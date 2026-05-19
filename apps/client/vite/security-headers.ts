@@ -1,13 +1,16 @@
 /**
- * Browser security headers + CSP for the Filosign client (Privy + WalletConnect + API).
- * @see https://docs.privy.io/security/implementation-guide/content-security-policy
+ * Browser security headers + CSP for the Filosign client (thirdweb wallets + API).
  */
 
-const PRIVY_CONNECT =
-	"https://auth.privy.io wss://relay.walletconnect.com wss://relay.walletconnect.org wss://www.walletlink.org https://*.rpc.privy.systems https://explorer-api.walletconnect.com";
+const THIRDWEB_CONNECT =
+	"https://embedded-wallet.thirdweb.com https://social.thirdweb.com https://api.thirdweb.com https://c.thirdweb.com wss://embedded-wallet.thirdweb.com";
 
-const PRIVY_FRAMES =
-	"https://auth.privy.io https://verify.walletconnect.com https://verify.walletconnect.org https://challenges.cloudflare.com";
+const THIRDWEB_FRAMES =
+	"https://embedded-wallet.thirdweb.com https://challenges.cloudflare.com";
+
+/** PostHog script loader + survey assets (when analytics enabled). */
+const POSTHOG_SCRIPTS =
+	"https://us.i.posthog.com https://us-assets.i.posthog.com";
 
 function normalizeSpaces(s: string): string {
 	return s.replace(/\s+/g, " ").trim();
@@ -31,10 +34,9 @@ export function buildContentSecurityPolicy(
 	apiOrigin: string | null,
 ): string {
 	const scriptSrc = isDev
-		? "'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://challenges.cloudflare.com"
-		: "'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com";
+		? `'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://challenges.cloudflare.com ${POSTHOG_SCRIPTS}`
+		: `'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com ${POSTHOG_SCRIPTS}`;
 
-	// Dev: allow local Hardhat, HMR websockets, arbitrary HTTPS RPC. Prod: HTTPS + WSS only (no http:).
 	const connectTail = isDev ? "http: https: ws: wss:" : "https: wss:";
 
 	const apiPart = apiOrigin ? `${apiOrigin} ` : "";
@@ -50,9 +52,9 @@ export function buildContentSecurityPolicy(
 		base-uri 'self';
 		form-action 'self';
 		frame-ancestors 'none';
-		child-src https://auth.privy.io https://verify.walletconnect.com https://verify.walletconnect.org;
-		frame-src ${PRIVY_FRAMES};
-		connect-src 'self' ${PRIVY_CONNECT} ${apiPart}${connectTail};
+		child-src https://embedded-wallet.thirdweb.com https://challenges.cloudflare.com;
+		frame-src ${THIRDWEB_FRAMES};
+		connect-src 'self' ${THIRDWEB_CONNECT} ${apiPart}${connectTail};
 		worker-src 'self' blob:;
 		manifest-src 'self'
 	`);

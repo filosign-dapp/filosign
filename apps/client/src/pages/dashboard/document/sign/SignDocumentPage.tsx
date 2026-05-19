@@ -33,7 +33,6 @@ export function SignDocumentPage() {
 		placement,
 		viewer,
 		signing,
-		incentive,
 		meta,
 		compliance,
 		coldShare,
@@ -247,7 +246,6 @@ export function SignDocumentPage() {
 					pieceCid={pieceCid}
 					identity={identity}
 					signing={signing}
-					incentive={incentive}
 					meta={meta}
 					viewer={viewer}
 					compliance={compliance}

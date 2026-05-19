@@ -105,8 +105,6 @@ describe("ComplianceBundle", () => {
 	});
 
 	it("COMPLIANCE_CHAIN_TX_KINDS covers all lifecycle labels", () => {
-		expect(COMPLIANCE_CHAIN_TX_KINDS).toContain("incentive_attached");
-		expect(COMPLIANCE_CHAIN_TX_KINDS).toContain("incentives_released");
-		expect(COMPLIANCE_CHAIN_TX_KINDS.length).toBe(6);
+		expect(COMPLIANCE_CHAIN_TX_KINDS.length).toBe(4);
 	});
 });

@@ -1,8 +1,6 @@
-import { useFilosignContext } from "@filosign/react";
 import {
 	useAckFile,
 	useComplianceBundle,
-	useDocumentIncentive,
 	useFileInfo,
 	useRegenerateColdInvite,
 	useSignDraft,
@@ -14,25 +12,19 @@ import {
 import { useUserProfile } from "@filosign/react/users";
 import { buildRotatedInviteEnvelope } from "@filosign/react/utils";
 import {
-	hashNormalizedSignerEmail,
 	normalizePlacementRecipientEmail,
 	zPlacementManifest,
 } from "@filosign/shared";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-	defaultChain,
-	erc20DisplayForChain,
-	SUPPORTED_TOKENS,
-} from "@/src/constants";
+import { defaultChain } from "@/src/constants";
 import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
 import { buildColdInviteMagicLink } from "@/src/lib/routing/cold-invite-search";
 import {
 	buildCompliancePdfOnly,
 	buildDocumentPlusCompliancePdf,
 	downloadPdfBytes,
-	fetchSignerIncentivesForCompliancePdf,
 	sha256HexOfBytes,
 } from "@/src/lib/utils/compliance-pdf";
 import type { ColdSharePackage } from "../../envelope/create/add-sign/_components/ColdShareDialog";
@@ -43,7 +35,6 @@ export function useSignDocument() {
 	const pieceCid = search.pieceCid;
 
 	const { user } = useThirdwebUserInfo();
-	const { contracts } = useFilosignContext();
 	const {
 		data: file,
 		isLoading: fileLoading,
@@ -67,26 +58,7 @@ export function useSignDocument() {
 		return null;
 	}, [userProfile?.email, file?.signers, signerAddress, user?.email?.address]);
 
-	const signerEmailCommitment = useMemo(() => {
-		if (!signerPlacementEmail) return undefined;
-		return hashNormalizedSignerEmail(signerPlacementEmail);
-	}, [signerPlacementEmail]);
-
 	const acknowledgeFile = useAckFile();
-
-	const { data: incentive } = useDocumentIncentive({
-		pieceCid,
-		signerEmailCommitment,
-	});
-
-	const tokenInfo = useMemo(() => {
-		if (!incentive?.token) return null;
-		return (
-			SUPPORTED_TOKENS.find(
-				(t) => t.address.toLowerCase() === incentive.token.toLowerCase(),
-			) || null
-		);
-	}, [incentive]);
 
 	const mySignature = useMemo(() => {
 		if (!signerAddress || !file?.signatures?.length) return undefined;
@@ -347,21 +319,12 @@ export function useSignDocument() {
 					documentSha256,
 				});
 			const explorerBase = defaultChain.blockExplorers?.default?.url ?? null;
-			const signerIncentives = contracts?.FSFileRegistry?.read
-				? await fetchSignerIncentivesForCompliancePdf(
-						contracts.FSFileRegistry.read,
-						pieceCid,
-						file.signers,
-						erc20DisplayForChain,
-					)
-				: undefined;
 			const bytes = await buildCompliancePdfOnly({
 				bundle,
 				bundleHash,
 				exportId,
 				chainName: defaultChain.name,
 				explorerBaseUrl: explorerBase,
-				signerIncentives,
 				documentSha256,
 				decryptedDocumentMeta: fileData
 					? {
@@ -381,13 +344,7 @@ export function useSignDocument() {
 		} finally {
 			setPdfExportBusy(false);
 		}
-	}, [
-		complianceBundle,
-		contracts?.FSFileRegistry?.read,
-		file,
-		fileData,
-		pieceCid,
-	]);
+	}, [complianceBundle, file, fileData, pieceCid]);
 
 	const handleDownloadDocumentWithCompliancePdf = useCallback(async () => {
 		if (!file || !pieceCid || !fileData) {
@@ -403,14 +360,6 @@ export function useSignDocument() {
 					documentSha256,
 				});
 			const explorerBase = defaultChain.blockExplorers?.default?.url ?? null;
-			const signerIncentives = contracts?.FSFileRegistry?.read
-				? await fetchSignerIncentivesForCompliancePdf(
-						contracts.FSFileRegistry.read,
-						pieceCid,
-						file.signers,
-						erc20DisplayForChain,
-					)
-				: undefined;
 			const bytes = await buildDocumentPlusCompliancePdf({
 				bundle,
 				bundleHash,
@@ -418,7 +367,6 @@ export function useSignDocument() {
 				fileData,
 				chainName: defaultChain.name,
 				explorerBaseUrl: explorerBase,
-				signerIncentives,
 				documentSha256,
 			});
 			const safe = pieceCid.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 48);
@@ -431,13 +379,7 @@ export function useSignDocument() {
 		} finally {
 			setPdfExportBusy(false);
 		}
-	}, [
-		complianceBundle,
-		contracts?.FSFileRegistry?.read,
-		file,
-		fileData,
-		pieceCid,
-	]);
+	}, [complianceBundle, file, fileData, pieceCid]);
 
 	const formatAddress = useCallback((address: string) => {
 		return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -559,7 +501,6 @@ export function useSignDocument() {
 			handleSign,
 			mySignature,
 		},
-		incentive: { incentive, tokenInfo },
 		meta: {
 			isSender,
 			signedTxExplorerUrl,

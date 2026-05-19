@@ -45,7 +45,6 @@ import {
 	rpcPieceAckOutputSchema,
 	rpcPieceComplianceBundleOutputSchema,
 	rpcPieceDetailOutputSchema,
-	rpcPieceIncentiveOutputSchema,
 	rpcPieceS3UrlOutputSchema,
 	rpcPieceSignDraftFieldIdsOutputSchema,
 	rpcPieceSignOutputSchema,
@@ -82,8 +81,6 @@ const platformRuntimeSchema = z.object({
 	serverAddressSynapse: z.string(),
 	chain: z.unknown(),
 	chainKey: z.enum(["local", "testnet", "mainnet"]),
-	platformFeeBps: z.number(),
-	maxPlatformFeeBps: z.number(),
 	treasury: z.string(),
 });
 
@@ -100,8 +97,6 @@ export const appRouter = {
 			serverAddressSynapse: r.serverAddressSynapse,
 			chain: r.chain,
 			chainKey: r.chainKey,
-			platformFeeBps: r.platformFeeBps,
-			maxPlatformFeeBps: r.maxPlatformFeeBps,
 			treasury: r.treasury,
 		};
 	}),
@@ -263,21 +258,6 @@ export const appRouter = {
 						requestIp,
 					});
 				}),
-			incentive: authenticatedProcedure
-				.input(
-					z.object({
-						pieceCid: z.string().min(1),
-						body: z.record(z.string(), unk),
-					}),
-				)
-				.output(rpcPieceIncentiveOutputSchema)
-				.handler(({ context, input }) =>
-					pieceHandlers.pieceIncentive({
-						userWallet: context.userWallet,
-						pieceCid: input.pieceCid,
-						body: input.body,
-					}),
-				),
 			sign: authenticatedProcedure
 				.input(
 					z.object({

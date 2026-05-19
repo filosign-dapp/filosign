@@ -6,11 +6,6 @@ export const filosignKeys = {
 	authedApi: (address: string | undefined) =>
 		["fsQ-authed-api", address] as const,
 
-	documentIncentive: (
-		pieceCid: string | undefined,
-		signerEmailCommitment: string | undefined,
-	) => ["fsQ-document-incentive", pieceCid, signerEmailCommitment] as const,
-
 	/** useCanSendTo / useCanReceiveFrom — dependency first (recipient or sender), then wallet. */
 	isApprovedDependentFirst: (dependent: string, wallet: string | undefined) =>
 		["fsQ-is-approved", dependent, wallet] as const,

@@ -2,22 +2,16 @@ import {
 	CLIENT_ANALYTICS_EVENTS,
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
-import { useAttachInvoiceToFile, useSendFile } from "@filosign/react/files";
+import { useSendFile } from "@filosign/react/files";
 import { useProfilesByAddresses } from "@filosign/react/users";
-import {
-	hashNormalizedSignerEmail,
-	normalizePlacementRecipientEmail,
-	validateInvoiceMemo,
-} from "@filosign/shared";
+import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { useNavigate } from "@tanstack/react-router";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { type Address, parseUnits } from "viem";
-import { SUPPORTED_TOKENS } from "@/src/constants";
+import type { Address } from "viem";
 import { EntitlementPlanHint } from "@/src/lib/components/custom/EntitlementPlanHint";
 import { useStorePersist } from "@/src/lib/hooks/use-store";
 import { buildColdInviteMagicLink } from "@/src/lib/routing/cold-invite-search";
-import { safe } from "@/src/lib/utils/safe";
 import { cn } from "@/src/lib/utils/utils";
 import type { Recipient } from "../types";
 import {
@@ -58,7 +52,6 @@ export default function AddSignaturePage() {
 	const { createForm, clearCreateForm } = useStorePersist();
 	const captureAppEvent = useCaptureAppEvent();
 	const sendFile = useSendFile();
-	const attachInvoice = useAttachInvoiceToFile();
 
 	const recipientAddresses = useMemo(
 		() =>
@@ -343,19 +336,6 @@ export default function AddSignaturePage() {
 			return;
 		}
 
-		for (const r of createForm.recipients ?? []) {
-			if (!r.invoice?.token?.trim() || !r.invoice?.amount?.trim()) continue;
-			const [, memoErr] = safe(() =>
-				validateInvoiceMemo(r.invoice?.memo ?? ""),
-			);
-			if (memoErr) {
-				toast.error(memoErr.message);
-				setSendStatus("error");
-				setTimeout(() => setSendStatus("idle"), 3000);
-				return;
-			}
-		}
-
 		captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopeSendClicked, {
 			recipient_count: createForm.recipients?.length ?? 0,
 		});
@@ -412,34 +392,6 @@ export default function AddSignaturePage() {
 				viewerEmails,
 				...(coldInvitePayload ? { coldInvites: coldInvitePayload } : {}),
 			});
-
-			if (result.success && result.pieceCid) {
-				for (const recipient of createForm.recipients) {
-					if (recipient.invoice?.token && recipient.invoice?.amount) {
-						const rawSignerEmail = recipient.email?.trim();
-						if (!rawSignerEmail) continue;
-						const tokenAddress = recipient.invoice.token.toLowerCase();
-						const tokenData = SUPPORTED_TOKENS.find(
-							(t) => t.address.toLowerCase() === tokenAddress,
-						);
-						const decimals = tokenData?.decimals ?? 18;
-						const amountInWei = parseUnits(recipient.invoice.amount, decimals);
-						const { normalized: memo } = validateInvoiceMemo(
-							recipient.invoice.memo ?? "",
-						);
-
-						await attachInvoice.mutateAsync({
-							pieceCid: result.pieceCid,
-							signerEmailCommitment: hashNormalizedSignerEmail(
-								normalizePlacementRecipientEmail(rawSignerEmail),
-							),
-							token: recipient.invoice.token as Address,
-							amount: amountInWei,
-							memo,
-						});
-					}
-				}
-			}
 
 			clearCreateForm();
 

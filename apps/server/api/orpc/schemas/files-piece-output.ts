@@ -47,13 +47,6 @@ export const rpcPieceComplianceBundleOutputSchema = z.object({
 	bundle: zComplianceBundle,
 });
 
-export const rpcPieceIncentiveOutputSchema = z.object({
-	txHash: zHexString(),
-	platformFeeBps: z.number(),
-	grossAmount: z.string(),
-	signerNetAmount: z.string(),
-});
-
 export const rpcPieceSignOutputSchema = z.object({
 	txHash: zHexString(),
 	signature: zHexString(),

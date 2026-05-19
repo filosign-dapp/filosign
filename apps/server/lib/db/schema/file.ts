@@ -178,24 +178,6 @@ export const fileSignatures = t.pgTable(
 	],
 );
 
-/** On-chain incentive attach txs for compliance ledger (FSManager.attachIncentive*). */
-export const fileIncentiveAttaches = t.pgTable(
-	"file_incentive_attaches",
-	{
-		id: t.uuid().primaryKey().$defaultFn(randomUuidV7),
-		filePieceCid: t
-			.text()
-			.notNull()
-			.references(() => files.pieceCid, { onDelete: "cascade" }),
-		signerEmailCommitment: t.text().notNull(),
-		token: tEvmAddress().notNull(),
-		amount: t.text().notNull(),
-		txHash: t.text().notNull().unique(),
-		...timestamps,
-	},
-	(table) => [t.index("idx_file_incentive_piece").on(table.filePieceCid)],
-);
-
 /** Platform log: each compliance bundle generation for audit / future attestation. */
 export const complianceExportLogs = t.pgTable(
 	"compliance_export_logs",

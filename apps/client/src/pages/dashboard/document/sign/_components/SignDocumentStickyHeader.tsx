@@ -5,8 +5,6 @@ import {
 	CaretLeftIcon,
 	CaretRightIcon,
 	CheckCircleIcon,
-	CheckIcon,
-	ClockIcon,
 	DownloadIcon,
 	FileArrowDownIcon,
 	MagnifyingGlassMinusIcon,
@@ -14,7 +12,6 @@ import {
 	ScrollIcon,
 	SpinnerIcon,
 } from "@phosphor-icons/react";
-import { formatUnits } from "viem";
 import { CopyButton } from "@/src/lib/components/custom/CopyButton";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
@@ -29,7 +26,6 @@ export type SignDocumentStickyHeaderProps = {
 		SignDocumentController["signing"],
 		"canSign" | "alreadySigned" | "signFile" | "handleSign"
 	>;
-	incentive: SignDocumentController["incentive"];
 	meta: Pick<
 		SignDocumentController["meta"],
 		"isSender" | "signedTxExplorerUrl" | "explorerLabel" | "formatAddress"
@@ -68,7 +64,6 @@ export function SignDocumentStickyHeader({
 	pieceCid,
 	identity: { signerAddress },
 	signing: { canSign, alreadySigned, signFile, handleSign },
-	incentive: { incentive, tokenInfo },
 	meta: { isSender, signedTxExplorerUrl, explorerLabel, formatAddress },
 	viewer: {
 		zoom,
@@ -133,25 +128,6 @@ export function SignDocumentStickyHeader({
 						) : (
 							<span className="text-xs text-muted-foreground">
 								On-chain proof recorded
-							</span>
-						)}
-					</div>
-				)}
-
-				{incentive && incentive.amount > 0n && (
-					<div className="flex flex-wrap items-center justify-center gap-2 px-3 py-2 border-b border-border bg-accent/30">
-						<pre className="font-medium">
-							{formatUnits(incentive.amount, tokenInfo?.decimals ?? 18)}
-						</pre>
-						<pre className="font-medium">{tokenInfo?.symbol ?? "Tokens"}</pre>
-						<img
-							src={tokenInfo?.icon}
-							alt={tokenInfo?.symbol}
-							className="size-4"
-						/>
-						{incentive.claimed && (
-							<span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
-								(Distributed)
 							</span>
 						)}
 					</div>
@@ -315,36 +291,6 @@ export function SignDocumentStickyHeader({
 										On-chain proof recorded
 									</div>
 								)}
-							</div>
-						)}
-						{incentive && incentive.amount > 0n && (
-							<div className="flex flex-wrap items-center gap-2 mt-2">
-								<Badge variant="default">
-									<img
-										src={tokenInfo?.icon}
-										alt={tokenInfo?.symbol}
-										className="size-4"
-									/>
-									<pre className="font-medium">
-										{formatUnits(incentive.amount, tokenInfo?.decimals ?? 18)}
-									</pre>
-									<pre className="font-medium">
-										{tokenInfo?.symbol ?? "Tokens"}
-									</pre>
-								</Badge>
-								<div className="items-center text-xs font-medium text-muted-foreground hover:text-ring/90">
-									{incentive.claimed ? (
-										<span className="inline-flex items-center gap-1">
-											Distributed
-											<CheckIcon className="size-3.5" />
-										</span>
-									) : (
-										<span className="inline-flex items-center gap-1 text-chart-1">
-											Pending
-											<ClockIcon className="size-3.5" />
-										</span>
-									)}
-								</div>
 							</div>
 						)}
 					</div>

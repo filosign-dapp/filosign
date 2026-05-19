@@ -14,13 +14,12 @@ import {
 } from "@filosign/shared";
 import { and, desc, eq, inArray, or } from "drizzle-orm";
 import type { Address, Hex } from "viem";
-import { decodeEventLog, getAddress, hexToBytes, isHex } from "viem";
+import { getAddress, hexToBytes, isHex } from "viem";
 import config from "@/config";
 import type db from "@/lib/db";
 import {
 	complianceExportLogs,
 	fileAcknowledgements,
-	fileIncentiveAttaches,
 	fileSignatures,
 	fileSignerDrafts,
 	files,
@@ -76,14 +75,13 @@ type TxDraft = {
 async function receiptMeta(txHash: Hex): Promise<{
 	blockNumber: number | null;
 	timestamp: number | null;
-	hasIncentivesReleased: boolean;
 }> {
 	const recRes = await tryCatch(
 		evmClient.getTransactionReceipt({ hash: txHash }),
 	);
 	const receipt = recRes.data;
 	if (!receipt?.blockNumber) {
-		return { blockNumber: null, timestamp: null, hasIncentivesReleased: false };
+		return { blockNumber: null, timestamp: null };
 	}
 	const blockNumber = Number(receipt.blockNumber);
 	let timestamp: number | null = null;
@@ -93,23 +91,7 @@ async function receiptMeta(txHash: Hex): Promise<{
 	if (blockRes.data?.timestamp) {
 		timestamp = Number(blockRes.data.timestamp);
 	}
-	let hasIncentivesReleased = false;
-	for (const log of receipt.logs) {
-		try {
-			const decoded = decodeEventLog({
-				abi: FSManager.abi,
-				data: log.data,
-				topics: log.topics,
-			});
-			if (decoded.eventName === "IncentivesReleased") {
-				hasIncentivesReleased = true;
-				break;
-			}
-		} catch {
-			// ignore
-		}
-	}
-	return { blockNumber, timestamp, hasIncentivesReleased };
+	return { blockNumber, timestamp };
 }
 
 export async function buildComplianceBundleAndHash(args: {
@@ -164,16 +146,6 @@ export async function buildComplianceBundleAndHash(args: {
 		})
 		.from(fileSignerDrafts)
 		.where(eq(fileSignerDrafts.filePieceCid, pieceCid));
-
-	const incentiveRows = await database
-		.select({
-			signerEmailCommitment: fileIncentiveAttaches.signerEmailCommitment,
-			token: fileIncentiveAttaches.token,
-			amount: fileIncentiveAttaches.amount,
-			txHash: fileIncentiveAttaches.txHash,
-		})
-		.from(fileIncentiveAttaches)
-		.where(eq(fileIncentiveAttaches.filePieceCid, pieceCid));
 
 	const ackRowsRaw = await database
 		.select({
@@ -441,20 +413,6 @@ export async function buildComplianceBundleAndHash(args: {
 		});
 	}
 
-	const seenIncentiveTx = new Set<string>();
-	for (const inc of incentiveRows) {
-		const h = inc.txHash.toLowerCase();
-		if (seenIncentiveTx.has(h)) continue;
-		seenIncentiveTx.add(h);
-		txDrafts.push({
-			kind: "incentive_attached",
-			txHash: inc.txHash as Hex,
-			contractAddress: mgrAddr,
-			summary: `attachIncentive — token ${getAddress(inc.token as Address)} amount ${inc.amount}`,
-			relatedAddresses: [senderNorm],
-		});
-	}
-
 	const uniqueHashes = [
 		...new Set(txDrafts.map((t) => t.txHash.toLowerCase())),
 	].map((h) => h as Hex);
@@ -470,7 +428,6 @@ export async function buildComplianceBundleAndHash(args: {
 		const meta = receiptCache.get(d.txHash.toLowerCase()) ?? {
 			blockNumber: null,
 			timestamp: null,
-			hasIncentivesReleased: false,
 		};
 		return {
 			kind: d.kind,
@@ -484,27 +441,6 @@ export async function buildComplianceBundleAndHash(args: {
 			fetchedAtIso,
 		};
 	});
-
-	const incentivesReleasedSeen = new Set<string>();
-	for (const s of sigRows) {
-		const h = (s.onchainTxHash as string).toLowerCase();
-		const meta = receiptCache.get(h);
-		if (meta?.hasIncentivesReleased && !incentivesReleasedSeen.has(h)) {
-			incentivesReleasedSeen.add(h);
-			transactions.push({
-				kind: "incentives_released",
-				txHash: s.onchainTxHash as Hex,
-				chainId,
-				contractAddress: mgrAddr,
-				summary:
-					"IncentivesReleased — payout eligibility recorded (same tx as final signature batch when applicable)",
-				relatedAddresses: [senderNorm, getAddress(s.signer)],
-				blockNumber: meta.blockNumber,
-				timestamp: meta.timestamp,
-				fetchedAtIso,
-			});
-		}
-	}
 
 	transactions.sort((a, b) => {
 		if (a.blockNumber != null && b.blockNumber != null) {

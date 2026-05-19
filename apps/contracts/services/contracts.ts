@@ -29,7 +29,7 @@ type FilosignKeyedContractClient = {
 
 type DefinitionContracts = Pick<
 	ChainDefinitionsEntry,
-	"FSManager" | "FSFileRegistry" | "FSKeyRegistry" | "FSEscrow"
+	"FSManager" | "FSFileRegistry" | "FSKeyRegistry"
 >;
 
 // Mapped type keeps TS7056 in check vs. a large inferred union.
@@ -81,10 +81,6 @@ export function getContracts<T extends Wallet>(options: {
 		FSKeyRegistry: getContract({
 			client: bundledClient,
 			...contractDefinitions.FSKeyRegistry,
-		}),
-		FSEscrow: getContract({
-			client: bundledClient,
-			...contractDefinitions.FSEscrow,
 		}),
 		$client: client,
 	} as FilosignContracts<T>;

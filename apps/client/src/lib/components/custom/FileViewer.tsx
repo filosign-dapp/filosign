@@ -29,12 +29,11 @@ import {
 	useState,
 } from "react";
 import { toast } from "sonner";
-import { defaultChain, erc20DisplayForChain } from "@/src/constants";
+import { defaultChain } from "@/src/constants";
 import {
 	buildCompliancePdfOnly,
 	buildDocumentPlusCompliancePdf,
 	downloadPdfBytes,
-	fetchSignerIncentivesForCompliancePdf,
 	sha256HexOfBytes,
 } from "@/src/lib/utils/compliance-pdf";
 import { Button } from "../ui/button";
@@ -85,7 +84,7 @@ export function FileViewer({ file, open, onOpenChange }: FileViewerProps) {
 		height: 800,
 	});
 
-	const { wallet, contracts } = useFilosignContext();
+	const { wallet } = useFilosignContext();
 
 	const previewPdfBytes = useMemo(() => {
 		if (!fileData) return null;
@@ -233,21 +232,12 @@ export function FileViewer({ file, open, onOpenChange }: FileViewerProps) {
 					documentSha256,
 				});
 			const explorerBase = defaultChain.blockExplorers?.default?.url ?? null;
-			const signerIncentives = contracts?.FSFileRegistry?.read
-				? await fetchSignerIncentivesForCompliancePdf(
-						contracts.FSFileRegistry.read,
-						file.pieceCid,
-						fileInfo.signers,
-						erc20DisplayForChain,
-					)
-				: undefined;
 			const bytes = await buildCompliancePdfOnly({
 				bundle,
 				bundleHash,
 				exportId,
 				chainName: defaultChain.name,
 				explorerBaseUrl: explorerBase,
-				signerIncentives,
 				documentSha256,
 				decryptedDocumentMeta: fileData
 					? {
@@ -267,13 +257,7 @@ export function FileViewer({ file, open, onOpenChange }: FileViewerProps) {
 		} finally {
 			setPdfExportBusy(false);
 		}
-	}, [
-		complianceBundle,
-		contracts?.FSFileRegistry?.read,
-		file?.pieceCid,
-		fileData,
-		fileInfo,
-	]);
+	}, [complianceBundle, file?.pieceCid, fileData, fileInfo]);
 
 	const handleDownloadDocumentWithCompliancePdf = useCallback(async () => {
 		if (!fileInfo || !file?.pieceCid || !fileData) {
@@ -295,14 +279,6 @@ export function FileViewer({ file, open, onOpenChange }: FileViewerProps) {
 					documentSha256,
 				});
 			const explorerBase = defaultChain.blockExplorers?.default?.url ?? null;
-			const signerIncentives = contracts?.FSFileRegistry?.read
-				? await fetchSignerIncentivesForCompliancePdf(
-						contracts.FSFileRegistry.read,
-						file.pieceCid,
-						fileInfo.signers,
-						erc20DisplayForChain,
-					)
-				: undefined;
 			const bytes = await buildDocumentPlusCompliancePdf({
 				bundle,
 				bundleHash,
@@ -310,7 +286,6 @@ export function FileViewer({ file, open, onOpenChange }: FileViewerProps) {
 				fileData: toViewFileResult(fileData),
 				chainName: defaultChain.name,
 				explorerBaseUrl: explorerBase,
-				signerIncentives,
 				documentSha256,
 			});
 			const safe = file.pieceCid.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 48);
@@ -323,13 +298,7 @@ export function FileViewer({ file, open, onOpenChange }: FileViewerProps) {
 		} finally {
 			setPdfExportBusy(false);
 		}
-	}, [
-		complianceBundle,
-		contracts?.FSFileRegistry?.read,
-		file?.pieceCid,
-		fileData,
-		fileInfo,
-	]);
+	}, [complianceBundle, file?.pieceCid, fileData, fileInfo]);
 
 	// Handle escape key to close
 	useEffect(() => {

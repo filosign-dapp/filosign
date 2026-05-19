@@ -11,7 +11,6 @@ contract FSFileRegistry is EIP712 {
     using ECDSA for bytes32;
 
     uint256 constant SIGNATURE_VALIDITY_PERIOD = 2 minutes;
-    uint256 public constant INCENTIVE_REFUND_DELAY = 7 days;
 
     struct FileRegistration {
         bytes32 cidIdentifier;
@@ -27,11 +26,6 @@ contract FSFileRegistry is EIP712 {
         uint8 signaturesCount;
         mapping(bytes32 => bytes) signatures;
         uint256 timestamp;
-        mapping(bytes32 => address) incentiveToken;
-        mapping(bytes32 => uint256) incentiveAmount;
-        mapping(bytes32 => bool) incentiveClaimed;
-        mapping(bytes32 => uint256) incentiveRefundNotBefore;
-        mapping(bytes32 => bytes32) incentiveMemoHash;
     }
 
     struct FileRegistrationView {
@@ -66,11 +60,6 @@ contract FSFileRegistry is EIP712 {
 
     modifier onlyServer() {
         if (msg.sender != manager.server()) revert OnlyServer();
-        _;
-    }
-
-    modifier onlyManager() {
-        if (msg.sender != address(manager)) revert OnlyManager();
         _;
     }
 
@@ -202,8 +191,6 @@ contract FSFileRegistry is EIP712 {
         bytes20 dl3SignatureCommitment_,
         uint256 timestamp_,
         bytes calldata signature_,
-        bytes32[] calldata allSignerEmailCommitments_,
-        address[] calldata payoutWallets_,
         bytes32 completionsRoot_,
         uint8 leafSchemaVersion_
     ) external onlyServer {
@@ -232,22 +219,6 @@ contract FSFileRegistry is EIP712 {
 
         file.signatures[signerEmailCommitment_] = signature_;
         file.signaturesCount++;
-
-        if (file.signaturesCount == file.signersCount) {
-            if (allSignerEmailCommitments_.length != uint256(file.signersCount))
-                revert BadSignersLength();
-            if (
-                computeEmailSignerCommitment(allSignerEmailCommitments_) !=
-                file.signersCommitment
-            ) revert InvalidSignersCommitment();
-            if (payoutWallets_.length != allSignerEmailCommitments_.length)
-                revert BadSignersLength();
-            manager.releaseIncentives(
-                pieceCid_,
-                allSignerEmailCommitments_,
-                payoutWallets_
-            );
-        }
 
         nonce[signerWallet_]++;
         emit FileSigned(cidId, sender_, signerWallet_, uint48(block.timestamp));
@@ -411,81 +382,6 @@ contract FSFileRegistry is EIP712 {
         string calldata pieceCid_
     ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(pieceCid_));
-    }
-
-    function setSignerIncentive(
-        bytes32 cidId,
-        bytes32 signerEmailCommitment_,
-        address token,
-        uint256 amount,
-        bytes32 memoHash_
-    ) external onlyManager {
-        FileRegistration storage file = _fileRegistrations[cidId];
-        if (file.timestamp == 0) revert FileNotRegistered();
-        if (file.signaturesCount == file.signersCount)
-            revert FileAlreadyFullySigned();
-        if (!file.signerEmailRegistered[signerEmailCommitment_])
-            revert InvalidSigner();
-        if (file.incentiveToken[signerEmailCommitment_] != address(0))
-            revert IncentiveAlreadyAttached();
-        file.incentiveToken[signerEmailCommitment_] = token;
-        file.incentiveAmount[signerEmailCommitment_] = amount;
-        file.incentiveRefundNotBefore[signerEmailCommitment_] =
-            block.timestamp +
-            INCENTIVE_REFUND_DELAY;
-        file.incentiveMemoHash[signerEmailCommitment_] = memoHash_;
-    }
-
-    /// Reset incentive slot (post-refund).
-    function clearSignerIncentive(
-        bytes32 cidId,
-        bytes32 signerEmailCommitment_
-    ) external onlyManager {
-        FileRegistration storage file = _fileRegistrations[cidId];
-        file.incentiveToken[signerEmailCommitment_] = address(0);
-        file.incentiveAmount[signerEmailCommitment_] = 0;
-        file.incentiveClaimed[signerEmailCommitment_] = false;
-        file.incentiveRefundNotBefore[signerEmailCommitment_] = 0;
-        file.incentiveMemoHash[signerEmailCommitment_] = bytes32(0);
-    }
-
-    function getIncentiveRefundNotBefore(
-        bytes32 cidId,
-        bytes32 signerEmailCommitment_
-    ) external view returns (uint256) {
-        return
-            _fileRegistrations[cidId].incentiveRefundNotBefore[
-                signerEmailCommitment_
-            ];
-    }
-
-    function getIncentiveMemoHash(
-        bytes32 cidId,
-        bytes32 signerEmailCommitment_
-    ) external view returns (bytes32) {
-        return
-            _fileRegistrations[cidId].incentiveMemoHash[signerEmailCommitment_];
-    }
-
-    function getSignerIncentive(
-        bytes32 cidId,
-        bytes32 signerEmailCommitment_
-    ) external view returns (address token, uint256 amount, bool claimed) {
-        FileRegistration storage file = _fileRegistrations[cidId];
-        return (
-            file.incentiveToken[signerEmailCommitment_],
-            file.incentiveAmount[signerEmailCommitment_],
-            file.incentiveClaimed[signerEmailCommitment_]
-        );
-    }
-
-    function markIncentiveClaimed(
-        bytes32 cidId,
-        bytes32 signerEmailCommitment_
-    ) external onlyManager {
-        _fileRegistrations[cidId].incentiveClaimed[
-            signerEmailCommitment_
-        ] = true;
     }
 
     function allSigned(bytes32 cidId) external view returns (bool) {

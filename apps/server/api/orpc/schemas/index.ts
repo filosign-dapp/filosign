@@ -16,7 +16,6 @@ export {
 	rpcPieceAckOutputSchema,
 	rpcPieceComplianceBundleOutputSchema,
 	rpcPieceDetailOutputSchema,
-	rpcPieceIncentiveOutputSchema,
 	rpcPieceS3UrlOutputSchema,
 	rpcPieceSignDraftFieldIdsOutputSchema,
 	rpcPieceSignOutputSchema,

@@ -96,10 +96,6 @@ const TX_KIND_GLOSSARY: Record<ChainTxKind, string> = {
 		"FSManager transaction where a recipient approved the sender relationship (`approveSender`), often after reviewing the file.",
 	sender_revoked:
 		"FSManager transaction revoking a prior sender approval for a recipient (relationship update).",
-	incentive_attached:
-		"FSManager transaction attaching a USDC signer incentive (`attachIncentive`; token, amount, and memo summary in the bundle).",
-	incentives_released:
-		"On-chain incentive payout release (`IncentivesReleased`) where applicable; Filosign may surface this when log data is available on the receipt.",
 };
 
 export function buildAppendixLines(): ComplianceCopyLine[] {

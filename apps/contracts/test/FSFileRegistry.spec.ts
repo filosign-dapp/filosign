@@ -6,12 +6,10 @@ import { keccak256, toBytes } from "viem";
 import {
 	deployFullSystem,
 	deployFullSystemWithoutSenderKeygen,
-	registerFileAndAttach,
-	registerFileAndAttachMulti,
+	registerFileOnly,
 	registerFileSignatureStep,
 } from "./fixtures.js";
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
-import { assertEscrowBalanced } from "./helpers/invariants.js";
 import {
 	signRegisterFile,
 	signRegisterFileSignature,
@@ -92,7 +90,7 @@ describe("FSFileRegistry", () => {
 		const ctx = await deployFullSystem();
 		const c = `0x${"b1".repeat(32)}` as Hex;
 		const pieceCid = "dup-file";
-		await registerFileAndAttach(ctx, pieceCid, c);
+		await registerFileOnly(ctx, pieceCid, [c]);
 
 		const sc = await ctx.fileRegistry.read.computeEmailSignerCommitment([[c]]);
 		const ts = await latestBlockTimestamp(ctx.publicClient);
@@ -158,7 +156,7 @@ describe("FSFileRegistry", () => {
 		const onFile = `0x${"d1".repeat(32)}` as Hex;
 		const notOnFile = `0x${"d2".repeat(32)}` as Hex;
 		const pieceCid = "invalid-signer";
-		await registerFileAndAttach(ctx, pieceCid, onFile);
+		await registerFileOnly(ctx, pieceCid, [onFile]);
 
 		const ts = await latestBlockTimestamp(ctx.publicClient);
 		const n = await ctx.fileRegistry.read.nonce([
@@ -189,8 +187,6 @@ describe("FSFileRegistry", () => {
 					`0x${"88".repeat(20)}`,
 					ts,
 					signSig,
-					[notOnFile],
-					[walletAccount(ctx.payout).address],
 					defaultPlacement,
 					1,
 				],
@@ -203,144 +199,47 @@ describe("FSFileRegistry", () => {
 		const ctx = await deployFullSystem();
 		const c = `0x${"e1".repeat(32)}` as Hex;
 		const pieceCid = "double-sign";
-		await registerFileAndAttach(ctx, pieceCid, c);
+		await registerFileOnly(ctx, pieceCid, [c]);
 		const step = {
 			ctx,
 			pieceCid,
 			senderAddr: walletAccount(ctx.sender).address,
 			signerWallet: ctx.payout,
 			signerEmailCommitment: c,
-			allSignerEmailCommitments: [c],
-			payoutWallets: [walletAccount(ctx.payout).address],
 		};
 		await registerFileSignatureStep(step);
 		await assert.rejects(registerFileSignatureStep(step));
 	});
 
-	it("two signers: full completion pays both payouts (registry-triggered release)", async () => {
+	it("two signers: both can register signatures", async () => {
 		const ctx = await deployFullSystem();
-		const clients = await hre.viem.getWalletClients();
-		const payoutA = clients[3];
-		const payoutB = clients[4];
 		const ca = `0x${"01".repeat(32)}` as Hex;
 		const cb = `0x${"02".repeat(32)}` as Hex;
 		const pieceCid = "two-signers";
 
-		await registerFileAndAttachMulti(ctx, pieceCid, [ca, cb]);
-		await ctx.manager.write.setPlatformFeeBps([0], {
-			account: walletAccount(ctx.server),
-		});
+		await registerFileOnly(ctx, pieceCid, [ca, cb]);
 
 		await registerFileSignatureStep({
 			ctx,
 			pieceCid,
 			senderAddr: walletAccount(ctx.sender).address,
-			signerWallet: payoutA,
+			signerWallet: ctx.payout,
 			signerEmailCommitment: ca,
-			allSignerEmailCommitments: [ca, cb],
-			payoutWallets: [
-				walletAccount(payoutA).address,
-				walletAccount(payoutB).address,
-			],
 		});
 
-		const bBefore = await ctx.mockUsdc.read.balanceOf([
-			walletAccount(payoutB).address,
-		]);
-		await registerFileSignatureStep({
-			ctx,
-			pieceCid,
-			senderAddr: walletAccount(ctx.sender).address,
-			signerWallet: payoutB,
-			signerEmailCommitment: cb,
-			allSignerEmailCommitments: [ca, cb],
-			payoutWallets: [
-				walletAccount(payoutA).address,
-				walletAccount(payoutB).address,
-			],
-		});
-
-		expect(
-			await ctx.mockUsdc.read.balanceOf([walletAccount(payoutA).address]),
-		).to.equal(ctx.fundAmount);
-		expect(
-			await ctx.mockUsdc.read.balanceOf([walletAccount(payoutB).address]),
-		).to.equal(bBefore + ctx.fundAmount);
-
-		const accounted = await ctx.escrow.read.accountedAssets([
-			ctx.mockUsdc.address,
-		]);
-		const stray = await ctx.escrow.read.strayBalance([ctx.mockUsdc.address]);
-		await assertEscrowBalanced(
-			ctx.publicClient,
-			ctx.escrow.address,
-			ctx.mockUsdc.address,
-			accounted,
-			stray,
-		);
-	});
-
-	it("last signature reverts when completion batch mis-ordered commitments", async () => {
-		const ctx = await deployFullSystem();
 		const clients = await hre.viem.getWalletClients();
-		const payoutA = clients[3];
-		const payoutB = clients[4];
-		const ca = `0x${"01".repeat(32)}` as Hex;
-		const cb = `0x${"02".repeat(32)}` as Hex;
-		const pieceCid = "bad-batch";
-
-		await registerFileAndAttachMulti(ctx, pieceCid, [ca, cb]);
+		const signerB = clients[4];
 
 		await registerFileSignatureStep({
 			ctx,
 			pieceCid,
 			senderAddr: walletAccount(ctx.sender).address,
-			signerWallet: payoutA,
-			signerEmailCommitment: ca,
-			allSignerEmailCommitments: [ca, cb],
-			payoutWallets: [
-				walletAccount(payoutA).address,
-				walletAccount(payoutB).address,
-			],
+			signerWallet: signerB,
+			signerEmailCommitment: cb,
 		});
 
-		const ts = await latestBlockTimestamp(ctx.publicClient);
-		const signNonce = await ctx.fileRegistry.read.nonce([
-			walletAccount(payoutB).address,
-		]);
-		const signSig = await signRegisterFileSignature({
-			wallet: payoutB,
-			fileRegistryAddress: ctx.fileRegistry.address,
-			chainId: ctx.chainId,
-			pieceCid,
-			sender: walletAccount(ctx.sender).address,
-			signerEmailCommitment: cb,
-			privySubjectCommitment: defaultSenderPrivy,
-			dl3SignatureCommitment: `0x${"88".repeat(20)}` as Hex,
-			completionsRoot: defaultPlacement,
-			leafSchemaVersion: 1,
-			timestamp: ts,
-			nonce: signNonce,
-		});
-		await assert.rejects(
-			ctx.fileRegistry.write.registerFileSignature(
-				[
-					pieceCid,
-					walletAccount(ctx.sender).address,
-					walletAccount(payoutB).address,
-					cb,
-					defaultSenderPrivy,
-					`0x${"88".repeat(20)}`,
-					ts,
-					signSig,
-					[cb, ca],
-					[walletAccount(payoutA).address, walletAccount(payoutB).address],
-					defaultPlacement,
-					1,
-				],
-				{ account: walletAccount(ctx.server) },
-			),
-		);
+		const cidId = await ctx.fileRegistry.read.cidIdentifier([pieceCid]);
+		expect(await ctx.fileRegistry.read.allSigned([cidId])).to.equal(true);
 	});
 
 	it("cidIdentifier is keccak256 of piece CID string", async () => {

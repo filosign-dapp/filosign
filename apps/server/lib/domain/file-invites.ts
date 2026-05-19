@@ -1,8 +1,4 @@
-import { LOCAL_MOCK_USDC_ADDRESS } from "@filosign/contracts";
-import {
-	isCanonicalInvoiceUsdc,
-	normalizePlacementRecipientEmail,
-} from "@filosign/shared";
+import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { eq, inArray } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -14,17 +10,6 @@ export const COLD_INVITE_TTL_DAYS = 7;
 export const COLD_INVITE_TTL_MS = COLD_INVITE_TTL_DAYS * 24 * 60 * 60 * 1000;
 
 export const coldInviteExpiry = () => new Date(Date.now() + COLD_INVITE_TTL_MS);
-
-export function isIncentiveTokenAllowed(
-	chainId: number,
-	token: Address,
-): boolean {
-	if (isCanonicalInvoiceUsdc(chainId, token)) return true;
-	if (chainId === 31_337) {
-		return getAddress(token) === getAddress(LOCAL_MOCK_USDC_ADDRESS);
-	}
-	return false;
-}
 
 export function isSenderAlreadyApprovedError(err: unknown): boolean {
 	const msg = err instanceof Error ? err.message : String(err);

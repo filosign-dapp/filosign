@@ -32,8 +32,6 @@ export type Runtime = {
 	chain: unknown;
 	chainKey: ChainKey;
 	serverAddressSynapse: string;
-	platformFeeBps: number;
-	maxPlatformFeeBps: number;
 	treasury: string;
 };
 

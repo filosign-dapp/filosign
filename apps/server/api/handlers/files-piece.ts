@@ -8,27 +8,21 @@ import {
 	toBytes,
 } from "@filosign/crypto-utils/node";
 import {
-	assessInvoiceForAml,
 	completionsMerkleRootV1,
-	computeSignerNetPayout,
 	FILE_ACK_COLD_CLAIM_SENTINEL_V1,
-	hashInvoiceMemo,
 	hashNormalizedSignerEmail,
 	hashPrivySubjectCommitment,
 	LEAF_SCHEMA_VERSION_V1,
 	normalizePlacementRecipientEmail,
 	requiredFieldIdsForRecipientEmail,
-	sortedSignerCommitsForManifest,
-	validateInvoiceMemo,
 	zPlacementManifest,
 } from "@filosign/shared";
-import { zEvmAddress, zHexString } from "@filosign/shared/zod";
+import { zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
 import { and, eq, sql } from "drizzle-orm";
-import type { Address, Hex } from "viem";
-import { getAddress, zeroAddress } from "viem";
+import type { Address } from "viem";
+import { getAddress } from "viem";
 import z from "zod";
-import config from "@/config";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/analytics/events";
 import { trackServerEvent } from "@/lib/analytics/track";
 import {
@@ -38,13 +32,12 @@ import {
 import db from "@/lib/db";
 import { isEnvelopeFullySigned } from "@/lib/domain/envelope-completion";
 import {
-	isIncentiveTokenAllowed,
 	isSenderAlreadyApprovedError,
 	primaryEmailForWallet,
 } from "@/lib/domain/file-invites";
 import { evmClient, fsContracts } from "@/lib/evm";
 import { bucket } from "@/lib/s3/client";
-import tryCatchSync, { tryCatch } from "@/lib/utils/tryCatch";
+import { tryCatch } from "@/lib/utils/tryCatch";
 import { zodSafeParseMessage } from "@/lib/utils/zodHttp";
 
 const { FSFileRegistry, FSManager } = fsContracts;
@@ -54,7 +47,6 @@ const {
 	fileParticipants,
 	fileSignatures,
 	fileSignerDrafts,
-	fileIncentiveAttaches,
 	users,
 } = db.schema;
 
@@ -612,153 +604,6 @@ export async function pieceComplianceBundle(args: {
 	};
 }
 
-/** --- incentive --- */
-
-export async function pieceIncentive(args: {
-	userWallet: Address;
-	pieceCid: string;
-	body: unknown;
-}) {
-	const userWallet = args.userWallet;
-	const pieceCid = args.pieceCid;
-
-	const zBytes32Hex = z.string().regex(/^0x[a-fA-F0-9]{64}$/, {
-		error: "signerEmailCommitment must be bytes32 hex",
-	});
-
-	const baseSchema = z.object({
-		signerEmailCommitment: zBytes32Hex.transform((s) => s as Hex),
-		token: zEvmAddress(),
-		memo: z.string(),
-		amount: z.string().regex(/^[0-9]+$/, {
-			error: "amount must be a non-negative integer string",
-		}),
-		usePermit: z.boolean(),
-	});
-	const permitSchema = baseSchema.extend({
-		usePermit: z.literal(true),
-		deadline: z.string().regex(/^[0-9]+$/, {
-			error: "deadline must be a non-negative integer string",
-		}),
-		v: z.int().min(0).max(255),
-		r: zHexString(),
-		s: zHexString(),
-	});
-	const allowanceSchema = baseSchema.extend({
-		usePermit: z.literal(false),
-	});
-	const parsedBody = z
-		.union([permitSchema, allowanceSchema])
-		.safeParse(args.body);
-	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: zodSafeParseMessage(parsedBody.error),
-		});
-	}
-
-	const memoValidated = tryCatchSync(() =>
-		validateInvoiceMemo(parsedBody.data.memo),
-	);
-	if (memoValidated.error) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: memoValidated.error.message,
-		});
-	}
-	const { normalized: incentiveMemo } = memoValidated.data;
-	if (assessInvoiceForAml(incentiveMemo) === "blocked") {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Incentive memo blocked by policy",
-		});
-	}
-
-	const [fileRecord] = await db
-		.select({ sender: files.sender })
-		.from(files)
-		.where(eq(files.pieceCid, pieceCid));
-	if (!fileRecord) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
-	}
-	if (getAddress(fileRecord.sender) !== getAddress(userWallet)) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Only the file sender can attach signer incentives",
-		});
-	}
-
-	const { signerEmailCommitment, token, amount } = parsedBody.data;
-	const tokenAddr = getAddress(token);
-	if (!isIncentiveTokenAllowed(config.runtimeChain.id, tokenAddr)) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Only canonical incentive USDC is allowed for this chain",
-		});
-	}
-
-	const memoHash = hashInvoiceMemo({
-		memo: incentiveMemo,
-		pieceCid,
-		signerEmailCommitment,
-		amount,
-		token: tokenAddr,
-	});
-
-	const attachResult = await tryCatch(
-		parsedBody.data.usePermit
-			? FSManager.write.attachIncentiveWithPermit([
-					pieceCid,
-					signerEmailCommitment,
-					tokenAddr,
-					BigInt(amount),
-					memoHash,
-					BigInt(parsedBody.data.deadline),
-					parsedBody.data.v,
-					parsedBody.data.r,
-					parsedBody.data.s,
-				])
-			: FSManager.write.attachIncentive([
-					pieceCid,
-					signerEmailCommitment,
-					tokenAddr,
-					BigInt(amount),
-					memoHash,
-				]),
-	);
-
-	if (attachResult.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: `Failed to attach incentive: ${attachResult.error}`,
-		});
-	}
-
-	const txHash = attachResult.data as `0x${string}`;
-	const ins = await tryCatch(
-		db.insert(fileIncentiveAttaches).values({
-			filePieceCid: pieceCid,
-			signerEmailCommitment: signerEmailCommitment as string,
-			token: getAddress(token),
-			amount,
-			txHash,
-		}),
-	);
-	if (ins.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: `Incentive attached on-chain but failed to record tx: ${ins.error}`,
-		});
-	}
-
-	const platformFeeBps = Number(await FSManager.read.platformFeeBps());
-	const gross = BigInt(amount);
-	const signerNetAmount = computeSignerNetPayout(
-		gross,
-		platformFeeBps,
-	).toString();
-
-	return {
-		txHash,
-		platformFeeBps,
-		grossAmount: amount,
-		signerNetAmount,
-	};
-}
-
 /** --- sign --- */
 
 export async function pieceSign(args: {
@@ -941,36 +786,6 @@ export async function pieceSign(args: {
 		participantRecord.privyDid,
 	);
 
-	const allSignerEmailCommitments = sortedSignerCommitsForManifest(
-		manifestParsed.data,
-	);
-
-	const signerRows = await db
-		.select({
-			wallet: fileParticipants.wallet,
-			email: users.email,
-		})
-		.from(fileParticipants)
-		.innerJoin(users, eq(fileParticipants.wallet, users.walletAddress))
-		.where(
-			and(
-				eq(fileParticipants.filePieceCid, pieceCid),
-				eq(fileParticipants.role, "signer"),
-			),
-		);
-
-	const walletByC = new Map<string, Address>();
-	for (const r of signerRows) {
-		const raw = r.email?.trim();
-		if (!raw) continue;
-		const c = hashNormalizedSignerEmail(normalizePlacementRecipientEmail(raw));
-		walletByC.set(c.toLowerCase() as string, getAddress(r.wallet));
-	}
-
-	const payouts = allSignerEmailCommitments.map(
-		(c) => walletByC.get(c.toLowerCase() as string) ?? (zeroAddress as Address),
-	);
-
 	const registerSignatureArgs = [
 		pieceCid,
 		fileRecord.sender,
@@ -980,8 +795,6 @@ export async function pieceSign(args: {
 		dl3SignatureCommitment,
 		BigInt(timestamp),
 		signature,
-		allSignerEmailCommitments,
-		payouts,
 		completionsRoot,
 		LEAF_SCHEMA_VERSION_V1,
 	] as const;

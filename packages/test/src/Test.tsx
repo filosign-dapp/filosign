@@ -7,7 +7,6 @@ import {
 } from "@filosign/react/auth";
 import {
 	useAckFile,
-	useAttachInvoiceToFile,
 	useFileInfo,
 	useReceivedFiles,
 	useSendFile,
@@ -22,11 +21,8 @@ import {
 } from "@filosign/react/sharing";
 import { useUserProfile, useUserProfileByQuery } from "@filosign/react/users";
 import type { PlacementManifest } from "@filosign/shared";
-import {
-	hashNormalizedSignerEmail,
-	normalizePlacementRecipientEmail,
-} from "@filosign/shared";
-import { memo, useId, useMemo, useRef, useState } from "react";
+import { normalizePlacementRecipientEmail } from "@filosign/shared";
+import { memo, useId, useMemo, useState } from "react";
 import {
 	useCurrentWalletAddress,
 	useOtherAddress,
@@ -975,117 +971,6 @@ const SentFileItem = memo(function SentFileItem(props: { pieceCid: string }) {
 					</pre>
 				</div>
 			)}
-
-			{file.signers.length > 0 && (
-				<div className="mt-3 space-y-2">
-					<h4 className="text-sm font-medium">Attach Incentives</h4>
-					{file.signers.map((s) => {
-						const email =
-							typeof s === "object" && s.email?.trim()
-								? normalizePlacementRecipientEmail(s.email)
-								: null;
-						if (!email) return null;
-						const key = typeof s === "string" ? s : (s.wallet ?? email);
-						return (
-							<TestAttachInvoice
-								key={key}
-								pieceCid={pieceCid}
-								signerEmail={email}
-							/>
-						);
-					})}
-				</div>
-			)}
 		</article>
 	);
 });
-
-function TestAttachInvoice(props: { pieceCid: string; signerEmail: string }) {
-	const { pieceCid, signerEmail } = props;
-	const attachInvoice = useAttachInvoiceToFile();
-	const tokenRef = useRef<HTMLInputElement>(null);
-	const amountRef = useRef<HTMLInputElement>(null);
-	const memoRef = useRef<HTMLTextAreaElement>(null);
-	const formId = useId();
-
-	const handleSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
-		const token = tokenRef.current?.value.trim() as `0x${string}` | undefined;
-		const rawAmount = amountRef.current?.value.trim();
-		const memo = memoRef.current?.value.trim() ?? "";
-		if (!token || !rawAmount) return;
-		attachInvoice.mutate({
-			pieceCid,
-			signerEmailCommitment: hashNormalizedSignerEmail(signerEmail),
-			token,
-			amount: BigInt(rawAmount),
-			memo,
-		});
-	};
-
-	return (
-		<form
-			onSubmit={handleSubmit}
-			className="bg-background border rounded p-3 space-y-2 text-sm"
-			aria-labelledby={`${formId}-heading`}
-		>
-			<p
-				id={`${formId}-heading`}
-				className="font-mono text-xs text-muted-foreground break-all"
-			>
-				Signer email: {signerEmail}
-			</p>
-
-			<div className="flex flex-col sm:flex-row gap-2">
-				<input
-					ref={tokenRef}
-					type="text"
-					placeholder="Token address (0x...)"
-					required
-					pattern="^0x[0-9a-fA-F]{40}$"
-					className="flex-1 rounded border bg-card px-2 py-1 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-ring"
-					aria-label="Token address"
-				/>
-				<input
-					ref={amountRef}
-					type="text"
-					placeholder="Amount (wei)"
-					required
-					pattern="^[0-9]+$"
-					className="w-36 rounded border bg-card px-2 py-1 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-ring"
-					aria-label="Amount in wei"
-				/>
-				<button
-					type="submit"
-					disabled={attachInvoice.isPending}
-					className="rounded-md px-3 py-1 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none transition-all"
-				>
-					{attachInvoice.isPending ? "Attaching..." : "Attach"}
-				</button>
-			</div>
-			<textarea
-				ref={memoRef}
-				required
-				rows={2}
-				placeholder="Invoice memo (required)"
-				className="w-full rounded border bg-card px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-				aria-label="Invoice memo"
-			/>
-
-			{attachInvoice.isError && (
-				<p
-					className="text-destructive bg-destructive/10 p-1 rounded text-xs wrap-break-word"
-					role="alert"
-				>
-					{getErrorMessage(attachInvoice.error)}
-				</p>
-			)}
-
-			{attachInvoice.isSuccess && (
-				<p className="text-success bg-success/10 p-1 rounded text-xs">
-					Invoice attached successfully.
-				</p>
-			)}
-		</form>
-	);
-}

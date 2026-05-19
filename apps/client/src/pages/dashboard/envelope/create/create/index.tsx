@@ -12,19 +12,12 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { erc20Abi } from "viem";
-import { useAccount, usePublicClient } from "wagmi";
 import { EntitlementPlanHint } from "@/src/lib/components/custom/EntitlementPlanHint";
 import Logo from "@/src/lib/components/custom/Logo";
 import { Button } from "@/src/lib/components/ui/button";
 import { useStorePersist } from "@/src/lib/hooks/use-store";
-import { safeAsync } from "@/src/lib/utils/safe";
 import { UserDropdown } from "../../../_components/user-dropdown";
 import type { EnvelopeForm, StoredDocument } from "../types";
-import {
-	invoiceTokenLabel,
-	invoiceTotalsByTokenWei,
-} from "../utils/incentive-totals-by-token";
 import DocumentsSection from "./_components/DocumentUpload";
 import {
 	EntitlementUpgradeProvider,
@@ -48,8 +41,6 @@ export default function CreateEnvelopePage() {
 function CreateEnvelopePageContent() {
 	const navigate = useNavigate();
 	const { setCreateForm } = useStorePersist();
-	const { address } = useAccount();
-	const publicClient = usePublicClient();
 	const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
 	const promptPlanUpgrade = usePromptPlanUpgrade();
 	const captureAppEvent = useCaptureAppEvent();
@@ -93,52 +84,6 @@ function CreateEnvelopePageContent() {
 			if (!isWithinRecipientLimit(value.recipients.length)) {
 				promptPlanUpgrade("envelope.recipients.max");
 				return;
-			}
-
-			const invoiceTotals = invoiceTotalsByTokenWei(value.recipients);
-
-			if (invoiceTotals.size > 0) {
-				if (!address) {
-					toast.error(
-						"Connect your wallet so we can verify balances for signer invoices.",
-					);
-					return;
-				}
-				if (!publicClient) {
-					toast.error("Unable to read on-chain balances. Try again.");
-					return;
-				}
-
-				for (const [tokenAddr, totalWei] of invoiceTotals) {
-					if (totalWei <= 0n) continue;
-
-					const [balance, readErr] = await safeAsync(() =>
-						publicClient.readContract({
-							address: tokenAddr,
-							abi: erc20Abi,
-							functionName: "balanceOf",
-							args: [address],
-						}),
-					);
-
-					if (readErr || balance === undefined) {
-						toast.error(
-							`Could not verify your ${invoiceTokenLabel(tokenAddr)} balance. Try again.`,
-						);
-						return;
-					}
-
-					if (totalWei > balance) {
-						const label = invoiceTokenLabel(tokenAddr);
-						toast.error(
-							`Total ${label} invoice amounts exceed your current ${label} balance.`,
-							{
-								id: `invoice-exceeds-balance-${tokenAddr}`,
-							},
-						);
-						return;
-					}
-				}
 			}
 
 			try {

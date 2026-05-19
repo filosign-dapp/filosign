@@ -11,17 +11,6 @@ export type ChangelogEntry = {
 
 export const ChangelogEntries: ChangelogEntry[] = [
 	{
-		id: "8",
-		date: "Mar 31, 2026",
-		type: "Feature",
-		title: "Trustless Escrow & Automated Payouts",
-		description: [
-			"Launched an atomic incentive system that allows document senders to attach ERC20 rewards directly to signing requests.",
-			"Secured by a non-custodial escrow contract that automatically releases funds to all parties once the final signature is verified.",
-			"Perfect for freelance agreements, advisory roles, and 'Proof of Contribution' workflows where payment is contingent on signature.",
-		],
-	},
-	{
 		id: "9",
 		date: "Mar 31, 2026",
 		type: "Enhancement",

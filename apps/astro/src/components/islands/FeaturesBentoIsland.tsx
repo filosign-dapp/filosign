@@ -193,17 +193,17 @@ export default function FeaturesBentoIsland() {
 								<div className="flex items-center gap-2 text-primary mb-1">
 									<ChartBarIcon className="size-5" />
 									<span className="font-medium text-sm font-manrope">
-										Programmable Settlement
+										Compliance-ready records
 									</span>
 								</div>
 								<h3 className="text-2xl md:text-3xl font-manrope font-light">
-									Attach payments directly to signatures
+									Proof you can export and verify
 								</h3>
 								<p className="text-muted-foreground text-base leading-relaxed font-manrope font-light">
-									Attach incentives like USDT to documents. Signers
-									automatically receive payment the moment they sign. Perfect
-									for instant contractor payouts, cross-border payments, and DAO
-									grants—eliminating invoice delays and wire fees.
+									Every signature is anchored on-chain with a structured
+									compliance bundle—who signed, when, and how fields map to the
+									document. Export a PDF audit trail without stitching emails
+									and screenshots.
 								</p>
 							</div>
 

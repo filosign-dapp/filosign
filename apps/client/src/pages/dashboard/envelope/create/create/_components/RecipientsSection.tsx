@@ -1,42 +1,22 @@
-import { useFilosignContext } from "@filosign/react";
 import { useEnvelopeRecipientLimit } from "@filosign/react/billing";
 import { useUserProfileByQuery } from "@filosign/react/users";
-import { computeSignerNetPayout, validateInvoiceMemo } from "@filosign/shared";
 import {
 	CaretDownIcon,
 	CheckIcon,
-	CoinsIcon,
 	TrashIcon,
 	UserIcon,
 	UsersIcon,
 } from "@phosphor-icons/react";
 import { motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
-import {
-	type Address,
-	erc20Abi,
-	formatUnits,
-	getAddress,
-	parseUnits,
-} from "viem";
-import { useAccount, useChainId, useReadContract } from "wagmi";
-import { defaultChain, SUPPORTED_TOKENS } from "@/src/constants";
+import { useEffect, useState } from "react";
+import type { Address } from "viem";
 import { Avatar, AvatarFallback } from "@/src/lib/components/ui/avatar";
-import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/src/lib/components/ui/collapsible";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/src/lib/components/ui/dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import {
@@ -46,14 +26,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/src/lib/components/ui/select";
-import { Textarea } from "@/src/lib/components/ui/textarea";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/src/lib/components/ui/tooltip";
-import { useWalletTopUp } from "@/src/lib/hooks/use-wallet-top-up";
-import { safeAsync } from "@/src/lib/utils/safe";
 import { cn } from "@/src/lib/utils/utils";
 import { initialsFromName } from "@/src/pages/dashboard/connections/_components/contact-utils";
 import type { Recipient } from "../../types";
@@ -308,10 +285,6 @@ function CompactRecipientCard({
 		recipient.email.trim().length > 0 && !isValidEmail(recipient.email.trim());
 
 	const isRegisteredOnFilosign = Boolean(queryEmail) && profileQuery.isSuccess;
-	const isCheckingProfile = Boolean(queryEmail) && profileQuery.isPending;
-
-	const usdc = SUPPORTED_TOKENS[0];
-	const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
 
 	const flushEmailLookup = () => {
 		const raw = recipient.email.trim().toLowerCase();
@@ -359,31 +332,6 @@ function CompactRecipientCard({
 		index,
 		onUpdate,
 	]);
-
-	const shouldClearInvoice =
-		invalidEmailSyntax || (Boolean(queryEmail) && profileQuery.isError);
-
-	useEffect(() => {
-		if (!recipient.invoice?.token) return;
-		if (isCheckingProfile) return;
-		if (isRegisteredOnFilosign) return;
-		if (profileQuery.isError || shouldClearInvoice) {
-			onUpdate(index, { invoice: { token: "", amount: "", memo: "" } });
-			setInvoiceDialogOpen(false);
-		}
-	}, [
-		isCheckingProfile,
-		isRegisteredOnFilosign,
-		profileQuery.isError,
-		shouldClearInvoice,
-		recipient.invoice?.token,
-		index,
-		onUpdate,
-	]);
-
-	const hasInvoice =
-		Boolean(recipient.invoice?.token?.trim()) &&
-		Boolean(recipient.invoice?.amount?.trim());
 
 	const showAvatarUserIcon = !recipient.name.trim() && !recipient.email.trim();
 	const avatarInitials = initialsFromName(
@@ -508,30 +456,6 @@ function CompactRecipientCard({
 								/>
 							</div>
 						</div>
-
-						<div className="flex flex-wrap items-center gap-2">
-							{hasInvoice ? (
-								<Badge
-									variant="secondary"
-									className="h-5 gap-1 border border-border/50 bg-muted/40 px-2 text-[10px] font-medium text-foreground/85"
-								>
-									<CoinsIcon className="size-3" weight="fill" />
-									{recipient.invoice?.amount || "0"} USD · {usdc.symbol}
-								</Badge>
-							) : null}
-							{isRegisteredOnFilosign ? (
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									className="gap-1.5 border-border/60 shadow-none"
-									onClick={() => setInvoiceDialogOpen(true)}
-								>
-									<CoinsIcon className="size-3.5" weight="regular" />
-									{hasInvoice ? "Edit invoice" : "Attach invoice"}
-								</Button>
-							) : null}
-						</div>
 					</div>
 
 					<div className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
@@ -555,345 +479,6 @@ function CompactRecipientCard({
 					</div>
 				</div>
 			</div>
-
-			<InvoiceAttachDialog
-				open={invoiceDialogOpen}
-				onOpenChange={setInvoiceDialogOpen}
-				recipient={recipient}
-				onSave={(invoice) => onUpdate(index, { invoice })}
-				onClear={() => {
-					onUpdate(index, { invoice: { token: "", amount: "", memo: "" } });
-					setInvoiceDialogOpen(false);
-				}}
-			/>
 		</motion.div>
-	);
-}
-
-interface InvoiceAttachDialogProps {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-	recipient: Recipient;
-	onSave: (invoice: NonNullable<Recipient["invoice"]>) => void;
-	onClear: () => void;
-}
-
-function InvoiceAttachDialog({
-	open,
-	onOpenChange,
-	recipient,
-	onSave,
-	onClear,
-}: InvoiceAttachDialogProps) {
-	const usdc = SUPPORTED_TOKENS[0];
-	const tokenAddress = usdc.address as Address;
-	const { runtime } = useFilosignContext();
-	const platformFeeBps = runtime.platformFeeBps ?? 0;
-	const { address } = useAccount();
-	const chainId = useChainId();
-	const { openTopUp } = useWalletTopUp();
-
-	const wrongChain = chainId !== defaultChain.id;
-	const balanceQueryEnabled = open && Boolean(address) && !wrongChain;
-
-	const [amount, setAmount] = useState("");
-	const [memo, setMemo] = useState("");
-	const [formError, setFormError] = useState<string | null>(null);
-
-	useEffect(() => {
-		if (!open) return;
-		setFormError(null);
-		const inv = recipient.invoice;
-		setAmount(inv?.amount?.trim() || "");
-		setMemo(inv?.memo ?? "");
-	}, [
-		open,
-		recipient.invoice?.amount,
-		recipient.invoice?.memo,
-		recipient.invoice?.token,
-	]);
-
-	const {
-		data: balance,
-		isFetching: balanceFetching,
-		isPending: balancePending,
-		isError: balanceIsError,
-		error: balanceQueryError,
-		refetch,
-	} = useReadContract({
-		address: tokenAddress,
-		abi: erc20Abi,
-		functionName: "balanceOf",
-		args: address ? [address] : undefined,
-		query: { enabled: balanceQueryEnabled },
-	});
-
-	const balanceReady =
-		balanceQueryEnabled &&
-		!balancePending &&
-		!balanceIsError &&
-		balance !== undefined;
-
-	const parsedAmountWei = useMemo(() => {
-		const trimmed = amount.trim();
-		if (!trimmed) return null;
-		try {
-			return parseUnits(trimmed, usdc.decimals);
-		} catch {
-			return null;
-		}
-	}, [amount, usdc.decimals]);
-
-	const amountExceedsBalance =
-		balanceReady &&
-		parsedAmountWei !== null &&
-		parsedAmountWei > 0n &&
-		parsedAmountWei > balance;
-
-	const signerNetLabel = useMemo(() => {
-		if (!parsedAmountWei || parsedAmountWei <= 0n || platformFeeBps <= 0) {
-			return null;
-		}
-		const net = computeSignerNetPayout(parsedAmountWei, platformFeeBps);
-		return Number(formatUnits(net, usdc.decimals)).toLocaleString(undefined, {
-			maximumFractionDigits: 6,
-		});
-	}, [parsedAmountWei, platformFeeBps, usdc.decimals]);
-
-	const saveBlockedByBalance = !balanceReady || amountExceedsBalance;
-
-	const handleSave = () => {
-		setFormError(null);
-		let normalizedMemo: string;
-		try {
-			normalizedMemo = validateInvoiceMemo(memo).normalized;
-		} catch (e) {
-			setFormError(e instanceof Error ? e.message : "Invalid memo");
-			return;
-		}
-		const trimmed = amount.trim();
-		if (!trimmed) {
-			setFormError("Enter an amount in USD");
-			return;
-		}
-		let amountWei: bigint;
-		try {
-			amountWei = parseUnits(trimmed, usdc.decimals);
-		} catch {
-			setFormError("Enter a valid USD amount");
-			return;
-		}
-		if (amountWei <= 0n) {
-			setFormError("Amount must be greater than zero");
-			return;
-		}
-		if (!balanceReady) {
-			setFormError(
-				"Your USDC balance must load before you can save. Connect your wallet, use the correct network, then tap Refresh.",
-			);
-			return;
-		}
-		if (amountWei > balance) {
-			setFormError("Amount exceeds your USDC balance.");
-			return;
-		}
-		onSave({
-			token: getAddress(tokenAddress),
-			amount: trimmed,
-			memo: normalizedMemo,
-		});
-		onOpenChange(false);
-	};
-
-	const handleFund = async () => {
-		if (!address) return;
-		setFormError(null);
-		const [, err] = await safeAsync(() => openTopUp());
-		if (err) setFormError(err.message);
-		else void refetch();
-	};
-
-	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-w-md gap-4">
-				<DialogHeader>
-					<DialogTitle>Signer invoice (USDC)</DialogTitle>
-					<DialogDescription>
-						Describe what this payment is for and how much USDC to escrow for
-						this signer. Funds lock when you send the envelope.
-					</DialogDescription>
-				</DialogHeader>
-
-				<div className="space-y-3">
-					{wrongChain ? (
-						<p className="text-xs text-destructive">
-							Switch your wallet to {defaultChain.name} before funding or
-							sending.
-						</p>
-					) : null}
-
-					<div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/10 px-3 py-2 text-xs">
-						<div className="space-y-0.5">
-							<p className="font-medium text-foreground/90">
-								Your USDC balance
-							</p>
-							<p className="text-muted-foreground">
-								{!address
-									? "Connect a wallet to see balance."
-									: wrongChain
-										? `Switch to ${defaultChain.name} to load balance.`
-										: balanceIsError
-											? (balanceQueryError?.shortMessage ??
-												balanceQueryError?.message ??
-												"Could not load balance.")
-											: balanceFetching && balance === undefined
-												? "Loading…"
-												: balance !== undefined
-													? `${Number(
-															formatUnits(balance, usdc.decimals),
-														).toLocaleString(undefined, {
-															maximumFractionDigits: 4,
-														})} ${usdc.symbol}`
-													: "—"}
-							</p>
-						</div>
-						<div className="flex flex-wrap gap-2">
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								className="h-8"
-								disabled={!address || wrongChain}
-								onClick={() => void refetch()}
-							>
-								Refresh
-							</Button>
-							<Button
-								type="button"
-								size="sm"
-								className="h-8"
-								disabled={!address || wrongChain}
-								onClick={() => void handleFund()}
-							>
-								Add funds
-							</Button>
-						</div>
-					</div>
-
-					{usdc.faucets && usdc.faucets.length > 0 ? (
-						<div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-							<span>Testnet faucet:</span>
-							{usdc.faucets.map((faucet) => (
-								<a
-									key={faucet.url}
-									href={faucet.url}
-									target="_blank"
-									rel="noreferrer"
-									className="text-primary hover:underline"
-								>
-									{faucet.name}
-								</a>
-							))}
-						</div>
-					) : null}
-
-					<div className="space-y-1.5">
-						<Label htmlFor="invoice-amount" className={FIELD_LABEL_CLASS}>
-							Amount (USD)
-						</Label>
-						<Input
-							id="invoice-amount"
-							type="text"
-							inputMode="decimal"
-							value={amount}
-							onChange={(e) => setAmount(e.target.value)}
-							placeholder="0.00"
-							className={cn(
-								FIELD_CONTROL_CLASS,
-								"placeholder:text-muted-foreground/45",
-							)}
-							autoComplete="off"
-						/>
-						{amountExceedsBalance ? (
-							<p className="text-xs text-destructive" role="status">
-								This amount is higher than your loaded USDC balance.
-							</p>
-						) : balanceQueryEnabled && !balanceReady && !balanceIsError ? (
-							<p className="text-xs text-muted-foreground" role="status">
-								Wait for your balance to load before saving, or tap Refresh.
-							</p>
-						) : null}
-						{signerNetLabel ? (
-							<p className="text-xs text-muted-foreground" role="status">
-								Signer receives ~{signerNetLabel} {usdc.symbol} after a{" "}
-								{(platformFeeBps / 100).toLocaleString(undefined, {
-									maximumFractionDigits: 2,
-								})}
-								% platform fee at settlement.
-							</p>
-						) : null}
-					</div>
-
-					<div className="space-y-1.5">
-						<Label htmlFor="invoice-memo" className={FIELD_LABEL_CLASS}>
-							Memo / description
-						</Label>
-						<Textarea
-							id="invoice-memo"
-							value={memo}
-							onChange={(e) => setMemo(e.target.value)}
-							placeholder="e.g. Contractor payment for Q1 design work"
-							className={cn(FIELD_CONTROL_CLASS, "min-h-[88px] resize-y")}
-							rows={3}
-						/>
-					</div>
-
-					{formError ? (
-						<p className="text-xs text-destructive" role="alert">
-							{formError}
-						</p>
-					) : null}
-				</div>
-
-				<DialogFooter className="gap-2 sm:justify-between">
-					<Button
-						type="button"
-						variant="ghost"
-						size="sm"
-						className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-						onClick={() => {
-							onClear();
-						}}
-					>
-						Remove invoice
-					</Button>
-					<div className="flex flex-wrap gap-2 sm:justify-end">
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							onClick={() => onOpenChange(false)}
-						>
-							Cancel
-						</Button>
-						<Button
-							type="button"
-							size="sm"
-							disabled={saveBlockedByBalance}
-							title={
-								saveBlockedByBalance
-									? !balanceReady
-										? "Balance must load before you can save."
-										: "Amount cannot exceed your USDC balance."
-									: undefined
-							}
-							onClick={handleSave}
-						>
-							Save
-						</Button>
-					</div>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
 	);
 }

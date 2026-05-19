@@ -107,7 +107,7 @@ If `mutate` takes a different shape than procedure input (e.g. `string` vs `{ id
 
 ### Cache keys ([`filosignKeys`](src/lib/query-keys.ts))
 
-Non-RPC only: `useAuthedApi`, `useIsLoggedIn`, `useIsRegistered`, `useStoredKeygenData`, on-chain approval caches (**`isApprovedDependentFirst` vs `isApprovedWalletFirst`—argument order differs**), `useDocumentIncentive`.
+Non-RPC only: `useAuthedApi`, `useIsLoggedIn`, `useIsRegistered`, `useStoredKeygenData`, on-chain approval caches (**`isApprovedDependentFirst` vs `isApprovedWalletFirst`—argument order differs**).
 
 ---
 

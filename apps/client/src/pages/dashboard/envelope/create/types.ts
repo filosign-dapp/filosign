@@ -4,11 +4,6 @@ export type Recipient = {
 	email: string;
 	walletAddress?: string;
 	role: "signer" | "viewer";
-	invoice?: {
-		token: string;
-		amount: string;
-		memo: string;
-	};
 };
 
 export type UploadedFile = {

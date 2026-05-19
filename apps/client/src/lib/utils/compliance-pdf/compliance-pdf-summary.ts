@@ -1,5 +1,4 @@
 import { LEAF_SCHEMA_VERSION_V1 } from "@filosign/shared";
-import { formatUnits } from "viem";
 import {
 	buildAboutThisRecordLines,
 	buildAppendixLines,
@@ -13,7 +12,6 @@ import type {
 	CompliancePdfBundleOptions,
 	CompliancePdfLine,
 	CompliancePdfSummary,
-	SignerIncentiveForPdf,
 } from "./compliance-pdf-types";
 
 /** Section title for appendix; must match the appendix entry in this module. */
@@ -25,33 +23,6 @@ function explorerTxUrl(explorerBase: string, txHash: string): string {
 	return `${base}/tx/${txHash}`;
 }
 
-function incentiveByAddressFirstWins(
-	rows: SignerIncentiveForPdf[] | undefined,
-): Map<string, SignerIncentiveForPdf> | undefined {
-	if (!rows?.length) return undefined;
-	const m = new Map<string, SignerIncentiveForPdf>();
-	for (const r of rows) {
-		const k = r.address.toLowerCase();
-		if (!m.has(k)) m.set(k, r);
-	}
-	return m;
-}
-
-function incentiveSuffixForAddress(
-	address: string,
-	map: Map<string, SignerIncentiveForPdf> | undefined,
-): string {
-	if (!map) return "";
-	const inc = map.get(address.toLowerCase());
-	if (!inc) return "";
-	if (!inc.hasIncentive) {
-		return " - Incentive: none";
-	}
-	const amt = formatUnits(inc.amount, inc.decimals);
-	const paid = inc.claimed ? "Paid" : "Unpaid";
-	return ` - Incentive: ${amt} ${inc.tokenLabel} / ${paid}`;
-}
-
 export function buildCompliancePdfSummaryFromBundle(
 	options: CompliancePdfBundleOptions,
 ): CompliancePdfSummary {
@@ -61,12 +32,10 @@ export function buildCompliancePdfSummaryFromBundle(
 		exportId,
 		chainName,
 		explorerBaseUrl,
-		signerIncentives,
 		documentSha256,
 		decryptedDocumentMeta,
 	} = options;
 
-	const incentiveMap = incentiveByAddressFirstWins(signerIncentives);
 	const signersByRecipient = signersByNormalizedRecipientEmail(bundle.signers);
 
 	const regTxLink =
@@ -238,11 +207,10 @@ export function buildCompliancePdfSummaryFromBundle(
 		parts.push(s.wallet);
 
 		const identityLine = parts.join(" / ");
-		const incentiveInfo = incentiveSuffixForAddress(s.wallet, incentiveMap);
 
 		const statusLabel = s.signed ? "SIGNED" : "NOT SIGNED";
 
-		signerMatrix.push({ text: `${i + 1}. ${identityLine}${incentiveInfo}` });
+		signerMatrix.push({ text: `${i + 1}. ${identityLine}` });
 
 		if (s.signed) {
 			signerMatrix.push({ text: `   Status: ${statusLabel}` });

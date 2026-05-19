@@ -5,14 +5,6 @@ import { privateKeyToAccount } from "viem/accounts";
 import { hardhat } from "viem/chains";
 import type { ChainKey } from "../definitions/index.js";
 
-// Constants
-const USDC_BASE_MAINNET = getAddress(
-	"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-);
-const USDC_BASE_SEPOLIA = getAddress(
-	"0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-);
-
 const DEFINITIONS_FILE_PREFIX = "export const definitions = ";
 const DEFINITIONS_FILE_SUFFIX = " as const;";
 
@@ -30,7 +22,7 @@ const CHAIN_NUMBER_TO_KEY: Record<number, ChainKey> = {
 
 const BASE_BLOCK_EXPLORER_NETWORKS = new Set(["baseSepolia", "base"]);
 const LOCAL_MOCK_USDC_RECIPIENT = getAddress(
-	"0x900aEe86E4a368653217D8a952ae0B781980ea4b",
+	"0x4CC33004581cdDe1a4838C9d897260A244f3b4dA",
 );
 const LOCAL_MOCK_USDC_MINT_AMOUNT = 10_000_000n * 10n ** 6n;
 const MOCK_USDC_DEF_PATH = "definitions/mock-usdc.ts";
@@ -96,17 +88,6 @@ function viemChainOverride(): { chain: Chain } | undefined {
 	return undefined;
 }
 
-function invoiceAllowlistTokens(
-	chainId: number,
-	mockUsd: MockUsdBundle | undefined,
-): `0x${string}`[] {
-	return [
-		...(chainId === CHAIN_ID.mainnet ? [getAddress(USDC_BASE_MAINNET)] : []),
-		...(chainId === CHAIN_ID.testnet ? [getAddress(USDC_BASE_SEPOLIA)] : []),
-		...(mockUsd ? [mockUsd.address] : []),
-	];
-}
-
 async function deployFsManager(deployer: WalletDeployed) {
 	const manager = await hre.viem.deployContract(
 		"FSManager",
@@ -133,12 +114,11 @@ async function assertManagerBytecodeLive(managerAddress: `0x${string}`) {
 }
 
 async function attachManagerChildren(manager: FsManagerDeployed) {
-	const [fileRegistry, keyRegistry, escrow] = await Promise.all([
+	const [fileRegistry, keyRegistry] = await Promise.all([
 		hre.viem.getContractAt("FSFileRegistry", await manager.read.fileRegistry()),
 		hre.viem.getContractAt("FSKeyRegistry", await manager.read.keyRegistry()),
-		hre.viem.getContractAt("FSEscrow", await manager.read.escrow()),
 	]);
-	return { fileRegistry, keyRegistry, escrow };
+	return { fileRegistry, keyRegistry };
 }
 
 type AttachedContracts = Awaited<ReturnType<typeof attachManagerChildren>>;
@@ -180,33 +160,19 @@ async function writeMockUsdAddressFile(address: `0x${string}`) {
 	console.log(`Wrote ${MOCK_USDC_DEF_PATH}`);
 }
 
-async function setAllowedInvoiceTokens(
-	publicClient: PublicClientDeployed,
-	manager: FsManagerDeployed,
-	tokens: readonly `0x${string}`[],
-) {
-	for (const token of tokens) {
-		const tx = await manager.write.setTokenAllowed([token, true]);
-		await publicClient.waitForTransactionReceipt({ hash: tx });
-		console.log("Allowed invoice token:", token);
-	}
-}
-
 function buildDefinitionsManifest(args: {
 	manager: FsManagerDeployed;
 	fileRegistry: AttachedContracts["fileRegistry"];
 	keyRegistry: AttachedContracts["keyRegistry"];
-	escrow: AttachedContracts["escrow"];
 	chainId: number;
 	mockUsd: MockUsdBundle | undefined;
 }) {
-	const { manager, fileRegistry, keyRegistry, escrow, chainId, mockUsd } = args;
+	const { manager, fileRegistry, keyRegistry, chainId, mockUsd } = args;
 
 	return {
 		FSManager: abiFromContract(manager),
 		FSFileRegistry: abiFromContract(fileRegistry),
 		FSKeyRegistry: abiFromContract(keyRegistry),
-		FSEscrow: abiFromContract(escrow),
 		...(chainId === CHAIN_ID.local && mockUsd ? { MockUSDC: mockUsd } : {}),
 	} as const;
 }
@@ -232,17 +198,12 @@ async function verifyOnBaseExplorerIfApplicable(
 		manager: FsManagerDeployed;
 	} & AttachedContracts,
 ) {
-	const { networkName, deployer, manager, fileRegistry, keyRegistry, escrow } =
-		args;
+	const { networkName, deployer, manager, fileRegistry, keyRegistry } = args;
 	if (!BASE_BLOCK_EXPLORER_NETWORKS.has(networkName)) return;
 
 	try {
 		await $`bunx --bun hardhat verify --network ${networkName} ${manager.address} ${deployer.account.address} --force`;
-		for (const addr of [
-			fileRegistry.address,
-			keyRegistry.address,
-			escrow.address,
-		]) {
+		for (const addr of [fileRegistry.address, keyRegistry.address]) {
 			await sleep(1000);
 			await $`bunx --bun hardhat verify --network ${networkName} ${addr} --force`;
 		}
@@ -261,17 +222,13 @@ async function main() {
 
 	const manager = await deployFsManager(deployer);
 	const publicClient = await assertManagerBytecodeLive(manager.address);
-	const { fileRegistry, keyRegistry, escrow } =
-		await attachManagerChildren(manager);
+	const { fileRegistry, keyRegistry } = await attachManagerChildren(manager);
 
 	let mockUsd: MockUsdBundle | undefined;
 	if (chainId === CHAIN_ID.local) {
 		mockUsd = await deployAndFundLocalMockUsd(deployer, publicClient);
 		await writeMockUsdAddressFile(mockUsd.address);
 	}
-
-	const tokens = invoiceAllowlistTokens(chainId, mockUsd);
-	await setAllowedInvoiceTokens(publicClient, manager, tokens);
 
 	console.log("Contracts deployed");
 
@@ -281,7 +238,6 @@ async function main() {
 			manager,
 			fileRegistry,
 			keyRegistry,
-			escrow,
 			chainId,
 			mockUsd,
 		}),
@@ -293,7 +249,6 @@ async function main() {
 		manager,
 		fileRegistry,
 		keyRegistry,
-		escrow,
 	});
 }
 

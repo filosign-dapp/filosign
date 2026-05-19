@@ -3,3 +3,4 @@ pragma solidity ^0.8.26;
 
 /// Shared FS contract errors.
 error OnlyManager();
+error ZeroAddress();

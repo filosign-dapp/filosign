@@ -27,9 +27,9 @@ export const env = createEnv({
 			.transform((v) => parseInt(v, 10))
 			.optional(),
 		JWT_SECRET: z.string().min(32),
-		PRIVY_APP_ID: z.string().min(1),
-		PRIVY_APP_SECRET: z.string().min(1),
-		PRIVY_VERIFICATION_KEY: z.string().min(1),
+		/** Same project client ID as `VITE_THIRDWEB_CLIENT_ID` on the client. */
+		THIRDWEB_CLIENT_ID: z.string().min(1),
+		THIRDWEB_SECRET_KEY: z.string().min(1),
 		DEBUG: z
 			.enum(["true", "false"])
 			.default("false")

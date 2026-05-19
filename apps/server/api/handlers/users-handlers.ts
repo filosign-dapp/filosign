@@ -1,5 +1,5 @@
 /**
- * Profile, registration, Dilithium signatures, Privy email sync.
+ * Profile, registration, Dilithium signatures, thirdweb email sync.
  */
 import { hashPrivySubjectCommitment } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
@@ -17,9 +17,9 @@ import { fsContracts } from "@/lib/evm";
 import { processTransaction } from "@/lib/indexer/process";
 import {
 	verifiedLinkedEmailsForWallet,
-	verifiedPrivyEmailForWallet,
-	verifyPrivyTokenWithWallet,
-} from "@/lib/utils/privy";
+	verifiedThirdwebEmailForWallet,
+	verifyThirdwebAuthTokenWithWallet,
+} from "@/lib/utils/thirdweb";
 import { tryCatch } from "@/lib/utils/tryCatch";
 
 const { users, userSignatures } = db.schema;
@@ -267,12 +267,12 @@ export async function userProfileSyncPrivyEmail(
 	}
 
 	const emailResult = await tryCatch(
-		verifiedPrivyEmailForWallet(parsedBody.data.identityToken, wallet),
+		verifiedThirdwebEmailForWallet(parsedBody.data.identityToken, wallet),
 	);
 
 	if (emailResult.error) {
 		throw new ORPCError("UNAUTHORIZED", {
-			message: `Privy verification failed: ${emailResult.error.message}`,
+			message: `Wallet auth verification failed: ${emailResult.error.message}`,
 		});
 	}
 
@@ -327,7 +327,7 @@ export async function userProfileSetPrimaryEmail(
 
 	if (linkedResult.error) {
 		throw new ORPCError("UNAUTHORIZED", {
-			message: `Privy verification failed: ${linkedResult.error.message}`,
+			message: `Wallet auth verification failed: ${linkedResult.error.message}`,
 		});
 	}
 
@@ -337,7 +337,7 @@ export async function userProfileSetPrimaryEmail(
 
 	if (!canonical) {
 		throw new ORPCError("BAD_REQUEST", {
-			message: "This email is not linked to your Privy account.",
+			message: "This email is not linked to your sign-in account.",
 		});
 	}
 
@@ -405,18 +405,18 @@ export async function userRegister(body: unknown) {
 		email = `dev-${walletAddress}@filosign.local`;
 		privyDid = `did:dev:${walletAddress}`;
 	} else if (idToken) {
-		const privyResult = await tryCatch(
-			verifyPrivyTokenWithWallet(idToken, walletAddress),
+		const authResult = await tryCatch(
+			verifyThirdwebAuthTokenWithWallet(idToken, walletAddress),
 		);
 
-		if (privyResult.error) {
+		if (authResult.error) {
 			throw new ORPCError("UNAUTHORIZED", {
-				message: `Privy verification failed: ${privyResult.error.message}`,
+				message: `Wallet auth verification failed: ${authResult.error.message}`,
 			});
 		}
 
-		email = privyResult.data.email ?? "";
-		privyDid = privyResult.data.privyDid;
+		email = authResult.data.email ?? "";
+		privyDid = authResult.data.privyDid;
 	} else {
 		throw new ORPCError("BAD_REQUEST", {
 			message: "idToken or skipToken required",

@@ -1,7 +1,7 @@
 import { useIsRegistered } from "@filosign/react/auth";
-import { usePrivy } from "@privy-io/react-auth";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useThirdwebConnection } from "@/src/lib/hooks/use-thirdweb-connection";
 import {
 	coldInviteEntrySearchSchema,
 	signDocumentSearchFromColdEntry,
@@ -13,7 +13,7 @@ export function useOnboardingRegisteredGuestRedirect(args: {
 }) {
 	const { registrationStarted, recoveryPhrase } = args;
 	const navigate = useNavigate();
-	const { ready } = usePrivy();
+	const { ready } = useThirdwebConnection();
 	const isRegistered = useIsRegistered();
 	const coldSignSearch = useRouterState({
 		select: (s) => {

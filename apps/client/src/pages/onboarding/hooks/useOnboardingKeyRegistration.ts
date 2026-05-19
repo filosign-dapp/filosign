@@ -1,22 +1,22 @@
 import { useLogin } from "@filosign/react/auth";
-import { useIdentityToken } from "@privy-io/react-auth";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { useAuthToken } from "thirdweb/react";
 
 export function useOnboardingKeyRegistration() {
-	const { identityToken } = useIdentityToken();
+	const authToken = useAuthToken();
 	const login = useLogin();
 	const [recoveryPhrase, setRecoveryPhrase] = useState<string | null>(null);
 
 	const registerKeys = useCallback(async () => {
-		if (!identityToken) {
+		if (!authToken) {
 			toast.error(
-				"Identity token not available. Enable identity tokens in the Privy dashboard, or try logging in again.",
+				"Wallet session not ready. Sign in again, then retry registration.",
 			);
 			return { ok: false as const };
 		}
 		try {
-			const result = await login.mutateAsync({ idToken: identityToken });
+			const result = await login.mutateAsync({ idToken: authToken });
 			if (
 				result &&
 				typeof result === "object" &&
@@ -32,7 +32,7 @@ export function useOnboardingKeyRegistration() {
 			toast.error("Registration failed. Try again.");
 			return { ok: false as const };
 		}
-	}, [identityToken, login]);
+	}, [authToken, login]);
 
 	const clearRecoveryPhrase = useCallback(() => {
 		setRecoveryPhrase(null);

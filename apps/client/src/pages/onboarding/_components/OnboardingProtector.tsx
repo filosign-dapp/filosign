@@ -1,6 +1,6 @@
 import { useIsRegistered } from "@filosign/react/auth";
-import { usePrivy } from "@privy-io/react-auth";
 import { Navigate, useRouterState } from "@tanstack/react-router";
+import { useThirdwebConnection } from "@/src/lib/hooks/use-thirdweb-connection";
 import {
 	coldInviteEntrySearchSchema,
 	signDocumentSearchFromColdEntry,
@@ -13,7 +13,7 @@ export default function OnboardingProtector({
 	children: React.ReactNode;
 	allowRegistered?: boolean;
 }) {
-	const { ready } = usePrivy();
+	const { ready } = useThirdwebConnection();
 	const isRegistered = useIsRegistered();
 	const coldSignSearch = useRouterState({
 		select: (s) => {

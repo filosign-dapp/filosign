@@ -1,10 +1,11 @@
 import { useFilosignContext } from "@filosign/react";
 import { useLogout } from "@filosign/react/auth";
-import { usePrivy } from "@privy-io/react-auth";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { useStorePersist } from "@/src/lib/hooks/use-store";
+import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
+import { useThirdwebWalletAuth } from "@/src/lib/hooks/use-thirdweb-wallet-auth";
 import {
 	extractColdInviteSearchFromLocation,
 	SKIP_COLD_SIGN_AFTER_MISMATCH,
@@ -17,14 +18,14 @@ export type ExecuteSwitchAccountLogoutArgs = {
 	clearOnboardingForm: () => void;
 	wallet: ReturnType<typeof useFilosignContext>["wallet"];
 	logoutFilosign: ReturnType<typeof useLogout>;
-	logoutPrivy: () => Promise<void>;
+	logoutWallet: () => Promise<void>;
 	navigate: ReturnType<typeof useNavigate>;
 	/** When true, skip navigating home (stay on cold-invite URL, etc.). */
 	stayAfterLogout: boolean;
 	onStayAfterLogout?: () => void;
 };
 
-/** Clears onboarding draft, logs out Filosign + Privy; optionally stays on the current route. */
+/** Clears onboarding draft, logs out Filosign + wallet; optionally stays on the current route. */
 export async function executeSwitchAccountLogout(
 	args: ExecuteSwitchAccountLogoutArgs,
 ): Promise<void> {
@@ -36,9 +37,9 @@ export async function executeSwitchAccountLogout(
 			logger.error("Filosign logout before switch account:", err);
 		}
 	}
-	const [, privyErr] = await safeAsync(() => args.logoutPrivy());
-	if (privyErr) {
-		logger.error("Privy logout (switch account):", privyErr);
+	const [, walletErr] = await safeAsync(() => args.logoutWallet());
+	if (walletErr) {
+		logger.error("Wallet logout (switch account):", walletErr);
 	}
 	if (args.stayAfterLogout) {
 		args.onStayAfterLogout?.();
@@ -65,9 +66,8 @@ export function OnboardingSwitchAccountLink({
 	continueAnywayColdSearch?: { coldPieceCid: string; coldInvite: string };
 }) {
 	const { wallet } = useFilosignContext();
-	const { logout: logoutPrivy, user } = usePrivy();
-	const loggedInEmail =
-		user?.email?.address?.trim() || user?.google?.email?.trim() || "";
+	const { logout: logoutWallet } = useThirdwebWalletAuth();
+	const { email: loggedInEmail } = useThirdwebUserInfo();
 	const logoutFilosign = useLogout();
 	const clearOnboardingForm = useStorePersist((s) => s.clearOnboardingForm);
 	const navigate = useNavigate();
@@ -85,7 +85,7 @@ export function OnboardingSwitchAccountLink({
 				clearOnboardingForm,
 				wallet,
 				logoutFilosign,
-				logoutPrivy,
+				logoutWallet,
 				navigate,
 				stayAfterLogout,
 				onStayAfterLogout,

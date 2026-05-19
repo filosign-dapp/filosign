@@ -5,7 +5,6 @@ import {
 import { useAuthedApi, useIsRegistered } from "@filosign/react/auth";
 import { useUpdateUserProfile } from "@filosign/react/users";
 import { CaretRightIcon } from "@phosphor-icons/react";
-import { usePrivy } from "@privy-io/react-auth";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
@@ -19,6 +18,7 @@ import {
 	CardTitle,
 } from "@/src/lib/components/ui/card";
 import { useStorePersist } from "@/src/lib/hooks/use-store";
+import { useThirdwebConnection } from "@/src/lib/hooks/use-thirdweb-connection";
 import {
 	SKIP_COLD_SIGN_AFTER_MISMATCH,
 	shouldSkipColdDocumentAfterMismatch,
@@ -29,7 +29,7 @@ export default function OnboardingWelcomeCompletePage() {
 	const captureAppEvent = useCaptureAppEvent();
 	const [userName, setUserName] = useState("");
 	const { onboardingForm, setOnboardingForm } = useStorePersist();
-	const { ready } = usePrivy();
+	const { ready } = useThirdwebConnection();
 	const isRegistered = useIsRegistered();
 	const updateUserProfile = useUpdateUserProfile();
 	const { data: auth } = useAuthedApi();

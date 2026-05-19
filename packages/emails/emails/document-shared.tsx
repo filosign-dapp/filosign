@@ -36,7 +36,8 @@ function copyForVariant(variant: DocumentSharedVariant, senderLabel: string) {
 					{body}
 					<br />
 					<br />
-					This document is password protected. Contact the sender for the
+					This document is password protected. You'll need the secret code from
+					the sender to open it.
 				</>
 			),
 		};

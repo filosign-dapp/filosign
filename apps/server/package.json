@@ -31,7 +31,6 @@
 		"@orpc/openapi": "1.14.3",
 		"@orpc/server": "1.14.3",
 		"@orpc/zod": "1.14.3",
-		"@privy-io/node": "0.18.0",
 		"drizzle-orm": "0.44.7",
 		"fast-json-stable-stringify": "catalog:",
 		"hono": "catalog:",
@@ -40,6 +39,7 @@
 		"pino": "10.3.1",
 		"posthog-node": "5.1.1",
 		"resend": "6.4.0",
+		"thirdweb": "5.120.0",
 		"viem": "catalog:",
 		"zod": "catalog:"
 	},

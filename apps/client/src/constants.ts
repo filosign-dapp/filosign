@@ -4,7 +4,6 @@ import { base, baseSepolia, hardhat } from "viem/chains";
 import env from "./env";
 
 const chains = [hardhat, baseSepolia, base] as const;
-export const privyChains = [...chains];
 export const wagmiChains = chains;
 export const defaultChain =
 	env.VITE_CHAIN === "local"

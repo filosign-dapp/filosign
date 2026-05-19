@@ -1,17 +1,15 @@
 import { useUserProfile } from "@filosign/react/users";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
-import { usePrivy } from "@privy-io/react-auth";
 import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
+import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
 import type { ProfileForm } from "../types";
 import { profileSchema } from "../types";
 import { useFileUpload } from "./use-file-upload";
 import { useSectionState } from "./use-section-state";
 
 export function useProfileSettings() {
-	const { user } = usePrivy();
-
-	const walletAddress = user?.wallet?.address || "";
+	const { walletAddress } = useThirdwebUserInfo();
 	const userProfileQuery = useUserProfile();
 
 	const form = useForm<ProfileForm>({

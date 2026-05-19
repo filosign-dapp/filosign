@@ -1,27 +1,33 @@
 import { useSyncPrivyEmail, useUserProfile } from "@filosign/react/users";
-import { useIdentityToken, usePrivy } from "@privy-io/react-auth";
 import { useEffect, useRef } from "react";
+import { useAuthToken } from "thirdweb/react";
+import { useThirdwebConnection } from "@/src/lib/hooks/use-thirdweb-connection";
 
-/** Syncs email from a verified Privy identity JWT on each new Privy identity token (e.g. login). */
+/** Syncs email from a verified thirdweb auth token when the user connects. */
 export default function ProfileEmailSync() {
-	const { authenticated } = usePrivy();
-	const { identityToken } = useIdentityToken();
+	const { authenticated } = useThirdwebConnection();
+	const authToken = useAuthToken();
 	const userProfile = useUserProfile();
 	const syncPrivyEmail = useSyncPrivyEmail();
 	const lastSyncedTokenRef = useRef<string | null>(null);
 
 	useEffect(() => {
-		if (!authenticated || !identityToken || !userProfile.data) {
+		if (!authenticated || !authToken || !userProfile.data) {
 			return;
 		}
 
-		if (lastSyncedTokenRef.current === identityToken) {
+		if (lastSyncedTokenRef.current === authToken) {
 			return;
 		}
 
-		lastSyncedTokenRef.current = identityToken;
-		syncPrivyEmail.mutate({ identityToken });
-	}, [authenticated, identityToken, userProfile.data, syncPrivyEmail]);
+		lastSyncedTokenRef.current = authToken;
+		syncPrivyEmail.mutate({ identityToken: authToken });
+	}, [
+		authenticated,
+		authToken,
+		userProfile.data?.walletAddress,
+		syncPrivyEmail,
+	]);
 
 	return null;
 }

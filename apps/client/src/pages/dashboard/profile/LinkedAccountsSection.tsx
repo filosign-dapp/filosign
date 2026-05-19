@@ -6,10 +6,15 @@ import {
 	StarIcon,
 	TrashIcon,
 } from "@phosphor-icons/react";
-import type { User } from "@privy-io/react-auth";
-import { useIdentityToken, usePrivy } from "@privy-io/react-auth";
 import { toast } from "sonner";
-
+import {
+	useAuthToken,
+	useLinkProfile,
+	useProfiles,
+	useUnlinkProfile,
+	useWalletDetailsModal,
+} from "thirdweb/react";
+import type { Profile } from "thirdweb/wallets";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Card,
@@ -29,79 +34,47 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/src/lib/components/ui/tooltip";
+import { thirdwebClient } from "@/src/lib/thirdweb/client";
+import { thirdwebWalletModalOptions } from "@/src/lib/thirdweb/wallet-modal-options";
 
-type LinkedConnection =
-	| {
-			key: string;
-			kind: "email";
-			email: string;
-	  }
-	| {
-			key: string;
-			kind: "google";
-			email: string;
-			subject: string;
-	  };
+type LinkedRow = {
+	key: string;
+	kind: "email" | "google";
+	email: string;
+	profile: Profile;
+};
 
-function connectionsFromPrivyUser(user: User | null): LinkedConnection[] {
-	if (!user) return [];
-
-	const out: LinkedConnection[] = [];
-	const linked = user.linkedAccounts;
-
-	if (linked?.length) {
-		for (const a of linked) {
-			if (a.type === "email" && "address" in a && a.address) {
-				out.push({
-					key: `email:${a.address.toLowerCase()}`,
-					kind: "email",
-					email: a.address.trim(),
-				});
-			}
-			if (a.type === "google_oauth") {
-				const email =
-					"email" in a && typeof (a as { email?: string }).email === "string"
-						? (a as { email: string }).email.trim()
-						: "";
-				const subject =
-					"subject" in a &&
-					typeof (a as { subject?: string }).subject === "string"
-						? (a as { subject: string }).subject
-						: "";
-				if (email && subject) {
-					out.push({
-						key: `google:${subject}`,
-						kind: "google",
-						email,
-						subject,
-					});
-				}
-			}
-		}
-	}
-
-	if (!out.length) {
-		if (user.email?.address) {
+function rowsFromProfiles(profiles: Profile[] | undefined): LinkedRow[] {
+	if (!profiles?.length) return [];
+	const out: LinkedRow[] = [];
+	for (const profile of profiles) {
+		if (profile.type === "email" && profile.details.email?.trim()) {
+			const email = profile.details.email.trim();
 			out.push({
-				key: `email:${user.email.address.toLowerCase()}`,
+				key: `email:${email.toLowerCase()}`,
 				kind: "email",
-				email: user.email.address.trim(),
+				email,
+				profile,
 			});
 		}
-		if (user.google?.email && user.google.subject) {
+		if (profile.type === "google" && profile.details.email?.trim()) {
+			const email = profile.details.email.trim();
+			const id =
+				"id" in profile.details && profile.details.id
+					? String(profile.details.id)
+					: email;
 			out.push({
-				key: `google:${user.google.subject}`,
+				key: `google:${id}`,
 				kind: "google",
-				email: user.google.email.trim(),
-				subject: user.google.subject,
+				email,
+				profile,
 			});
 		}
 	}
-
 	return out;
 }
 
-function ProviderIcon({ kind }: { kind: LinkedConnection["kind"] }) {
+function ProviderIcon({ kind }: { kind: LinkedRow["kind"] }) {
 	if (kind === "google") {
 		return (
 			<GoogleLogoIcon
@@ -122,30 +95,25 @@ const iconButton =
 	"size-8 text-muted-foreground hover:text-foreground hover:bg-muted/60";
 
 export function LinkedAccountsSection() {
-	const {
-		user,
-		linkEmail,
-		linkGoogle,
-		unlinkEmail: unlinkPrivyEmail,
-		unlinkGoogle,
-	} = usePrivy();
-	const { identityToken } = useIdentityToken();
+	const authToken = useAuthToken();
+	const { data: profiles } = useProfiles({ client: thirdwebClient });
+	const { mutate: linkProfile } = useLinkProfile();
+	const walletDetailsModal = useWalletDetailsModal();
+	const { mutateAsync: unlinkProfile } = useUnlinkProfile();
 	const { data: profile } = useUserProfile();
 	const setPrimary = useSetPrimaryEmail();
 
-	const connections = connectionsFromPrivyUser(user ?? null);
+	const connections = rowsFromProfiles(profiles);
 	const primaryNormalized = profile?.email?.trim().toLowerCase() ?? "";
-
-	const linkedAccountCount = user?.linkedAccounts?.length ?? 0;
-	const canUnlinkAny = linkedAccountCount > 1;
+	const canUnlinkAny = connections.length > 1;
 
 	const handleMakePrimary = async (email: string) => {
-		if (!identityToken) {
+		if (!authToken) {
 			toast.error("Session expired. Sign in again and retry.");
 			return;
 		}
 		try {
-			await setPrimary.mutateAsync({ identityToken, email });
+			await setPrimary.mutateAsync({ identityToken: authToken, email });
 			toast.success("Primary email updated.");
 		} catch (e) {
 			const message =
@@ -154,19 +122,21 @@ export function LinkedAccountsSection() {
 		}
 	};
 
-	const handleUnlink = async (row: LinkedConnection) => {
+	const handleUnlink = async (row: LinkedRow) => {
 		if (!canUnlinkAny) {
 			toast.error("Add another way to sign in before removing this one.");
 			return;
 		}
 		try {
-			if (row.kind === "email") {
-				await unlinkPrivyEmail(row.email);
-				toast.success("Email sign-in removed.");
-			} else {
-				await unlinkGoogle(row.subject);
-				toast.success("Google account disconnected.");
-			}
+			await unlinkProfile({
+				client: thirdwebClient,
+				profileToUnlink: row.profile,
+			});
+			toast.success(
+				row.kind === "email"
+					? "Email sign-in removed."
+					: "Google account disconnected.",
+			);
 		} catch (e) {
 			const message =
 				e instanceof Error ? e.message : "Could not remove this account.";
@@ -198,14 +168,21 @@ export function LinkedAccountsSection() {
 						<DropdownMenuContent align="end" className="min-w-40">
 							<DropdownMenuItem
 								className="gap-2 cursor-pointer text-muted-foreground focus:text-foreground"
-								onClick={() => linkEmail()}
+								onClick={() =>
+									walletDetailsModal.open(thirdwebWalletModalOptions)
+								}
 							>
 								<EnvelopeSimpleIcon className="size-4 opacity-70" />
-								Email
+								More sign-in options
 							</DropdownMenuItem>
 							<DropdownMenuItem
 								className="gap-2 cursor-pointer text-muted-foreground focus:text-foreground"
-								onClick={() => linkGoogle()}
+								onClick={() =>
+									linkProfile({
+										client: thirdwebClient,
+										strategy: "google",
+									})
+								}
 							>
 								<GoogleLogoIcon className="size-4 opacity-70" />
 								Google
@@ -250,10 +227,7 @@ export function LinkedAccountsSection() {
 															size="icon-sm"
 															className={iconButton}
 															disabled={
-																isPrimary ||
-																setPrimary.isPending ||
-																!identityToken ||
-																!user
+																isPrimary || setPrimary.isPending || !authToken
 															}
 															aria-label="Set as primary"
 															onClick={() => handleMakePrimary(row.email)}

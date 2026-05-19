@@ -1,7 +1,7 @@
 import { CaretDownIcon } from "@phosphor-icons/react";
-import { useFundWallet, usePrivy } from "@privy-io/react-auth";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useActiveAccount } from "thirdweb/react";
 import { formatUnits } from "viem";
 import { useBalance } from "wagmi";
 import {
@@ -18,6 +18,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
+import { useWalletTopUp } from "@/src/lib/hooks/use-wallet-top-up";
 import { copyToClipboard } from "@/src/lib/utils/utils";
 
 const usdc = SUPPORTED_TOKENS[0];
@@ -49,28 +50,12 @@ function explorerAddressUrl(address: string): string | null {
 	return `${root}/address/${address}`;
 }
 
-function walletKindLabel(walletClientType: string | undefined): string {
-	if (!walletClientType) return "Primary";
-	const t = walletClientType.toLowerCase();
-	if (t === "privy" || t === "privy-v2") return "My wallet";
-	if (t === "coinbase_wallet" || t === "coinbase") return "Coinbase";
-	if (t === "metamask") return "MetaMask";
-	if (t === "rainbow") return "Rainbow";
-	if (t === "wallet_connect") return "WalletConnect";
-	return walletClientType
-		.split(/[-_]/)
-		.filter(Boolean)
-		.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-		.join(" ");
-}
-
 export function WalletUsdcBalanceCard() {
-	const { user } = usePrivy();
-	const { fundWallet } = useFundWallet();
+	const account = useActiveAccount();
+	const { openTopUp } = useWalletTopUp();
 	const [topUpLoading, setTopUpLoading] = useState(false);
 
-	const address = user?.wallet?.address;
-	const walletClientType = user?.wallet?.walletClientType;
+	const address = account?.address;
 	const checksummed = address as `0x${string}` | undefined;
 
 	const { data, isPending, isError, refetch } = useBalance({
@@ -91,22 +76,13 @@ export function WalletUsdcBalanceCard() {
 		return formatUsdcAmountParts(value, decimals);
 	}, [data?.decimals, data?.value]);
 
-	const walletTitleSuffix = address
-		? walletKindLabel(walletClientType)
-		: "Not connected";
+	const walletTitleSuffix = address ? "My wallet" : "Not connected";
 
 	const handleTopUp = async () => {
 		if (!address) return;
 		setTopUpLoading(true);
 		try {
-			await fundWallet({
-				address,
-				options: {
-					chain: defaultChain,
-					asset: "USDC",
-					amount: "25",
-				},
-			});
+			await openTopUp();
 			await refetch();
 		} catch {
 			toast.error(

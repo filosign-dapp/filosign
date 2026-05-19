@@ -1,6 +1,6 @@
 import { useIsRegistered } from "@filosign/react/auth";
-import { usePrivy } from "@privy-io/react-auth";
-import { usePrivyLogin } from "@/src/lib/hooks/use-privy-login";
+import { useThirdwebLogin } from "@/src/lib/hooks/use-thirdweb-login";
+import { useThirdwebWalletAuth } from "@/src/lib/hooks/use-thirdweb-wallet-auth";
 
 export type ConnectButtonState =
 	| "loading"
@@ -9,8 +9,8 @@ export type ConnectButtonState =
 	| "dashboard";
 
 export function useConnectButtonLogic() {
-	const { ready, authenticated, logout } = usePrivy();
-	const { login: loginPrivy } = usePrivyLogin();
+	const { ready, authenticated, logout } = useThirdwebWalletAuth();
+	const { login } = useThirdwebLogin();
 	const isRegistered = useIsRegistered();
 
 	const getButtonState = (): ConnectButtonState => {
@@ -36,7 +36,7 @@ export function useConnectButtonLogic() {
 		isLoading,
 		buttonState,
 		primaryCta,
-		signIn: () => loginPrivy(),
-		logout: () => logout(),
+		signIn: () => void login(),
+		logout: () => void logout(),
 	} as const;
 }

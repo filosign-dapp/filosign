@@ -13,7 +13,7 @@ import { IconContext } from "@phosphor-icons/react";
 import { Buffer as BufferI } from "buffer";
 import env from "./env";
 import { FilosignProvider } from "./lib/context/filosign-provider";
-import { PrivyProvider } from "./lib/context/privy-provider";
+import { ThirdwebRootProvider } from "./lib/context/thirdweb-provider";
 import { WagmiProvider } from "./lib/context/wagmi-provider";
 import { configurePdfWorker } from "./lib/pdf/configurePdfWorker";
 
@@ -40,7 +40,7 @@ const App = () => {
 							apiHost={env.VITE_POSTHOG_HOST ?? "https://us.i.posthog.com"}
 							enabled={env.VITE_POSTHOG_ENABLED === true}
 						>
-							<PrivyProvider>
+							<ThirdwebRootProvider>
 								<WagmiProvider>
 									<FilosignProvider>
 										<IconContext.Provider
@@ -55,7 +55,7 @@ const App = () => {
 										</IconContext.Provider>
 									</FilosignProvider>
 								</WagmiProvider>
-							</PrivyProvider>
+							</ThirdwebRootProvider>
 						</FilosignAnalyticsProvider>
 					</QueryClientProvider>
 				</ThemeProvider>

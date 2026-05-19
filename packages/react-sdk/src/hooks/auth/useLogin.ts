@@ -39,7 +39,7 @@ export function useLogin() {
 				const { idToken, skipToken } = params;
 				if (!idToken && !skipToken) {
 					throw new Error(
-						"Authentication token required. Please ensure you are logged in with Privy.",
+						"Authentication token required. Please sign in with your wallet first.",
 					);
 				}
 

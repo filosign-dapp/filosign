@@ -1,4 +1,7 @@
-import { loadBrowserDilithium } from "@filosign/crypto-utils/browser/dilithium";
+import {
+	type DilithiumInstance,
+	loadBrowserDilithium,
+} from "@filosign/crypto-utils/browser/dilithium";
 import { FilosignProvider as FilosignProviderBase } from "@filosign/react";
 import { useEffect, useState } from "react";
 import { useWalletClient } from "wagmi";
@@ -8,10 +11,7 @@ import { logger } from "../utils/logger";
 
 export function FilosignProvider({ children }: { children: React.ReactNode }) {
 	const { data: wallet } = useWalletClient();
-
-	const [dilithium, setDilithium] = useState<
-		Awaited<ReturnType<typeof loadBrowserDilithium>> | undefined
-	>(undefined);
+	const [dilithium, setDilithium] = useState<DilithiumInstance | undefined>();
 
 	useEffect(() => {
 		let mounted = true;
@@ -29,16 +29,14 @@ export function FilosignProvider({ children }: { children: React.ReactNode }) {
 		};
 	}, []);
 
-	if (!dilithium?.generateKeys) {
+	if (!dilithium) {
 		return <Loader />;
 	}
 
 	return (
 		<FilosignProviderBase
 			apiBaseUrl={env.VITE_SERVER_URL}
-			wasm={{
-				dilithium: dilithium as never,
-			}}
+			wasm={{ dilithium }}
 			wallet={wallet}
 			loader={Loader}
 		>

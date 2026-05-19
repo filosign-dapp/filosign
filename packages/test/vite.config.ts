@@ -4,21 +4,7 @@ import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-	plugins: [
-		react(),
-		tailwindcss(),
-		{
-			name: "wasm-mime-type",
-			configureServer(server) {
-				server.middlewares.use((req, res, next) => {
-					if (req.url?.endsWith(".wasm")) {
-						res.setHeader("Content-Type", "application/wasm");
-					}
-					next();
-				});
-			},
-		},
-	],
+	plugins: [react(), tailwindcss()],
 	resolve: {
 		alias: {
 			"@": "/src",
@@ -33,6 +19,7 @@ export default defineConfig({
 		},
 	},
 	optimizeDeps: {
+		include: ["dilithium-crystals-js"],
 		exclude: [
 			"@filosign/crypto-utils",
 			"@filosign/react",

@@ -94,12 +94,12 @@ export function useOtherReload() {
 }
 
 import {
-	type BrowserDilithium,
+	type DilithiumInstance,
 	loadBrowserDilithium,
 } from "@filosign/crypto-utils/browser/dilithium";
 
 function App() {
-	const [dilithium, setDilithium] = useState<BrowserDilithium | null>(null);
+	const [dilithium, setDilithium] = useState<DilithiumInstance | null>(null);
 
 	useEffect(() => {
 		let mounted = true;
@@ -133,7 +133,7 @@ function App() {
 					<FilosignProvider
 						wallet={wallet1}
 						apiBaseUrl="http://localhost:3000/api"
-						wasm={{ dilithium: dilithium as never }}
+						wasm={{ dilithium }}
 					>
 						<Test />
 					</FilosignProvider>
@@ -144,7 +144,7 @@ function App() {
 					<FilosignProvider
 						wallet={wallet2}
 						apiBaseUrl="http://localhost:3000/api"
-						wasm={{ dilithium: dilithium as never }}
+						wasm={{ dilithium }}
 					>
 						<Test />
 					</FilosignProvider>

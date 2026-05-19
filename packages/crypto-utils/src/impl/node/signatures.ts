@@ -1,14 +1,16 @@
-import Dilithium from "dilithium-crystals-js";
 import { DILITHIUM_KIND } from "../../constants";
+import type { DilithiumInstance } from "../../dilithium-instance";
 import * as fsHash from "./hash";
 import { toBytes } from "./utils";
 
 const dilithiumKind = DILITHIUM_KIND;
-export type DL = Awaited<typeof Dilithium>;
+export type DL = DilithiumInstance;
 
-export async function dilithiumInstance() {
-	const dl = await Dilithium;
-	return dl;
+export async function dilithiumInstance(): Promise<DilithiumInstance> {
+	const mod = (await import("dilithium-crystals-js")) as unknown as {
+		default: Promise<DilithiumInstance>;
+	};
+	return mod.default;
 }
 
 export async function keyGen(args: { dl: DL; seed: Uint8Array }) {

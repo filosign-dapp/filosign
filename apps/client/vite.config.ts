@@ -60,13 +60,15 @@ export default defineConfig(({ mode, command }) => {
 		server: {
 			port: 3001,
 			headers: securityHeadersRecord(isDev, apiOrigin),
+			fs: { strict: false },
 		},
 		preview: {
 			headers: securityHeadersRecord(false, apiOrigin),
 		},
 		envPrefix: "VITE_",
 		optimizeDeps: {
-			include: ["buffer", "react-pdf", "pdfjs-dist"],
+			include: ["buffer", "react-pdf", "pdfjs-dist", "dilithium-crystals-js"],
+			exclude: ["@filosign/crypto-utils"],
 		},
 		build: {
 			outDir: "dist",

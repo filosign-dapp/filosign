@@ -15,12 +15,13 @@ index 263d5e9c932ff1dd723a2c3d88bc5f5d99e8bbf0..c0e97eb53429baf848baf266d74e296e
      "src/**/*.js",
      "src/**/*.d.ts",
 diff --git a/src/browser/index.js b/src/browser/index.js
-index af3f14541de0ab15419bbffe1430b6209af37b84..98cca8ec773a81c7b5d9be143ae34be22329e0f1 100644
+index af3f14541de0ab15419bbffe1430b6209af37b84..a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 100644
 --- a/src/browser/index.js
 +++ b/src/browser/index.js
-@@ -1,35 +1,41 @@
- import dilithiumFactory from "../../dilithium.js";
+@@ -1,35 +1,45 @@
+-import dilithiumFactory from "../../dilithium.js";
 -import { DILITHIUM_PARAMS, generateKeys, sign, verify } from "../common";
++import * as dilithiumEmscripten from "../../dilithium.js";
 +import * as commonModule from "../common.js";
  
 -// Function to fetch the WebAssembly file
@@ -30,6 +31,7 @@ index af3f14541de0ab15419bbffe1430b6209af37b84..98cca8ec773a81c7b5d9be143ae34be2
 -  const response = await fetch(wasmUrl);
 -  return await response.arrayBuffer();
 -}
++const dilithiumFactory = dilithiumEmscripten.default ?? dilithiumEmscripten;
 +const common = commonModule.default || commonModule;
 +const { DILITHIUM_PARAMS, generateKeys, sign, verify } = common;
  
@@ -55,43 +57,45 @@ index af3f14541de0ab15419bbffe1430b6209af37b84..98cca8ec773a81c7b5d9be143ae34be2
 -        verify(dilithium, signature, message, publicKey, kind),
 -      DILITHIUM_PARAMS,
 -    }));
-+/** @returns {string} Path to WASM binary */
-+const getWasmUrl = () => {
-+  const isExtension = typeof chrome !== "undefined" && chrome.runtime?.getURL;
-+  return isExtension ? chrome.runtime.getURL("dilithium.wasm") : "/dilithium.wasm";
++/** @param {string} [wasmUrl] Bundled asset URL for web apps; extension uses chrome.runtime. */
++const resolveWasmUrl = (wasmUrl) => {
++	if (wasmUrl) return wasmUrl;
++	const isExtension = typeof chrome !== "undefined" && chrome.runtime?.getURL;
++	return isExtension
++		? chrome.runtime.getURL("dilithium.wasm")
++		: "/dilithium.wasm";
 +};
  
 -export { createDilithium };
-\ No newline at end of file
-+/** @returns {Promise<ArrayBuffer>} WASM binary */
-+const fetchWasm = async () => {
-+  const url = getWasmUrl();
-+  console.log(`[dilithium] loading from ${url}`);
-+  const res = await fetch(url);
-+  return res.arrayBuffer();
++/** @returns {Promise<ArrayBuffer>} */
++const fetchWasm = async (wasmUrl) => {
++	const url = resolveWasmUrl(wasmUrl);
++	const res = await fetch(url);
++	if (!res.ok) {
++		throw new Error(`[dilithium] failed to fetch WASM (${res.status}): ${url}`);
++	}
++	return res.arrayBuffer();
 +};
 +
 +/**
-+ * Creates a Dilithium instance.
-+ * @returns {Promise<Object>} The Dilithium API.
++ * @param {string} [wasmUrl]
++ * @returns {Promise<Object>}
 + */
-+export const createDilithium = async () => {
-+  const wasmBinary = await fetchWasm();
-+  const dilithium = await dilithiumFactory({
-+    wasmBinary,
-+    locateFile: (path) => (path.endsWith(".wasm") ? getWasmUrl() : path),
-+  });
++export const createDilithium = async (wasmUrl) => {
++	const resolved = resolveWasmUrl(wasmUrl);
++	const wasmBinary = await fetchWasm(wasmUrl);
++	const dilithium = await dilithiumFactory({
++		wasmBinary,
++		locateFile: (path) => (path.endsWith(".wasm") ? resolved : path),
++	});
 +
-+  return {
-+    generateKeys: (kind, seed) => generateKeys(dilithium, kind, seed),
-+    sign: (msg, sk, kind) => sign(dilithium, msg, sk, kind),
-+    verify: (sig, msg, pk, kind) => verify(dilithium, sig, msg, pk, kind),
-+    DILITHIUM_PARAMS,
-+  };
++	return {
++		generateKeys: (kind, seed) => generateKeys(dilithium, kind, seed),
++		sign: (msg, sk, kind) => sign(dilithium, msg, sk, kind),
++		verify: (sig, msg, pk, kind) => verify(dilithium, sig, msg, pk, kind),
++		DILITHIUM_PARAMS,
++	};
 +};
-+
-+// High-quality HQ: Export a single-instance promise by default
-+export default createDilithium();
 diff --git a/src/node/index.js b/src/node/index.js
 index a4f192eb2d607840810250073783106bd8ab3683..943fd2b77334799bfff5bfa35f3bd9c392158a77 100644
 --- a/src/node/index.js

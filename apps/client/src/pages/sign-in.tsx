@@ -1,15 +1,16 @@
 import { useFilosignContext } from "@filosign/react";
 import { useIsRegistered, useLogout } from "@filosign/react/auth";
 import { SpinnerIcon } from "@phosphor-icons/react";
-import { usePrivy } from "@privy-io/react-auth";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useActiveAccount } from "thirdweb/react";
 import { useWalletClient } from "wagmi";
 import env from "@/src/env";
 import Logo from "@/src/lib/components/custom/Logo";
 import { Button } from "@/src/lib/components/ui/button";
-import { usePrivyLogin } from "@/src/lib/hooks/use-privy-login";
 import { useStorePersist } from "@/src/lib/hooks/use-store";
+import { useThirdwebLogin } from "@/src/lib/hooks/use-thirdweb-login";
+import { useThirdwebWalletAuth } from "@/src/lib/hooks/use-thirdweb-wallet-auth";
 import { useColdInviteRecipientWarning } from "@/src/lib/hooks/useColdInviteRecipientWarning";
 import {
 	hasColdReturn,
@@ -22,8 +23,12 @@ import {
 } from "@/src/pages/onboarding/_components/OnboardingSwitchAccountLink";
 
 export default function SignInPage() {
-	const { ready, authenticated, logout: logoutPrivy } = usePrivy();
-	const { login } = usePrivyLogin();
+	const {
+		ready,
+		authenticated,
+		logout: logoutWallet,
+	} = useThirdwebWalletAuth();
+	const { login } = useThirdwebLogin();
 	const { data: walletClient } = useWalletClient();
 	const { wallet } = useFilosignContext();
 	const logoutFilosign = useLogout();
@@ -75,14 +80,20 @@ export default function SignInPage() {
 		signSearch,
 	]);
 
-	const walletReady = Boolean(walletClient?.account.address);
+	const thirdwebAddress = useActiveAccount()?.address;
+	const walletAddress = walletClient?.account.address ?? thirdwebAddress;
+	const walletReady = Boolean(walletAddress);
+	const checkingRegistration = walletReady && isRegistered.isLoading;
+
 	const needsAccountSetup =
 		authenticated &&
 		walletReady &&
 		isRegistered.data === false &&
-		!isRegistered.isPending;
+		!checkingRegistration;
 
-	const signingIn = authenticated && (!walletReady || isRegistered.isPending);
+	const signingIn = authenticated && (!walletReady || checkingRegistration);
+	const registrationCheckFailed =
+		authenticated && walletReady && isRegistered.isError;
 	const buttonLoading = !ready;
 
 	const handleSwitchAccountFromSignIn = async () => {
@@ -92,7 +103,7 @@ export default function SignInPage() {
 				clearOnboardingForm,
 				wallet,
 				logoutFilosign,
-				logoutPrivy,
+				logoutWallet,
 				navigate,
 				stayAfterLogout: false,
 			});
@@ -142,7 +153,24 @@ export default function SignInPage() {
 						iconDelay={0}
 					/>
 
-					{signingIn ? (
+					{registrationCheckFailed ? (
+						<div className="flex flex-col items-center gap-4 py-8 text-center">
+							<p className="font-medium text-foreground">
+								Could not verify your account
+							</p>
+							<p className="text-sm text-muted-foreground">
+								Check your connection and that contracts are deployed for this
+								network, then try again.
+							</p>
+							<Button
+								type="button"
+								variant="outline"
+								onClick={() => void isRegistered.refetch()}
+							>
+								Retry
+							</Button>
+						</div>
+					) : signingIn ? (
 						<div className="flex flex-col items-center gap-4 py-8 text-center">
 							{showColdInviteMismatch ? (
 								<>
@@ -271,7 +299,7 @@ export default function SignInPage() {
 									isLoading={buttonLoading}
 									onClick={() => login()}
 								>
-									Continue with Privy
+									Sign in
 								</Button>
 								<p className="text-center text-xs text-muted-foreground">
 									By continuing you agree to Filosign&apos;s terms and privacy

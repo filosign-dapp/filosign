@@ -1,6 +1,6 @@
 # @filosign/server
 
-Hono API, Drizzle/Postgres, Privy, S3, and chain/indexer helpers for Filosign.
+Hono API, Drizzle/Postgres, thirdweb auth verification, S3, and chain/indexer helpers for Filosign.
 
 ## Run
 

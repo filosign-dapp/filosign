@@ -2,7 +2,7 @@ import { definitions as local } from "./local.js";
 import { definitions as mainnet } from "./mainnet.js";
 import { definitions as testnet } from "./testnet.js";
 
-export type ChainDefinitionsEntry = (typeof testnet)[keyof typeof testnet];
+export type ChainDefinitionsEntry = (typeof local)[keyof typeof local];
 export type ChainKey = "local" | "testnet" | "mainnet";
 
 export { LOCAL_MOCK_USDC_ADDRESS } from "./mock-usdc.js";

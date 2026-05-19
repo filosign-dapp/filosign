@@ -20,7 +20,3 @@ ignition/deployments/chain-31337
 # Build output
 *.tgz
 .DS_Store
-
-# Local deploy output (bun run deploy:local)
-/definitions/local.ts
-/definitions/mock-usdc.ts

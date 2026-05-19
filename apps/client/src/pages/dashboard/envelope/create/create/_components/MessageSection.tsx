@@ -45,7 +45,10 @@ export default function MessageSection({
 			<Collapsible open={isMessageOpen} onOpenChange={setIsMessageOpen}>
 				<CollapsibleTrigger
 					render={
-						<div className="flex items-center justify-between cursor-pointer hover:bg-accent/50 transition-colors p-2 -m-2 rounded-md group/add-message" />
+						<button
+							type="button"
+							className="group/add-message -m-2 flex w-full cursor-pointer items-center justify-between rounded-md border-0 bg-transparent p-2 text-left transition-colors hover:bg-accent/50"
+						/>
 					}
 				>
 					<h4 className="flex items-center gap-3">

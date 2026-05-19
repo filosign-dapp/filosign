@@ -10,7 +10,6 @@ import {
 	UserIcon,
 	UsersIcon,
 } from "@phosphor-icons/react";
-import { useFundWallet } from "@privy-io/react-auth";
 import { motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -53,6 +52,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/src/lib/components/ui/tooltip";
+import { useWalletTopUp } from "@/src/lib/hooks/use-wallet-top-up";
 import { safeAsync } from "@/src/lib/utils/safe";
 import { cn } from "@/src/lib/utils/utils";
 import { initialsFromName } from "@/src/pages/dashboard/connections/_components/contact-utils";
@@ -134,7 +134,10 @@ export default function RecipientsSection() {
 			<Collapsible open={isRecipientsOpen} onOpenChange={setIsRecipientsOpen}>
 				<CollapsibleTrigger
 					render={
-						<div className="group/add-recipients -m-2 flex cursor-pointer items-center justify-between rounded-lg p-2 transition-colors hover:bg-muted/40" />
+						<button
+							type="button"
+							className="group/add-recipients -m-2 flex w-full cursor-pointer items-center justify-between rounded-lg border-0 bg-transparent p-2 text-left transition-colors hover:bg-muted/40"
+						/>
 					}
 				>
 					<h4 className="flex items-center gap-3 text-base font-semibold tracking-tight text-foreground">
@@ -588,7 +591,7 @@ function InvoiceAttachDialog({
 	const platformFeeBps = runtime.platformFeeBps ?? 0;
 	const { address } = useAccount();
 	const chainId = useChainId();
-	const { fundWallet } = useFundWallet();
+	const { openTopUp } = useWalletTopUp();
 
 	const wrongChain = chainId !== defaultChain.id;
 	const balanceQueryEnabled = open && Boolean(address) && !wrongChain;
@@ -705,12 +708,7 @@ function InvoiceAttachDialog({
 	const handleFund = async () => {
 		if (!address) return;
 		setFormError(null);
-		const [, err] = await safeAsync(() =>
-			fundWallet({
-				address,
-				options: { chain: defaultChain, asset: "USDC" },
-			}),
-		);
+		const [, err] = await safeAsync(() => openTopUp());
 		if (err) setFormError(err.message);
 		else void refetch();
 	};

@@ -1,7 +1,6 @@
 import { useLogout } from "@filosign/react/auth";
 import { useUserProfile } from "@filosign/react/users";
 import { CopySimpleIcon, SignOutIcon, UserIcon } from "@phosphor-icons/react";
-import { usePrivy } from "@privy-io/react-auth";
 import { useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import * as React from "react";
@@ -16,11 +15,14 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
+import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
+import { useThirdwebWalletAuth } from "@/src/lib/hooks/use-thirdweb-wallet-auth";
 import { copyToClipboard } from "@/src/lib/utils/utils";
 
 export function UserDropdown() {
 	const [isOpen, setIsOpen] = React.useState(false);
-	const { user, logout: logoutPrivy } = usePrivy();
+	const { user } = useThirdwebUserInfo();
+	const { logout: logoutWallet } = useThirdwebWalletAuth();
 	const logoutFilosign = useLogout();
 	const navigate = useNavigate();
 
@@ -28,7 +30,7 @@ export function UserDropdown() {
 
 	const handleSignOut = async () => {
 		await logoutFilosign.mutateAsync();
-		await logoutPrivy();
+		await logoutWallet();
 		navigate({ to: "/" });
 	};
 
@@ -36,7 +38,7 @@ export function UserDropdown() {
 		return `${address.slice(0, 6)}...${address.slice(-4)}`;
 	};
 
-	// Use userProfile data for display name, fallback to Privy data
+	// Use userProfile data for display name, fallback to wallet login data
 	const displayName = userProfile
 		? userProfile.username ||
 			(userProfile.firstName && userProfile.lastName
@@ -44,7 +46,7 @@ export function UserDropdown() {
 				: userProfile.firstName || userProfile.lastName) ||
 			userProfile.email ||
 			"User"
-		: user?.google?.name || user?.email?.address || "User";
+		: user?.email?.address || user?.google?.email || "User";
 
 	const walletAddress = user?.wallet?.address;
 	const avatarUrl = userProfile?.avatarUrl;

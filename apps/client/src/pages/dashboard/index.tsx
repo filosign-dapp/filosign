@@ -1,6 +1,5 @@
 import { useReceivedFiles, useSentFiles } from "@filosign/react/files";
 import { useReceivedRequests } from "@filosign/react/sharing";
-import { usePrivy } from "@privy-io/react-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
@@ -17,6 +16,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/src/lib/components/ui/card";
+import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
 import DashboardLayout from "./layout";
 
 /** Invalidate queries for notifications and documents to re-fetch on navigation */
@@ -56,7 +56,7 @@ const statsCards = [
 ];
 
 export default function DashboardPage() {
-	const { user } = usePrivy();
+	const { user } = useThirdwebUserInfo();
 	const queryClient = useQueryClient();
 	const { data: balance } = useBalance({
 		address: user?.wallet?.address as `0x${string}`,

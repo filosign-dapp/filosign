@@ -8,7 +8,6 @@ import {
 	useRecoverWithPhrase,
 } from "@filosign/react/auth";
 import { CaretRightIcon } from "@phosphor-icons/react";
-import { usePrivy } from "@privy-io/react-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
@@ -25,6 +24,7 @@ import {
 import { Label } from "@/src/lib/components/ui/label";
 import { Loader } from "@/src/lib/components/ui/loader";
 import { Textarea } from "@/src/lib/components/ui/textarea";
+import { useThirdwebWalletAuth } from "@/src/lib/hooks/use-thirdweb-wallet-auth";
 import Logo from "./Logo";
 
 interface DashboardProtectorProps {
@@ -34,7 +34,7 @@ interface DashboardProtectorProps {
 export default function DashboardProtector({
 	children,
 }: DashboardProtectorProps) {
-	const { ready, authenticated } = usePrivy();
+	const { ready, authenticated } = useThirdwebWalletAuth();
 	const { wallet } = useFilosignContext();
 	const isRegistered = useIsRegistered();
 	const isLoggedIn = useIsLoggedIn();

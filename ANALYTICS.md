@@ -51,7 +51,7 @@ Every server event includes `chain` and `service: "filosign-server"`.
 
 In `FilosignAnalyticsProvider`: autocapture, pageviews, pageleave, and **session replay** are **disabled** — only listed client events are sent.
 
-Privy sign-in must go through [`usePrivyLogin`](apps/client/src/lib/hooks/use-privy-login.ts) (not raw `usePrivy().login`) so first-time Privy signups emit `wallet_signup`.
+Wallet sign-in must go through [`useThirdwebLogin`](apps/client/src/lib/hooks/use-thirdweb-login.ts) (thirdweb Connect modal) so first-time wallet connects emit `wallet_signup`.
 
 ---
 
@@ -97,7 +97,7 @@ Defined in [`packages/react-sdk/src/analytics/events.ts`](packages/react-sdk/src
 
 | Event | `piece_cid` | When | Properties |
 | --- | --- | --- | --- |
-| `wallet_signup` | — | First Privy account created (`usePrivyLogin` `onComplete`, `isNewUser`) | `login_method` (e.g. `google`, `email`) |
+| `wallet_signup` | — | First thirdweb wallet connect in session (`useThirdwebLogin`) | — |
 | `onboarding_completed` | If cold-invite URL | Welcome step done | — |
 | `envelope_compose_submitted` | — | Create step submitted | `recipient_count` |
 | `envelope_send_clicked` | — | Send started | `recipient_count` |
@@ -126,7 +126,7 @@ Do not start with `cold_invite_created` (that event is on the sender).
 1. `cold_invite_created`
 2. `envelope_fully_signed`
 
-**New user — Privy → Filosign setup**
+**New user — wallet → Filosign setup**
 
 1. `wallet_signup` (client)
 2. `onboarding_completed` (optional cold `piece_cid`)

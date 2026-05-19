@@ -34,7 +34,7 @@ docs/                 Local-only notes (gitignored)
 
 FiloSign has five main layers:
 
-- **Client app:** React 19, TanStack Router, TanStack Query, Privy, Wagmi, Viem, Tailwind, Radix UI, and Motion.
+- **Client app:** React 19, TanStack Router, TanStack Query, thirdweb (embedded wallet + Connect UI), Wagmi, Viem, Tailwind, Radix UI, and Motion.
 - **API server:** Bun + Hono service for auth, users, files, sharing, uploads, indexing, and server-side protocol actions.
 - **React SDK:** Hooks and provider logic for authentication, file workflows, sharing approvals, signing, and profiles.
 - **Contracts:** Protocol contracts for sender approvals, key registration, file registration, signer records, and incentive escrow.
@@ -83,7 +83,7 @@ Shared validation schemas and product data helpers.
 - Postgres
 - S3-compatible object storage
 - EVM private keys for protocol transactions and storage flows
-- Privy app ID
+- thirdweb client ID (client) and secret key (server)
 
 ## Setup
 
@@ -134,6 +134,8 @@ Server configuration is defined in `apps/server/env.ts`. The main required value
 - `EVM_PRIVATE_KEY_SERVER`
 - `EVM_PRIVATE_KEY_SYNAPSE`
 - `JWT_SECRET`
+- `THIRDWEB_CLIENT_ID` — same value as client `VITE_THIRDWEB_CLIENT_ID`
+- `THIRDWEB_SECRET_KEY` — project secret key (server only)
 - `S3_ACCESS_KEY_ID`
 - `S3_SECRET_ACCESS_KEY`
 - `S3_BUCKET`
@@ -141,7 +143,7 @@ Server configuration is defined in `apps/server/env.ts`. The main required value
 - `TG_ANALYTICS_BOT_GROUP_ID`
 - `TG_ANALYTICS_BOT_TOKEN`
 
-Client (`apps/client/.env.example`): `VITE_SERVER_URL`, `VITE_ASTRO_URL`, `VITE_PRIVY_APP_ID`, `VITE_CHAIN`.
+Client (`apps/client/.env.example`): `VITE_SERVER_URL`, `VITE_ASTRO_URL`, `VITE_THIRDWEB_CLIENT_ID`, `VITE_CHAIN`.
 
 Astro (`apps/astro/.env.example`): `PUBLIC_ASTRO_URL`, `PUBLIC_CLIENT_URL`, `PUBLIC_SERVER_URL`.
 

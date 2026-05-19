@@ -1,16 +1,17 @@
 import { useFilosignContext } from "@filosign/react";
 import { useColdInvitePayload } from "@filosign/react/files";
 import { useUserProfile } from "@filosign/react/users";
-import { usePrivy } from "@privy-io/react-auth";
 import { useRouterState } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { useThirdwebConnection } from "@/src/lib/hooks/use-thirdweb-connection";
+import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
 import {
 	coldInviteRecipientMatchesIdentity,
 	parseColdInviteFromLocationSearch,
 } from "@/src/lib/routing/cold-invite-search";
 
 /**
- * When the URL carries a cold-invite token and the user is logged in, compares Privy
+ * When the URL carries a cold-invite token and the user is logged in, compares wallet
  * (email + Google) and Filosign profile email to invite recipients (and sender wallet).
  */
 export function useColdInviteRecipientWarning() {
@@ -39,15 +40,20 @@ export function useColdInviteRecipientWarning() {
 	}, [searchKey]);
 	const inviteToken = cold?.coldInvite;
 
-	const { authenticated, user } = usePrivy();
+	const { authenticated } = useThirdwebConnection();
+	const { user, email: walletEmail } = useThirdwebUserInfo();
 	const { data: userProfile } = useUserProfile();
 	const { wallet } = useFilosignContext();
 
 	const { data: invite, isSuccess } = useColdInvitePayload(inviteToken);
 
 	const loggedInEmail = useMemo(
-		() => user?.email?.address?.trim() || user?.google?.email?.trim() || "",
-		[user?.email?.address, user?.google?.email],
+		() =>
+			walletEmail ||
+			user?.email?.address?.trim() ||
+			user?.google?.email?.trim() ||
+			"",
+		[walletEmail, user?.email?.address, user?.google?.email],
 	);
 
 	const signedInEmailForUi = loggedInEmail || userProfile?.email?.trim() || "";

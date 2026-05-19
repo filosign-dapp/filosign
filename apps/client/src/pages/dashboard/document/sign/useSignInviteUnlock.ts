@@ -15,14 +15,15 @@ import {
 } from "@filosign/react/files";
 import { fetchUserProfile, useUserProfile } from "@filosign/react/users";
 import { buildClaimKemPayload } from "@filosign/react/utils";
-import { usePrivy } from "@privy-io/react-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getAddress, type Hex } from "viem";
-import { usePrivyLoginAction } from "@/src/lib/hooks/use-privy-login";
 import { useStorePersist } from "@/src/lib/hooks/use-store";
+import { useThirdwebLoginAction } from "@/src/lib/hooks/use-thirdweb-login";
+import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
+import { useThirdwebWalletAuth } from "@/src/lib/hooks/use-thirdweb-wallet-auth";
 import { coldInviteRecipientMatchesIdentity } from "@/src/lib/routing/cold-invite-search";
 import { executeSwitchAccountLogout } from "@/src/pages/onboarding/_components/OnboardingSwitchAccountLink";
 
@@ -35,8 +36,13 @@ export function useSignInviteUnlock(args: {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const { rpc, session, wallet, rpcQuery } = useFilosignContext();
-	const { ready, authenticated, logout: logoutPrivy, user } = usePrivy();
-	const login = usePrivyLoginAction();
+	const {
+		ready,
+		authenticated,
+		logout: logoutWallet,
+	} = useThirdwebWalletAuth();
+	const { user } = useThirdwebUserInfo();
+	const login = useThirdwebLoginAction();
 	const { data: userProfile } = useUserProfile();
 	const sdkLogin = useLogin();
 	const logoutFilosign = useLogout();
@@ -59,7 +65,7 @@ export function useSignInviteUnlock(args: {
 	const [tryingWalletUnlock, setTryingWalletUnlock] = useState(false);
 	const [showFilosignRecovery, setShowFilosignRecovery] = useState(false);
 	const walletUnlockStartedRef = useRef(false);
-	const autoPrivyLoginRef = useRef(false);
+	const autoWalletLoginRef = useRef(false);
 
 	const resetWizardAfterSwitchAccount = useCallback(() => {
 		setPhrase("");
@@ -68,13 +74,13 @@ export function useSignInviteUnlock(args: {
 		setTryingWalletUnlock(false);
 		setShowFilosignRecovery(false);
 		walletUnlockStartedRef.current = false;
-		autoPrivyLoginRef.current = false;
+		autoWalletLoginRef.current = false;
 	}, []);
 
 	useEffect(() => {
-		if (!active || !invite || authenticated || autoPrivyLoginRef.current)
+		if (!active || !invite || authenticated || autoWalletLoginRef.current)
 			return;
-		autoPrivyLoginRef.current = true;
+		autoWalletLoginRef.current = true;
 		void login();
 	}, [active, invite, authenticated, login]);
 
@@ -83,7 +89,7 @@ export function useSignInviteUnlock(args: {
 			clearOnboardingForm,
 			wallet,
 			logoutFilosign,
-			logoutPrivy,
+			logoutWallet,
 			navigate,
 			stayAfterLogout: true,
 			onStayAfterLogout: resetWizardAfterSwitchAccount,
@@ -92,7 +98,7 @@ export function useSignInviteUnlock(args: {
 		clearOnboardingForm,
 		wallet,
 		logoutFilosign,
-		logoutPrivy,
+		logoutWallet,
 		navigate,
 		resetWizardAfterSwitchAccount,
 	]);

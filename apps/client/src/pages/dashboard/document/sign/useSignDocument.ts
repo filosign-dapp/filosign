@@ -18,7 +18,6 @@ import {
 	normalizePlacementRecipientEmail,
 	zPlacementManifest,
 } from "@filosign/shared";
-import { usePrivy } from "@privy-io/react-auth";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -27,6 +26,7 @@ import {
 	erc20DisplayForChain,
 	SUPPORTED_TOKENS,
 } from "@/src/constants";
+import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
 import { buildColdInviteMagicLink } from "@/src/lib/routing/cold-invite-search";
 import {
 	buildCompliancePdfOnly,
@@ -42,7 +42,7 @@ export function useSignDocument() {
 	const search = useSearch({ from: "/dashboard/document/sign/" });
 	const pieceCid = search.pieceCid;
 
-	const { user } = usePrivy();
+	const { user } = useThirdwebUserInfo();
 	const { contracts } = useFilosignContext();
 	const {
 		data: file,
@@ -62,8 +62,8 @@ export function useSignDocument() {
 		if (row && typeof row === "object" && row.email?.trim()) {
 			return normalizePlacementRecipientEmail(row.email);
 		}
-		const privy = user?.email?.address?.trim();
-		if (privy) return normalizePlacementRecipientEmail(privy);
+		const walletEmail = user?.email?.address?.trim();
+		if (walletEmail) return normalizePlacementRecipientEmail(walletEmail);
 		return null;
 	}, [userProfile?.email, file?.signers, signerAddress, user?.email?.address]);
 

@@ -2,8 +2,10 @@ import {
 	buildRegistrationEmailCommitments,
 	computePlacementCommitment,
 	hashNormalizedSignerEmail,
+	hashOrgIdCommitment,
 	hashPrivySubjectCommitment,
 	normalizePlacementRecipientEmail,
+	ZERO_ORG_ID_COMMITMENT,
 	zPlacementManifest,
 } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
@@ -25,6 +27,7 @@ import {
 	coldInviteExpiry,
 	normalizedViewerEmailsForRegister,
 } from "@/lib/domain/file-invites";
+import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domain/orgs";
 import {
 	sendColdDocumentInviteEmail,
 	sendDocumentReceivedEmail,
@@ -68,9 +71,16 @@ export const zFileRegisterBody = z.object({
 			}),
 		)
 		.optional(),
+	organizationId: z.uuid().optional(),
+	orgKemCiphertext: zHexString().optional(),
+	orgEncryptedEncryptionKey: zHexString().optional(),
 });
 
-export async function filesRegister(sender: Address, rawBody: unknown) {
+export async function filesRegister(
+	sender: Address,
+	rawBody: unknown,
+	activeOrg: ActiveOrgContext | null = null,
+) {
 	const parsedBody = zFileRegisterBody.safeParse(rawBody);
 	if (parsedBody.error) {
 		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });
@@ -86,7 +96,29 @@ export async function filesRegister(sender: Address, rawBody: unknown) {
 		placementCommitment,
 		placementManifest: placementManifestRaw,
 		coldInvites = [],
+		organizationId,
+		orgKemCiphertext,
+		orgEncryptedEncryptionKey,
 	} = parsedBody.data;
+
+	if (organizationId) {
+		if (!activeOrg || activeOrg.organizationId !== organizationId) {
+			throw new ORPCError("FORBIDDEN", {
+				message: "Organization context required for org send",
+			});
+		}
+		assertOrgPermission(activeOrg, "documents:send");
+		if (!orgKemCiphertext || !orgEncryptedEncryptionKey) {
+			throw new ORPCError("BAD_REQUEST", {
+				message:
+					"Org send requires orgKemCiphertext and orgEncryptedEncryptionKey",
+			});
+		}
+	}
+
+	const orgIdCommitment = organizationId
+		? hashOrgIdCommitment(organizationId)
+		: ZERO_ORG_ID_COMMITMENT;
 
 	const parsedManifest = zPlacementManifest.safeParse(placementManifestRaw);
 	if (!parsedManifest.success) {
@@ -144,6 +176,7 @@ export async function filesRegister(sender: Address, rawBody: unknown) {
 			viewerEmailCommitmentsSorted,
 			senderEmailCommitment,
 			senderPrivySubjectCommitment,
+			orgIdCommitment,
 			BigInt(timestamp),
 			signature,
 			placementCommitment,
@@ -159,7 +192,7 @@ export async function filesRegister(sender: Address, rawBody: unknown) {
 		throw new ORPCError("BAD_REQUEST", { message: "Invalid signature" });
 	}
 
-	const fileExists = bucket.exists(`uploads/${pieceCid}`);
+	const fileExists = await bucket.exists(`uploads/${pieceCid}`);
 	if (!fileExists) {
 		throw new ORPCError("BAD_REQUEST", {
 			message: "File not found on storage",
@@ -168,7 +201,6 @@ export async function filesRegister(sender: Address, rawBody: unknown) {
 
 	const file = bucket.file(`uploads/${pieceCid}`);
 	if (file.size > MAX_FILE_SIZE) {
-		file.delete();
 		throw new ORPCError("PAYLOAD_TOO_LARGE", {
 			message: "File exceeds maximum allowed size",
 		});
@@ -176,12 +208,14 @@ export async function filesRegister(sender: Address, rawBody: unknown) {
 
 	const bytes = await file.arrayBuffer();
 	if (bytes.byteLength === 0) {
-		file.delete();
 		throw new ORPCError("BAD_REQUEST", { message: "Uploaded file is empty" });
 	}
 
 	const slotCounts = recipientSlotCounts({ participants, coldInvites });
-	const entitlementCtx = await resolveEntitlementContext(getAddress(sender));
+	const entitlementCtx = await resolveEntitlementContext(
+		getAddress(sender),
+		organizationId ?? null,
+	);
 	assertEntitlement(entitlementCtx, "documents.sent.monthly");
 	assertEntitlement(entitlementCtx, "envelope.recipients.max", {
 		requested: slotCounts.recipientSlotCount,
@@ -194,6 +228,7 @@ export async function filesRegister(sender: Address, rawBody: unknown) {
 		viewerEmailCommitmentsSorted,
 		senderEmailCommitment,
 		senderPrivySubjectCommitment,
+		orgIdCommitment,
 		BigInt(timestamp),
 		signature,
 		placementCommitment,
@@ -208,6 +243,10 @@ export async function filesRegister(sender: Address, rawBody: unknown) {
 				pieceCid,
 				status: "foc",
 				sender,
+				createdByWallet: getAddress(sender),
+				organizationId: organizationId ?? null,
+				orgKemCiphertext: orgKemCiphertext ?? null,
+				orgEncryptedEncryptionKey: orgEncryptedEncryptionKey ?? null,
 				onchainTxHash: txHash,
 				placementCommitment,
 				placementManifestJson: placementManifest,

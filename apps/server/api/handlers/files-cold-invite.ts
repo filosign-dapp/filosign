@@ -66,7 +66,7 @@ export async function filesColdInviteByToken(inviteToken: string) {
 	const recipientEmails = [...new Set(rows.map((r) => r.email))];
 
 	const key = `uploads/${row.pieceCid}`;
-	if (!bucket.exists(key)) {
+	if (!(await bucket.exists(key))) {
 		throw new ORPCError("NOT_FOUND", { message: "File not found" });
 	}
 

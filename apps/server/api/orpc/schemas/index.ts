@@ -1,5 +1,7 @@
 import {
+	rpcAuthLogoutOutputSchema,
 	rpcAuthNonceOutputSchema,
+	rpcAuthRefreshOutputSchema,
 	rpcAuthVerifyOutputSchema,
 } from "./auth-output";
 import { rpcBillingEntitlementsOutputSchema } from "./billing-output";
@@ -73,6 +75,8 @@ export const rpcOut = {
 	auth: {
 		nonce: rpcAuthNonceOutputSchema,
 		verify: rpcAuthVerifyOutputSchema,
+		refresh: rpcAuthRefreshOutputSchema,
+		logout: rpcAuthLogoutOutputSchema,
 	},
 	tx: {
 		processIndexerHash: rpcTxProcessIndexerHashOutputSchema,

@@ -42,7 +42,12 @@ console.log("runtime chain:", {
 const http = {
 	cors: {
 		origin: [env.CLIENT_URL, "http://localhost:3001", "http://localhost:3002"],
-		allowHeaders: ["Content-Type", "Authorization", "x-session-token"],
+		allowHeaders: [
+			"Content-Type",
+			"Authorization",
+			"X-Org-Id",
+			"x-session-token",
+		],
 		allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 		credentials: true,
 	},

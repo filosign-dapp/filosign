@@ -2,7 +2,13 @@ import { zHexString } from "@filosign/shared/zod";
 import type { RouterClient } from "@orpc/server";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
-import { authNonce, authVerify, zAuthVerifyBody } from "@/api/handlers/auth";
+import {
+	authLogout,
+	authNonce,
+	authRefresh,
+	authVerify,
+	zAuthVerifyBody,
+} from "@/api/handlers/auth";
 import { billingEntitlements } from "@/api/handlers/billing-handlers";
 import * as fileHandlers from "@/api/handlers/files";
 import {
@@ -50,11 +56,17 @@ export const appRouter = {
 		nonce: publicProcedure
 			.input(z.object({ address: z.string() }))
 			.output(out.auth.nonce)
-			.handler(({ input }) => authNonce(input.address)),
+			.handler(({ input, context }) => authNonce(input.address, context)),
 		verify: publicProcedure
 			.input(zAuthVerifyBody)
 			.output(out.auth.verify)
-			.handler(({ input }) => authVerify(input)),
+			.handler(({ input, context }) => authVerify(input, context)),
+		refresh: publicProcedure
+			.output(out.auth.refresh)
+			.handler(({ context }) => authRefresh(context)),
+		logout: publicProcedure
+			.output(out.auth.logout)
+			.handler(({ context }) => authLogout(context)),
 	},
 	tx: {
 		processIndexerHash: authenticatedProcedure
@@ -639,7 +651,7 @@ export const appRouter = {
 				.handler(({ context, input }) =>
 					userHandlers.userProfileLookup(context.userWallet, input.query),
 				),
-			syncPrivyEmail: authenticatedProcedure
+			syncThirdwebEmail: authenticatedProcedure
 				.input(z.record(z.string(), unk))
 				.output(out.users.profileSyncPrivyEmail)
 				.handler(({ context, input }) =>

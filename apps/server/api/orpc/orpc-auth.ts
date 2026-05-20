@@ -2,9 +2,13 @@ import { eq } from "drizzle-orm";
 import type { Context, Next } from "hono";
 import type { Address } from "viem";
 import env from "@/env";
+import {
+	authStore,
+	isAccessToken,
+	verifyJwt,
+} from "@/lib/platform/auth/instance";
 import db from "@/lib/platform/db";
 import { users } from "@/lib/platform/db/schema";
-import { verifyJwt } from "@/lib/platform/utils/jwt";
 import tryCatchSync, { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const ORPC_PATH_PREFIXES = ["/api/rpc", "/api/api-reference"] as const;
@@ -34,9 +38,17 @@ export async function optionalJwtWalletForOrpc(c: Context, next: Next) {
 	}
 
 	const payload = verified.data;
-	if (!payload?.sub) {
+	if (!payload?.sub || !isAccessToken(payload)) {
 		if (env.DEBUG) {
-			console.error("[orpc-auth] JWT missing sub");
+			console.error("[orpc-auth] JWT missing sub or invalid typ");
+		}
+		return next();
+	}
+
+	const revoked = await authStore.isAccessJtiRevoked(payload.jti);
+	if (revoked) {
+		if (env.DEBUG) {
+			console.error("[orpc-auth] JWT jti revoked");
 		}
 		return next();
 	}

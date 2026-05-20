@@ -24,7 +24,10 @@ Bun reads `.env*` automatically per [environment variables — Bun](https://bun.
 
 ## Scaling / limits
 
-- **Auth (`auth.nonce`):** nonces are **in-process** (`Record<Address, …>`). Safe for **one server process**. For **multiple replicas**, use Redis/Postgres or redesign the Dilithium handshake.
+- **Auth package:** [`@filosign/auth`](../../packages/auth) — JWT, refresh cookies, Dragonfly/Postgres store. Wired in [`lib/platform/auth/instance.ts`](lib/platform/auth/instance.ts).
+- **Dragonfly (recommended prod):** set `DRAGONFLY_URL=redis://…` for nonces, `jti` denylist, refresh rotation, and distributed rate limits.
+- **Postgres fallback:** omit `DRAGONFLY_URL` — uses `auth_nonces`, `jwt_revoked_jtis`, `refresh_sessions` (run `db:push` after schema changes). Audit events always in Postgres.
+- **Access JWT:** 30 min Bearer. **Refresh:** `filosign_refresh` httpOnly on `/api`, rotated on `auth.refresh`.
 - **`tx.processIndexerHash` input `{ hash, body? }`:** **`body: {}`** is valid for txs that only index FSManager logs; **`encryptionPublicKey` + `signaturePublicKey`** together (hex) for KeyRegistry registration. Shape is **`zIndexerTxBody`** in `lib/validation/tx-registration.ts`.
 
 ## Analytics (PostHog)

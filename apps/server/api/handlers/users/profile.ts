@@ -256,6 +256,11 @@ export async function userProfileSyncPrivyEmail(
 		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });
 	}
 
+	const [existing] = await db
+		.select({ email: users.email })
+		.from(users)
+		.where(eq(users.walletAddress, wallet));
+
 	const emailResult = await tryCatch(
 		verifiedThirdwebEmailForWallet(parsedBody.data.identityToken, wallet),
 	);
@@ -271,25 +276,29 @@ export async function userProfileSyncPrivyEmail(
 		return { updated: false as const };
 	}
 
+	const normalizedNew = email.trim().toLowerCase();
+	const normalizedCurrent = existing?.email?.trim().toLowerCase() ?? "";
+	if (normalizedCurrent === normalizedNew) {
+		return { updated: false as const, email };
+	}
+
 	await db.updateUserFieldWithLog({
 		walletAddress: wallet,
 		fieldName: "email",
 		newValue: email,
 	});
 
-	if (email?.trim()) {
-		const inviteRes = await tryCatch(
-			materializePendingInvitesForEmail({
-				walletAddress: wallet,
-				email: email,
-			}),
+	const inviteRes = await tryCatch(
+		materializePendingInvitesForEmail({
+			walletAddress: wallet,
+			email,
+		}),
+	);
+	if (inviteRes.error) {
+		console.error(
+			"materializePendingInvitesForEmail (sync-privy-email):",
+			inviteRes.error,
 		);
-		if (inviteRes.error) {
-			console.error(
-				"materializePendingInvitesForEmail (sync-privy-email):",
-				inviteRes.error,
-			);
-		}
 	}
 
 	return { updated: true as const, email };

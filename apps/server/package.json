@@ -19,6 +19,7 @@
 		"test": "bun test"
 	},
 	"dependencies": {
+		"@filosign/auth": "workspace:*",
 		"@filosign/contracts": "workspace:*",
 		"@filosign/crypto-utils": "workspace:*",
 		"@filosign/emails": "workspace:*",

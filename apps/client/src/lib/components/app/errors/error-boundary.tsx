@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Button } from "@/src/lib/components/ui/button";
+import { reportClientError } from "@/src/lib/utils/report-client-error";
 
 interface ErrorBoundaryProps {
 	children: ReactNode;
@@ -29,7 +30,10 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 	}
 
 	componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-		console.error("Error caught by ErrorBoundary:", error, errorInfo);
+		reportClientError(error, {
+			componentStack: errorInfo.componentStack,
+			source: "ErrorBoundary",
+		});
 		this.props.onError?.(error, errorInfo);
 	}
 
@@ -42,7 +46,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 			return (
 				<div className="relative overflow-hidden rounded-lg border border-destructive/20 bg-destructive/5 p-4 shadow-sm animate-in fade-in duration-300">
 					{/* Animated gradient line */}
-					<div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-destructive to-transparent animate-shimmer" />
+					<div className="absolute inset-x-0 top-0 h-[2px] bg-linear-to-r from-transparent via-destructive to-transparent animate-shimmer" />
 
 					<div className="flex items-start space-x-3">
 						<div className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive">

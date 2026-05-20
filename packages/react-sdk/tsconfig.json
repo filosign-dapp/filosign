@@ -17,7 +17,8 @@
 		"paths": {
 			"@/*": ["../../apps/server/*"],
 			"@/api/*": ["../../apps/server/api/*"],
-			"@/lib/*": ["../../apps/server/lib/*"],
+			"@/lib/platform/*": ["../../apps/server/lib/platform/*"],
+			"@/lib/domains/*": ["../../apps/server/lib/domains/*"],
 			"@/constants": ["../../apps/server/constants.ts"],
 			"@/config": ["../../apps/server/config.ts"],
 			"@/env": ["../../apps/server/env.ts"]

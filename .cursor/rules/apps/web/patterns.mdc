@@ -4,10 +4,10 @@ alwaysApply: true
 
 # Code patterns (Filosign)
 
-- Prefer reusable utils; extract on second use. Check existing **`lib/`** before adding helpers.
+- Prefer reusable utils; extract on second use. Server: **`@/lib/domains/`** (business), **`@/lib/platform/`** (infra), **`@/env`** / **`@/config`** / **`@/constants`** for app root modules — avoid `../../../` relative imports.
 - For unfamiliar libraries, skim current docs / examples rather than guessing APIs.
 - **Client:** tuple helpers **`safe`** / **`safeAsync`** ([`apps/client/src/lib/utils/safe.ts`](apps/client/src/lib/utils/safe.ts)) where neighbours use them; prefer that over silent failure.
-- **Server:** **`tryCatch` / `tryCatchSync`** ([`apps/server/lib/utils/tryCatch.ts`](apps/server/lib/utils/tryCatch.ts)) for fallible work; encode failures with **`respond.err`** ([`respond.ts`](apps/server/lib/utils/respond.ts)), not a project-wide **`ApiError`** / **`ErrorHandler`** pattern.
+- **Server:** **`tryCatch` / `tryCatchSync`** ([`apps/server/lib/platform/utils/tryCatch.ts`](apps/server/lib/platform/utils/tryCatch.ts)) for fallible work; encode failures with **`ORPCError`** in handlers (not a project-wide **`ApiError`** / **`ErrorHandler`** pattern).
 - **Hono:** **`createMiddleware`**, **`ctx.set`** for typed **Variables** (e.g. `userWallet`).
 - **React Query:** [`QueryClient`](apps/client/src/lib/context/query-client.tsx) mutation **`onError`** → **`toast`** by default—add local UX where a flow needs more than that.
 - **Types:** infer from Zod (**`z.input`**) and existing types; avoid duplicating shapes.

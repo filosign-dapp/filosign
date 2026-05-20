@@ -12,7 +12,8 @@
 		"paths": {
 			"@/*": ["./*"],
 			"@/api/*": ["../server/api/*"],
-			"@/lib/*": ["../server/lib/*"],
+			"@/lib/platform/*": ["../server/lib/platform/*"],
+			"@/lib/domains/*": ["../server/lib/domains/*"],
 			"@/constants": ["../server/constants.ts"],
 			"@/config": ["../server/config.ts"],
 			"@/env": ["../server/env.ts"]

@@ -39,7 +39,7 @@ Many events belong to one document envelope (IPFS piece CID). Those events inclu
 | Property `piece_cid` | Works on every PostHog plan — filter, breakdown, HogQL |
 | Group `envelope` | Same CID as group key; enables **group funnels** when Group analytics is enabled on your PostHog plan |
 
-**Server:** pass `pieceCid` to `trackServerEvent` ([`apps/server/lib/analytics/envelope.ts`](apps/server/lib/analytics/envelope.ts)).
+**Server:** pass `pieceCid` to `trackServerEvent` ([`apps/server/lib/platform/analytics/envelope.ts`](apps/server/lib/platform/analytics/envelope.ts)).
 
 **Client:** pass `piece_cid` in event properties when the CID is known; [`packages/react-sdk/src/analytics/context.tsx`](packages/react-sdk/src/analytics/context.tsx) also calls `posthog.group("envelope", …)` so group data is ready when you upgrade PostHog.
 
@@ -59,7 +59,7 @@ Wallet sign-in must go through [`useThirdwebLogin`](apps/client/src/lib/hooks/us
 
 | Path | Contents |
 | --- | --- |
-| [`apps/server/lib/analytics/`](apps/server/lib/analytics/) | `posthog-node`, `trackServerEvent`, `SERVER_ANALYTICS_EVENTS` |
+| [`apps/server/lib/platform/analytics/`](apps/server/lib/platform/analytics/) | `posthog-node`, `trackServerEvent`, `SERVER_ANALYTICS_EVENTS` |
 | [`packages/react-sdk/src/analytics/`](packages/react-sdk/src/analytics/) | Provider, hooks, `CLIENT_ANALYTICS_EVENTS` |
 
 Event names are defined in each package’s `events.ts`. Keep names stable; PostHog funnels reference them by string.
@@ -68,7 +68,7 @@ Event names are defined in each package’s `events.ts`. Keep names stable; Post
 
 ## Server events
 
-Defined in [`apps/server/lib/analytics/events.ts`](apps/server/lib/analytics/events.ts). Emitted with `trackServerEvent` from API handlers and jobs.
+Defined in [`apps/server/lib/platform/analytics/events.ts`](apps/server/lib/platform/analytics/events.ts). Emitted with `trackServerEvent` from API handlers and jobs.
 
 | Event | Person (`distinct_id`) | `piece_cid` | When | Properties |
 | --- | --- | --- | --- | --- |
@@ -171,5 +171,5 @@ Until Group analytics is on your plan, use `piece_cid` property filters above �
 
 ## Related
 
-- Server ops (cold invite cron): [`apps/server/README.md`](apps/server/README.md)
+- Server ops (cold invite `Bun.cron`): [`apps/server/lib/platform/cron/`](apps/server/lib/platform/cron/) · [`apps/server/README.md`](apps/server/README.md)
 - React SDK: [`packages/react-sdk/README.md`](packages/react-sdk/README.md)

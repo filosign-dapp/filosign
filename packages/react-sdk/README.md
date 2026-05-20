@@ -28,7 +28,7 @@ Deeper context: [`AGENTS.md`](../../AGENTS.md), [api-routes.mdc](../../.cursor/r
 
 **Owns:** browser RPC, React Query hooks, session seed, provider, **client PostHog** (`src/analytics/`). **Not:** Hono/DB, contracts source, page UI.
 
-**Analytics:** `FilosignAnalyticsProvider`, `useCaptureAppEvent`, `CLIENT_ANALYTICS_EVENTS` — see [`apps/server/lib/analytics/README.md`](../../apps/server/lib/analytics/README.md) (full catalog: server + client events).
+**Analytics:** `FilosignAnalyticsProvider`, `useCaptureAppEvent`, `CLIENT_ANALYTICS_EVENTS` — see [`apps/server/lib/platform/analytics/`](../../apps/server/lib/platform/analytics/) (full catalog: server + client events).
 
 ---
 

@@ -5,7 +5,7 @@ alwaysApply: false
 
 # Filosign API routes
 
-Backend: **`apps/server`**. **`/api`** is **oRPC** on **`/api/rpc`** and **OpenAPI UI** on **`/api/api-reference`** — see [`api/orpc/hono-mount.ts`](apps/server/api/orpc/hono-mount.ts). Procedure handlers live under [`api/handlers/*`](apps/server/api/handlers/) and compose [`api/orpc/router.ts`](apps/server/api/orpc/router.ts). [`api/routes/router.ts`](apps/server/api/routes/router.ts) mounts only **JWT optional auth** + hybrid middleware (no REST JSON carve-outs). Details in **[`AGENTS.md`](AGENTS.md)**.
+Backend: **`apps/server`**. **`/api`** is **oRPC** on **`/api/rpc`** and **OpenAPI UI** on **`/api/api-reference`** — [`api/orpc/hono-mount.ts`](apps/server/api/orpc/hono-mount.ts) exports **`apiRouter`** (optional JWT + hybrid handler). Procedure handlers live under [`api/handlers/*`](apps/server/api/handlers/) and compose [`api/orpc/router.ts`](apps/server/api/orpc/router.ts) (`appRouter`). Business rules: [`lib/domains/*`](apps/server/lib/domains/). Infra (db, evm, s3, indexer): [`lib/platform/*`](apps/server/lib/platform/). Details in **[`AGENTS.md`](AGENTS.md)**.
 
 ## Conventions
 

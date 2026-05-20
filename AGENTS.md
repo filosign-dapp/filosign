@@ -36,7 +36,7 @@ Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).
 
 ## Flow
 
-`definitions/` ← deploy ← `.sol` → `getContracts` ([services/contracts.ts](apps/contracts/services/contracts.ts)) → server `[lib/evm.ts](apps/server/lib/evm.ts)` + SDK `[FilosignProvider](packages/react-sdk/src/context/FilosignProvider.tsx)` (`rpc.runtime` → `chainKey` + wagmi) → hooks → client pages. Typed RPC: `[create-orpc-client.ts](packages/react-sdk/src/orpc/create-orpc-client.ts)` → `{apiBase}/api/rpc`. Client shell: `[filosign-provider.tsx](apps/client/src/lib/context/filosign-provider.tsx)` (WASM, wagmi, `VITE_SERVER_URL`). `@filosign/shared` → server, SDK, client; `@filosign/crypto-utils` → SDK, contracts.
+`definitions/` ← deploy ← `.sol` → `getContracts` ([services/contracts.ts](apps/contracts/services/contracts.ts)) → server `[lib/platform/evm.ts](apps/server/lib/platform/evm.ts)` + SDK `[FilosignProvider](packages/react-sdk/src/context/FilosignProvider.tsx)` (`rpc.runtime` → `chainKey` + wagmi) → hooks → client pages. Typed RPC: `[create-orpc-client.ts](packages/react-sdk/src/orpc/create-orpc-client.ts)` → `{apiBase}/api/rpc`. Client shell: `[filosign-provider.tsx](apps/client/src/lib/context/filosign-provider.tsx)` (WASM, wagmi, `VITE_SERVER_URL`). `@filosign/shared` → server, SDK, client; `@filosign/crypto-utils` → SDK, contracts.
 
 ## Boundaries
 
@@ -47,7 +47,7 @@ Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).
 
 ## API & oRPC
 
-Mount: `[api/routes/router.ts](apps/server/api/routes/router.ts)` — `optionalJwtWalletForOrpc` + hybrid middleware; **JSON API = `/api/rpc`** only ([router](apps/server/api/orpc/router.ts), [handlers](apps/server/api/handlers/)). Domain logic: `lib/domain/`. Runtime loader: `[platform-runtime](apps/server/lib/domain/platform-runtime.ts)`; config `[config.ts](apps/server/config.ts)`. Detail: [api-routes.mdc](.cursor/rules/apps/web/api-routes.mdc).
+Mount: [`api/orpc/hono-mount.ts`](apps/server/api/orpc/hono-mount.ts) (`apiRouter`) — `optionalJwtWalletForOrpc` + hybrid middleware; **JSON API = `/api/rpc`** only ([`router.ts`](apps/server/api/orpc/router.ts) `appRouter`, [handlers](apps/server/api/handlers/)). Domain logic: [`lib/domains/`](apps/server/lib/domains/). Runtime loader: [`lib/domains/runtime`](apps/server/lib/domains/runtime/); shared infra: [`lib/platform/`](apps/server/lib/platform/). Config: [`config.ts`](apps/server/config.ts). Detail: [api-routes.mdc](.cursor/rules/apps/web/api-routes.mdc).
 
 - **Outputs:** Concrete Zod `.output` per procedure in `[api/orpc/schemas/](apps/server/api/orpc/schemas/)` (not `z.unknown()`).
 - `**createORPCClient` is a Proxy** — never put `rpc` in TanStack `queryKey`/deep-stringified payloads (use primitives); `JSON.stringify` can hit `toJSON` → bogus RPC.

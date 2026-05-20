@@ -28,16 +28,50 @@ routes/<segment>/.../
 
 No other top-level files or folders (`hooks/`, `components/`, loose `*.ts` siblings).
 
-### Lift rule (shared vs route-local)
+### Lift rule (`lib/` vs route-local)
 
 | Used by | Put it in |
 |---------|-----------|
 | One route tree only | That route's `-components/` or `-lib/` |
-| 2+ unrelated route trees | `lib/components/shared/`, `lib/hooks/`, or `lib/features/<domain>/` |
-| Design system | `lib/components/ui/` |
-| App infra (providers, wagmi, query client) | `lib/context/` |
+| 2+ unrelated route trees | `lib/domains/<context>/` (server-aligned UX slices) |
+| Design system (shadcn) | `lib/components/ui/` — **do not move**; imported everywhere |
+| Wallet / SDK bootstrap | `lib/web3/`, `lib/filosign/`, `lib/auth/` |
+| Pure helpers | `lib/utils/` |
+| App chrome / media | `lib/components/app/{chrome,errors,media}/` |
 
-**`lib/` must not import from `routes/`.** **`routes/` must not import from deleted `pages/`.**
+**`lib/` must not import from `routes/`.** Types shared with Zustand live in `lib/domains/files/envelope-form-types.ts` (routes re-export).
+
+### `lib/` layout (integration + domains)
+
+```
+lib/
+  components/ui/          # shadcn primitives (unchanged path)
+  utils/                  # cn, safe, logger, use-mobile, …
+  components/
+    ui/                   # shadcn primitives (unchanged)
+    app/                  # chrome, errors, media
+  web3/
+    config/               # thirdweb client, chains, in-app-wallet, modal options
+    bridge/               # wagmi-thirdweb-sync, use-sync-wagmi-thirdweb
+    providers/            # wagmi-provider, thirdweb-provider
+    hooks/                # use-thirdweb-*, connect-button, wallet-top-up
+  filosign/               # filosign-provider, query-client, persisted-active-org, use-store
+  auth/                   # dashboard-protector, connect-button, profile-email-sync
+  domains/                # cross-route product UX (mirror server contexts)
+    files/                # pdf, file-viewer, compliance-pdf, placement-viewport, decrypt hooks
+    invites/              # cold-invite-search, cold-share-dialog, recipient warning
+    entitlements/         # plan hint, upgrade dialog
+    sharing/              # add-recipient-dialog
+```
+
+| Domain | Path | Notes |
+|--------|------|--------|
+| Files | `lib/domains/files/` | PDF preview, modal viewer, compliance PDF export, placement math |
+| Invites | `lib/domains/invites/` | Cold invite URL schema, share dialog, identity warning |
+| Entitlements | `lib/domains/entitlements/` | Billing UI hints (envelope create) |
+| Sharing | `lib/domains/sharing/` | Add-recipient dialog (connections) |
+
+**Import examples:** `@/src/lib/web3/hooks/use-thirdweb-login`, `@/src/lib/domains/files/pdf/pdf-js-preview`, `@/src/lib/components/app/chrome/logo`, `@/src/lib/filosign/use-store`.
 
 ## UI / logic split
 
@@ -52,13 +86,28 @@ Avoid boolean prop walls; use `Pick<Controller, "…">` or route-scoped context 
 
 **Reference routes:** [`envelope/create/add-sign/`](src/routes/dashboard/envelope/create/add-sign/) (`use-controller` → `AddSign.*` → context slices) · [`document/sign/`](src/routes/dashboard/document/sign/) (`use-controller` → `Sign.*` → `useSignViewer`, `useSignPlacement`, etc.).
 
+### Composition patterns (when to use what)
+
+| Pattern | Use when | Example |
+|---------|----------|---------|
+| **`use-*-controller` + thin `index.tsx`** | Default for any route with queries, mutations, or multi-step handlers | `connections`, `team`, `document/all`, `envelope/create` |
+| **`-components/page.tsx` + `controller` prop** | Presentational shell; keeps `index.tsx` ≤ ~15 LOC | `TeamSettingsPage`, `DocumentsAllPage` |
+| **Route context + slice hooks** | 3+ siblings need the same data without prop drilling | `add-sign`, `sign` (`useAddSignViewer`, `useSignPlacement`) |
+| **Compound `ui.tsx` (`AddSign.*`, `Sign.*`)** | Fixed layout slots; ergonomic JSX at page composer | add-sign, sign |
+| **Colocated `useState` in leaf** | Dialog open, tab, hover — one component only | `isFilterOpen` in document/all controller is OK; dialog open in a leaf is better local |
+| **`Pick<Controller, …>` on children** | Avoid — prefer context slices or pass `controller` once to `page` | Legacy; do not extend |
+
+**Decision tree:** Start with **controller + page**. Add **context** when siblings would need >8 props or duplicated `Pick` types. Add **compound `ui.tsx`** only when the page layout is stable and slot names help readability (PDF flows).
+
+**Routes refactored:** dashboard shell (`connections`, `team`, `document/all`, `envelope/create`, `signature/create`, `profile`) · flows (`add-sign`, `sign`) · auth (`/` sign-in, `invite/$inviteId`, `onboarding/`, `onboarding/welcome`, `onboarding/create-signature` reuses signature route).
+
 ## State
 
 | Kind | Tool |
 |------|------|
 | Server | `@filosign/react` + React Query |
 | URL | TanStack Router `search` / `params` |
-| Cross-route persist | Zustand (`lib/hooks/use-store.ts`) — minimize |
+| Cross-route persist | Zustand (`lib/filosign/use-store.ts`) — minimize |
 | Wizard / deep tree | `-lib/context/` |
 | Dashboard chrome | Pathless layout `dashboard/_shell/` |
 | Ephemeral UI | `useState` in leaf `-components` |

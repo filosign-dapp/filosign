@@ -1,6 +1,10 @@
 import { CaretLeftIcon } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
+import {
+	FullBleedMain,
+	FullBleedPageHeader,
+} from "@/src/lib/components/app/chrome/full-bleed-page-header";
 import Logo from "@/src/lib/components/app/chrome/logo";
 import { Button } from "@/src/lib/components/ui/button";
 import { Form } from "@/src/lib/components/ui/form";
@@ -14,7 +18,7 @@ export function ProfileSettingsPage() {
 
 	return (
 		<div className="min-h-screen">
-			<header className="flex sticky top-0 z-50 justify-between items-center px-8 h-16 border-b glass bg-background/50 border-border">
+			<FullBleedPageHeader>
 				<div className="flex gap-4 items-center">
 					<Logo
 						className="px-0"
@@ -34,11 +38,11 @@ export function ProfileSettingsPage() {
 						Profile Settings
 					</motion.h3>
 				</div>
-			</header>
+			</FullBleedPageHeader>
 
 			<Form {...form}>
 				<form>
-					<main className="p-8 mx-auto max-w-xl space-y-8 flex flex-col items-center justify-center min-h-[calc(100dvh-4rem)]">
+					<FullBleedMain className="max-w-xl space-y-8 flex flex-col items-center justify-center">
 						<Button
 							variant="ghost"
 							size="lg"
@@ -65,7 +69,7 @@ export function ProfileSettingsPage() {
 							<PersonalInfoSection />
 							<LinkedAccountsSection />
 						</motion.div>
-					</main>
+					</FullBleedMain>
 				</form>
 			</Form>
 		</div>

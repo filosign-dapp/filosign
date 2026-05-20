@@ -15,6 +15,7 @@ import {
 	useWalletDetailsModal,
 } from "thirdweb/react";
 import type { Profile } from "thirdweb/wallets";
+import { useReconcileThirdwebEmail } from "@/src/lib/auth/reconcile-thirdweb-email";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Card,
@@ -102,6 +103,7 @@ export function LinkedAccountsSection() {
 	const { mutateAsync: unlinkProfile } = useUnlinkProfile();
 	const { data: profile } = useUserProfile();
 	const setPrimary = useSetPrimaryEmail();
+	const reconcileThirdwebEmail = useReconcileThirdwebEmail();
 
 	const connections = rowsFromProfiles(profiles);
 	const primaryNormalized = profile?.email?.trim().toLowerCase() ?? "";
@@ -132,6 +134,7 @@ export function LinkedAccountsSection() {
 				client: thirdwebClient,
 				profileToUnlink: row.profile,
 			});
+			await reconcileThirdwebEmail();
 			toast.success(
 				row.kind === "email"
 					? "Email sign-in removed."
@@ -178,10 +181,17 @@ export function LinkedAccountsSection() {
 							<DropdownMenuItem
 								className="gap-2 cursor-pointer text-muted-foreground focus:text-foreground"
 								onClick={() =>
-									linkProfile({
-										client: thirdwebClient,
-										strategy: "google",
-									})
+									linkProfile(
+										{
+											client: thirdwebClient,
+											strategy: "google",
+										},
+										{
+											onSuccess: () => {
+												void reconcileThirdwebEmail();
+											},
+										},
+									)
 								}
 							>
 								<GoogleLogoIcon className="size-4 opacity-70" />

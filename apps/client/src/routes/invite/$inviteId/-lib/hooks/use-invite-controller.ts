@@ -1,5 +1,6 @@
 import { useFilosignContext } from "@filosign/react";
 import { useAuthedApi, useIsRegistered } from "@filosign/react/auth";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -23,48 +24,51 @@ export type InviteView =
 	| "auto-claiming"
 	| "signup";
 
+const inviteByIdSchema = z.object({
+	inviteeEmail: z.string(),
+	senderName: z.string(),
+	message: z.string().nullable(),
+});
+
 export function useInviteController() {
 	const { inviteId } = useParams({ from: "/invite/$inviteId/" });
 	const { ready, authenticated } = useThirdwebWalletAuth();
 	const { login } = useThirdwebLogin();
-	const { rpc, ready: filosignReady } = useFilosignContext();
+	const { rpcQuery, ready: filosignReady } = useFilosignContext();
 	const { data: auth } = useAuthedApi();
 	const navigate = useNavigate();
 	const isRegistered = useIsRegistered();
 
-	const [inviteData, setInviteData] = useState<InviteData | null>(null);
-	const [isLoading, setIsLoading] = useState(true);
 	const [isClaiming, setIsClaiming] = useState(false);
 	const [claimSuccess, setClaimSuccess] = useState(false);
 
+	const inviteQuery = useQuery({
+		...rpcQuery.sharing.inviteById.queryOptions({
+			input: { id: inviteId ?? "" },
+		}),
+		enabled: filosignReady && !!inviteId,
+	});
+
+	const inviteData: InviteData | null = (() => {
+		if (!inviteQuery.data) return null;
+		try {
+			const data = inviteByIdSchema.parse(inviteQuery.data);
+			return {
+				inviteeEmail: data.inviteeEmail,
+				senderName: data.senderName,
+				message: data.message ?? undefined,
+			};
+		} catch {
+			return null;
+		}
+	})();
+
 	useEffect(() => {
-		const fetchInvite = async () => {
-			if (!filosignReady || !inviteId) return;
-
-			try {
-				const data = z
-					.object({
-						inviteeEmail: z.string(),
-						senderName: z.string(),
-						message: z.string().nullable(),
-					})
-					.parse(await rpc.sharing.inviteById({ id: inviteId }));
-
-				setInviteData({
-					inviteeEmail: data.inviteeEmail,
-					senderName: data.senderName,
-					message: data.message ?? undefined,
-				});
-			} catch (error) {
-				logger.error("Failed to fetch invite:", error);
-				toast.error("Invalid or expired invite link");
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		void fetchInvite();
-	}, [rpc, filosignReady, inviteId]);
+		if (inviteQuery.isError) {
+			logger.error("Failed to fetch invite:", inviteQuery.error);
+			toast.error("Invalid or expired invite link");
+		}
+	}, [inviteQuery.isError, inviteQuery.error]);
 
 	useEffect(() => {
 		const claimInvite = async () => {
@@ -121,8 +125,10 @@ export function useInviteController() {
 		void navigate({ to: "/onboarding" });
 	};
 
+	const isLoading = inviteQuery.isLoading || !ready;
+
 	const view: InviteView = (() => {
-		if (isLoading || !ready) return "boot";
+		if (isLoading) return "boot";
 		if (claimSuccess) return "success";
 		if (isClaiming) return "claiming";
 		if (authenticated && isRegistered.isPending) return "checking-account";

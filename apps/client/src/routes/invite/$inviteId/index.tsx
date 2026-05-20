@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { RoutePendingFallback } from "@/src/lib/components/app/suspense";
 import { InvitePage } from "./-components/page";
 import { InviteProvider } from "./-lib/context/context";
 import { useInviteController } from "./-lib/hooks/use-invite-controller";
@@ -14,4 +15,5 @@ function InviteRoutePage() {
 
 export const Route = createFileRoute("/invite/$inviteId/")({
 	component: InviteRoutePage,
+	pendingComponent: RoutePendingFallback,
 });

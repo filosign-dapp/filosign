@@ -4,7 +4,11 @@ import { getAddress } from "viem";
 import { Image } from "@/src/lib/components/app/media/image";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
-import { Input } from "@/src/lib/components/ui/input";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from "@/src/lib/components/ui/input-group";
 import { TabsContent } from "@/src/lib/components/ui/tabs";
 import { cn } from "@/src/lib/utils/index";
 import {
@@ -37,19 +41,21 @@ export function ContactsTab() {
 				<p className="text-xs text-muted-foreground">
 					{contacts.length} {contacts.length === 1 ? "recipient" : "recipients"}
 				</p>
-				<div className="relative w-full max-w-xs">
-					<MagnifyingGlassIcon
-						className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-						weight="regular"
-					/>
-					<Input
+				<InputGroup className="h-8 w-full max-w-xs border-border/80 bg-transparent">
+					<InputGroupAddon align="inline-start">
+						<MagnifyingGlassIcon
+							className="size-4 text-muted-foreground"
+							weight="regular"
+						/>
+					</InputGroupAddon>
+					<InputGroupInput
 						type="search"
 						placeholder="Search…"
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
-						className="h-8 border-border/80 bg-transparent pl-8 text-sm"
+						className="text-sm"
 					/>
-				</div>
+				</InputGroup>
 			</div>
 
 			<div className={tableWrap}>

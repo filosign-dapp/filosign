@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import * as t from "drizzle-orm/pg-core";
 import { randomUuidV7 } from "@/lib/db/random-uuid-v7";
 import { tBytes32, tEvmAddress, tHex, timestamps } from "../helpers";
+import { organizations } from "./organization";
 import { users } from "./user";
 
 export const coldInviteStatuses = [
@@ -21,6 +22,14 @@ export const files = t.pgTable(
 		sender: tEvmAddress()
 			.notNull()
 			.references(() => users.walletAddress),
+		createdByWallet: tEvmAddress()
+			.notNull()
+			.references(() => users.walletAddress),
+		organizationId: t
+			.uuid()
+			.references(() => organizations.id, { onDelete: "set null" }),
+		orgKemCiphertext: tHex(),
+		orgEncryptedEncryptionKey: tHex(),
 
 		status: t.text({ enum: ["s3", "foc", "unpaid_for", "invalid"] }).notNull(),
 		onchainTxHash: tBytes32().unique().notNull(),
@@ -38,6 +47,7 @@ export const files = t.pgTable(
 	(table) => [
 		t.index("idx_files_owner").on(table.sender),
 		t.index("idx_files_sender_created").on(table.sender, table.createdAt),
+		t.index("idx_files_organization").on(table.organizationId),
 	],
 );
 

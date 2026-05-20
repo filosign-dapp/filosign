@@ -2,6 +2,14 @@ import * as t from "drizzle-orm/pg-core";
 import { randomUuidV7 } from "@/lib/db/random-uuid-v7";
 import { tEvmAddress, timestamps } from "../helpers";
 
+export const userInviteStatuses = [
+	"pending",
+	"claimed",
+	"expired",
+	"revoked",
+] as const;
+export type UserInviteStatus = (typeof userInviteStatuses)[number];
+
 export const users = t.pgTable("users", {
 	walletAddress: tEvmAddress().primaryKey(),
 	keygenDataJson: t.jsonb(),
@@ -46,7 +54,9 @@ export const userInvites = t.pgTable("user_invites", {
 		})
 		.notNull(),
 	inviteeEmail: t.text().notNull(),
-	accepted: t.boolean().notNull().default(false),
+	status: t.text({ enum: userInviteStatuses }).notNull().default("pending"),
+	claimedAt: t.timestamp({ withTimezone: true }),
+	claimedByWallet: tEvmAddress().references(() => users.walletAddress),
 	message: t.text(),
 
 	...timestamps,

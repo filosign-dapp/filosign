@@ -76,6 +76,8 @@ export function useAddSignViewer() {
 		handleFieldRemove,
 		handleFieldUpdate,
 		handleBack,
+		setPdfLayoutHeight,
+		placementDocHeight,
 	} = useAddSignContext();
 	return useMemo(
 		() => ({
@@ -93,6 +95,8 @@ export function useAddSignViewer() {
 			handleFieldRemove,
 			handleFieldUpdate,
 			handleBack,
+			setPdfLayoutHeight,
+			placementDocHeight,
 		}),
 		[
 			currentDocument,
@@ -109,6 +113,8 @@ export function useAddSignViewer() {
 			handleFieldRemove,
 			handleFieldUpdate,
 			handleBack,
+			setPdfLayoutHeight,
+			placementDocHeight,
 		],
 	);
 }

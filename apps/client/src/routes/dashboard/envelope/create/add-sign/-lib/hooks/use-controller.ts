@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import type { Address, Hex } from "viem";
 import { useStorePersist } from "@/src/lib/hooks/use-store";
 import { buildColdInviteMagicLink } from "@/src/lib/routing/cold-invite-search";
+import { constrainFieldTopLeft } from "@/src/lib/utils/placement-viewport";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import type { ColdSharePackage } from "@/src/routes/dashboard/envelope/create/add-sign/-components/cold-share-dialog";
 import type {
@@ -84,6 +85,8 @@ export function useAddSignController() {
 		isMobile,
 	} = useDocumentDimensions();
 	const fieldBoxCss = signatureFieldBoxCssPx(isMobile);
+	const [pdfLayoutHeight, setPdfLayoutHeight] = useState<number | null>(null);
+	const placementDocHeight = pdfLayoutHeight ?? docHeight;
 	const [currentDocumentId, setCurrentDocumentId] = useState("");
 	const [currentPage, setCurrentPage] = useState(1);
 	const [zoom, setZoom] = useState(100);
@@ -152,6 +155,10 @@ export function useAddSignController() {
 		}
 	}, [documents, currentDocumentId]);
 
+	useEffect(() => {
+		setPdfLayoutHeight(null);
+	}, [currentDocumentId]);
+
 	const currentDocument: Document | undefined = documents.find(
 		(doc) => doc.id === currentDocumentId,
 	);
@@ -199,21 +206,31 @@ export function useAddSignController() {
 				(config) => config.type === pendingFieldType,
 			);
 			if (!fieldConfig) return;
-			placeField(
-				placementCoords.x,
-				placementCoords.y,
-				placementCoords.page,
-				currentDocumentId,
-				{
-					label: fieldConfig.label,
-					assignedSignerWallet: payload.assignedSignerWallet,
-					assignedSignerName: payload.assignedSignerName,
-					assignedSignerEmail: payload.assignedSignerEmail,
-					required: payload.required,
-				},
-			);
+			const { x, y } = constrainFieldTopLeft({
+				x: placementCoords.x,
+				y: placementCoords.y,
+				docWidth,
+				docHeight: placementDocHeight,
+				fieldWidth: fieldBoxCss.width,
+				fieldHeight: fieldBoxCss.height,
+			});
+			placeField(x, y, placementCoords.page, currentDocumentId, {
+				label: fieldConfig.label,
+				assignedSignerWallet: payload.assignedSignerWallet,
+				assignedSignerName: payload.assignedSignerName,
+				assignedSignerEmail: payload.assignedSignerEmail,
+				required: payload.required,
+			});
 		},
-		[placementCoords, pendingFieldType, currentDocumentId, placeField],
+		[
+			placementCoords,
+			pendingFieldType,
+			currentDocumentId,
+			placeField,
+			docWidth,
+			placementDocHeight,
+			fieldBoxCss,
+		],
 	);
 
 	const placementFieldTypeLabel = useMemo(() => {
@@ -366,7 +383,7 @@ export function useAddSignController() {
 				),
 				signatureFields,
 				docWidth,
-				docHeight,
+				docHeight: placementDocHeight,
 				fieldBox: fieldBoxCss,
 			});
 
@@ -444,7 +461,7 @@ export function useAddSignController() {
 		captureAppEvent,
 		clearCreateForm,
 		createForm,
-		docHeight,
+		placementDocHeight,
 		docWidth,
 		fieldBoxCss,
 		navigate,
@@ -507,6 +524,8 @@ export function useAddSignController() {
 		handleSend,
 		handleDocumentSelect,
 		handleColdShareDone,
+		setPdfLayoutHeight,
+		placementDocHeight,
 	};
 }
 

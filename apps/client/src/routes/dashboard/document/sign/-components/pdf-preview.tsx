@@ -13,6 +13,7 @@ export function SignDocumentPdfPreview({
 	maxHeight = 800,
 	className,
 	onNumPagesLoaded,
+	onPageLayoutLoaded,
 	renderPageOverlay,
 }: {
 	documentKey: string;
@@ -22,6 +23,7 @@ export function SignDocumentPdfPreview({
 	maxHeight?: number;
 	className?: string;
 	onNumPagesLoaded?: (n: number) => void;
+	onPageLayoutLoaded?: (layout: { width: number; height: number }) => void;
 	renderPageOverlay?: (pageIndex: number) => ReactNode;
 }) {
 	return (
@@ -40,6 +42,7 @@ export function SignDocumentPdfPreview({
 				width={width}
 				maxHeight={maxHeight}
 				onNumPagesLoaded={onNumPagesLoaded}
+				onPageLayoutLoaded={onPageLayoutLoaded}
 				renderPageOverlay={renderPageOverlay}
 			/>
 		</Suspense>

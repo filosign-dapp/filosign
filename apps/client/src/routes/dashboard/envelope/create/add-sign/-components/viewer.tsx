@@ -21,6 +21,8 @@ export default function DocumentViewer() {
 		handleFieldRemove,
 		handleFieldUpdate,
 		handleBack,
+		setPdfLayoutHeight,
+		placementDocHeight,
 	} = useAddSignViewer();
 
 	const interaction = useDocumentViewerInteraction({
@@ -33,6 +35,8 @@ export default function DocumentViewer() {
 		onPdfPageChange: setCurrentPage,
 		onFieldSelect: handleFieldSelect,
 		onFieldUpdate: handleFieldUpdate,
+		placementDocHeight,
+		onPdfPageLayoutLoaded: (layout) => setPdfLayoutHeight(layout.height),
 	});
 
 	if (!currentDocument) {
@@ -56,6 +60,7 @@ export default function DocumentViewer() {
 		handleDocumentClick,
 		handleFieldClick,
 		handleFieldMouseDown,
+		onPdfPageLayoutLoaded,
 	} = interaction;
 
 	return (
@@ -101,6 +106,7 @@ export default function DocumentViewer() {
 							pendingFieldType={pendingFieldType}
 							onDocumentClick={handleDocumentClick}
 							onPdfNumPagesLoaded={handlePdfNumPagesLoaded}
+							onPdfPageLayoutLoaded={onPdfPageLayoutLoaded}
 						/>
 
 						<SignatureFieldOverlays

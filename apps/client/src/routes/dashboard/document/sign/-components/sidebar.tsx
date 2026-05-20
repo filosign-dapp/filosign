@@ -7,34 +7,25 @@ import {
 } from "@phosphor-icons/react";
 import { defaultChain } from "@/src/constants";
 import { cn } from "@/src/lib/utils";
-import type { SignDocumentController } from "../-lib/hooks/useSignDocument";
+import {
+	useSignFile,
+	useSignIdentity,
+	useSignMeta,
+	useSignPlacement,
+	useSignSigning,
+} from "@/src/routes/dashboard/document/sign/-lib/context/context";
 
-export type SignDocumentSidebarProps = {
-	file: NonNullable<SignDocumentController["fileQuery"]["file"]>;
-	identity: Pick<SignDocumentController["identity"], "signerAddress">;
-	placement: Pick<
-		SignDocumentController["placement"],
-		| "myPlacementFields"
-		| "togglePlacementField"
-		| "isMyPlacementFieldDone"
-		| "canSubmitPlacementSign"
-	>;
-	signing: Pick<SignDocumentController["signing"], "canSign" | "alreadySigned">;
-	meta: Pick<SignDocumentController["meta"], "formatAddress">;
-};
-
-export function SignDocumentSidebar({
-	file,
-	identity: { signerAddress },
-	placement: {
+export function SignDocumentSidebar() {
+	const { file } = useSignFile();
+	const { signerAddress } = useSignIdentity();
+	const {
 		myPlacementFields,
 		togglePlacementField,
 		isMyPlacementFieldDone,
 		canSubmitPlacementSign,
-	},
-	signing: { canSign, alreadySigned },
-	meta: { formatAddress },
-}: SignDocumentSidebarProps) {
+	} = useSignPlacement();
+	const { canSign, alreadySigned } = useSignSigning();
+	const { formatAddress } = useSignMeta();
 	return (
 		<aside className="hidden lg:block w-72 border-l border-border bg-background overflow-y-auto">
 			<div className="p-4 space-y-4">

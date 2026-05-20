@@ -1,29 +1,17 @@
-import type { ViewFileResult } from "@filosign/react/files";
 import type { PlacementField } from "@filosign/shared";
 import { DownloadIcon, FileTextIcon } from "@phosphor-icons/react";
-import type { Dispatch, SetStateAction } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { cn } from "@/src/lib/utils";
-import { SignDocumentPdfPreview } from "./SignDocumentPdfPreview";
-
-export type SignDocumentFileContentProps = {
-	pieceCid: string | undefined;
-	viewError: string | null;
-	fileData: ViewFileResult | null;
-	viewFilePending: boolean;
-	handleViewFile: () => void | Promise<void>;
-	zoom: number;
-	myPlacementFields: PlacementField[];
-	alreadySigned: boolean;
-	isMyPlacementFieldDone: (fieldId: string) => boolean;
-	togglePlacementField: (fieldId: string) => void;
-	previewPdfBytes: Uint8Array | null;
-	signPdfPage: number;
-	setSignPdfPage: Dispatch<SetStateAction<number>>;
-	setSignPdfNumPages: Dispatch<SetStateAction<number | null>>;
-	handleDownload: () => void;
-	canSign: boolean;
-};
+import { PLACEMENT_VIEWPORT_WIDTH } from "@/src/lib/utils/placement-viewport";
+import {
+	useSignCompliance,
+	useSignFile,
+	useSignPlacement,
+	useSignSigning,
+	useSignViewer,
+} from "@/src/routes/dashboard/document/sign/-lib/context/context";
+import { SignDocumentPdfPreview } from "./pdf-preview";
 
 type SignDocumentPdfPlacementOverlayProps = {
 	pageIndex: number;
@@ -79,24 +67,32 @@ function SignDocumentPdfPlacementOverlay({
 	);
 }
 
-export function SignDocumentFileContent({
-	pieceCid,
-	viewError,
-	fileData,
-	viewFilePending,
-	handleViewFile,
-	zoom,
-	myPlacementFields,
-	alreadySigned,
-	isMyPlacementFieldDone,
-	togglePlacementField,
-	previewPdfBytes,
-	signPdfPage,
-	setSignPdfPage,
-	setSignPdfNumPages,
-	handleDownload,
-	canSign,
-}: SignDocumentFileContentProps) {
+export function SignDocumentFileContent() {
+	const { pieceCid } = useSignFile();
+	const [pdfLayoutHeight, setPdfLayoutHeight] = useState<number | null>(null);
+	const viewportWidth = PLACEMENT_VIEWPORT_WIDTH;
+	const viewportHeight = pdfLayoutHeight ?? 800;
+
+	const {
+		fileData,
+		viewError,
+		viewFile,
+		handleViewFile,
+		zoom,
+		previewPdfBytes,
+		signPdfPage,
+		setSignPdfPage,
+		setSignPdfNumPages,
+	} = useSignViewer();
+
+	useEffect(() => {
+		setPdfLayoutHeight(null);
+	}, [pieceCid, signPdfPage]);
+	const { myPlacementFields, isMyPlacementFieldDone, togglePlacementField } =
+		useSignPlacement();
+	const { alreadySigned, canSign } = useSignSigning();
+	const { handleDownload } = useSignCompliance();
+	const viewFilePending = viewFile.isPending;
 	if (viewError) {
 		return (
 			<div className="flex items-center justify-center w-full h-full text-sm text-muted-foreground p-4 text-center">
@@ -150,8 +146,8 @@ export function SignDocumentFileContent({
 				<div
 					className="relative bg-white border shadow-lg border-border"
 					style={{
-						width: 600,
-						height: 800,
+						width: viewportWidth,
+						height: viewportHeight,
 						transform: `scale(${zoom / 100})`,
 						transformOrigin: "center",
 					}}
@@ -246,8 +242,8 @@ export function SignDocumentFileContent({
 				<div
 					className="relative bg-white border shadow-lg border-border"
 					style={{
-						width: 600,
-						height: 800,
+						width: viewportWidth,
+						height: viewportHeight,
 						transform: `scale(${zoom / 100})`,
 						transformOrigin: "center",
 					}}
@@ -258,8 +254,9 @@ export function SignDocumentFileContent({
 							documentKey={pieceCid ?? "sign"}
 							file={previewPdfBytes}
 							pageNumber={signPdfPage}
-							width={600}
+							width={viewportWidth}
 							maxHeight={800}
+							onPageLayoutLoaded={({ height }) => setPdfLayoutHeight(height)}
 							onNumPagesLoaded={(n) => {
 								setSignPdfNumPages(n);
 								setSignPdfPage((p) => Math.min(p, n));

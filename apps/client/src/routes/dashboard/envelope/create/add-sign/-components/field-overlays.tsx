@@ -1,4 +1,5 @@
 import { XIcon } from "@phosphor-icons/react";
+import { constrainFieldTopLeft } from "@/src/lib/utils/placement-viewport";
 import { cn } from "@/src/lib/utils/utils";
 import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 import {
@@ -37,14 +38,15 @@ export function SignatureFieldOverlays({
 	return (
 		<>
 			{signatureFields.map((field) => {
-				const constrainedX = Math.max(
+				const { x: constrainedX, y: constrainedY } = constrainFieldTopLeft({
+					x: field.x,
+					y: field.y,
+					docWidth: documentWidth,
+					docHeight: documentHeight,
+					fieldWidth,
+					fieldHeight,
 					margin,
-					Math.min(field.x, documentWidth - fieldWidth - margin),
-				);
-				const constrainedY = Math.max(
-					margin,
-					Math.min(field.y, documentHeight - fieldHeight - margin),
-				);
+				});
 
 				return (
 					<div

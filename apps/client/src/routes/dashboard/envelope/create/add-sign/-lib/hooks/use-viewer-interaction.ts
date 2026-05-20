@@ -1,5 +1,6 @@
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { constrainFieldTopLeft } from "@/src/lib/utils/placement-viewport";
 import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
 import type {
 	Document,
@@ -21,6 +22,8 @@ type UseDocumentViewerInteractionArgs = {
 	onPdfPageChange?: (page: number) => void;
 	onFieldSelect: (fieldId: string) => void;
 	onFieldUpdate: (fieldId: string, updates: Partial<SignatureField>) => void;
+	placementDocHeight?: number;
+	onPdfPageLayoutLoaded?: (layout: { width: number; height: number }) => void;
 };
 
 export function useDocumentViewerInteraction({
@@ -33,6 +36,8 @@ export function useDocumentViewerInteraction({
 	onPdfPageChange,
 	onFieldSelect,
 	onFieldUpdate,
+	placementDocHeight,
+	onPdfPageLayoutLoaded,
 }: UseDocumentViewerInteractionArgs) {
 	const [isDragging, setIsDragging] = useState(false);
 	const [pdfPageNumber, setPdfPageNumber] = useState(1);
@@ -46,6 +51,7 @@ export function useDocumentViewerInteraction({
 	} = useDocumentDimensions();
 	const { width: fieldWidth, height: fieldHeight } =
 		signatureFieldBoxCssPx(isMobile);
+	const effectiveDocHeight = placementDocHeight ?? documentHeight;
 
 	const documentRef = useRef<HTMLDivElement>(null);
 	const dragDataRef = useRef({
@@ -81,8 +87,15 @@ export function useDocumentViewerInteraction({
 			const x = (event.clientX - documentRect.left) / (zoom / 100);
 			const y = (event.clientY - documentRect.top) / (zoom / 100);
 
-			const boundedX = Math.max(margin, Math.min(x, documentWidth - margin));
-			const boundedY = Math.max(margin, Math.min(y, documentHeight - margin));
+			const { x: boundedX, y: boundedY } = constrainFieldTopLeft({
+				x,
+				y,
+				docWidth: documentWidth,
+				docHeight: effectiveDocHeight,
+				fieldWidth,
+				fieldHeight,
+				margin,
+			});
 
 			const page = isPdfDocument ? pdfPageNumber : documentPage;
 			onFieldPlacementRequest({ x: boundedX, y: boundedY, page });
@@ -92,7 +105,9 @@ export function useDocumentViewerInteraction({
 			onFieldPlacementRequest,
 			zoom,
 			documentWidth,
-			documentHeight,
+			effectiveDocHeight,
+			fieldWidth,
+			fieldHeight,
 			margin,
 			isPdfDocument,
 			pdfPageNumber,
@@ -144,18 +159,28 @@ export function useDocumentViewerInteraction({
 			const deltaX = (event.clientX - dragData.startX) / (zoom / 100);
 			const deltaY = (event.clientY - dragData.startY) / (zoom / 100);
 
-			const newX = Math.max(
+			const { x: newX, y: newY } = constrainFieldTopLeft({
+				x: dragData.fieldX + deltaX,
+				y: dragData.fieldY + deltaY,
+				docWidth: documentWidth,
+				docHeight: effectiveDocHeight,
+				fieldWidth,
+				fieldHeight,
 				margin,
-				Math.min(dragData.fieldX + deltaX, documentWidth - margin),
-			);
-			const newY = Math.max(
-				margin,
-				Math.min(dragData.fieldY + deltaY, documentHeight - margin),
-			);
+			});
 
 			onFieldUpdate(dragData.fieldId, { x: newX, y: newY });
 		},
-		[isDragging, onFieldUpdate, zoom, documentWidth, documentHeight, margin],
+		[
+			isDragging,
+			onFieldUpdate,
+			zoom,
+			documentWidth,
+			effectiveDocHeight,
+			fieldWidth,
+			fieldHeight,
+			margin,
+		],
 	);
 
 	const handleMouseUp = useCallback(() => {
@@ -207,7 +232,8 @@ export function useDocumentViewerInteraction({
 	return {
 		documentRef,
 		documentWidth,
-		documentHeight,
+		documentHeight: effectiveDocHeight,
+		onPdfPageLayoutLoaded,
 		margin,
 		isMobile,
 		fieldWidth,

@@ -50,7 +50,7 @@ No other top-level files or folders (`hooks/`, `components/`, loose `*.ts` sibli
 
 Avoid boolean prop walls; use `Pick<Controller, "…">` or route-scoped context in `-lib/context/`.
 
-**Reference (Phase 3 POC):** [`envelope/create/add-sign/`](src/routes/dashboard/envelope/create/add-sign/) — `useAddSignController` → `AddSign.Root` compound layout → route context (`useAddSignPlacement`, `useAddSignViewer`) → zero-prop leaf components (`DocumentViewer`, sidebars).
+**Reference routes:** [`envelope/create/add-sign/`](src/routes/dashboard/envelope/create/add-sign/) (`use-controller` → `AddSign.*` → context slices) · [`document/sign/`](src/routes/dashboard/document/sign/) (`use-controller` → `Sign.*` → `useSignViewer`, `useSignPlacement`, etc.).
 
 ## State
 

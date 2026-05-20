@@ -16,6 +16,7 @@ type DocumentPageContentProps = {
 	pendingFieldType: SignatureField["type"] | null;
 	onDocumentClick: (event: React.MouseEvent) => void;
 	onPdfNumPagesLoaded: (n: number) => void;
+	onPdfPageLayoutLoaded?: (layout: { width: number; height: number }) => void;
 };
 
 export function DocumentPageContent({
@@ -27,6 +28,7 @@ export function DocumentPageContent({
 	pendingFieldType,
 	onDocumentClick,
 	onPdfNumPagesLoaded,
+	onPdfPageLayoutLoaded,
 }: DocumentPageContentProps) {
 	if (!document.url) {
 		return (
@@ -50,6 +52,7 @@ export function DocumentPageContent({
 					maxHeight={documentHeight}
 					className="absolute inset-0 z-10"
 					onNumPagesLoaded={onPdfNumPagesLoaded}
+					onPageLayoutLoaded={onPdfPageLayoutLoaded}
 				/>
 				<PlacementCaptureLayer
 					isPlacingField={isPlacingField}

@@ -1,3 +1,4 @@
+import { useFilosignContext } from "@filosign/react";
 import {
 	useAckFile,
 	useComplianceBundle,
@@ -15,6 +16,7 @@ import {
 	normalizePlacementRecipientEmail,
 	zPlacementManifest,
 } from "@filosign/shared";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -33,11 +35,13 @@ export function useSignDocument() {
 	const navigate = useNavigate();
 	const search = useSearch({ from: "/dashboard/document/sign/" });
 	const pieceCid = search.pieceCid;
+	const { rpcQuery } = useFilosignContext();
+	const queryClient = useQueryClient();
 
 	const { user } = useThirdwebUserInfo();
 	const {
 		data: file,
-		isLoading: fileLoading,
+		isPending: filePending,
 		error: fileError,
 	} = useFileInfo({ pieceCid });
 	const { data: userProfile } = useUserProfile();
@@ -113,6 +117,7 @@ export function useSignDocument() {
 
 	const [coldShareDialogOpen, setColdShareDialogOpen] = useState(false);
 	const [coldShare, setColdShare] = useState<ColdSharePackage | null>(null);
+	const [signSuccessDialogOpen, setSignSuccessDialogOpen] = useState(false);
 	const regenerateColdInvite = useRegenerateColdInvite();
 
 	useEffect(() => {
@@ -467,15 +472,29 @@ export function useSignDocument() {
 				pieceCid,
 				completedFieldIds,
 			});
+			if (pieceCid) {
+				await queryClient.invalidateQueries({
+					queryKey: rpcQuery.files.piece.detail.key({
+						input: { pieceCid },
+					}),
+				});
+			}
+			setSignSuccessDialogOpen(true);
 			toast.success("Document signed successfully!");
-			window.location.reload();
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : "Failed to sign";
 			console.error(error);
 			toast.error(errorMessage);
 		}
-	}, [pieceCid, canSubmitPlacementSign, completedFieldIds, signFile]);
+	}, [
+		pieceCid,
+		canSubmitPlacementSign,
+		completedFieldIds,
+		signFile,
+		queryClient,
+		rpcQuery.files.piece.detail,
+	]);
 
 	const handleRotateInvite = useCallback(async () => {
 		if (!pieceCid || !file || !user?.wallet?.address) return;
@@ -521,9 +540,13 @@ export function useSignDocument() {
 		navigation: { navigate, pieceCid },
 		fileQuery: {
 			file,
-			fileLoading,
+			filePending,
 			fileError,
 			acknowledgeFile,
+		},
+		signSuccess: {
+			signSuccessDialogOpen,
+			setSignSuccessDialogOpen,
 		},
 		identity: { user, userProfile, signerAddress },
 		placement: {

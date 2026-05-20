@@ -33,6 +33,8 @@ export type PdfJsPreviewProps = {
 	maxHeight?: number;
 	/** Called once the PDF is parsed (authoritative page count). */
 	onNumPagesLoaded?: (numPages: number) => void;
+	/** Rendered page size in CSS pixels at `width` (for placement coordinate alignment). */
+	onPageLayoutLoaded?: (layout: { width: number; height: number }) => void;
 };
 
 /**
@@ -48,6 +50,7 @@ export function PdfJsPreview({
 	className,
 	maxHeight,
 	onNumPagesLoaded,
+	onPageLayoutLoaded,
 }: PdfJsPreviewProps) {
 	configurePdfWorker();
 
@@ -63,11 +66,15 @@ export function PdfJsPreview({
 	const activeDocKeyRef = useRef(docKey);
 	const onNumPagesLoadedRef = useRef(onNumPagesLoaded);
 	onNumPagesLoadedRef.current = onNumPagesLoaded;
+	const onPageLayoutLoadedRef = useRef(onPageLayoutLoaded);
+	onPageLayoutLoadedRef.current = onPageLayoutLoaded;
+	const [pageLayoutHeight, setPageLayoutHeight] = useState<number | null>(null);
 
 	useEffect(() => {
 		activeDocKeyRef.current = docKey;
 		setNumPages(null);
 		setLoadError(null);
+		setPageLayoutHeight(null);
 	}, [docKey, fileSource]);
 
 	const safePageNumber =
@@ -89,6 +96,13 @@ export function PdfJsPreview({
 						key={`${docKey}-page-${safePageNumber}`}
 						pageNumber={safePageNumber}
 						{...pageProps}
+						onLoadSuccess={(page) => {
+							const base = page.getViewport({ scale: 1 });
+							const scale = width / base.width;
+							const height = Math.ceil(base.height * scale);
+							setPageLayoutHeight(height);
+							onPageLayoutLoadedRef.current?.({ width, height });
+						}}
 						onRenderError={(err) =>
 							setLoadError(err.message || "Could not render PDF page")
 						}
@@ -102,12 +116,16 @@ export function PdfJsPreview({
 			</div>
 		) : null;
 
+	const containerHeight = pageLayoutHeight ?? maxHeight;
+
 	return (
 		<div
 			className={cn("relative overflow-hidden bg-white", className)}
 			style={{
 				width,
-				...(maxHeight == null ? {} : { height: maxHeight, maxHeight }),
+				...(containerHeight == null
+					? {}
+					: { height: containerHeight, maxHeight: containerHeight }),
 			}}
 		>
 			{loadError ? (

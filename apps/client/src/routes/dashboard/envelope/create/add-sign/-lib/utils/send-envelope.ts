@@ -1,6 +1,7 @@
 import type { PlacementManifest } from "@filosign/shared";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { type Address, getAddress, isAddress } from "viem";
+import { placementManifestRect } from "@/src/lib/utils/placement-viewport";
 import type { Recipient, StoredDocument } from "../../../-lib/types";
 import type { SignatureField } from "../types";
 
@@ -42,10 +43,6 @@ export type EnvelopeViewer = {
 	encryptionPublicKey: string;
 };
 
-function clamp01(n: number): number {
-	return Math.min(1, Math.max(0, n));
-}
-
 export function buildPlacementManifestForDocument(args: {
 	docId: string;
 	/** Signer emails in routing order (normalized). */
@@ -63,8 +60,6 @@ export function buildPlacementManifestForDocument(args: {
 		docHeight,
 		fieldBox,
 	} = args;
-	const dw = Math.max(docWidth, 1);
-	const dh = Math.max(docHeight, 1);
 	const fw = Math.max(fieldBox.width, 1);
 	const fh = Math.max(fieldBox.height, 1);
 
@@ -96,12 +91,14 @@ export function buildPlacementManifestForDocument(args: {
 		manifestFields.push({
 			id: field.id,
 			pageIndex: Math.max(0, field.page - 1),
-			rect: {
-				x: clamp01(field.x / dw),
-				y: clamp01(field.y / dh),
-				width: clamp01(fw / dw),
-				height: clamp01(fh / dh),
-			},
+			rect: placementManifestRect({
+				x: field.x,
+				y: field.y,
+				docWidth,
+				docHeight,
+				fieldWidth: fw,
+				fieldHeight: fh,
+			}),
 			assignedRecipientEmail: assigned,
 			required: field.required,
 			type: field.type,

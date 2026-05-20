@@ -7,15 +7,12 @@ import {
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
-import { ColdShareDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/cold-share-dialog";
-import { useSignDocument } from "../-lib/hooks/useSignDocument";
-import { useSignInviteUnlock } from "../-lib/hooks/useSignInviteUnlock";
-import { SignDocumentBody } from "./SignDocumentBody";
-import { SignDocumentShell } from "./SignDocumentShell";
-import { SignDocumentShellHeader } from "./SignDocumentShellHeader";
-import { SignDocumentSidebar } from "./SignDocumentSidebar";
-import { SignDocumentStickyHeader } from "./SignDocumentStickyHeader";
-import { SignInviteUnlockDialog } from "./SignInviteUnlockDialog";
+import { useSignDocument } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-controller";
+import { useSignInviteUnlock } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-invite-unlock";
+import { SignInviteUnlockDialog } from "./invite-unlock-dialog";
+import { SignDocumentShell } from "./shell";
+import { SignDocumentShellHeader } from "./shell-header";
+import { Sign } from "./ui";
 
 export function SignDocumentPage() {
 	const navigate = useNavigate();
@@ -26,21 +23,8 @@ export function SignDocumentPage() {
 	const sign = useSignDocument();
 	const unlock = useSignInviteUnlock({ pieceCid, inviteToken });
 
-	const {
-		navigation,
-		fileQuery,
-		identity,
-		placement,
-		viewer,
-		signing,
-		meta,
-		compliance,
-		coldShare,
-		refs,
-		acknowledge,
-	} = sign;
-
-	const { file, fileLoading, fileError, acknowledgeFile } = fileQuery;
+	const { file, filePending, fileError, acknowledgeFile } = sign.fileQuery;
+	const { handleAcknowledge } = sign.acknowledge;
 
 	const hasDecryptionKeys = Boolean(
 		(file?.kemCiphertext && file?.encryptedEncryptionKey) ||
@@ -162,7 +146,7 @@ export function SignDocumentPage() {
 		);
 	}
 
-	if (fileLoading) {
+	if (filePending) {
 		return (
 			<div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background px-4">
 				<InlineLoader size="lg" />
@@ -211,7 +195,7 @@ export function SignDocumentPage() {
 				</p>
 				<div className="flex items-center gap-3">
 					<Button
-						onClick={() => void acknowledge.handleAcknowledge()}
+						onClick={() => void handleAcknowledge()}
 						disabled={acknowledgeFile.isPending}
 						variant="primary"
 					>
@@ -249,63 +233,10 @@ export function SignDocumentPage() {
 	}
 
 	return (
-		<SignDocumentShell
-			stickyHeader={
-				<SignDocumentStickyHeader
-					navigation={navigation}
-					file={file}
-					pieceCid={pieceCid}
-					identity={identity}
-					signing={signing}
-					meta={meta}
-					viewer={viewer}
-					compliance={compliance}
-					coldShare={coldShare}
-					placement={placement}
-				/>
-			}
-			body={
-				<>
-					<SignDocumentBody
-						containerRef={refs.containerRef}
-						documentRef={refs.documentRef}
-						fileContent={{
-							pieceCid,
-							viewError: viewer.viewError,
-							fileData: viewer.fileData,
-							viewFilePending: viewer.viewFile.isPending,
-							handleViewFile: viewer.handleViewFile,
-							zoom: viewer.zoom,
-							myPlacementFields: placement.myPlacementFields,
-							alreadySigned: signing.alreadySigned,
-							isMyPlacementFieldDone: placement.isMyPlacementFieldDone,
-							togglePlacementField: placement.togglePlacementField,
-							previewPdfBytes: viewer.previewPdfBytes,
-							signPdfPage: viewer.signPdfPage,
-							setSignPdfPage: viewer.setSignPdfPage,
-							setSignPdfNumPages: viewer.setSignPdfNumPages,
-							handleDownload: compliance.handleDownload,
-							canSign: signing.canSign,
-						}}
-					/>
-					<SignDocumentSidebar
-						file={file}
-						identity={identity}
-						placement={placement}
-						signing={signing}
-						meta={meta}
-					/>
-				</>
-			}
-		>
-			<ColdShareDialog
-				open={coldShare.coldShareDialogOpen}
-				share={coldShare.coldShare}
-				onDone={() => {
-					coldShare.setColdShareDialogOpen(false);
-					coldShare.setColdShare(null);
-				}}
-			/>
-		</SignDocumentShell>
+		<Sign.Root value={{ sign, pieceCid, file }}>
+			<Sign.Shell>
+				<Sign.Dialogs />
+			</Sign.Shell>
+		</Sign.Root>
 	);
 }

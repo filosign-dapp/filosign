@@ -15,57 +15,26 @@ import {
 import { CopyButton } from "@/src/lib/components/shared/CopyButton";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
-import type { SignDocumentController } from "../-lib/hooks/useSignDocument";
+import {
+	useSignColdShare,
+	useSignCompliance,
+	useSignFile,
+	useSignIdentity,
+	useSignMeta,
+	useSignNavigation,
+	useSignPlacement,
+	useSignSigning,
+	useSignViewer,
+} from "@/src/routes/dashboard/document/sign/-lib/context/context";
 
-export type SignDocumentStickyHeaderProps = {
-	navigation: SignDocumentController["navigation"];
-	file: NonNullable<SignDocumentController["fileQuery"]["file"]>;
-	pieceCid: string;
-	identity: Pick<SignDocumentController["identity"], "signerAddress">;
-	signing: Pick<
-		SignDocumentController["signing"],
-		"canSign" | "alreadySigned" | "signFile" | "handleSign"
-	>;
-	meta: Pick<
-		SignDocumentController["meta"],
-		"isSender" | "signedTxExplorerUrl" | "explorerLabel" | "formatAddress"
-	>;
-	viewer: Pick<
-		SignDocumentController["viewer"],
-		| "zoom"
-		| "handleZoomIn"
-		| "handleZoomOut"
-		| "isSigningPdf"
-		| "signPdfPage"
-		| "setSignPdfPage"
-		| "signPdfTotalDisplay"
-		| "fileData"
-	>;
-	compliance: Pick<
-		SignDocumentController["compliance"],
-		| "pdfExportBusy"
-		| "handleDownload"
-		| "handleDownloadCompliancePdf"
-		| "handleDownloadDocumentWithCompliancePdf"
-	>;
-	coldShare: Pick<
-		SignDocumentController["coldShare"],
-		"handleRotateInvite" | "regenerateColdInvite"
-	>;
-	placement: Pick<
-		SignDocumentController["placement"],
-		"canSubmitPlacementSign"
-	>;
-};
-
-export function SignDocumentStickyHeader({
-	navigation: { navigate },
-	file,
-	pieceCid,
-	identity: { signerAddress },
-	signing: { canSign, alreadySigned, signFile, handleSign },
-	meta: { isSender, signedTxExplorerUrl, explorerLabel, formatAddress },
-	viewer: {
+export function SignDocumentStickyHeader() {
+	const { navigate } = useSignNavigation();
+	const { pieceCid, file } = useSignFile();
+	const { signerAddress } = useSignIdentity();
+	const { canSign, alreadySigned, signFile, handleSign } = useSignSigning();
+	const { isSender, signedTxExplorerUrl, explorerLabel, formatAddress } =
+		useSignMeta();
+	const {
 		zoom,
 		handleZoomIn,
 		handleZoomOut,
@@ -74,16 +43,15 @@ export function SignDocumentStickyHeader({
 		setSignPdfPage,
 		signPdfTotalDisplay,
 		fileData,
-	},
-	compliance: {
+	} = useSignViewer();
+	const {
 		pdfExportBusy,
 		handleDownload,
 		handleDownloadCompliancePdf,
 		handleDownloadDocumentWithCompliancePdf,
-	},
-	coldShare: { handleRotateInvite, regenerateColdInvite },
-	placement: { canSubmitPlacementSign },
-}: SignDocumentStickyHeaderProps) {
+	} = useSignCompliance();
+	const { handleRotateInvite, regenerateColdInvite } = useSignColdShare();
+	const { canSubmitPlacementSign } = useSignPlacement();
 	return (
 		<>
 			<div className="md:hidden">

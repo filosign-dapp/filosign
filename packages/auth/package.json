@@ -1,0 +1,29 @@
+{
+	"name": "@filosign/auth",
+	"version": "0.1.0",
+	"exports": {
+		".": {
+			"default": "./src/index.ts"
+		},
+		"./client": {
+			"default": "./src/client.ts"
+		},
+		"./constants": {
+			"default": "./src/constants.ts"
+		}
+	},
+	"scripts": {
+		"check-types": "tsc --noEmit -p tsconfig.json",
+		"test": "bun test"
+	},
+	"dependencies": {
+		"jsonwebtoken": "9.0.2",
+		"viem": "catalog:",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@types/bun": "catalog:",
+		"@types/jsonwebtoken": "9.0.10",
+		"typescript": "catalog:"
+	}
+}

@@ -11,9 +11,9 @@ import {
 } from "viem";
 import z from "zod";
 import { MINUTE } from "@/constants";
-import db from "@/lib/db";
-import { issueJwtToken } from "@/lib/utils/jwt";
-import { tryCatch } from "@/lib/utils/tryCatch";
+import db from "@/lib/platform/db";
+import { issueJwtToken } from "@/lib/platform/utils/jwt";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const nonces = {} as Record<Address, { nonce: Hash; validTill: number }>;
 

@@ -1,8 +1,8 @@
 import { ORPCError } from "@orpc/server";
 import type { Address } from "viem";
 import { z } from "zod";
-import { userAvatarWebpKey } from "@/lib/domain/storage-keys";
-import { bucket } from "@/lib/s3/client";
+import { userAvatarWebpKey } from "@/lib/domains/files";
+import { bucket } from "@/lib/platform/s3/client";
 
 /** Extend with discriminated unions as new wallet-scoped WebP kinds ship. */
 export const zStoragePresignPutInput = z.discriminatedUnion("kind", [

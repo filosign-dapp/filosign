@@ -1,7 +1,7 @@
 import { ORPCError, os } from "@orpc/server";
 import type { Address } from "viem";
 
-import { readOrgIdHeader, resolveActiveOrg } from "@/lib/domain/orgs";
+import { readOrgIdHeader, resolveActiveOrg } from "@/lib/domains/orgs";
 import type { OrpcContext } from "./context";
 
 export const o = os.$context<OrpcContext>();

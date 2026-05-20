@@ -1,11 +1,12 @@
-import "./lib/polyfills/bigint-json";
+import "@/lib/platform/polyfills/bigint-json";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import config from "@/config";
-import { shutdownPostHog } from "@/lib/analytics/posthog";
-import { csp } from "@/lib/csp";
-import { requestLog } from "@/lib/request-log";
-import { apiRouter } from "./api/routes/router";
+import { shutdownPostHog } from "@/lib/platform/analytics/posthog";
+import { startPlatformCron, stopPlatformCron } from "@/lib/platform/cron";
+import { csp } from "@/lib/platform/csp";
+import { requestLog } from "@/lib/platform/pino";
+import { apiRouter } from "./api/orpc/hono-mount";
 
 export const app = new Hono()
 	.use(requestLog)
@@ -20,11 +21,14 @@ const server = Bun.serve({
 	fetch: app.fetch,
 });
 
+startPlatformCron();
+
 let shuttingDown = false;
 
 async function shutdown(): Promise<void> {
 	if (shuttingDown) return;
 	shuttingDown = true;
+	stopPlatformCron();
 	await shutdownPostHog();
 	server.stop();
 }

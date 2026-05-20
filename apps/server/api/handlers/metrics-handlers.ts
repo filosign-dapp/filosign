@@ -3,12 +3,12 @@ import { and, eq, gte, lte, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress, isAddress } from "viem";
 import env from "@/env";
-import db from "@/lib/db";
-import { fileColdInvites, files } from "@/lib/db/schema/file";
 import {
 	buildEntitlementsSnapshot,
 	resolveEntitlementContext,
-} from "@/lib/domain/entitlements";
+} from "@/lib/domains/entitlements";
+import db from "@/lib/platform/db";
+import { fileColdInvites, files } from "@/lib/platform/db/schema/file";
 
 function parseAdminWallets(): Set<string> {
 	const raw = env.ADMIN_WALLETS?.trim();

@@ -3,7 +3,7 @@ import { getAddress } from "viem";
 import {
 	buildEntitlementsSnapshot,
 	resolveEntitlementContext,
-} from "@/lib/domain/entitlements";
+} from "@/lib/domains/entitlements";
 
 export async function billingEntitlements(wallet: Address) {
 	const ctx = await resolveEntitlementContext(getAddress(wallet));

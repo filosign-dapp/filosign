@@ -1,7 +1,7 @@
 import type { LoggerContext } from "@orpc/experimental-pino";
 import type { Context as HonoContext } from "hono";
 import type { Address } from "viem";
-import type { ActiveOrgContext } from "@/lib/domain/orgs";
+import type { ActiveOrgContext } from "@/lib/domains/orgs";
 
 export type ApiRouterVariables = {
 	userWallet?: Address;

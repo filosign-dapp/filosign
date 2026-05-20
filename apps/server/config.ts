@@ -2,7 +2,7 @@ import type { ChainKey } from "@filosign/contracts";
 import { isHex } from "viem";
 import { privateKeyToAddress } from "viem/accounts";
 import { base, baseSepolia, hardhat } from "viem/chains";
-import env from "./env";
+import env from "@/env";
 
 const CHAIN_MAP = {
 	local: hardhat,

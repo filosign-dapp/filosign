@@ -1,10 +1,10 @@
 import { ORPCError } from "@orpc/server";
 import { isHash } from "viem";
-import { ProcessTxUserError } from "@/lib/indexer/errors";
-import { processTransaction } from "@/lib/indexer/process";
-import { tryCatch } from "@/lib/utils/tryCatch";
-import { zodSafeParseMessage } from "@/lib/utils/zodHttp";
-import { zIndexerTxBody } from "@/lib/validation/tx-registration";
+import { ProcessTxUserError } from "@/lib/platform/indexer/errors";
+import { processTransaction } from "@/lib/platform/indexer/process";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
+import { zIndexerTxBody } from "@/lib/platform/validation/tx-registration";
 
 export async function txProcessIndexerHash(
 	params: { hash: string },

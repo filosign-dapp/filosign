@@ -5,19 +5,19 @@ import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
-import { SERVER_ANALYTICS_EVENTS } from "@/lib/analytics/events";
-import { trackServerEvent } from "@/lib/analytics/track";
-import db from "@/lib/db";
 import {
-	pendingColdInviteFilter,
-	redactColdInviteRow,
-} from "@/lib/domain/cold-invite-lifecycle";
-import {
-	coldInviteExpiry,
 	coldInviteSenderLabel,
 	primaryEmailForWallet,
-} from "@/lib/domain/file-invites";
-import { bucket } from "@/lib/s3/client";
+	redactColdInviteRow,
+} from "@/lib/domains/files";
+import {
+	inviteExpiresAt,
+	pendingFileColdInviteFilter,
+} from "@/lib/domains/invites";
+import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
+import { trackServerEvent } from "@/lib/platform/analytics/track";
+import db from "@/lib/platform/db";
+import { bucket } from "@/lib/platform/s3/client";
 
 const {
 	files,
@@ -48,7 +48,7 @@ export async function filesColdInviteByToken(inviteToken: string) {
 		.where(
 			and(
 				eq(fileColdInvites.inviteToken, inviteToken),
-				pendingColdInviteFilter(),
+				pendingFileColdInviteFilter(),
 			),
 		);
 
@@ -145,7 +145,7 @@ export async function filesColdInviteClaim(args: {
 			and(
 				eq(fileColdInvites.inviteToken, inviteToken),
 				eq(fileColdInvites.email, profileEmail),
-				pendingColdInviteFilter(),
+				pendingFileColdInviteFilter(),
 			),
 		);
 	if (!invite) {
@@ -257,7 +257,7 @@ export async function filesColdInviteRegenerate(args: {
 		.where(
 			and(
 				eq(fileColdInvites.filePieceCid, pieceCid),
-				pendingColdInviteFilter(),
+				pendingFileColdInviteFilter(),
 			),
 		);
 	if (activeInvites.length === 0) {
@@ -266,7 +266,7 @@ export async function filesColdInviteRegenerate(args: {
 		});
 	}
 
-	const expiresAt = coldInviteExpiry();
+	const expiresAt = inviteExpiresAt();
 	await db
 		.update(fileColdInvites)
 		.set({
@@ -278,7 +278,7 @@ export async function filesColdInviteRegenerate(args: {
 		.where(
 			and(
 				eq(fileColdInvites.filePieceCid, pieceCid),
-				pendingColdInviteFilter(),
+				pendingFileColdInviteFilter(),
 			),
 		);
 

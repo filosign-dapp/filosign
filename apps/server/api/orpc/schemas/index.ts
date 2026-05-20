@@ -1,9 +1,9 @@
-export {
+import {
 	rpcAuthNonceOutputSchema,
 	rpcAuthVerifyOutputSchema,
 } from "./auth-output";
-export { rpcBillingEntitlementsOutputSchema } from "./billing-output";
-export {
+import { rpcBillingEntitlementsOutputSchema } from "./billing-output";
+import {
 	rpcColdInviteByTokenOutputSchema,
 	rpcColdInviteClaimOutputSchema,
 	rpcColdInviteRegenerateOutputSchema,
@@ -12,7 +12,7 @@ export {
 	rpcFilesRegisterOutputSchema,
 	rpcFilesUploadStartOutputSchema,
 } from "./files-output";
-export {
+import {
 	rpcPieceAckOutputSchema,
 	rpcPieceComplianceBundleOutputSchema,
 	rpcPieceDetailOutputSchema,
@@ -20,11 +20,11 @@ export {
 	rpcPieceSignDraftFieldIdsOutputSchema,
 	rpcPieceSignOutputSchema,
 } from "./files-piece-output";
-export {
+import {
 	rpcMetricsInvitesSummaryOutputSchema,
 	rpcMetricsSenderUsageOutputSchema,
 } from "./metrics-output";
-export {
+import {
 	rpcOrgsConnectionOutputSchema,
 	rpcOrgsConnectionsListOutputSchema,
 	rpcOrgsCreateOutputSchema,
@@ -37,8 +37,7 @@ export {
 	rpcOrgsTemplatesListOutputSchema,
 	rpcOrgsUpdateOutputSchema,
 } from "./orgs-output";
-export { rpcEmptyOutputSchema, zDateWire } from "./rpc-wire";
-export {
+import {
 	rpcSharingAcceptRequestOutputSchema,
 	rpcSharingApproveOutputSchema,
 	rpcSharingCancelRequestOutputSchema,
@@ -54,9 +53,9 @@ export {
 	rpcSharingSendableToOutputSchema,
 	rpcSharingSentRequestsOutputSchema,
 } from "./sharing-output";
-export { rpcStoragePresignPutOutputSchema } from "./storage-output";
-export { rpcTxProcessIndexerHashOutputSchema } from "./tx-output";
-export {
+import { rpcStoragePresignPutOutputSchema } from "./storage-output";
+import { rpcTxProcessIndexerHashOutputSchema } from "./tx-output";
+import {
 	rpcUserProfileLookupOutputSchema,
 	rpcUserProfileMeOutputSchema,
 	rpcUserProfilePrevalidateOutputSchema,
@@ -68,3 +67,87 @@ export {
 	rpcUserSignaturesGetOutputSchema,
 	rpcUserSignaturesListOutputSchema,
 } from "./users-output";
+
+/** Nested output schemas aligned with `appRouter` — use in router as `out.auth.nonce`, etc. */
+export const rpcOut = {
+	auth: {
+		nonce: rpcAuthNonceOutputSchema,
+		verify: rpcAuthVerifyOutputSchema,
+	},
+	tx: {
+		processIndexerHash: rpcTxProcessIndexerHashOutputSchema,
+	},
+	storage: {
+		presignPut: rpcStoragePresignPutOutputSchema,
+	},
+	files: {
+		uploadStart: rpcFilesUploadStartOutputSchema,
+		register: rpcFilesRegisterOutputSchema,
+		list: {
+			sent: rpcFilesListSentOutputSchema,
+			received: rpcFilesListReceivedOutputSchema,
+			org: rpcFilesListSentOutputSchema,
+		},
+		coldInvite: {
+			inviteByToken: rpcColdInviteByTokenOutputSchema,
+			claim: rpcColdInviteClaimOutputSchema,
+			regenerate: rpcColdInviteRegenerateOutputSchema,
+		},
+		piece: {
+			detail: rpcPieceDetailOutputSchema,
+			ack: rpcPieceAckOutputSchema,
+			signDraftFieldIds: rpcPieceSignDraftFieldIdsOutputSchema,
+			s3Url: rpcPieceS3UrlOutputSchema,
+			complianceBundle: rpcPieceComplianceBundleOutputSchema,
+			sign: rpcPieceSignOutputSchema,
+		},
+	},
+	billing: {
+		entitlements: rpcBillingEntitlementsOutputSchema,
+	},
+	metrics: {
+		invitesSummary: rpcMetricsInvitesSummaryOutputSchema,
+		senderUsage: rpcMetricsSenderUsageOutputSchema,
+	},
+	sharing: {
+		receivedRequests: rpcSharingReceivedRequestsOutputSchema,
+		sentRequests: rpcSharingSentRequestsOutputSchema,
+		emailInvites: rpcSharingEmailInvitesOutputSchema,
+		canSendTo: rpcSharingCanSendToOutputSchema,
+		cancelRequest: rpcSharingCancelRequestOutputSchema,
+		rejectRequest: rpcSharingRejectRequestOutputSchema,
+		acceptRequest: rpcSharingAcceptRequestOutputSchema,
+		approve: rpcSharingApproveOutputSchema,
+		receivableFrom: rpcSharingReceivableFromOutputSchema,
+		sendableTo: rpcSharingSendableToOutputSchema,
+		inviteById: rpcSharingInviteByIdOutputSchema,
+		inviteClaim: rpcSharingInviteClaimOutputSchema,
+		createRequest: rpcSharingCreateRequestOutputSchema,
+		requestInvite: rpcSharingRequestInviteOutputSchema,
+	},
+	orgs: {
+		create: rpcOrgsCreateOutputSchema,
+		listMine: rpcOrgsListMineOutputSchema,
+		get: rpcOrgsGetOutputSchema,
+		update: rpcOrgsUpdateOutputSchema,
+		member: rpcOrgsMemberOutputSchema,
+		inviteCreate: rpcOrgsInviteCreateOutputSchema,
+		connection: rpcOrgsConnectionOutputSchema,
+		connectionsList: rpcOrgsConnectionsListOutputSchema,
+		template: rpcOrgsTemplateOutputSchema,
+		templatesList: rpcOrgsTemplatesListOutputSchema,
+		templatesClone: rpcOrgsTemplatesCloneOutputSchema,
+	},
+	users: {
+		register: rpcUserRegisterOutputSchema,
+		profileMe: rpcUserProfileMeOutputSchema,
+		profileUpdate: rpcUserProfileUpdateOutputSchema,
+		profilePrevalidate: rpcUserProfilePrevalidateOutputSchema,
+		profileLookup: rpcUserProfileLookupOutputSchema,
+		profileSyncPrivyEmail: rpcUserProfileSyncPrivyEmailOutputSchema,
+		profileSetPrimaryEmail: rpcUserProfileSetPrimaryEmailOutputSchema,
+		signaturesCreate: rpcUserSignaturesCreateOutputSchema,
+		signaturesList: rpcUserSignaturesListOutputSchema,
+		signaturesGet: rpcUserSignaturesGetOutputSchema,
+	},
+} as const;

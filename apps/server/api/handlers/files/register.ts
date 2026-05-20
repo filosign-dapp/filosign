@@ -15,27 +15,25 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { MAX_FILE_SIZE } from "@/constants";
-import { SERVER_ANALYTICS_EVENTS } from "@/lib/analytics/events";
-import { trackServerEvent } from "@/lib/analytics/track";
-import db from "@/lib/db";
 import {
 	assertEntitlement,
 	recipientSlotCounts,
 	resolveEntitlementContext,
-} from "@/lib/domain/entitlements";
-import {
-	coldInviteExpiry,
-	normalizedViewerEmailsForRegister,
-} from "@/lib/domain/file-invites";
-import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domain/orgs";
+} from "@/lib/domains/entitlements";
+import { normalizedViewerEmailsForRegister } from "@/lib/domains/files";
+import { inviteExpiresAt } from "@/lib/domains/invites";
+import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
+import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
+import { trackServerEvent } from "@/lib/platform/analytics/track";
+import db from "@/lib/platform/db";
 import {
 	sendColdDocumentInviteEmail,
 	sendDocumentReceivedEmail,
-} from "@/lib/email/invites";
-import { fsContracts } from "@/lib/evm";
-import { bucket } from "@/lib/s3/client";
-import { getOrCreateUserDataset } from "@/lib/synapse";
-import { tryCatch } from "@/lib/utils/tryCatch";
+} from "@/lib/platform/email/invites";
+import { fsContracts } from "@/lib/platform/evm";
+import { bucket } from "@/lib/platform/s3/client";
+import { getOrCreateUserDataset } from "@/lib/platform/synapse";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const { FSFileRegistry } = fsContracts;
 
@@ -283,7 +281,7 @@ export async function filesRegister(
 					wrappedEncryptionKey: c.wrappedEncryptionKey,
 					isSigner: c.isSigner,
 					status: "pending" as const,
-					expiresAt: coldInviteExpiry(),
+					expiresAt: inviteExpiresAt(),
 				})),
 			);
 		}

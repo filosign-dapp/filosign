@@ -4,13 +4,13 @@ import { and, desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
-import db from "@/lib/db";
 import {
 	assertEntitlement,
 	resolveEntitlementContext,
-} from "@/lib/domain/entitlements";
-import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domain/orgs";
-import { bucket } from "@/lib/s3/client";
+} from "@/lib/domains/entitlements";
+import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
+import db from "@/lib/platform/db";
+import { bucket } from "@/lib/platform/s3/client";
 
 const { organizationConnections, organizationTemplates, shareApprovals } =
 	db.schema;

@@ -5,11 +5,11 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
-import db from "@/lib/db";
-import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domain/orgs";
-import { slugifyOrgName } from "@/lib/domain/orgs/slug";
-import { tryCatch } from "@/lib/utils/tryCatch";
-import { zOrgMemberRole } from "./orgs-schemas";
+import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
+import { slugifyOrgName } from "@/lib/domains/orgs/slug";
+import db from "@/lib/platform/db";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { zOrgMemberRole } from "./schemas";
 
 const {
 	organizations,

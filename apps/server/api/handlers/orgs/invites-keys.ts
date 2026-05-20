@@ -2,15 +2,16 @@ import { randomBytes } from "node:crypto";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
-import { and, eq, gt, ne, sql } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
-import db from "@/lib/db";
-import type { OrgMemberRole } from "@/lib/db/schema/organization";
-import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domain/orgs";
-import { getOrgMemberWithDocumentRead } from "@/lib/domain/orgs/file-access";
-import { zOrgMemberRole } from "./orgs-schemas";
+import { inviteExpiresAt, pendingOrgInviteFilter } from "@/lib/domains/invites";
+import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
+import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs/file-access";
+import db from "@/lib/platform/db";
+import type { OrgMemberRole } from "@/lib/platform/db/schema/organization";
+import { zOrgMemberRole } from "./schemas";
 
 const {
 	organizationMembers,
@@ -154,13 +155,10 @@ const zInviteCreateBody = z.object({
 	role: zOrgMemberRole.optional().default("sender"),
 });
 
-const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-
 async function assertOrgHasInviteSeat(
 	organizationId: string,
 	options?: { excludePendingInviteId?: string },
 ) {
-	const now = new Date();
 	const [sub] = await db
 		.select({ seatCount: organizationSubscriptions.seatCount })
 		.from(organizationSubscriptions)
@@ -184,14 +182,12 @@ async function assertOrgHasInviteSeat(
 			options?.excludePendingInviteId
 				? and(
 						eq(organizationInvites.organizationId, organizationId),
-						eq(organizationInvites.status, "pending"),
-						gt(organizationInvites.expiresAt, now),
+						pendingOrgInviteFilter(),
 						ne(organizationInvites.id, options.excludePendingInviteId),
 					)
 				: and(
 						eq(organizationInvites.organizationId, organizationId),
-						eq(organizationInvites.status, "pending"),
-						gt(organizationInvites.expiresAt, now),
+						pendingOrgInviteFilter(),
 					),
 		);
 
@@ -222,8 +218,7 @@ export async function orgsInvitesCreate(
 			and(
 				eq(organizationInvites.organizationId, activeOrg.organizationId),
 				eq(organizationInvites.email, emailNorm),
-				eq(organizationInvites.status, "pending"),
-				gt(organizationInvites.expiresAt, new Date()),
+				pendingOrgInviteFilter(),
 			),
 		)
 		.limit(1);
@@ -234,7 +229,7 @@ export async function orgsInvitesCreate(
 	}
 
 	const token = randomBytes(32).toString("hex");
-	const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
+	const expiresAt = inviteExpiresAt();
 	await assertOrgHasInviteSeat(activeOrg.organizationId);
 
 	const [invite] = await db
@@ -295,26 +290,15 @@ export async function orgsInvitesAccept(wallet: Address, body: unknown) {
 		.where(
 			and(
 				eq(organizationInvites.token, parsed.data.token),
-				eq(organizationInvites.status, "pending"),
+				pendingOrgInviteFilter(),
 			),
 		)
 		.limit(1);
 
 	if (!invite) {
 		throw new ORPCError("NOT_FOUND", {
-			message: "Invite not found or already used",
+			message: "Invite not found or expired",
 		});
-	}
-	if (invite.expiresAt <= new Date()) {
-		await db
-			.update(organizationInvites)
-			.set({
-				status: "expired",
-				token: null,
-				updatedAt: new Date(),
-			})
-			.where(eq(organizationInvites.id, invite.id));
-		throw new ORPCError("GONE", { message: "This invite has expired" });
 	}
 	if (invite.email !== emailNorm) {
 		throw new ORPCError("FORBIDDEN", {

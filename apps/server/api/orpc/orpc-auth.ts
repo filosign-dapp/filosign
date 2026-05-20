@@ -2,10 +2,10 @@ import { eq } from "drizzle-orm";
 import type { Context, Next } from "hono";
 import type { Address } from "viem";
 import env from "@/env";
-import db from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { verifyJwt } from "@/lib/utils/jwt";
-import tryCatchSync, { tryCatch } from "@/lib/utils/tryCatch";
+import db from "@/lib/platform/db";
+import { users } from "@/lib/platform/db/schema";
+import { verifyJwt } from "@/lib/platform/utils/jwt";
+import tryCatchSync, { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const ORPC_PATH_PREFIXES = ["/api/rpc", "/api/api-reference"] as const;
 

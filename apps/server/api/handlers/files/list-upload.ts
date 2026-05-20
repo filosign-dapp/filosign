@@ -3,8 +3,8 @@ import { and, desc, eq, ne, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
-import db from "@/lib/db";
-import { bucket } from "@/lib/s3/client";
+import db from "@/lib/platform/db";
+import { bucket } from "@/lib/platform/s3/client";
 
 const { files, fileParticipants, shareApprovals } = db.schema;
 

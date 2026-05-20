@@ -1,30 +1,20 @@
-/**
- * Profile, registration, Dilithium signatures, thirdweb email sync.
- */
+/** Profile and thirdweb email sync. */
 import { hashPrivySubjectCommitment } from "@filosign/shared";
-import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { isAddress } from "viem";
 import { z } from "zod";
-import { SERVER_ANALYTICS_EVENTS } from "@/lib/analytics/events";
-import { trackServerEvent } from "@/lib/analytics/track";
-import db from "@/lib/db";
-import { materializePendingInvitesForEmail } from "@/lib/domain/sharing";
-import { userAvatarWebpKey } from "@/lib/domain/storage-keys";
-import { fsContracts } from "@/lib/evm";
-import { processTransaction } from "@/lib/indexer/process";
+import { userAvatarWebpKey } from "@/lib/domains/files";
+import { materializePendingInvitesForEmail } from "@/lib/domains/sharing";
+import db from "@/lib/platform/db";
 import {
 	verifiedLinkedEmailsForWallet,
 	verifiedThirdwebEmailForWallet,
-	verifyThirdwebAuthTokenWithWallet,
-} from "@/lib/utils/thirdweb";
-import { tryCatch } from "@/lib/utils/tryCatch";
+} from "@/lib/platform/utils/thirdweb";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
-const { users, userSignatures } = db.schema;
-
-const { FSKeyRegistry } = fsContracts;
+const { users } = db.schema;
 
 export async function userProfileMe(wallet: Address) {
 	const [userData] = await db
@@ -49,7 +39,7 @@ export async function userProfileMe(wallet: Address) {
 
 	let avatarUrl: string | null = null;
 	if (userData.avatarKey) {
-		const { bucket } = await import("@/lib/s3/client");
+		const { bucket } = await import("@/lib/platform/s3/client");
 		avatarUrl = bucket.presign(userData.avatarKey, {
 			method: "GET",
 			expiresIn: 60 * 60 * 24,
@@ -131,7 +121,7 @@ export async function userProfileUpdate(wallet: Address, body: unknown) {
 				message: "Avatar key does not match this wallet",
 			});
 		}
-		const { bucket } = await import("@/lib/s3/client");
+		const { bucket } = await import("@/lib/platform/s3/client");
 		const exists = await bucket.exists(expectedKey);
 		if (!exists) {
 			throw new ORPCError("BAD_REQUEST", {
@@ -229,7 +219,7 @@ export async function userProfileLookup(_wallet: Address, q: string) {
 
 	let avatarUrl: string | null = null;
 	if (userData.avatarKey) {
-		const { bucket } = await import("@/lib/s3/client");
+		const { bucket } = await import("@/lib/platform/s3/client");
 		avatarUrl = bucket.presign(userData.avatarKey as string, {
 			method: "GET",
 			expiresIn: 60 * 60 * 24,
@@ -361,177 +351,4 @@ export async function userProfileSetPrimaryEmail(
 	}
 
 	return { email: canonical };
-}
-
-const zRegisterBody = z.object({
-	saltPin: zHexString(),
-	saltSeed: zHexString(),
-	saltChallenge: zHexString(),
-	commitmentKem: zHexString(),
-	commitmentSig: zHexString(),
-	signature: zHexString(),
-	encryptionPublicKey: zHexString(),
-	signaturePublicKey: zHexString(),
-	walletAddress: zEvmAddress(),
-	idToken: z.string().min(1).optional(),
-	skipToken: z.boolean().optional(),
-});
-
-export async function userRegister(body: unknown) {
-	const parsedBody = zRegisterBody.safeParse(body);
-
-	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });
-	}
-
-	const {
-		saltPin,
-		saltSeed,
-		saltChallenge,
-		commitmentKem,
-		commitmentSig,
-		signature,
-		encryptionPublicKey,
-		signaturePublicKey,
-		walletAddress,
-		idToken,
-		skipToken,
-	} = parsedBody.data;
-
-	let email: string;
-	let privyDid: string;
-
-	if (skipToken) {
-		email = `dev-${walletAddress}@filosign.local`;
-		privyDid = `did:dev:${walletAddress}`;
-	} else if (idToken) {
-		const authResult = await tryCatch(
-			verifyThirdwebAuthTokenWithWallet(idToken, walletAddress),
-		);
-
-		if (authResult.error) {
-			throw new ORPCError("UNAUTHORIZED", {
-				message: `Wallet auth verification failed: ${authResult.error.message}`,
-			});
-		}
-
-		email = authResult.data.email ?? "";
-		privyDid = authResult.data.privyDid;
-	} else {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "idToken or skipToken required",
-		});
-	}
-
-	if (!email) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"Email is required for registration. Please log in with email or Google.",
-		});
-	}
-
-	const valid = await tryCatch(
-		FSKeyRegistry.read.validateKeygenDataRegistrationSignature([
-			saltPin,
-			saltSeed,
-			saltChallenge,
-			commitmentKem,
-			commitmentSig,
-			signature,
-			walletAddress,
-		]),
-	);
-
-	if (valid.error || !valid.data) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: `Error validating signature ${valid.error}`,
-		});
-	}
-
-	const { FSManager } = fsContracts;
-	const alreadyRegistered = await FSManager.read.isRegistered([walletAddress]);
-	if (alreadyRegistered) {
-		return {};
-	}
-
-	const txHash = await tryCatch(
-		FSKeyRegistry.write.registerKeygenData([
-			saltPin,
-			saltSeed,
-			saltChallenge,
-			commitmentKem,
-			commitmentSig,
-			signature,
-			walletAddress,
-		]),
-	);
-	if (txHash.error || !txHash.data) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: `Error registering keygen data: ${txHash.error || "Unknown error"}`,
-		});
-	}
-
-	await processTransaction(txHash.data, {
-		encryptionPublicKey,
-		signaturePublicKey,
-		email,
-		privyDid,
-	});
-
-	trackServerEvent({
-		distinctId: walletAddress,
-		event: SERVER_ANALYTICS_EVENTS.userRegistered,
-		properties: { entry: skipToken ? "dev" : "organic" },
-	});
-
-	return {};
-}
-
-const zSignaturePostBody = z.object({
-	data: z.string(),
-});
-
-export async function userSignaturesCreate(wallet: Address, body: unknown) {
-	const parsedBody = zSignaturePostBody.safeParse(body);
-
-	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });
-	}
-
-	try {
-		await db.insert(userSignatures).values({
-			walletAddress: wallet,
-			data: parsedBody.data.data,
-		});
-	} catch (error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: `Failed to upload signature ${error}`,
-		});
-	}
-
-	return {};
-}
-
-export async function userSignaturesList(wallet: Address) {
-	const dbEntries = await db
-		.select()
-		.from(userSignatures)
-		.where(eq(userSignatures.walletAddress, wallet));
-
-	return { signatures: dbEntries };
-}
-
-export async function userSignaturesGetById(wallet: Address, id: string) {
-	const [dbEntry] = await db
-		.select()
-		.from(userSignatures)
-		.where(
-			and(eq(userSignatures.id, id), eq(userSignatures.walletAddress, wallet)),
-		);
-
-	if (!dbEntry) {
-		throw new ORPCError("NOT_FOUND", { message: "Signature not found" });
-	}
-
-	return dbEntry;
 }

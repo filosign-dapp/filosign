@@ -23,23 +23,23 @@ import { and, eq, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
-import { SERVER_ANALYTICS_EVENTS } from "@/lib/analytics/events";
-import { trackServerEvent } from "@/lib/analytics/track";
+import {
+	isEnvelopeFullySigned,
+	isSenderAlreadyApprovedError,
+	primaryEmailForWallet,
+} from "@/lib/domains/files";
+import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs";
+import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
+import { trackServerEvent } from "@/lib/platform/analytics/track";
 import {
 	buildComplianceBundleAndHash,
 	insertComplianceExportLog,
-} from "@/lib/compliance/buildComplianceBundle";
-import db from "@/lib/db";
-import { isEnvelopeFullySigned } from "@/lib/domain/envelope-completion";
-import {
-	isSenderAlreadyApprovedError,
-	primaryEmailForWallet,
-} from "@/lib/domain/file-invites";
-import { getOrgMemberWithDocumentRead } from "@/lib/domain/orgs";
-import { evmClient, fsContracts } from "@/lib/evm";
-import { bucket } from "@/lib/s3/client";
-import { tryCatch } from "@/lib/utils/tryCatch";
-import { zodSafeParseMessage } from "@/lib/utils/zodHttp";
+} from "@/lib/platform/compliance";
+import db from "@/lib/platform/db";
+import { evmClient, fsContracts } from "@/lib/platform/evm";
+import { bucket } from "@/lib/platform/s3/client";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
 
 const { FSFileRegistry, FSManager } = fsContracts;
 const {

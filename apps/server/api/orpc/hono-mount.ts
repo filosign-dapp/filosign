@@ -69,6 +69,18 @@ export async function orpcHybridMiddleware(c: Context, next: Next) {
 	});
 
 	if (rpcResult.matched) {
+		const cookies = context.authSetCookies;
+		if (cookies?.length) {
+			const headers = new Headers(rpcResult.response.headers);
+			for (const cookie of cookies) {
+				headers.append("Set-Cookie", cookie);
+			}
+			return new Response(rpcResult.response.body, {
+				status: rpcResult.response.status,
+				statusText: rpcResult.response.statusText,
+				headers,
+			});
+		}
 		return c.newResponse(rpcResult.response.body, rpcResult.response);
 	}
 

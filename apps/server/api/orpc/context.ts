@@ -11,6 +11,8 @@ export type OrpcContext = LoggerContext & {
 	hono: HonoContext<{ Variables: ApiRouterVariables }>;
 	userWallet?: Address;
 	activeOrg?: ActiveOrgContext | null;
+	/** Set-Cookie header values appended on the oRPC response. */
+	authSetCookies?: string[];
 };
 
 export type CreateContextOptions = {

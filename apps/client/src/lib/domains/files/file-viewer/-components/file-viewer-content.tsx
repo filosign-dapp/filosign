@@ -1,12 +1,11 @@
 import { DownloadIcon, FileIcon } from "@phosphor-icons/react";
-import { lazy, Suspense } from "react";
+import {
+	LazyBoundary,
+	LazyPdfJsPreview,
+} from "@/src/lib/components/app/suspense";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { useFileViewer } from "@/src/lib/domains/files/file-viewer/-lib/context/context";
-
-const LazyPdfJsPreview = lazy(
-	() => import("@/src/lib/domains/files/pdf/pdf-js-preview.lazy"),
-);
 
 export function FileViewerContent() {
 	const {
@@ -111,7 +110,7 @@ export function FileViewerContent() {
 					className="relative bg-white border shadow-lg border-border"
 					style={scaledFrameStyle}
 				>
-					<Suspense
+					<LazyBoundary
 						fallback={
 							<div className="absolute inset-0 flex items-center justify-center bg-white">
 								<InlineLoader size="md" />
@@ -126,7 +125,7 @@ export function FileViewerContent() {
 							pageNumber={1}
 							width={documentDimensions.width}
 						/>
-					</Suspense>
+					</LazyBoundary>
 				</div>
 			</div>
 		);

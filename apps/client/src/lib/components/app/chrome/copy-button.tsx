@@ -1,7 +1,7 @@
 import { CheckIcon, CopyIcon } from "@phosphor-icons/react";
 import { useState } from "react";
-import { cn } from "../../utils/utils";
-import { Button } from "../ui/button";
+import { Button } from "@/src/lib/components/ui/button";
+import { cn } from "@/src/lib/utils";
 
 export function CopyButton({
 	text,

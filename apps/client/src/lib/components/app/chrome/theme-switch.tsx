@@ -1,7 +1,7 @@
 import { MoonIcon, SunIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import { useTheme } from "next-themes";
-import { Button } from "../ui/button";
+import { Button } from "@/src/lib/components/ui/button";
 
 export default function ThemeSwitch() {
 	const { resolvedTheme, setTheme } = useTheme();

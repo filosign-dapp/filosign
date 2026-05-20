@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import Crop from "./Crop";
-import { Image } from "./Image";
+import Crop from "./crop";
+import { Image } from "./image";
 
 interface IProps {
 	setImage: (file: File) => void;

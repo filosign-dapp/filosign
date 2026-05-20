@@ -3,7 +3,7 @@ import { useUserProfile } from "@filosign/react/users";
 import { CopySimpleIcon, SignOutIcon, UserIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import * as React from "react";
-import { Image } from "@/src/lib/components/shared/Image";
+import { Image } from "@/src/lib/components/app/media/image";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	DropdownMenu,
@@ -13,9 +13,9 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
-import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
-import { useThirdwebWalletAuth } from "@/src/lib/hooks/use-thirdweb-wallet-auth";
 import { copyToClipboard } from "@/src/lib/utils/utils";
+import { useThirdwebUserInfo } from "@/src/lib/web3/hooks/use-thirdweb-user-info";
+import { useThirdwebWalletAuth } from "@/src/lib/web3/hooks/use-thirdweb-wallet-auth";
 
 export function UserDropdownButton() {
 	const { user } = useThirdwebUserInfo();

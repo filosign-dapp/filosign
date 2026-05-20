@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { cn } from "../../utils";
-import { Image } from "./Image";
+import { Image } from "@/src/lib/components/app/media/image";
+import { cn } from "@/src/lib/utils";
 
 interface LogoProps {
 	className?: string;

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { cn } from "../../utils";
+import { cn } from "@/src/lib/utils";
 
 type Props = {
 	src?: string | null;

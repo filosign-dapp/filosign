@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Cropper from "react-easy-crop";
 import { toast } from "sonner";
-import { Button } from "../ui/button";
+import { Button } from "@/src/lib/components/ui/button";
 import {
 	Dialog,
 	DialogContent,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "../ui/dialog";
-import { ToggleGroup, ToggleGroupItem } from "../ui/toggle-group";
+} from "@/src/lib/components/ui/dialog";
+import {
+	ToggleGroup,
+	ToggleGroupItem,
+} from "@/src/lib/components/ui/toggle-group";
 
 type AspectRatio =
 	| "square"

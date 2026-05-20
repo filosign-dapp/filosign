@@ -1,4 +1,6 @@
 /** Profile and thirdweb email sync. */
+
+import type { DragonflyAuthStore } from "@filosign/auth";
 import { hashPrivySubjectCommitment } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
@@ -7,13 +9,12 @@ import { isAddress } from "viem";
 import { z } from "zod";
 import { userAvatarWebpKey } from "@/lib/domains/files";
 import { materializePendingInvitesForEmail } from "@/lib/domains/sharing";
+import { authStore } from "@/lib/platform/auth/instance";
 import db from "@/lib/platform/db";
 import {
 	verifiedLinkedEmailsForWallet,
 	verifiedThirdwebEmailForWallet,
 } from "@/lib/platform/utils/thirdweb";
-import type { DragonflyAuthStore } from "@filosign/auth";
-import { authStore } from "@/lib/platform/auth/instance";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const { users } = db.schema;

@@ -26,7 +26,8 @@ function isValidEmail(email: string) {
 }
 
 export function RecipientCard({ index }: { index: number }) {
-	const { recipients, updateRecipient, removeRecipient } = useRecipientsContext();
+	const { recipients, updateRecipient, removeRecipient } =
+		useRecipientsContext();
 	const recipient = recipients?.[index];
 
 	if (!recipient) return null;

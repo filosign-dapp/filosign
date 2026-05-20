@@ -25,7 +25,7 @@ import { useThirdwebLoginAction } from "@/src/lib/hooks/use-thirdweb-login";
 import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
 import { useThirdwebWalletAuth } from "@/src/lib/hooks/use-thirdweb-wallet-auth";
 import { coldInviteRecipientMatchesIdentity } from "@/src/lib/routing/cold-invite-search";
-import { executeSwitchAccountLogout } from "@/src/pages/onboarding/_components/OnboardingSwitchAccountLink";
+import { executeSwitchAccountLogout } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
 
 export function useSignInviteUnlock(args: {
 	pieceCid: string;

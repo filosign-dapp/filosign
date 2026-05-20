@@ -13,17 +13,16 @@ import { Route as DashboardRouteRouteImport } from "./routes/dashboard/route"
 import { Route as IndexRouteImport } from "./routes/index"
 import { Route as OnboardingIndexRouteImport } from "./routes/onboarding/index"
 import { Route as DashboardIndexRouteImport } from "./routes/dashboard/index"
-import { Route as OnboardingWelcomeRouteImport } from "./routes/onboarding/welcome"
-import { Route as OnboardingCreateSignatureRouteImport } from "./routes/onboarding/create-signature"
-import { Route as InviteInviteIdRouteImport } from "./routes/invite/$inviteId"
-import { Route as DashboardConnectionsIndexRouteImport } from "./routes/dashboard/connections/index"
-import { Route as DashboardSettingsTeamRouteImport } from "./routes/dashboard/settings/team"
-import { Route as DashboardSettingsProfileRouteImport } from "./routes/dashboard/settings/profile"
+import { Route as DashboardShellRouteRouteImport } from "./routes/dashboard/_shell/route"
+import { Route as OnboardingWelcomeIndexRouteImport } from "./routes/onboarding/welcome/index"
+import { Route as OnboardingCreateSignatureIndexRouteImport } from "./routes/onboarding/create-signature/index"
+import { Route as InviteInviteIdIndexRouteImport } from "./routes/invite/$inviteId/index"
 import { Route as DashboardSignatureCreateIndexRouteImport } from "./routes/dashboard/signature/create/index"
 import { Route as DashboardEnvelopeCreateIndexRouteImport } from "./routes/dashboard/envelope/create/index"
 import { Route as DashboardDocumentSignIndexRouteImport } from "./routes/dashboard/document/sign/index"
-import { Route as DashboardDocumentAllIndexRouteImport } from "./routes/dashboard/document/all/index"
+import { Route as DashboardShellConnectionsIndexRouteImport } from "./routes/dashboard/_shell/connections/index"
 import { Route as DashboardEnvelopeCreateAddSignIndexRouteImport } from "./routes/dashboard/envelope/create/add-sign/index"
+import { Route as DashboardShellDocumentAllIndexRouteImport } from "./routes/dashboard/_shell/document/all/index"
 
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
   id: "/dashboard",
@@ -45,39 +44,26 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: "/",
   getParentRoute: () => DashboardRouteRoute,
 } as any)
-const OnboardingWelcomeRoute = OnboardingWelcomeRouteImport.update({
-  id: "/onboarding/welcome",
-  path: "/onboarding/welcome",
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingCreateSignatureRoute =
-  OnboardingCreateSignatureRouteImport.update({
-    id: "/onboarding/create-signature",
-    path: "/onboarding/create-signature",
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const InviteInviteIdRoute = InviteInviteIdRouteImport.update({
-  id: "/invite/$inviteId",
-  path: "/invite/$inviteId",
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardConnectionsIndexRoute =
-  DashboardConnectionsIndexRouteImport.update({
-    id: "/connections/",
-    path: "/connections/",
-    getParentRoute: () => DashboardRouteRoute,
-  } as any)
-const DashboardSettingsTeamRoute = DashboardSettingsTeamRouteImport.update({
-  id: "/settings/team",
-  path: "/settings/team",
+const DashboardShellRouteRoute = DashboardShellRouteRouteImport.update({
+  id: "/_shell",
   getParentRoute: () => DashboardRouteRoute,
 } as any)
-const DashboardSettingsProfileRoute =
-  DashboardSettingsProfileRouteImport.update({
-    id: "/settings/profile",
-    path: "/settings/profile",
-    getParentRoute: () => DashboardRouteRoute,
+const OnboardingWelcomeIndexRoute = OnboardingWelcomeIndexRouteImport.update({
+  id: "/onboarding/welcome/",
+  path: "/onboarding/welcome/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingCreateSignatureIndexRoute =
+  OnboardingCreateSignatureIndexRouteImport.update({
+    id: "/onboarding/create-signature/",
+    path: "/onboarding/create-signature/",
+    getParentRoute: () => rootRouteImport,
   } as any)
+const InviteInviteIdIndexRoute = InviteInviteIdIndexRouteImport.update({
+  id: "/invite/$inviteId/",
+  path: "/invite/$inviteId/",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardSignatureCreateIndexRoute =
   DashboardSignatureCreateIndexRouteImport.update({
     id: "/signature/create/",
@@ -96,11 +82,11 @@ const DashboardDocumentSignIndexRoute =
     path: "/document/sign/",
     getParentRoute: () => DashboardRouteRoute,
   } as any)
-const DashboardDocumentAllIndexRoute =
-  DashboardDocumentAllIndexRouteImport.update({
-    id: "/document/all/",
-    path: "/document/all/",
-    getParentRoute: () => DashboardRouteRoute,
+const DashboardShellConnectionsIndexRoute =
+  DashboardShellConnectionsIndexRouteImport.update({
+    id: "/connections/",
+    path: "/connections/",
+    getParentRoute: () => DashboardShellRouteRoute,
   } as any)
 const DashboardEnvelopeCreateAddSignIndexRoute =
   DashboardEnvelopeCreateAddSignIndexRouteImport.update({
@@ -108,56 +94,57 @@ const DashboardEnvelopeCreateAddSignIndexRoute =
     path: "/envelope/create/add-sign/",
     getParentRoute: () => DashboardRouteRoute,
   } as any)
+const DashboardShellDocumentAllIndexRoute =
+  DashboardShellDocumentAllIndexRouteImport.update({
+    id: "/document/all/",
+    path: "/document/all/",
+    getParentRoute: () => DashboardShellRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
-  "/dashboard": typeof DashboardRouteRouteWithChildren
-  "/invite/$inviteId": typeof InviteInviteIdRoute
-  "/onboarding/create-signature": typeof OnboardingCreateSignatureRoute
-  "/onboarding/welcome": typeof OnboardingWelcomeRoute
+  "/dashboard": typeof DashboardShellRouteRouteWithChildren
   "/dashboard/": typeof DashboardIndexRoute
   "/onboarding/": typeof OnboardingIndexRoute
-  "/dashboard/settings/profile": typeof DashboardSettingsProfileRoute
-  "/dashboard/settings/team": typeof DashboardSettingsTeamRoute
-  "/dashboard/connections/": typeof DashboardConnectionsIndexRoute
-  "/dashboard/document/all/": typeof DashboardDocumentAllIndexRoute
+  "/invite/$inviteId/": typeof InviteInviteIdIndexRoute
+  "/onboarding/create-signature/": typeof OnboardingCreateSignatureIndexRoute
+  "/onboarding/welcome/": typeof OnboardingWelcomeIndexRoute
+  "/dashboard/connections/": typeof DashboardShellConnectionsIndexRoute
   "/dashboard/document/sign/": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create/": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create/": typeof DashboardSignatureCreateIndexRoute
+  "/dashboard/document/all/": typeof DashboardShellDocumentAllIndexRoute
   "/dashboard/envelope/create/add-sign/": typeof DashboardEnvelopeCreateAddSignIndexRoute
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
-  "/invite/$inviteId": typeof InviteInviteIdRoute
-  "/onboarding/create-signature": typeof OnboardingCreateSignatureRoute
-  "/onboarding/welcome": typeof OnboardingWelcomeRoute
   "/dashboard": typeof DashboardIndexRoute
   "/onboarding": typeof OnboardingIndexRoute
-  "/dashboard/settings/profile": typeof DashboardSettingsProfileRoute
-  "/dashboard/settings/team": typeof DashboardSettingsTeamRoute
-  "/dashboard/connections": typeof DashboardConnectionsIndexRoute
-  "/dashboard/document/all": typeof DashboardDocumentAllIndexRoute
+  "/invite/$inviteId": typeof InviteInviteIdIndexRoute
+  "/onboarding/create-signature": typeof OnboardingCreateSignatureIndexRoute
+  "/onboarding/welcome": typeof OnboardingWelcomeIndexRoute
+  "/dashboard/connections": typeof DashboardShellConnectionsIndexRoute
   "/dashboard/document/sign": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create": typeof DashboardSignatureCreateIndexRoute
+  "/dashboard/document/all": typeof DashboardShellDocumentAllIndexRoute
   "/dashboard/envelope/create/add-sign": typeof DashboardEnvelopeCreateAddSignIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
   "/dashboard": typeof DashboardRouteRouteWithChildren
-  "/invite/$inviteId": typeof InviteInviteIdRoute
-  "/onboarding/create-signature": typeof OnboardingCreateSignatureRoute
-  "/onboarding/welcome": typeof OnboardingWelcomeRoute
+  "/dashboard/_shell": typeof DashboardShellRouteRouteWithChildren
   "/dashboard/": typeof DashboardIndexRoute
   "/onboarding/": typeof OnboardingIndexRoute
-  "/dashboard/settings/profile": typeof DashboardSettingsProfileRoute
-  "/dashboard/settings/team": typeof DashboardSettingsTeamRoute
-  "/dashboard/connections/": typeof DashboardConnectionsIndexRoute
-  "/dashboard/document/all/": typeof DashboardDocumentAllIndexRoute
+  "/invite/$inviteId/": typeof InviteInviteIdIndexRoute
+  "/onboarding/create-signature/": typeof OnboardingCreateSignatureIndexRoute
+  "/onboarding/welcome/": typeof OnboardingWelcomeIndexRoute
+  "/dashboard/_shell/connections/": typeof DashboardShellConnectionsIndexRoute
   "/dashboard/document/sign/": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create/": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create/": typeof DashboardSignatureCreateIndexRoute
+  "/dashboard/_shell/document/all/": typeof DashboardShellDocumentAllIndexRoute
   "/dashboard/envelope/create/add-sign/": typeof DashboardEnvelopeCreateAddSignIndexRoute
 }
 export interface FileRouteTypes {
@@ -165,61 +152,56 @@ export interface FileRouteTypes {
   fullPaths:
     | "/"
     | "/dashboard"
-    | "/invite/$inviteId"
-    | "/onboarding/create-signature"
-    | "/onboarding/welcome"
     | "/dashboard/"
     | "/onboarding/"
-    | "/dashboard/settings/profile"
-    | "/dashboard/settings/team"
+    | "/invite/$inviteId/"
+    | "/onboarding/create-signature/"
+    | "/onboarding/welcome/"
     | "/dashboard/connections/"
-    | "/dashboard/document/all/"
     | "/dashboard/document/sign/"
     | "/dashboard/envelope/create/"
     | "/dashboard/signature/create/"
+    | "/dashboard/document/all/"
     | "/dashboard/envelope/create/add-sign/"
   fileRoutesByTo: FileRoutesByTo
   to:
     | "/"
+    | "/dashboard"
+    | "/onboarding"
     | "/invite/$inviteId"
     | "/onboarding/create-signature"
     | "/onboarding/welcome"
-    | "/dashboard"
-    | "/onboarding"
-    | "/dashboard/settings/profile"
-    | "/dashboard/settings/team"
     | "/dashboard/connections"
-    | "/dashboard/document/all"
     | "/dashboard/document/sign"
     | "/dashboard/envelope/create"
     | "/dashboard/signature/create"
+    | "/dashboard/document/all"
     | "/dashboard/envelope/create/add-sign"
   id:
     | "__root__"
     | "/"
     | "/dashboard"
-    | "/invite/$inviteId"
-    | "/onboarding/create-signature"
-    | "/onboarding/welcome"
+    | "/dashboard/_shell"
     | "/dashboard/"
     | "/onboarding/"
-    | "/dashboard/settings/profile"
-    | "/dashboard/settings/team"
-    | "/dashboard/connections/"
-    | "/dashboard/document/all/"
+    | "/invite/$inviteId/"
+    | "/onboarding/create-signature/"
+    | "/onboarding/welcome/"
+    | "/dashboard/_shell/connections/"
     | "/dashboard/document/sign/"
     | "/dashboard/envelope/create/"
     | "/dashboard/signature/create/"
+    | "/dashboard/_shell/document/all/"
     | "/dashboard/envelope/create/add-sign/"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
-  InviteInviteIdRoute: typeof InviteInviteIdRoute
-  OnboardingCreateSignatureRoute: typeof OnboardingCreateSignatureRoute
-  OnboardingWelcomeRoute: typeof OnboardingWelcomeRoute
   OnboardingIndexRoute: typeof OnboardingIndexRoute
+  InviteInviteIdIndexRoute: typeof InviteInviteIdIndexRoute
+  OnboardingCreateSignatureIndexRoute: typeof OnboardingCreateSignatureIndexRoute
+  OnboardingWelcomeIndexRoute: typeof OnboardingWelcomeIndexRoute
 }
 
 declare module "@tanstack/react-router" {
@@ -252,47 +234,33 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
-    "/onboarding/welcome": {
-      id: "/onboarding/welcome"
+    "/dashboard/_shell": {
+      id: "/dashboard/_shell"
+      path: ""
+      fullPath: "/dashboard"
+      preLoaderRoute: typeof DashboardShellRouteRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    "/onboarding/welcome/": {
+      id: "/onboarding/welcome/"
       path: "/onboarding/welcome"
-      fullPath: "/onboarding/welcome"
-      preLoaderRoute: typeof OnboardingWelcomeRouteImport
+      fullPath: "/onboarding/welcome/"
+      preLoaderRoute: typeof OnboardingWelcomeIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/onboarding/create-signature": {
-      id: "/onboarding/create-signature"
+    "/onboarding/create-signature/": {
+      id: "/onboarding/create-signature/"
       path: "/onboarding/create-signature"
-      fullPath: "/onboarding/create-signature"
-      preLoaderRoute: typeof OnboardingCreateSignatureRouteImport
+      fullPath: "/onboarding/create-signature/"
+      preLoaderRoute: typeof OnboardingCreateSignatureIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/invite/$inviteId": {
-      id: "/invite/$inviteId"
+    "/invite/$inviteId/": {
+      id: "/invite/$inviteId/"
       path: "/invite/$inviteId"
-      fullPath: "/invite/$inviteId"
-      preLoaderRoute: typeof InviteInviteIdRouteImport
+      fullPath: "/invite/$inviteId/"
+      preLoaderRoute: typeof InviteInviteIdIndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    "/dashboard/connections/": {
-      id: "/dashboard/connections/"
-      path: "/connections"
-      fullPath: "/dashboard/connections/"
-      preLoaderRoute: typeof DashboardConnectionsIndexRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    "/dashboard/settings/team": {
-      id: "/dashboard/settings/team"
-      path: "/settings/team"
-      fullPath: "/dashboard/settings/team"
-      preLoaderRoute: typeof DashboardSettingsTeamRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    "/dashboard/settings/profile": {
-      id: "/dashboard/settings/profile"
-      path: "/settings/profile"
-      fullPath: "/dashboard/settings/profile"
-      preLoaderRoute: typeof DashboardSettingsProfileRouteImport
-      parentRoute: typeof DashboardRouteRoute
     }
     "/dashboard/signature/create/": {
       id: "/dashboard/signature/create/"
@@ -315,12 +283,12 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardDocumentSignIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
-    "/dashboard/document/all/": {
-      id: "/dashboard/document/all/"
-      path: "/document/all"
-      fullPath: "/dashboard/document/all/"
-      preLoaderRoute: typeof DashboardDocumentAllIndexRouteImport
-      parentRoute: typeof DashboardRouteRoute
+    "/dashboard/_shell/connections/": {
+      id: "/dashboard/_shell/connections/"
+      path: "/connections"
+      fullPath: "/dashboard/connections/"
+      preLoaderRoute: typeof DashboardShellConnectionsIndexRouteImport
+      parentRoute: typeof DashboardShellRouteRoute
     }
     "/dashboard/envelope/create/add-sign/": {
       id: "/dashboard/envelope/create/add-sign/"
@@ -329,15 +297,32 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardEnvelopeCreateAddSignIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    "/dashboard/_shell/document/all/": {
+      id: "/dashboard/_shell/document/all/"
+      path: "/document/all"
+      fullPath: "/dashboard/document/all/"
+      preLoaderRoute: typeof DashboardShellDocumentAllIndexRouteImport
+      parentRoute: typeof DashboardShellRouteRoute
+    }
   }
 }
 
+interface DashboardShellRouteRouteChildren {
+  DashboardShellConnectionsIndexRoute: typeof DashboardShellConnectionsIndexRoute
+  DashboardShellDocumentAllIndexRoute: typeof DashboardShellDocumentAllIndexRoute
+}
+
+const DashboardShellRouteRouteChildren: DashboardShellRouteRouteChildren = {
+  DashboardShellConnectionsIndexRoute: DashboardShellConnectionsIndexRoute,
+  DashboardShellDocumentAllIndexRoute: DashboardShellDocumentAllIndexRoute,
+}
+
+const DashboardShellRouteRouteWithChildren =
+  DashboardShellRouteRoute._addFileChildren(DashboardShellRouteRouteChildren)
+
 interface DashboardRouteRouteChildren {
+  DashboardShellRouteRoute: typeof DashboardShellRouteRouteWithChildren
   DashboardIndexRoute: typeof DashboardIndexRoute
-  DashboardSettingsProfileRoute: typeof DashboardSettingsProfileRoute
-  DashboardSettingsTeamRoute: typeof DashboardSettingsTeamRoute
-  DashboardConnectionsIndexRoute: typeof DashboardConnectionsIndexRoute
-  DashboardDocumentAllIndexRoute: typeof DashboardDocumentAllIndexRoute
   DashboardDocumentSignIndexRoute: typeof DashboardDocumentSignIndexRoute
   DashboardEnvelopeCreateIndexRoute: typeof DashboardEnvelopeCreateIndexRoute
   DashboardSignatureCreateIndexRoute: typeof DashboardSignatureCreateIndexRoute
@@ -345,11 +330,8 @@ interface DashboardRouteRouteChildren {
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardShellRouteRoute: DashboardShellRouteRouteWithChildren,
   DashboardIndexRoute: DashboardIndexRoute,
-  DashboardSettingsProfileRoute: DashboardSettingsProfileRoute,
-  DashboardSettingsTeamRoute: DashboardSettingsTeamRoute,
-  DashboardConnectionsIndexRoute: DashboardConnectionsIndexRoute,
-  DashboardDocumentAllIndexRoute: DashboardDocumentAllIndexRoute,
   DashboardDocumentSignIndexRoute: DashboardDocumentSignIndexRoute,
   DashboardEnvelopeCreateIndexRoute: DashboardEnvelopeCreateIndexRoute,
   DashboardSignatureCreateIndexRoute: DashboardSignatureCreateIndexRoute,
@@ -364,10 +346,10 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
-  InviteInviteIdRoute: InviteInviteIdRoute,
-  OnboardingCreateSignatureRoute: OnboardingCreateSignatureRoute,
-  OnboardingWelcomeRoute: OnboardingWelcomeRoute,
   OnboardingIndexRoute: OnboardingIndexRoute,
+  InviteInviteIdIndexRoute: InviteInviteIdIndexRoute,
+  OnboardingCreateSignatureIndexRoute: OnboardingCreateSignatureIndexRoute,
+  OnboardingWelcomeIndexRoute: OnboardingWelcomeIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

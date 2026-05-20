@@ -7,15 +7,15 @@ import {
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
-import { ColdShareDialog } from "../../envelope/create/add-sign/_components/ColdShareDialog";
-import { SignDocumentBody } from "./_components/SignDocumentBody";
-import { SignDocumentShell } from "./_components/SignDocumentShell";
-import { SignDocumentShellHeader } from "./_components/SignDocumentShellHeader";
-import { SignDocumentSidebar } from "./_components/SignDocumentSidebar";
-import { SignDocumentStickyHeader } from "./_components/SignDocumentStickyHeader";
-import { SignInviteUnlockDialog } from "./_components/SignInviteUnlockDialog";
-import { useSignDocument } from "./useSignDocument";
-import { useSignInviteUnlock } from "./useSignInviteUnlock";
+import { ColdShareDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/ColdShareDialog";
+import { SignDocumentBody } from "./-components/SignDocumentBody";
+import { SignDocumentShell } from "./-components/SignDocumentShell";
+import { SignDocumentShellHeader } from "./-components/SignDocumentShellHeader";
+import { SignDocumentSidebar } from "./-components/SignDocumentSidebar";
+import { SignDocumentStickyHeader } from "./-components/SignDocumentStickyHeader";
+import { SignInviteUnlockDialog } from "./-components/SignInviteUnlockDialog";
+import { useSignDocument } from "./hooks/useSignDocument";
+import { useSignInviteUnlock } from "./hooks/useSignInviteUnlock";
 
 export function SignDocumentPage() {
 	const navigate = useNavigate();

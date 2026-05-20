@@ -8,7 +8,7 @@ import { CaretRightIcon } from "@phosphor-icons/react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
-import Logo from "@/src/lib/components/custom/Logo";
+import Logo from "@/src/lib/components/shared/Logo";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Card,
@@ -25,7 +25,7 @@ import {
 } from "@/src/lib/routing/cold-invite-search";
 import { logger } from "@/src/lib/utils/logger";
 
-export default function OnboardingWelcomeCompletePage() {
+function OnboardingWelcomeCompletePage() {
 	const captureAppEvent = useCaptureAppEvent();
 	const [userName, setUserName] = useState("");
 	const { onboardingForm, setOnboardingForm } = useStorePersist();
@@ -164,3 +164,11 @@ export default function OnboardingWelcomeCompletePage() {
 		</div>
 	);
 }
+
+import { createFileRoute } from "@tanstack/react-router";
+import { coldInviteEntrySearchSchema } from "@/src/lib/routing/cold-invite-search";
+
+export const Route = createFileRoute("/onboarding/welcome/")({
+	validateSearch: coldInviteEntrySearchSchema,
+	component: OnboardingWelcomeCompletePage,
+});

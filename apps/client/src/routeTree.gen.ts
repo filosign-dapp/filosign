@@ -17,6 +17,7 @@ import { Route as OnboardingWelcomeRouteImport } from "./routes/onboarding/welco
 import { Route as OnboardingCreateSignatureRouteImport } from "./routes/onboarding/create-signature"
 import { Route as InviteInviteIdRouteImport } from "./routes/invite/$inviteId"
 import { Route as DashboardConnectionsIndexRouteImport } from "./routes/dashboard/connections/index"
+import { Route as DashboardSettingsTeamRouteImport } from "./routes/dashboard/settings/team"
 import { Route as DashboardSettingsProfileRouteImport } from "./routes/dashboard/settings/profile"
 import { Route as DashboardSignatureCreateIndexRouteImport } from "./routes/dashboard/signature/create/index"
 import { Route as DashboardEnvelopeCreateIndexRouteImport } from "./routes/dashboard/envelope/create/index"
@@ -66,6 +67,11 @@ const DashboardConnectionsIndexRoute =
     path: "/connections/",
     getParentRoute: () => DashboardRouteRoute,
   } as any)
+const DashboardSettingsTeamRoute = DashboardSettingsTeamRouteImport.update({
+  id: "/settings/team",
+  path: "/settings/team",
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 const DashboardSettingsProfileRoute =
   DashboardSettingsProfileRouteImport.update({
     id: "/settings/profile",
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   "/dashboard/": typeof DashboardIndexRoute
   "/onboarding/": typeof OnboardingIndexRoute
   "/dashboard/settings/profile": typeof DashboardSettingsProfileRoute
+  "/dashboard/settings/team": typeof DashboardSettingsTeamRoute
   "/dashboard/connections/": typeof DashboardConnectionsIndexRoute
   "/dashboard/document/all/": typeof DashboardDocumentAllIndexRoute
   "/dashboard/document/sign/": typeof DashboardDocumentSignIndexRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   "/dashboard": typeof DashboardIndexRoute
   "/onboarding": typeof OnboardingIndexRoute
   "/dashboard/settings/profile": typeof DashboardSettingsProfileRoute
+  "/dashboard/settings/team": typeof DashboardSettingsTeamRoute
   "/dashboard/connections": typeof DashboardConnectionsIndexRoute
   "/dashboard/document/all": typeof DashboardDocumentAllIndexRoute
   "/dashboard/document/sign": typeof DashboardDocumentSignIndexRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   "/dashboard/": typeof DashboardIndexRoute
   "/onboarding/": typeof OnboardingIndexRoute
   "/dashboard/settings/profile": typeof DashboardSettingsProfileRoute
+  "/dashboard/settings/team": typeof DashboardSettingsTeamRoute
   "/dashboard/connections/": typeof DashboardConnectionsIndexRoute
   "/dashboard/document/all/": typeof DashboardDocumentAllIndexRoute
   "/dashboard/document/sign/": typeof DashboardDocumentSignIndexRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | "/dashboard/"
     | "/onboarding/"
     | "/dashboard/settings/profile"
+    | "/dashboard/settings/team"
     | "/dashboard/connections/"
     | "/dashboard/document/all/"
     | "/dashboard/document/sign/"
@@ -177,6 +187,7 @@ export interface FileRouteTypes {
     | "/dashboard"
     | "/onboarding"
     | "/dashboard/settings/profile"
+    | "/dashboard/settings/team"
     | "/dashboard/connections"
     | "/dashboard/document/all"
     | "/dashboard/document/sign"
@@ -193,6 +204,7 @@ export interface FileRouteTypes {
     | "/dashboard/"
     | "/onboarding/"
     | "/dashboard/settings/profile"
+    | "/dashboard/settings/team"
     | "/dashboard/connections/"
     | "/dashboard/document/all/"
     | "/dashboard/document/sign/"
@@ -268,6 +280,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardConnectionsIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    "/dashboard/settings/team": {
+      id: "/dashboard/settings/team"
+      path: "/settings/team"
+      fullPath: "/dashboard/settings/team"
+      preLoaderRoute: typeof DashboardSettingsTeamRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     "/dashboard/settings/profile": {
       id: "/dashboard/settings/profile"
       path: "/settings/profile"
@@ -316,6 +335,7 @@ declare module "@tanstack/react-router" {
 interface DashboardRouteRouteChildren {
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardSettingsProfileRoute: typeof DashboardSettingsProfileRoute
+  DashboardSettingsTeamRoute: typeof DashboardSettingsTeamRoute
   DashboardConnectionsIndexRoute: typeof DashboardConnectionsIndexRoute
   DashboardDocumentAllIndexRoute: typeof DashboardDocumentAllIndexRoute
   DashboardDocumentSignIndexRoute: typeof DashboardDocumentSignIndexRoute
@@ -327,6 +347,7 @@ interface DashboardRouteRouteChildren {
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardSettingsProfileRoute: DashboardSettingsProfileRoute,
+  DashboardSettingsTeamRoute: DashboardSettingsTeamRoute,
   DashboardConnectionsIndexRoute: DashboardConnectionsIndexRoute,
   DashboardDocumentAllIndexRoute: DashboardDocumentAllIndexRoute,
   DashboardDocumentSignIndexRoute: DashboardDocumentSignIndexRoute,

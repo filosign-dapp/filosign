@@ -3,6 +3,8 @@ import { z } from "zod";
 
 export const env = createEnv({
 	server: {
+		/** `development` = local HTTP; `production` = HTTPS deploy (enables Secure cookies). */
+		NODE_ENV: z.enum(["development", "production"]).default("production"),
 		TG_ANALYTICS_BOT_GROUP_ID: z.string().min(1).optional(),
 		TG_ANALYTICS_BOT_TOKEN: z.string().min(1).optional(),
 		S3_SECRET_ACCESS_KEY: z.string().min(1),

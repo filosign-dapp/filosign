@@ -15,7 +15,7 @@ import { createPostgresAuthStore } from "@/lib/platform/auth/postgres-store";
 import db from "@/lib/platform/db";
 import { authAuditEvents } from "@/lib/platform/db/schema";
 
-const secureCookies = env.CHAIN === "mainnet";
+const secureCookies = env.NODE_ENV === "production";
 
 export const authConfig = defaultAuthConfig({
 	jwtSecret: env.JWT_SECRET,

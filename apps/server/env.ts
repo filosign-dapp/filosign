@@ -27,6 +27,8 @@ export const env = createEnv({
 			.transform((v) => parseInt(v, 10))
 			.optional(),
 		JWT_SECRET: z.string().min(32),
+		/** Dragonfly / Redis URL for auth cache (nonces, denylist, refresh). Falls back to Postgres when unset. */
+		DRAGONFLY_URL: z.string().min(1).optional(),
 		/** Same project client ID as `VITE_THIRDWEB_CLIENT_ID` on the client. */
 		THIRDWEB_CLIENT_ID: z.string().min(1),
 		THIRDWEB_SECRET_KEY: z.string().min(1),

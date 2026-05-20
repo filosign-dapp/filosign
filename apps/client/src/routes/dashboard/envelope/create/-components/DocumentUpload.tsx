@@ -16,8 +16,8 @@ import {
 } from "@/src/lib/components/ui/collapsible";
 import { createClientId } from "@/src/lib/utils/id";
 import { cn } from "@/src/lib/utils/utils";
-import type { AllowedFileMime, UploadedFile } from "../../types";
-import { ACCEPTED_FILE_EXTENSIONS, ACCEPTED_FILE_MIME_SET } from "../../types";
+import type { AllowedFileMime, UploadedFile } from "../-types";
+import { ACCEPTED_FILE_EXTENSIONS, ACCEPTED_FILE_MIME_SET } from "../-types";
 import { usePromptPlanUpgrade } from "./entitlement-upgrade-context";
 import { useDocumentUpload } from "./envelope-draft-context";
 import FileCard from "./FileCard";

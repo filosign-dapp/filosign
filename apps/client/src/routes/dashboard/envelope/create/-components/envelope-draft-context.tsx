@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { EnvelopeForm } from "../../types";
+import type { EnvelopeForm } from "../-types";
 
 type EnvelopeDraftContextValue = {
 	documentsField: {

@@ -32,8 +32,8 @@ import {
 	TooltipTrigger,
 } from "@/src/lib/components/ui/tooltip";
 import { cn } from "@/src/lib/utils/utils";
-import { initialsFromName } from "@/src/pages/dashboard/connections/_components/contact-utils";
-import type { Recipient } from "../../types";
+import { initialsFromName } from "@/src/routes/dashboard/_shell/connections/-components/contact-utils";
+import type { Recipient } from "../-types";
 import { usePromptPlanUpgrade } from "./entitlement-upgrade-context";
 import { useRecipients } from "./envelope-draft-context";
 

@@ -9,7 +9,7 @@ import {
 import {
 	UpgradePlanDialog,
 	type UpgradePlanLimitReason,
-} from "@/src/lib/components/custom/UpgradePlanDialog";
+} from "@/src/lib/components/shared/UpgradePlanDialog";
 
 type EntitlementUpgradeContextValue = {
 	promptPlanUpgrade: (reason: UpgradePlanLimitReason) => void;

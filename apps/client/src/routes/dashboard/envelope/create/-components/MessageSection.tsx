@@ -17,7 +17,7 @@ import {
 import { Input } from "@/src/lib/components/ui/input";
 import { Textarea } from "@/src/lib/components/ui/textarea";
 import { cn } from "@/src/lib/utils/utils";
-import type { EnvelopeForm } from "../../types";
+import type { EnvelopeForm } from "../-types";
 
 interface MessageSectionProps {
 	control: Control<EnvelopeForm>;

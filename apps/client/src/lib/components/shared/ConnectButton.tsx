@@ -1,8 +1,8 @@
 import { SignOutIcon } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { useConnectButtonLogic } from "@/src/lib/components/custom/useConnectButtonLogic";
 import { Button } from "@/src/lib/components/ui/button";
+import { useConnectButtonLogic } from "@/src/lib/hooks/use-connect-button-logic";
 
 export default function ConnectButton() {
 	const { authenticated, isLoading, buttonState, primaryCta, signIn, logout } =

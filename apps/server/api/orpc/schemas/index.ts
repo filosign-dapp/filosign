@@ -24,6 +24,19 @@ export {
 	rpcMetricsInvitesSummaryOutputSchema,
 	rpcMetricsSenderUsageOutputSchema,
 } from "./metrics-output";
+export {
+	rpcOrgsConnectionOutputSchema,
+	rpcOrgsConnectionsListOutputSchema,
+	rpcOrgsCreateOutputSchema,
+	rpcOrgsGetOutputSchema,
+	rpcOrgsInviteCreateOutputSchema,
+	rpcOrgsListMineOutputSchema,
+	rpcOrgsMemberOutputSchema,
+	rpcOrgsTemplateOutputSchema,
+	rpcOrgsTemplatesCloneOutputSchema,
+	rpcOrgsTemplatesListOutputSchema,
+	rpcOrgsUpdateOutputSchema,
+} from "./orgs-output";
 export { rpcEmptyOutputSchema, zDateWire } from "./rpc-wire";
 export {
 	rpcSharingAcceptRequestOutputSchema,

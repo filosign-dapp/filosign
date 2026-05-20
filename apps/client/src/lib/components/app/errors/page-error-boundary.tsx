@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import type React from "react";
+import { reportClientError } from "@/src/lib/utils/report-client-error";
 import { ErrorBoundary } from "./error-boundary";
 import { PageCrashed } from "./page-crashed";
 
@@ -26,8 +27,14 @@ const DefaultErrorFallback = () => {
 };
 
 const PageErrorBoundary: React.FC<PageErrorBoundaryProps> = ({ children }) => {
-	const handleError = (error: Error) => {
-		console.error("Page error:", error);
+	const handleError = (
+		error: Error,
+		errorInfo: { componentStack?: string | null },
+	) => {
+		reportClientError(error, {
+			componentStack: errorInfo.componentStack,
+			source: "PageErrorBoundary",
+		});
 	};
 
 	return (

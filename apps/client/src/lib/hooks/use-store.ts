@@ -21,6 +21,10 @@ interface StorePersist {
 	setCreateForm: (form: CreateForm) => void;
 	clearCreateForm: () => void;
 
+	/** Active org workspace (synced to `FilosignSession` + `X-Org-Id`). */
+	activeOrgId: string | null;
+	setActiveOrgId: (id: string | null) => void;
+
 	onboardingForm: OnboardingForm;
 	setOnboardingForm: (form: OnboardingForm) => void;
 	clearOnboardingForm: () => void;
@@ -35,6 +39,10 @@ export const useStorePersist = create<StorePersist>()(
 			createForm: null,
 			setCreateForm: (form: CreateForm) => set({ createForm: form }),
 			clearCreateForm: () => set({ createForm: null }),
+
+			activeOrgId: null,
+			setActiveOrgId: (id: string | null) =>
+				set({ activeOrgId: id?.trim() ? id.trim() : null }),
 
 			onboardingForm: {
 				firstName: "",
@@ -68,6 +76,10 @@ export const useStorePersist = create<StorePersist>()(
 					sidebar: { ...state.sidebar, ...updates },
 				})),
 		}),
-		{ name: "zustand" },
+		{
+			name: "filosign-client",
+			version: 1,
+			partialize: (state) => ({ activeOrgId: state.activeOrgId }),
+		},
 	),
 );

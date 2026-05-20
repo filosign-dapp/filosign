@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page } from "react-pdf";
+import { configurePdfWorker } from "@/src/lib/domains/files/pdf/configure-pdf-worker";
 import { cn } from "@/src/lib/utils";
-import { configurePdfWorker } from "@/src/lib/utils/configurePdfWorker";
 
 function normalizeFile(file: string | ArrayBuffer | Uint8Array) {
 	if (typeof file === "string") {

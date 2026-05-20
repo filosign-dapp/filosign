@@ -41,6 +41,33 @@ describe("FSManager", () => {
 		).to.equal(true);
 	});
 
+	it("approveSender supports ERC-1271 recipient signatures", async () => {
+		const ctx = await deployFullSystem();
+		const recipientContract = await hre.viem.deployContract(
+			"MockERC1271Signer",
+			[true],
+		);
+		const deadline = BigInt((await time.latest()) + 600);
+
+		await ctx.manager.write.approveSender(
+			[
+				recipientContract.address,
+				walletAccount(ctx.sender).address,
+				0n,
+				deadline,
+				"0x1234",
+			],
+			{ account: walletAccount(ctx.server) },
+		);
+
+		expect(
+			await ctx.manager.read.approvedSenders([
+				recipientContract.address,
+				walletAccount(ctx.sender).address,
+			]),
+		).to.equal(true);
+	});
+
 	it("approveSender reverts when sender not registered in key registry", async () => {
 		const ctx = await deployFullSystem();
 		const recipient = ctx.payout;

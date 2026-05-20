@@ -19,6 +19,8 @@ import { walletAccount } from "./helpers/walletAccount.js";
 const defaultPlacement = `0x${"ab".repeat(32)}` as Hex;
 const defaultSenderEmail = `0x${"cd".repeat(32)}` as Hex;
 const defaultSenderPrivy = `0x${"ef".repeat(32)}` as Hex;
+const zeroOrg =
+	"0x0000000000000000000000000000000000000000000000000000000000000000" as Hex;
 
 describe("FSFileRegistry", () => {
 	it("computeEmailSignerCommitment: empty list yields zero bytes20", async () => {
@@ -77,6 +79,7 @@ describe("FSFileRegistry", () => {
 					[],
 					defaultSenderEmail,
 					defaultSenderPrivy,
+					zeroOrg,
 					ts,
 					sig,
 					defaultPlacement,
@@ -118,6 +121,7 @@ describe("FSFileRegistry", () => {
 					[],
 					defaultSenderEmail,
 					defaultSenderPrivy,
+					zeroOrg,
 					ts,
 					sig,
 					defaultPlacement,
@@ -142,6 +146,7 @@ describe("FSFileRegistry", () => {
 					[],
 					defaultSenderEmail,
 					defaultSenderPrivy,
+					zeroOrg,
 					ts,
 					fakeSig,
 					defaultPlacement,

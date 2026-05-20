@@ -55,12 +55,16 @@ export async function signRegisterFile(args: {
 	placementCommitment: Hex;
 	senderEmailCommitment: Hex;
 	senderPrivySubjectCommitment: Hex;
+	orgIdCommitment?: Hex;
 	timestamp: bigint;
 	nonce: bigint;
 }): Promise<Hex> {
 	const account = args.wallet.account as Account;
 	const cidId = keccak256(toBytes(args.pieceCid));
 	const viewersCommitment = args.viewersCommitment ?? ZERO_BYTES20;
+	const orgIdCommitment =
+		args.orgIdCommitment ??
+		("0x0000000000000000000000000000000000000000000000000000000000000000" as Hex);
 
 	return args.wallet.signTypedData({
 		account,
@@ -79,6 +83,7 @@ export async function signRegisterFile(args: {
 				{ name: "placementCommitment", type: "bytes32" },
 				{ name: "senderEmailCommitment", type: "bytes32" },
 				{ name: "senderPrivySubjectCommitment", type: "bytes32" },
+				{ name: "orgIdCommitment", type: "bytes32" },
 				{ name: "timestamp", type: "uint256" },
 				{ name: "nonce", type: "uint256" },
 			],
@@ -92,6 +97,7 @@ export async function signRegisterFile(args: {
 			placementCommitment: args.placementCommitment,
 			senderEmailCommitment: args.senderEmailCommitment,
 			senderPrivySubjectCommitment: args.senderPrivySubjectCommitment,
+			orgIdCommitment,
 			timestamp: args.timestamp,
 			nonce: args.nonce,
 		},

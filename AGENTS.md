@@ -50,7 +50,7 @@ Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).
 Mount: `[api/routes/router.ts](apps/server/api/routes/router.ts)` — `optionalJwtWalletForOrpc` + hybrid middleware; **JSON API = `/api/rpc`** only ([router](apps/server/api/orpc/router.ts), [handlers](apps/server/api/handlers/)). Domain logic: `lib/domain/`. Runtime loader: `[platform-runtime](apps/server/lib/domain/platform-runtime.ts)`; config `[config.ts](apps/server/config.ts)`. Detail: [api-routes.mdc](.cursor/rules/apps/web/api-routes.mdc).
 
 - **Outputs:** Concrete Zod `.output` per procedure in `[api/orpc/schemas/](apps/server/api/orpc/schemas/)` (not `z.unknown()`).
-- **`createORPCClient` is a Proxy** — never put `rpc` in TanStack `queryKey`/deep-stringified payloads (use primitives); `JSON.stringify` can hit `toJSON` → bogus RPC.
+- `**createORPCClient` is a Proxy** — never put `rpc` in TanStack `queryKey`/deep-stringified payloads (use primitives); `JSON.stringify` can hit `toJSON` → bogus RPC.
 - **Query utils:** `createFilosignRpcQueryUtils` → `rpcQuery.{users,files,storage,…}` ([rpc-query-utils.ts](packages/react-sdk/src/orpc/rpc-query-utils.ts)).
 - **Storage:** Browser PUT to presign URLs; object keys in Postgres; serve via presigned GET (no public bucket URLs on PUT paths).
 - **JWT:** Malformed Bearer ignored on `/api/rpc`; protected procedures → `UNAUTHORIZED` via `authenticatedProcedure`.
@@ -75,6 +75,8 @@ All commands: **[SCRIPTS.md](SCRIPTS.md)** (or `bun run <script> -- --help`). Pr
 ## Skills
 
 Use when relevant (`~/.agents/skills/`): **ETHSKILLS** / `~/.cursor/skills/ethskills` (Solidity, onchain) · `/vercel-react-best-practices` (client, SDK) · `/vercel-composition-patterns` (client) · `/frontend-design` (client, astro) · `/web-design-guidelines` (TSX) · `/develop-secure-contracts` (contracts) · `/copywriting` (astro, client) · `/playwright` (E2E). Frontend polish: [impeccable.style](https://impeccable.style/docs/) + [design.mdc](.cursor/rules/apps/web/design.mdc).
+
+Always use Zod v4 schemas: Fetch migration guide from [https://zod.dev/v4/changelog](https://zod.dev/v4/changelog)
 
 ## Development stance
 

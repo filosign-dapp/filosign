@@ -10,16 +10,16 @@ import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import Logo from "@/src/lib/components/custom/Logo";
+import Logo from "@/src/lib/components/shared/Logo";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { Loader } from "@/src/lib/components/ui/loader";
 import { useThirdwebLogin } from "@/src/lib/hooks/use-thirdweb-login";
 import { useThirdwebWalletAuth } from "@/src/lib/hooks/use-thirdweb-wallet-auth";
 import { logger } from "@/src/lib/utils/logger";
-import { OnboardingSwitchAccountLink } from "@/src/pages/onboarding/_components/OnboardingSwitchAccountLink";
+import { OnboardingSwitchAccountLink } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
 
-export default function InvitePage() {
+function InvitePage() {
 	const { inviteId } = useParams({ from: "/invite/$inviteId" });
 	const { ready, authenticated } = useThirdwebWalletAuth();
 	const { login } = useThirdwebLogin();
@@ -282,3 +282,9 @@ export default function InvitePage() {
 		</div>
 	);
 }
+
+import { createFileRoute } from "@tanstack/react-router";
+
+export const Route = createFileRoute("/invite/$inviteId/")({
+	component: InvitePage,
+});

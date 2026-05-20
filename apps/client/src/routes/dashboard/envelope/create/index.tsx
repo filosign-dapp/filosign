@@ -5,13 +5,19 @@ import { EntitlementUpgradeProvider } from "./-lib/context/entitlement-upgrade-c
 import { useCreateEnvelopeController } from "./-lib/hooks/use-create-controller";
 
 function CreateEnvelopeRoutePage() {
-	const controller = useCreateEnvelopeController();
 	return (
 		<EntitlementUpgradeProvider>
-			<CreateEnvelopeProvider value={controller}>
-				<CreateEnvelopePage />
-			</CreateEnvelopeProvider>
+			<CreateEnvelopeRouteContent />
 		</EntitlementUpgradeProvider>
+	);
+}
+
+function CreateEnvelopeRouteContent() {
+	const controller = useCreateEnvelopeController();
+	return (
+		<CreateEnvelopeProvider value={controller}>
+			<CreateEnvelopePage />
+		</CreateEnvelopeProvider>
 	);
 }
 

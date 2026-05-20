@@ -2,7 +2,7 @@ import { useUserProfile } from "@filosign/react/users";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
-import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
+import { useThirdwebUserInfo } from "@/src/lib/web3/hooks/use-thirdweb-user-info";
 import type { ProfileForm } from "../types";
 import { profileSchema } from "../types";
 import { useFileUpload } from "./use-file-upload";
@@ -66,3 +66,5 @@ export function useProfileSettings() {
 		fileUpload,
 	};
 }
+
+export type ProfileSettingsState = ReturnType<typeof useProfileSettings>;

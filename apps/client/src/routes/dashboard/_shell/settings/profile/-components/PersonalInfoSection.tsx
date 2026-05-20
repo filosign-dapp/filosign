@@ -1,4 +1,3 @@
-import type { UseFormReturn } from "react-hook-form";
 import {
 	Card,
 	CardContent,
@@ -13,7 +12,7 @@ import {
 	FormMessage,
 } from "@/src/lib/components/ui/form";
 import { Input } from "@/src/lib/components/ui/input";
-import type { ProfileForm } from "../-lib/hooks/use-section-state";
+import { useProfileSettingsContext } from "../-lib/context/context";
 import { SaveButton } from "./SaveButton";
 
 const labelClass = "text-xs font-normal text-muted-foreground";
@@ -24,19 +23,8 @@ const readOnlyInputClass =
 const editableInputClass =
 	"h-9 border-border/60 bg-muted/5 text-sm text-foreground/90 placeholder:text-muted-foreground/45";
 
-interface PersonalInfoSectionProps {
-	form: UseFormReturn<ProfileForm>;
-	sectionState: {
-		hasChanges: boolean;
-		state: { isSaving: boolean; isSaved: boolean; error?: string };
-		save: () => void;
-	};
-}
-
-export function PersonalInfoSection({
-	form,
-	sectionState,
-}: PersonalInfoSectionProps) {
+export function PersonalInfoSection() {
+	const { form, personalSection: sectionState } = useProfileSettingsContext();
 	return (
 		<Card className="border-border/50 shadow-none">
 			<CardHeader className="space-y-0 pb-3">

@@ -5,9 +5,9 @@ import { formatUnits } from "viem";
 import { useBalance } from "wagmi";
 import { defaultChain, SUPPORTED_TOKENS } from "@/src/constants";
 import env from "@/src/env";
-import { Image } from "@/src/lib/components/shared/Image";
+import { Image } from "@/src/lib/components/app/media/image";
 import { Button } from "@/src/lib/components/ui/button";
-import { useWalletTopUp } from "@/src/lib/hooks/use-wallet-top-up";
+import { useWalletTopUp } from "@/src/lib/web3/hooks/use-wallet-top-up";
 
 const usdc = SUPPORTED_TOKENS[0];
 

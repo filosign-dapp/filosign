@@ -18,7 +18,7 @@ export function FileListSection({
 	prefix: "received" | "org" | "sent";
 	delay: number;
 }) {
-	const { viewMode, handleItemClick } = useDocuments();
+	const { viewMode, handleItemClick, fileInfoByPieceCid } = useDocuments();
 
 	if (files.length === 0) return null;
 
@@ -38,6 +38,7 @@ export function FileListSection({
 						<FileCard
 							key={`${prefix}-${file.pieceCid}`}
 							file={file}
+							fileInfo={fileInfoByPieceCid.get(file.pieceCid)}
 							onClick={handleItemClick}
 							variant="list"
 						/>
@@ -49,6 +50,7 @@ export function FileListSection({
 						<FileCard
 							key={`${prefix}-${file.pieceCid}`}
 							file={file}
+							fileInfo={fileInfoByPieceCid.get(file.pieceCid)}
 							onClick={handleItemClick}
 							variant="grid"
 						/>

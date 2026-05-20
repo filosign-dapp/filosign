@@ -1,6 +1,7 @@
-import { GridFourIcon, ListIcon, PlusIcon } from "@phosphor-icons/react";
+import { PlusIcon } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
+import { ListGridViewToggle } from "@/src/lib/components/app/view/list-grid-view-toggle";
 import { Button } from "@/src/lib/components/ui/button";
 import { useDocuments } from "@/src/routes/dashboard/_shell/document/all/-lib/context/context";
 
@@ -19,26 +20,10 @@ export function DocumentsHeader() {
 			</div>
 
 			<div className="flex items-center gap-4">
-				<div className="flex items-center gap-2 bg-muted rounded-lg p-1">
-					<Button
-						type="button"
-						variant={viewMode === "list" ? "default" : "ghost"}
-						size="sm"
-						onClick={() => handleViewModeChange("list")}
-						className="h-7 w-7 p-0"
-					>
-						<ListIcon className="h-4 w-4" />
-					</Button>
-					<Button
-						type="button"
-						variant={viewMode === "grid" ? "default" : "ghost"}
-						size="sm"
-						onClick={() => handleViewModeChange("grid")}
-						className="h-7 w-7 p-0"
-					>
-						<GridFourIcon className="h-4 w-4" />
-					</Button>
-				</div>
+				<ListGridViewToggle
+					value={viewMode}
+					onValueChange={handleViewModeChange}
+				/>
 
 				<Link to="/dashboard/envelope/create">
 					<Button variant="primary" size="sm" className="gap-2 group">

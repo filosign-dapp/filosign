@@ -1,3 +1,4 @@
+import { useFilosignContext } from "@filosign/react";
 import {
 	useAcceptedPeople,
 	useApproveSender,
@@ -18,12 +19,13 @@ import {
 	buildContacts,
 	type ConnectionsTab,
 	invalidateQueriesForTab,
-	invalidateSharingQueries,
+	invalidateSharingQueriesForConnections,
 	sortPendingRequestRows,
 } from "@/src/routes/dashboard/_shell/connections/-lib/utils/contacts";
 
 export function useConnectionsController() {
 	const queryClient = useQueryClient();
+	const { rpcQuery } = useFilosignContext();
 	const [activeTab, setActiveTab] = useState<ConnectionsTab>("contacts");
 	const [search, setSearch] = useState("");
 
@@ -91,10 +93,11 @@ export function useConnectionsController() {
 	> = (next) => {
 		const tab = next as ConnectionsTab;
 		setActiveTab(tab);
-		invalidateQueriesForTab(queryClient, tab);
+		invalidateQueriesForTab(queryClient, rpcQuery, tab);
 	};
 
-	const onRequestCompleted = () => invalidateSharingQueries(queryClient);
+	const onRequestCompleted = () =>
+		invalidateSharingQueriesForConnections(queryClient, rpcQuery);
 
 	return {
 		activeTab,

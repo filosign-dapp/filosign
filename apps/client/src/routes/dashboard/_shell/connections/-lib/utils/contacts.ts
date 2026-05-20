@@ -1,3 +1,9 @@
+import type { FilosignRpcQueryUtils } from "@filosign/react";
+import {
+	invalidateConnectionsContactsTab,
+	invalidateConnectionsRequestsTab,
+	invalidateSharingQueries,
+} from "@filosign/react/invalidate-queries";
 import type { QueryClient } from "@tanstack/react-query";
 
 export type UnifiedContact = {
@@ -103,28 +109,20 @@ export function sortPendingRequestRows(
 	return rows;
 }
 
-export function invalidateSharingQueries(queryClient: QueryClient) {
-	queryClient.invalidateQueries({ queryKey: ["received-requests"] });
-	queryClient.invalidateQueries({ queryKey: ["sent-requests"] });
-	queryClient.invalidateQueries({ queryKey: ["sent-email-invites"] });
-	queryClient.invalidateQueries({ queryKey: ["accepted-people"] });
-	queryClient.invalidateQueries({ queryKey: ["sendable-to"] });
-	queryClient.invalidateQueries({ queryKey: ["receivable-from"] });
-	queryClient.invalidateQueries({ queryKey: ["accepted-recipients"] });
+export function invalidateSharingQueriesForConnections(
+	queryClient: QueryClient,
+	rpcQuery: FilosignRpcQueryUtils,
+) {
+	return invalidateSharingQueries(queryClient, rpcQuery);
 }
 
 export function invalidateQueriesForTab(
 	queryClient: QueryClient,
+	rpcQuery: FilosignRpcQueryUtils,
 	tab: ConnectionsTab,
 ) {
 	if (tab === "contacts") {
-		queryClient.invalidateQueries({ queryKey: ["accepted-people"] });
-		queryClient.invalidateQueries({ queryKey: ["accepted-recipients"] });
-		queryClient.invalidateQueries({ queryKey: ["sendable-to"] });
-		queryClient.invalidateQueries({ queryKey: ["receivable-from"] });
-		queryClient.invalidateQueries({ queryKey: ["fsQ-user-info-by-address"] });
-	} else {
-		queryClient.invalidateQueries({ queryKey: ["received-requests"] });
-		queryClient.invalidateQueries({ queryKey: ["sent-requests"] });
+		return invalidateConnectionsContactsTab(queryClient, rpcQuery);
 	}
+	return invalidateConnectionsRequestsTab(queryClient, rpcQuery);
 }

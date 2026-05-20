@@ -1,4 +1,5 @@
-import { useFileInfo, useViewFile } from "@filosign/react/files";
+import type { FileInfo } from "@filosign/react/files";
+import { useViewFile } from "@filosign/react/files";
 import {
 	DotsThreeVerticalIcon,
 	FilePdfIcon,
@@ -8,6 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { Image } from "@/src/lib/components/app/media/image";
 import { Button } from "@/src/lib/components/ui/button";
+import { filosignKeys } from "@/src/lib/query/query-keys";
 import { cn } from "@/src/lib/utils/utils";
 
 interface RealFile {
@@ -30,6 +32,8 @@ interface RealFile {
 
 interface FileCardProps {
 	file: RealFile;
+	/** Batched from parent — avoids per-card useFileInfo N+1. */
+	fileInfo?: FileInfo;
 	onClick?: (file: RealFile) => void;
 	variant?: "list" | "grid";
 }
@@ -40,10 +44,11 @@ const iconColor = "text-red-500";
 
 export default function FileCard({
 	file,
+	fileInfo: fileInfoProp,
 	onClick,
 	variant = "grid",
 }: FileCardProps) {
-	const { data: fileInfo } = useFileInfo({ pieceCid: file.pieceCid });
+	const fileInfo = fileInfoProp;
 	const kemCiphertext = file.kemCiphertext || fileInfo?.kemCiphertext;
 	const encryptedEncryptionKey =
 		file.encryptedEncryptionKey || fileInfo?.encryptedEncryptionKey;
@@ -63,11 +68,10 @@ export default function FileCard({
 	const { mutateAsync: viewFileMutate } = useViewFile();
 
 	const { data: actualMetadata, isLoading } = useQuery({
-		queryKey: [
-			"fsQ-decrypted-file-metadata",
+		queryKey: filosignKeys.decryptedFileMetadata(
 			file.pieceCid,
 			orgDecryptEligible,
-		],
+		),
 		queryFn: async () => {
 			if (!status) throw new Error("Missing status");
 

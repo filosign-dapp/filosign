@@ -3,12 +3,13 @@ import {
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
 import { useSendFile } from "@filosign/react/files";
+import { useActiveOrganization } from "@filosign/react/orgs";
 import { useProfilesByAddresses } from "@filosign/react/users";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { useNavigate } from "@tanstack/react-router";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Address } from "viem";
+import type { Address, Hex } from "viem";
 import { EntitlementPlanHint } from "@/src/lib/components/custom/EntitlementPlanHint";
 import { useStorePersist } from "@/src/lib/hooks/use-store";
 import { buildColdInviteMagicLink } from "@/src/lib/routing/cold-invite-search";
@@ -52,6 +53,7 @@ export default function AddSignaturePage() {
 	const { createForm, clearCreateForm } = useStorePersist();
 	const captureAppEvent = useCaptureAppEvent();
 	const sendFile = useSendFile();
+	const activeOrg = useActiveOrganization();
 
 	const recipientAddresses = useMemo(
 		() =>
@@ -391,6 +393,12 @@ export default function AddSignaturePage() {
 				placementManifest,
 				viewerEmails,
 				...(coldInvitePayload ? { coldInvites: coldInvitePayload } : {}),
+				...(activeOrg
+					? {
+							organizationId: activeOrg.id,
+							orgEncryptionPublicKey: activeOrg.encryptionPublicKey as Hex,
+						}
+					: {}),
 			});
 
 			clearCreateForm();

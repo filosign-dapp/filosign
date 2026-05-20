@@ -35,6 +35,7 @@ import {
 	isSenderAlreadyApprovedError,
 	primaryEmailForWallet,
 } from "@/lib/domain/file-invites";
+import { getOrgMemberWithDocumentRead } from "@/lib/domain/orgs";
 import { evmClient, fsContracts } from "@/lib/evm";
 import { bucket } from "@/lib/s3/client";
 import { tryCatch } from "@/lib/utils/tryCatch";
@@ -57,6 +58,9 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		.select({
 			pieceCid: files.pieceCid,
 			sender: files.sender,
+			organizationId: files.organizationId,
+			orgKemCiphertext: files.orgKemCiphertext,
+			orgEncryptedEncryptionKey: files.orgEncryptedEncryptionKey,
 			status: sql<"foc">`'foc'`.as("status"),
 			onchainTxHash: files.onchainTxHash,
 			createdAt: files.createdAt,
@@ -88,7 +92,16 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 	const participantUser = participants.find(
 		(p) => getAddress(p.wallet) === userWalletNorm,
 	);
-	if (!participantUser) {
+
+	const orgRead =
+		!participantUser &&
+		fileRecord.organizationId &&
+		(await getOrgMemberWithDocumentRead(
+			userWalletNorm,
+			fileRecord.organizationId,
+		));
+
+	if (!participantUser && !orgRead) {
 		throw new ORPCError("FORBIDDEN", {
 			message: "You dont have access to this file",
 		});
@@ -136,7 +149,9 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 				eq(fileAcknowledgements.wallet, userWalletNorm),
 			),
 		);
-	const canRead = !!acked || getAddress(fileRecord.sender) === userWalletNorm;
+	const isSender = getAddress(fileRecord.sender) === userWalletNorm;
+	const canReadParticipant = participantUser && (!!acked || isSender);
+	const canReadOrg = Boolean(orgRead);
 
 	return {
 		pieceCid: fileRecord.pieceCid,
@@ -150,10 +165,19 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		viewers,
 		signatures: fileSignaturesRecord,
 
-		kemCiphertext: canRead ? participantUser.kemCiphertext : null,
-		encryptedEncryptionKey: canRead
-			? participantUser.encryptedEncryptionKey
+		kemCiphertext:
+			canReadParticipant && participantUser
+				? participantUser.kemCiphertext
+				: null,
+		encryptedEncryptionKey:
+			canReadParticipant && participantUser
+				? participantUser.encryptedEncryptionKey
+				: null,
+		orgKemCiphertext: canReadOrg ? fileRecord.orgKemCiphertext : null,
+		orgEncryptedEncryptionKey: canReadOrg
+			? fileRecord.orgEncryptedEncryptionKey
 			: null,
+		organizationId: canReadOrg ? fileRecord.organizationId : null,
 	};
 }
 
@@ -460,10 +484,13 @@ export async function pieceS3Url(userWallet: Address, pieceCid: string) {
 		throw new ORPCError("BAD_REQUEST", { message: "Invalid pieceCid" });
 	}
 
+	const userWalletNorm = getAddress(userWallet);
+
 	const [fileRecord] = await db
 		.select({
 			pieceCid: files.pieceCid,
 			sender: files.sender,
+			organizationId: files.organizationId,
 		})
 		.from(files)
 		.where(eq(files.pieceCid, pieceCid));
@@ -482,11 +509,19 @@ export async function pieceS3Url(userWallet: Address, pieceCid: string) {
 		.where(
 			and(
 				eq(fileParticipants.filePieceCid, fileRecord.pieceCid),
-				eq(fileParticipants.wallet, userWallet),
+				eq(fileParticipants.wallet, userWalletNorm),
 			),
 		);
 
-	if (!participantRecord) {
+	const orgRead =
+		!participantRecord &&
+		fileRecord.organizationId &&
+		(await getOrgMemberWithDocumentRead(
+			userWalletNorm,
+			fileRecord.organizationId,
+		));
+
+	if (!participantRecord && !orgRead) {
 		throw new ORPCError("NOT_FOUND", {
 			message: "File not found or not allowed to access",
 		});

@@ -1,7 +1,9 @@
 import { FileTextIcon } from "@phosphor-icons/react";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { z } from "zod";
+import { RoutePendingFallback } from "@/src/lib/components/app/suspense";
 import { SignDocumentPage } from "./-components/page";
+import { SignInviteUnlockRoutePage } from "./-components/sign-invite-unlock-page";
 
 function SignDocumentRoutePage() {
 	const search = useSearch({ from: "/dashboard/document/sign/" });
@@ -21,6 +23,10 @@ function SignDocumentRoutePage() {
 		);
 	}
 
+	if (invite && pieceCid) {
+		return <SignInviteUnlockRoutePage />;
+	}
+
 	return <SignDocumentPage />;
 }
 
@@ -30,4 +36,5 @@ export const Route = createFileRoute("/dashboard/document/sign/")({
 		invite: z.string().optional().default(""),
 	}),
 	component: SignDocumentRoutePage,
+	pendingComponent: RoutePendingFallback,
 });

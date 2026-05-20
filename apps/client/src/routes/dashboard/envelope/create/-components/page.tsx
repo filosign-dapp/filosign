@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
+import { FullBleedPageHeader } from "@/src/lib/components/app/chrome/full-bleed-page-header";
 import Logo from "@/src/lib/components/app/chrome/logo";
 import { Button } from "@/src/lib/components/ui/button";
 import { UserDropdown } from "@/src/routes/dashboard/_shell/-components/user-dropdown";
@@ -11,7 +12,7 @@ export function CreateEnvelopePage() {
 
 	return (
 		<div className="min-h-screen bg-background">
-			<header className="flex sticky top-0 z-50 justify-between items-center px-8 h-16 border-b glass bg-background/50 border-border">
+			<FullBleedPageHeader>
 				<div className="flex gap-4 items-center">
 					<Logo
 						className="px-0"
@@ -21,7 +22,7 @@ export function CreateEnvelopePage() {
 					<h3>Create New Document</h3>
 				</div>
 				<UserDropdown />
-			</header>
+			</FullBleedPageHeader>
 
 			<form
 				onSubmit={(e) => {
@@ -41,7 +42,7 @@ export function CreateEnvelopePage() {
 						damping: 25,
 						delay: 0.7,
 					}}
-					className="flex justify-end px-8 mb-8 mx-auto max-w-4xl gap-4"
+					className="flex justify-end px-8 pb-8 mx-auto max-w-4xl gap-4"
 				>
 					<Button
 						type="button"

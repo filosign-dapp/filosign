@@ -1,13 +1,12 @@
 import { useMonthlyDocumentQuota } from "@filosign/react/billing";
 import {
 	CaretDownIcon,
-	GridFourIcon,
-	ListIcon,
 	PaperPlaneTiltIcon,
 	UploadIcon,
 } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import { useCallback, useRef, useState } from "react";
+import { ListGridViewToggle } from "@/src/lib/components/app/view/list-grid-view-toggle";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Collapsible,
@@ -157,9 +156,9 @@ export default function DocumentsSection() {
 			<Collapsible open={isDocumentsOpen} onOpenChange={setIsDocumentsOpen}>
 				<CollapsibleTrigger
 					render={
-						<button
+						<Button
 							type="button"
-							className="group/add-docs -m-2 flex w-full cursor-pointer items-center justify-between rounded-md border-0 bg-transparent p-2 text-left transition-colors hover:bg-accent/50"
+							className="group/add-recipients -my-2 flex w-full text-primary h-12 cursor-pointer items-center justify-between rounded-md border-0 bg-transparent p-2 text-left transition-colors hover:bg-accent/50"
 						/>
 					}
 				>
@@ -230,7 +229,7 @@ export default function DocumentsSection() {
 								}}
 							>
 								<motion.div
-									className="p-6 rounded-full bg-muted/20"
+									className="p-6 rounded-full bg-muted"
 									transition={{
 										type: "spring",
 										stiffness: 230,
@@ -253,9 +252,7 @@ export default function DocumentsSection() {
 								}}
 							>
 								<p className="text-muted-foreground">
-									{isDragOver
-										? "Drop your files here"
-										: "Drop your files here or"}
+									{isDragOver ? "Drop your files here" : "Drop your files here"}
 								</p>
 								<Button
 									type="button"
@@ -313,26 +310,10 @@ export default function DocumentsSection() {
 								<h5 className="text-sm font-medium text-muted-foreground">
 									Uploaded Files ({documents.length})
 								</h5>
-								<div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-									<Button
-										type="button"
-										variant={viewMode === "list" ? "default" : "ghost"}
-										size="sm"
-										onClick={() => handleViewModeChange("list")}
-										className="h-7 w-7 p-0"
-									>
-										<ListIcon className="h-4 w-4" />
-									</Button>
-									<Button
-										type="button"
-										variant={viewMode === "grid" ? "default" : "ghost"}
-										size="sm"
-										onClick={() => handleViewModeChange("grid")}
-										className="h-7 w-7 p-0"
-									>
-										<GridFourIcon className="h-4 w-4" />
-									</Button>
-								</div>
+								<ListGridViewToggle
+									value={viewMode}
+									onValueChange={handleViewModeChange}
+								/>
 							</div>
 
 							{/* Files display */}

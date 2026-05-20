@@ -1,4 +1,4 @@
-import { CaretDownIcon, UsersIcon } from "@phosphor-icons/react";
+import { CaretDownIcon, UserIcon, UsersIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
@@ -33,16 +33,17 @@ function RecipientsSectionContent() {
 			<Collapsible open={isRecipientsOpen} onOpenChange={setIsRecipientsOpen}>
 				<CollapsibleTrigger
 					render={
-						<button
+						<Button
 							type="button"
-							className="group/add-recipients -m-2 flex w-full cursor-pointer items-center justify-between rounded-lg border-0 bg-transparent p-2 text-left transition-colors hover:bg-muted/40"
+							className="group/add-recipients -my-2 flex w-full text-primary h-12 cursor-pointer items-center justify-between rounded-md border-0 bg-transparent p-2 text-left transition-colors hover:bg-accent/50"
 						/>
 					}
 				>
-					<h4 className="flex items-center gap-3 text-base font-semibold tracking-tight text-foreground">
-						<span className="flex size-8 items-center justify-center rounded-md bg-muted/50 text-muted-foreground transition-colors group-hover/add-recipients:bg-muted/70">
-							<UsersIcon className="size-4" weight="regular" />
-						</span>
+					<h4 className="flex items-center gap-3">
+						<UsersIcon
+							className="size-5 text-muted-foreground"
+							weight="regular"
+						/>
 						Add recipients
 					</h4>
 					<CaretDownIcon
@@ -72,12 +73,11 @@ function RecipientsSectionContent() {
 							<div className="flex shrink-0 flex-wrap items-center gap-2">
 								<Button
 									type="button"
-									variant="outline"
+									variant="default"
 									size="sm"
-									className="gap-1.5 border-border/60 bg-background text-foreground/90 shadow-none"
 									onClick={addRecipient}
 								>
-									<UsersIcon className="size-4" weight="regular" />
+									<UserIcon className="size-4" weight="regular" />
 									Add recipient
 								</Button>
 							</div>
@@ -91,22 +91,46 @@ function RecipientsSectionContent() {
 								transition={{
 									type: "spring",
 									stiffness: 230,
-									damping: 26,
+									damping: 25,
+									delay: 0.1,
 								}}
 							>
-								<div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-lg bg-muted/40 text-muted-foreground">
-									<UsersIcon className="size-6" weight="regular" />
+								<div className="space-y-6">
+									<motion.div
+										className="flex justify-center"
+										initial={{ opacity: 0 }}
+										animate={{ opacity: 1 }}
+										transition={{
+											type: "spring",
+											stiffness: 230,
+											damping: 25,
+											delay: 0.2,
+										}}
+									>
+										<div className="rounded-full bg-muted p-6">
+											<UsersIcon
+												className="h-12 w-12 text-primary"
+												weight="regular"
+											/>
+										</div>
+									</motion.div>
+									<motion.div
+										className="space-y-2"
+										initial={{ opacity: 0, y: 10 }}
+										animate={{ opacity: 1, y: 0 }}
+										transition={{
+											type: "spring",
+											stiffness: 230,
+											damping: 25,
+											delay: 0.3,
+										}}
+									>
+										<p className="text-muted-foreground">No recipients added</p>
+										<p className="text-muted-foreground text-sm">
+											Click Add recipient above, then enter their email.
+										</p>
+									</motion.div>
 								</div>
-								<p className="text-sm font-medium text-foreground/90">
-									No recipients added
-								</p>
-								<p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-									Click{" "}
-									<span className="font-medium text-foreground/80">
-										Add recipient
-									</span>{" "}
-									above, then enter their email.
-								</p>
 							</motion.div>
 						) : (
 							<RecipientList />

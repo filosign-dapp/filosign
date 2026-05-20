@@ -1,5 +1,5 @@
 import hre from "hardhat";
-import type { Hex, PublicClient, WalletClient } from "viem";
+import type { Address, Hex, PublicClient, WalletClient } from "viem";
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
 import {
 	COMMIT_DILITHIUM,
@@ -31,6 +31,40 @@ export type FullSystemFixture = {
 	publicClient: PublicClient;
 	chainId: number;
 };
+
+/** Stand-in for Safe / ERC-1271 contract wallets in signature tests. */
+export async function deployMock1271(valid: boolean): Promise<Address> {
+	const mock = await hre.viem.deployContract("MockERC1271Signer", [valid]);
+	return mock.address;
+}
+
+export async function setMock1271Valid(
+	address: Address,
+	valid: boolean,
+): Promise<void> {
+	const mock = await hre.viem.getContractAt("MockERC1271Signer", address);
+	await mock.write.setValid([valid]);
+}
+
+/** Register keygen row for any wallet (EOA or contract). */
+export async function registerKeygenForWallet(
+	ctx: FullSystemFixture,
+	walletAddress: Address,
+	signature: Hex = "0x1234",
+): Promise<void> {
+	await ctx.keyRegistry.write.registerKeygenData(
+		[
+			SALT_PIN,
+			SALT_SEED,
+			SALT_CHALLENGE,
+			COMMIT_KYBER,
+			COMMIT_DILITHIUM,
+			signature,
+			walletAddress,
+		],
+		{ account: walletAccount(ctx.server) },
+	);
+}
 
 export async function deployFullSystem(): Promise<FullSystemFixture> {
 	const [server, treasury, sender, payout] = await hre.viem.getWalletClients();
@@ -150,6 +184,9 @@ export async function registerFileOnly(
 		nonce,
 	});
 
+	const zeroOrg =
+		"0x0000000000000000000000000000000000000000000000000000000000000000" as Hex;
+
 	await fileRegistry.write.registerFile(
 		[
 			pieceCid,
@@ -158,6 +195,7 @@ export async function registerFileOnly(
 			[],
 			defaultSenderEmail,
 			defaultSenderPrivy,
+			zeroOrg,
 			timestamp,
 			regSig,
 			defaultPlacement,

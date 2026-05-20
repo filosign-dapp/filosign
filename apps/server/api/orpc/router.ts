@@ -1,4 +1,6 @@
+import { zHexString } from "@filosign/shared/zod";
 import type { RouterClient } from "@orpc/server";
+import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import { authNonce, authVerify, zAuthVerifyBody } from "@/api/handlers/auth";
 import { billingEntitlements } from "@/api/handlers/billing-handlers";
@@ -8,6 +10,7 @@ import {
 	filesColdInviteRegenerate,
 } from "@/api/handlers/files-cold-invite";
 import {
+	filesListOrg,
 	filesListReceived,
 	filesListSent,
 	filesUploadStart,
@@ -19,6 +22,7 @@ import {
 	metricsInvitesSummary,
 	metricsSenderUsage,
 } from "@/api/handlers/metrics-handlers";
+import * as orgsHandlers from "@/api/handlers/orgs-handlers";
 import * as sharingHandlers from "@/api/handlers/sharing-handlers";
 import {
 	storagePresignPut,
@@ -42,6 +46,17 @@ import {
 	rpcFilesUploadStartOutputSchema,
 	rpcMetricsInvitesSummaryOutputSchema,
 	rpcMetricsSenderUsageOutputSchema,
+	rpcOrgsConnectionOutputSchema,
+	rpcOrgsConnectionsListOutputSchema,
+	rpcOrgsCreateOutputSchema,
+	rpcOrgsGetOutputSchema,
+	rpcOrgsInviteCreateOutputSchema,
+	rpcOrgsListMineOutputSchema,
+	rpcOrgsMemberOutputSchema,
+	rpcOrgsTemplateOutputSchema,
+	rpcOrgsTemplatesCloneOutputSchema,
+	rpcOrgsTemplatesListOutputSchema,
+	rpcOrgsUpdateOutputSchema,
 	rpcPieceAckOutputSchema,
 	rpcPieceComplianceBundleOutputSchema,
 	rpcPieceDetailOutputSchema,
@@ -142,7 +157,7 @@ export const appRouter = {
 			.input(z.record(z.string(), unk))
 			.output(rpcFilesRegisterOutputSchema)
 			.handler(({ context, input }) =>
-				filesRegister(context.userWallet, input),
+				filesRegister(context.userWallet, input, context.activeOrg ?? null),
 			),
 		list: {
 			sent: authenticatedProcedure
@@ -151,6 +166,16 @@ export const appRouter = {
 			received: authenticatedProcedure
 				.output(rpcFilesListReceivedOutputSchema)
 				.handler(({ context }) => filesListReceived(context.userWallet)),
+			org: authenticatedProcedure
+				.output(rpcFilesListSentOutputSchema)
+				.handler(({ context }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return filesListOrg(context.activeOrg.organizationId);
+				}),
 		},
 		coldInvite: {
 			inviteByToken: publicProcedure
@@ -328,7 +353,11 @@ export const appRouter = {
 			.input(z.object({ recipient: z.string() }))
 			.output(rpcSharingCanSendToOutputSchema)
 			.handler(({ context, input }) =>
-				sharingHandlers.sharingCanSendTo(context.userWallet, input.recipient),
+				sharingHandlers.sharingCanSendTo(
+					context.userWallet,
+					input.recipient,
+					context.activeOrg ?? null,
+				),
 			),
 		cancelRequest: authenticatedProcedure
 			.input(z.object({ id: z.string().min(1) }))
@@ -359,7 +388,10 @@ export const appRouter = {
 		sendableTo: authenticatedProcedure
 			.output(rpcSharingSendableToOutputSchema)
 			.handler(({ context }) =>
-				sharingHandlers.sharingSendableTo(context.userWallet),
+				sharingHandlers.sharingSendableTo(
+					context.userWallet,
+					context.activeOrg ?? null,
+				),
 			),
 		inviteById: publicProcedure
 			.input(z.object({ id: z.string().min(1) }))
@@ -383,6 +415,256 @@ export const appRouter = {
 			.handler(({ context, input }) =>
 				sharingHandlers.sharingRequestInvite(context.userWallet, input),
 			),
+	},
+	orgs: {
+		create: authenticatedProcedure
+			.input(z.record(z.string(), unk))
+			.output(rpcOrgsCreateOutputSchema)
+			.handler(({ context, input }) =>
+				orgsHandlers.orgsCreate(context.userWallet, input),
+			),
+		listMine: authenticatedProcedure
+			.output(rpcOrgsListMineOutputSchema)
+			.handler(({ context }) => orgsHandlers.orgsListMine(context.userWallet)),
+		get: authenticatedProcedure
+			.input(z.object({ organizationId: z.string().uuid() }))
+			.output(rpcOrgsGetOutputSchema)
+			.handler(({ context, input }) => {
+				if (!context.activeOrg) {
+					throw new ORPCError("BAD_REQUEST", {
+						message: "X-Org-Id header required",
+					});
+				}
+				return orgsHandlers.orgsGet(
+					context.userWallet,
+					context.activeOrg,
+					input.organizationId,
+				);
+			}),
+		update: authenticatedProcedure
+			.input(z.record(z.string(), unk))
+			.output(rpcOrgsUpdateOutputSchema)
+			.handler(({ context, input }) => {
+				if (!context.activeOrg) {
+					throw new ORPCError("BAD_REQUEST", {
+						message: "X-Org-Id header required",
+					});
+				}
+				return orgsHandlers.orgsUpdate(
+					context.userWallet,
+					context.activeOrg,
+					input,
+				);
+			}),
+		members: {
+			setRole: authenticatedProcedure
+				.input(z.record(z.string(), unk))
+				.output(rpcOrgsMemberOutputSchema)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsMembersSetRole(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					);
+				}),
+			remove: authenticatedProcedure
+				.input(z.record(z.string(), unk))
+				.output(rpcOrgsMemberOutputSchema)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsMembersRemove(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					);
+				}),
+		},
+		keys: {
+			wrapForMine: authenticatedProcedure
+				.input(z.object({ organizationId: z.string().uuid() }))
+				.output(
+					z.object({
+						wrappedOmk: zHexString(),
+						wrapKemCiphertext: zHexString(),
+					}),
+				)
+				.handler(({ context, input }) =>
+					orgsHandlers.orgsKeysMyWrapForOrganization(
+						context.userWallet,
+						input.organizationId,
+					),
+				),
+			myWrap: authenticatedProcedure
+				.output(
+					z.object({
+						wrappedOmk: zHexString(),
+						wrapKemCiphertext: zHexString(),
+					}),
+				)
+				.handler(({ context }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsKeysMyWrap(
+						context.userWallet,
+						context.activeOrg,
+					);
+				}),
+			publishWrap: authenticatedProcedure
+				.input(z.record(z.string(), unk))
+				.output(z.object({ ok: z.literal(true) }))
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsKeysPublishWrap(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					);
+				}),
+		},
+		invites: {
+			create: authenticatedProcedure
+				.input(z.record(z.string(), unk))
+				.output(rpcOrgsInviteCreateOutputSchema)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsInvitesCreate(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					);
+				}),
+			accept: authenticatedProcedure
+				.input(z.object({ token: z.string().min(16) }))
+				.output(z.object({ organizationId: z.string().uuid() }))
+				.handler(({ context, input }) =>
+					orgsHandlers.orgsInvitesAccept(context.userWallet, input),
+				),
+		},
+		connections: {
+			add: authenticatedProcedure
+				.input(z.record(z.string(), unk))
+				.output(rpcOrgsConnectionOutputSchema)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsConnectionsAdd(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					);
+				}),
+			list: authenticatedProcedure
+				.output(rpcOrgsConnectionsListOutputSchema)
+				.handler(({ context }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsConnectionsList(
+						context.userWallet,
+						context.activeOrg,
+					);
+				}),
+			revoke: authenticatedProcedure
+				.input(z.record(z.string(), unk))
+				.output(rpcOrgsConnectionOutputSchema)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsConnectionsRevoke(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					);
+				}),
+		},
+		templates: {
+			create: authenticatedProcedure
+				.input(z.record(z.string(), unk))
+				.output(rpcOrgsTemplateOutputSchema)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsTemplatesCreate(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					);
+				}),
+			list: authenticatedProcedure
+				.output(rpcOrgsTemplatesListOutputSchema)
+				.handler(({ context }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsTemplatesList(
+						context.userWallet,
+						context.activeOrg,
+					);
+				}),
+			get: authenticatedProcedure
+				.input(z.object({ templateId: z.string().uuid() }))
+				.output(rpcOrgsTemplateOutputSchema)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsTemplatesGet(
+						context.userWallet,
+						context.activeOrg,
+						input.templateId,
+					);
+				}),
+			cloneToEnvelope: authenticatedProcedure
+				.input(z.object({ templateId: z.string().uuid() }))
+				.output(rpcOrgsTemplatesCloneOutputSchema)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsTemplatesCloneToEnvelope(
+						context.userWallet,
+						context.activeOrg,
+						input.templateId,
+					);
+				}),
+		},
 	},
 	users: {
 		register: publicProcedure

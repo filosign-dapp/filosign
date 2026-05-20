@@ -8,7 +8,7 @@ import {
 	UsersThreeIcon,
 } from "@phosphor-icons/react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import Logo from "@/src/lib/components/custom/Logo";
+import Logo from "@/src/lib/components/shared/Logo";
 import {
 	Sidebar,
 	SidebarContent,
@@ -33,12 +33,6 @@ type NavItem = {
 	tooltip: string;
 };
 
-function matchExact(pathname: string, path: string) {
-	const n = pathname.replace(/\/$/, "") || "/";
-	const p = path.replace(/\/$/, "") || "/";
-	return n === p;
-}
-
 function matchPrefix(pathname: string, prefix: string) {
 	const n = pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
 	const pre = prefix.endsWith("/") ? prefix.slice(0, -1) : prefix;
@@ -51,10 +45,9 @@ const groups: { label: string; items: NavItem[] }[] = [
 		items: [
 			{
 				title: "Home",
-				url: "/dashboard/",
+				url: "/dashboard/document/all/",
 				icon: HouseIcon,
-				match: (p) =>
-					matchExact(p, "/dashboard") || matchExact(p, "/dashboard/"),
+				match: (p) => matchPrefix(p, "/dashboard/document/all"),
 				tooltip: "Home",
 			},
 		],

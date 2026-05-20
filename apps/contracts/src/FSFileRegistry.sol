@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.26;
 
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 import "./errors/EFSFileRegistry.sol";
 import "./interfaces/IFSManager.sol";
+import "./libraries/FSSignatureValidation.sol";
 
 contract FSFileRegistry is EIP712 {
-    using ECDSA for bytes32;
 
     uint256 constant SIGNATURE_VALIDITY_PERIOD = 2 minutes;
 
@@ -69,7 +68,7 @@ contract FSFileRegistry is EIP712 {
 
     bytes32 private constant REGISTER_FILE_TYPEHASH =
         keccak256(
-            "RegisterFile(bytes32 cidIdentifier,address sender,bytes20 signersCommitment,bytes20 viewersCommitment,bytes32 placementCommitment,bytes32 senderEmailCommitment,bytes32 senderPrivySubjectCommitment,uint256 timestamp,uint256 nonce)"
+            "RegisterFile(bytes32 cidIdentifier,address sender,bytes20 signersCommitment,bytes20 viewersCommitment,bytes32 placementCommitment,bytes32 senderEmailCommitment,bytes32 senderPrivySubjectCommitment,bytes32 orgIdCommitment,uint256 timestamp,uint256 nonce)"
         );
     bytes32 private constant ACK_FILE_TYPEHASH =
         keccak256(
@@ -126,6 +125,7 @@ contract FSFileRegistry is EIP712 {
         bytes32[] calldata viewerEmailCommitments_,
         bytes32 senderEmailCommitment_,
         bytes32 senderPrivySubjectCommitment_,
+        bytes32 orgIdCommitment_,
         uint256 timestamp_,
         bytes calldata signature_,
         bytes32 placementCommitment_
@@ -138,6 +138,7 @@ contract FSFileRegistry is EIP712 {
                 viewerEmailCommitments_,
                 senderEmailCommitment_,
                 senderPrivySubjectCommitment_,
+                orgIdCommitment_,
                 timestamp_,
                 signature_,
                 placementCommitment_
@@ -252,6 +253,7 @@ contract FSFileRegistry is EIP712 {
         bytes32[] calldata viewerEmailCommitments_,
         bytes32 senderEmailCommitment_,
         bytes32 senderPrivySubjectCommitment_,
+        bytes32 orgIdCommitment_,
         uint256 timestamp_,
         bytes calldata signature_,
         bytes32 placementCommitment_
@@ -285,13 +287,13 @@ contract FSFileRegistry is EIP712 {
                 placementCommitment_,
                 senderEmailCommitment_,
                 senderPrivySubjectCommitment_,
+                orgIdCommitment_,
                 timestamp_,
                 nonce[sender_]
             )
         );
         bytes32 digest = _hashTypedDataV4(structHash);
-        address recovered = ECDSA.recover(digest, signature_);
-        return recovered == sender_;
+        return FSSignatureValidation.isValid(sender_, digest, signature_);
     }
 
     function validateFileSigningSignature(
@@ -335,8 +337,7 @@ contract FSFileRegistry is EIP712 {
             )
         );
         bytes32 digest = _hashTypedDataV4(structHash);
-        address recovered = ECDSA.recover(digest, signature_);
-        return recovered == signerWallet_;
+        return FSSignatureValidation.isValid(signerWallet_, digest, signature_);
     }
 
     function validateFileAckSignature(
@@ -374,8 +375,7 @@ contract FSFileRegistry is EIP712 {
             )
         );
         bytes32 digest = _hashTypedDataV4(structHash);
-        address recovered = ECDSA.recover(digest, signature_);
-        return recovered == viewerWallet_;
+        return FSSignatureValidation.isValid(viewerWallet_, digest, signature_);
     }
 
     function cidIdentifier(

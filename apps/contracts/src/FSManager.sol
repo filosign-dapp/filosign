@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.26;
 
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 import "./FSFileRegistry.sol";
@@ -9,9 +8,9 @@ import "./FSKeyRegistry.sol";
 import "./errors/EFSCommon.sol";
 import "./errors/EFSFileRegistry.sol";
 import "./errors/EFSManager.sol";
+import "./libraries/FSSignatureValidation.sol";
 
 contract FSManager is EIP712 {
-    using ECDSA for bytes32;
 
     address public fileRegistry;
     address public keyRegistry;
@@ -100,8 +99,7 @@ contract FSManager is EIP712 {
             )
         );
         bytes32 digest = _hashTypedDataV4(structHash);
-        address recovered = ECDSA.recover(digest, signature_);
-        return recovered == recipient_;
+        return FSSignatureValidation.isValid(recipient_, digest, signature_);
     }
 
     function revokeSender(address sender_) external {

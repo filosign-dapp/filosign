@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.26;
 
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 import "./errors/EFSKeyRegistry.sol";
 import "./interfaces/IFSManager.sol";
+import "./libraries/FSSignatureValidation.sol";
 
 contract FSKeyRegistry is EIP712 {
-    using ECDSA for bytes32;
 
     struct KeygenData {
         bytes16 salt_pin;
@@ -105,7 +104,6 @@ contract FSKeyRegistry is EIP712 {
             )
         );
         bytes32 digest = _hashTypedDataV4(structHash);
-        address recovered = ECDSA.recover(digest, signature_);
-        return recovered == walletAddress_;
+        return FSSignatureValidation.isValid(walletAddress_, digest, signature_);
     }
 }

@@ -26,33 +26,6 @@ export const definitions = {
 				},
 				{
 					inputs: [],
-					name: "ECDSAInvalidSignature",
-					type: "error",
-				},
-				{
-					inputs: [
-						{
-							internalType: "uint256",
-							name: "length",
-							type: "uint256",
-						},
-					],
-					name: "ECDSAInvalidSignatureLength",
-					type: "error",
-				},
-				{
-					inputs: [
-						{
-							internalType: "bytes32",
-							name: "s",
-							type: "bytes32",
-						},
-					],
-					name: "ECDSAInvalidSignatureS",
-					type: "error",
-				},
-				{
-					inputs: [],
 					name: "InvalidApproveNonce",
 					type: "error",
 				},
@@ -432,33 +405,6 @@ export const definitions = {
 				{
 					inputs: [],
 					name: "BadSignersLength",
-					type: "error",
-				},
-				{
-					inputs: [],
-					name: "ECDSAInvalidSignature",
-					type: "error",
-				},
-				{
-					inputs: [
-						{
-							internalType: "uint256",
-							name: "length",
-							type: "uint256",
-						},
-					],
-					name: "ECDSAInvalidSignatureLength",
-					type: "error",
-				},
-				{
-					inputs: [
-						{
-							internalType: "bytes32",
-							name: "s",
-							type: "bytes32",
-						},
-					],
-					name: "ECDSAInvalidSignatureS",
 					type: "error",
 				},
 				{
@@ -873,6 +819,11 @@ export const definitions = {
 							type: "bytes32",
 						},
 						{
+							internalType: "bytes32",
+							name: "orgIdCommitment_",
+							type: "bytes32",
+						},
+						{
 							internalType: "uint256",
 							name: "timestamp_",
 							type: "uint256",
@@ -1033,6 +984,11 @@ export const definitions = {
 							type: "bytes32",
 						},
 						{
+							internalType: "bytes32",
+							name: "orgIdCommitment_",
+							type: "bytes32",
+						},
+						{
 							internalType: "uint256",
 							name: "timestamp_",
 							type: "uint256",
@@ -1136,33 +1092,6 @@ export const definitions = {
 				{
 					inputs: [],
 					name: "DataAlreadyRegistered",
-					type: "error",
-				},
-				{
-					inputs: [],
-					name: "ECDSAInvalidSignature",
-					type: "error",
-				},
-				{
-					inputs: [
-						{
-							internalType: "uint256",
-							name: "length",
-							type: "uint256",
-						},
-					],
-					name: "ECDSAInvalidSignatureLength",
-					type: "error",
-				},
-				{
-					inputs: [
-						{
-							internalType: "bytes32",
-							name: "s",
-							type: "bytes32",
-						},
-					],
-					name: "ECDSAInvalidSignatureS",
 					type: "error",
 				},
 				{

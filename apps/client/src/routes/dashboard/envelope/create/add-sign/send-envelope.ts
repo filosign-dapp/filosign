@@ -1,7 +1,7 @@
 import type { PlacementManifest } from "@filosign/shared";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { type Address, getAddress, isAddress } from "viem";
-import type { Recipient, StoredDocument } from "../types";
+import type { Recipient, StoredDocument } from "../-types";
 import type { SignatureField } from "./mock";
 
 export function recipientResolvedSignerAddress(

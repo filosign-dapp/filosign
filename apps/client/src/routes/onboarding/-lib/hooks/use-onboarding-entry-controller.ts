@@ -1,34 +1,26 @@
-import { useNavigate, useSearch } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useSearch } from "@tanstack/react-router";
+import { useState } from "react";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import type { OnboardingNamePayload } from "@/src/routes/onboarding/-components/OnboardingNameForm";
+import { useOnboardingComplete } from "@/src/routes/onboarding/-lib/hooks/use-onboarding-complete";
 import { useOnboardingKeyRegistration } from "@/src/routes/onboarding/-lib/hooks/useOnboardingKeyRegistration";
 import { useOnboardingRegisteredGuestRedirect } from "@/src/routes/onboarding/-lib/hooks/useOnboardingRegisteredGuestRedirect";
-import { buildWelcomeSearchFromOnboardingEntry } from "@/src/routes/onboarding/-lib/utils/build-welcome-search";
 
 export function useOnboardingEntryController() {
 	const [registrationStarted, setRegistrationStarted] = useState(false);
 	const search = useSearch({ from: "/onboarding/" });
-	const navigate = useNavigate();
 	const { setOnboardingForm } = useStorePersist();
 	const { registerKeys, isRegistering, recoveryPhrase, clearRecoveryPhrase } =
 		useOnboardingKeyRegistration();
+	const completeOnboarding = useOnboardingComplete();
 
 	useOnboardingRegisteredGuestRedirect({
 		registrationStarted,
 		recoveryPhrase,
 	});
 
-	const welcomeSearch = useMemo(
-		() => buildWelcomeSearchFromOnboardingEntry(search),
-		[search],
-	);
-
-	const goToWelcome = () => {
-		void navigate({
-			to: "/onboarding/welcome",
-			search: welcomeSearch,
-		});
+	const finishRegistration = async () => {
+		await completeOnboarding(search);
 	};
 
 	const handleContinue = async (names: OnboardingNamePayload) => {
@@ -45,13 +37,13 @@ export function useOnboardingEntryController() {
 			return;
 		}
 		if (!outcome.hadPhrase) {
-			goToWelcome();
+			await finishRegistration();
 		}
 	};
 
 	const handlePhraseSaved = () => {
 		clearRecoveryPhrase();
-		goToWelcome();
+		void finishRegistration();
 	};
 
 	return {

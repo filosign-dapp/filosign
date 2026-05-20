@@ -6,9 +6,9 @@ import {
 import { useCallback, useMemo } from "react";
 import { useActiveAccount, useConnectModal } from "thirdweb/react";
 import { useConnect, useConnectors } from "wagmi";
-import { connectWagmiInAppWallet } from "@/src/lib/thirdweb/connect-wagmi-in-app";
-import { thirdwebConnectModalOptions } from "@/src/lib/thirdweb/wallet-modal-options";
 import { logger } from "@/src/lib/utils/logger";
+import { connectWagmiInAppWallet } from "@/src/lib/web3/config/connect-wagmi-in-app";
+import { thirdwebConnectModalOptions } from "@/src/lib/web3/config/wallet-modal-options";
 
 const IN_APP_WALLET_CONNECTOR_ID = "in-app-wallet";
 

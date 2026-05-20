@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useActiveAccount, useProfiles } from "thirdweb/react";
-import { thirdwebClient } from "@/src/lib/thirdweb/client";
-import { profileEmailsFromThirdwebProfiles } from "@/src/lib/thirdweb/profile-emails";
+import { thirdwebClient } from "@/src/lib/web3/config/client";
+import { profileEmailsFromThirdwebProfiles } from "@/src/lib/web3/config/profile-emails";
 
 /** Wallet address + primary email from thirdweb linked profiles. */
 export function useThirdwebUserInfo() {

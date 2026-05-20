@@ -9,12 +9,12 @@ import {
 	useConnectors,
 	useConnect as useWagmiConnect,
 } from "wagmi";
-import { useThirdwebConnection } from "@/src/lib/hooks/use-thirdweb-connection";
-import { defaultThirdwebChain } from "@/src/lib/thirdweb/chains";
-import { thirdwebClient } from "@/src/lib/thirdweb/client";
-import { connectWagmiInAppWallet } from "@/src/lib/thirdweb/connect-wagmi-in-app";
-import { filosignInAppWallet } from "@/src/lib/thirdweb/in-app-wallet";
 import { logger } from "@/src/lib/utils/logger";
+import { defaultThirdwebChain } from "@/src/lib/web3/config/chains";
+import { thirdwebClient } from "@/src/lib/web3/config/client";
+import { connectWagmiInAppWallet } from "@/src/lib/web3/config/connect-wagmi-in-app";
+import { filosignInAppWallet } from "@/src/lib/web3/config/in-app-wallet";
+import { useThirdwebConnection } from "@/src/lib/web3/hooks/use-thirdweb-connection";
 
 const IN_APP_WALLET_CONNECTOR_ID = "in-app-wallet";
 

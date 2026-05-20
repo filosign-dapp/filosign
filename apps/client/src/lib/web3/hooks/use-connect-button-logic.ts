@@ -1,6 +1,6 @@
 import { useIsRegistered } from "@filosign/react/auth";
-import { useThirdwebLogin } from "@/src/lib/hooks/use-thirdweb-login";
-import { useThirdwebWalletAuth } from "@/src/lib/hooks/use-thirdweb-wallet-auth";
+import { useThirdwebLogin } from "@/src/lib/web3/hooks/use-thirdweb-login";
+import { useThirdwebWalletAuth } from "@/src/lib/web3/hooks/use-thirdweb-wallet-auth";
 
 export type ConnectButtonState =
 	| "loading"

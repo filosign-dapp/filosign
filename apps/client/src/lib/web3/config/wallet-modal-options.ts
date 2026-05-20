@@ -2,13 +2,13 @@ import type {
 	UseConnectModalOptions,
 	UseWalletDetailsModalOptions,
 } from "thirdweb/react";
-import { defaultThirdwebChain } from "@/src/lib/thirdweb/chains";
-import { thirdwebClient } from "@/src/lib/thirdweb/client";
+import { defaultThirdwebChain } from "@/src/lib/web3/config/chains";
+import { thirdwebClient } from "@/src/lib/web3/config/client";
 import {
 	filosignAppMetadata,
 	filosignInAppWallet,
 	filosignMockLegalUrls,
-} from "@/src/lib/thirdweb/in-app-wallet";
+} from "@/src/lib/web3/config/in-app-wallet";
 
 /** Filosign UI is light-first; thirdweb modals default to dark without this. */
 export const thirdwebModalTheme = "light" as const;

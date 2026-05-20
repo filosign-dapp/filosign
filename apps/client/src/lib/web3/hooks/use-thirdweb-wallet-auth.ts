@@ -5,8 +5,8 @@ import {
 	useConnectModal,
 	useDisconnect,
 } from "thirdweb/react";
-import { useThirdwebConnection } from "@/src/lib/hooks/use-thirdweb-connection";
-import { thirdwebConnectModalOptions } from "@/src/lib/thirdweb/wallet-modal-options";
+import { thirdwebConnectModalOptions } from "@/src/lib/web3/config/wallet-modal-options";
+import { useThirdwebConnection } from "@/src/lib/web3/hooks/use-thirdweb-connection";
 
 /** Wallet login state and connect/disconnect actions. */
 export function useThirdwebWalletAuth() {

@@ -127,12 +127,18 @@ export function FileViewer({ file, open, onOpenChange }: FileViewerProps) {
 			return;
 		}
 
-		// Server returns current user's participant keys (works for both sender and receiver)
-		const { kemCiphertext, encryptedEncryptionKey } = fileInfo;
+		const kemCiphertext = fileInfo.kemCiphertext;
+		const encryptedEncryptionKey = fileInfo.encryptedEncryptionKey;
+		const organizationId = fileInfo.organizationId;
+		const orgKemCiphertext = fileInfo.orgKemCiphertext;
+		const orgEncryptedEncryptionKey = fileInfo.orgEncryptedEncryptionKey;
+		const participant = kemCiphertext && encryptedEncryptionKey;
+		const orgVault =
+			organizationId && orgKemCiphertext && orgEncryptedEncryptionKey;
 
-		if (!kemCiphertext || !encryptedEncryptionKey) {
+		if (!(participant || orgVault)) {
 			setViewError(
-				`Missing decryption keys. ${!isSender ? "Acknowledge the file first." : ""}`,
+				`Missing decryption keys. ${!isSender ? "Acknowledge the file first or use your team workspace key." : ""}`,
 			);
 			return;
 		}
@@ -140,12 +146,28 @@ export function FileViewer({ file, open, onOpenChange }: FileViewerProps) {
 		try {
 			setViewError(null);
 			console.log("Starting file decryption...");
-			const result = await viewFile.mutateAsync({
-				pieceCid: fileInfo.pieceCid,
-				kemCiphertext,
-				encryptedEncryptionKey,
-				status: fileInfo.status as "s3" | "foc",
-			});
+			let result: ViewFileResult | undefined;
+			if (participant) {
+				result = await viewFile.mutateAsync({
+					pieceCid: fileInfo.pieceCid,
+					kemCiphertext,
+					encryptedEncryptionKey,
+					status: fileInfo.status as "s3" | "foc",
+				});
+			} else if (
+				organizationId &&
+				orgKemCiphertext &&
+				orgEncryptedEncryptionKey
+			) {
+				result = await viewFile.mutateAsync({
+					variant: "org",
+					pieceCid: fileInfo.pieceCid,
+					organizationId,
+					orgKemCiphertext,
+					orgEncryptedEncryptionKey,
+					status: fileInfo.status as "s3" | "foc",
+				});
+			}
 			console.log("File decryption successful:", {
 				hasFileBytes: !!result?.fileBytes,
 				bytesLength: result?.fileBytes?.length,
@@ -172,15 +194,24 @@ export function FileViewer({ file, open, onOpenChange }: FileViewerProps) {
 		}
 	}, [fileInfo, viewFile, isSender]);
 
+	// Clear decrypted preview when viewing a different piece (same viewer instance).
+	useEffect(() => {
+		setFileData(null);
+		setViewError(null);
+	}, [file?.pieceCid]);
+
 	// Load file data when component mounts or file changes
 	useEffect(() => {
 		if (!fileInfo || fileData || viewFile.isPending) return;
 
-		// Server returns keys only when user can read (acked or sender)
-		const hasRequiredKeys =
+		const participant =
 			fileInfo.kemCiphertext && fileInfo.encryptedEncryptionKey;
+		const orgVault =
+			fileInfo.organizationId &&
+			fileInfo.orgKemCiphertext &&
+			fileInfo.orgEncryptedEncryptionKey;
 
-		if (hasRequiredKeys) {
+		if (participant || orgVault) {
 			handleViewFile();
 		}
 	}, [fileInfo, fileData, viewFile.isPending, handleViewFile]);

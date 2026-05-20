@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import type React from "react";
-import { PageCrashed } from "../custom/PageCrashed";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { PageCrashed } from "./PageCrashed";
 
 interface PageErrorBoundaryProps {
 	children: React.ReactNode;

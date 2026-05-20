@@ -5,7 +5,7 @@ import { formatUnits } from "viem";
 import { useBalance } from "wagmi";
 import { defaultChain, SUPPORTED_TOKENS } from "@/src/constants";
 import env from "@/src/env";
-import { Image } from "@/src/lib/components/custom/Image";
+import { Image } from "@/src/lib/components/shared/Image";
 import { Button } from "@/src/lib/components/ui/button";
 import { useWalletTopUp } from "@/src/lib/hooks/use-wallet-top-up";
 

@@ -3,9 +3,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 
-import type { ProfileForm } from "../types";
+import type { ProfileForm } from "../-types";
 
-export type { ProfileForm } from "../types";
+export type { ProfileForm } from "../-types";
 
 export type SectionKey = "personal" | "profilePicture";
 

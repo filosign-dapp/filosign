@@ -1,7 +1,7 @@
 import { CaretLeftIcon } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import Logo from "@/src/lib/components/custom/Logo";
+import Logo from "@/src/lib/components/shared/Logo";
 import { Button } from "@/src/lib/components/ui/button";
 import { Form } from "@/src/lib/components/ui/form";
 import { useProfileSettings } from "./hooks/use-profile-settings";
@@ -9,7 +9,7 @@ import { LinkedAccountsSection } from "./LinkedAccountsSection";
 import { PersonalInfoSection } from "./PersonalInfoSection";
 import { WalletUsdcBalanceCard } from "./WalletUsdcBalanceCard";
 
-export default function ProfilePage() {
+function ProfilePage() {
 	const { form, personalSection } = useProfileSettings();
 
 	return (
@@ -71,3 +71,5 @@ export default function ProfilePage() {
 		</div>
 	);
 }
+
+import { createFileRoute } from "@tanstack/react-router";

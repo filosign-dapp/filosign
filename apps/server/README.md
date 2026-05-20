@@ -15,12 +15,11 @@ Bun reads `.env*` automatically per [environment variables — Bun](https://bun.
 |------|------|
 | `api/orpc/` | oRPC **`/api/rpc`** + OpenAPI **`/api/api-reference`** (see `hono-mount.ts`, `router.ts`) |
 | `api/handlers/` | oRPC procedure implementations (**`ORPCError`**, reuse `tryCatch`) |
-| `api/routes/router.ts` | **`optionalJwtWalletForOrpc`** + hybrid oRPC mount (thin shell) |
+| `api/orpc/hono-mount.ts` | **`apiRouter`** — optional JWT + hybrid oRPC/OpenAPI on `/api` |
 | `api/middleware/` | JWT optional parsing for **`/api/rpc`** + **`/api/api-reference`** |
-| `lib/domain/` | Cross-cutting domain logic (oRPC handlers + indexer), e.g. sharing invites, file-invite helpers |
-| `lib/indexer/` | `processTransaction` — replays receipts into DB |
-| `lib/validation/` | E.g. `tx-registration.ts` — Zod schemas shared with indexer / RPC |
-| `lib/polyfills/` | `bigint-json` for JSON serialization |
+| `lib/domains/` | Business logic by bounded context (orgs, files, sharing, users, entitlements, invites, runtime) — shared by handlers, indexer, cron |
+| `lib/platform/` | Shared infra: `db/`, `indexer/`, `cron/`, `evm`, `s3/`, `analytics/`, `compliance/`, `validation/`, `utils/` |
+| `lib/platform/polyfills/` | `bigint-json` for JSON serialization |
 | `constants.ts` | Shared limits (e.g. `MAX_FILE_SIZE`) |
 
 ## Scaling / limits
@@ -35,8 +34,8 @@ Server-side product events via `lib/analytics/` (`posthog-node`). Set `POSTHOG_E
 ## Ops
 
 - **`GET /health`** (root app, not under `/api`) — `{ ok: true }` for probes.
-- **`bun run routes:print`** — lists mounted Hono routes (`scripts/print-routes.ts`).
-- **Cold invite expiry** — run `bun run jobs:expire-cold-invites` (or `bun run --cwd apps/server jobs:expire-cold-invites`) on a schedule (e.g. hourly cron). Marks `file_cold_invites` with `status = pending` and `expires_at < now()` as `expired`; logs `{ expiredCount }` and emits a batched PostHog `cold_invite_expired` when analytics is enabled.
+- **`bun run db -- purge local|testnet`** (repo root) — `scripts/clear-db.ts` drops/recreates the Postgres `public` schema, then drizzle push (dev reset).
+- **Invite expiry** — `INVITE_TTL_DAYS` in env (default `7`). All invite types set `expiresAt` at creation via [`inviteExpiresAt()`](lib/domains/invites/ttl.ts): `file_cold_invites`, `user_invites`, `organization_invites`. Hourly `Bun.cron` in [`lib/platform/cron/`](lib/platform/cron/) marks overdue `pending` rows `expired`; handlers use `pending*InviteFilter()` immediately after expiry. PostHog: `cold_invite_expired` for document invites.
 
 ## API envelope
 
@@ -45,7 +44,7 @@ JSON API is **`/api/rpc`** — native outputs + **`ORPCError`** mapping. OpenAPI
 ## Security notes
 
 - **`tx.processIndexerHash`** uses **`authenticatedProcedure`** — JWT unchanged. Validates JSON server-side; **reverted** on-chain txs return **400**. Generic **500** text avoids leaking internals; see `ProcessTxUserError`.
-- **`DEBUG=true`** — skips outbound Resend email (`lib/email/invites.ts`) and expands JWT indexer logs (`env.ts` drives both).
+- **`DEBUG=true`** — skips outbound Resend email (`lib/platform/email/invites.ts`) and expands JWT indexer logs (`env.ts` drives both).
 
 ## Object storage (S3-compatible / R2)
 
@@ -55,7 +54,7 @@ JSON API is **`/api/rpc`** — native outputs + **`ORPCError`** mapping. OpenAPI
 
 ## Database
 
-- **Drizzle** uses **`pg.Pool`** in `lib/db/client.ts`; tune **`max`** / **`idleTimeoutMillis`** for your Postgres limits.
+- **Drizzle** uses **`pg.Pool`** in `lib/platform/db/client.ts`; tune **`max`** / **`idleTimeoutMillis`** for your Postgres limits.
 - Push schema (dev): `bun run db -- push local` or `bun run db -- push testnet` (from repo root)
 - Purge (destructive): `bun run db -- purge local|testnet`
 

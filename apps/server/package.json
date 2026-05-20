@@ -16,9 +16,7 @@
 		"db:push:testnet": "bun run --env-file=.env.staging drizzle-kit:push",
 		"compile": "bun build --compile --minify --sourcemap --bytecode ./index.ts --outfile out/server",
 		"check-types": "tsc --noEmit",
-		"test": "bun test",
-		"routes:print": "bun run scripts/print-routes.ts",
-		"jobs:expire-cold-invites": "bun run --env-file=.env.local scripts/expire-cold-invites.ts"
+		"test": "bun test"
 	},
 	"dependencies": {
 		"@filosign/contracts": "workspace:*",

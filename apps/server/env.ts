@@ -39,6 +39,8 @@ export const env = createEnv({
 		POSTHOG_ENABLED: z.coerce.boolean().default(false),
 		/** Comma-separated wallet addresses allowed to call metrics.* admin RPC. */
 		ADMIN_WALLETS: z.string().optional(),
+		/** Days until pending document, user, and org invites expire. */
+		INVITE_TTL_DAYS: z.coerce.number().int().min(1).default(7),
 	},
 	runtimeEnv: Bun.env,
 	emptyStringAsUndefined: true,

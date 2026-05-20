@@ -12,10 +12,10 @@ import {
 	ScrollIcon,
 	SpinnerIcon,
 } from "@phosphor-icons/react";
-import { CopyButton } from "@/src/lib/components/custom/CopyButton";
+import { CopyButton } from "@/src/lib/components/shared/CopyButton";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
-import type { SignDocumentController } from "../useSignDocument";
+import type { SignDocumentController } from "../hooks/useSignDocument";
 
 export type SignDocumentStickyHeaderProps = {
 	navigation: SignDocumentController["navigation"];

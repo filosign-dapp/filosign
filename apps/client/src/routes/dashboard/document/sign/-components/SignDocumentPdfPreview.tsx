@@ -2,7 +2,7 @@ import { lazy, type ReactNode, Suspense } from "react";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 
 const LazyPdfJsPreview = lazy(
-	() => import("@/src/lib/components/custom/PdfJsPreview.lazy"),
+	() => import("@/src/lib/components/shared/PdfJsPreview.lazy"),
 );
 
 export function SignDocumentPdfPreview({

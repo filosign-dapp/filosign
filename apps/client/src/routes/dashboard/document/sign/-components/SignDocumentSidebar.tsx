@@ -7,7 +7,7 @@ import {
 } from "@phosphor-icons/react";
 import { defaultChain } from "@/src/constants";
 import { cn } from "@/src/lib/utils";
-import type { SignDocumentController } from "../useSignDocument";
+import type { SignDocumentController } from "../hooks/useSignDocument";
 
 export type SignDocumentSidebarProps = {
 	file: NonNullable<SignDocumentController["fileQuery"]["file"]>;

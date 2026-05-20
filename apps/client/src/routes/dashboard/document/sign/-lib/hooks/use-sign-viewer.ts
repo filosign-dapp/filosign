@@ -1,7 +1,6 @@
 import type { ViewFileResult } from "@filosign/react/files";
 import { useEffect, useRef, useState } from "react";
-import { useDecryptedFileView } from "@/src/lib/domains/files/hooks/use-decrypted-file-view";
-import { usePdfViewport } from "@/src/lib/domains/files/hooks/use-pdf-viewport";
+import { usePdfDocumentViewer } from "@/src/lib/domains/files/hooks/use-pdf-document-viewer";
 
 type SignFileRecord = {
 	pieceCid: string;
@@ -17,13 +16,12 @@ export function useSignViewer(
 	file: SignFileRecord | undefined,
 	pieceCid: string | undefined,
 ) {
-	const decrypt = useDecryptedFileView({
+	const decrypt = usePdfDocumentViewer({
 		file: file ?? null,
 		enabled: Boolean(file),
 		acknowledgeHint: true,
+		initialZoom: 100,
 	});
-
-	const viewport = usePdfViewport({ initialZoom: 100 });
 	const [signPdfPage, setSignPdfPage] = useState(1);
 	const [signPdfNumPages, setSignPdfNumPages] = useState<number | null>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -42,7 +40,11 @@ export function useSignViewer(
 		viewFile: decrypt.viewFile,
 		handleViewFile: decrypt.handleViewFile,
 		previewPdfBytes: decrypt.previewPdfBytes,
-		...viewport,
+		zoom: decrypt.zoom,
+		setZoom: decrypt.setZoom,
+		documentDimensions: decrypt.documentDimensions,
+		handleZoomIn: decrypt.handleZoomIn,
+		handleZoomOut: decrypt.handleZoomOut,
 		signPdfPage,
 		setSignPdfPage,
 		signPdfNumPages,

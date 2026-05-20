@@ -1,9 +1,8 @@
-import { lazy, type ReactNode, Suspense } from "react";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
-
-const LazyPdfJsPreview = lazy(
-	() => import("@/src/lib/domains/files/pdf/pdf-js-preview.lazy"),
-);
+import type { ReactNode } from "react";
+import {
+	LazyBoundary,
+	LazyPdfJsPreview,
+} from "@/src/lib/components/app/suspense";
 
 export function SignDocumentPdfPreview({
 	documentKey,
@@ -27,13 +26,7 @@ export function SignDocumentPdfPreview({
 	renderPageOverlay?: (pageIndex: number) => ReactNode;
 }) {
 	return (
-		<Suspense
-			fallback={
-				<div className="flex min-h-[240px] items-center justify-center bg-white">
-					<InlineLoader size="md" />
-				</div>
-			}
-		>
+		<LazyBoundary>
 			<LazyPdfJsPreview
 				className={className ?? "absolute inset-0 z-0"}
 				documentKey={documentKey}
@@ -45,6 +38,6 @@ export function SignDocumentPdfPreview({
 				onPageLayoutLoaded={onPageLayoutLoaded}
 				renderPageOverlay={renderPageOverlay}
 			/>
-		</Suspense>
+		</LazyBoundary>
 	);
 }

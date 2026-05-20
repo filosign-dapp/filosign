@@ -58,18 +58,34 @@ export function FilosignProvider(props: FilosignConfig) {
 		},
 	});
 
+	const walletAddress = wallet?.account.address;
+	const chainKey = runtimeQuery.data?.chainKey;
+
 	useEffect(() => {
-		if (!wallet || !runtimeQuery.data) {
+		session.bindWallet(walletAddress);
+	}, [session, walletAddress]);
+
+	useEffect(() => {
+		if (!chainKey) {
 			setContracts(null);
 			return;
 		}
+		if (!walletAddress) {
+			setContracts(null);
+			return;
+		}
+		// Keep contracts when `wallet` client flickers during wagmi↔thirdweb sync.
+		if (!wallet) {
+			return;
+		}
 
-		const fsContracts = getContracts({
-			client: wallet,
-			chainKey: runtimeQuery.data.chainKey,
-		});
-		setContracts(fsContracts);
-	}, [runtimeQuery.data, wallet]);
+		setContracts(
+			getContracts({
+				client: wallet,
+				chainKey,
+			}),
+		);
+	}, [chainKey, walletAddress, wallet]);
 
 	const value: FilosignContextValue = useMemo(
 		() => ({

@@ -1,3 +1,8 @@
+import {
+	isAccessJwtUsable,
+	readStoredAccessJwt,
+	writeStoredAccessJwt,
+} from "@filosign/auth/client";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { AppRouterClient } from "./app-router-types";
@@ -9,6 +14,7 @@ export function normalizeApiBaseUrl(apiBaseUrl: string) {
 export class FilosignSession {
 	private token: string | null = null;
 	private activeOrgId: string | null = null;
+	private walletAddress: string | null = null;
 
 	private readonly activeOrgListeners = new Set<() => void>();
 
@@ -32,16 +38,50 @@ export class FilosignSession {
 		return this.activeOrgId;
 	}
 
-	setJwt(value: string | null | undefined) {
-		if (value === null || value === undefined) {
+	/** Re-hydrate access JWT from sessionStorage when the connected wallet changes. */
+	bindWallet(walletAddress: string | null | undefined) {
+		const next = walletAddress?.trim() ? walletAddress.trim() : null;
+		if (next === this.walletAddress) return;
+		this.walletAddress = next;
+
+		if (!next) {
 			this.token = null;
 			return;
 		}
+
+		const stored = readStoredAccessJwt(next);
+		if (stored && isAccessJwtUsable(stored, next)) {
+			this.token = stored;
+			return;
+		}
+
+		this.token = null;
+		writeStoredAccessJwt(next, null);
+	}
+
+	setJwt(value: string | null | undefined, walletAddress?: string | null) {
+		const wallet = walletAddress ?? this.walletAddress;
+		if (value === null || value === undefined) {
+			this.token = null;
+			if (wallet) writeStoredAccessJwt(wallet, null);
+			return;
+		}
 		this.token = value;
+		if (wallet) writeStoredAccessJwt(wallet, value);
+	}
+
+	getJwt(): string | null {
+		return this.token;
+	}
+
+	hasValidAccessJwt(walletAddress?: string | null): boolean {
+		const wallet = walletAddress ?? this.walletAddress;
+		if (!this.token || !wallet) return false;
+		return isAccessJwtUsable(this.token, wallet);
 	}
 
 	get jwtExists(): boolean {
-		return this.token != null && this.token !== "";
+		return this.hasValidAccessJwt();
 	}
 
 	ensureJwt() {
@@ -63,6 +103,11 @@ export function createFilosignOrpcClient(
 	const base = normalizeApiBaseUrl(apiBaseUrl);
 	const link = new RPCLink({
 		url: `${base}/api/rpc`,
+		fetch: (request, init) =>
+			globalThis.fetch(request, {
+				...init,
+				credentials: "include",
+			}),
 		headers: async () => {
 			const headers: Record<string, string> = {};
 			const authorization = session.getAuthorizationValue();

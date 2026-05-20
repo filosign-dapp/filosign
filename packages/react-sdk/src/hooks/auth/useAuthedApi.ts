@@ -13,27 +13,39 @@ export type FilosignAuthed = {
 
 /**
  * Ensures a JWT is on the shared oRPC client before authenticated procedures run.
- * Not a plain RPC query — orchestrates wallet crypto + `auth.nonce` / `auth.verify`.
+ * Order: valid access JWT → refresh cookie → dilithium `auth.nonce` / `auth.verify`.
  */
 export function useAuthedApi() {
 	const { rpc, rpcQuery, session, wallet, wasm } = useFilosignContext();
 	const { action: cryptoAction } = useCryptoSeed();
+	const walletAddress = wallet?.account.address;
 
 	return useQuery({
-		queryKey: filosignKeys.authedApi(wallet?.account.address),
+		queryKey: filosignKeys.authedApi(walletAddress),
 		queryFn: async (): Promise<FilosignAuthed> => {
-			if (!wallet) {
+			if (!wallet || !walletAddress) {
 				throw new Error("unreachable");
 			}
 
-			if (session.jwtExists) {
-				session.ensureJwt();
+			session.bindWallet(walletAddress);
+
+			if (session.hasValidAccessJwt(walletAddress)) {
 				return { rpc, session };
+			}
+
+			try {
+				const refreshed = await rpc.auth.refresh();
+				if (refreshed.token) {
+					session.setJwt(refreshed.token, walletAddress);
+					return { rpc, session };
+				}
+			} catch {
+				// fall through to dilithium bootstrap
 			}
 
 			await cryptoAction(async (seed: Uint8Array) => {
 				const { nonce } = await rpcQuery.auth.nonce.call({
-					address: wallet.account.address,
+					address: walletAddress,
 				});
 
 				const dl3Keypair = await signatures.keyGen({
@@ -48,7 +60,7 @@ export function useAuthedApi() {
 				});
 
 				const verify = await rpcQuery.auth.verify.call({
-					address: wallet.account.address,
+					address: walletAddress,
 					signature: toHex(signature),
 				});
 
@@ -56,7 +68,7 @@ export function useAuthedApi() {
 					throw new Error("Authentication verification failed");
 				}
 
-				session.setJwt(verify.token);
+				session.setJwt(verify.token, walletAddress);
 			});
 
 			session.ensureJwt();

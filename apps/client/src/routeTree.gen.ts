@@ -9,12 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from "./routes/__root"
+import { Route as OnboardingRouteRouteImport } from "./routes/onboarding/route"
 import { Route as DashboardRouteRouteImport } from "./routes/dashboard/route"
 import { Route as IndexRouteImport } from "./routes/index"
 import { Route as OnboardingIndexRouteImport } from "./routes/onboarding/index"
 import { Route as DashboardIndexRouteImport } from "./routes/dashboard/index"
 import { Route as DashboardShellRouteRouteImport } from "./routes/dashboard/_shell/route"
-import { Route as OnboardingWelcomeIndexRouteImport } from "./routes/onboarding/welcome/index"
 import { Route as OnboardingCreateSignatureIndexRouteImport } from "./routes/onboarding/create-signature/index"
 import { Route as InviteInviteIdIndexRouteImport } from "./routes/invite/$inviteId/index"
 import { Route as DashboardSignatureCreateIndexRouteImport } from "./routes/dashboard/signature/create/index"
@@ -26,6 +26,11 @@ import { Route as DashboardShellSettingsTeamIndexRouteImport } from "./routes/da
 import { Route as DashboardShellSettingsProfileIndexRouteImport } from "./routes/dashboard/_shell/settings/profile/index"
 import { Route as DashboardShellDocumentAllIndexRouteImport } from "./routes/dashboard/_shell/document/all/index"
 
+const OnboardingRouteRoute = OnboardingRouteRouteImport.update({
+  id: "/onboarding",
+  path: "/onboarding",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
   id: "/dashboard",
   path: "/dashboard",
@@ -37,9 +42,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
-  id: "/onboarding/",
-  path: "/onboarding/",
-  getParentRoute: () => rootRouteImport,
+  id: "/",
+  path: "/",
+  getParentRoute: () => OnboardingRouteRoute,
 } as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: "/",
@@ -50,16 +55,11 @@ const DashboardShellRouteRoute = DashboardShellRouteRouteImport.update({
   id: "/_shell",
   getParentRoute: () => DashboardRouteRoute,
 } as any)
-const OnboardingWelcomeIndexRoute = OnboardingWelcomeIndexRouteImport.update({
-  id: "/onboarding/welcome/",
-  path: "/onboarding/welcome/",
-  getParentRoute: () => rootRouteImport,
-} as any)
 const OnboardingCreateSignatureIndexRoute =
   OnboardingCreateSignatureIndexRouteImport.update({
-    id: "/onboarding/create-signature/",
-    path: "/onboarding/create-signature/",
-    getParentRoute: () => rootRouteImport,
+    id: "/create-signature/",
+    path: "/create-signature/",
+    getParentRoute: () => OnboardingRouteRoute,
   } as any)
 const InviteInviteIdIndexRoute = InviteInviteIdIndexRouteImport.update({
   id: "/invite/$inviteId/",
@@ -118,11 +118,11 @@ const DashboardShellDocumentAllIndexRoute =
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/dashboard": typeof DashboardShellRouteRouteWithChildren
+  "/onboarding": typeof OnboardingRouteRouteWithChildren
   "/dashboard/": typeof DashboardIndexRoute
   "/onboarding/": typeof OnboardingIndexRoute
   "/invite/$inviteId/": typeof InviteInviteIdIndexRoute
   "/onboarding/create-signature/": typeof OnboardingCreateSignatureIndexRoute
-  "/onboarding/welcome/": typeof OnboardingWelcomeIndexRoute
   "/dashboard/connections/": typeof DashboardShellConnectionsIndexRoute
   "/dashboard/document/sign/": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create/": typeof DashboardEnvelopeCreateIndexRoute
@@ -138,7 +138,6 @@ export interface FileRoutesByTo {
   "/onboarding": typeof OnboardingIndexRoute
   "/invite/$inviteId": typeof InviteInviteIdIndexRoute
   "/onboarding/create-signature": typeof OnboardingCreateSignatureIndexRoute
-  "/onboarding/welcome": typeof OnboardingWelcomeIndexRoute
   "/dashboard/connections": typeof DashboardShellConnectionsIndexRoute
   "/dashboard/document/sign": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create": typeof DashboardEnvelopeCreateIndexRoute
@@ -152,12 +151,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
   "/dashboard": typeof DashboardRouteRouteWithChildren
+  "/onboarding": typeof OnboardingRouteRouteWithChildren
   "/dashboard/_shell": typeof DashboardShellRouteRouteWithChildren
   "/dashboard/": typeof DashboardIndexRoute
   "/onboarding/": typeof OnboardingIndexRoute
   "/invite/$inviteId/": typeof InviteInviteIdIndexRoute
   "/onboarding/create-signature/": typeof OnboardingCreateSignatureIndexRoute
-  "/onboarding/welcome/": typeof OnboardingWelcomeIndexRoute
   "/dashboard/_shell/connections/": typeof DashboardShellConnectionsIndexRoute
   "/dashboard/document/sign/": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create/": typeof DashboardEnvelopeCreateIndexRoute
@@ -172,11 +171,11 @@ export interface FileRouteTypes {
   fullPaths:
     | "/"
     | "/dashboard"
+    | "/onboarding"
     | "/dashboard/"
     | "/onboarding/"
     | "/invite/$inviteId/"
     | "/onboarding/create-signature/"
-    | "/onboarding/welcome/"
     | "/dashboard/connections/"
     | "/dashboard/document/sign/"
     | "/dashboard/envelope/create/"
@@ -192,7 +191,6 @@ export interface FileRouteTypes {
     | "/onboarding"
     | "/invite/$inviteId"
     | "/onboarding/create-signature"
-    | "/onboarding/welcome"
     | "/dashboard/connections"
     | "/dashboard/document/sign"
     | "/dashboard/envelope/create"
@@ -205,12 +203,12 @@ export interface FileRouteTypes {
     | "__root__"
     | "/"
     | "/dashboard"
+    | "/onboarding"
     | "/dashboard/_shell"
     | "/dashboard/"
     | "/onboarding/"
     | "/invite/$inviteId/"
     | "/onboarding/create-signature/"
-    | "/onboarding/welcome/"
     | "/dashboard/_shell/connections/"
     | "/dashboard/document/sign/"
     | "/dashboard/envelope/create/"
@@ -224,14 +222,19 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
-  OnboardingIndexRoute: typeof OnboardingIndexRoute
+  OnboardingRouteRoute: typeof OnboardingRouteRouteWithChildren
   InviteInviteIdIndexRoute: typeof InviteInviteIdIndexRoute
-  OnboardingCreateSignatureIndexRoute: typeof OnboardingCreateSignatureIndexRoute
-  OnboardingWelcomeIndexRoute: typeof OnboardingWelcomeIndexRoute
 }
 
 declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
+    "/onboarding": {
+      id: "/onboarding"
+      path: "/onboarding"
+      fullPath: "/onboarding"
+      preLoaderRoute: typeof OnboardingRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/dashboard": {
       id: "/dashboard"
       path: "/dashboard"
@@ -248,10 +251,10 @@ declare module "@tanstack/react-router" {
     }
     "/onboarding/": {
       id: "/onboarding/"
-      path: "/onboarding"
+      path: "/"
       fullPath: "/onboarding/"
       preLoaderRoute: typeof OnboardingIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRouteRoute
     }
     "/dashboard/": {
       id: "/dashboard/"
@@ -267,19 +270,12 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardShellRouteRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
-    "/onboarding/welcome/": {
-      id: "/onboarding/welcome/"
-      path: "/onboarding/welcome"
-      fullPath: "/onboarding/welcome/"
-      preLoaderRoute: typeof OnboardingWelcomeIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     "/onboarding/create-signature/": {
       id: "/onboarding/create-signature/"
-      path: "/onboarding/create-signature"
+      path: "/create-signature"
       fullPath: "/onboarding/create-signature/"
       preLoaderRoute: typeof OnboardingCreateSignatureIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof OnboardingRouteRoute
     }
     "/invite/$inviteId/": {
       id: "/invite/$inviteId/"
@@ -388,13 +384,25 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
   DashboardRouteRouteChildren,
 )
 
+interface OnboardingRouteRouteChildren {
+  OnboardingIndexRoute: typeof OnboardingIndexRoute
+  OnboardingCreateSignatureIndexRoute: typeof OnboardingCreateSignatureIndexRoute
+}
+
+const OnboardingRouteRouteChildren: OnboardingRouteRouteChildren = {
+  OnboardingIndexRoute: OnboardingIndexRoute,
+  OnboardingCreateSignatureIndexRoute: OnboardingCreateSignatureIndexRoute,
+}
+
+const OnboardingRouteRouteWithChildren = OnboardingRouteRoute._addFileChildren(
+  OnboardingRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
-  OnboardingIndexRoute: OnboardingIndexRoute,
+  OnboardingRouteRoute: OnboardingRouteRouteWithChildren,
   InviteInviteIdIndexRoute: InviteInviteIdIndexRoute,
-  OnboardingCreateSignatureIndexRoute: OnboardingCreateSignatureIndexRoute,
-  OnboardingWelcomeIndexRoute: OnboardingWelcomeIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

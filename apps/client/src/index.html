@@ -11,21 +11,24 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200..800&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap" rel="stylesheet" />
-  
+
   <style>
-    :root { color-scheme: dark; }
-    html, body { height: 100%; }
-    body { margin: 0; background: #0b0b0c; }
-    #root { min-height: 100%; }
-    /* Non-JS boot screen to avoid "white flash" on slow devices. */
-    #boot {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: rgba(255,255,255,0.72);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      font-size: 14px;
+    :root {
+      color-scheme: dark;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      background: #0b0b0c;
+    }
+
+    #root {
+      min-height: 100%;
     }
   </style>
 
@@ -34,9 +37,7 @@
 </head>
 
 <body>
-  <div id="root">
-    <div id="boot">Loading…</div>
-  </div>
+  <div id="root"></div>
 </body>
 
 </html>

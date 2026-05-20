@@ -7,12 +7,13 @@ Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-pack
 
 | Path                    | Docs                                                                      | Role                                                         |
 | ----------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `apps/client`           | [AGENTS.md](apps/client/AGENTS.md)                                        | Thin Vite UI → `@filosign/react`                             |
+| `apps/client`           | [README](apps/client/README.md)                                           | Thin Vite UI → `@filosign/react`                             |
 | `apps/server`           | [README](apps/server/README.md)                                           | Hono, Drizzle, `/api/rpc`, `rpc.runtime`                     |
 | `apps/contracts`        | [README](apps/contracts/README.md) · [TESTING](apps/contracts/TESTING.md) | Solidity, `definitions/`, EIP-712; tests in `test/`          |
 | `apps/astro`            | [README](apps/astro/README.md)                                            | Marketing                                                    |
 | `packages/react-sdk`    | [README](packages/react-sdk/README.md)                                    | `FilosignProvider`, typed `rpc`, `rpcQuery`, hooks           |
 | `packages/shared`       | [AGENTS.md](packages/shared/AGENTS.md)                                    | Types, Zod, manifests (browser+server)                       |
+| `packages/auth`         | [README](packages/auth/README.md)                                         | JWT, refresh cookies, Dragonfly/Postgres auth store        |
 | `packages/entitlements` | —                                                                         | Plan catalog + pure evaluator (no DB; server wires later)    |
 | `packages/crypto-utils` | [README](packages/crypto-utils/README.md)                                 | KEM, WASM-adjacent crypto                                    |
 | `packages/test`         | [README](packages/test/README.md)                                         | Dev harness                                                  |
@@ -36,7 +37,7 @@ Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).
 
 ## Flow
 
-`definitions/` ← deploy ← `.sol` → `getContracts` ([services/contracts.ts](apps/contracts/services/contracts.ts)) → server `[lib/platform/evm.ts](apps/server/lib/platform/evm.ts)` + SDK `[FilosignProvider](packages/react-sdk/src/context/FilosignProvider.tsx)` (`rpc.runtime` → `chainKey` + wagmi) → hooks → client pages. Typed RPC: `[create-orpc-client.ts](packages/react-sdk/src/orpc/create-orpc-client.ts)` → `{apiBase}/api/rpc`. Client shell: `[filosign-provider.tsx](apps/client/src/lib/context/filosign-provider.tsx)` (WASM, wagmi, `VITE_SERVER_URL`). `@filosign/shared` → server, SDK, client; `@filosign/crypto-utils` → SDK, contracts.
+`definitions/` ← deploy ← `.sol` → `getContracts` ([services/contracts.ts](apps/contracts/services/contracts.ts)) → server `[lib/platform/evm.ts](apps/server/lib/platform/evm.ts)` + SDK `[FilosignProvider](packages/react-sdk/src/context/FilosignProvider.tsx)` (`rpc.runtime` → `chainKey` + wagmi) → hooks → client pages. Typed RPC: `[create-orpc-client.ts](packages/react-sdk/src/orpc/create-orpc-client.ts)` → `{apiBase}/api/rpc`. Client shell: [`filosign-provider.tsx`](apps/client/src/lib/filosign/filosign-provider.tsx) (WASM, wagmi, `VITE_SERVER_URL`). Client conventions: [`apps/client/README.md`](apps/client/README.md). `@filosign/shared` → server, SDK, client; `@filosign/crypto-utils` → SDK, contracts.
 
 ## Boundaries
 

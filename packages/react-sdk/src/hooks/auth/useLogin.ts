@@ -4,6 +4,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { invalidateUserProfile } from "../../lib/invalidate-user-profile";
 import { filosignKeys } from "../../lib/query-keys";
+import {
+	invalidateAuthQueries,
+	invalidateSessionQueries,
+} from "./invalidate-auth-queries";
+import type { KeyRegistrySnapshot } from "./key-registry-snapshot";
+import { clearKeyRegistrySnapshotCache } from "./key-registry-snapshot";
 import { recoveryPhraseFromSeed } from "./recovery-phrase";
 import { setSessionSeed } from "./session-seed";
 import { unlockSeedFromWallet } from "./unlock-seed";
@@ -32,6 +38,11 @@ export function useLogin() {
 			if (!contracts || !wallet || !wasm.dilithium) {
 				throw new Error("unreachable");
 			}
+
+			const address = wallet.account.address;
+			const snapshot = queryClient.getQueryData<KeyRegistrySnapshot>(
+				filosignKeys.keyRegistrySnapshot(address),
+			);
 
 			let recoveryPhrase: string | undefined;
 
@@ -87,30 +98,14 @@ export function useLogin() {
 				await rpcQuery.users.register.call(requestPayload);
 
 				setSessionSeed(wallet.account.address, keygenData.seed);
+				clearKeyRegistrySnapshotCache(address);
 				recoveryPhrase = recoveryPhraseFromSeed(keygenData.seedCore32);
-
-				queryClient
-					.refetchQueries({
-						queryKey: filosignKeys.isRegistered(wallet?.account.address),
-					})
-					.then(() =>
-						queryClient
-							.refetchQueries({
-								queryKey: filosignKeys.storedKeygenData(
-									wallet?.account.address,
-								),
-							})
-							.then(() =>
-								queryClient.refetchQueries({
-									queryKey: filosignKeys.isLoggedIn(wallet?.account.address),
-								}),
-							),
-					);
 			} else {
 				const seedFromWallet = await unlockSeedFromWallet({
 					wallet,
 					contracts,
 					wasm,
+					storedKeygenData: snapshot?.storedKeygenData,
 				});
 
 				if (seedFromWallet) {
@@ -120,21 +115,11 @@ export function useLogin() {
 				}
 			}
 
-			queryClient
-				.refetchQueries({
-					queryKey: filosignKeys.isRegistered(wallet?.account.address),
-				})
-				.then(() =>
-					queryClient
-						.refetchQueries({
-							queryKey: filosignKeys.storedKeygenData(wallet?.account.address),
-						})
-						.then(() =>
-							queryClient.refetchQueries({
-								queryKey: filosignKeys.isLoggedIn(wallet?.account.address),
-							}),
-						),
-				);
+			if (!isRegistered) {
+				await invalidateAuthQueries(queryClient, address);
+			} else {
+				await invalidateSessionQueries(queryClient, address);
+			}
 			void invalidateUserProfile(queryClient, rpcQuery);
 			return recoveryPhrase
 				? { success: true, recoveryPhrase }

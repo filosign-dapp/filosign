@@ -1,29 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
-import { MINUTE } from "../../constants";
-import { useFilosignContext } from "../../context/useFilosignContext";
-import { filosignKeys } from "../../lib/query-keys";
+import { useKeyRegistrySnapshot } from "./useKeyRegistrySnapshot";
 
 export function useIsRegistered() {
-	const { contracts, wallet } = useFilosignContext();
+	const snapshot = useKeyRegistrySnapshot();
 
-	return useQuery({
-		queryKey: filosignKeys.isRegistered(wallet?.account.address),
-		queryFn: async () => {
-			if (!contracts || !wallet) {
-				throw new Error("No contracts or wallet");
-			}
-
-			try {
-				const isRegistered = await contracts.FSKeyRegistry.read.isRegistered([
-					wallet.account.address,
-				]);
-				return isRegistered;
-			} catch (error) {
-				console.error("Failed to check if user is registered", error);
-				throw error;
-			}
-		},
-		staleTime: 5 * MINUTE,
-		enabled: !!contracts && !!wallet?.account.address,
-	});
+	return {
+		...snapshot,
+		data: snapshot.data?.isRegistered,
+	};
 }

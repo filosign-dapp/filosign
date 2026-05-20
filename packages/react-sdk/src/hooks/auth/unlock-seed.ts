@@ -6,6 +6,7 @@ import {
 } from "@filosign/crypto-utils";
 import type { UseWalletClientReturnType } from "wagmi";
 import type { FilosignContextValue } from "../../context/FilosignContext";
+import type { StoredKeygenData } from "./key-registry-snapshot";
 
 type Wallet = NonNullable<UseWalletClientReturnType["data"]>;
 
@@ -13,16 +14,35 @@ export async function unlockSeedFromWallet(args: {
 	wallet: Wallet;
 	contracts: FilosignContracts;
 	wasm: FilosignContextValue["wasm"];
+	/** When provided, skips a duplicate FSKeyRegistry.keygenData eth_call. */
+	storedKeygenData?: StoredKeygenData;
 }): Promise<Uint8Array | null> {
 	const { wallet, contracts, wasm } = args;
 
 	try {
-		const [, saltSeed, saltChallenge, commitmentKem, commitmentSig] =
-			await contracts.FSKeyRegistry.read.keygenData([wallet.account.address]);
+		const stored =
+			args.storedKeygenData ??
+			(await (async () => {
+				const [, saltSeed, saltChallenge, commitmentKem, commitmentSig] =
+					await contracts.FSKeyRegistry.read.keygenData([
+						wallet.account.address,
+					]);
+				if (!saltSeed || !saltChallenge || !commitmentKem || !commitmentSig) {
+					return undefined;
+				}
+				return {
+					saltSeed,
+					saltChallenge,
+					commitmentKem,
+					commitmentSig,
+				} satisfies StoredKeygenData;
+			})());
 
-		if (!saltSeed || !saltChallenge || !commitmentKem || !commitmentSig) {
+		if (!stored) {
 			return null;
 		}
+
+		const { saltSeed, saltChallenge, commitmentKem, commitmentSig } = stored;
 
 		const seedCore32 = await deriveDeterministicSeed32(wallet, {
 			saltChallenge,

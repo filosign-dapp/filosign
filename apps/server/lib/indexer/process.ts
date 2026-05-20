@@ -2,6 +2,8 @@ import { and, eq, type InferInsertModel } from "drizzle-orm";
 import { decodeEventLog, type Hash, isHex, type Log } from "viem";
 import env from "@/env";
 import { materializePendingInvitesForEmail } from "@/lib/domain/sharing";
+import { activatePendingOrgConnectionsForApproval } from "@/lib/domain/sharing/org-connections";
+import { syncSenderApprovalsFromChainForWallet } from "@/lib/domain/sharing/sync-chain-approvals";
 import type { IndexerTxBodyParsed } from "@/lib/validation/tx-registration";
 import db from "../db";
 import { users } from "../db/schema/user";
@@ -9,7 +11,7 @@ import { evmClient, fsContracts } from "../evm";
 import tryCatchSync, { tryCatch } from "../utils/tryCatch";
 import { ProcessTxUserError } from "./errors";
 
-const { shareApprovals, shareRequests } = db.schema;
+const { shareApprovals, shareRequests, organizationConnections } = db.schema;
 const { FSKeyRegistry, FSManager } = fsContracts;
 
 async function handleKeygenDataRegistered(
@@ -75,6 +77,16 @@ async function handleKeygenDataRegistered(
 			);
 		}
 	}
+
+	const syncRes = await tryCatch(
+		syncSenderApprovalsFromChainForWallet(log.args.user),
+	);
+	if (syncRes.error) {
+		console.error(
+			"syncSenderApprovalsFromChainForWallet after registration:",
+			syncRes.error,
+		);
+	}
 }
 
 async function processFsManagerLog(
@@ -117,12 +129,23 @@ async function processFsManagerLog(
 			return;
 		}
 
-		await db.insert(shareApprovals).values({
-			recipientWallet: log.args.recipient,
-			senderWallet: log.args.sender,
-			txHash: encodedLog.transactionHash,
-			active: true,
-		});
+		const [approval] = await db
+			.insert(shareApprovals)
+			.values({
+				recipientWallet: log.args.recipient,
+				senderWallet: log.args.sender,
+				txHash: encodedLog.transactionHash,
+				active: true,
+			})
+			.returning({ id: shareApprovals.id });
+
+		if (approval) {
+			await activatePendingOrgConnectionsForApproval({
+				anchorSender: log.args.sender,
+				recipient: log.args.recipient,
+				shareApprovalId: approval.id,
+			});
+		}
 
 		await db
 			.update(shareRequests)
@@ -159,6 +182,20 @@ async function processFsManagerLog(
 			active: false,
 			txHash: txHash,
 		});
+
+		// Keep org connection allow-lists in sync with on-chain sender revoke events.
+		await db
+			.update(organizationConnections)
+			.set({
+				status: "inactive",
+				updatedAt: new Date(),
+			})
+			.where(
+				and(
+					eq(organizationConnections.anchorSenderWallet, log.args.sender),
+					eq(organizationConnections.recipientWallet, log.args.recipient),
+				),
+			);
 	}
 }
 

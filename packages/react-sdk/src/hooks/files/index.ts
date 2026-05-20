@@ -4,6 +4,7 @@ export * from "./useColdInviteDecrypt";
 export * from "./useColdInvitePayload";
 export * from "./useComplianceBundle";
 export * from "./useFileInfo";
+export * from "./useOrgFiles";
 export * from "./useReceivedFiles";
 export * from "./useRegenerateColdInvite";
 export * from "./useSendFile";

@@ -13,7 +13,9 @@ import {
 	computePlacementCommitment,
 	encodeFileData,
 	hashNormalizedSignerEmail,
+	hashOrgIdCommitment,
 	normalizePlacementRecipientEmail,
+	ZERO_ORG_ID_COMMITMENT,
 	type zFileData,
 } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -47,6 +49,9 @@ export function useSendFile() {
 			coldInvites?: { email: string; isSigner: boolean }[];
 			/** Normalized viewer emails (non-signer recipients); must match server derivation. */
 			viewerEmails: string[];
+			/** When set, send as organization (requires X-Org-Id on session). */
+			organizationId?: string;
+			orgEncryptionPublicKey?: Hex;
 		}) => {
 			const {
 				signers,
@@ -56,6 +61,8 @@ export function useSendFile() {
 				placementManifest,
 				coldInvites,
 				viewerEmails,
+				organizationId,
+				orgEncryptionPublicKey,
 			} = args;
 			const timestamp = Math.floor(Date.now() / 1000);
 
@@ -119,6 +126,22 @@ export function useSendFile() {
 				info: `${pieceCid.toString()}:${wallet.account.address}`,
 			});
 			viewedParticipants[wallet.account.address] = true;
+
+			let orgKemCiphertext: Hex | undefined;
+			let orgEncryptedEncryptionKey: Hex | undefined;
+			if (organizationId && orgEncryptionPublicKey) {
+				const { ciphertext, sharedSecret } = await KEM.encapsulate({
+					publicKeyOther: toBytes(orgEncryptionPublicKey),
+				});
+				orgKemCiphertext = toHex(ciphertext);
+				orgEncryptedEncryptionKey = toHex(
+					await encryption.encrypt({
+						message: encryptionKey,
+						secretKey: sharedSecret,
+						info: `${pieceCid.toString()}:org:${organizationId}`,
+					}),
+				);
+			}
 
 			for (const signer of signers) {
 				if (viewedParticipants[signer.address]) continue;
@@ -195,6 +218,10 @@ export function useSendFile() {
 					viewerEmails,
 				});
 
+			const orgIdCommitment = organizationId
+				? hashOrgIdCommitment(organizationId)
+				: ZERO_ORG_ID_COMMITMENT;
+
 			const signature = await eip712signature(contracts, "FSFileRegistry", {
 				types: {
 					RegisterFile: [
@@ -205,6 +232,7 @@ export function useSendFile() {
 						{ name: "placementCommitment", type: "bytes32" },
 						{ name: "senderEmailCommitment", type: "bytes32" },
 						{ name: "senderPrivySubjectCommitment", type: "bytes32" },
+						{ name: "orgIdCommitment", type: "bytes32" },
 						{ name: "timestamp", type: "uint256" },
 						{ name: "nonce", type: "uint256" },
 					],
@@ -218,6 +246,7 @@ export function useSendFile() {
 					placementCommitment,
 					senderEmailCommitment,
 					senderPrivySubjectCommitment,
+					orgIdCommitment,
 					timestamp: BigInt(timestamp),
 					nonce: BigInt(nonce),
 				},
@@ -265,6 +294,13 @@ export function useSendFile() {
 				timestamp: timestamp,
 				placementCommitment,
 				placementManifest,
+				...(organizationId && orgKemCiphertext && orgEncryptedEncryptionKey
+					? {
+							organizationId,
+							orgKemCiphertext,
+							orgEncryptedEncryptionKey,
+						}
+					: {}),
 				...(coldInviteRows.length > 0 ? { coldInvites: coldInviteRows } : {}),
 			};
 
@@ -275,6 +311,11 @@ export function useSendFile() {
 			void queryClient.invalidateQueries({
 				queryKey: rpcQuery.files.list.sent.key(),
 			});
+			if (organizationId) {
+				void queryClient.invalidateQueries({
+					queryKey: rpcQuery.files.list.org.key(),
+				});
+			}
 			void invalidateEntitlements(queryClient, rpcQuery);
 
 			return {

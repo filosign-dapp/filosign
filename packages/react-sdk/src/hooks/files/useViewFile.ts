@@ -1,16 +1,30 @@
 import { encryption, KEM, toBytes } from "@filosign/crypto-utils";
-import { decodeFileData, type PlacementManifest } from "@filosign/shared";
+import {
+	decodeFileData,
+	ORG_OMK_WRAP_INFO,
+	type PlacementManifest,
+} from "@filosign/shared";
 import { useMutation } from "@tanstack/react-query";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import { getSessionSeed } from "../auth/session-seed";
 
-export type ViewFileArgs = {
-	pieceCid: string;
-	kemCiphertext: string;
-	encryptedEncryptionKey: string;
-	status: "s3" | "foc";
-};
+export type ViewFileArgs =
+	| {
+			variant?: "participant";
+			pieceCid: string;
+			kemCiphertext: string;
+			encryptedEncryptionKey: string;
+			status: "s3" | "foc";
+	  }
+	| {
+			variant: "org";
+			pieceCid: string;
+			organizationId: string;
+			orgKemCiphertext: string;
+			orgEncryptedEncryptionKey: string;
+			status: "s3" | "foc";
+	  };
 
 export type ViewFileMetadata = {
 	name: string;
@@ -31,7 +45,7 @@ export function useViewFile() {
 
 	return useMutation<ViewFileResult, Error, ViewFileArgs>({
 		mutationFn: async (args) => {
-			const { pieceCid, kemCiphertext, encryptedEncryptionKey } = args;
+			const { pieceCid } = args;
 
 			if (!contracts || !wallet || !runtime || !isAuthed) {
 				throw new Error("not connected");
@@ -82,24 +96,57 @@ export function useViewFile() {
 				throw new Error("No unlocked key seed found");
 			}
 
-			const { privateKey } = await KEM.keyGen({
+			const { privateKey: userKemPrivate } = await KEM.keyGen({
 				seed: new Uint8Array(Array.from(keySeed)),
 			});
 
-			const { sharedSecret: ssE } = await KEM.decapsulate({
-				ciphertext: toBytes(kemCiphertext),
-				privateKeySelf: privateKey,
-			});
 			let encryptionKey: Uint8Array;
-			try {
-				encryptionKey = await encryption.decrypt({
-					ciphertext: toBytes(encryptedEncryptionKey),
-					secretKey: ssE,
-					info: `${pieceCid}:${wallet.account.address}`,
+
+			const isOrgVariant = args.variant === "org";
+			if (isOrgVariant) {
+				const myWrap = await rpcQuery.orgs.keys.wrapForMine.call({
+					organizationId: args.organizationId,
 				});
-			} catch (e) {
-				console.error("Decryption error: ", e);
-				throw e;
+				const { sharedSecret: ssSelf } = await KEM.decapsulate({
+					ciphertext: toBytes(myWrap.wrapKemCiphertext),
+					privateKeySelf: userKemPrivate,
+				});
+				const omkSeed = await encryption.decrypt({
+					ciphertext: toBytes(myWrap.wrappedOmk),
+					secretKey: ssSelf,
+					info: ORG_OMK_WRAP_INFO,
+				});
+
+				const { privateKey: omkPrivate } = await KEM.keyGen({
+					seed: omkSeed,
+				});
+
+				const { sharedSecret: ssOrg } = await KEM.decapsulate({
+					ciphertext: toBytes(args.orgKemCiphertext),
+					privateKeySelf: omkPrivate,
+				});
+
+				encryptionKey = await encryption.decrypt({
+					ciphertext: toBytes(args.orgEncryptedEncryptionKey),
+					secretKey: ssOrg,
+					info: `${pieceCid}:org:${args.organizationId}`,
+				});
+			} else {
+				const { kemCiphertext, encryptedEncryptionKey } = args;
+				const { sharedSecret: ssE } = await KEM.decapsulate({
+					ciphertext: toBytes(kemCiphertext),
+					privateKeySelf: userKemPrivate,
+				});
+				try {
+					encryptionKey = await encryption.decrypt({
+						ciphertext: toBytes(encryptedEncryptionKey),
+						secretKey: ssE,
+						info: `${pieceCid}:${wallet.account.address}`,
+					});
+				} catch (e) {
+					console.error("Decryption error: ", e);
+					throw e;
+				}
 			}
 
 			const encryptionInfo = "ignore-encryption-info";

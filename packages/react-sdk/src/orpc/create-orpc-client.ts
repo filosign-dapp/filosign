@@ -8,6 +8,29 @@ export function normalizeApiBaseUrl(apiBaseUrl: string) {
 
 export class FilosignSession {
 	private token: string | null = null;
+	private activeOrgId: string | null = null;
+
+	private readonly activeOrgListeners = new Set<() => void>();
+
+	subscribeActiveOrgId = (listener: () => void): (() => void) => {
+		this.activeOrgListeners.add(listener);
+		return () => {
+			this.activeOrgListeners.delete(listener);
+		};
+	};
+
+	setActiveOrgId(value: string | null | undefined) {
+		const next = value?.trim() ? value.trim() : null;
+		if (next === this.activeOrgId) return;
+		this.activeOrgId = next;
+		for (const listener of this.activeOrgListeners) {
+			listener();
+		}
+	}
+
+	getActiveOrgId(): string | null {
+		return this.activeOrgId;
+	}
 
 	setJwt(value: string | null | undefined) {
 		if (value === null || value === undefined) {
@@ -41,8 +64,12 @@ export function createFilosignOrpcClient(
 	const link = new RPCLink({
 		url: `${base}/api/rpc`,
 		headers: async () => {
+			const headers: Record<string, string> = {};
 			const authorization = session.getAuthorizationValue();
-			return authorization ? { Authorization: authorization } : {};
+			if (authorization) headers.Authorization = authorization;
+			const orgId = session.getActiveOrgId();
+			if (orgId) headers["X-Org-Id"] = orgId;
+			return headers;
 		},
 	});
 	return createORPCClient<AppRouterClient>(link);

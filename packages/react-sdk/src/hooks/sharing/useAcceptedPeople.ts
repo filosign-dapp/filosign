@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { filosignKeys } from "../../lib/query-keys";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import { useAcceptedRecipients } from "./useSendableTo";
 
@@ -6,12 +8,16 @@ export function useAcceptedPeople() {
 	const { rpcQuery, isAuthed } = useFilosignRpc();
 	const { data: acceptedRecipients } = useAcceptedRecipients();
 
+	const recipientWallets = useMemo(
+		() =>
+			(acceptedRecipients ?? [])
+				.map((request) => request.recipientWallet.toLowerCase())
+				.sort(),
+		[acceptedRecipients],
+	);
+
 	return useQuery({
-		queryKey: [
-			...rpcQuery.sharing.sentRequests.key(),
-			"accepted-people",
-			acceptedRecipients,
-		],
+		queryKey: filosignKeys.acceptedPeople(recipientWallets),
 		queryFn: async () => {
 			if (!acceptedRecipients || !isAuthed) return { people: [] };
 

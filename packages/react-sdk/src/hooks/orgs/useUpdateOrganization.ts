@@ -10,7 +10,7 @@ export function useUpdateOrganization() {
 			return rpcQuery.orgs.update.call(args);
 		},
 		onSuccess: async () => {
-			await queryClient.invalidateQueries({ queryKey: ["filosign", "orgs"] });
+			await queryClient.invalidateQueries({ queryKey: rpcQuery.orgs.key() });
 		},
 	});
 }

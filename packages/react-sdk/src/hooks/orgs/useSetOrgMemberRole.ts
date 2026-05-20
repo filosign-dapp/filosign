@@ -14,7 +14,7 @@ export function useSetOrgMemberRole() {
 			return rpcQuery.orgs.members.setRole.call(args);
 		},
 		onSuccess: async () => {
-			await queryClient.invalidateQueries({ queryKey: ["filosign", "orgs"] });
+			await queryClient.invalidateQueries({ queryKey: rpcQuery.orgs.key() });
 		},
 	});
 }

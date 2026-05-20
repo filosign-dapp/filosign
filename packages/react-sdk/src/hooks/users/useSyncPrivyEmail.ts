@@ -9,7 +9,7 @@ export function useSyncPrivyEmail() {
 	return useMutation({
 		mutationFn: async (args: { identityToken: string }) => {
 			if (!isAuthed) throw new Error("Not authenticated");
-			return rpcQuery.users.profile.syncPrivyEmail.call(args);
+			return rpcQuery.users.profile.syncThirdwebEmail.call(args);
 		},
 		onSuccess: () => {
 			invalidateUser();

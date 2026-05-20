@@ -1,6 +1,6 @@
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { constrainFieldTopLeft } from "@/src/lib/utils/placement-viewport";
+import { constrainFieldTopLeft } from "@/src/lib/domains/files/placement-viewport";
 import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
 import type {
 	Document,

@@ -1,5 +1,5 @@
 import { XIcon } from "@phosphor-icons/react";
-import { constrainFieldTopLeft } from "@/src/lib/utils/placement-viewport";
+import { constrainFieldTopLeft } from "@/src/lib/domains/files/placement-viewport";
 import { cn } from "@/src/lib/utils/utils";
 import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 import {

@@ -10,11 +10,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Address, Hex } from "viem";
-import { useStorePersist } from "@/src/lib/hooks/use-store";
-import { buildColdInviteMagicLink } from "@/src/lib/routing/cold-invite-search";
-import { constrainFieldTopLeft } from "@/src/lib/utils/placement-viewport";
+import { constrainFieldTopLeft } from "@/src/lib/domains/files/placement-viewport";
+import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
+import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
+import { useStorePersist } from "@/src/lib/filosign/use-store";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
-import type { ColdSharePackage } from "@/src/routes/dashboard/envelope/create/add-sign/-components/cold-share-dialog";
 import type {
 	FieldPlacementConfirmPayload,
 	FieldPlacementSignerOption,

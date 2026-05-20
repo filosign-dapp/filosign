@@ -23,7 +23,7 @@ import {
 	ACCEPTED_FILE_EXTENSIONS,
 	ACCEPTED_FILE_MIME_SET,
 } from "../-lib/types";
-import FileCard from "./FileCard";
+import FileCard from "./file-card";
 
 export default function DocumentsSection() {
 	const { value: documents, onChange, error, showError } = useDocumentUpload();

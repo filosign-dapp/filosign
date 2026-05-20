@@ -4,19 +4,16 @@ import {
 	SpinnerGapIcon,
 	XCircleIcon,
 } from "@phosphor-icons/react";
-import Logo from "@/src/lib/components/shared/Logo";
+import Logo from "@/src/lib/components/app/chrome/logo";
 import { Button } from "@/src/lib/components/ui/button";
 import { cn } from "@/src/lib/utils/utils";
+import { useAddSignChrome } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 
-interface HeaderProps {
-	onSend: () => void;
-	status?: "idle" | "loading" | "success" | "error";
-}
-
-export default function Header({ onSend, status = "idle" }: HeaderProps) {
-	const isLoading = status === "loading";
-	const isSuccess = status === "success";
-	const isError = status === "error";
+export default function Header() {
+	const { sendStatus, handleSend } = useAddSignChrome();
+	const isLoading = sendStatus === "loading";
+	const isSuccess = sendStatus === "success";
+	const isError = sendStatus === "error";
 
 	const getButtonContent = () => {
 		if (isLoading) {
@@ -65,7 +62,7 @@ export default function Header({ onSend, status = "idle" }: HeaderProps) {
 
 				<Button
 					variant="primary"
-					onClick={onSend}
+					onClick={handleSend}
 					disabled={isLoading}
 					className={cn(
 						"gap-2 transition-colors duration-300",

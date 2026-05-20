@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { EntitlementPlanHint } from "@/src/lib/components/shared/EntitlementPlanHint";
+import { EntitlementPlanHint } from "@/src/lib/domains/entitlements/entitlement-plan-hint";
+import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import {
 	AddSignProvider,
 	useAddSignChrome,
@@ -7,7 +8,6 @@ import {
 	useAddSignPlacement,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 import type { AddSignController } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-controller";
-import { ColdShareDialog } from "./cold-share-dialog";
 import FieldsSidebar from "./fields-sidebar";
 import Header from "./header";
 import MobileToolbar from "./mobile-toolbar";
@@ -32,10 +32,9 @@ function AddSignPageShell({ children }: { children: ReactNode }) {
 }
 
 function AddSignHeaderRow() {
-	const { sendStatus, handleSend } = useAddSignChrome();
 	return (
 		<>
-			<Header onSend={handleSend} status={sendStatus} />
+			<Header />
 			<div className="px-4 py-2 border-b border-border">
 				<EntitlementPlanHint />
 			</div>

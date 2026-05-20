@@ -1,6 +1,6 @@
 import type * as React from "react";
-import { Image } from "@/src/lib/components/shared/Image";
-import { PdfJsPreview } from "@/src/lib/components/shared/PdfJsPreview";
+import { Image } from "@/src/lib/components/app/media/image";
+import { PdfJsPreview } from "@/src/lib/domains/files/pdf/pdf-js-preview";
 import { PlacementCaptureLayer } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-layer";
 import type {
 	Document,

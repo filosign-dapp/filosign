@@ -1,22 +1,10 @@
-import { useEnvelopeRecipientLimit } from "@filosign/react/billing";
 import { useUserProfileByQuery } from "@filosign/react/users";
-import {
-	CaretDownIcon,
-	CheckIcon,
-	TrashIcon,
-	UserIcon,
-	UsersIcon,
-} from "@phosphor-icons/react";
+import { CheckIcon, TrashIcon, UserIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import type { Address } from "viem";
 import { Avatar, AvatarFallback } from "@/src/lib/components/ui/avatar";
 import { Button } from "@/src/lib/components/ui/button";
-import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@/src/lib/components/ui/collapsible";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import {
@@ -33,9 +21,8 @@ import {
 } from "@/src/lib/components/ui/tooltip";
 import { cn } from "@/src/lib/utils/utils";
 import { initialsFromName } from "@/src/routes/dashboard/_shell/connections/-components/contact-utils";
-import { usePromptPlanUpgrade } from "../-lib/context/entitlement-upgrade-context";
-import { useRecipients } from "../-lib/context/envelope-draft-context";
-import type { Recipient } from "../-lib/types";
+import { useRecipientsContext } from "@/src/routes/dashboard/envelope/create/-lib/context/recipients-context";
+import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 
 const EMPTY_USER_PROFILE_QUERY: {
 	address?: Address;
@@ -51,223 +38,22 @@ function isValidEmail(email: string) {
 	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-export default function RecipientsSection() {
-	const { value: recipients, onChange, error, showError } = useRecipients();
-	const [isRecipientsOpen, setIsRecipientsOpen] = useState(true);
-	const { canAddRecipient } = useEnvelopeRecipientLimit();
-	const promptPlanUpgrade = usePromptPlanUpgrade();
-
-	const recipientCount = recipients?.length ?? 0;
-
-	const addRecipient = () => {
-		if (!canAddRecipient(recipientCount)) {
-			promptPlanUpgrade("envelope.recipients.max");
-			return;
-		}
-		const next: Recipient = {
-			clientRowId: crypto.randomUUID(),
-			name: "",
-			email: "",
-			role: "signer",
-		};
-		onChange([...(recipients || []), next]);
-	};
-
-	const removeRecipient = (index: number) => {
-		const updated = [...(recipients || [])];
-		updated.splice(index, 1);
-		onChange(updated);
-	};
-
-	const updateRecipient = (index: number, updates: Partial<Recipient>) => {
-		const updated = [...(recipients || [])];
-		updated[index] = { ...updated[index], ...updates };
-		onChange(updated);
-	};
-
-	useEffect(() => {
-		if (!recipients?.length) return;
-		if (!recipients.some((r) => !r.clientRowId)) return;
-		onChange(
-			recipients.map((r) => ({
-				...r,
-				clientRowId: r.clientRowId ?? crypto.randomUUID(),
-			})),
-		);
-	}, [recipients, onChange]);
-
-	return (
-		<motion.section
-			className="space-y-4"
-			initial={{ opacity: 0, y: 30 }}
-			animate={{ opacity: 1, y: 0 }}
-			transition={{
-				type: "spring",
-				stiffness: 200,
-				damping: 25,
-				delay: 0.4,
-			}}
-		>
-			<Collapsible open={isRecipientsOpen} onOpenChange={setIsRecipientsOpen}>
-				<CollapsibleTrigger
-					render={
-						<button
-							type="button"
-							className="group/add-recipients -m-2 flex w-full cursor-pointer items-center justify-between rounded-lg border-0 bg-transparent p-2 text-left transition-colors hover:bg-muted/40"
-						/>
-					}
-				>
-					<h4 className="flex items-center gap-3 text-base font-semibold tracking-tight text-foreground">
-						<span className="flex size-8 items-center justify-center rounded-md bg-muted/50 text-muted-foreground transition-colors group-hover/add-recipients:bg-muted/70">
-							<UsersIcon className="size-4" weight="regular" />
-						</span>
-						Add recipients
-					</h4>
-					<CaretDownIcon
-						className={cn(
-							"size-4 text-muted-foreground transition-transform duration-200",
-							isRecipientsOpen && "rotate-180",
-						)}
-						weight="bold"
-					/>
-				</CollapsibleTrigger>
-
-				<CollapsibleContent className="mt-6">
-					<div className="space-y-5">
-						<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-							<div className="min-w-0 space-y-1">
-								<p className="text-sm leading-relaxed text-muted-foreground">
-									Add recipients by email.
-								</p>
-								{recipients && recipients.length > 0 ? (
-									<p className="text-xs text-muted-foreground/80">
-										{recipients.length} recipient
-										{recipients.length !== 1 ? "s" : ""} added
-									</p>
-								) : null}
-							</div>
-
-							<div className="flex shrink-0 flex-wrap items-center gap-2">
-								<Button
-									type="button"
-									variant="outline"
-									size="sm"
-									className="gap-1.5 border-border/60 bg-background text-foreground/90 shadow-none"
-									onClick={addRecipient}
-								>
-									<UsersIcon className="size-4" weight="regular" />
-									Add recipient
-								</Button>
-							</div>
-						</div>
-
-						{!recipients || recipients.length === 0 ? (
-							<motion.div
-								className="rounded-xl border border-dashed border-border/60 bg-muted/10 px-8 py-12 text-center"
-								initial={{ opacity: 0, y: 12 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{
-									type: "spring",
-									stiffness: 230,
-									damping: 26,
-								}}
-							>
-								<div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-lg bg-muted/40 text-muted-foreground">
-									<UsersIcon className="size-6" weight="regular" />
-								</div>
-								<p className="text-sm font-medium text-foreground/90">
-									No recipients added
-								</p>
-								<p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-									Click{" "}
-									<span className="font-medium text-foreground/80">
-										Add recipient
-									</span>{" "}
-									above, then enter their email.
-								</p>
-							</motion.div>
-						) : (
-							<CompactRecipientList
-								recipients={recipients}
-								onUpdateRecipient={updateRecipient}
-								onRemoveRecipient={removeRecipient}
-							/>
-						)}
-
-						{error && showError ? (
-							<motion.p
-								initial={{ opacity: 0, y: -6 }}
-								animate={{ opacity: 1, y: 0 }}
-								className="rounded-md border border-destructive/25 bg-destructive/5 px-3 py-2 text-sm text-destructive"
-							>
-								{error}
-							</motion.p>
-						) : null}
-					</div>
-				</CollapsibleContent>
-			</Collapsible>
-		</motion.section>
-	);
-}
-
-interface CompactRecipientListProps {
-	recipients: Recipient[];
-	onUpdateRecipient: (index: number, updates: Partial<Recipient>) => void;
-	onRemoveRecipient: (index: number) => void;
-}
-
-function CompactRecipientList({
-	recipients,
-	onUpdateRecipient,
-	onRemoveRecipient,
-}: CompactRecipientListProps) {
-	return (
-		<motion.div
-			className="space-y-3"
-			initial={{ opacity: 0, y: 12 }}
-			animate={{ opacity: 1, y: 0 }}
-			transition={{
-				type: "spring",
-				stiffness: 230,
-				damping: 26,
-				delay: 0.06,
-			}}
-		>
-			{recipients.map((recipient, index) => (
-				<CompactRecipientCard
-					key={recipient.clientRowId ?? `recipient-row-${index}`}
-					recipient={recipient}
-					index={index}
-					onUpdate={onUpdateRecipient}
-					onRemove={onRemoveRecipient}
-				/>
-			))}
-		</motion.div>
-	);
-}
-
-interface CompactRecipientCardProps {
-	recipient: Recipient;
-	index: number;
-	onUpdate: (index: number, updates: Partial<Recipient>) => void;
-	onRemove: (index: number) => void;
-}
-
-function CompactRecipientCard({
-	recipient,
-	index,
-	onUpdate,
-	onRemove,
-}: CompactRecipientCardProps) {
+export function RecipientCard({ index }: { index: number }) {
+	const { recipients, updateRecipient, removeRecipient } =
+		useRecipientsContext();
+	const recipient = recipients?.[index];
 	const [lookupEmail, setLookupEmail] = useState("");
 
 	useEffect(() => {
+		if (!recipient) return;
 		const t = window.setTimeout(() => {
 			const raw = recipient.email.trim().toLowerCase();
 			setLookupEmail(raw && isValidEmail(raw) ? raw : "");
 		}, 450);
 		return () => window.clearTimeout(t);
-	}, [recipient.email]);
+	}, [recipient?.email]);
+
+	if (!recipient) return null;
 
 	const normalizedInput = recipient.email.trim().toLowerCase();
 	const queryEmail =
@@ -306,7 +92,7 @@ function CompactRecipientCard({
 		const patch: Partial<Recipient> = {};
 		if (recipient.walletAddress !== w) patch.walletAddress = w;
 		if (displayName && recipient.name !== displayName) patch.name = displayName;
-		if (Object.keys(patch).length > 0) onUpdate(index, patch);
+		if (Object.keys(patch).length > 0) updateRecipient(index, patch);
 	}, [
 		queryEmail,
 		profileQuery.isSuccess,
@@ -316,13 +102,13 @@ function CompactRecipientCard({
 		recipient.walletAddress,
 		recipient.name,
 		index,
-		onUpdate,
+		updateRecipient,
 	]);
 
 	useEffect(() => {
 		if (!queryEmail || profileQuery.isPending) return;
 		if (profileQuery.isError && recipient.walletAddress) {
-			onUpdate(index, { walletAddress: undefined });
+			updateRecipient(index, { walletAddress: undefined });
 		}
 	}, [
 		queryEmail,
@@ -330,7 +116,7 @@ function CompactRecipientCard({
 		profileQuery.isError,
 		recipient.walletAddress,
 		index,
-		onUpdate,
+		updateRecipient,
 	]);
 
 	const showAvatarUserIcon = !recipient.name.trim() && !recipient.email.trim();
@@ -399,7 +185,7 @@ function CompactRecipientCard({
 									autoComplete="email"
 									value={recipient.email}
 									onChange={(e) =>
-										onUpdate(index, {
+										updateRecipient(index, {
 											email: e.target.value,
 											walletAddress: undefined,
 										})
@@ -423,7 +209,7 @@ function CompactRecipientCard({
 								<Select
 									value={recipient.role}
 									onValueChange={(val) =>
-										onUpdate(index, { role: val as Recipient["role"] })
+										updateRecipient(index, { role: val as Recipient["role"] })
 									}
 								>
 									<SelectTrigger
@@ -450,7 +236,9 @@ function CompactRecipientCard({
 								<Input
 									id={`recipient-name-${index}`}
 									value={recipient.name}
-									onChange={(e) => onUpdate(index, { name: e.target.value })}
+									onChange={(e) =>
+										updateRecipient(index, { name: e.target.value })
+									}
 									placeholder="Recipient name"
 									className={FIELD_CONTROL_CLASS}
 								/>
@@ -468,7 +256,7 @@ function CompactRecipientCard({
 										size="icon-sm"
 										className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
 										aria-label="Remove recipient"
-										onClick={() => onRemove(index)}
+										onClick={() => removeRecipient(index)}
 									/>
 								}
 							>

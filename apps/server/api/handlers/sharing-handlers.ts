@@ -7,7 +7,13 @@ import z from "zod";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/analytics/events";
 import { trackServerEvent } from "@/lib/analytics/track";
 import db from "@/lib/db";
+import type { ActiveOrgContext } from "@/lib/domain/orgs";
 import { ensureReciprocalShareRequest } from "@/lib/domain/sharing";
+import {
+	activatePendingOrgConnectionsForApproval,
+	listOrgSendableRecipients,
+	orgCanSendToRecipient,
+} from "@/lib/domain/sharing/org-connections";
 import { evmClient, fsContracts } from "@/lib/evm";
 import { processTransaction } from "@/lib/indexer/process";
 import { tryCatch } from "@/lib/utils/tryCatch";
@@ -78,7 +84,7 @@ export async function sharingEmailInvites(wallet: Address) {
 				id: userInvites.id,
 				inviteeEmail: userInvites.inviteeEmail,
 				message: userInvites.message,
-				accepted: userInvites.accepted,
+				accepted: sql<boolean>`${userInvites.status} = 'claimed'`,
 				createdAt: userInvites.createdAt,
 			})
 			.from(userInvites)
@@ -95,7 +101,11 @@ export async function sharingEmailInvites(wallet: Address) {
 	return { invites: result.data };
 }
 
-export async function sharingCanSendTo(sender: Address, recipient: string) {
+export async function sharingCanSendTo(
+	sender: Address,
+	recipient: string,
+	activeOrg: ActiveOrgContext | null = null,
+) {
 	if (!recipient || !isAddress(recipient)) {
 		throw new ORPCError("BAD_REQUEST", { message: "Invalid recipient" });
 	}
@@ -114,7 +124,13 @@ export async function sharingCanSendTo(sender: Address, recipient: string) {
 		)
 		.orderBy(desc(shareApprovals.createdAt))
 		.limit(1);
-	const canSend = latestApproval ? latestApproval.active : false;
+	let canSend = latestApproval ? latestApproval.active : false;
+	if (!canSend && activeOrg) {
+		canSend = await orgCanSendToRecipient({
+			organizationId: activeOrg.organizationId,
+			recipient: recipientAddr,
+		});
+	}
 	return {
 		canSend,
 		reason: canSend ? null : ("No active approval" as const),
@@ -235,6 +251,26 @@ export async function sharingApprove(wallet: Address, body: unknown) {
 	const txHash = await FSManager.write.approveSender(args);
 	await processTransaction(txHash, {});
 
+	const [latestApproval] = await db
+		.select({ id: shareApprovals.id })
+		.from(shareApprovals)
+		.where(
+			and(
+				eq(shareApprovals.senderWallet, senderAddr),
+				eq(shareApprovals.recipientWallet, getAddress(recipient)),
+			),
+		)
+		.orderBy(desc(shareApprovals.createdAt))
+		.limit(1);
+
+	if (latestApproval) {
+		await activatePendingOrgConnectionsForApproval({
+			anchorSender: senderAddr,
+			recipient: getAddress(recipient),
+			shareApprovalId: latestApproval.id,
+		});
+	}
+
 	let reciprocalCreated = false;
 	if (establishMutualConnection) {
 		const out = await ensureReciprocalShareRequest({
@@ -278,7 +314,10 @@ export async function sharingReceivableFrom(wallet: Address) {
 	return { approvals };
 }
 
-export async function sharingSendableTo(wallet: Address) {
+export async function sharingSendableTo(
+	wallet: Address,
+	activeOrg: ActiveOrgContext | null = null,
+) {
 	const subquery = db
 		.select({
 			recipientWallet: shareApprovals.recipientWallet,
@@ -306,7 +345,36 @@ export async function sharingSendableTo(wallet: Address) {
 			),
 		);
 
-	return { approvals };
+	const merged = new Map<
+		string,
+		{ recipientWallet: string; active: boolean; createdAt: number }
+	>();
+	for (const a of approvals) {
+		merged.set(getAddress(a.recipientWallet).toLowerCase(), {
+			recipientWallet: getAddress(a.recipientWallet),
+			active: a.active,
+			createdAt: a.createdAt,
+		});
+	}
+
+	if (activeOrg) {
+		const orgRows = await listOrgSendableRecipients(activeOrg.organizationId);
+		for (const r of orgRows) {
+			const key = getAddress(r.recipientWallet).toLowerCase();
+			if (!merged.has(key)) {
+				merged.set(key, {
+					recipientWallet: getAddress(r.recipientWallet),
+					active: true,
+					createdAt: 0,
+				});
+			} else {
+				const prev = merged.get(key);
+				if (prev) merged.set(key, { ...prev, active: true });
+			}
+		}
+	}
+
+	return { approvals: [...merged.values()] };
 }
 
 /** --- email invite by id (public read) --- */
@@ -327,7 +395,7 @@ export async function sharingInviteById(id: string) {
 					sender: userInvites.sender,
 				})
 				.from(userInvites)
-				.where(eq(userInvites.id, id));
+				.where(and(eq(userInvites.id, id), eq(userInvites.status, "pending")));
 
 			if (!invite) {
 				return { notFound: true as const };
@@ -387,7 +455,7 @@ export async function sharingInviteClaim(wallet: Address, id: string) {
 			const [primaryInvite] = await tx
 				.select()
 				.from(userInvites)
-				.where(eq(userInvites.id, id));
+				.where(and(eq(userInvites.id, id), eq(userInvites.status, "pending")));
 
 			if (!primaryInvite) {
 				throw new Error("Invite not found");
@@ -396,7 +464,12 @@ export async function sharingInviteClaim(wallet: Address, id: string) {
 			const allInvites = await tx
 				.select()
 				.from(userInvites)
-				.where(and(eq(userInvites.inviteeEmail, primaryInvite.inviteeEmail)));
+				.where(
+					and(
+						eq(userInvites.inviteeEmail, primaryInvite.inviteeEmail),
+						eq(userInvites.status, "pending"),
+					),
+				);
 
 			for (const invite of allInvites) {
 				await tx.insert(shareRequests).values({
@@ -407,7 +480,15 @@ export async function sharingInviteClaim(wallet: Address, id: string) {
 						`Auto-generated request from invite to ${invite.inviteeEmail}`,
 					createdAt: invite.createdAt,
 				});
-				await tx.delete(userInvites).where(eq(userInvites.id, invite.id));
+				await tx
+					.update(userInvites)
+					.set({
+						status: "claimed",
+						claimedAt: new Date(),
+						claimedByWallet: wallet,
+						updatedAt: new Date(),
+					})
+					.where(eq(userInvites.id, invite.id));
 			}
 
 			return primaryInvite;
@@ -428,7 +509,16 @@ export async function sharingInviteClaim(wallet: Address, id: string) {
 		event: SERVER_ANALYTICS_EVENTS.sharingInviteClaimed,
 	});
 
-	return result.data;
+	return {
+		id: result.data.id,
+		sender: result.data.sender,
+		inviteeEmail: result.data.inviteeEmail,
+		accepted: result.data.status === "claimed",
+		message: result.data.message ?? null,
+		createdAt: result.data.createdAt,
+		updatedAt: result.data.updatedAt,
+		deletedAt: null,
+	};
 }
 
 /** --- outbound share requests --- */
@@ -619,6 +709,7 @@ export async function sharingRequestInvite(wallet: Address, body: unknown) {
 			and(
 				eq(userInvites.sender, wallet),
 				eq(userInvites.inviteeEmail, inviteeEmail),
+				eq(userInvites.status, "pending"),
 			),
 		);
 
@@ -629,6 +720,7 @@ export async function sharingRequestInvite(wallet: Address, body: unknown) {
 	await db.insert(userInvites).values({
 		sender: wallet,
 		inviteeEmail,
+		status: "pending",
 		message: message ?? null,
 	});
 

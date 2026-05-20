@@ -27,6 +27,9 @@ export const rpcPieceDetailOutputSchema = z.object({
 	),
 	kemCiphertext: zHexString().nullable(),
 	encryptedEncryptionKey: zHexString().nullable(),
+	organizationId: z.string().uuid().nullable().optional(),
+	orgKemCiphertext: zHexString().nullable().optional(),
+	orgEncryptedEncryptionKey: zHexString().nullable().optional(),
 });
 
 export type RpcPieceDetailOutput = z.output<typeof rpcPieceDetailOutputSchema>;

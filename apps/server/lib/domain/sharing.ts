@@ -17,7 +17,12 @@ export async function materializePendingInvitesForEmail(args: {
 		const invites = await tx
 			.select()
 			.from(userInvites)
-			.where(sql`lower(${userInvites.inviteeEmail}) = ${normalized}`);
+			.where(
+				and(
+					sql`lower(${userInvites.inviteeEmail}) = ${normalized}`,
+					eq(userInvites.status, "pending"),
+				),
+			);
 
 		for (const invite of invites) {
 			await tx.insert(shareRequests).values({
@@ -28,7 +33,15 @@ export async function materializePendingInvitesForEmail(args: {
 					`Auto-generated request from invite to ${invite.inviteeEmail}`,
 				createdAt: invite.createdAt,
 			});
-			await tx.delete(userInvites).where(eq(userInvites.id, invite.id));
+			await tx
+				.update(userInvites)
+				.set({
+					status: "claimed",
+					claimedAt: new Date(),
+					claimedByWallet: args.walletAddress,
+					updatedAt: new Date(),
+				})
+				.where(eq(userInvites.id, invite.id));
 		}
 	});
 }

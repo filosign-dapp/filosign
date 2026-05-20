@@ -2,6 +2,7 @@ import { SignatureIcon, TextAaIcon, TrashIcon } from "@phosphor-icons/react";
 import { useCallback, useRef, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { compressPng } from "@/src/lib/utils/compress-image";
+import { useSignatureCreate } from "@/src/routes/dashboard/signature/create/-lib/context/context";
 
 const ACCEPTED_FILE_TYPES = [
 	"image/gif",
@@ -10,17 +11,6 @@ const ACCEPTED_FILE_TYPES = [
 	"image/bmp",
 ];
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
-
-interface SignatureUploadProps {
-	signatureData: string | null;
-	initialsData: string | null;
-	onSignatureUpload: (dataUrl: string) => void;
-	onInitialsUpload: (dataUrl: string) => void;
-	onSignatureClear: () => void;
-	onInitialsClear: () => void;
-	onCreateSignature: () => void;
-	disabled?: boolean;
-}
 
 interface UploadAreaProps {
 	icon: React.ReactNode;
@@ -55,17 +45,13 @@ function UploadArea({
 			}
 
 			try {
-				// Compress the image before converting to data URL
 				const compressedFile = await compressPng(file);
-
 				const reader = new FileReader();
 				reader.onload = () => {
 					onFileUpload(reader.result as string);
 				};
 				reader.readAsDataURL(compressedFile);
-			} catch (compressionError) {
-				console.error("Image compression failed:", compressionError);
-				// Fallback to original file if compression fails
+			} catch {
 				const reader = new FileReader();
 				reader.onload = () => {
 					onFileUpload(reader.result as string);
@@ -79,7 +65,7 @@ function UploadArea({
 	const handleFileInputChange = (
 		event: React.ChangeEvent<HTMLInputElement>,
 	) => {
-		handleFileSelect(event.target.files?.[0] || null);
+		void handleFileSelect(event.target.files?.[0] ?? null);
 		if (fileInputRef.current) {
 			fileInputRef.current.value = "";
 		}
@@ -142,16 +128,18 @@ function UploadArea({
 	);
 }
 
-export default function SignatureUpload({
-	signatureData,
-	initialsData,
-	onSignatureUpload,
-	onInitialsUpload,
-	onSignatureClear,
-	onInitialsClear,
-	onCreateSignature,
-	disabled = false,
-}: SignatureUploadProps) {
+export function SignatureUpload() {
+	const {
+		signatureData,
+		initialsData,
+		handleSignatureUpload,
+		handleInitialsUpload,
+		handleClearSignature,
+		handleClearInitials,
+		handleCreateSignature,
+		isUploadDisabled,
+	} = useSignatureCreate();
+
 	return (
 		<div className="space-y-4">
 			<h4 className="text-muted-foreground">Upload Signature</h4>
@@ -159,14 +147,14 @@ export default function SignatureUpload({
 				<UploadArea
 					icon={<SignatureIcon className="size-16 text-muted-foreground" />}
 					uploadedFile={signatureData}
-					onFileUpload={onSignatureUpload}
-					onFileClear={onSignatureClear}
+					onFileUpload={handleSignatureUpload}
+					onFileClear={handleClearSignature}
 				/>
 				<UploadArea
 					icon={<TextAaIcon className="size-16 text-muted-foreground" />}
 					uploadedFile={initialsData}
-					onFileUpload={onInitialsUpload}
-					onFileClear={onInitialsClear}
+					onFileUpload={handleInitialsUpload}
+					onFileClear={handleClearInitials}
 				/>
 			</div>
 			<p className="text-sm text-muted-foreground">
@@ -179,8 +167,8 @@ export default function SignatureUpload({
 				<Button
 					variant="primary"
 					size="lg"
-					onClick={onCreateSignature}
-					disabled={disabled}
+					onClick={handleCreateSignature}
+					disabled={isUploadDisabled}
 				>
 					Save
 				</Button>

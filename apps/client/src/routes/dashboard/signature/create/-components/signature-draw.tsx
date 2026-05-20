@@ -1,37 +1,28 @@
 import { SignatureIcon, TextAaIcon, TrashIcon } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
+import { useSignatureCreate } from "@/src/routes/dashboard/signature/create/-lib/context/context";
 
-interface SignatureDrawProps {
-	signatureData: string | null;
-	initialsData: string | null;
-	onSignatureDialogOpen: () => void;
-	onInitialsDialogOpen: () => void;
-	onSignatureClear: () => void;
-	onInitialsClear: () => void;
-	onCreateSignature: () => void;
-	disabled?: boolean;
-}
+export function SignatureDraw() {
+	const {
+		signatureData,
+		initialsData,
+		setIsSignatureDialogOpen,
+		setIsInitialsDialogOpen,
+		handleClearSignature,
+		handleClearInitials,
+		handleCreateSignature,
+		isDrawDisabled,
+	} = useSignatureCreate();
 
-export default function SignatureDraw({
-	signatureData,
-	initialsData,
-	onSignatureDialogOpen,
-	onInitialsDialogOpen,
-	onSignatureClear,
-	onInitialsClear,
-	onCreateSignature,
-	disabled = false,
-}: SignatureDrawProps) {
 	return (
 		<div className="space-y-4">
 			<h4 className="text-muted-foreground">Draw Signature</h4>
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-				{/* Signature drawing area */}
 				<div className="space-y-3">
 					<button
 						type="button"
 						className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center min-h-[16rem] flex flex-col items-center justify-center bg-card w-full"
-						onClick={onSignatureDialogOpen}
+						onClick={() => setIsSignatureDialogOpen(true)}
 					>
 						{signatureData ? (
 							<div className="space-y-3">
@@ -47,7 +38,7 @@ export default function SignatureDraw({
 									<Button
 										variant="outline"
 										size="sm"
-										onClick={onSignatureClear}
+										onClick={handleClearSignature}
 										className="text-destructive hover:text-destructive"
 									>
 										<TrashIcon className="size-4" />
@@ -64,12 +55,11 @@ export default function SignatureDraw({
 						)}
 					</button>
 				</div>
-				{/* Initials drawing area */}
 				<div className="space-y-3">
 					<button
 						type="button"
 						className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center min-h-[16rem] flex flex-col items-center justify-center w-full bg-card"
-						onClick={onInitialsDialogOpen}
+						onClick={() => setIsInitialsDialogOpen(true)}
 					>
 						{initialsData ? (
 							<div className="space-y-3">
@@ -85,7 +75,7 @@ export default function SignatureDraw({
 									<Button
 										variant="outline"
 										size="sm"
-										onClick={onInitialsClear}
+										onClick={handleClearInitials}
 										className="text-destructive hover:text-destructive"
 									>
 										<TrashIcon className="size-4" />
@@ -113,8 +103,8 @@ export default function SignatureDraw({
 				<Button
 					variant="primary"
 					size="lg"
-					onClick={onCreateSignature}
-					disabled={disabled}
+					onClick={handleCreateSignature}
+					disabled={isDrawDisabled}
 				>
 					Save
 				</Button>

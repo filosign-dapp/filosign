@@ -7,7 +7,7 @@ React SDK: **`FilosignProvider`**, typed **oRPC**, TanStack Query hooks, wallet/
 ## Quick rules
 
 1. **API hooks:** `useFilosignRpc()` + `rpcQuery.*.queryOptions()` / `.call()`; `enabled: isAuthed` (or document public procedures).
-2. **Invalidate:** `rpcQuery.<domain>.<procedure>.key()` (or parent `.key()`); profile → `useInvalidateUserProfile()`. **`filosignKeys`** only for wallet / on-chain / session—not for oRPC lists.
+2. **Invalidate:** `rpcQuery.<domain>.<procedure>.key()` (or parent `.key()`); grouped helpers in `@filosign/react/invalidate-queries`. **`filosignKeys`** / **`filosignQueryRoots`** (`@filosign/react/query-keys`) for wallet, on-chain, session, and derived client queries—not hand-rolled oRPC strings.
 3. **Apps:** import `@filosign/react/{auth,files,sharing,users}` (+ `/utils`, `/runtime` if needed)—no `/hooks` barrel, no `@filosign/react/src/...`, no `fetch` to `/api/rpc`.
 4. **Changes:** server procedure first → hook in matching `src/hooks/<domain>/` → client import → `turbo run check-types --filter=@filosign/client`.
 5. **Never** put `rpc` inside a `queryKey` (proxy + `JSON.stringify` hazard—see root [`AGENTS.md`](../../AGENTS.md)).
@@ -24,7 +24,7 @@ Deeper context: [`AGENTS.md`](../../AGENTS.md), [api-routes.mdc](../../.cursor/r
 | [`@filosign/shared`](../../packages/shared) | Zod, commitments, pure helpers—not HTTP. |
 | [`@filosign/crypto-utils`](../../packages/crypto-utils) | KEM, Dilithium, encryption inside hooks. |
 | [`@filosign/contracts`](../../apps/contracts) | `getContracts`, EIP-712; on-chain via context `contracts`. |
-| [`apps/client`](../../apps/client) | Wraps provider ([`filosign-provider.tsx`](../../apps/client/src/lib/context/filosign-provider.tsx)): `apiBaseUrl`, wagmi `wallet`, `wasm.dilithium`. `ready` after `runtime` + `chainKey`. |
+| [`apps/client`](../../apps/client) | Wraps provider ([`filosign-provider.tsx`](../../apps/client/src/lib/filosign/filosign-provider.tsx)): `apiBaseUrl`, wagmi `wallet`, `wasm.dilithium`. `ready` after `runtime` + `chainKey`. |
 
 **Owns:** browser RPC, React Query hooks, session seed, provider, **client PostHog** (`src/analytics/`). **Not:** Hono/DB, contracts source, page UI.
 
@@ -64,9 +64,10 @@ flowchart TB
 ```
 
 1. Provider loads **`runtime`** (`rpcQuery.runtime`), then **`getContracts({ chainKey })`**.
-2. **`FilosignSession`** stores JWT; `rpc` sends `Authorization` when set.
-3. **`useAuthedApi`** runs wallet crypto + `auth.nonce` / `auth.verify` via `rpcQuery.auth.*.call`.
-4. Feature hooks: **`useFilosignRpc()`** → `rpcQuery` + `isAuthed`.
+2. **`FilosignSession`** stores the access JWT in memory and mirrors it to **`sessionStorage`** (per wallet) for reload UX. **XSS can read it** — refresh tokens stay **httpOnly** on the API origin; treat CSP and dependency hygiene as the primary defense.
+3. **`useAuthedApi`:** valid access JWT → `auth.refresh` (cookie, `credentials: "include"`) → dilithium `auth.nonce` / `auth.verify`.
+4. **`useLogout`** calls `auth.logout` (revokes server session + clears refresh cookie) then clears local seed/JWT.
+5. Feature hooks: **`useFilosignRpc()`** → `rpcQuery` + `isAuthed`.
 
 TanStack helpers: [`src/orpc/rpc-query-utils.ts`](src/orpc/rpc-query-utils.ts) (`["filosign", …]` prefix).
 
@@ -121,7 +122,7 @@ Non-RPC only: `useAuthedApi`, `useIsLoggedIn`, `useIsRegistered`, `useStoredKeyg
 | Uploads | `rpcQuery.storage.presignPut.call` → **`fetch` PUT** to URL |
 | File bytes | Presigned GET / Filecoin in `useViewFile` |
 | Composite | e.g. `useAcceptedPeople`—multiple `.call` in one `queryFn` |
-| Profile email | Keep **separate** RPCs/hooks: `profile.update` (fields/avatar), `syncPrivyEmail`, `setPrimaryEmail`; shared `useInvalidateUserProfile()` |
+| Profile email | Keep **separate** RPCs/hooks: `profile.update` (fields/avatar), `syncThirdwebEmail`, `setPrimaryEmail`; shared `useInvalidateUserProfile()` |
 
 ---
 
@@ -155,9 +156,18 @@ package.json          # domain exports
 src/context/          # FilosignProvider
 src/orpc/             # client, rpc-query-utils, AppRouterClient
 src/hooks/{auth,files,sharing,users}/
-src/lib/              # use-filosign-rpc, query-keys, invalidate-user-profile
+src/lib/              # use-filosign-rpc, query-keys, invalidate-queries, invalidate-user-profile
 src/utils/
 src/constants.ts      # DAY, MINUTE
 ```
 
 No package-level `test` script yet—rely on client typecheck and manual flows.
+
+---
+
+## Auth security (JWT)
+
+- Access JWT is mirrored to **`sessionStorage`** per wallet for reload UX (**XSS-readable**). Refresh tokens are **httpOnly** cookies on the API origin only.
+- oRPC uses **`credentials: "include"`** for `auth.refresh` / `auth.logout`.
+- **`useAuthedApi`:** valid access JWT → `auth.refresh` → dilithium bootstrap.
+- Client `isAccessJwtUsable` checks `exp` / `sub` / `typ` only; the server verifies signature, `aud`, and revoked `jti`.

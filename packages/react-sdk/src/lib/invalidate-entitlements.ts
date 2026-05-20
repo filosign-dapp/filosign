@@ -1,24 +1,16 @@
-import type { QueryClient } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import type { FilosignRpcQueryUtils } from "../context/FilosignContext";
 import { useFilosignContext } from "../context/useFilosignContext";
+import { invalidateEntitlements as invalidateEntitlementsQueries } from "./invalidate-queries";
 import { useFilosignRpc } from "./use-filosign-rpc";
 
-export function invalidateEntitlements(
-	queryClient: QueryClient,
-	rpcQuery: FilosignRpcQueryUtils,
-) {
-	return queryClient.invalidateQueries({
-		queryKey: rpcQuery.billing.entitlements.key(),
-	});
-}
+export { invalidateEntitlements } from "./invalidate-queries";
 
 export function useInvalidateEntitlements() {
 	const queryClient = useQueryClient();
 	const { rpcQuery } = useFilosignContext();
 	return () => {
-		void invalidateEntitlements(queryClient, rpcQuery);
+		void invalidateEntitlementsQueries(queryClient, rpcQuery);
 	};
 }
 
@@ -30,6 +22,6 @@ export function useRefetchEntitlementsOnMount() {
 
 	useEffect(() => {
 		if (!isAuthed) return;
-		void invalidateEntitlements(queryClient, rpcQuery);
+		void invalidateEntitlementsQueries(queryClient, rpcQuery);
 	}, [isAuthed, queryClient, rpcQuery]);
 }

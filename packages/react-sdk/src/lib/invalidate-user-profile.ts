@@ -1,21 +1,13 @@
-import type { QueryClient } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
-import type { FilosignRpcQueryUtils } from "../context/FilosignContext";
 import { useFilosignContext } from "../context/useFilosignContext";
+import { invalidateUserProfile as invalidateUserProfileQueries } from "./invalidate-queries";
 
-export function invalidateUserProfile(
-	queryClient: QueryClient,
-	rpcQuery: FilosignRpcQueryUtils,
-) {
-	return queryClient.invalidateQueries({
-		queryKey: rpcQuery.users.profile.me.key(),
-	});
-}
+export { invalidateUserProfile } from "./invalidate-queries";
 
 export function useInvalidateUserProfile() {
 	const queryClient = useQueryClient();
 	const { rpcQuery } = useFilosignContext();
 	return () => {
-		void invalidateUserProfile(queryClient, rpcQuery);
+		void invalidateUserProfileQueries(queryClient, rpcQuery);
 	};
 }

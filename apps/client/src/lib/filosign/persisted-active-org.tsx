@@ -1,7 +1,7 @@
 import { useFilosignContext } from "@filosign/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { useStorePersist } from "@/src/lib/hooks/use-store";
+import { useStorePersist } from "@/src/lib/filosign/use-store";
 
 /**
  * Restores `X-Org-Id` from zustand after rehydration and keeps `FilosignSession` in sync.

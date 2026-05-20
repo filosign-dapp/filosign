@@ -6,9 +6,9 @@ import { FilosignProvider as FilosignProviderBase } from "@filosign/react";
 import { useEffect, useState } from "react";
 import { useWalletClient } from "wagmi";
 import env from "@/src/env";
-import { PersistedActiveOrganizationSync } from "@/src/lib/context/persisted-active-org";
+import { PersistedActiveOrganizationSync } from "@/src/lib/filosign/persisted-active-org";
+import { logger } from "@/src/lib/utils/logger";
 import { Loader } from "../components/ui/loader";
-import { logger } from "../utils/logger";
 
 export function FilosignProvider({ children }: { children: React.ReactNode }) {
 	const { data: wallet } = useWalletClient();

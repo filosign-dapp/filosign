@@ -1,7 +1,7 @@
 import { useSyncPrivyEmail, useUserProfile } from "@filosign/react/users";
 import { useEffect, useRef } from "react";
 import { useAuthToken } from "thirdweb/react";
-import { useThirdwebConnection } from "@/src/lib/hooks/use-thirdweb-connection";
+import { useThirdwebConnection } from "@/src/lib/web3/hooks/use-thirdweb-connection";
 
 /** Syncs email from a verified thirdweb auth token when the user connects. */
 export default function ProfileEmailSync() {

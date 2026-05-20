@@ -8,7 +8,7 @@ import {
 	UsersThreeIcon,
 } from "@phosphor-icons/react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import Logo from "@/src/lib/components/shared/Logo";
+import Logo from "@/src/lib/components/app/chrome/logo";
 import {
 	Sidebar,
 	SidebarContent,

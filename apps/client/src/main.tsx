@@ -2,20 +2,20 @@ import { RouterProvider } from "@tanstack/react-router";
 import { ThemeProvider } from "next-themes";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { ErrorBoundary } from "./lib/components/shared/ErrorBoundary";
-import ProfileEmailSync from "./lib/components/shared/ProfileEmailSync";
+import ProfileEmailSync from "./lib/auth/profile-email-sync";
+import { ErrorBoundary } from "./lib/components/app/errors/error-boundary";
 import { Toaster } from "./lib/components/ui/sonner";
-import { QueryClientProvider } from "./lib/context/query-client";
+import { QueryClientProvider } from "./lib/filosign/query-client";
 import router from "./router";
 import "./globals.css";
 import { FilosignAnalyticsProvider } from "@filosign/react/analytics";
 import { IconContext } from "@phosphor-icons/react";
 import { Buffer as BufferI } from "buffer";
 import env from "./env";
-import { FilosignProvider } from "./lib/context/filosign-provider";
-import { ThirdwebRootProvider } from "./lib/context/thirdweb-provider";
-import { WagmiProvider } from "./lib/context/wagmi-provider";
-import { configurePdfWorker } from "./lib/utils/configurePdfWorker";
+import { configurePdfWorker } from "./lib/domains/files/pdf/configure-pdf-worker";
+import { FilosignProvider } from "./lib/filosign/filosign-provider";
+import { ThirdwebRootProvider } from "./lib/web3/providers/thirdweb-provider";
+import { WagmiProvider } from "./lib/web3/providers/wagmi-provider";
 
 configurePdfWorker();
 

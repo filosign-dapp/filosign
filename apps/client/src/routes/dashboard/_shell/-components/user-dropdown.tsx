@@ -14,7 +14,7 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import * as React from "react";
-import { Image } from "@/src/lib/components/shared/Image";
+import { Image } from "@/src/lib/components/app/media/image";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	DropdownMenu,
@@ -32,10 +32,10 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/src/lib/components/ui/select";
-import { useSetPersistedActiveOrganizationId } from "@/src/lib/context/persisted-active-org";
-import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
-import { useThirdwebWalletAuth } from "@/src/lib/hooks/use-thirdweb-wallet-auth";
+import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { copyToClipboard } from "@/src/lib/utils/utils";
+import { useThirdwebUserInfo } from "@/src/lib/web3/hooks/use-thirdweb-user-info";
+import { useThirdwebWalletAuth } from "@/src/lib/web3/hooks/use-thirdweb-wallet-auth";
 
 export function UserDropdown() {
 	const [isOpen, setIsOpen] = React.useState(false);

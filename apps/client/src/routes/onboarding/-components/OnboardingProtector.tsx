@@ -1,10 +1,10 @@
 import { useIsRegistered } from "@filosign/react/auth";
 import { Navigate, useRouterState } from "@tanstack/react-router";
-import { useThirdwebConnection } from "@/src/lib/hooks/use-thirdweb-connection";
 import {
 	coldInviteEntrySearchSchema,
 	signDocumentSearchFromColdEntry,
-} from "@/src/lib/routing/cold-invite-search";
+} from "@/src/lib/domains/invites/cold-invite-search";
+import { useThirdwebConnection } from "@/src/lib/web3/hooks/use-thirdweb-connection";
 
 export default function OnboardingProtector({
 	children,

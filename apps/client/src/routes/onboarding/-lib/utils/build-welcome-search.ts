@@ -2,7 +2,7 @@ import {
 	type ColdInviteEntrySearch,
 	SKIP_COLD_SIGN_AFTER_MISMATCH,
 	shouldSkipColdDocumentAfterMismatch,
-} from "@/src/lib/routing/cold-invite-search";
+} from "@/src/lib/domains/invites/cold-invite-search";
 
 export function buildWelcomeSearchFromOnboardingEntry(
 	search: ColdInviteEntrySearch,

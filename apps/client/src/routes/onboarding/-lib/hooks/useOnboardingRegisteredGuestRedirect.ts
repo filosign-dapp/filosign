@@ -1,11 +1,11 @@
 import { useIsRegistered } from "@filosign/react/auth";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useThirdwebConnection } from "@/src/lib/hooks/use-thirdweb-connection";
 import {
 	coldInviteEntrySearchSchema,
 	signDocumentSearchFromColdEntry,
-} from "@/src/lib/routing/cold-invite-search";
+} from "@/src/lib/domains/invites/cold-invite-search";
+import { useThirdwebConnection } from "@/src/lib/web3/hooks/use-thirdweb-connection";
 
 export function useOnboardingRegisteredGuestRedirect(args: {
 	registrationStarted: boolean;

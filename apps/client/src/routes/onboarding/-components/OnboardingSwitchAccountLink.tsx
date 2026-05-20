@@ -3,16 +3,16 @@ import { useLogout } from "@filosign/react/auth";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
-import { useStorePersist } from "@/src/lib/hooks/use-store";
-import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
-import { useThirdwebWalletAuth } from "@/src/lib/hooks/use-thirdweb-wallet-auth";
 import {
 	extractColdInviteSearchFromLocation,
 	SKIP_COLD_SIGN_AFTER_MISMATCH,
-} from "@/src/lib/routing/cold-invite-search";
+} from "@/src/lib/domains/invites/cold-invite-search";
+import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn } from "@/src/lib/utils";
 import { logger } from "@/src/lib/utils/logger";
 import { safeAsync } from "@/src/lib/utils/safe";
+import { useThirdwebUserInfo } from "@/src/lib/web3/hooks/use-thirdweb-user-info";
+import { useThirdwebWalletAuth } from "@/src/lib/web3/hooks/use-thirdweb-wallet-auth";
 
 export type ExecuteSwitchAccountLogoutArgs = {
 	clearOnboardingForm: () => void;

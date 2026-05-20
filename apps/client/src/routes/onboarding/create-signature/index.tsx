@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { CreateNewSignaturePage } from "@/src/routes/dashboard/signature/create/-components/CreateNewSignaturePage";
+import { CreateNewSignaturePage } from "@/src/routes/dashboard/signature/create/-components/page";
 import OnboardingProtector from "../-components/OnboardingProtector";
 
 function OnboardingCreateSignaturePage() {

@@ -722,10 +722,16 @@ const ReceivedFileItem = memo(function ReceivedFileItem(props: {
 		};
 	}, [signFile.data]);
 
-	const canView = Boolean(file?.kemCiphertext && file?.encryptedEncryptionKey);
 	const kemCiphertext = parseString(file?.kemCiphertext);
 	const encryptedEncryptionKey = parseString(file?.encryptedEncryptionKey);
+	const orgKemCiphertext = parseString(file?.orgKemCiphertext);
+	const orgEncryptedEncryptionKey = parseString(
+		file?.orgEncryptedEncryptionKey,
+	);
 	const status = parseFileStatus(file?.status);
+	const participantKeysReady = Boolean(
+		kemCiphertext && encryptedEncryptionKey && status,
+	);
 	const displayCid = file?.pieceCid.toString() ?? "";
 	const truncatedCid =
 		displayCid.length > MAX_CID_DISPLAY_LENGTH
@@ -751,6 +757,18 @@ const ReceivedFileItem = memo(function ReceivedFileItem(props: {
 		);
 	}
 
+	const organizationIdRaw = file.organizationId;
+	const organizationId =
+		typeof organizationIdRaw === "string"
+			? organizationIdRaw.trim().length > 0
+				? organizationIdRaw
+				: null
+			: null;
+	const orgVaultReady = Boolean(
+		organizationId && orgKemCiphertext && orgEncryptedEncryptionKey && status,
+	);
+	const canView = participantKeysReady || orgVaultReady;
+
 	return (
 		<article className="bg-card p-3 rounded border">
 			<dl className="grid grid-cols-[auto,1fr] gap-x-2 sm:gap-x-4 gap-y-1 text-sm mb-3">
@@ -767,7 +785,7 @@ const ReceivedFileItem = memo(function ReceivedFileItem(props: {
 			</dl>
 
 			<div className="flex flex-wrap gap-2 items-start">
-				{canView && kemCiphertext && encryptedEncryptionKey && status ? (
+				{canView && participantKeysReady ? (
 					<Button
 						mutation={viewFile}
 						mutationArgs={{
@@ -778,6 +796,20 @@ const ReceivedFileItem = memo(function ReceivedFileItem(props: {
 						}}
 					>
 						View File
+					</Button>
+				) : canView && orgVaultReady && organizationId ? (
+					<Button
+						mutation={viewFile}
+						mutationArgs={{
+							variant: "org",
+							pieceCid: file.pieceCid,
+							organizationId,
+							orgKemCiphertext,
+							orgEncryptedEncryptionKey,
+							status,
+						}}
+					>
+						View File (org)
 					</Button>
 				) : (
 					<Button mutation={ackFile} mutationArgs={{ pieceCid: file.pieceCid }}>
@@ -898,13 +930,19 @@ const SentFileItem = memo(function SentFileItem(props: { pieceCid: string }) {
 
 	const kemCiphertext = parseString(file?.kemCiphertext);
 	const encryptedEncryptionKey = parseString(file?.encryptedEncryptionKey);
+	const orgKemCiphertext = parseString(file?.orgKemCiphertext);
+	const orgEncryptedEncryptionKey = parseString(
+		file?.orgEncryptedEncryptionKey,
+	);
 	const status = parseFileStatus(file?.status);
+	const participantKeysReady = Boolean(
+		kemCiphertext && encryptedEncryptionKey && status,
+	);
 	const displayCid = file?.pieceCid.toString() ?? "";
 	const truncatedCid =
 		displayCid.length > MAX_CID_DISPLAY_LENGTH
 			? `${displayCid.slice(0, TRUNCATED_CID_LENGTH)}...`
 			: displayCid;
-	const canView = Boolean(kemCiphertext && encryptedEncryptionKey && status);
 
 	const decodedContent = useMemo(() => {
 		if (!viewFile.data?.fileBytes) return null;
@@ -922,6 +960,18 @@ const SentFileItem = memo(function SentFileItem(props: { pieceCid: string }) {
 			</div>
 		);
 	}
+
+	const organizationIdRaw = file.organizationId;
+	const organizationId =
+		typeof organizationIdRaw === "string"
+			? organizationIdRaw.trim().length > 0
+				? organizationIdRaw
+				: null
+			: null;
+	const orgVaultReady = Boolean(
+		organizationId && orgKemCiphertext && orgEncryptedEncryptionKey && status,
+	);
+	const canView = participantKeysReady || orgVaultReady;
 
 	return (
 		<article className="bg-card p-3 rounded border">
@@ -941,7 +991,7 @@ const SentFileItem = memo(function SentFileItem(props: { pieceCid: string }) {
 				<dd>{file.signatures.length}</dd>
 			</dl>
 
-			{canView && kemCiphertext && encryptedEncryptionKey && status ? (
+			{canView && participantKeysReady ? (
 				<Button
 					mutation={viewFile}
 					mutationArgs={{
@@ -952,6 +1002,20 @@ const SentFileItem = memo(function SentFileItem(props: { pieceCid: string }) {
 					}}
 				>
 					View File
+				</Button>
+			) : canView && orgVaultReady && organizationId ? (
+				<Button
+					mutation={viewFile}
+					mutationArgs={{
+						variant: "org",
+						pieceCid: file.pieceCid,
+						organizationId,
+						orgKemCiphertext,
+						orgEncryptedEncryptionKey,
+						status,
+					}}
+				>
+					View File (org)
 				</Button>
 			) : (
 				<p className="text-sm text-muted-foreground italic">

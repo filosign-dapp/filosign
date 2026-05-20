@@ -9,6 +9,11 @@ import {
 	useConnectors,
 	useConnect as useWagmiConnect,
 } from "wagmi";
+import {
+	hydrationMark,
+	hydrationMarkAsyncEnd,
+	hydrationMarkNow,
+} from "@/src/lib/utils/hydration-lifecycle";
 import { logger } from "@/src/lib/utils/logger";
 import { defaultThirdwebChain } from "@/src/lib/web3/config/chains";
 import { thirdwebClient } from "@/src/lib/web3/config/client";
@@ -54,6 +59,24 @@ export function useSyncWagmiWithThirdweb() {
 	const clientId = thirdwebClient.clientId;
 
 	useEffect(() => {
+		hydrationMark("wagmi-thirdweb-sync:connection", {
+			authenticated,
+			wagmiAddress: wagmiAddress?.slice(0, 10),
+			wagmiConnecting,
+			isAutoConnecting,
+			hasActiveWallet: Boolean(activeWallet),
+			hasStoredToken: hasStoredWalletToken(clientId),
+		});
+	}, [
+		authenticated,
+		wagmiAddress,
+		wagmiConnecting,
+		isAutoConnecting,
+		activeWallet,
+		clientId,
+	]);
+
+	useEffect(() => {
 		syncStartedRef.current = false;
 	}, [authenticated, wagmiAddress]);
 
@@ -73,15 +96,31 @@ export function useSyncWagmiWithThirdweb() {
 			return;
 		}
 		syncStartedRef.current = true;
+		const started = hydrationMarkNow();
+		hydrationMark("wagmi-thirdweb-sync:thirdweb-to-wagmi-start");
 
 		void connectWagmiInAppWallet(
 			connectAsync as Parameters<typeof connectWagmiInAppWallet>[0],
 			inAppConnector,
 			activeWallet,
-		).catch((err) => {
-			syncStartedRef.current = false;
-			logger.error("Wagmi sync after thirdweb connect:", err);
-		});
+		)
+			.then(() => {
+				hydrationMarkAsyncEnd(
+					"wagmi-thirdweb-sync:thirdweb-to-wagmi-done",
+					started,
+				);
+			})
+			.catch((err) => {
+				syncStartedRef.current = false;
+				hydrationMarkAsyncEnd(
+					"wagmi-thirdweb-sync:thirdweb-to-wagmi-failed",
+					started,
+					{
+						error: err instanceof Error ? err.message : "unknown",
+					},
+				);
+				logger.error("Wagmi sync after thirdweb connect:", err);
+			});
 	}, [
 		authenticated,
 		wagmiAddress,
@@ -106,6 +145,8 @@ export function useSyncWagmiWithThirdweb() {
 			return;
 		}
 		reverseSyncStartedRef.current = true;
+		const started = hydrationMarkNow();
+		hydrationMark("wagmi-thirdweb-sync:wagmi-to-thirdweb-start");
 
 		void (async () => {
 			try {
@@ -116,8 +157,19 @@ export function useSyncWagmiWithThirdweb() {
 					});
 					return filosignInAppWallet;
 				});
+				hydrationMarkAsyncEnd(
+					"wagmi-thirdweb-sync:wagmi-to-thirdweb-done",
+					started,
+				);
 			} catch (err) {
 				reverseSyncStartedRef.current = false;
+				hydrationMarkAsyncEnd(
+					"wagmi-thirdweb-sync:wagmi-to-thirdweb-failed",
+					started,
+					{
+						error: err instanceof Error ? err.message : "unknown",
+					},
+				);
 				logger.error("Thirdweb sync after wagmi reconnect:", err);
 			}
 		})();

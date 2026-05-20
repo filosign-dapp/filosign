@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
+import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import {
 	type SignDocumentContextValue,
 	SignDocumentProvider,
 	useSignColdShare,
 	useSignDocumentContext,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
-import { ColdShareDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/cold-share-dialog";
 import { SignDocumentBody } from "./body";
 import { SignDocumentShell } from "./shell";
 import { SignDocumentSidebar } from "./sidebar";

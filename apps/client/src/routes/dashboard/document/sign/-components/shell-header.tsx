@@ -1,5 +1,5 @@
 import { ArrowLeftIcon } from "@phosphor-icons/react";
-import { CopyButton } from "@/src/lib/components/shared/CopyButton";
+import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
 import { Button } from "@/src/lib/components/ui/button";
 
 export function SignDocumentShellHeader({

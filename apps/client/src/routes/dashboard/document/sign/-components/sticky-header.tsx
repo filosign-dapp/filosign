@@ -12,7 +12,7 @@ import {
 	ScrollIcon,
 	SpinnerIcon,
 } from "@phosphor-icons/react";
-import { CopyButton } from "@/src/lib/components/shared/CopyButton";
+import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 import {

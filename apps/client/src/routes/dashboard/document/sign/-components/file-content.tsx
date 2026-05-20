@@ -2,8 +2,8 @@ import type { PlacementField } from "@filosign/shared";
 import { DownloadIcon, FileTextIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
+import { PLACEMENT_VIEWPORT_WIDTH } from "@/src/lib/domains/files/placement-viewport";
 import { cn } from "@/src/lib/utils";
-import { PLACEMENT_VIEWPORT_WIDTH } from "@/src/lib/utils/placement-viewport";
 import {
 	useSignCompliance,
 	useSignFile,

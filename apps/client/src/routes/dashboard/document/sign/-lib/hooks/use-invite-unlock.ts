@@ -20,11 +20,11 @@ import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { getAddress, type Hex } from "viem";
-import { useStorePersist } from "@/src/lib/hooks/use-store";
-import { useThirdwebLoginAction } from "@/src/lib/hooks/use-thirdweb-login";
-import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
-import { useThirdwebWalletAuth } from "@/src/lib/hooks/use-thirdweb-wallet-auth";
-import { coldInviteRecipientMatchesIdentity } from "@/src/lib/routing/cold-invite-search";
+import { coldInviteRecipientMatchesIdentity } from "@/src/lib/domains/invites/cold-invite-search";
+import { useStorePersist } from "@/src/lib/filosign/use-store";
+import { useThirdwebLoginAction } from "@/src/lib/web3/hooks/use-thirdweb-login";
+import { useThirdwebUserInfo } from "@/src/lib/web3/hooks/use-thirdweb-user-info";
+import { useThirdwebWalletAuth } from "@/src/lib/web3/hooks/use-thirdweb-wallet-auth";
 import { executeSwitchAccountLogout } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
 
 export function useSignInviteUnlock(args: {

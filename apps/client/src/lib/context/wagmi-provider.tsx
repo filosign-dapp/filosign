@@ -2,7 +2,7 @@ import { inAppWalletConnector } from "@thirdweb-dev/wagmi-adapter";
 import { AutoConnect } from "thirdweb/react";
 import { createConfig, http, WagmiProvider as WagmiProviderBase } from "wagmi";
 import { wagmiChains } from "@/src/constants";
-import { WagmiThirdwebSync } from "@/src/lib/components/custom/WagmiThirdwebSync";
+import { WagmiThirdwebSync } from "@/src/lib/components/shared/WagmiThirdwebSync";
 import { thirdwebClient } from "@/src/lib/thirdweb/client";
 import {
 	filosignInAppWallet,

@@ -27,7 +27,7 @@ import {
 	downloadPdfBytes,
 	sha256HexOfBytes,
 } from "@/src/lib/utils/compliance-pdf";
-import type { ColdSharePackage } from "@/src/routes/dashboard/envelope/create/add-sign/-components/ColdShareDialog";
+import type { ColdSharePackage } from "@/src/routes/dashboard/envelope/create/add-sign/-components/cold-share-dialog";
 
 export function useSignDocument() {
 	const navigate = useNavigate();

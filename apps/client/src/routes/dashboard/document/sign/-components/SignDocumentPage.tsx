@@ -7,7 +7,7 @@ import {
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
-import { ColdShareDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/ColdShareDialog";
+import { ColdShareDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/cold-share-dialog";
 import { useSignDocument } from "../-lib/hooks/useSignDocument";
 import { useSignInviteUnlock } from "../-lib/hooks/useSignInviteUnlock";
 import { SignDocumentBody } from "./SignDocumentBody";

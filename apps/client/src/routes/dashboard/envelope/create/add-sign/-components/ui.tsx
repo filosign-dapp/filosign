@@ -1,0 +1,122 @@
+import type { ReactNode } from "react";
+import { EntitlementPlanHint } from "@/src/lib/components/shared/EntitlementPlanHint";
+import {
+	AddSignProvider,
+	useAddSignChrome,
+	useAddSignContext,
+	useAddSignPlacement,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
+import type { AddSignController } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-controller";
+import { ColdShareDialog } from "./cold-share-dialog";
+import FieldsSidebar from "./fields-sidebar";
+import Header from "./header";
+import MobileToolbar from "./mobile-toolbar";
+import { FieldPlacementDialog } from "./placement-dialog";
+import { DocumentThumbnailsSidebar } from "./thumbnails";
+import DocumentViewer from "./viewer";
+
+function AddSignRoot({
+	controller,
+	children,
+}: {
+	controller: AddSignController;
+	children: ReactNode;
+}) {
+	return <AddSignProvider value={controller}>{children}</AddSignProvider>;
+}
+
+function AddSignPageShell({ children }: { children: ReactNode }) {
+	return (
+		<div className="min-h-screen bg-background flex flex-col">{children}</div>
+	);
+}
+
+function AddSignHeaderRow() {
+	const { sendStatus, handleSend } = useAddSignChrome();
+	return (
+		<>
+			<Header onSend={handleSend} status={sendStatus} />
+			<div className="px-4 py-2 border-b border-border">
+				<EntitlementPlanHint />
+			</div>
+		</>
+	);
+}
+
+function AddSignWorkspace({ children }: { children: ReactNode }) {
+	return <div className="flex flex-1">{children}</div>;
+}
+
+function AddSignFieldsSidebarSlot() {
+	return (
+		<aside className="hidden lg:block w-64 border-r border-border bg-muted/5">
+			<FieldsSidebar />
+		</aside>
+	);
+}
+
+function AddSignViewerSlot() {
+	const { currentDocument } = useAddSignContext();
+	return (
+		<main className="flex-1 flex flex-col bg-background">
+			{currentDocument ? (
+				<DocumentViewer />
+			) : (
+				<div className="flex-1 flex items-center justify-center">
+					<div className="text-center">
+						<p className="text-muted-foreground">No documents available</p>
+					</div>
+				</div>
+			)}
+		</main>
+	);
+}
+
+function AddSignThumbnailsSlot() {
+	const { documents, currentDocumentId, handleDocumentSelect } =
+		useAddSignChrome();
+	return (
+		<DocumentThumbnailsSidebar
+			documents={documents}
+			currentDocumentId={currentDocumentId}
+			onDocumentSelect={handleDocumentSelect}
+		/>
+	);
+}
+
+function AddSignMobileToolbarSlot() {
+	return <MobileToolbar />;
+}
+
+function AddSignDialogs() {
+	const placement = useAddSignPlacement();
+	const chrome = useAddSignChrome();
+	return (
+		<>
+			<FieldPlacementDialog
+				open={placement.placementDialogOpen}
+				onOpenChange={placement.handlePlacementDialogOpenChange}
+				fieldTypeLabel={placement.placementFieldTypeLabel}
+				signers={placement.signerOptionsForPlacement}
+				onConfirm={placement.handlePlacementConfirm}
+			/>
+			<ColdShareDialog
+				open={chrome.coldShareDialogOpen}
+				share={chrome.coldShare}
+				onDone={chrome.handleColdShareDone}
+			/>
+		</>
+	);
+}
+
+export const AddSign = {
+	Root: AddSignRoot,
+	Shell: AddSignPageShell,
+	HeaderRow: AddSignHeaderRow,
+	Workspace: AddSignWorkspace,
+	FieldsSidebar: AddSignFieldsSidebarSlot,
+	Viewer: AddSignViewerSlot,
+	Thumbnails: AddSignThumbnailsSlot,
+	MobileToolbar: AddSignMobileToolbarSlot,
+	Dialogs: AddSignDialogs,
+};

@@ -1,76 +1,13 @@
-import {
-	CalendarIcon,
-	CheckSquareIcon,
-	EnvelopeIcon,
-	SignatureIcon,
-	TextAaIcon,
-	TextBIcon,
-	UserIcon,
-} from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import { Button } from "@/src/lib/components/ui/button";
 import { cn } from "@/src/lib/utils/utils";
-import type { SignatureField } from "../-lib/utils/mock";
+import { useAddSignPlacement } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
+import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
 
-type SignatureFieldType = SignatureField["type"];
+export default function SignatureFieldsSidebar() {
+	const { handleAddField, isPlacingField, pendingFieldType } =
+		useAddSignPlacement();
 
-interface SignatureFieldsSidebarProps {
-	onAddField: (fieldType: SignatureFieldType) => void;
-	isPlacingField?: boolean;
-	pendingFieldType?: SignatureFieldType | null;
-}
-
-// Local field type configuration with icons
-const fieldTypes = [
-	{
-		type: "signature" as const,
-		label: "Signature",
-		icon: SignatureIcon,
-		description: "Digital signature field",
-	},
-	{
-		type: "initial" as const,
-		label: "Initial",
-		icon: TextAaIcon,
-		description: "Initial field",
-	},
-	{
-		type: "date" as const,
-		label: "Date Signed",
-		icon: CalendarIcon,
-		description: "Date field",
-	},
-	{
-		type: "name" as const,
-		label: "Name",
-		icon: UserIcon,
-		description: "Name field",
-	},
-	{
-		type: "email" as const,
-		label: "Email",
-		icon: EnvelopeIcon,
-		description: "Email field",
-	},
-	{
-		type: "text" as const,
-		label: "Text",
-		icon: TextBIcon,
-		description: "Text input field",
-	},
-	{
-		type: "checkbox" as const,
-		label: "Checkbox",
-		icon: CheckSquareIcon,
-		description: "Checkbox field",
-	},
-];
-
-export default function SignatureFieldsSidebar({
-	onAddField,
-	isPlacingField,
-	pendingFieldType,
-}: SignatureFieldsSidebarProps) {
 	return (
 		<div className="p-4 space-y-4">
 			<div>
@@ -84,7 +21,7 @@ export default function SignatureFieldsSidebar({
 			</div>
 
 			<div className="space-y-2">
-				{fieldTypes.map((field, index) => {
+				{signatureFieldPalette.map((field, index) => {
 					const IconComponent = field.icon;
 					return (
 						<motion.div
@@ -104,7 +41,7 @@ export default function SignatureFieldsSidebar({
 										pendingFieldType === field.type &&
 										"bg-accent border",
 								)}
-								onClick={() => onAddField(field.type)}
+								onClick={() => handleAddField(field.type)}
 							>
 								<div className="flex items-center gap-3 w-full">
 									<div className="p-2 rounded-md bg-muted/30">
@@ -128,12 +65,15 @@ export default function SignatureFieldsSidebar({
 
 			<div className="pt-4 border-t border-border">
 				<div className="text-xs text-muted-foreground space-y-2">
-					{isPlacingField && (
+					{isPlacingField ? (
 						<div className="mt-3 p-2 bg-primary/5 border border-primary/20 rounded text-primary text-xs">
 							<strong>Placing:</strong>{" "}
-							{fieldTypes.find((f) => f.type === pendingFieldType)?.label}
+							{
+								signatureFieldPalette.find((f) => f.type === pendingFieldType)
+									?.label
+							}
 						</div>
-					)}
+					) : null}
 				</div>
 			</div>
 		</div>

@@ -44,11 +44,13 @@ No other top-level files or folders (`hooks/`, `components/`, loose `*.ts` sibli
 | File | Role |
 |------|------|
 | **`index.tsx`** | Route config + thin composer, or full page if small |
-| **`-lib/hooks/*`** | Queries, mutations, handlers (**no JSX**) |
+| **`-lib/hooks/-use-*-controller.ts`** | Queries, mutations, handlers (**no JSX**) |
 | **`-components/*.tsx`** | Markup; local UI state only |
 | **Large flows** | Split: keep `index.tsx` as composer calling one controller hook |
 
 Avoid boolean prop walls; use `Pick<Controller, "…">` or route-scoped context in `-lib/context/`.
+
+**Reference (Phase 3 POC):** [`envelope/create/add-sign/`](src/routes/dashboard/envelope/create/add-sign/) — `useAddSignController` → `AddSign.Root` compound layout → route context (`useAddSignPlacement`, `useAddSignViewer`) → zero-prop leaf components (`DocumentViewer`, sidebars).
 
 ## State
 

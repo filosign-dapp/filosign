@@ -1,4 +1,5 @@
 import {
+	BuildingsIcon,
 	CaretRightIcon,
 	EnvelopeSimpleIcon,
 	HouseIcon,
@@ -98,6 +99,13 @@ const groups: { label: string; items: NavItem[] }[] = [
 				icon: UserCircleIcon,
 				match: (p) => matchPrefix(p, "/dashboard/settings/profile"),
 				tooltip: "Profile",
+			},
+			{
+				title: "Team",
+				url: "/dashboard/settings/team",
+				icon: BuildingsIcon,
+				match: (p) => matchPrefix(p, "/dashboard/settings/team"),
+				tooltip: "Team",
 			},
 		],
 	},

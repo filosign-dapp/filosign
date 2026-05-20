@@ -43,7 +43,10 @@ export function SignDocumentPage() {
 	const { file, fileLoading, fileError, acknowledgeFile } = fileQuery;
 
 	const hasDecryptionKeys = Boolean(
-		file?.kemCiphertext && file?.encryptedEncryptionKey,
+		(file?.kemCiphertext && file?.encryptedEncryptionKey) ||
+			(file?.organizationId &&
+				file?.orgKemCiphertext &&
+				file?.orgEncryptedEncryptionKey),
 	);
 	const needsInviteUnlock =
 		Boolean(inviteToken) && !hasDecryptionKeys && !unlock.claimSucceeded;
@@ -190,7 +193,15 @@ export function SignDocumentPage() {
 		);
 	}
 
-	if (file && (!file.kemCiphertext || !file.encryptedEncryptionKey)) {
+	if (
+		file &&
+		!(
+			(file.kemCiphertext && file.encryptedEncryptionKey) ||
+			(file.organizationId &&
+				file.orgKemCiphertext &&
+				file.orgEncryptedEncryptionKey)
+		)
+	) {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-screen bg-background p-8">
 				<FileTextIcon className="h-16 w-16 text-amber-500 mb-4" />

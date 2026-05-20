@@ -92,7 +92,14 @@ export function useSignDocument() {
 	const signFile = useSignFile();
 
 	const signDraftPieceCid =
-		pieceCid && file?.kemCiphertext && file?.encryptedEncryptionKey
+		pieceCid &&
+		file &&
+		(Boolean(file.kemCiphertext && file.encryptedEncryptionKey) ||
+			Boolean(
+				file.organizationId &&
+					file.orgKemCiphertext &&
+					file.orgEncryptedEncryptionKey,
+			))
 			? pieceCid
 			: undefined;
 	const { data: serverDraftIds } = useSignDraft(signDraftPieceCid);
@@ -240,20 +247,66 @@ export function useSignDocument() {
 	}, [pieceCid, previewPdfBytes]);
 
 	const handleViewFile = useCallback(async () => {
-		if (!file?.kemCiphertext || !file?.encryptedEncryptionKey) {
-			const errMsg = "Missing decryption keys. Acknowledge the file first.";
-			setViewError(errMsg);
+		if (!file) return;
+
+		const hasParticipantWrap =
+			Boolean(file.kemCiphertext) && Boolean(file.encryptedEncryptionKey);
+		const hasOrgVaultWrap =
+			Boolean(file.organizationId) &&
+			Boolean(file.orgKemCiphertext) &&
+			Boolean(file.orgEncryptedEncryptionKey);
+
+		if (!(hasParticipantWrap || hasOrgVaultWrap)) {
+			setViewError(
+				"Missing decryption keys. Acknowledge the file first, or ask an admin for your organization key.",
+			);
 			return;
 		}
 
 		try {
 			setViewError(null);
-			const result = await viewFile.mutateAsync({
-				pieceCid: file.pieceCid,
-				kemCiphertext: file.kemCiphertext,
-				encryptedEncryptionKey: file.encryptedEncryptionKey,
-				status: file.status as "s3" | "foc",
-			});
+
+			let result: ViewFileResult;
+
+			const kemCiphertext = file.kemCiphertext;
+			const encryptedEncryptionKey = file.encryptedEncryptionKey;
+			const organizationId = file.organizationId;
+			const orgKemCiphertext = file.orgKemCiphertext;
+			const orgEncryptedEncryptionKey = file.orgEncryptedEncryptionKey;
+			const status = file.status as "s3" | "foc";
+
+			if (hasParticipantWrap) {
+				if (!kemCiphertext || !encryptedEncryptionKey) {
+					setViewError(
+						"Missing decryption keys. Acknowledge the file first, or ask an admin for your organization key.",
+					);
+					return;
+				}
+				result = await viewFile.mutateAsync({
+					pieceCid: file.pieceCid,
+					kemCiphertext,
+					encryptedEncryptionKey,
+					status,
+				});
+			} else if (
+				organizationId &&
+				orgKemCiphertext &&
+				orgEncryptedEncryptionKey
+			) {
+				result = await viewFile.mutateAsync({
+					variant: "org",
+					pieceCid: file.pieceCid,
+					organizationId,
+					orgKemCiphertext,
+					orgEncryptedEncryptionKey,
+					status,
+				});
+			} else {
+				setViewError(
+					"Missing decryption keys. Acknowledge the file first, or ask an admin for your organization key.",
+				);
+				return;
+			}
 			setFileData(result);
 		} catch (error) {
 			const errorMessage =
@@ -267,12 +320,15 @@ export function useSignDocument() {
 	}, [file, viewFile]);
 
 	useEffect(() => {
-		if (
-			file?.kemCiphertext &&
-			file.encryptedEncryptionKey &&
-			!fileData &&
-			!viewFile.isPending
-		) {
+		const participant =
+			!!file && Boolean(file.kemCiphertext && file.encryptedEncryptionKey);
+		const orgVault = Boolean(
+			file?.organizationId &&
+				file?.orgKemCiphertext &&
+				file?.orgEncryptedEncryptionKey,
+		);
+
+		if ((participant || orgVault) && !fileData && !viewFile.isPending) {
 			void handleViewFile();
 		}
 	}, [file, fileData, viewFile.isPending, handleViewFile]);

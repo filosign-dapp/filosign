@@ -20,7 +20,7 @@ interface RealFile {
 		originalId?: string;
 		dataUrl?: string;
 	};
-	type?: "sent" | "received";
+	type?: "sent" | "received" | "org";
 	createdAt?: Date;
 	kemCiphertext?: string;
 	encryptedEncryptionKey?: string;
@@ -49,20 +49,58 @@ export default function FileCard({
 		file.encryptedEncryptionKey || fileInfo?.encryptedEncryptionKey;
 	const status = file.status || fileInfo?.status;
 
+	const orgDecryptEligible = Boolean(
+		fileInfo?.organizationId &&
+			fileInfo.orgKemCiphertext &&
+			fileInfo.orgEncryptedEncryptionKey &&
+			!(kemCiphertext && encryptedEncryptionKey),
+	);
+
+	const participantDecryptEligible = Boolean(
+		kemCiphertext && encryptedEncryptionKey,
+	);
+
 	const { mutateAsync: viewFileMutate } = useViewFile();
 
 	const { data: actualMetadata, isLoading } = useQuery({
-		queryKey: ["fsQ-decrypted-file-metadata", file.pieceCid],
+		queryKey: [
+			"fsQ-decrypted-file-metadata",
+			file.pieceCid,
+			orgDecryptEligible,
+		],
 		queryFn: async () => {
-			if (!kemCiphertext || !encryptedEncryptionKey || !status)
-				throw new Error("Missing keys");
+			if (!status) throw new Error("Missing status");
 
-			const res = await viewFileMutate({
-				pieceCid: file.pieceCid,
-				kemCiphertext: kemCiphertext as string,
-				encryptedEncryptionKey: encryptedEncryptionKey as string,
-				status: status as "s3" | "foc",
-			});
+			let res: Awaited<ReturnType<typeof viewFileMutate>>;
+
+			if (participantDecryptEligible) {
+				if (!kemCiphertext || !encryptedEncryptionKey) {
+					throw new Error("Missing keys");
+				}
+				res = await viewFileMutate({
+					pieceCid: file.pieceCid,
+					kemCiphertext,
+					encryptedEncryptionKey,
+					status: status as "s3" | "foc",
+				});
+			} else if (orgDecryptEligible) {
+				const oid = fileInfo?.organizationId;
+				const okc = fileInfo?.orgKemCiphertext;
+				const ocek = fileInfo?.orgEncryptedEncryptionKey;
+				if (!oid || !okc || !ocek) {
+					throw new Error("Missing org decryption material");
+				}
+				res = await viewFileMutate({
+					variant: "org",
+					pieceCid: file.pieceCid,
+					organizationId: oid,
+					orgKemCiphertext: okc,
+					orgEncryptedEncryptionKey: ocek,
+					status: status as "s3" | "foc",
+				});
+			} else {
+				throw new Error("Missing keys");
+			}
 
 			let dataUrl: string | undefined;
 			if (res.metadata.mimeType?.includes("image")) {
@@ -79,7 +117,7 @@ export default function FileCard({
 				dataUrl,
 			};
 		},
-		enabled: !!kemCiphertext && !!encryptedEncryptionKey && !!status,
+		enabled: !!status && (participantDecryptEligible || orgDecryptEligible),
 		staleTime: Infinity,
 		gcTime: 1000 * 60 * 60 * 24,
 	});

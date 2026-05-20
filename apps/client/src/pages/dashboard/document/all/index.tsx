@@ -1,4 +1,9 @@
-import { useReceivedFiles, useSentFiles } from "@filosign/react/files";
+import {
+	useOrgFiles,
+	useReceivedFiles,
+	useSentFiles,
+} from "@filosign/react/files";
+import { useActiveOrgId } from "@filosign/react/orgs";
 import {
 	FileTextIcon,
 	FunnelIcon,
@@ -26,9 +31,12 @@ export default function DocumentAllPage() {
 	const [isFilterOpen, _setIsFilterOpen] = useState(false);
 	const navigate = useNavigate();
 
+	const activeOrgId = useActiveOrgId();
+
 	// File queries
 	const sentFiles = useSentFiles();
 	const receivedFiles = useReceivedFiles();
+	const orgFiles = useOrgFiles();
 
 	const sentFilesData = Array.isArray(sentFiles.data)
 		? sentFiles.data.map((file) => ({
@@ -46,7 +54,23 @@ export default function DocumentAllPage() {
 			}))
 		: [];
 
-	const allFiles = [...sentFilesData, ...receivedFilesData];
+	const orgFilesData =
+		activeOrgId && Array.isArray(orgFiles.data)
+			? orgFiles.data.map((file) => {
+					const row = file as {
+						pieceCid: string;
+						createdAt?: Date;
+						[key: string]: unknown;
+					};
+					return {
+						...row,
+						type: "org" as const,
+						createdAt: row.createdAt ?? new Date(),
+					};
+				})
+			: [];
+
+	const allFiles = [...sentFilesData, ...receivedFilesData, ...orgFilesData];
 
 	const handleViewModeChange = (newViewMode: "list" | "grid") => {
 		if (newViewMode !== viewMode) {
@@ -227,7 +251,9 @@ export default function DocumentAllPage() {
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ duration: 0.2, delay: 0.3 }}
 					>
-						{sentFiles.isLoading || receivedFiles.isLoading ? (
+						{sentFiles.isLoading ||
+						receivedFiles.isLoading ||
+						(activeOrgId && orgFiles.isLoading) ? (
 							<div className="flex flex-1 flex-col items-center justify-center gap-2 py-24">
 								<InlineLoader size="lg" />
 								<p className="text-sm text-muted-foreground">
@@ -291,6 +317,42 @@ export default function DocumentAllPage() {
 												{receivedFilesData.map((file) => (
 													<FileCard
 														key={`received-${file.pieceCid}`}
+														file={file}
+														onClick={handleItemClick}
+														variant="grid"
+													/>
+												))}
+											</div>
+										)}
+									</motion.div>
+								)}
+
+								{orgFilesData.length > 0 && (
+									<motion.div
+										className="space-y-4"
+										initial={{ opacity: 0, y: 10 }}
+										animate={{ opacity: 1, y: 0 }}
+										transition={{ duration: 0.2, delay: 0.35 }}
+									>
+										<h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+											Team documents ({orgFilesData.length})
+										</h3>
+										{viewMode === "list" ? (
+											<div className="space-y-2">
+												{orgFilesData.map((file) => (
+													<FileCard
+														key={`org-${file.pieceCid}`}
+														file={file}
+														onClick={handleItemClick}
+														variant="list"
+													/>
+												))}
+											</div>
+										) : (
+											<div className="grid grid-cols-4 @xl:grid-cols-5 @2xl:grid-cols-6 @3xl:grid-cols-8 @5xl:grid-cols-10 gap-3">
+												{orgFilesData.map((file) => (
+													<FileCard
+														key={`org-${file.pieceCid}`}
 														file={file}
 														onClick={handleItemClick}
 														variant="grid"

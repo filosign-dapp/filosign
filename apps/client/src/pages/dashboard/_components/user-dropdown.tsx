@@ -1,6 +1,16 @@
 import { useLogout } from "@filosign/react/auth";
+import {
+	useActiveOrganization,
+	useActiveOrgId,
+	useOrganizations,
+} from "@filosign/react/orgs";
 import { useUserProfile } from "@filosign/react/users";
-import { CopySimpleIcon, SignOutIcon, UserIcon } from "@phosphor-icons/react";
+import {
+	BuildingsIcon,
+	CopySimpleIcon,
+	SignOutIcon,
+	UserIcon,
+} from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import * as React from "react";
@@ -15,6 +25,14 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/src/lib/components/ui/select";
+import { useSetPersistedActiveOrganizationId } from "@/src/lib/context/persisted-active-org";
 import { useThirdwebUserInfo } from "@/src/lib/hooks/use-thirdweb-user-info";
 import { useThirdwebWalletAuth } from "@/src/lib/hooks/use-thirdweb-wallet-auth";
 import { copyToClipboard } from "@/src/lib/utils/utils";
@@ -27,6 +45,13 @@ export function UserDropdown() {
 	const navigate = useNavigate();
 
 	const { data: userProfile } = useUserProfile();
+	const { data: orgsData } = useOrganizations();
+	const activeOrgId = useActiveOrgId();
+	const activeOrg = useActiveOrganization();
+	const setActiveOrg = useSetPersistedActiveOrganizationId();
+	const orgs =
+		(orgsData as { organizations?: Array<{ id: string; name: string }> })
+			?.organizations ?? [];
 
 	const handleSignOut = async () => {
 		await logoutFilosign.mutateAsync();
@@ -129,6 +154,39 @@ export function UserDropdown() {
 
 				<DropdownMenuSeparator />
 
+				{orgs.length > 0 ? (
+					<>
+						<DropdownMenuGroup>
+							<DropdownMenuLabel className="text-muted-foreground text-xs">
+								Workspace
+							</DropdownMenuLabel>
+							<div className="px-2 pb-2">
+								<Select
+									value={activeOrgId ?? "personal"}
+									onValueChange={(v) =>
+										setActiveOrg(v === "personal" ? null : v)
+									}
+								>
+									<SelectTrigger className="w-full h-8" size="sm">
+										<SelectValue
+											placeholder={activeOrg?.name ?? "Personal workspace"}
+										/>
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="personal">Personal workspace</SelectItem>
+										{orgs.map((org) => (
+											<SelectItem key={org.id} value={org.id}>
+												{org.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+						</DropdownMenuGroup>
+						<DropdownMenuSeparator />
+					</>
+				) : null}
+
 				{/* Actions Section */}
 				<DropdownMenuGroup>
 					<DropdownMenuLabel className="text-muted-foreground text-xs">
@@ -140,6 +198,13 @@ export function UserDropdown() {
 							label: "Manage Profile",
 							action: () => {
 								navigate({ to: "/dashboard/settings/profile" });
+							},
+						},
+						{
+							icon: BuildingsIcon,
+							label: "Team",
+							action: () => {
+								navigate({ to: "/dashboard/settings/team" });
 							},
 						},
 					].map((item, index) => (

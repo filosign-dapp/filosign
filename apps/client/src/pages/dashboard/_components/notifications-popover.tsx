@@ -312,15 +312,44 @@ function ReceivedFileNotification({
 	};
 
 	const handleViewFile = async () => {
-		if (!file?.kemCiphertext || !file?.encryptedEncryptionKey) return;
+		if (!file) return;
+
+		const kemCiphertext = file.kemCiphertext;
+		const encryptedEncryptionKey = file.encryptedEncryptionKey;
+		const participant = !!(kemCiphertext && encryptedEncryptionKey);
+		const organizationId = file.organizationId;
+		const orgKemCiphertext = file.orgKemCiphertext;
+		const orgEncryptedEncryptionKey = file.orgEncryptedEncryptionKey;
+		const orgVault =
+			organizationId && orgKemCiphertext && orgEncryptedEncryptionKey;
+
+		if (!(participant || orgVault)) return;
 
 		try {
-			const fileData = await viewFile.mutateAsync({
-				pieceCid: file.pieceCid,
-				kemCiphertext: file.kemCiphertext,
-				encryptedEncryptionKey: file.encryptedEncryptionKey,
-				status: file.status as "s3" | "foc",
-			});
+			let fileData: Awaited<ReturnType<typeof viewFile.mutateAsync>>;
+			if (participant) {
+				fileData = await viewFile.mutateAsync({
+					pieceCid: file.pieceCid,
+					kemCiphertext,
+					encryptedEncryptionKey,
+					status: file.status as "s3" | "foc",
+				});
+			} else if (
+				organizationId &&
+				orgKemCiphertext &&
+				orgEncryptedEncryptionKey
+			) {
+				fileData = await viewFile.mutateAsync({
+					variant: "org",
+					pieceCid: file.pieceCid,
+					organizationId,
+					orgKemCiphertext,
+					orgEncryptedEncryptionKey,
+					status: file.status as "s3" | "foc",
+				});
+			} else {
+				return;
+			}
 			console.log("File data received:", fileData);
 
 			// Save file to computer using metadata
@@ -360,8 +389,14 @@ function ReceivedFileNotification({
 		);
 	}
 
-	// Recipients have kemCiphertext/encryptedEncryptionKey only after acking; sender always has them
-	const isAcknowledged = !!(file.kemCiphertext && file.encryptedEncryptionKey);
+	// Recipient KEM ciphertext appears after acknowledging a personal envelope; org-vault ciphertext is present separately.
+	const hasOrgDecryptMaterial =
+		!!file.organizationId &&
+		!!file.orgKemCiphertext &&
+		!!file.orgEncryptedEncryptionKey;
+	const isAcknowledged =
+		!!(file.kemCiphertext && file.encryptedEncryptionKey) ||
+		hasOrgDecryptMaterial;
 	const hasSignatures = file.signatures && file.signatures.length > 0;
 
 	const handleSignDocument = () => {

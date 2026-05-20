@@ -6,6 +6,7 @@ import { FilosignProvider as FilosignProviderBase } from "@filosign/react";
 import { useEffect, useState } from "react";
 import { useWalletClient } from "wagmi";
 import env from "@/src/env";
+import { PersistedActiveOrganizationSync } from "@/src/lib/context/persisted-active-org";
 import { Loader } from "../components/ui/loader";
 import { logger } from "../utils/logger";
 
@@ -40,6 +41,7 @@ export function FilosignProvider({ children }: { children: React.ReactNode }) {
 			wallet={wallet}
 			loader={Loader}
 		>
+			<PersistedActiveOrganizationSync />
 			{children}
 		</FilosignProviderBase>
 	);

@@ -3,7 +3,7 @@ import { useUserProfile } from "@filosign/react/users";
 import { CopySimpleIcon, SignOutIcon, UserIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import * as React from "react";
-import { Image } from "@/src/lib/components/custom/Image";
+import { Image } from "@/src/lib/components/shared/Image";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	DropdownMenu,

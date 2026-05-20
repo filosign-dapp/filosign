@@ -10,13 +10,55 @@ import { getAddress } from "viem";
 import db from "@/lib/db";
 import { userSubscriptions } from "@/lib/db/schema/billing";
 import { files } from "@/lib/db/schema/file";
+import { organizationSubscriptions } from "@/lib/db/schema/organization";
 import { calendarMonthPeriod } from "./calendar-month";
 
 export async function resolveEntitlementContext(
 	wallet: Address,
+	organizationId?: string | null,
 ): Promise<EntitlementContext> {
 	const walletNorm = getAddress(wallet);
 	const { periodStart, periodEnd } = calendarMonthPeriod();
+
+	if (organizationId) {
+		const [orgSub] = await db
+			.select({
+				planId: organizationSubscriptions.planId,
+				featureOverrides: organizationSubscriptions.featureOverrides,
+			})
+			.from(organizationSubscriptions)
+			.where(eq(organizationSubscriptions.organizationId, organizationId))
+			.limit(1);
+
+		const planId: PlanId =
+			(orgSub?.planId as PlanId | undefined) ?? DEFAULT_PLAN_ID;
+		const overrides =
+			(orgSub?.featureOverrides as EntitlementContext["overrides"]) ??
+			undefined;
+
+		const [{ count }] = await db
+			.select({ count: sql<number>`count(*)::int` })
+			.from(files)
+			.where(
+				and(
+					eq(files.organizationId, organizationId),
+					gte(files.createdAt, periodStart),
+					lt(files.createdAt, periodEnd),
+				),
+			);
+
+		return {
+			subject: {
+				type: "org_member",
+				orgId: organizationId,
+				wallet: walletNorm,
+			},
+			planId,
+			periodStart,
+			usage: { "documents.sent.monthly": count ?? 0 },
+			overrides,
+		};
+	}
 
 	const [sub] = await db
 		.select({

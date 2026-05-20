@@ -97,3 +97,19 @@ export async function filesListReceived(userWallet: Address) {
 	const categorizedFiles: ReceivedInboxEntry[] = [...primary, ...pending];
 	return { files: categorizedFiles, primary, pending };
 }
+
+export async function filesListOrg(organizationId: string) {
+	const orgFiles = await db
+		.select({
+			pieceCid: files.pieceCid,
+			sender: files.sender,
+			organizationId: files.organizationId,
+			status: sql<"foc">`'foc'`.as("status"),
+			createdAt: files.createdAt,
+		})
+		.from(files)
+		.where(eq(files.organizationId, organizationId))
+		.orderBy(desc(files.createdAt));
+
+	return { files: orgFiles };
+}

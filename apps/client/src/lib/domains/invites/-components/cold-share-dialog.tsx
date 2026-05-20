@@ -9,7 +9,7 @@ import {
 } from "@phosphor-icons/react";
 import { useEffect } from "react";
 import env from "@/src/env";
-import { CopyButton } from "@/src/lib/components/shared/CopyButton";
+import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Dialog,

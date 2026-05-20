@@ -13,9 +13,9 @@ import { OnboardingNameForm } from "./-components/OnboardingNameForm";
 import OnboardingProtector from "./-components/OnboardingProtector";
 import { OnboardingSwitchAccountLink } from "./-components/OnboardingSwitchAccountLink";
 import { RecoveryPhraseDialog } from "./-components/RecoveryPhraseDialog";
-import { useOnboardingKeyRegistration } from "./hooks/useOnboardingKeyRegistration";
-import { useOnboardingRegisteredGuestRedirect } from "./hooks/useOnboardingRegisteredGuestRedirect";
-import { buildWelcomeSearchFromOnboardingEntry } from "./utils/build-welcome-search";
+import { useOnboardingKeyRegistration } from "./-lib/hooks/useOnboardingKeyRegistration";
+import { useOnboardingRegisteredGuestRedirect } from "./-lib/hooks/useOnboardingRegisteredGuestRedirect";
+import { buildWelcomeSearchFromOnboardingEntry } from "./-lib/utils/build-welcome-search";
 
 function OnboardingPage() {
 	const [registrationStarted, setRegistrationStarted] = useState(false);

@@ -4,7 +4,7 @@ import { DownloadIcon, FileTextIcon } from "@phosphor-icons/react";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { cn } from "@/src/lib/utils";
-import { SignDocumentPdfPreview } from "../-components/SignDocumentPdfPreview";
+import { SignDocumentPdfPreview } from "./SignDocumentPdfPreview";
 
 export type SignDocumentFileContentProps = {
 	pieceCid: string | undefined;

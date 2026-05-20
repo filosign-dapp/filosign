@@ -25,7 +25,7 @@ import {
 	type Document,
 	type SignatureField,
 	signatureFieldBoxCssPx,
-} from "../mock";
+} from "../-lib/utils/mock";
 
 function fieldSignerAriaSnippet(field: SignatureField): string {
 	const name = field.assignedSignerName.trim() || "Signer";

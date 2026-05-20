@@ -15,7 +15,7 @@ import {
 import { CopyButton } from "@/src/lib/components/shared/CopyButton";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
-import type { SignDocumentController } from "../hooks/useSignDocument";
+import type { SignDocumentController } from "../-lib/hooks/useSignDocument";
 
 export type SignDocumentStickyHeaderProps = {
 	navigation: SignDocumentController["navigation"];

@@ -18,13 +18,13 @@ import { Button } from "@/src/lib/components/ui/button";
 import { useStorePersist } from "@/src/lib/hooks/use-store";
 import { UserDropdown } from "@/src/routes/dashboard/_shell/-components/user-dropdown";
 import DocumentsSection from "./-components/DocumentUpload";
+import RecipientsSection from "./-components/RecipientsSection";
 import {
 	EntitlementUpgradeProvider,
 	usePromptPlanUpgrade,
-} from "./-components/entitlement-upgrade-context";
-import { EnvelopeDraftProvider } from "./-components/envelope-draft-context";
-import RecipientsSection from "./-components/RecipientsSection";
-import type { EnvelopeForm, StoredDocument } from "./-types";
+} from "./-lib/context/entitlement-upgrade-context";
+import { EnvelopeDraftProvider } from "./-lib/context/envelope-draft-context";
+import type { EnvelopeForm, StoredDocument } from "./-lib/types";
 
 function isValidRecipientEmail(email: string) {
 	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());

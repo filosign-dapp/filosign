@@ -14,7 +14,7 @@ import { EntitlementPlanHint } from "@/src/lib/components/shared/EntitlementPlan
 import { useStorePersist } from "@/src/lib/hooks/use-store";
 import { buildColdInviteMagicLink } from "@/src/lib/routing/cold-invite-search";
 import { cn } from "@/src/lib/utils/utils";
-import type { Recipient } from "../-types";
+import type { Recipient } from "../-lib/types";
 import {
 	ColdShareDialog,
 	type ColdSharePackage,
@@ -30,13 +30,13 @@ import {
 import Header from "./-components/Header";
 import MobileSignatureToolbar from "./-components/MobileSignatureToolbar";
 import SignatureFieldsSidebar from "./-components/SignatureFieldsSidebar";
-import { useSignatureFields } from "./-components/use-signature-fields";
+import { useSignatureFields } from "./-lib/hooks/use-signature-fields";
 import {
 	type Document,
 	fieldTypeConfigs,
 	mockDocuments,
 	signatureFieldBoxCssPx,
-} from "./mock";
+} from "./-lib/utils/mock";
 import {
 	buildPlacementManifestForDocument,
 	buildSignersAndViewersForDocument,
@@ -45,8 +45,8 @@ import {
 	type RecipientWithEncryptionProfile,
 	recipientResolvedSignerAddress,
 	SendEnvelopeError,
-} from "./send-envelope";
-import { collectViewerEmails } from "./viewer-emails";
+} from "./-lib/utils/send-envelope";
+import { collectViewerEmails } from "./-lib/utils/viewer-emails";
 
 function AddSignaturePage() {
 	const navigate = useNavigate();

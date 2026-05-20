@@ -20,7 +20,7 @@ import { logger } from "@/src/lib/utils/logger";
 import { OnboardingSwitchAccountLink } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
 
 function InvitePage() {
-	const { inviteId } = useParams({ from: "/invite/$inviteId" });
+	const { inviteId } = useParams({ from: "/invite/$inviteId/" });
 	const { ready, authenticated } = useThirdwebWalletAuth();
 	const { login } = useThirdwebLogin();
 	const { rpc, ready: filosignReady } = useFilosignContext();

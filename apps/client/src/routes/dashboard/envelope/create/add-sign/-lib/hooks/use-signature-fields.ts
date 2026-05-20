@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createClientId } from "@/src/lib/utils/id";
-import type { SignatureField } from "../mock";
+import type { SignatureField } from "../utils/mock";
 
 export function useSignatureFields() {
 	const [signatureFields, setSignatureFields] = useState<SignatureField[]>([]);

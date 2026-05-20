@@ -13,8 +13,8 @@ import {
 	FormMessage,
 } from "@/src/lib/components/ui/form";
 import { Input } from "@/src/lib/components/ui/input";
-import { SaveButton } from "./components/SaveButton";
-import type { ProfileForm } from "./hooks/use-section-state";
+import type { ProfileForm } from "../-lib/hooks/use-section-state";
+import { SaveButton } from "./SaveButton";
 
 const labelClass = "text-xs font-normal text-muted-foreground";
 

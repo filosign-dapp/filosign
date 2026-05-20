@@ -1,13 +1,13 @@
 import { CaretLeftIcon } from "@phosphor-icons/react";
-import { Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import Logo from "@/src/lib/components/shared/Logo";
 import { Button } from "@/src/lib/components/ui/button";
 import { Form } from "@/src/lib/components/ui/form";
-import { useProfileSettings } from "./hooks/use-profile-settings";
-import { LinkedAccountsSection } from "./LinkedAccountsSection";
-import { PersonalInfoSection } from "./PersonalInfoSection";
-import { WalletUsdcBalanceCard } from "./WalletUsdcBalanceCard";
+import { LinkedAccountsSection } from "./-components/LinkedAccountsSection";
+import { PersonalInfoSection } from "./-components/PersonalInfoSection";
+import { WalletUsdcBalanceCard } from "./-components/WalletUsdcBalanceCard";
+import { useProfileSettings } from "./-lib/hooks/use-profile-settings";
 
 function ProfilePage() {
 	const { form, personalSection } = useProfileSettings();
@@ -72,4 +72,6 @@ function ProfilePage() {
 	);
 }
 
-import { createFileRoute } from "@tanstack/react-router";
+export const Route = createFileRoute("/dashboard/_shell/settings/profile/")({
+	component: ProfilePage,
+});

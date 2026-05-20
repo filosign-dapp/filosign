@@ -15,7 +15,7 @@ import env from "./env";
 import { FilosignProvider } from "./lib/context/filosign-provider";
 import { ThirdwebRootProvider } from "./lib/context/thirdweb-provider";
 import { WagmiProvider } from "./lib/context/wagmi-provider";
-import { configurePdfWorker } from "./lib/pdf/configurePdfWorker";
+import { configurePdfWorker } from "./lib/utils/configurePdfWorker";
 
 configurePdfWorker();
 

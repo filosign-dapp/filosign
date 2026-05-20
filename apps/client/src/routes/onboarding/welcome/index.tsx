@@ -34,7 +34,7 @@ function OnboardingWelcomeCompletePage() {
 	const updateUserProfile = useUpdateUserProfile();
 	const { data: auth } = useAuthedApi();
 	const navigate = useNavigate();
-	const search = useSearch({ from: "/onboarding/welcome" });
+	const search = useSearch({ from: "/onboarding/welcome/" });
 
 	const coldReturnToSign =
 		Boolean(search.coldPieceCid?.trim()) && Boolean(search.coldInvite?.trim());

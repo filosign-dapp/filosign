@@ -1,5 +1,5 @@
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
-import type { Recipient } from "../-types";
+import type { Recipient } from "../../../-lib/types";
 
 export function collectViewerEmails(args: {
 	recipients: Recipient[];

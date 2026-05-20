@@ -1,7 +1,7 @@
 import { SidebarInset, SidebarProvider } from "@/src/lib/components/ui/sidebar";
 import { TooltipProvider } from "@/src/lib/components/ui/tooltip";
-import DashboardNav from "./-components/dashboard-nav";
-import { DashboardSidebar } from "./-components/dashboard-sidebar";
+import DashboardNav from "./dashboard-nav";
+import { DashboardSidebar } from "./dashboard-sidebar";
 
 export default function DashboardLayout({
 	children,

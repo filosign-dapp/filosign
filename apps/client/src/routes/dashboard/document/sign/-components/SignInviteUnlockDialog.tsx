@@ -14,7 +14,7 @@ import { Label } from "@/src/lib/components/ui/label";
 import { Textarea } from "@/src/lib/components/ui/textarea";
 import { ColdInviteNotForYouCallout } from "@/src/routes/onboarding/-components/ColdInviteNotForYouCallout";
 import { OnboardingSwitchAccountLink } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
-import type { SignInviteUnlockController } from "../hooks/useSignInviteUnlock";
+import type { SignInviteUnlockController } from "../-lib/hooks/useSignInviteUnlock";
 
 type InvitePayload = NonNullable<SignInviteUnlockController["invite"]>;
 

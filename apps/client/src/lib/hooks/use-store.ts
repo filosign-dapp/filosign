@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CreateForm } from "@/src/routes/dashboard/envelope/create/-types";
+import type { CreateForm } from "@/src/routes/dashboard/envelope/create/-lib/types";
 
 interface OnboardingForm {
 	firstName: string;

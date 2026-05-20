@@ -8,8 +8,8 @@ import {
 	CardTitle,
 } from "@/src/lib/components/ui/card";
 import { FormField } from "@/src/lib/components/ui/form";
-import { SaveButton } from "./components/SaveButton";
-import type { ProfileForm } from "./hooks/use-section-state";
+import type { ProfileForm } from "../-lib/hooks/use-section-state";
+import { SaveButton } from "./SaveButton";
 
 interface ProfilePictureSectionProps {
 	form: UseFormReturn<ProfileForm>;

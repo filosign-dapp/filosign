@@ -22,6 +22,8 @@ import { Route as DashboardEnvelopeCreateIndexRouteImport } from "./routes/dashb
 import { Route as DashboardDocumentSignIndexRouteImport } from "./routes/dashboard/document/sign/index"
 import { Route as DashboardShellConnectionsIndexRouteImport } from "./routes/dashboard/_shell/connections/index"
 import { Route as DashboardEnvelopeCreateAddSignIndexRouteImport } from "./routes/dashboard/envelope/create/add-sign/index"
+import { Route as DashboardShellSettingsTeamIndexRouteImport } from "./routes/dashboard/_shell/settings/team/index"
+import { Route as DashboardShellSettingsProfileIndexRouteImport } from "./routes/dashboard/_shell/settings/profile/index"
 import { Route as DashboardShellDocumentAllIndexRouteImport } from "./routes/dashboard/_shell/document/all/index"
 
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
@@ -94,6 +96,18 @@ const DashboardEnvelopeCreateAddSignIndexRoute =
     path: "/envelope/create/add-sign/",
     getParentRoute: () => DashboardRouteRoute,
   } as any)
+const DashboardShellSettingsTeamIndexRoute =
+  DashboardShellSettingsTeamIndexRouteImport.update({
+    id: "/settings/team/",
+    path: "/settings/team/",
+    getParentRoute: () => DashboardShellRouteRoute,
+  } as any)
+const DashboardShellSettingsProfileIndexRoute =
+  DashboardShellSettingsProfileIndexRouteImport.update({
+    id: "/settings/profile/",
+    path: "/settings/profile/",
+    getParentRoute: () => DashboardShellRouteRoute,
+  } as any)
 const DashboardShellDocumentAllIndexRoute =
   DashboardShellDocumentAllIndexRouteImport.update({
     id: "/document/all/",
@@ -114,6 +128,8 @@ export interface FileRoutesByFullPath {
   "/dashboard/envelope/create/": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create/": typeof DashboardSignatureCreateIndexRoute
   "/dashboard/document/all/": typeof DashboardShellDocumentAllIndexRoute
+  "/dashboard/settings/profile/": typeof DashboardShellSettingsProfileIndexRoute
+  "/dashboard/settings/team/": typeof DashboardShellSettingsTeamIndexRoute
   "/dashboard/envelope/create/add-sign/": typeof DashboardEnvelopeCreateAddSignIndexRoute
 }
 export interface FileRoutesByTo {
@@ -128,6 +144,8 @@ export interface FileRoutesByTo {
   "/dashboard/envelope/create": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create": typeof DashboardSignatureCreateIndexRoute
   "/dashboard/document/all": typeof DashboardShellDocumentAllIndexRoute
+  "/dashboard/settings/profile": typeof DashboardShellSettingsProfileIndexRoute
+  "/dashboard/settings/team": typeof DashboardShellSettingsTeamIndexRoute
   "/dashboard/envelope/create/add-sign": typeof DashboardEnvelopeCreateAddSignIndexRoute
 }
 export interface FileRoutesById {
@@ -145,6 +163,8 @@ export interface FileRoutesById {
   "/dashboard/envelope/create/": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create/": typeof DashboardSignatureCreateIndexRoute
   "/dashboard/_shell/document/all/": typeof DashboardShellDocumentAllIndexRoute
+  "/dashboard/_shell/settings/profile/": typeof DashboardShellSettingsProfileIndexRoute
+  "/dashboard/_shell/settings/team/": typeof DashboardShellSettingsTeamIndexRoute
   "/dashboard/envelope/create/add-sign/": typeof DashboardEnvelopeCreateAddSignIndexRoute
 }
 export interface FileRouteTypes {
@@ -162,6 +182,8 @@ export interface FileRouteTypes {
     | "/dashboard/envelope/create/"
     | "/dashboard/signature/create/"
     | "/dashboard/document/all/"
+    | "/dashboard/settings/profile/"
+    | "/dashboard/settings/team/"
     | "/dashboard/envelope/create/add-sign/"
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -176,6 +198,8 @@ export interface FileRouteTypes {
     | "/dashboard/envelope/create"
     | "/dashboard/signature/create"
     | "/dashboard/document/all"
+    | "/dashboard/settings/profile"
+    | "/dashboard/settings/team"
     | "/dashboard/envelope/create/add-sign"
   id:
     | "__root__"
@@ -192,6 +216,8 @@ export interface FileRouteTypes {
     | "/dashboard/envelope/create/"
     | "/dashboard/signature/create/"
     | "/dashboard/_shell/document/all/"
+    | "/dashboard/_shell/settings/profile/"
+    | "/dashboard/_shell/settings/team/"
     | "/dashboard/envelope/create/add-sign/"
   fileRoutesById: FileRoutesById
 }
@@ -297,6 +323,20 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardEnvelopeCreateAddSignIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    "/dashboard/_shell/settings/team/": {
+      id: "/dashboard/_shell/settings/team/"
+      path: "/settings/team"
+      fullPath: "/dashboard/settings/team/"
+      preLoaderRoute: typeof DashboardShellSettingsTeamIndexRouteImport
+      parentRoute: typeof DashboardShellRouteRoute
+    }
+    "/dashboard/_shell/settings/profile/": {
+      id: "/dashboard/_shell/settings/profile/"
+      path: "/settings/profile"
+      fullPath: "/dashboard/settings/profile/"
+      preLoaderRoute: typeof DashboardShellSettingsProfileIndexRouteImport
+      parentRoute: typeof DashboardShellRouteRoute
+    }
     "/dashboard/_shell/document/all/": {
       id: "/dashboard/_shell/document/all/"
       path: "/document/all"
@@ -310,11 +350,16 @@ declare module "@tanstack/react-router" {
 interface DashboardShellRouteRouteChildren {
   DashboardShellConnectionsIndexRoute: typeof DashboardShellConnectionsIndexRoute
   DashboardShellDocumentAllIndexRoute: typeof DashboardShellDocumentAllIndexRoute
+  DashboardShellSettingsProfileIndexRoute: typeof DashboardShellSettingsProfileIndexRoute
+  DashboardShellSettingsTeamIndexRoute: typeof DashboardShellSettingsTeamIndexRoute
 }
 
 const DashboardShellRouteRouteChildren: DashboardShellRouteRouteChildren = {
   DashboardShellConnectionsIndexRoute: DashboardShellConnectionsIndexRoute,
   DashboardShellDocumentAllIndexRoute: DashboardShellDocumentAllIndexRoute,
+  DashboardShellSettingsProfileIndexRoute:
+    DashboardShellSettingsProfileIndexRoute,
+  DashboardShellSettingsTeamIndexRoute: DashboardShellSettingsTeamIndexRoute,
 }
 
 const DashboardShellRouteRouteWithChildren =

@@ -1,7 +1,7 @@
 import { FileTextIcon } from "@phosphor-icons/react";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { z } from "zod";
-import { SignDocumentPage } from "./SignDocumentPage";
+import { SignDocumentPage } from "./-components/SignDocumentPage";
 
 function SignDocumentRoutePage() {
 	const search = useSearch({ from: "/dashboard/document/sign/" });

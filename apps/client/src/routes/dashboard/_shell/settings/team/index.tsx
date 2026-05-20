@@ -11,7 +11,7 @@ import {
 	useSetOrgMemberRole,
 } from "@filosign/react/orgs";
 import { BuildingsIcon, LinkSimpleIcon, PlusIcon } from "@phosphor-icons/react";
-import { useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import type { Address } from "viem";
@@ -479,4 +479,6 @@ function TeamSettingsPage() {
 	);
 }
 
-import { createFileRoute } from "@tanstack/react-router";
+export const Route = createFileRoute("/dashboard/_shell/settings/team/")({
+	component: TeamSettingsPage,
+});

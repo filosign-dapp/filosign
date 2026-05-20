@@ -16,11 +16,6 @@ export const app = new Hono()
 	.get("/health", (c) => c.json({ ok: true }))
 	.route("/api", apiRouter);
 
-const server = Bun.serve({
-	port: config.http.port,
-	fetch: app.fetch,
-});
-
 startPlatformCron();
 
 let shuttingDown = false;
@@ -30,7 +25,6 @@ async function shutdown(): Promise<void> {
 	shuttingDown = true;
 	stopPlatformCron();
 	await shutdownPostHog();
-	server.stop();
 }
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
@@ -40,3 +34,9 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
 		);
 	});
 }
+
+/** Required for `bun build --compile` — the executable calls `Bun.serve(default)`. */
+export default {
+	port: config.http.port,
+	fetch: app.fetch,
+};

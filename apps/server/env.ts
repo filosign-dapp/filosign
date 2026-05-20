@@ -1,6 +1,8 @@
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
+console.log(Bun.env.CHAIN);
+
 export const env = createEnv({
 	server: {
 		/** `development` = local HTTP; `production` = HTTPS deploy (enables Secure cookies). */

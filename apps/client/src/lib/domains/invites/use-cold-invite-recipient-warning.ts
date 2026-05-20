@@ -42,7 +42,7 @@ export function useColdInviteRecipientWarning() {
 
 	const { authenticated } = useThirdwebConnection();
 	const { user, email: walletEmail } = useThirdwebUserInfo();
-	const { data: userProfile } = useUserProfile();
+	const { data: userProfile } = useUserProfile({ enabled: authenticated });
 	const { wallet } = useFilosignContext();
 
 	const { data: invite, isSuccess } = useColdInvitePayload(inviteToken);

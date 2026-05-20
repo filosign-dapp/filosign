@@ -18,10 +18,9 @@ export function useUserProfileByQuery(query: {
 	const hasQuery = !!(query.address || query.username || query.email);
 
 	return useQuery({
-		...rpcQuery.users.profile.lookup.queryOptions({
-			input: { query: q },
-		}),
+		...rpcQuery.users.profile.lookup.queryOptions({ input: { query: q } }),
 		enabled: hasQuery && isAuthed,
 		staleTime: 1 * DAY,
+		retry: false,
 	});
 }

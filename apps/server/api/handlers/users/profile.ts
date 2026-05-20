@@ -12,6 +12,8 @@ import {
 	verifiedLinkedEmailsForWallet,
 	verifiedThirdwebEmailForWallet,
 } from "@/lib/platform/utils/thirdweb";
+import type { DragonflyAuthStore } from "@filosign/auth";
+import { authStore } from "@/lib/platform/auth/instance";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const { users } = db.schema;
@@ -183,7 +185,19 @@ export async function userProfilePrevalidate(query: {
 	return { valid: true as const };
 }
 
+const PROFILE_LOOKUP_CACHE_SEC = 30 * 60;
+
 export async function userProfileLookup(_wallet: Address, q: string) {
+	const query = q.trim().toLowerCase();
+	const cacheKey = `filosign:profile:lookup:${query}`;
+	const redis =
+		"redis" in authStore ? (authStore as DragonflyAuthStore).redis : null;
+
+	if (redis) {
+		const cached = await redis.get(cacheKey).catch(() => null);
+		if (cached) return JSON.parse(cached);
+	}
+
 	const returns = {
 		walletAddress: users.walletAddress,
 		encryptionPublicKey: users.encryptionPublicKey,
@@ -199,18 +213,18 @@ export async function userProfileLookup(_wallet: Address, q: string) {
 	let [userData] = await db
 		.select(returns)
 		.from(users)
-		.where(eq(users.email, q));
-	if (!userData && isAddress(q)) {
+		.where(eq(users.email, query));
+	if (!userData && isAddress(query)) {
 		[userData] = await db
 			.select(returns)
 			.from(users)
-			.where(eq(users.walletAddress, q));
+			.where(eq(users.walletAddress, query));
 	}
 	if (!userData) {
 		[userData] = await db
 			.select(returns)
 			.from(users)
-			.where(eq(users.username, q));
+			.where(eq(users.username, query));
 	}
 
 	if (!userData) {
@@ -226,7 +240,7 @@ export async function userProfileLookup(_wallet: Address, q: string) {
 		});
 	}
 
-	return {
+	const result = {
 		walletAddress: userData.walletAddress,
 		encryptionPublicKey: userData.encryptionPublicKey,
 		lastActiveAt: userData.lastActiveAt,
@@ -240,6 +254,14 @@ export async function userProfileLookup(_wallet: Address, q: string) {
 			mobile: !!userData.mobile,
 		},
 	};
+
+	if (redis) {
+		void redis
+			.setex(cacheKey, JSON.stringify(result), PROFILE_LOOKUP_CACHE_SEC)
+			.catch(() => {});
+	}
+
+	return result;
 }
 
 const zSyncPrivyBody = z.object({

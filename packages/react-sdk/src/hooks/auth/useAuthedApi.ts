@@ -1,3 +1,4 @@
+import { readStoredAccessJwt } from "@filosign/auth/client";
 import { signatures, toBytes, toHex } from "@filosign/crypto-utils";
 import { useQuery } from "@tanstack/react-query";
 import { useFilosignContext } from "../../context/useFilosignContext";
@@ -15,10 +16,16 @@ export type FilosignAuthed = {
  * Ensures a JWT is on the shared oRPC client before authenticated procedures run.
  * Order: valid access JWT → refresh cookie → dilithium `auth.nonce` / `auth.verify`.
  */
-export function useAuthedApi() {
+export type UseAuthedApiOptions = {
+	/** When false, skips the JWT bootstrap query (no refresh / dilithium). Default true. */
+	enabled?: boolean;
+};
+
+export function useAuthedApi(options?: UseAuthedApiOptions) {
 	const { rpc, rpcQuery, session, wallet, wasm } = useFilosignContext();
 	const { action: cryptoAction } = useCryptoSeed();
 	const walletAddress = wallet?.account.address;
+	const authEnabled = options?.enabled ?? true;
 
 	return useQuery({
 		queryKey: filosignKeys.authedApi(walletAddress),
@@ -33,14 +40,18 @@ export function useAuthedApi() {
 				return { rpc, session };
 			}
 
-			try {
-				const refreshed = await rpc.auth.refresh();
-				if (refreshed.token) {
-					session.setJwt(refreshed.token, walletAddress);
-					return { rpc, session };
+			// Only hit refresh when we previously had an access JWT (expired or stale).
+			// Avoids noisy 401s for guests with a connected wallet but no Filosign session.
+			if (readStoredAccessJwt(walletAddress)) {
+				try {
+					const refreshed = await rpc.auth.refresh();
+					if (refreshed.token) {
+						session.setJwt(refreshed.token, walletAddress);
+						return { rpc, session };
+					}
+				} catch {
+					// fall through to dilithium bootstrap
 				}
-			} catch {
-				// fall through to dilithium bootstrap
 			}
 
 			await cryptoAction(async (seed: Uint8Array) => {
@@ -74,6 +85,7 @@ export function useAuthedApi() {
 			session.ensureJwt();
 			return { rpc, session };
 		},
-		enabled: !!wallet && !!wasm.dilithium,
+		enabled: authEnabled && !!wallet && !!wasm.dilithium,
+		retry: false,
 	});
 }

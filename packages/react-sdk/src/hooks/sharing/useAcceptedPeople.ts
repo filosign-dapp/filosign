@@ -36,11 +36,7 @@ export function useAcceptedPeople() {
 							avatarUrl: profile.avatarUrl,
 							email: profile.email ?? null,
 						};
-					} catch (error) {
-						console.error(
-							`Failed to fetch profile for ${request.recipientWallet}:`,
-							error,
-						);
+					} catch {
 						return {
 							walletAddress: request.recipientWallet,
 							displayName: null,

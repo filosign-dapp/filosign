@@ -225,7 +225,7 @@ All helpers take `(queryClient, rpcQuery)` when touching oRPC—get `rpcQuery` f
 ### Batching
 
 - [`useFileInfosByPieceCids`](src/lib/domains/files/hooks/use-file-infos-by-piece-cids.ts)—piece detail per CID, deduped
-- [`useProfilesByAddresses`](src/lib/domains/users/hooks/use-profiles-by-emails.ts) / SDK `useProfilesByAddresses`—profile lookup per address
+- SDK `useProfilesByAddresses`—profile lookup per address (cached; used on add-sign when wallets are set)
 
 Do not mount per-row `useQuery` in lists; batch at the controller.
 

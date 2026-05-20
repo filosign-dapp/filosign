@@ -1,6 +1,5 @@
-import { CheckIcon, TrashIcon, UserIcon } from "@phosphor-icons/react";
+import { TrashIcon, UserIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
-import type { Address } from "viem";
 import { Avatar, AvatarFallback } from "@/src/lib/components/ui/avatar";
 import { Button } from "@/src/lib/components/ui/button";
 import { Input } from "@/src/lib/components/ui/input";
@@ -12,12 +11,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/src/lib/components/ui/select";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/src/lib/components/ui/tooltip";
-import { cn } from "@/src/lib/utils/utils";
 import { initialsFromName } from "@/src/routes/dashboard/_shell/connections/-components/contact-utils";
 import { useRecipientsContext } from "@/src/routes/dashboard/envelope/create/-lib/context/recipients-context";
 
@@ -33,22 +26,13 @@ function isValidEmail(email: string) {
 }
 
 export function RecipientCard({ index }: { index: number }) {
-	const { recipients, updateRecipient, removeRecipient, profileByEmail } =
-		useRecipientsContext();
+	const { recipients, updateRecipient, removeRecipient } = useRecipientsContext();
 	const recipient = recipients?.[index];
 
 	if (!recipient) return null;
 
-	const normalizedInput = recipient.email.trim().toLowerCase();
-	const profile =
-		normalizedInput && isValidEmail(normalizedInput)
-			? profileByEmail.get(normalizedInput)
-			: undefined;
-
 	const invalidEmailSyntax =
 		recipient.email.trim().length > 0 && !isValidEmail(recipient.email.trim());
-
-	const isRegisteredOnFilosign = Boolean(profile?.walletAddress);
 
 	const showAvatarUserIcon = !recipient.name.trim() && !recipient.email.trim();
 	const avatarInitials = initialsFromName(
@@ -64,39 +48,15 @@ export function RecipientCard({ index }: { index: number }) {
 			transition={{ duration: 0.2 }}
 		>
 			<div className="flex items-start gap-3 p-4">
-				<div className="relative shrink-0">
-					<Avatar className="size-9 border border-border/50">
-						<AvatarFallback className="bg-muted/30 text-xs font-medium text-muted-foreground">
-							{showAvatarUserIcon ? (
-								<UserIcon className="size-4" />
-							) : (
-								avatarInitials
-							)}
-						</AvatarFallback>
-					</Avatar>
-					{isRegisteredOnFilosign ? (
-						<Tooltip>
-							<TooltipTrigger
-								render={
-									<button
-										type="button"
-										className={cn(
-											"absolute -bottom-1.5 -right-1 flex size-5 items-center justify-center rounded-full border border-emerald-500/25 bg-background text-emerald-600/90 shadow-sm transition-colors hover:bg-muted/50",
-										)}
-										aria-label="Filosign user"
-									/>
-								}
-							>
-								<CheckIcon className="size-3" weight="bold" aria-hidden />
-							</TooltipTrigger>
-							<TooltipContent side="top">
-								{profile?.walletAddress
-									? `Wallet: ${(profile.walletAddress as Address).slice(0, 6)}…`
-									: "Filosign user"}
-							</TooltipContent>
-						</Tooltip>
-					) : null}
-				</div>
+				<Avatar className="size-9 shrink-0 border border-border/50">
+					<AvatarFallback className="bg-muted/30 text-xs font-medium text-muted-foreground">
+						{showAvatarUserIcon ? (
+							<UserIcon className="size-4" />
+						) : (
+							avatarInitials
+						)}
+					</AvatarFallback>
+				</Avatar>
 
 				<div className="min-w-0 flex-1 space-y-3">
 					<div className="grid gap-3 sm:grid-cols-2">

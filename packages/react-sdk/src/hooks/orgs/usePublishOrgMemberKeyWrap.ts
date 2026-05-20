@@ -72,10 +72,7 @@ export function usePublishOrgMemberKeyWrap() {
 		},
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({
-				queryKey: ["filosign", "orgs"],
-			});
-			await queryClient.invalidateQueries({
-				queryKey: rpcQuery.orgs.listMine.key(),
+				queryKey: rpcQuery.orgs.key(),
 			});
 		},
 	});

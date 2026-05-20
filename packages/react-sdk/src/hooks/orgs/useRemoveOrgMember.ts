@@ -11,7 +11,7 @@ export function useRemoveOrgMember() {
 			return rpcQuery.orgs.members.remove.call(args);
 		},
 		onSuccess: async () => {
-			await queryClient.invalidateQueries({ queryKey: ["filosign", "orgs"] });
+			await queryClient.invalidateQueries({ queryKey: rpcQuery.orgs.key() });
 		},
 	});
 }

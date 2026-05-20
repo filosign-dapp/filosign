@@ -14,7 +14,7 @@ export function useAcceptOrgInvite() {
 		},
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({
-				queryKey: ["filosign", "orgs"],
+				queryKey: rpcQuery.orgs.key(),
 			});
 			await queryClient.invalidateQueries({
 				queryKey: rpcQuery.orgs.listMine.key(),

@@ -8,7 +8,6 @@ import "./interfaces/IFSManager.sol";
 import "./libraries/FSSignatureValidation.sol";
 
 contract FSFileRegistry is EIP712 {
-
     uint256 constant SIGNATURE_VALIDITY_PERIOD = 2 minutes;
 
     struct FileRegistration {
@@ -58,7 +57,7 @@ contract FSFileRegistry is EIP712 {
     IFSManager public immutable manager;
 
     modifier onlyServer() {
-        if (msg.sender != manager.server()) revert OnlyServer();
+        if (!manager.isServer(msg.sender)) revert OnlyServer();
         _;
     }
 
@@ -259,7 +258,8 @@ contract FSFileRegistry is EIP712 {
         bytes32 placementCommitment_
     ) public view returns (bool) {
         require(
-            block.timestamp <= timestamp_ + SIGNATURE_VALIDITY_PERIOD,
+            timestamp_ <= block.timestamp + SIGNATURE_VALIDITY_PERIOD &&
+                block.timestamp <= timestamp_ + SIGNATURE_VALIDITY_PERIOD,
             SignatureExpired()
         );
 
@@ -309,7 +309,8 @@ contract FSFileRegistry is EIP712 {
         uint8 leafSchemaVersion_
     ) public view returns (bool) {
         require(
-            block.timestamp <= timestamp_ + SIGNATURE_VALIDITY_PERIOD,
+            timestamp_ <= block.timestamp + SIGNATURE_VALIDITY_PERIOD &&
+                block.timestamp <= timestamp_ + SIGNATURE_VALIDITY_PERIOD,
             SignatureExpired()
         );
 
@@ -350,7 +351,8 @@ contract FSFileRegistry is EIP712 {
         bytes calldata signature_
     ) public view returns (bool) {
         require(
-            block.timestamp <= timestamp_ + SIGNATURE_VALIDITY_PERIOD,
+            timestamp_ <= block.timestamp + SIGNATURE_VALIDITY_PERIOD &&
+                block.timestamp <= timestamp_ + SIGNATURE_VALIDITY_PERIOD,
             SignatureExpired()
         );
         FileRegistration storage file = _fileRegistrations[

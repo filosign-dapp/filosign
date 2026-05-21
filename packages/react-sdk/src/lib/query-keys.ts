@@ -19,6 +19,7 @@ export const filosignQueryRoots = {
 	users: [...FILOSIGN_RPC_ROOT, "users"] as const,
 	orgs: [...FILOSIGN_RPC_ROOT, "orgs"] as const,
 	billing: [...FILOSIGN_RPC_ROOT, "billing"] as const,
+	payments: [...FILOSIGN_RPC_ROOT, "payments"] as const,
 } as const;
 
 /** First segment of non-oRPC keys (for `refetchQueries` predicates). */

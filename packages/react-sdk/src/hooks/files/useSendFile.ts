@@ -23,6 +23,10 @@ import type { Address, Hex } from "viem";
 import z from "zod";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { invalidateEntitlements } from "../../lib/invalidate-entitlements";
+import {
+	type PaymentRuleDraft,
+	registerPaymentRulesOnChain,
+} from "../../lib/payment-rules.ts";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import { calculatePieceCid } from "../../utils/piece.ts";
 import { useUserProfile } from "../users";
@@ -52,6 +56,8 @@ export function useSendFile() {
 			/** When set, send as organization (requires X-Org-Id on session). */
 			organizationId?: string;
 			orgEncryptionPublicKey?: Hex;
+			/** On-chain payment rules (register + approve before files.register). */
+			paymentRules?: PaymentRuleDraft[];
 		}) => {
 			const {
 				signers,
@@ -63,6 +69,7 @@ export function useSendFile() {
 				viewerEmails,
 				organizationId,
 				orgEncryptionPublicKey,
+				paymentRules = [],
 			} = args;
 			const timestamp = Math.floor(Date.now() / 1000);
 
@@ -285,6 +292,17 @@ export function useSendFile() {
 					}
 				: undefined;
 
+			const paymentRuleRecords =
+				paymentRules.length > 0
+					? await registerPaymentRulesOnChain({
+							wallet,
+							contracts,
+							payer: wallet.account.address,
+							cidIdentifier,
+							rules: paymentRules,
+						})
+					: [];
+
 			const requestPayload = {
 				pieceCid: pieceCid.toString(),
 				participants: participants,
@@ -302,6 +320,9 @@ export function useSendFile() {
 						}
 					: {}),
 				...(coldInviteRows.length > 0 ? { coldInvites: coldInviteRows } : {}),
+				...(paymentRuleRecords.length > 0
+					? { paymentRules: paymentRuleRecords }
+					: {}),
 			};
 
 			await rpcQuery.files.register.call(

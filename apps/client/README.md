@@ -35,7 +35,7 @@ From repo root (see [SCRIPTS.md](../../SCRIPTS.md)):
 **HTTP exceptions** (allowed `fetch` outside oRPC):
 
 - Document bytes for send flow: [`send-envelope.ts`](src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope.ts)
-- Static assets for compliance PDF: [`compliance-pdf-images.ts`](src/lib/utils/compliance-pdf/compliance-pdf-images.ts)
+- Static assets for compliance PDF: [`compliance-pdf-images.ts`](src/lib/domains/files/compliance-pdf/compliance-pdf-images.ts)
 - **PUT** to `storage.presignPut` URLs (no API body proxy)
 
 ---
@@ -100,7 +100,7 @@ lib/
     invites/           # cold invite, share dialog
     entitlements/      # plan hints, upgrade dialog
     sharing/           # add-recipient dialog
-  utils/               # cn, safe, logger, compliance-pdf builders, …
+  utils/               # cn, safe, logger, …
 ```
 
 **Import style:** `@/src/lib/web3/hooks/use-thirdweb-login`, `@/src/lib/domains/files/hooks/use-file-infos-by-piece-cids`.

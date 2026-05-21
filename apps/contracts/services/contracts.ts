@@ -49,6 +49,11 @@ export type FilosignContracts<T extends Wallet = Wallet> = {
 			: Address
 	>;
 } & {
+	FSPaymentValidator?: GetContractReturnType<
+		readonly unknown[],
+		FilosignKeyedContractClient,
+		Address
+	>;
 	$client: T;
 };
 
@@ -76,10 +81,14 @@ export function getContracts<T extends Wallet>(options: {
 		);
 	}
 
-	const contractDefinitions = getDefinitionsEntry(chainKey);
+	const contractDefinitions = getDefinitionsEntry(
+		chainKey,
+	) as ChainDefinitionsEntry & {
+		FSPaymentValidator?: { address: Address; abi: readonly unknown[] };
+	};
 	const bundledClient = getKeyedClient(client, chainKey);
 
-	return {
+	const contracts = {
 		FSManager: getContract({
 			client: bundledClient,
 			...contractDefinitions.FSManager,
@@ -94,4 +103,19 @@ export function getContracts<T extends Wallet>(options: {
 		}),
 		$client: client,
 	} as FilosignContracts<T>;
+
+	if (contractDefinitions.FSPaymentValidator) {
+		(
+			contracts as FilosignContracts<T> & {
+				FSPaymentValidator: NonNullable<
+					FilosignContracts<T>["FSPaymentValidator"]
+				>;
+			}
+		).FSPaymentValidator = getContract({
+			client: bundledClient,
+			...contractDefinitions.FSPaymentValidator,
+		}) as NonNullable<FilosignContracts<T>["FSPaymentValidator"]>;
+	}
+
+	return contracts;
 }

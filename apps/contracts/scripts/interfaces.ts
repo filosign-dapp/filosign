@@ -62,6 +62,12 @@ interface StructDefinition {
 	members?: StructMember[];
 }
 
+interface EnumDefinition {
+	type: string;
+	name: string;
+	members?: { name: string }[];
+}
+
 interface ErrorDefinition {
 	type: string;
 	name: string;
@@ -86,6 +92,7 @@ interface ContractDefinition {
 	kind: string;
 	subNodes?: (
 		| StructDefinition
+		| EnumDefinition
 		| FunctionDefinition
 		| EventDefinition
 		| ErrorDefinition
@@ -473,7 +480,12 @@ function generateInterfaceForContract(
 
 	if (contractNode.subNodes && Array.isArray(contractNode.subNodes)) {
 		for (const sub of contractNode.subNodes) {
-			if (sub.type === "StructDefinition") {
+			if (sub.type === "EnumDefinition") {
+				const enumDef = sub as EnumDefinition;
+				const members = enumDef.members?.map((m) => m.name).join(", ") ?? "";
+				lines.push(`    enum ${enumDef.name} { ${members} }`);
+				lines.push("");
+			} else if (sub.type === "StructDefinition") {
 				const structDef = structToDefinition(sub as StructDefinition);
 				lines.push(structDef);
 				lines.push("");

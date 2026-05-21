@@ -123,6 +123,35 @@ async function attachManagerChildren(manager: FsManagerDeployed) {
 
 type AttachedContracts = Awaited<ReturnType<typeof attachManagerChildren>>;
 
+function gelatoExecutorAddress(deployer: WalletDeployed): `0x${string}` {
+	const fromEnv = process.env.GELATO_DEDICATED_SENDER as
+		| `0x${string}`
+		| undefined;
+	if (fromEnv) return getAddress(fromEnv);
+	return deployer.account.address;
+}
+
+async function deployPaymentValidator(
+	deployer: WalletDeployed,
+	fileRegistryAddress: `0x${string}`,
+	chainId: number,
+) {
+	const executor = gelatoExecutorAddress(deployer);
+	const validator = await hre.viem.deployContract(
+		"FSPaymentValidator",
+		[fileRegistryAddress, executor, BigInt(chainId)],
+		{ client: { wallet: deployer } },
+	);
+	console.log("FSPaymentValidator deployed at:", validator.address, {
+		gelatoExecutor: executor,
+	});
+	return validator;
+}
+
+type PaymentValidatorDeployed = Awaited<
+	ReturnType<typeof deployPaymentValidator>
+>;
+
 async function deployAndFundLocalMockUsd(
 	deployer: WalletDeployed,
 	publicClient: PublicClientDeployed,
@@ -164,15 +193,24 @@ function buildDefinitionsManifest(args: {
 	manager: FsManagerDeployed;
 	fileRegistry: AttachedContracts["fileRegistry"];
 	keyRegistry: AttachedContracts["keyRegistry"];
+	paymentValidator: PaymentValidatorDeployed;
 	chainId: number;
 	mockUsd: MockUsdBundle | undefined;
 }) {
-	const { manager, fileRegistry, keyRegistry, chainId, mockUsd } = args;
+	const {
+		manager,
+		fileRegistry,
+		keyRegistry,
+		paymentValidator,
+		chainId,
+		mockUsd,
+	} = args;
 
 	return {
 		FSManager: abiFromContract(manager),
 		FSFileRegistry: abiFromContract(fileRegistry),
 		FSKeyRegistry: abiFromContract(keyRegistry),
+		FSPaymentValidator: abiFromContract(paymentValidator),
 		...(chainId === CHAIN_ID.local && mockUsd ? { MockUSDC: mockUsd } : {}),
 	} as const;
 }
@@ -223,6 +261,11 @@ async function main() {
 	const manager = await deployFsManager(deployer);
 	const publicClient = await assertManagerBytecodeLive(manager.address);
 	const { fileRegistry, keyRegistry } = await attachManagerChildren(manager);
+	const paymentValidator = await deployPaymentValidator(
+		deployer,
+		fileRegistry.address,
+		chainId,
+	);
 
 	let mockUsd: MockUsdBundle | undefined;
 	if (chainId === CHAIN_ID.local) {
@@ -238,6 +281,7 @@ async function main() {
 			manager,
 			fileRegistry,
 			keyRegistry,
+			paymentValidator,
 			chainId,
 			mockUsd,
 		}),

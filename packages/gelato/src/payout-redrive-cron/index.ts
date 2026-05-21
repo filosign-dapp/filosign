@@ -3,8 +3,9 @@ import {
 	Web3Function,
 	type Web3FunctionContext,
 } from "@gelatonetwork/web3-functions-sdk";
-import { type Address, encodeFunctionData } from "viem";
-import { validatorAbi } from "../lib/validator-abi";
+import { type Abi, type Address, encodeFunctionData } from "viem";
+import { validatorAbi } from "../lib/contract-abis";
+import { payerCanFundPayout } from "../lib/payout-preflight";
 import {
 	type FilosignWebhookUserArgs,
 	registerPayoutWebhooks,
@@ -62,12 +63,13 @@ Web3Function.onRun(async (context: Web3FunctionContext) => {
 		const ruleId = BigInt(rule.onChainRuleId);
 		const canRun: boolean = await validator.canExecute(ruleId);
 		if (!canRun) continue;
+		if (!(await payerCanFundPayout(validator, ruleId))) continue;
 
 		await storage.set("pendingOnChainRuleId", rule.onChainRuleId);
 		await storage.set("pendingCidId", rule.cidId);
 
 		const data = encodeFunctionData({
-			abi: validatorAbi,
+			abi: validatorAbi as Abi,
 			functionName: "executePayout",
 			args: [ruleId],
 		});

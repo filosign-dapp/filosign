@@ -40,6 +40,10 @@ import {
 	rpcOrgsUpdateOutputSchema,
 } from "./orgs-output";
 import {
+	rpcPaymentsListByFileOutputSchema,
+	rpcPaymentsRequestRetryOutputSchema,
+} from "./payments-output";
+import {
 	rpcSharingAcceptRequestOutputSchema,
 	rpcSharingApproveOutputSchema,
 	rpcSharingCancelRequestOutputSchema,
@@ -141,6 +145,10 @@ export const rpcOut = {
 		template: rpcOrgsTemplateOutputSchema,
 		templatesList: rpcOrgsTemplatesListOutputSchema,
 		templatesClone: rpcOrgsTemplatesCloneOutputSchema,
+	},
+	payments: {
+		listByFile: rpcPaymentsListByFileOutputSchema,
+		requestRetry: rpcPaymentsRequestRetryOutputSchema,
 	},
 	users: {
 		register: rpcUserRegisterOutputSchema,

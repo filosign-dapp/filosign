@@ -1,4 +1,8 @@
-import type { ComplianceBundle } from "@filosign/shared";
+import type {
+	ComplianceBundle,
+	PaymentReleaseType,
+	PaymentRuleStatus,
+} from "@filosign/shared";
 import {
 	completionsMerkleProofsV1,
 	FILE_ACK_COLD_CLAIM_SENTINEL_V1,
@@ -17,7 +21,7 @@ import type { ComplianceLoadContext } from "./load-context";
 import { receiptMeta } from "./receipt-meta";
 import { displayNameFromUser, roleOrder, type TxDraft } from "./types";
 
-const { FSFileRegistry, FSManager } = fsContracts;
+const { FSFileRegistry, FSManager, FSPaymentValidator } = fsContracts;
 
 export async function assembleComplianceBundle(
 	ctx: ComplianceLoadContext,
@@ -37,6 +41,7 @@ export async function assembleComplianceBundle(
 		executionStatus,
 		exportedAtIso,
 		senderNorm,
+		paymentRows,
 	} = ctx;
 
 	const signerParticipants = participantRows.filter((p) => p.role === "signer");
@@ -177,6 +182,21 @@ export async function assembleComplianceBundle(
 		});
 	}
 
+	const validatorAddr = FSPaymentValidator?.address
+		? getAddress(FSPaymentValidator.address)
+		: null;
+
+	for (const pay of paymentRows) {
+		if (!pay.payoutTxHash || !validatorAddr) continue;
+		txDrafts.push({
+			kind: "payout_executed",
+			txHash: pay.payoutTxHash,
+			contractAddress: validatorAddr,
+			summary: `executePayout — rule ${pay.onChainRuleId.toString()} to ${getAddress(pay.recipientWallet)}`,
+			relatedAddresses: [senderNorm, getAddress(pay.recipientWallet)],
+		});
+	}
+
 	const seenApprovalTx = new Set<string>();
 	for (const row of approvalRows) {
 		const h = row.txHash.toLowerCase();
@@ -264,8 +284,22 @@ export async function assembleComplianceBundle(
 		});
 	}
 
+	const payments: ComplianceBundle["payments"] = paymentRows.map((pay) => ({
+		onChainRuleId: pay.onChainRuleId.toString(),
+		recipientWallet: getAddress(pay.recipientWallet),
+		tokenAddress: getAddress(pay.tokenAddress),
+		amount: pay.amount,
+		releaseType: pay.releaseType as PaymentReleaseType,
+		status: pay.status as PaymentRuleStatus,
+		registerRuleTxHash: pay.registerRuleTxHash,
+		approveTxHash: pay.approveTxHash,
+		payoutTxHash: pay.payoutTxHash,
+		executedAtIso: pay.executedAt?.toISOString() ?? null,
+		lastError: pay.lastError,
+	}));
+
 	return {
-		version: 2,
+		version: 3,
 		pieceCid,
 		chainId,
 		exportedAtIso,
@@ -281,6 +315,7 @@ export async function assembleComplianceBundle(
 		onchainRegistration,
 		transactions,
 		signers,
+		payments,
 		offChainEvidence: { acknowledgements },
 	};
 }

@@ -16,6 +16,10 @@ import {
 	metricsSenderUsage,
 } from "@/api/handlers/metrics-handlers";
 import * as orgsHandlers from "@/api/handlers/orgs";
+import {
+	paymentsListByFile,
+	paymentsRequestRetry,
+} from "@/api/handlers/payments";
 import * as sharingHandlers from "@/api/handlers/sharing";
 import {
 	storagePresignPut,
@@ -67,6 +71,20 @@ export const appRouter = {
 		logout: publicProcedure
 			.output(out.auth.logout)
 			.handler(({ context }) => authLogout(context)),
+	},
+	payments: {
+		listByFile: authenticatedProcedure
+			.input(z.object({ pieceCid: z.string().min(1) }))
+			.output(out.payments.listByFile)
+			.handler(({ context, input }) =>
+				paymentsListByFile(context.userWallet, input.pieceCid),
+			),
+		requestRetry: authenticatedProcedure
+			.input(z.object({ onChainRuleId: z.string().regex(/^\d+$/) }))
+			.output(out.payments.requestRetry)
+			.handler(({ context, input }) =>
+				paymentsRequestRetry(context.userWallet, input.onChainRuleId),
+			),
 	},
 	tx: {
 		processIndexerHash: authenticatedProcedure

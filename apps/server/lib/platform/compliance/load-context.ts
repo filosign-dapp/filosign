@@ -10,6 +10,7 @@ import {
 	fileSignerDrafts,
 	files,
 } from "@/lib/platform/db/schema/file";
+import { filePaymentRules } from "@/lib/platform/db/schema/payments";
 import { shareApprovals } from "@/lib/platform/db/schema/sharing";
 import { users } from "@/lib/platform/db/schema/user";
 import { fsContracts } from "@/lib/platform/evm";
@@ -58,6 +59,19 @@ export type ComplianceLoadContext = {
 	executionStatus: "fully_executed" | "partially_executed";
 	exportedAtIso: string;
 	senderNorm: Address;
+	paymentRows: {
+		onChainRuleId: bigint;
+		recipientWallet: Address;
+		tokenAddress: Address;
+		amount: string;
+		releaseType: string;
+		status: string;
+		registerRuleTxHash: Hex;
+		approveTxHash: Hex;
+		payoutTxHash: Hex | null;
+		executedAt: Date | null;
+		lastError: string | null;
+	}[];
 };
 
 export async function loadComplianceContext(args: {
@@ -230,6 +244,37 @@ export async function loadComplianceContext(args: {
 		}
 	}
 
+	const paymentRowsRaw = await database
+		.select({
+			onChainRuleId: filePaymentRules.onChainRuleId,
+			recipientWallet: filePaymentRules.recipientWallet,
+			tokenAddress: filePaymentRules.tokenAddress,
+			amount: filePaymentRules.amount,
+			releaseType: filePaymentRules.releaseType,
+			status: filePaymentRules.status,
+			registerRuleTxHash: filePaymentRules.registerRuleTxHash,
+			approveTxHash: filePaymentRules.approveTxHash,
+			payoutTxHash: filePaymentRules.payoutTxHash,
+			executedAt: filePaymentRules.executedAt,
+			lastError: filePaymentRules.lastError,
+		})
+		.from(filePaymentRules)
+		.where(eq(filePaymentRules.pieceCid, pieceCid));
+
+	const paymentRows = paymentRowsRaw.map((r) => ({
+		onChainRuleId: r.onChainRuleId,
+		recipientWallet: getAddress(r.recipientWallet),
+		tokenAddress: getAddress(r.tokenAddress),
+		amount: r.amount,
+		releaseType: r.releaseType,
+		status: r.status,
+		registerRuleTxHash: r.registerRuleTxHash as Hex,
+		approveTxHash: r.approveTxHash as Hex,
+		payoutTxHash: r.payoutTxHash ? (r.payoutTxHash as Hex) : null,
+		executedAt: r.executedAt,
+		lastError: r.lastError,
+	}));
+
 	return {
 		pieceCid,
 		participantRows,
@@ -257,5 +302,6 @@ export async function loadComplianceContext(args: {
 		executionStatus,
 		exportedAtIso,
 		senderNorm,
+		paymentRows,
 	};
 }

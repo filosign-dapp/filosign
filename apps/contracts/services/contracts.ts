@@ -11,6 +11,7 @@ import {
 	type Chain as ViemChain,
 	type WalletClient,
 } from "viem";
+import { base, baseSepolia, hardhat } from "viem/chains";
 import {
 	type ChainDefinitionsEntry,
 	type ChainKey,
@@ -18,6 +19,12 @@ import {
 } from "../definitions/index";
 
 export type { ChainKey } from "../definitions/index";
+
+const VIEM_CHAIN_BY_KEY = {
+	local: hardhat,
+	testnet: baseSepolia,
+	mainnet: base,
+} as const satisfies Record<ChainKey, ViemChain>;
 
 type Wallet = WalletClient<Transport, ViemChain, Account>;
 
@@ -45,11 +52,14 @@ export type FilosignContracts<T extends Wallet = Wallet> = {
 	$client: T;
 };
 
-function getKeyedClient<T extends Client | WalletClient>(client: T) {
+/** Public reads use `chainKey` (server runtime), not wagmi's active chain (may be stale Hardhat). */
+function getKeyedClient<T extends Client | WalletClient>(
+	client: T,
+	chainKey: ChainKey,
+) {
+	const chain = VIEM_CHAIN_BY_KEY[chainKey];
 	return {
-		public: createPublicClient({
-			transport: http(client.chain?.rpcUrls.default.http[0]),
-		}),
+		public: createPublicClient({ chain, transport: http() }),
 		wallet: client,
 	} as FilosignKeyedContractClient;
 }
@@ -67,7 +77,7 @@ export function getContracts<T extends Wallet>(options: {
 	}
 
 	const contractDefinitions = getDefinitionsEntry(chainKey);
-	const bundledClient = getKeyedClient(client);
+	const bundledClient = getKeyedClient(client, chainKey);
 
 	return {
 		FSManager: getContract({

@@ -1,4 +1,4 @@
-import { jsonStringify } from "@filosign/crypto-utils/node";
+import { jsonStringify } from "@filosign/crypto-utils";
 import type { Address } from "viem";
 import type z from "zod";
 import { zFileData } from "./file-data";

@@ -50,11 +50,7 @@ export function buildAboutThisRecordLines(
 	return [
 		{ text: scope, textStyle: "lead" },
 		{ text: "" },
-		{
-			text: "How to use this record",
-			textStyle: "listHeading",
-			pageBreakBefore: true,
-		},
+		{ text: "How to use this record", textStyle: "listHeading" },
 		{
 			text: "1. Bundle hash — Treat the bundle hash (in the key identifiers table) as the fingerprint of the canonical JSON snapshot. Any change to the JSON changes the hash.",
 			textStyle: "body",

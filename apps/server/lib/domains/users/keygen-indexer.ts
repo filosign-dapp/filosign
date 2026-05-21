@@ -1,7 +1,6 @@
 import { eq, type InferInsertModel } from "drizzle-orm";
 import { isHex } from "viem";
 import { materializePendingInvitesForEmail } from "@/lib/domains/sharing";
-import { syncSenderApprovalsFromChainForWallet } from "@/lib/domains/sharing/sync-chain-approvals";
 import db from "@/lib/platform/db";
 import { users } from "@/lib/platform/db/schema/user";
 import { fsContracts } from "@/lib/platform/evm";
@@ -73,15 +72,5 @@ export async function handleKeygenDataRegisteredFromIndexer(
 				inviteRes.error,
 			);
 		}
-	}
-
-	const syncRes = await tryCatch(
-		syncSenderApprovalsFromChainForWallet(log.args.user),
-	);
-	if (syncRes.error) {
-		console.error(
-			"syncSenderApprovalsFromChainForWallet after registration:",
-			syncRes.error,
-		);
 	}
 }

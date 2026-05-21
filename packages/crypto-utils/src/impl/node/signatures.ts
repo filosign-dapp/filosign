@@ -1,16 +1,17 @@
+import { toBytes } from "viem";
 import { DILITHIUM_KIND } from "../../constants";
 import type { DilithiumInstance } from "../../dilithium-instance";
 import * as fsHash from "./hash";
-import { toBytes } from "./utils";
+import { loadNodeDilithium } from "./load-dilithium";
 
 const dilithiumKind = DILITHIUM_KIND;
 export type DL = DilithiumInstance;
 
-export async function dilithiumInstance(): Promise<DilithiumInstance> {
-	const mod = (await import("dilithium-crystals-js")) as unknown as {
-		default: Promise<DilithiumInstance>;
-	};
-	return mod.default;
+let dilithiumReady: Promise<DilithiumInstance> | undefined;
+
+export function dilithiumInstance(): Promise<DilithiumInstance> {
+	if (!dilithiumReady) dilithiumReady = loadNodeDilithium();
+	return dilithiumReady;
 }
 
 export async function keyGen(args: { dl: DL; seed: Uint8Array }) {

@@ -12,8 +12,9 @@ import {
 	toHex,
 	type WalletClient,
 } from "viem";
+import type { DilithiumInstance } from "../../dilithium-instance";
+import * as dilithiumSig from "../browser/signatures";
 import * as KEM from "./KEM";
-import * as signatures from "./signatures";
 
 export { toBytes, toHex };
 
@@ -95,7 +96,7 @@ export function computeCommitment(
 export async function walletKeyGen(
 	wallet: Wallet,
 	args: {
-		dl: signatures.DL;
+		dl: DilithiumInstance;
 		salts?: {
 			challenge: Hex;
 			seed: Hex;
@@ -117,7 +118,7 @@ export async function walletKeyGen(
 	const seed = await expandDeterministicSeed(seedCore32);
 
 	const kemKeypair = await KEM.keyGen({ seed });
-	const sigKeypair = await signatures.keyGen({ seed, dl });
+	const sigKeypair = await dilithiumSig.keyGen({ seed, dl });
 
 	const commitmentKem = computeCommitment([kemKeypair.publicKey.toString()]);
 	const commitmentSig = computeCommitment([sigKeypair.publicKey.toString()]);
@@ -179,10 +180,10 @@ export async function expandDeterministicSeed(seedCore32: Uint8Array) {
 
 export async function seedKeyGen(
 	seed: Uint8Array<ArrayBuffer>,
-	args: { dl: signatures.DL },
+	args: { dl: DilithiumInstance },
 ) {
 	const kemKeypair = await KEM.keyGen({ seed });
-	const sigKeypair = await signatures.keyGen({ seed, dl: args.dl });
+	const sigKeypair = await dilithiumSig.keyGen({ seed, dl: args.dl });
 
 	const commitmentKem = computeCommitment([kemKeypair.publicKey.toString()]);
 	const commitmentSig = computeCommitment([sigKeypair.publicKey.toString()]);

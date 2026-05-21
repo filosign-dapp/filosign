@@ -1,4 +1,4 @@
-import { jsonStringify } from "@filosign/crypto-utils/node";
+import { jsonStringify } from "@filosign/crypto-utils";
 import type { Hex } from "viem";
 import { keccak256, stringToBytes } from "viem";
 import z from "zod";

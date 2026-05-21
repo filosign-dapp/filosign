@@ -150,7 +150,7 @@ index a4f192eb2d607840810250073783106bd8ab3683..943fd2b77334799bfff5bfa35f3bd9c3
 +  locateFile: (f) => f.endsWith(".wasm") ? "dilithium.wasm" : f,
  });
  
- module.exports = dilithiumModule.then((dilithium) => ({
+ module.exports = Promise.resolve(dilithiumModule).then((dilithium) => ({
    generateKeys: (kind, seed) => generateKeys(dilithium, kind, seed),
 -  sign: (message, privateKey, kind) =>
 -    sign(dilithium, message, privateKey, kind),

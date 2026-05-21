@@ -1,7 +1,7 @@
+import { toBytes } from "viem";
 import { DILITHIUM_KIND } from "../../constants";
 import type { DilithiumInstance } from "../../dilithium-instance";
 import * as fsHash from "../node/hash";
-import { toBytes } from "../node/utils";
 
 const dilithiumKind = DILITHIUM_KIND;
 

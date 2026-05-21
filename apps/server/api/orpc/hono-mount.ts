@@ -5,6 +5,7 @@ import { RPCHandler } from "@orpc/server/fetch";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import type { Context, Next } from "hono";
 import { Hono } from "hono";
+import { integrationsRouter } from "@/api/integrations";
 import type { ApiRouterVariables } from "@/api/orpc/context";
 import { optionalJwtWalletForOrpc } from "@/api/orpc/orpc-auth";
 import env from "@/env";
@@ -96,7 +97,8 @@ export async function orpcHybridMiddleware(c: Context, next: Next) {
 	return next();
 }
 
-/** Hono `/api` mount: optional JWT + oRPC/OpenAPI hybrid handler. */
+/** Hono `/api` mount: integrations (no JWT), then optional JWT + oRPC/OpenAPI. */
 export const apiRouter = new Hono<{ Variables: ApiRouterVariables }>()
+	.route("/", integrationsRouter)
 	.use("*", optionalJwtWalletForOrpc)
 	.use("*", orpcHybridMiddleware);

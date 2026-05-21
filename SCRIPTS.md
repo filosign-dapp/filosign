@@ -84,7 +84,7 @@ Flags: `--client`, `--astro`, `--server`, `--harness` (`--test`), `--contracts`,
 
 ## `db`
 
-`push` + `local|testnet` — drizzle push only.
+`push` + `local|testnet` — drizzle push only (includes `file_payment_rules` and other server schema).
 
 `purge` + `local|testnet` — clear schema (`db:purge:*`), then **push** automatically.
 

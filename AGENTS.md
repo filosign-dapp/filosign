@@ -12,6 +12,7 @@ Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-pack
 | `apps/contracts`        | [README](apps/contracts/README.md) · [TESTING](apps/contracts/TESTING.md) | Solidity, `definitions/`, EIP-712; tests in `test/`          |
 | `apps/astro`            | [README](apps/astro/README.md)                                            | Marketing                                                    |
 | `packages/react-sdk`    | [README](packages/react-sdk/README.md)                                    | `FilosignProvider`, typed `rpc`, `rpcQuery`, hooks           |
+| `packages/gelato`       | [README](packages/gelato/README.md)                                       | Gelato Web3 Functions (`executePayout`, redrive cron)        |
 | `packages/shared`       | [AGENTS.md](packages/shared/AGENTS.md)                                    | Types, Zod, manifests (browser+server)                       |
 | `packages/auth`         | [README](packages/auth/README.md)                                         | JWT, refresh cookies, Dragonfly/Postgres auth store        |
 | `packages/entitlements` | —                                                                         | Plan catalog + pure evaluator (no DB; server wires later)    |
@@ -41,14 +42,15 @@ Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).
 
 ## Boundaries
 
-- **HTTP (client):** `useFilosignContext().rpc` + `@filosign/react` hooks only. No `fetch`/axios to JSON API except: blob/doc bytes ([send-envelope.ts](apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope.ts)), static assets ([compliance-pdf-images.ts](apps/client/src/lib/features/compliance-pdf/compliance-pdf-images.ts)), **PUT to `storage.presignPut` URLs** (no API body proxy).
+- **HTTP (client):** `useFilosignContext().rpc` + `@filosign/react` hooks only. No `fetch`/axios to JSON API except: blob/doc bytes ([send-envelope.ts](apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope.ts)), static assets ([compliance-pdf-images.ts](apps/client/src/lib/domains/files/compliance-pdf/compliance-pdf-images.ts)), **PUT to `storage.presignPut` URLs** (no API body proxy).
+- **Payments:** Server never custodies USDC. Client registers rules + `approve` on-chain; Gelato calls `FSPaymentValidator.executePayout`; server indexes `file_payment_rules` + webhooks only (`payments.listByFile`, `payments.requestRetry`).
 - **Logic:** UI `apps/client` | hooks/SDK `packages/react-sdk` | API/DB/relay `apps/server`.
 - **Imports:** Client uses minimal `@filosign/contracts` ([constants](apps/client/src/constants.ts)); prefer SDK/runtime for new code.
 - **Definitions:** Never hand-edit `apps/contracts/definitions/`. Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy).
 
 ## API & oRPC
 
-Mount: [`api/orpc/hono-mount.ts`](apps/server/api/orpc/hono-mount.ts) (`apiRouter`) — `optionalJwtWalletForOrpc` + hybrid middleware; **JSON API = `/api/rpc`** only ([`router.ts`](apps/server/api/orpc/router.ts) `appRouter`, [handlers](apps/server/api/handlers/)). Domain logic: [`lib/domains/`](apps/server/lib/domains/). Runtime loader: [`lib/domains/runtime`](apps/server/lib/domains/runtime/); shared infra: [`lib/platform/`](apps/server/lib/platform/). Config: [`config.ts`](apps/server/config.ts). Detail: [api-routes.mdc](.cursor/rules/apps/web/api-routes.mdc).
+Mount: [`api/orpc/hono-mount.ts`](apps/server/api/orpc/hono-mount.ts) (`apiRouter`) — [`api/integrations/`](apps/server/api/integrations/) (secret-gated webhooks, no JWT) **then** `optionalJwtWalletForOrpc` + hybrid middleware; **JSON API = `/api/rpc`** only ([`router.ts`](apps/server/api/orpc/router.ts) `appRouter`, [handlers](apps/server/api/handlers/)). Domain logic: [`lib/domains/`](apps/server/lib/domains/). Runtime loader: [`lib/domains/runtime`](apps/server/lib/domains/runtime/); shared infra: [`lib/platform/`](apps/server/lib/platform/). Config: [`config.ts`](apps/server/config.ts). Detail: [api-routes.mdc](.cursor/rules/apps/web/api-routes.mdc).
 
 - **Outputs:** Concrete Zod `.output` per procedure in `[api/orpc/schemas/](apps/server/api/orpc/schemas/)` (not `z.unknown()`).
 - `**createORPCClient` is a Proxy** — never put `rpc` in TanStack `queryKey`/deep-stringified payloads (use primitives); `JSON.stringify` can hit `toJSON` → bogus RPC.
@@ -60,10 +62,11 @@ Mount: [`api/orpc/hono-mount.ts`](apps/server/api/orpc/hono-mount.ts) (`apiRoute
 ## Vertical slice
 
 1. Contracts `src` → compile → tests ([TESTING.md](apps/contracts/TESTING.md)) aligned in same PR.
-2. Server: oRPC `api/orpc/` + handlers + thin routes + `fsContracts`.
-3. SDK: hooks + `useFilosignContext()`.
-4. Client: UI only, `@filosign/react`.
-5. Verify: [SCRIPTS.md](SCRIPTS.md) — `check`, `test`; contract changes: `bun run sanity` (includes Hardhat) or `bun run sanity -- --fast` without Hardhat.
+2. Server: oRPC `api/orpc/` + handlers + thin routes + `fsContracts`; `file_payment_rules` schema; Gelato integration routes under `/api/integrations/gelato/`.
+3. Gelato: `packages/gelato` Web3 Functions (event + cron redrive).
+4. SDK: hooks + `useFilosignContext()` (`registerPaymentRulesOnChain`, `usePaymentsListByFile`, `usePaymentRequestRetry`).
+5. Client: UI only, `@filosign/react` (payment attachment panel, sign-page payout status).
+6. Verify: [SCRIPTS.md](SCRIPTS.md) — `check`, `test`; contract changes: `bun run sanity` (includes Hardhat) or `bun run sanity -- --fast` without Hardhat.
 
 ## Scripts & CI
 

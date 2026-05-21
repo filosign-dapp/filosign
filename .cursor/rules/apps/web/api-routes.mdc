@@ -5,7 +5,7 @@ alwaysApply: false
 
 # Filosign API routes
 
-Backend: **`apps/server`**. **`/api`** is **oRPC** on **`/api/rpc`** and **OpenAPI UI** on **`/api/api-reference`** — [`api/orpc/hono-mount.ts`](apps/server/api/orpc/hono-mount.ts) exports **`apiRouter`** (optional JWT + hybrid handler). Procedure handlers live under [`api/handlers/*`](apps/server/api/handlers/) and compose [`api/orpc/router.ts`](apps/server/api/orpc/router.ts) (`appRouter`). Business rules: [`lib/domains/*`](apps/server/lib/domains/). Infra (db, evm, s3, indexer): [`lib/platform/*`](apps/server/lib/platform/). Details in **[`AGENTS.md`](AGENTS.md)**.
+Backend: **`apps/server`**. **`/api`** mounts [`api/integrations/`](apps/server/api/integrations/) **before** JWT/oRPC middleware, then **oRPC** on **`/api/rpc`** and **OpenAPI UI** on **`/api/api-reference`** — [`api/orpc/hono-mount.ts`](apps/server/api/orpc/hono-mount.ts) exports **`apiRouter`**. **Integration webhooks** (e.g. Gelato `POST/GET /api/integrations/gelato/*`) use shared-secret headers, not oRPC. Procedure handlers live under [`api/handlers/*`](apps/server/api/handlers/) and compose [`api/orpc/router.ts`](apps/server/api/orpc/router.ts) (`appRouter`). Business rules: [`lib/domains/*`](apps/server/lib/domains/). Infra (db, evm, s3, indexer): [`lib/platform/*`](apps/server/lib/platform/). Details in **[`AGENTS.md`](AGENTS.md)**.
 
 ## Conventions
 
@@ -17,7 +17,7 @@ Backend: **`apps/server`**. **`/api`** is **oRPC** on **`/api/rpc`** and **OpenA
 
 ## TanStack Query (React SDK)
 
-- **`rpcQuery`** exposes **`createTanstackQueryUtils` per subtree** — `filosign` root + **`auth`**, **`files`**, **`sharing`**, **`storage`**, **`users`**, **`tx`**, plus leaf utils for **`healthCheck`** / **`runtime`** ([`rpc-query-utils.ts`](packages/react-sdk/src/orpc/rpc-query-utils.ts)).
+- **`rpcQuery`** exposes **`createTanstackQueryUtils` per subtree** — `filosign` root + **`auth`**, **`files`**, **`payments`**, **`sharing`**, **`storage`**, **`users`**, **`tx`**, plus leaf utils for **`healthCheck`** / **`runtime`** ([`rpc-query-utils.ts`](packages/react-sdk/src/orpc/rpc-query-utils.ts)). Invalidate a subtree with **`rpcQuery.payments.key()`** (same pattern as **`orgs`**).
 
 ## Client
 

@@ -11,7 +11,7 @@ It lets users send documents, invite recipients, collect signatures, and export 
 - Lets recipients approve who can send them documents.
 - Registers document and signature state through smart contracts.
 - Supports acknowledgements, signer records, and compliance exports.
-- Supports optional ERC-20 signer incentives for wallet-native workflows.
+- Supports optional USDC payment rules released automatically when signing conditions are met.
 - Provides a React SDK for apps that want to integrate FiloSign flows.
 
 ## Repository Structure
@@ -22,6 +22,7 @@ apps/
   server/             Hono API server
   contracts/          Solidity contracts and deployment helpers
 packages/
+  gelato/             Gelato Web3 Functions for automated payouts
   react-sdk/          React provider, API client, and hooks
   crypto-utils/       Encryption, KEM, signatures, hashing, encoding
   shared/             Shared schemas and helpers
@@ -37,7 +38,7 @@ FiloSign has five main layers:
 - **Client app:** React 19, TanStack Router, TanStack Query, thirdweb (embedded wallet + Connect UI), Wagmi, Viem, Tailwind, Radix UI, and Motion.
 - **API server:** Bun + Hono service for auth, users, files, sharing, uploads, indexing, and server-side protocol actions.
 - **React SDK:** Hooks and provider logic for authentication, file workflows, sharing approvals, signing, and profiles.
-- **Contracts:** Protocol contracts for sender approvals, key registration, file registration, signer records, and incentive escrow.
+- **Contracts:** Protocol contracts for sender approvals, key registration, file registration, signer records, and pull-based USDC payouts (`FSPaymentValidator`).
 - **Crypto/shared libraries:** ML-KEM/Kyber, Dilithium, AES-GCM, stable encoding, Zod schemas, and EVM helpers.
 
 ## Core Workflow
@@ -66,7 +67,7 @@ Solidity contracts and deployment utilities for local, testnet, and mainnet envi
 
 ### `@filosign/react`
 
-The SDK consumed by the client and test app. It wraps the API client, contract setup, TanStack Query hooks, auth, files, sharing, users, and incentives.
+The SDK consumed by the client and test app. It wraps the API client, contract setup, TanStack Query hooks, auth, files, sharing, users, and payment rules.
 
 ### `@filosign/crypto-utils`
 

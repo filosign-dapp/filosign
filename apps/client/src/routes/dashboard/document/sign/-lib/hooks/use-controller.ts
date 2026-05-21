@@ -1,3 +1,7 @@
+import {
+	usePaymentRequestRetry,
+	usePaymentsListByFile,
+} from "@filosign/react/files";
 import { useCompliancePdfExports } from "@/src/lib/domains/files/compliance-pdf/use-compliance-pdf-exports";
 import { useSignActions } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-sign-actions";
 import { useSignDraftState } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-sign-draft";
@@ -33,6 +37,9 @@ export function useSignDocument() {
 		file: file ?? null,
 		fileData: viewer.fileData,
 	});
+
+	const paymentsQuery = usePaymentsListByFile(pieceCid);
+	const paymentRequestRetry = usePaymentRequestRetry(pieceCid);
 
 	const actions = useSignActions({
 		pieceCid,
@@ -112,6 +119,16 @@ export function useSignDocument() {
 			documentRef: viewer.documentRef,
 		},
 		acknowledge: { handleAcknowledge: actions.handleAcknowledge },
+		payments: {
+			rules: paymentsQuery.data ?? [],
+			isPending: paymentsQuery.isPending,
+			retryPending: paymentRequestRetry.isPending,
+			retryingRuleId: paymentRequestRetry.isPending
+				? paymentRequestRetry.variables
+				: undefined,
+			onRetryRule: (onChainRuleId: string) =>
+				paymentRequestRetry.mutateAsync(onChainRuleId),
+		},
 	};
 }
 

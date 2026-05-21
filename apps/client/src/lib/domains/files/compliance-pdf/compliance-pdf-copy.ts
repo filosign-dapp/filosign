@@ -92,6 +92,8 @@ const TX_KIND_GLOSSARY: Record<ChainTxKind, string> = {
 		"FSManager transaction where a recipient approved the sender relationship (`approveSender`), often after reviewing the file.",
 	sender_revoked:
 		"FSManager transaction revoking a prior sender approval for a recipient (relationship update).",
+	payout_executed:
+		"FSPaymentValidator `executePayout` — USDC transferFrom sender to recipient when release conditions were met.",
 };
 
 export function buildAppendixLines(): ComplianceCopyLine[] {
@@ -193,7 +195,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 	lines.push(
 		{ text: "" },
 		{
-			text: "Appendix B — JSON field map (bundle version 2)",
+			text: "Appendix B — JSON field map (bundle version 3)",
 			textStyle: "subheading",
 		},
 		{ text: "" },
@@ -205,7 +207,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 	);
 
 	const rows: Array<[string, string]> = [
-		["version", "Schema version; must be 2 for this layout."],
+		["version", "Schema version; must be 3 for this layout."],
 		["pieceCid", "Content id for the encrypted document payload."],
 		["chainId", "EVM chain id for all on-chain references in the bundle."],
 		["exportedAtIso", "UTC timestamp when Filosign finalized this bundle."],
@@ -312,6 +314,18 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 			"Block time from the sign tx receipt when fetched.",
 		],
 		["signers[ ].approveSenderTxHash", "FSManager approval tx when present."],
+		["payments[ ]", "USDC payout rules attached at send time."],
+		["payments[ ].onChainRuleId", "FSPaymentValidator rule id."],
+		["payments[ ].recipientWallet", "Recipient address for the payout."],
+		["payments[ ].tokenAddress", "ERC-20 token (USDC)."],
+		["payments[ ].amount", "Token amount in base units."],
+		["payments[ ].releaseType", "When the payout may execute."],
+		["payments[ ].status", "Filosign-tracked payout status at export."],
+		["payments[ ].registerRuleTxHash", "On-chain registerRule transaction."],
+		["payments[ ].approveTxHash", "Sender USDC approve transaction."],
+		["payments[ ].payoutTxHash", "executePayout transaction when paid."],
+		["payments[ ].executedAtIso", "UTC time payout completed when known."],
+		["payments[ ].lastError", "Last Gelato or chain error when failed."],
 		[
 			"offChainEvidence.acknowledgements",
 			"Typed acknowledgements without txs.",

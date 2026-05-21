@@ -19,7 +19,7 @@ export const filosignInAppWalletOptions: NonNullable<InAppWalletCreationOptions>
 				height: 64,
 			},
 		},
-		executionMode: { mode: "EOA" },
+		executionMode: { mode: "EIP7702", sponsorGas: true },
 		hidePrivateKeyExport: true,
 	};
 

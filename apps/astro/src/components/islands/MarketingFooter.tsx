@@ -21,18 +21,24 @@ function getFooterSections(appUrl: string) {
 			links: [
 				{ label: "About us", href: "https://hetairoi.xyz" },
 				{ label: "Contact", href: "https://x.com/filosign" },
-				{ label: "Newsroom", href: "/blog" },
 			],
 		},
 		{
 			title: "Resources",
 			links: [
-				{ label: "Blog", href: "/blog" },
+				{ label: "Blogs", href: "/blog" },
 				{ label: "Customer center", href: appUrl },
 				{
 					label: "Open source",
 					href: "https://github.com/hetairoi-labs/filosign",
 				},
+			],
+		},
+		{
+			title: "Legal",
+			links: [
+				{ label: "Terms of Service", href: "/terms" },
+				{ label: "Privacy Policy", href: "/privacy" },
 			],
 		},
 	];

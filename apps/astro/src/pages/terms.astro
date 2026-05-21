@@ -1,0 +1,120 @@
+---
+import Footer from "../components/Footer.astro";
+import LegalDocument from "../components/LegalDocument.astro";
+import Navbar from "../components/Navbar.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+	title="Terms of Service — Filosign"
+	description="Terms of Service for Filosign document signing and optional USDC payout features."
+>
+	<div
+		class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary"
+	>
+		<Navbar />
+		<main>
+			<LegalDocument
+				title="Terms of Service"
+				description="These terms describe how Filosign provides document signing software and optional on-chain payment automation. They are not legal advice."
+				lastUpdated="May 2026"
+			>
+				<h2>1. Service</h2>
+				<p>
+					Filosign provides software for sending, signing, and verifying
+					documents. Optional features may include USDC payout rules executed via
+					public smart contracts on supported networks.
+				</p>
+
+				<h2>2. Non-custodial payments</h2>
+				<p>
+					Filosign does not hold, pool, or transmit your USDC. Payouts use a
+					pull-payment model: you register rules and approve the payment validator
+					from your own wallet; settlement is <code>transferFrom</code> from your
+					wallet to the recipient when release conditions on the document registry
+					are met.
+				</p>
+				<ul>
+					<li>
+						You control <code>registerRule</code> and token <code>approve</code>
+						transactions from your wallet.
+					</li>
+					<li>
+						Filosign does not sign payout transactions on your behalf.
+					</li>
+					<li>
+						You may revoke funding by setting token approval to zero (e.g.
+						<code>approve(validator, 0)</code>) before a payout executes.
+					</li>
+				</ul>
+
+				<h2>3. Supported product path vs direct contract use</h2>
+				<p>
+					<strong>Supported path:</strong> creating payments through the Filosign
+					app or API when sending a document. On that path, Filosign enforces
+					product rules (for example, payout recipients limited to envelope
+					participants or your organization&apos;s linked payout wallet) and may
+					index payment status for the UI and compliance exports.
+				</p>
+				<p>
+					<strong>Direct contract use:</strong> you may interact with deployed
+					contracts without the app. Filosign does not apply product policies to
+					those transactions and does not guarantee that status, indexing, or
+					automation covers rules created outside the supported path.
+				</p>
+				<p>
+					<strong
+						>Filosign does not control or screen, and hence is not responsible
+						for, all on-chain payouts.</strong
+					>
+					Execution of <code>executePayout</code> is permissionless when contract
+					conditions are met: any address (including third-party relayers such as
+					Gelato) may submit the transaction. Paying gas does not bypass signature
+					requirements enforced by the contracts.
+				</p>
+
+				<h2>4. Automation and indexing</h2>
+				<ul>
+					<li>
+						Optional Gelato Web3 Functions may relay <code>executePayout</code>
+						when conditions are met. Gelato is a third-party service; Filosign
+						configures integration parameters but does not operate Gelato
+						infrastructure.
+					</li>
+					<li>
+						Database and in-app payment status generally reflect rules submitted
+						through <code>files.register</code> after on-chain verification.
+						On-chain rules created only outside Filosign may still execute on-chain
+						but may not appear in the app.
+					</li>
+					<li>
+						Filosign does not guarantee that a payout will execute (for example,
+						insufficient balance, revoked approval, or unmet release conditions).
+					</li>
+				</ul>
+
+				<h2>5. Compliance screening</h2>
+				<p>
+					When wallet screening is enabled, it applies to the Filosign send and
+					registration path—not to every <code>registerRule</code> call on the
+					blockchain by wallets that do not use Filosign.
+				</p>
+
+				<h2>6. Assumption of risk</h2>
+				<p>
+					Smart contracts, wallets, and blockchain networks involve technical
+					risk (bugs, chain reorganizations, failed transactions). You are
+					responsible for reviewing amounts, recipients, and approvals before you
+					sign transactions.
+				</p>
+
+				<p class="text-xs text-muted-foreground pt-6">
+					Contact: <a href="https://x.com/filosign" class="underline"
+						>@filosign</a
+					>. See also our <a href="/privacy" class="underline">Privacy Policy</a>.
+				</p>
+			</LegalDocument>
+		</main>
+		<Footer />
+	</div>
+</BaseLayout>

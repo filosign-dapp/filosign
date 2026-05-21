@@ -1,0 +1,72 @@
+---
+import Footer from "../components/Footer.astro";
+import LegalDocument from "../components/LegalDocument.astro";
+import Navbar from "../components/Navbar.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+	title="Privacy Policy — Filosign"
+	description="How Filosign handles personal data for document signing and optional payment features."
+>
+	<div
+		class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary"
+	>
+		<Navbar />
+		<main>
+			<LegalDocument
+				title="Privacy Policy"
+				description="This policy describes data Filosign processes when you use our applications. It is not legal advice."
+				lastUpdated="May 2026"
+			>
+				<h2>1. What we process</h2>
+				<ul>
+					<li>
+						Account and profile data (for example email, wallet address, display
+						name) to operate signing workflows.
+					</li>
+					<li>
+						Document metadata, participant information, and encrypted document
+						content according to product design.
+					</li>
+					<li>
+						When you attach optional USDC payouts through Filosign: payout
+						amounts, token and validator addresses, on-chain rule identifiers,
+						transaction hashes, and status fields used for UI and compliance
+						exports.
+					</li>
+				</ul>
+
+				<h2>2. On-chain data</h2>
+				<p>
+					Blockchain transactions you sign (including <code>registerRule</code>
+					and <code>approve</code>) are public on the network. Filosign does not
+					control public chain data. Rules created without the Filosign app are
+					not indexed by us unless they are later associated through a supported
+					send flow.
+				</p>
+
+				<h2>3. Third parties</h2>
+				<p>
+					We may use infrastructure and service providers (hosting, email,
+					analytics, wallet authentication, and optional Gelato automation).
+					Their processing is limited to operating Filosign.
+				</p>
+
+				<h2>4. Payments disclaimer</h2>
+				<p>
+					Filosign does not control or screen all on-chain payouts. Payment
+					status shown in the product reflects our indexing of the supported send
+					path where applicable, not a complete view of all activity on public
+					contracts.
+				</p>
+
+				<p class="text-xs text-muted-foreground pt-6">
+					See our <a href="/terms" class="underline">Terms of Service</a> for
+					payment and non-custody terms.
+				</p>
+			</LegalDocument>
+		</main>
+		<Footer />
+	</div>
+</BaseLayout>

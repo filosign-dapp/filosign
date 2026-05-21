@@ -8,7 +8,6 @@ import "./interfaces/IFSManager.sol";
 import "./libraries/FSSignatureValidation.sol";
 
 contract FSKeyRegistry is EIP712 {
-
     struct KeygenData {
         bytes16 salt_pin;
         bytes16 salt_seed;
@@ -23,7 +22,7 @@ contract FSKeyRegistry is EIP712 {
     event KeygenDataRegistered(address indexed user);
 
     modifier onlyServer() {
-        if (msg.sender != manager.server()) revert InvalidServer();
+        if (!manager.isServer(msg.sender)) revert InvalidServer();
         _;
     }
 
@@ -104,6 +103,7 @@ contract FSKeyRegistry is EIP712 {
             )
         );
         bytes32 digest = _hashTypedDataV4(structHash);
-        return FSSignatureValidation.isValid(walletAddress_, digest, signature_);
+        return
+            FSSignatureValidation.isValid(walletAddress_, digest, signature_);
     }
 }

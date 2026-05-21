@@ -11,15 +11,14 @@ import "./errors/EFSManager.sol";
 import "./libraries/FSSignatureValidation.sol";
 
 contract FSManager is EIP712 {
+    address public immutable fileRegistry;
+    address public immutable keyRegistry;
 
-    address public fileRegistry;
-    address public keyRegistry;
-
-    address public immutable server;
     address public immutable treasury;
 
     uint8 public version = 2;
 
+    mapping(address => bool) public isServer;
     mapping(address => mapping(address => bool)) public approvedSenders;
     mapping(address => uint256) public approveNonce;
 
@@ -28,20 +27,35 @@ contract FSManager is EIP712 {
             "ApproveSender(address recipient,address sender,uint256 nonce,uint256 deadline)"
         );
 
+    event ServerAdded(address indexed server);
+    event ServerRemoved(address indexed server);
     event SenderApproved(address indexed recipient, address indexed sender);
     event SenderRevoked(address indexed recipient, address indexed sender);
 
     modifier onlyServer() {
-        if (msg.sender != server) revert OnlyServer();
+        if (!isServer[msg.sender]) revert OnlyServer();
         _;
     }
 
     constructor(address treasury_) EIP712("FSManager", "1") {
         if (treasury_ == address(0)) revert ZeroAddress();
-        server = msg.sender;
+        isServer[msg.sender] = true;
+        emit ServerAdded(msg.sender);
         treasury = treasury_;
         fileRegistry = address(new FSFileRegistry());
         keyRegistry = address(new FSKeyRegistry());
+    }
+
+    function addServer(address server_) external onlyServer {
+        if (server_ == address(0)) revert ZeroAddress();
+        isServer[server_] = true;
+        emit ServerAdded(server_);
+    }
+
+    function removeServer(address server_) external onlyServer {
+        if (!isServer[server_]) revert ServerNotRegistered();
+        isServer[server_] = false;
+        emit ServerRemoved(server_);
     }
 
     function setActiveVersion(uint8 version_) external onlyServer {

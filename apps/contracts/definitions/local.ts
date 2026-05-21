@@ -1367,8 +1367,382 @@ export const definitions = {
 				},
 			],
 		},
-		MockUSDC: {
+		FSPaymentValidator: {
 			address: "0xB581C9264f59BF0289fA76D61B2D0746dCE3C30D",
+			abi: [
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "fileRegistry_",
+							type: "address",
+						},
+						{
+							internalType: "uint256",
+							name: "deploymentChainId_",
+							type: "uint256",
+						},
+					],
+					stateMutability: "nonpayable",
+					type: "constructor",
+				},
+				{
+					inputs: [],
+					name: "InvalidAmount",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "InvalidPayer",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "InvalidReleaseConfig",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "ReentrancyGuardReentrantCall",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "RuleAlreadyExecuted",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "RuleNotExecutable",
+					type: "error",
+				},
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "token",
+							type: "address",
+						},
+					],
+					name: "SafeERC20FailedOperation",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "UnauthorizedRuleRegistration",
+					type: "error",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+						{
+							indexed: true,
+							internalType: "bytes32",
+							name: "cidId",
+							type: "bytes32",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "payer",
+							type: "address",
+						},
+						{
+							indexed: false,
+							internalType: "address",
+							name: "recipient",
+							type: "address",
+						},
+						{
+							indexed: false,
+							internalType: "address",
+							name: "token",
+							type: "address",
+						},
+						{
+							indexed: false,
+							internalType: "uint256",
+							name: "amount",
+							type: "uint256",
+						},
+						{
+							indexed: false,
+							internalType: "enum FSPaymentValidator.ReleaseType",
+							name: "releaseType",
+							type: "uint8",
+						},
+					],
+					name: "PaymentRuleRegistered",
+					type: "event",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+						{
+							indexed: true,
+							internalType: "bytes32",
+							name: "cidId",
+							type: "bytes32",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "recipient",
+							type: "address",
+						},
+						{
+							indexed: false,
+							internalType: "uint256",
+							name: "amount",
+							type: "uint256",
+						},
+					],
+					name: "PayoutExecuted",
+					type: "event",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					name: "canExecute",
+					outputs: [
+						{
+							internalType: "bool",
+							name: "",
+							type: "bool",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "deploymentChainId",
+					outputs: [
+						{
+							internalType: "uint256",
+							name: "",
+							type: "uint256",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					name: "executePayout",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "fileRegistry",
+					outputs: [
+						{
+							internalType: "contract IFSFileRegistry",
+							name: "",
+							type: "address",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "nextRuleId",
+					outputs: [
+						{
+							internalType: "uint256",
+							name: "",
+							type: "uint256",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "payer_",
+							type: "address",
+						},
+						{
+							internalType: "address",
+							name: "recipient_",
+							type: "address",
+						},
+						{
+							internalType: "address",
+							name: "token_",
+							type: "address",
+						},
+						{
+							internalType: "uint256",
+							name: "amount_",
+							type: "uint256",
+						},
+						{
+							internalType: "bytes32",
+							name: "cidId_",
+							type: "bytes32",
+						},
+						{
+							internalType: "enum FSPaymentValidator.ReleaseType",
+							name: "releaseType_",
+							type: "uint8",
+						},
+						{
+							internalType: "bytes32",
+							name: "specificSignerCommitment_",
+							type: "bytes32",
+						},
+						{
+							internalType: "uint8",
+							name: "thresholdN_",
+							type: "uint8",
+						},
+						{
+							internalType: "bytes32[]",
+							name: "signerCommitments_",
+							type: "bytes32[]",
+						},
+					],
+					name: "registerRule",
+					outputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "bytes32",
+							name: "cidId_",
+							type: "bytes32",
+						},
+					],
+					name: "ruleIdsForCid",
+					outputs: [
+						{
+							internalType: "uint256[]",
+							name: "",
+							type: "uint256[]",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					name: "rules",
+					outputs: [
+						{
+							internalType: "address",
+							name: "payer",
+							type: "address",
+						},
+						{
+							internalType: "address",
+							name: "recipient",
+							type: "address",
+						},
+						{
+							internalType: "address",
+							name: "token",
+							type: "address",
+						},
+						{
+							internalType: "uint256",
+							name: "amount",
+							type: "uint256",
+						},
+						{
+							internalType: "bytes32",
+							name: "cidId",
+							type: "bytes32",
+						},
+						{
+							internalType: "enum FSPaymentValidator.ReleaseType",
+							name: "releaseType",
+							type: "uint8",
+						},
+						{
+							internalType: "bytes32",
+							name: "specificSignerCommitment",
+							type: "bytes32",
+						},
+						{
+							internalType: "uint8",
+							name: "thresholdN",
+							type: "uint8",
+						},
+						{
+							internalType: "bool",
+							name: "executed",
+							type: "bool",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					name: "signerCommitments",
+					outputs: [
+						{
+							internalType: "bytes32[]",
+							name: "",
+							type: "bytes32[]",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+			],
+		},
+		MockUSDC: {
+			address: "0xC469e7aE4aD962c30c7111dc580B4adbc7E914DD",
 			abi: [
 				{
 					inputs: [

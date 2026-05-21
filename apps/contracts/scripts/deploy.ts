@@ -123,28 +123,17 @@ async function attachManagerChildren(manager: FsManagerDeployed) {
 
 type AttachedContracts = Awaited<ReturnType<typeof attachManagerChildren>>;
 
-function gelatoExecutorAddress(deployer: WalletDeployed): `0x${string}` {
-	const fromEnv = process.env.GELATO_DEDICATED_SENDER as
-		| `0x${string}`
-		| undefined;
-	if (fromEnv) return getAddress(fromEnv);
-	return deployer.account.address;
-}
-
 async function deployPaymentValidator(
 	deployer: WalletDeployed,
 	fileRegistryAddress: `0x${string}`,
 	chainId: number,
 ) {
-	const executor = gelatoExecutorAddress(deployer);
 	const validator = await hre.viem.deployContract(
 		"FSPaymentValidator",
-		[fileRegistryAddress, executor, BigInt(chainId)],
+		[fileRegistryAddress, BigInt(chainId)],
 		{ client: { wallet: deployer } },
 	);
-	console.log("FSPaymentValidator deployed at:", validator.address, {
-		gelatoExecutor: executor,
-	});
+	console.log("FSPaymentValidator deployed at:", validator.address);
 	return validator;
 }
 

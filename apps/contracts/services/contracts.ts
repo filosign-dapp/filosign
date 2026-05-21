@@ -1,4 +1,5 @@
 import {
+	type Abi,
 	type Account,
 	type Address,
 	type Client,
@@ -20,6 +21,20 @@ import {
 
 export type { ChainKey } from "../definitions/index";
 
+export type FilosignContractName = keyof ChainDefinitionsEntry & string;
+
+export function getContractAbi(
+	name: FilosignContractName,
+	chainKey: ChainKey = "local",
+): Abi {
+	const entry = getDefinitionsEntry(chainKey);
+	const contract = entry[name as keyof ChainDefinitionsEntry];
+	if (!contract || typeof contract !== "object" || !("abi" in contract)) {
+		throw new Error(`${name} not in definitions for ${chainKey}`);
+	}
+	return contract.abi as Abi;
+}
+
 const VIEM_CHAIN_BY_KEY = {
 	local: hardhat,
 	testnet: baseSepolia,
@@ -34,25 +49,30 @@ type FilosignKeyedContractClient = {
 	wallet: WalletClient<Transport, ViemChain, Account>;
 };
 
-type DefinitionContracts = Pick<
+type CoreDefinitionContracts = Pick<
 	ChainDefinitionsEntry,
 	"FSManager" | "FSFileRegistry" | "FSKeyRegistry"
 >;
 
+type PaymentValidatorDefinition = Pick<
+	ChainDefinitionsEntry,
+	"FSPaymentValidator"
+>["FSPaymentValidator"];
+
 // Mapped type keeps TS7056 in check vs. a large inferred union.
 export type FilosignContracts<T extends Wallet = Wallet> = {
-	[K in keyof DefinitionContracts]: GetContractReturnType<
-		DefinitionContracts[K]["abi"],
+	[K in keyof CoreDefinitionContracts]: GetContractReturnType<
+		CoreDefinitionContracts[K]["abi"],
 		FilosignKeyedContractClient,
-		DefinitionContracts[K]["address"] extends Address
-			? DefinitionContracts[K]["address"]
+		CoreDefinitionContracts[K]["address"] extends Address
+			? CoreDefinitionContracts[K]["address"]
 			: Address
 	>;
 } & {
 	FSPaymentValidator?: GetContractReturnType<
-		readonly unknown[],
+		PaymentValidatorDefinition["abi"],
 		FilosignKeyedContractClient,
-		Address
+		PaymentValidatorDefinition["address"]
 	>;
 	$client: T;
 };
@@ -81,14 +101,10 @@ export function getContracts<T extends Wallet>(options: {
 		);
 	}
 
-	const contractDefinitions = getDefinitionsEntry(
-		chainKey,
-	) as ChainDefinitionsEntry & {
-		FSPaymentValidator?: { address: Address; abi: readonly unknown[] };
-	};
+	const contractDefinitions = getDefinitionsEntry(chainKey);
 	const bundledClient = getKeyedClient(client, chainKey);
 
-	const contracts = {
+	return {
 		FSManager: getContract({
 			client: bundledClient,
 			...contractDefinitions.FSManager,
@@ -101,21 +117,10 @@ export function getContracts<T extends Wallet>(options: {
 			client: bundledClient,
 			...contractDefinitions.FSKeyRegistry,
 		}),
-		$client: client,
-	} as FilosignContracts<T>;
-
-	if (contractDefinitions.FSPaymentValidator) {
-		(
-			contracts as FilosignContracts<T> & {
-				FSPaymentValidator: NonNullable<
-					FilosignContracts<T>["FSPaymentValidator"]
-				>;
-			}
-		).FSPaymentValidator = getContract({
+		FSPaymentValidator: getContract({
 			client: bundledClient,
 			...contractDefinitions.FSPaymentValidator,
-		}) as NonNullable<FilosignContracts<T>["FSPaymentValidator"]>;
-	}
-
-	return contracts;
+		}),
+		$client: client,
+	};
 }

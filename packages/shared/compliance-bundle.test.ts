@@ -23,7 +23,7 @@ const minimalManifest: PlacementManifest = {
 describe("ComplianceBundle", () => {
 	it("parses minimal bundle and canonical JSON is stable", () => {
 		const raw = {
-			version: 2 as const,
+			version: 3 as const,
 			pieceCid: "bafyTEST",
 			chainId: 84532,
 			exportedAtIso: "2026-01-01T00:00:00.000Z",
@@ -95,6 +95,7 @@ describe("ComplianceBundle", () => {
 					draftCompletedFieldIds: [],
 				},
 			],
+			payments: [],
 			offChainEvidence: { acknowledgements: [] },
 		};
 		const a = zComplianceBundle.parse(raw);
@@ -105,6 +106,6 @@ describe("ComplianceBundle", () => {
 	});
 
 	it("COMPLIANCE_CHAIN_TX_KINDS covers all lifecycle labels", () => {
-		expect(COMPLIANCE_CHAIN_TX_KINDS.length).toBe(4);
+		expect(COMPLIANCE_CHAIN_TX_KINDS.length).toBe(5);
 	});
 });

@@ -1,5 +1,6 @@
 import z from "zod";
 import { zEvmAddress, zHexString } from "./helpers/zod";
+import { paymentReleaseTypes, paymentRuleStatuses } from "./payment-rules";
 import { zPlacementManifest } from "./placement-manifest";
 
 /** Single leaf inclusion proof (matches {@link completionsMerkleProofsV1}). */
@@ -64,7 +65,22 @@ export const zChainTxKind = z.enum([
 	"file_signed",
 	"sender_approved",
 	"sender_revoked",
+	"payout_executed",
 ]);
+
+export const zPaymentComplianceRow = z.object({
+	onChainRuleId: z.string(),
+	recipientWallet: zEvmAddress(),
+	tokenAddress: zEvmAddress(),
+	amount: z.string(),
+	releaseType: z.enum(paymentReleaseTypes),
+	status: z.enum(paymentRuleStatuses),
+	registerRuleTxHash: zHexString(),
+	approveTxHash: zHexString(),
+	payoutTxHash: zHexString().nullable(),
+	executedAtIso: z.string().nullable(),
+	lastError: z.string().nullable(),
+});
 
 /** All values of {@link zChainTxKind} (for UI, PDF glossary coverage tests, etc.). */
 export const COMPLIANCE_CHAIN_TX_KINDS = zChainTxKind.options;
@@ -95,7 +111,7 @@ export const zOffChainEvidence = z.object({
 });
 
 export const zComplianceBundle = z.object({
-	version: z.literal(2),
+	version: z.literal(3),
 	pieceCid: z.string(),
 	chainId: z.number().int(),
 	exportedAtIso: z.string(),
@@ -112,10 +128,12 @@ export const zComplianceBundle = z.object({
 	onchainRegistration: zOnchainRegistrationSnapshot.nullable(),
 	transactions: z.array(zChainTxRef),
 	signers: z.array(zSignerComplianceRow),
+	payments: z.array(zPaymentComplianceRow),
 	offChainEvidence: zOffChainEvidence,
 });
 
 export type ComplianceBundle = z.infer<typeof zComplianceBundle>;
+export type PaymentComplianceRow = z.infer<typeof zPaymentComplianceRow>;
 export type SignerComplianceRow = z.infer<typeof zSignerComplianceRow>;
 export type MerkleLeafProof = z.infer<typeof zMerkleLeafProof>;
 export type PartyRow = z.infer<typeof zPartyRow>;

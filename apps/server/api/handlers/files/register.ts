@@ -23,6 +23,11 @@ import {
 import { normalizedViewerEmailsForRegister } from "@/lib/domains/files";
 import { inviteExpiresAt } from "@/lib/domains/invites";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
+import {
+	assertPaymentRecipientsAllowlisted,
+	insertPaymentRulesForFile,
+	zPaymentRulesRegisterBatch,
+} from "@/lib/domains/payments";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
 import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
@@ -72,6 +77,7 @@ export const zFileRegisterBody = z.object({
 	organizationId: z.uuid().optional(),
 	orgKemCiphertext: zHexString().optional(),
 	orgEncryptedEncryptionKey: zHexString().optional(),
+	paymentRules: zPaymentRulesRegisterBatch.optional(),
 });
 
 export async function filesRegister(
@@ -97,6 +103,7 @@ export async function filesRegister(
 		organizationId,
 		orgKemCiphertext,
 		orgEncryptedEncryptionKey,
+		paymentRules = [],
 	} = parsedBody.data;
 
 	if (organizationId) {
@@ -234,6 +241,14 @@ export async function filesRegister(
 
 	const ds = await getOrCreateUserDataset(sender);
 
+	if (paymentRules.length > 0) {
+		await assertPaymentRecipientsAllowlisted({
+			participantWallets: participants.map((p) => getAddress(p.address)),
+			organizationId,
+			rules: paymentRules,
+		});
+	}
+
 	await db.transaction(async (tx) => {
 		await tx
 			.insert(files)
@@ -285,6 +300,13 @@ export async function filesRegister(
 				})),
 			);
 		}
+
+		await insertPaymentRulesForFile(
+			pieceCid,
+			getAddress(sender),
+			paymentRules,
+			tx,
+		);
 	});
 
 	const participantWallets = [

@@ -36,6 +36,9 @@ describe("FSPaymentValidator", () => {
 		const id = cidId(pieceCid);
 
 		await ctx.mockUsdc.write.mint([senderAddr, amount * 2n]);
+
+		await registerFileOnly(ctx, pieceCid, [signerCommitment]);
+
 		await ctx.paymentValidator.write.registerRule(
 			[
 				senderAddr,
@@ -47,6 +50,7 @@ describe("FSPaymentValidator", () => {
 				`0x${"00".repeat(32)}`,
 				0,
 				[],
+				0n,
 			],
 			{ account: walletAccount(ctx.sender) },
 		);
@@ -56,8 +60,6 @@ describe("FSPaymentValidator", () => {
 		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
 			account: walletAccount(ctx.sender),
 		});
-
-		await registerFileOnly(ctx, pieceCid, [signerCommitment]);
 		await registerFileSignatureStep({
 			ctx,
 			pieceCid,
@@ -91,6 +93,9 @@ describe("FSPaymentValidator", () => {
 		const id = cidId("permissionless-exec");
 
 		await ctx.mockUsdc.write.mint([senderAddr, amount]);
+
+		await registerFileOnly(ctx, "permissionless-exec", [signerCommitment]);
+
 		await ctx.paymentValidator.write.registerRule(
 			[
 				senderAddr,
@@ -102,6 +107,7 @@ describe("FSPaymentValidator", () => {
 				`0x${"00".repeat(32)}`,
 				0,
 				[],
+				0n,
 			],
 			{ account: walletAccount(ctx.sender) },
 		);
@@ -109,8 +115,6 @@ describe("FSPaymentValidator", () => {
 		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
 			account: walletAccount(ctx.sender),
 		});
-
-		await registerFileOnly(ctx, "permissionless-exec", [signerCommitment]);
 		await registerFileSignatureStep({
 			ctx,
 			pieceCid: "permissionless-exec",
@@ -132,6 +136,8 @@ describe("FSPaymentValidator", () => {
 		const recipientAddr = walletAccount(ctx.payout).address;
 		const id = cidId("unsigned-doc");
 
+		await registerFileOnly(ctx, "unsigned-doc", [signerCommitment]);
+
 		await ctx.paymentValidator.write.registerRule(
 			[
 				senderAddr,
@@ -143,6 +149,7 @@ describe("FSPaymentValidator", () => {
 				`0x${"00".repeat(32)}`,
 				0,
 				[],
+				0n,
 			],
 			{ account: walletAccount(ctx.sender) },
 		);
@@ -170,6 +177,9 @@ describe("FSPaymentValidator", () => {
 		const id = cidId(specificPiece);
 
 		await ctx.mockUsdc.write.mint([senderAddr, amount]);
+
+		await registerFileOnly(ctx, specificPiece, [signerCommitment]);
+
 		await ctx.paymentValidator.write.registerRule(
 			[
 				senderAddr,
@@ -181,6 +191,7 @@ describe("FSPaymentValidator", () => {
 				signerCommitment,
 				0,
 				[],
+				0n,
 			],
 			{ account: walletAccount(ctx.sender) },
 		);
@@ -188,8 +199,6 @@ describe("FSPaymentValidator", () => {
 		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
 			account: walletAccount(ctx.sender),
 		});
-
-		await registerFileOnly(ctx, specificPiece, [signerCommitment]);
 		await registerFileSignatureStep({
 			ctx,
 			pieceCid: specificPiece,
@@ -232,6 +241,12 @@ describe("FSPaymentValidator", () => {
 		);
 
 		await ctx.mockUsdc.write.mint([senderAddr, amount]);
+
+		await registerFileOnly(ctx, piece, [
+			signerCommitment,
+			secondSignerCommitment,
+		]);
+
 		await ctx.paymentValidator.write.registerRule(
 			[
 				senderAddr,
@@ -243,6 +258,7 @@ describe("FSPaymentValidator", () => {
 				zeroCommitment,
 				2,
 				[signerCommitment, secondSignerCommitment],
+				0n,
 			],
 			{ account: walletAccount(ctx.sender) },
 		);
@@ -250,11 +266,6 @@ describe("FSPaymentValidator", () => {
 		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
 			account: walletAccount(ctx.sender),
 		});
-
-		await registerFileOnly(ctx, piece, [
-			signerCommitment,
-			secondSignerCommitment,
-		]);
 		await registerFileSignatureStep({
 			ctx,
 			pieceCid: piece,
@@ -297,6 +308,7 @@ describe("FSPaymentValidator", () => {
 					zeroCommitment,
 					2,
 					[signerCommitment, signerCommitment],
+					0n,
 				],
 				{ account: walletAccount(ctx.sender) },
 			),
@@ -321,6 +333,7 @@ describe("FSPaymentValidator", () => {
 					zeroCommitment,
 					1,
 					[zeroCommitment],
+					0n,
 				],
 				{ account: walletAccount(ctx.sender) },
 			),
@@ -335,6 +348,9 @@ describe("FSPaymentValidator", () => {
 		const id = cidId(piece);
 
 		await ctx.mockUsdc.write.mint([senderAddr, amount]);
+
+		await registerFileOnly(ctx, piece, [signerCommitment]);
+
 		await ctx.paymentValidator.write.registerRule(
 			[
 				senderAddr,
@@ -346,12 +362,11 @@ describe("FSPaymentValidator", () => {
 				zeroCommitment,
 				0,
 				[],
+				0n,
 			],
 			{ account: walletAccount(ctx.sender) },
 		);
 		const ruleId = (await ctx.paymentValidator.read.nextRuleId()) - 1n;
-
-		await registerFileOnly(ctx, piece, [signerCommitment]);
 		await registerFileSignatureStep({
 			ctx,
 			pieceCid: piece,

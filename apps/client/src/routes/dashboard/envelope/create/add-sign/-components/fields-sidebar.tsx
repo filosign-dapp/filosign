@@ -1,12 +1,18 @@
 import { motion } from "motion/react";
 import { Button } from "@/src/lib/components/ui/button";
 import { cn } from "@/src/lib/utils/utils";
-import { useAddSignPlacement } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
+import { PaymentAttachmentPanel } from "@/src/routes/dashboard/envelope/create/add-sign/-components/payment-attachment-panel";
+import {
+	useAddSignContext,
+	useAddSignPlacement,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
 
 export default function SignatureFieldsSidebar() {
 	const { handleAddField, isPlacingField, pendingFieldType } =
 		useAddSignPlacement();
+	const { paymentDrafts, setPaymentDrafts, createFormRecipients } =
+		useAddSignContext();
 
 	return (
 		<div className="p-4 space-y-4">
@@ -76,6 +82,12 @@ export default function SignatureFieldsSidebar() {
 					) : null}
 				</div>
 			</div>
+
+			<PaymentAttachmentPanel
+				recipients={createFormRecipients}
+				drafts={paymentDrafts}
+				onChange={setPaymentDrafts}
+			/>
 		</div>
 	);
 }

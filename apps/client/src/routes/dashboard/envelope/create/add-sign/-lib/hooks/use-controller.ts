@@ -22,6 +22,8 @@ import type {
 import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
 import { useSignatureFields } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-fields";
 import type { Document } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+import type { PaymentAttachmentDraft } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types/payment-attachment";
+import { buildPaymentRulesForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/build-payment-rules";
 import { signatureFieldBoxCssPx } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-box";
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
 import {
@@ -94,6 +96,9 @@ export function useAddSignController() {
 		"idle" | "loading" | "success" | "error"
 	>("idle");
 	const [coldShareDialogOpen, setColdShareDialogOpen] = useState(false);
+	const [paymentDrafts, setPaymentDrafts] = useState<PaymentAttachmentDraft[]>(
+		[],
+	);
 	const [coldShare, setColdShare] = useState<ColdSharePackage | null>(null);
 	const isSendingRef = useRef(false);
 
@@ -387,6 +392,8 @@ export function useAddSignController() {
 				fieldBox: fieldBoxCss,
 			});
 
+			const paymentRules = buildPaymentRulesForSend(paymentDrafts);
+
 			const result = await sendFile.mutateAsync({
 				signers,
 				viewers,
@@ -395,6 +402,7 @@ export function useAddSignController() {
 				placementManifest,
 				viewerEmails,
 				...(coldInvitePayload ? { coldInvites: coldInvitePayload } : {}),
+				...(paymentRules.length > 0 ? { paymentRules } : {}),
 				...(activeOrg
 					? {
 							organizationId: activeOrg.id,
@@ -469,6 +477,7 @@ export function useAddSignController() {
 		recipientProfilesMapWithRecipient,
 		sendFile,
 		signatureFields,
+		paymentDrafts,
 	]);
 
 	const currentPageFields = useMemo(
@@ -526,6 +535,9 @@ export function useAddSignController() {
 		handleColdShareDone,
 		setPdfLayoutHeight,
 		placementDocHeight,
+		paymentDrafts,
+		setPaymentDrafts,
+		createFormRecipients: createForm?.recipients ?? [],
 	};
 }
 

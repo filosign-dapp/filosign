@@ -24,6 +24,9 @@ export type FullSystemFixture = {
 	mockUsdc: Awaited<
 		ReturnType<typeof hre.viem.deployContract<"MockUSDCToken">>
 	>;
+	paymentValidator: Awaited<
+		ReturnType<typeof hre.viem.deployContract<"FSPaymentValidator">>
+	>;
 	server: WalletClient;
 	treasury: WalletClient;
 	sender: WalletClient;
@@ -89,6 +92,12 @@ export async function deployFullSystem(): Promise<FullSystemFixture> {
 		walletAccount(server).address,
 	]);
 
+	const paymentValidator = await hre.viem.deployContract(
+		"FSPaymentValidator",
+		[fileRegistry.address, walletAccount(payout).address, BigInt(chainId)],
+		{ client: { wallet: server } },
+	);
+
 	const keySig = await signRegisterKeygen(sender, keyRegistry.address, chainId);
 	await keyRegistry.write.registerKeygenData(
 		[
@@ -108,6 +117,7 @@ export async function deployFullSystem(): Promise<FullSystemFixture> {
 		fileRegistry,
 		keyRegistry,
 		mockUsdc,
+		paymentValidator,
 		server,
 		treasury,
 		sender,
@@ -141,11 +151,18 @@ export async function deployFullSystemWithoutSenderKeygen(): Promise<FullSystemF
 		walletAccount(server).address,
 	]);
 
+	const paymentValidator = await hre.viem.deployContract(
+		"FSPaymentValidator",
+		[fileRegistry.address, walletAccount(payout).address, BigInt(chainId)],
+		{ client: { wallet: server } },
+	);
+
 	return {
 		manager,
 		fileRegistry,
 		keyRegistry,
 		mockUsdc,
+		paymentValidator,
 		server,
 		treasury,
 		sender,

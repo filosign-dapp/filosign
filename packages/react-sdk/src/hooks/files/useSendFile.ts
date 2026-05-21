@@ -34,7 +34,11 @@ import { useUserProfile } from "../users";
 type FileData = z.infer<ReturnType<typeof zFileData>>;
 
 export function useSendFile() {
-	const { contracts, wallet } = useFilosignContext();
+	const {
+		contracts,
+		wallet,
+		runtime: { chainKey },
+	} = useFilosignContext();
 	const { rpcQuery, isAuthed } = useFilosignRpc();
 	const { data: user } = useUserProfile();
 
@@ -297,6 +301,7 @@ export function useSendFile() {
 					? await registerPaymentRulesOnChain({
 							wallet,
 							contracts,
+							chainKey,
 							payer: wallet.account.address,
 							cidIdentifier,
 							rules: paymentRules,

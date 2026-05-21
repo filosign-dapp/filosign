@@ -11,6 +11,7 @@ export * from "./usePaymentRequestRetry";
 export * from "./usePaymentsListByFile";
 export * from "./useReceivedFiles";
 export * from "./useRegenerateColdInvite";
+export * from "./useRevokePaymentAllowance";
 export * from "./useSendFile";
 export * from "./useSentFiles";
 export * from "./useSignDraft";

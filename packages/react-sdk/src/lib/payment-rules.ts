@@ -1,4 +1,5 @@
 import type { FilosignContracts } from "@filosign/contracts";
+import { type ChainKey, getContractAbi } from "@filosign/contracts";
 import type {
 	PaymentReleaseType,
 	PaymentRuleRegistrationInput,
@@ -14,38 +15,33 @@ export type PaymentRuleDraft = {
 	releaseParams: PaymentRuleRegistrationInput["releaseParams"];
 };
 
-const validatorAbi = [
-	{
-		type: "function",
-		name: "registerRule",
-		inputs: [
-			{ name: "payer_", type: "address" },
-			{ name: "recipient_", type: "address" },
-			{ name: "token_", type: "address" },
-			{ name: "amount_", type: "uint256" },
-			{ name: "cidId_", type: "bytes32" },
-			{ name: "releaseType_", type: "uint8" },
-			{ name: "specificSignerCommitment_", type: "bytes32" },
-			{ name: "thresholdN_", type: "uint8" },
-			{ name: "signerCommitments_", type: "bytes32[]" },
-		],
-		outputs: [{ type: "uint256" }],
-		stateMutability: "nonpayable",
-	},
-] as const;
+const ZERO_COMMITMENT = `0x${"00".repeat(32)}` as Hex;
 
-const erc20Abi = [
-	{
-		type: "function",
-		name: "approve",
-		inputs: [
-			{ name: "spender", type: "address" },
-			{ name: "amount", type: "uint256" },
-		],
-		outputs: [{ type: "bool" }],
-		stateMutability: "nonpayable",
-	},
-] as const;
+/** Matches on-chain AtLeastN rules: no zero or duplicate email commitments. */
+function uniqueSignerCommitments(
+	commitments: Hex[],
+	thresholdN: number,
+): Hex[] {
+	const unique: Hex[] = [];
+	const seen = new Set<string>();
+	for (const c of commitments) {
+		if (c === ZERO_COMMITMENT) {
+			throw new Error("Signer commitment must be non-zero");
+		}
+		const key = c.toLowerCase();
+		if (seen.has(key)) {
+			throw new Error("Duplicate signer commitment in at_least_n rule");
+		}
+		seen.add(key);
+		unique.push(c);
+	}
+	if (thresholdN > unique.length) {
+		throw new Error(
+			"thresholdN cannot exceed the number of unique signer commitments",
+		);
+	}
+	return unique;
+}
 
 function releaseTypeToUint8(releaseType: PaymentReleaseType): number {
 	switch (releaseType) {
@@ -83,7 +79,10 @@ function releaseParamsToContractArgs(
 		return {
 			specificSignerCommitment: `0x${"00".repeat(32)}` as Hex,
 			thresholdN: releaseParams.thresholdN,
-			signerCommitments: releaseParams.signerEmailCommitments,
+			signerCommitments: uniqueSignerCommitments(
+				releaseParams.signerEmailCommitments,
+				releaseParams.thresholdN,
+			),
 		};
 	}
 	return {
@@ -93,9 +92,18 @@ function releaseParamsToContractArgs(
 	};
 }
 
+function erc20ApproveAbi(chainKey: ChainKey) {
+	try {
+		return getContractAbi("MockUSDC", chainKey);
+	} catch {
+		return getContractAbi("MockUSDC", "local");
+	}
+}
+
 export async function registerPaymentRulesOnChain(args: {
 	wallet: NonNullable<FilosignContracts["$client"]>;
 	contracts: FilosignContracts;
+	chainKey: ChainKey;
 	payer: Address;
 	cidIdentifier: Hex;
 	rules: PaymentRuleDraft[];
@@ -107,6 +115,8 @@ export async function registerPaymentRulesOnChain(args: {
 		);
 	}
 
+	const validatorAbi = validator.abi;
+	const approveAbi = erc20ApproveAbi(args.chainKey);
 	const registered: PaymentRuleRegistrationInput[] = [];
 
 	for (const rule of args.rules) {
@@ -114,7 +124,7 @@ export async function registerPaymentRulesOnChain(args: {
 			releaseParamsToContractArgs(rule.releaseType, rule.releaseParams);
 
 		const approveData = encodeFunctionData({
-			abi: erc20Abi,
+			abi: approveAbi,
 			functionName: "approve",
 			args: [validator.address, rule.amount],
 		});
@@ -135,7 +145,7 @@ export async function registerPaymentRulesOnChain(args: {
 			],
 		});
 
-		const onChainRuleId = (await validator.read.nextRuleId([])) as bigint;
+		const onChainRuleId = await validator.read.nextRuleId();
 
 		const approveHash = await args.wallet.sendTransaction({
 			to: rule.tokenAddress,
@@ -166,4 +176,32 @@ export async function registerPaymentRulesOnChain(args: {
 	}
 
 	return registered;
+}
+
+/** Revokes ERC-20 allowance for FSPaymentValidator (approve 0). Blocks future executePayout. */
+export async function revokePaymentValidatorAllowance(args: {
+	wallet: NonNullable<FilosignContracts["$client"]>;
+	contracts: FilosignContracts;
+	chainKey: ChainKey;
+	tokenAddress: Address;
+}): Promise<Hex> {
+	const validator = args.contracts.FSPaymentValidator;
+	if (!validator) {
+		throw new Error(
+			"FSPaymentValidator is not deployed on this chain. Run contracts deploy/migrate first.",
+		);
+	}
+
+	const data = encodeFunctionData({
+		abi: erc20ApproveAbi(args.chainKey),
+		functionName: "approve",
+		args: [validator.address, 0n],
+	});
+
+	return args.wallet.sendTransaction({
+		to: args.tokenAddress,
+		data,
+		account: args.wallet.account,
+		chain: args.wallet.chain,
+	});
 }

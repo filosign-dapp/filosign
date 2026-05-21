@@ -111,9 +111,11 @@ export function PaymentAttachmentPanel({
 			<div>
 				<p className="font-medium text-sm">Attach USDC payment</p>
 				<p className="text-xs text-muted-foreground mt-1">
-					Optional payout when signing completes. Recipients must be on this
-					envelope or your organization&apos;s linked payout wallet. Funds move
-					from your wallet when conditions are met — not held by Filosign.
+					Optional payout when signing completes. Filosign enforces recipient
+					rules only when you send through Filosign; on-chain rules are
+					controlled by your wallet. Recipients must be on this envelope or your
+					organization&apos;s linked payout wallet. Funds move from your wallet
+					when conditions are met — not held by Filosign.
 				</p>
 			</div>
 

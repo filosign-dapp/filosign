@@ -17,7 +17,7 @@ bun run --cwd apps/contracts check-types # tsc on exports/definitions/services
 
 Hardhat + viem + TypeScript. Test what loses money or breaks trust:
 
-- Access control (`onlyServer`, `onlyGelatoExecutor`, payer-only `registerRule`)
+- Access control (`onlyServer`, payer-only `registerRule`, permissionless `executePayout`)
 - Reverts on bad inputs and release misconfiguration
 - Signature and registry paths
 - **FSPaymentValidator:** `canExecute` gating, `executePayout` transfer, double-execution prevention
@@ -45,8 +45,18 @@ Hardhat + viem + TypeScript. Test what loses money or breaks trust:
 - Payment tests: assert USDC balances and `executed` flags, not only storage mirrors.
 - Same PR as Solidity changes for behavioral edits.
 
+## Static analysis (recommended before mainnet)
+
+```bash
+# From apps/contracts after compile
+slither .
+```
+
+Triage reentrancy, unchecked returns, and unprotected state-changing findings. Not wired in CI yet.
+
 ## Before merge
 
 - `bun run --cwd apps/contracts test` and `check-types` green
 - Unauthorized callers revert where expected
 - Fund flows use explicit balance checks for `FSPaymentValidator`
+- `FSPaymentValidator`: `AtLeastN` distinct commitments, allowance failure leaves `executed` false

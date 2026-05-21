@@ -21,7 +21,6 @@ interface IFSPaymentValidator {
     }
 
     function fileRegistry() external view returns (address);
-    function gelatoExecutor() external view returns (address);
     function deploymentChainId() external view returns (uint256);
     function nextRuleId() external view returns (uint256);
     function rules(uint256 key) external view returns (PaymentRule memory);

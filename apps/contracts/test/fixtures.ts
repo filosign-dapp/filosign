@@ -94,7 +94,7 @@ export async function deployFullSystem(): Promise<FullSystemFixture> {
 
 	const paymentValidator = await hre.viem.deployContract(
 		"FSPaymentValidator",
-		[fileRegistry.address, walletAccount(payout).address, BigInt(chainId)],
+		[fileRegistry.address, BigInt(chainId)],
 		{ client: { wallet: server } },
 	);
 
@@ -153,7 +153,7 @@ export async function deployFullSystemWithoutSenderKeygen(): Promise<FullSystemF
 
 	const paymentValidator = await hre.viem.deployContract(
 		"FSPaymentValidator",
-		[fileRegistry.address, walletAccount(payout).address, BigInt(chainId)],
+		[fileRegistry.address, BigInt(chainId)],
 		{ client: { wallet: server } },
 	);
 

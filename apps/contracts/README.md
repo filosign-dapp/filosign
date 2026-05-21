@@ -15,7 +15,7 @@ Solidity contracts for Filosign: document registration and signing (`FSFileRegis
 
 ## Architecture
 
-`FSManager` deploys `FSFileRegistry` and `FSKeyRegistry` in its constructor. `FSPaymentValidator` is deployed separately and wired to the file registry address plus a Gelato executor address.
+`FSManager` deploys `FSFileRegistry` and `FSKeyRegistry` in its constructor. `FSPaymentValidator` is deployed separately and wired to the file registry address.
 
 ```mermaid
 flowchart TB
@@ -59,7 +59,7 @@ flowchart TB
 | ---- | ------- |
 | `AllSigned` | Payout when every required signer has signed. |
 | `SpecificSigner` | Payout when a signer matching an email commitment signs. |
-| `AtLeastN` | Payout when at least N signers from a commitment set have signed. |
+| `AtLeastN` | Payout when at least N **distinct** signers from a commitment set have signed (duplicates and zero commitments rejected at `registerRule`). |
 
 ## Payment flow
 
@@ -70,12 +70,25 @@ flowchart TB
 
 Filosign never holds USDC. The server does not relay payout transactions.
 
+### Cancelling a payout before execution
+
+There is no `cancelRule` on-chain. The payer controls funding:
+
+1. **Revoke allowance** — `USDC.approve(FSPaymentValidator, 0)` from the payer wallet (exposed in the sign UI for senders). `executePayout` will revert on `transferFrom` even when release conditions are met.
+2. **Leave rule unfunded** — skip or revoke approval before signers finish.
+
+The rule row remains on-chain and in `file_payment_rules` until executed or marked failed. **Filosign does not control or screen all on-chain payouts** — see marketing Terms of Service.
+
+### Indexing (supported path)
+
+Server `files.register` verifies each payment rule on-chain (`assertPaymentRulesVerifiedOnChain`) before inserting into `file_payment_rules`. Rules created only outside the app are not indexed.
+
 See [`packages/gelato/README.md`](../../packages/gelato/README.md) for Web3 Function deployment and [`apps/server/README.md`](../server/README.md) for webhooks and cron.
 
 ## Trust model
 
-- **Server (`onlyServer` on manager paths):** Can register files and signatures on behalf of users who have authenticated; cannot move USDC without the payer’s on-chain approve and Gelato’s separate executor key.
-- **Gelato executor:** Optional gasless relayer; any address may call `executePayout` once `canExecute` is true.
+- **Server (`onlyServer` on manager paths):** Can register files and signatures on behalf of users who have authenticated; cannot move USDC without the payer’s on-chain approve.
+- **Relayers:** Any address may call `executePayout` once `canExecute` is true; Gelato provides optional gasless relay.
 - **Payer:** Must call `registerRule` as `msg.sender == payer`; approval is exact-amount per rule.
 - **Recipients (product):** Filosign UI only allows envelope participants or a linked organization payout wallet.
 
@@ -104,4 +117,4 @@ Deploy with migrate (runs tests first):
 bun run contracts -- --migrate
 ```
 
-Set `GELATO_DEDICATED_SENDER` in env for the validator’s executor address on deploy.
+Set `GELATO_DEDICATED_SENDER` in the Gelato dashboard for the Web3 Function dedicated sender (not stored on `FSPaymentValidator`).

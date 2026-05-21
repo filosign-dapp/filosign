@@ -31,7 +31,6 @@ contract FSPaymentValidator is ReentrancyGuard {
     }
 
     IFSFileRegistry public immutable fileRegistry;
-    address public immutable gelatoExecutor;
     uint256 public immutable deploymentChainId;
 
     uint256 public nextRuleId;
@@ -56,16 +55,11 @@ contract FSPaymentValidator is ReentrancyGuard {
         uint256 amount
     );
 
-    constructor(
-        address fileRegistry_,
-        address gelatoExecutor_,
-        uint256 deploymentChainId_
-    ) {
-        if (fileRegistry_ == address(0) || gelatoExecutor_ == address(0)) {
+    constructor(address fileRegistry_, uint256 deploymentChainId_) {
+        if (fileRegistry_ == address(0)) {
             revert InvalidReleaseConfig();
         }
         fileRegistry = IFSFileRegistry(fileRegistry_);
-        gelatoExecutor = gelatoExecutor_;
         deploymentChainId = deploymentChainId_;
         if (block.chainid != deploymentChainId_) {
             revert InvalidReleaseConfig();
@@ -110,10 +104,7 @@ contract FSPaymentValidator is ReentrancyGuard {
         rule.thresholdN = thresholdN_;
 
         if (releaseType_ == ReleaseType.AtLeastN) {
-            bytes32[] storage stored = _ruleSignerCommitments[ruleId];
-            for (uint256 i = 0; i < signerCommitments_.length; i++) {
-                stored.push(signerCommitments_[i]);
-            }
+            _storeAtLeastNCommitments(ruleId, signerCommitments_);
         }
 
         _ruleIdsByCid[cidId_].push(ruleId);
@@ -162,6 +153,24 @@ contract FSPaymentValidator is ReentrancyGuard {
         bytes32 cidId_
     ) external view returns (uint256[] memory) {
         return _ruleIdsByCid[cidId_];
+    }
+
+    /// @dev Reverts on zero or duplicate commitments (distinct signers required for threshold).
+    function _storeAtLeastNCommitments(
+        uint256 ruleId,
+        bytes32[] calldata signerCommitments_
+    ) private {
+        bytes32[] storage stored = _ruleSignerCommitments[ruleId];
+        for (uint256 i = 0; i < signerCommitments_.length; i++) {
+            bytes32 commitment = signerCommitments_[i];
+            if (commitment == bytes32(0)) revert InvalidReleaseConfig();
+            for (uint256 j = 0; j < i; j++) {
+                if (signerCommitments_[j] == commitment) {
+                    revert InvalidReleaseConfig();
+                }
+            }
+            stored.push(commitment);
+        }
     }
 
     function _validateReleaseConfig(

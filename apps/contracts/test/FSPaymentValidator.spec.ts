@@ -7,9 +7,19 @@ import {
 	registerFileOnly,
 	registerFileSignatureStep,
 } from "./fixtures.js";
+import {
+	COMMIT_DILITHIUM,
+	COMMIT_KYBER,
+	SALT_CHALLENGE,
+	SALT_PIN,
+	SALT_SEED,
+	signRegisterKeygen,
+} from "./helpers/signatures.js";
 import { walletAccount } from "./helpers/walletAccount.js";
 
 const signerCommitment = `0x${"aa".repeat(32)}` as Hex;
+const secondSignerCommitment = `0x${"bb".repeat(32)}` as Hex;
+const zeroCommitment = `0x${"00".repeat(32)}` as Hex;
 const pieceCid = "payment-test-doc";
 const amount = parseUnits("10", 6);
 
@@ -193,5 +203,172 @@ describe("FSPaymentValidator", () => {
 		});
 
 		expect(await ctx.mockUsdc.read.balanceOf([recipientAddr])).to.equal(amount);
+	});
+
+	it("AtLeastN: pays when N distinct signers have signed", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const recipientAddr = walletAccount(ctx.payout).address;
+		const coSigner = walletAccount(ctx.treasury);
+		const piece = "at-least-n-doc";
+		const id = cidId(piece);
+
+		const coSignerKeySig = await signRegisterKeygen(
+			ctx.treasury,
+			ctx.keyRegistry.address,
+			ctx.chainId,
+		);
+		await ctx.keyRegistry.write.registerKeygenData(
+			[
+				SALT_PIN,
+				SALT_SEED,
+				SALT_CHALLENGE,
+				COMMIT_KYBER,
+				COMMIT_DILITHIUM,
+				coSignerKeySig,
+				coSigner.address,
+			],
+			{ account: walletAccount(ctx.server) },
+		);
+
+		await ctx.mockUsdc.write.mint([senderAddr, amount]);
+		await ctx.paymentValidator.write.registerRule(
+			[
+				senderAddr,
+				recipientAddr,
+				ctx.mockUsdc.address,
+				amount,
+				id,
+				2, // AtLeastN
+				zeroCommitment,
+				2,
+				[signerCommitment, secondSignerCommitment],
+			],
+			{ account: walletAccount(ctx.sender) },
+		);
+		const ruleId = (await ctx.paymentValidator.read.nextRuleId()) - 1n;
+		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
+			account: walletAccount(ctx.sender),
+		});
+
+		await registerFileOnly(ctx, piece, [
+			signerCommitment,
+			secondSignerCommitment,
+		]);
+		await registerFileSignatureStep({
+			ctx,
+			pieceCid: piece,
+			senderAddr,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: signerCommitment,
+		});
+		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.false;
+
+		await registerFileSignatureStep({
+			ctx,
+			pieceCid: piece,
+			senderAddr,
+			signerWallet: ctx.treasury,
+			signerEmailCommitment: secondSignerCommitment,
+		});
+		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.true;
+
+		await ctx.paymentValidator.write.executePayout([ruleId], {
+			account: walletAccount(ctx.payout),
+		});
+		expect(await ctx.mockUsdc.read.balanceOf([recipientAddr])).to.equal(amount);
+	});
+
+	it("AtLeastN: reverts registerRule on duplicate commitments", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const recipientAddr = walletAccount(ctx.payout).address;
+		const id = cidId("dup-commitments");
+
+		await assert.rejects(
+			ctx.paymentValidator.write.registerRule(
+				[
+					senderAddr,
+					recipientAddr,
+					ctx.mockUsdc.address,
+					amount,
+					id,
+					2,
+					zeroCommitment,
+					2,
+					[signerCommitment, signerCommitment],
+				],
+				{ account: walletAccount(ctx.sender) },
+			),
+		);
+	});
+
+	it("AtLeastN: reverts registerRule on zero commitment", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const recipientAddr = walletAccount(ctx.payout).address;
+		const id = cidId("zero-commitment");
+
+		await assert.rejects(
+			ctx.paymentValidator.write.registerRule(
+				[
+					senderAddr,
+					recipientAddr,
+					ctx.mockUsdc.address,
+					amount,
+					id,
+					2,
+					zeroCommitment,
+					1,
+					[zeroCommitment],
+				],
+				{ account: walletAccount(ctx.sender) },
+			),
+		);
+	});
+
+	it("executePayout reverts without allowance and leaves rule unexecuted", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const recipientAddr = walletAccount(ctx.payout).address;
+		const piece = "no-allowance-doc";
+		const id = cidId(piece);
+
+		await ctx.mockUsdc.write.mint([senderAddr, amount]);
+		await ctx.paymentValidator.write.registerRule(
+			[
+				senderAddr,
+				recipientAddr,
+				ctx.mockUsdc.address,
+				amount,
+				id,
+				0,
+				zeroCommitment,
+				0,
+				[],
+			],
+			{ account: walletAccount(ctx.sender) },
+		);
+		const ruleId = (await ctx.paymentValidator.read.nextRuleId()) - 1n;
+
+		await registerFileOnly(ctx, piece, [signerCommitment]);
+		await registerFileSignatureStep({
+			ctx,
+			pieceCid: piece,
+			senderAddr,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: signerCommitment,
+		});
+
+		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.true;
+
+		await assert.rejects(
+			ctx.paymentValidator.write.executePayout([ruleId], {
+				account: walletAccount(ctx.payout),
+			}),
+		);
+
+		const rule = await ctx.paymentValidator.read.rules([ruleId]);
+		expect(rule[8]).to.equal(false);
 	});
 });

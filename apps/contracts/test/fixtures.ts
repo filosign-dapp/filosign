@@ -98,6 +98,10 @@ export async function deployFullSystem(): Promise<FullSystemFixture> {
 		{ client: { wallet: server } },
 	);
 
+	await paymentValidator.write.addAllowedToken([mockUsdc.address], {
+		account: walletAccount(server),
+	});
+
 	const keySig = await signRegisterKeygen(sender, keyRegistry.address, chainId);
 	await keyRegistry.write.registerKeygenData(
 		[
@@ -156,6 +160,10 @@ export async function deployFullSystemWithoutSenderKeygen(): Promise<FullSystemF
 		[fileRegistry.address, BigInt(chainId)],
 		{ client: { wallet: server } },
 	);
+
+	await paymentValidator.write.addAllowedToken([mockUsdc.address], {
+		account: walletAccount(server),
+	});
 
 	return {
 		manager,

@@ -7,10 +7,12 @@ import {
 } from "@phosphor-icons/react";
 import { defaultChain } from "@/src/constants";
 import { cn } from "@/src/lib/utils";
+import { PaymentStatusPanel } from "@/src/routes/dashboard/document/sign/-components/payment-status-panel";
 import {
 	useSignFile,
 	useSignIdentity,
 	useSignMeta,
+	useSignPayments,
 	useSignPlacement,
 	useSignSigning,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
@@ -25,7 +27,13 @@ export function SignDocumentSidebar() {
 		canSubmitPlacementSign,
 	} = useSignPlacement();
 	const { canSign, alreadySigned } = useSignSigning();
-	const { formatAddress } = useSignMeta();
+	const { formatAddress, isSender } = useSignMeta();
+	const {
+		rules: paymentRules,
+		retryPending,
+		retryingRuleId,
+		onRetryRule,
+	} = useSignPayments();
 	return (
 		<aside className="hidden lg:block w-72 border-l border-border bg-background overflow-y-auto">
 			<div className="p-4 space-y-4">
@@ -189,6 +197,15 @@ export function SignDocumentSidebar() {
 						},
 					)}
 				</div>
+
+				<PaymentStatusPanel
+					rules={paymentRules}
+					formatAddress={formatAddress}
+					isSender={isSender}
+					retryPending={retryPending}
+					retryingRuleId={retryingRuleId}
+					onRetryRule={onRetryRule}
+				/>
 
 				{file.viewers && file.viewers.length > 0 && (
 					<div className="pt-4 border-t border-border">

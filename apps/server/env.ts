@@ -47,6 +47,8 @@ export const env = createEnv({
 		ADMIN_WALLETS: z.string().optional(),
 		/** Days until pending document, user, and org invites expire. */
 		INVITE_TTL_DAYS: z.coerce.number().int().min(1).default(7),
+		/** Shared secret for Gelato Web3 Function payout webhooks. */
+		GELATO_WEBHOOK_SECRET: z.string().min(16).optional(),
 	},
 	runtimeEnv: Bun.env,
 	emptyStringAsUndefined: true,

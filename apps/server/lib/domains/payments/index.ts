@@ -14,3 +14,4 @@ export {
 } from "./list-by-file";
 export { assertPaymentRecipientsAllowlisted } from "./recipient-allowlist";
 export { runSyncPaymentRulesJob } from "./sync-readiness";
+export { assertPaymentRulesVerifiedOnChain } from "./verify-rules-on-chain";

@@ -25,6 +25,7 @@ import { inviteExpiresAt } from "@/lib/domains/invites";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
 import {
 	assertPaymentRecipientsAllowlisted,
+	assertPaymentRulesVerifiedOnChain,
 	insertPaymentRulesForFile,
 	zPaymentRulesRegisterBatch,
 } from "@/lib/domains/payments";
@@ -247,6 +248,11 @@ export async function filesRegister(
 			organizationId,
 			rules: paymentRules,
 		});
+		await assertPaymentRulesVerifiedOnChain(
+			getAddress(sender),
+			pieceCid,
+			paymentRules,
+		);
 	}
 
 	await db.transaction(async (tx) => {

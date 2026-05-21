@@ -7,3 +7,4 @@ error SenderNotApproved();
 error InvalidApproveSignature();
 error InvalidApproveNonce();
 error ApproveSignatureExpired();
+error ServerNotRegistered();

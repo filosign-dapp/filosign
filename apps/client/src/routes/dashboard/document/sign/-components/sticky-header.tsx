@@ -16,6 +16,7 @@ import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 import { PaymentHeaderBadge } from "@/src/routes/dashboard/document/sign/-components/payment-header-badge";
+import { PaymentRevokeAllowanceButton } from "@/src/routes/dashboard/document/sign/-components/payment-revoke-allowance-button";
 import {
 	useSignColdShare,
 	useSignCompliance,
@@ -54,7 +55,12 @@ export function SignDocumentStickyHeader() {
 	} = useSignCompliance();
 	const { handleRotateInvite, regenerateColdInvite } = useSignColdShare();
 	const { canSubmitPlacementSign } = useSignPlacement();
-	const { rules: paymentRules } = useSignPayments();
+	const {
+		rules: paymentRules,
+		revokePending,
+		retryPending,
+		onRevokeAllowance,
+	} = useSignPayments();
 	return (
 		<>
 			<div className="md:hidden">
@@ -77,6 +83,13 @@ export function SignDocumentStickyHeader() {
 				{(alreadySigned || paymentRules.length > 0) && (
 					<div className="flex flex-wrap items-center justify-center gap-2 px-3 py-2 border-b border-border bg-secondary/40">
 						<PaymentHeaderBadge rules={paymentRules} />
+						<PaymentRevokeAllowanceButton
+							rules={paymentRules}
+							isSender={isSender}
+							revokePending={revokePending}
+							retryPending={retryPending}
+							onRevokeAllowance={onRevokeAllowance}
+						/>
 						{alreadySigned ? (
 							<>
 								<Badge

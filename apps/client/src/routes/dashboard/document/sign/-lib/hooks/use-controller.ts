@@ -1,7 +1,10 @@
 import {
 	usePaymentRequestRetry,
 	usePaymentsListByFile,
+	useRevokePaymentAllowance,
 } from "@filosign/react/files";
+import { toast } from "sonner";
+import { getAddress } from "viem";
 import { useCompliancePdfExports } from "@/src/lib/domains/files/compliance-pdf/use-compliance-pdf-exports";
 import { useSignActions } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-sign-actions";
 import { useSignDraftState } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-sign-draft";
@@ -40,6 +43,7 @@ export function useSignDocument() {
 
 	const paymentsQuery = usePaymentsListByFile(pieceCid);
 	const paymentRequestRetry = usePaymentRequestRetry(pieceCid);
+	const revokePaymentAllowance = useRevokePaymentAllowance(pieceCid);
 
 	const actions = useSignActions({
 		pieceCid,
@@ -128,6 +132,26 @@ export function useSignDocument() {
 				: undefined,
 			onRetryRule: (onChainRuleId: string) =>
 				paymentRequestRetry.mutateAsync(onChainRuleId),
+			revokePending: revokePaymentAllowance.isPending,
+			onRevokeAllowance: async () => {
+				const rules = paymentsQuery.data ?? [];
+				const token = rules[0]?.tokenAddress;
+				if (!token) return;
+
+				const confirmed = window.confirm(
+					"Revoke USDC approval for payouts on this document? Signers can still finish signing, but attached payouts cannot settle until you approve again.",
+				);
+				if (!confirmed) return;
+
+				try {
+					await revokePaymentAllowance.mutateAsync(getAddress(token));
+					toast.success("Payout approval revoked");
+				} catch (err) {
+					const msg =
+						err instanceof Error ? err.message : "Failed to revoke approval";
+					toast.error(msg);
+				}
+			},
 		},
 	};
 }

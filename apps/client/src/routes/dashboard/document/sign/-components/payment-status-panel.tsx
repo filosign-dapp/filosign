@@ -11,6 +11,7 @@ import { formatUnits } from "viem";
 import { defaultChain, SUPPORTED_TOKENS } from "@/src/constants";
 import { Button } from "@/src/lib/components/ui/button";
 import { cn } from "@/src/lib/utils";
+import { PaymentRevokeAllowanceButton } from "@/src/routes/dashboard/document/sign/-components/payment-revoke-allowance-button";
 
 const RETRIABLE: PaymentRuleStatus[] = [
 	"failed_insufficient",
@@ -25,6 +26,8 @@ type Props = {
 	retryPending: boolean;
 	retryingRuleId: string | undefined;
 	onRetryRule: (onChainRuleId: string) => void;
+	revokePending: boolean;
+	onRevokeAllowance: () => void;
 };
 
 function explorerTxUrl(hash: string) {
@@ -50,6 +53,8 @@ export function PaymentStatusPanel({
 	retryPending,
 	retryingRuleId,
 	onRetryRule,
+	revokePending,
+	onRevokeAllowance,
 }: Props) {
 	if (rules.length === 0) return null;
 
@@ -57,9 +62,18 @@ export function PaymentStatusPanel({
 
 	return (
 		<div className="pt-4 border-t border-border space-y-3">
-			<h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-				Attached payments ({rules.length})
-			</h4>
+			<div className="space-y-1">
+				<h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+					Attached payments ({rules.length})
+				</h4>
+				{isSender ? (
+					<p className="text-xs text-muted-foreground">
+						Recipient rules apply to sends through Filosign; on-chain payouts
+						are controlled by your wallet. Revoke approval below to cancel
+						unfunded payouts.
+					</p>
+				) : null}
+			</div>
 			<div className="space-y-2">
 				{rules.map((rule) => {
 					const paid = rule.status === "executed";
@@ -143,6 +157,14 @@ export function PaymentStatusPanel({
 					);
 				})}
 			</div>
+			<PaymentRevokeAllowanceButton
+				rules={rules}
+				isSender={isSender}
+				revokePending={revokePending}
+				retryPending={retryPending}
+				onRevokeAllowance={onRevokeAllowance}
+				className="w-full"
+			/>
 		</div>
 	);
 }

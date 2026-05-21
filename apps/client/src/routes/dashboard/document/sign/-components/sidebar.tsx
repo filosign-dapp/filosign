@@ -33,6 +33,8 @@ export function SignDocumentSidebar() {
 		retryPending,
 		retryingRuleId,
 		onRetryRule,
+		revokePending,
+		onRevokeAllowance,
 	} = useSignPayments();
 	return (
 		<aside className="hidden lg:block w-72 border-l border-border bg-background overflow-y-auto">
@@ -205,6 +207,8 @@ export function SignDocumentSidebar() {
 					retryPending={retryPending}
 					retryingRuleId={retryingRuleId}
 					onRetryRule={onRetryRule}
+					revokePending={revokePending}
+					onRevokeAllowance={onRevokeAllowance}
 				/>
 
 				{file.viewers && file.viewers.length > 0 && (

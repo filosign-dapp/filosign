@@ -29,19 +29,19 @@ flowchart TB
   end
   subgraph runtime [Runtime]
     Sender[Sender wallet EIP-7702]
-    Gelato[Gelato executor]
+    Relay[Filosign server relay]
     PV -->|canExecute reads| FR
-    Gelato -->|executePayout| PV
+    Relay -->|executePayout| PV
     Sender -->|registerRule approve USDC| PV
     Sender -->|registerFile| FR
     Signers[Signers] -->|registerFileSignature| FR
-    FR -->|FileSigned event| Gelato
+    FR -->|after sign| Relay
   end
 ```
 
 - **Document state** (who signed, commitments, placement) lives in `FSFileRegistry`.
 - **Keys and approvals** live in `FSKeyRegistry` and `FSManager`.
-- **Payments** are not custodied by Filosign. The sender approves `FSPaymentValidator` for an exact USDC amount per rule; when release conditions hold, `executePayout` performs `transferFrom` (callable by anyone, including Gelato for gasless relay).
+- **Payments** are not custodied by Filosign. The sender approves `FSPaymentValidator` for an exact USDC amount per rule; when release conditions hold, `executePayout` performs `transferFrom` (callable by anyone, including the Filosign server relay or user wallets).
 
 ## Contract roles
 
@@ -50,7 +50,7 @@ flowchart TB
 | `FSManager` | Server-gated admin: pause flags, `approveSender`, fee configuration, registry pointers. |
 | `FSFileRegistry` | File registration, signatures, viewer/signer commitments, `allSigned`, `FileSigned` events. |
 | `FSKeyRegistry` | Wallet keygen registration and Dilithium/KEM material. |
-| `FSPaymentValidator` | Payment rules per `cidId`: `registerRule` (payer only), `canExecute`, `executePayout` (permissionless when conditions met). |
+| `FSPaymentValidator` | Settlement rules per `cidId`: `registerRule` (payer only), `canExecute`, `executePayout` (permissionless when conditions met). |
 | `MockUSDCToken` | Local Hardhat USDC stand-in. |
 
 ### FSPaymentValidator release types
@@ -65,10 +65,10 @@ flowchart TB
 
 1. **Send (client):** For each payment line, the sender’s wallet calls `USDC.approve(validator, amount)` then `registerRule(...)` on `FSPaymentValidator`, then `registerFile` on the registry via the server relay path.
 2. **Sign:** Recipients sign; the registry emits `FileSigned` per signature.
-3. **Execute (Gelato):** A Gelato Web3 Function listens for `FileSigned`, finds rules via `ruleIdsForCid`, and when `canExecute(ruleId)` returns true, submits `executePayout(ruleId)`.
-4. **Index (server):** `file_payment_rules` rows track status; Gelato webhooks update `executed` or failure statuses.
+3. **Execute (server / user):** After signatures, the Filosign server relay (or sender/recipient via the app) calls `executePayout(ruleId)` when `canExecute` is true.
+4. **Index (server):** `file_settlement_rules` rows track status from relay results and `settlements.confirmSettlement`.
 
-Filosign never holds USDC. The server does not relay payout transactions.
+Filosign never holds USDC. Payout txs are permissionless `executePayout` calls; the server relay only pays gas.
 
 ### Cancelling a payout before execution
 
@@ -77,18 +77,18 @@ There is no `cancelRule` on-chain. The payer controls funding:
 1. **Revoke allowance** — `USDC.approve(FSPaymentValidator, 0)` from the payer wallet (exposed in the sign UI for senders). `executePayout` will revert on `transferFrom` even when release conditions are met.
 2. **Leave rule unfunded** — skip or revoke approval before signers finish.
 
-The rule row remains on-chain and in `file_payment_rules` until executed or marked failed. **Filosign does not control or screen all on-chain payouts** — see marketing Terms of Service.
+The rule row remains on-chain and in `file_settlement_rules` until executed or marked failed. **Filosign does not control or screen all on-chain payouts** — see marketing Terms of Service.
 
 ### Indexing (supported path)
 
-Server `files.register` verifies each payment rule on-chain (`assertPaymentRulesVerifiedOnChain`) before inserting into `file_payment_rules`. Rules created only outside the app are not indexed.
+Server `files.register` verifies each settlement rule on-chain (`assertSettlementRulesVerifiedOnChain`) before inserting into `file_settlement_rules`. Rules created only outside the app are not indexed.
 
-See [`packages/gelato/README.md`](../../packages/gelato/README.md) for Web3 Function deployment and [`apps/server/README.md`](../server/README.md) for webhooks and cron.
+See [`apps/server/README.md`](../server/README.md) for auto-execution cron and [`project/settlements/architecture-and-non-custody.md`](../../project/settlements/architecture-and-non-custody.md).
 
 ## Trust model
 
 - **Server (`onlyServer` on manager paths):** Can register files and signatures on behalf of users who have authenticated; cannot move USDC without the payer’s on-chain approve.
-- **Relayers:** Any address may call `executePayout` once `canExecute` is true; Gelato provides optional gasless relay.
+- **Relayers:** Any address may call `executePayout` once `canExecute` is true; Filosign server relay and users provide the primary paths.
 - **Payer:** Must call `registerRule` as `msg.sender == payer`; approval is exact-amount per rule.
 - **Recipients (product):** Filosign UI only allows envelope participants or a linked organization payout wallet.
 
@@ -117,4 +117,3 @@ Deploy with migrate (runs tests first):
 bun run contracts -- --migrate
 ```
 
-Set `GELATO_DEDICATED_SENDER` in the Gelato dashboard for the Web3 Function dedicated sender (not stored on `FSPaymentValidator`).

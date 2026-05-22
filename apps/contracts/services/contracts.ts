@@ -77,7 +77,6 @@ export type FilosignContracts<T extends Wallet = Wallet> = {
 	$client: T;
 };
 
-/** Public reads use `chainKey` (server runtime), not wagmi's active chain (may be stale Hardhat). */
 function getKeyedClient<T extends Client | WalletClient>(
 	client: T,
 	chainKey: ChainKey,

@@ -28,7 +28,7 @@ From repo root (see [SCRIPTS.md](../../SCRIPTS.md)):
 | Owns (`apps/client`) | Does not own |
 |----------------------|--------------|
 | Routes, layouts, `-components/`, `-lib/hooks/` controllers | oRPC handlers, DB, indexer (`apps/server`) |
-| `lib/filosign/filosign-provider.tsx` (wagmi wallet + WASM into SDK provider) | Hook implementations (`packages/react-sdk`) |
+| `lib/filosign/filosign-provider.tsx` (thirdweb → viem wallet + WASM into SDK provider) | Hook implementations (`packages/react-sdk`) |
 | `lib/domains/*` cross-route UX (PDF viewer, compliance export, invites UI) | Contract source (`apps/contracts`) |
 | App-only query keys (`filosignKeys.decryptedFileMetadata`, …) via re-export | Session seed, JWT, on-chain reads (SDK `filosignKeys`) |
 
@@ -91,7 +91,7 @@ No other top-level siblings under the route directory (`hooks/`, loose `*.ts`, e
 lib/
   components/ui/       # shadcn primitives
   components/app/      # chrome, errors, suspense, media
-  web3/                # thirdweb + wagmi config, providers, bridge sync
+  web3/                # config, providers, use-thirdweb (thirdweb + viemAdapter)
   filosign/            # filosign-provider, query-client, persisted-active-org, use-store
   auth/                # dashboard-protector, session gate, wallet unlock, connect
   query/               # client re-exports: query-keys, invalidate-inbox
@@ -103,7 +103,7 @@ lib/
   utils/               # cn, safe, logger, …
 ```
 
-**Import style:** `@/src/lib/web3/hooks/use-thirdweb-login`, `@/src/lib/domains/files/hooks/use-file-infos-by-piece-cids`.
+**Import style:** `@/src/lib/web3/use-thirdweb`, `@/src/lib/web3/config`.
 
 ---
 

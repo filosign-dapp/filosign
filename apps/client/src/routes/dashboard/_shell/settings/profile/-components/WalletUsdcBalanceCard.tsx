@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useActiveAccount } from "thirdweb/react";
+import { getContract } from "thirdweb";
+import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { formatUnits } from "viem";
-import { useBalance } from "wagmi";
 import { defaultChain, SUPPORTED_TOKENS } from "@/src/constants";
 import env from "@/src/env";
 import { Image } from "@/src/lib/components/app/media/image";
 import { Button } from "@/src/lib/components/ui/button";
-import { useWalletTopUp } from "@/src/lib/web3/hooks/use-wallet-top-up";
+import { defaultThirdwebChain, thirdwebClient } from "@/src/lib/web3/config";
+import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
 const usdc = SUPPORTED_TOKENS[0];
 
@@ -33,27 +34,40 @@ function formatUsdcAmountParts(
 
 export function WalletUsdcBalanceCard() {
 	const account = useActiveAccount();
-	const { openTopUp } = useWalletTopUp();
+	const { openTopUp } = useThirdweb();
 	const [topUpLoading, setTopUpLoading] = useState(false);
 
 	const address = account?.address;
 	const checksummed = address as `0x${string}` | undefined;
 
-	const { data, isPending, isError, refetch } = useBalance({
-		address: checksummed,
-		token: usdc.address as `0x${string}`,
-		chainId: defaultChain.id,
-		query: { enabled: Boolean(checksummed) },
+	const usdcContract = useMemo(
+		() =>
+			getContract({
+				client: thirdwebClient,
+				address: usdc.address,
+				chain: defaultThirdwebChain,
+			}),
+		[],
+	);
+
+	const balanceParams = checksummed
+		? ([checksummed] as const)
+		: (["0x0000000000000000000000000000000000000000"] as const);
+
+	const { data, isPending, isError, refetch } = useReadContract({
+		contract: usdcContract,
+		method: "function balanceOf(address account) view returns (uint256)",
+		params: balanceParams,
+		queryOptions: { enabled: Boolean(checksummed) },
 	});
 
 	const onrampEnabled = env.VITE_CHAIN === "mainnet";
 	const faucetUrl = usdc.faucets[0]?.url;
 
 	const parts = useMemo(() => {
-		const decimals = data?.decimals ?? usdc.decimals;
-		const value = data?.value ?? 0n;
-		return formatUsdcAmountParts(value, decimals);
-	}, [data?.decimals, data?.value]);
+		const value = typeof data === "bigint" ? data : 0n;
+		return formatUsdcAmountParts(value, usdc.decimals);
+	}, [data]);
 
 	const handleTopUp = async () => {
 		if (!address) return;

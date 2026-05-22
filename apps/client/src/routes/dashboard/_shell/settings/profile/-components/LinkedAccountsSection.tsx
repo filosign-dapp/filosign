@@ -35,8 +35,10 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/src/lib/components/ui/tooltip";
-import { thirdwebClient } from "@/src/lib/web3/config/client";
-import { thirdwebWalletModalOptions } from "@/src/lib/web3/config/wallet-modal-options";
+import {
+	thirdwebClient,
+	thirdwebWalletModalOptions,
+} from "@/src/lib/web3/config";
 
 type LinkedRow = {
 	key: string;

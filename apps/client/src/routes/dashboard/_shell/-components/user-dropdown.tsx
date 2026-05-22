@@ -34,13 +34,11 @@ import {
 } from "@/src/lib/components/ui/select";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { copyToClipboard } from "@/src/lib/utils/utils";
-import { useThirdwebUserInfo } from "@/src/lib/web3/hooks/use-thirdweb-user-info";
-import { useThirdwebWalletAuth } from "@/src/lib/web3/hooks/use-thirdweb-wallet-auth";
+import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
 export function UserDropdown() {
 	const [isOpen, setIsOpen] = React.useState(false);
-	const { user } = useThirdwebUserInfo();
-	const { logout: logoutWallet } = useThirdwebWalletAuth();
+	const { user, logout: logoutWallet } = useThirdweb();
 	const logoutFilosign = useLogout();
 	const navigate = useNavigate();
 

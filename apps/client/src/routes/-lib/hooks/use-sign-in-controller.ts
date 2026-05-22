@@ -2,16 +2,13 @@ import { useFilosignContext } from "@filosign/react";
 import { useIsRegistered, useLogout } from "@filosign/react/auth";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useActiveAccount } from "thirdweb/react";
-import { useWalletClient } from "wagmi";
 import {
 	hasColdReturn,
 	signDocumentSearchFromColdEntry,
 } from "@/src/lib/domains/invites/cold-invite-search";
 import { useColdInviteRecipientWarning } from "@/src/lib/domains/invites/use-cold-invite-recipient-warning";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
-import { useThirdwebLogin } from "@/src/lib/web3/hooks/use-thirdweb-login";
-import { useThirdwebWalletAuth } from "@/src/lib/web3/hooks/use-thirdweb-wallet-auth";
+import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 import { executeSwitchAccountLogout } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
 
 export type SignInView =
@@ -21,13 +18,7 @@ export type SignInView =
 	| "guest";
 
 export function useSignInController() {
-	const {
-		ready,
-		authenticated,
-		logout: logoutWallet,
-	} = useThirdwebWalletAuth();
-	const { login } = useThirdwebLogin();
-	const { data: walletClient } = useWalletClient();
+	const { ready, authenticated, login, logout: logoutWallet } = useThirdweb();
 	const { wallet } = useFilosignContext();
 	const logoutFilosign = useLogout();
 	const clearOnboardingForm = useStorePersist((s) => s.clearOnboardingForm);
@@ -79,8 +70,7 @@ export function useSignInController() {
 		signSearch,
 	]);
 
-	const thirdwebAddress = useActiveAccount()?.address;
-	const walletAddress = walletClient?.account.address ?? thirdwebAddress;
+	const walletAddress = wallet?.account.address;
 	const walletReady = Boolean(walletAddress);
 	const checkingRegistration = walletReady && isRegistered.isLoading;
 

@@ -2,14 +2,14 @@ import { useUserProfile } from "@filosign/react/users";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
-import { useThirdwebUserInfo } from "@/src/lib/web3/hooks/use-thirdweb-user-info";
+import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 import type { ProfileForm } from "../types";
 import { profileSchema } from "../types";
 import { useFileUpload } from "./use-file-upload";
 import { useSectionState } from "./use-section-state";
 
 export function useProfileSettings() {
-	const { walletAddress } = useThirdwebUserInfo();
+	const { walletAddress } = useThirdweb();
 	const userProfileQuery = useUserProfile();
 
 	const form = useForm<ProfileForm>({

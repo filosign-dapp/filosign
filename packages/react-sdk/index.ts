@@ -9,3 +9,4 @@ export {
 	queryKeyHasNonRpcRoot,
 	queryKeyStartsWith,
 } from "./src/lib/query-keys";
+export type { FilosignWallet } from "./src/lib/wallet";

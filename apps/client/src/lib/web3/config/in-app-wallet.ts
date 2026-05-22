@@ -19,7 +19,11 @@ export const filosignInAppWalletOptions: NonNullable<InAppWalletCreationOptions>
 				height: 64,
 			},
 		},
-		executionMode: { mode: "EIP7702", sponsorGas: true },
+		// Hardhat (31337): thirdweb bundler/delegation is unavailable — use direct EOA txs.
+		executionMode:
+			env.VITE_CHAIN === "local"
+				? { mode: "EOA" }
+				: { mode: "EIP7702", sponsorGas: true },
 		hidePrivateKeyExport: true,
 	};
 

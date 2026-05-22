@@ -9,8 +9,7 @@ import { HydrationLifecycleTracer } from "@/src/lib/components/app/hydration-lif
 import { Toaster } from "@/src/lib/components/ui/sonner";
 import { FilosignProvider } from "@/src/lib/filosign/filosign-provider";
 import { QueryClientProvider } from "@/src/lib/filosign/query-client";
-import { ThirdwebRootProvider } from "@/src/lib/web3/providers/thirdweb-provider";
-import { WagmiProvider } from "@/src/lib/web3/providers/wagmi-provider";
+import { Web3Provider } from "@/src/lib/web3/providers";
 import router from "@/src/router";
 
 export function AppProviders({ children }: { children?: ReactNode }) {
@@ -29,26 +28,24 @@ export function AppProviders({ children }: { children?: ReactNode }) {
 							apiHost={env.VITE_POSTHOG_HOST ?? "https://us.i.posthog.com"}
 							enabled={env.VITE_POSTHOG_ENABLED === true}
 						>
-							<ThirdwebRootProvider>
-								<WagmiProvider>
-									<FilosignProvider>
-										<IconContext.Provider
-											value={{
-												mirrored: false,
-												weight: "regular",
-											}}
-										>
-											<HydrationLifecycleTracer />
-											{children ?? (
-												<>
-													<RouterProvider router={router} />
-													<Toaster position="bottom-right" />
-												</>
-											)}
-										</IconContext.Provider>
-									</FilosignProvider>
-								</WagmiProvider>
-							</ThirdwebRootProvider>
+							<Web3Provider>
+								<FilosignProvider>
+									<IconContext.Provider
+										value={{
+											mirrored: false,
+											weight: "regular",
+										}}
+									>
+										<HydrationLifecycleTracer />
+										{children ?? (
+											<>
+												<RouterProvider router={router} />
+												<Toaster position="bottom-right" />
+											</>
+										)}
+									</IconContext.Provider>
+								</FilosignProvider>
+							</Web3Provider>
 						</FilosignAnalyticsProvider>
 					</QueryClientProvider>
 				</ThemeProvider>

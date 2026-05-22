@@ -1,7 +1,9 @@
 import type { DilithiumInstance } from "@filosign/crypto-utils/browser/dilithium";
-import { FilosignProvider as FilosignProviderBase } from "@filosign/react";
+import {
+	FilosignProvider as FilosignProviderBase,
+	type FilosignWallet,
+} from "@filosign/react";
 import { useEffect, useState } from "react";
-import { useWalletClient } from "wagmi";
 import env from "@/src/env";
 import { PersistedActiveOrganizationSync } from "@/src/lib/filosign/persisted-active-org";
 import { dilithiumLoadPromise } from "@/src/lib/filosign/preload-dilithium";
@@ -11,10 +13,14 @@ import {
 	hydrationMarkNow,
 } from "@/src/lib/utils/hydration-lifecycle";
 import { logger } from "@/src/lib/utils/logger";
+import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 import { Loader } from "../components/ui/loader";
 
 export function FilosignProvider({ children }: { children: React.ReactNode }) {
-	const { data: wallet } = useWalletClient();
+	const { viemWallet } = useThirdweb();
+	const walletForSdk: FilosignWallet | undefined = viemWallet?.account
+		? (viemWallet as FilosignWallet)
+		: undefined;
 	const [dilithium, setDilithium] = useState<DilithiumInstance | undefined>();
 
 	useEffect(() => {
@@ -23,10 +29,10 @@ export function FilosignProvider({ children }: { children: React.ReactNode }) {
 
 	useEffect(() => {
 		hydrationMark("filosign-provider:wallet-client", {
-			hasWallet: Boolean(wallet),
-			address: wallet?.account?.address?.slice(0, 10),
+			hasWallet: Boolean(walletForSdk),
+			address: walletForSdk?.account.address?.slice(0, 10),
 		});
-	}, [wallet?.account?.address]);
+	}, [walletForSdk?.account.address]);
 
 	useEffect(() => {
 		let mounted = true;
@@ -60,7 +66,7 @@ export function FilosignProvider({ children }: { children: React.ReactNode }) {
 		<FilosignProviderBase
 			apiBaseUrl={env.VITE_SERVER_URL}
 			wasm={{ dilithium }}
-			wallet={wallet}
+			wallet={walletForSdk}
 			loader={Loader}
 		>
 			<PersistedActiveOrganizationSync />

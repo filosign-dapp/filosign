@@ -1,4 +1,4 @@
-# Payments — architecture and non-custody
+# Settlements — architecture and non-custody
 
 Filosign is a **software provider** for document signing. Optional USDC payouts use a **pull-payment** model on `FSPaymentValidator`; Filosign does not custody user funds.
 
@@ -8,7 +8,7 @@ Public terms: [Terms of Service](/terms) and [Privacy Policy](/privacy) on the m
 
 1. **Sender** calls `registerRule` as the payer (`msg.sender == payer`).
 2. **Sender** `approve`s the validator for the exact USDC amount per rule.
-3. When **release conditions** are satisfied (`FSFileRegistry` signatures), **anyone** may call `executePayout` (Gelato for gasless relay, or any address paying its own gas).
+3. When **release conditions** are satisfied (`FSFileRegistry` signatures), **anyone** may call `executePayout` (Filosign server relay, user wallet, or any address paying its own gas).
 4. The validator `transferFrom`s USDC from payer to recipient.
 
 Release checks are enforced in the contract (`canExecute` / `RuleNotExecutable`). Paying gas does not bypass unsigned documents.
@@ -17,9 +17,9 @@ Release checks are enforced in the contract (`canExecute` / `RuleNotExecutable`)
 
 ## What Filosign does
 
-- Indexes payout rules in Postgres (`file_payment_rules`) only when sent through `files.register`, after on-chain verification (`assertPaymentRulesVerifiedOnChain`).
-- Optional Gelato Web3 Functions to relay `executePayout` for rules discoverable on-chain (including rules not indexed by Filosign).
-- Webhooks update status for UI and compliance bundles.
+- Indexes payout rules in Postgres (`file_settlement_rules`) only when sent through `files.register`, after on-chain verification (`assertSettlementRulesVerifiedOnChain`).
+- Server relay attempts `executePayout` after signatures and via hourly cron for indexed rules.
+- Manual settle from the app (sender or recipient) with `settlements.confirmSettlement` after an on-chain tx.
 - **Does not** hold USDC, approve on behalf of users, or gate on-chain execution (permissionless `executePayout`).
 
 ## Supported path vs bypass
@@ -28,7 +28,7 @@ Release checks are enforced in the contract (`canExecute` / `RuleNotExecutable`)
 |--|---------------------|-------------------------------|
 | Recipient allowlist | Yes, at `files.register` | No |
 | Indexed in DB / UI | Yes, when verified on-chain | No, unless also sent via Filosign |
-| Gelato event W3F | May execute if `cidId` matches | Same |
+| Server auto relay | Executes indexed rules when `canExecute` | Same |
 | Wallet screening (planned) | Filosign send + `files.register` only | Not applied |
 
 ## Recipient allowlist (product)

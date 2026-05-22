@@ -29,7 +29,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 				<h2>2. Non-custodial payments</h2>
 				<p>
 					Filosign does not hold, pool, or transmit your USDC. Payouts use a
-					pull-payment model: you register rules and approve the payment validator
+					pull-payment model: you register rules and approve the settlement validator
 					from your own wallet; settlement is <code>transferFrom</code> from your
 					wallet to the recipient when release conditions on the document registry
 					are met.
@@ -68,18 +68,17 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 						for, all on-chain payouts.</strong
 					>
 					Execution of <code>executePayout</code> is permissionless when contract
-					conditions are met: any address (including third-party relayers such as
-					Gelato) may submit the transaction. Paying gas does not bypass signature
+					conditions are met: any address (including Filosign server relay or your
+					wallet) may submit the transaction. Paying gas does not bypass signature
 					requirements enforced by the contracts.
 				</p>
 
 				<h2>4. Automation and indexing</h2>
 				<ul>
 					<li>
-						Optional Gelato Web3 Functions may relay <code>executePayout</code>
-						when conditions are met. Gelato is a third-party service; Filosign
-						configures integration parameters but does not operate Gelato
-						infrastructure.
+						Filosign may automatically relay <code>executePayout</code> from its
+						server when conditions are met (server-paid gas). You may also submit
+						settlement yourself from the sign page when offered.
 					</li>
 					<li>
 						Database and in-app payment status generally reflect rules submitted
@@ -90,6 +89,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 					<li>
 						Filosign does not guarantee that a payout will execute (for example,
 						insufficient balance, revoked approval, or unmet release conditions).
+					</li>
+					<li>
+						If a payout is executed outside Filosign (without using Settle payment
+						or Settle from wallet on the sign page), in-app status and compliance
+						indexing may update within approximately one day via a daily on-chain
+						scan. Funds still transfer on-chain regardless of dashboard timing.
 					</li>
 				</ul>
 

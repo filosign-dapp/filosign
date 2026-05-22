@@ -12,7 +12,6 @@ Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-pack
 | `apps/contracts`        | [README](apps/contracts/README.md) · [TESTING](apps/contracts/TESTING.md) | Solidity, `definitions/`, EIP-712; tests in `test/`          |
 | `apps/astro`            | [README](apps/astro/README.md)                                            | Marketing                                                    |
 | `packages/react-sdk`    | [README](packages/react-sdk/README.md)                                    | `FilosignProvider`, typed `rpc`, `rpcQuery`, hooks           |
-| `packages/gelato`       | [README](packages/gelato/README.md)                                       | Gelato Web3 Functions (`executePayout`, redrive cron)        |
 | `packages/shared`       | [AGENTS.md](packages/shared/AGENTS.md)                                    | Types, Zod, manifests (browser+server)                       |
 | `packages/auth`         | [README](packages/auth/README.md)                                         | JWT, refresh cookies, Dragonfly/Postgres auth store        |
 | `packages/entitlements` | —                                                                         | Plan catalog + pure evaluator (no DB; server wires later)    |
@@ -38,12 +37,12 @@ Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).
 
 ## Flow
 
-`definitions/` ← deploy ← `.sol` → `getContracts` ([services/contracts.ts](apps/contracts/services/contracts.ts)) → server `[lib/platform/evm.ts](apps/server/lib/platform/evm.ts)` + SDK `[FilosignProvider](packages/react-sdk/src/context/FilosignProvider.tsx)` (`rpc.runtime` → `chainKey` + wagmi) → hooks → client pages. Typed RPC: `[create-orpc-client.ts](packages/react-sdk/src/orpc/create-orpc-client.ts)` → `{apiBase}/api/rpc`. Client shell: [`filosign-provider.tsx`](apps/client/src/lib/filosign/filosign-provider.tsx) (WASM, wagmi, `VITE_SERVER_URL`). Client conventions: [`apps/client/README.md`](apps/client/README.md). `@filosign/shared` → server, SDK, client; `@filosign/crypto-utils` → SDK, contracts.
+`definitions/` ← deploy ← `.sol` → `getContracts` ([services/contracts.ts](apps/contracts/services/contracts.ts)) → server `[lib/platform/evm.ts](apps/server/lib/platform/evm.ts)` + SDK `[FilosignProvider](packages/react-sdk/src/context/FilosignProvider.tsx)` (`rpc.runtime` → `chainKey` + viem wallet from thirdweb) → hooks → client pages. Typed RPC: `[create-orpc-client.ts](packages/react-sdk/src/orpc/create-orpc-client.ts)` → `{apiBase}/api/rpc`. Client shell: [`filosign-provider.tsx`](apps/client/src/lib/filosign/filosign-provider.tsx) (thirdweb, `viemAdapter`, WASM, `VITE_SERVER_URL`). Client conventions: [`apps/client/README.md`](apps/client/README.md). `@filosign/shared` → server, SDK, client; `@filosign/crypto-utils` → SDK, contracts.
 
 ## Boundaries
 
 - **HTTP (client):** `useFilosignContext().rpc` + `@filosign/react` hooks only. No `fetch`/axios to JSON API except: blob/doc bytes ([send-envelope.ts](apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope.ts)), static assets ([compliance-pdf-images.ts](apps/client/src/lib/domains/files/compliance-pdf/compliance-pdf-images.ts)), **PUT to `storage.presignPut` URLs** (no API body proxy).
-- **Payments:** Server never custodies USDC. Client registers rules + `approve` on-chain; Gelato calls `FSPaymentValidator.executePayout`; server indexes `file_payment_rules` + webhooks only (`payments.listByFile`, `payments.requestRetry`).
+- **Settlements:** Server never custodies USDC. Client registers rules + `approve` on-chain; sign page **Settle payment** → `settlements.trySettle` (server relay); fallback **Settle from wallet** → `settlements.confirmSettlement`. Daily cron syncs off-platform `executed` state. See [`lib/domains/settlements/`](apps/server/lib/domains/settlements/).
 - **Logic:** UI `apps/client` | hooks/SDK `packages/react-sdk` | API/DB/relay `apps/server`.
 - **Imports:** Client uses minimal `@filosign/contracts` ([constants](apps/client/src/constants.ts)); prefer SDK/runtime for new code.
 - **Definitions:** Never hand-edit `apps/contracts/definitions/`. Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy).
@@ -62,9 +61,8 @@ Mount: [`api/orpc/hono-mount.ts`](apps/server/api/orpc/hono-mount.ts) (`apiRoute
 ## Vertical slice
 
 1. Contracts `src` → compile → tests ([TESTING.md](apps/contracts/TESTING.md)) aligned in same PR.
-2. Server: oRPC `api/orpc/` + handlers + thin routes + `fsContracts`; `file_payment_rules` schema; Gelato integration routes under `/api/integrations/gelato/`.
-3. Gelato: `packages/gelato` Web3 Functions (event + cron redrive).
-4. SDK: hooks + `useFilosignContext()` (`registerPaymentRulesOnChain`, `usePaymentsListByFile`, `usePaymentRequestRetry`).
+2. Server: oRPC `api/orpc/` + handlers + `fsContracts`; `file_settlement_rules`; post-sign + `trySettle` auto-execute; daily cron backfill.
+3. SDK: hooks + `useFilosignContext()` (`registerSettlementRulesOnChain`, `useSettlementsListByFile`, `useTrySettleSettlement`, `useManualSettlementPayout`).
 5. Client: UI only, `@filosign/react` (payment attachment panel, sign-page payout status).
 6. Verify: [SCRIPTS.md](SCRIPTS.md) — `check`, `test`; contract changes: `bun run sanity` (includes Hardhat) or `bun run sanity -- --fast` without Hardhat.
 
@@ -81,6 +79,27 @@ All commands: **[SCRIPTS.md](SCRIPTS.md)** (or `bun run <script> -- --help`). Pr
 Use when relevant (`~/.agents/skills/`): **ETHSKILLS** / `~/.cursor/skills/ethskills` (Solidity, onchain) · `/vercel-react-best-practices` (client, SDK) · `/vercel-composition-patterns` (client) · `/frontend-design` (client, astro) · `/web-design-guidelines` (TSX) · `/develop-secure-contracts` (contracts) · `/copywriting` (astro, client) · `/playwright` (E2E). Frontend polish: [impeccable.style](https://impeccable.style/docs/) + [design.mdc](.cursor/rules/apps/web/design.mdc).
 
 Always use Zod v4 schemas: Fetch migration guide from [https://zod.dev/v4/changelog](https://zod.dev/v4/changelog)
+
+## Domain module layout (refactor)
+
+**Goal:** Middle ground between one giant file and dozens of one-function files — a **feature folder** with a thin public surface and scoped internals (same idea as [`apps/client/src/lib/web3/`](apps/client/src/lib/web3/)).
+
+**Where:** [`apps/server/lib/domains/<feature>/`](apps/server/lib/domains/) (and similar colocated trees in client/SDK when a feature outgrows one file).
+
+**Shape:**
+
+| Piece | Role |
+| ----- | ---- |
+| `index.ts` | Stable exports for handlers and other packages — only what callers need |
+| `<feature>.ts` | Thin facade: oRPC/domain entrypoints, auth, cron hooks, orchestration |
+| `<feature>-<flow>.ts` | Optional second top-level file only when a distinct lifecycle exists (e.g. register vs runtime) |
+| `utils/` | **Big or reusable** chunks only — chain sync, relay, heavy validation (~100+ lines or shared by 2+ callers) |
+
+**Avoid:** One file per tiny helper; repo-root `utils/` dumps; duplicating exports from both `index` and implementation files.
+
+**Reference:** [`lib/domains/settlements/`](apps/server/lib/domains/settlements/) — `settlements.ts` + `settlements-register.ts` + `utils/{execute-payout,sync-from-chain,verify-rules-on-chain,preflight}.ts`.
+
+When refactoring an over-split domain: merge related modules into one `utils/` file per concern, keep handlers thin, preserve `index.ts` exports.
 
 ## Development stance
 

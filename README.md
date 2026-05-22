@@ -11,7 +11,7 @@ It lets users send documents, invite recipients, collect signatures, and export 
 - Lets recipients approve who can send them documents.
 - Registers document and signature state through smart contracts.
 - Supports acknowledgements, signer records, and compliance exports.
-- Supports optional USDC payment rules released automatically when signing conditions are met.
+- Supports optional USDC settlement rules released automatically when signing conditions are met.
 - Provides a React SDK for apps that want to integrate FiloSign flows.
 
 ## Repository Structure
@@ -22,7 +22,6 @@ apps/
   server/             Hono API server
   contracts/          Solidity contracts and deployment helpers
 packages/
-  gelato/             Gelato Web3 Functions for automated payouts
   react-sdk/          React provider, API client, and hooks
   crypto-utils/       Encryption, KEM, signatures, hashing, encoding
   shared/             Shared schemas and helpers
@@ -67,7 +66,7 @@ Solidity contracts and deployment utilities for local, testnet, and mainnet envi
 
 ### `@filosign/react`
 
-The SDK consumed by the client and test app. It wraps the API client, contract setup, TanStack Query hooks, auth, files, sharing, users, and payment rules.
+The SDK consumed by the client and test app. It wraps the API client, contract setup, TanStack Query hooks, auth, files, sharing, users, and settlement rules.
 
 ### `@filosign/crypto-utils`
 

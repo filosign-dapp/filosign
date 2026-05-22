@@ -1,6 +1,6 @@
 import { decodeEventLog, type Hash } from "viem";
 import env from "@/env";
-import { processFsManagerLogFromIndexer } from "@/lib/domains/sharing/fs-manager-indexer";
+import { processFsManagerLogFromIndexer } from "@/lib/domains/sharing";
 import { handleKeygenDataRegisteredFromIndexer } from "@/lib/domains/users/keygen-indexer";
 import { evmClient, fsContracts } from "@/lib/platform/evm";
 import tryCatchSync, { tryCatch } from "@/lib/platform/utils/tryCatch";

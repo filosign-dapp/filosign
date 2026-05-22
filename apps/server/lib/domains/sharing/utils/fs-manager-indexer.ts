@@ -1,11 +1,11 @@
 import { and, eq } from "drizzle-orm";
 import { decodeEventLog, type Hash, type Log } from "viem";
 import env from "@/env";
-import { activatePendingOrgConnectionsForApproval } from "@/lib/domains/sharing/org-connections";
 import db from "@/lib/platform/db";
 import { users } from "@/lib/platform/db/schema/user";
 import { fsContracts } from "@/lib/platform/evm";
 import tryCatchSync from "@/lib/platform/utils/tryCatch";
+import { activatePendingOrgConnectionsForApproval } from "../sharing";
 
 const { shareApprovals, shareRequests, organizationConnections } = db.schema;
 const { FSManager } = fsContracts;

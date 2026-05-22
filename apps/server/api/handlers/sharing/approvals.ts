@@ -5,12 +5,12 @@ import type { Address } from "viem";
 import { getAddress, isAddress } from "viem";
 import z from "zod";
 import type { ActiveOrgContext } from "@/lib/domains/orgs";
-import { ensureReciprocalShareRequest } from "@/lib/domains/sharing";
 import {
 	activatePendingOrgConnectionsForApproval,
+	ensureReciprocalShareRequest,
 	listOrgSendableRecipients,
 	orgCanSendToRecipient,
-} from "@/lib/domains/sharing/org-connections";
+} from "@/lib/domains/sharing";
 import db from "@/lib/platform/db";
 import { evmClient, fsContracts } from "@/lib/platform/evm";
 import { processTransaction } from "@/lib/platform/indexer/process";

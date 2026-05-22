@@ -38,7 +38,7 @@ Deeper context: [`AGENTS.md`](../../AGENTS.md), [api-routes.mdc](../../.cursor/r
 |---------|---------|
 | `@filosign/react` | `FilosignProvider`, `useFilosignContext` (`rpc`, `rpcQuery`, `session`, `contracts`, `runtime`, `wallet`, `wasm`) |
 | `@filosign/react/auth` | Login, logout, `useAuthedApi`, registration, recovery |
-| `@filosign/react/files` | Documents, cold invite, sign/ack/view/send |
+| `@filosign/react/files` | Documents, cold invite, sign/ack/view/send, settlement rules (`useSettlementsListByFile`, `useTrySettleSettlement`, `useManualSettlementPayout`) |
 | `@filosign/react/sharing` | Connections, approvals, requests |
 | `@filosign/react/users` | Profile, Privy email, lookup |
 | `@filosign/react/runtime` | `useRuntimeChain` |

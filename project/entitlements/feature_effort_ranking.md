@@ -19,7 +19,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | Feature | Tier | Why so low | How to build |
 | ------- | ---- | ---------- | ------------ |
 | **Standard form fields** | Free Trial | **Done:** 7 placement types in [`field-types.ts`](../../apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types.ts); manifest + send path exists | Entitlement gates per tier; sign flow still tracks `completedFieldIds` only (not rich field values) |
-| **Basic audit trail** | Free Trial | **Done:** compliance PDF v3 in [`compliance-pdf/`](../../apps/client/src/lib/domains/files/compliance-pdf/) | Add signer IP capture on register/sign in server handlers; include in compliance bundle |
+| **Basic audit trail** | Free Trial | **Done:** compliance PDF (bundle v4, [`compliance-pdf/`](../../apps/client/src/lib/domains/files/compliance-pdf/)) | Add signer IP capture on register/sign in [`lib/domains/files/`](../../apps/server/lib/domains/files/); include in compliance bundle |
 | **Mobile-responsive signing UI** | Free Trial | **Partial:** sticky header, responsive sign layout | Polish breakpoints, touch targets, field overlays on small screens |
 | **Embedded signing sandbox (testnet)** | Platform Starter | **Partial:** `VITE_CHAIN=testnet`, Base Sepolia | Document sandbox for API consumers; optional testnet-only API base URL / keys |
 
@@ -30,7 +30,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | Feature | Tier | Why | How to build |
 | ------- | ---- | --- | ------------ |
 | **Manual email reminders** | Free Trial | Resend + templates exist ([`invites.ts`](../../apps/server/lib/platform/email/invites.ts)) | oRPC `files.remindSigners` + dashboard button; dedupe/cooldown |
-| **Cryptographically signed webhooks** | Platform Starter | Same pattern as [`gelato-secret.ts`](../../apps/server/api/integrations/gelato-secret.ts) | Per-API-key secret; HMAC on outbound POST body |
+| **Cryptographically signed webhooks** | Platform Starter | No product webhooks yet; use shared-secret integration pattern under `api/integrations/` when added | Per-API-key secret; HMAC on outbound POST body |
 | **Custom metadata passthrough** | Platform Starter | No `metadata` on files yet | `jsonb` on `files`; include in register, detail, webhooks |
 | **API key management dashboard** | Platform Starter | Auth is JWT wallet today; OpenAPI mount exists | `api_keys` table; middleware; rotation/revoke UI |
 | **Shared template folders** | Team Pro | Org templates done ([`connections-templates.ts`](../../apps/server/api/handlers/orgs/connections-templates.ts)) | `folder_id` + permissions; UI tree |
@@ -48,7 +48,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 
 | Feature | Tier | Why | How to build |
 | ------- | ---- | --- | ------------ |
-| **Basic webhook integrations** | Team Standard | Only Gelato webhooks today | `webhook_endpoints` per org; emit on sign/register/complete; queue + retries |
+| **Basic webhook integrations** | Team Standard | No outbound product webhooks today | `webhook_endpoints` per org; emit on sign/register/complete; queue + retries |
 | **Automated reminder rules & expiration** | Team Standard | Invite TTL cron partial | Envelope `expires_at` + `reminder_schedule`; cron → email |
 | **Sequential signing workflows** | Team Standard | Order passed but not enforced | Server gate: no invite/sign until prior signer done; optional delayed emails |
 | **Encrypted shared contacts & team address book** | Team Standard | Connections graph partial | Org-scoped contacts; optional encrypted notes |
@@ -112,7 +112,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 - **Free Trial “standard fields”** — largely **already built**; tier work is gating + sign UX.  
 - **“Shared templates” (Team Standard)** — org templates exist; **team key-sharing** is the **L** row above.  
 - **`features.routing.advanced`** is in the catalog but **sequential signing is not implemented**.  
-- **Payments / USDC** are implemented (on-chain rules + Gelato) but were outside the suggested-feature list in the report.
+- **Settlements / USDC** are implemented (on-chain rules + server `trySettle` relay + manual confirm + daily sync) but were outside the suggested-feature list in the report.
 
 ---
 
@@ -128,7 +128,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | CSV export | **none** | — |
 | Templates / org keys | **done–partial** | `orgs/connections-templates.ts`, `invites-keys.ts` |
 | Sequential signing | **partial** (order not enforced) | `send-envelope.ts` |
-| Product webhooks | **none** (Gelato only) | `integrations/gelato.ts` |
+| Product webhooks | **none** | — |
 | Contacts | **partial** | `connections/-lib/utils/contacts.ts` |
 | Reminders / expiration | **partial** | `expire-invites.ts` |
 | Seat / billing | **partial** | `packages/entitlements/`, `billing.ts` |

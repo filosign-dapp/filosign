@@ -14,7 +14,7 @@
 
 ## Enforcement
 
-- **Client:** Payment attach UI only offers envelope participants and org payout wallet (when linked).
+- **Client:** Settlement attach UI only offers envelope participants and org payout wallet (when linked).
 - **Server:** `assertSettlementRecipientsAllowlisted` on `files.register` when `settlementRules` are present.
 - **Server:** `assertSettlementRulesVerifiedOnChain` — payer, `cidId`, amount, recipient, and token must match on-chain `FSPaymentValidator.rules` plus successful `registerRule` / `approve` receipts.
 

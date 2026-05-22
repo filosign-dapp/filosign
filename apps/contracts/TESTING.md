@@ -28,7 +28,7 @@ Hardhat + viem + TypeScript. Test what loses money or breaks trust:
 | Path | Role |
 | ---- | ---- |
 | `test/*.spec.ts` | Behavior: reverts, balances, integration |
-| `test/fixtures.ts` | Deploy factories, shared wallets including Gelato `payout` |
+| `test/fixtures.ts` | Deploy factories, shared wallets including relay `payout` executor |
 | `test/helpers/signatures.ts` | EIP-712 signing aligned with Solidity |
 | `test/helpers/walletAccount.ts` | viem account helpers |
 | `test/helpers/chainTime.ts` | `latestBlockTimestamp(publicClient)` |

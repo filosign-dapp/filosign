@@ -16,9 +16,9 @@ Ranked **high → low**. Keep bullets actionable; link detail docs in `project/e
 - **Pricing page:** redesign from new entitlements + `[feature_effort_ranking.md](entitlements/feature_effort_ranking.md)` + competitive/cost reports.
 - **Deploy path:** decide Hetzner (multi-node + Docker Swarm) vs managed DB/PaaS; document server + Postgres + secrets + backups.
 - **Uptime monitoring + backups** (DB, R2, secrets rotation).
-- **Launch funds:** budget ETH/USDC (contracts), server gas relayer, Thirdweb/Gelato credits, Hetzner, domains, legal, first year ops.
+- **Launch funds:** budget ETH/USDC (contracts), server settlement relay gas, Thirdweb credits, Hetzner, domains, legal, first year ops.
 - **Counsel review** of ToS, Privacy, cookie/consent (GDPR if EU users), acceptable use, limitation of liability, arbitration venue.
-- **Payments & crypto wording:** non-custodial USDC, Gelato/third-party relayers, no money-transmitter claims you can’t support.
+- **Payments & crypto wording:** non-custodial USDC, server/wallet settlement relay (no custody), no money-transmitter claims you can’t support.
 - **E-sign legal posture:** which markets you target (US ESIGN/UETA vs EU eIDAS); don’t claim QES until built.
 - **Trademark:** “Filosign” search + filing (India/US).
 - **CPA / tax advisor:** India vs US entity, GST, export of services, US sales tax (SaaS nexus), crypto/treasury reporting.
@@ -68,6 +68,6 @@ Ranked **high → low**. Keep bullets actionable; link detail docs in `project/e
 ## P4 — Ongoing / research backlog
 
 - **Agents SDK:** architecture, auth, billing meter, safety — dedicated design pass.
-- **Gelato + testnet production checklist** (if not already on mainnet/testnet GTM path).
-- **Centralized gas ops** (server vs Thirdweb vs Gelato) — optional cost simplification.
+- **Settlement relay + testnet production checklist** (relayer EOA funded on Base Sepolia/mainnet).
+- **Centralized gas ops** (server settlement relay vs Thirdweb tx sponsorship) — optional cost simplification.
 

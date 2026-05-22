@@ -34,7 +34,7 @@ docs/                 Local-only notes (gitignored)
 
 FiloSign has five main layers:
 
-- **Client app:** React 19, TanStack Router, TanStack Query, thirdweb (embedded wallet + Connect UI), Wagmi, Viem, Tailwind, Radix UI, and Motion.
+- **Client app:** React 19, TanStack Router, TanStack Query, thirdweb (embedded wallet + Connect UI) with Viem via `viemAdapter`, Tailwind, Radix UI, and Motion.
 - **API server:** Bun + Hono service for auth, users, files, sharing, uploads, indexing, and server-side protocol actions.
 - **React SDK:** Hooks and provider logic for authentication, file workflows, sharing approvals, signing, and profiles.
 - **Contracts:** Protocol contracts for sender approvals, key registration, file registration, signer records, and pull-based USDC payouts (`FSPaymentValidator`).

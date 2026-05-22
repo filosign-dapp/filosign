@@ -26,7 +26,7 @@ Traditional e-signature products treat documents as plain text on their servers,
 ### Filosign's Core Value Propositions (USPs)
 1. **End-to-End Encryption (E2EE):** Documents are encrypted client-side. Filosign's servers only host encrypted blobs (IPFS/S3), meaning we cannot read the contents of your contracts.
 2. **Post-Quantum Cryptography (PQC):** We use state-of-the-art lattice-based cryptography (Dilithium/ML-DSA) for signatures, ensuring documents signed today remain secure even when quantum computers become available.
-3. **Automated Blockchain Settlements:** We integrate stablecoin payouts directly into the signing flow. When all parties sign, smart contracts (running via Gelato network automation) execute non-custodial payouts instantly.
+3. **Automated Blockchain Settlements:** We integrate stablecoin payouts directly into the signing flow. When all parties sign, `FSPaymentValidator` releases USDC via permissionless `executePayout` (server relay after sign, with manual wallet fallback).
 
 ---
 

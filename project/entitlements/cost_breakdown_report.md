@@ -15,7 +15,7 @@ This report breaks down the fixed, variable, and per-user break-even costs for F
 * **All Tiers:**
   * Thirdweb Pro RPC: \$219.00/mo
   * Web & DB Hosting (Fly.io + Supabase): \$50.00/mo
-  * Gelato Platform Fee: \$0.00/mo (Free/Pay-as-you-go)
+  * Settlement relay gas (server EOA on Base): variable; no third-party automation platform fee
   * **Total Fixed Cost:** \$269.00/mo (\$0.0897 USD / user / month)
 
 ### Gas Cost Models on Base L2 (Per Document)
@@ -210,8 +210,8 @@ While unit margins exceed 90%, scaling to 3,000+ active users introduces minor o
    * **Scale Impact:** At ~75 GB/mo new data and 4x downloads, storage grows to **\$4.40/mo** in Year 1, and egress adds **\$4.10/mo**. Total overhead is under **\$10.00/mo** (less than \$0.0001/doc).
 2. **Post-Quantum Cryptography (PQC) Gas Markup:**
    * PQC signatures (Dilithium/ML-DSA) are **~2,400 to 3,300 bytes** (vs. legacy ECDSA's **64 bytes**). This increases Base L2 transaction size and gas fees. Model B (\$0.005/txn) cushions this, but congestion can impact fees.
-3. **Gelato Web3 Function Relaying:**
-   * Gelato adds a **5–10% gas premium** for executing stablecoin payouts. We must lock minor Base ETH as a deposit buffer to avoid failed transactions during gas spikes.
+3. **Settlement execution gas (server relay):**
+   * Post-sign and **Settle payment** paths use the server relayer EOA on Base L2. Budget minor ETH for spikes; off-platform payouts sync via daily cron (up to ~24h UI lag).
 4. **SaaS Tooling Scaling:**
    * Monitoring/log services (PostHog, Sentry, BetterStack) are free initially, but will add **\$30–\$55/mo** in aggregate once volumes cross free limits.
 5. **Payment Chargebacks & Disputes:**

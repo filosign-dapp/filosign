@@ -63,7 +63,7 @@ Mount: [`api/orpc/hono-mount.ts`](apps/server/api/orpc/hono-mount.ts) (`apiRoute
 1. Contracts `src` → compile → tests ([TESTING.md](apps/contracts/TESTING.md)) aligned in same PR.
 2. Server: oRPC `api/orpc/` + handlers + `fsContracts`; `file_settlement_rules`; post-sign + `trySettle` auto-execute; daily cron backfill.
 3. SDK: hooks + `useFilosignContext()` (`registerSettlementRulesOnChain`, `useSettlementsListByFile`, `useTrySettleSettlement`, `useManualSettlementPayout`).
-5. Client: UI only, `@filosign/react` (payment attachment panel, sign-page payout status).
+5. Client: UI only, `@filosign/react` (settlement attachment panel, sign-page settle CTAs).
 6. Verify: [SCRIPTS.md](SCRIPTS.md) — `check`, `test`; contract changes: `bun run sanity` (includes Hardhat) or `bun run sanity -- --fast` without Hardhat.
 
 ## Scripts & CI
@@ -98,6 +98,8 @@ Always use Zod v4 schemas: Fetch migration guide from [https://zod.dev/v4/change
 **Avoid:** One file per tiny helper; repo-root `utils/` dumps; duplicating exports from both `index` and implementation files.
 
 **Reference:** [`lib/domains/settlements/`](apps/server/lib/domains/settlements/) — `settlements.ts` + `settlements-register.ts` + `utils/{execute-payout,sync-from-chain,verify-rules-on-chain,preflight}.ts`.
+
+**Also refactored:** [`lib/domains/files/`](apps/server/lib/domains/files/) — `piece.ts`, `piece-sign.ts`, `register.ts`, `utils/piece-{detail,compliance}.ts` (handlers re-export only). [`lib/domains/sharing/`](apps/server/lib/domains/sharing/) — `sharing.ts` + `utils/fs-manager-indexer.ts`. Client [`compliance-pdf/`](apps/client/src/lib/domains/files/compliance-pdf/) — `compliance-pdf.ts` + `utils/{draw,summary,build,...}.ts`.
 
 When refactoring an over-split domain: merge related modules into one `utils/` file per concern, keep handlers thin, preserve `index.ts` exports.
 

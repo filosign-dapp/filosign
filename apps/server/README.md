@@ -18,7 +18,7 @@ Bun reads `.env*` automatically per [environment variables — Bun](https://bun.
 | `api/handlers/` | oRPC procedure implementations (**`ORPCError`**, reuse `tryCatch`) |
 | `api/orpc/hono-mount.ts` | **`apiRouter`** — integrations, then optional JWT + hybrid oRPC/OpenAPI on `/api` |
 | `api/middleware/` | JWT optional parsing for **`/api/rpc`** + **`/api/api-reference`** |
-| `lib/domains/` | Business logic by bounded context (orgs, files, payments, sharing, users, entitlements, invites, runtime) — shared by handlers, indexer, cron |
+| `lib/domains/` | Business logic by bounded context (orgs, files, settlements, sharing, users, entitlements, invites, runtime) — shared by handlers, indexer, cron |
 | `lib/platform/` | Shared infra: `db/`, `indexer/`, `cron/`, `evm`, `s3/`, `analytics/`, `compliance/`, `validation/`, `utils/` |
 | `lib/platform/polyfills/` | `bigint-json` for JSON serialization |
 | `constants.ts` | Shared limits (e.g. `MAX_FILE_SIZE`) |

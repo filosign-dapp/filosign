@@ -25,9 +25,10 @@ import { getAddress, type Hex } from "viem";
 import { useWalletUnlock } from "@/src/lib/auth/use-wallet-unlock";
 import { coldInviteRecipientMatchesIdentity } from "@/src/lib/domains/invites/cold-invite-search";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
-import { useThirdwebLoginAction } from "@/src/lib/web3/hooks/use-thirdweb-login";
-import { useThirdwebUserInfo } from "@/src/lib/web3/hooks/use-thirdweb-user-info";
-import { useThirdwebWalletAuth } from "@/src/lib/web3/hooks/use-thirdweb-wallet-auth";
+import {
+	useThirdweb,
+	useThirdwebLoginAction,
+} from "@/src/lib/web3/use-thirdweb";
 import { executeSwitchAccountLogout } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
 
 export function useSignInviteUnlock(args: {
@@ -39,12 +40,7 @@ export function useSignInviteUnlock(args: {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const { rpc, session, wallet, rpcQuery } = useFilosignContext();
-	const {
-		ready,
-		authenticated,
-		logout: logoutWallet,
-	} = useThirdwebWalletAuth();
-	const { user } = useThirdwebUserInfo();
+	const { ready, authenticated, user, logout: logoutWallet } = useThirdweb();
 	const login = useThirdwebLoginAction();
 	const { data: userProfile } = useUserProfile();
 	const logoutFilosign = useLogout();

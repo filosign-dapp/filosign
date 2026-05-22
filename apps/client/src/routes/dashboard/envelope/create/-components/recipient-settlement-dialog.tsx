@@ -1,4 +1,4 @@
-import type { PaymentReleaseType } from "@filosign/shared";
+import type { SettlementReleaseType } from "@filosign/shared";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { useEffect, useMemo, useState } from "react";
 import { SUPPORTED_TOKENS } from "@/src/constants";
@@ -21,24 +21,24 @@ import {
 	SelectValue,
 } from "@/src/lib/components/ui/select";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
-import type { PaymentAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/payment-attachment";
+import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
+import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
 import {
 	buildDraftFromRecipient,
-	recipientPaymentLabel,
-} from "@/src/routes/dashboard/envelope/create/-lib/utils/payment-drafts";
-import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
+	recipientSettlementLabel,
+} from "@/src/routes/dashboard/envelope/create/-lib/utils/settlement-drafts";
 
 type Props = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	recipient: Recipient;
 	allRecipients: Recipient[];
-	existingDraft: PaymentAttachmentDraft | undefined;
-	onSave: (draft: PaymentAttachmentDraft) => void;
+	existingDraft: SettlementAttachmentDraft | undefined;
+	onSave: (draft: SettlementAttachmentDraft) => void;
 	onRemove: () => void;
 };
 
-export function RecipientPaymentDialog({
+export function RecipientSettlementDialog({
 	open,
 	onOpenChange,
 	recipient,
@@ -49,7 +49,7 @@ export function RecipientPaymentDialog({
 }: Props) {
 	const [amountUsdc, setAmountUsdc] = useState("");
 	const [releaseType, setReleaseType] =
-		useState<PaymentReleaseType>("all_signed");
+		useState<SettlementReleaseType>("all_signed");
 	const [specificSignerEmail, setSpecificSignerEmail] = useState("");
 
 	const signerOptions = useMemo(() => {
@@ -60,7 +60,7 @@ export function RecipientPaymentDialog({
 				if (!raw || !isValidRecipientEmail(raw)) return null;
 				return {
 					email: normalizePlacementRecipientEmail(raw),
-					label: recipientPaymentLabel(r),
+					label: recipientSettlementLabel(r),
 				};
 			})
 			.filter((x): x is NonNullable<typeof x> => x !== null);
@@ -75,7 +75,7 @@ export function RecipientPaymentDialog({
 		);
 	}, [open, existingDraft, signerOptions]);
 
-	const payeeLabel = recipientPaymentLabel(recipient);
+	const payeeLabel = recipientSettlementLabel(recipient);
 	const emailValid = isValidRecipientEmail(recipient.email ?? "");
 
 	const handleSave = () => {
@@ -119,9 +119,9 @@ export function RecipientPaymentDialog({
 				) : (
 					<div className="grid gap-4 py-1">
 						<div className="grid gap-2">
-							<Label htmlFor="recipient-payment-amount">Amount (USDC)</Label>
+							<Label htmlFor="recipient-settlement-amount">Amount (USDC)</Label>
 							<Input
-								id="recipient-payment-amount"
+								id="recipient-settlement-amount"
 								inputMode="decimal"
 								value={amountUsdc}
 								onChange={(e) => setAmountUsdc(e.target.value)}
@@ -130,12 +130,14 @@ export function RecipientPaymentDialog({
 						</div>
 
 						<div className="grid gap-2">
-							<Label htmlFor="recipient-payment-release">Release when</Label>
+							<Label htmlFor="recipient-settlement-release">Release when</Label>
 							<Select
 								value={releaseType}
-								onValueChange={(v) => setReleaseType(v as PaymentReleaseType)}
+								onValueChange={(v) =>
+									setReleaseType(v as SettlementReleaseType)
+								}
 							>
-								<SelectTrigger id="recipient-payment-release">
+								<SelectTrigger id="recipient-settlement-release">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
@@ -149,7 +151,7 @@ export function RecipientPaymentDialog({
 
 						{releaseType === "specific_signer" ? (
 							<div className="grid gap-2">
-								<Label htmlFor="recipient-payment-signer">Signer</Label>
+								<Label htmlFor="recipient-settlement-signer">Signer</Label>
 								{signerOptions.length === 0 ? (
 									<p className="text-xs text-muted-foreground">
 										Add at least one signer with a valid email.
@@ -161,7 +163,7 @@ export function RecipientPaymentDialog({
 											if (v != null) setSpecificSignerEmail(v);
 										}}
 									>
-										<SelectTrigger id="recipient-payment-signer">
+										<SelectTrigger id="recipient-settlement-signer">
 											<SelectValue placeholder="Select signer" />
 										</SelectTrigger>
 										<SelectContent>
@@ -193,7 +195,7 @@ export function RecipientPaymentDialog({
 							className="text-destructive sm:mr-auto"
 							onClick={handleRemove}
 						>
-							Remove payment
+							Remove settlement
 						</Button>
 					) : (
 						<span className="hidden sm:block sm:mr-auto" />

@@ -14,11 +14,14 @@ export type UploadedFile = {
 	type: string;
 };
 
+import type { PaymentAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/payment-attachment";
+
 export type EnvelopeForm = {
 	recipients: Recipient[];
 	emailSubject: string;
 	emailMessage: string;
 	documents: UploadedFile[];
+	paymentDrafts: PaymentAttachmentDraft[];
 };
 
 export const ALLOWED_FILE_TYPES = [
@@ -49,4 +52,5 @@ export type CreateForm = {
 	emailSubject: string;
 	emailMessage: string;
 	documents: StoredDocument[];
+	paymentDrafts: PaymentAttachmentDraft[];
 };

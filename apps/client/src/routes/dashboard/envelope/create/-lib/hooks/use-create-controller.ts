@@ -17,10 +17,7 @@ import type {
 	EnvelopeForm,
 	StoredDocument,
 } from "@/src/routes/dashboard/envelope/create/-lib/types";
-
-function isValidRecipientEmail(email: string) {
-	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-}
+import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
 
 export function useCreateEnvelopeController() {
 	const navigate = useNavigate();
@@ -38,6 +35,7 @@ export function useCreateEnvelopeController() {
 			emailMessage: "",
 			emailSubject: "",
 			documents: [],
+			paymentDrafts: [],
 		} as EnvelopeForm,
 		onSubmit: async ({ value }) => {
 			if (isMonthlyQuotaExhausted) {
@@ -93,6 +91,7 @@ export function useCreateEnvelopeController() {
 					emailMessage: value.emailMessage,
 					emailSubject: "",
 					documents: storedDocuments,
+					paymentDrafts: value.paymentDrafts ?? [],
 				});
 
 				captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopeComposeSubmitted, {

@@ -1,21 +1,21 @@
-import type { PaymentRuleRow } from "@filosign/react/files";
+import type { SettlementRuleRow } from "@filosign/react/files";
 import { Button } from "@/src/lib/components/ui/button";
 import { cn } from "@/src/lib/utils";
 
 type Props = {
-	rules: PaymentRuleRow[];
+	rules: SettlementRuleRow[];
 	isSender: boolean;
 	revokePending: boolean;
-	retryPending?: boolean;
+	settlePending?: boolean;
 	onRevokeAllowance: () => void;
 	className?: string;
 };
 
-export function PaymentRevokeAllowanceButton({
+export function SettlementRevokeAllowanceButton({
 	rules,
 	isSender,
 	revokePending,
-	retryPending = false,
+	settlePending = false,
 	onRevokeAllowance,
 	className,
 }: Props) {
@@ -29,7 +29,7 @@ export function PaymentRevokeAllowanceButton({
 			variant="outline"
 			size="sm"
 			className={cn("text-xs", className)}
-			disabled={revokePending || retryPending}
+			disabled={revokePending || settlePending}
 			onClick={onRevokeAllowance}
 		>
 			{revokePending ? "Revoking approval…" : "Revoke payout approval"}

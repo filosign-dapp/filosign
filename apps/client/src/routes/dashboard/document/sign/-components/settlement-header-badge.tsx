@@ -1,14 +1,14 @@
-import type { PaymentRuleRow } from "@filosign/react/files";
-import { paymentHeaderSummary } from "@filosign/shared";
+import type { SettlementRuleRow } from "@filosign/react/files";
+import { settlementHeaderSummary } from "@filosign/shared";
 import { CheckCircleIcon, ClockIcon, WarningIcon } from "@phosphor-icons/react";
 import { Badge } from "@/src/lib/components/ui/badge";
 
 type Props = {
-	rules: PaymentRuleRow[];
+	rules: SettlementRuleRow[];
 };
 
-export function PaymentHeaderBadge({ rules }: Props) {
-	const summary = paymentHeaderSummary(rules);
+export function SettlementHeaderBadge({ rules }: Props) {
+	const summary = settlementHeaderSummary(rules);
 	if (summary === "none") return null;
 
 	if (summary === "all_paid") {
@@ -18,7 +18,7 @@ export function PaymentHeaderBadge({ rules }: Props) {
 				className="gap-1.5 border-border bg-secondary/90 text-secondary-foreground shadow-none"
 			>
 				<CheckCircleIcon className="size-3.5 text-chart-2" weight="fill" />
-				Payments complete
+				Settlements complete
 			</Badge>
 		);
 	}
@@ -27,7 +27,7 @@ export function PaymentHeaderBadge({ rules }: Props) {
 		return (
 			<Badge variant="destructive" className="gap-1.5 shadow-none">
 				<WarningIcon className="size-3.5" weight="fill" />
-				Payment issue
+				Settlement issue
 			</Badge>
 		);
 	}
@@ -38,7 +38,7 @@ export function PaymentHeaderBadge({ rules }: Props) {
 			className="gap-1.5 border-border bg-secondary/90 text-secondary-foreground shadow-none"
 		>
 			<ClockIcon className="size-3.5 text-muted-foreground" />
-			Payment pending
+			Settlement pending
 		</Badge>
 	);
 }

@@ -45,27 +45,35 @@ export function EnvelopeFormBody() {
 						}}
 					>
 						{(recipientsField) => (
-							<EnvelopeDraftProvider
-								value={{
-									documentsField: {
-										value: documentsField.state.value,
-										onChange: documentsField.handleChange,
-										error:
-											documentsField.state.meta.errors?.[0] ??
-											documentsSubmitError,
-										showError: showValidationErrors,
-									},
-									recipientsField: {
-										value: recipientsField.state.value,
-										onChange: recipientsField.handleChange,
-										error: recipientsField.state.meta.errors?.[0],
-										showError: showValidationErrors,
-									},
-								}}
-							>
-								<DocumentsSection />
-								<RecipientsSection />
-							</EnvelopeDraftProvider>
+							<form.Field name="paymentDrafts">
+								{(paymentDraftsField) => (
+									<EnvelopeDraftProvider
+										value={{
+											documentsField: {
+												value: documentsField.state.value,
+												onChange: documentsField.handleChange,
+												error:
+													documentsField.state.meta.errors?.[0] ??
+													documentsSubmitError,
+												showError: showValidationErrors,
+											},
+											recipientsField: {
+												value: recipientsField.state.value,
+												onChange: recipientsField.handleChange,
+												error: recipientsField.state.meta.errors?.[0],
+												showError: showValidationErrors,
+											},
+											paymentDraftsField: {
+												value: paymentDraftsField.state.value ?? [],
+												onChange: paymentDraftsField.handleChange,
+											},
+										}}
+									>
+										<DocumentsSection />
+										<RecipientsSection />
+									</EnvelopeDraftProvider>
+								)}
+							</form.Field>
 						)}
 					</form.Field>
 				)}

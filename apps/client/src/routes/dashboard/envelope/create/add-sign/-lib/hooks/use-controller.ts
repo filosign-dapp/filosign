@@ -1,3 +1,4 @@
+import { useFilosignContext } from "@filosign/react";
 import {
 	CLIENT_ANALYTICS_EVENTS,
 	useCaptureAppEvent,
@@ -15,6 +16,7 @@ import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/col
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
+import type { PaymentAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/payment-attachment";
 import type {
 	FieldPlacementConfirmPayload,
 	FieldPlacementSignerOption,
@@ -22,10 +24,10 @@ import type {
 import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
 import { useSignatureFields } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-fields";
 import type { Document } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
-import type { PaymentAttachmentDraft } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types/payment-attachment";
 import { buildPaymentRulesForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/build-payment-rules";
 import { signatureFieldBoxCssPx } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-box";
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
+import { resolvePaymentDraftsForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/resolve-payment-drafts";
 import {
 	buildPlacementManifestForDocument,
 	buildSignersAndViewersForDocument,
@@ -42,6 +44,7 @@ export function useAddSignController() {
 	const { createForm, clearCreateForm } = useStorePersist();
 	const captureAppEvent = useCaptureAppEvent();
 	const sendFile = useSendFile();
+	const { rpcQuery } = useFilosignContext();
 	const activeOrg = useActiveOrganization();
 
 	const recipientAddresses = useMemo(
@@ -96,9 +99,6 @@ export function useAddSignController() {
 		"idle" | "loading" | "success" | "error"
 	>("idle");
 	const [coldShareDialogOpen, setColdShareDialogOpen] = useState(false);
-	const [paymentDrafts, setPaymentDrafts] = useState<PaymentAttachmentDraft[]>(
-		[],
-	);
 	const [coldShare, setColdShare] = useState<ColdSharePackage | null>(null);
 	const isSendingRef = useRef(false);
 
@@ -392,7 +392,33 @@ export function useAddSignController() {
 				fieldBox: fieldBoxCss,
 			});
 
-			const paymentRules = buildPaymentRulesForSend(paymentDrafts);
+			let resolvedPaymentDrafts: PaymentAttachmentDraft[];
+			try {
+				resolvedPaymentDrafts = await resolvePaymentDraftsForSend({
+					drafts: createForm.paymentDrafts ?? [],
+					recipients: createForm.recipients,
+					lookupProfile: async (email) => {
+						try {
+							const profile = await rpcQuery.users.profile.lookup.call({
+								query: email,
+							});
+							return { walletAddress: profile.walletAddress };
+						} catch {
+							return null;
+						}
+					},
+				});
+			} catch (err) {
+				const message =
+					err instanceof Error ? err.message : "Invalid payment configuration";
+				toast.error(message);
+				setSendStatus("error");
+				isSendingRef.current = false;
+				setTimeout(() => setSendStatus("idle"), 3000);
+				return;
+			}
+
+			const paymentRules = buildPaymentRulesForSend(resolvedPaymentDrafts);
 
 			const result = await sendFile.mutateAsync({
 				signers,
@@ -477,7 +503,7 @@ export function useAddSignController() {
 		recipientProfilesMapWithRecipient,
 		sendFile,
 		signatureFields,
-		paymentDrafts,
+		rpcQuery,
 	]);
 
 	const currentPageFields = useMemo(
@@ -535,9 +561,6 @@ export function useAddSignController() {
 		handleColdShareDone,
 		setPdfLayoutHeight,
 		placementDocHeight,
-		paymentDrafts,
-		setPaymentDrafts,
-		createFormRecipients: createForm?.recipients ?? [],
 	};
 }
 

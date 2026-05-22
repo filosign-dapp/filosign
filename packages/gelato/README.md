@@ -2,7 +2,7 @@
 
 Reference for Filosign’s optional **pull-payment** stack: on-chain rules in [`FSPaymentValidator`](../../apps/contracts/src/FSPaymentValidator.sol), release truth in [`FSFileRegistry`](../../apps/contracts/src/FSFileRegistry.sol), and **Gelato Web3 Functions** that relay `executePayout` when conditions are met. This package does not hold funds, sign user transactions, or gate who may execute payouts on-chain.
 
-For compliance-oriented summaries, see also [`project/compliance/payments/architecture-and-non-custody.md`](../../project/compliance/payments/architecture-and-non-custody.md), [`recipient-allowlist-policy.md`](../../project/compliance/payments/recipient-allowlist-policy.md), and public [Terms of Service](https://filosign.com/terms) / [Privacy Policy](https://filosign.com/privacy) (paths on the marketing site).
+For compliance-oriented summaries, see also [`project/payments/architecture-and-non-custody.md`](../../project/payments/architecture-and-non-custody.md), [`recipient-allowlist-policy.md`](../../project/payments/recipient-allowlist-policy.md), and public [Terms of Service](https://filosign.com/terms) / [Privacy Policy](https://filosign.com/privacy) (paths on the marketing site).
 
 **Filosign does not control or screen, and hence is not responsible for, all on-chain payouts.** Gelato may relay `executePayout` for any on-chain rule when conditions are met; Filosign DB/UI index rules submitted through the app after on-chain verification at `files.register`.
 
@@ -101,7 +101,7 @@ sequenceDiagram
 
 ### Product allowlist vs on-chain
 
-On the supported app path, recipients must be an envelope participant or the organization’s linked payout wallet (`organizations.orgWalletAddress`). A payer can still call `registerRule` **directly on-chain** to any address; that is the payer’s wallet interaction outside Filosign software. See [`recipient-allowlist-policy.md`](../../project/compliance/payments/recipient-allowlist-policy.md).
+On the supported app path, recipients must be an envelope participant or the organization’s linked payout wallet (`organizations.orgWalletAddress`). A payer can still call `registerRule` **directly on-chain** to any address; that is the payer’s wallet interaction outside Filosign software. See [`recipient-allowlist-policy.md`](../../project/payments/recipient-allowlist-policy.md).
 
 ---
 
@@ -219,7 +219,7 @@ This section describes **technical** boundaries for operators and reviewers. It 
 - **Software provider:** Filosign provides document signing and optional hooks to observe or automate payout status. It is not a money transmitter wallet for user USDC.
 - **User-initiated movement:** The sender’s wallet registers rules and grants allowance. Filosign cannot redirect settlement to a new recipient without a new on-chain `registerRule` and approval from that wallet.
 - **Third-party relayer:** Gelato Network executes transactions configured in the Gelato dashboard (user args, 1Balance). Filosign does not operate Gelato infrastructure.
-- **Screening:** Sanctions / wallet screening via a third-party API is planned for production; not required for pre-production development. See compliance docs under `project/compliance/payments/`.
+- **Screening:** Sanctions / wallet screening via a third-party API is planned for production; not required for pre-production development. See compliance docs under `project/payments/`.
 - **Transparency:** Compliance PDFs (v3) include indexed `payments[]` and on-chain tx references where available; on-chain state remains authoritative for settlement.
 
 ---
@@ -278,8 +278,8 @@ bun run --cwd packages/gelato check-types
 
 | Document | Focus |
 | -------- | ----- |
-| [`project/compliance/payments/architecture-and-non-custody.md`](../../project/compliance/payments/architecture-and-non-custody.md) | Compliance summary of non-custody |
-| [`project/compliance/payments/recipient-allowlist-policy.md`](../../project/compliance/payments/recipient-allowlist-policy.md) | Product recipient policy |
+| [`project/payments/architecture-and-non-custody.md`](../../project/payments/architecture-and-non-custody.md) | Compliance summary of non-custody |
+| [`project/payments/recipient-allowlist-policy.md`](../../project/payments/recipient-allowlist-policy.md) | Product recipient policy |
 | [`apps/contracts/README.md`](../../apps/contracts/README.md) | Contract suite and payment overview |
 | [`apps/server/README.md`](../../apps/server/README.md) | Server cron, oRPC payments, env vars |
 

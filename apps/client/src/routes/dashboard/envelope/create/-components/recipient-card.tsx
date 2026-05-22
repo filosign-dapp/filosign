@@ -1,4 +1,4 @@
-import { paymentReleaseTypeLabel } from "@filosign/shared";
+import { settlementReleaseTypeLabel } from "@filosign/shared";
 import {
 	CheckCircleIcon,
 	CurrencyDollarIcon,
@@ -23,7 +23,7 @@ import {
 	SelectValue,
 } from "@/src/lib/components/ui/select";
 import { initialsFromName } from "@/src/routes/dashboard/_shell/connections/-components/contact-utils";
-import { RecipientPaymentDialog } from "@/src/routes/dashboard/envelope/create/-components/recipient-payment-dialog";
+import { RecipientSettlementDialog } from "@/src/routes/dashboard/envelope/create/-components/recipient-settlement-dialog";
 import {
 	RECIPIENT_FIELD_LABEL_CLASS,
 	RECIPIENT_ROLE_LABELS,
@@ -41,10 +41,10 @@ export function RecipientCard({ index }: { index: number }) {
 		invalidEmailSyntax,
 		isFilosignRecipient,
 		canAttachFunds,
-		paymentDialogOpen,
-		setPaymentDialogOpen,
-		savePaymentDraft,
-		removePaymentDraft,
+		settlementDialogOpen,
+		setSettlementDialogOpen,
+		saveSettlementDraft,
+		removeSettlementDraft,
 	} = useRecipientCard(index);
 
 	if (!recipient) return null;
@@ -120,14 +120,14 @@ export function RecipientCard({ index }: { index: number }) {
 							<div className="flex flex-wrap items-center gap-2">
 								<Badge variant="secondary" className="font-normal">
 									USDC {formatAttachedUsdcAmount(attachedDraft.amountUsdc)} ·{" "}
-									{paymentReleaseTypeLabel(attachedDraft.releaseType)}
+									{settlementReleaseTypeLabel(attachedDraft.releaseType)}
 								</Badge>
 								<Button
 									type="button"
 									variant="link"
 									size="sm"
 									className="h-auto px-0 text-xs"
-									onClick={() => setPaymentDialogOpen(true)}
+									onClick={() => setSettlementDialogOpen(true)}
 								>
 									Edit
 								</Button>
@@ -176,7 +176,7 @@ export function RecipientCard({ index }: { index: number }) {
 										type="button"
 										variant="outline"
 										size="sm"
-										onClick={() => setPaymentDialogOpen(true)}
+										onClick={() => setSettlementDialogOpen(true)}
 									>
 										<CurrencyDollarIcon className="size-4" weight="regular" />
 										{attachedDraft ? "Edit funds" : "Attach funds"}
@@ -199,14 +199,14 @@ export function RecipientCard({ index }: { index: number }) {
 			</motion.div>
 
 			{canAttachFunds ? (
-				<RecipientPaymentDialog
-					open={paymentDialogOpen}
-					onOpenChange={setPaymentDialogOpen}
+				<RecipientSettlementDialog
+					open={settlementDialogOpen}
+					onOpenChange={setSettlementDialogOpen}
 					recipient={recipient}
 					allRecipients={allRecipients}
 					existingDraft={attachedDraft}
-					onSave={savePaymentDraft}
-					onRemove={removePaymentDraft}
+					onSave={saveSettlementDraft}
+					onRemove={removeSettlementDraft}
 				/>
 			) : null}
 		</>

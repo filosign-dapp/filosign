@@ -45,8 +45,8 @@ export function EnvelopeFormBody() {
 						}}
 					>
 						{(recipientsField) => (
-							<form.Field name="paymentDrafts">
-								{(paymentDraftsField) => (
+							<form.Field name="settlementDrafts">
+								{(settlementDraftsField) => (
 									<EnvelopeDraftProvider
 										value={{
 											documentsField: {
@@ -63,9 +63,9 @@ export function EnvelopeFormBody() {
 												error: recipientsField.state.meta.errors?.[0],
 												showError: showValidationErrors,
 											},
-											paymentDraftsField: {
-												value: paymentDraftsField.state.value ?? [],
-												onChange: paymentDraftsField.handleChange,
+											settlementDraftsField: {
+												value: settlementDraftsField.state.value ?? [],
+												onChange: settlementDraftsField.handleChange,
 											},
 										}}
 									>

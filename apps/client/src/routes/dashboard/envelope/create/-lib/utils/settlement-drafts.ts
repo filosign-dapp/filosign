@@ -1,18 +1,18 @@
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
-import type { PaymentAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/payment-attachment";
+import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
 
 export function getDraftForRecipient(
-	drafts: PaymentAttachmentDraft[],
+	drafts: SettlementAttachmentDraft[],
 	clientRowId: string,
-): PaymentAttachmentDraft | undefined {
+): SettlementAttachmentDraft | undefined {
 	return drafts.find((d) => d.recipientClientRowId === clientRowId);
 }
 
 export function upsertRecipientDraft(
-	drafts: PaymentAttachmentDraft[],
-	draft: PaymentAttachmentDraft,
-): PaymentAttachmentDraft[] {
+	drafts: SettlementAttachmentDraft[],
+	draft: SettlementAttachmentDraft,
+): SettlementAttachmentDraft[] {
 	const without = drafts.filter(
 		(d) => d.recipientClientRowId !== draft.recipientClientRowId,
 	);
@@ -20,23 +20,23 @@ export function upsertRecipientDraft(
 }
 
 export function removeDraftForRecipient(
-	drafts: PaymentAttachmentDraft[],
+	drafts: SettlementAttachmentDraft[],
 	clientRowId: string,
-): PaymentAttachmentDraft[] {
+): SettlementAttachmentDraft[] {
 	return drafts.filter((d) => d.recipientClientRowId !== clientRowId);
 }
 
 export function removeDraftsForRemovedRecipients(
-	drafts: PaymentAttachmentDraft[],
+	drafts: SettlementAttachmentDraft[],
 	recipients: Recipient[],
-): PaymentAttachmentDraft[] {
+): SettlementAttachmentDraft[] {
 	const ids = new Set(
 		recipients.map((r) => r.clientRowId).filter((id): id is string => !!id),
 	);
 	return drafts.filter((d) => ids.has(d.recipientClientRowId));
 }
 
-export function recipientPaymentLabel(recipient: Recipient): string {
+export function recipientSettlementLabel(recipient: Recipient): string {
 	const email = recipient.email?.trim();
 	const name = recipient.name?.trim();
 	if (name && email) return `${name} (${email})`;
@@ -46,14 +46,14 @@ export function recipientPaymentLabel(recipient: Recipient): string {
 export function buildDraftFromRecipient(
 	recipient: Recipient,
 	patch: Omit<
-		PaymentAttachmentDraft,
+		SettlementAttachmentDraft,
 		| "id"
 		| "recipientClientRowId"
 		| "recipientEmail"
 		| "recipientSource"
 		| "recipientLabel"
 	> & { id?: string },
-): PaymentAttachmentDraft | null {
+): SettlementAttachmentDraft | null {
 	const clientRowId = recipient.clientRowId;
 	const rawEmail = recipient.email?.trim();
 	if (!clientRowId || !rawEmail) return null;
@@ -63,7 +63,7 @@ export function buildDraftFromRecipient(
 		recipientClientRowId: clientRowId,
 		recipientEmail: normalizePlacementRecipientEmail(rawEmail),
 		recipientSource: recipient.role === "viewer" ? "viewer" : "signer",
-		recipientLabel: recipientPaymentLabel(recipient),
+		recipientLabel: recipientSettlementLabel(recipient),
 		amountUsdc: patch.amountUsdc,
 		releaseType: patch.releaseType,
 		specificSignerEmail: patch.specificSignerEmail,

@@ -9,10 +9,10 @@ export * from "./compliance-bundle";
 export { zFileData } from "./file-data";
 export * from "./org-commitment";
 export * from "./org-crypto";
-export * from "./payment-rules";
-export * from "./payment-status-label";
 export * from "./placement-manifest";
 export * from "./privy-subject-commitment";
+export * from "./settlement-rules";
+export * from "./settlement-status-label";
 export * from "./signer-email-commitment";
 
 export function base64ToUint8(base64: string): Uint8Array {

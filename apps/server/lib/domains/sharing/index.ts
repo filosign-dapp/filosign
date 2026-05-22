@@ -1,3 +1,2 @@
-export * from "./fs-manager-indexer";
-export * from "./invite-materialization";
-export * from "./org-connections";
+export * from "./sharing";
+export * from "./utils/fs-manager-indexer";

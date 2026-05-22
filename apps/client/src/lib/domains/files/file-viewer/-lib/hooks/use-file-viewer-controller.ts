@@ -1,6 +1,6 @@
 import { useFilosignContext } from "@filosign/react";
 import { useFileInfo } from "@filosign/react/files";
-import { useCompliancePdfExports } from "@/src/lib/domains/files/compliance-pdf/use-compliance-pdf-exports";
+import { useCompliancePdfExports } from "@/src/lib/domains/files/compliance-pdf";
 import type { FileViewerFile } from "@/src/lib/domains/files/file-viewer/-lib/types";
 import { usePdfDocumentViewer } from "@/src/lib/domains/files/hooks/use-pdf-document-viewer";
 

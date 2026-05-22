@@ -9,7 +9,7 @@ import { useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { getAddress } from "viem";
-import { useCompliancePdfExports } from "@/src/lib/domains/files/compliance-pdf/use-compliance-pdf-exports";
+import { useCompliancePdfExports } from "@/src/lib/domains/files/compliance-pdf";
 import { useSignActions } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-sign-actions";
 import { useSignDraftState } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-sign-draft";
 import {

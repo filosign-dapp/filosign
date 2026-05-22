@@ -1,5 +1,5 @@
 import { registerExpireInvitesCron } from "./expire-invites";
-import { registerSyncPaymentRulesCron } from "./sync-payment-rules";
+import { registerSyncSettlementRulesCron } from "./sync-settlement-rules";
 
 export {
 	EXPIRE_INVITES_CRON,
@@ -7,9 +7,9 @@ export {
 } from "./expire-invites";
 
 export {
-	runSyncPaymentRulesJob,
-	SYNC_PAYMENT_RULES_CRON,
-} from "./sync-payment-rules";
+	runSyncSettlementRulesJob,
+	SYNC_SETTLEMENT_RULES_CRON,
+} from "./sync-settlement-rules";
 
 /** Bun.cron — universal 7-day invite expiry (document, user, org). */
 export type PlatformCronJob = { stop(): void };
@@ -19,7 +19,7 @@ const activeJobs: PlatformCronJob[] = [];
 export function startPlatformCron(): void {
 	if (activeJobs.length > 0) return;
 	activeJobs.push(registerExpireInvitesCron());
-	activeJobs.push(registerSyncPaymentRulesCron());
+	activeJobs.push(registerSyncSettlementRulesCron());
 }
 
 export function stopPlatformCron(): void {

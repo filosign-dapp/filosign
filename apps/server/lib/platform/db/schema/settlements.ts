@@ -1,15 +1,15 @@
 import {
-	paymentRecipientSources,
-	paymentReleaseTypes,
-	paymentRuleStatuses,
+	settlementRecipientSources,
+	settlementReleaseTypes,
+	settlementRuleStatuses,
 } from "@filosign/shared";
 import * as t from "drizzle-orm/pg-core";
 import { tBytes32, tEvmAddress, timestamps } from "@/lib/platform/db/helpers";
 import { randomUuidV7 } from "@/lib/platform/db/random-uuid-v7";
 import { files } from "./file";
 
-export const filePaymentRules = t.pgTable(
-	"file_payment_rules",
+export const fileSettlementRules = t.pgTable(
+	"file_settlement_rules",
 	{
 		id: t
 			.uuid()
@@ -23,12 +23,15 @@ export const filePaymentRules = t.pgTable(
 		cidIdentifier: tBytes32().notNull(),
 		payerWallet: tEvmAddress().notNull(),
 		recipientWallet: tEvmAddress().notNull(),
-		recipientSource: t.text({ enum: paymentRecipientSources }).notNull(),
+		recipientSource: t.text({ enum: settlementRecipientSources }).notNull(),
 		tokenAddress: tEvmAddress().notNull(),
 		amount: t.numeric({ precision: 78, scale: 0 }).notNull(),
-		releaseType: t.text({ enum: paymentReleaseTypes }).notNull(),
+		releaseType: t.text({ enum: settlementReleaseTypes }).notNull(),
 		releaseParams: t.jsonb().$type<Record<string, unknown>>().notNull(),
-		status: t.text({ enum: paymentRuleStatuses }).notNull().default("pending"),
+		status: t
+			.text({ enum: settlementRuleStatuses })
+			.notNull()
+			.default("pending"),
 		registerRuleTxHash: tBytes32().notNull(),
 		approveTxHash: tBytes32().notNull(),
 		payoutTxHash: tBytes32(),
@@ -38,8 +41,8 @@ export const filePaymentRules = t.pgTable(
 		...timestamps,
 	},
 	(table) => [
-		t.uniqueIndex("uq_file_payment_rules_on_chain").on(table.onChainRuleId),
-		t.index("idx_file_payment_rules_piece").on(table.pieceCid),
-		t.index("idx_file_payment_rules_status").on(table.status),
+		t.uniqueIndex("uq_file_settlement_rules_on_chain").on(table.onChainRuleId),
+		t.index("idx_file_settlement_rules_piece").on(table.pieceCid),
+		t.index("idx_file_settlement_rules_status").on(table.status),
 	],
 );

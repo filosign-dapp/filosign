@@ -35,7 +35,7 @@ export function useCreateEnvelopeController() {
 			emailMessage: "",
 			emailSubject: "",
 			documents: [],
-			paymentDrafts: [],
+			settlementDrafts: [],
 		} as EnvelopeForm,
 		onSubmit: async ({ value }) => {
 			if (isMonthlyQuotaExhausted) {
@@ -91,7 +91,7 @@ export function useCreateEnvelopeController() {
 					emailMessage: value.emailMessage,
 					emailSubject: "",
 					documents: storedDocuments,
-					paymentDrafts: value.paymentDrafts ?? [],
+					settlementDrafts: value.settlementDrafts ?? [],
 				});
 
 				captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopeComposeSubmitted, {

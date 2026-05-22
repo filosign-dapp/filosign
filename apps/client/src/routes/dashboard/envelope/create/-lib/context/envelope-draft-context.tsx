@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { PaymentAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/payment-attachment";
+import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
 import type { EnvelopeForm } from "../types";
 
 type EnvelopeDraftContextValue = {
@@ -15,9 +15,9 @@ type EnvelopeDraftContextValue = {
 		error?: string;
 		showError?: boolean;
 	};
-	paymentDraftsField: {
-		value: PaymentAttachmentDraft[];
-		onChange: (drafts: PaymentAttachmentDraft[]) => void;
+	settlementDraftsField: {
+		value: SettlementAttachmentDraft[];
+		onChange: (drafts: SettlementAttachmentDraft[]) => void;
 	};
 };
 
@@ -57,6 +57,6 @@ export function useRecipients() {
 	return useEnvelopeDraft().recipientsField;
 }
 
-export function usePayments() {
-	return useEnvelopeDraft().paymentDraftsField;
+export function useSettlements() {
+	return useEnvelopeDraft().settlementDraftsField;
 }

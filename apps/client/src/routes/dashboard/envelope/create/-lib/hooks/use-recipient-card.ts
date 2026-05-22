@@ -4,34 +4,34 @@ import { getAddress, isAddress } from "viem";
 import { useDebouncedSearch } from "@/src/lib/utils/use-debounced-search";
 import { RECIPIENT_LOOKUP_DEBOUNCE_MS } from "@/src/routes/dashboard/envelope/create/-lib/constants/recipient-card";
 import {
-	usePayments,
 	useRecipients,
+	useSettlements,
 } from "@/src/routes/dashboard/envelope/create/-lib/context/envelope-draft-context";
 import { useRecipientsContext } from "@/src/routes/dashboard/envelope/create/-lib/context/recipients-context";
-import type { PaymentAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/payment-attachment";
+import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
 import { filosignProfileDisplayName } from "@/src/routes/dashboard/envelope/create/-lib/utils/filosign-profile";
-import {
-	getDraftForRecipient,
-	removeDraftForRecipient,
-	upsertRecipientDraft,
-} from "@/src/routes/dashboard/envelope/create/-lib/utils/payment-drafts";
 import {
 	isValidRecipientEmail,
 	recipientLookupEmail,
 } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
+import {
+	getDraftForRecipient,
+	removeDraftForRecipient,
+	upsertRecipientDraft,
+} from "@/src/routes/dashboard/envelope/create/-lib/utils/settlement-drafts";
 
 export function useRecipientCard(index: number) {
 	const { recipients, updateRecipient, removeRecipient } =
 		useRecipientsContext();
 	const { value: allRecipients } = useRecipients();
-	const { value: paymentDrafts, onChange: onPaymentDraftsChange } =
-		usePayments();
-	const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+	const { value: settlementDrafts, onChange: onSettlementDraftsChange } =
+		useSettlements();
+	const [settlementDialogOpen, setSettlementDialogOpen] = useState(false);
 
 	const recipient = recipients?.[index];
 	const clientRowId = recipient?.clientRowId;
 	const attachedDraft = clientRowId
-		? getDraftForRecipient(paymentDrafts, clientRowId)
+		? getDraftForRecipient(settlementDrafts, clientRowId)
 		: undefined;
 
 	const emailTrimmed = recipient?.email.trim() ?? "";
@@ -56,21 +56,21 @@ export function useRecipientCard(index: number) {
 	const autofillKeyRef = useRef<string | null>(null);
 
 	useEffect(() => {
-		if (!canAttachFunds) setPaymentDialogOpen(false);
+		if (!canAttachFunds) setSettlementDialogOpen(false);
 	}, [canAttachFunds]);
 
 	useEffect(() => {
 		if (!clientRowId || !attachedDraft) return;
 		if (!emailValid) {
-			onPaymentDraftsChange(
-				removeDraftForRecipient(paymentDrafts, clientRowId),
+			onSettlementDraftsChange(
+				removeDraftForRecipient(settlementDrafts, clientRowId),
 			);
 			return;
 		}
 		if (!lookupSettled || profileQuery.isFetching) return;
 		if (!canAttachFunds) {
-			onPaymentDraftsChange(
-				removeDraftForRecipient(paymentDrafts, clientRowId),
+			onSettlementDraftsChange(
+				removeDraftForRecipient(settlementDrafts, clientRowId),
 			);
 		}
 	}, [
@@ -80,8 +80,8 @@ export function useRecipientCard(index: number) {
 		canAttachFunds,
 		lookupSettled,
 		profileQuery.isFetching,
-		onPaymentDraftsChange,
-		paymentDrafts,
+		onSettlementDraftsChange,
+		settlementDrafts,
 	]);
 
 	useEffect(() => {
@@ -130,13 +130,15 @@ export function useRecipientCard(index: number) {
 		if (!lookupSettled) autofillKeyRef.current = null;
 	}, [lookupSettled]);
 
-	const savePaymentDraft = (draft: PaymentAttachmentDraft) => {
-		onPaymentDraftsChange(upsertRecipientDraft(paymentDrafts, draft));
+	const saveSettlementDraft = (draft: SettlementAttachmentDraft) => {
+		onSettlementDraftsChange(upsertRecipientDraft(settlementDrafts, draft));
 	};
 
-	const removePaymentDraft = () => {
+	const removeSettlementDraft = () => {
 		if (!clientRowId) return;
-		onPaymentDraftsChange(removeDraftForRecipient(paymentDrafts, clientRowId));
+		onSettlementDraftsChange(
+			removeDraftForRecipient(settlementDrafts, clientRowId),
+		);
 	};
 
 	return {
@@ -150,9 +152,9 @@ export function useRecipientCard(index: number) {
 		invalidEmailSyntax,
 		isFilosignRecipient,
 		canAttachFunds,
-		paymentDialogOpen,
-		setPaymentDialogOpen,
-		savePaymentDraft,
-		removePaymentDraft,
+		settlementDialogOpen,
+		setSettlementDialogOpen,
+		saveSettlementDraft,
+		removeSettlementDraft,
 	};
 }

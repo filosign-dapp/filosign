@@ -3,19 +3,19 @@ import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { useEffect } from "react";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
 import {
-	usePayments,
 	useRecipients,
+	useSettlements,
 } from "@/src/routes/dashboard/envelope/create/-lib/context/envelope-draft-context";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import {
 	removeDraftForRecipient,
 	removeDraftsForRemovedRecipients,
-} from "@/src/routes/dashboard/envelope/create/-lib/utils/payment-drafts";
+} from "@/src/routes/dashboard/envelope/create/-lib/utils/settlement-drafts";
 
 export function useRecipientsController() {
 	const { value: recipients, onChange, error, showError } = useRecipients();
-	const { value: paymentDrafts, onChange: onPaymentDraftsChange } =
-		usePayments();
+	const { value: settlementDrafts, onChange: onSettlementDraftsChange } =
+		useSettlements();
 	const { canAddRecipient } = useEnvelopeRecipientLimit();
 	const promptPlanUpgrade = usePromptPlanUpgrade();
 
@@ -41,8 +41,8 @@ export function useRecipientsController() {
 		updated.splice(index, 1);
 		onChange(updated);
 		if (removed?.clientRowId) {
-			onPaymentDraftsChange(
-				removeDraftForRecipient(paymentDrafts, removed.clientRowId),
+			onSettlementDraftsChange(
+				removeDraftForRecipient(settlementDrafts, removed.clientRowId),
 			);
 		}
 	};
@@ -55,13 +55,15 @@ export function useRecipientsController() {
 		const rowId = updated[index]?.clientRowId;
 		if (!rowId) return;
 
-		const draft = paymentDrafts.find((d) => d.recipientClientRowId === rowId);
+		const draft = settlementDrafts.find(
+			(d) => d.recipientClientRowId === rowId,
+		);
 		if (!draft) return;
 
 		const next = { ...updated[index] };
 		const emailRaw = next.email?.trim();
-		onPaymentDraftsChange(
-			paymentDrafts.map((d) => {
+		onSettlementDraftsChange(
+			settlementDrafts.map((d) => {
 				if (d.recipientClientRowId !== rowId) return d;
 				return {
 					...d,
@@ -84,10 +86,10 @@ export function useRecipientsController() {
 			clientRowId: r.clientRowId ?? crypto.randomUUID(),
 		}));
 		onChange(withIds);
-		onPaymentDraftsChange(
-			removeDraftsForRemovedRecipients(paymentDrafts, withIds),
+		onSettlementDraftsChange(
+			removeDraftsForRemovedRecipients(settlementDrafts, withIds),
 		);
-	}, [recipients, onChange, onPaymentDraftsChange, paymentDrafts]);
+	}, [recipients, onChange, onSettlementDraftsChange, settlementDrafts]);
 
 	return {
 		recipients,

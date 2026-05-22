@@ -1,8 +1,12 @@
+import { useFilosignContext } from "@filosign/react";
 import {
-	usePaymentRequestRetry,
-	usePaymentsListByFile,
-	useRevokePaymentAllowance,
+	useManualSettlementPayout,
+	useRevokeSettlementAllowance,
+	useSettlementsListByFile,
+	useTrySettleSettlement,
 } from "@filosign/react/files";
+import { useQueries } from "@tanstack/react-query";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import { getAddress } from "viem";
 import { useCompliancePdfExports } from "@/src/lib/domains/files/compliance-pdf/use-compliance-pdf-exports";
@@ -41,9 +45,36 @@ export function useSignDocument() {
 		fileData: viewer.fileData,
 	});
 
-	const paymentsQuery = usePaymentsListByFile(pieceCid);
-	const paymentRequestRetry = usePaymentRequestRetry(pieceCid);
-	const revokePaymentAllowance = useRevokePaymentAllowance(pieceCid);
+	const { contracts } = useFilosignContext();
+	const settlementsQuery = useSettlementsListByFile(pieceCid);
+	const trySettleSettlement = useTrySettleSettlement(pieceCid);
+	const manualSettlementPayout = useManualSettlementPayout(pieceCid);
+	const revokeSettlementAllowance = useRevokeSettlementAllowance(pieceCid);
+
+	const settlementRules = settlementsQuery.data ?? [];
+	const canExecuteQueries = useQueries({
+		queries: settlementRules.map((rule) => ({
+			queryKey: ["settlement-can-execute", rule.onChainRuleId],
+			queryFn: async () => {
+				if (!contracts?.FSPaymentValidator) return false;
+				return contracts.FSPaymentValidator.read.canExecute([
+					BigInt(rule.onChainRuleId),
+				]);
+			},
+			enabled:
+				rule.status !== "executed" && Boolean(contracts?.FSPaymentValidator),
+		})),
+	});
+
+	const canSettleByRuleId = useMemo(() => {
+		const map = new Map<string, boolean>();
+		for (let i = 0; i < settlementRules.length; i++) {
+			const rule = settlementRules[i];
+			if (!rule) continue;
+			map.set(rule.onChainRuleId, canExecuteQueries[i]?.data === true);
+		}
+		return map;
+	}, [settlementRules, canExecuteQueries]);
 
 	const actions = useSignActions({
 		pieceCid,
@@ -123,18 +154,41 @@ export function useSignDocument() {
 			documentRef: viewer.documentRef,
 		},
 		acknowledge: { handleAcknowledge: actions.handleAcknowledge },
-		payments: {
-			rules: paymentsQuery.data ?? [],
-			isPending: paymentsQuery.isPending,
-			retryPending: paymentRequestRetry.isPending,
-			retryingRuleId: paymentRequestRetry.isPending
-				? paymentRequestRetry.variables
-				: undefined,
-			onRetryRule: (onChainRuleId: string) =>
-				paymentRequestRetry.mutateAsync(onChainRuleId),
-			revokePending: revokePaymentAllowance.isPending,
+		settlements: {
+			rules: settlementRules,
+			isPending: settlementsQuery.isPending,
+			walletAddress: identity.signerAddress,
+			canSettleByRuleId,
+			trySettlePending: trySettleSettlement.isPending,
+			manualSettlePending: manualSettlementPayout.isPending,
+			settlingRuleId: trySettleSettlement.isPending
+				? trySettleSettlement.variables
+				: manualSettlementPayout.isPending
+					? manualSettlementPayout.variables
+					: undefined,
+			onTrySettleRule: async (onChainRuleId: string) => {
+				try {
+					await trySettleSettlement.mutateAsync(onChainRuleId);
+					toast.success("Payout settled");
+				} catch (err) {
+					const msg =
+						err instanceof Error ? err.message : "Failed to settle payout";
+					toast.error(msg);
+				}
+			},
+			onManualSettleRule: async (onChainRuleId: string) => {
+				try {
+					await manualSettlementPayout.mutateAsync(onChainRuleId);
+					toast.success("Payout settled from your wallet");
+				} catch (err) {
+					const msg =
+						err instanceof Error ? err.message : "Failed to settle from wallet";
+					toast.error(msg);
+				}
+			},
+			revokePending: revokeSettlementAllowance.isPending,
 			onRevokeAllowance: async () => {
-				const rules = paymentsQuery.data ?? [];
+				const rules = settlementsQuery.data ?? [];
 				const token = rules[0]?.tokenAddress;
 				if (!token) return;
 
@@ -144,7 +198,7 @@ export function useSignDocument() {
 				if (!confirmed) return;
 
 				try {
-					await revokePaymentAllowance.mutateAsync(getAddress(token));
+					await revokeSettlementAllowance.mutateAsync(getAddress(token));
 					toast.success("Payout approval revoked");
 				} catch (err) {
 					const msg =

@@ -15,8 +15,8 @@ import {
 import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
-import { PaymentHeaderBadge } from "@/src/routes/dashboard/document/sign/-components/payment-header-badge";
-import { PaymentRevokeAllowanceButton } from "@/src/routes/dashboard/document/sign/-components/payment-revoke-allowance-button";
+import { SettlementHeaderBadge } from "@/src/routes/dashboard/document/sign/-components/settlement-header-badge";
+import { SettlementRevokeAllowanceButton } from "@/src/routes/dashboard/document/sign/-components/settlement-revoke-allowance-button";
 import {
 	useSignColdShare,
 	useSignCompliance,
@@ -24,8 +24,8 @@ import {
 	useSignIdentity,
 	useSignMeta,
 	useSignNavigation,
-	useSignPayments,
 	useSignPlacement,
+	useSignSettlements,
 	useSignSigning,
 	useSignViewer,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
@@ -56,11 +56,13 @@ export function SignDocumentStickyHeader() {
 	const { handleRotateInvite, regenerateColdInvite } = useSignColdShare();
 	const { canSubmitPlacementSign } = useSignPlacement();
 	const {
-		rules: paymentRules,
+		rules: settlementRules,
 		revokePending,
-		retryPending,
+		trySettlePending,
+		manualSettlePending,
 		onRevokeAllowance,
-	} = useSignPayments();
+	} = useSignSettlements();
+	const settlePending = trySettlePending || manualSettlePending;
 	return (
 		<>
 			<div className="md:hidden">
@@ -80,14 +82,14 @@ export function SignDocumentStickyHeader() {
 					</h2>
 				</div>
 
-				{(alreadySigned || paymentRules.length > 0) && (
+				{(alreadySigned || settlementRules.length > 0) && (
 					<div className="flex flex-wrap items-center justify-center gap-2 px-3 py-2 border-b border-border bg-secondary/40">
-						<PaymentHeaderBadge rules={paymentRules} />
-						<PaymentRevokeAllowanceButton
-							rules={paymentRules}
+						<SettlementHeaderBadge rules={settlementRules} />
+						<SettlementRevokeAllowanceButton
+							rules={settlementRules}
 							isSender={isSender}
 							revokePending={revokePending}
-							retryPending={retryPending}
+							settlePending={settlePending}
 							onRevokeAllowance={onRevokeAllowance}
 						/>
 						{alreadySigned ? (
@@ -253,9 +255,9 @@ export function SignDocumentStickyHeader() {
 								<CopyButton text={formatAddress(file.sender)} />
 							</p>
 						</div>
-						{(alreadySigned || paymentRules.length > 0) && (
+						{(alreadySigned || settlementRules.length > 0) && (
 							<div className="flex flex-wrap items-center gap-2 mt-2">
-								<PaymentHeaderBadge rules={paymentRules} />
+								<SettlementHeaderBadge rules={settlementRules} />
 								{alreadySigned ? (
 									<>
 										<Badge

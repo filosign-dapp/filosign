@@ -93,7 +93,7 @@ export function useSignNavigation() {
 	return sign.navigation;
 }
 
-export function useSignPayments() {
+export function useSignSettlements() {
 	const { sign } = useSignDocumentContext();
-	return sign.payments;
+	return sign.settlements;
 }

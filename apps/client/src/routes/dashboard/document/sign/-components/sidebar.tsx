@@ -7,13 +7,13 @@ import {
 } from "@phosphor-icons/react";
 import { defaultChain } from "@/src/constants";
 import { cn } from "@/src/lib/utils";
-import { PaymentStatusPanel } from "@/src/routes/dashboard/document/sign/-components/payment-status-panel";
+import { SettlementStatusPanel } from "@/src/routes/dashboard/document/sign/-components/settlement-status-panel";
 import {
 	useSignFile,
 	useSignIdentity,
 	useSignMeta,
-	useSignPayments,
 	useSignPlacement,
+	useSignSettlements,
 	useSignSigning,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
 
@@ -29,13 +29,17 @@ export function SignDocumentSidebar() {
 	const { canSign, alreadySigned } = useSignSigning();
 	const { formatAddress, isSender } = useSignMeta();
 	const {
-		rules: paymentRules,
-		retryPending,
-		retryingRuleId,
-		onRetryRule,
+		rules: settlementRules,
+		walletAddress,
+		canSettleByRuleId,
+		trySettlePending,
+		manualSettlePending,
+		settlingRuleId,
+		onTrySettleRule,
+		onManualSettleRule,
 		revokePending,
 		onRevokeAllowance,
-	} = useSignPayments();
+	} = useSignSettlements();
 	return (
 		<aside className="hidden lg:block w-72 border-l border-border bg-background overflow-y-auto">
 			<div className="p-4 space-y-4">
@@ -200,13 +204,17 @@ export function SignDocumentSidebar() {
 					)}
 				</div>
 
-				<PaymentStatusPanel
-					rules={paymentRules}
+				<SettlementStatusPanel
+					rules={settlementRules}
 					formatAddress={formatAddress}
 					isSender={isSender}
-					retryPending={retryPending}
-					retryingRuleId={retryingRuleId}
-					onRetryRule={onRetryRule}
+					walletAddress={walletAddress}
+					canSettleByRuleId={canSettleByRuleId}
+					trySettlePending={trySettlePending}
+					manualSettlePending={manualSettlePending}
+					settlingRuleId={settlingRuleId}
+					onTrySettleRule={onTrySettleRule}
+					onManualSettleRule={onManualSettleRule}
 					revokePending={revokePending}
 					onRevokeAllowance={onRevokeAllowance}
 				/>

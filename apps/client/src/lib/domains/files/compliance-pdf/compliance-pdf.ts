@@ -8,7 +8,7 @@ import {
 	buildDocumentPlusCompliancePdf,
 	downloadPdfBytes,
 	sha256HexOfBytes,
-} from "@/src/lib/domains/files/compliance-pdf";
+} from "./utils/build";
 
 type ComplianceFileRef = {
 	pieceCid: string;

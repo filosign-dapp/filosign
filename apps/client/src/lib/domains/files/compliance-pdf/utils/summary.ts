@@ -5,20 +5,20 @@ import {
 } from "@filosign/shared";
 import { formatUnits } from "viem";
 import { SUPPORTED_TOKENS } from "@/src/constants";
-import {
-	buildAboutThisRecordLines,
-	buildAppendixLines,
-	buildTimestampExplainerLines,
-} from "./compliance-pdf-copy";
-import {
-	fieldPlacementStatusFromSignerRow,
-	signersByNormalizedRecipientEmail,
-} from "./compliance-pdf-placement";
 import type {
 	CompliancePdfBundleOptions,
 	CompliancePdfLine,
 	CompliancePdfSummary,
-} from "./compliance-pdf-types";
+} from "../compliance-pdf-types";
+import {
+	buildAboutThisRecordLines,
+	buildAppendixLines,
+	buildTimestampExplainerLines,
+} from "./copy";
+import {
+	fieldPlacementStatusFromSignerRow,
+	signersByNormalizedRecipientEmail,
+} from "./placement";
 
 /** Section title for appendix; must match the appendix entry in this module. */
 export const COMPLIANCE_PDF_APPENDIX_SECTION_TITLE =

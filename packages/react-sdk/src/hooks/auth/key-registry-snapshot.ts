@@ -1,9 +1,9 @@
 import type { FilosignContracts } from "@filosign/contracts";
-import type { UseWalletClientReturnType } from "wagmi";
 import { DAY } from "../../constants";
 import { filosignKeys } from "../../lib/query-keys";
+import type { FilosignWallet } from "../../lib/wallet";
 
-type Wallet = NonNullable<UseWalletClientReturnType["data"]>;
+type Wallet = FilosignWallet;
 
 export type StoredKeygenData = {
 	saltSeed: `0x${string}`;

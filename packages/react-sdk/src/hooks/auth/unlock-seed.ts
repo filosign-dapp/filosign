@@ -4,11 +4,11 @@ import {
 	expandDeterministicSeed,
 	seedKeyGen,
 } from "@filosign/crypto-utils";
-import type { UseWalletClientReturnType } from "wagmi";
 import type { FilosignContextValue } from "../../context/FilosignContext";
+import type { FilosignWallet } from "../../lib/wallet";
 import type { StoredKeygenData } from "./key-registry-snapshot";
 
-type Wallet = NonNullable<UseWalletClientReturnType["data"]>;
+type Wallet = FilosignWallet;
 
 export async function unlockSeedFromWallet(args: {
 	wallet: Wallet;

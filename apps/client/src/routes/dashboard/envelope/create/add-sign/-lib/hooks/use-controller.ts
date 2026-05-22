@@ -16,7 +16,7 @@ import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/col
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
-import type { PaymentAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/payment-attachment";
+import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
 import type {
 	FieldPlacementConfirmPayload,
 	FieldPlacementSignerOption,
@@ -24,10 +24,10 @@ import type {
 import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
 import { useSignatureFields } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-fields";
 import type { Document } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
-import { buildPaymentRulesForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/build-payment-rules";
+import { buildSettlementRulesForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/build-settlement-rules";
 import { signatureFieldBoxCssPx } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-box";
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
-import { resolvePaymentDraftsForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/resolve-payment-drafts";
+import { resolveSettlementDraftsForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/resolve-settlement-drafts";
 import {
 	buildPlacementManifestForDocument,
 	buildSignersAndViewersForDocument,
@@ -392,10 +392,10 @@ export function useAddSignController() {
 				fieldBox: fieldBoxCss,
 			});
 
-			let resolvedPaymentDrafts: PaymentAttachmentDraft[];
+			let resolvedSettlementDrafts: SettlementAttachmentDraft[];
 			try {
-				resolvedPaymentDrafts = await resolvePaymentDraftsForSend({
-					drafts: createForm.paymentDrafts ?? [],
+				resolvedSettlementDrafts = await resolveSettlementDraftsForSend({
+					drafts: createForm.settlementDrafts ?? [],
 					recipients: createForm.recipients,
 					lookupProfile: async (email) => {
 						try {
@@ -410,7 +410,9 @@ export function useAddSignController() {
 				});
 			} catch (err) {
 				const message =
-					err instanceof Error ? err.message : "Invalid payment configuration";
+					err instanceof Error
+						? err.message
+						: "Invalid settlement configuration";
 				toast.error(message);
 				setSendStatus("error");
 				isSendingRef.current = false;
@@ -418,7 +420,9 @@ export function useAddSignController() {
 				return;
 			}
 
-			const paymentRules = buildPaymentRulesForSend(resolvedPaymentDrafts);
+			const settlementRules = buildSettlementRulesForSend(
+				resolvedSettlementDrafts,
+			);
 
 			const result = await sendFile.mutateAsync({
 				signers,
@@ -428,7 +432,7 @@ export function useAddSignController() {
 				placementManifest,
 				viewerEmails,
 				...(coldInvitePayload ? { coldInvites: coldInvitePayload } : {}),
-				...(paymentRules.length > 0 ? { paymentRules } : {}),
+				...(settlementRules.length > 0 ? { settlementRules } : {}),
 				...(activeOrg
 					? {
 							organizationId: activeOrg.id,

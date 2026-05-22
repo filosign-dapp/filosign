@@ -1,17 +1,17 @@
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { getAddress, isAddress } from "viem";
 import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
-import type { PaymentAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/payment-attachment";
+import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
 
 export type ProfileLookupResult = {
 	walletAddress: string;
 } | null;
 
-export async function resolvePaymentDraftsForSend(args: {
-	drafts: PaymentAttachmentDraft[];
+export async function resolveSettlementDraftsForSend(args: {
+	drafts: SettlementAttachmentDraft[];
 	recipients: Recipient[];
 	lookupProfile: (query: string) => Promise<ProfileLookupResult>;
-}): Promise<PaymentAttachmentDraft[]> {
+}): Promise<SettlementAttachmentDraft[]> {
 	const { drafts, recipients, lookupProfile } = args;
 
 	const active = drafts.filter(
@@ -19,7 +19,7 @@ export async function resolvePaymentDraftsForSend(args: {
 	);
 	if (active.length === 0) return [];
 
-	const resolved: PaymentAttachmentDraft[] = [];
+	const resolved: SettlementAttachmentDraft[] = [];
 
 	for (const draft of active) {
 		const recipient = recipients.find(
@@ -39,7 +39,7 @@ export async function resolvePaymentDraftsForSend(args: {
 			const profile = await lookupProfile(email);
 			if (!profile?.walletAddress || !isAddress(profile.walletAddress)) {
 				throw new Error(
-					`Cannot attach USDC payout to ${draft.recipientLabel}: they need a Filosign account with a linked wallet, or send as an invite-only recipient without payment.`,
+					`Cannot attach USDC settlement to ${draft.recipientLabel}: they need a Filosign account with a linked wallet, or send as an invite-only recipient without settlement.`,
 				);
 			}
 			wallet = getAddress(profile.walletAddress);

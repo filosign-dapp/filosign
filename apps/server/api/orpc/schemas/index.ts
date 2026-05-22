@@ -40,9 +40,10 @@ import {
 	rpcOrgsUpdateOutputSchema,
 } from "./orgs-output";
 import {
-	rpcPaymentsListByFileOutputSchema,
-	rpcPaymentsRequestRetryOutputSchema,
-} from "./payments-output";
+	rpcSettlementsConfirmSettlementOutputSchema,
+	rpcSettlementsListByFileOutputSchema,
+	rpcSettlementsTrySettleOutputSchema,
+} from "./settlements-output";
 import {
 	rpcSharingAcceptRequestOutputSchema,
 	rpcSharingApproveOutputSchema,
@@ -146,9 +147,10 @@ export const rpcOut = {
 		templatesList: rpcOrgsTemplatesListOutputSchema,
 		templatesClone: rpcOrgsTemplatesCloneOutputSchema,
 	},
-	payments: {
-		listByFile: rpcPaymentsListByFileOutputSchema,
-		requestRetry: rpcPaymentsRequestRetryOutputSchema,
+	settlements: {
+		listByFile: rpcSettlementsListByFileOutputSchema,
+		trySettle: rpcSettlementsTrySettleOutputSchema,
+		confirmSettlement: rpcSettlementsConfirmSettlementOutputSchema,
 	},
 	users: {
 		register: rpcUserRegisterOutputSchema,

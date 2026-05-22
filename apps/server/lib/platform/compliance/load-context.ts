@@ -10,7 +10,7 @@ import {
 	fileSignerDrafts,
 	files,
 } from "@/lib/platform/db/schema/file";
-import { filePaymentRules } from "@/lib/platform/db/schema/payments";
+import { fileSettlementRules } from "@/lib/platform/db/schema/settlements";
 import { shareApprovals } from "@/lib/platform/db/schema/sharing";
 import { users } from "@/lib/platform/db/schema/user";
 import { fsContracts } from "@/lib/platform/evm";
@@ -59,7 +59,7 @@ export type ComplianceLoadContext = {
 	executionStatus: "fully_executed" | "partially_executed";
 	exportedAtIso: string;
 	senderNorm: Address;
-	paymentRows: {
+	settlementRows: {
 		onChainRuleId: bigint;
 		recipientWallet: Address;
 		tokenAddress: Address;
@@ -244,24 +244,24 @@ export async function loadComplianceContext(args: {
 		}
 	}
 
-	const paymentRowsRaw = await database
+	const settlementRowsRaw = await database
 		.select({
-			onChainRuleId: filePaymentRules.onChainRuleId,
-			recipientWallet: filePaymentRules.recipientWallet,
-			tokenAddress: filePaymentRules.tokenAddress,
-			amount: filePaymentRules.amount,
-			releaseType: filePaymentRules.releaseType,
-			status: filePaymentRules.status,
-			registerRuleTxHash: filePaymentRules.registerRuleTxHash,
-			approveTxHash: filePaymentRules.approveTxHash,
-			payoutTxHash: filePaymentRules.payoutTxHash,
-			executedAt: filePaymentRules.executedAt,
-			lastError: filePaymentRules.lastError,
+			onChainRuleId: fileSettlementRules.onChainRuleId,
+			recipientWallet: fileSettlementRules.recipientWallet,
+			tokenAddress: fileSettlementRules.tokenAddress,
+			amount: fileSettlementRules.amount,
+			releaseType: fileSettlementRules.releaseType,
+			status: fileSettlementRules.status,
+			registerRuleTxHash: fileSettlementRules.registerRuleTxHash,
+			approveTxHash: fileSettlementRules.approveTxHash,
+			payoutTxHash: fileSettlementRules.payoutTxHash,
+			executedAt: fileSettlementRules.executedAt,
+			lastError: fileSettlementRules.lastError,
 		})
-		.from(filePaymentRules)
-		.where(eq(filePaymentRules.pieceCid, pieceCid));
+		.from(fileSettlementRules)
+		.where(eq(fileSettlementRules.pieceCid, pieceCid));
 
-	const paymentRows = paymentRowsRaw.map((r) => ({
+	const settlementRows = settlementRowsRaw.map((r) => ({
 		onChainRuleId: r.onChainRuleId,
 		recipientWallet: getAddress(r.recipientWallet),
 		tokenAddress: getAddress(r.tokenAddress),
@@ -302,6 +302,6 @@ export async function loadComplianceContext(args: {
 		executionStatus,
 		exportedAtIso,
 		senderNorm,
-		paymentRows,
+		settlementRows,
 	};
 }

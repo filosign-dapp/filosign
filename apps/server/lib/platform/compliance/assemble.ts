@@ -1,7 +1,7 @@
 import type {
 	ComplianceBundle,
-	PaymentReleaseType,
-	PaymentRuleStatus,
+	SettlementReleaseType,
+	SettlementRuleStatus,
 } from "@filosign/shared";
 import {
 	completionsMerkleProofsV1,
@@ -41,7 +41,7 @@ export async function assembleComplianceBundle(
 		executionStatus,
 		exportedAtIso,
 		senderNorm,
-		paymentRows,
+		settlementRows,
 	} = ctx;
 
 	const signerParticipants = participantRows.filter((p) => p.role === "signer");
@@ -186,7 +186,7 @@ export async function assembleComplianceBundle(
 		? getAddress(FSPaymentValidator.address)
 		: null;
 
-	for (const pay of paymentRows) {
+	for (const pay of settlementRows) {
 		if (!pay.payoutTxHash || !validatorAddr) continue;
 		txDrafts.push({
 			kind: "payout_executed",
@@ -284,22 +284,24 @@ export async function assembleComplianceBundle(
 		});
 	}
 
-	const payments: ComplianceBundle["payments"] = paymentRows.map((pay) => ({
-		onChainRuleId: pay.onChainRuleId.toString(),
-		recipientWallet: getAddress(pay.recipientWallet),
-		tokenAddress: getAddress(pay.tokenAddress),
-		amount: pay.amount,
-		releaseType: pay.releaseType as PaymentReleaseType,
-		status: pay.status as PaymentRuleStatus,
-		registerRuleTxHash: pay.registerRuleTxHash,
-		approveTxHash: pay.approveTxHash,
-		payoutTxHash: pay.payoutTxHash,
-		executedAtIso: pay.executedAt?.toISOString() ?? null,
-		lastError: pay.lastError,
-	}));
+	const settlements: ComplianceBundle["settlements"] = settlementRows.map(
+		(pay) => ({
+			onChainRuleId: pay.onChainRuleId.toString(),
+			recipientWallet: getAddress(pay.recipientWallet),
+			tokenAddress: getAddress(pay.tokenAddress),
+			amount: pay.amount,
+			releaseType: pay.releaseType as SettlementReleaseType,
+			status: pay.status as SettlementRuleStatus,
+			registerRuleTxHash: pay.registerRuleTxHash,
+			approveTxHash: pay.approveTxHash,
+			payoutTxHash: pay.payoutTxHash,
+			executedAtIso: pay.executedAt?.toISOString() ?? null,
+			lastError: pay.lastError,
+		}),
+	);
 
 	return {
-		version: 3,
+		version: 4,
 		pieceCid,
 		chainId,
 		exportedAtIso,
@@ -315,7 +317,7 @@ export async function assembleComplianceBundle(
 		onchainRegistration,
 		transactions,
 		signers,
-		payments,
+		settlements,
 		offChainEvidence: { acknowledgements },
 	};
 }

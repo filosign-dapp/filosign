@@ -1,12 +1,31 @@
+import { useIsRegistered } from "@filosign/react/auth";
 import { SignOutIcon } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/src/lib/components/ui/button";
-import { useConnectButtonLogic } from "@/src/lib/web3/hooks/use-connect-button-logic";
+import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
+
+type ConnectButtonState = "loading" | "signin" | "get-started" | "dashboard";
 
 export default function ConnectButton() {
-	const { authenticated, isLoading, buttonState, primaryCta, signIn, logout } =
-		useConnectButtonLogic();
+	const { ready, authenticated, logout, login } = useThirdweb();
+	const isRegistered = useIsRegistered();
+
+	const buttonState: ConnectButtonState = !ready
+		? "loading"
+		: !authenticated || isRegistered.isPending
+			? "signin"
+			: !isRegistered.data
+				? "get-started"
+				: "dashboard";
+
+	const isLoading = buttonState === "loading";
+	const primaryCta =
+		buttonState === "dashboard"
+			? { label: "Dashboard", to: "/dashboard" as const }
+			: buttonState === "get-started"
+				? { label: "Get started", to: "/onboarding" as const }
+				: null;
 
 	return (
 		<motion.div
@@ -21,12 +40,13 @@ export default function ConnectButton() {
 				delay: 0.78,
 			}}
 		>
-			{/* Sign In button - show when not authenticated or loading */}
 			{(!authenticated || isLoading) && buttonState !== "dashboard" ? (
 				<Button
 					variant="secondary"
 					onClick={
-						buttonState === "signin" && !isLoading ? () => signIn() : undefined
+						buttonState === "signin" && !isLoading
+							? () => void login()
+							: undefined
 					}
 					disabled={isLoading}
 					className="min-w-28"
@@ -50,7 +70,6 @@ export default function ConnectButton() {
 				</Button>
 			) : null}
 
-			{/* Get started / Dashboard buttons */}
 			{primaryCta ? (
 				<Button
 					variant="secondary"
@@ -76,17 +95,16 @@ export default function ConnectButton() {
 				</Button>
 			) : null}
 
-			{/* Logout button - show when authenticated */}
-			{authenticated && (
+			{authenticated ? (
 				<Button
 					variant="secondary"
 					size="icon"
-					onClick={() => logout()}
+					onClick={() => void logout()}
 					title="Logout"
 				>
 					<SignOutIcon className="h-5 w-5" />
 				</Button>
-			)}
+			) : null}
 		</motion.div>
 	);
 }

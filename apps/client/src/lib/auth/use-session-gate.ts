@@ -2,7 +2,7 @@ import { useFilosignContext } from "@filosign/react";
 import { useIdentifyAnalyticsWallet } from "@filosign/react/analytics";
 import { useIsLoggedIn, useIsRegistered } from "@filosign/react/auth";
 import { useEffect } from "react";
-import { useThirdwebWalletAuth } from "@/src/lib/web3/hooks/use-thirdweb-wallet-auth";
+import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 import {
 	canAttemptWalletLogin,
 	isDashboardEntryAllowed,
@@ -13,7 +13,7 @@ import {
 } from "./session-state";
 
 export function useSessionGateFlags(): SessionGateFlags {
-	const { ready, authenticated } = useThirdwebWalletAuth();
+	const { ready, authenticated } = useThirdweb();
 	const { wallet } = useFilosignContext();
 	const isRegistered = useIsRegistered();
 	const isLoggedIn = useIsLoggedIn();

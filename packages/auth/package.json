@@ -17,13 +17,13 @@
 		"test": "bun test"
 	},
 	"dependencies": {
-		"jsonwebtoken": "9.0.2",
+		"jsonwebtoken": "catalog:",
 		"viem": "catalog:",
 		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@types/bun": "catalog:",
-		"@types/jsonwebtoken": "9.0.10",
+		"@types/jsonwebtoken": "catalog:",
 		"typescript": "catalog:"
 	}
 }

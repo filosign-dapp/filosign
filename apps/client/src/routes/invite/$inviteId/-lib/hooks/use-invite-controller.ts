@@ -6,8 +6,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { logger } from "@/src/lib/utils/logger";
-import { useThirdwebLogin } from "@/src/lib/web3/hooks/use-thirdweb-login";
-import { useThirdwebWalletAuth } from "@/src/lib/web3/hooks/use-thirdweb-wallet-auth";
+import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
 export type InviteData = {
 	inviteeEmail: string;
@@ -32,8 +31,7 @@ const inviteByIdSchema = z.object({
 
 export function useInviteController() {
 	const { inviteId } = useParams({ from: "/invite/$inviteId/" });
-	const { ready, authenticated } = useThirdwebWalletAuth();
-	const { login } = useThirdwebLogin();
+	const { ready, authenticated, login } = useThirdweb();
 	const { rpcQuery, ready: filosignReady } = useFilosignContext();
 	const { data: auth } = useAuthedApi();
 	const navigate = useNavigate();

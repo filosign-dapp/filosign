@@ -11,8 +11,7 @@ import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn } from "@/src/lib/utils";
 import { logger } from "@/src/lib/utils/logger";
 import { safeAsync } from "@/src/lib/utils/safe";
-import { useThirdwebUserInfo } from "@/src/lib/web3/hooks/use-thirdweb-user-info";
-import { useThirdwebWalletAuth } from "@/src/lib/web3/hooks/use-thirdweb-wallet-auth";
+import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
 export type ExecuteSwitchAccountLogoutArgs = {
 	clearOnboardingForm: () => void;
@@ -66,8 +65,7 @@ export function OnboardingSwitchAccountLink({
 	continueAnywayColdSearch?: { coldPieceCid: string; coldInvite: string };
 }) {
 	const { wallet } = useFilosignContext();
-	const { logout: logoutWallet } = useThirdwebWalletAuth();
-	const { email: loggedInEmail } = useThirdwebUserInfo();
+	const { logout: logoutWallet, email: loggedInEmail } = useThirdweb();
 	const logoutFilosign = useLogout();
 	const clearOnboardingForm = useStorePersist((s) => s.clearOnboardingForm);
 	const navigate = useNavigate();

@@ -4,7 +4,7 @@ import {
 	coldInviteEntrySearchSchema,
 	signDocumentSearchFromColdEntry,
 } from "@/src/lib/domains/invites/cold-invite-search";
-import { useThirdwebConnection } from "@/src/lib/web3/hooks/use-thirdweb-connection";
+import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
 export default function OnboardingProtector({
 	children,
@@ -13,7 +13,7 @@ export default function OnboardingProtector({
 	children: React.ReactNode;
 	allowRegistered?: boolean;
 }) {
-	const { ready } = useThirdwebConnection();
+	const { ready } = useThirdweb();
 	const isRegistered = useIsRegistered();
 	const coldSignSearch = useRouterState({
 		select: (s) => {

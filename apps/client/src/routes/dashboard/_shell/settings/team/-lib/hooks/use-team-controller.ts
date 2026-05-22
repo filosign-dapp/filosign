@@ -14,10 +14,10 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
-import { useThirdwebUserInfo } from "@/src/lib/web3/hooks/use-thirdweb-user-info";
+import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
 export function useTeamSettingsController() {
-	const { user } = useThirdwebUserInfo();
+	const { user } = useThirdweb();
 	const navigate = useNavigate();
 	const { setCreateForm } = useStorePersist();
 	const myWalletNorm = user?.wallet?.address?.toLowerCase() ?? null;

@@ -24,9 +24,9 @@ import z from "zod";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { invalidateEntitlements } from "../../lib/invalidate-entitlements";
 import {
-	type PaymentRuleDraft,
-	registerPaymentRulesOnChain,
-} from "../../lib/payment-rules.ts";
+	registerSettlementRulesOnChain,
+	type SettlementRuleDraft,
+} from "../../lib/settlement-rules.ts";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import { calculatePieceCid } from "../../utils/piece.ts";
 import { useUserProfile } from "../users";
@@ -60,8 +60,8 @@ export function useSendFile() {
 			/** When set, send as organization (requires X-Org-Id on session). */
 			organizationId?: string;
 			orgEncryptionPublicKey?: Hex;
-			/** On-chain payment rules (register + approve before files.register). */
-			paymentRules?: PaymentRuleDraft[];
+			/** On-chain settlement rules (register + approve before files.register). */
+			settlementRules?: SettlementRuleDraft[];
 		}) => {
 			const {
 				signers,
@@ -73,7 +73,7 @@ export function useSendFile() {
 				viewerEmails,
 				organizationId,
 				orgEncryptionPublicKey,
-				paymentRules = [],
+				settlementRules = [],
 			} = args;
 			const timestamp = Math.floor(Date.now() / 1000);
 
@@ -296,15 +296,15 @@ export function useSendFile() {
 					}
 				: undefined;
 
-			const paymentRuleRecords =
-				paymentRules.length > 0
-					? await registerPaymentRulesOnChain({
+			const settlementRuleRecords =
+				settlementRules.length > 0
+					? await registerSettlementRulesOnChain({
 							wallet,
 							contracts,
 							chainKey,
 							payer: wallet.account.address,
 							cidIdentifier,
-							rules: paymentRules,
+							rules: settlementRules,
 						})
 					: [];
 
@@ -325,8 +325,8 @@ export function useSendFile() {
 						}
 					: {}),
 				...(coldInviteRows.length > 0 ? { coldInvites: coldInviteRows } : {}),
-				...(paymentRuleRecords.length > 0
-					? { paymentRules: paymentRuleRecords }
+				...(settlementRuleRecords.length > 0
+					? { settlementRules: settlementRuleRecords }
 					: {}),
 			};
 

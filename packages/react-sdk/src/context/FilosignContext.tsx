@@ -1,12 +1,12 @@
 import type { ChainKey, FilosignContracts } from "@filosign/contracts";
 import type { signatures } from "@filosign/crypto-utils";
 import { createContext } from "react";
-import type { UseWalletClientReturnType } from "wagmi";
+import type { FilosignWallet } from "../lib/wallet";
 import type { AppRouterClient } from "../orpc/app-router-types";
 import type { FilosignSession } from "../orpc/create-orpc-client";
 import type { createFilosignRpcQueryUtils } from "../orpc/rpc-query-utils";
 
-type Wallet = UseWalletClientReturnType["data"] | undefined;
+type Wallet = FilosignWallet | undefined;
 type DilithiumInstance = Parameters<typeof signatures.keyGen>[0]["dl"];
 
 export type FilosignRpcQueryUtils = ReturnType<

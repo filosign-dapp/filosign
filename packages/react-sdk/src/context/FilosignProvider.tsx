@@ -2,8 +2,8 @@ import { type FilosignContracts, getContracts } from "@filosign/contracts";
 import type { signatures } from "@filosign/crypto-utils";
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import type { UseWalletClientReturnType } from "wagmi";
 import { MINUTE } from "../constants";
+import type { FilosignWallet } from "../lib/wallet";
 import {
 	createFilosignOrpcClient,
 	FilosignSession,
@@ -16,7 +16,7 @@ import {
 	type Runtime,
 } from "./FilosignContext";
 
-type Wallet = UseWalletClientReturnType["data"];
+type Wallet = FilosignWallet | undefined;
 type DilithiumInstance = Parameters<typeof signatures.keyGen>[0]["dl"];
 
 type FilosignConfig = {
@@ -74,7 +74,7 @@ export function FilosignProvider(props: FilosignConfig) {
 			setContracts(null);
 			return;
 		}
-		// Keep contracts when `wallet` client flickers during wagmi↔thirdweb sync.
+		// Keep contracts when `wallet` client is briefly undefined during connect.
 		if (!wallet) {
 			return;
 		}

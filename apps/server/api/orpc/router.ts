@@ -17,9 +17,10 @@ import {
 } from "@/api/handlers/metrics-handlers";
 import * as orgsHandlers from "@/api/handlers/orgs";
 import {
-	paymentsListByFile,
-	paymentsRequestRetry,
-} from "@/api/handlers/payments";
+	settlementsConfirmSettlement,
+	settlementsListByFile,
+	settlementsTrySettle,
+} from "@/api/handlers/settlements";
 import * as sharingHandlers from "@/api/handlers/sharing";
 import {
 	storagePresignPut,
@@ -72,18 +73,34 @@ export const appRouter = {
 			.output(out.auth.logout)
 			.handler(({ context }) => authLogout(context)),
 	},
-	payments: {
+	settlements: {
 		listByFile: authenticatedProcedure
 			.input(z.object({ pieceCid: z.string().min(1) }))
-			.output(out.payments.listByFile)
+			.output(out.settlements.listByFile)
 			.handler(({ context, input }) =>
-				paymentsListByFile(context.userWallet, input.pieceCid),
+				settlementsListByFile(context.userWallet, input.pieceCid),
 			),
-		requestRetry: authenticatedProcedure
+		trySettle: authenticatedProcedure
 			.input(z.object({ onChainRuleId: z.string().regex(/^\d+$/) }))
-			.output(out.payments.requestRetry)
+			.output(out.settlements.trySettle)
 			.handler(({ context, input }) =>
-				paymentsRequestRetry(context.userWallet, input.onChainRuleId),
+				settlementsTrySettle(context.userWallet, {
+					onChainRuleId: input.onChainRuleId,
+				}),
+			),
+		confirmSettlement: authenticatedProcedure
+			.input(
+				z.object({
+					onChainRuleId: z.string().regex(/^\d+$/),
+					payoutTxHash: zHexString,
+				}),
+			)
+			.output(out.settlements.confirmSettlement)
+			.handler(({ context, input }) =>
+				settlementsConfirmSettlement(context.userWallet, {
+					onChainRuleId: input.onChainRuleId,
+					payoutTxHash: input.payoutTxHash as `0x${string}`,
+				}),
 			),
 	},
 	tx: {

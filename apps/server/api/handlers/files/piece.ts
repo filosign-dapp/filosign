@@ -29,6 +29,7 @@ import {
 	primaryEmailForWallet,
 } from "@/lib/domains/files";
 import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs";
+import { tryExecuteSettlementRulesForPiece } from "@/lib/domains/settlements";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
 import { trackServerEvent } from "@/lib/platform/analytics/track";
 import {
@@ -37,6 +38,7 @@ import {
 } from "@/lib/platform/compliance";
 import db from "@/lib/platform/db";
 import { evmClient, fsContracts } from "@/lib/platform/evm";
+import { logger } from "@/lib/platform/pino";
 import { bucket } from "@/lib/platform/s3/client";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
@@ -922,6 +924,13 @@ export async function pieceSign(args: {
 			pieceCid,
 		});
 	}
+
+	void tryExecuteSettlementRulesForPiece(pieceCid).catch((err) => {
+		logger.warn(
+			{ err, pieceCid },
+			"post-sign settlement execute failed; use Settle payment or daily sync",
+		);
+	});
 
 	return { txHash, signature, approveSenderTxHash };
 }

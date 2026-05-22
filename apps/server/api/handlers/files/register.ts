@@ -24,11 +24,11 @@ import { normalizedViewerEmailsForRegister } from "@/lib/domains/files";
 import { inviteExpiresAt } from "@/lib/domains/invites";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
 import {
-	assertPaymentRecipientsAllowlisted,
-	assertPaymentRulesVerifiedOnChain,
-	insertPaymentRulesForFile,
-	zPaymentRulesRegisterBatch,
-} from "@/lib/domains/payments";
+	assertSettlementRecipientsAllowlisted,
+	assertSettlementRulesVerifiedOnChain,
+	insertSettlementRulesForFile,
+	zSettlementRulesRegisterBatch,
+} from "@/lib/domains/settlements";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
 import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
@@ -78,7 +78,7 @@ export const zFileRegisterBody = z.object({
 	organizationId: z.uuid().optional(),
 	orgKemCiphertext: zHexString().optional(),
 	orgEncryptedEncryptionKey: zHexString().optional(),
-	paymentRules: zPaymentRulesRegisterBatch.optional(),
+	settlementRules: zSettlementRulesRegisterBatch.optional(),
 });
 
 export async function filesRegister(
@@ -104,7 +104,7 @@ export async function filesRegister(
 		organizationId,
 		orgKemCiphertext,
 		orgEncryptedEncryptionKey,
-		paymentRules = [],
+		settlementRules = [],
 	} = parsedBody.data;
 
 	if (organizationId) {
@@ -242,16 +242,16 @@ export async function filesRegister(
 
 	const ds = await getOrCreateUserDataset(sender);
 
-	if (paymentRules.length > 0) {
-		await assertPaymentRecipientsAllowlisted({
+	if (settlementRules.length > 0) {
+		await assertSettlementRecipientsAllowlisted({
 			participantWallets: participants.map((p) => getAddress(p.address)),
 			organizationId,
-			rules: paymentRules,
+			rules: settlementRules,
 		});
-		await assertPaymentRulesVerifiedOnChain(
+		await assertSettlementRulesVerifiedOnChain(
 			getAddress(sender),
 			pieceCid,
-			paymentRules,
+			settlementRules,
 		);
 	}
 
@@ -307,10 +307,10 @@ export async function filesRegister(
 			);
 		}
 
-		await insertPaymentRulesForFile(
+		await insertSettlementRulesForFile(
 			pieceCid,
 			getAddress(sender),
-			paymentRules,
+			settlementRules,
 			tx,
 		);
 	});

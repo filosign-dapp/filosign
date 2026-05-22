@@ -13,7 +13,7 @@ Bun reads `.env*` automatically per [environment variables — Bun](https://bun.
 
 | Path | Role |
 |------|------|
-| `api/integrations/` | Secret-gated webhooks (e.g. Gelato `/api/integrations/gelato/*`) — mounted on **`apiRouter`** before JWT/oRPC |
+| `api/integrations/` | Partner webhooks (`/api/integrations/*`) — mounted on **`apiRouter`** before JWT/oRPC |
 | `api/orpc/` | oRPC **`/api/rpc`** + OpenAPI **`/api/api-reference`** (see `hono-mount.ts`, `router.ts`) |
 | `api/handlers/` | oRPC procedure implementations (**`ORPCError`**, reuse `tryCatch`) |
 | `api/orpc/hono-mount.ts` | **`apiRouter`** — integrations, then optional JWT + hybrid oRPC/OpenAPI on `/api` |
@@ -40,7 +40,7 @@ Server-side product events via `lib/analytics/` (`posthog-node`). Set `POSTHOG_E
 - **`GET /health`** (root app, not under `/api`) — `{ ok: true }` for probes.
 - **`bun run db -- purge local|testnet`** (repo root) — `scripts/clear-db.ts` drops/recreates the Postgres `public` schema, then drizzle push (dev reset).
 - **Invite expiry** — `INVITE_TTL_DAYS` in env (default `7`). All invite types set `expiresAt` at creation via [`inviteExpiresAt()`](lib/domains/invites/ttl.ts): `file_cold_invites`, `user_invites`, `organization_invites`. Hourly `Bun.cron` in [`lib/platform/cron/`](lib/platform/cron/) marks overdue `pending` rows `expired`; handlers use `pending*InviteFilter()` immediately after expiry. PostHog: `cold_invite_expired` for document invites.
-- **Payments** — `file_payment_rules` tracks on-chain payout rules (status, tx hashes). Optional `GELATO_WEBHOOK_SECRET` (min 16 chars) secures Gelato callbacks. Routes: `POST /api/integrations/gelato/payout`, `GET /api/integrations/gelato/pending-rules`. Hourly `sync-payment-rules` cron sets `ready` when `FSPaymentValidator.canExecute` is true. oRPC: `payments.listByFile`, `payments.requestRetry` (sender, failed rules only). Compliance bundles are **version 3** and include `payments[]`. See [`packages/gelato/README.md`](../../packages/gelato/README.md).
+- **Settlements** — `file_settlement_rules` tracks on-chain payout rules (status, tx hashes). After each signature the server attempts `executePayout` for executable rules. Sign page **Settle payment** calls `settlements.trySettle` (server relay + chain sync). **Settle from wallet** uses `settlements.confirmSettlement` (hash + `rules()` sync, no receipt RPC). Daily `sync-settlement-rules` cron backfills `executed` from chain for off-platform payouts. oRPC: `settlements.listByFile`, `settlements.trySettle`, `settlements.confirmSettlement`. Compliance bundles are **version 4** and include `settlements[]`. See [`project/settlements/architecture-and-non-custody.md`](../../project/settlements/architecture-and-non-custody.md).
 
 ## API envelope
 

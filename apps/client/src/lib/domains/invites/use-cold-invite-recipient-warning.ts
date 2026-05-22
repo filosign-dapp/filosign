@@ -7,8 +7,7 @@ import {
 	coldInviteRecipientMatchesIdentity,
 	parseColdInviteFromLocationSearch,
 } from "@/src/lib/domains/invites/cold-invite-search";
-import { useThirdwebConnection } from "@/src/lib/web3/hooks/use-thirdweb-connection";
-import { useThirdwebUserInfo } from "@/src/lib/web3/hooks/use-thirdweb-user-info";
+import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
 /**
  * When the URL carries a cold-invite token and the user is logged in, compares wallet
@@ -40,8 +39,7 @@ export function useColdInviteRecipientWarning() {
 	}, [searchKey]);
 	const inviteToken = cold?.coldInvite;
 
-	const { authenticated } = useThirdwebConnection();
-	const { user, email: walletEmail } = useThirdwebUserInfo();
+	const { authenticated, user, email: walletEmail } = useThirdweb();
 	const { data: userProfile } = useUserProfile({ enabled: authenticated });
 	const { wallet } = useFilosignContext();
 

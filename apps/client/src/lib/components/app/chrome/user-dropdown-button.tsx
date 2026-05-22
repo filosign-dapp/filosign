@@ -14,12 +14,10 @@ import {
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
 import { copyToClipboard } from "@/src/lib/utils/utils";
-import { useThirdwebUserInfo } from "@/src/lib/web3/hooks/use-thirdweb-user-info";
-import { useThirdwebWalletAuth } from "@/src/lib/web3/hooks/use-thirdweb-wallet-auth";
+import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
 export function UserDropdownButton() {
-	const { user } = useThirdwebUserInfo();
-	const { logout: logoutWallet } = useThirdwebWalletAuth();
+	const { user, logout: logoutWallet } = useThirdweb();
 	const logoutFilosign = useLogout();
 	const { data: userProfile } = useUserProfile();
 	const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
@@ -83,7 +81,7 @@ export function UserDropdownButton() {
 					</Image>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent
-					className="w-64 rounded-lg mt-1 z-[60]"
+					className="w-64 rounded-lg mt-1 z-60"
 					align="end"
 					side="bottom"
 				>

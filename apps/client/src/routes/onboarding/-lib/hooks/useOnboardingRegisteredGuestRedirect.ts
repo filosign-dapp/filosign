@@ -5,7 +5,7 @@ import {
 	coldInviteEntrySearchSchema,
 	signDocumentSearchFromColdEntry,
 } from "@/src/lib/domains/invites/cold-invite-search";
-import { useThirdwebConnection } from "@/src/lib/web3/hooks/use-thirdweb-connection";
+import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
 export function useOnboardingRegisteredGuestRedirect(args: {
 	registrationStarted: boolean;
@@ -13,7 +13,7 @@ export function useOnboardingRegisteredGuestRedirect(args: {
 }) {
 	const { registrationStarted, recoveryPhrase } = args;
 	const navigate = useNavigate();
-	const { ready } = useThirdwebConnection();
+	const { ready } = useThirdweb();
 	const isRegistered = useIsRegistered();
 	const coldSignSearch = useRouterState({
 		select: (s) => {

@@ -1,7 +1,7 @@
 import {
 	LEAF_SCHEMA_VERSION_V1,
-	paymentReleaseTypeLabel,
-	paymentStatusLabel,
+	settlementReleaseTypeLabel,
+	settlementStatusLabel,
 } from "@filosign/shared";
 import { formatUnits } from "viem";
 import { SUPPORTED_TOKENS } from "@/src/constants";
@@ -467,39 +467,41 @@ export function buildCompliancePdfSummaryFromBundle(
 		}
 	}
 
-	const paymentLines: CompliancePdfLine[] = [];
-	if (bundle.payments.length > 0) {
+	const settlementLines: CompliancePdfLine[] = [];
+	if (bundle.settlements.length > 0) {
 		const decimals = SUPPORTED_TOKENS[0]?.decimals ?? 6;
-		paymentLines.push(
+		settlementLines.push(
 			{
 				text: "USDC payout rules registered on FSPaymentValidator. Status reflects Filosign records at export; verify payout txs in the transaction index.",
 				textStyle: "lead",
 			},
 			{ text: "" },
 		);
-		for (let i = 0; i < bundle.payments.length; i++) {
-			const p = bundle.payments[i];
+		for (let i = 0; i < bundle.settlements.length; i++) {
+			const p = bundle.settlements[i];
 			const amount = formatUnits(BigInt(p.amount), decimals);
-			paymentLines.push({
+			settlementLines.push({
 				text: `${i + 1}. ${p.recipientWallet} — ${amount} USDC`,
 			});
-			paymentLines.push({
-				text: `   Release: ${paymentReleaseTypeLabel(p.releaseType)} · Status: ${paymentStatusLabel(p.status)}`,
+			settlementLines.push({
+				text: `   Release: ${settlementReleaseTypeLabel(p.releaseType)} · Status: ${settlementStatusLabel(p.status)}`,
 			});
-			paymentLines.push({ text: `   Rule id: ${p.onChainRuleId}` });
-			paymentLines.push({ text: `   registerRule: ${p.registerRuleTxHash}` });
-			paymentLines.push({ text: `   approve: ${p.approveTxHash}` });
+			settlementLines.push({ text: `   Rule id: ${p.onChainRuleId}` });
+			settlementLines.push({
+				text: `   registerRule: ${p.registerRuleTxHash}`,
+			});
+			settlementLines.push({ text: `   approve: ${p.approveTxHash}` });
 			if (p.payoutTxHash) {
-				paymentLines.push({ text: `   payout: ${p.payoutTxHash}` });
+				settlementLines.push({ text: `   payout: ${p.payoutTxHash}` });
 				if (explorerBaseUrl) {
 					const link = explorerTxUrl(explorerBaseUrl, p.payoutTxHash);
-					paymentLines.push({ text: `   Link: ${link}`, linkUri: link });
+					settlementLines.push({ text: `   Link: ${link}`, linkUri: link });
 				}
 			}
 			if (p.lastError) {
-				paymentLines.push({ text: `   Error: ${p.lastError}` });
+				settlementLines.push({ text: `   Error: ${p.lastError}` });
 			}
-			if (i < bundle.payments.length - 1) paymentLines.push({ text: "" });
+			if (i < bundle.settlements.length - 1) settlementLines.push({ text: "" });
 		}
 	}
 
@@ -514,8 +516,8 @@ export function buildCompliancePdfSummaryFromBundle(
 			{ title: "On-chain registration snapshot", lines: onchainLines },
 			{ title: "On-chain transactions (index)", lines: txIndexLines },
 			{ title: "Signer matrix", lines: signerMatrix },
-			...(paymentLines.length > 0
-				? [{ title: "Attached payments", lines: paymentLines }]
+			...(settlementLines.length > 0
+				? [{ title: "Attached settlements", lines: settlementLines }]
 				: []),
 			{ title: "Document content metadata", lines: docMetaLines },
 			{ title: "Field placements", lines: placementRef },

@@ -51,7 +51,7 @@ Every server event includes `chain` and `service: "filosign-server"`.
 
 In `FilosignAnalyticsProvider`: autocapture, pageviews, pageleave, and **session replay** are **disabled** — only listed client events are sent.
 
-Wallet sign-in must go through [`useThirdwebLogin`](apps/client/src/lib/hooks/use-thirdweb-login.ts) (thirdweb Connect modal) so first-time wallet connects emit `wallet_signup`.
+Wallet sign-in must go through [`useThirdweb`](apps/client/src/lib/web3/hooks/use-thirdweb.ts) `.login()` (thirdweb Connect modal) so first-time wallet connects emit `wallet_signup`.
 
 ---
 

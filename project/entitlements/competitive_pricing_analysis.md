@@ -64,7 +64,7 @@ graph TD
 * **Price:** \$35.00 / user / month (Monthly) or **\$25.00 / user / month (Billed Annually)**
 * **Offering:** 30 documents/user/mo, average of 3 recipients per document. Includes all security features plus automated blockchain payment settlements and shared team template libraries.
 * **Strategic Positioning:**
-  * **vs. DocuSign Standard (\$45/mo Monthly / \$25/mo Annual):** Matches DocuSign's annual Standard price *exactly* (\$25/user/mo), eliminating friction. However, standard DocuSign doesn't support payment collection at all, whereas Filosign includes on-chain USDC escrows and payment rules natively at this price point.
+  * **vs. DocuSign Standard (\$45/mo Monthly / \$25/mo Annual):** Matches DocuSign's annual Standard price *exactly* (\$25/user/mo), eliminating friction. However, standard DocuSign doesn't support payment collection at all, whereas Filosign includes on-chain USDC escrows and settlement rules natively at this price point.
 
 #### 4. Secure Team Pro
 * **Price:** \$55.00 / user / month (Monthly) or **\$40.00 / user / month (Billed Annually)**

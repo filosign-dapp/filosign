@@ -81,7 +81,7 @@ This document outlines the detailed entitlement breakdown for each of Filosign's
 ---
 
 ### 4. Secure Team Pro
-*Designed for advanced Web3 teams requiring custom payment rules and complex workspaces.*
+*Designed for advanced Web3 teams requiring custom settlement rules and complex workspaces.*
 
 *   **Existing Features:**
     *   30 documents per user/mo (pooled across team members).

@@ -7,7 +7,7 @@ Ranked **high → low**. Keep bullets actionable; link detail docs in `project/e
 ## P0 — Urgent / gate launch
 
 - Modular Smart Contract Migration for mainnet
-- **Secrets & key custody:** server relay key (KMS), deployer (KMS), `GELATO_WEBHOOK_SECRET`, JWT, no keys in client. No .env at all. 
+- **Secrets & key custody:** server relay key (KMS), deployer (KMS), JWT, no keys in client. No .env at all. 
 - **Support channel** (email, status page, SLA for paid tiers)!!!
 - **Analytics & consent:** PostHog/opt-in if EU traffic.
 - **Request Access (invite-only trial):** no signup without code; work-email domains → auto invite; public domains → manual review queue + superadmin tools ([entitlement report § Free Trial](entitlements/entitlement_breakdown_report.md)).

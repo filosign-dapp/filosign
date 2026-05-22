@@ -66,6 +66,7 @@ export function TemplatesSection() {
 												})),
 												emailMessage: "",
 												emailSubject: "",
+												paymentDrafts: [],
 											});
 											void navigate({
 												to: "/dashboard/envelope/create/add-sign",

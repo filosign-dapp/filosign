@@ -8,18 +8,18 @@ import {
 	rgb,
 	StandardFonts,
 } from "pdf-lib";
-import { A4 } from "./compliance-pdf-constants";
-import type { ComplianceGlossaryEntry } from "./compliance-pdf-copy";
-import { embedComplianceLogo } from "./compliance-pdf-images";
-import {
-	buildCompliancePdfSummaryFromBundle,
-	COMPLIANCE_PDF_APPENDIX_SECTION_TITLE,
-} from "./compliance-pdf-summary";
-import { lineHeightAt, wrapLines } from "./compliance-pdf-text";
 import type {
 	CompliancePdfBundleOptions,
 	CompliancePdfLine,
-} from "./compliance-pdf-types";
+} from "../compliance-pdf-types";
+import { A4 } from "../compliance-pdf-types";
+import type { ComplianceGlossaryEntry } from "./copy";
+import { embedComplianceLogo } from "./images";
+import {
+	buildCompliancePdfSummaryFromBundle,
+	COMPLIANCE_PDF_APPENDIX_SECTION_TITLE,
+} from "./summary";
+import { lineHeightAt, wrapLines } from "./text";
 
 const PDF_BRAND = {
 	pageBg: rgb(252 / 255, 253 / 255, 250 / 255),

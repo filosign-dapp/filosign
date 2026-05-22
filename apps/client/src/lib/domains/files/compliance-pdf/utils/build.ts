@@ -7,18 +7,18 @@ import {
 	rgb,
 	StandardFonts,
 } from "pdf-lib";
-import { A4, EMBED_MARGIN } from "./compliance-pdf-constants";
-import { drawComplianceReport } from "./compliance-pdf-draw";
-import { bytesToPngBytes } from "./compliance-pdf-images";
-import {
-	fieldPlacementStatusFromSignerRow,
-	signersByNormalizedRecipientEmail,
-} from "./compliance-pdf-placement";
-import { lineHeightAt, wrapLines } from "./compliance-pdf-text";
 import type {
 	CompliancePdfBundleOptions,
 	CompliancePdfOptions,
-} from "./compliance-pdf-types";
+} from "../compliance-pdf-types";
+import { A4, EMBED_MARGIN } from "../compliance-pdf-types";
+import { drawComplianceReport } from "./draw";
+import { bytesToPngBytes } from "./images";
+import {
+	fieldPlacementStatusFromSignerRow,
+	signersByNormalizedRecipientEmail,
+} from "./placement";
+import { lineHeightAt, wrapLines } from "./text";
 
 /** SHA-256 over bytes as lowercase 0x-prefixed hex (for compliance export query + appendix). */
 export async function sha256HexOfBytes(

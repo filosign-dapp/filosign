@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { cn } from "@/src/lib/utils/utils";
 import { useAddSignViewer } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 import { useDocumentViewerInteraction } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-viewer-interaction";
@@ -5,7 +6,7 @@ import { SignatureFieldOverlays } from "./field-overlays";
 import { DocumentPageContent } from "./page-content";
 import { DocumentViewerToolbar } from "./viewer-toolbar";
 
-export default function DocumentViewer() {
+function DocumentViewer() {
 	const {
 		currentDocument,
 		currentPage,
@@ -61,6 +62,7 @@ export default function DocumentViewer() {
 		handleFieldClick,
 		handleFieldMouseDown,
 		onPdfPageLayoutLoaded,
+		displaySignatureFields,
 	} = interaction;
 
 	return (
@@ -110,7 +112,7 @@ export default function DocumentViewer() {
 						/>
 
 						<SignatureFieldOverlays
-							signatureFields={currentPageFields}
+							signatureFields={displaySignatureFields}
 							selectedField={selectedField}
 							documentWidth={documentWidth}
 							documentHeight={documentHeight}
@@ -128,3 +130,5 @@ export default function DocumentViewer() {
 		</div>
 	);
 }
+
+export default memo(DocumentViewer);

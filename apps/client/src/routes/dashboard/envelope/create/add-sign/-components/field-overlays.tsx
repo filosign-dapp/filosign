@@ -1,4 +1,5 @@
 import { XIcon } from "@phosphor-icons/react";
+import { memo } from "react";
 import { constrainFieldTopLeft } from "@/src/lib/domains/files/placement-viewport";
 import { cn } from "@/src/lib/utils/utils";
 import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
@@ -22,7 +23,7 @@ type SignatureFieldOverlaysProps = {
 	onFieldRemove: (fieldId: string) => void;
 };
 
-export function SignatureFieldOverlays({
+export const SignatureFieldOverlays = memo(function SignatureFieldOverlays({
 	signatureFields,
 	selectedField,
 	documentWidth,
@@ -139,4 +140,4 @@ export function SignatureFieldOverlays({
 			})}
 		</>
 	);
-}
+});

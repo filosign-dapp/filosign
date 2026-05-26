@@ -5,8 +5,8 @@ import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-shar
 import {
 	AddSignProvider,
 	useAddSignChrome,
-	useAddSignContext,
 	useAddSignPlacement,
+	useAddSignShell,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 import type { AddSignController } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-controller";
 import FieldsSidebar from "./fields-sidebar";
@@ -23,7 +23,7 @@ function AddSignRoot({
 	controller: AddSignController;
 	children: ReactNode;
 }) {
-	return <AddSignProvider value={controller}>{children}</AddSignProvider>;
+	return <AddSignProvider controller={controller}>{children}</AddSignProvider>;
 }
 
 function AddSignPageShell({ children }: { children: ReactNode }) {
@@ -61,7 +61,7 @@ function AddSignViewerSlot() {
 		draftReady,
 		suppressEmptyDraftRedirect,
 		currentDocument,
-	} = useAddSignContext();
+	} = useAddSignShell();
 	const showViewer =
 		persistHydrated && (draftReady || suppressEmptyDraftRedirect);
 	return (

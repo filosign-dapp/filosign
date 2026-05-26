@@ -1,13 +1,25 @@
 import { useFileInfo } from "@filosign/react/files";
 import { useMemo } from "react";
 import { defaultChain } from "@/src/constants";
+import { useOptionalSignPieceFile } from "@/src/routes/dashboard/document/sign/-lib/context/sign-piece-file-context";
 
 export function useSignFileMeta(pieceCid: string | undefined) {
+	const shared = useOptionalSignPieceFile();
+	const useShared = Boolean(shared && pieceCid && shared.pieceCid === pieceCid);
+
 	const {
 		data: file,
 		isPending: filePending,
 		error: fileError,
-	} = useFileInfo({ pieceCid });
+	} = useFileInfo({ pieceCid: useShared ? undefined : pieceCid });
+
+	if (useShared && shared) {
+		return {
+			file: shared.file,
+			filePending: shared.filePending,
+			fileError: shared.fileError,
+		};
+	}
 
 	return { file, filePending, fileError };
 }

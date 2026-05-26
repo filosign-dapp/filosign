@@ -1,12 +1,10 @@
-import { useFilosignContext } from "@filosign/react";
 import {
 	useManualSettlementPayout,
 	useRevokeSettlementAllowance,
 	useSettlementsListByFile,
 	useTrySettleSettlement,
 } from "@filosign/react/files";
-import { useQueries } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { getAddress } from "viem";
 import { useCompliancePdfExports } from "@/src/lib/domains/files/compliance-pdf";
 import { useSignActions } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-sign-actions";
@@ -44,36 +42,23 @@ export function useSignDocument() {
 		fileData: viewer.fileData,
 	});
 
-	const { contracts } = useFilosignContext();
 	const settlementsQuery = useSettlementsListByFile(pieceCid);
 	const trySettleSettlement = useTrySettleSettlement(pieceCid);
 	const manualSettlementPayout = useManualSettlementPayout(pieceCid);
 	const revokeSettlementAllowance = useRevokeSettlementAllowance(pieceCid);
 
 	const settlementRules = settlementsQuery.data ?? [];
-	const canExecuteQueries = useQueries({
-		queries: settlementRules.map((rule) => ({
-			queryKey: ["settlement-can-execute", rule.onChainRuleId],
-			queryFn: async () => {
-				if (!contracts?.FSPaymentValidator) return false;
-				return contracts.FSPaymentValidator.read.canExecute([
-					BigInt(rule.onChainRuleId),
-				]);
-			},
-			enabled:
-				rule.status !== "executed" && Boolean(contracts?.FSPaymentValidator),
-		})),
-	});
 
 	const canSettleByRuleId = useMemo(() => {
 		const map = new Map<string, boolean>();
-		for (let i = 0; i < settlementRules.length; i++) {
-			const rule = settlementRules[i];
-			if (!rule) continue;
-			map.set(rule.onChainRuleId, canExecuteQueries[i]?.data === true);
+		for (const rule of settlementRules) {
+			map.set(
+				rule.onChainRuleId,
+				rule.status === "executed" ? false : rule.canExecuteOnChain === true,
+			);
 		}
 		return map;
-	}, [settlementRules, canExecuteQueries]);
+	}, [settlementRules]);
 
 	const actions = useSignActions({
 		pieceCid,
@@ -82,6 +67,39 @@ export function useSignDocument() {
 		canSubmitPlacementSign: placement.canSubmitPlacementSign,
 		completedFieldIds: draft.completedFieldIds,
 	});
+
+	const onTrySettleRule = useCallback(
+		async (onChainRuleId: string) => {
+			try {
+				await trySettleSettlement.mutateAsync(onChainRuleId);
+			} catch (err) {
+				console.error(err);
+			}
+		},
+		[trySettleSettlement],
+	);
+
+	const onManualSettleRule = useCallback(
+		async (onChainRuleId: string) => {
+			try {
+				await manualSettlementPayout.mutateAsync(onChainRuleId);
+			} catch (err) {
+				console.error(err);
+			}
+		},
+		[manualSettlementPayout],
+	);
+
+	const onRevokeAllowance = useCallback(async () => {
+		const rules = settlementsQuery.data ?? [];
+		const token = rules[0]?.tokenAddress;
+		if (!token) return;
+		try {
+			await revokeSettlementAllowance.mutateAsync(getAddress(token));
+		} catch (err) {
+			console.error(err);
+		}
+	}, [revokeSettlementAllowance, settlementsQuery.data]);
 
 	return {
 		navigation: { navigate, pieceCid },
@@ -153,31 +171,10 @@ export function useSignDocument() {
 				: manualSettlementPayout.isPending
 					? manualSettlementPayout.variables
 					: undefined,
-			onTrySettleRule: async (onChainRuleId: string) => {
-				try {
-					await trySettleSettlement.mutateAsync(onChainRuleId);
-				} catch (err) {
-					console.error(err);
-				}
-			},
-			onManualSettleRule: async (onChainRuleId: string) => {
-				try {
-					await manualSettlementPayout.mutateAsync(onChainRuleId);
-				} catch (err) {
-					console.error(err);
-				}
-			},
+			onTrySettleRule,
+			onManualSettleRule,
 			revokePending: revokeSettlementAllowance.isPending,
-			onRevokeAllowance: async () => {
-				const rules = settlementsQuery.data ?? [];
-				const token = rules[0]?.tokenAddress;
-				if (!token) return;
-				try {
-					await revokeSettlementAllowance.mutateAsync(getAddress(token));
-				} catch (err) {
-					console.error(err);
-				}
-			},
+			onRevokeAllowance,
 		},
 	};
 }

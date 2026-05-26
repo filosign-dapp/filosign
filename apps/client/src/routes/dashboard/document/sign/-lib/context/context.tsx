@@ -37,14 +37,29 @@ export function useSignDocumentContext(): SignDocumentContextValue {
 
 export function useSignFile() {
 	const { sign, pieceCid, file } = useSignDocumentContext();
+	const { filePending, fileError, acknowledgeFile } = sign.fileQuery;
+	const { handleAcknowledge } = sign.acknowledge;
+
 	return useMemo(
 		() => ({
 			pieceCid,
 			file,
-			fileQuery: sign.fileQuery,
-			acknowledge: sign.acknowledge,
+			fileQuery: {
+				file,
+				filePending,
+				fileError,
+				acknowledgeFile,
+			},
+			acknowledge: { handleAcknowledge },
 		}),
-		[pieceCid, file, sign.fileQuery, sign.acknowledge],
+		[
+			pieceCid,
+			file,
+			filePending,
+			fileError,
+			acknowledgeFile,
+			handleAcknowledge,
+		],
 	);
 }
 

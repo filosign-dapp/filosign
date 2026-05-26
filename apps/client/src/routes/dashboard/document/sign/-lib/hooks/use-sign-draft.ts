@@ -1,5 +1,5 @@
 import { useSignDraft, useUpdateSignDraft } from "@filosign/react/files";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 export function useSignDraftState(
 	pieceCid: string | undefined,
@@ -29,6 +29,7 @@ export function useSignDraftState(
 	const { data: serverDraftIds } = useSignDraft(signDraftPieceCid);
 	const updateSignDraft = useUpdateSignDraft();
 	const [completedFieldIds, setCompletedFieldIds] = useState<string[]>([]);
+	const [, startTransition] = useTransition();
 	const hasHydratedDraftForPieceCid = useRef<string | null>(null);
 	const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
 		undefined,
@@ -84,16 +85,18 @@ export function useSignDraftState(
 	const togglePlacementField = useCallback(
 		(fieldId: string) => {
 			if (alreadySigned) return;
-			setCompletedFieldIds((prev) => {
-				const isRemoving = prev.includes(fieldId);
-				const next = isRemoving
-					? prev.filter((x) => x !== fieldId)
-					: [...prev, fieldId];
-				scheduleSignDraftSave(next);
-				return next;
+			startTransition(() => {
+				setCompletedFieldIds((prev) => {
+					const isRemoving = prev.includes(fieldId);
+					const next = isRemoving
+						? prev.filter((x) => x !== fieldId)
+						: [...prev, fieldId];
+					scheduleSignDraftSave(next);
+					return next;
+				});
 			});
 		},
-		[scheduleSignDraftSave, alreadySigned],
+		[scheduleSignDraftSave, alreadySigned, startTransition],
 	);
 
 	return {

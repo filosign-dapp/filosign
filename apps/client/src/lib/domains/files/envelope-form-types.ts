@@ -44,13 +44,36 @@ export type StoredDocument = {
 	name: string;
 	size: number;
 	type: string;
-	dataUrl?: string;
+};
+
+export type SignatureField = {
+	id: string;
+	type:
+		| "signature"
+		| "initial"
+		| "date"
+		| "name"
+		| "email"
+		| "text"
+		| "checkbox";
+	x: number;
+	y: number;
+	page: number;
+	documentId: string;
+	assignedSignerWallet: string;
+	assignedSignerName: string;
+	assignedSignerEmail: string;
+	required: boolean;
+	label?: string;
 };
 
 export type CreateForm = {
+	draftId: string;
+	recipientFingerprint: string;
 	recipients: Recipient[];
 	emailSubject: string;
 	emailMessage: string;
 	documents: StoredDocument[];
 	settlementDrafts: SettlementAttachmentDraft[];
+	signatureFields: SignatureField[];
 };

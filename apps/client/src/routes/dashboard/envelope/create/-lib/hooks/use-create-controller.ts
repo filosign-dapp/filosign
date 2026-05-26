@@ -7,22 +7,25 @@ import {
 	useMonthlyDocumentQuota,
 	useRefetchEntitlementsOnMount,
 } from "@filosign/react/billing";
-import { useForm } from "@tanstack/react-form";
+import { useForm, useStore } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { useStorePersist } from "@/src/lib/filosign/use-store";
+import { useRef } from "react";
+import {
+	useStorePersist,
+	useStorePersistHydrated,
+} from "@/src/lib/filosign/use-store";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
-import type {
-	EnvelopeForm,
-	StoredDocument,
-} from "@/src/routes/dashboard/envelope/create/-lib/types";
-import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
+import type { EnvelopeForm } from "@/src/routes/dashboard/envelope/create/-lib/types";
+import { buildCreateForm } from "@/src/routes/dashboard/envelope/create/-lib/utils/envelope-draft";
 
-export function useCreateEnvelopeController() {
+const PERSIST_DEBOUNCE_MS = 400;
+
+export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 	const navigate = useNavigate();
-	const { setCreateForm } = useStorePersist();
-	const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+	const setCreateForm = useStorePersist((s) => s.setCreateForm);
+	const persistHydrated = useStorePersistHydrated();
+	const persistHydratedRef = useRef(persistHydrated);
+	persistHydratedRef.current = persistHydrated;
 	const promptPlanUpgrade = usePromptPlanUpgrade();
 	const captureAppEvent = useCaptureAppEvent();
 	useRefetchEntitlementsOnMount();
@@ -30,34 +33,28 @@ export function useCreateEnvelopeController() {
 	const { isMonthlyQuotaExhausted } = useMonthlyDocumentQuota();
 
 	const form = useForm({
-		defaultValues: {
-			recipients: [],
-			emailMessage: "",
-			emailSubject: "",
-			documents: [],
-			settlementDrafts: [],
-		} as EnvelopeForm,
+		defaultValues: initialValues,
+		listeners: {
+			onChangeDebounceMs: PERSIST_DEBOUNCE_MS,
+			onChange: ({ formApi }) => {
+				if (!persistHydratedRef.current) return;
+
+				const value = formApi.state.values;
+				const hasContent =
+					value.documents.length > 0 ||
+					value.recipients.length > 0 ||
+					value.emailMessage.trim().length > 0 ||
+					(value.settlementDrafts?.length ?? 0) > 0;
+				if (!hasContent) return;
+
+				void buildCreateForm(value, useStorePersist.getState().createForm)
+					.then(setCreateForm)
+					.catch((error) => console.error("Failed to persist draft:", error));
+			},
+		},
 		onSubmit: async ({ value }) => {
 			if (isMonthlyQuotaExhausted) {
 				promptPlanUpgrade("documents.sent.monthly");
-				return;
-			}
-
-			if (!value.documents || value.documents.length === 0) {
-				toast.error("Please upload at least one document");
-				return;
-			}
-
-			if (!value.recipients || value.recipients.length === 0) {
-				toast.error("Please add at least one recipient");
-				return;
-			}
-
-			const invalidRecipients = value.recipients.filter(
-				(r) => !isValidRecipientEmail(r.email ?? ""),
-			);
-			if (invalidRecipients.length > 0) {
-				toast.error("Enter a valid email for every recipient");
 				return;
 			}
 
@@ -67,32 +64,11 @@ export function useCreateEnvelopeController() {
 			}
 
 			try {
-				const storedDocuments: StoredDocument[] = await Promise.all(
-					value.documents.map(async (doc) => {
-						const dataUrl = await new Promise<string>((resolve, reject) => {
-							const reader = new FileReader();
-							reader.onload = () => resolve(reader.result as string);
-							reader.onerror = reject;
-							reader.readAsDataURL(doc.file);
-						});
-
-						return {
-							id: doc.id,
-							name: doc.name,
-							size: doc.size,
-							type: doc.type,
-							dataUrl,
-						};
-					}),
+				const draft = await buildCreateForm(
+					value,
+					useStorePersist.getState().createForm,
 				);
-
-				setCreateForm({
-					recipients: value.recipients,
-					emailMessage: value.emailMessage,
-					emailSubject: "",
-					documents: storedDocuments,
-					settlementDrafts: value.settlementDrafts ?? [],
-				});
+				setCreateForm(draft);
 
 				captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopeComposeSubmitted, {
 					recipient_count: value.recipients.length,
@@ -101,34 +77,18 @@ export function useCreateEnvelopeController() {
 				navigate({ to: "/dashboard/envelope/create/add-sign" });
 			} catch (error) {
 				console.error("Failed to prepare documents:", error);
-				toast.error("Failed to prepare documents. Please try again.", {
-					id: "prepare-progress",
-				});
 			}
 		},
 	});
 
-	const showValidationErrors = hasAttemptedSubmit;
-
-	const documentsSubmitError = useMemo(
-		() =>
-			showValidationErrors && form.state.values.documents.length === 0
-				? "Please upload at least one document"
-				: undefined,
-		[showValidationErrors, form.state.values.documents.length],
+	const showValidationErrors = useStore(
+		form.store,
+		(state) => state.submissionAttempts > 0,
 	);
-
-	const handleSubmitAttempt = () => {
-		setHasAttemptedSubmit(true);
-		void form.handleSubmit();
-	};
 
 	return {
 		form,
 		showValidationErrors,
-		documentsSubmitError,
-		handleSubmitAttempt,
-		isValidRecipientEmail,
 	};
 }
 

@@ -1,23 +1,34 @@
 import { useEnvelopeRecipientLimit } from "@filosign/react/billing";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
+import { useStore } from "@tanstack/react-form";
 import { useEffect } from "react";
+import { useCreateEnvelope } from "@/src/routes/dashboard/envelope/create/-lib/context/create-envelope-context";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
-import {
-	useRecipients,
-	useSettlements,
-} from "@/src/routes/dashboard/envelope/create/-lib/context/envelope-draft-context";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import {
 	removeDraftForRecipient,
 	removeDraftsForRemovedRecipients,
 } from "@/src/routes/dashboard/envelope/create/-lib/utils/settlement-drafts";
+import { fieldErrorMessage } from "@/src/routes/dashboard/envelope/create/-lib/validation/field-validator";
 
 export function useRecipientsController() {
-	const { value: recipients, onChange, error, showError } = useRecipients();
-	const { value: settlementDrafts, onChange: onSettlementDraftsChange } =
-		useSettlements();
+	const { form, showValidationErrors } = useCreateEnvelope();
+	const recipients = useStore(form.store, (state) => state.values.recipients);
+	const settlementDrafts = useStore(
+		form.store,
+		(state) => state.values.settlementDrafts ?? [],
+	);
+	const recipientErrors = useStore(
+		form.store,
+		(state) => state.fieldMeta.recipients?.errors,
+	);
 	const { canAddRecipient } = useEnvelopeRecipientLimit();
 	const promptPlanUpgrade = usePromptPlanUpgrade();
+
+	const onChange = (next: Recipient[]) =>
+		form.setFieldValue("recipients", next);
+	const onSettlementDraftsChange = (next: typeof settlementDrafts) =>
+		form.setFieldValue("settlementDrafts", next);
 
 	const recipientCount = recipients?.length ?? 0;
 
@@ -85,16 +96,19 @@ export function useRecipientsController() {
 			...r,
 			clientRowId: r.clientRowId ?? crypto.randomUUID(),
 		}));
-		onChange(withIds);
-		onSettlementDraftsChange(
+		form.setFieldValue("recipients", withIds);
+		form.setFieldValue(
+			"settlementDrafts",
 			removeDraftsForRemovedRecipients(settlementDrafts, withIds),
 		);
-	}, [recipients, onChange, onSettlementDraftsChange, settlementDrafts]);
+	}, [recipients, settlementDrafts, form]);
 
 	return {
 		recipients,
-		error,
-		showError,
+		error: fieldErrorMessage(recipientErrors),
+		showError: showValidationErrors,
+		settlementDrafts,
+		onSettlementDraftsChange,
 		addRecipient,
 		removeRecipient,
 		updateRecipient,

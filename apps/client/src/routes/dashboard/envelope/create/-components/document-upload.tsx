@@ -16,7 +16,7 @@ import {
 import { createClientId } from "@/src/lib/utils/id";
 import { cn } from "@/src/lib/utils/utils";
 import { usePromptPlanUpgrade } from "../-lib/context/entitlement-upgrade-context";
-import { useDocumentUpload } from "../-lib/context/envelope-draft-context";
+import { useComposeDocuments } from "../-lib/hooks/use-compose-documents";
 import type { AllowedFileMime, UploadedFile } from "../-lib/types";
 import {
 	ACCEPTED_FILE_EXTENSIONS,
@@ -25,7 +25,7 @@ import {
 import FileCard from "./file-card";
 
 export default function DocumentsSection() {
-	const { value: documents, onChange, error, showError } = useDocumentUpload();
+	const { documents, onChange, error, showError } = useComposeDocuments();
 	const promptPlanUpgrade = usePromptPlanUpgrade();
 	const { isMonthlyQuotaExhausted } = useMonthlyDocumentQuota();
 	const [isDocumentsOpen, setIsDocumentsOpen] = useState(true);

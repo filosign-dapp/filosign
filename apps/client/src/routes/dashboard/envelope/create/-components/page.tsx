@@ -8,7 +8,7 @@ import { useCreateEnvelope } from "@/src/routes/dashboard/envelope/create/-lib/c
 import { EnvelopeFormBody } from "./envelope-form-body";
 
 export function CreateEnvelopePage() {
-	const { form, handleSubmitAttempt } = useCreateEnvelope();
+	const { form } = useCreateEnvelope();
 
 	return (
 		<div className="min-h-screen bg-background">
@@ -28,7 +28,7 @@ export function CreateEnvelopePage() {
 				onSubmit={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
-					handleSubmitAttempt();
+					void form.handleSubmit();
 				}}
 			>
 				<EnvelopeFormBody />

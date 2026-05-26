@@ -3,10 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { getAddress, isAddress } from "viem";
 import { useDebouncedSearch } from "@/src/lib/utils/use-debounced-search";
 import { RECIPIENT_LOOKUP_DEBOUNCE_MS } from "@/src/routes/dashboard/envelope/create/-lib/constants/recipient-card";
-import {
-	useRecipients,
-	useSettlements,
-} from "@/src/routes/dashboard/envelope/create/-lib/context/envelope-draft-context";
 import { useRecipientsContext } from "@/src/routes/dashboard/envelope/create/-lib/context/recipients-context";
 import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
 import { filosignProfileDisplayName } from "@/src/routes/dashboard/envelope/create/-lib/utils/filosign-profile";
@@ -21,11 +17,14 @@ import {
 } from "@/src/routes/dashboard/envelope/create/-lib/utils/settlement-drafts";
 
 export function useRecipientCard(index: number) {
-	const { recipients, updateRecipient, removeRecipient } =
-		useRecipientsContext();
-	const { value: allRecipients } = useRecipients();
-	const { value: settlementDrafts, onChange: onSettlementDraftsChange } =
-		useSettlements();
+	const {
+		recipients,
+		updateRecipient,
+		removeRecipient,
+		settlementDrafts,
+		onSettlementDraftsChange,
+	} = useRecipientsContext();
+	const allRecipients = recipients ?? [];
 	const [settlementDialogOpen, setSettlementDialogOpen] = useState(false);
 
 	const recipient = recipients?.[index];

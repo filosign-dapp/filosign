@@ -2,8 +2,10 @@ import { useState } from "react";
 import { createClientId } from "@/src/lib/utils/id";
 import type { SignatureField } from "../types";
 
-export function useSignatureFields() {
-	const [signatureFields, setSignatureFields] = useState<SignatureField[]>([]);
+export function useSignatureFields(
+	signatureFields: SignatureField[],
+	onFieldsChange: (fields: SignatureField[]) => void,
+) {
 	const [selectedField, setSelectedField] = useState<string | null>(null);
 	const [isPlacingField, setIsPlacingField] = useState(false);
 	const [pendingFieldType, setPendingFieldType] = useState<
@@ -43,7 +45,7 @@ export function useSignatureFields() {
 			required: options.required,
 			label: options.label,
 		};
-		setSignatureFields((prev) => [...prev, newField]);
+		onFieldsChange([...signatureFields, newField]);
 		setIsPlacingField(false);
 		setPendingFieldType(null);
 	};
@@ -55,7 +57,7 @@ export function useSignatureFields() {
 	};
 
 	const handleFieldRemove = (fieldId: string) => {
-		setSignatureFields((prev) => prev.filter((field) => field.id !== fieldId));
+		onFieldsChange(signatureFields.filter((field) => field.id !== fieldId));
 		setSelectedField((prev) => (prev === fieldId ? null : prev));
 	};
 
@@ -63,8 +65,8 @@ export function useSignatureFields() {
 		fieldId: string,
 		updates: Partial<SignatureField>,
 	) => {
-		setSignatureFields((prev) =>
-			prev.map((field) =>
+		onFieldsChange(
+			signatureFields.map((field) =>
 				field.id === fieldId ? { ...field, ...updates } : field,
 			),
 		);

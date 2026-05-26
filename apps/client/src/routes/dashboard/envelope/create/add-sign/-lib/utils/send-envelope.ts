@@ -2,6 +2,7 @@ import type { PlacementManifest } from "@filosign/shared";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { type Address, getAddress, isAddress } from "viem";
 import { placementManifestRect } from "@/src/lib/domains/files/placement-viewport";
+import { loadDocumentBytes } from "@/src/routes/dashboard/envelope/create/-lib/utils/envelope-draft";
 import type { Recipient, StoredDocument } from "../../../-lib/types";
 import type { SignatureField } from "../types";
 
@@ -25,7 +26,7 @@ export function isColdRecipient(recipient: Recipient): boolean {
 }
 
 export const SendEnvelopeError = {
-	MISSING_DATA_URL: "MISSING_DATA_URL",
+	MISSING_DRAFT_DOCUMENT: "MISSING_DRAFT_DOCUMENT",
 } as const;
 
 export type RecipientWithEncryptionProfile = {
@@ -109,32 +110,10 @@ export function buildPlacementManifestForDocument(args: {
 }
 
 export async function loadDocumentFileBytes(
+	draftId: string,
 	doc: StoredDocument,
 ): Promise<Uint8Array> {
-	if (!doc.dataUrl) {
-		throw new Error(SendEnvelopeError.MISSING_DATA_URL);
-	}
-	const url = doc.dataUrl;
-	if (url.startsWith("data:")) {
-		const commaIdx = url.indexOf(",");
-		if (commaIdx === -1) throw new Error("Invalid data URL");
-		const meta = url.slice(5, commaIdx);
-		const payload = url.slice(commaIdx + 1);
-		if (meta.includes("base64")) {
-			const binaryStr = atob(payload);
-			const bytes = new Uint8Array(binaryStr.length);
-			for (let i = 0; i < binaryStr.length; i++) {
-				bytes[i] = binaryStr.charCodeAt(i);
-			}
-			return bytes;
-		}
-		const decoded = decodeURIComponent(payload);
-		return new Uint8Array(Array.from(decoded).map((c) => c.charCodeAt(0)));
-	}
-	const response = await fetch(url);
-	const blob = await response.blob();
-	const file = new File([blob], doc.name, { type: doc.type });
-	return new Uint8Array(await file.arrayBuffer());
+	return loadDocumentBytes(draftId, doc);
 }
 
 export function buildSignersAndViewersForDocument(args: {

@@ -6,6 +6,7 @@ import type {
 	Document,
 	SignatureField,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+import { isPdfDocument } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/document-kind";
 
 type DocumentPageContentProps = {
 	document: Document;
@@ -30,22 +31,30 @@ export function DocumentPageContent({
 	onPdfNumPagesLoaded,
 	onPdfPageLayoutLoaded,
 }: DocumentPageContentProps) {
-	if (!document.url) {
-		return (
-			<div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground px-6 text-center">
-				No document preview available
-			</div>
-		);
-	}
+	const pdfFile =
+		document.pdfBytes ??
+		(document.url.startsWith("data:application/pdf")
+			? document.url
+			: undefined);
 
 	if (
-		document.url.startsWith("data:application/pdf") ||
-		document.name?.toLowerCase().endsWith(".pdf")
+		isPdfDocument({
+			type: document.mimeType,
+			name: document.name,
+			pdfBytes: document.pdfBytes,
+		})
 	) {
+		if (!pdfFile) {
+			return (
+				<div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground px-6 text-center">
+					Loading PDF…
+				</div>
+			);
+		}
 		return (
 			<>
 				<PdfJsPreview
-					file={document.url}
+					file={pdfFile}
 					documentKey={document.id}
 					pageNumber={pdfPageNumber}
 					width={documentWidth}
@@ -60,6 +69,14 @@ export function DocumentPageContent({
 					onDocumentClick={onDocumentClick}
 				/>
 			</>
+		);
+	}
+
+	if (!document.url) {
+		return (
+			<div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground px-6 text-center">
+				No document preview available
+			</div>
 		);
 	}
 

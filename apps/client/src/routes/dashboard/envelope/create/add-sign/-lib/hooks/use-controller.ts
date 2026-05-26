@@ -9,14 +9,21 @@ import { useProfilesByAddresses } from "@filosign/react/users";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import type { Address, Hex } from "viem";
+import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
 import { constrainFieldTopLeft } from "@/src/lib/domains/files/placement-viewport";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
-import { useStorePersist } from "@/src/lib/filosign/use-store";
+import {
+	useStorePersist,
+	useStorePersistHydrated,
+} from "@/src/lib/filosign/use-store";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
+import {
+	loadDraftDocuments,
+	pruneSignatureFields,
+} from "@/src/routes/dashboard/envelope/create/-lib/utils/envelope-draft";
 import type {
 	FieldPlacementConfirmPayload,
 	FieldPlacementSignerOption,
@@ -25,6 +32,7 @@ import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/ad
 import { useSignatureFields } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-fields";
 import type { Document } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 import { buildSettlementRulesForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/build-settlement-rules";
+import { isPdfDocument } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/document-kind";
 import { signatureFieldBoxCssPx } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-box";
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
 import { resolveSettlementDraftsForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/resolve-settlement-drafts";
@@ -41,7 +49,13 @@ import { collectViewerEmails } from "@/src/routes/dashboard/envelope/create/add-
 
 export function useAddSignController() {
 	const navigate = useNavigate();
-	const { createForm, clearCreateForm } = useStorePersist();
+	const { createForm, clearCreateForm, setCreateForm } = useStorePersist();
+	const persistHydrated = useStorePersistHydrated();
+	const draftReady = Boolean(createForm?.documents?.length);
+	const [documentUrls, setDocumentUrls] = useState<Record<string, string>>({});
+	const [documentPdfBytes, setDocumentPdfBytes] = useState<
+		Record<string, Uint8Array>
+	>({});
 	const captureAppEvent = useCaptureAppEvent();
 	const sendFile = useSendFile();
 	const { rpcQuery } = useFilosignContext();
@@ -102,8 +116,29 @@ export function useAddSignController() {
 	const [coldShare, setColdShare] = useState<ColdSharePackage | null>(null);
 	const isSendingRef = useRef(false);
 
+	const signatureFields = useMemo(
+		() =>
+			createForm
+				? pruneSignatureFields(
+						createForm.signatureFields ?? [],
+						createForm.recipients,
+					)
+				: [],
+		[createForm],
+	);
+
+	const handleSignatureFieldsChange = useCallback(
+		(fields: SignatureField[]) => {
+			if (!createForm) return;
+			setCreateForm({
+				...createForm,
+				signatureFields: fields,
+			});
+		},
+		[createForm, setCreateForm],
+	);
+
 	const {
-		signatureFields,
 		selectedField,
 		isPlacingField,
 		pendingFieldType,
@@ -113,7 +148,7 @@ export function useAddSignController() {
 		handleFieldRemove,
 		handleFieldUpdate,
 		cancelPlacement,
-	} = useSignatureFields();
+	} = useSignatureFields(signatureFields, handleSignatureFieldsChange);
 
 	const placementCommittedRef = useRef(false);
 	const [placementDialogOpen, setPlacementDialogOpen] = useState(false);
@@ -147,12 +182,75 @@ export function useAddSignController() {
 				.filter((x): x is NonNullable<typeof x> => x !== null);
 		}, [createForm?.recipients]);
 
-	const documents: Document[] = (createForm?.documents ?? []).map((doc) => ({
-		id: doc.id,
-		name: doc.name,
-		url: doc.dataUrl || "",
-		pages: 1,
-	}));
+	const draftDocumentKey = useMemo(
+		() =>
+			(createForm?.documents ?? [])
+				.map((d) => `${d.id}:${d.size}:${d.type}`)
+				.join("|"),
+		[createForm?.documents],
+	);
+
+	const documents: Document[] = useMemo(
+		() =>
+			(createForm?.documents ?? []).map((doc) => ({
+				id: doc.id,
+				name: doc.name,
+				mimeType: doc.type,
+				url: documentUrls[doc.id] ?? "",
+				pdfBytes: documentPdfBytes[doc.id],
+				pages: 1,
+			})),
+		[createForm?.documents, documentUrls, documentPdfBytes],
+	);
+
+	useEffect(() => {
+		if (!createForm?.draftId || !draftDocumentKey) {
+			setDocumentUrls({});
+			setDocumentPdfBytes({});
+			return;
+		}
+		let cancelled = false;
+		void (async () => {
+			const uploaded = await loadDraftDocuments(
+				createForm.draftId,
+				createForm.documents,
+			);
+			if (cancelled) return;
+			const urls: Record<string, string> = {};
+			const pdfBytes: Record<string, Uint8Array> = {};
+			for (const doc of uploaded) {
+				if (isPdfDocument({ type: doc.type, name: doc.name })) {
+					const buffer = await doc.file.arrayBuffer();
+					pdfBytes[doc.id] = new Uint8Array(buffer);
+				} else {
+					urls[doc.id] = URL.createObjectURL(doc.file);
+				}
+			}
+			setDocumentUrls(urls);
+			setDocumentPdfBytes(pdfBytes);
+		})().catch((error) =>
+			console.error("Failed to load draft preview:", error),
+		);
+
+		return () => {
+			cancelled = true;
+			setDocumentUrls((prev) => {
+				for (const url of Object.values(prev)) URL.revokeObjectURL(url);
+				return {};
+			});
+			setDocumentPdfBytes({});
+		};
+	}, [createForm?.draftId, createForm?.documents, draftDocumentKey]);
+
+	useEffect(() => {
+		if (!persistHydrated) return;
+		if (!draftReady) {
+			navigate({
+				to: "/dashboard/envelope/create",
+				replace: true,
+			});
+		}
+	}, [persistHydrated, draftReady, navigate]);
 
 	useEffect(() => {
 		if (documents.length > 0 && !currentDocumentId) {
@@ -172,9 +270,6 @@ export function useAddSignController() {
 		(coords: { x: number; y: number; page: number }) => {
 			if (!pendingFieldType || !currentDocumentId) return;
 			if (signerOptionsForPlacement.length === 0) {
-				toast.error(
-					"Add at least one signer with an email address before placing fields.",
-				);
 				cancelPlacement();
 				return;
 			}
@@ -257,26 +352,22 @@ export function useAddSignController() {
 
 	const handleSend = useCallback(async () => {
 		if (isSendingRef.current) {
-			toast.info("Already sending...");
 			return;
 		}
 
 		if (!createForm?.documents.length) {
-			toast.error("Add a document first");
 			setSendStatus("error");
 			setTimeout(() => setSendStatus("idle"), 3000);
 			return;
 		}
 
 		if (createForm.documents.length !== 1) {
-			toast.error("Only one document supported");
 			setSendStatus("error");
 			setTimeout(() => setSendStatus("idle"), 3000);
 			return;
 		}
 
 		if (!createForm.recipients || createForm.recipients.length === 0) {
-			toast.error("Add recipients first");
 			setSendStatus("error");
 			setTimeout(() => setSendStatus("idle"), 3000);
 			return;
@@ -286,7 +377,6 @@ export function useAddSignController() {
 			(r) => r.role === "signer",
 		);
 		if (signerRecipients.length === 0) {
-			toast.error("Add at least one signer");
 			setSendStatus("error");
 			setTimeout(() => setSendStatus("idle"), 3000);
 			return;
@@ -296,7 +386,6 @@ export function useAddSignController() {
 			(r) => !r.email?.trim(),
 		);
 		if (unresolvedSignerEmails.length > 0) {
-			toast.error("Every signer must have an email address.");
 			setSendStatus("error");
 			setTimeout(() => setSendStatus("idle"), 3000);
 			return;
@@ -313,15 +402,11 @@ export function useAddSignController() {
 					signerEmail,
 			);
 			if (signerFields.length === 0) {
-				toast.error(`${signer.name || "A signer"} has no signature fields`);
 				setSendStatus("error");
 				setTimeout(() => setSendStatus("idle"), 3000);
 				return;
 			}
 			if (!signerFields.some((f) => f.required)) {
-				toast.error(
-					`${signer.name || "A signer"} needs at least one required field`,
-				);
 				setSendStatus("error");
 				setTimeout(() => setSendStatus("idle"), 3000);
 				return;
@@ -329,7 +414,6 @@ export function useAddSignController() {
 		}
 
 		if (recipientProfilesLoading) {
-			toast.error("Loading recipient info...");
 			return;
 		}
 
@@ -339,7 +423,6 @@ export function useAddSignController() {
 			return !recipientProfilesMapWithRecipient.has(addr);
 		});
 		if (missingProfiles.length > 0) {
-			toast.error("Loading recipient profiles...");
 			setSendStatus("error");
 			setTimeout(() => setSendStatus("idle"), 3000);
 			return;
@@ -351,14 +434,13 @@ export function useAddSignController() {
 
 		isSendingRef.current = true;
 		setSendStatus("loading");
-		toast.loading("Sending documents...", { id: "send-progress" });
 
 		try {
 			const doc = createForm.documents[0];
 			if (!doc) {
 				throw new Error("No document to send");
 			}
-			const fileData = await loadDocumentFileBytes(doc);
+			const fileData = await loadDocumentFileBytes(createForm.draftId, doc);
 
 			const { signers, viewers } = buildSignersAndViewersForDocument({
 				recipients: createForm.recipients,
@@ -409,11 +491,7 @@ export function useAddSignController() {
 					},
 				});
 			} catch (err) {
-				const message =
-					err instanceof Error
-						? err.message
-						: "Invalid settlement configuration";
-				toast.error(message);
+				console.error(err);
 				setSendStatus("error");
 				isSendingRef.current = false;
 				setTimeout(() => setSendStatus("idle"), 3000);
@@ -444,9 +522,6 @@ export function useAddSignController() {
 			clearCreateForm();
 
 			setSendStatus("success");
-			toast.success("Documents sent successfully!", {
-				id: "send-progress",
-			});
 
 			captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopeSendSucceeded, {
 				had_cold_recipients: coldRecipients.length > 0,
@@ -479,17 +554,12 @@ export function useAddSignController() {
 			setSendStatus("error");
 			if (
 				error instanceof Error &&
-				error.message === SendEnvelopeError.MISSING_DATA_URL
+				error.message === SendEnvelopeError.MISSING_DRAFT_DOCUMENT
 			) {
-				toast.dismiss("send-progress");
-				toast.error("Document is missing file data");
 				setTimeout(() => setSendStatus("idle"), 3000);
 				return;
 			}
 			console.error("Failed to send documents:", error);
-			toast.error("Failed to send documents. Please try again.", {
-				id: "send-progress",
-			});
 			setTimeout(() => setSendStatus("idle"), 3000);
 		} finally {
 			isSendingRef.current = false;
@@ -535,6 +605,8 @@ export function useAddSignController() {
 	}, [navigate]);
 
 	return {
+		persistHydrated,
+		draftReady,
 		documents,
 		currentDocument,
 		currentDocumentId,

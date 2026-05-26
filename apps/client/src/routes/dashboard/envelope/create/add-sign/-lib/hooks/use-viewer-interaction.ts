@@ -6,6 +6,7 @@ import type {
 	Document,
 	SignatureField,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+import { isPdfDocument } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/document-kind";
 import { signatureFieldBoxCssPx } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-box";
 
 type UseDocumentViewerInteractionArgs = {
@@ -63,10 +64,13 @@ export function useDocumentViewerInteraction({
 	});
 	const lastUpdateRef = useRef(0);
 
-	const isPdfDocument = Boolean(
-		document?.url &&
-			(document.url.startsWith("data:application/pdf") ||
-				document.name?.toLowerCase().endsWith(".pdf")),
+	const isPdf = Boolean(
+		document &&
+			isPdfDocument({
+				type: document.mimeType,
+				name: document.name,
+				pdfBytes: document.pdfBytes,
+			}),
 	);
 
 	useEffect(() => {
@@ -75,7 +79,7 @@ export function useDocumentViewerInteraction({
 			document?.pages != null && document.pages > 0 ? document.pages : null;
 		setPdfNumPages(hint);
 		onPdfPageChange?.(1);
-	}, [document?.id, document?.url, onPdfPageChange]);
+	}, [document?.id, document?.pdfBytes, document?.url, onPdfPageChange]);
 
 	const handleDocumentClick = useCallback(
 		(event: React.MouseEvent) => {
@@ -97,7 +101,7 @@ export function useDocumentViewerInteraction({
 				margin,
 			});
 
-			const page = isPdfDocument ? pdfPageNumber : documentPage;
+			const page = isPdf ? pdfPageNumber : documentPage;
 			onFieldPlacementRequest({ x: boundedX, y: boundedY, page });
 		},
 		[
@@ -109,7 +113,7 @@ export function useDocumentViewerInteraction({
 			fieldWidth,
 			fieldHeight,
 			margin,
-			isPdfDocument,
+			isPdf,
 			pdfPageNumber,
 			documentPage,
 		],
@@ -238,7 +242,7 @@ export function useDocumentViewerInteraction({
 		isMobile,
 		fieldWidth,
 		fieldHeight,
-		isPdfDocument,
+		isPdfDocument: isPdf,
 		isPlacingField,
 		pdfPageNumber,
 		pdfNumPages,

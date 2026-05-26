@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { EntitlementPlanHint } from "@/src/lib/domains/entitlements/entitlement-plan-hint";
 import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import {
@@ -55,16 +56,18 @@ function AddSignFieldsSidebarSlot() {
 }
 
 function AddSignViewerSlot() {
-	const { currentDocument } = useAddSignContext();
+	const { persistHydrated, draftReady, currentDocument } = useAddSignContext();
 	return (
 		<main className="flex-1 flex flex-col bg-background">
-			{currentDocument ? (
+			{!persistHydrated || !draftReady ? (
+				<div className="flex flex-1 items-center justify-center">
+					<InlineLoader size="lg" />
+				</div>
+			) : currentDocument ? (
 				<DocumentViewer />
 			) : (
-				<div className="flex-1 flex items-center justify-center">
-					<div className="text-center">
-						<p className="text-muted-foreground">No documents available</p>
-					</div>
+				<div className="flex flex-1 items-center justify-center">
+					<InlineLoader size="lg" />
 				</div>
 			)}
 		</main>

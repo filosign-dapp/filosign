@@ -1,8 +1,8 @@
-import { useFileInfo } from "@filosign/react/files";
 import { ArrowLeftIcon, FileTextIcon } from "@phosphor-icons/react";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { useSignPieceFileContext } from "@/src/routes/dashboard/document/sign/-lib/context/sign-piece-file-context";
 import { useSignInviteUnlock } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-invite-unlock";
 import { SignInviteUnlockDialog } from "./invite-unlock-dialog";
 import { SignDocumentPage } from "./page";
@@ -18,7 +18,7 @@ export function SignInviteUnlockRoutePage() {
 	const pieceCid = search.pieceCid?.trim() ?? "";
 	const inviteToken = search.invite?.trim() ?? "";
 
-	const { data: file } = useFileInfo({ pieceCid });
+	const { file } = useSignPieceFileContext();
 	const hasDecryptionKeys = Boolean(
 		(file?.kemCiphertext && file?.encryptedEncryptionKey) ||
 			(file?.organizationId &&
@@ -32,7 +32,7 @@ export function SignInviteUnlockRoutePage() {
 	const toHome = () => navigate({ to: "/" });
 
 	if (hasDecryptionKeys || unlock.claimSucceeded) {
-		return <SignDocumentPage skipInviteUnlock />;
+		return <SignDocumentPage />;
 	}
 
 	if (!unlock.ready) {

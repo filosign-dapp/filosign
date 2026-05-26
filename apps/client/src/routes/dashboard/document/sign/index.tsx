@@ -4,6 +4,7 @@ import { z } from "zod";
 import { RoutePendingFallback } from "@/src/lib/components/app/suspense";
 import { SignDocumentPage } from "./-components/page";
 import { SignInviteUnlockRoutePage } from "./-components/sign-invite-unlock-page";
+import { SignPieceFileProvider } from "./-lib/context/sign-piece-file-context";
 
 function SignDocumentRoutePage() {
 	const search = useSearch({ from: "/dashboard/document/sign/" });
@@ -24,10 +25,22 @@ function SignDocumentRoutePage() {
 	}
 
 	if (invite && pieceCid) {
-		return <SignInviteUnlockRoutePage />;
+		return (
+			<SignPieceFileProvider pieceCid={pieceCid}>
+				<SignInviteUnlockRoutePage />
+			</SignPieceFileProvider>
+		);
 	}
 
-	return <SignDocumentPage />;
+	if (!pieceCid) {
+		return <SignDocumentPage />;
+	}
+
+	return (
+		<SignPieceFileProvider pieceCid={pieceCid}>
+			<SignDocumentPage />
+		</SignPieceFileProvider>
+	);
 }
 
 export const Route = createFileRoute("/dashboard/document/sign/")({

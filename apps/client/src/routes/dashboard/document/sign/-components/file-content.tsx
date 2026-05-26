@@ -1,6 +1,6 @@
 import type { PlacementField } from "@filosign/shared";
 import { DownloadIcon, FileTextIcon } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { DocCanvasPanel } from "@/src/lib/domains/files/components/doc-canvas-panel";
 import { PLACEMENT_VIEWPORT_WIDTH } from "@/src/lib/domains/files/placement-viewport";
@@ -102,6 +102,24 @@ export function SignDocumentFileContent() {
 		useSignPlacement();
 	const { alreadySigned, canSign } = useSignSigning();
 	const { handleDownload } = useSignCompliance();
+
+	const renderPageOverlay = useCallback(
+		(pageIndex: number) => (
+			<SignDocumentPdfPlacementOverlay
+				pageIndex={pageIndex}
+				myPlacementFields={myPlacementFields}
+				alreadySigned={alreadySigned}
+				isMyPlacementFieldDone={isMyPlacementFieldDone}
+				togglePlacementField={togglePlacementField}
+			/>
+		),
+		[
+			myPlacementFields,
+			alreadySigned,
+			isMyPlacementFieldDone,
+			togglePlacementField,
+		],
+	);
 
 	const needsAck =
 		file &&
@@ -292,15 +310,7 @@ export function SignDocumentFileContent() {
 								setSignPdfNumPages(n);
 								setSignPdfPage((p) => Math.min(p, n));
 							}}
-							renderPageOverlay={(pageIndex) => (
-								<SignDocumentPdfPlacementOverlay
-									pageIndex={pageIndex}
-									myPlacementFields={myPlacementFields}
-									alreadySigned={alreadySigned}
-									isMyPlacementFieldDone={isMyPlacementFieldDone}
-									togglePlacementField={togglePlacementField}
-								/>
-							)}
+							renderPageOverlay={renderPageOverlay}
 						/>
 					</div>
 				</div>

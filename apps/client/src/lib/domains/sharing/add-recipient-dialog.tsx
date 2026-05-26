@@ -5,7 +5,6 @@ import {
 	SpinnerGapIcon,
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Dialog,
@@ -41,20 +40,9 @@ function isValidEmail(email: string) {
 	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function successHeading(result: {
-	alreadyApproved?: boolean;
-	alreadyRequested?: boolean;
-	alreadyInvited?: boolean;
-	exists?: boolean;
-	requested?: boolean;
-	invited?: boolean;
-}) {
-	if (result.alreadyApproved) return "Already connected";
-	if (result.alreadyRequested) return "Request pending";
+function successHeading(result: { alreadyInvited?: boolean }) {
 	if (result.alreadyInvited) return "Already invited";
-	if (result.exists && result.requested) return "Request sent";
-	if (result.invited && !result.alreadyInvited) return "Invite sent";
-	return "Done";
+	return "Invite sent";
 }
 
 export default function AddRecipientDialog({
@@ -68,11 +56,7 @@ export default function AddRecipientDialog({
 	const [step, setStep] = useState<Step>("email");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [result, setResult] = useState<{
-		exists?: boolean;
-		requested?: boolean;
 		invited?: boolean;
-		alreadyRequested?: boolean;
-		alreadyApproved?: boolean;
 		alreadyInvited?: boolean;
 	} | null>(null);
 
@@ -93,7 +77,6 @@ export default function AddRecipientDialog({
 
 	const handleSubmit = async () => {
 		if (!isValidEmail(email.trim())) {
-			toast.error("Please enter a valid email address");
 			return;
 		}
 
@@ -109,7 +92,6 @@ export default function AddRecipientDialog({
 		setIsSubmitting(false);
 
 		if (error) {
-			toast.error(error.message || "Something went wrong");
 			return;
 		}
 
@@ -147,12 +129,12 @@ export default function AddRecipientDialog({
 						</DialogTitle>
 						{step === "email" ? (
 							<DialogDescription className="text-sm leading-relaxed">
-								We&apos;ll connect them if they already use Filosign, or send an
-								email invite otherwise.
+								Send an email invite. When they register with that address, the
+								invite is recorded on their account.
 							</DialogDescription>
 						) : (
 							<DialogDescription className="sr-only">
-								Result of your invitation or connection request.
+								Result of your email invite.
 							</DialogDescription>
 						)}
 					</DialogHeader>
@@ -236,46 +218,20 @@ export default function AddRecipientDialog({
 								<CheckCircleIcon className="size-4" weight="regular" />
 							</span>
 							<div className="min-w-0 flex-col items-center text-sm leading-relaxed">
-								{result.alreadyApproved && (
-									<p className="text-foreground/90">
-										You&apos;re already connected with{" "}
-										<span className="font-medium text-foreground">{email}</span>
-										. You can send documents anytime.
-									</p>
-								)}
-								{result.alreadyRequested && (
-									<p className="text-muted-foreground">
-										A request to{" "}
-										<span className="font-medium text-foreground/90">
-											{email}
-										</span>{" "}
-										is already pending.
-									</p>
-								)}
-								{result.alreadyInvited && (
+								{result.alreadyInvited ? (
 									<p className="text-muted-foreground">
 										<span className="font-medium text-foreground/90">
 											{email}
 										</span>{" "}
 										already has a pending invite.
 									</p>
-								)}
-								{result.exists && result.requested && (
-									<p className="text-muted-foreground">
-										<span className="font-medium text-foreground/90">
-											{email}
-										</span>{" "}
-										is on Filosign. They&apos;ll be asked to accept your
-										connection request.
-									</p>
-								)}
-								{result.invited && !result.alreadyInvited && (
+								) : (
 									<p className="text-muted-foreground">
 										We sent an invite to{" "}
 										<span className="font-medium text-foreground/90">
 											{email}
 										</span>
-										. They can join and connect with you from the email.
+										. They can join Filosign from the email link.
 									</p>
 								)}
 

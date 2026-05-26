@@ -3,18 +3,7 @@ import {
 	BellIcon,
 	CheckCircleIcon,
 	FileTextIcon,
-	UserCheckIcon,
 } from "@phosphor-icons/react";
-import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@/src/lib/components/ui/alert-dialog";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -22,9 +11,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/src/lib/components/ui/popover";
-import { Separator } from "@/src/lib/components/ui/separator";
 import { useNotificationsController } from "@/src/routes/dashboard/_shell/-lib/hooks/use-notifications-controller";
-import { NotificationItemCard } from "./notification-item-card";
 import { ReceivedFileNotification } from "./received-file-notification";
 
 export function NotificationsPopover() {
@@ -61,7 +48,7 @@ export function NotificationsPopover() {
 							<h3 className="font-manrope">Notifications</h3>
 							<p className="text-sm text-muted-foreground mt-1 font-manrope">
 								{n.notificationCount > 0
-									? `${n.notificationCount} pending action${n.notificationCount > 1 ? "s" : ""}`
+									? `${n.notificationCount} document${n.notificationCount > 1 ? "s" : ""} to review`
 									: "You're all caught up!"}
 							</p>
 						</div>
@@ -86,43 +73,8 @@ export function NotificationsPopover() {
 						</div>
 					)}
 
-					{n.pendingRequests.length > 0 && (
-						<div className="p-4">
-							<div className="flex items-center gap-2 mb-4">
-								<UserCheckIcon className="h-4 w-4 text-primary" />
-								<h4 className="text-sm font-semibold">Sharing Requests</h4>
-								<Badge variant="secondary" className="text-xs">
-									{n.pendingRequests.length}
-								</Badge>
-							</div>
-
-							<div className="space-y-3">
-								{n.pendingRequests.map((req) => (
-									<NotificationItemCard
-										key={req.id}
-										icon={<UserCheckIcon className="h-4 w-4 text-primary" />}
-										title={`From: ${n.formatAddress(req.senderWallet)}`}
-										subtitle={req.message || "No message provided"}
-										variant="default"
-										actionButton={{
-											label: n.allowSharing.isPending
-												? "Accepting..."
-												: "Accept",
-											onClick: () =>
-												n.handleAllowSharing(req.id, req.senderWallet),
-											loading: n.allowSharing.isPending,
-											variant: "default",
-										}}
-									/>
-								))}
-							</div>
-						</div>
-					)}
-
 					{n.allReceivedFiles.length > 0 && (
 						<div className="p-4">
-							{n.pendingRequests.length > 0 && <Separator className="mb-4" />}
-
 							<div className="flex items-center gap-2 mb-4">
 								<FileTextIcon className="h-4 w-4 text-primary" />
 								<h4 className="text-sm font-semibold">Received Files</h4>
@@ -151,38 +103,12 @@ export function NotificationsPopover() {
 							<CheckCircleIcon className="h-12 w-12 text-chart-2 mx-auto mb-3" />
 							<h4 className="text-sm font-medium mb-1">All caught up!</h4>
 							<p className="text-xs text-muted-foreground">
-								No pending actions at this time.
+								No new documents at this time.
 							</p>
 						</div>
 					)}
 				</div>
 			</PopoverContent>
-
-			<AlertDialog
-				open={n.confirmDialogOpen}
-				onOpenChange={n.setConfirmDialogOpen}
-			>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Accept Sharing Request</AlertDialogTitle>
-						<AlertDialogDescription>
-							Are you sure you want to accept this sharing request? This will
-							allow the sender to share documents with you.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel onClick={n.closeConfirmDialog}>
-							Cancel
-						</AlertDialogCancel>
-						<AlertDialogAction
-							onClick={() => void n.confirmAllowSharing()}
-							disabled={n.allowSharing.isPending}
-						>
-							{n.allowSharing.isPending ? "Accepting..." : "Accept Request"}
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</AlertDialogContent>
-			</AlertDialog>
 		</Popover>
 	);
 }

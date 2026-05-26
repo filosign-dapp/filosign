@@ -1,16 +1,7 @@
 import { useLogout } from "@filosign/react/auth";
-import {
-	useActiveOrganization,
-	useActiveOrgId,
-	useOrganizations,
-} from "@filosign/react/orgs";
+import { useActiveOrgId, useOrganizations } from "@filosign/react/orgs";
 import { useUserProfile } from "@filosign/react/users";
-import {
-	BuildingsIcon,
-	CopySimpleIcon,
-	SignOutIcon,
-	UserIcon,
-} from "@phosphor-icons/react";
+import { BuildingsIcon, SignOutIcon, UserIcon } from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import * as React from "react";
@@ -25,15 +16,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/src/lib/components/ui/select";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
-import { copyToClipboard } from "@/src/lib/utils/utils";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
 export function UserDropdown() {
@@ -45,11 +28,8 @@ export function UserDropdown() {
 	const { data: userProfile } = useUserProfile();
 	const { data: orgsData } = useOrganizations();
 	const activeOrgId = useActiveOrgId();
-	const activeOrg = useActiveOrganization();
 	const setActiveOrg = useSetPersistedActiveOrganizationId();
-	const orgs =
-		(orgsData as { organizations?: Array<{ id: string; name: string }> })
-			?.organizations ?? [];
+	const orgs = orgsData?.organizations ?? [];
 
 	const handleSignOut = async () => {
 		await logoutFilosign.mutateAsync();
@@ -57,9 +37,15 @@ export function UserDropdown() {
 		navigate({ to: "/" });
 	};
 
-	const formatAddress = (address: string) => {
-		return `${address.slice(0, 6)}...${address.slice(-4)}`;
-	};
+	React.useEffect(() => {
+		const orgExists = orgs.some((org) => org.id === activeOrgId);
+		if ((!activeOrgId || !orgExists) && orgs.length > 0) {
+			const firstOrg = orgs[0];
+			if (firstOrg?.id) {
+				setActiveOrg(firstOrg.id);
+			}
+		}
+	}, [activeOrgId, orgs, setActiveOrg]);
 
 	// Use userProfile data for display name, fallback to wallet login data
 	const displayName = userProfile
@@ -71,7 +57,6 @@ export function UserDropdown() {
 			"User"
 		: user?.email?.address || user?.google?.email || "User";
 
-	const walletAddress = user?.wallet?.address;
 	const avatarUrl = userProfile?.avatarUrl;
 	const contactEmail =
 		userProfile?.email?.trim() || user?.email?.address || null;
@@ -130,60 +115,12 @@ export function UserDropdown() {
 										{contactEmail}
 									</p>
 								) : null}
-								<div className="flex items-center gap-1">
-									<p className="text-xs text-muted-foreground">
-										{walletAddress ? formatAddress(walletAddress) : "No wallet"}
-									</p>
-									{walletAddress && (
-										<Button
-											variant="ghost"
-											size="sm"
-											className="h-4 w-4 p-0 hover:bg-accent/50"
-											onClick={() => copyToClipboard(walletAddress)}
-										>
-											<CopySimpleIcon className="h-3 w-3" />
-										</Button>
-									)}
-								</div>
 							</div>
 						</DropdownMenuItem>
 					</motion.div>
 				</DropdownMenuGroup>
 
 				<DropdownMenuSeparator />
-
-				{orgs.length > 0 ? (
-					<>
-						<DropdownMenuGroup>
-							<DropdownMenuLabel className="text-muted-foreground text-xs">
-								Workspace
-							</DropdownMenuLabel>
-							<div className="px-2 pb-2">
-								<Select
-									value={activeOrgId ?? "personal"}
-									onValueChange={(v) =>
-										setActiveOrg(v === "personal" ? null : v)
-									}
-								>
-									<SelectTrigger className="w-full h-8" size="sm">
-										<SelectValue
-											placeholder={activeOrg?.name ?? "Personal workspace"}
-										/>
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="personal">Personal workspace</SelectItem>
-										{orgs.map((org) => (
-											<SelectItem key={org.id} value={org.id}>
-												{org.name}
-											</SelectItem>
-										))}
-									</SelectContent>
-								</Select>
-							</div>
-						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
-					</>
-				) : null}
 
 				{/* Actions Section */}
 				<DropdownMenuGroup>
@@ -200,9 +137,9 @@ export function UserDropdown() {
 						},
 						{
 							icon: BuildingsIcon,
-							label: "Team",
+							label: "Workspace Settings",
 							action: () => {
-								navigate({ to: "/dashboard/settings/team" });
+								navigate({ to: "/dashboard/settings/workspace" });
 							},
 						},
 					].map((item, index) => (

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import Crop from "./crop";
 import { Image } from "./image";
 
@@ -60,7 +59,6 @@ export default function Upload({
 		const validationError = validateFile(selectedFile);
 		if (validationError) {
 			setError(validationError);
-			toast.error(validationError);
 			// Reset input
 			e.target.value = "";
 			return;

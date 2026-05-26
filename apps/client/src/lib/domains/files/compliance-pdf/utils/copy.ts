@@ -88,10 +88,6 @@ const TX_KIND_GLOSSARY: Record<ChainTxKind, string> = {
 		"Initial registration of the file’s commitments (placements, signers, viewers, sender bindings) on FSFileRegistry.",
 	file_signed:
 		"A signer’s signature recorded on-chain for this file (registry `registerFileSignature`).",
-	sender_approved:
-		"FSManager transaction where a recipient approved the sender relationship (`approveSender`), often after reviewing the file.",
-	sender_revoked:
-		"FSManager transaction revoking a prior sender approval for a recipient (relationship update).",
 	payout_executed:
 		"FSPaymentValidator `executePayout` — USDC transferFrom sender to recipient when release conditions were met.",
 };
@@ -163,10 +159,6 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 		appendixGlossaryLine(
 			"Execution status",
 			"`fully_executed` or `partially_executed` from Filosign’s view of required fields vs on-chain signatures at export. Verify: cross-check the signer matrix against your business rules.",
-		),
-		appendixGlossaryLine(
-			"approveSender transaction",
-			"FSManager approval tying a signer wallet to the sender for this flow. Verify: open the linked transaction and confirm event payloads and addresses.",
 		),
 		appendixGlossaryLine(
 			"Merkle completions root",
@@ -313,7 +305,6 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 			"signers[ ].blockTimestampFromTx",
 			"Block time from the sign tx receipt when fetched.",
 		],
-		["signers[ ].approveSenderTxHash", "FSManager approval tx when present."],
 		["settlements[ ]", "USDC payout rules attached at send time."],
 		["settlements[ ].onChainRuleId", "FSPaymentValidator rule id."],
 		["settlements[ ].recipientWallet", "Recipient address for the payout."],

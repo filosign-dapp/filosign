@@ -1,5 +1,4 @@
 import { type ClassValue, clsx } from "clsx";
-import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -17,6 +16,5 @@ export function truncateAddress(address: string | undefined) {
 }
 
 export function copyToClipboard(text: string) {
-	navigator.clipboard.writeText(text);
-	toast.success("Copied to clipboard");
+	void navigator.clipboard.writeText(text);
 }

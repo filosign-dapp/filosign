@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Cropper from "react-easy-crop";
-import { toast } from "sonner";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Dialog,
@@ -207,7 +206,6 @@ export default function Crop({
 
 	const handleCrop = useCallback(async () => {
 		if (!croppedAreaPixels) {
-			toast.error("Please select an area to crop");
 			return;
 		}
 
@@ -222,7 +220,6 @@ export default function Crop({
 			const errorMessage =
 				err instanceof Error ? err.message : "Failed to crop image";
 			setError(errorMessage);
-			toast.error(errorMessage);
 		} finally {
 			setIsLoading(false);
 		}
@@ -243,7 +240,6 @@ export default function Crop({
 	const handleImageError = () => {
 		setIsLoading(false);
 		setError("Failed to load image. Please try a different file.");
-		toast.error("Failed to load image");
 	};
 
 	const handleZoomChange = (value: number) => {

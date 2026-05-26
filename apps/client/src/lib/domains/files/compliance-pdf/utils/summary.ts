@@ -88,7 +88,7 @@ export function buildCompliancePdfSummaryFromBundle(
 
 	const hasExplorerLinks = Boolean(explorerBaseUrl);
 	const explorerNote = hasExplorerLinks
-		? "Registration, signature, and related FSManager transaction links appear in the transaction index below."
+		? "Registration, signature, and settlement transaction links appear in the transaction index below."
 		: "No blockchain explorer configured for this network - verify transactions manually using the chain ID and transaction hashes provided.";
 
 	const aboutLines: CompliancePdfLine[] = [
@@ -229,18 +229,6 @@ export function buildCompliancePdfSummaryFromBundle(
 				signerMatrix.push({
 					text: `   Block time from sign tx receipt (UTC): ${new Date(s.blockTimestampFromTx * 1000).toISOString()}`,
 				});
-			}
-			if (s.approveSenderTxHash) {
-				signerMatrix.push({
-					text: `   approveSender tx: ${s.approveSenderTxHash}`,
-				});
-				if (explorerBaseUrl) {
-					const al = explorerTxUrl(explorerBaseUrl, s.approveSenderTxHash);
-					signerMatrix.push({
-						text: `   approveSender link: ${al}`,
-						linkUri: al,
-					});
-				}
 			}
 			if (s.completionsRoot) {
 				signerMatrix.push({

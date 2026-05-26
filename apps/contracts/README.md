@@ -1,6 +1,8 @@
 # `@filosign/contracts`
 
-Solidity contracts for Filosign: document registration and signing (`FSFileRegistry`), cryptographic registration (`FSKeyRegistry`), privileged orchestration (`FSManager`), and pull-based USDC payouts (`FSPaymentValidator`). Hardhat-only `MockUSDCToken` supports local testing.
+Solidity contracts for Filosign: document registration and signing (`FSFileRegistry`) and pull-based USDC payouts (`FSPaymentValidator`). Hardhat-only `MockUSDCToken` supports local testing.
+
+Wallet identity, keygen, and sharing approvals are **server-side** — not on-chain.
 
 ## Contents
 
@@ -15,41 +17,36 @@ Solidity contracts for Filosign: document registration and signing (`FSFileRegis
 
 ## Architecture
 
-`FSManager` deploys `FSFileRegistry` and `FSKeyRegistry` in its constructor. `FSPaymentValidator` is deployed separately and wired to the file registry address.
+**Immutable v1:** deploy `FSFileRegistry(server)` then `FSPaymentValidator(fileRegistry, chainId)`.
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) and [`project/contracts-future-scope.md`](../../project/contracts-future-scope.md).
 
 ```mermaid
 flowchart TB
   subgraph deploy [Deployment]
-    M[FSManager]
     FR[FSFileRegistry]
-    KR[FSKeyRegistry]
     PV[FSPaymentValidator]
-    M --> FR
-    M --> KR
+    FR --> PV
   end
   subgraph runtime [Runtime]
-    Sender[Sender wallet EIP-7702]
+    Sender[Sender wallet]
     Relay[Filosign server relay]
     PV -->|canExecute reads| FR
     Relay -->|executePayout| PV
     Sender -->|registerRule approve USDC| PV
     Sender -->|registerFile| FR
     Signers[Signers] -->|registerFileSignature| FR
-    FR -->|after sign| Relay
   end
 ```
 
 - **Document state** (who signed, commitments, placement) lives in `FSFileRegistry`.
-- **Keys and approvals** live in `FSKeyRegistry` and `FSManager`.
-- **Payments** are not custodied by Filosign. The sender approves `FSPaymentValidator` for an exact USDC amount per rule; when release conditions hold, `executePayout` performs `transferFrom` (callable by anyone, including the Filosign server relay or user wallets).
+- **Payments** are not custodied by Filosign. The sender approves `FSPaymentValidator` for an exact USDC amount per rule; when release conditions hold, `executePayout` performs `transferFrom` (callable by anyone).
 
 ## Contract roles
 
 | Contract | Role |
 | -------- | ---- |
-| `FSManager` | Server-gated admin: pause flags, `approveSender`, fee configuration, registry pointers. |
-| `FSFileRegistry` | File registration, signatures, viewer/signer commitments, `allSigned`, `FileSigned` events. |
-| `FSKeyRegistry` | Wallet keygen registration and Dilithium/KEM material. |
+| `FSFileRegistry` | File registration, signatures, viewer/signer commitments, `allSigned`, `FileSigned` events. Immutable `server` for relay writes. |
 | `FSPaymentValidator` | Settlement rules per `cidId`: `registerRule` (payer only), `canExecute`, `executePayout` (permissionless when conditions met). |
 | `MockUSDCToken` | Local Hardhat USDC stand-in. |
 
@@ -87,7 +84,7 @@ See [`apps/server/README.md`](../server/README.md) for auto-execution cron and [
 
 ## Trust model
 
-- **Server (`onlyServer` on manager paths):** Can register files and signatures on behalf of users who have authenticated; cannot move USDC without the payer’s on-chain approve.
+- **Server (`onlyServer` on file registry):** Can register files and signatures on behalf of users who have authenticated; cannot move USDC without the payer’s on-chain approve.
 - **Relayers:** Any address may call `executePayout` once `canExecute` is true; Filosign server relay and users provide the primary paths.
 - **Payer:** Must call `registerRule` as `msg.sender == payer`; approval is exact-amount per rule.
 - **Recipients (product):** Filosign UI only allows envelope participants or a linked organization payout wallet.
@@ -98,7 +95,8 @@ See [`apps/server/README.md`](../server/README.md) for auto-execution cron and [
 | ---- | ---- |
 | `src/*.sol` | Contract source |
 | `test/*.spec.ts` | Hardhat + viem tests |
-| `scripts/deploy.ts` | Deploy and write `definitions/` |
+| `scripts/deploy.ts` | Deploy file registry + validator; `FC_SERVER_ADDRESS`; write `definitions/` |
+| `ARCHITECTURE.md` | Ledger vs KMS, frozen v1, deploy order |
 | `definitions/` | Generated addresses and ABIs (do not hand-edit) |
 | `services/contracts.ts` | `getContracts()` for server and SDK |
 
@@ -111,9 +109,13 @@ bun run --cwd apps/contracts check-types
 
 `FSPaymentValidator.spec.ts` covers register, approve, execute, and release-type gating. See [TESTING.md](./TESTING.md).
 
+Deploy env (testnet/mainnet): `FC_PVT_KEY` (Ledger), `FC_SERVER_ADDRESS` (KMS relayer).
+
 Deploy with migrate (runs tests first):
 
 ```bash
 bun run contracts -- --migrate
+bun run --cwd apps/contracts migrate:testnet
 ```
 
+Pre-mainnet: run tests + `slither .` from this package (see [TESTING.md](./TESTING.md)).

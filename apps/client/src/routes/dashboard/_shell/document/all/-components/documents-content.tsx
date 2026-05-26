@@ -1,88 +1,61 @@
-import { FileTextIcon, FunnelIcon, PlusIcon } from "@phosphor-icons/react";
+import { PlusIcon } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
+import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { Tabs, TabsList, TabsTrigger } from "@/src/lib/components/ui/tabs";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/src/lib/components/ui/select";
+	DocumentCard,
+	formatDocumentCardDate,
+} from "@/src/lib/domains/documents/document-card";
+import { mapFileToDocumentCardProps } from "@/src/lib/domains/documents/map-file-to-card-props";
+import { useDraftDelete } from "@/src/lib/domains/documents/use-draft-delete";
 import { useDocuments } from "@/src/routes/dashboard/_shell/document/all/-lib/context/context";
-import { FileListSection } from "./file-list-section";
+import { parseDocumentTab } from "@/src/routes/dashboard/_shell/document/all/-lib/hooks/use-documents-controller";
 
 export function DocumentsContent() {
 	const {
-		isFilterOpen,
-		sentFilesData,
-		receivedFilesData,
-		orgFilesData,
-		allFiles,
+		viewMode,
+		activeTab,
+		setActiveTab,
+		filteredItems,
+		hasAnyContent,
 		isLoading,
+		handleItemClick,
+		handleDraftClick,
 	} = useDocuments();
 
+	const {
+		requestDelete,
+		deleteOpen,
+		closeDelete,
+		confirmDelete,
+		deletePending,
+	} = useDraftDelete();
+
 	return (
-		<>
-			<motion.div
-				className="overflow-hidden border-b border-border"
-				initial={false}
-				animate={{
-					height: isFilterOpen ? "auto" : 0,
-					opacity: isFilterOpen ? 1 : 0,
-				}}
-				transition={{
-					duration: 0.3,
-					ease: "easeInOut",
-					opacity: { duration: 0.2 },
-				}}
-			>
-				<div className="px-8 py-4 bg-background/50 backdrop-blur-sm">
-					<div className="flex flex-col gap-4 @md:flex-row @md:items-center">
-						<div className="flex items-center gap-2">
-							<FunnelIcon className="size-4 text-muted-foreground" />
-							<span className="text-sm font-medium text-foreground">
-								Filters
-							</span>
-						</div>
-
-						<div className="flex flex-col gap-3 @md:flex-row @md:gap-4 @md:flex-1">
-							<Select>
-								<SelectTrigger
-									className="w-full @md:w-auto @md:min-w-40"
-									size="sm"
-								>
-									<SelectValue placeholder="Sender: All" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">All</SelectItem>
-									<SelectItem value="me">Me</SelectItem>
-									<SelectItem value="others">Others</SelectItem>
-								</SelectContent>
-							</Select>
-
-							<Select>
-								<SelectTrigger
-									className="w-full @md:w-auto @md:min-w-40"
-									size="sm"
-								>
-									<SelectValue placeholder="All Time" />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="all">All Time</SelectItem>
-									<SelectItem value="today">Today</SelectItem>
-									<SelectItem value="week">This Week</SelectItem>
-									<SelectItem value="month">This Month</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
-					</div>
+		<Tabs
+			value={activeTab}
+			onValueChange={(val) => {
+				const tab = parseDocumentTab(val);
+				if (tab) setActiveTab(tab);
+			}}
+			className="flex flex-col flex-1 min-h-0"
+		>
+			<div className="flex flex-col border-b border-border bg-background/50 backdrop-blur-sm">
+				<div className="px-8 py-2">
+					<TabsList variant="line" className="h-10">
+						<TabsTrigger value="all">All</TabsTrigger>
+						<TabsTrigger value="sent">Sent</TabsTrigger>
+						<TabsTrigger value="received">Received</TabsTrigger>
+						<TabsTrigger value="drafts">Drafts</TabsTrigger>
+					</TabsList>
 				</div>
-			</motion.div>
+			</div>
 
 			<motion.div
-				className="flex min-h-0 flex-1 flex-col overflow-y-auto p-8 space-y-8"
+				className="flex min-h-0 flex-1 flex-col overflow-y-auto p-8"
 				initial={{ opacity: 0, y: 20 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.2, delay: 0.3 }}
@@ -92,7 +65,7 @@ export function DocumentsContent() {
 						<InlineLoader size="lg" />
 						<p className="text-sm text-muted-foreground">Loading documents…</p>
 					</div>
-				) : allFiles.length === 0 ? (
+				) : !hasAnyContent ? (
 					<div className="flex min-h-0 flex-1 flex-col items-center justify-center">
 						<motion.div
 							initial={{ opacity: 0, y: 20 }}
@@ -100,12 +73,6 @@ export function DocumentsContent() {
 							transition={{ duration: 0.2, delay: 0.4 }}
 							className="space-y-4 text-center"
 						>
-							<div className="size-40 mx-auto mb-6">
-								<FileTextIcon
-									className="size-full text-muted-foreground/50"
-									weight="light"
-								/>
-							</div>
 							<h2 className="font-semibold text-foreground">No documents</h2>
 							<p className="max-w-md px-4 text-muted-foreground">
 								You have not yet created or received any documents. Get started
@@ -119,29 +86,98 @@ export function DocumentsContent() {
 							</Link>
 						</motion.div>
 					</div>
+				) : filteredItems.length === 0 ? (
+					<div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center py-20 space-y-2">
+						<p className="font-medium text-foreground text-sm">
+							No items found
+						</p>
+						<p className="text-xs text-muted-foreground">
+							There are no items under the "{activeTab}" filter.
+						</p>
+					</div>
 				) : (
-					<>
-						<FileListSection
-							title="Received Files"
-							files={receivedFilesData}
-							prefix="received"
-							delay={0.5}
-						/>
-						<FileListSection
-							title="Team documents"
-							files={orgFilesData}
-							prefix="org"
-							delay={0.35}
-						/>
-						<FileListSection
-							title="Sent Files"
-							files={sentFilesData}
-							prefix="sent"
-							delay={0.4}
-						/>
-					</>
+					<div className="space-y-4">
+						{viewMode === "list" ? (
+							<div className="space-y-2">
+								{filteredItems.map((item) => {
+									if (item.isDraft) {
+										const draft = item.draftRow;
+										return (
+											<DocumentCard
+												key={draft.id}
+												kind="draft"
+												variant="list"
+												title={draft.title}
+												subtitle={`Updated ${formatDocumentCardDate(draft.updatedAt)}`}
+												draftId={draft.id}
+												onOpen={() => handleDraftClick(draft.id)}
+												onDeleteDraft={requestDelete}
+												deleteDisabled={deletePending}
+											/>
+										);
+									}
+									const file = item.fileRow;
+									const { title, subtitle } = mapFileToDocumentCardProps(file);
+									return (
+										<DocumentCard
+											key={file.pieceCid}
+											kind={file.type}
+											variant="list"
+											title={title}
+											subtitle={subtitle}
+											onOpen={() => handleItemClick(file)}
+										/>
+									);
+								})}
+							</div>
+						) : (
+							<div className="grid grid-cols-2 @md:grid-cols-3 @xl:grid-cols-4 @2xl:grid-cols-5 @3xl:grid-cols-6 @5xl:grid-cols-8 gap-3">
+								{filteredItems.map((item) => {
+									if (item.isDraft) {
+										const draft = item.draftRow;
+										return (
+											<DocumentCard
+												key={draft.id}
+												kind="draft"
+												variant="grid"
+												title={draft.title}
+												subtitle={formatDocumentCardDate(draft.updatedAt)}
+												draftId={draft.id}
+												onOpen={() => handleDraftClick(draft.id)}
+												onDeleteDraft={requestDelete}
+												deleteDisabled={deletePending}
+											/>
+										);
+									}
+									const file = item.fileRow;
+									const { title, subtitle } = mapFileToDocumentCardProps(file);
+									return (
+										<DocumentCard
+											key={file.pieceCid}
+											kind={file.type}
+											variant="grid"
+											title={title}
+											subtitle={subtitle}
+											onOpen={() => handleItemClick(file)}
+										/>
+									);
+								})}
+							</div>
+						)}
+					</div>
 				)}
 			</motion.div>
-		</>
+
+			<ConfirmAlertDialog
+				open={deleteOpen}
+				onOpenChange={closeDelete}
+				title="Delete draft?"
+				description="This removes the draft from your list. You cannot undo this action."
+				confirmLabel="Delete Draft"
+				destructive
+				pending={deletePending}
+				onConfirm={confirmDelete}
+			/>
+		</Tabs>
 	);
 }

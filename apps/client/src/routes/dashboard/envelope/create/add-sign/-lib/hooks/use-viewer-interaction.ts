@@ -1,5 +1,5 @@
 import type * as React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { constrainFieldTopLeft } from "@/src/lib/domains/files/placement-viewport";
 import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
 import type {
@@ -41,6 +41,16 @@ export function useDocumentViewerInteraction({
 	onPdfPageLayoutLoaded,
 }: UseDocumentViewerInteractionArgs) {
 	const [isDragging, setIsDragging] = useState(false);
+	const [dragPreview, setDragPreview] = useState<{
+		fieldId: string;
+		x: number;
+		y: number;
+	} | null>(null);
+	const dragPreviewRef = useRef<{
+		fieldId: string;
+		x: number;
+		y: number;
+	} | null>(null);
 	const [pdfPageNumber, setPdfPageNumber] = useState(1);
 	const [pdfNumPages, setPdfNumPages] = useState<number | null>(null);
 
@@ -173,11 +183,16 @@ export function useDocumentViewerInteraction({
 				margin,
 			});
 
-			onFieldUpdate(dragData.fieldId, { x: newX, y: newY });
+			const next = {
+				fieldId: dragData.fieldId,
+				x: newX,
+				y: newY,
+			};
+			dragPreviewRef.current = next;
+			setDragPreview(next);
 		},
 		[
 			isDragging,
-			onFieldUpdate,
 			zoom,
 			documentWidth,
 			effectiveDocHeight,
@@ -188,7 +203,13 @@ export function useDocumentViewerInteraction({
 	);
 
 	const handleMouseUp = useCallback(() => {
+		const preview = dragPreviewRef.current;
+		if (preview) {
+			onFieldUpdate(preview.fieldId, { x: preview.x, y: preview.y });
+		}
 		setIsDragging(false);
+		setDragPreview(null);
+		dragPreviewRef.current = null;
 		dragDataRef.current = {
 			startX: 0,
 			startY: 0,
@@ -196,7 +217,16 @@ export function useDocumentViewerInteraction({
 			fieldY: 0,
 			fieldId: "",
 		};
-	}, []);
+	}, [onFieldUpdate]);
+
+	const displaySignatureFields = useMemo(() => {
+		if (!dragPreview) return signatureFields;
+		return signatureFields.map((field) =>
+			field.id === dragPreview.fieldId
+				? { ...field, x: dragPreview.x, y: dragPreview.y }
+				: field,
+		);
+	}, [signatureFields, dragPreview]);
 
 	useEffect(() => {
 		if (!isDragging) return;
@@ -234,6 +264,7 @@ export function useDocumentViewerInteraction({
 	}, []);
 
 	return {
+		displaySignatureFields,
 		documentRef,
 		documentWidth,
 		documentHeight: effectiveDocHeight,

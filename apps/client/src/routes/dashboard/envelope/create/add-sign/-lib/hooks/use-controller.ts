@@ -20,6 +20,7 @@ import {
 } from "@/src/lib/filosign/use-store";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
+import { takeDraftPreviewCache } from "@/src/routes/dashboard/envelope/create/-lib/utils/draft-preview-cache";
 import {
 	loadDraftDocuments,
 	pruneSignatureFields,
@@ -49,7 +50,9 @@ import { collectViewerEmails } from "@/src/routes/dashboard/envelope/create/add-
 
 export function useAddSignController() {
 	const navigate = useNavigate();
-	const { createForm, clearCreateForm, setCreateForm } = useStorePersist();
+	const createForm = useStorePersist((s) => s.createForm);
+	const clearCreateForm = useStorePersist((s) => s.clearCreateForm);
+	const setCreateForm = useStorePersist((s) => s.setCreateForm);
 	const persistHydrated = useStorePersistHydrated();
 	const draftReady = Boolean(createForm?.documents?.length);
 	const [documentUrls, setDocumentUrls] = useState<Record<string, string>>({});
@@ -134,13 +137,11 @@ export function useAddSignController() {
 
 	const handleSignatureFieldsChange = useCallback(
 		(fields: SignatureField[]) => {
-			if (!createForm) return;
-			setCreateForm({
-				...createForm,
-				signatureFields: fields,
-			});
+			const prev = useStorePersist.getState().createForm;
+			if (!prev) return;
+			setCreateForm({ ...prev, signatureFields: fields });
 		},
-		[createForm, setCreateForm],
+		[setCreateForm],
 	);
 
 	const {
@@ -216,10 +217,10 @@ export function useAddSignController() {
 		}
 		let cancelled = false;
 		void (async () => {
-			const uploaded = await loadDraftDocuments(
-				createForm.draftId,
-				createForm.documents,
-			);
+			const cached = takeDraftPreviewCache(createForm.draftId);
+			const uploaded =
+				cached ??
+				(await loadDraftDocuments(createForm.draftId, createForm.documents));
 			if (cancelled) return;
 			const urls: Record<string, string> = {};
 			const pdfBytes: Record<string, Uint8Array> = {};

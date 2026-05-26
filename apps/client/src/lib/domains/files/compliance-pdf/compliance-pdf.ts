@@ -2,12 +2,7 @@ import type { ViewFileResult } from "@filosign/react/files";
 import { useComplianceBundle } from "@filosign/react/files";
 import { useCallback, useState } from "react";
 import { defaultChain } from "@/src/constants";
-import {
-	buildCompliancePdfOnly,
-	buildDocumentPlusCompliancePdf,
-	downloadPdfBytes,
-	sha256HexOfBytes,
-} from "./utils/build";
+import { downloadPdfBytes, sha256HexOfBytes } from "./utils/build";
 
 type ComplianceFileRef = {
 	pieceCid: string;
@@ -55,6 +50,7 @@ export function useCompliancePdfExports(options: {
 					documentSha256,
 				});
 			const explorerBase = defaultChain.blockExplorers?.default?.url ?? null;
+			const { buildCompliancePdfOnly } = await import("./utils/build");
 			const bytes = await buildCompliancePdfOnly({
 				bundle,
 				bundleHash,
@@ -92,6 +88,7 @@ export function useCompliancePdfExports(options: {
 					documentSha256,
 				});
 			const explorerBase = defaultChain.blockExplorers?.default?.url ?? null;
+			const { buildDocumentPlusCompliancePdf } = await import("./utils/build");
 			const bytes = await buildDocumentPlusCompliancePdf({
 				bundle,
 				bundleHash,

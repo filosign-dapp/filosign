@@ -7,7 +7,7 @@ export type ParticipantRow = {
 	lastName: string | null;
 	email: string | null;
 	username: string | null;
-	privyDid: string | null;
+	authProviderId: string | null;
 };
 
 export function displayNameFromUser(p: ParticipantRow): string | null {

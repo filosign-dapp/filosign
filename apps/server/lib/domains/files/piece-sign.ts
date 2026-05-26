@@ -6,8 +6,8 @@ import {
 } from "@filosign/crypto-utils/node";
 import {
 	completionsMerkleRootV1,
+	hashAuthSubjectCommitment,
 	hashNormalizedSignerEmail,
-	hashPrivySubjectCommitment,
 	LEAF_SCHEMA_VERSION_V1,
 	requiredFieldIdsForRecipientEmail,
 	zPlacementManifest,
@@ -24,15 +24,11 @@ import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
 import { evmClient, fsContracts } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
-import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
 import { isEnvelopeFullySigned } from "./envelope-completion";
-import {
-	isSenderAlreadyApprovedError,
-	primaryEmailForWallet,
-} from "./file-invites";
+import { primaryEmailForWallet } from "./file-invites";
 
-const { FSFileRegistry, FSManager } = fsContracts;
+const { FSFileRegistry } = fsContracts;
 const { files, fileParticipants, fileSignatures, fileSignerDrafts, users } =
 	db.schema;
 
@@ -52,13 +48,6 @@ export async function pieceSign(args: {
 			timestamp: z.number({ error: "timestamp must be a number" }),
 			dl3Signature: zHexString(),
 			completedFieldIds: z.array(z.string()).optional(),
-			approveSender: z
-				.object({
-					nonce: z.coerce.bigint(),
-					deadline: z.coerce.bigint(),
-					signature: zHexString(),
-				})
-				.optional(),
 		})
 		.safeParse(args.body);
 	if (parsedBody.error) {
@@ -66,13 +55,8 @@ export async function pieceSign(args: {
 			message: zodSafeParseMessage(parsedBody.error),
 		});
 	}
-	const {
-		signature,
-		timestamp,
-		dl3Signature,
-		completedFieldIds,
-		approveSender,
-	} = parsedBody.data;
+	const { signature, timestamp, dl3Signature, completedFieldIds } =
+		parsedBody.data;
 
 	const [fileRecord] = await db
 		.select({
@@ -87,7 +71,7 @@ export async function pieceSign(args: {
 	const [participantRecord] = await db
 		.select({
 			wallet: fileParticipants.wallet,
-			privyDid: users.privyDid,
+			authProviderId: users.authProviderId,
 		})
 		.from(fileParticipants)
 		.innerJoin(users, eq(fileParticipants.wallet, users.walletAddress))
@@ -212,8 +196,8 @@ export async function pieceSign(args: {
 
 	const signerEmailCommitment = hashNormalizedSignerEmail(signerEmail);
 
-	const privySubjectCommitment = hashPrivySubjectCommitment(
-		participantRecord.privyDid,
+	const privySubjectCommitment = hashAuthSubjectCommitment(
+		participantRecord.authProviderId,
 	);
 
 	const registerSignatureArgs = [
@@ -240,45 +224,6 @@ export async function pieceSign(args: {
 	const txHash = await FSFileRegistry.write.registerFileSignature(
 		registerSignatureArgs,
 	);
-	let approveSenderTxHash: string | null = null;
-	if (approveSender) {
-		const approveSenderArgs = [
-			participantRecord.wallet,
-			fileRecord.sender,
-			approveSender.nonce,
-			approveSender.deadline,
-			approveSender.signature,
-		] as const;
-
-		const approveSimulation = await tryCatch(
-			FSManager.simulate.approveSender(approveSenderArgs, {
-				account: evmClient.account,
-			}),
-		);
-		if (
-			approveSimulation.error &&
-			!isSenderAlreadyApprovedError(approveSimulation.error)
-		) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "Invalid approveSender signature",
-			});
-		}
-
-		if (!approveSimulation.error) {
-			const approveWrite = await tryCatch(
-				FSManager.write.approveSender(approveSenderArgs),
-			);
-			if (approveWrite.error) {
-				if (!isSenderAlreadyApprovedError(approveWrite.error)) {
-					throw new ORPCError("INTERNAL_SERVER_ERROR", {
-						message: "Could not approve sender",
-					});
-				}
-			} else {
-				approveSenderTxHash = approveWrite.data;
-			}
-		}
-	}
 
 	await db.insert(fileSignatures).values({
 		filePieceCid: pieceCid,
@@ -325,5 +270,5 @@ export async function pieceSign(args: {
 		);
 	});
 
-	return { txHash, signature, approveSenderTxHash };
+	return { txHash, signature };
 }

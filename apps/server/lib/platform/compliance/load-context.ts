@@ -1,6 +1,6 @@
 import type { PlacementManifest } from "@filosign/shared";
 import { zPlacementManifest } from "@filosign/shared";
-import { and, desc, eq, inArray, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
 import type db from "@/lib/platform/db";
@@ -11,7 +11,6 @@ import {
 	files,
 } from "@/lib/platform/db/schema/file";
 import { fileSettlementRules } from "@/lib/platform/db/schema/settlements";
-import { shareApprovals } from "@/lib/platform/db/schema/sharing";
 import { users } from "@/lib/platform/db/schema/user";
 import { fsContracts } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
@@ -45,16 +44,8 @@ export type ComplianceLoadContext = {
 		ackCreatedAt: Date;
 		ack: string;
 		email: string | null;
-		privyDid: string | null;
+		authProviderId: string | null;
 	}[];
-	approvalRows: {
-		recipientWallet: Address;
-		senderWallet: Address;
-		active: boolean;
-		txHash: Hex;
-		createdAt: Date;
-	}[];
-	latestApproveByRecipient: Map<string, Hex>;
 	onchainRegistration: import("@filosign/shared").ComplianceBundle["onchainRegistration"];
 	executionStatus: "fully_executed" | "partially_executed";
 	exportedAtIso: string;
@@ -130,7 +121,7 @@ export async function loadComplianceContext(args: {
 			ackCreatedAt: fileAcknowledgements.createdAt,
 			ack: fileAcknowledgements.ack,
 			email: users.email,
-			privyDid: users.privyDid,
+			authProviderId: users.authProviderId,
 		})
 		.from(fileAcknowledgements)
 		.innerJoin(users, eq(fileAcknowledgements.wallet, users.walletAddress))
@@ -169,44 +160,6 @@ export async function loadComplianceContext(args: {
 
 	const exportedAtIso = new Date().toISOString();
 	const senderNorm = getAddress(fileRecord.sender);
-	const participantWallets = [
-		...new Set(participantRows.map((p) => getAddress(p.wallet))),
-	];
-
-	const approvalRows = await database
-		.select({
-			recipientWallet: shareApprovals.recipientWallet,
-			senderWallet: shareApprovals.senderWallet,
-			active: shareApprovals.active,
-			txHash: shareApprovals.txHash,
-			createdAt: shareApprovals.createdAt,
-		})
-		.from(shareApprovals)
-		.where(
-			or(
-				and(
-					eq(shareApprovals.senderWallet, senderNorm),
-					inArray(shareApprovals.recipientWallet, participantWallets),
-				),
-				and(
-					eq(shareApprovals.recipientWallet, senderNorm),
-					inArray(shareApprovals.senderWallet, participantWallets),
-				),
-			),
-		)
-		.orderBy(desc(shareApprovals.createdAt));
-
-	const latestApproveByRecipient = new Map<string, Hex>();
-	for (const row of approvalRows) {
-		if (!row.active) continue;
-		const rec = getAddress(row.recipientWallet).toLowerCase();
-		if (
-			getAddress(row.senderWallet) === senderNorm &&
-			!latestApproveByRecipient.has(rec)
-		) {
-			latestApproveByRecipient.set(rec, row.txHash as Hex);
-		}
-	}
 
 	let onchainRegistration: ComplianceLoadContext["onchainRegistration"] = null;
 	const cidRes = await tryCatch(FSFileRegistry.read.cidIdentifier([pieceCid]));
@@ -290,14 +243,6 @@ export async function loadComplianceContext(args: {
 		draftByWallet,
 		sigByWallet,
 		ackRowsRaw,
-		approvalRows: approvalRows.map((r) => ({
-			recipientWallet: getAddress(r.recipientWallet),
-			senderWallet: getAddress(r.senderWallet),
-			active: r.active,
-			txHash: r.txHash as Hex,
-			createdAt: new Date(r.createdAt as string | number | Date),
-		})),
-		latestApproveByRecipient,
 		onchainRegistration,
 		executionStatus,
 		exportedAtIso,

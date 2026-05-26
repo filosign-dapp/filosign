@@ -7,8 +7,8 @@ import {
 	completionsMerkleProofsV1,
 	FILE_ACK_COLD_CLAIM_SENTINEL_V1,
 	fieldIdsForRecipientEmail,
+	hashAuthSubjectCommitment,
 	hashNormalizedSignerEmail,
-	hashPrivySubjectCommitment,
 	normalizePlacementRecipientEmail,
 	requiredFieldIdsForRecipientEmail,
 } from "@filosign/shared";
@@ -21,7 +21,7 @@ import type { ComplianceLoadContext } from "./load-context";
 import { receiptMeta } from "./receipt-meta";
 import { displayNameFromUser, roleOrder, type TxDraft } from "./types";
 
-const { FSFileRegistry, FSManager, FSPaymentValidator } = fsContracts;
+const { FSFileRegistry, FSPaymentValidator } = fsContracts;
 
 export async function assembleComplianceBundle(
 	ctx: ComplianceLoadContext,
@@ -35,8 +35,6 @@ export async function assembleComplianceBundle(
 		draftByWallet,
 		sigByWallet,
 		ackRowsRaw,
-		approvalRows,
-		latestApproveByRecipient,
 		onchainRegistration,
 		executionStatus,
 		exportedAtIso,
@@ -62,8 +60,8 @@ export async function assembleComplianceBundle(
 		}
 		const email = normalizePlacementRecipientEmail(emailRaw);
 		const emailCommitment = hashNormalizedSignerEmail(email);
-		const privySubjectCommitment = p.privyDid?.trim()
-			? hashPrivySubjectCommitment(p.privyDid.trim())
+		const privySubjectCommitment = p.authProviderId?.trim()
+			? hashAuthSubjectCommitment(p.authProviderId.trim())
 			: null;
 		return {
 			role: p.role,
@@ -95,7 +93,6 @@ export async function assembleComplianceBundle(
 
 		const sig = sigByWallet.get(walletKey);
 		const draftIds = draftByWallet.get(walletKey) ?? [];
-		const approveSenderTxHash = latestApproveByRecipient.get(walletKey) ?? null;
 
 		if (sig) {
 			const completedFieldIds = sig.completedFieldIds;
@@ -124,7 +121,6 @@ export async function assembleComplianceBundle(
 				signedAtIso,
 				messageTimestampIso: signedAtIso,
 				blockTimestampFromTx: null as number | null,
-				approveSenderTxHash,
 				completedFieldIds,
 				completionsRoot: sig.completionsRoot,
 				leafSchemaVersion: sig.leafSchemaVersion,
@@ -145,7 +141,6 @@ export async function assembleComplianceBundle(
 			signedAtIso: null,
 			messageTimestampIso: null,
 			blockTimestampFromTx: null,
-			approveSenderTxHash,
 			completedFieldIds: [] as string[],
 			completionsRoot: null,
 			leafSchemaVersion: null,
@@ -157,7 +152,6 @@ export async function assembleComplianceBundle(
 	});
 
 	const regAddr = getAddress(FSFileRegistry.address);
-	const mgrAddr = getAddress(FSManager.address);
 	const chainId = config.runtimeChain.id;
 	const fetchedAtIso = exportedAtIso;
 
@@ -194,25 +188,6 @@ export async function assembleComplianceBundle(
 			contractAddress: validatorAddr,
 			summary: `executePayout — rule ${pay.onChainRuleId.toString()} to ${getAddress(pay.recipientWallet)}`,
 			relatedAddresses: [senderNorm, getAddress(pay.recipientWallet)],
-		});
-	}
-
-	const seenApprovalTx = new Set<string>();
-	for (const row of approvalRows) {
-		const h = row.txHash.toLowerCase();
-		if (seenApprovalTx.has(h)) continue;
-		seenApprovalTx.add(h);
-		txDrafts.push({
-			kind: row.active ? "sender_approved" : "sender_revoked",
-			txHash: row.txHash,
-			contractAddress: mgrAddr,
-			summary: row.active
-				? `approveSender — recipient ${getAddress(row.recipientWallet)} approved sender ${getAddress(row.senderWallet)}`
-				: `sender relationship update (revoked) — tx ${row.txHash}`,
-			relatedAddresses: [
-				getAddress(row.recipientWallet),
-				getAddress(row.senderWallet),
-			],
 		});
 	}
 
@@ -270,8 +245,8 @@ export async function assembleComplianceBundle(
 		if (!emailRaw) continue;
 		const email = normalizePlacementRecipientEmail(emailRaw);
 		const emailCommitment = hashNormalizedSignerEmail(email);
-		const privySubjectCommitment = row.privyDid?.trim()
-			? hashPrivySubjectCommitment(row.privyDid.trim())
+		const privySubjectCommitment = row.authProviderId?.trim()
+			? hashAuthSubjectCommitment(row.authProviderId.trim())
 			: null;
 		const ackHex = row.ack as Hex;
 		const ackSha256 = isHex(ackHex) ? sha256HexOfHexBytes(ackHex) : null;
@@ -301,7 +276,7 @@ export async function assembleComplianceBundle(
 	);
 
 	return {
-		version: 4,
+		version: 5,
 		pieceCid,
 		chainId,
 		exportedAtIso,

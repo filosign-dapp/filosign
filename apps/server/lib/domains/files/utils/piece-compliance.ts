@@ -29,7 +29,7 @@ export async function pieceComplianceBundle(args: {
 			lastName: users.lastName,
 			email: users.email,
 			username: users.username,
-			privyDid: users.privyDid,
+			authProviderId: users.authProviderId,
 		})
 		.from(fileParticipants)
 		.leftJoin(users, eq(fileParticipants.wallet, users.walletAddress))
@@ -61,7 +61,7 @@ export async function pieceComplianceBundle(args: {
 		lastName: p.lastName,
 		email: p.email,
 		username: p.username,
-		privyDid: p.privyDid ?? null,
+		authProviderId: p.authProviderId ?? null,
 	}));
 
 	const bundleRes = await tryCatch(

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { DocCanvasPanel } from "@/src/lib/domains/files/components/doc-canvas-panel";
 import { FileViewerContent } from "@/src/lib/domains/files/file-viewer/-components/file-viewer-content";
 import { FileViewerToolbar } from "@/src/lib/domains/files/file-viewer/-components/file-viewer-toolbar";
 import {
@@ -14,7 +14,21 @@ function FileViewerShell({
 	onOpenChange,
 }: Pick<FileViewerProps, "open" | "onOpenChange">) {
 	const containerRef = useRef<HTMLDivElement>(null);
-	const { fileLoading, viewFile, fileInfo } = useFileViewer();
+	const {
+		fileLoading,
+		viewFile,
+		fileInfo,
+		docCanvasBusy,
+		showRecoveryInCanvas,
+		recoveryPhrase,
+		setRecoveryPhrase,
+		recoveryError,
+		submitRecovery,
+		recoveryPending,
+		viewError,
+		handleViewFile,
+		fileData,
+	} = useFileViewer();
 
 	const handleClose = useCallback(() => onOpenChange(false), [onOpenChange]);
 
@@ -59,17 +73,23 @@ function FileViewerShell({
 					ref={containerRef}
 					className="overflow-auto bg-transparent flex items-center justify-center px-4 py-4 @md:px-8 @md:py-8 flex-1"
 				>
-					{(fileLoading || viewFile.isPending) && (
-						<div className="flex h-full w-full flex-col items-center justify-center gap-2">
-							<InlineLoader size="lg" />
-							<p className="text-sm text-muted-foreground">
-								{fileLoading ? "Preparing document…" : "Loading document…"}
-							</p>
-						</div>
+					{fileLoading ? (
+						<DocCanvasPanel busy />
+					) : (
+						<DocCanvasPanel
+							busy={docCanvasBusy}
+							showRecovery={showRecoveryInCanvas}
+							recoveryPhrase={recoveryPhrase}
+							onRecoveryPhraseChange={setRecoveryPhrase}
+							recoveryError={recoveryError}
+							onRecoverySubmit={() => void submitRecovery()}
+							recoveryPending={recoveryPending}
+							error={viewError}
+							onRetry={() => void handleViewFile()}
+							retryPending={viewFile.isPending}
+						/>
 					)}
-					{!fileLoading && !viewFile.isPending && fileInfo && (
-						<FileViewerContent />
-					)}
+					{!fileLoading && fileInfo && fileData ? <FileViewerContent /> : null}
 				</div>
 			</div>
 		</div>
@@ -77,7 +97,7 @@ function FileViewerShell({
 }
 
 export function FileViewer({ file, open, onOpenChange }: FileViewerProps) {
-	const controller = useFileViewerController(file);
+	const controller = useFileViewerController(file, { viewerOpen: open });
 
 	return (
 		<FileViewerProvider value={controller}>

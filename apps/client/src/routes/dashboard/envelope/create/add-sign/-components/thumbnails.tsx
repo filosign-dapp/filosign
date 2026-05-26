@@ -1,5 +1,6 @@
 import { cn } from "@/src/lib/utils/utils";
 import type { Document } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+import { isPdfDocument } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/document-kind";
 
 type DocumentThumbnailsSidebarProps = {
 	documents: Document[];
@@ -35,9 +36,12 @@ export function DocumentThumbnailsSidebar({
 							role="button"
 							tabIndex={0}
 						>
-							{doc.url ? (
-								doc.url.startsWith("data:application/pdf") ||
-								doc.name?.toLowerCase().endsWith(".pdf") ? (
+							{doc.url || doc.pdfBytes ? (
+								isPdfDocument({
+									type: doc.mimeType,
+									name: doc.name,
+									pdfBytes: doc.pdfBytes,
+								}) ? (
 									<div className="absolute inset-0 flex items-center justify-center bg-red-50">
 										<div className="text-xs text-destructive font-medium">
 											PDF

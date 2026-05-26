@@ -4,8 +4,12 @@ import { useCompliancePdfExports } from "@/src/lib/domains/files/compliance-pdf"
 import type { FileViewerFile } from "@/src/lib/domains/files/file-viewer/-lib/types";
 import { usePdfDocumentViewer } from "@/src/lib/domains/files/hooks/use-pdf-document-viewer";
 
-export function useFileViewerController(file: FileViewerFile | null) {
+export function useFileViewerController(
+	file: FileViewerFile | null,
+	options?: { viewerOpen?: boolean },
+) {
 	const { wallet } = useFilosignContext();
+	const viewerOpen = options?.viewerOpen ?? false;
 
 	const { data: fileInfo, isLoading: fileLoading } = useFileInfo({
 		pieceCid: file?.pieceCid,
@@ -16,7 +20,7 @@ export function useFileViewerController(file: FileViewerFile | null) {
 
 	const decrypt = usePdfDocumentViewer({
 		file: fileInfo ?? null,
-		enabled: Boolean(fileInfo),
+		enabled: viewerOpen && Boolean(fileInfo),
 		acknowledgeHint: !isSender,
 		initialZoom: 75,
 	});

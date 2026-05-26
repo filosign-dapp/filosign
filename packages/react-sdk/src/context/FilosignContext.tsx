@@ -19,6 +19,8 @@ export type FilosignContextValue = {
 	rpc: AppRouterClient;
 	rpcQuery: FilosignRpcQueryUtils;
 	session: FilosignSession;
+	/** thirdweb `useAuthToken()` — synced by the app shell. */
+	thirdwebAuthToken: string | null;
 	wallet: Wallet;
 	contracts: FilosignContracts | null;
 	runtime: Runtime;
@@ -31,8 +33,6 @@ export type Runtime = {
 	uptime: number;
 	chain: unknown;
 	chainKey: ChainKey;
-	serverAddressSynapse: string;
-	treasury: string;
 };
 
 export const FilosignContext = createContext<FilosignContextValue>({
@@ -41,6 +41,7 @@ export const FilosignContext = createContext<FilosignContextValue>({
 	rpc: {} as AppRouterClient,
 	rpcQuery: {} as FilosignRpcQueryUtils,
 	session: {} as FilosignSession,
+	thirdwebAuthToken: null,
 	wallet: undefined,
 	contracts: null,
 	runtime: {} as Runtime,

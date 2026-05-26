@@ -15,7 +15,6 @@ export type ViewFileArgs =
 			pieceCid: string;
 			kemCiphertext: string;
 			encryptedEncryptionKey: string;
-			status: "s3" | "foc";
 	  }
 	| {
 			variant: "org";
@@ -23,7 +22,6 @@ export type ViewFileArgs =
 			organizationId: string;
 			orgKemCiphertext: string;
 			orgEncryptedEncryptionKey: string;
-			status: "s3" | "foc";
 	  };
 
 export type ViewFileMetadata = {
@@ -40,56 +38,30 @@ export type ViewFileResult = {
 };
 
 export function useViewFile() {
-	const { contracts, wallet, runtime } = useFilosignContext();
+	const { contracts, wallet } = useFilosignContext();
 	const { rpcQuery, isAuthed } = useFilosignRpc();
 
 	return useMutation<ViewFileResult, Error, ViewFileArgs>({
 		mutationFn: async (args) => {
 			const { pieceCid } = args;
 
-			if (!contracts || !wallet || !runtime || !isAuthed) {
+			if (!contracts || !wallet || !isAuthed) {
 				throw new Error("not connected");
 			}
 
-			let data: Uint8Array;
+			const { presignedUrl } = await rpcQuery.files.piece.downloadUrl.call({
+				pieceCid,
+			});
 
-			try {
-				const { presignedUrl } = await rpcQuery.files.piece.s3Url.call({
-					pieceCid,
-				});
+			const downloadResponse = await fetch(presignedUrl, {
+				method: "GET",
+			});
 
-				const downloadResponse = await fetch(presignedUrl, {
-					method: "GET",
-				});
-
-				if (!downloadResponse.ok) {
-					throw new Error("Failed to fetch file from S3");
-				}
-
-				data = new Uint8Array(await downloadResponse.arrayBuffer());
-			} catch (s3Err) {
-				const filecoinUrl = `https://${runtime.serverAddressSynapse}.calibration.filbeam.io/${pieceCid}`;
-
-				const fileResponse = await fetch(filecoinUrl);
-
-				if (!fileResponse.ok) {
-					const errorText = await fileResponse.text();
-					console.error("Filecoin error response:", errorText);
-					throw new Error(
-						`Failed to fetch file from S3 and Filecoin: ${fileResponse.status} - ${errorText}`,
-					);
-				}
-
-				const arrayBuffer = await fileResponse.arrayBuffer();
-				data = new Uint8Array(arrayBuffer);
-				console.warn(
-					"[useViewFile] S3 download failed, fell back to Filecoin",
-					{
-						pieceCid,
-						error: s3Err instanceof Error ? s3Err.message : String(s3Err),
-					},
-				);
+			if (!downloadResponse.ok) {
+				throw new Error(`Failed to fetch file (${downloadResponse.status})`);
 			}
+
+			const data = new Uint8Array(await downloadResponse.arrayBuffer());
 
 			const keySeed = getSessionSeed(wallet.account.address);
 			if (!keySeed) {

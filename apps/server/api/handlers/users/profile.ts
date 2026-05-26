@@ -1,7 +1,6 @@
 /** Profile and thirdweb email sync. */
 
-import type { DragonflyAuthStore } from "@filosign/auth";
-import { hashPrivySubjectCommitment } from "@filosign/shared";
+import { hashAuthSubjectCommitment } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import type { Address } from "viem";
@@ -9,7 +8,7 @@ import { isAddress } from "viem";
 import { z } from "zod";
 import { userAvatarWebpKey } from "@/lib/domains/files";
 import { materializePendingInvitesForEmail } from "@/lib/domains/sharing";
-import { authStore } from "@/lib/platform/auth/instance";
+import { getRedis } from "@/lib/platform/cache/session-cache";
 import db from "@/lib/platform/db";
 import {
 	verifiedLinkedEmailsForWallet,
@@ -31,7 +30,7 @@ export async function userProfileMe(wallet: Address) {
 			firstName: users.firstName,
 			lastName: users.lastName,
 			avatarKey: users.avatarKey,
-			privyDid: users.privyDid,
+			authProviderId: users.authProviderId,
 		})
 		.from(users)
 		.where(eq(users.walletAddress, wallet));
@@ -49,8 +48,8 @@ export async function userProfileMe(wallet: Address) {
 		});
 	}
 
-	const { privyDid, ...rest } = userData;
-	const privySubjectCommitment = hashPrivySubjectCommitment(privyDid);
+	const { authProviderId, ...rest } = userData;
+	const privySubjectCommitment = hashAuthSubjectCommitment(authProviderId);
 
 	return { ...rest, avatarUrl, privySubjectCommitment };
 }
@@ -191,13 +190,10 @@ const PROFILE_LOOKUP_CACHE_SEC = 30 * 60;
 export async function userProfileLookup(_wallet: Address, q: string) {
 	const query = q.trim().toLowerCase();
 	const cacheKey = `filosign:profile:lookup:${query}`;
-	const redis =
-		"redis" in authStore ? (authStore as DragonflyAuthStore).redis : null;
-
-	if (redis) {
-		const cached = await redis.get(cacheKey).catch(() => null);
-		if (cached) return JSON.parse(cached);
-	}
+	const cached = await getRedis()
+		.get(cacheKey)
+		.catch(() => null);
+	if (cached) return JSON.parse(cached);
 
 	const returns = {
 		walletAddress: users.walletAddress,
@@ -256,11 +252,9 @@ export async function userProfileLookup(_wallet: Address, q: string) {
 		},
 	};
 
-	if (redis) {
-		void redis
-			.setex(cacheKey, JSON.stringify(result), PROFILE_LOOKUP_CACHE_SEC)
-			.catch(() => {});
-	}
+	void getRedis()
+		.setex(cacheKey, PROFILE_LOOKUP_CACHE_SEC, JSON.stringify(result))
+		.catch(() => {});
 
 	return result;
 }

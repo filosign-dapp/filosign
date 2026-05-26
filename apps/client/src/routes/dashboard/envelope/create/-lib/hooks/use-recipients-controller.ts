@@ -1,14 +1,12 @@
 import { useEnvelopeRecipientLimit } from "@filosign/react/billing";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { useStore } from "@tanstack/react-form";
-import { useEffect } from "react";
+import { useCallback, useMemo } from "react";
+import { createClientId } from "@/src/lib/utils/id";
 import { useCreateEnvelope } from "@/src/routes/dashboard/envelope/create/-lib/context/create-envelope-context";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
-import {
-	removeDraftForRecipient,
-	removeDraftsForRemovedRecipients,
-} from "@/src/routes/dashboard/envelope/create/-lib/utils/settlement-drafts";
+import { removeDraftForRecipient } from "@/src/routes/dashboard/envelope/create/-lib/utils/settlement-drafts";
 import { fieldErrorMessage } from "@/src/routes/dashboard/envelope/create/-lib/validation/field-validator";
 
 export function useRecipientsController() {
@@ -32,87 +30,98 @@ export function useRecipientsController() {
 
 	const recipientCount = recipients?.length ?? 0;
 
-	const addRecipient = () => {
+	const addRecipient = useCallback(() => {
 		if (!canAddRecipient(recipientCount)) {
 			promptPlanUpgrade("envelope.recipients.max");
 			return;
 		}
 		const next: Recipient = {
-			clientRowId: crypto.randomUUID(),
+			clientRowId: createClientId(),
 			name: "",
 			email: "",
 			role: "signer",
 		};
 		onChange([...(recipients || []), next]);
-	};
-
-	const removeRecipient = (index: number) => {
-		const updated = [...(recipients || [])];
-		const removed = updated[index];
-		updated.splice(index, 1);
-		onChange(updated);
-		if (removed?.clientRowId) {
-			onSettlementDraftsChange(
-				removeDraftForRecipient(settlementDrafts, removed.clientRowId),
-			);
-		}
-	};
-
-	const updateRecipient = (index: number, updates: Partial<Recipient>) => {
-		const updated = [...(recipients || [])];
-		updated[index] = { ...updated[index], ...updates };
-		onChange(updated);
-
-		const rowId = updated[index]?.clientRowId;
-		if (!rowId) return;
-
-		const draft = settlementDrafts.find(
-			(d) => d.recipientClientRowId === rowId,
-		);
-		if (!draft) return;
-
-		const next = { ...updated[index] };
-		const emailRaw = next.email?.trim();
-		onSettlementDraftsChange(
-			settlementDrafts.map((d) => {
-				if (d.recipientClientRowId !== rowId) return d;
-				return {
-					...d,
-					recipientLabel: next.name?.trim() || emailRaw || d.recipientLabel,
-					recipientEmail: emailRaw
-						? normalizePlacementRecipientEmail(emailRaw)
-						: d.recipientEmail,
-					recipientSource:
-						next.role === "viewer" ? ("viewer" as const) : ("signer" as const),
-				};
-			}),
-		);
-	};
-
-	useEffect(() => {
-		if (!recipients?.length) return;
-		if (!recipients.some((r) => !r.clientRowId)) return;
-		const withIds = recipients.map((r) => ({
-			...r,
-			clientRowId: r.clientRowId ?? crypto.randomUUID(),
-		}));
-		form.setFieldValue("recipients", withIds);
-		form.setFieldValue(
-			"settlementDrafts",
-			removeDraftsForRemovedRecipients(settlementDrafts, withIds),
-		);
-	}, [recipients, settlementDrafts, form]);
-
-	return {
+	}, [
+		canAddRecipient,
+		recipientCount,
+		promptPlanUpgrade,
 		recipients,
-		error: fieldErrorMessage(recipientErrors),
-		showError: showValidationErrors,
-		settlementDrafts,
-		onSettlementDraftsChange,
-		addRecipient,
-		removeRecipient,
-		updateRecipient,
-	};
+		onChange,
+	]);
+
+	const removeRecipient = useCallback(
+		(index: number) => {
+			const updated = [...(recipients || [])];
+			const removed = updated[index];
+			updated.splice(index, 1);
+			onChange(updated);
+			if (removed?.clientRowId) {
+				onSettlementDraftsChange(
+					removeDraftForRecipient(settlementDrafts, removed.clientRowId),
+				);
+			}
+		},
+		[recipients, settlementDrafts, onChange, onSettlementDraftsChange],
+	);
+
+	const updateRecipient = useCallback(
+		(index: number, updates: Partial<Recipient>) => {
+			const updated = [...(recipients || [])];
+			updated[index] = { ...updated[index], ...updates };
+			onChange(updated);
+
+			const rowId = updated[index]?.clientRowId;
+			if (!rowId) return;
+
+			const draft = settlementDrafts.find(
+				(d) => d.recipientClientRowId === rowId,
+			);
+			if (!draft) return;
+
+			const next = { ...updated[index] };
+			const emailRaw = next.email?.trim();
+			onSettlementDraftsChange(
+				settlementDrafts.map((d) => {
+					if (d.recipientClientRowId !== rowId) return d;
+					return {
+						...d,
+						recipientLabel: next.name?.trim() || emailRaw || d.recipientLabel,
+						recipientEmail: emailRaw
+							? normalizePlacementRecipientEmail(emailRaw)
+							: d.recipientEmail,
+						recipientSource:
+							next.role === "viewer"
+								? ("viewer" as const)
+								: ("signer" as const),
+					};
+				}),
+			);
+		},
+		[recipients, settlementDrafts, onChange, onSettlementDraftsChange],
+	);
+
+	return useMemo(
+		() => ({
+			recipients,
+			error: fieldErrorMessage(recipientErrors),
+			showError: showValidationErrors,
+			settlementDrafts,
+			onSettlementDraftsChange,
+			addRecipient,
+			removeRecipient,
+			updateRecipient,
+		}),
+		[
+			recipients,
+			recipientErrors,
+			showValidationErrors,
+			settlementDrafts,
+			addRecipient,
+			removeRecipient,
+			updateRecipient,
+		],
+	);
 }
 
 export type RecipientsController = ReturnType<typeof useRecipientsController>;

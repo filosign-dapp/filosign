@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
 import { cn } from "@/src/lib/utils/utils";
+import { useObjectUrl } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-object-url";
 
 type UploadedFile = {
 	id: string;
@@ -90,7 +91,9 @@ export default function FileCard({
 	};
 
 	const isImage = file.type.includes("image");
-	const shouldShowPreview = isImage && !imageError && showPreview;
+	const previewUrl = useObjectUrl(isImage ? file.file : null);
+	const shouldShowPreview =
+		isImage && !imageError && showPreview && previewUrl != null;
 
 	// Grid variant
 	if (variant === "grid") {
@@ -122,7 +125,7 @@ export default function FileCard({
 				<div className="aspect-square mb-3 bg-muted/20 rounded-lg flex items-center justify-center overflow-hidden">
 					{shouldShowPreview ? (
 						<img
-							src={URL.createObjectURL(file.file)}
+							src={previewUrl}
 							alt={file.name}
 							className="w-full h-full object-cover"
 							onError={() => setImageError(true)}
@@ -153,22 +156,11 @@ export default function FileCard({
 
 	// List variant
 	return (
-		<motion.div
-			className="flex items-center justify-between p-2 bg-background border border-border rounded-lg"
-			initial={{ opacity: 0, x: -20 }}
-			animate={{ opacity: 1, x: 0 }}
-			exit={{ opacity: 0, x: 20 }}
-			transition={{
-				type: "spring",
-				stiffness: 230,
-				damping: 25,
-				duration: 0.3,
-			}}
-		>
+		<div className="flex items-center justify-between p-2 bg-background border border-border rounded-lg">
 			<div className="flex items-center gap-3">
 				{shouldShowPreview ? (
 					<img
-						src={URL.createObjectURL(file.file)}
+						src={previewUrl}
 						alt={file.name}
 						className="size-10 object-cover rounded"
 						onError={() => setImageError(true)}
@@ -204,6 +196,6 @@ export default function FileCard({
 			>
 				<XIcon className="size-4" />
 			</Button>
-		</motion.div>
+		</div>
 	);
 }

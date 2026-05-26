@@ -7,6 +7,14 @@ import { zodFieldValidator } from "@/src/routes/dashboard/envelope/create/-lib/v
 import DocumentsSection from "./document-upload";
 import RecipientsSection from "./recipients-section";
 
+function renderComposeDocumentsField() {
+	return <DocumentsSection />;
+}
+
+function renderComposeRecipientsField() {
+	return <RecipientsSection />;
+}
+
 export function ComposeDocumentsField() {
 	const { form } = useCreateEnvelope();
 
@@ -17,7 +25,7 @@ export function ComposeDocumentsField() {
 				onSubmit: zodFieldValidator(composeDocumentsSchema),
 			}}
 		>
-			{() => <DocumentsSection />}
+			{renderComposeDocumentsField}
 		</form.Field>
 	);
 }
@@ -32,7 +40,7 @@ export function ComposeRecipientsField() {
 				onSubmit: zodFieldValidator(composeRecipientsSchema),
 			}}
 		>
-			{() => <RecipientsSection />}
+			{renderComposeRecipientsField}
 		</form.Field>
 	);
 }

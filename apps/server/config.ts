@@ -1,6 +1,4 @@
 import type { ChainKey } from "@filosign/contracts";
-import { isHex } from "viem";
-import { privateKeyToAddress } from "viem/accounts";
 import { base, baseSepolia, hardhat } from "viem/chains";
 import env from "@/env";
 
@@ -27,13 +25,6 @@ if (!runtimeChain) {
 	throw new Error(`Invalid CHAIN: ${env.CHAIN}`);
 }
 
-if (!isHex(env.EVM_PRIVATE_KEY_SYNAPSE)) {
-	throw new Error(
-		"EVM_PRIVATE_KEY_SYNAPSE is not set properly in environment variables",
-	);
-}
-
-const serverAddressSynapse = privateKeyToAddress(env.EVM_PRIVATE_KEY_SYNAPSE);
 console.log("runtime chain:", {
 	id: runtimeChain.id,
 	runtimeChain: runtimeChain.name,
@@ -45,6 +36,7 @@ const http = {
 		allowHeaders: [
 			"Content-Type",
 			"Authorization",
+			"X-Wallet-Address",
 			"X-Org-Id",
 			"x-session-token",
 		],
@@ -65,7 +57,6 @@ const http = {
 const config = {
 	chainKey,
 	runtimeChain,
-	serverAddressSynapse,
 	INDEXER,
 	http,
 };

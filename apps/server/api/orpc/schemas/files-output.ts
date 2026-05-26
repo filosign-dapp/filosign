@@ -7,10 +7,17 @@ export const rpcFilesUploadStartOutputSchema = z.object({
 	key: z.string(),
 });
 
-const rpcFileRowSentSchema = z.object({
+const rpcFileListDisplaySchema = z.object({
+	displayName: z.string().nullable(),
+	mimeType: z.string().nullable(),
+	ciphertextByteLength: z.number().int().nullable(),
+	createdAt: z.coerce.date().optional(),
+});
+
+const rpcFileRowSentSchema = rpcFileListDisplaySchema.extend({
 	pieceCid: z.string(),
 	sender: z.string(),
-	status: z.literal("foc"),
+	status: z.literal("s3"),
 });
 
 export const rpcFilesListSentOutputSchema = z.object({
@@ -20,13 +27,10 @@ export const rpcFilesListSentOutputSchema = z.object({
 const inboxEntrySchema = rpcFileRowSentSchema.extend({
 	encryptedEncryptionKey: zHexString(),
 	kemCiphertext: zHexString(),
-	inboxCategory: z.enum(["primary", "pending"]),
 });
 
 export const rpcFilesListReceivedOutputSchema = z.object({
 	files: z.array(inboxEntrySchema),
-	primary: z.array(inboxEntrySchema),
-	pending: z.array(inboxEntrySchema),
 });
 
 export const rpcColdInviteByTokenOutputSchema = z.object({

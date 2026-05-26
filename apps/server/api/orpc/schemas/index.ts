@@ -1,10 +1,8 @@
-import {
-	rpcAuthLogoutOutputSchema,
-	rpcAuthNonceOutputSchema,
-	rpcAuthRefreshOutputSchema,
-	rpcAuthVerifyOutputSchema,
-} from "./auth-output";
 import { rpcBillingEntitlementsOutputSchema } from "./billing-output";
+import {
+	rpcFilesArchivalPurchaseOutputSchema,
+	rpcFilesArchivalStatusOutputSchema,
+} from "./files-archival-output";
 import {
 	rpcColdInviteByTokenOutputSchema,
 	rpcColdInviteClaimOutputSchema,
@@ -18,7 +16,7 @@ import {
 	rpcPieceAckOutputSchema,
 	rpcPieceComplianceBundleOutputSchema,
 	rpcPieceDetailOutputSchema,
-	rpcPieceS3UrlOutputSchema,
+	rpcPieceDownloadUrlOutputSchema,
 	rpcPieceSignDraftFieldIdsOutputSchema,
 	rpcPieceSignOutputSchema,
 } from "./files-piece-output";
@@ -45,20 +43,10 @@ import {
 	rpcSettlementsTrySettleOutputSchema,
 } from "./settlements-output";
 import {
-	rpcSharingAcceptRequestOutputSchema,
-	rpcSharingApproveOutputSchema,
-	rpcSharingCancelRequestOutputSchema,
-	rpcSharingCanSendToOutputSchema,
-	rpcSharingCreateRequestOutputSchema,
 	rpcSharingEmailInvitesOutputSchema,
 	rpcSharingInviteByIdOutputSchema,
 	rpcSharingInviteClaimOutputSchema,
-	rpcSharingReceivableFromOutputSchema,
-	rpcSharingReceivedRequestsOutputSchema,
-	rpcSharingRejectRequestOutputSchema,
 	rpcSharingRequestInviteOutputSchema,
-	rpcSharingSendableToOutputSchema,
-	rpcSharingSentRequestsOutputSchema,
 } from "./sharing-output";
 import { rpcStoragePresignPutOutputSchema } from "./storage-output";
 import { rpcTxProcessIndexerHashOutputSchema } from "./tx-output";
@@ -70,19 +58,14 @@ import {
 	rpcUserProfileSyncPrivyEmailOutputSchema,
 	rpcUserProfileUpdateOutputSchema,
 	rpcUserRegisterOutputSchema,
+	rpcUserRegistrationSnapshotOutputSchema,
 	rpcUserSignaturesCreateOutputSchema,
 	rpcUserSignaturesGetOutputSchema,
 	rpcUserSignaturesListOutputSchema,
 } from "./users-output";
 
-/** Nested output schemas aligned with `appRouter` — use in router as `out.auth.nonce`, etc. */
+/** Nested output schemas aligned with `appRouter`. */
 export const rpcOut = {
-	auth: {
-		nonce: rpcAuthNonceOutputSchema,
-		verify: rpcAuthVerifyOutputSchema,
-		refresh: rpcAuthRefreshOutputSchema,
-		logout: rpcAuthLogoutOutputSchema,
-	},
 	tx: {
 		processIndexerHash: rpcTxProcessIndexerHashOutputSchema,
 	},
@@ -97,6 +80,10 @@ export const rpcOut = {
 			received: rpcFilesListReceivedOutputSchema,
 			org: rpcFilesListSentOutputSchema,
 		},
+		archival: {
+			purchase: rpcFilesArchivalPurchaseOutputSchema,
+			status: rpcFilesArchivalStatusOutputSchema,
+		},
 		coldInvite: {
 			inviteByToken: rpcColdInviteByTokenOutputSchema,
 			claim: rpcColdInviteClaimOutputSchema,
@@ -106,7 +93,7 @@ export const rpcOut = {
 			detail: rpcPieceDetailOutputSchema,
 			ack: rpcPieceAckOutputSchema,
 			signDraftFieldIds: rpcPieceSignDraftFieldIdsOutputSchema,
-			s3Url: rpcPieceS3UrlOutputSchema,
+			downloadUrl: rpcPieceDownloadUrlOutputSchema,
 			complianceBundle: rpcPieceComplianceBundleOutputSchema,
 			sign: rpcPieceSignOutputSchema,
 		},
@@ -119,19 +106,9 @@ export const rpcOut = {
 		senderUsage: rpcMetricsSenderUsageOutputSchema,
 	},
 	sharing: {
-		receivedRequests: rpcSharingReceivedRequestsOutputSchema,
-		sentRequests: rpcSharingSentRequestsOutputSchema,
 		emailInvites: rpcSharingEmailInvitesOutputSchema,
-		canSendTo: rpcSharingCanSendToOutputSchema,
-		cancelRequest: rpcSharingCancelRequestOutputSchema,
-		rejectRequest: rpcSharingRejectRequestOutputSchema,
-		acceptRequest: rpcSharingAcceptRequestOutputSchema,
-		approve: rpcSharingApproveOutputSchema,
-		receivableFrom: rpcSharingReceivableFromOutputSchema,
-		sendableTo: rpcSharingSendableToOutputSchema,
 		inviteById: rpcSharingInviteByIdOutputSchema,
 		inviteClaim: rpcSharingInviteClaimOutputSchema,
-		createRequest: rpcSharingCreateRequestOutputSchema,
 		requestInvite: rpcSharingRequestInviteOutputSchema,
 	},
 	orgs: {
@@ -154,6 +131,7 @@ export const rpcOut = {
 	},
 	users: {
 		register: rpcUserRegisterOutputSchema,
+		registrationSnapshot: rpcUserRegistrationSnapshotOutputSchema,
 		profileMe: rpcUserProfileMeOutputSchema,
 		profileUpdate: rpcUserProfileUpdateOutputSchema,
 		profilePrevalidate: rpcUserProfilePrevalidateOutputSchema,

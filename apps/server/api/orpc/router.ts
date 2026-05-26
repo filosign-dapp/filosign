@@ -2,13 +2,6 @@ import { zHexString } from "@filosign/shared/zod";
 import type { RouterClient } from "@orpc/server";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
-import {
-	authLogout,
-	authNonce,
-	authRefresh,
-	authVerify,
-	zAuthVerifyBody,
-} from "@/api/handlers/auth";
 import { billingEntitlements } from "@/api/handlers/billing-handlers";
 import * as fileHandlers from "@/api/handlers/files";
 import {
@@ -35,10 +28,8 @@ import { rpcOut as out } from "./schemas";
 
 const platformRuntimeSchema = z.object({
 	uptime: z.number(),
-	serverAddressSynapse: z.string(),
 	chain: z.unknown(),
 	chainKey: z.enum(["local", "testnet", "mainnet"]),
-	treasury: z.string(),
 });
 
 const unk = z.unknown();
@@ -51,28 +42,10 @@ export const appRouter = {
 		const r = await loadPlatformRuntime();
 		return {
 			uptime: r.uptime,
-			serverAddressSynapse: r.serverAddressSynapse,
 			chain: r.chain,
 			chainKey: r.chainKey,
-			treasury: r.treasury,
 		};
 	}),
-	auth: {
-		nonce: publicProcedure
-			.input(z.object({ address: z.string() }))
-			.output(out.auth.nonce)
-			.handler(({ input, context }) => authNonce(input.address, context)),
-		verify: publicProcedure
-			.input(zAuthVerifyBody)
-			.output(out.auth.verify)
-			.handler(({ input, context }) => authVerify(input, context)),
-		refresh: publicProcedure
-			.output(out.auth.refresh)
-			.handler(({ context }) => authRefresh(context)),
-		logout: publicProcedure
-			.output(out.auth.logout)
-			.handler(({ context }) => authLogout(context)),
-	},
 	settlements: {
 		listByFile: authenticatedProcedure
 			.input(z.object({ pieceCid: z.string().min(1) }))
@@ -163,6 +136,25 @@ export const appRouter = {
 					return fileHandlers.filesListOrg(context.activeOrg.organizationId);
 				}),
 		},
+		archival: {
+			purchase: authenticatedProcedure
+				.input(
+					z.object({
+						pieceCid: z.string().min(1),
+						tier: z.enum(["1y", "5y", "10y"]),
+					}),
+				)
+				.output(out.files.archival.purchase)
+				.handler(({ context, input }) =>
+					fileHandlers.filesArchivalPurchase(context.userWallet, input),
+				),
+			status: authenticatedProcedure
+				.input(z.object({ pieceCid: z.string().min(1) }))
+				.output(out.files.archival.status)
+				.handler(({ context, input }) =>
+					fileHandlers.filesArchivalStatus(context.userWallet, input),
+				),
+		},
 		coldInvite: {
 			inviteByToken: publicProcedure
 				.input(z.object({ inviteToken: z.string().min(1) }))
@@ -244,11 +236,11 @@ export const appRouter = {
 						body: input.body,
 					}),
 				),
-			s3Url: authenticatedProcedure
+			downloadUrl: authenticatedProcedure
 				.input(z.object({ pieceCid: z.string().min(1) }))
-				.output(out.files.piece.s3Url)
+				.output(out.files.piece.downloadUrl)
 				.handler(({ context, input }) =>
-					fileHandlers.pieceS3Url(context.userWallet, input.pieceCid),
+					fileHandlers.pieceDownloadUrl(context.userWallet, input.pieceCid),
 				),
 			complianceBundle: authenticatedProcedure
 				.input(
@@ -322,64 +314,10 @@ export const appRouter = {
 			),
 	},
 	sharing: {
-		receivedRequests: authenticatedProcedure
-			.output(out.sharing.receivedRequests)
-			.handler(({ context }) =>
-				sharingHandlers.sharingReceivedRequests(context.userWallet),
-			),
-		sentRequests: authenticatedProcedure
-			.output(out.sharing.sentRequests)
-			.handler(({ context }) =>
-				sharingHandlers.sharingSentRequests(context.userWallet),
-			),
 		emailInvites: authenticatedProcedure
 			.output(out.sharing.emailInvites)
 			.handler(({ context }) =>
 				sharingHandlers.sharingEmailInvites(context.userWallet),
-			),
-		canSendTo: authenticatedProcedure
-			.input(z.object({ recipient: z.string() }))
-			.output(out.sharing.canSendTo)
-			.handler(({ context, input }) =>
-				sharingHandlers.sharingCanSendTo(
-					context.userWallet,
-					input.recipient,
-					context.activeOrg ?? null,
-				),
-			),
-		cancelRequest: authenticatedProcedure
-			.input(z.object({ id: z.string().min(1) }))
-			.output(out.sharing.cancelRequest)
-			.handler(({ context, input }) =>
-				sharingHandlers.sharingCancelRequest(context.userWallet, input.id),
-			),
-		rejectRequest: authenticatedProcedure
-			.input(z.object({ id: z.string().min(1) }))
-			.output(out.sharing.rejectRequest)
-			.handler(({ context, input }) =>
-				sharingHandlers.sharingRejectRequest(context.userWallet, input.id),
-			),
-		acceptRequest: authenticatedProcedure
-			.output(out.sharing.acceptRequest)
-			.handler(() => sharingHandlers.sharingAcceptRequestDenied()),
-		approve: authenticatedProcedure
-			.input(z.record(z.string(), unk))
-			.output(out.sharing.approve)
-			.handler(({ context, input }) =>
-				sharingHandlers.sharingApprove(context.userWallet, input),
-			),
-		receivableFrom: authenticatedProcedure
-			.output(out.sharing.receivableFrom)
-			.handler(({ context }) =>
-				sharingHandlers.sharingReceivableFrom(context.userWallet),
-			),
-		sendableTo: authenticatedProcedure
-			.output(out.sharing.sendableTo)
-			.handler(({ context }) =>
-				sharingHandlers.sharingSendableTo(
-					context.userWallet,
-					context.activeOrg ?? null,
-				),
 			),
 		inviteById: publicProcedure
 			.input(z.object({ id: z.string().min(1) }))
@@ -390,12 +328,6 @@ export const appRouter = {
 			.output(out.sharing.inviteClaim)
 			.handler(({ context, input }) =>
 				sharingHandlers.sharingInviteClaim(context.userWallet, input.id),
-			),
-		createRequest: authenticatedProcedure
-			.input(z.record(z.string(), unk))
-			.output(out.sharing.createRequest)
-			.handler(({ context, input }) =>
-				sharingHandlers.sharingCreateRequest(context.userWallet, input),
 			),
 		requestInvite: authenticatedProcedure
 			.input(z.record(z.string(), unk))
@@ -659,6 +591,10 @@ export const appRouter = {
 			.input(z.record(z.string(), unk))
 			.output(out.users.register)
 			.handler(({ input }) => userHandlers.userRegister(input)),
+		registrationSnapshot: publicProcedure
+			.input(z.object({ walletAddress: z.string() }))
+			.output(out.users.registrationSnapshot)
+			.handler(({ input }) => userHandlers.userRegistrationSnapshot(input)),
 		profile: {
 			me: authenticatedProcedure
 				.output(out.users.profileMe)

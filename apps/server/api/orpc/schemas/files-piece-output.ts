@@ -11,7 +11,7 @@ const rosterPersonSchema = z.object({
 export const rpcPieceDetailOutputSchema = z.object({
 	pieceCid: z.string(),
 	sender: z.string(),
-	status: z.string(),
+	status: z.literal("s3"),
 	onchainTxHash: zHexString(),
 	createdAt: z.union([z.string(), z.date()]),
 	placementCommitment: zHexString(),
@@ -40,7 +40,7 @@ export const rpcPieceSignDraftFieldIdsOutputSchema = z.object({
 	completedFieldIds: z.array(z.string()),
 });
 
-export const rpcPieceS3UrlOutputSchema = z.object({
+export const rpcPieceDownloadUrlOutputSchema = z.object({
 	presignedUrl: z.string(),
 });
 
@@ -53,5 +53,4 @@ export const rpcPieceComplianceBundleOutputSchema = z.object({
 export const rpcPieceSignOutputSchema = z.object({
 	txHash: zHexString(),
 	signature: zHexString(),
-	approveSenderTxHash: zHexString().nullable(),
 });

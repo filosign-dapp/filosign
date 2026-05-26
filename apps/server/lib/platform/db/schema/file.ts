@@ -32,9 +32,10 @@ export const files = t.pgTable(
 			.references(() => users.walletAddress),
 		organizationId: t
 			.uuid()
-			.references(() => organizations.id, { onDelete: "set null" }),
-		orgKemCiphertext: tHex(),
-		orgEncryptedEncryptionKey: tHex(),
+			.notNull()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		orgKemCiphertext: tHex().notNull(),
+		orgEncryptedEncryptionKey: tHex().notNull(),
 
 		status: t
 			.text({ enum: ["s3"] })

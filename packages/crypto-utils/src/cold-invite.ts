@@ -127,10 +127,11 @@ function concatBytes(a: Uint8Array, b: Uint8Array): Uint8Array {
 	return out;
 }
 
-/** Wrap file DEK for a cold recipient: random Argon2 salt + AES payload (iv+ciphertext). */
-export async function wrapColdInviteDek(args: {
+/** Wrap a DEK with an Argon2id-derived key from a passphrase (random salt prefix). */
+export async function wrapPassphraseDek(args: {
 	encryptionKey: Uint8Array;
 	phrase: string;
+	info: string;
 }): Promise<Uint8Array> {
 	const argonSalt = randomBytes(ARGON_SALT_BYTES);
 	const secretKey = await deriveColdInviteKeyFromPhrase({
@@ -140,18 +141,20 @@ export async function wrapColdInviteDek(args: {
 	const body = await encryption.encrypt({
 		message: args.encryptionKey,
 		secretKey,
-		info: DEK_WRAP_INFO,
+		info: args.info,
 	});
 	return concatBytes(argonSalt, body);
 }
 
-export async function unwrapColdInviteDek(args: {
+/** Unwrap a DEK from {@link wrapPassphraseDek}. */
+export async function unwrapPassphraseDek(args: {
 	wrappedEncryptionKey: Uint8Array;
 	phrase: string;
+	info: string;
 }): Promise<Uint8Array> {
 	const { wrappedEncryptionKey } = args;
 	if (wrappedEncryptionKey.length < ARGON_SALT_BYTES + 12 + 32 + 16) {
-		throw new Error("Invalid cold invite wrap payload");
+		throw new Error("Invalid passphrase wrap payload");
 	}
 	const argonSalt = wrappedEncryptionKey.slice(0, ARGON_SALT_BYTES);
 	const ciphertext = wrappedEncryptionKey.slice(ARGON_SALT_BYTES);
@@ -162,6 +165,29 @@ export async function unwrapColdInviteDek(args: {
 	return encryption.decrypt({
 		ciphertext,
 		secretKey,
+		info: args.info,
+	});
+}
+
+/** Wrap file DEK for a cold recipient: random Argon2 salt + AES payload (iv+ciphertext). */
+export async function wrapColdInviteDek(args: {
+	encryptionKey: Uint8Array;
+	phrase: string;
+}): Promise<Uint8Array> {
+	return wrapPassphraseDek({
+		encryptionKey: args.encryptionKey,
+		phrase: args.phrase,
+		info: DEK_WRAP_INFO,
+	});
+}
+
+export async function unwrapColdInviteDek(args: {
+	wrappedEncryptionKey: Uint8Array;
+	phrase: string;
+}): Promise<Uint8Array> {
+	return unwrapPassphraseDek({
+		wrappedEncryptionKey: args.wrappedEncryptionKey,
+		phrase: args.phrase,
 		info: DEK_WRAP_INFO,
 	});
 }

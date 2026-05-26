@@ -3,6 +3,9 @@ import type { PlanEntitlements, PlanId } from "../types";
 
 const teamProductFeatures = {
 	"features.shared_templates": { kind: "boolean", enabled: true },
+	"features.team_drafts": { kind: "boolean", enabled: true },
+	"features.draft_review_links": { kind: "boolean", enabled: true },
+	"features.draft_comments": { kind: "boolean", enabled: true },
 	"features.comments": { kind: "boolean", enabled: true },
 	"features.envelope.team_visibility": { kind: "boolean", enabled: true },
 	"features.routing.advanced": { kind: "boolean", enabled: true },
@@ -10,6 +13,9 @@ const teamProductFeatures = {
 } as const satisfies Pick<
 	PlanEntitlements,
 	| "features.shared_templates"
+	| "features.team_drafts"
+	| "features.draft_review_links"
+	| "features.draft_comments"
 	| "features.comments"
 	| "features.envelope.team_visibility"
 	| "features.routing.advanced"
@@ -18,6 +24,9 @@ const teamProductFeatures = {
 
 const disabledProductFeatures = {
 	"features.shared_templates": { kind: "boolean", enabled: false },
+	"features.team_drafts": { kind: "boolean", enabled: false },
+	"features.draft_review_links": { kind: "boolean", enabled: false },
+	"features.draft_comments": { kind: "boolean", enabled: false },
 	"features.comments": { kind: "boolean", enabled: false },
 	"features.envelope.team_visibility": { kind: "boolean", enabled: false },
 	"features.routing.advanced": { kind: "boolean", enabled: false },
@@ -25,6 +34,9 @@ const disabledProductFeatures = {
 } as const satisfies Pick<
 	PlanEntitlements,
 	| "features.shared_templates"
+	| "features.team_drafts"
+	| "features.draft_review_links"
+	| "features.draft_comments"
 	| "features.comments"
 	| "features.envelope.team_visibility"
 	| "features.routing.advanced"

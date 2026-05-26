@@ -7,6 +7,8 @@ import type { PlacementManifest } from "./placement-manifest";
 export * from "./auth-subject";
 export * from "./completions-merkle";
 export * from "./compliance-bundle";
+export * from "./draft-crypto";
+export * from "./draft-snapshot";
 export { zFileData } from "./file-data";
 export * from "./org-commitment";
 export * from "./org-crypto";

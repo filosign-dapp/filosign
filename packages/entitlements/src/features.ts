@@ -3,6 +3,9 @@ export const FEATURE_KEYS = [
 	"documents.sent.monthly",
 	"envelope.recipients.max",
 	"features.shared_templates",
+	"features.team_drafts",
+	"features.draft_review_links",
+	"features.draft_comments",
 	"features.comments",
 	"features.envelope.team_visibility",
 	"features.routing.advanced",
@@ -22,6 +25,9 @@ export type MaxFeatureKey = (typeof MAX_FEATURE_KEYS)[number];
 
 export const BOOLEAN_FEATURE_KEYS = [
 	"features.shared_templates",
+	"features.team_drafts",
+	"features.draft_review_links",
+	"features.draft_comments",
 	"features.comments",
 	"features.envelope.team_visibility",
 	"features.routing.advanced",

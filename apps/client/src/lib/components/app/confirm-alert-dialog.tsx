@@ -44,8 +44,12 @@ export function ConfirmAlertDialog({
 						disabled={pending}
 						onClick={() => {
 							void (async () => {
-								await onConfirm();
-								onOpenChange(false);
+								try {
+									await onConfirm();
+									onOpenChange(false);
+								} catch {
+									// Caller handles user feedback; keep dialog open on failure.
+								}
 							})();
 						}}
 					>

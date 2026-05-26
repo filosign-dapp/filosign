@@ -187,8 +187,6 @@ useQuery({
 | `filosignKeys.authedApi(address)` | JWT session query |
 | `filosignKeys.keyRegistrySnapshot(address)` | On-chain registration + keygen |
 | `filosignKeys.isLoggedIn(address)` | Seed matches commitments |
-| `filosignKeys.isApprovedDependentFirst` / `isApprovedWalletFirst` | Sharing approval caches |
-| `filosignKeys.acceptedPeople(wallets)` | Derived contacts list |
 | `filosignKeys.decryptedFileMetadata(…)` | Document card preview cache |
 
 **Static roots** (no `rpcQuery` in scope): `filosignQueryRoots.sharing`, `.files`, `.users`, `.orgs`, …—aligned with oRPC paths.

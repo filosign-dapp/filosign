@@ -1,6 +1,12 @@
+import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { CreateForm } from "@/src/lib/domains/files/envelope-form-types";
+import { createClientId } from "@/src/lib/utils/id";
+import {
+	clearDraftDocuments,
+	recipientFingerprint,
+} from "@/src/routes/dashboard/envelope/create/-lib/utils/envelope-draft";
 
 interface OnboardingForm {
 	firstName: string;
@@ -38,7 +44,11 @@ export const useStorePersist = create<StorePersist>()(
 		(set) => ({
 			createForm: null,
 			setCreateForm: (form: CreateForm) => set({ createForm: form }),
-			clearCreateForm: () => set({ createForm: null }),
+			clearCreateForm: () => {
+				const draftId = useStorePersist.getState().createForm?.draftId;
+				if (draftId) void clearDraftDocuments(draftId);
+				set({ createForm: null });
+			},
 
 			activeOrgId: null,
 			setActiveOrgId: (id: string | null) =>
@@ -78,8 +88,58 @@ export const useStorePersist = create<StorePersist>()(
 		}),
 		{
 			name: "filosign-client",
-			version: 1,
-			partialize: (state) => ({ activeOrgId: state.activeOrgId }),
+			version: 3,
+			migrate: (persisted, version) => {
+				const row = persisted as {
+					activeOrgId?: string | null;
+					createForm?: CreateForm | null;
+				};
+				if (version < 2) {
+					return {
+						activeOrgId: row.activeOrgId ?? null,
+						createForm: null,
+					};
+				}
+				const cf = row.createForm;
+				if (cf && version < 3) {
+					return {
+						activeOrgId: row.activeOrgId ?? null,
+						createForm: {
+							...cf,
+							draftId: cf.draftId ?? createClientId(),
+							recipientFingerprint:
+								cf.recipientFingerprint ||
+								recipientFingerprint(cf.recipients ?? []),
+							signatureFields: cf.signatureFields ?? [],
+						},
+					};
+				}
+				return {
+					activeOrgId: row.activeOrgId ?? null,
+					createForm: row.createForm ?? null,
+				};
+			},
+			partialize: (state) => ({
+				activeOrgId: state.activeOrgId,
+				createForm: state.createForm,
+			}),
 		},
 	),
 );
+
+/** True after `filosign-client` has rehydrated from localStorage. */
+export function useStorePersistHydrated() {
+	const [hydrated, setHydrated] = useState(() =>
+		useStorePersist.persist.hasHydrated(),
+	);
+	useEffect(() => {
+		if (useStorePersist.persist.hasHydrated()) {
+			setHydrated(true);
+			return;
+		}
+		return useStorePersist.persist.onFinishHydration(() => {
+			setHydrated(true);
+		});
+	}, []);
+	return hydrated;
+}

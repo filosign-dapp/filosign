@@ -2,7 +2,6 @@ import {
 	QueryClient,
 	QueryClientProvider as QueryClientProviderBase,
 } from "@tanstack/react-query";
-import { toast } from "sonner";
 
 const queryClient = new QueryClient({
 	defaultOptions: {
@@ -13,11 +12,6 @@ const queryClient = new QueryClient({
 		},
 		mutations: {
 			retry: 0,
-			onError: (error) => {
-				const message =
-					error instanceof Error ? error.message : "Request failed";
-				toast.error(message);
-			},
 		},
 	},
 });

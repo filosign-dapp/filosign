@@ -1,5 +1,4 @@
 import { CopySimpleIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
-import { toast } from "sonner";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Dialog,
@@ -25,10 +24,7 @@ export function RecoveryPhraseDialog({
 		if (!phrase) return;
 		try {
 			await navigator.clipboard.writeText(phrase);
-			toast.success("Recovery phrase copied");
-		} catch {
-			toast.error("Unable to copy recovery phrase");
-		}
+		} catch {}
 	};
 
 	const handleDownload = () => {
@@ -45,7 +41,6 @@ export function RecoveryPhraseDialog({
 		anchor.click();
 		anchor.remove();
 		URL.revokeObjectURL(url);
-		toast.success("Recovery phrase downloaded");
 	};
 
 	return (

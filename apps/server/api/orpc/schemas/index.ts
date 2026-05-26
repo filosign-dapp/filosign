@@ -1,5 +1,22 @@
 import { rpcBillingEntitlementsOutputSchema } from "./billing-output";
 import {
+	rpcDraftsArchiveOutputSchema,
+	rpcDraftsCommentsAppendOutputSchema,
+	rpcDraftsCommentsListOutputSchema,
+	rpcDraftsCreateOutputSchema,
+	rpcDraftsGetOutputSchema,
+	rpcDraftsListExternalSharesOutputSchema,
+	rpcDraftsListOutputSchema,
+	rpcDraftsMarkSentOutputSchema,
+	rpcDraftsPresignDocumentsOutputSchema,
+	rpcDraftsPresignSnapshotOutputSchema,
+	rpcDraftsReviewByTokenOutputSchema,
+	rpcDraftsReviewForWalletOutputSchema,
+	rpcDraftsRevokeExternalShareOutputSchema,
+	rpcDraftsSaveOutputSchema,
+	rpcDraftsShareExternalOutputSchema,
+} from "./drafts-output";
+import {
 	rpcFilesArchivalPurchaseOutputSchema,
 	rpcFilesArchivalStatusOutputSchema,
 } from "./files-archival-output";
@@ -128,6 +145,23 @@ export const rpcOut = {
 		listByFile: rpcSettlementsListByFileOutputSchema,
 		trySettle: rpcSettlementsTrySettleOutputSchema,
 		confirmSettlement: rpcSettlementsConfirmSettlementOutputSchema,
+	},
+	drafts: {
+		create: rpcDraftsCreateOutputSchema,
+		save: rpcDraftsSaveOutputSchema,
+		list: rpcDraftsListOutputSchema,
+		get: rpcDraftsGetOutputSchema,
+		presignSnapshot: rpcDraftsPresignSnapshotOutputSchema,
+		presignDocuments: rpcDraftsPresignDocumentsOutputSchema,
+		shareExternal: rpcDraftsShareExternalOutputSchema,
+		listExternalShares: rpcDraftsListExternalSharesOutputSchema,
+		revokeExternalShare: rpcDraftsRevokeExternalShareOutputSchema,
+		reviewByToken: rpcDraftsReviewByTokenOutputSchema,
+		reviewForWallet: rpcDraftsReviewForWalletOutputSchema,
+		markSent: rpcDraftsMarkSentOutputSchema,
+		archive: rpcDraftsArchiveOutputSchema,
+		commentsList: rpcDraftsCommentsListOutputSchema,
+		commentsAppend: rpcDraftsCommentsAppendOutputSchema,
 	},
 	users: {
 		register: rpcUserRegisterOutputSchema,

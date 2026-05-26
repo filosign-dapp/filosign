@@ -28,3 +28,25 @@ export const authenticatedProcedure = publicProcedure.use(
 		});
 	},
 );
+
+export const orgProcedure = authenticatedProcedure.use(
+	async ({ context, next }) => {
+		const orgIdHeader = context.hono.req.header("x-org-id");
+		if (orgIdHeader && !context.activeOrg) {
+			throw new ORPCError("FORBIDDEN", {
+				message: "Not an active member of this organization",
+			});
+		}
+		if (!context.activeOrg) {
+			throw new ORPCError("BAD_REQUEST", {
+				message: "Organization context required (X-Org-Id header)",
+			});
+		}
+		return next({
+			context: {
+				...context,
+				activeOrg: context.activeOrg,
+			},
+		});
+	},
+);

@@ -33,6 +33,9 @@ export const rpcOrgMemberSchema = z.object({
 	role: zOrgMemberRole,
 	status: zOrgMemberStatus,
 	hasKeyWrap: z.boolean(),
+	firstName: z.string().nullable().optional(),
+	lastName: z.string().nullable().optional(),
+	email: z.string().nullable().optional(),
 });
 
 export const rpcOrgTemplateSummarySchema = z.object({
@@ -136,5 +139,5 @@ export const rpcOrgsTemplatesCloneOutputSchema = z.object({
 		type: z.string(),
 		dataUrl: z.string().url(),
 	}),
-	placementManifest: z.unknown(),
+	placementManifest: zPlacementManifest.optional().nullable(),
 });

@@ -209,6 +209,11 @@ export async function orgsInvitesCreate(
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
+	if (parsed.data.role === "owner" && activeOrg.role !== "owner") {
+		throw new ORPCError("FORBIDDEN", {
+			message: "Only organization owners can invite members as owners",
+		});
+	}
 	const emailNorm = normalizePlacementRecipientEmail(parsed.data.email.trim());
 
 	const existing = await db

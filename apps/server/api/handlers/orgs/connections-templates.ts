@@ -1,3 +1,4 @@
+import type { PlacementManifest } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq } from "drizzle-orm";
@@ -238,6 +239,6 @@ export async function orgsTemplatesCloneToEnvelope(
 			type: "application/pdf",
 			dataUrl: presignedUrl,
 		},
-		placementManifest: row.placementManifestJson,
+		placementManifest: row.placementManifestJson as PlacementManifest | null,
 	};
 }

@@ -25,7 +25,7 @@ export type FilosignContextValue = {
 	contracts: FilosignContracts | null;
 	runtime: Runtime;
 	wasm: {
-		dilithium: DilithiumInstance;
+		dilithium?: DilithiumInstance;
 	};
 };
 

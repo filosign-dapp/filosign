@@ -26,7 +26,7 @@ type FilosignConfig = {
 	/** thirdweb embedded-wallet auth token (`useAuthToken()`). */
 	thirdwebAuthToken?: string | null;
 	wasm: {
-		dilithium: DilithiumInstance;
+		dilithium?: DilithiumInstance;
 	};
 	loader?: React.ComponentType<{ text?: string }>;
 };

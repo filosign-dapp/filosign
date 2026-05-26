@@ -60,10 +60,6 @@ export function FilosignProvider({ children }: { children: React.ReactNode }) {
 		};
 	}, []);
 
-	if (!dilithium) {
-		return <Loader />;
-	}
-
 	return (
 		<FilosignProviderBase
 			apiBaseUrl={env.VITE_SERVER_URL}

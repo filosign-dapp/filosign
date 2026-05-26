@@ -42,7 +42,8 @@ export function useSignFile() {
 			const timestamp = Math.floor(Date.now() / 1000);
 			const textEncoder = new TextEncoder();
 
-			if (!contracts || !wallet || !wasm.dilithium || !isAuthed) {
+			const dilithium = wasm.dilithium;
+			if (!contracts || !wallet || !dilithium || !isAuthed) {
 				throw new Error("not connected");
 			}
 
@@ -127,11 +128,11 @@ export function useSignFile() {
 					leafSchemaVersion: LEAF_SCHEMA_VERSION_V1,
 				});
 				const dl3Keypair = await signatures.keyGen({
-					dl: wasm.dilithium,
+					dl: dilithium,
 					seed: seed,
 				});
 				const dl3Signature = await signatures.sign({
-					dl: wasm.dilithium,
+					dl: dilithium,
 					privateKey: dl3Keypair.privateKey,
 					message: textEncoder.encode(dl3SignatureMessage),
 				});

@@ -31,8 +31,10 @@ export async function unlockSeedFromWallet(args: {
 			saltSeed,
 		});
 		const seed = await expandDeterministicSeed(seedCore32);
+		const dilithium = wasm.dilithium;
+		if (!dilithium) return null;
 		const keygenData = await seedKeyGen(new Uint8Array(Array.from(seed)), {
-			dl: wasm.dilithium,
+			dl: dilithium,
 		});
 
 		if (

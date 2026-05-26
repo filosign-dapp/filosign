@@ -5,6 +5,7 @@ import { isHex } from "viem";
 import db from "@/lib/platform/db";
 import { fsContracts } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { tryExecuteSettlementPayout } from "./utils/execute-payout";
 import { syncSettlementPayoutFromChain } from "./utils/sync-from-chain";
 
@@ -91,19 +92,34 @@ export async function settlementsListByFile(
 		});
 	}
 
-	return rows.map((r) => ({
-		id: r.id,
-		onChainRuleId: r.onChainRuleId.toString(),
-		recipientWallet: r.recipientWallet,
-		recipientSource: r.recipientSource,
-		amount: r.amount,
-		tokenAddress: r.tokenAddress,
-		releaseType: r.releaseType,
-		status: r.status,
-		payoutTxHash: r.payoutTxHash ?? null,
-		lastError: r.lastError ?? null,
-		executedAt: r.executedAt?.toISOString() ?? null,
-	}));
+	const validator = fsContracts.FSPaymentValidator;
+
+	return Promise.all(
+		rows.map(async (r) => {
+			let canExecuteOnChain: boolean | null = null;
+			if (r.status !== "executed" && validator) {
+				const res = await tryCatch(
+					validator.read.canExecute([r.onChainRuleId]),
+				);
+				canExecuteOnChain = res.error ? null : res.data;
+			}
+
+			return {
+				id: r.id,
+				onChainRuleId: r.onChainRuleId.toString(),
+				recipientWallet: r.recipientWallet,
+				recipientSource: r.recipientSource,
+				amount: r.amount,
+				tokenAddress: r.tokenAddress,
+				releaseType: r.releaseType,
+				status: r.status,
+				payoutTxHash: r.payoutTxHash ?? null,
+				lastError: r.lastError ?? null,
+				executedAt: r.executedAt?.toISOString() ?? null,
+				canExecuteOnChain,
+			};
+		}),
+	);
 }
 
 export async function settlementsTrySettle(

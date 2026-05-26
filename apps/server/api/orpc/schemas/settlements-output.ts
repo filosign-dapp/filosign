@@ -30,5 +30,7 @@ export const rpcSettlementsListByFileOutputSchema = z.array(
 		payoutTxHash: z.string().nullable(),
 		lastError: z.string().nullable(),
 		executedAt: z.string().nullable(),
+		/** On-chain `canExecute` when rule is not executed; null if executed or chain unavailable. */
+		canExecuteOnChain: z.boolean().nullable(),
 	}),
 );

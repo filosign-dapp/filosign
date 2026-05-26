@@ -1,6 +1,6 @@
 import { $ } from "bun";
 import hre from "hardhat";
-import { type Chain, getAddress, toHex } from "viem";
+import { type Chain, getAddress, parseEther, toHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { hardhat } from "viem/chains";
 import type { ChainKey } from "../definitions/index.js";
@@ -10,8 +10,8 @@ const DEFINITIONS_FILE_SUFFIX = " as const;";
 
 const CHAIN_ID = {
 	local: 31337,
-	testnet: 84532, // Base Sepolia
-	mainnet: 8453, // Base
+	testnet: 84532,
+	mainnet: 8453,
 } as const;
 
 const CHAIN_NUMBER_TO_KEY: Record<number, ChainKey> = {
@@ -27,7 +27,10 @@ const LOCAL_MOCK_USDC_RECIPIENT = getAddress(
 const LOCAL_MOCK_USDC_MINT_AMOUNT = 10_000_000n * 10n ** 6n;
 const MOCK_USDC_DEF_PATH = "definitions/mock-usdc.ts";
 
-// Types
+const HARDHAT_LOCAL_SERVER = getAddress(
+	"0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+);
+
 type MockUsdBundle = {
 	readonly address: `0x${string}`;
 	abi: unknown;
@@ -38,7 +41,6 @@ type PublicClientDeployed = Awaited<
 	ReturnType<typeof hre.viem.getPublicClient>
 >;
 
-// Pure helpers & env vars
 function chainKeyFromId(chainId: number): ChainKey {
 	const key = CHAIN_NUMBER_TO_KEY[chainId];
 	if (!key) throw new Error(`Unsupported chainId ${chainId}`);
@@ -52,9 +54,7 @@ function sleep(ms: number) {
 function requireChainId(): number {
 	const chainId = hre.network.config.chainId;
 	if (!chainId) {
-		console.error(
-			"No chainId found in network config, how will we deploy to this network?",
-		);
+		console.error("No chainId in network config");
 		process.exit(1);
 	}
 	return chainId;
@@ -67,6 +67,37 @@ function requireDeployerPrivateKey(): `0x${string}` {
 		process.exit(1);
 	}
 	return key;
+}
+
+function resolveServerAddress(chainId: number): `0x${string}` {
+	const raw = process.env.FC_SERVER_ADDRESS;
+	if (raw) return getAddress(raw);
+	if (chainId === CHAIN_ID.local) {
+		console.warn(
+			"FC_SERVER_ADDRESS not set — using Hardhat account #1 for local server",
+		);
+		return HARDHAT_LOCAL_SERVER;
+	}
+	console.error("FC_SERVER_ADDRESS is required for deployment");
+	process.exit(1);
+}
+
+async function fundLocalServer(
+	deployer: WalletDeployed,
+	publicClient: PublicClientDeployed,
+	serverAddress: `0x${string}`,
+) {
+	const min = parseEther("1");
+	const balance = await publicClient.getBalance({ address: serverAddress });
+	if (balance >= min) return;
+
+	const hash = await deployer.sendTransaction({
+		account: deployer.account,
+		to: serverAddress,
+		value: parseEther("100"),
+	});
+	await publicClient.waitForTransactionReceipt({ hash });
+	console.log("Funded server relayer:", serverAddress);
 }
 
 function definitionsFileBody(singleChainDefinitions: unknown) {
@@ -88,40 +119,32 @@ function viemChainOverride(): { chain: Chain } | undefined {
 	return undefined;
 }
 
-async function deployFsManager(deployer: WalletDeployed) {
-	const manager = await hre.viem.deployContract(
-		"FSManager",
-		[deployer.account.address],
+async function deployFileRegistry(
+	deployer: WalletDeployed,
+	serverAddress: `0x${string}`,
+) {
+	const fileRegistry = await hre.viem.deployContract(
+		"FSFileRegistry",
+		[serverAddress],
 		{ client: { wallet: deployer } },
 	);
-	console.log("FSManager deployed at:", manager.address, {
-		treasury: deployer.account.address,
+	console.log("FSFileRegistry deployed at:", fileRegistry.address, {
+		server: serverAddress,
+		deployer: deployer.account.address,
 	});
-	return manager;
+	return fileRegistry;
 }
 
-type FsManagerDeployed = Awaited<ReturnType<typeof deployFsManager>>;
-
-async function assertManagerBytecodeLive(managerAddress: `0x${string}`) {
+async function assertBytecodeLive(address: `0x${string}`) {
 	await sleep(3000);
 	const publicClient = await hre.viem.getPublicClient(viemChainOverride());
-	const code = await publicClient.getCode({ address: managerAddress });
+	const code = await publicClient.getCode({ address });
 	if (!code || code === "0x") {
-		console.error("Deployment failed - no code at manager address");
+		console.error("Deployment failed - no code at", address);
 		process.exit(1);
 	}
 	return publicClient;
 }
-
-async function attachManagerChildren(manager: FsManagerDeployed) {
-	const [fileRegistry, keyRegistry] = await Promise.all([
-		hre.viem.getContractAt("FSFileRegistry", await manager.read.fileRegistry()),
-		hre.viem.getContractAt("FSKeyRegistry", await manager.read.keyRegistry()),
-	]);
-	return { fileRegistry, keyRegistry };
-}
-
-type AttachedContracts = Awaited<ReturnType<typeof attachManagerChildren>>;
 
 async function deployPaymentValidator(
 	deployer: WalletDeployed,
@@ -137,10 +160,6 @@ async function deployPaymentValidator(
 	return validator;
 }
 
-type PaymentValidatorDeployed = Awaited<
-	ReturnType<typeof deployPaymentValidator>
->;
-
 async function deployAndFundLocalMockUsd(
 	deployer: WalletDeployed,
 	publicClient: PublicClientDeployed,
@@ -154,19 +173,11 @@ async function deployAndFundLocalMockUsd(
 		address: getAddress(mockUsdc.address),
 		abi: mockUsdc.abi,
 	};
-	console.log("MockUSDCToken deployed at:", bundle.address);
-
 	const mintHash = await mockUsdc.write.mint([
 		LOCAL_MOCK_USDC_RECIPIENT,
 		LOCAL_MOCK_USDC_MINT_AMOUNT,
 	]);
 	await publicClient.waitForTransactionReceipt({ hash: mintHash });
-	console.log("MockUSDC minted to test wallet:", {
-		to: LOCAL_MOCK_USDC_RECIPIENT,
-		amount: LOCAL_MOCK_USDC_MINT_AMOUNT.toString(),
-		txHash: mintHash,
-	});
-
 	return bundle;
 }
 
@@ -175,65 +186,23 @@ async function writeMockUsdAddressFile(address: `0x${string}`) {
 		"/** Auto-generated by scripts/deploy.ts (local Hardhat) — do not edit */\n" +
 		`export const LOCAL_MOCK_USDC_ADDRESS = ${JSON.stringify(address)} as const;\n`;
 	await Bun.write(MOCK_USDC_DEF_PATH, body);
-	console.log(`Wrote ${MOCK_USDC_DEF_PATH}`);
 }
 
-function buildDefinitionsManifest(args: {
-	manager: FsManagerDeployed;
-	fileRegistry: AttachedContracts["fileRegistry"];
-	keyRegistry: AttachedContracts["keyRegistry"];
-	paymentValidator: PaymentValidatorDeployed;
+async function verifyOnBaseExplorerIfApplicable(args: {
+	networkName: string;
+	fileRegistry: Awaited<ReturnType<typeof deployFileRegistry>>;
+	paymentValidator: Awaited<ReturnType<typeof deployPaymentValidator>>;
+	serverAddress: `0x${string}`;
+	fileRegistryAddress: `0x${string}`;
 	chainId: number;
-	mockUsd: MockUsdBundle | undefined;
 }) {
-	const {
-		manager,
-		fileRegistry,
-		keyRegistry,
-		paymentValidator,
-		chainId,
-		mockUsd,
-	} = args;
-
-	return {
-		FSManager: abiFromContract(manager),
-		FSFileRegistry: abiFromContract(fileRegistry),
-		FSKeyRegistry: abiFromContract(keyRegistry),
-		FSPaymentValidator: abiFromContract(paymentValidator),
-		...(chainId === CHAIN_ID.local && mockUsd ? { MockUSDC: mockUsd } : {}),
-	} as const;
-}
-
-async function writeChainDefinitions(
-	chainId: number,
-	definitions: ReturnType<typeof buildDefinitionsManifest>,
-) {
-	const key = chainKeyFromId(chainId);
-	const blob = definitionsFileBody({
-		[toHex(chainId)]: definitions,
-	});
-	const path = `definitions/${key}.ts`;
-	await Bun.write(path, blob);
-	console.log(`Definitions written to ${path}`);
-	console.log({ chain: key, chainId });
-}
-
-async function verifyOnBaseExplorerIfApplicable(
-	args: {
-		networkName: string;
-		deployer: WalletDeployed;
-		manager: FsManagerDeployed;
-	} & AttachedContracts,
-) {
-	const { networkName, deployer, manager, fileRegistry, keyRegistry } = args;
+	const { networkName, fileRegistry, paymentValidator, serverAddress } = args;
 	if (!BASE_BLOCK_EXPLORER_NETWORKS.has(networkName)) return;
 
 	try {
-		await $`bunx --bun hardhat verify --network ${networkName} ${manager.address} ${deployer.account.address} --force`;
-		for (const addr of [fileRegistry.address, keyRegistry.address]) {
-			await sleep(1000);
-			await $`bunx --bun hardhat verify --network ${networkName} ${addr} --force`;
-		}
+		await $`bunx --bun hardhat verify --network ${networkName} ${fileRegistry.address} ${serverAddress} --force`;
+		await sleep(1000);
+		await $`bunx --bun hardhat verify --network ${networkName} ${paymentValidator.address} ${args.fileRegistryAddress} ${String(args.chainId)} --force`;
 	} catch (_) {}
 	console.log(`Contracts verified on ${networkName} block explorer`);
 }
@@ -244,12 +213,15 @@ async function main() {
 		privateKeyToAccount(requireDeployerPrivateKey()).address,
 		viemChainOverride(),
 	);
+	const serverAddress = resolveServerAddress(chainId);
 
-	console.log("Deploying contracts as", { address: deployer.account.address });
+	console.log("Deploying contracts as", {
+		deployer: deployer.account.address,
+		server: serverAddress,
+	});
 
-	const manager = await deployFsManager(deployer);
-	const publicClient = await assertManagerBytecodeLive(manager.address);
-	const { fileRegistry, keyRegistry } = await attachManagerChildren(manager);
+	const fileRegistry = await deployFileRegistry(deployer, serverAddress);
+	const publicClient = await assertBytecodeLive(fileRegistry.address);
 	const paymentValidator = await deployPaymentValidator(
 		deployer,
 		fileRegistry.address,
@@ -258,30 +230,28 @@ async function main() {
 
 	let mockUsd: MockUsdBundle | undefined;
 	if (chainId === CHAIN_ID.local) {
+		await fundLocalServer(deployer, publicClient, serverAddress);
 		mockUsd = await deployAndFundLocalMockUsd(deployer, publicClient);
 		await writeMockUsdAddressFile(mockUsd.address);
 	}
 
-	console.log("Contracts deployed");
+	const definitions = {
+		FSFileRegistry: abiFromContract(fileRegistry),
+		FSPaymentValidator: abiFromContract(paymentValidator),
+		...(chainId === CHAIN_ID.local && mockUsd ? { MockUSDC: mockUsd } : {}),
+	} as const;
 
-	await writeChainDefinitions(
-		chainId,
-		buildDefinitionsManifest({
-			manager,
-			fileRegistry,
-			keyRegistry,
-			paymentValidator,
-			chainId,
-			mockUsd,
-		}),
-	);
+	const path = `definitions/${chainKeyFromId(chainId)}.ts`;
+	await Bun.write(path, definitionsFileBody({ [toHex(chainId)]: definitions }));
+	console.log(`Definitions written to ${path}`);
 
 	await verifyOnBaseExplorerIfApplicable({
 		networkName: hre.network.name,
-		deployer,
-		manager,
 		fileRegistry,
-		keyRegistry,
+		paymentValidator,
+		serverAddress,
+		fileRegistryAddress: fileRegistry.address,
+		chainId,
 	});
 }
 

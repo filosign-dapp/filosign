@@ -9,6 +9,8 @@ export {
 export {
 	computeCidIdentifier,
 	eip712signature,
+	FILOSIGN_REGISTRATION_DOMAIN_NAME,
+	filosignRegistrationSignature,
 	parsePieceCid,
 	rebuildPieceCid,
 } from "./services/utils";

@@ -43,7 +43,6 @@ const VIEM_CHAIN_BY_KEY = {
 
 type Wallet = WalletClient<Transport, ViemChain, Account>;
 
-/** Public + wallet client bundle passed to `getContract` (see `getKeyedClient`). */
 type FilosignKeyedContractClient = {
 	public: PublicClient<Transport, ViemChain>;
 	wallet: WalletClient<Transport, ViemChain, Account>;
@@ -51,15 +50,9 @@ type FilosignKeyedContractClient = {
 
 type CoreDefinitionContracts = Pick<
 	ChainDefinitionsEntry,
-	"FSManager" | "FSFileRegistry" | "FSKeyRegistry"
+	"FSFileRegistry" | "FSPaymentValidator"
 >;
 
-type PaymentValidatorDefinition = Pick<
-	ChainDefinitionsEntry,
-	"FSPaymentValidator"
->["FSPaymentValidator"];
-
-// Mapped type keeps TS7056 in check vs. a large inferred union.
 export type FilosignContracts<T extends Wallet = Wallet> = {
 	[K in keyof CoreDefinitionContracts]: GetContractReturnType<
 		CoreDefinitionContracts[K]["abi"],
@@ -69,11 +62,6 @@ export type FilosignContracts<T extends Wallet = Wallet> = {
 			: Address
 	>;
 } & {
-	FSPaymentValidator?: GetContractReturnType<
-		PaymentValidatorDefinition["abi"],
-		FilosignKeyedContractClient,
-		PaymentValidatorDefinition["address"]
-	>;
 	$client: T;
 };
 
@@ -93,28 +81,13 @@ export function getContracts<T extends Wallet>(options: {
 	chainKey: ChainKey;
 }): FilosignContracts<T> {
 	const { client, chainKey } = options;
-
-	if (!client.transport || !client.chain || !client.account) {
-		console.log(
-			"Ensure client is properly initialized with transport, chain and account",
-		);
-	}
-
 	const contractDefinitions = getDefinitionsEntry(chainKey);
 	const bundledClient = getKeyedClient(client, chainKey);
 
 	return {
-		FSManager: getContract({
-			client: bundledClient,
-			...contractDefinitions.FSManager,
-		}),
 		FSFileRegistry: getContract({
 			client: bundledClient,
 			...contractDefinitions.FSFileRegistry,
-		}),
-		FSKeyRegistry: getContract({
-			client: bundledClient,
-			...contractDefinitions.FSKeyRegistry,
 		}),
 		FSPaymentValidator: getContract({
 			client: bundledClient,

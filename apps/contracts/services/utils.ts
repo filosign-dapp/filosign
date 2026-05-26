@@ -42,12 +42,29 @@ export function computeCidIdentifier(pieceCid: string) {
 	return keccak256(encodePacked(["string"], [pieceCid]));
 }
 
+export const FILOSIGN_REGISTRATION_DOMAIN_NAME =
+	"FilosignRegistration" as const;
+
+export async function filosignRegistrationSignature(
+	contracts: FilosignContracts,
+	args: Omit<SignTypedDataParameters, "domain" | "privateKey">,
+) {
+	const domain = {
+		name: FILOSIGN_REGISTRATION_DOMAIN_NAME,
+		version: "1",
+		chainId: contracts.$client.chain.id,
+		verifyingContract: contracts.FSFileRegistry.address,
+	};
+
+	return contracts.$client.signTypedData({
+		domain,
+		...args,
+	});
+}
+
 export async function eip712signature(
 	contracts: FilosignContracts,
-	contractName: keyof Pick<
-		FilosignContracts,
-		"FSFileRegistry" | "FSKeyRegistry" | "FSManager"
-	>,
+	contractName: keyof Pick<FilosignContracts, "FSFileRegistry">,
 	args: Omit<SignTypedDataParameters, "domain" | "privateKey">,
 ) {
 	// const domain = {

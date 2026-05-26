@@ -1,9 +1,9 @@
 import {
 	buildRegistrationEmailCommitments,
 	computePlacementCommitment,
+	hashAuthSubjectCommitment,
 	hashNormalizedSignerEmail,
 	hashOrgIdCommitment,
-	hashPrivySubjectCommitment,
 	normalizePlacementRecipientEmail,
 	ZERO_ORG_ID_COMMITMENT,
 	zPlacementManifest,
@@ -37,7 +37,6 @@ import {
 } from "@/lib/platform/email/invites";
 import { fsContracts } from "@/lib/platform/evm";
 import { bucket } from "@/lib/platform/s3/client";
-import { getOrCreateUserDataset } from "@/lib/platform/synapse";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { normalizedViewerEmailsForRegister } from "./file-invites";
 
@@ -79,6 +78,9 @@ export const zFileRegisterBody = z.object({
 	orgKemCiphertext: zHexString().optional(),
 	orgEncryptedEncryptionKey: zHexString().optional(),
 	settlementRules: zSettlementRulesRegisterBatch.optional(),
+	displayName: z.string().min(1).max(512),
+	mimeType: z.string().min(1).max(255),
+	ciphertextByteLength: z.number().int().positive(),
 });
 
 export async function filesRegister(
@@ -105,6 +107,9 @@ export async function filesRegister(
 		orgKemCiphertext,
 		orgEncryptedEncryptionKey,
 		settlementRules = [],
+		displayName,
+		mimeType,
+		ciphertextByteLength,
 	} = parsedBody.data;
 
 	if (organizationId) {
@@ -152,7 +157,7 @@ export async function filesRegister(
 	const [senderUser] = await db
 		.select({
 			email: users.email,
-			privyDid: users.privyDid,
+			authProviderId: users.authProviderId,
 		})
 		.from(users)
 		.where(eq(users.walletAddress, getAddress(sender)));
@@ -170,8 +175,8 @@ export async function filesRegister(
 	const senderEmailCommitment = hashNormalizedSignerEmail(
 		normalizePlacementRecipientEmail(senderEmailRaw),
 	);
-	const senderPrivySubjectCommitment = hashPrivySubjectCommitment(
-		senderUser.privyDid,
+	const senderPrivySubjectCommitment = hashAuthSubjectCommitment(
+		senderUser.authProviderId,
 	);
 
 	const valid = await tryCatch(
@@ -212,8 +217,7 @@ export async function filesRegister(
 		});
 	}
 
-	const bytes = await file.arrayBuffer();
-	if (bytes.byteLength === 0) {
+	if (file.size === 0) {
 		throw new ORPCError("BAD_REQUEST", { message: "Uploaded file is empty" });
 	}
 
@@ -240,8 +244,6 @@ export async function filesRegister(
 		placementCommitment,
 	]);
 
-	const ds = await getOrCreateUserDataset(sender);
-
 	if (settlementRules.length > 0) {
 		await assertSettlementRecipientsAllowlisted({
 			participantWallets: participants.map((p) => getAddress(p.address)),
@@ -260,7 +262,7 @@ export async function filesRegister(
 			.insert(files)
 			.values({
 				pieceCid,
-				status: "foc",
+				status: "s3",
 				sender,
 				createdByWallet: getAddress(sender),
 				organizationId: organizationId ?? null,
@@ -273,6 +275,9 @@ export async function filesRegister(
 				coldInviteCount: slotCounts.coldInviteCount,
 				signerSlotCount: slotCounts.signerSlotCount,
 				recipientSlotCount: slotCounts.recipientSlotCount,
+				displayName,
+				mimeType,
+				ciphertextByteLength,
 				createdAt: new Date(timestamp * 1000),
 			})
 			.returning();
@@ -388,24 +393,6 @@ export async function filesRegister(
 			errors: coldEmailFailures.map((r) => r.error?.message),
 		});
 	}
-
-	ds.upload(new Uint8Array(bytes), { pieceMetadata: {} })
-		.then(async (uploadResult) => {
-			if (uploadResult.pieceCid.toString() !== pieceCid) {
-				await db.delete(files).where(eq(files.pieceCid, pieceCid));
-			}
-		})
-		.catch((err) => {
-			console.warn(
-				"Filecoin addPieces failed (file remains in S3):",
-				err?.message ?? err,
-			);
-			console.warn("[files.upload] synapse upload failed", {
-				pieceCid,
-				sender,
-				error: err?.message ?? String(err),
-			});
-		});
 
 	trackServerEvent({
 		distinctId: getAddress(sender),

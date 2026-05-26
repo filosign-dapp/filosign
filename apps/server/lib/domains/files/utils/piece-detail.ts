@@ -1,5 +1,5 @@
 import { ORPCError } from "@orpc/server";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs";
@@ -16,7 +16,7 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 			organizationId: files.organizationId,
 			orgKemCiphertext: files.orgKemCiphertext,
 			orgEncryptedEncryptionKey: files.orgEncryptedEncryptionKey,
-			status: sql<"foc">`'foc'`.as("status"),
+			status: files.status,
 			onchainTxHash: files.onchainTxHash,
 			createdAt: files.createdAt,
 			placementCommitment: files.placementCommitment,

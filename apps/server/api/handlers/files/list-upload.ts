@@ -1,12 +1,11 @@
 import { ORPCError } from "@orpc/server";
-import { and, desc, eq, ne, sql } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import type { Address } from "viem";
-import { getAddress } from "viem";
 import z from "zod";
 import db from "@/lib/platform/db";
 import { bucket } from "@/lib/platform/s3/client";
 
-const { files, fileParticipants, shareApprovals } = db.schema;
+const { files, fileParticipants } = db.schema;
 
 export const zUploadStartBody = z.object({
 	pieceCid: z.string().min(1),
@@ -34,7 +33,11 @@ export async function filesListSent(userWallet: Address) {
 		.select({
 			pieceCid: files.pieceCid,
 			sender: files.sender,
-			status: sql<"foc">`'foc'`.as("status"),
+			status: files.status,
+			displayName: files.displayName,
+			mimeType: files.mimeType,
+			ciphertextByteLength: files.ciphertextByteLength,
+			createdAt: files.createdAt,
 		})
 		.from(files)
 		.where(eq(files.sender, userWallet));
@@ -46,7 +49,11 @@ export async function filesListReceived(userWallet: Address) {
 		.select({
 			pieceCid: files.pieceCid,
 			sender: files.sender,
-			status: sql<"foc">`'foc'`.as("status"),
+			status: files.status,
+			displayName: files.displayName,
+			mimeType: files.mimeType,
+			ciphertextByteLength: files.ciphertextByteLength,
+			createdAt: files.createdAt,
 			encryptedEncryptionKey: fileParticipants.encryptedEncryptionKey,
 			kemCiphertext: fileParticipants.kemCiphertext,
 		})
@@ -62,40 +69,7 @@ export async function filesListReceived(userWallet: Address) {
 			),
 		);
 
-	const approvalRows = await db
-		.select({
-			senderWallet: shareApprovals.senderWallet,
-			active: shareApprovals.active,
-		})
-		.from(shareApprovals)
-		.where(eq(shareApprovals.recipientWallet, userWallet))
-		.orderBy(desc(shareApprovals.createdAt));
-
-	const latestApprovalBySender = new Map<string, boolean>();
-	for (const row of approvalRows) {
-		const sender = getAddress(row.senderWallet).toLowerCase();
-		if (!latestApprovalBySender.has(sender)) {
-			latestApprovalBySender.set(sender, row.active);
-		}
-	}
-
-	type ReceivedInboxEntry = (typeof receivedFiles)[number] & {
-		inboxCategory: "primary" | "pending";
-	};
-	const primary: ReceivedInboxEntry[] = [];
-	const pending: ReceivedInboxEntry[] = [];
-	for (const file of receivedFiles) {
-		const sender = getAddress(file.sender).toLowerCase();
-		const isApproved = latestApprovalBySender.get(sender) === true;
-		const entry = {
-			...file,
-			inboxCategory: isApproved ? ("primary" as const) : ("pending" as const),
-		};
-		if (isApproved) primary.push(entry);
-		else pending.push(entry);
-	}
-	const categorizedFiles: ReceivedInboxEntry[] = [...primary, ...pending];
-	return { files: categorizedFiles, primary, pending };
+	return { files: receivedFiles };
 }
 
 export async function filesListOrg(organizationId: string) {
@@ -104,7 +78,10 @@ export async function filesListOrg(organizationId: string) {
 			pieceCid: files.pieceCid,
 			sender: files.sender,
 			organizationId: files.organizationId,
-			status: sql<"foc">`'foc'`.as("status"),
+			status: files.status,
+			displayName: files.displayName,
+			mimeType: files.mimeType,
+			ciphertextByteLength: files.ciphertextByteLength,
 			createdAt: files.createdAt,
 		})
 		.from(files)

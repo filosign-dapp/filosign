@@ -1,7 +1,7 @@
 import {
 	FILE_ACK_COLD_CLAIM_SENTINEL_V1,
+	hashAuthSubjectCommitment,
 	hashNormalizedSignerEmail,
-	hashPrivySubjectCommitment,
 	normalizePlacementRecipientEmail,
 	zPlacementManifest,
 } from "@filosign/shared";
@@ -66,7 +66,7 @@ export async function pieceAck(args: {
 		.select({
 			wallet: fileParticipants.wallet,
 			email: users.email,
-			privyDid: users.privyDid,
+			authProviderId: users.authProviderId,
 		})
 		.from(fileParticipants)
 		.innerJoin(users, eq(fileParticipants.wallet, users.walletAddress))
@@ -103,8 +103,8 @@ export async function pieceAck(args: {
 	}
 	const viewerAckEmail = normalizePlacementRecipientEmail(viewerAckEmailRaw);
 	const viewerEmailCommitment = hashNormalizedSignerEmail(viewerAckEmail);
-	const privySubjectCommitment = hashPrivySubjectCommitment(
-		participantRecord.privyDid,
+	const privySubjectCommitment = hashAuthSubjectCommitment(
+		participantRecord.authProviderId,
 	);
 
 	const valid = await FSFileRegistry.read.validateFileAckSignature([
@@ -328,7 +328,7 @@ export async function pieceSignDraftPut(args: {
 
 /** --- s3 --- */
 
-export async function pieceS3Url(userWallet: Address, pieceCid: string) {
+export async function pieceDownloadUrl(userWallet: Address, pieceCid: string) {
 	if (!pieceCid || typeof pieceCid !== "string") {
 		throw new ORPCError("BAD_REQUEST", { message: "Invalid pieceCid" });
 	}

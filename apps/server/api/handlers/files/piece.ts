@@ -2,7 +2,7 @@ export {
 	pieceAck,
 	pieceComplianceBundle,
 	pieceDetail,
-	pieceS3Url,
+	pieceDownloadUrl,
 	pieceSignDraftGet,
 	pieceSignDraftPut,
 } from "@/lib/domains/files/piece";

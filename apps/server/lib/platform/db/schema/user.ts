@@ -18,7 +18,7 @@ export const users = t.pgTable("users", {
 
 	/**non core here */
 	lastActiveAt: t.timestamp({ withTimezone: true }),
-	privyDid: t.text().unique().notNull(),
+	authProviderId: t.text().unique().notNull(),
 	email: t.text().unique().notNull(),
 	mobile: t.text(),
 	username: t.text().unique(),

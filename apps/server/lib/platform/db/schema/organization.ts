@@ -14,11 +14,7 @@ export type OrgMemberRole = (typeof orgMemberRoles)[number];
 export const orgMemberStatuses = ["invited", "active", "removed"] as const;
 export type OrgMemberStatus = (typeof orgMemberStatuses)[number];
 
-export const orgConnectionStatuses = [
-	"pending_approval",
-	"active",
-	"inactive",
-] as const;
+export const orgConnectionStatuses = ["active", "inactive"] as const;
 export type OrgConnectionStatus = (typeof orgConnectionStatuses)[number];
 
 export const orgInviteStatuses = [
@@ -152,11 +148,7 @@ export const organizationConnections = t.pgTable(
 		anchorSenderWallet: tEvmAddress()
 			.notNull()
 			.references(() => users.walletAddress),
-		shareApprovalId: t.uuid(),
-		status: t
-			.text({ enum: orgConnectionStatuses })
-			.notNull()
-			.default("pending_approval"),
+		status: t.text({ enum: orgConnectionStatuses }).notNull().default("active"),
 		...timestamps,
 	},
 	(table) => [

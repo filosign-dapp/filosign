@@ -15,9 +15,6 @@ export function createFilosignRpcQueryUtils(client: AppRouterClient) {
 		runtime: createProcedureUtils(client.runtime, {
 			path: [...ROOT, "runtime"],
 		}),
-		auth: createTanstackQueryUtils(client.auth, {
-			path: [...ROOT, "auth"],
-		}),
 		tx: createTanstackQueryUtils(client.tx, {
 			path: [...ROOT, "tx"],
 		}),

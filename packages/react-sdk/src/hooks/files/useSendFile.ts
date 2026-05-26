@@ -330,9 +330,12 @@ export function useSendFile() {
 					: {}),
 			};
 
-			await rpcQuery.files.register.call(
-				requestPayload as Record<string, unknown>,
-			);
+			await rpcQuery.files.register.call({
+				...requestPayload,
+				displayName: metadata.name,
+				mimeType: "application/pdf",
+				ciphertextByteLength: encryptedData.byteLength,
+			} as Record<string, unknown>);
 
 			void queryClient.invalidateQueries({
 				queryKey: rpcQuery.files.list.sent.key(),

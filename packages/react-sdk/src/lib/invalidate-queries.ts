@@ -2,14 +2,19 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { FilosignRpcQueryUtils } from "../context/FilosignContext";
 import { filosignKeys } from "./query-keys";
 
-/** Refetch `useIsLoggedIn` after seed is set (unlock / recovery). On-chain registry unchanged. */
+/** Refetch crypto unlock state after seed is set (unlock / recovery). */
 export async function invalidateSessionQueries(
 	queryClient: QueryClient,
 	walletAddress: string | undefined,
 ) {
-	await queryClient.invalidateQueries({
-		queryKey: filosignKeys.isLoggedIn(walletAddress),
-	});
+	await Promise.all([
+		queryClient.invalidateQueries({
+			queryKey: filosignKeys.cryptoUnlocked(walletAddress),
+		}),
+		queryClient.invalidateQueries({
+			queryKey: filosignKeys.authedApi(walletAddress),
+		}),
+	]);
 }
 
 /** Refetch on-chain registry + session (e.g. after `users.register`). */
@@ -43,22 +48,17 @@ export function invalidateEntitlements(
 	});
 }
 
-/** Inbox lists used by notifications (received files + sharing requests). */
+/** Inbox lists used by notifications (received files). */
 export function invalidateInboxQueries(
 	queryClient: QueryClient,
 	rpcQuery: FilosignRpcQueryUtils,
 ) {
-	return Promise.all([
-		queryClient.invalidateQueries({
-			queryKey: rpcQuery.files.list.received.key(),
-		}),
-		queryClient.invalidateQueries({
-			queryKey: rpcQuery.sharing.receivedRequests.key(),
-		}),
-	]);
+	return queryClient.invalidateQueries({
+		queryKey: rpcQuery.files.list.received.key(),
+	});
 }
 
-/** All sharing-domain queries (sendable, receivable, requests, email invites, derived contacts). */
+/** Email invite queries under sharing. */
 export function invalidateSharingQueries(
 	queryClient: QueryClient,
 	rpcQuery: FilosignRpcQueryUtils,
@@ -78,30 +78,18 @@ export function invalidateOrgsQueries(
 	});
 }
 
-/** Connections → Contacts tab: sharing + profile lookups by address. */
+/** Connections page: email invites. */
 export function invalidateConnectionsContactsTab(
 	queryClient: QueryClient,
 	rpcQuery: FilosignRpcQueryUtils,
 ) {
-	return Promise.all([
-		invalidateSharingQueries(queryClient, rpcQuery),
-		queryClient.invalidateQueries({
-			queryKey: rpcQuery.users.profile.key(),
-		}),
-	]);
+	return invalidateSharingQueries(queryClient, rpcQuery);
 }
 
-/** Connections → Requests tab: pending incoming/outgoing share requests. */
+/** @deprecated Share requests removed — use {@link invalidateSharingQueries}. */
 export function invalidateConnectionsRequestsTab(
 	queryClient: QueryClient,
 	rpcQuery: FilosignRpcQueryUtils,
 ) {
-	return Promise.all([
-		queryClient.invalidateQueries({
-			queryKey: rpcQuery.sharing.receivedRequests.key(),
-		}),
-		queryClient.invalidateQueries({
-			queryKey: rpcQuery.sharing.sentRequests.key(),
-		}),
-	]);
+	return invalidateSharingQueries(queryClient, rpcQuery);
 }

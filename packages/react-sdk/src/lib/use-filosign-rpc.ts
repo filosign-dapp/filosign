@@ -7,7 +7,7 @@ import {
 export type UseFilosignRpcOptions = UseAuthedApiOptions;
 
 /**
- * Filosign RPC client, oRPC TanStack helpers (`rpcQuery`), and JWT session gate.
+ * Filosign RPC client, oRPC TanStack helpers (`rpcQuery`), and thirdweb session gate.
  * Use `rpcQuery.*.queryOptions()` / `mutationOptions()` for API calls; gate with `isAuthed`.
  */
 export function useFilosignRpc(options?: UseFilosignRpcOptions) {

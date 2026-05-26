@@ -1,8 +1,3 @@
-import {
-	isAccessJwtUsable,
-	readStoredAccessJwt,
-	writeStoredAccessJwt,
-} from "@filosign/auth/client";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { AppRouterClient } from "./app-router-types";
@@ -12,7 +7,7 @@ export function normalizeApiBaseUrl(apiBaseUrl: string) {
 }
 
 export class FilosignSession {
-	private token: string | null = null;
+	private thirdwebAuthToken: string | null = null;
 	private activeOrgId: string | null = null;
 	private walletAddress: string | null = null;
 
@@ -38,61 +33,29 @@ export class FilosignSession {
 		return this.activeOrgId;
 	}
 
-	/** Re-hydrate access JWT from sessionStorage when the connected wallet changes. */
 	bindWallet(walletAddress: string | null | undefined) {
-		const next = walletAddress?.trim() ? walletAddress.trim() : null;
-		if (next === this.walletAddress) return;
-		this.walletAddress = next;
-
-		if (!next) {
-			this.token = null;
-			return;
-		}
-
-		const stored = readStoredAccessJwt(next);
-		if (stored && isAccessJwtUsable(stored, next)) {
-			this.token = stored;
-			return;
-		}
-
-		this.token = null;
-		writeStoredAccessJwt(next, null);
+		this.walletAddress = walletAddress?.trim() ? walletAddress.trim() : null;
 	}
 
-	setJwt(value: string | null | undefined, walletAddress?: string | null) {
-		const wallet = walletAddress ?? this.walletAddress;
-		if (value === null || value === undefined) {
-			this.token = null;
-			if (wallet) writeStoredAccessJwt(wallet, null);
-			return;
-		}
-		this.token = value;
-		if (wallet) writeStoredAccessJwt(wallet, value);
+	getWalletAddress(): string | null {
+		return this.walletAddress;
 	}
 
-	getJwt(): string | null {
-		return this.token;
+	setThirdwebAuthToken(value: string | null | undefined) {
+		this.thirdwebAuthToken = value?.trim() ? value.trim() : null;
 	}
 
-	hasValidAccessJwt(walletAddress?: string | null): boolean {
-		const wallet = walletAddress ?? this.walletAddress;
-		if (!this.token || !wallet) return false;
-		return isAccessJwtUsable(this.token, wallet);
+	getThirdwebAuthToken(): string | null {
+		return this.thirdwebAuthToken;
 	}
 
-	get jwtExists(): boolean {
-		return this.hasValidAccessJwt();
-	}
-
-	ensureJwt() {
-		if (!this.jwtExists) {
-			throw new Error("JWT token is missing - user is not logged in");
-		}
+	hasThirdwebSession(): boolean {
+		return Boolean(this.thirdwebAuthToken && this.walletAddress);
 	}
 
 	getAuthorizationValue(): string | undefined {
-		if (!this.jwtExists) return undefined;
-		return `Bearer ${this.token}`;
+		if (!this.thirdwebAuthToken) return undefined;
+		return `Bearer ${this.thirdwebAuthToken}`;
 	}
 }
 
@@ -112,6 +75,8 @@ export function createFilosignOrpcClient(
 			const headers: Record<string, string> = {};
 			const authorization = session.getAuthorizationValue();
 			if (authorization) headers.Authorization = authorization;
+			const wallet = session.getWalletAddress();
+			if (wallet) headers["X-Wallet-Address"] = wallet;
 			const orgId = session.getActiveOrgId();
 			if (orgId) headers["X-Org-Id"] = orgId;
 			return headers;

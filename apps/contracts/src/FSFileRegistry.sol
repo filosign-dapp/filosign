@@ -3,8 +3,8 @@ pragma solidity ^0.8.26;
 
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
+import "./errors/EFSCommon.sol";
 import "./errors/EFSFileRegistry.sol";
-import "./interfaces/IFSManager.sol";
 import "./libraries/FSSignatureValidation.sol";
 
 contract FSFileRegistry is EIP712 {
@@ -55,15 +55,16 @@ contract FSFileRegistry is EIP712 {
     mapping(address => uint256) public nonce;
     mapping(bytes32 => FileRegistration) private _fileRegistrations;
 
-    IFSManager public immutable manager;
+    address public immutable server;
 
     modifier onlyServer() {
-        if (msg.sender != manager.server()) revert OnlyServer();
+        if (msg.sender != server) revert OnlyServer();
         _;
     }
 
-    constructor() EIP712("FSFileRegistry", "1") {
-        manager = IFSManager(msg.sender);
+    constructor(address server_) EIP712("FSFileRegistry", "1") {
+        if (server_ == address(0)) revert ZeroAddress();
+        server = server_;
     }
 
     bytes32 private constant REGISTER_FILE_TYPEHASH =
@@ -263,7 +264,6 @@ contract FSFileRegistry is EIP712 {
             SignatureExpired()
         );
 
-        if (!manager.isRegistered(sender_)) revert SenderNotRegistered();
         if (
             senderEmailCommitment_ == bytes32(0) ||
             senderPrivySubjectCommitment_ == bytes32(0)

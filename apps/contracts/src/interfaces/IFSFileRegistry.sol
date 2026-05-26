@@ -3,8 +3,6 @@ pragma solidity ^0.8.26;
 
 // Auto-generated from src/FSFileRegistry.sol — DO NOT EDIT (regenerate with the script only)
 
-import "./IFSManager.sol";
-
 interface IFSFileRegistry {
     struct FileRegistration {
         bytes32 cidIdentifier;
@@ -38,7 +36,7 @@ interface IFSFileRegistry {
     event FileRegistered();
     event FileSigned();
     function nonce(address key) external view returns (uint256);
-    function manager() external view returns (address);
+    function server() external view returns (address);
     function computeEmailSignerCommitment(bytes32[] calldata commitments_) external pure returns (bytes20);
     function fileRegistrations(bytes32 cidId) external view returns (FileRegistrationView memory);
     function registerFile(string calldata pieceCid_, address sender_, bytes32[] calldata signerEmailCommitments_, bytes32[] calldata viewerEmailCommitments_, bytes32 senderEmailCommitment_, bytes32 senderPrivySubjectCommitment_, bytes32 orgIdCommitment_, uint256 timestamp_, bytes calldata signature_, bytes32 placementCommitment_) external;

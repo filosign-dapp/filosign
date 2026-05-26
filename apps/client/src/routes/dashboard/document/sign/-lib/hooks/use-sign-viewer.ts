@@ -35,11 +35,8 @@ export function useSignViewer(
 	}, [pieceCid, decrypt.previewPdfBytes]);
 
 	return {
+		...decrypt,
 		fileData: decrypt.fileData as ViewFileResult | null,
-		viewError: decrypt.viewError,
-		viewFile: decrypt.viewFile,
-		handleViewFile: decrypt.handleViewFile,
-		previewPdfBytes: decrypt.previewPdfBytes,
 		zoom: decrypt.zoom,
 		setZoom: decrypt.setZoom,
 		documentDimensions: decrypt.documentDimensions,

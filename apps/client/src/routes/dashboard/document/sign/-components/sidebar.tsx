@@ -6,6 +6,7 @@ import {
 	UserIcon,
 } from "@phosphor-icons/react";
 import { defaultChain } from "@/src/constants";
+import { Skeleton } from "@/src/lib/components/ui/skeleton";
 import { cn } from "@/src/lib/utils";
 import { SettlementStatusPanel } from "@/src/routes/dashboard/document/sign/-components/settlement-status-panel";
 import {
@@ -40,6 +41,9 @@ export function SignDocumentSidebar() {
 		revokePending,
 		onRevokeAllowance,
 	} = useSignSettlements();
+	const signers = file?.signers ?? [];
+	const signatures = file?.signatures;
+	const viewers = file?.viewers;
 	return (
 		<aside className="hidden lg:block w-72 border-l border-border bg-background overflow-y-auto">
 			<div className="p-4 space-y-4">
@@ -50,17 +54,25 @@ export function SignDocumentSidebar() {
 
 				<div className="flex items-center justify-between text-sm">
 					<span className="text-muted-foreground">Progress</span>
-					<span className="font-medium">
-						{file.signatures?.length || 0} of {file.signers?.length || 0} signed
-					</span>
+					{file ? (
+						<span className="font-medium">
+							{signatures?.length || 0} of {signers.length} signed
+						</span>
+					) : (
+						<Skeleton className="h-4 w-14" />
+					)}
 				</div>
 				<div className="h-2 bg-muted rounded-full overflow-hidden">
-					<div
-						className="h-full bg-chart-2 transition-all duration-500"
-						style={{
-							width: `${file.signers?.length ? ((file.signatures?.length || 0) / file.signers.length) * 100 : 0}%`,
-						}}
-					/>
+					{file ? (
+						<div
+							className="h-full bg-chart-2 transition-all duration-500"
+							style={{
+								width: `${signers.length ? ((signatures?.length || 0) / signers.length) * 100 : 0}%`,
+							}}
+						/>
+					) : (
+						<Skeleton className="h-full w-full" />
+					)}
 				</div>
 
 				{(canSign || alreadySigned) && myPlacementFields.length > 0 && (
@@ -118,7 +130,12 @@ export function SignDocumentSidebar() {
 				)}
 
 				<div className="space-y-2 pt-2">
-					{(file.signers || []).map(
+					{!file
+						? Array.from({ length: 2 }).map((_, i) => (
+								<Skeleton key={i} className="h-16 w-full rounded-lg" />
+							))
+						: null}
+					{signers.map(
 						(
 							signer:
 								| string
@@ -130,7 +147,7 @@ export function SignDocumentSidebar() {
 						) => {
 							const signerWallet =
 								typeof signer === "string" ? signer : signer.wallet;
-							const signature = file.signatures?.find(
+							const signature = signatures?.find(
 								(s) => s.signer.toLowerCase() === signerWallet.toLowerCase(),
 							);
 							const hasSigned = Boolean(signature);
@@ -219,13 +236,13 @@ export function SignDocumentSidebar() {
 					onRevokeAllowance={onRevokeAllowance}
 				/>
 
-				{file.viewers && file.viewers.length > 0 && (
+				{viewers && viewers.length > 0 && (
 					<div className="pt-4 border-t border-border">
 						<h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-							Viewers ({file.viewers.length})
+							Viewers ({viewers.length})
 						</h4>
 						<div className="space-y-2">
-							{file.viewers.map(
+							{viewers.map(
 								(
 									viewer:
 										| string

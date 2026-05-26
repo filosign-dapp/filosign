@@ -7,7 +7,6 @@ import {
 import { buildRotatedInviteEnvelope } from "@filosign/react/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
 
@@ -44,17 +43,14 @@ export function useSignActions(options: {
 		if (!pieceCid) return;
 		try {
 			await acknowledgeFile.mutateAsync({ pieceCid });
-			toast.success("File acknowledged!");
 		} catch (error) {
 			console.error(error);
-			toast.error("Failed to acknowledge file");
 		}
 	}, [pieceCid, acknowledgeFile]);
 
 	const handleSign = useCallback(async () => {
 		if (!pieceCid) return;
 		if (!canSubmitPlacementSign) {
-			toast.error("Mark every required field on the document first.");
 			return;
 		}
 		try {
@@ -65,12 +61,8 @@ export function useSignActions(options: {
 				}),
 			});
 			setSignSuccessDialogOpen(true);
-			toast.success("Document signed successfully!");
 		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : "Failed to sign";
 			console.error(error);
-			toast.error(errorMessage);
 		}
 	}, [
 		pieceCid,
@@ -81,12 +73,8 @@ export function useSignActions(options: {
 		rpcQuery.files.piece.detail,
 	]);
 
-	const handleRotateInvite = useCallback(async () => {
+	const executeRotateInvite = useCallback(async () => {
 		if (!pieceCid || !file || !user?.wallet?.address) return;
-		const confirmed = window.confirm(
-			"Rotate invite now? Existing magic links and codes will stop working.",
-		);
-		if (!confirmed) return;
 
 		try {
 			const { phrase, inviteToken, wrappedEncryptionKey } =
@@ -113,11 +101,8 @@ export function useSignActions(options: {
 				magicLink,
 			});
 			setColdShareDialogOpen(true);
-			toast.success("Invite rotated. Old links are now invalid.");
 		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to rotate invite",
-			);
+			console.error(err);
 		}
 	}, [pieceCid, file, user, regenerateColdInvite]);
 
@@ -130,7 +115,7 @@ export function useSignActions(options: {
 		setColdShareDialogOpen,
 		coldShare,
 		setColdShare,
-		handleRotateInvite,
+		executeRotateInvite,
 		regenerateColdInvite,
 		formatAddress,
 		handleAcknowledge,

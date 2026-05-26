@@ -4,7 +4,7 @@ import type { SignDocumentController } from "@/src/routes/dashboard/document/sig
 export type SignDocumentContextValue = {
 	sign: SignDocumentController;
 	pieceCid: string;
-	file: NonNullable<SignDocumentController["fileQuery"]["file"]>;
+	file: SignDocumentController["fileQuery"]["file"];
 };
 
 const SignDocumentContext = createContext<SignDocumentContextValue | null>(

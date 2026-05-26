@@ -1,6 +1,7 @@
 import { normalizeColdInvitePhrase } from "@filosign/crypto-utils";
 import { useFilosignContext } from "@filosign/react";
 import {
+	useCryptoUnlocked,
 	useIsLoggedIn,
 	useIsRegistered,
 	useLogout,
@@ -20,7 +21,6 @@ import { buildClaimKemPayload } from "@filosign/react/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { getAddress, type Hex } from "viem";
 import { useWalletUnlock } from "@/src/lib/auth/use-wallet-unlock";
 import { coldInviteRecipientMatchesIdentity } from "@/src/lib/domains/invites/cold-invite-search";
@@ -46,7 +46,8 @@ export function useSignInviteUnlock(args: {
 	const logoutFilosign = useLogout();
 	const clearOnboardingForm = useStorePersist((s) => s.clearOnboardingForm);
 	const isRegistered = useIsRegistered();
-	const isLoggedIn = useIsLoggedIn();
+	const apiSession = useIsLoggedIn();
+	const cryptoUnlocked = useCryptoUnlocked();
 	const {
 		data: invite,
 		isLoading,
@@ -170,12 +171,19 @@ export function useSignInviteUnlock(args: {
 	const wizardPanel = useMemo(() => {
 		if (!active || !invite) return null;
 		if (!authenticated) return "signingIn" as const;
-		if (isRegistered.isPending || isLoggedIn.isPending) return "busy" as const;
+		if (
+			isRegistered.isPending ||
+			apiSession.isPending ||
+			cryptoUnlocked.isPending
+		) {
+			return "busy" as const;
+		}
 		if (isRegistered.data === false) return "redirecting" as const;
-		if (!isLoggedIn.data && showFilosignRecovery)
+		if (!apiSession.data) return "busy" as const;
+		if (!cryptoUnlocked.data && showFilosignRecovery)
 			return "filosignRecovery" as const;
-		if (!isLoggedIn.data && tryingWalletUnlock) return "unlocking" as const;
-		if (!isLoggedIn.data) return "busy" as const;
+		if (!cryptoUnlocked.data && tryingWalletUnlock) return "unlocking" as const;
+		if (!cryptoUnlocked.data) return "busy" as const;
 		return "passphrase" as const;
 	}, [
 		active,
@@ -183,8 +191,10 @@ export function useSignInviteUnlock(args: {
 		authenticated,
 		isRegistered.isPending,
 		isRegistered.data,
-		isLoggedIn.isPending,
-		isLoggedIn.data,
+		apiSession.isPending,
+		apiSession.data,
+		cryptoUnlocked.isPending,
+		cryptoUnlocked.data,
 		showFilosignRecovery,
 		tryingWalletUnlock,
 	]);
@@ -218,12 +228,11 @@ export function useSignInviteUnlock(args: {
 			predicate: (q) =>
 				queryKeyHasNonRpcRoot(q.queryKey, filosignNonRpcRoots.authedApi),
 		});
-		if (!session.jwtExists) {
+		if (!session.hasThirdwebSession()) {
 			throw new Error(
-				"Could not authenticate with the server. Try unlocking your session again.",
+				"Could not authenticate with the server. Sign in with your wallet again.",
 			);
 		}
-		session.ensureJwt();
 		const profile = await fetchUserProfile(rpc);
 		if (!profile.encryptionPublicKey?.trim()) {
 			throw new Error("Missing recipient encryption key");
@@ -241,12 +250,21 @@ export function useSignInviteUnlock(args: {
 		if (isRegistered.data === false) {
 			throw new Error("REDIRECTING_TO_ONBOARDING");
 		}
-		if (!isLoggedIn.data) {
+		if (!apiSession.data) {
+			throw new Error("Wait for your wallet session to connect to Filosign.");
+		}
+		if (!cryptoUnlocked.data) {
 			throw new Error(
-				"Wait for your wallet session to finish unlocking, or enter your recovery phrase if prompted.",
+				"Unlock your encryption keys (wallet sign or recovery phrase) to continue.",
 			);
 		}
-	}, [authenticated, login, isRegistered.data, isLoggedIn.data]);
+	}, [
+		authenticated,
+		login,
+		isRegistered.data,
+		apiSession.data,
+		cryptoUnlocked.data,
+	]);
 
 	const submitFilosignRecovery = useCallback(async () => {
 		if (!filosignRecoveryPhrase.trim()) return;
@@ -255,9 +273,8 @@ export function useSignInviteUnlock(args: {
 			await walletUnlock.handleRecover();
 			await queryClient.refetchQueries({
 				predicate: (q) =>
-					queryKeyHasNonRpcRoot(q.queryKey, filosignNonRpcRoots.isLoggedIn),
+					queryKeyHasNonRpcRoot(q.queryKey, filosignNonRpcRoots.cryptoUnlocked),
 			});
-			toast.success("Session unlocked");
 		} catch (e) {
 			const msg =
 				e instanceof Error
@@ -266,21 +283,18 @@ export function useSignInviteUnlock(args: {
 						: e.message
 					: "Could not unlock with this phrase";
 			setDecryptError(msg);
-			toast.error(msg);
 		}
 	}, [filosignRecoveryPhrase, walletUnlock, queryClient]);
 
 	const handleUnlockDocument = useCallback(async () => {
 		if (!invite || !phrase.trim()) {
-			toast.error("Enter the six-word passphrase the sender shared with you.");
 			return;
 		}
 		if (wizardPanel !== "passphrase") {
-			toast.error("Finish signing in before unlocking the document.");
 			return;
 		}
 		if (shouldSwitchAccountPrompt) {
-			toast.error(
+			setDecryptError(
 				"Only the invited email can open this document. Switch account or sign in with that address.",
 			);
 			return;
@@ -289,7 +303,7 @@ export function useSignInviteUnlock(args: {
 		const normalizedPhrase = normalizeColdInvitePhrase(phrase);
 		const wc = normalizedPhrase.split("-").filter(Boolean).length;
 		if (wc !== 6) {
-			toast.error(
+			setDecryptError(
 				`Passphrase must be exactly six hyphen-separated words (${wc} detected).`,
 			);
 			return;
@@ -322,8 +336,6 @@ export function useSignInviteUnlock(args: {
 				search: { pieceCid, invite: "" },
 				replace: true,
 			} as never);
-
-			toast.success("Document unlocked and secured to your wallet");
 		} catch (e) {
 			if (e instanceof Error && e.message === "PRIVY_LOGIN_STARTED") return;
 			if (e instanceof Error && e.message === "REDIRECTING_TO_ONBOARDING")
@@ -331,7 +343,6 @@ export function useSignInviteUnlock(args: {
 			const msg =
 				e instanceof Error ? e.message : "Could not unlock this document";
 			setDecryptError(msg);
-			toast.error(msg || "Invalid passphrase or corrupted document");
 		}
 	}, [
 		invite,

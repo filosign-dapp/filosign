@@ -7,7 +7,6 @@ import {
 } from "@filosign/react/files";
 import { useQueries } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { toast } from "sonner";
 import { getAddress } from "viem";
 import { useCompliancePdfExports } from "@/src/lib/domains/files/compliance-pdf";
 import { useSignActions } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-sign-actions";
@@ -106,20 +105,8 @@ export function useSignDocument() {
 			signerPlacementEmail: identity.signerPlacementEmail,
 		},
 		viewer: {
-			fileData: viewer.fileData,
-			viewError: viewer.viewError,
-			viewFile: viewer.viewFile,
-			handleViewFile: viewer.handleViewFile,
-			zoom: viewer.zoom,
-			handleZoomIn: viewer.handleZoomIn,
-			handleZoomOut: viewer.handleZoomOut,
-			previewPdfBytes: viewer.previewPdfBytes,
-			signPdfPage: viewer.signPdfPage,
-			setSignPdfPage: viewer.setSignPdfPage,
-			signPdfNumPages: viewer.signPdfNumPages,
-			setSignPdfNumPages: viewer.setSignPdfNumPages,
+			...viewer,
 			signPdfTotalDisplay,
-			isSigningPdf: viewer.isSigningPdf,
 		},
 		signing: {
 			canSign: signingMeta.canSign,
@@ -146,7 +133,7 @@ export function useSignDocument() {
 			setColdShareDialogOpen: actions.setColdShareDialogOpen,
 			coldShare: actions.coldShare,
 			setColdShare: actions.setColdShare,
-			handleRotateInvite: actions.handleRotateInvite,
+			executeRotateInvite: actions.executeRotateInvite,
 			regenerateColdInvite: actions.regenerateColdInvite,
 		},
 		refs: {
@@ -169,21 +156,15 @@ export function useSignDocument() {
 			onTrySettleRule: async (onChainRuleId: string) => {
 				try {
 					await trySettleSettlement.mutateAsync(onChainRuleId);
-					toast.success("Payout settled");
 				} catch (err) {
-					const msg =
-						err instanceof Error ? err.message : "Failed to settle payout";
-					toast.error(msg);
+					console.error(err);
 				}
 			},
 			onManualSettleRule: async (onChainRuleId: string) => {
 				try {
 					await manualSettlementPayout.mutateAsync(onChainRuleId);
-					toast.success("Payout settled from your wallet");
 				} catch (err) {
-					const msg =
-						err instanceof Error ? err.message : "Failed to settle from wallet";
-					toast.error(msg);
+					console.error(err);
 				}
 			},
 			revokePending: revokeSettlementAllowance.isPending,
@@ -191,19 +172,10 @@ export function useSignDocument() {
 				const rules = settlementsQuery.data ?? [];
 				const token = rules[0]?.tokenAddress;
 				if (!token) return;
-
-				const confirmed = window.confirm(
-					"Revoke USDC approval for payouts on this document? Signers can still finish signing, but attached payouts cannot settle until you approve again.",
-				);
-				if (!confirmed) return;
-
 				try {
 					await revokeSettlementAllowance.mutateAsync(getAddress(token));
-					toast.success("Payout approval revoked");
 				} catch (err) {
-					const msg =
-						err instanceof Error ? err.message : "Failed to revoke approval";
-					toast.error(msg);
+					console.error(err);
 				}
 			},
 		},

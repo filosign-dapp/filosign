@@ -1,4 +1,3 @@
-import { toast } from "sonner";
 import { Button } from "@/src/lib/components/ui/button";
 import { Input } from "@/src/lib/components/ui/input";
 import { copyToClipboard } from "@/src/lib/utils/utils";
@@ -45,14 +44,11 @@ export function InviteEmailSection() {
 									)?.invite?.token;
 									setInviteEmail("");
 									if (token) {
-										toast.success("Invite created — copy the token.");
 										void copyToClipboard(token);
-									} else {
-										toast.success("Invite created.");
 									}
 								},
 								onError: (e) => {
-									toast.error(e instanceof Error ? e.message : "Invite failed");
+									console.error(e);
 								},
 							},
 						);

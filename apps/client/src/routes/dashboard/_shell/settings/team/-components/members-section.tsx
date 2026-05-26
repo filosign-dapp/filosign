@@ -1,5 +1,4 @@
 import { LinkSimpleIcon } from "@phosphor-icons/react";
-import { toast } from "sonner";
 import type { Address } from "viem";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -65,11 +64,7 @@ export function MembersSection() {
 														void orgDetail.refetch();
 													},
 													onError: (e) => {
-														toast.error(
-															e instanceof Error
-																? e.message
-																: "Role update failed",
-														);
+														console.error(e);
 													},
 												},
 											);
@@ -99,14 +94,9 @@ export function MembersSection() {
 													{
 														onSuccess: () => {
 															void orgDetail.refetch();
-															toast.success("Org key delivered.");
 														},
 														onError: (e) => {
-															toast.error(
-																e instanceof Error
-																	? e.message
-																	: "Key delivery failed",
-															);
+															console.error(e);
 														},
 													},
 												);
@@ -130,14 +120,9 @@ export function MembersSection() {
 													{
 														onSuccess: () => {
 															void orgDetail.refetch();
-															toast.success("Member removed.");
 														},
 														onError: (e) => {
-															toast.error(
-																e instanceof Error
-																	? e.message
-																	: "Remove failed",
-															);
+															console.error(e);
 														},
 													},
 												);

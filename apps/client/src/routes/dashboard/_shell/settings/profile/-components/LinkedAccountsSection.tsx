@@ -6,7 +6,6 @@ import {
 	StarIcon,
 	TrashIcon,
 } from "@phosphor-icons/react";
-import { toast } from "sonner";
 import {
 	useAuthToken,
 	useLinkProfile,
@@ -113,22 +112,17 @@ export function LinkedAccountsSection() {
 
 	const handleMakePrimary = async (email: string) => {
 		if (!authToken) {
-			toast.error("Session expired. Sign in again and retry.");
 			return;
 		}
 		try {
 			await setPrimary.mutateAsync({ identityToken: authToken, email });
-			toast.success("Primary email updated.");
 		} catch (e) {
-			const message =
-				e instanceof Error ? e.message : "Could not update primary email.";
-			toast.error(message);
+			console.error(e);
 		}
 	};
 
 	const handleUnlink = async (row: LinkedRow) => {
 		if (!canUnlinkAny) {
-			toast.error("Add another way to sign in before removing this one.");
 			return;
 		}
 		try {
@@ -137,15 +131,8 @@ export function LinkedAccountsSection() {
 				profileToUnlink: row.profile,
 			});
 			await reconcileThirdwebEmail();
-			toast.success(
-				row.kind === "email"
-					? "Email sign-in removed."
-					: "Google account disconnected.",
-			);
 		} catch (e) {
-			const message =
-				e instanceof Error ? e.message : "Could not remove this account.";
-			toast.error(message);
+			console.error(e);
 		}
 	};
 

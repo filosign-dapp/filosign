@@ -1,7 +1,6 @@
 import { useUpdateUserProfile } from "@filosign/react/users";
 import { useCallback, useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
-import { toast } from "sonner";
 
 import type { ProfileForm } from "../types";
 
@@ -101,7 +100,6 @@ export const useSectionState = (
 					const errorMessage =
 						error instanceof Error ? error.message : "Failed to update profile";
 					setState({ isSaving: false, isSaved: false, error: errorMessage });
-					toast.error(errorMessage);
 				});
 
 			return;
@@ -113,7 +111,6 @@ export const useSectionState = (
 			if (!picValue || typeof picValue !== "string") {
 				const errorMessage = "Please upload a profile picture";
 				setState({ isSaving: false, isSaved: false, error: errorMessage });
-				toast.error(errorMessage);
 				return;
 			}
 
@@ -122,7 +119,6 @@ export const useSectionState = (
 				const errorMessage =
 					"Please upload a new profile picture to save changes";
 				setState({ isSaving: false, isSaved: false, error: errorMessage });
-				toast.error(errorMessage);
 				return;
 			}
 
@@ -138,7 +134,6 @@ export const useSectionState = (
 					const errorMessage =
 						error instanceof Error ? error.message : "Failed to update avatar";
 					setState({ isSaving: false, isSaved: false, error: errorMessage });
-					toast.error(errorMessage);
 				});
 		}
 	}, [sectionKey, form, updateUserProfile]);

@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 import { getContract } from "thirdweb";
 import { useActiveAccount, useReadContract } from "thirdweb/react";
 import { formatUnits } from "viem";
@@ -76,9 +75,7 @@ export function WalletUsdcBalanceCard() {
 			await openTopUp();
 			await refetch();
 		} catch {
-			toast.error(
-				"Couldn’t open top up. Try again or use a faucet on test networks.",
-			);
+			// Top-up modal failed; balance refetch still runs on success path only.
 		} finally {
 			setTopUpLoading(false);
 		}

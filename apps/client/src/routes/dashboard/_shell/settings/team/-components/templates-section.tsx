@@ -1,6 +1,9 @@
-import { toast } from "sonner";
 import { Button } from "@/src/lib/components/ui/button";
 import { useTeamSettings } from "@/src/routes/dashboard/_shell/settings/team/-lib/context/context";
+import {
+	buildCreateForm,
+	uploadedFromDataUrl,
+} from "@/src/routes/dashboard/envelope/create/-lib/utils/envelope-draft";
 
 export function TemplatesSection() {
 	const { activeOrgId, templates, cloneTemplate, setCreateForm, navigate } =
@@ -28,56 +31,57 @@ export function TemplatesSection() {
 									{ templateId: t.id },
 									{
 										onSuccess: (res) => {
-											const fields =
-												(
-													res as {
-														placementManifest?: {
-															fields?: Array<{
-																assignedRecipientEmail?: string;
-															}>;
-														};
-													}
-												).placementManifest?.fields ?? [];
-											const signerEmails = [
-												...new Set(
-													fields
-														.map((f) =>
-															f.assignedRecipientEmail?.trim().toLowerCase(),
-														)
-														.filter((v): v is string => Boolean(v)),
-												),
-											];
-											setCreateForm({
-												documents: [
+											void (async () => {
+												const docMeta = (
+													res as { document: { name: string; dataUrl: string } }
+												).document;
+												const fields =
+													(
+														res as {
+															placementManifest?: {
+																fields?: Array<{
+																	assignedRecipientEmail?: string;
+																}>;
+															};
+														}
+													).placementManifest?.fields ?? [];
+												const signerEmails = [
+													...new Set(
+														fields
+															.map((f) =>
+																f.assignedRecipientEmail?.trim().toLowerCase(),
+															)
+															.filter((v): v is string => Boolean(v)),
+													),
+												];
+												const draft = await buildCreateForm(
 													{
-														id: t.id,
-														name: (res as { document: { name: string } })
-															.document.name,
-														type: "application/pdf",
-														size: 0,
-														dataUrl: (res as { document: { dataUrl: string } })
-															.document.dataUrl,
+														documents: [
+															uploadedFromDataUrl(docMeta.dataUrl, {
+																id: t.id,
+																name: docMeta.name,
+																type: "application/pdf",
+															}),
+														],
+														recipients: signerEmails.map((email) => ({
+															name: email,
+															email,
+															role: "signer" as const,
+														})),
+														emailMessage: "",
+														emailSubject: "",
+														settlementDrafts: [],
 													},
-												],
-												recipients: signerEmails.map((email) => ({
-													name: email,
-													email,
-													role: "signer" as const,
-												})),
-												emailMessage: "",
-												emailSubject: "",
-												settlementDrafts: [],
-											});
-											void navigate({
-												to: "/dashboard/envelope/create/add-sign",
-											});
+													null,
+												);
+												setCreateForm(draft);
+												void navigate({
+													to: "/dashboard/envelope/create/add-sign",
+												});
+											})().catch((e) => console.error(e));
 										},
 										onError: (e) => {
-											toast.error(
-												e instanceof Error
-													? e.message
-													: "Template clone failed",
-											);
+											console.error(e);
 										},
 									},
 								);

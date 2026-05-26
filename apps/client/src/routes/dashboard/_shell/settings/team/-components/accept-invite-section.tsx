@@ -1,4 +1,3 @@
-import { toast } from "sonner";
 import { Button } from "@/src/lib/components/ui/button";
 import { Input } from "@/src/lib/components/ui/input";
 import { useTeamSettings } from "@/src/routes/dashboard/_shell/settings/team/-lib/context/context";
@@ -34,10 +33,9 @@ export function AcceptInviteSection() {
 										.organizationId;
 									if (id) setActiveOrg(id);
 									setInviteTokenPaste("");
-									toast.success("You joined the organization.");
 								},
 								onError: (e) => {
-									toast.error(e instanceof Error ? e.message : "Invite failed");
+									console.error(e);
 								},
 							},
 						);

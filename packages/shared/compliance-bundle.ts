@@ -34,7 +34,6 @@ export const zSignerComplianceRow = z.object({
 	messageTimestampIso: z.string().nullable(),
 	/** Block time from `FileSigned` tx receipt when fetched. */
 	blockTimestampFromTx: z.number().int().nonnegative().nullable(),
-	approveSenderTxHash: zHexString().nullable(),
 });
 
 export const zPartyRole = z.enum(["sender", "signer", "viewer"]);
@@ -66,8 +65,6 @@ export const zOnchainRegistrationSnapshot = z.object({
 export const zChainTxKind = z.enum([
 	"file_registered",
 	"file_signed",
-	"sender_approved",
-	"sender_revoked",
 	"payout_executed",
 ]);
 
@@ -114,7 +111,7 @@ export const zOffChainEvidence = z.object({
 });
 
 export const zComplianceBundle = z.object({
-	version: z.literal(4),
+	version: z.literal(5),
 	pieceCid: z.string(),
 	chainId: z.number().int(),
 	exportedAtIso: z.string(),

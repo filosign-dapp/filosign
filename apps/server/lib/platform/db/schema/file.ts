@@ -36,7 +36,10 @@ export const files = t.pgTable(
 		orgKemCiphertext: tHex(),
 		orgEncryptedEncryptionKey: tHex(),
 
-		status: t.text({ enum: ["s3", "foc", "unpaid_for", "invalid"] }).notNull(),
+		status: t
+			.text({ enum: ["s3"] })
+			.notNull()
+			.default("s3"),
 		onchainTxHash: tBytes32().unique().notNull(),
 
 		placementCommitment: tBytes32().notNull(),
@@ -46,6 +49,10 @@ export const files = t.pgTable(
 		coldInviteCount: t.integer().notNull().default(0),
 		signerSlotCount: t.integer().notNull().default(0),
 		recipientSlotCount: t.integer().notNull().default(0),
+
+		displayName: t.text(),
+		mimeType: t.text(),
+		ciphertextByteLength: t.integer(),
 
 		...timestamps,
 	},
@@ -194,6 +201,37 @@ export const fileSignatures = t.pgTable(
 );
 
 /** Platform log: each compliance bundle generation for audit / future attestation. */
+export const archivalTiers = ["1y", "5y", "10y"] as const;
+export type ArchivalTier = (typeof archivalTiers)[number];
+
+export const archivalStatuses = ["pending", "archived", "failed"] as const;
+export type ArchivalStatus = (typeof archivalStatuses)[number];
+
+/** Paid Filecoin archival copy (R2 remains hot storage). */
+export const fileArchival = t.pgTable(
+	"file_archival",
+	{
+		pieceCid: t
+			.text()
+			.primaryKey()
+			.references(() => files.pieceCid, { onDelete: "cascade" }),
+		purchasedByWallet: tEvmAddress()
+			.notNull()
+			.references(() => users.walletAddress),
+		tier: t.text({ enum: archivalTiers }).notNull(),
+		status: t.text({ enum: archivalStatuses }).notNull().default("pending"),
+		purchasedAt: t.timestamp({ withTimezone: true }).notNull().defaultNow(),
+		expiresAt: t.timestamp({ withTimezone: true }).notNull(),
+		archivedAt: t.timestamp({ withTimezone: true }),
+		failureReason: t.text(),
+		...timestamps,
+	},
+	(table) => [
+		t.index("idx_file_archival_status").on(table.status),
+		t.index("idx_file_archival_expires").on(table.expiresAt),
+	],
+);
+
 export const complianceExportLogs = t.pgTable(
 	"compliance_export_logs",
 	{

@@ -3,7 +3,6 @@ import { useAuthedApi, useIsRegistered } from "@filosign/react/auth";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { z } from "zod";
 import { logger } from "@/src/lib/utils/logger";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
@@ -64,7 +63,6 @@ export function useInviteController() {
 	useEffect(() => {
 		if (inviteQuery.isError) {
 			logger.error("Failed to fetch invite:", inviteQuery.error);
-			toast.error("Invalid or expired invite link");
 		}
 	}, [inviteQuery.isError, inviteQuery.error]);
 
@@ -86,16 +84,12 @@ export function useInviteController() {
 			try {
 				await auth.rpc.sharing.inviteClaim({ id: inviteId });
 				setClaimSuccess(true);
-				toast.success(
-					"Invite accepted! You can now receive documents from this sender.",
-				);
 
 				setTimeout(() => {
 					void navigate({ to: "/dashboard/connections" });
 				}, 2000);
 			} catch (error) {
 				logger.error("Failed to claim invite:", error);
-				toast.error("Failed to accept invite. It may have expired.");
 			} finally {
 				setIsClaiming(false);
 			}

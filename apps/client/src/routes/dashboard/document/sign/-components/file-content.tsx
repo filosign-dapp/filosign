@@ -2,6 +2,7 @@ import type { PlacementField } from "@filosign/shared";
 import { DownloadIcon, FileTextIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
+import { DocCanvasPanel } from "@/src/lib/domains/files/components/doc-canvas-panel";
 import { PLACEMENT_VIEWPORT_WIDTH } from "@/src/lib/domains/files/placement-viewport";
 import { cn } from "@/src/lib/utils";
 import {
@@ -68,7 +69,9 @@ function SignDocumentPdfPlacementOverlay({
 }
 
 export function SignDocumentFileContent() {
-	const { pieceCid } = useSignFile();
+	const { pieceCid, file, fileQuery, acknowledge } = useSignFile();
+	const { filePending, fileError, acknowledgeFile } = fileQuery;
+	const { handleAcknowledge } = acknowledge;
 	const [pdfLayoutHeight, setPdfLayoutHeight] = useState<number | null>(null);
 	const viewportWidth = PLACEMENT_VIEWPORT_WIDTH;
 	const viewportHeight = pdfLayoutHeight ?? 800;
@@ -83,6 +86,13 @@ export function SignDocumentFileContent() {
 		signPdfPage,
 		setSignPdfPage,
 		setSignPdfNumPages,
+		docCanvasBusy,
+		showRecoveryInCanvas,
+		recoveryPhrase,
+		setRecoveryPhrase,
+		recoveryError,
+		submitRecovery,
+		recoveryPending,
 	} = useSignViewer();
 
 	useEffect(() => {
@@ -92,40 +102,61 @@ export function SignDocumentFileContent() {
 		useSignPlacement();
 	const { alreadySigned, canSign } = useSignSigning();
 	const { handleDownload } = useSignCompliance();
-	const viewFilePending = viewFile.isPending;
-	if (viewError) {
+
+	const needsAck =
+		file &&
+		!(
+			(file.kemCiphertext && file.encryptedEncryptionKey) ||
+			(file.organizationId &&
+				file.orgKemCiphertext &&
+				file.orgEncryptedEncryptionKey)
+		);
+
+	if (filePending && !file) {
+		return <DocCanvasPanel busy />;
+	}
+
+	if (fileError || (!filePending && !file)) {
 		return (
-			<div className="flex items-center justify-center w-full h-full text-sm text-muted-foreground p-4 text-center">
-				<div className="flex flex-col items-center gap-3 md:gap-4">
-					<FileTextIcon className="size-12 md:size-16 text-destructive/50" />
-					<div className="text-xs md:text-sm text-destructive font-medium">
-						Failed to decrypt file
-					</div>
-					<div className="text-xs text-muted-foreground max-w-md">
-						{viewError}
-					</div>
-					<Button
-						size="sm"
-						variant="outline"
-						onClick={() => void handleViewFile()}
-						disabled={viewFilePending}
-					>
-						Retry
-					</Button>
-				</div>
+			<DocCanvasPanel
+				error={
+					fileError instanceof Error ? fileError.message : "File not found"
+				}
+			/>
+		);
+	}
+
+	if (needsAck) {
+		return (
+			<div className="flex w-full h-full items-center justify-center p-6">
+				<Button
+					variant="primary"
+					onClick={() => void handleAcknowledge()}
+					disabled={acknowledgeFile.isPending}
+				>
+					Accept file
+				</Button>
 			</div>
 		);
 	}
 
-	if (!fileData) {
-		return (
-			<div className="flex items-center justify-center w-full h-full text-sm text-muted-foreground p-4 text-center">
-				<div className="flex flex-col items-center gap-3 md:gap-4">
-					<FileTextIcon className="size-12 md:size-16 text-muted-foreground/50" />
-					<div className="text-xs md:text-sm">No file preview available</div>
-				</div>
-			</div>
-		);
+	const canvasGate = (
+		<DocCanvasPanel
+			busy={docCanvasBusy}
+			showRecovery={showRecoveryInCanvas}
+			recoveryPhrase={recoveryPhrase}
+			onRecoveryPhraseChange={setRecoveryPhrase}
+			recoveryError={recoveryError}
+			onRecoverySubmit={() => void submitRecovery()}
+			recoveryPending={recoveryPending}
+			error={viewError}
+			onRetry={() => void handleViewFile()}
+			retryPending={viewFile.isPending}
+		/>
+	);
+
+	if (docCanvasBusy || showRecoveryInCanvas || viewError || !fileData) {
+		return canvasGate;
 	}
 
 	const { fileBytes, metadata } = fileData;

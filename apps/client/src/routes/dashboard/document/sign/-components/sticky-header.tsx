@@ -12,9 +12,12 @@ import {
 	ScrollIcon,
 	SpinnerIcon,
 } from "@phosphor-icons/react";
+import { useState } from "react";
 import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
+import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
+import { Skeleton } from "@/src/lib/components/ui/skeleton";
 import { SettlementHeaderBadge } from "@/src/routes/dashboard/document/sign/-components/settlement-header-badge";
 import { SettlementRevokeAllowanceButton } from "@/src/routes/dashboard/document/sign/-components/settlement-revoke-allowance-button";
 import {
@@ -46,14 +49,17 @@ export function SignDocumentStickyHeader() {
 		setSignPdfPage,
 		signPdfTotalDisplay,
 		fileData,
+		docCanvasBusy,
 	} = useSignViewer();
+	const docReady = Boolean(fileData) && !docCanvasBusy;
 	const {
 		pdfExportBusy,
 		handleDownload,
 		handleDownloadCompliancePdf,
 		handleDownloadDocumentWithCompliancePdf,
 	} = useSignCompliance();
-	const { handleRotateInvite, regenerateColdInvite } = useSignColdShare();
+	const { executeRotateInvite, regenerateColdInvite } = useSignColdShare();
+	const [rotateInviteOpen, setRotateInviteOpen] = useState(false);
 	const { canSubmitPlacementSign } = useSignPlacement();
 	const {
 		rules: settlementRules,
@@ -203,7 +209,7 @@ export function SignDocumentStickyHeader() {
 							<Button
 								variant="outline"
 								size="sm"
-								onClick={() => void handleRotateInvite()}
+								onClick={() => setRotateInviteOpen(true)}
 								disabled={regenerateColdInvite.isPending}
 								className="h-8 px-2 text-xs"
 							>
@@ -217,7 +223,9 @@ export function SignDocumentStickyHeader() {
 								variant="primary"
 								size="sm"
 								onClick={() => void handleSign()}
-								disabled={signFile.isPending || !canSubmitPlacementSign}
+								disabled={
+									signFile.isPending || !canSubmitPlacementSign || !docReady
+								}
 							>
 								{signFile.isPending ? (
 									<>
@@ -250,10 +258,14 @@ export function SignDocumentStickyHeader() {
 								<span className="truncate max-w-xs">{pieceCid}</span>
 								<CopyButton text={pieceCid} />
 							</h2>
-							<p className="text-xs text-muted-foreground flex items-center gap-1">
-								From {formatAddress(file.sender)}
-								<CopyButton text={formatAddress(file.sender)} />
-							</p>
+							{file ? (
+								<p className="text-xs text-muted-foreground flex items-center gap-1">
+									From {formatAddress(file.sender)}
+									<CopyButton text={formatAddress(file.sender)} />
+								</p>
+							) : (
+								<Skeleton className="h-3 w-36" />
+							)}
 						</div>
 						{(alreadySigned || settlementRules.length > 0) && (
 							<div className="flex flex-wrap items-center gap-2 mt-2">
@@ -394,7 +406,7 @@ export function SignDocumentStickyHeader() {
 							<Button
 								variant="outline"
 								size="sm"
-								onClick={() => void handleRotateInvite()}
+								onClick={() => setRotateInviteOpen(true)}
 								disabled={regenerateColdInvite.isPending}
 								className="h-8 gap-1.5"
 								title="Rotate invite"
@@ -412,7 +424,9 @@ export function SignDocumentStickyHeader() {
 								variant="primary"
 								size="sm"
 								onClick={() => void handleSign()}
-								disabled={signFile.isPending || !canSubmitPlacementSign}
+								disabled={
+									signFile.isPending || !canSubmitPlacementSign || !docReady
+								}
 							>
 								{signFile.isPending ? (
 									<>
@@ -427,6 +441,16 @@ export function SignDocumentStickyHeader() {
 					)}
 				</div>
 			</div>
+			<ConfirmAlertDialog
+				open={rotateInviteOpen}
+				onOpenChange={setRotateInviteOpen}
+				title="Rotate invite?"
+				description="Existing magic links and codes will stop working."
+				confirmLabel="Rotate"
+				destructive
+				pending={regenerateColdInvite.isPending}
+				onConfirm={() => executeRotateInvite()}
+			/>
 		</>
 	);
 }

@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import config from "@/config";
 import { shutdownPostHog } from "@/lib/platform/analytics/posthog";
+import { initCache } from "@/lib/platform/cache/session-cache";
 import { startPlatformCron, stopPlatformCron } from "@/lib/platform/cron";
 import { csp } from "@/lib/platform/csp";
 import { requestLog } from "@/lib/platform/pino";
@@ -39,4 +40,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
 export default {
 	port: config.http.port,
 	fetch: app.fetch,
+	async start() {
+		await initCache();
+	},
 };

@@ -1,11 +1,11 @@
+import { zEvmAddress, zEvmPrivateKey } from "@filosign/shared/zod";
 import { createEnv } from "@t3-oss/env-core";
+import { getAddress } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import { z } from "zod";
-
-console.log(Bun.env.CHAIN);
 
 export const env = createEnv({
 	server: {
-		/** `development` = local HTTP; `production` = HTTPS deploy (enables Secure cookies). */
 		NODE_ENV: z.enum(["development", "production"]).default("production"),
 		TG_ANALYTICS_BOT_GROUP_ID: z.string().min(1).optional(),
 		TG_ANALYTICS_BOT_TOKEN: z.string().min(1).optional(),
@@ -13,15 +13,12 @@ export const env = createEnv({
 		S3_ACCESS_KEY_ID: z.string().min(1),
 		S3_BUCKET: z.string().min(1),
 		S3_ENDPOINT: z.url(),
-		EVM_PRIVATE_KEY_SYNAPSE: z.string().min(1),
-		EVM_PRIVATE_KEY_SERVER: z.string().min(1),
+		FC_SERVER_PRIVATE_KEY: zEvmPrivateKey(),
+		FC_SERVER_ADDRESS: zEvmAddress(),
 		PG_URI: z.string().min(1),
 		DB_NAME: z.string().min(1),
-		/** Public API origin (no trailing slash). */
 		SERVER_URL: z.url(),
-		/** React app origin — CORS, email CTAs. */
 		CLIENT_URL: z.url(),
-		/** Marketing site origin — email static assets (`/logo.webp`, `/icons/*`). */
 		ASTRO_URL: z.url(),
 		RESEND_API_KEY: z.string().min(1),
 		RESEND_FROM_EMAIL: z.email(),
@@ -30,10 +27,7 @@ export const env = createEnv({
 			.string()
 			.transform((v) => parseInt(v, 10))
 			.optional(),
-		JWT_SECRET: z.string().min(32),
-		/** Dragonfly / Redis URL for auth cache (nonces, denylist, refresh). Falls back to Postgres when unset. */
-		DRAGONFLY_URL: z.string().min(1).optional(),
-		/** Same project client ID as `VITE_THIRDWEB_CLIENT_ID` on the client. */
+		DRAGONFLY_URL: z.string().min(1),
 		THIRDWEB_CLIENT_ID: z.string().min(1),
 		THIRDWEB_SECRET_KEY: z.string().min(1),
 		DEBUG: z
@@ -43,13 +37,24 @@ export const env = createEnv({
 		POSTHOG_API_KEY: z.string().min(1).optional(),
 		POSTHOG_HOST: z.url().default("https://us.i.posthog.com"),
 		POSTHOG_ENABLED: z.coerce.boolean().default(false),
-		/** Comma-separated wallet addresses allowed to call metrics.* admin RPC. */
 		ADMIN_WALLETS: z.string().optional(),
-		/** Days until pending document, user, and org invites expire. */
 		INVITE_TTL_DAYS: z.coerce.number().int().min(1).default(7),
 	},
 	runtimeEnv: Bun.env,
 	emptyStringAsUndefined: true,
+	onValidationError: (issues) => {
+		console.error("Invalid server environment variables:", issues);
+		throw new Error("Invalid environment variables");
+	},
 });
+
+const relayerFromKey = getAddress(
+	privateKeyToAccount(env.FC_SERVER_PRIVATE_KEY).address,
+);
+if (relayerFromKey !== env.FC_SERVER_ADDRESS) {
+	throw new Error(
+		`FC_SERVER_PRIVATE_KEY address ${relayerFromKey} does not match FC_SERVER_ADDRESS ${env.FC_SERVER_ADDRESS}`,
+	);
+}
 
 export default env;

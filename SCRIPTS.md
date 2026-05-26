@@ -8,7 +8,8 @@
 
 | Goal | Command |
 | --- | --- |
-| Local dev (bootstrap + server + client + astro) | `bun run dev` or `bun run dev -- --local` |
+| Local dev (compose + bootstrap + server + client + astro) | `bun run dev` or `bun run dev -- --local` |
+| Dragonfly only | `bun run dev -- --deps` |
 | Bootstrap + API only | `bun run dev -- --serloc` |
 | Client + marketing + email preview | `bun run dev -- --web` |
 | React Email preview only | `bun run dev -- --emails` |
@@ -48,7 +49,7 @@
 
 ## `dev`
 
-`dev` / `--local` → bootstrap + server + client + astro · `--serloc` → bootstrap + server · `--web` → client + astro + emails (:30010) · `--emails` → emails only (:30010) · `--testnet` → client + server (no bootstrap) · `--client --local` → Vite only · `--server --local` → bootstrap + API · `--astro` → marketing site only.
+`dev` / `--local` → `docker compose up -d` + bootstrap + server + client + astro · `--deps` → compose only (foreground) · `--no-deps` → skip compose · `--serloc` → bootstrap + server · `--web` → client + astro + emails (:30010) · `--emails` → emails only (:30010) · `--testnet` → client + server (no bootstrap) · `--client --local` → Vite only · `--server --local` → bootstrap + API · `--astro` → marketing site only.
 
 Harness: `bun run --cwd packages/test dev` (`VITE_CHAIN`, not env files).
 

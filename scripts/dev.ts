@@ -28,22 +28,30 @@ e.g. bun run dev -- --client --local
 
 Ports:  server :3000   client :3001   astro :3002   emails :30010
 
+Deps:  default runs \`docker compose up -d\` (Dragonfly :6379).  --no-deps to skip.
+       --deps alone = compose only (foreground).  --deps with apps = same as default.
+
+Local bootstrap (default \`dev\` with server): deploy + db purge (clears Postgres + Dragonfly).
+
 Presets (--serloc, --web, --emails) cannot be combined with each other or with --client / --server / --astro.
 `.trim();
 
 function parseArgv(argv: string[]) {
 	const flags = new Set<string>();
 	let profile: Profile | undefined;
+	let withDeps = true;
 
 	for (const arg of argv) {
 		if (arg === "--help" || arg === "-h") {
-			return { help: true as const, flags, profile };
+			return { help: true as const, flags, profile, withDeps };
 		}
 		if (arg === "--local") profile = "local";
 		if (arg === "--testnet") profile = "testnet";
 		if (arg === "--full") {
 			die("Removed --full; astro is included in the default bun run dev stack");
 		}
+		if (arg === "--deps") flags.add("deps");
+		if (arg === "--no-deps") withDeps = false;
 		if (arg === "--serloc") flags.add("serloc");
 		if (arg === "--web") flags.add("web");
 		if (arg === "--emails") flags.add("emails");
@@ -56,7 +64,30 @@ function parseArgv(argv: string[]) {
 		profile = "local";
 	}
 
-	return { help: false as const, flags, profile };
+	return { help: false as const, flags, profile, withDeps };
+}
+
+function isDepsOnly(flags: Set<string>): boolean {
+	if (!flags.has("deps")) return false;
+	if (flags.has("client") || flags.has("server") || flags.has("astro")) {
+		return false;
+	}
+	return activePresets(flags).length === 0;
+}
+
+async function composeUp(rootDir: string, detached: boolean): Promise<void> {
+	const cmd = detached
+		? ["docker", "compose", "up", "-d"]
+		: ["docker", "compose", "up"];
+	const code = await Bun.spawn({
+		cmd,
+		cwd: rootDir,
+		stdout: "inherit",
+		stderr: "inherit",
+		stdin: "inherit",
+		env: process.env,
+	}).exited;
+	if (code !== 0) die("docker compose failed");
 }
 
 function workspaceTask(packageName: string, script: string): SpawnTask {
@@ -166,12 +197,21 @@ runMain(async () => {
 		process.exit(0);
 	}
 
+	if (isDepsOnly(parsed.flags)) {
+		await composeUp(rootDir, false);
+		process.exit(0);
+	}
+
 	const tasks = resolveTasks(parsed.flags, parsed.profile);
 
 	if (tasks.length === 0) {
 		console.error("Missing profile or component. Try: bun run dev -- --help\n");
 		console.log(HELP);
 		process.exit(1);
+	}
+
+	if (parsed.withDeps) {
+		await composeUp(rootDir, true);
 	}
 
 	if (parsed.profile === "local" && tasksIncludeServer(tasks)) {

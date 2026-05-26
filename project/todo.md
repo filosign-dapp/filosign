@@ -22,7 +22,6 @@ Ranked **high → low**. Keep bullets actionable; link detail docs in `project/e
 - **E-sign legal posture:** which markets you target (US ESIGN/UETA vs EU eIDAS); don’t claim QES until built.
 - **Trademark:** “Filosign” search + filing (India/US).
 - **CPA / tax advisor:** India vs US entity, GST, export of services, US sales tax (SaaS nexus), crypto/treasury reporting.
-
 - **Incident response:** breach notification playbook (even pre-SOC2).
 - **Waitlist / Request Access ops:** who reviews manual queue, SLA, fraud (disposable emails).
 - **Founder-led sales script** for first 10 design partners before “marketing scale.”

@@ -22,7 +22,7 @@ Filosign database orchestrator (@filosign/server)
 
   bun run db -- push local      drizzle push (.env.local)
   bun run db -- push testnet    drizzle push (.env.staging)
-  bun run db -- purge local     clear schema, then push (.env.local)
+  bun run db -- purge local     clear schema + Dragonfly flush, then push (.env.local)
   bun run db -- purge testnet   clear schema, then push (.env.staging)
 `.trim();
 

@@ -131,9 +131,8 @@ Server configuration is defined in `apps/server/env.ts`. The main required value
 - `RESEND_FROM_EMAIL`
 - `PG_URI`
 - `DB_NAME`
-- `EVM_PRIVATE_KEY_SERVER`
-- `EVM_PRIVATE_KEY_SYNAPSE`
-- `JWT_SECRET`
+- `FC_SERVER_PRIVATE_KEY` / `FC_SERVER_ADDRESS` (on-chain relayer + Synapse; must match contracts deploy)
+- `DRAGONFLY_URL` — `redis://127.0.0.1:6379` with root `docker compose up -d`
 - `THIRDWEB_CLIENT_ID` — same value as client `VITE_THIRDWEB_CLIENT_ID`
 - `THIRDWEB_SECRET_KEY` — project secret key (server only)
 - `S3_ACCESS_KEY_ID`

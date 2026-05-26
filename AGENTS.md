@@ -13,7 +13,6 @@ Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-pack
 | `apps/astro`            | [README](apps/astro/README.md)                                            | Marketing                                                    |
 | `packages/react-sdk`    | [README](packages/react-sdk/README.md)                                    | `FilosignProvider`, typed `rpc`, `rpcQuery`, hooks           |
 | `packages/shared`       | [AGENTS.md](packages/shared/AGENTS.md)                                    | Types, Zod, manifests (browser+server)                       |
-| `packages/auth`         | [README](packages/auth/README.md)                                         | JWT, refresh cookies, Dragonfly/Postgres auth store        |
 | `packages/entitlements` | —                                                                         | Plan catalog + pure evaluator (no DB; server wires later)    |
 | `packages/crypto-utils` | [README](packages/crypto-utils/README.md)                                 | KEM, WASM-adjacent crypto                                    |
 | `packages/test`         | [README](packages/test/README.md)                                         | Dev harness                                                  |
@@ -46,16 +45,17 @@ Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).
 - **Logic:** UI `apps/client` | hooks/SDK `packages/react-sdk` | API/DB/relay `apps/server`.
 - **Imports:** Client uses minimal `@filosign/contracts` ([constants](apps/client/src/constants.ts)); prefer SDK/runtime for new code.
 - **Definitions:** Never hand-edit `apps/contracts/definitions/`. Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy).
+- **Contracts v1 (immutable):** `FSFileRegistry` + `FSPaymentValidator` only; KMS = `FSFileRegistry.server`; identity/E2EE off-chain. See [`apps/contracts/ARCHITECTURE.md`](apps/contracts/ARCHITECTURE.md) and [`project/contracts-future-scope.md`](project/contracts-future-scope.md).
 
 ## API & oRPC
 
-Mount: [`api/orpc/hono-mount.ts`](apps/server/api/orpc/hono-mount.ts) (`apiRouter`) — [`api/integrations/`](apps/server/api/integrations/) (secret-gated webhooks, no JWT) **then** `optionalJwtWalletForOrpc` + hybrid middleware; **JSON API = `/api/rpc`** only ([`router.ts`](apps/server/api/orpc/router.ts) `appRouter`, [handlers](apps/server/api/handlers/)). Domain logic: [`lib/domains/`](apps/server/lib/domains/). Runtime loader: [`lib/domains/runtime`](apps/server/lib/domains/runtime/); shared infra: [`lib/platform/`](apps/server/lib/platform/). Config: [`config.ts`](apps/server/config.ts). Detail: [api-routes.mdc](.cursor/rules/apps/web/api-routes.mdc).
+Mount: [`api/orpc/hono-mount.ts`](apps/server/api/orpc/hono-mount.ts) (`apiRouter`) — integrations (no session) **then** `optionalThirdwebSessionForOrpc`; **JSON API = `/api/rpc`** only ([`router.ts`](apps/server/api/orpc/router.ts) `appRouter`, [handlers](apps/server/api/handlers/)). Domain logic: [`lib/domains/`](apps/server/lib/domains/). Runtime loader: [`lib/domains/runtime`](apps/server/lib/domains/runtime/); shared infra: [`lib/platform/`](apps/server/lib/platform/). Config: [`config.ts`](apps/server/config.ts). Detail: [api-routes.mdc](.cursor/rules/apps/web/api-routes.mdc).
 
 - **Outputs:** Concrete Zod `.output` per procedure in `[api/orpc/schemas/](apps/server/api/orpc/schemas/)` (not `z.unknown()`).
 - `**createORPCClient` is a Proxy** — never put `rpc` in TanStack `queryKey`/deep-stringified payloads (use primitives); `JSON.stringify` can hit `toJSON` → bogus RPC.
 - **Query utils:** `createFilosignRpcQueryUtils` → `rpcQuery.{users,files,storage,…}` ([rpc-query-utils.ts](packages/react-sdk/src/orpc/rpc-query-utils.ts)).
 - **Storage:** Browser PUT to presign URLs; object keys in Postgres; serve via presigned GET (no public bucket URLs on PUT paths).
-- **JWT:** Malformed Bearer ignored on `/api/rpc`; protected procedures → `UNAUTHORIZED` via `authenticatedProcedure`.
+- **Session:** thirdweb Bearer + `X-Wallet-Address`; invalid/missing → public procedures only; protected → `UNAUTHORIZED`.
 - **Hono:** `[hono-mount.ts](apps/server/api/orpc/hono-mount.ts)` — `/api/rpc` then `/api/api-reference`; `proxyRawRequest` avoids consumed body.
 
 ## Vertical slice
@@ -99,7 +99,7 @@ Always use Zod v4 schemas: Fetch migration guide from [https://zod.dev/v4/change
 
 **Reference:** [`lib/domains/settlements/`](apps/server/lib/domains/settlements/) — `settlements.ts` + `settlements-register.ts` + `utils/{execute-payout,sync-from-chain,verify-rules-on-chain,preflight}.ts`.
 
-**Also refactored:** [`lib/domains/files/`](apps/server/lib/domains/files/) — `piece.ts`, `piece-sign.ts`, `register.ts`, `utils/piece-{detail,compliance}.ts` (handlers re-export only). [`lib/domains/sharing/`](apps/server/lib/domains/sharing/) — `sharing.ts` + `utils/fs-manager-indexer.ts`. Client [`compliance-pdf/`](apps/client/src/lib/domains/files/compliance-pdf/) — `compliance-pdf.ts` + `utils/{draw,summary,build,...}.ts`.
+**Also refactored:** [`lib/domains/files/`](apps/server/lib/domains/files/) — `piece.ts`, `piece-sign.ts`, `register.ts`, `utils/piece-{detail,compliance}.ts` (handlers re-export only). [`lib/domains/sharing/`](apps/server/lib/domains/sharing/) — `sharing.ts` + `utils/record-share-approval.ts`. Client [`compliance-pdf/`](apps/client/src/lib/domains/files/compliance-pdf/) — `compliance-pdf.ts` + `utils/{draw,summary,build,...}.ts`.
 
 When refactoring an over-split domain: merge related modules into one `utils/` file per concern, keep handlers thin, preserve `index.ts` exports.
 

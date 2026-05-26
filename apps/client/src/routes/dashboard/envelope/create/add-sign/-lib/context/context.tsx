@@ -126,9 +126,9 @@ export function useAddSignChrome() {
 		documents,
 		currentDocumentId,
 		handleDocumentSelect,
-		coldShareDialogOpen,
-		coldShare,
-		handleColdShareDone,
+		postSendDialogOpen,
+		postSendShare,
+		handlePostSendDone,
 	} = useAddSignContext();
 	return useMemo(
 		() => ({
@@ -137,9 +137,9 @@ export function useAddSignChrome() {
 			documents,
 			currentDocumentId,
 			handleDocumentSelect,
-			coldShareDialogOpen,
-			coldShare,
-			handleColdShareDone,
+			postSendDialogOpen,
+			postSendShare,
+			handlePostSendDone,
 		}),
 		[
 			sendStatus,
@@ -147,9 +147,9 @@ export function useAddSignChrome() {
 			documents,
 			currentDocumentId,
 			handleDocumentSelect,
-			coldShareDialogOpen,
-			coldShare,
-			handleColdShareDone,
+			postSendDialogOpen,
+			postSendShare,
+			handlePostSendDone,
 		],
 	);
 }

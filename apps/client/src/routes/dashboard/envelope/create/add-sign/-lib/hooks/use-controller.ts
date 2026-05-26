@@ -112,9 +112,14 @@ export function useAddSignController() {
 	const [sendStatus, setSendStatus] = useState<
 		"idle" | "loading" | "success" | "error"
 	>("idle");
-	const [coldShareDialogOpen, setColdShareDialogOpen] = useState(false);
-	const [coldShare, setColdShare] = useState<ColdSharePackage | null>(null);
+	const [postSendDialogOpen, setPostSendDialogOpen] = useState(false);
+	const [postSendShare, setPostSendShare] = useState<ColdSharePackage | null>(
+		null,
+	);
 	const isSendingRef = useRef(false);
+
+	const suppressEmptyDraftRedirect =
+		sendStatus === "loading" || sendStatus === "success" || postSendDialogOpen;
 
 	const signatureFields = useMemo(
 		() =>
@@ -244,13 +249,13 @@ export function useAddSignController() {
 
 	useEffect(() => {
 		if (!persistHydrated) return;
-		if (!draftReady) {
+		if (!draftReady && !suppressEmptyDraftRedirect) {
 			navigate({
 				to: "/dashboard/envelope/create",
 				replace: true,
 			});
 		}
-	}, [persistHydrated, draftReady, navigate]);
+	}, [persistHydrated, draftReady, suppressEmptyDraftRedirect, navigate]);
 
 	useEffect(() => {
 		if (documents.length > 0 && !currentDocumentId) {
@@ -519,8 +524,6 @@ export function useAddSignController() {
 					: {}),
 			});
 
-			clearCreateForm();
-
 			setSendStatus("success");
 
 			captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopeSendSucceeded, {
@@ -540,16 +543,10 @@ export function useAddSignController() {
 								inviteToken: result.coldInviteShareCode.inviteToken,
 							}),
 						}
-					: undefined;
+					: null;
 
-			if (shareCode) {
-				setColdShare(shareCode);
-				setColdShareDialogOpen(true);
-			} else {
-				setTimeout(() => {
-					navigate({ to: "/dashboard" });
-				}, 1500);
-			}
+			setPostSendShare(shareCode);
+			setPostSendDialogOpen(true);
 		} catch (error) {
 			setSendStatus("error");
 			if (
@@ -598,11 +595,12 @@ export function useAddSignController() {
 		[setSelectedField],
 	);
 
-	const handleColdShareDone = useCallback(() => {
-		setColdShareDialogOpen(false);
-		setColdShare(null);
+	const handlePostSendDone = useCallback(() => {
+		setPostSendDialogOpen(false);
+		setPostSendShare(null);
+		clearCreateForm();
 		navigate({ to: "/dashboard" });
-	}, [navigate]);
+	}, [clearCreateForm, navigate]);
 
 	return {
 		persistHydrated,
@@ -616,8 +614,9 @@ export function useAddSignController() {
 		setZoom,
 		setCurrentPage,
 		sendStatus,
-		coldShareDialogOpen,
-		coldShare,
+		postSendDialogOpen,
+		postSendShare,
+		suppressEmptyDraftRedirect,
 		selectedField,
 		isPlacingField,
 		pendingFieldType,
@@ -634,7 +633,7 @@ export function useAddSignController() {
 		handleBack,
 		handleSend,
 		handleDocumentSelect,
-		handleColdShareDone,
+		handlePostSendDone,
 		setPdfLayoutHeight,
 		placementDocHeight,
 	};

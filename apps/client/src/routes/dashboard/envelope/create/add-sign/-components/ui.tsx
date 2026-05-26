@@ -56,10 +56,17 @@ function AddSignFieldsSidebarSlot() {
 }
 
 function AddSignViewerSlot() {
-	const { persistHydrated, draftReady, currentDocument } = useAddSignContext();
+	const {
+		persistHydrated,
+		draftReady,
+		suppressEmptyDraftRedirect,
+		currentDocument,
+	} = useAddSignContext();
+	const showViewer =
+		persistHydrated && (draftReady || suppressEmptyDraftRedirect);
 	return (
 		<main className="flex-1 flex flex-col bg-background">
-			{!persistHydrated || !draftReady ? (
+			{!showViewer ? (
 				<div className="flex flex-1 items-center justify-center">
 					<InlineLoader size="lg" />
 				</div>
@@ -103,9 +110,9 @@ function AddSignDialogs() {
 				onConfirm={placement.handlePlacementConfirm}
 			/>
 			<ColdShareDialog
-				open={chrome.coldShareDialogOpen}
-				share={chrome.coldShare}
-				onDone={chrome.handleColdShareDone}
+				open={chrome.postSendDialogOpen}
+				share={chrome.postSendShare}
+				onDone={chrome.handlePostSendDone}
 			/>
 		</>
 	);

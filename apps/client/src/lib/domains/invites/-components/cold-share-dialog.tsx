@@ -3,6 +3,7 @@ import {
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
 import {
+	CheckCircleIcon,
 	EnvelopeSimpleIcon,
 	PaperPlaneTiltIcon,
 	WhatsappLogoIcon,
@@ -44,18 +45,23 @@ function shareLinks(share: ColdSharePackage) {
 
 export function ColdShareDialog(props: {
 	open: boolean;
+	/** When null while open, shows warm-recipient success (no secret code). */
 	share: ColdSharePackage | null;
 	onDone: () => void;
 }) {
 	const captureAppEvent = useCaptureAppEvent();
 	const share = props.share;
+	const isColdVariant = Boolean(share);
 	const links = share ? shareLinks(share) : null;
 
 	const fullUrl = share ? buildFullUrl(share) : "";
 
 	useEffect(() => {
-		if (props.open && share) {
+		if (!props.open) return;
+		if (share) {
 			captureAppEvent(CLIENT_ANALYTICS_EVENTS.coldShareDialogShown);
+		} else {
+			captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopePostSendDialogShown);
 		}
 	}, [props.open, share, captureAppEvent]);
 
@@ -68,14 +74,15 @@ export function ColdShareDialog(props: {
 							Share Access
 						</DialogTitle>
 						<DialogDescription className="text-xs leading-relaxed">
-							We email recipients the magic link automatically. Share the secret
-							code too, otherwise they cannot open the document.
+							{isColdVariant
+								? "We email recipients the magic link automatically. Share the secret code too, otherwise they cannot open the document."
+								: "Your file has been shared with the recipients."}
 						</DialogDescription>
 					</DialogHeader>
 				</div>
 
 				<div className="space-y-4 px-6 py-5">
-					{share ? (
+					{isColdVariant && share ? (
 						<>
 							<div className="rounded-lg border border-border bg-muted/25 p-3">
 								<p className="text-xs text-muted-foreground">
@@ -168,12 +175,23 @@ export function ColdShareDialog(props: {
 								Without the secret code, recipients cannot access this document.
 							</p>
 						</>
-					) : null}
+					) : (
+						<div className="flex flex-col items-center gap-3 py-4 text-center">
+							<CheckCircleIcon
+								className="size-12 text-green-600"
+								weight="fill"
+								aria-hidden
+							/>
+							<p className="text-sm text-muted-foreground">
+								Recipients will be notified by email.
+							</p>
+						</div>
+					)}
 				</div>
 
 				<DialogFooter className="border-t border-border/50 px-6 py-4">
 					<Button type="button" variant="primary" onClick={props.onDone}>
-						Done
+						{isColdVariant ? "Done" : "Continue to dashboard"}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

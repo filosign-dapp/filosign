@@ -3,6 +3,18 @@ import { rpcEmptyOutputSchema, zDateWire } from "./rpc-wire";
 
 export const rpcUserRegisterOutputSchema = rpcEmptyOutputSchema;
 
+export const rpcUserRegistrationSnapshotOutputSchema = z.object({
+	isRegistered: z.boolean(),
+	storedKeygenData: z
+		.object({
+			saltSeed: z.string(),
+			saltChallenge: z.string(),
+			commitmentKem: z.string(),
+			commitmentSig: z.string(),
+		})
+		.nullable(),
+});
+
 export const rpcUserProfileMeOutputSchema = z.object({
 	walletAddress: z.string(),
 	encryptionPublicKey: z.string(),

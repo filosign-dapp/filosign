@@ -4,7 +4,7 @@ import { zDateWire } from "./rpc-wire";
 
 const zOrgMemberRole = z.enum(["owner", "admin", "sender", "viewer"]);
 const zOrgMemberStatus = z.enum(["invited", "active", "removed"]);
-const zOrgConnectionStatus = z.enum(["pending_approval", "active", "inactive"]);
+const zOrgConnectionStatus = z.enum(["active", "inactive"]);
 const zOrgSigningMode = z.enum(["acting_member", "org_safe"]);
 export const rpcOrgRowSchema = z.object({
 	id: z.uuid(),
@@ -65,7 +65,6 @@ export const rpcOrgConnectionSchema = z.object({
 	label: z.string().nullable(),
 	addedByWallet: z.string(),
 	anchorSenderWallet: z.string(),
-	shareApprovalId: z.uuid().nullable(),
 	status: zOrgConnectionStatus,
 	createdAt: zDateWire,
 	updatedAt: zDateWire,

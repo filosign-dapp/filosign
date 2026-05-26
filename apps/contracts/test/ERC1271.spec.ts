@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { time } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import type { Hex } from "viem";
 import { getAddress } from "viem";
@@ -7,7 +6,6 @@ import {
 	deployFullSystem,
 	deployMock1271,
 	registerFileOnly,
-	registerKeygenForWallet,
 	setMock1271Valid,
 } from "./fixtures.js";
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
@@ -23,54 +21,10 @@ const zeroOrg =
 const dummy1271Sig = "0x1234" as Hex;
 
 describe("ERC-1271 signature paths (Safe-compatible)", () => {
-	describe("FSManager", () => {
-		it("approveSender reverts when ERC-1271 recipient returns invalid magic", async () => {
-			const ctx = await deployFullSystem();
-			const invalidRecipient = await deployMock1271(false);
-			const deadline = BigInt((await time.latest()) + 600);
-
-			await assert.rejects(
-				ctx.manager.write.approveSender(
-					[
-						invalidRecipient,
-						walletAccount(ctx.sender).address,
-						0n,
-						deadline,
-						dummy1271Sig,
-					],
-					{ account: walletAccount(ctx.server) },
-				),
-			);
-		});
-	});
-
-	describe("FSKeyRegistry", () => {
-		it("registerKeygenData accepts ERC-1271 wallet signatures", async () => {
-			const ctx = await deployFullSystem();
-			const contractWallet = await deployMock1271(true);
-
-			await registerKeygenForWallet(ctx, contractWallet, dummy1271Sig);
-
-			expect(
-				await ctx.keyRegistry.read.isRegistered([contractWallet]),
-			).to.equal(true);
-		});
-
-		it("registerKeygenData reverts when ERC-1271 wallet returns invalid magic", async () => {
-			const ctx = await deployFullSystem();
-			const contractWallet = await deployMock1271(false);
-
-			await assert.rejects(
-				registerKeygenForWallet(ctx, contractWallet, dummy1271Sig),
-			);
-		});
-	});
-
 	describe("FSFileRegistry", () => {
 		it("registerFile accepts ERC-1271 sender signatures", async () => {
 			const ctx = await deployFullSystem();
 			const contractSender = await deployMock1271(true);
-			await registerKeygenForWallet(ctx, contractSender, dummy1271Sig);
 
 			const signerCommitment = `0x${"f1".repeat(32)}` as Hex;
 			const pieceCid = "erc1271-register-file";
@@ -100,7 +54,6 @@ describe("ERC-1271 signature paths (Safe-compatible)", () => {
 		it("registerFile reverts when ERC-1271 sender returns invalid magic", async () => {
 			const ctx = await deployFullSystem();
 			const contractSender = await deployMock1271(true);
-			await registerKeygenForWallet(ctx, contractSender, dummy1271Sig);
 			await setMock1271Valid(contractSender, false);
 
 			const signerCommitment = `0x${"f2".repeat(32)}` as Hex;
@@ -129,7 +82,6 @@ describe("ERC-1271 signature paths (Safe-compatible)", () => {
 		it("registerFileSignature accepts ERC-1271 signerWallet signatures", async () => {
 			const ctx = await deployFullSystem();
 			const contractSigner = await deployMock1271(true);
-			await registerKeygenForWallet(ctx, contractSigner, dummy1271Sig);
 
 			const signerCommitment = `0x${"f3".repeat(32)}` as Hex;
 			const pieceCid = "erc1271-sign-step";
@@ -160,7 +112,6 @@ describe("ERC-1271 signature paths (Safe-compatible)", () => {
 		it("registerFileSignature reverts when ERC-1271 signerWallet returns invalid magic", async () => {
 			const ctx = await deployFullSystem();
 			const contractSigner = await deployMock1271(true);
-			await registerKeygenForWallet(ctx, contractSigner, dummy1271Sig);
 
 			const signerCommitment = `0x${"f4".repeat(32)}` as Hex;
 			const pieceCid = "erc1271-bad-sign";

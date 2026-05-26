@@ -11,17 +11,17 @@ export const COMMIT_DILITHIUM = `0x${"05".repeat(20)}` as Hex;
 
 export async function signRegisterKeygen(
 	wallet: WalletClient,
-	keyRegistryAddress: Address,
+	fileRegistryAddress: Address,
 	chainId: number,
 ): Promise<Hex> {
 	const account = wallet.account as Account;
 	return wallet.signTypedData({
 		account,
 		domain: {
-			name: "FSKeyRegistry",
+			name: "FilosignRegistration",
 			version: "1",
 			chainId,
-			verifyingContract: keyRegistryAddress,
+			verifyingContract: fileRegistryAddress,
 		},
 		types: {
 			RegisterKeygenData: [
@@ -155,42 +155,6 @@ export async function signRegisterFileSignature(args: {
 			leafSchemaVersion: args.leafSchemaVersion,
 			timestamp: args.timestamp,
 			nonce: args.nonce,
-		},
-	});
-}
-
-/** EIP-712 `ApproveSender` for FSManager — recipient signs approval of sender. */
-export async function signApproveSender(args: {
-	wallet: WalletClient;
-	managerAddress: Address;
-	chainId: number;
-	recipient: Address;
-	sender: Address;
-	nonce: bigint;
-	deadline: bigint;
-}): Promise<Hex> {
-	return args.wallet.signTypedData({
-		account: args.wallet.account as Account,
-		domain: {
-			name: "FSManager",
-			version: "1",
-			chainId: args.chainId,
-			verifyingContract: args.managerAddress,
-		},
-		types: {
-			ApproveSender: [
-				{ name: "recipient", type: "address" },
-				{ name: "sender", type: "address" },
-				{ name: "nonce", type: "uint256" },
-				{ name: "deadline", type: "uint256" },
-			],
-		},
-		primaryType: "ApproveSender",
-		message: {
-			recipient: args.recipient,
-			sender: args.sender,
-			nonce: args.nonce,
-			deadline: args.deadline,
 		},
 	});
 }

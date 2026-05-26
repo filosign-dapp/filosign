@@ -2,11 +2,6 @@ import hre from "hardhat";
 import type { Address, Hex, PublicClient, WalletClient } from "viem";
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
 import {
-	COMMIT_DILITHIUM,
-	COMMIT_KYBER,
-	SALT_CHALLENGE,
-	SALT_PIN,
-	SALT_SEED,
 	signRegisterFile,
 	signRegisterFileSignature,
 	signRegisterKeygen,
@@ -14,12 +9,8 @@ import {
 import { walletAccount } from "./helpers/walletAccount.js";
 
 export type FullSystemFixture = {
-	manager: Awaited<ReturnType<typeof hre.viem.deployContract<"FSManager">>>;
 	fileRegistry: Awaited<
 		ReturnType<typeof hre.viem.getContractAt<"FSFileRegistry">>
-	>;
-	keyRegistry: Awaited<
-		ReturnType<typeof hre.viem.getContractAt<"FSKeyRegistry">>
 	>;
 	mockUsdc: Awaited<
 		ReturnType<typeof hre.viem.deployContract<"MockUSDCToken">>
@@ -27,10 +18,11 @@ export type FullSystemFixture = {
 	paymentValidator: Awaited<
 		ReturnType<typeof hre.viem.deployContract<"FSPaymentValidator">>
 	>;
+	deployer: WalletClient;
 	server: WalletClient;
-	treasury: WalletClient;
 	sender: WalletClient;
 	payout: WalletClient;
+	coSigner: WalletClient;
 	publicClient: PublicClient;
 	chainId: number;
 };
@@ -49,134 +41,93 @@ export async function setMock1271Valid(
 	await mock.write.setValid([valid]);
 }
 
-/** Register keygen row for any wallet (EOA or contract). */
-export async function registerKeygenForWallet(
-	ctx: FullSystemFixture,
-	walletAddress: Address,
-	signature: Hex = "0x1234",
-): Promise<void> {
-	await ctx.keyRegistry.write.registerKeygenData(
-		[
-			SALT_PIN,
-			SALT_SEED,
-			SALT_CHALLENGE,
-			COMMIT_KYBER,
-			COMMIT_DILITHIUM,
-			signature,
-			walletAddress,
-		],
-		{ account: walletAccount(ctx.server) },
+async function deployCore(args: {
+	deployer: WalletClient;
+	server: WalletClient;
+	sender: WalletClient;
+	payout: WalletClient;
+	coSigner: WalletClient;
+	registerSenderKeygen: boolean;
+}): Promise<FullSystemFixture> {
+	const { deployer, server, sender, payout, registerSenderKeygen } = args;
+	const publicClient = await hre.viem.getPublicClient();
+	const chainId = await publicClient.getChainId();
+
+	const fileRegistry = await hre.viem.deployContract(
+		"FSFileRegistry",
+		[walletAccount(server).address],
+		{ client: { wallet: deployer } },
 	);
+
+	const mockUsdc = await hre.viem.deployContract("MockUSDCToken", [
+		walletAccount(deployer).address,
+	]);
+
+	const paymentValidator = await hre.viem.deployContract(
+		"FSPaymentValidator",
+		[fileRegistry.address, BigInt(chainId)],
+		{ client: { wallet: deployer } },
+	);
+
+	if (registerSenderKeygen) {
+		const keySig = await signRegisterKeygen(
+			sender,
+			fileRegistry.address,
+			chainId,
+		);
+		void keySig;
+	}
+
+	return {
+		fileRegistry,
+		mockUsdc,
+		paymentValidator,
+		deployer,
+		server,
+		sender,
+		payout,
+		coSigner: args.coSigner,
+		publicClient,
+		chainId,
+	};
 }
 
 export async function deployFullSystem(): Promise<FullSystemFixture> {
-	const [server, treasury, sender, payout] = await hre.viem.getWalletClients();
-	const publicClient = await hre.viem.getPublicClient();
-	const chainId = await publicClient.getChainId();
+	const clients = await hre.viem.getWalletClients();
+	const deployer = clients[0];
+	const server = clients[1];
+	const coSigner = clients[2];
+	const sender = clients[3];
+	const payout = clients[4];
+	if (!deployer || !server || !coSigner || !sender || !payout) {
+		throw new Error("expected Hardhat wallet clients");
+	}
 
-	const manager = await hre.viem.deployContract(
-		"FSManager",
-		[walletAccount(treasury).address],
-		{ client: { wallet: server } },
-	);
-	const fileRegistry = await hre.viem.getContractAt(
-		"FSFileRegistry",
-		await manager.read.fileRegistry(),
-	);
-	const keyRegistry = await hre.viem.getContractAt(
-		"FSKeyRegistry",
-		await manager.read.keyRegistry(),
-	);
-
-	const mockUsdc = await hre.viem.deployContract("MockUSDCToken", [
-		walletAccount(server).address,
-	]);
-
-	const paymentValidator = await hre.viem.deployContract(
-		"FSPaymentValidator",
-		[fileRegistry.address, BigInt(chainId)],
-		{ client: { wallet: server } },
-	);
-
-	const keySig = await signRegisterKeygen(sender, keyRegistry.address, chainId);
-	await keyRegistry.write.registerKeygenData(
-		[
-			SALT_PIN,
-			SALT_SEED,
-			SALT_CHALLENGE,
-			COMMIT_KYBER,
-			COMMIT_DILITHIUM,
-			keySig,
-			walletAccount(sender).address,
-		],
-		{ account: walletAccount(server) },
-	);
-
-	return {
-		manager,
-		fileRegistry,
-		keyRegistry,
-		mockUsdc,
-		paymentValidator,
+	return deployCore({
+		deployer,
 		server,
-		treasury,
 		sender,
 		payout,
-		publicClient,
-		chainId,
-	};
+		coSigner,
+		registerSenderKeygen: false,
+	});
 }
 
-/** Manager + registry + token; **no** `FSKeyRegistry` row for `sender` (for negative registration tests). */
+// Legacy helper name used by ERC1271 tests — keygen is off-chain; no-op on chain.
+export async function registerKeygenForWallet(
+	_ctx: FullSystemFixture,
+	_walletAddress: Address,
+	_signature?: Hex,
+): Promise<void> {}
+
 export async function deployFullSystemWithoutSenderKeygen(): Promise<FullSystemFixture> {
-	const [server, treasury, sender, payout] = await hre.viem.getWalletClients();
-	const publicClient = await hre.viem.getPublicClient();
-	const chainId = await publicClient.getChainId();
-
-	const manager = await hre.viem.deployContract(
-		"FSManager",
-		[walletAccount(treasury).address],
-		{ client: { wallet: server } },
-	);
-	const fileRegistry = await hre.viem.getContractAt(
-		"FSFileRegistry",
-		await manager.read.fileRegistry(),
-	);
-	const keyRegistry = await hre.viem.getContractAt(
-		"FSKeyRegistry",
-		await manager.read.keyRegistry(),
-	);
-
-	const mockUsdc = await hre.viem.deployContract("MockUSDCToken", [
-		walletAccount(server).address,
-	]);
-
-	const paymentValidator = await hre.viem.deployContract(
-		"FSPaymentValidator",
-		[fileRegistry.address, BigInt(chainId)],
-		{ client: { wallet: server } },
-	);
-
-	return {
-		manager,
-		fileRegistry,
-		keyRegistry,
-		mockUsdc,
-		paymentValidator,
-		server,
-		treasury,
-		sender,
-		payout,
-		publicClient,
-		chainId,
-	};
+	return deployFullSystem();
 }
 
 const defaultPlacement = `0x${"ab".repeat(32)}` as Hex;
 const defaultSenderEmail = `0x${"cd".repeat(32)}` as Hex;
 const defaultSenderPrivy = `0x${"ef".repeat(32)}` as Hex;
 
-/** Register file row for one or more signer commitments. */
 export async function registerFileOnly(
 	ctx: FullSystemFixture,
 	pieceCid: string,
@@ -228,7 +179,6 @@ const signDefaults = {
 	leafVersion: 1,
 };
 
-/** One `registerFileSignature` call (not necessarily the last signer). */
 export async function registerFileSignatureStep(args: {
 	ctx: FullSystemFixture;
 	pieceCid: string;

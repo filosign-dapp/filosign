@@ -7,14 +7,6 @@ import {
 	registerFileOnly,
 	registerFileSignatureStep,
 } from "./fixtures.js";
-import {
-	COMMIT_DILITHIUM,
-	COMMIT_KYBER,
-	SALT_CHALLENGE,
-	SALT_PIN,
-	SALT_SEED,
-	signRegisterKeygen,
-} from "./helpers/signatures.js";
 import { walletAccount } from "./helpers/walletAccount.js";
 
 const signerCommitment = `0x${"aa".repeat(32)}` as Hex;
@@ -165,7 +157,7 @@ describe("FSPaymentValidator", () => {
 	it("SpecificSigner: pays when that signer signed", async () => {
 		const ctx = await deployFullSystem();
 		const senderAddr = walletAccount(ctx.sender).address;
-		const recipientAddr = walletAccount(ctx.treasury).address;
+		const recipientAddr = walletAccount(ctx.payout).address;
 		const specificPiece = "specific-signer-doc";
 		const id = cidId(specificPiece);
 
@@ -209,27 +201,8 @@ describe("FSPaymentValidator", () => {
 		const ctx = await deployFullSystem();
 		const senderAddr = walletAccount(ctx.sender).address;
 		const recipientAddr = walletAccount(ctx.payout).address;
-		const coSigner = walletAccount(ctx.treasury);
 		const piece = "at-least-n-doc";
 		const id = cidId(piece);
-
-		const coSignerKeySig = await signRegisterKeygen(
-			ctx.treasury,
-			ctx.keyRegistry.address,
-			ctx.chainId,
-		);
-		await ctx.keyRegistry.write.registerKeygenData(
-			[
-				SALT_PIN,
-				SALT_SEED,
-				SALT_CHALLENGE,
-				COMMIT_KYBER,
-				COMMIT_DILITHIUM,
-				coSignerKeySig,
-				coSigner.address,
-			],
-			{ account: walletAccount(ctx.server) },
-		);
 
 		await ctx.mockUsdc.write.mint([senderAddr, amount]);
 		await ctx.paymentValidator.write.registerRule(
@@ -268,7 +241,7 @@ describe("FSPaymentValidator", () => {
 			ctx,
 			pieceCid: piece,
 			senderAddr,
-			signerWallet: ctx.treasury,
+			signerWallet: ctx.coSigner,
 			signerEmailCommitment: secondSignerCommitment,
 		});
 		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.true;

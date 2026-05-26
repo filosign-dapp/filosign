@@ -5,7 +5,6 @@ import type { Hex } from "viem";
 import { keccak256, toBytes } from "viem";
 import {
 	deployFullSystem,
-	deployFullSystemWithoutSenderKeygen,
 	registerFileOnly,
 	registerFileSignatureStep,
 } from "./fixtures.js";
@@ -46,46 +45,6 @@ describe("FSFileRegistry", () => {
 		const lo = `0x${"01".repeat(32)}` as Hex;
 		await assert.rejects(
 			ctx.fileRegistry.read.computeEmailSignerCommitment([[z, lo]]),
-		);
-	});
-
-	it("registerFile reverts when sender not in key registry", async () => {
-		const ctx = await deployFullSystemWithoutSenderKeygen();
-		const c = `0x${"aa".repeat(32)}` as Hex;
-		const pieceCid = "no-keygen";
-		const sc = await ctx.fileRegistry.read.computeEmailSignerCommitment([[c]]);
-		const ts = await latestBlockTimestamp(ctx.publicClient);
-		const nonce = await ctx.fileRegistry.read.nonce([
-			walletAccount(ctx.sender).address,
-		]);
-		const sig = await signRegisterFile({
-			wallet: ctx.sender,
-			fileRegistryAddress: ctx.fileRegistry.address,
-			chainId: ctx.chainId,
-			pieceCid,
-			signersCommitment: sc,
-			placementCommitment: defaultPlacement,
-			senderEmailCommitment: defaultSenderEmail,
-			senderPrivySubjectCommitment: defaultSenderPrivy,
-			timestamp: ts,
-			nonce,
-		});
-		await assert.rejects(
-			ctx.fileRegistry.write.registerFile(
-				[
-					pieceCid,
-					walletAccount(ctx.sender).address,
-					[c],
-					[],
-					defaultSenderEmail,
-					defaultSenderPrivy,
-					zeroOrg,
-					ts,
-					sig,
-					defaultPlacement,
-				],
-				{ account: walletAccount(ctx.server) },
-			),
 		);
 	});
 

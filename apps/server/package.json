@@ -19,7 +19,6 @@
 		"test": "bun test"
 	},
 	"dependencies": {
-		"@filosign/auth": "workspace:*",
 		"@filosign/contracts": "workspace:*",
 		"@filosign/crypto-utils": "workspace:*",
 		"@filosign/emails": "workspace:*",
@@ -33,7 +32,6 @@
 		"drizzle-orm": "0.45.2",
 		"fast-json-stable-stringify": "catalog:",
 		"hono": "catalog:",
-		"jsonwebtoken": "catalog:",
 		"pg": "8.16.3",
 		"pino": "10.3.1",
 		"posthog-node": "5.1.1",
@@ -47,7 +45,6 @@
 		"ethers": "catalog:",
 		"@t3-oss/env-core": "catalog:",
 		"@types/bun": "catalog:",
-		"@types/jsonwebtoken": "catalog:",
 		"@types/node": "catalog:",
 		"@types/pg": "8.15.6",
 		"drizzle-kit": "0.31.6"

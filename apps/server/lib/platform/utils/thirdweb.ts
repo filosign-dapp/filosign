@@ -1,12 +1,18 @@
+import { createHash } from "node:crypto";
 import { type Address, getAddress } from "viem";
 import env from "@/env";
+import {
+	assertVerifyRateLimit,
+	type CachedSession,
+	getCachedSession,
+	setCachedSession,
+} from "@/lib/platform/cache/session-cache";
 
 const EMBEDDED_WALLET_ACCOUNTS_URL =
 	"https://embedded-wallet.thirdweb.com/api/2024-05-05/accounts";
 
 export interface ThirdwebAuthResult {
-	/** Stored in `users.privyDid` (legacy column name). */
-	privyDid: string;
+	authProviderId: string;
 	email: string | null;
 	walletAddress: string | null;
 }
@@ -109,7 +115,7 @@ export async function verifyThirdwebAuthTokenWithWallet(
 		null;
 
 	return {
-		privyDid: status.id,
+		authProviderId: status.id,
 		email,
 		walletAddress,
 	};
@@ -159,4 +165,32 @@ export async function verifiedLinkedEmailsForWallet(
 	await verifyThirdwebAuthTokenWithWallet(authToken, walletAddress);
 	const status = await fetchUserStatus(authToken);
 	return linkedEmailsFromThirdwebStatus(status);
+}
+
+function tokenRateLimitId(token: string): string {
+	return createHash("sha256").update(token).digest("hex").slice(0, 32);
+}
+
+export async function verifyThirdwebSession(
+	authToken: string,
+	expectedWallet: string,
+): Promise<CachedSession> {
+	const wallet = getAddress(expectedWallet);
+	const cached = await getCachedSession(authToken);
+	if (cached) {
+		if (getAddress(cached.wallet) !== wallet) {
+			throw new Error("Wallet mismatch");
+		}
+		return cached;
+	}
+
+	await assertVerifyRateLimit(tokenRateLimitId(authToken));
+	const result = await verifyThirdwebAuthTokenWithWallet(authToken, wallet);
+	const session: CachedSession = {
+		wallet,
+		userId: result.authProviderId,
+		email: result.email ?? "",
+	};
+	await setCachedSession(authToken, session);
+	return session;
 }

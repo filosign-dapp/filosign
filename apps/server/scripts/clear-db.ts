@@ -1,4 +1,5 @@
 import { Client } from "pg";
+import { flushDevCache, initCache } from "@/lib/platform/cache/session-cache";
 
 // Bun automatically loads --env-file into process.env
 const PG_URI = process.env.PG_URI;
@@ -33,6 +34,17 @@ try {
 	await client.query("GRANT ALL ON SCHEMA public TO PUBLIC");
 	await client.query("COMMIT");
 	console.log("✓ Database cleared successfully");
+
+	try {
+		await initCache();
+		await flushDevCache();
+		console.log("✓ Dragonfly cache flushed");
+	} catch (cacheErr) {
+		console.warn(
+			"⚠ Dragonfly cache flush skipped (is docker compose up?):",
+			cacheErr instanceof Error ? cacheErr.message : cacheErr,
+		);
+	}
 } catch (err) {
 	console.error("✗ Failed to clear database:", err);
 	try {

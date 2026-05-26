@@ -11,7 +11,7 @@ import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
-const { shareApprovals, shareRequests, userInvites, users } = db.schema;
+const { userInvites, users } = db.schema;
 
 export async function sharingEmailInvites(wallet: Address) {
 	const result = await tryCatch(
@@ -130,14 +130,6 @@ export async function sharingInviteClaim(wallet: Address, id: string) {
 				);
 
 			for (const invite of allInvites) {
-				await tx.insert(shareRequests).values({
-					senderWallet: invite.sender,
-					recipientWallet: wallet,
-					message:
-						invite.message ??
-						`Auto-generated request from invite to ${invite.inviteeEmail}`,
-					createdAt: invite.createdAt,
-				});
 				await tx
 					.update(userInvites)
 					.set({
@@ -179,6 +171,37 @@ export async function sharingInviteClaim(wallet: Address, id: string) {
 	};
 }
 
+async function insertUserInvite(args: {
+	sender: Address;
+	inviteeEmail: string;
+	message: string | null | undefined;
+}) {
+	const [existingInvite] = await db
+		.select({ id: userInvites.id })
+		.from(userInvites)
+		.where(
+			and(
+				eq(userInvites.sender, args.sender),
+				eq(userInvites.inviteeEmail, args.inviteeEmail),
+				pendingUserInviteFilter(),
+			),
+		);
+
+	if (existingInvite) {
+		return { alreadyInvited: true as const };
+	}
+
+	await db.insert(userInvites).values({
+		sender: args.sender,
+		inviteeEmail: args.inviteeEmail,
+		status: "pending",
+		expiresAt: inviteExpiresAt(),
+		message: args.message ?? null,
+	});
+
+	return { alreadyInvited: false as const };
+}
+
 export async function sharingRequestInvite(wallet: Address, body: unknown) {
 	const parsed = z
 		.object({
@@ -210,74 +233,16 @@ export async function sharingRequestInvite(wallet: Address, body: unknown) {
 		});
 	}
 
-	const [existingUser] = await db
-		.select({ walletAddress: users.walletAddress })
-		.from(users)
-		.where(eq(users.email, inviteeEmail));
+	const normalizedEmail = inviteeEmail.toLowerCase();
+	const out = await insertUserInvite({
+		sender: wallet,
+		inviteeEmail: normalizedEmail,
+		message,
+	});
 
-	if (existingUser) {
-		const [existingRequest] = await db
-			.select()
-			.from(shareRequests)
-			.where(
-				and(
-					eq(shareRequests.senderWallet, wallet),
-					eq(shareRequests.recipientWallet, existingUser.walletAddress),
-					eq(shareRequests.status, "PENDING"),
-				),
-			);
-
-		if (existingRequest) {
-			return { exists: true as const, alreadyRequested: true as const };
-		}
-
-		const [latestApproval] = await db
-			.select()
-			.from(shareApprovals)
-			.where(
-				and(
-					eq(shareApprovals.senderWallet, wallet),
-					eq(shareApprovals.recipientWallet, existingUser.walletAddress),
-				),
-			)
-			.orderBy(desc(shareApprovals.createdAt))
-			.limit(1);
-
-		if (latestApproval?.active) {
-			return { exists: true as const, alreadyApproved: true as const };
-		}
-
-		await db.insert(shareRequests).values({
-			senderWallet: wallet,
-			recipientWallet: existingUser.walletAddress,
-			message: message ?? null,
-		});
-
-		return { exists: true as const, requested: true as const };
-	}
-
-	const [existingInvite] = await db
-		.select({ id: userInvites.id })
-		.from(userInvites)
-		.where(
-			and(
-				eq(userInvites.sender, wallet),
-				eq(userInvites.inviteeEmail, inviteeEmail),
-				pendingUserInviteFilter(),
-			),
-		);
-
-	if (existingInvite) {
+	if (out.alreadyInvited) {
 		return { invited: true as const, alreadyInvited: true as const };
 	}
-
-	await db.insert(userInvites).values({
-		sender: wallet,
-		inviteeEmail,
-		status: "pending",
-		expiresAt: inviteExpiresAt(),
-		message: message ?? null,
-	});
 
 	return { invited: true as const };
 }

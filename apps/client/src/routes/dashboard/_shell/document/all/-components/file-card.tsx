@@ -1,6 +1,5 @@
 import type { FileInfo } from "@filosign/react/files";
 import { DotsThreeVerticalIcon, FilePdfIcon } from "@phosphor-icons/react";
-import { motion } from "motion/react";
 import { Button } from "@/src/lib/components/ui/button";
 import { cn } from "@/src/lib/utils/utils";
 
@@ -74,12 +73,17 @@ export default function FileCard({
 
 	if (variant === "grid") {
 		return (
-			<motion.div
+			<div
+				role="button"
+				tabIndex={0}
 				className="group bg-background border rounded-lg p-2 hover:bg-accent/50 transition-colors cursor-pointer"
-				initial={{ opacity: 0, scale: 0.9 }}
-				animate={{ opacity: 1, scale: 1 }}
-				transition={{ duration: 0.2 }}
 				onClick={handleClick}
+				onKeyDown={(e) => {
+					if (e.key === "Enter" || e.key === " ") {
+						e.preventDefault();
+						handleClick();
+					}
+				}}
 			>
 				<div className="aspect-[4/3] bg-muted rounded-md flex items-center justify-center mb-2 overflow-hidden">
 					{isImage ? (
@@ -98,16 +102,22 @@ export default function FileCard({
 						{formatFileSize(fileSize)} · {formatDate(createdAt)}
 					</p>
 				</div>
-			</motion.div>
+			</div>
 		);
 	}
 
 	return (
-		<motion.div
+		<div
+			role="button"
+			tabIndex={0}
 			className="group flex items-center gap-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
-			initial={{ opacity: 0, x: -10 }}
-			animate={{ opacity: 1, x: 0 }}
 			onClick={handleClick}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
+					handleClick();
+				}
+			}}
 		>
 			<div className="size-10 shrink-0 flex items-center justify-center">
 				<FileIconComponent className={cn("size-8", iconColor)} />
@@ -126,6 +136,6 @@ export default function FileCard({
 			>
 				<DotsThreeVerticalIcon className="size-4" />
 			</Button>
-		</motion.div>
+		</div>
 	);
 }

@@ -5,7 +5,7 @@ import {
 } from "@filosign/react/files";
 import { useActiveOrgId } from "@filosign/react/orgs";
 import { useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useFileInfosByPieceCids } from "@/src/lib/domains/files/hooks/use-file-infos-by-piece-cids";
 
 export function useDocumentsController() {
@@ -75,35 +75,48 @@ export function useDocumentsController() {
 		receivedFiles.isLoading ||
 		Boolean(activeOrgId && orgFiles.isLoading);
 
-	const handleViewModeChange = (newViewMode: "list" | "grid") => {
-		if (newViewMode !== viewMode) {
-			setViewMode(newViewMode);
-		}
-	};
+	const handleViewModeChange = useCallback((newViewMode: "list" | "grid") => {
+		setViewMode((prev) => (newViewMode !== prev ? newViewMode : prev));
+	}, []);
 
-	const handleItemClick = (file: {
-		pieceCid: string;
-		[key: string]: unknown;
-	}) => {
-		void navigate({
-			to: "/dashboard/document/sign",
-			search: { pieceCid: file.pieceCid },
-		});
-	};
+	const handleItemClick = useCallback(
+		(file: { pieceCid: string; [key: string]: unknown }) => {
+			void navigate({
+				to: "/dashboard/document/sign",
+				search: { pieceCid: file.pieceCid },
+			});
+		},
+		[navigate],
+	);
 
-	return {
-		viewMode,
-		isFilterOpen,
-		activeOrgId,
-		sentFilesData,
-		receivedFilesData,
-		orgFilesData,
-		allFiles,
-		fileInfoByPieceCid: fileInfos.byPieceCid,
-		isLoading,
-		handleViewModeChange,
-		handleItemClick,
-	};
+	return useMemo(
+		() => ({
+			viewMode,
+			isFilterOpen,
+			activeOrgId,
+			sentFilesData,
+			receivedFilesData,
+			orgFilesData,
+			allFiles,
+			fileInfoByPieceCid: fileInfos.byPieceCid,
+			isLoading,
+			handleViewModeChange,
+			handleItemClick,
+		}),
+		[
+			viewMode,
+			isFilterOpen,
+			activeOrgId,
+			sentFilesData,
+			receivedFilesData,
+			orgFilesData,
+			allFiles,
+			fileInfos.byPieceCid,
+			isLoading,
+			handleViewModeChange,
+			handleItemClick,
+		],
+	);
 }
 
 export type DocumentsController = ReturnType<typeof useDocumentsController>;

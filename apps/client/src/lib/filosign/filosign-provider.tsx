@@ -4,6 +4,7 @@ import {
 	type FilosignWallet,
 } from "@filosign/react";
 import { useEffect, useState } from "react";
+import { useAuthToken } from "thirdweb/react";
 import env from "@/src/env";
 import { PersistedActiveOrganizationSync } from "@/src/lib/filosign/persisted-active-org";
 import { dilithiumLoadPromise } from "@/src/lib/filosign/preload-dilithium";
@@ -18,6 +19,7 @@ import { Loader } from "../components/ui/loader";
 
 export function FilosignProvider({ children }: { children: React.ReactNode }) {
 	const { viemWallet } = useThirdweb();
+	const thirdwebAuthToken = useAuthToken();
 	const walletForSdk: FilosignWallet | undefined = viemWallet?.account
 		? (viemWallet as FilosignWallet)
 		: undefined;
@@ -67,6 +69,7 @@ export function FilosignProvider({ children }: { children: React.ReactNode }) {
 			apiBaseUrl={env.VITE_SERVER_URL}
 			wasm={{ dilithium }}
 			wallet={walletForSdk}
+			thirdwebAuthToken={thirdwebAuthToken ?? null}
 			loader={Loader}
 		>
 			<PersistedActiveOrganizationSync />

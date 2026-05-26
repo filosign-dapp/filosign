@@ -1,6 +1,10 @@
 import { useFilosignContext } from "@filosign/react";
 import { useIdentifyAnalyticsWallet } from "@filosign/react/analytics";
-import { useIsLoggedIn, useIsRegistered } from "@filosign/react/auth";
+import {
+	useCryptoUnlocked,
+	useIsLoggedIn,
+	useIsRegistered,
+} from "@filosign/react/auth";
 import { useEffect } from "react";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 import {
@@ -16,7 +20,8 @@ export function useSessionGateFlags(): SessionGateFlags {
 	const { ready, authenticated } = useThirdweb();
 	const { wallet } = useFilosignContext();
 	const isRegistered = useIsRegistered();
-	const isLoggedIn = useIsLoggedIn();
+	const apiSession = useIsLoggedIn();
+	const cryptoUnlocked = useCryptoUnlocked();
 
 	return {
 		ready,
@@ -24,22 +29,24 @@ export function useSessionGateFlags(): SessionGateFlags {
 		hasWalletClient: Boolean(wallet?.account?.address),
 		isRegistered: isRegistered.data,
 		isRegisteredPending: isRegistered.isPending,
-		isLoggedIn: isLoggedIn.data,
-		isLoggedInPending: isLoggedIn.isPending,
-		isLoggedInError: isLoggedIn.isError,
+		isApiSessionActive: apiSession.data,
+		isApiSessionPending: apiSession.isPending,
+		isApiSessionError: apiSession.isError,
+		isCryptoUnlocked: cryptoUnlocked.data,
+		isCryptoUnlockedPending: cryptoUnlocked.isPending,
 	};
 }
 
 export function useSessionGateAnalytics() {
 	const { wallet } = useFilosignContext();
-	const isLoggedIn = useIsLoggedIn();
+	const apiSession = useIsLoggedIn();
 	const identifyAnalyticsWallet = useIdentifyAnalyticsWallet();
 
 	useEffect(() => {
-		if (isLoggedIn.data && wallet?.account?.address) {
+		if (apiSession.data && wallet?.account?.address) {
 			identifyAnalyticsWallet(wallet.account.address);
 		}
-	}, [isLoggedIn.data, wallet?.account?.address, identifyAnalyticsWallet]);
+	}, [apiSession.data, wallet?.account?.address, identifyAnalyticsWallet]);
 }
 
 export function useSessionGateDerived(flags: SessionGateFlags) {

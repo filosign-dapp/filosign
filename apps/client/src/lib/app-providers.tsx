@@ -6,7 +6,6 @@ import { type ReactNode, StrictMode } from "react";
 import env from "@/src/env";
 import { ErrorBoundary } from "@/src/lib/components/app/errors/error-boundary";
 import { HydrationLifecycleTracer } from "@/src/lib/components/app/hydration-lifecycle-tracer";
-import { Toaster } from "@/src/lib/components/ui/sonner";
 import { FilosignProvider } from "@/src/lib/filosign/filosign-provider";
 import { QueryClientProvider } from "@/src/lib/filosign/query-client";
 import { Web3Provider } from "@/src/lib/web3/providers";
@@ -37,12 +36,7 @@ export function AppProviders({ children }: { children?: ReactNode }) {
 										}}
 									>
 										<HydrationLifecycleTracer />
-										{children ?? (
-											<>
-												<RouterProvider router={router} />
-												<Toaster position="bottom-right" />
-											</>
-										)}
+										{children ?? <RouterProvider router={router} />}
 									</IconContext.Provider>
 								</FilosignProvider>
 							</Web3Provider>

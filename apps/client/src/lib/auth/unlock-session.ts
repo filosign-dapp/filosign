@@ -1,7 +1,6 @@
 import { LOGIN_RECOVERY_PHRASE_REQUIRED } from "@filosign/react/auth";
 import { invalidateSessionQueries } from "@filosign/react/invalidate-queries";
 import type { QueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import {
 	hydrationMark,
 	hydrationMarkAsyncEnd,
@@ -27,7 +26,7 @@ export async function attemptWalletLoginUnlock(args: {
 	});
 
 	try {
-		await args.login.mutateAsync();
+		await args.login.mutateAsync({ unlockOnly: true });
 		hydrationMarkAsyncEnd("unlock:wallet-login-success", started);
 	} catch (err: unknown) {
 		const message = err instanceof Error ? err.message : "unknown";
@@ -42,9 +41,6 @@ export async function attemptWalletLoginUnlock(args: {
 		hydrationMarkAsyncEnd("unlock:wallet-login-failed", started, {
 			message,
 		});
-		toast.error(
-			err instanceof Error ? err.message : "Could not unlock session",
-		);
 		args.onRecoveryRequired();
 	}
 }

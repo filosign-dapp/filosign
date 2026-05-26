@@ -5,9 +5,13 @@ export type SessionGateFlags = {
 	hasWalletClient: boolean;
 	isRegistered: boolean | undefined;
 	isRegisteredPending: boolean;
-	isLoggedIn: boolean | undefined;
-	isLoggedInPending: boolean;
-	isLoggedInError: boolean;
+	/** Thirdweb Bearer + Filosign API session (`useAuthedApi`). */
+	isApiSessionActive: boolean | undefined;
+	isApiSessionPending: boolean;
+	isApiSessionError: boolean;
+	/** In-memory crypto seed matches key commitments. */
+	isCryptoUnlocked: boolean | undefined;
+	isCryptoUnlockedPending: boolean;
 };
 
 function walletSessionUp(flags: SessionGateFlags): boolean {
@@ -23,9 +27,9 @@ export function isDashboardEntryAllowed(flags: SessionGateFlags): boolean {
 	);
 }
 
-/** Filosign SDK session is active (not recovery gate). */
+/** Filosign API session is active (thirdweb token on RPC). */
 export function isFilosignSessionActive(flags: SessionGateFlags): boolean {
-	return flags.isLoggedIn === true;
+	return flags.isApiSessionActive === true;
 }
 
 export function shouldRedirectToSignIn(flags: SessionGateFlags): boolean {
@@ -42,22 +46,19 @@ export function shouldShowSessionBootstrapLoader(
 	if (!walletSessionUp(flags) || flags.isRegisteredPending) {
 		return true;
 	}
-	// Registered but no in-memory seed: unlock runs next — do not wait on isLoggedIn query.
-	if (flags.isRegistered === true && flags.isLoggedIn !== true) {
-		return false;
+	if (flags.isRegistered === true && flags.isApiSessionActive !== true) {
+		return flags.isApiSessionPending && !flags.isApiSessionError;
 	}
-	return (
-		flags.isLoggedIn !== true &&
-		flags.isLoggedInPending &&
-		!flags.isLoggedInError
-	);
+	return false;
 }
 
+/** Explicit crypto unlock (sign/view flows), not dashboard auto-unlock. */
 export function canAttemptWalletLogin(flags: SessionGateFlags): boolean {
 	return (
 		walletSessionUp(flags) &&
 		flags.isRegistered === true &&
 		!flags.isRegisteredPending &&
-		flags.isLoggedIn !== true
+		flags.isApiSessionActive === true &&
+		flags.isCryptoUnlocked !== true
 	);
 }

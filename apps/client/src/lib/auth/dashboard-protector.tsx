@@ -13,7 +13,7 @@ export default function DashboardProtector({
 	children,
 }: DashboardProtectorProps) {
 	const navigate = useNavigate();
-	const unlock = useWalletUnlock({ enabled: true });
+	const unlock = useWalletUnlock({ enabled: false });
 	const { derived, showRecoveryGate, tryingWalletUnlock } = unlock;
 
 	useEffect(() => {

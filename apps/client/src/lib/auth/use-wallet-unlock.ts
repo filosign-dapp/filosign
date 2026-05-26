@@ -2,7 +2,6 @@ import { useFilosignContext } from "@filosign/react";
 import { useLogin, useRecoverWithPhrase } from "@filosign/react/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { hydrationMark } from "@/src/lib/utils/hydration-lifecycle";
 import {
 	attemptWalletLoginUnlock,
@@ -41,16 +40,16 @@ export function useWalletUnlock(options?: { enabled?: boolean }) {
 			authenticated: flags.authenticated,
 			isRegistered: flags.isRegistered,
 			isRegisteredPending: flags.isRegisteredPending,
-			isLoggedIn: flags.isLoggedIn,
-			isLoggedInPending: flags.isLoggedInPending,
+			isCryptoUnlocked: flags.isCryptoUnlocked,
+			isCryptoUnlockedPending: flags.isCryptoUnlockedPending,
 		});
 	}, [
 		flags.ready,
 		flags.authenticated,
 		flags.isRegistered,
 		flags.isRegisteredPending,
-		flags.isLoggedIn,
-		flags.isLoggedInPending,
+		flags.isCryptoUnlocked,
+		flags.isCryptoUnlockedPending,
 	]);
 
 	useEffect(() => {
@@ -72,17 +71,17 @@ export function useWalletUnlock(options?: { enabled?: boolean }) {
 	]);
 
 	useEffect(() => {
-		if (flags.isLoggedIn) {
+		if (flags.isCryptoUnlocked) {
 			setShowRecoveryGate(false);
 			setRecoveryPhrase("");
 			setError("");
 			walletUnlockStartedRef.current = false;
 		}
-	}, [flags.isLoggedIn]);
+	}, [flags.isCryptoUnlocked]);
 
 	useEffect(() => {
 		if (!enabled) return;
-		if (flags.isLoggedIn) return;
+		if (flags.isCryptoUnlocked) return;
 		if (!derived.canAttemptWalletLogin) {
 			walletUnlockStartedRef.current = false;
 			return;
@@ -95,7 +94,9 @@ export function useWalletUnlock(options?: { enabled?: boolean }) {
 		hydrationMark("wallet-unlock:effect-trigger-login");
 
 		void attemptWalletLoginUnlock({
-			login: { mutateAsync: (args) => login.mutateAsync(args ?? {}) },
+			login: {
+				mutateAsync: (args) => login.mutateAsync({ unlockOnly: true, ...args }),
+			},
 			onRecoveryRequired: () => {
 				setShowRecoveryGate(true);
 				walletUnlockStartedRef.current = false;
@@ -106,7 +107,7 @@ export function useWalletUnlock(options?: { enabled?: boolean }) {
 	}, [
 		enabled,
 		derived.canAttemptWalletLogin,
-		flags.isLoggedIn,
+		flags.isCryptoUnlocked,
 		login,
 		showRecoveryGate,
 	]);
@@ -123,7 +124,6 @@ export function useWalletUnlock(options?: { enabled?: boolean }) {
 			});
 			setShowRecoveryGate(false);
 			setRecoveryPhrase("");
-			toast.success("Session unlocked");
 		} catch (recoverErr) {
 			setError(formatRecoveryPhraseError(recoverErr));
 		}

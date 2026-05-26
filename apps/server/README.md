@@ -13,23 +13,21 @@ Bun reads `.env*` automatically per [environment variables — Bun](https://bun.
 
 | Path | Role |
 |------|------|
-| `api/integrations/` | Partner webhooks (`/api/integrations/*`) — mounted on **`apiRouter`** before JWT/oRPC |
+| `api/integrations/` | Partner webhooks — before session middleware |
 | `api/orpc/` | oRPC **`/api/rpc`** + OpenAPI **`/api/api-reference`** (see `hono-mount.ts`, `router.ts`) |
 | `api/handlers/` | oRPC procedure implementations (**`ORPCError`**, reuse `tryCatch`) |
-| `api/orpc/hono-mount.ts` | **`apiRouter`** — integrations, then optional JWT + hybrid oRPC/OpenAPI on `/api` |
-| `api/middleware/` | JWT optional parsing for **`/api/rpc`** + **`/api/api-reference`** |
+| `api/orpc/hono-mount.ts` | **`apiRouter`** — integrations, then optional thirdweb Bearer + oRPC on `/api` |
+| `lib/platform/cache/session-cache.ts` | Dragonfly: thirdweb session cache + verify rate limit |
 | `lib/domains/` | Business logic by bounded context (orgs, files, settlements, sharing, users, entitlements, invites, runtime) — shared by handlers, indexer, cron |
 | `lib/platform/` | Shared infra: `db/`, `indexer/`, `cron/`, `evm`, `s3/`, `analytics/`, `compliance/`, `validation/`, `utils/` |
 | `lib/platform/polyfills/` | `bigint-json` for JSON serialization |
 | `constants.ts` | Shared limits (e.g. `MAX_FILE_SIZE`) |
 
-## Scaling / limits
+## Session
 
-- **Auth package:** [`@filosign/auth`](../../packages/auth) — JWT, refresh cookies, Dragonfly/Postgres store. Wired in [`lib/platform/auth/instance.ts`](lib/platform/auth/instance.ts).
-- **Dragonfly (recommended prod):** set `DRAGONFLY_URL=redis://…` for nonces, `jti` denylist, refresh rotation, distributed rate limits, and optional `users.profile.lookup` JSON cache (30m).
-- **Postgres fallback:** omit `DRAGONFLY_URL` — uses `auth_nonces`, `jwt_revoked_jtis`, `refresh_sessions` (run `db:push` after schema changes). Audit events always in Postgres.
-- **Access JWT:** 30 min Bearer. **Refresh:** `filosign_refresh` httpOnly on `/api`, rotated on `auth.refresh`.
-- **`tx.processIndexerHash` input `{ hash, body? }`:** **`body: {}`** is valid for txs that only index FSManager logs; **`encryptionPublicKey` + `signaturePublicKey`** together (hex) for KeyRegistry registration. Shape is **`zIndexerTxBody`** in `lib/validation/tx-registration.ts`.
+- **`DRAGONFLY_URL`** (required) — `docker compose up -d` → `redis://127.0.0.1:6379`
+- Client: thirdweb `useAuthToken()` → `Authorization: Bearer` + `X-Wallet-Address` on `/api/rpc`
+- **`tx.processIndexerHash`:** `{ hash, body? }` — **`body: {}`** ok for registry relay txs (`zIndexerTxBody`).
 
 ## Analytics (PostHog)
 
@@ -48,8 +46,8 @@ JSON API is **`/api/rpc`** — native outputs + **`ORPCError`** mapping. OpenAPI
 
 ## Security notes
 
-- **`tx.processIndexerHash`** uses **`authenticatedProcedure`** — JWT unchanged. Validates JSON server-side; **reverted** on-chain txs return **400**. Generic **500** text avoids leaking internals; see `ProcessTxUserError`.
-- **`DEBUG=true`** — skips outbound Resend email (`lib/platform/email/invites.ts`) and expands JWT indexer logs (`env.ts` drives both).
+- **`tx.processIndexerHash`** — **`authenticatedProcedure`** (thirdweb session). Reverted txs → **400**.
+- **`DEBUG=true`** — skips Resend email; verbose indexer logs.
 
 ## Object storage (S3-compatible / R2)
 

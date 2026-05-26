@@ -12,8 +12,7 @@ import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
 import db from "@/lib/platform/db";
 import { bucket } from "@/lib/platform/s3/client";
 
-const { organizationConnections, organizationTemplates, shareApprovals } =
-	db.schema;
+const { organizationConnections, organizationTemplates } = db.schema;
 
 const zConnectionBody = z.object({
 	recipientWallet: zEvmAddress(),
@@ -34,21 +33,6 @@ export async function orgsConnectionsAdd(
 	const recipient = getAddress(parsed.data.recipientWallet);
 	const anchor = getAddress(wallet);
 
-	const [approval] = await db
-		.select()
-		.from(shareApprovals)
-		.where(
-			and(
-				eq(shareApprovals.senderWallet, anchor),
-				eq(shareApprovals.recipientWallet, recipient),
-				eq(shareApprovals.active, true),
-			),
-		)
-		.orderBy(desc(shareApprovals.createdAt))
-		.limit(1);
-
-	const status = approval ? "active" : "pending_approval";
-
 	const [row] = await db
 		.insert(organizationConnections)
 		.values({
@@ -57,8 +41,7 @@ export async function orgsConnectionsAdd(
 			label: parsed.data.label ?? null,
 			addedByWallet: anchor,
 			anchorSenderWallet: anchor,
-			shareApprovalId: approval?.id ?? null,
-			status,
+			status: "active",
 		})
 		.onConflictDoUpdate({
 			target: [
@@ -68,8 +51,7 @@ export async function orgsConnectionsAdd(
 			set: {
 				label: parsed.data.label ?? null,
 				anchorSenderWallet: anchor,
-				shareApprovalId: approval?.id ?? null,
-				status,
+				status: "active",
 				updatedAt: new Date(),
 			},
 		})

@@ -1,7 +1,12 @@
+import type { InferClientOutputs } from "@orpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
+import type { AppRouterClient } from "../../orpc/app-router-types";
+
+export type OrgListItem =
+	InferClientOutputs<AppRouterClient>["orgs"]["listMine"]["organizations"][number];
 
 export function useOrganizations() {
 	const { rpcQuery, isAuthed } = useFilosignRpc();

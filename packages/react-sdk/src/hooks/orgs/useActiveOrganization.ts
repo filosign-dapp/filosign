@@ -4,19 +4,7 @@ import { useActiveOrgId, useOrganizations } from "./useOrganizations";
 export function useActiveOrganization() {
 	const activeOrgId = useActiveOrgId();
 	const { data } = useOrganizations();
-	const organizations =
-		(
-			data as
-				| {
-						organizations?: Array<{
-							id: string;
-							name: string;
-							encryptionPublicKey: string;
-							role: string;
-						}>;
-				  }
-				| undefined
-		)?.organizations ?? [];
+	const organizations = data?.organizations ?? [];
 
 	return useMemo(() => {
 		if (!activeOrgId) return null;

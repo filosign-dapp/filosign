@@ -42,7 +42,7 @@ export function useCreateOrganization() {
 				creatorWrapKemCiphertext: toHex(ciphertext),
 			});
 
-			return result as { organization: { id: string; name: string } };
+			return result;
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({

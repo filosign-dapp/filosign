@@ -53,8 +53,8 @@ export function isValidEthereumAddress(val: unknown): val is `0x${string}` {
 	return /^0x[a-fA-F0-9]{40}$/.test(val);
 }
 
-export function isValidFileStatus(val: unknown): val is "s3" | "foc" {
-	return val === "s3" || val === "foc";
+export function isValidFileStatus(val: unknown): val is "s3" {
+	return val === "s3";
 }
 
 export function isNonEmptyString(val: unknown): val is string {
@@ -67,7 +67,7 @@ export function parseEthereumAddress(val: unknown): `0x${string}` | null {
 	return null;
 }
 
-export function parseFileStatus(val: unknown): "s3" | "foc" | null {
+export function parseFileStatus(val: unknown): "s3" | null {
 	if (isValidFileStatus(val)) return val;
 	return null;
 }

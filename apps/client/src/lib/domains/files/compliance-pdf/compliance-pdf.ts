@@ -1,7 +1,6 @@
 import type { ViewFileResult } from "@filosign/react/files";
 import { useComplianceBundle } from "@filosign/react/files";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
 import { defaultChain } from "@/src/constants";
 import {
 	buildCompliancePdfOnly,
@@ -40,17 +39,11 @@ export function useCompliancePdfExports(options: {
 		a.click();
 		document.body.removeChild(a);
 		URL.revokeObjectURL(url);
-		toast.success("File downloaded!");
 	}, [fileData, file?.pieceCid]);
 
 	const handleDownloadCompliancePdf = useCallback(async () => {
 		if (!file?.pieceCid) return;
-		if (file.status !== "foc") {
-			toast.info(
-				"Compliance report will be available soon (once uploaded to FOC).",
-			);
-			return;
-		}
+		if (!fileData) return;
 		setPdfExportBusy(true);
 		try {
 			const documentSha256 = fileData
@@ -79,11 +72,8 @@ export function useCompliancePdfExports(options: {
 			});
 			const safe = file.pieceCid.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 48);
 			downloadPdfBytes(bytes, `filosign-file-record-${safe}`);
-			toast.success("Compliance PDF downloaded");
 		} catch (e) {
-			toast.error(
-				e instanceof Error ? e.message : "Could not create compliance PDF",
-			);
+			console.error(e);
 		} finally {
 			setPdfExportBusy(false);
 		}
@@ -91,13 +81,6 @@ export function useCompliancePdfExports(options: {
 
 	const handleDownloadDocumentWithCompliancePdf = useCallback(async () => {
 		if (!file?.pieceCid || !fileData) {
-			toast.error("Load the document first to bundle with the compliance PDF.");
-			return;
-		}
-		if (file.status !== "foc") {
-			toast.info(
-				"Compliance report will be available soon (once uploaded to FOC).",
-			);
 			return;
 		}
 		setPdfExportBusy(true);
@@ -120,11 +103,8 @@ export function useCompliancePdfExports(options: {
 			});
 			const safe = file.pieceCid.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 48);
 			downloadPdfBytes(bytes, `filosign-document-with-record-${safe}`);
-			toast.success("PDF with document and compliance appendix downloaded");
 		} catch (e) {
-			toast.error(
-				e instanceof Error ? e.message : "Could not create bundled PDF",
-			);
+			console.error(e);
 		} finally {
 			setPdfExportBusy(false);
 		}

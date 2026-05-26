@@ -4,7 +4,6 @@ import { useAckFile, useViewFile } from "@filosign/react/files";
 import { FileTextIcon, SignatureIcon } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
 import { Button } from "@/src/lib/components/ui/button";
 import { invalidateInboxQueries } from "@/src/lib/query/invalidate-inbox";
 import { NotificationItemCard } from "./notification-item-card";
@@ -36,7 +35,6 @@ export function ReceivedFileNotification({
 			await invalidateInboxQueries(queryClient, rpcQuery);
 		} catch (error) {
 			console.error(error);
-			toast.error("Failed to accept file");
 		}
 	};
 
@@ -61,7 +59,6 @@ export function ReceivedFileNotification({
 					pieceCid: file.pieceCid,
 					kemCiphertext,
 					encryptedEncryptionKey,
-					status: file.status as "s3" | "foc",
 				});
 			} else if (
 				organizationId &&
@@ -74,7 +71,6 @@ export function ReceivedFileNotification({
 					organizationId,
 					orgKemCiphertext,
 					orgEncryptedEncryptionKey,
-					status: file.status as "s3" | "foc",
 				});
 			} else {
 				return;
@@ -93,11 +89,8 @@ export function ReceivedFileNotification({
 			a.click();
 			document.body.removeChild(a);
 			URL.revokeObjectURL(url);
-
-			toast.success("File downloaded!");
 		} catch (error) {
 			console.error(error);
-			toast.error("Failed to download file");
 		}
 	};
 

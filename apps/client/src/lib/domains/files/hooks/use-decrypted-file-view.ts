@@ -1,6 +1,7 @@
+import { useCryptoUnlocked } from "@filosign/react/auth";
 import { useViewFile, type ViewFileResult } from "@filosign/react/files";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useWalletUnlock } from "@/src/lib/auth/use-wallet-unlock";
 
 export type DecryptableFileRecord = {
 	pieceCid: string;
@@ -32,8 +33,12 @@ export function useDecryptedFileView(options: {
 	const viewFile = useViewFile();
 	const [fileData, setFileData] = useState<ViewFileResult | null>(null);
 	const [viewError, setViewError] = useState<string | null>(null);
+	const autoDecryptStartedRef = useRef(false);
 
 	const canDecrypt = hasDecryptKeys(file);
+	const needsCrypto = enabled && canDecrypt;
+	const cryptoUnlocked = useCryptoUnlocked();
+	const unlock = useWalletUnlock({ enabled: needsCrypto });
 
 	const handleViewFile = useCallback(async () => {
 		if (!file || !canDecrypt) {
@@ -47,7 +52,6 @@ export function useDecryptedFileView(options: {
 
 		try {
 			setViewError(null);
-			const status = (file.status ?? "foc") as "s3" | "foc";
 			let result: ViewFileResult | undefined;
 
 			if (file.kemCiphertext && file.encryptedEncryptionKey) {
@@ -55,7 +59,6 @@ export function useDecryptedFileView(options: {
 					pieceCid: file.pieceCid,
 					kemCiphertext: file.kemCiphertext,
 					encryptedEncryptionKey: file.encryptedEncryptionKey,
-					status,
 				});
 			} else if (
 				file.organizationId &&
@@ -68,7 +71,6 @@ export function useDecryptedFileView(options: {
 					organizationId: file.organizationId,
 					orgKemCiphertext: file.orgKemCiphertext,
 					orgEncryptedEncryptionKey: file.orgEncryptedEncryptionKey,
-					status,
 				});
 			}
 
@@ -82,25 +84,60 @@ export function useDecryptedFileView(options: {
 				});
 			}
 		} catch (error) {
-			const errorMessage =
+			const message =
 				error instanceof Error
 					? error.message
 					: "Failed to load file for viewing";
-			setViewError(errorMessage);
-			toast.error(errorMessage);
+			setViewError(
+				message === "No unlocked key seed found"
+					? "Unlock encryption keys with your wallet or recovery phrase."
+					: message,
+			);
 		}
 	}, [file, canDecrypt, viewFile, acknowledgeHint]);
 
 	useEffect(() => {
 		setFileData(null);
 		setViewError(null);
+		autoDecryptStartedRef.current = false;
 	}, [file?.pieceCid]);
 
 	useEffect(() => {
-		if (!enabled || !file || !canDecrypt || fileData || viewFile.isPending)
-			return;
+		if (cryptoUnlocked.data === true) setViewError(null);
+	}, [cryptoUnlocked.data]);
+
+	useEffect(() => {
+		if (!needsCrypto || !file || fileData || viewFile.isPending) return;
+		if (viewError) return;
+		if (cryptoUnlocked.data !== true) return;
+		if (autoDecryptStartedRef.current) return;
+		autoDecryptStartedRef.current = true;
 		void handleViewFile();
-	}, [enabled, file, canDecrypt, fileData, viewFile.isPending, handleViewFile]);
+	}, [
+		needsCrypto,
+		file,
+		fileData,
+		viewFile.isPending,
+		viewError,
+		cryptoUnlocked.data,
+		handleViewFile,
+	]);
+
+	const handleRetryViewFile = useCallback(() => {
+		autoDecryptStartedRef.current = false;
+		setViewError(null);
+		void handleViewFile();
+	}, [handleViewFile]);
+
+	const docCanvasBusy =
+		needsCrypto &&
+		(unlock.showRecoveryGate
+			? false
+			: unlock.tryingWalletUnlock ||
+				cryptoUnlocked.isPending ||
+				cryptoUnlocked.data !== true ||
+				viewFile.isPending ||
+				(!fileData && !viewError));
 
 	const previewPdfBytes = useMemo(() => {
 		if (!fileData) return null;
@@ -114,8 +151,15 @@ export function useDecryptedFileView(options: {
 		fileData,
 		viewError,
 		viewFile,
-		handleViewFile,
+		handleViewFile: handleRetryViewFile,
 		previewPdfBytes,
 		canDecrypt,
+		docCanvasBusy,
+		showRecoveryInCanvas: needsCrypto && unlock.showRecoveryGate,
+		recoveryPhrase: unlock.recoveryPhrase,
+		setRecoveryPhrase: unlock.setRecoveryPhrase,
+		recoveryError: unlock.error,
+		submitRecovery: unlock.handleRecover,
+		recoveryPending: unlock.recoverWithPhrase.isPending,
 	};
 }

@@ -1,4 +1,4 @@
-import { eip712signature } from "@filosign/contracts";
+import { filosignRegistrationSignature } from "@filosign/contracts";
 import { toHex, walletKeyGen } from "@filosign/crypto-utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFilosignContext } from "../../context/useFilosignContext";
@@ -13,15 +13,15 @@ import { clearKeyRegistrySnapshotCache } from "./key-registry-snapshot";
 import { recoveryPhraseFromSeed } from "./recovery-phrase";
 import { setSessionSeed } from "./session-seed";
 import { unlockSeedFromWallet } from "./unlock-seed";
-import { useIsLoggedIn } from "./useIsLoggedIn";
+import { useCryptoUnlocked } from "./useCryptoUnlocked";
 import { useIsRegistered } from "./useIsRegistered";
 
 export const LOGIN_RECOVERY_PHRASE_REQUIRED = "RECOVERY_PHRASE_REQUIRED";
 
 export interface LoginParams {
 	idToken?: string;
-	/** @internal For dev testing only - skips token authentication */
-	skipToken?: boolean;
+	/** Only unlock in-memory seed for an already registered user. */
+	unlockOnly?: boolean;
 }
 
 export function useLogin() {
@@ -29,11 +29,11 @@ export function useLogin() {
 	const queryClient = useQueryClient();
 
 	const { data: isRegistered } = useIsRegistered();
-	const { data: isLoggedIn } = useIsLoggedIn();
+	const { data: isCryptoUnlocked } = useCryptoUnlocked();
 
 	return useMutation({
 		mutationFn: async (params: LoginParams) => {
-			if (isLoggedIn) return { success: true };
+			if (isCryptoUnlocked) return { success: true };
 
 			if (!contracts || !wallet || !wasm.dilithium) {
 				throw new Error("unreachable");
@@ -46,9 +46,24 @@ export function useLogin() {
 
 			let recoveryPhrase: string | undefined;
 
-			if (!isRegistered) {
-				const { idToken, skipToken } = params;
-				if (!idToken && !skipToken) {
+			if (params.unlockOnly) {
+				if (!isRegistered) {
+					throw new Error("User is not registered");
+				}
+				const seedFromWallet = await unlockSeedFromWallet({
+					wallet,
+					contracts,
+					wasm,
+					storedKeygenData: snapshot?.storedKeygenData,
+				});
+				if (seedFromWallet) {
+					setSessionSeed(wallet.account.address, seedFromWallet);
+				} else {
+					throw new Error(LOGIN_RECOVERY_PHRASE_REQUIRED);
+				}
+			} else if (!isRegistered) {
+				const { idToken } = params;
+				if (!idToken?.trim()) {
 					throw new Error(
 						"Authentication token required. Please sign in with your wallet first.",
 					);
@@ -59,7 +74,7 @@ export function useLogin() {
 				});
 
 				const walletAddress = wallet.account.address;
-				const signature = await eip712signature(contracts, "FSKeyRegistry", {
+				const signature = await filosignRegistrationSignature(contracts, {
 					types: {
 						RegisterKeygenData: [
 							{ name: "from", type: "address" },
@@ -81,7 +96,7 @@ export function useLogin() {
 					},
 				});
 
-				const requestPayload = {
+				await rpcQuery.users.register.call({
 					signature,
 					saltPin: keygenData.saltPin,
 					saltSeed: keygenData.saltSeed,
@@ -92,10 +107,7 @@ export function useLogin() {
 					signaturePublicKey: toHex(keygenData.sigKeypair.publicKey),
 					walletAddress: wallet.account.address,
 					idToken,
-					skipToken,
-				};
-
-				await rpcQuery.users.register.call(requestPayload);
+				});
 
 				setSessionSeed(wallet.account.address, keygenData.seed);
 				clearKeyRegistrySnapshotCache(address);

@@ -14,30 +14,12 @@ export async function unlockSeedFromWallet(args: {
 	wallet: Wallet;
 	contracts: FilosignContracts;
 	wasm: FilosignContextValue["wasm"];
-	/** When provided, skips a duplicate FSKeyRegistry.keygenData eth_call. */
 	storedKeygenData?: StoredKeygenData;
 }): Promise<Uint8Array | null> {
-	const { wallet, contracts, wasm } = args;
+	const { wallet, wasm } = args;
 
 	try {
-		const stored =
-			args.storedKeygenData ??
-			(await (async () => {
-				const [, saltSeed, saltChallenge, commitmentKem, commitmentSig] =
-					await contracts.FSKeyRegistry.read.keygenData([
-						wallet.account.address,
-					]);
-				if (!saltSeed || !saltChallenge || !commitmentKem || !commitmentSig) {
-					return undefined;
-				}
-				return {
-					saltSeed,
-					saltChallenge,
-					commitmentKem,
-					commitmentSig,
-				} satisfies StoredKeygenData;
-			})());
-
+		const stored = args.storedKeygenData;
 		if (!stored) {
 			return null;
 		}

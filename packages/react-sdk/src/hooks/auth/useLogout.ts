@@ -1,11 +1,10 @@
-import { writeStoredAccessJwt } from "@filosign/auth/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { filosignKeys } from "../../lib/query-keys";
 import { clearSessionSeed } from "./session-seed";
 
 export function useLogout() {
-	const { wallet, session, rpc } = useFilosignContext();
+	const { wallet, session } = useFilosignContext();
 	const queryClient = useQueryClient();
 
 	return useMutation({
@@ -16,18 +15,14 @@ export function useLogout() {
 			}
 
 			const address = wallet.account.address;
-			try {
-				await rpc.auth.logout();
-			} catch {
-				// still clear local state if server unreachable
-			}
-
 			clearSessionSeed(address);
-			session.setJwt(null, address);
-			writeStoredAccessJwt(address, null);
+			session.setThirdwebAuthToken(null);
 
 			queryClient.invalidateQueries({
-				queryKey: filosignKeys.isLoggedIn(address),
+				queryKey: filosignKeys.authedApi(address),
+			});
+			queryClient.invalidateQueries({
+				queryKey: filosignKeys.cryptoUnlocked(address),
 			});
 			queryClient.invalidateQueries();
 			queryClient.refetchQueries();

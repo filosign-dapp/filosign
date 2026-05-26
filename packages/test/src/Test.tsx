@@ -14,11 +14,6 @@ import {
 	useSignFile,
 	useViewFile,
 } from "@filosign/react/files";
-import {
-	useApproveSender,
-	useCanReceiveFrom,
-	useCanSendTo,
-} from "@filosign/react/sharing";
 import { useUserProfile, useUserProfileByQuery } from "@filosign/react/users";
 import type { PlacementManifest } from "@filosign/shared";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
@@ -51,7 +46,6 @@ type TestName =
 	| "login"
 	| "check-this-user-info"
 	| "check-other-user-info"
-	| "approve-sender"
 	| "check-send"
 	| "file-send"
 	| "file-sign";
@@ -80,18 +74,10 @@ export default function TestPage() {
 						{isDone("login") && <TestThisUserInfo notify={markDone} />}
 
 						{isDone("check-this-user-info") && (
-							<TestApproveSender notify={markDone} />
-						)}
-
-						{isDone("approve-sender") && (
 							<TestOtherUserInfo notify={markDone} />
 						)}
 
 						{isDone("check-other-user-info") && (
-							<TestCheckCanSendTo notify={markDone} />
-						)}
-
-						{isDone("check-send") && (
 							<div className="space-y-4">
 								<TestFileSend notify={markDone} />
 								<ShowReceivedFiles />
@@ -189,145 +175,6 @@ function TestLogin(props: { notify: NotifierFn }) {
 				<dt className="text-muted-foreground">Is Logged In:</dt>
 				<dd>{isLoggedIn.data ? "Yes" : "No"}</dd>
 			</dl>
-		</section>
-	);
-}
-
-function TestApproveSender(props: { notify: NotifierFn }) {
-	const { notify } = props;
-
-	const otherAddress = useOtherAddress();
-	const approveSender = useApproveSender();
-	const canReceiveFrom = useCanReceiveFrom({ sender: otherAddress });
-	const { reload: otherReload } = useOtherReload();
-	const { setSafeTimeout, clearSafeTimeout } = useTimeout();
-
-	useEffectOnce(() => {
-		if (canReceiveFrom.data === false) {
-			approveSender.mutate({
-				sender: otherAddress,
-			});
-
-			setSafeTimeout(() => {
-				otherReload();
-			}, RELOAD_DELAY_MS);
-		}
-
-		return () => {
-			clearSafeTimeout();
-		};
-	}, [canReceiveFrom.data]);
-
-	useEffectOnce(() => {
-		if (canReceiveFrom.data) {
-			notify("approve-sender");
-		}
-	}, [canReceiveFrom.data]);
-
-	useEffectOnce(() => {
-		notify("approve-sender");
-	}, [approveSender.isSuccess]);
-
-	return (
-		<section
-			className="p-3 sm:p-4 space-y-2 max-w-4xl animate-fade-in contain-layout"
-			aria-labelledby="approve-sender-heading"
-		>
-			<SectionHeading id="approve-sender-heading" title="Approve Sender Test" />
-
-			{canReceiveFrom.data === true && (
-				<p
-					className="text-success bg-success/10 p-2 rounded"
-					aria-live="polite"
-				>
-					This sender is already approved.
-				</p>
-			)}
-
-			{approveSender.isPending && (
-				<p
-					className="text-muted-foreground animate-pulse-subtle"
-					aria-live="polite"
-				>
-					Approving sender...
-				</p>
-			)}
-
-			{approveSender.isError && (
-				<p
-					className="text-destructive bg-destructive/10 p-2 rounded wrap-break-word"
-					role="alert"
-					aria-live="assertive"
-				>
-					<strong>Could not approve sender:</strong>{" "}
-					{getErrorMessage(approveSender.error)}
-					Please try again in a moment.
-				</p>
-			)}
-
-			{approveSender.isSuccess && (
-				<p
-					className="text-success bg-success/10 p-2 rounded"
-					aria-live="polite"
-				>
-					Sender approved. You can now receive files from this address.
-				</p>
-			)}
-		</section>
-	);
-}
-
-function TestCheckCanSendTo(props: { notify: NotifierFn }) {
-	const { notify } = props;
-
-	const otherAddress = useOtherAddress();
-	const canSendTo = useCanSendTo({ recipient: otherAddress });
-
-	useEffectOnce(() => {
-		if (canSendTo.data === true) {
-			notify("check-send");
-		}
-	}, [canSendTo.data]);
-	useEffectOnce(() => {
-		notify("check-send");
-	}, [canSendTo.isSuccess]);
-
-	return (
-		<section
-			className="p-3 sm:p-4 space-y-2 max-w-4xl animate-fade-in contain-layout"
-			aria-labelledby="check-send-heading"
-		>
-			<SectionHeading
-				id="check-send-heading"
-				title="Check Send Permission Test"
-			/>
-
-			{canSendTo.isPending && (
-				<p
-					className="text-muted-foreground animate-pulse-subtle"
-					aria-live="polite"
-				>
-					Checking if can receive from sender...
-				</p>
-			)}
-
-			{canSendTo.data === true && (
-				<p
-					className="text-success bg-success/10 p-2 rounded"
-					aria-live="polite"
-				>
-					Ready to send files. Permission check passed.
-				</p>
-			)}
-
-			{canSendTo.data === false && (
-				<p
-					className="text-destructive bg-destructive/10 p-2 rounded"
-					aria-live="polite"
-				>
-					Cannot receive from sender.
-				</p>
-			)}
 		</section>
 	);
 }

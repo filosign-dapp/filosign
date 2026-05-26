@@ -1,14 +1,10 @@
 import { eq } from "drizzle-orm";
 import type { Context, Next } from "hono";
-import type { Address } from "viem";
+import { type Address, getAddress } from "viem";
 import env from "@/env";
-import {
-	authStore,
-	isAccessToken,
-	verifyJwt,
-} from "@/lib/platform/auth/instance";
 import db from "@/lib/platform/db";
 import { users } from "@/lib/platform/db/schema";
+import { verifyThirdwebSession } from "@/lib/platform/utils/thirdweb";
 import tryCatchSync, { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const ORPC_PATH_PREFIXES = ["/api/rpc", "/api/api-reference"] as const;
@@ -19,36 +15,38 @@ function touchesOrpcUrls(pathname: string) {
 	);
 }
 
-/** Optional JWT → `userWallet`. Invalid/expired Bearer is ignored so RPC returns native `UNAUTHORIZED` from procedures instead of Hono `{ success:false }`. */
-export async function optionalJwtWalletForOrpc(c: Context, next: Next) {
+function parseBearerWallet(
+	c: Context,
+): { token: string; wallet: Address } | null {
+	const authHeader = c.req.header("Authorization");
+	if (!authHeader?.startsWith("Bearer ")) return null;
+
+	const token = authHeader.slice(7).trim();
+	if (!token) return null;
+
+	const walletHeader = c.req.header("X-Wallet-Address")?.trim();
+	if (!walletHeader) return null;
+
+	const walletParsed = tryCatchSync(() => getAddress(walletHeader));
+	if (walletParsed.error || !walletParsed.data) return null;
+
+	return { token, wallet: walletParsed.data };
+}
+
+/** Optional thirdweb session → `userWallet`. Invalid Bearer is ignored so RPC returns `UNAUTHORIZED` from procedures. */
+export async function optionalThirdwebSessionForOrpc(c: Context, next: Next) {
 	const pathname = new URL(c.req.url).pathname;
 	if (!touchesOrpcUrls(pathname)) return next();
 
-	const authHeader = c.req.header("Authorization");
-	if (!authHeader?.startsWith("Bearer ")) return next();
+	const creds = parseBearerWallet(c);
+	if (!creds) return next();
 
-	const token = authHeader.slice(7);
-	const verified = tryCatchSync(() => verifyJwt(token));
-
+	const verified = await tryCatch(
+		verifyThirdwebSession(creds.token, creds.wallet),
+	);
 	if (verified.error) {
 		if (env.DEBUG) {
-			console.error("[orpc-auth] JWT verify failed:", verified.error);
-		}
-		return next();
-	}
-
-	const payload = verified.data;
-	if (!payload?.sub || !isAccessToken(payload)) {
-		if (env.DEBUG) {
-			console.error("[orpc-auth] JWT missing sub or invalid typ");
-		}
-		return next();
-	}
-
-	const revoked = await authStore.isAccessJtiRevoked(payload.jti);
-	if (revoked) {
-		if (env.DEBUG) {
-			console.error("[orpc-auth] JWT jti revoked");
+			console.error("[orpc-auth] thirdweb session failed:", verified.error);
 		}
 		return next();
 	}
@@ -57,11 +55,11 @@ export async function optionalJwtWalletForOrpc(c: Context, next: Next) {
 		db
 			.update(users)
 			.set({ lastActiveAt: new Date() })
-			.where(eq(users.walletAddress, payload.sub)),
+			.where(eq(users.walletAddress, creds.wallet)),
 	);
 	if (touchRes.error) {
 		console.error("[orpc-auth] lastActiveAt touch failed:", {
-			walletHint: `${payload.sub.slice(0, 6)}…${payload.sub.slice(-4)}`,
+			walletHint: `${creds.wallet.slice(0, 6)}…${creds.wallet.slice(-4)}`,
 			error:
 				touchRes.error instanceof Error
 					? touchRes.error.message
@@ -69,6 +67,6 @@ export async function optionalJwtWalletForOrpc(c: Context, next: Next) {
 		});
 	}
 
-	c.set("userWallet", payload.sub as Address);
+	c.set("userWallet", creds.wallet);
 	return next();
 }

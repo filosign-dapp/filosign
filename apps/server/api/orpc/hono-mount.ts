@@ -7,7 +7,7 @@ import type { Context, Next } from "hono";
 import { Hono } from "hono";
 import { integrationsRouter } from "@/api/integrations";
 import type { ApiRouterVariables } from "@/api/orpc/context";
-import { optionalJwtWalletForOrpc } from "@/api/orpc/orpc-auth";
+import { optionalThirdwebSessionForOrpc } from "@/api/orpc/orpc-auth";
 import env from "@/env";
 import { logger } from "@/lib/platform/pino";
 import { createContext, type OrpcContext } from "./context";
@@ -97,8 +97,8 @@ export async function orpcHybridMiddleware(c: Context, next: Next) {
 	return next();
 }
 
-/** Hono `/api` mount: integrations (no JWT), then optional JWT + oRPC/OpenAPI. */
+/** Hono `/api` mount: integrations (no session), then optional thirdweb Bearer + oRPC. */
 export const apiRouter = new Hono<{ Variables: ApiRouterVariables }>()
 	.route("/", integrationsRouter)
-	.use("*", optionalJwtWalletForOrpc)
+	.use("*", optionalThirdwebSessionForOrpc)
 	.use("*", orpcHybridMiddleware);

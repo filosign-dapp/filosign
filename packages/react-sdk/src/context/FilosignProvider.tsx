@@ -23,6 +23,8 @@ type FilosignConfig = {
 	children: ReactNode;
 	apiBaseUrl: string;
 	wallet: Wallet | undefined;
+	/** thirdweb embedded-wallet auth token (`useAuthToken()`). */
+	thirdwebAuthToken?: string | null;
 	wasm: {
 		dilithium: DilithiumInstance;
 	};
@@ -30,7 +32,13 @@ type FilosignConfig = {
 };
 
 export function FilosignProvider(props: FilosignConfig) {
-	const { children, apiBaseUrl, wallet, wasm } = props;
+	const {
+		children,
+		apiBaseUrl,
+		wallet,
+		thirdwebAuthToken = null,
+		wasm,
+	} = props;
 
 	const [contracts, setContracts] = useState<FilosignContracts | null>(null);
 
@@ -66,6 +74,10 @@ export function FilosignProvider(props: FilosignConfig) {
 	}, [session, walletAddress]);
 
 	useEffect(() => {
+		session.setThirdwebAuthToken(thirdwebAuthToken);
+	}, [session, thirdwebAuthToken]);
+
+	useEffect(() => {
 		if (!chainKey) {
 			setContracts(null);
 			return;
@@ -94,6 +106,9 @@ export function FilosignProvider(props: FilosignConfig) {
 			rpc,
 			rpcQuery,
 			session,
+			thirdwebAuthToken: thirdwebAuthToken?.trim()
+				? thirdwebAuthToken.trim()
+				: null,
 			wallet: wallet,
 			contracts,
 			wasm: { dilithium: wasm.dilithium },
@@ -104,6 +119,7 @@ export function FilosignProvider(props: FilosignConfig) {
 			rpc,
 			rpcQuery,
 			session,
+			thirdwebAuthToken,
 			wallet,
 			contracts,
 			wasm,

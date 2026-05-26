@@ -3,6 +3,6 @@ import { useFilosignContext } from "../../context/useFilosignContext";
 import { keyRegistrySnapshotQueryOptions } from "./key-registry-snapshot";
 
 export function useKeyRegistrySnapshot() {
-	const { contracts, wallet } = useFilosignContext();
-	return useQuery(keyRegistrySnapshotQueryOptions(contracts, wallet));
+	const { rpc, wallet } = useFilosignContext();
+	return useQuery(keyRegistrySnapshotQueryOptions(rpc, wallet));
 }

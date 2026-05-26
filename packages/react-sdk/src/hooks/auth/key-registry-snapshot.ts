@@ -1,7 +1,7 @@
-import type { FilosignContracts } from "@filosign/contracts";
 import { DAY } from "../../constants";
 import { filosignKeys } from "../../lib/query-keys";
 import type { FilosignWallet } from "../../lib/wallet";
+import type { AppRouterClient } from "../../orpc/app-router-types";
 
 type Wallet = FilosignWallet;
 
@@ -23,7 +23,6 @@ const snapshotCache = new Map<
 	{ fetchedAt: number; data: KeyRegistrySnapshot }
 >();
 
-/** Short TTL so wallet-client flicker + duplicate observers do not re-hit the chain. */
 const SNAPSHOT_CACHE_MS = 30_000;
 
 export function clearKeyRegistrySnapshotCache(address?: string) {
@@ -35,7 +34,7 @@ export function clearKeyRegistrySnapshotCache(address?: string) {
 }
 
 export async function fetchKeyRegistrySnapshot(
-	contracts: FilosignContracts,
+	rpc: AppRouterClient,
 	address: `0x${string}`,
 ): Promise<KeyRegistrySnapshot> {
 	const key = address.toLowerCase();
@@ -48,17 +47,13 @@ export async function fetchKeyRegistrySnapshot(
 	if (existing) return existing;
 
 	const promise = (async (): Promise<KeyRegistrySnapshot> => {
-		const [isRegistered, keygenTuple] = await Promise.all([
-			contracts.FSKeyRegistry.read.isRegistered([address]),
-			contracts.FSKeyRegistry.read.keygenData([address]),
-		]);
+		const row = await rpc.users.registrationSnapshot({
+			walletAddress: address,
+		});
 
-		const [, saltSeed, saltChallenge, commitmentKem, commitmentSig] =
-			keygenTuple;
-
-		if (!saltSeed || !saltChallenge || !commitmentKem || !commitmentSig) {
+		if (!row.isRegistered || !row.storedKeygenData) {
 			const empty: KeyRegistrySnapshot = {
-				isRegistered,
+				isRegistered: row.isRegistered,
 				storedKeygenData: undefined,
 			};
 			snapshotCache.set(key, { fetchedAt: Date.now(), data: empty });
@@ -66,12 +61,12 @@ export async function fetchKeyRegistrySnapshot(
 		}
 
 		const data: KeyRegistrySnapshot = {
-			isRegistered,
+			isRegistered: true,
 			storedKeygenData: {
-				saltSeed,
-				saltChallenge,
-				commitmentKem,
-				commitmentSig,
+				saltSeed: row.storedKeygenData.saltSeed as `0x${string}`,
+				saltChallenge: row.storedKeygenData.saltChallenge as `0x${string}`,
+				commitmentKem: row.storedKeygenData.commitmentKem as `0x${string}`,
+				commitmentSig: row.storedKeygenData.commitmentSig as `0x${string}`,
 			},
 		};
 		snapshotCache.set(key, { fetchedAt: Date.now(), data });
@@ -85,7 +80,7 @@ export async function fetchKeyRegistrySnapshot(
 }
 
 export function keyRegistrySnapshotQueryOptions(
-	contracts: FilosignContracts | null,
+	rpc: AppRouterClient | null,
 	wallet: Wallet | undefined,
 ) {
 	const address = wallet?.account.address as `0x${string}` | undefined;
@@ -93,13 +88,13 @@ export function keyRegistrySnapshotQueryOptions(
 	return {
 		queryKey: filosignKeys.keyRegistrySnapshot(address),
 		queryFn: async (): Promise<KeyRegistrySnapshot> => {
-			if (!contracts || !address) {
+			if (!rpc || !address) {
 				throw new Error("unreachable");
 			}
-			return fetchKeyRegistrySnapshot(contracts, address);
+			return fetchKeyRegistrySnapshot(rpc, address);
 		},
 		staleTime: 1 * DAY,
 		gcTime: 1 * DAY,
-		enabled: Boolean(contracts && address),
+		enabled: Boolean(rpc && address),
 	};
 }

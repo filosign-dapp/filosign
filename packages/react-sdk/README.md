@@ -64,10 +64,11 @@ flowchart TB
 ```
 
 1. Provider loads **`runtime`** (`rpcQuery.runtime`), then **`getContracts({ chainKey })`**.
-2. **`FilosignSession`** stores the access JWT in memory and mirrors it to **`sessionStorage`** (per wallet) for reload UX. **XSS can read it** — refresh tokens stay **httpOnly** on the API origin; treat CSP and dependency hygiene as the primary defense.
-3. **`useAuthedApi`:** valid access JWT → `auth.refresh` (cookie, `credentials: "include"`) → dilithium `auth.nonce` / `auth.verify`.
-4. **`useLogout`** calls `auth.logout` (revokes server session + clears refresh cookie) then clears local seed/JWT.
-5. Feature hooks: **`useFilosignRpc()`** → `rpcQuery` + `isAuthed`.
+2. **`FilosignSession`** holds the thirdweb auth token; app passes `useAuthToken()` via `thirdwebAuthToken` on the provider.
+3. **`useAuthedApi`:** wallet + thirdweb token + registered user → RPC headers (`Bearer` + `X-Wallet-Address`).
+4. **`useLogout`** clears local seed + session token (wallet disconnect is separate).
+5. **`useCryptoUnlocked`** — in-memory seed for decrypt/sign (lazy unlock).
+6. Feature hooks: **`useFilosignRpc()`** → `rpcQuery` + `isAuthed`.
 
 TanStack helpers: [`src/orpc/rpc-query-utils.ts`](src/orpc/rpc-query-utils.ts) (`["filosign", …]` prefix).
 
@@ -108,7 +109,7 @@ If `mutate` takes a different shape than procedure input (e.g. `string` vs `{ id
 
 ### Cache keys ([`filosignKeys`](src/lib/query-keys.ts))
 
-Non-RPC only: `useAuthedApi`, `useIsLoggedIn`, `useIsRegistered`, `useStoredKeygenData`, on-chain approval caches (**`isApprovedDependentFirst` vs `isApprovedWalletFirst`—argument order differs**).
+Non-RPC only: `useAuthedApi`, `useIsLoggedIn`, `useIsRegistered`, `useStoredKeygenData`.
 
 ---
 
@@ -116,7 +117,8 @@ Non-RPC only: `useAuthedApi`, `useIsLoggedIn`, `useIsRegistered`, `useStoredKeyg
 
 | Case | Pattern |
 |------|---------|
-| JWT bootstrap | [`useAuthedApi`](src/hooks/auth/useAuthedApi.ts)—not a normal query |
+| API session | [`useAuthedApi`](src/hooks/auth/useAuthedApi.ts) |
+| Crypto unlock | [`useCryptoUnlocked`](src/hooks/auth/useCryptoUnlocked.ts) |
 | On-chain | `contracts.*.read` |
 | Session seed | In-memory [`session-seed.ts`](src/hooks/auth/session-seed.ts)—never `sessionStorage` |
 | Uploads | `rpcQuery.storage.presignPut.call` → **`fetch` PUT** to URL |
@@ -165,9 +167,7 @@ No package-level `test` script yet—rely on client typecheck and manual flows.
 
 ---
 
-## Auth security (JWT)
+## Auth
 
-- Access JWT is mirrored to **`sessionStorage`** per wallet for reload UX (**XSS-readable**). Refresh tokens are **httpOnly** cookies on the API origin only.
-- oRPC uses **`credentials: "include"`** for `auth.refresh` / `auth.logout`.
-- **`useAuthedApi`:** valid access JWT → `auth.refresh` → dilithium bootstrap.
-- Client `isAccessJwtUsable` checks `exp` / `sub` / `typ` only; the server verifies signature, `aud`, and revoked `jti`.
+- API session = thirdweb embedded-wallet token verified server-side (Dragonfly cache).
+- Crypto unlock = separate in-memory seed (`useLogin` / recovery phrase); not required for dashboard list/metadata.

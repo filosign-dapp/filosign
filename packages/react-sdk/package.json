@@ -45,7 +45,6 @@
 		"test": "bun -e \"console.log('[ @filosign/react ] no bun tests yet'); process.exit(0)\""
 	},
 	"dependencies": {
-		"@filosign/auth": "workspace:*",
 		"@filosign/contracts": "workspace:*",
 		"@filosign/crypto-utils": "workspace:*",
 		"@filosign/shared": "workspace:*",

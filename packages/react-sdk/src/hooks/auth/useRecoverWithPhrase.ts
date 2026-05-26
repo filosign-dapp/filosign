@@ -3,16 +3,17 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { filosignKeys } from "../../lib/query-keys";
 import type { KeyRegistrySnapshot } from "./key-registry-snapshot";
+import { fetchKeyRegistrySnapshot } from "./key-registry-snapshot";
 import { seedFromRecoveryPhrase } from "./recovery-phrase";
 import { setSessionSeed } from "./session-seed";
 
 export function useRecoverWithPhrase() {
-	const { wallet, contracts, wasm } = useFilosignContext();
+	const { wallet, rpc, wasm } = useFilosignContext();
 	const queryClient = useQueryClient();
 
 	return useMutation({
 		mutationFn: async (params: { phrase: string }) => {
-			if (!wallet || !contracts || !wasm.dilithium) {
+			if (!wallet || !rpc || !wasm.dilithium) {
 				throw new Error("unreachable");
 			}
 			const address = wallet.account.address;
@@ -27,14 +28,14 @@ export function useRecoverWithPhrase() {
 			let commitmentKem = cached?.storedKeygenData?.commitmentKem;
 			let commitmentSig = cached?.storedKeygenData?.commitmentSig;
 			if (!commitmentKem || !commitmentSig) {
-				const [, , , kem, sig] = await contracts.FSKeyRegistry.read.keygenData([
-					address,
-				]);
-				commitmentKem = kem;
-				commitmentSig = sig;
+				const snapshot = await fetchKeyRegistrySnapshot(rpc, address);
+				commitmentKem = snapshot.storedKeygenData?.commitmentKem;
+				commitmentSig = snapshot.storedKeygenData?.commitmentSig;
 			}
 
 			if (
+				!commitmentKem ||
+				!commitmentSig ||
 				commitmentKem !== keygenData.commitmentKem ||
 				commitmentSig !== keygenData.commitmentSig
 			) {

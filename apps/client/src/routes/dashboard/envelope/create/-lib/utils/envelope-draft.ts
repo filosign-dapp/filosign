@@ -297,6 +297,15 @@ export function normalizeCreateForm(draft: CreateForm): CreateForm {
 	};
 }
 
+export function hasEnvelopeFormContent(value: EnvelopeForm): boolean {
+	return (
+		value.documents.length > 0 ||
+		value.recipients.length > 0 ||
+		value.emailMessage.trim().length > 0 ||
+		(value.settlementDrafts?.length ?? 0) > 0
+	);
+}
+
 export function hasDraftContent(draft: CreateForm | null | undefined): boolean {
 	if (!draft) return false;
 	return (

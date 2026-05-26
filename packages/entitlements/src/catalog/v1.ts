@@ -31,6 +31,24 @@ const disabledProductFeatures = {
 	| "features.integrations.custom"
 >;
 
+const paidArchivalFeatures = {
+	"archival.1y": { kind: "boolean", enabled: true },
+	"archival.5y": { kind: "boolean", enabled: true },
+	"archival.10y": { kind: "boolean", enabled: true },
+} as const satisfies Pick<
+	PlanEntitlements,
+	"archival.1y" | "archival.5y" | "archival.10y"
+>;
+
+const disabledArchivalFeatures = {
+	"archival.1y": { kind: "boolean", enabled: false },
+	"archival.5y": { kind: "boolean", enabled: false },
+	"archival.10y": { kind: "boolean", enabled: false },
+} as const satisfies Pick<
+	PlanEntitlements,
+	"archival.1y" | "archival.5y" | "archival.10y"
+>;
+
 /** Versioned plan catalog — change via PR + tests; bump version when breaking. */
 export const catalogV1: Record<PlanId, PlanEntitlements> = {
 	free: {
@@ -42,6 +60,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		},
 		"envelope.recipients.max": { kind: "max", limit: 1 },
 		...disabledProductFeatures,
+		...disabledArchivalFeatures,
 	},
 	individual: {
 		"documents.sent.monthly": {
@@ -52,6 +71,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		},
 		"envelope.recipients.max": { kind: "max", limit: 5 },
 		...disabledProductFeatures,
+		...paidArchivalFeatures,
 	},
 	teams: {
 		"documents.sent.monthly": {
@@ -62,6 +82,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		},
 		"envelope.recipients.max": { kind: "max", limit: 10 },
 		...teamProductFeatures,
+		...paidArchivalFeatures,
 	},
 	enterprise: {
 		"documents.sent.monthly": {
@@ -73,6 +94,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		"envelope.recipients.max": { kind: "max", limit: null },
 		...teamProductFeatures,
 		"features.integrations.custom": { kind: "boolean", enabled: true },
+		...paidArchivalFeatures,
 	},
 };
 

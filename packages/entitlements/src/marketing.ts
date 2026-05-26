@@ -11,6 +11,9 @@ const MARKETING_LABELS: Record<FeatureKey, string> = {
 	"features.envelope.team_visibility": "Team envelope visibility",
 	"features.routing.advanced": "Advanced routing",
 	"features.integrations.custom": "Custom integrations",
+	"archival.1y": "Filecoin archival (1 year)",
+	"archival.5y": "Filecoin archival (5 years)",
+	"archival.10y": "Filecoin archival (10 years)",
 };
 
 /** Human-readable bullets for pricing pages (derived from catalog). */

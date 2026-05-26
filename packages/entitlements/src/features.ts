@@ -7,6 +7,9 @@ export const FEATURE_KEYS = [
 	"features.envelope.team_visibility",
 	"features.routing.advanced",
 	"features.integrations.custom",
+	"archival.1y",
+	"archival.5y",
+	"archival.10y",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -23,6 +26,9 @@ export const BOOLEAN_FEATURE_KEYS = [
 	"features.envelope.team_visibility",
 	"features.routing.advanced",
 	"features.integrations.custom",
+	"archival.1y",
+	"archival.5y",
+	"archival.10y",
 ] as const;
 export type BooleanFeatureKey = (typeof BOOLEAN_FEATURE_KEYS)[number];
 

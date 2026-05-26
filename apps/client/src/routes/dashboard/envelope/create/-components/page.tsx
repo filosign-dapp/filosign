@@ -6,6 +6,7 @@ import { Button } from "@/src/lib/components/ui/button";
 import { UserDropdown } from "@/src/routes/dashboard/_shell/-components/user-dropdown";
 import { useCreateEnvelope } from "@/src/routes/dashboard/envelope/create/-lib/context/create-envelope-context";
 import { ClearEnvelopeFormButton } from "./clear-envelope-form-button";
+import { DraftsPanel } from "./drafts-panel";
 import { EnvelopeFormBody } from "./envelope-form-body";
 
 export function CreateEnvelopePage() {
@@ -33,6 +34,7 @@ export function CreateEnvelopePage() {
 				}}
 			>
 				<EnvelopeFormBody />
+				<DraftsPanel />
 
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}

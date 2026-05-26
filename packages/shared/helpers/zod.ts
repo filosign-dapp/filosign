@@ -13,6 +13,14 @@ export const zHexString = () =>
 		)
 		.transform((val) => val.toLowerCase() as Hex);
 
+export const zEvmPrivateKey = () =>
+	z
+		.string()
+		.refine((val) => isHex(val, { strict: true }) && val.length === 66, {
+			error: "Invalid 32-byte private key",
+		})
+		.transform((val) => val.toLowerCase() as Hex);
+
 export const zEvmAddress = () =>
 	z
 		.string()

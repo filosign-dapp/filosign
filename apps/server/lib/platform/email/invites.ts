@@ -74,7 +74,7 @@ async function deliverEmail(args: {
 	}
 }
 
-async function sendDocumentSharedEmail(args: {
+export async function sendDocumentSharedEmail(args: {
 	to: string;
 	senderWallet: Address;
 	pieceCid: string;

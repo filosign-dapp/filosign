@@ -17,6 +17,7 @@ const {
 	organizationMemberKeys,
 	organizationTemplates,
 	organizationSubscriptions,
+	users,
 } = db.schema;
 
 const zCreateOrgBody = z.object({
@@ -138,8 +139,12 @@ export async function orgsGet(
 			role: organizationMembers.role,
 			status: organizationMembers.status,
 			hasKeyWrap: sql<boolean>`${organizationMemberKeys.walletAddress} IS NOT NULL`,
+			firstName: users.firstName,
+			lastName: users.lastName,
+			email: users.email,
 		})
 		.from(organizationMembers)
+		.leftJoin(users, eq(organizationMembers.walletAddress, users.walletAddress))
 		.leftJoin(
 			organizationMemberKeys,
 			and(
@@ -242,6 +247,19 @@ export async function orgsMembersSetRole(
 		throw new ORPCError("NOT_FOUND", { message: "Member not found" });
 	}
 
+	if (activeOrg.role !== "owner") {
+		if (parsed.data.role === "owner") {
+			throw new ORPCError("FORBIDDEN", {
+				message: "Only organization owners can promote members to owner",
+			});
+		}
+		if (current.role === "owner") {
+			throw new ORPCError("FORBIDDEN", {
+				message: "Only organization owners can modify owner roles",
+			});
+		}
+	}
+
 	if (targetWallet === actorWallet && parsed.data.role !== "owner") {
 		throw new ORPCError("FORBIDDEN", {
 			message: "You cannot demote yourself from owner",
@@ -318,6 +336,11 @@ export async function orgsMembersRemove(
 		.limit(1);
 	if (!target || target.status !== "active") {
 		throw new ORPCError("NOT_FOUND", { message: "Member not found" });
+	}
+	if (target.role === "owner" && activeOrg.role !== "owner") {
+		throw new ORPCError("FORBIDDEN", {
+			message: "Only organization owners can remove owners",
+		});
 	}
 	if (target.role === "owner") {
 		const [ownerCount] = await db

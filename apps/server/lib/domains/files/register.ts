@@ -5,7 +5,6 @@ import {
 	hashNormalizedSignerEmail,
 	hashOrgIdCommitment,
 	normalizePlacementRecipientEmail,
-	ZERO_ORG_ID_COMMITMENT,
 	zPlacementManifest,
 } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
@@ -74,9 +73,9 @@ export const zFileRegisterBody = z.object({
 			}),
 		)
 		.optional(),
-	organizationId: z.uuid().optional(),
-	orgKemCiphertext: zHexString().optional(),
-	orgEncryptedEncryptionKey: zHexString().optional(),
+	organizationId: z.uuid(),
+	orgKemCiphertext: zHexString(),
+	orgEncryptedEncryptionKey: zHexString(),
 	settlementRules: zSettlementRulesRegisterBatch.optional(),
 	displayName: z.string().min(1).max(512),
 	mimeType: z.string().min(1).max(255),
@@ -112,24 +111,15 @@ export async function filesRegister(
 		ciphertextByteLength,
 	} = parsedBody.data;
 
-	if (organizationId) {
-		if (!activeOrg || activeOrg.organizationId !== organizationId) {
-			throw new ORPCError("FORBIDDEN", {
-				message: "Organization context required for org send",
-			});
-		}
-		assertOrgPermission(activeOrg, "documents:send");
-		if (!orgKemCiphertext || !orgEncryptedEncryptionKey) {
-			throw new ORPCError("BAD_REQUEST", {
-				message:
-					"Org send requires orgKemCiphertext and orgEncryptedEncryptionKey",
-			});
-		}
+	assertOrgPermission(activeOrg, "documents:send");
+	if (organizationId !== activeOrg.organizationId) {
+		throw new ORPCError("BAD_REQUEST", {
+			message:
+				"organizationId in request body must match X-Org-Id header context",
+		});
 	}
 
-	const orgIdCommitment = organizationId
-		? hashOrgIdCommitment(organizationId)
-		: ZERO_ORG_ID_COMMITMENT;
+	const orgIdCommitment = hashOrgIdCommitment(organizationId);
 
 	const parsedManifest = zPlacementManifest.safeParse(placementManifestRaw);
 	if (!parsedManifest.success) {
@@ -265,9 +255,9 @@ export async function filesRegister(
 				status: "s3",
 				sender,
 				createdByWallet: getAddress(sender),
-				organizationId: organizationId ?? null,
-				orgKemCiphertext: orgKemCiphertext ?? null,
-				orgEncryptedEncryptionKey: orgEncryptedEncryptionKey ?? null,
+				organizationId: organizationId,
+				orgKemCiphertext: orgKemCiphertext,
+				orgEncryptedEncryptionKey: orgEncryptedEncryptionKey,
 				onchainTxHash: txHash,
 				placementCommitment,
 				placementManifestJson: placementManifest,

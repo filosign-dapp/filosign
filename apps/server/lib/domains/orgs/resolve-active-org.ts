@@ -46,11 +46,7 @@ export async function resolveActiveOrg(
 		)
 		.limit(1);
 
-	if (!row) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Not an active member of this organization",
-		});
-	}
+	if (!row) return null;
 
 	return {
 		organizationId: row.organizationId,

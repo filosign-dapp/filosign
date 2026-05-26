@@ -8,6 +8,9 @@ export type OrgPermission =
 	| "templates:use"
 	| "documents:send"
 	| "documents:read:org"
+	| "drafts:read"
+	| "drafts:write"
+	| "drafts:share"
 	| "connections:manage"
 	| "connections:request"
 	| "connections:view"
@@ -22,6 +25,9 @@ const ROLE_PERMISSIONS: Record<OrgMemberRole, ReadonlySet<OrgPermission>> = {
 		"templates:use",
 		"documents:send",
 		"documents:read:org",
+		"drafts:read",
+		"drafts:write",
+		"drafts:share",
 		"connections:manage",
 		"connections:request",
 		"connections:view",
@@ -35,6 +41,9 @@ const ROLE_PERMISSIONS: Record<OrgMemberRole, ReadonlySet<OrgPermission>> = {
 		"templates:use",
 		"documents:send",
 		"documents:read:org",
+		"drafts:read",
+		"drafts:write",
+		"drafts:share",
 		"connections:manage",
 		"connections:request",
 		"connections:view",
@@ -43,10 +52,18 @@ const ROLE_PERMISSIONS: Record<OrgMemberRole, ReadonlySet<OrgPermission>> = {
 		"templates:use",
 		"documents:send",
 		"documents:read:org",
+		"drafts:read",
+		"drafts:write",
+		"drafts:share",
 		"connections:request",
 		"connections:view",
 	]),
-	viewer: new Set(["templates:use", "documents:read:org", "connections:view"]),
+	viewer: new Set([
+		"templates:use",
+		"documents:read:org",
+		"drafts:read",
+		"connections:view",
+	]),
 };
 
 export function orgRoleHasPermission(

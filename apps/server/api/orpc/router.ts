@@ -3,6 +3,7 @@ import type { RouterClient } from "@orpc/server";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import { billingEntitlements } from "@/api/handlers/billing-handlers";
+import * as draftHandlers from "@/api/handlers/drafts";
 import * as fileHandlers from "@/api/handlers/files";
 import {
 	metricsInvitesSummary,
@@ -23,7 +24,11 @@ import { txProcessIndexerHash } from "@/api/handlers/tx";
 import * as userHandlers from "@/api/handlers/users";
 import { loadPlatformRuntime } from "@/lib/domains/runtime";
 import { zIndexerTxBody } from "@/lib/platform/validation/tx-registration";
-import { authenticatedProcedure, publicProcedure } from "./procedures";
+import {
+	authenticatedProcedure,
+	orgProcedure,
+	publicProcedure,
+} from "./procedures";
 import { rpcOut as out } from "./schemas";
 
 const platformRuntimeSchema = z.object({
@@ -46,6 +51,146 @@ export const appRouter = {
 			chainKey: r.chainKey,
 		};
 	}),
+	drafts: {
+		create: orgProcedure
+			.input(z.record(z.string(), unk))
+			.output(out.drafts.create)
+			.handler(({ context, input }) =>
+				draftHandlers.draftsCreate(
+					context.userWallet,
+					context.activeOrg,
+					input,
+				),
+			),
+		save: orgProcedure
+			.input(z.record(z.string(), unk))
+			.output(out.drafts.save)
+			.handler(({ context, input }) =>
+				draftHandlers.draftsSave(context.userWallet, context.activeOrg, input),
+			),
+		list: orgProcedure
+			.output(out.drafts.list)
+			.handler(({ context }) =>
+				draftHandlers.draftsList(context.userWallet, context.activeOrg),
+			),
+		get: orgProcedure
+			.input(z.object({ draftId: z.string().uuid() }))
+			.output(out.drafts.get)
+			.handler(({ context, input }) =>
+				draftHandlers.draftsGet(
+					context.userWallet,
+					context.activeOrg,
+					input.draftId,
+				),
+			),
+		presignSnapshot: orgProcedure
+			.input(z.object({ draftId: z.string().uuid() }))
+			.output(out.drafts.presignSnapshot)
+			.handler(({ context, input }) =>
+				draftHandlers.draftsPresignSnapshot(
+					context.userWallet,
+					context.activeOrg,
+					input.draftId,
+				),
+			),
+		presignDocuments: orgProcedure
+			.input(z.record(z.string(), unk))
+			.output(out.drafts.presignDocuments)
+			.handler(({ context, input }) =>
+				draftHandlers.draftsPresignDocuments(
+					context.userWallet,
+					context.activeOrg,
+					input,
+				),
+			),
+		shareExternal: orgProcedure
+			.input(z.record(z.string(), unk))
+			.output(out.drafts.shareExternal)
+			.handler(({ context, input }) =>
+				draftHandlers.draftsShareExternal(
+					context.userWallet,
+					context.activeOrg,
+					input,
+				),
+			),
+		listExternalShares: orgProcedure
+			.input(z.object({ draftId: z.string().uuid() }))
+			.output(out.drafts.listExternalShares)
+			.handler(({ context, input }) =>
+				draftHandlers.draftsListExternalShares(
+					context.userWallet,
+					context.activeOrg,
+					input.draftId,
+				),
+			),
+		revokeExternalShare: orgProcedure
+			.input(z.record(z.string(), unk))
+			.output(out.drafts.revokeExternalShare)
+			.handler(({ context, input }) =>
+				draftHandlers.draftsRevokeExternalShare(
+					context.userWallet,
+					context.activeOrg,
+					input,
+				),
+			),
+		reviewByToken: publicProcedure
+			.input(z.object({ inviteToken: z.string().min(8) }))
+			.output(out.drafts.reviewByToken)
+			.handler(({ input }) =>
+				draftHandlers.draftsReviewByToken(input.inviteToken),
+			),
+		reviewForWallet: authenticatedProcedure
+			.input(z.object({ inviteToken: z.string().min(8) }))
+			.output(out.drafts.reviewForWallet)
+			.handler(({ context, input }) =>
+				draftHandlers.draftsReviewForWallet(
+					context.userWallet,
+					input.inviteToken,
+				),
+			),
+		markSent: orgProcedure
+			.input(z.record(z.string(), unk))
+			.output(out.drafts.markSent)
+			.handler(({ context, input }) =>
+				draftHandlers.draftsMarkSent(
+					context.userWallet,
+					context.activeOrg,
+					input,
+				),
+			),
+		archive: orgProcedure
+			.input(z.object({ draftId: z.string().uuid() }))
+			.output(out.drafts.archive)
+			.handler(({ context, input }) =>
+				draftHandlers.draftsArchive(
+					context.userWallet,
+					context.activeOrg,
+					input,
+				),
+			),
+		comments: {
+			list: orgProcedure
+				.input(z.object({ draftId: z.string().uuid() }))
+				.output(out.drafts.commentsList)
+				.handler(({ context, input }) =>
+					draftHandlers.draftsCommentsList(
+						context.userWallet,
+						context.activeOrg,
+						input.draftId,
+					),
+				),
+			append: orgProcedure
+				.input(z.record(z.string(), unk))
+				.output(out.drafts.commentsAppend)
+				.handler(({ context, input }) =>
+					draftHandlers.draftsCommentsAppend(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					),
+				),
+		},
+	},
 	settlements: {
 		listByFile: authenticatedProcedure
 			.input(z.object({ pieceCid: z.string().min(1) }))

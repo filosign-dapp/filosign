@@ -3,13 +3,16 @@ import {
 	CLIENT_ANALYTICS_EVENTS,
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
+import { useMarkDraftSent } from "@filosign/react/drafts";
 import { useSendFile } from "@filosign/react/files";
 import { useActiveOrganization } from "@filosign/react/orgs";
 import { useProfilesByAddresses } from "@filosign/react/users";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
-import { useNavigate } from "@tanstack/react-router";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { Address, Hex } from "viem";
+import { useServerDraftActions } from "@/src/lib/domains/drafts/use-server-draft-actions";
 import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
 import { constrainFieldTopLeft } from "@/src/lib/domains/files/placement-viewport";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
@@ -48,8 +51,12 @@ import {
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 import { collectViewerEmails } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/viewer-emails";
 
+const addSignRouteApi = getRouteApi("/dashboard/envelope/create/add-sign/");
+
 export function useAddSignController() {
 	const navigate = useNavigate();
+	const { serverDraftId: pendingServerDraftId } = addSignRouteApi.useSearch();
+	const { loadDraftIntoStore } = useServerDraftActions();
 	const createForm = useStorePersist((s) => s.createForm);
 	const clearCreateForm = useStorePersist((s) => s.clearCreateForm);
 	const setCreateForm = useStorePersist((s) => s.setCreateForm);
@@ -61,6 +68,7 @@ export function useAddSignController() {
 	>({});
 	const captureAppEvent = useCaptureAppEvent();
 	const sendFile = useSendFile();
+	const markDraftSent = useMarkDraftSent();
 	const { rpcQuery } = useFilosignContext();
 	const activeOrg = useActiveOrganization();
 
@@ -120,9 +128,16 @@ export function useAddSignController() {
 		null,
 	);
 	const isSendingRef = useRef(false);
+	const [serverDraftLoadState, setServerDraftLoadState] = useState<
+		"idle" | "loading" | "error"
+	>("idle");
 
 	const suppressEmptyDraftRedirect =
-		sendStatus === "loading" || sendStatus === "success" || postSendDialogOpen;
+		sendStatus === "loading" ||
+		sendStatus === "success" ||
+		postSendDialogOpen ||
+		serverDraftLoadState === "loading" ||
+		Boolean(pendingServerDraftId && !draftReady);
 
 	const signatureFields = useMemo(
 		() =>
@@ -247,6 +262,39 @@ export function useAddSignController() {
 			setDocumentPdfBytes({});
 		};
 	}, [createForm?.draftId, createForm?.documents, draftDocumentKey]);
+
+	useEffect(() => {
+		const targetId = pendingServerDraftId?.trim();
+		if (!targetId) return;
+		if (createForm?.serverDraftId === targetId && draftReady) return;
+
+		let cancelled = false;
+		setServerDraftLoadState("loading");
+		void loadDraftIntoStore(targetId)
+			.then(() => {
+				if (!cancelled) setServerDraftLoadState("idle");
+			})
+			.catch((err) => {
+				if (cancelled) return;
+				setServerDraftLoadState("error");
+				toast.error(
+					err instanceof Error && err.message.length > 0
+						? err.message
+						: "Failed to open draft",
+				);
+				void navigate({ to: "/dashboard/drafts", replace: true });
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [
+		pendingServerDraftId,
+		createForm?.serverDraftId,
+		draftReady,
+		loadDraftIntoStore,
+		navigate,
+	]);
 
 	useEffect(() => {
 		if (!persistHydrated) return;
@@ -526,6 +574,13 @@ export function useAddSignController() {
 			});
 
 			setSendStatus("success");
+
+			if (createForm.serverDraftId && result.success && result.pieceCid) {
+				void markDraftSent.mutateAsync({
+					draftId: createForm.serverDraftId,
+					pieceCid: result.pieceCid,
+				});
+			}
 
 			captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopeSendSucceeded, {
 				had_cold_recipients: coldRecipients.length > 0,

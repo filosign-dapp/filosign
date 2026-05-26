@@ -3,10 +3,13 @@ import {
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
 import { useAuthedApi } from "@filosign/react/auth";
+import { useCreateOrganization } from "@filosign/react/orgs";
 import { useUpdateUserProfile } from "@filosign/react/users";
 import { useNavigate } from "@tanstack/react-router";
+import { toast } from "sonner";
 import type { ColdInviteEntrySearch } from "@/src/lib/domains/invites/cold-invite-search";
 import { signDocumentSearchFromColdEntry } from "@/src/lib/domains/invites/cold-invite-search";
+import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { logger } from "@/src/lib/utils/logger";
 
@@ -14,6 +17,8 @@ import { logger } from "@/src/lib/utils/logger";
 export function useOnboardingComplete() {
 	const captureAppEvent = useCaptureAppEvent();
 	const updateUserProfile = useUpdateUserProfile();
+	const createOrg = useCreateOrganization();
+	const setActiveOrg = useSetPersistedActiveOrganizationId();
 	const { onboardingForm, setOnboardingForm } = useStorePersist();
 	const { data: auth } = useAuthedApi();
 	const navigate = useNavigate();
@@ -25,10 +30,31 @@ export function useOnboardingComplete() {
 		});
 
 		if (onboardingForm?.firstName) {
-			void updateUserProfile.mutateAsync({
-				firstName: onboardingForm.firstName,
-				lastName: onboardingForm.lastName ? onboardingForm.lastName : undefined,
+			const firstName = onboardingForm.firstName;
+			const lastName = onboardingForm.lastName;
+
+			await updateUserProfile.mutateAsync({
+				firstName,
+				lastName: lastName ? lastName : undefined,
 			});
+
+			try {
+				const orgName = `${firstName}'s Workspace`;
+				const created = await createOrg.mutateAsync({ name: orgName });
+				if (created?.organization?.id) {
+					setActiveOrg(created.organization.id);
+				} else {
+					throw new Error("No organization ID returned from server.");
+				}
+			} catch (error) {
+				logger.error("Failed to automate default workspace creation:", error);
+				toast.error(
+					error instanceof Error
+						? `Workspace setup failed: ${error.message}`
+						: "Workspace setup failed. Please try again.",
+				);
+				return;
+			}
 
 			setOnboardingForm({
 				...onboardingForm,

@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
-import { EntitlementPlanHint } from "@/src/lib/domains/entitlements/entitlement-plan-hint";
 import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import {
 	AddSignProvider,
@@ -33,14 +32,7 @@ function AddSignPageShell({ children }: { children: ReactNode }) {
 }
 
 function AddSignHeaderRow() {
-	return (
-		<>
-			<Header />
-			<div className="px-4 py-2 border-b border-border">
-				<EntitlementPlanHint />
-			</div>
-		</>
-	);
+	return <Header />;
 }
 
 function AddSignWorkspace({ children }: { children: ReactNode }) {

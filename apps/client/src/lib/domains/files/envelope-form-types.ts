@@ -69,6 +69,9 @@ export type SignatureField = {
 
 export type CreateForm = {
 	draftId: string;
+	/** Server-synced collaborative draft (off-chain). */
+	serverDraftId?: string;
+	serverDraftRevision?: number;
 	recipientFingerprint: string;
 	recipients: Recipient[];
 	emailSubject: string;

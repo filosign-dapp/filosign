@@ -9,6 +9,7 @@ alwaysApply: false
 - Avoid redundant styling tokens and tailwind classes; Optimize new components and remove unnecessary style tokens wherever possible.
 - Use semantic HTML elements for layout structure wherever possible.
 - Avoid hacky fixes, always try to look at the design as a whole and fix the root causes.
+- Import spring physics configurations and motion variants from `@filosign/motion` rather than defining inline stiffness/damping transitions.
 
 ## React Patterns
 - Implement the Headless Pattern: Extract complex interactions (keyboard nav, state) into custom hooks.

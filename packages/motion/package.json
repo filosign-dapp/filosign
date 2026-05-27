@@ -1,0 +1,22 @@
+{
+	"name": "@filosign/motion",
+	"version": "0.1.0",
+	"type": "module",
+	"exports": {
+		".": {
+			"default": "./index.ts"
+		}
+	},
+	"scripts": {
+		"check-types": "tsc --noEmit -p tsconfig.json"
+	},
+	"dependencies": {
+		"motion": "catalog:",
+		"react": "catalog:",
+		"react-dom": "catalog:"
+	},
+	"devDependencies": {
+		"@types/react": "catalog:",
+		"typescript": "catalog:"
+	}
+}

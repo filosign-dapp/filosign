@@ -224,6 +224,19 @@
         "typescript": "catalog:",
       },
     },
+    "packages/motion": {
+      "name": "@filosign/motion",
+      "version": "0.1.0",
+      "dependencies": {
+        "motion": "catalog:",
+        "react": "catalog:",
+        "react-dom": "catalog:",
+      },
+      "devDependencies": {
+        "@types/react": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/react-sdk": {
       "name": "@filosign/react",
       "version": "0.1.0",
@@ -671,6 +684,8 @@
     "@filosign/emails": ["@filosign/emails@workspace:packages/emails"],
 
     "@filosign/entitlements": ["@filosign/entitlements@workspace:packages/entitlements"],
+
+    "@filosign/motion": ["@filosign/motion@workspace:packages/motion"],
 
     "@filosign/react": ["@filosign/react@workspace:packages/react-sdk"],
 

@@ -16,11 +16,7 @@ export function CreateEnvelopePage() {
 		<div className="min-h-screen bg-background">
 			<FullBleedPageHeader>
 				<div className="flex gap-4 items-center">
-					<Logo
-						className="px-0"
-						textClassName="text-foreground font-bold"
-						iconOnly
-					/>
+					<Logo className="px-0" textClassName="text-foreground" iconOnly />
 					<h3>Create New Document</h3>
 				</div>
 				<UserDropdown />

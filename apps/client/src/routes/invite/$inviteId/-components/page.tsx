@@ -27,10 +27,7 @@ export function InvitePage() {
 		<div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
 			<div className="max-w-md w-full space-y-8">
 				<div className="text-center">
-					<Logo
-						className="mx-auto mb-6"
-						textClassName="text-foreground font-semibold"
-					/>
+					<Logo className="mx-auto mb-6" textClassName="text-foreground" />
 
 					{view === "success" ? (
 						<div className="space-y-4">

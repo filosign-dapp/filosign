@@ -37,11 +37,7 @@ export function SignatureCreatePage() {
 		<div className="min-h-screen">
 			<FullBleedPageHeader>
 				<div className="flex gap-4 items-center">
-					<Logo
-						className="px-0"
-						textClassName="text-foreground font-bold"
-						iconOnly
-					/>
+					<Logo className="px-0" textClassName="text-foreground" iconOnly />
 					<motion.h3
 						initial={{ opacity: 0, x: -10 }}
 						animate={{ opacity: 1, x: 0 }}

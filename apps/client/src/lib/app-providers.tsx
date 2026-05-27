@@ -1,3 +1,4 @@
+import { MotionConfig, SPRING_TOKENS } from "@filosign/motion";
 import { FilosignAnalyticsProvider } from "@filosign/react/analytics";
 import { IconContext } from "@phosphor-icons/react";
 import { RouterProvider } from "@tanstack/react-router";
@@ -36,7 +37,12 @@ export function AppProviders({ children }: { children?: ReactNode }) {
 										}}
 									>
 										<HydrationLifecycleTracer />
-										{children ?? <RouterProvider router={router} />}
+										<MotionConfig
+											reducedMotion="user"
+											transition={SPRING_TOKENS.smooth}
+										>
+											{children ?? <RouterProvider router={router} />}
+										</MotionConfig>
 									</IconContext.Provider>
 								</FilosignProvider>
 							</Web3Provider>

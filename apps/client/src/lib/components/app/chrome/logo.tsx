@@ -1,5 +1,5 @@
+import { motion, SPRING_TOKENS } from "@filosign/motion";
 import { useNavigate } from "@tanstack/react-router";
-import { motion } from "motion/react";
 import { Image } from "@/src/lib/components/app/media/image";
 import { cn } from "@/src/lib/utils";
 
@@ -60,9 +60,7 @@ export default function Logo({
 					initial={animatedLogo ? { scale: 0, rotate: -180 } : {}}
 					animate={animatedLogo ? { scale: 1, rotate: 0 } : {}}
 					transition={{
-						type: "spring",
-						stiffness: 345,
-						damping: 20,
+						...SPRING_TOKENS.bouncy,
 						delay: iconDelay,
 					}}
 				>
@@ -88,9 +86,7 @@ export default function Logo({
 					initial={{ opacity: 0, x: -20 }}
 					animate={{ opacity: 1, x: 0 }}
 					transition={{
-						type: "spring",
-						stiffness: 230,
-						damping: 25,
+						...SPRING_TOKENS.smooth,
 						delay: textDelay,
 					}}
 				>

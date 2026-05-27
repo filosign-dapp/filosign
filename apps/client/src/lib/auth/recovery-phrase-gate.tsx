@@ -41,7 +41,7 @@ export function RecoveryPhraseGate({
 				transition={{ duration: 0.3, delay: 0.2 }}
 				className="flex flex-col justify-center items-center px-8 mx-auto"
 			>
-				<Logo className="mb-4" textClassName="text-foreground font-semibold" />
+				<Logo className="mb-4" textClassName="text-foreground" />
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}

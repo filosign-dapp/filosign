@@ -24,10 +24,7 @@ export function OnboardingEntryPage() {
 					transition={{ duration: 0.3, delay: 0.2 }}
 					className="flex flex-col justify-center items-center px-8 mx-auto w-full max-w-lg"
 				>
-					<Logo
-						className="mb-4"
-						textClassName="text-foreground font-semibold"
-					/>
+					<Logo className="mb-4" textClassName="text-foreground" />
 					<OnboardingNameForm
 						onContinue={handleContinue}
 						disabled={isRegistering}

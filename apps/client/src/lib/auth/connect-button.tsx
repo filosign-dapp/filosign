@@ -1,7 +1,7 @@
+import { motion, PresenceSwap, SPRING_TOKENS } from "@filosign/motion";
 import { useIsRegistered } from "@filosign/react/auth";
 import { SignOutIcon } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/src/lib/components/ui/button";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
@@ -33,10 +33,7 @@ export default function ConnectButton() {
 			initial={{ opacity: 0, x: 30 }}
 			animate={{ opacity: 1, x: 0 }}
 			transition={{
-				type: "spring",
-				stiffness: 230,
-				damping: 30,
-				mass: 1.2,
+				...SPRING_TOKENS.smoothHeavy,
 				delay: 0.78,
 			}}
 		>
@@ -51,22 +48,9 @@ export default function ConnectButton() {
 					disabled={isLoading}
 					className="min-w-28"
 				>
-					<AnimatePresence mode="wait">
-						<motion.span
-							key={buttonState}
-							initial={{ opacity: 0, y: 10 }}
-							animate={{ opacity: 1, y: 0 }}
-							exit={{ opacity: 0, y: -10 }}
-							transition={{
-								duration: 0.2,
-								ease: "easeInOut",
-								layout: { duration: 0.3 },
-							}}
-							layout
-						>
-							Sign in
-						</motion.span>
-					</AnimatePresence>
+					<PresenceSwap customKey={buttonState} layout>
+						<span>Sign in</span>
+					</PresenceSwap>
 				</Button>
 			) : null}
 
@@ -76,22 +60,9 @@ export default function ConnectButton() {
 					className="min-w-28 mr-2"
 					render={<Link to={primaryCta.to} />}
 				>
-					<AnimatePresence mode="wait">
-						<motion.span
-							key={primaryCta.to}
-							initial={{ opacity: 0, y: 10 }}
-							animate={{ opacity: 1, y: 0 }}
-							exit={{ opacity: 0, y: -10 }}
-							transition={{
-								duration: 0.2,
-								ease: "easeInOut",
-								layout: { duration: 0.3 },
-							}}
-							layout
-						>
-							{primaryCta.label}
-						</motion.span>
-					</AnimatePresence>
+					<PresenceSwap customKey={primaryCta.to} layout>
+						<span>{primaryCta.label}</span>
+					</PresenceSwap>
 				</Button>
 			) : null}
 

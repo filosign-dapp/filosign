@@ -235,7 +235,7 @@ export function WorkspaceSettingsPage() {
 		<div className="mx-auto max-w-4xl space-y-8 px-8 py-8">
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-6">
 				<div>
-					<h1 className="text-2xl font-bold tracking-tight text-foreground">
+					<h1 className="text-2xl font-normal tracking-tight text-foreground">
 						Workspace Settings
 					</h1>
 					<p className="mt-1 text-sm text-muted-foreground">

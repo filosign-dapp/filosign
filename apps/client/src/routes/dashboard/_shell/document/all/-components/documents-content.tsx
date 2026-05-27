@@ -1,6 +1,6 @@
+import { MotionReveal, Pressable } from "@filosign/motion";
 import { PlusIcon } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
-import { motion } from "motion/react";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
@@ -54,11 +54,12 @@ export function DocumentsContent() {
 				</div>
 			</div>
 
-			<motion.div
+			<MotionReveal
 				className="flex min-h-0 flex-1 flex-col overflow-y-auto p-8"
-				initial={{ opacity: 0, y: 20 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.2, delay: 0.3 }}
+				preset="smooth"
+				delay={0.3}
+				onlyOnce
+				id="documents-tab-content"
 			>
 				{isLoading ? (
 					<div className="flex flex-1 flex-col items-center justify-center gap-2 py-24">
@@ -67,10 +68,9 @@ export function DocumentsContent() {
 					</div>
 				) : !hasAnyContent ? (
 					<div className="flex min-h-0 flex-1 flex-col items-center justify-center">
-						<motion.div
-							initial={{ opacity: 0, y: 20 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{ duration: 0.2, delay: 0.4 }}
+						<MotionReveal
+							preset="smooth"
+							delay={0.4}
 							className="space-y-4 text-center"
 						>
 							<h2 className="font-semibold text-foreground">No documents</h2>
@@ -79,12 +79,14 @@ export function DocumentsContent() {
 								by creating a new document.
 							</p>
 							<Link to="/dashboard/envelope/create">
-								<Button variant="primary" className="gap-2">
-									<PlusIcon className="size-4" weight="bold" />
-									Create New Document
-								</Button>
+								<Pressable preset="snappy">
+									<Button variant="primary" className="gap-2">
+										<PlusIcon className="size-4" weight="bold" />
+										Create New Document
+									</Button>
+								</Pressable>
 							</Link>
-						</motion.div>
+						</MotionReveal>
 					</div>
 				) : filteredItems.length === 0 ? (
 					<div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center py-20 space-y-2">
@@ -166,7 +168,7 @@ export function DocumentsContent() {
 						)}
 					</div>
 				)}
-			</motion.div>
+			</MotionReveal>
 
 			<ConfirmAlertDialog
 				open={deleteOpen}

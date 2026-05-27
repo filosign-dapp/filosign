@@ -1,3 +1,4 @@
+import { SPRING_TOKENS } from "@filosign/motion";
 import { useLogout } from "@filosign/react/auth";
 import { useActiveOrgId, useOrganizations } from "@filosign/react/orgs";
 import { useUserProfile } from "@filosign/react/users";
@@ -89,9 +90,7 @@ export function UserDropdown() {
 						initial={{ opacity: 0, y: -5 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{
-							type: "spring",
-							stiffness: 500,
-							damping: 20,
+							...SPRING_TOKENS.pop,
 							delay: 0.05,
 						}}
 					>
@@ -148,9 +147,7 @@ export function UserDropdown() {
 							initial={{ opacity: 0, y: -5 }}
 							animate={{ opacity: 1, y: 0 }}
 							transition={{
-								type: "spring",
-								stiffness: 500,
-								damping: 20,
+								...SPRING_TOKENS.pop,
 								delay: 0.1 + index * 0.03,
 							}}
 						>
@@ -174,9 +171,7 @@ export function UserDropdown() {
 					initial={{ opacity: 0, y: -5 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{
-						type: "spring",
-						stiffness: 500,
-						damping: 20,
+						...SPRING_TOKENS.pop,
 						delay: 0.2,
 					}}
 				>

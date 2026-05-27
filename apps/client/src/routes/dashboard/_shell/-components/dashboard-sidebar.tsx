@@ -303,7 +303,7 @@ export function DashboardSidebar() {
 				<SidebarHeader className="border-b border-sidebar-border/80 px-2 h-20 flex justify-center">
 					<Logo
 						className="px-2"
-						textClassName="text-foreground font-bold"
+						textClassName="text-foreground"
 						isCollapsed={state === "collapsed"}
 					/>
 				</SidebarHeader>

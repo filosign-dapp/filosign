@@ -53,11 +53,7 @@ export default function Header() {
 		<header className="sticky top-0 z-50 glass bg-background/95 border-b border-border">
 			<div className="flex items-center justify-between h-16 px-6">
 				<div className="flex items-center gap-4">
-					<Logo
-						className="px-0"
-						textClassName="text-foreground font-bold"
-						iconOnly
-					/>
+					<Logo className="px-0" textClassName="text-foreground" iconOnly />
 					<h3>Add Signature</h3>
 				</div>
 

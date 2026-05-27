@@ -1,6 +1,12 @@
+import { SPRING_TOKENS } from "@filosign/motion";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { cn } from "../../lib/cn";
+import {
+	type MarketingPace,
+	NAV_INTRO_DELAYS,
+	NAV_SCROLL_SPRING,
+} from "../../lib/marketing-motion";
 import MarketingLogo from "./MarketingLogo";
 
 const navLinks = [
@@ -15,9 +21,14 @@ const secondaryButtonClass =
 
 interface LandingNavbarProps {
 	appUrl: string;
+	pace?: MarketingPace;
 }
 
-export default function LandingNavbar({ appUrl }: LandingNavbarProps) {
+export default function LandingNavbar({
+	appUrl,
+	pace = "page",
+}: LandingNavbarProps) {
+	const intro = NAV_INTRO_DELAYS[pace];
 	const [isVisible, setIsVisible] = useState(true);
 	const [lastScrollY, setLastScrollY] = useState(0);
 
@@ -49,11 +60,10 @@ export default function LandingNavbar({ appUrl }: LandingNavbarProps) {
 					y: isVisible ? 0 : -200,
 				}}
 				transition={{
-					type: "spring",
-					stiffness: 230,
-					damping: 25,
-					mass: 1.0,
-					delay: 0,
+					opacity: { ...SPRING_TOKENS.smooth, delay: intro.nav },
+					y: isVisible
+						? { ...SPRING_TOKENS.smooth, delay: intro.nav }
+						: NAV_SCROLL_SPRING,
 				}}
 			>
 				<div className="flex items-center gap-4">
@@ -78,10 +88,8 @@ export default function LandingNavbar({ appUrl }: LandingNavbarProps) {
 					initial={{ opacity: 0, y: -20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{
-						type: "spring",
-						stiffness: 230,
-						damping: 25,
-						delay: 0.43,
+						...SPRING_TOKENS.smooth,
+						delay: intro.linkGroup,
 					}}
 				>
 					{navLinks.map((link, index) => (
@@ -92,10 +100,8 @@ export default function LandingNavbar({ appUrl }: LandingNavbarProps) {
 							initial={{ opacity: 0, y: -15 }}
 							animate={{ opacity: 1, y: 0 }}
 							transition={{
-								type: "spring",
-								stiffness: 230,
-								damping: 25,
-								delay: 0.52 + index * 0.087,
+								...SPRING_TOKENS.smooth,
+								delay: intro.linkBase + index * intro.linkStagger,
 							}}
 						>
 							{link.label}
@@ -108,11 +114,8 @@ export default function LandingNavbar({ appUrl }: LandingNavbarProps) {
 					initial={{ opacity: 0, x: 30 }}
 					animate={{ opacity: 1, x: 0 }}
 					transition={{
-						type: "spring",
-						stiffness: 230,
-						damping: 30,
-						mass: 1.2,
-						delay: 0.78,
+						...SPRING_TOKENS.smoothHeavy,
+						delay: intro.cta,
 					}}
 				>
 					<a

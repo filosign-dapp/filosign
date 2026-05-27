@@ -1,3 +1,4 @@
+import { Pressable, SPRING_TOKENS } from "@filosign/motion";
 import {
 	CaretRightIcon,
 	CircleIcon,
@@ -27,9 +28,7 @@ export default function MarketingHero({ appUrl }: MarketingHeroProps) {
 				initial={{ opacity: 0, y: 30 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{
-					type: "spring",
-					stiffness: 200,
-					damping: 25,
+					...SPRING_TOKENS.soft,
 					delay: 0.8,
 				}}
 			>
@@ -37,9 +36,7 @@ export default function MarketingHero({ appUrl }: MarketingHeroProps) {
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{
-						type: "spring",
-						stiffness: 200,
-						damping: 25,
+						...SPRING_TOKENS.soft,
 						delay: 1.3,
 					}}
 					className="self-start group"
@@ -57,9 +54,7 @@ export default function MarketingHero({ appUrl }: MarketingHeroProps) {
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{
-						type: "spring",
-						stiffness: 200,
-						damping: 25,
+						...SPRING_TOKENS.soft,
 						delay: 1.4,
 					}}
 					className="text-3xl sm:text-4xl md:text-5xl xl:text-7xl leading-tight"
@@ -71,9 +66,7 @@ export default function MarketingHero({ appUrl }: MarketingHeroProps) {
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{
-						type: "spring",
-						stiffness: 200,
-						damping: 25,
+						...SPRING_TOKENS.soft,
 						delay: 1.5,
 					}}
 					className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed -mt-2 font-manrope font-light"
@@ -85,38 +78,40 @@ export default function MarketingHero({ appUrl }: MarketingHeroProps) {
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{
-						type: "spring",
-						stiffness: 200,
-						damping: 25,
+						...SPRING_TOKENS.soft,
 						delay: 1.6,
 					}}
 					className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
 				>
-					<a
-						href={appUrl}
-						target="_blank"
-						rel="noopener noreferrer"
-						className={cn(
-							primaryLgClass,
-							"flex items-center justify-center gap-2 group",
-						)}
-					>
-						Get Started
-						<CaretRightIcon className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
-					</a>
+					<Pressable preset="snappy">
+						<a
+							href={appUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							className={cn(
+								primaryLgClass,
+								"flex items-center justify-center gap-2 group",
+							)}
+						>
+							Get Started
+							<CaretRightIcon className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+						</a>
+					</Pressable>
 
-					<a
-						href="https://github.com/hetairoi-labs/filosign"
-						target="_blank"
-						rel="noreferrer"
-						className={cn(
-							ghostLgClass,
-							"flex items-center justify-center gap-2 group",
-						)}
-					>
-						<GithubLogoIcon className="size-4" weight="fill" />
-						Source code
-					</a>
+					<Pressable preset="snappy">
+						<a
+							href="https://github.com/hetairoi-labs/filosign"
+							target="_blank"
+							rel="noreferrer"
+							className={cn(
+								ghostLgClass,
+								"flex items-center justify-center gap-2 group",
+							)}
+						>
+							<GithubLogoIcon className="size-4" weight="fill" />
+							Source code
+						</a>
+					</Pressable>
 				</motion.div>
 			</motion.div>
 

@@ -8,7 +8,7 @@ import {
 import { useActiveOrgId } from "@filosign/react/orgs";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useState } from "react";
-import { useOpenDraft } from "@/src/lib/domains/drafts/use-open-draft";
+import { useOpenDraft } from "@/src/lib/domains/drafts";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
 export const DOCUMENT_TABS = ["all", "sent", "received", "drafts"] as const;

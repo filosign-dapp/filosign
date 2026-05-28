@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CreateForm } from "@/src/lib/domains/files/envelope-form-types";
-import { createClientId } from "@/src/lib/utils/id";
 import {
 	clearDraftDocuments,
 	recipientFingerprint,
-} from "@/src/routes/dashboard/envelope/create/-lib/utils/envelope-draft";
+	shouldPersistCreateFormToDisk,
+} from "@/src/lib/domains/drafts";
+import type { CreateForm } from "@/src/lib/domains/files/envelope-form-types";
+import { createClientId } from "@/src/lib/utils/id";
 
 interface OnboardingForm {
 	firstName: string;
@@ -121,7 +122,7 @@ export const useStorePersist = create<StorePersist>()(
 			},
 			partialize: (state) => ({
 				activeOrgId: state.activeOrgId,
-				createForm: state.createForm,
+				createForm: shouldPersistCreateFormToDisk() ? state.createForm : null,
 			}),
 		},
 	),

@@ -2,6 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import {
+	createFormToEnvelopeForm,
+	createFormToEnvelopeFormWithoutDocuments,
+	EMPTY_ENVELOPE_FORM,
+	hasDraftContent,
+} from "@/src/lib/domains/drafts";
+import {
 	useStorePersist,
 	useStorePersistHydrated,
 } from "@/src/lib/filosign/use-store";
@@ -10,12 +16,6 @@ import { CreateEnvelopeProvider } from "./-lib/context/create-envelope-context";
 import { EntitlementUpgradeProvider } from "./-lib/context/entitlement-upgrade-context";
 import { useCreateEnvelopeController } from "./-lib/hooks/use-create-controller";
 import type { EnvelopeForm } from "./-lib/types";
-import {
-	createFormToEnvelopeForm,
-	createFormToEnvelopeFormWithoutDocuments,
-	EMPTY_ENVELOPE_FORM,
-	hasDraftContent,
-} from "./-lib/utils/envelope-draft";
 
 function CreateEnvelopeRoutePage() {
 	return (
@@ -39,6 +39,7 @@ function CreateEnvelopeRouteContent() {
 		if (!persistHydrated) return;
 
 		const draft = useStorePersist.getState().createForm;
+
 		if (!draft || !hasDraftContent(draft)) {
 			setInitialValues(EMPTY_ENVELOPE_FORM);
 			setBootState("ready");

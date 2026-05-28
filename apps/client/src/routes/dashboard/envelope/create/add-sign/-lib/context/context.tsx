@@ -27,6 +27,7 @@ type AddSignViewerContextValue = Pick<
 	| "handleBack"
 	| "setPdfLayoutHeight"
 	| "placementDocHeight"
+	| "documentLoadingMessage"
 >;
 
 type AddSignPlacementContextValue = Pick<
@@ -105,6 +106,7 @@ export function AddSignProvider({
 			handleBack: controller.handleBack,
 			setPdfLayoutHeight: controller.setPdfLayoutHeight,
 			placementDocHeight: controller.placementDocHeight,
+			documentLoadingMessage: controller.documentLoadingMessage,
 		}),
 		[
 			controller.currentDocument,
@@ -123,6 +125,7 @@ export function AddSignProvider({
 			controller.handleBack,
 			controller.setPdfLayoutHeight,
 			controller.placementDocHeight,
+			controller.documentLoadingMessage,
 		],
 	);
 

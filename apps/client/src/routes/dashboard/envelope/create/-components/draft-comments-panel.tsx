@@ -5,7 +5,7 @@ import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { Label } from "@/src/lib/components/ui/label";
 import { Textarea } from "@/src/lib/components/ui/textarea";
-import { useDraftCommentsContext } from "@/src/lib/domains/drafts/draft-comments-context";
+import { useDraftCommentsContext } from "@/src/lib/domains/drafts";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn, truncateAddress } from "@/src/lib/utils/utils";
 

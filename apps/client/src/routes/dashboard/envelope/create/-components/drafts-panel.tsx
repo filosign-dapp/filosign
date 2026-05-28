@@ -7,7 +7,7 @@ import {
 	formatDocumentCardDate,
 } from "@/src/lib/domains/documents/document-card";
 import { useDraftDelete } from "@/src/lib/domains/documents/use-draft-delete";
-import { useOpenDraft } from "@/src/lib/domains/drafts/use-open-draft";
+import { useOpenDraft } from "@/src/lib/domains/drafts";
 
 export function DraftsPanel() {
 	const { data, isLoading } = useDraftsList();

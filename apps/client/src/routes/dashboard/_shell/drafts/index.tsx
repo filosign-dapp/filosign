@@ -1,6 +1,6 @@
 import { useDraftsList } from "@filosign/react/drafts";
 import { FileTextIcon, PlusIcon } from "@phosphor-icons/react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useMemo } from "react";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
@@ -11,7 +11,7 @@ import {
 	formatDocumentCardDate,
 } from "@/src/lib/domains/documents/document-card";
 import { useDraftDelete } from "@/src/lib/domains/documents/use-draft-delete";
-import { useOpenDraft } from "@/src/lib/domains/drafts/use-open-draft";
+import { useOpenDraft, useStartNewEnvelope } from "@/src/lib/domains/drafts";
 
 export const Route = createFileRoute("/dashboard/_shell/drafts/")({
 	component: DraftsIndexPage,
@@ -20,6 +20,7 @@ export const Route = createFileRoute("/dashboard/_shell/drafts/")({
 function DraftsIndexPage() {
 	const { data, isLoading } = useDraftsList();
 	const { openDraft } = useOpenDraft();
+	const startNewEnvelope = useStartNewEnvelope();
 	const {
 		requestDelete,
 		deleteOpen,
@@ -42,12 +43,16 @@ function DraftsIndexPage() {
 						<h2 className="text-lg font-medium text-foreground">Drafts</h2>
 					</div>
 					<div className="flex items-center gap-4">
-						<Link to="/dashboard/envelope/create">
-							<Button variant="primary" size="sm" className="gap-2 group">
-								<PlusIcon className="size-4" weight="bold" />
-								<p className="hidden sm:inline">New Draft</p>
-							</Button>
-						</Link>
+						<Button
+							type="button"
+							variant="primary"
+							size="sm"
+							className="gap-2 group"
+							onClick={startNewEnvelope}
+						>
+							<PlusIcon className="size-4" weight="bold" />
+							<p className="hidden sm:inline">New Draft</p>
+						</Button>
 					</div>
 				</motion.div>
 
@@ -82,12 +87,15 @@ function DraftsIndexPage() {
 									fields, and hit{" "}
 									<span className="font-medium">Save draft</span>.
 								</p>
-								<Link to="/dashboard/envelope/create">
-									<Button variant="primary" className="gap-2">
-										<PlusIcon className="size-4" weight="bold" />
-										Create Draft
-									</Button>
-								</Link>
+								<Button
+									type="button"
+									variant="primary"
+									className="gap-2"
+									onClick={startNewEnvelope}
+								>
+									<PlusIcon className="size-4" weight="bold" />
+									Create Draft
+								</Button>
 							</motion.div>
 						</div>
 					) : (

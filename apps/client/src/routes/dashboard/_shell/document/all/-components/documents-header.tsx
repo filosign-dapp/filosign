@@ -1,12 +1,13 @@
 import { MotionReveal, Pressable } from "@filosign/motion";
 import { PlusIcon } from "@phosphor-icons/react";
-import { Link } from "@tanstack/react-router";
 import { ListGridViewToggle } from "@/src/lib/components/app/view/list-grid-view-toggle";
 import { Button } from "@/src/lib/components/ui/button";
+import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
 import { useDocuments } from "@/src/routes/dashboard/_shell/document/all/-lib/context/context";
 
 export function DocumentsHeader() {
 	const { viewMode, handleViewModeChange } = useDocuments();
+	const startNewEnvelope = useStartNewEnvelope();
 
 	return (
 		<MotionReveal
@@ -26,14 +27,18 @@ export function DocumentsHeader() {
 					onValueChange={handleViewModeChange}
 				/>
 
-				<Link to="/dashboard/envelope/create">
-					<Pressable preset="snappy">
-						<Button variant="primary" size="sm" className="gap-2 group">
-							<PlusIcon className="size-4" weight="bold" />
-							<p className="hidden sm:inline">New Document</p>
-						</Button>
-					</Pressable>
-				</Link>
+				<Pressable preset="snappy">
+					<Button
+						type="button"
+						variant="primary"
+						size="sm"
+						className="gap-2 group"
+						onClick={startNewEnvelope}
+					>
+						<PlusIcon className="size-4" weight="bold" />
+						<p className="hidden sm:inline">New Document</p>
+					</Button>
+				</Pressable>
 			</div>
 		</MotionReveal>
 	);

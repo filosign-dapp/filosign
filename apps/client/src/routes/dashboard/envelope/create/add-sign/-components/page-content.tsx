@@ -18,6 +18,7 @@ type DocumentPageContentProps = {
 	onDocumentClick: (event: React.MouseEvent) => void;
 	onPdfNumPagesLoaded: (n: number) => void;
 	onPdfPageLayoutLoaded?: (layout: { width: number; height: number }) => void;
+	loadingMessage?: string | null;
 };
 
 export function DocumentPageContent({
@@ -30,6 +31,7 @@ export function DocumentPageContent({
 	onDocumentClick,
 	onPdfNumPagesLoaded,
 	onPdfPageLayoutLoaded,
+	loadingMessage,
 }: DocumentPageContentProps) {
 	const pdfFile =
 		document.pdfBytes ??
@@ -47,7 +49,7 @@ export function DocumentPageContent({
 		if (!pdfFile) {
 			return (
 				<div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground px-6 text-center">
-					Loading PDF…
+					{loadingMessage ?? "Loading PDF…"}
 				</div>
 			);
 		}

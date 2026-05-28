@@ -3,6 +3,7 @@ import {
 	CLIENT_ANALYTICS_EVENTS,
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
+import { useCryptoUnlocked } from "@filosign/react/auth";
 import { useMarkDraftSent } from "@filosign/react/drafts";
 import { useSendFile } from "@filosign/react/files";
 import { useActiveOrganization } from "@filosign/react/orgs";
@@ -12,7 +13,12 @@ import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Address, Hex } from "viem";
-import { useServerDraftActions } from "@/src/lib/domains/drafts/use-server-draft-actions";
+import {
+	draftSyncModeFromSearch,
+	pruneSignatureFields,
+	useDraftDocumentPreview,
+	useServerDraftHydrate,
+} from "@/src/lib/domains/drafts";
 import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
 import { constrainFieldTopLeft } from "@/src/lib/domains/files/placement-viewport";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
@@ -23,11 +29,6 @@ import {
 } from "@/src/lib/filosign/use-store";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
-import { takeDraftPreviewCache } from "@/src/routes/dashboard/envelope/create/-lib/utils/draft-preview-cache";
-import {
-	loadDraftDocuments,
-	pruneSignatureFields,
-} from "@/src/routes/dashboard/envelope/create/-lib/utils/envelope-draft";
 import type {
 	FieldPlacementConfirmPayload,
 	FieldPlacementSignerOption,
@@ -36,7 +37,6 @@ import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/ad
 import { useSignatureFields } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-fields";
 import type { Document } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 import { buildSettlementRulesForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/build-settlement-rules";
-import { isPdfDocument } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/document-kind";
 import { signatureFieldBoxCssPx } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-box";
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
 import { resolveSettlementDraftsForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/resolve-settlement-drafts";
@@ -56,16 +56,26 @@ const addSignRouteApi = getRouteApi("/dashboard/envelope/create/add-sign/");
 export function useAddSignController() {
 	const navigate = useNavigate();
 	const { serverDraftId: pendingServerDraftId } = addSignRouteApi.useSearch();
-	const { loadDraftIntoStore } = useServerDraftActions();
+	const draftSyncMode = draftSyncModeFromSearch(pendingServerDraftId);
+	const cryptoUnlocked = useCryptoUnlocked();
+	const serverDraftCryptoReady =
+		draftSyncMode !== "server" || cryptoUnlocked.data === true;
+	const { serverDraftLoadState, documentLoadingMessage } =
+		useServerDraftHydrate({
+			pendingServerDraftId:
+				draftSyncMode === "server" ? pendingServerDraftId : undefined,
+			cryptoReady: serverDraftCryptoReady,
+		});
 	const createForm = useStorePersist((s) => s.createForm);
 	const clearCreateForm = useStorePersist((s) => s.clearCreateForm);
 	const setCreateForm = useStorePersist((s) => s.setCreateForm);
 	const persistHydrated = useStorePersistHydrated();
 	const draftReady = Boolean(createForm?.documents?.length);
-	const [documentUrls, setDocumentUrls] = useState<Record<string, string>>({});
-	const [documentPdfBytes, setDocumentPdfBytes] = useState<
-		Record<string, Uint8Array>
-	>({});
+	const { documentUrls, documentPdfBytes } = useDraftDocumentPreview({
+		createForm,
+		draftSyncMode,
+		serverDraftLoadState,
+	});
 	const captureAppEvent = useCaptureAppEvent();
 	const sendFile = useSendFile();
 	const markDraftSent = useMarkDraftSent();
@@ -128,15 +138,13 @@ export function useAddSignController() {
 		null,
 	);
 	const isSendingRef = useRef(false);
-	const [serverDraftLoadState, setServerDraftLoadState] = useState<
-		"idle" | "loading" | "error"
-	>("idle");
 
 	const suppressEmptyDraftRedirect =
 		sendStatus === "loading" ||
 		sendStatus === "success" ||
 		postSendDialogOpen ||
 		serverDraftLoadState === "loading" ||
+		serverDraftLoadState === "awaiting_crypto" ||
 		Boolean(pendingServerDraftId && !draftReady);
 
 	const signatureFields = useMemo(
@@ -203,14 +211,6 @@ export function useAddSignController() {
 				.filter((x): x is NonNullable<typeof x> => x !== null);
 		}, [createForm?.recipients]);
 
-	const draftDocumentKey = useMemo(
-		() =>
-			(createForm?.documents ?? [])
-				.map((d) => `${d.id}:${d.size}:${d.type}`)
-				.join("|"),
-		[createForm?.documents],
-	);
-
 	const documents: Document[] = useMemo(
 		() =>
 			(createForm?.documents ?? []).map((doc) => ({
@@ -223,78 +223,6 @@ export function useAddSignController() {
 			})),
 		[createForm?.documents, documentUrls, documentPdfBytes],
 	);
-
-	useEffect(() => {
-		if (!createForm?.draftId || !draftDocumentKey) {
-			setDocumentUrls({});
-			setDocumentPdfBytes({});
-			return;
-		}
-		let cancelled = false;
-		void (async () => {
-			const cached = takeDraftPreviewCache(createForm.draftId);
-			const uploaded =
-				cached ??
-				(await loadDraftDocuments(createForm.draftId, createForm.documents));
-			if (cancelled) return;
-			const urls: Record<string, string> = {};
-			const pdfBytes: Record<string, Uint8Array> = {};
-			for (const doc of uploaded) {
-				if (isPdfDocument({ type: doc.type, name: doc.name })) {
-					const buffer = await doc.file.arrayBuffer();
-					pdfBytes[doc.id] = new Uint8Array(buffer);
-				} else {
-					urls[doc.id] = URL.createObjectURL(doc.file);
-				}
-			}
-			setDocumentUrls(urls);
-			setDocumentPdfBytes(pdfBytes);
-		})().catch((error) =>
-			console.error("Failed to load draft preview:", error),
-		);
-
-		return () => {
-			cancelled = true;
-			setDocumentUrls((prev) => {
-				for (const url of Object.values(prev)) URL.revokeObjectURL(url);
-				return {};
-			});
-			setDocumentPdfBytes({});
-		};
-	}, [createForm?.draftId, createForm?.documents, draftDocumentKey]);
-
-	useEffect(() => {
-		const targetId = pendingServerDraftId?.trim();
-		if (!targetId) return;
-		if (createForm?.serverDraftId === targetId && draftReady) return;
-
-		let cancelled = false;
-		setServerDraftLoadState("loading");
-		void loadDraftIntoStore(targetId)
-			.then(() => {
-				if (!cancelled) setServerDraftLoadState("idle");
-			})
-			.catch((err) => {
-				if (cancelled) return;
-				setServerDraftLoadState("error");
-				toast.error(
-					err instanceof Error && err.message.length > 0
-						? err.message
-						: "Failed to open draft",
-				);
-				void navigate({ to: "/dashboard/drafts", replace: true });
-			});
-
-		return () => {
-			cancelled = true;
-		};
-	}, [
-		pendingServerDraftId,
-		createForm?.serverDraftId,
-		draftReady,
-		loadDraftIntoStore,
-		navigate,
-	]);
 
 	useEffect(() => {
 		if (!persistHydrated) return;
@@ -692,6 +620,7 @@ export function useAddSignController() {
 		handlePostSendDone,
 		setPdfLayoutHeight,
 		placementDocHeight,
+		documentLoadingMessage,
 	};
 }
 

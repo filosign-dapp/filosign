@@ -24,6 +24,7 @@ function DocumentViewer() {
 		handleBack,
 		setPdfLayoutHeight,
 		placementDocHeight,
+		documentLoadingMessage,
 	} = useAddSignViewer();
 
 	const interaction = useDocumentViewerInteraction({
@@ -109,6 +110,7 @@ function DocumentViewer() {
 							onDocumentClick={handleDocumentClick}
 							onPdfNumPagesLoaded={handlePdfNumPagesLoaded}
 							onPdfPageLayoutLoaded={onPdfPageLayoutLoaded}
+							loadingMessage={documentLoadingMessage}
 						/>
 
 						<SignatureFieldOverlays

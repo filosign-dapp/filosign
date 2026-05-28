@@ -57,6 +57,7 @@ import {
 	SidebarRail,
 	useSidebar,
 } from "@/src/lib/components/ui/sidebar";
+import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { cn } from "@/src/lib/utils/index";
 
@@ -66,6 +67,8 @@ type NavItem = {
 	icon: typeof HouseIcon;
 	match: (pathname: string) => boolean;
 	tooltip: string;
+	/** Clear open envelope draft before navigating (new envelope, not resume). */
+	resetComposer?: boolean;
 };
 
 function matchPrefix(pathname: string, prefix: string) {
@@ -103,6 +106,7 @@ const groups: { label: string; items: NavItem[] }[] = [
 				icon: EnvelopeSimpleIcon,
 				match: (p) => matchPrefix(p, "/dashboard/envelope/create"),
 				tooltip: "New envelope",
+				resetComposer: true,
 			},
 			{
 				title: "Signature",
@@ -282,6 +286,7 @@ function InviteTeammateDialog(props: {
 
 export function DashboardSidebar() {
 	const navigate = useNavigate();
+	const startNewEnvelope = useStartNewEnvelope();
 	const pathname = useRouterState({
 		select: (s) => s.location.pathname,
 	});
@@ -330,7 +335,16 @@ export function DashboardSidebar() {
 														active &&
 															"bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-none",
 													)}
-													render={<Link to={item.url} />}
+													render={
+														item.resetComposer ? (
+															<button
+																type="button"
+																onClick={startNewEnvelope}
+															/>
+														) : (
+															<Link to={item.url} />
+														)
+													}
 												>
 													<Icon
 														className="size-4 opacity-80"

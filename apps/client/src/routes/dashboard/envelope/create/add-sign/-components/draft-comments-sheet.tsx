@@ -6,7 +6,7 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/src/lib/components/ui/sheet";
-import { DraftCommentsProvider } from "@/src/lib/domains/drafts/draft-comments-context";
+import { DraftCommentsProvider } from "@/src/lib/domains/drafts";
 import {
 	DraftCommentsComposer,
 	DraftCommentsPanel,

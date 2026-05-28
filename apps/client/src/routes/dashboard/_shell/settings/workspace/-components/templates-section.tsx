@@ -1,9 +1,6 @@
 import { Button } from "@/src/lib/components/ui/button";
+import { buildCreateForm, uploadedFromDataUrl } from "@/src/lib/domains/drafts";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
-import {
-	buildCreateForm,
-	uploadedFromDataUrl,
-} from "@/src/routes/dashboard/envelope/create/-lib/utils/envelope-draft";
 
 export function TemplatesSection() {
 	const { activeOrgId, templates, cloneTemplate, setCreateForm, navigate } =

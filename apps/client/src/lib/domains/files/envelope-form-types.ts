@@ -68,10 +68,13 @@ export type SignatureField = {
 };
 
 export type CreateForm = {
+	/** Local IndexedDB scope for document bytes (compose buffer). */
 	draftId: string;
-	/** Server-synced collaborative draft (off-chain). */
+	/** Server draft UUID; mirrors `?serverDraftId=` when URL-synced. */
 	serverDraftId?: string;
 	serverDraftRevision?: number;
+	/** Baseline for dirty detection after last successful server save. */
+	lastSavedSnapshotDigest?: string;
 	recipientFingerprint: string;
 	recipients: Recipient[];
 	emailSubject: string;

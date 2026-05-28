@@ -263,6 +263,7 @@ export async function buildCreateForm(
 		draftId,
 		serverDraftId: prev?.serverDraftId,
 		serverDraftRevision: prev?.serverDraftRevision,
+		lastSavedSnapshotDigest: prev?.lastSavedSnapshotDigest,
 		recipientFingerprint: recipientFingerprintValue,
 		recipients: value.recipients,
 		emailMessage: value.emailMessage,

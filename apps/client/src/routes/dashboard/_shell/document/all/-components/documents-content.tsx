@@ -11,10 +11,12 @@ import {
 } from "@/src/lib/domains/documents/document-card";
 import { mapFileToDocumentCardProps } from "@/src/lib/domains/documents/map-file-to-card-props";
 import { useDraftDelete } from "@/src/lib/domains/documents/use-draft-delete";
+import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
 import { useDocuments } from "@/src/routes/dashboard/_shell/document/all/-lib/context/context";
 import { parseDocumentTab } from "@/src/routes/dashboard/_shell/document/all/-lib/hooks/use-documents-controller";
 
 export function DocumentsContent() {
+	const startNewEnvelope = useStartNewEnvelope();
 	const {
 		viewMode,
 		activeTab,
@@ -78,14 +80,17 @@ export function DocumentsContent() {
 								You have not yet created or received any documents. Get started
 								by creating a new document.
 							</p>
-							<Link to="/dashboard/envelope/create">
-								<Pressable preset="snappy">
-									<Button variant="primary" className="gap-2">
-										<PlusIcon className="size-4" weight="bold" />
-										Create New Document
-									</Button>
-								</Pressable>
-							</Link>
+							<Pressable preset="snappy">
+								<Button
+									type="button"
+									variant="primary"
+									className="gap-2"
+									onClick={startNewEnvelope}
+								>
+									<PlusIcon className="size-4" weight="bold" />
+									Create New Document
+								</Button>
+							</Pressable>
 						</MotionReveal>
 					</div>
 				) : filteredItems.length === 0 ? (

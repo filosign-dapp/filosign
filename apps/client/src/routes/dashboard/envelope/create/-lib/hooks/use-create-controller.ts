@@ -11,18 +11,17 @@ import { useForm, useStore } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
+	buildCreateForm,
+	EMPTY_ENVELOPE_FORM,
+	hasDraftContent,
+	hasEnvelopeFormContent,
+} from "@/src/lib/domains/drafts";
+import {
 	useStorePersist,
 	useStorePersistHydrated,
 } from "@/src/lib/filosign/use-store";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
 import type { EnvelopeForm } from "@/src/routes/dashboard/envelope/create/-lib/types";
-import { setDraftPreviewCache } from "@/src/routes/dashboard/envelope/create/-lib/utils/draft-preview-cache";
-import {
-	buildCreateForm,
-	EMPTY_ENVELOPE_FORM,
-	hasDraftContent,
-	hasEnvelopeFormContent,
-} from "@/src/routes/dashboard/envelope/create/-lib/utils/envelope-draft";
 
 const PERSIST_DEBOUNCE_MS = 400;
 
@@ -76,7 +75,6 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 					useStorePersist.getState().createForm,
 				);
 				setCreateForm(draft);
-				setDraftPreviewCache(draft.draftId, value.documents);
 
 				captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopeComposeSubmitted, {
 					recipient_count: value.recipients.length,

@@ -19,5 +19,5 @@
 		"noPropertyAccessFromIndexSignature": false
 	},
 	"include": ["./**/*.ts"],
-	"exclude": ["./**/*.test.ts"]
+	"exclude": ["./**/*.test.ts", "./tests"]
 }

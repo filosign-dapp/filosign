@@ -60,6 +60,16 @@ describe("createInMemoryDedupe", () => {
 		expect(dedupe.shouldSend(dedupeBaseEvent)).toBe(true);
 		expect(dedupe.shouldSend(dedupeBaseEvent)).toBe(true);
 	});
+
+	test("prunes expired entries to prevent memory leaks", () => {
+		const dedupe = createInMemoryDedupe({ windowMs: 0 });
+		expect(dedupe.shouldSend(dedupeBaseEvent)).toBe(true);
+		expect(dedupe._getMapSize?.()).toBe(1);
+
+		// Since windowMs is 0, any subsequent call should prune the expired entry
+		expect(dedupe.shouldSend({ ...dedupeBaseEvent, message: "different" })).toBe(true);
+		expect(dedupe._getMapSize?.()).toBe(1);
+	});
 });
 
 describe("createLoggerRuntime", () => {

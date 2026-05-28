@@ -1,19 +1,35 @@
 import { Client } from "pg";
+import env from "@/env";
 import { flushDevCache, initCache } from "@/lib/platform/cache/session-cache";
 
-// Bun automatically loads --env-file into process.env
-const PG_URI = process.env.PG_URI;
-const DB_NAME = process.env.DB_NAME;
+const ALLOWED_LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
-if (!PG_URI || !DB_NAME) {
-	console.error("Missing required env vars: PG_URI and DB_NAME");
-	console.error(
-		"Make sure to run with: bun run --env-file=.env.xxx scripts/clear-db.ts",
-	);
+const fail = (message: string, error?: unknown): never => {
+	console.error(message, error ?? "");
 	process.exit(1);
+	throw new Error(message);
+};
+
+if (env.CHAIN !== "local") {
+	fail(
+		`✗ Safeguard Error: Database clear script is only allowed when CHAIN is "local". Current CHAIN: "${env.CHAIN}"`,
+	);
 }
 
-const connectionString = PG_URI.replace(":dbname", DB_NAME);
+const connectionString = env.PG_URI.replace(":dbname", env.DB_NAME);
+let hostname = "";
+try {
+	hostname = new URL(connectionString).hostname.toLowerCase();
+} catch (err) {
+	fail("✗ Safeguard Error: PG_URI does not parse as a valid URL:", err);
+}
+
+if (!ALLOWED_LOCAL_HOSTS.has(hostname)) {
+	fail(
+		`✗ Safeguard Error: Database clear script is only allowed to run against local databases. Target hostname "${hostname}" is not in the allowed list: ${[...ALLOWED_LOCAL_HOSTS].join(", ")}`,
+	);
+}
+
 console.log(
 	`Connecting to: ${connectionString.replace(/:\/\/.*@/, "://***@")}`,
 );

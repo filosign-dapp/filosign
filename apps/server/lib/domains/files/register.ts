@@ -244,6 +244,7 @@ export async function filesRegister(
 			getAddress(sender),
 			pieceCid,
 			settlementRules,
+			getAddress(fsContracts.FSPaymentValidator.address),
 		);
 	}
 
@@ -259,6 +260,7 @@ export async function filesRegister(
 				orgKemCiphertext: orgKemCiphertext,
 				orgEncryptedEncryptionKey: orgEncryptedEncryptionKey,
 				onchainTxHash: txHash,
+				registryAddress: getAddress(FSFileRegistry.address),
 				placementCommitment,
 				placementManifestJson: placementManifest,
 				warmParticipantCount: slotCounts.warmParticipantCount,
@@ -306,6 +308,7 @@ export async function filesRegister(
 			pieceCid,
 			getAddress(sender),
 			settlementRules,
+			getAddress(fsContracts.FSPaymentValidator.address),
 			tx,
 		);
 	});

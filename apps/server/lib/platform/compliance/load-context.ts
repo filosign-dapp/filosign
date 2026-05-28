@@ -12,11 +12,9 @@ import {
 } from "@/lib/platform/db/schema/file";
 import { fileSettlementRules } from "@/lib/platform/db/schema/settlements";
 import { users } from "@/lib/platform/db/schema/user";
-import { fsContracts } from "@/lib/platform/evm";
+import { fsFileRegistryAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import type { ParticipantRow } from "./types";
-
-const { FSFileRegistry } = fsContracts;
 
 export type ComplianceLoadContext = {
 	pieceCid: string;
@@ -24,6 +22,7 @@ export type ComplianceLoadContext = {
 	fileRecord: {
 		sender: Address;
 		onchainTxHash: Hex;
+		registryAddress: Address;
 		createdAt: Date;
 		placementCommitment: Hex;
 		placementManifestJson: unknown;
@@ -76,6 +75,7 @@ export async function loadComplianceContext(args: {
 		.select({
 			sender: files.sender,
 			onchainTxHash: files.onchainTxHash,
+			registryAddress: files.registryAddress,
 			createdAt: files.createdAt,
 			placementCommitment: files.placementCommitment,
 			placementManifestJson: files.placementManifestJson,
@@ -160,14 +160,13 @@ export async function loadComplianceContext(args: {
 
 	const exportedAtIso = new Date().toISOString();
 	const senderNorm = getAddress(fileRecord.sender);
+	const registry = fsFileRegistryAt(fileRecord.registryAddress);
 
 	let onchainRegistration: ComplianceLoadContext["onchainRegistration"] = null;
-	const cidRes = await tryCatch(FSFileRegistry.read.cidIdentifier([pieceCid]));
+	const cidRes = await tryCatch(registry.read.cidIdentifier([pieceCid]));
 	if (cidRes.data) {
 		const cidId = cidRes.data as Hex;
-		const regRes = await tryCatch(
-			FSFileRegistry.read.fileRegistrations([cidId]),
-		);
+		const regRes = await tryCatch(registry.read.fileRegistrations([cidId]));
 		const reg = regRes.data as
 			| {
 					sender: Address;
@@ -234,6 +233,7 @@ export async function loadComplianceContext(args: {
 		fileRecord: {
 			sender: fileRecord.sender,
 			onchainTxHash: fileRecord.onchainTxHash as Hex,
+			registryAddress: fileRecord.registryAddress,
 			createdAt: fileRecord.createdAt,
 			placementCommitment: fileRecord.placementCommitment as Hex,
 			placementManifestJson: fileRecord.placementManifestJson,

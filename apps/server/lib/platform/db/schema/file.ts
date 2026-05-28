@@ -42,6 +42,7 @@ export const files = t.pgTable(
 			.notNull()
 			.default("s3"),
 		onchainTxHash: tBytes32().unique().notNull(),
+		registryAddress: tEvmAddress().notNull(),
 
 		placementCommitment: tBytes32().notNull(),
 		placementManifestJson: t.jsonb().$type<PlacementManifest>().notNull(),
@@ -61,6 +62,7 @@ export const files = t.pgTable(
 		t.index("idx_files_owner").on(table.sender),
 		t.index("idx_files_sender_created").on(table.sender, table.createdAt),
 		t.index("idx_files_organization").on(table.organizationId),
+		t.index("idx_files_registry_address").on(table.registryAddress),
 	],
 );
 

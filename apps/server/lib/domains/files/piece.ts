@@ -16,14 +16,13 @@ import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
 import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
-import { fsContracts } from "@/lib/platform/evm";
+import { fsFileRegistryAt } from "@/lib/platform/evm";
 import { bucket } from "@/lib/platform/s3/client";
 import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
 
 export { pieceComplianceBundle } from "./utils/piece-compliance";
 export { pieceDetail } from "./utils/piece-detail";
 
-const { FSFileRegistry } = fsContracts;
 const {
 	files,
 	fileAcknowledgements,
@@ -54,6 +53,7 @@ export async function pieceAck(args: {
 		.select({
 			pieceCid: files.pieceCid,
 			sender: files.sender,
+			registryAddress: files.registryAddress,
 		})
 		.from(files)
 		.where(eq(files.pieceCid, args.pieceCid));
@@ -107,7 +107,9 @@ export async function pieceAck(args: {
 		participantRecord.authProviderId,
 	);
 
-	const valid = await FSFileRegistry.read.validateFileAckSignature([
+	const registry = fsFileRegistryAt(fileRecord.registryAddress);
+
+	const valid = await registry.read.validateFileAckSignature([
 		args.pieceCid,
 		fileRecord.sender,
 		participantRecord.wallet,

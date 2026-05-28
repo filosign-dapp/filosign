@@ -22,13 +22,12 @@ import { tryExecuteSettlementRulesForPiece } from "@/lib/domains/settlements";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
 import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
-import { evmClient, fsContracts } from "@/lib/platform/evm";
+import { evmClient, fsFileRegistryAt } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
 import { isEnvelopeFullySigned } from "./envelope-completion";
 import { primaryEmailForWallet } from "./file-invites";
 
-const { FSFileRegistry } = fsContracts;
 const { files, fileParticipants, fileSignatures, fileSignerDrafts, users } =
 	db.schema;
 
@@ -62,6 +61,7 @@ export async function pieceSign(args: {
 		.select({
 			pieceCid: files.pieceCid,
 			sender: files.sender,
+			registryAddress: files.registryAddress,
 			placementCommitment: files.placementCommitment,
 			placementManifestJson: files.placementManifestJson,
 		})
@@ -212,18 +212,23 @@ export async function pieceSign(args: {
 		completionsRoot,
 		LEAF_SCHEMA_VERSION_V1,
 	] as const;
+	const registry = fsFileRegistryAt(fileRecord.registryAddress);
 
 	try {
-		await FSFileRegistry.simulate.registerFileSignature(registerSignatureArgs, {
+		await registry.simulate.registerFileSignature(registerSignatureArgs, {
 			account: evmClient.account,
 		});
 	} catch (_err) {
 		throw new ORPCError("BAD_REQUEST", { message: "Invalid signature" });
 	}
 
-	const txHash = await FSFileRegistry.write.registerFileSignature(
-		registerSignatureArgs,
-	);
+	const txHash = await (
+		registry.write as unknown as {
+			registerFileSignature: (
+				args: readonly unknown[],
+			) => Promise<`0x${string}`>;
+		}
+	).registerFileSignature(registerSignatureArgs);
 
 	await db.insert(fileSignatures).values({
 		filePieceCid: pieceCid,

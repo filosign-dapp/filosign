@@ -33,6 +33,19 @@ Bun reads `.env*` automatically per [environment variables — Bun](https://bun.
 
 Server-side product events via `lib/analytics/` (`posthog-node`). Set `POSTHOG_ENABLED`, `POSTHOG_API_KEY` in `.env.local`. Full event catalog and funnel guidance: [`ANALYTICS.md`](../../ANALYTICS.md).
 
+## Platform alerts (Telegram)
+
+Critical platform failures emit via [`lib/platform/analytics/platform-alerts.ts`](lib/platform/analytics/platform-alerts.ts) using [`@filosign/logger`](../../packages/logger) (Telegram transport). Requires `TG_ANALYTICS_BOT_TOKEN` and `TG_ANALYTICS_BOT_GROUP_ID`; delivery is gated by `TG_ANALYTICS=true`.
+
+**Manual staging verification** (not run in CI):
+
+1. Set `TG_ANALYTICS=true` plus valid bot token and group id in `.env.staging`.
+2. Trigger a known 5xx (or wait for a real failure) — expect one Telegram message.
+3. Repeat the same failure within 5 minutes — expect dedupe (no spam).
+4. Set `TG_ANALYTICS=false` and restart — expect no new messages.
+
+Unit tests: `bun test tests/` in this package; see [TESTING.md](../../TESTING.md) and `tests/platform/` for platform alerts.
+
 ## Ops
 
 - **`GET /health`** (root app, not under `/api`) — `{ ok: true }` for probes.
@@ -75,4 +88,4 @@ Billing security notes:
 
 - `bun run check` — Biome
 - `bun run check-types` — TypeScript
-- **`bun test`** — Zod/helpers unit tests (`lib/**/*.test.ts`)
+- **`bun test`** — unit tests under [`tests/`](tests/) (domains, platform, support mocks)

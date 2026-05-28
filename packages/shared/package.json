@@ -10,8 +10,8 @@
 		}
 	},
 	"scripts": {
-		"check-types": "tsc --noEmit -p tsconfig.json",
-		"test": "bun test"
+		"check-types": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.tests.json",
+		"test": "bun test tests/"
 	},
 	"dependencies": {
 		"viem": "catalog:",

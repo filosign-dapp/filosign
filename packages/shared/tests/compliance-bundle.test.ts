@@ -3,8 +3,8 @@ import {
 	COMPLIANCE_CHAIN_TX_KINDS,
 	canonicalComplianceBundleJson,
 	zComplianceBundle,
-} from "./compliance-bundle";
-import type { PlacementManifest } from "./placement-manifest";
+} from "../compliance-bundle";
+import type { PlacementManifest } from "../placement-manifest";
 
 const minimalManifest: PlacementManifest = {
 	version: 2,

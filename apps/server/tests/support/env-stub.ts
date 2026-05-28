@@ -1,0 +1,33 @@
+import { privateKeyToAccount } from "viem/accounts";
+
+const testRelayerKey =
+	"0x0000000000000000000000000000000000000000000000000000000000000001";
+
+/** Minimal env stub for unit tests that must not load real `@/env` validation. */
+export const testEnvStub = {
+	NODE_ENV: "development" as const,
+	TG_ANALYTICS: false,
+	TG_ANALYTICS_BOT_TOKEN: "test-bot-token",
+	TG_ANALYTICS_BOT_GROUP_ID: "test-group-id",
+	S3_SECRET_ACCESS_KEY: "test-secret",
+	S3_ACCESS_KEY_ID: "test-key",
+	S3_BUCKET: "test-bucket",
+	S3_ENDPOINT: "https://s3.example.com",
+	FC_SERVER_PRIVATE_KEY: testRelayerKey,
+	FC_SERVER_ADDRESS: privateKeyToAccount(testRelayerKey).address,
+	PG_URI: "postgresql://u:p@localhost:5432/:dbname",
+	DB_NAME: "test",
+	SERVER_URL: "https://server.example.com",
+	CLIENT_URL: "https://app.example.com",
+	ASTRO_URL: "https://astro.example.com",
+	RESEND_API_KEY: "re_test",
+	RESEND_FROM_EMAIL: "test@example.com",
+	CHAIN: "local" as const,
+	DRAGONFLY_URL: "redis://localhost:6379",
+	THIRDWEB_CLIENT_ID: "test-client",
+	THIRDWEB_SECRET_KEY: "test-secret",
+	DEBUG: false,
+	POSTHOG_ENABLED: false,
+	DODO_API_KEY: "dodo-test",
+	DODO_WEBHOOK_KEY: "dodo-webhook-test",
+};

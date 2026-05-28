@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { effectivePlanIdFromStatus } from "./effective-plan";
+import { effectivePlanIdFromStatus } from "@/lib/domains/entitlements/effective-plan";
+import { recipientSlotCounts } from "@/lib/domains/entitlements/recipient-slots";
 
 describe("effectivePlanIdFromStatus", () => {
 	test("returns free when subscription is missing", () => {
@@ -25,5 +26,18 @@ describe("effectivePlanIdFromStatus", () => {
 		expect(
 			effectivePlanIdFromStatus({ planId: "teams", status: "canceled" }),
 		).toBe("free");
+	});
+});
+
+describe("recipientSlotCounts", () => {
+	test("sums warm participants and cold invites", () => {
+		const counts = recipientSlotCounts({
+			participants: [{ isSigner: true }, { isSigner: false }],
+			coldInvites: [{ isSigner: true }],
+		});
+		expect(counts.warmParticipantCount).toBe(2);
+		expect(counts.coldInviteCount).toBe(1);
+		expect(counts.recipientSlotCount).toBe(3);
+		expect(counts.signerSlotCount).toBe(2);
 	});
 });

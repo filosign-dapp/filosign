@@ -15,8 +15,8 @@
 		}
 	},
 	"scripts": {
-		"check-types": "tsc --noEmit -p tsconfig.json",
-		"test": "bun test lib.test.ts",
+		"check-types": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.tests.json",
+		"test": "bun test tests/",
 		"sync:wasm": "bun run scripts/sync-dilithium-wasm.ts",
 		"prepare": "bun run sync:wasm"
 	},

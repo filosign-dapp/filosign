@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { catalogV1 } from "./catalog";
-import { check, getLimit, getQuotaScope } from "./evaluate";
-import type { FeatureKey } from "./features";
-import { FEATURE_KEYS } from "./features";
-import type { EntitlementContext, PlanId } from "./types";
-import { PLAN_IDS } from "./types";
+import { catalogV1 } from "../src/catalog";
+import { check, getLimit, getQuotaScope } from "../src/evaluate";
+import type { FeatureKey } from "../src/features";
+import { FEATURE_KEYS } from "../src/features";
+import type { EntitlementContext, PlanId } from "../src/types";
+import { PLAN_IDS } from "../src/types";
 
 function ctx(
 	planId: PlanId,

@@ -18,6 +18,7 @@ Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-pack
 | `packages/motion`       | [README](packages/motion/README.md)                                       | Shared spring physics presets, tweens, and UI layout motion  |
 | `packages/test`         | [README](packages/test/README.md)                                         | Dev harness                                                  |
 | Scripts / CI            | [SCRIPTS.md](SCRIPTS.md)                                                  | `dev`, `check`, `sanity`, `test`, `build`, `db`, `contracts` |
+| Testing                 | [TESTING.md](TESTING.md)                                                  | `tests/` layout, `tests/support/`, grouping rules            |
 | Unsure                  | [README.md](README.md)                                                    | Product + repo map                                           |
 
 
@@ -31,6 +32,7 @@ Multi-package work: read every relevant row, then [Vertical slice](#vertical-sli
 | [apps/web/patterns.mdc](.cursor/rules/apps/web/patterns.mdc)     | `safe`/`tryCatch`, `respond`, Hono `Variables` |
 | [app.mdc](.cursor/rules/app.mdc)                                 | Never edit `definitions/` (generated)          |
 | [apps/web/api-routes.mdc](.cursor/rules/apps/web/api-routes.mdc) | oRPC routes + client consumption               |
+| [TESTING.md](TESTING.md)                                         | `tests/` vs `lib/`, mocks in `tests/support/`  |
 
 
 Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).

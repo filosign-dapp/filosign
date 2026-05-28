@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { draftDocumentKey, draftSnapshotKey } from "./draft-storage-keys";
+import { draftDocumentKey, draftSnapshotKey } from "../draft-storage-keys";
 
 test("draftSnapshotKey uses scope personal when organizationId is null", () => {
 	const key = draftSnapshotKey({

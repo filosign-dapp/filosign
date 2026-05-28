@@ -1,10 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import type { ORPCError } from "@orpc/server";
 import {
 	assertDraftDocumentsExistOnS3,
 	assertDraftSnapshotExistsOnS3,
 	type DraftStorageProbe,
-} from "./verify-draft-storage";
+} from "@/lib/domains/drafts/utils/verify-draft-storage";
 
 function probeWith(keys: Set<string>): DraftStorageProbe {
 	return {

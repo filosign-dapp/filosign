@@ -3,14 +3,14 @@ import { long as EFF_WORDLIST } from "@wordlist/english-eff/long";
 import {
 	generateColdInvitePhrase,
 	normalizeColdInvitePhrase,
-} from "./src/cold-invite";
+} from "../src/cold-invite";
 import {
 	computeCommitment,
 	deriveDeterministicSeed32FromSignature,
 	expandDeterministicSeed,
 	seedKeyGen,
-} from "./src/impl/node/utils";
-import cryptoUtils, { randomBytes } from "./src/lib-node";
+} from "../src/impl/node/utils";
+import cryptoUtils, { randomBytes } from "../src/lib-node";
 
 const { KEM, encryption, signatures } = cryptoUtils;
 
@@ -191,8 +191,10 @@ describe("Deterministic Key Seed", async () => {
 		const seed = await expandDeterministicSeed(seedCore32);
 		const regenerated = await expandDeterministicSeed(seedCore32);
 
-		const keygenA = await seedKeyGen(seed, { dl });
-		const keygenB = await seedKeyGen(regenerated, { dl });
+		const keygenA = await seedKeyGen(seed as Uint8Array<ArrayBuffer>, { dl });
+		const keygenB = await seedKeyGen(regenerated as Uint8Array<ArrayBuffer>, {
+			dl,
+		});
 
 		expect(keygenA.commitmentKem).toBe(keygenB.commitmentKem);
 		expect(keygenA.commitmentSig).toBe(keygenB.commitmentSig);

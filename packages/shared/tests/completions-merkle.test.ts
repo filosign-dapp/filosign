@@ -15,7 +15,7 @@ import {
 	LEAF_SCHEMA_VERSION_V1,
 	merkleRootFromLeafAndSiblings,
 	merkleRootFromLeaves,
-} from "./completions-merkle";
+} from "../completions-merkle";
 
 const signer = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266" as Address;
 const placementCommitment =

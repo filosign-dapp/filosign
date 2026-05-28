@@ -19,7 +19,7 @@ import {
 	getDefinitionsEntry,
 } from "../definitions/index";
 
-export type { ChainKey } from "../definitions/index";
+export type { ChainDefinitionsEntry, ChainKey } from "../definitions/index";
 
 export type FilosignContractName = keyof ChainDefinitionsEntry & string;
 

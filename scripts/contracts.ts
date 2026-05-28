@@ -30,7 +30,7 @@ Migrate (deploy contracts, then sync DB schema):
   bun run contracts -- --migrate --testnet    (deploys + pushes testnet DB schema)
   bun run contracts -- --migrate --mainnet    (deploys + pushes mainnet DB schema)
 
-Profiles: local (.env.local), testnet (.env.staging), mainnet (.env.production)
+Profiles: local (.env.local), testnet (.env.staging), mainnet (.env.production) in apps/contracts
 `.trim();
 
 const UTILITY_COMMANDS = {

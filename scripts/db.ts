@@ -21,8 +21,8 @@ const HELP = `
 Filosign database orchestrator (@filosign/server)
 
   bun run db -- push local      drizzle push (.env.local)
-  bun run db -- push testnet    drizzle push (.env.staging)
-  bun run db -- push mainnet    drizzle push (.env.production)
+  bun run db -- push testnet    drizzle push (Infisical staging)
+  bun run db -- push mainnet    drizzle push (Infisical prod)
   bun run db -- purge local     clear schema + Dragonfly flush, then push (.env.local)
 `.trim();
 

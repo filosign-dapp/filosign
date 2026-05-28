@@ -20,7 +20,7 @@ Stacks (pick one):
   dev -- --serloc     hardhat bootstrap + server                    [local only]
   dev -- --web        client + astro + emails                       [:30010]
   dev -- --emails     React Email preview only                      [:30010]
-  dev -- --testnet    client + server                       [.env.staging]
+  dev -- --testnet    client + server    [server: Infisical staging; client: .env.staging VITE_*]
 
 Or mix apps:  dev -- --client  --server  --astro  [--local | --testnet]
   (--server on --local runs with hardhat bootstrap first)

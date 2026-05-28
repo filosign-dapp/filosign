@@ -77,7 +77,7 @@ export async function runLocalBootstrap(rootDir: string): Promise<void> {
 
 	const steps: string[][] = [
 		["bun", "run", "contracts", "--", "compile"],
-		["bun", "run", "contracts", "--", "--deploy", "--local"],
+		["bun", "run", "contracts", "--", "--migrate", "--local"],
 		["bun", "run", "db", "--", "purge", "local"],
 	];
 

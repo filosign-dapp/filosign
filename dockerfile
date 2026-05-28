@@ -17,14 +17,25 @@ COPY . .
 # Compiled server (root scripts/build.ts → apps/server compile)
 RUN bun run build -- --server
 
-# Stage 2: Compile and run
+# Stage 2: Runtime + Infisical CLI (secrets at start via machine identity)
 FROM debian:bookworm-slim AS release
 WORKDIR /app
 
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends curl ca-certificates bash \
+	&& curl -1sLf "https://artifacts-cli.infisical.com/setup.deb.sh" | bash \
+	&& apt-get update \
+	&& apt-get install -y --no-install-recommends infisical \
+	&& rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder /app/apps/server/out/server .
 COPY --from=builder /app/packages/crypto-utils/assets/dilithium.wasm ./assets/dilithium.wasm
+COPY apps/server/scripts/infisical-entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 ENV NODE_ENV=production
+ENV INFISICAL_DISABLE_UPDATE_CHECK=true
 EXPOSE 3000
 
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["./server"]

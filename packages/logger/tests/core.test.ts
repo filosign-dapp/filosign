@@ -67,7 +67,9 @@ describe("createInMemoryDedupe", () => {
 		expect(dedupe._getMapSize?.()).toBe(1);
 
 		// Since windowMs is 0, any subsequent call should prune the expired entry
-		expect(dedupe.shouldSend({ ...dedupeBaseEvent, message: "different" })).toBe(true);
+		expect(
+			dedupe.shouldSend({ ...dedupeBaseEvent, message: "different" }),
+		).toBe(true);
 		expect(dedupe._getMapSize?.()).toBe(1);
 	});
 });

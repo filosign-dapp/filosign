@@ -45,7 +45,7 @@
 | `contracts` | `contracts.ts` | Hardhat + deploy/migrate |
 | `purge` | `shell/purge.sh` | rm all `node_modules` + `bun.lock` |
 
-**Env profiles:** `local` → `.env.local` · `testnet` → `.env.staging` (package scripts: `dev:local`, `db:push:local`, …).
+**Env profiles:** `local` → `.env.local` · server testnet/mainnet → Infisical `staging` / `prod` · contracts testnet/mainnet → `apps/contracts/.env.staging` / `.env.production`. See [`apps/server/SECRETS.md`](apps/server/SECRETS.md).
 
 ## `dev`
 
@@ -91,7 +91,7 @@ Flags: `--client`, `--astro`, `--server`, `--harness` (`--test`), `--contracts`,
 
 ## `contracts`
 
-`compile` · `test` (compile + Hardhat) · `node` · `--deploy --local|testnet|mainnet` · `--migrate …`
+`compile` · `test` (compile + Hardhat) · `node` · `--migrate --local|testnet|mainnet`
 
 Local deploy uses `deploy:local` (`--network localhost` + `.env.local`).
 
@@ -100,7 +100,7 @@ Local deploy uses `deploy:local` (`--network localhost` + `.env.local`).
 | deploy | — |
 | migrate | local/testnet: `db purge` (includes push) after deploy |
 
-Env: `local` / `testnet` / `mainnet` → `.env.local` / `.env.staging` / `.env.production`. Never hand-edit `definitions/` (deploy only). Test before testnet/mainnet deploy/migrate.
+Env: `local` / `testnet` / `mainnet` → `apps/contracts/.env.local` / `.env.staging` / `.env.production`. Never hand-edit `definitions/` (deploy only). Test before testnet/mainnet deploy/migrate.
 
 ## Turbo
 

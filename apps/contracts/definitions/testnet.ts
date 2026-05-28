@@ -1,7 +1,7 @@
 export const definitions = {
 	"0x14a34": {
 		FSFileRegistry: {
-			address: "0xE0F8422Fd5a2DAab42B7166f181D234A0B610f11",
+			address: "0x5CcFe00A2703B66A30b498a20c3c5c33C88CfAF9",
 			abi: [
 				{
 					inputs: [
@@ -855,7 +855,7 @@ export const definitions = {
 			],
 		},
 		FSPaymentValidator: {
-			address: "0xFDE27054858B74d7ce82ce2a3F82C57885Ea90D6",
+			address: "0xD5762E443498AcC9060de3bc00458Cea5B4A43b5",
 			abi: [
 				{
 					inputs: [

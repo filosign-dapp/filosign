@@ -152,7 +152,15 @@ Astro (`apps/astro/.env.example`): `PUBLIC_ASTRO_URL`, `PUBLIC_CLIENT_URL`, `PUB
 
 Emails preview (`packages/emails/.env.example`): `ASTRO_URL` (same unprefixed name as server; copy to `packages/emails/.env.local` or repo-root `.env.local`).
 
-Rename keys in gitignored `.env.local` / `.env.staging` / `.env.production` when upgrading (no runtime aliases).
+**Secrets**
+
+| Tier | Server | Contracts (deploy) | Client + Astro |
+|------|--------|-------------------|----------------|
+| Local | `apps/server/.env.local` | `apps/contracts/.env.local` | `.env.local` |
+| Staging | [Infisical](https://app.infisical.com) `staging` — [`apps/server/SECRETS.md`](apps/server/SECRETS.md) | `apps/contracts/.env.staging` | CF Pages; local client: [`.env.staging.example`](.env.staging.example) |
+| Production | Infisical `prod` | `apps/contracts/.env.production` | CF Pages |
+
+Rename keys in Infisical / env files when upgrading (no runtime aliases).
 
 **Local dev ports:** server `3000`, client `3001`, astro `3002` (see each app’s `.env.example`).
 

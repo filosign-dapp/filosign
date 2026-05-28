@@ -20,10 +20,14 @@ export function createInMemoryDedupe(opts: { windowMs: number }): {
 		shouldSend(event) {
 			const now = Date.now();
 
-			// Prune expired entries to prevent memory leaks
+			// Prune expired entries to prevent memory leaks.
+			// Since a JS Map preserves insertion order, scanning from the start yields the oldest entries first.
+			// The moment we encounter a non-expired entry, we can break early as all subsequent entries are newer.
 			for (const [k, timestamp] of seen.entries()) {
 				if (now - timestamp >= windowMs) {
 					seen.delete(k);
+				} else {
+					break;
 				}
 			}
 

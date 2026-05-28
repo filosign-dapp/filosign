@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { zPlacementManifest } from "./placement-manifest";
+import { zDraftPlacementManifest } from "./placement-manifest";
 
 const zRecipient = z.object({
 	clientRowId: z.string().optional(),
@@ -52,7 +52,7 @@ export const zDraftSnapshot = z.object({
 	emailMessage: z.string(),
 	signatureFields: z.array(zSignatureField),
 	settlementDrafts: z.array(zSettlementDraft).default([]),
-	placementManifest: zPlacementManifest,
+	placementManifest: zDraftPlacementManifest,
 	documents: z.array(
 		z.object({
 			id: z.string(),

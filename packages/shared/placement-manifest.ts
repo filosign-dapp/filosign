@@ -35,12 +35,20 @@ export const zPlacementField = z.object({
 	]),
 });
 
+/** Send/sign/compliance — at least one placed field. */
 export const zPlacementManifest = z.object({
 	version: z.literal(2),
 	fields: z.array(zPlacementField).min(1),
 });
 
+/** Draft checkpoints — fields may be empty before add-sign placement. */
+export const zDraftPlacementManifest = z.object({
+	version: z.literal(2),
+	fields: z.array(zPlacementField),
+});
+
 export type PlacementManifest = z.infer<typeof zPlacementManifest>;
+export type DraftPlacementManifest = z.infer<typeof zDraftPlacementManifest>;
 export type PlacementField = z.infer<typeof zPlacementField>;
 
 function sortKeysDeep(value: unknown): unknown {

@@ -1,3 +1,4 @@
+export { clearAllDraftDekCache } from "../../lib/draft-dek-cache";
 export { useArchiveDraft } from "./useArchiveDraft";
 export { useCreateDraft } from "./useCreateDraft";
 export { useDecryptDraft } from "./useDecryptDraft";
@@ -15,5 +16,9 @@ export {
 } from "./useDraftReview";
 export { type DraftSummaryRow, useDraftsList } from "./useDraftsList";
 export { useMarkDraftSent } from "./useMarkDraftSent";
-export { useSaveDraft } from "./useSaveDraft";
+export {
+	type SaveDraftDocumentInput,
+	type SaveDraftInput,
+	useSaveDraft,
+} from "./useSaveDraft";
 export { useShareDraftExternal } from "./useShareDraftExternal";

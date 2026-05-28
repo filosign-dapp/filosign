@@ -1,5 +1,10 @@
-import { type DraftSnapshot, draftDocumentKey } from "@filosign/shared";
+import {
+	type DraftSnapshot,
+	digestDraftSnapshot,
+	draftDocumentKey,
+} from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import type { Address, Hex } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import {
@@ -9,6 +14,12 @@ import {
 	generateDraftDek,
 	wrapDraftDekForOrg,
 } from "../../lib/draft-crypto";
+import {
+	clearAllDraftDekCache,
+	clearCachedDraftDek,
+	getCachedDraftDek,
+	setCachedDraftDek,
+} from "../../lib/draft-dek-cache";
 import {
 	debugDraftSave,
 	debugDraftSaveError,
@@ -21,7 +32,6 @@ export type SaveDraftDocumentInput = {
 	name: string;
 	size: number;
 	type: string;
-	bytes?: Uint8Array;
 };
 
 export type SaveDraftInput = {
@@ -29,15 +39,39 @@ export type SaveDraftInput = {
 	expectedRevision: number;
 	title?: string;
 	snapshot: DraftSnapshot;
+	snapshotDigest: Hex;
 	documents: SaveDraftDocumentInput[];
 	organizationId: string;
 	orgEncryptionPublicKey: Hex;
+	loadDocumentBytes?: (docId: string) => Promise<Uint8Array>;
 };
+
+function isConflictError(error: unknown): boolean {
+	if (error == null || typeof error !== "object") return false;
+	if ("code" in error && error.code === "CONFLICT") return true;
+	return (
+		error instanceof Error &&
+		error.message.includes("Draft was updated elsewhere")
+	);
+}
 
 export function useSaveDraft() {
 	const { wallet } = useFilosignContext();
 	const { rpc, rpcQuery, isAuthed } = useFilosignRpc();
 	const queryClient = useQueryClient();
+	const prevWalletRef = useRef<string | undefined>(undefined);
+
+	useEffect(() => {
+		const addr = wallet?.account?.address;
+		if (
+			prevWalletRef.current &&
+			addr &&
+			prevWalletRef.current.toLowerCase() !== addr.toLowerCase()
+		) {
+			clearAllDraftDekCache();
+		}
+		prevWalletRef.current = addr;
+	}, [wallet?.account?.address]);
 
 	return useMutation({
 		mutationFn: async (input: SaveDraftInput) => {
@@ -55,8 +89,14 @@ export function useSaveDraft() {
 
 				const walletAddress = wallet.account.address as Address;
 				let dek: Uint8Array;
+				let reuseHeadDek = false;
 
-				if (input.expectedRevision > 0) {
+				const cachedDek = getCachedDraftDek(input.draftId, walletAddress);
+				if (cachedDek) {
+					dek = cachedDek;
+					reuseHeadDek = input.expectedRevision > 0;
+					debugDraftSave("client.save.dek_cache.hit");
+				} else if (input.expectedRevision > 0) {
 					debugDraftSave("client.save.dek_load.start");
 					const existing = await rpc.drafts.get({ draftId: input.draftId });
 					const organizationId = draftOrganizationId(existing);
@@ -88,6 +128,8 @@ export function useSaveDraft() {
 						}
 						throw error;
 					}
+					setCachedDraftDek(input.draftId, walletAddress, dek);
+					reuseHeadDek = true;
 					debugDraftSave("client.save.dek_load.ok", {
 						headSnapshotFromDb: !!existing.headSnapshot,
 					});
@@ -100,42 +142,48 @@ export function useSaveDraft() {
 				const prepared = await rpc.drafts.prepareSave({
 					draftId: input.draftId,
 					docIds: input.documents.map((d) => d.id),
+					snapshotDigest: input.snapshotDigest,
 				});
 				debugDraftSave("client.save.prepare_rpc.ok", {
 					snapshotKey: prepared.snapshot.s3Key,
+					snapshotNeedsUpload: prepared.snapshot.needsUpload,
 					docs: prepared.documents.map((d) => ({
 						docId: d.docId,
 						needsUpload: d.needsUpload,
 					})),
 				});
 
-				debugDraftSave("client.save.encrypt_snapshot.start");
-				const snapshotCipher = await encryptDraftSnapshot({
-					dek,
-					draftId: input.draftId,
-					snapshot: input.snapshot,
-				});
-				debugDraftSave("client.save.encrypt_snapshot.ok", {
-					cipherBytes: snapshotCipher.byteLength,
-				});
+				if (prepared.snapshot.needsUpload && prepared.snapshot.uploadUrl) {
+					debugDraftSave("client.save.encrypt_snapshot.start");
+					const snapshotCipher = await encryptDraftSnapshot({
+						dek,
+						draftId: input.draftId,
+						snapshot: input.snapshot,
+					});
+					debugDraftSave("client.save.encrypt_snapshot.ok", {
+						cipherBytes: snapshotCipher.byteLength,
+					});
 
-				debugDraftSave("client.save.put_snapshot.start", {
-					urlHost: safeUrlHost(prepared.snapshot.uploadUrl),
-				});
-				const snapshotPut = await fetch(prepared.snapshot.uploadUrl, {
-					method: "PUT",
-					body: new Blob([Uint8Array.from(snapshotCipher)]),
-					headers: { "Content-Type": "application/octet-stream" },
-				});
-				debugDraftSave("client.save.put_snapshot.done", {
-					status: snapshotPut.status,
-					ok: snapshotPut.ok,
-				});
-				if (!snapshotPut.ok) {
-					const body = await snapshotPut.text().catch(() => "");
-					throw new Error(
-						`Failed to upload draft snapshot (${snapshotPut.status})${body ? `: ${body.slice(0, 200)}` : ""}`,
-					);
+					debugDraftSave("client.save.put_snapshot.start", {
+						urlHost: safeUrlHost(prepared.snapshot.uploadUrl),
+					});
+					const snapshotPut = await fetch(prepared.snapshot.uploadUrl, {
+						method: "PUT",
+						body: new Blob([Uint8Array.from(snapshotCipher)]),
+						headers: { "Content-Type": "application/octet-stream" },
+					});
+					debugDraftSave("client.save.put_snapshot.done", {
+						status: snapshotPut.status,
+						ok: snapshotPut.ok,
+					});
+					if (!snapshotPut.ok) {
+						const body = await snapshotPut.text().catch(() => "");
+						throw new Error(
+							`Failed to upload draft snapshot (${snapshotPut.status})${body ? `: ${body.slice(0, 200)}` : ""}`,
+						);
+					}
+				} else {
+					debugDraftSave("client.save.skip_snapshot");
 				}
 
 				const uploadByDocId = new Map(
@@ -144,31 +192,40 @@ export function useSaveDraft() {
 						.map((slot) => [slot.docId, slot] as const),
 				);
 
-				const documentRows: {
-					docId: string;
-					s3Key: string;
-					name: string;
-					size: number;
-					mimeType: string;
-				}[] = [];
+				const uploadedRows = await Promise.all(
+					input.documents.map(async (doc) => {
+						const slot = uploadByDocId.get(doc.id);
+						if (!slot?.uploadUrl) {
+							debugDraftSave("client.save.skip_document", { docId: doc.id });
+							const s3Key = draftDocumentKey({
+								draftId: input.draftId,
+								organizationId: input.organizationId,
+								docId: doc.id,
+							});
+							return {
+								docId: doc.id,
+								s3Key,
+								name: doc.name,
+								size: doc.size,
+								mimeType: doc.type,
+							};
+						}
 
-				for (const doc of input.documents) {
-					const slot = uploadByDocId.get(doc.id);
-					if (slot?.uploadUrl) {
-						if (doc.bytes === undefined) {
+						if (!input.loadDocumentBytes) {
 							throw new Error(
-								`Missing file bytes for document ${doc.id}; re-add the file and save again`,
+								`Missing file bytes loader for document ${doc.id}; re-add the file and save again`,
 							);
 						}
+						const bytes = await input.loadDocumentBytes(doc.id);
 						debugDraftSave("client.save.put_document.start", {
 							docId: doc.id,
-							plainBytes: doc.bytes.byteLength,
+							plainBytes: bytes.byteLength,
 						});
 						const cipher = await encryptDraftDocument({
 							dek,
 							draftId: input.draftId,
 							docId: doc.id,
-							bytes: doc.bytes,
+							bytes,
 						});
 						const put = await fetch(slot.uploadUrl, {
 							method: "PUT",
@@ -185,52 +242,48 @@ export function useSaveDraft() {
 								`Failed to upload draft document (${put.status})`,
 							);
 						}
-						documentRows.push({
+						return {
 							docId: doc.id,
 							s3Key: slot.s3Key,
 							name: doc.name,
 							size: doc.size,
 							mimeType: doc.type,
-						});
-					} else {
-						debugDraftSave("client.save.skip_document", { docId: doc.id });
-						const s3Key = draftDocumentKey({
-							draftId: input.draftId,
-							organizationId: input.organizationId,
-							docId: doc.id,
-						});
-						documentRows.push({
-							docId: doc.id,
-							s3Key,
-							name: doc.name,
-							size: doc.size,
-							mimeType: doc.type,
-						});
-					}
-				}
+						};
+					}),
+				);
 
-				debugDraftSave("client.save.wrap_dek.start");
-				const wrapped = await wrapDraftDekForOrg({
-					dek,
-					draftId: input.draftId,
-					orgEncryptionPublicKey: input.orgEncryptionPublicKey,
-				});
-				debugDraftSave("client.save.save_rpc.start");
-				const result = await rpc.drafts.save({
+				const savePayload: Parameters<typeof rpc.drafts.save>[0] = {
 					draftId: input.draftId,
 					expectedRevision: input.expectedRevision,
 					title: input.title,
 					headSnapshotS3Key: prepared.snapshot.s3Key,
 					snapshot: input.snapshot,
-					headDekWrappedOmk: wrapped.encryptedDek,
-					headOmkKemCiphertext: wrapped.kemCiphertext,
-					documents: documentRows,
-				});
+					documents: uploadedRows,
+				};
+
+				if (!reuseHeadDek) {
+					debugDraftSave("client.save.wrap_dek.start");
+					const wrapped = await wrapDraftDekForOrg({
+						dek,
+						draftId: input.draftId,
+						orgEncryptionPublicKey: input.orgEncryptionPublicKey,
+					});
+					savePayload.headDekWrappedOmk = wrapped.encryptedDek;
+					savePayload.headOmkKemCiphertext = wrapped.kemCiphertext;
+				} else {
+					debugDraftSave("client.save.reuse_head_dek");
+				}
+
+				debugDraftSave("client.save.save_rpc.start");
+				const result = await rpc.drafts.save(savePayload);
 				debugDraftSave("client.save.complete", {
 					revision: result.revision,
 				});
 				return result;
 			} catch (error) {
+				if (isConflictError(error)) {
+					clearCachedDraftDek(input.draftId);
+				}
 				debugDraftSaveError("client.save.failed", error, {
 					draftId: input.draftId,
 					expectedRevision: input.expectedRevision,
@@ -238,15 +291,51 @@ export function useSaveDraft() {
 				throw error;
 			}
 		},
-		onSuccess: async (_data, variables) => {
-			await queryClient.invalidateQueries({
-				queryKey: rpcQuery.drafts.list.key(),
+		onSuccess: async (data, variables) => {
+			const getKey = rpcQuery.drafts.get.key({
+				input: { draftId: variables.draftId },
 			});
-			await queryClient.invalidateQueries({
-				queryKey: rpcQuery.drafts.get.key({
-					input: { draftId: variables.draftId },
-				}),
+			queryClient.setQueryData(getKey, (prev) => {
+				if (!prev || typeof prev !== "object" || !("draft" in prev)) {
+					return prev;
+				}
+				const head = prev as {
+					draft: { revision: number; title?: string; updatedAt?: Date };
+					headSnapshot?: DraftSnapshot;
+				};
+				return {
+					...head,
+					draft: {
+						...head.draft,
+						revision: data.revision,
+						title: variables.title?.trim() ?? head.draft.title,
+						updatedAt: new Date(),
+					},
+					headSnapshot: variables.snapshot,
+				};
 			});
+
+			queryClient.setQueryData(
+				rpcQuery.drafts.list.key(),
+				(
+					prev:
+						| { drafts: { id: string; revision: number; title: string }[] }
+						| undefined,
+				) => {
+					if (!prev?.drafts) return prev;
+					return {
+						drafts: prev.drafts.map((d) =>
+							d.id === variables.draftId
+								? {
+										...d,
+										revision: data.revision,
+										title: variables.title?.trim() ?? d.title,
+									}
+								: d,
+						),
+					};
+				},
+			);
 		},
 	});
 }

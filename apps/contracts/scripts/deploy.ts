@@ -3,11 +3,11 @@ import hre from "hardhat";
 import { getAddress, toHex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { ChainKey } from "../definitions/index.js";
+import env from "../env";
 import {
 	deployAndFundLocalMockUsd,
 	fundLocalMockUsdcRecipientForGas,
 	fundLocalServer,
-	HARDHAT_LOCAL_SERVER,
 	LOCAL_MOCK_USDC_RECIPIENT,
 	type LocalMockUsdBundle,
 	viemChainOverride,
@@ -53,25 +53,20 @@ function requireChainId(): number {
 }
 
 function requireDeployerPrivateKey(): `0x${string}` {
-	const key = process.env.FC_PVT_KEY as `0x${string}` | undefined;
-	if (!key) {
-		console.error("FC_PVT_KEY is required for deployment");
-		process.exit(1);
-	}
-	return key;
+	return env.FC_DEPLOYER_PRIVATE_KEY as `0x${string}`;
 }
 
-function resolveServerAddress(chainId: number): `0x${string}` {
-	const raw = process.env.FC_SERVER_ADDRESS;
-	if (raw) return getAddress(raw);
-	if (chainId === CHAIN_ID.local) {
-		console.warn(
-			"FC_SERVER_ADDRESS not set — using Hardhat account #1 for local server",
-		);
-		return HARDHAT_LOCAL_SERVER;
-	}
-	console.error("FC_SERVER_ADDRESS is required for deployment");
-	process.exit(1);
+function resolveServerAddress(): `0x${string}` {
+	return getAddress(env.FC_SERVER_ADDRESS) as `0x${string}`;
+}
+
+function resolveOwnerAddress(
+	deployerAddress: `0x${string}`,
+): `0x${string}` | null {
+	const raw = env.FC_OWNER_ADDRESS;
+	const owner = getAddress(raw);
+	if (owner === deployerAddress) return null;
+	return owner;
 }
 
 function definitionsFileBody(singleChainDefinitions: unknown) {
@@ -89,6 +84,7 @@ function abiFromContract(c: { address: string; abi: unknown }) {
 async function deployFileRegistry(
 	deployer: WalletDeployed,
 	serverAddress: `0x${string}`,
+	ownerAddress: `0x${string}` | null,
 ) {
 	const fileRegistry = await hre.viem.deployContract(
 		"FSFileRegistry",
@@ -99,6 +95,43 @@ async function deployFileRegistry(
 		server: serverAddress,
 		deployer: deployer.account.address,
 	});
+
+	if (ownerAddress) {
+		try {
+			const txHash = await fileRegistry.write.transferOwnership(
+				[ownerAddress],
+				{
+					account: deployer.account,
+					gas: 120_000n,
+				},
+			);
+			const publicClient = await hre.viem.getPublicClient(viemChainOverride());
+			const receipt = await publicClient.waitForTransactionReceipt({
+				hash: txHash,
+			});
+			if (receipt.status !== "success") {
+				console.error("FSFileRegistry ownership transfer failed:", {
+					pendingOwner: ownerAddress,
+					txHash,
+					status: receipt.status,
+					note: "Continuing deployment without stopping.",
+				});
+			} else {
+				const pendingOwner = await fileRegistry.read.pendingOwner();
+				console.log("FSFileRegistry ownership transfer started:", {
+					pendingOwner,
+					txHash,
+					note: "Pending owner must call acceptOwnership() from target wallet.",
+				});
+			}
+		} catch (error) {
+			console.error("FSFileRegistry ownership transfer failed:", {
+				pendingOwner: ownerAddress,
+				error: error instanceof Error ? error.message : String(error),
+				note: "Continuing deployment without stopping.",
+			});
+		}
+	}
 	return fileRegistry;
 }
 
@@ -152,14 +185,20 @@ async function main() {
 		privateKeyToAccount(requireDeployerPrivateKey()).address,
 		viemChainOverride(),
 	);
-	const serverAddress = resolveServerAddress(chainId);
+	const serverAddress = resolveServerAddress();
+	const ownerAddress = resolveOwnerAddress(deployer.account.address);
 
 	console.log("Deploying contracts as", {
 		deployer: deployer.account.address,
 		server: serverAddress,
+		owner: ownerAddress ?? deployer.account.address,
 	});
 
-	const fileRegistry = await deployFileRegistry(deployer, serverAddress);
+	const fileRegistry = await deployFileRegistry(
+		deployer,
+		serverAddress,
+		ownerAddress,
+	);
 	const publicClient = await assertBytecodeLive(fileRegistry.address);
 	const paymentValidator = await deployPaymentValidator(
 		deployer,

@@ -17,3 +17,4 @@ error InvalidSender();
 error AlreadySigned();
 error InvalidSignature();
 error InvalidSignersCommitment();
+error ServerUnchanged();

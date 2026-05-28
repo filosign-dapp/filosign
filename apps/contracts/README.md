@@ -46,7 +46,7 @@ flowchart TB
 
 | Contract | Role |
 | -------- | ---- |
-| `FSFileRegistry` | File registration, signatures, viewer/signer commitments, `allSigned`, `FileSigned` events. Immutable `server` for relay writes. |
+| `FSFileRegistry` | File registration, signatures, viewer/signer commitments, `allSigned`, `FileSigned` events. `onlyServer` relay writes with owner-controlled `setServer`; ownership via OZ `Ownable2Step`. |
 | `FSPaymentValidator` | Settlement rules per `cidId`: `registerRule` (payer only), `canExecute`, `executePayout` (permissionless when conditions met). |
 | `MockUSDCToken` | Local Hardhat USDC stand-in. |
 
@@ -85,6 +85,7 @@ See [`apps/server/README.md`](../server/README.md) for auto-execution cron and [
 ## Trust model
 
 - **Server (`onlyServer` on file registry):** Can register files and signatures on behalf of users who have authenticated; cannot move USDC without the payer’s on-chain approve.
+- **Owner (governance):** Can rotate `FSFileRegistry.server` and transfer ownership (2-step). This does not grant access to user settlement funds.
 - **Relayers:** Any address may call `executePayout` once `canExecute` is true; Filosign server relay and users provide the primary paths.
 - **Payer:** Must call `registerRule` as `msg.sender == payer`; approval is exact-amount per rule.
 - **Recipients (product):** Filosign UI only allows envelope participants or a linked organization payout wallet.
@@ -109,7 +110,7 @@ bun run --cwd apps/contracts check-types
 
 `FSPaymentValidator.spec.ts` covers register, approve, execute, and release-type gating. See [TESTING.md](./TESTING.md).
 
-Deploy env (testnet/mainnet): `FC_PVT_KEY` (Ledger), `FC_SERVER_ADDRESS` (KMS relayer).
+Deploy env (testnet/mainnet): `FC_DEPLOYER_PRIVATE_KEY` (deployer), `FC_SERVER_ADDRESS` (KMS relayer), optional `FC_OWNER_ADDRESS` (cold wallet ownership handoff target).
 
 Deploy with migrate (runs tests first):
 

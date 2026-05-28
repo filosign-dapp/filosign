@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 pragma solidity ^0.8.26;
 
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
 import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 import "./errors/EFSCommon.sol";
 import "./errors/EFSFileRegistry.sol";
 import "./libraries/FSSignatureValidation.sol";
 
-contract FSFileRegistry is EIP712 {
-
+contract FSFileRegistry is EIP712, Ownable2Step {
     uint256 constant SIGNATURE_VALIDITY_PERIOD = 2 minutes;
 
     struct FileRegistration {
@@ -51,20 +51,34 @@ contract FSFileRegistry is EIP712 {
         address indexed signerWallet,
         uint48 timestamp
     );
+    event ServerUpdated(
+        address indexed previousServer,
+        address indexed newServer,
+        address indexed changedBy
+    );
 
     mapping(address => uint256) public nonce;
     mapping(bytes32 => FileRegistration) private _fileRegistrations;
 
-    address public immutable server;
+    address public server;
 
     modifier onlyServer() {
         if (msg.sender != server) revert OnlyServer();
         _;
     }
 
-    constructor(address server_) EIP712("FSFileRegistry", "1") {
+    constructor(address server_) EIP712("FSFileRegistry", "1") Ownable(msg.sender) {
         if (server_ == address(0)) revert ZeroAddress();
         server = server_;
+    }
+
+    function setServer(address newServer_) external onlyOwner {
+        if (newServer_ == address(0)) revert ZeroAddress();
+        if (newServer_ == server) revert ServerUnchanged();
+
+        address previousServer = server;
+        server = newServer_;
+        emit ServerUpdated(previousServer, newServer_, msg.sender);
     }
 
     bytes32 private constant REGISTER_FILE_TYPEHASH =

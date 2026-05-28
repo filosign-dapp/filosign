@@ -7,16 +7,11 @@ const privateKey = z
 
 export const env = createEnv({
 	server: {
-		/** Required for deploy / live networks only; Hardhat unit tests use the in-process network. */
-		FC_PVT_KEY: privateKey.optional(),
-		/** KMS relayer → `FSFileRegistry.server` (required on testnet/mainnet deploy). */
-		FC_SERVER_ADDRESS: z
-			.string()
-			.regex(/^0x[0-9a-fA-F]{40}$/)
-			.optional(),
-		ALCHEMY_API_KEY: z.string().min(1).optional(),
-		ETHERSCAN_API_KEY: z.string().min(1).optional(),
-		BLOCKSCOUT_API_KEY: z.string().min(1).optional(),
+		FC_DEPLOYER_PRIVATE_KEY: privateKey,
+		FC_SERVER_ADDRESS: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
+		FC_OWNER_ADDRESS: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
+		ALCHEMY_API_KEY: z.string().min(1),
+		ETHERSCAN_API_KEY: z.string().min(1),
 	},
 	// Hardhat loads this file under Node/ts-node — not Bun.
 	runtimeEnv: process.env,

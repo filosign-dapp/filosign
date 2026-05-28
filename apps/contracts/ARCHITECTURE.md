@@ -6,10 +6,11 @@ Frozen **immutable bytecode** for mainnet: two production contracts. No UUPS pro
 
 | Actor | Key | Role |
 | ----- | --- | ---- |
-| **Ledger** | `FC_PVT_KEY` | Deploys `FSFileRegistry` and `FSPaymentValidator` |
+| **Ledger** | `FC_DEPLOYER_PRIVATE_KEY` | Deploys `FSFileRegistry` and `FSPaymentValidator` |
+| **Owner (cold wallet recommended)** | deployer by default, optional `FC_OWNER_ADDRESS` handoff | Can rotate `FSFileRegistry.server` and ownership (2-step) |
 | **KMS / relayer** | `FC_SERVER_ADDRESS` → `FSFileRegistry.server` | `onlyServer` relay for `registerFile` / `registerFileSignature` |
 
-`server` is **immutable** at deploy. Rotating the relayer requires a new v1 bundle on a new chain or a future contract version.
+`server` is owner-rotatable via `setServer`. Ownership uses OpenZeppelin `Ownable2Step` (`transferOwnership` + `acceptOwnership`).
 
 ## Topology
 
@@ -63,9 +64,15 @@ See [`project/contracts-future-scope.md`](../../project/contracts-future-scope.m
 ## Deploy
 
 ```bash
-# Env: FC_PVT_KEY (Ledger), FC_SERVER_ADDRESS (KMS)
+# Env: FC_DEPLOYER_PRIVATE_KEY (deployer), FC_SERVER_ADDRESS (KMS relayer), optional FC_OWNER_ADDRESS (cold owner)
 bun run --cwd apps/contracts migrate:testnet   # test + deploy Base Sepolia
 bun run --cwd apps/contracts migrate:mainnet   # test + deploy Base
 ```
 
 Local deploy: `server` = `FC_SERVER_ADDRESS` (else Hardhat #1); deploy funds that address with 100 ETH.
+
+Post-deploy owner runbook:
+1. Deploy with `FC_DEPLOYER_PRIVATE_KEY` (hot/deployer wallet).
+2. Set `FC_OWNER_ADDRESS` during deploy to start 2-step ownership handoff.
+3. From owner wallet, call `acceptOwnership()`.
+4. Verify `owner()` and `server()` on-chain before enabling production traffic.

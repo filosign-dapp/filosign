@@ -60,6 +60,33 @@ export const definitions = {
 					type: "error",
 				},
 				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "owner",
+							type: "address",
+						},
+					],
+					name: "OwnableInvalidOwner",
+					type: "error",
+				},
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "account",
+							type: "address",
+						},
+					],
+					name: "OwnableUnauthorizedAccount",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "ServerUnchanged",
+					type: "error",
+				},
+				{
 					inputs: [],
 					name: "SignatureExpired",
 					type: "error",
@@ -151,6 +178,76 @@ export const definitions = {
 					],
 					name: "FileSigned",
 					type: "event",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "address",
+							name: "previousOwner",
+							type: "address",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "newOwner",
+							type: "address",
+						},
+					],
+					name: "OwnershipTransferStarted",
+					type: "event",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "address",
+							name: "previousOwner",
+							type: "address",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "newOwner",
+							type: "address",
+						},
+					],
+					name: "OwnershipTransferred",
+					type: "event",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "address",
+							name: "previousServer",
+							type: "address",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "newServer",
+							type: "address",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "changedBy",
+							type: "address",
+						},
+					],
+					name: "ServerUpdated",
+					type: "event",
+				},
+				{
+					inputs: [],
+					name: "acceptOwnership",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
 				},
 				{
 					inputs: [
@@ -391,6 +488,32 @@ export const definitions = {
 					type: "function",
 				},
 				{
+					inputs: [],
+					name: "owner",
+					outputs: [
+						{
+							internalType: "address",
+							name: "",
+							type: "address",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "pendingOwner",
+					outputs: [
+						{
+							internalType: "address",
+							name: "",
+							type: "address",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
 					inputs: [
 						{
 							internalType: "string",
@@ -508,6 +631,13 @@ export const definitions = {
 				},
 				{
 					inputs: [],
+					name: "renounceOwnership",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [],
 					name: "server",
 					outputs: [
 						{
@@ -517,6 +647,32 @@ export const definitions = {
 						},
 					],
 					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "newServer_",
+							type: "address",
+						},
+					],
+					name: "setServer",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "newOwner",
+							type: "address",
+						},
+					],
+					name: "transferOwnership",
+					outputs: [],
+					stateMutability: "nonpayable",
 					type: "function",
 				},
 				{

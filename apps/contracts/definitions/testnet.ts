@@ -1,7 +1,7 @@
 export const definitions = {
 	"0x14a34": {
 		FSFileRegistry: {
-			address: "0xcEc2aD2aeB418182Fc8b36B275ebb31c2072D865",
+			address: "0xE0F8422Fd5a2DAab42B7166f181D234A0B610f11",
 			abi: [
 				{
 					inputs: [
@@ -57,6 +57,33 @@ export const definitions = {
 				{
 					inputs: [],
 					name: "OnlyServer",
+					type: "error",
+				},
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "owner",
+							type: "address",
+						},
+					],
+					name: "OwnableInvalidOwner",
+					type: "error",
+				},
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "account",
+							type: "address",
+						},
+					],
+					name: "OwnableUnauthorizedAccount",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "ServerUnchanged",
 					type: "error",
 				},
 				{
@@ -151,6 +178,76 @@ export const definitions = {
 					],
 					name: "FileSigned",
 					type: "event",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "address",
+							name: "previousOwner",
+							type: "address",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "newOwner",
+							type: "address",
+						},
+					],
+					name: "OwnershipTransferStarted",
+					type: "event",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "address",
+							name: "previousOwner",
+							type: "address",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "newOwner",
+							type: "address",
+						},
+					],
+					name: "OwnershipTransferred",
+					type: "event",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "address",
+							name: "previousServer",
+							type: "address",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "newServer",
+							type: "address",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "changedBy",
+							type: "address",
+						},
+					],
+					name: "ServerUpdated",
+					type: "event",
+				},
+				{
+					inputs: [],
+					name: "acceptOwnership",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
 				},
 				{
 					inputs: [
@@ -391,6 +488,32 @@ export const definitions = {
 					type: "function",
 				},
 				{
+					inputs: [],
+					name: "owner",
+					outputs: [
+						{
+							internalType: "address",
+							name: "",
+							type: "address",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "pendingOwner",
+					outputs: [
+						{
+							internalType: "address",
+							name: "",
+							type: "address",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
 					inputs: [
 						{
 							internalType: "string",
@@ -508,6 +631,13 @@ export const definitions = {
 				},
 				{
 					inputs: [],
+					name: "renounceOwnership",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [],
 					name: "server",
 					outputs: [
 						{
@@ -517,6 +647,32 @@ export const definitions = {
 						},
 					],
 					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "newServer_",
+							type: "address",
+						},
+					],
+					name: "setServer",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "newOwner",
+							type: "address",
+						},
+					],
+					name: "transferOwnership",
+					outputs: [],
+					stateMutability: "nonpayable",
 					type: "function",
 				},
 				{
@@ -699,7 +855,7 @@ export const definitions = {
 			],
 		},
 		FSPaymentValidator: {
-			address: "0x3B9eD3A5628C4dFa89525a6C057e524b473952CA",
+			address: "0xFDE27054858B74d7ce82ce2a3F82C57885Ea90D6",
 			abi: [
 				{
 					inputs: [

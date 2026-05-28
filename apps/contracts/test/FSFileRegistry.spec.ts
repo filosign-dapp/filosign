@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { expect } from "chai";
 import hre from "hardhat";
 import type { Hex } from "viem";
-import { keccak256, toBytes } from "viem";
+import { keccak256, parseAbiItem, toBytes } from "viem";
 import {
 	deployFullSystem,
 	registerFileOnly,
@@ -22,6 +22,114 @@ const zeroOrg =
 	"0x0000000000000000000000000000000000000000000000000000000000000000" as Hex;
 
 describe("FSFileRegistry", () => {
+	it("sets deployer as owner at deployment", async () => {
+		const ctx = await deployFullSystem();
+		const owner = await ctx.fileRegistry.read.owner();
+		expect(owner.toLowerCase()).to.equal(
+			walletAccount(ctx.deployer).address.toLowerCase(),
+		);
+	});
+
+	it("only owner can rotate server address", async () => {
+		const ctx = await deployFullSystem();
+		const clients = await hre.viem.getWalletClients();
+		const newServer = clients[6];
+		if (!newServer)
+			throw new Error("expected additional Hardhat wallet client");
+
+		await assert.rejects(
+			ctx.fileRegistry.write.setServer([walletAccount(newServer).address], {
+				account: walletAccount(ctx.server),
+			}),
+		);
+
+		await ctx.fileRegistry.write.setServer([walletAccount(newServer).address], {
+			account: walletAccount(ctx.deployer),
+		});
+		const server = await ctx.fileRegistry.read.server();
+		expect(server.toLowerCase()).to.equal(
+			walletAccount(newServer).address.toLowerCase(),
+		);
+
+		const logs = await ctx.publicClient.getLogs({
+			address: ctx.fileRegistry.address,
+			fromBlock: "earliest",
+			event: parseAbiItem(
+				"event ServerUpdated(address indexed previousServer, address indexed newServer, address indexed changedBy)",
+			),
+		});
+		expect(logs.length).to.be.greaterThan(0);
+		const last = logs.at(-1);
+		expect(last?.args.previousServer?.toLowerCase()).to.equal(
+			walletAccount(ctx.server).address.toLowerCase(),
+		);
+		expect(last?.args.newServer?.toLowerCase()).to.equal(
+			walletAccount(newServer).address.toLowerCase(),
+		);
+		expect(last?.args.changedBy?.toLowerCase()).to.equal(
+			walletAccount(ctx.deployer).address.toLowerCase(),
+		);
+	});
+
+	it("supports two-step ownership transfer", async () => {
+		const ctx = await deployFullSystem();
+		const clients = await hre.viem.getWalletClients();
+		const newOwner = clients[6];
+		if (!newOwner) throw new Error("expected additional Hardhat wallet client");
+
+		await ctx.fileRegistry.write.transferOwnership(
+			[walletAccount(newOwner).address],
+			{
+				account: walletAccount(ctx.deployer),
+			},
+		);
+		expect((await ctx.fileRegistry.read.pendingOwner()).toLowerCase()).to.equal(
+			walletAccount(newOwner).address.toLowerCase(),
+		);
+
+		await ctx.fileRegistry.write.acceptOwnership({
+			account: walletAccount(newOwner),
+		});
+		expect((await ctx.fileRegistry.read.owner()).toLowerCase()).to.equal(
+			walletAccount(newOwner).address.toLowerCase(),
+		);
+	});
+
+	it("setServer reverts on zero address and unchanged address", async () => {
+		const ctx = await deployFullSystem();
+
+		await assert.rejects(
+			ctx.fileRegistry.write.setServer(
+				["0x0000000000000000000000000000000000000000"],
+				{
+					account: walletAccount(ctx.deployer),
+				},
+			),
+		);
+
+		await assert.rejects(
+			ctx.fileRegistry.write.setServer([walletAccount(ctx.server).address], {
+				account: walletAccount(ctx.deployer),
+			}),
+		);
+	});
+
+	it("only owner can start ownership transfer", async () => {
+		const ctx = await deployFullSystem();
+		const clients = await hre.viem.getWalletClients();
+		const newOwner = clients[6];
+		if (!newOwner) throw new Error("expected additional Hardhat wallet client");
+
+		await assert.rejects(
+			ctx.fileRegistry.write.transferOwnership(
+				[walletAccount(newOwner).address],
+				{
+					account: walletAccount(ctx.server),
+				},
+			),
+		);
+	});
+
 	it("computeEmailSignerCommitment: empty list yields zero bytes20", async () => {
 		const ctx = await deployFullSystem();
 		const z = await ctx.fileRegistry.read.computeEmailSignerCommitment([

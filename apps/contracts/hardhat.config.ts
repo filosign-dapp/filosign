@@ -2,23 +2,18 @@ import type { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox-viem";
 import env from "./env";
 
-const deployerKey =
-	env.FC_PVT_KEY && env.ALCHEMY_API_KEY ? env.FC_PVT_KEY : undefined;
-
-const liveNetworks: HardhatUserConfig["networks"] = deployerKey
-	? {
-			baseSepolia: {
-				accounts: [deployerKey],
-				chainId: 84532,
-				url: `https://base-sepolia.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`,
-			},
-			base: {
-				accounts: [deployerKey],
-				chainId: 8453,
-				url: `https://base-mainnet.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`,
-			},
-		}
-	: {};
+const liveNetworks: HardhatUserConfig["networks"] = {
+	baseSepolia: {
+		accounts: [env.FC_DEPLOYER_PRIVATE_KEY],
+		chainId: 84532,
+		url: `https://base-sepolia.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`,
+	},
+	base: {
+		accounts: [env.FC_DEPLOYER_PRIVATE_KEY],
+		chainId: 8453,
+		url: `https://base-mainnet.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`,
+	},
+};
 
 const config: HardhatUserConfig = {
 	solidity: {
@@ -47,7 +42,7 @@ const config: HardhatUserConfig = {
 		...liveNetworks,
 	},
 	etherscan: {
-		apiKey: env.BLOCKSCOUT_API_KEY ?? env.ETHERSCAN_API_KEY ?? "no-api-key",
+		apiKey: env.ETHERSCAN_API_KEY,
 		customChains: [
 			{
 				network: "baseSepolia",

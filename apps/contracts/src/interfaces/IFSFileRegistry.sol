@@ -35,8 +35,10 @@ interface IFSFileRegistry {
 
     event FileRegistered();
     event FileSigned();
+    event ServerUpdated();
     function nonce(address key) external view returns (uint256);
     function server() external view returns (address);
+    function setServer(address newServer_) external;
     function computeEmailSignerCommitment(bytes32[] calldata commitments_) external pure returns (bytes20);
     function fileRegistrations(bytes32 cidId) external view returns (FileRegistrationView memory);
     function registerFile(string calldata pieceCid_, address sender_, bytes32[] calldata signerEmailCommitments_, bytes32[] calldata viewerEmailCommitments_, bytes32 senderEmailCommitment_, bytes32 senderPrivySubjectCommitment_, bytes32 orgIdCommitment_, uint256 timestamp_, bytes calldata signature_, bytes32 placementCommitment_) external;

@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./errors/EFSPaymentValidator.sol";
 import "./interfaces/IFSFileRegistry.sol";
 
-/// @notice Pull-payment rules: USDC transferFrom payer when release conditions hold (any relayer may execute).
 contract FSPaymentValidator is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -79,16 +78,22 @@ contract FSPaymentValidator is ReentrancyGuard {
         bytes32[] calldata signerCommitments_
     ) external returns (uint256 ruleId) {
         if (msg.sender != payer_) revert UnauthorizedRuleRegistration();
-        if (payer_ == address(0) || recipient_ == address(0) || token_ == address(0)) {
+        if (
+            payer_ == address(0) ||
+            recipient_ == address(0) ||
+            token_ == address(0)
+        ) {
             revert InvalidPayer();
         }
         if (amount_ == 0) revert InvalidAmount();
-        if (!_validateReleaseConfig(
+        if (
+            !_validateReleaseConfig(
                 releaseType_,
                 specificSignerCommitment_,
                 thresholdN_,
                 signerCommitments_
-            )) {
+            )
+        ) {
             revert InvalidReleaseConfig();
         }
 
@@ -186,7 +191,8 @@ contract FSPaymentValidator is ReentrancyGuard {
             return specificSignerCommitment_ != bytes32(0);
         }
         if (releaseType_ == ReleaseType.AtLeastN) {
-            return thresholdN_ > 0 &&
+            return
+                thresholdN_ > 0 &&
                 signerCommitments_.length > 0 &&
                 thresholdN_ <= signerCommitments_.length;
         }

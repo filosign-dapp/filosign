@@ -36,9 +36,29 @@ export const env = createEnv({
 			.transform((v) => v === "true"),
 		POSTHOG_API_KEY: z.string().min(1).optional(),
 		POSTHOG_HOST: z.url().default("https://us.i.posthog.com"),
-		POSTHOG_ENABLED: z.coerce.boolean().default(false),
+		POSTHOG_ENABLED: z
+			.string()
+			.default("false")
+			.transform((v) => v === "true"),
 		ADMIN_WALLETS: z.string().optional(),
 		INVITE_TTL_DAYS: z.coerce.number().int().min(1).default(7),
+		DODO_API_KEY: z.string().min(1),
+		DODO_WEBHOOK_KEY: z.string().min(1),
+		DODO_API_BASE: z
+			.url()
+			.default("https://test.dodopayments.com")
+			.transform((v) => v.replace(/\/+$/, "")),
+		BILLING_RETURN_URL_ORIGINS: z.string().optional(),
+		DODO_PRODUCT_ID_INDIVIDUAL_MONTHLY: z.string().min(1).optional(),
+		DODO_PRODUCT_ID_INDIVIDUAL_YEARLY: z.string().min(1).optional(),
+		DODO_PRODUCT_ID_TEAMS_MONTHLY: z.string().min(1).optional(),
+		DODO_PRODUCT_ID_TEAMS_YEARLY: z.string().min(1).optional(),
+		DODO_PRODUCT_ID_TEAMS_PRO_MONTHLY: z.string().min(1).optional(),
+		DODO_PRODUCT_ID_TEAMS_PRO_YEARLY: z.string().min(1).optional(),
+		DODO_LIVE: z
+			.string()
+			.default("true")
+			.transform((v) => v === "true"),
 	},
 	runtimeEnv: Bun.env,
 	emptyStringAsUndefined: true,

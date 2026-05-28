@@ -57,7 +57,8 @@ describe("quota documents.sent.monthly", () => {
 	}[] = [
 		{ planId: "free", limit: 3, scope: "account" },
 		{ planId: "individual", limit: 10, scope: "account" },
-		{ planId: "teams", limit: 10, scope: "per_seat" },
+		{ planId: "teams", limit: 30, scope: "per_seat" },
+		{ planId: "teams_pro", limit: 60, scope: "per_seat" },
 		{ planId: "enterprise", limit: null },
 	];
 
@@ -122,8 +123,9 @@ describe("quota documents.sent.monthly", () => {
 describe("max envelope.recipients.max", () => {
 	const limits: Record<PlanId, number | null> = {
 		free: 1,
-		individual: 5,
+		individual: 3,
 		teams: 10,
+		teams_pro: 20,
 		enterprise: null,
 	};
 
@@ -164,18 +166,22 @@ describe("boolean features", () => {
 	];
 
 	for (const key of teamOnly) {
-		test(`${key} enabled on teams and enterprise only`, () => {
+		test(`${key} enabled on teams, teams_pro, and enterprise`, () => {
 			expect(check(ctx("free"), key).allowed).toBe(false);
 			expect(check(ctx("individual"), key).allowed).toBe(false);
 			expect(check(ctx("teams"), key).allowed).toBe(true);
+			expect(check(ctx("teams_pro"), key).allowed).toBe(true);
 			expect(check(ctx("enterprise"), key).allowed).toBe(true);
 		});
 	}
 
-	test("features.integrations.custom enterprise only", () => {
+	test("features.integrations.custom enterprise & teams_pro only", () => {
 		expect(check(ctx("teams"), "features.integrations.custom").allowed).toBe(
 			false,
 		);
+		expect(
+			check(ctx("teams_pro"), "features.integrations.custom").allowed,
+		).toBe(true);
 		expect(
 			check(ctx("enterprise"), "features.integrations.custom").allowed,
 		).toBe(true);

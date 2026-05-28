@@ -2,11 +2,11 @@ import { MotionConfig, SPRING_TOKENS } from "@filosign/motion";
 import { FilosignAnalyticsProvider } from "@filosign/react/analytics";
 import { IconContext } from "@phosphor-icons/react";
 import { RouterProvider } from "@tanstack/react-router";
-import { ThemeProvider } from "next-themes";
 import { type ReactNode, StrictMode } from "react";
 import env from "@/src/env";
 import { ErrorBoundary } from "@/src/lib/components/app/errors/error-boundary";
 import { HydrationLifecycleTracer } from "@/src/lib/components/app/hydration-lifecycle-tracer";
+import { ThemeProvider } from "@/src/lib/components/ui/theme-provider";
 import { FilosignProvider } from "@/src/lib/filosign/filosign-provider";
 import { QueryClientProvider } from "@/src/lib/filosign/query-client";
 import { Web3Provider } from "@/src/lib/web3/providers";
@@ -16,12 +16,7 @@ export function AppProviders({ children }: { children?: ReactNode }) {
 	return (
 		<StrictMode>
 			<ErrorBoundary>
-				<ThemeProvider
-					attribute="class"
-					defaultTheme="light"
-					enableSystem
-					storageKey="theme"
-				>
+				<ThemeProvider defaultTheme="light" storageKey="theme">
 					<QueryClientProvider>
 						<FilosignAnalyticsProvider
 							apiKey={env.VITE_POSTHOG_KEY ?? ""}

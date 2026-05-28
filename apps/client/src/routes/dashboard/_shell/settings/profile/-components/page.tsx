@@ -7,6 +7,7 @@ import { Form } from "@/src/lib/components/ui/form";
 import { useProfileSettingsContext } from "../-lib/context/context";
 import { LinkedAccountsSection } from "./LinkedAccountsSection";
 import { PersonalInfoSection } from "./PersonalInfoSection";
+import { ThemeSection } from "./ThemeSection";
 import { WalletUsdcBalanceCard } from "./WalletUsdcBalanceCard";
 
 export function ProfileSettingsPage() {
@@ -40,6 +41,7 @@ export function ProfileSettingsPage() {
 						>
 							<PersonalInfoSection />
 							<LinkedAccountsSection />
+							<ThemeSection />
 						</MotionReveal>
 					</FullBleedMain>
 				</form>

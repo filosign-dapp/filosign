@@ -6,6 +6,8 @@ export const coldInviteEntrySearchSchema = z.object({
 	coldInvite: z.string().optional().default(""),
 	/** Set to `"1"` when user chose "Continue anyway" after invite mismatch—skip document redirect. */
 	skipColdSign: z.string().optional().default(""),
+	upgrade: z.string().optional(),
+	interval: z.string().optional(),
 });
 
 export type ColdInviteEntrySearch = z.infer<typeof coldInviteEntrySearchSchema>;

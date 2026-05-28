@@ -1,5 +1,7 @@
 {
 	"name": "@filosign/astro",
+	"description": "Filosign marketing site — SEO, blog, and product pages.",
+	"homepage": "https://filosign.xyz",
 	"type": "module",
 	"version": "0.0.1",
 	"engines": {

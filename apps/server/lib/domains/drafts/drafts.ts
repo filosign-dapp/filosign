@@ -5,6 +5,7 @@ export {
 	draftsGet,
 	draftsList,
 	draftsMarkSent,
+	draftsPrepareSave,
 	draftsPresignDocuments,
 	draftsPresignSnapshot,
 	draftsSave,

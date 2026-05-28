@@ -3,6 +3,7 @@ import { type CollectionEntry, getCollection, render } from "astro:content";
 import Footer from "../../components/Footer.astro";
 import BlogPostIsland from "../../components/islands/BlogPostIsland";
 import Navbar from "../../components/Navbar.astro";
+import { blogTitleWithBrand } from "../../config/site";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import "../../styles/blog-content.css";
 
@@ -21,7 +22,7 @@ interface Props {
 const { post } = Astro.props;
 const { Content } = await render(post);
 
-const pageTitle = `${post.data.title} — Filosign Blog`;
+const pageTitle = blogTitleWithBrand(post.data.title);
 ---
 
 <BaseLayout

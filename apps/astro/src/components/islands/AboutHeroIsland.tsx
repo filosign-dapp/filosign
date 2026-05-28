@@ -44,7 +44,7 @@ export default function AboutHeroIsland() {
 					initial={{ opacity: 0, y: 40 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{
-						...SPRING_TOKENS.smooth,
+						...SPRING_TOKENS.snappy,
 						delay: 0.35,
 					}}
 					className="relative w-full"

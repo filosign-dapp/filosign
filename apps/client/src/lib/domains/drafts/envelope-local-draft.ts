@@ -261,6 +261,8 @@ export async function buildCreateForm(
 
 	return {
 		draftId,
+		serverDraftId: prev?.serverDraftId,
+		serverDraftRevision: prev?.serverDraftRevision,
 		recipientFingerprint: recipientFingerprintValue,
 		recipients: value.recipients,
 		emailMessage: value.emailMessage,

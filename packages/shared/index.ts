@@ -9,6 +9,7 @@ export * from "./completions-merkle";
 export * from "./compliance-bundle";
 export * from "./draft-crypto";
 export * from "./draft-snapshot";
+export * from "./draft-storage-keys";
 export { zFileData } from "./file-data";
 export * from "./org-commitment";
 export * from "./org-crypto";

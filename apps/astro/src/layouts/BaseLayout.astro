@@ -1,6 +1,16 @@
 ---
 import "../styles/global.css";
-import { env } from "../env";
+import {
+	defaultDescription,
+	defaultTitle,
+	logo,
+	parentOrganization,
+	siteName,
+	siteUrl,
+	social,
+	themeColor,
+	twitterSite,
+} from "../config/site";
 import { ogSlugFromPathname } from "../lib/og-slug";
 
 const OG_CANVAS_WIDTH = 1200;
@@ -31,8 +41,8 @@ const FALLBACK_OG_WIDTH = 1920;
 const FALLBACK_OG_HEIGHT = 1080;
 
 const {
-	title = "Filosign — Trustless standard for permanent agreements",
-	description = "Send, sign, and verify sensitive documents with encrypted workflows. Private document signing on the blockchain.",
+	title = defaultTitle,
+	description = defaultDescription,
 	image,
 	canonicalUrl,
 	noIndex = false,
@@ -43,7 +53,7 @@ const {
 	ogImageAlt,
 } = Astro.props;
 
-const siteUrl = env.PUBLIC_ASTRO_URL.replace(/\/$/, "");
+const logoUrl = new URL(logo.webp, `${siteUrl}/`).href;
 
 const ogSlug = ogSlugFromPathname(Astro.url.pathname);
 const resolvedOgImage = image ?? `/open-graph/${ogSlug}.png`;
@@ -71,24 +81,27 @@ const graph: Record<string, unknown>[] = [
 		"@type": "WebSite",
 		"@id": websiteId,
 		url: siteUrl,
-		name: "Filosign",
+		name: siteName,
+		description: defaultDescription,
 		publisher: { "@id": orgId },
 		inLanguage: "en",
 	},
 	{
 		"@type": "Organization",
 		"@id": orgId,
-		name: "Filosign",
+		name: siteName,
 		url: siteUrl,
-		logo: new URL("/logo.webp", `${siteUrl}/`).href,
-		sameAs: [
-			"https://x.com/filosign",
-			"https://github.com/hetairoi-labs/filosign",
-		],
+		logo: {
+			"@type": "ImageObject",
+			url: logoUrl,
+			width: logo.width,
+			height: logo.height,
+		},
+		sameAs: [social.x, social.github],
 		parentOrganization: {
 			"@type": "Organization",
-			name: "Hetairoi Labs",
-			url: "https://hetairoi.xyz",
+			name: parentOrganization.name,
+			url: parentOrganization.url,
 		},
 	},
 ];
@@ -117,7 +130,7 @@ if (schemaVariant === "article" && article) {
 	graph.push({
 		"@type": "SoftwareApplication",
 		"@id": `${siteUrl}/#software`,
-		name: "Filosign",
+		name: siteName,
 		description,
 		applicationCategory: "BusinessApplication",
 		operatingSystem: "Web",
@@ -139,7 +152,6 @@ const isArticle = schemaVariant === "article" && article;
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="generator" content={Astro.generator} />
 
 		<title>{title}</title>
 		<meta name="description" content={description} />
@@ -147,10 +159,13 @@ const isArticle = schemaVariant === "article" && article;
 
 		<link rel="canonical" href={canonical} />
 
-		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-		<link rel="alternate icon" href="/favicon.ico" />
-		<link rel="apple-touch-icon" href="/logo.webp" />
+		<link rel="icon" href={logo.faviconSvg} type="image/svg+xml" />
+		<link rel="icon" href={logo.faviconIco} sizes="32x32" />
+		<link rel="apple-touch-icon" href={logo.appleTouch} />
+		<link rel="manifest" href="/site.webmanifest" />
+		<meta name="theme-color" content={themeColor} />
 
+		<meta property="og:locale" content="en_US" />
 		<meta property="og:type" content={isArticle ? "article" : "website"} />
 		<meta property="og:url" content={canonical} />
 		<meta property="og:title" content={title} />
@@ -159,7 +174,7 @@ const isArticle = schemaVariant === "article" && article;
 		<meta property="og:image:width" content={String(ogW)} />
 		<meta property="og:image:height" content={String(ogH)} />
 		<meta property="og:image:alt" content={ogAlt} />
-		<meta property="og:site_name" content="Filosign" />
+		<meta property="og:site_name" content={siteName} />
 		{
 			isArticle && article && (
 				<>
@@ -176,6 +191,8 @@ const isArticle = schemaVariant === "article" && article;
 		}
 
 		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:site" content={twitterSite} />
+		<meta name="twitter:creator" content={twitterSite} />
 		<meta name="twitter:url" content={canonical} />
 		<meta name="twitter:title" content={title} />
 		<meta name="twitter:description" content={description} />

@@ -36,6 +36,7 @@ Server-side product events via `lib/analytics/` (`posthog-node`). Set `POSTHOG_E
 ## Ops
 
 - **`GET /health`** (root app, not under `/api`) — `{ ok: true }` for probes.
+- **Dodo billing webhook** — `POST /api/integrations/dodo/webhook` (Standard Webhooks signature headers: `webhook-id`, `webhook-timestamp`, `webhook-signature`). Stored idempotently in `billing_webhook_events`, then upserts `user_subscriptions`.
 - **`bun run db -- purge local|testnet`** (repo root) — `scripts/clear-db.ts` drops/recreates the Postgres `public` schema, then drizzle push (dev reset).
 - **Invite expiry** — `INVITE_TTL_DAYS` in env (default `7`). All invite types set `expiresAt` at creation via [`inviteExpiresAt()`](lib/domains/invites/ttl.ts): `file_cold_invites`, `user_invites`, `organization_invites`. Hourly `Bun.cron` in [`lib/platform/cron/`](lib/platform/cron/) marks overdue `pending` rows `expired`; handlers use `pending*InviteFilter()` immediately after expiry. PostHog: `cold_invite_expired` for document invites.
 - **Settlements** — `file_settlement_rules` tracks on-chain payout rules (status, tx hashes). After each signature the server attempts `executePayout` for executable rules. Sign page **Settle payment** calls `settlements.trySettle` (server relay + chain sync). **Settle from wallet** uses `settlements.confirmSettlement` (hash + `rules()` sync, no receipt RPC). Daily `sync-settlement-rules` cron backfills `executed` from chain for off-platform payouts. oRPC: `settlements.listByFile`, `settlements.trySettle`, `settlements.confirmSettlement`. Compliance bundles are **version 4** and include `settlements[]`. See [`project/settlements/architecture-and-non-custody.md`](../../project/settlements/architecture-and-non-custody.md).
@@ -43,6 +44,15 @@ Server-side product events via `lib/analytics/` (`posthog-node`). Set `POSTHOG_E
 ## API envelope
 
 JSON API is **`/api/rpc`** — native outputs + **`ORPCError`** mapping. OpenAPI explorer: **`/api/api-reference`**. Avatar flow: **`storage.presignPut`** + browser **`fetch` PUT** to storage, then **`users.profile.update`** with **`avatarKey`**. **`runtime`** stays on **`rpc.runtime`**.
+
+Billing oRPC:
+- `billing.entitlements`
+- `billing.createCheckoutSession` (returns hosted `checkoutUrl`)
+- `billing.createPortalSession` (returns hosted portal URL for existing Dodo customer)
+
+Billing security notes:
+- `billing.createCheckoutSession` validates `returnUrl` origin against `CLIENT_URL` plus optional `BILLING_RETURN_URL_ORIGINS`.
+- Webhook processing is idempotent by `webhook-id` with event status (`received`/`processed`/`failed`) in `billing_webhook_events`.
 
 ## Security notes
 

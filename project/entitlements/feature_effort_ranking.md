@@ -48,10 +48,10 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 
 | Feature | Tier | Why | How to build |
 | ------- | ---- | --- | ------------ |
-| **Basic webhook integrations** | Team Standard | No outbound product webhooks today | `webhook_endpoints` per org; emit on sign/register/complete; queue + retries |
-| **Automated reminder rules & expiration** | Team Standard | Invite TTL cron partial | Envelope `expires_at` + `reminder_schedule`; cron → email |
-| **Sequential signing workflows** | Team Standard | Order passed but not enforced | Server gate: no invite/sign until prior signer done; optional delayed emails |
-| **Encrypted shared contacts & team address book** | Team Standard | Connections graph partial | Org-scoped contacts; optional encrypted notes |
+| **Basic webhook integrations** | Team | No outbound product webhooks today | `webhook_endpoints` per org; emit on sign/register/complete; queue + retries |
+| **Automated reminder rules & expiration** | Team | Invite TTL cron partial | Envelope `expires_at` + `reminder_schedule`; cron → email |
+| **Sequential signing workflows** | Team | Order passed but not enforced | Server gate: no invite/sign until prior signer done; optional delayed emails |
+| **Encrypted shared contacts & team address book** | Team | Connections graph partial | Org-scoped contacts; optional encrypted notes |
 | **Local CSV data export** | Secure Solo | No CSV; decrypt path exists | Client: fetch blobs → decrypt → flatten manifest + fields → CSV |
 | **Custom branding** | Team Pro | Not in app UI | Org logo/colors; email template vars on sign + emails |
 | **Bulk send (client-side loop)** | Team Pro | Single send pipeline done | CSV → loop `useSendFile`; progress UI; rate limits |
@@ -67,7 +67,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | Feature | Tier | Why | How to build |
 | ------- | ---- | --- | ------------ |
 | **Encrypted signer attachments** | Secure Solo | Doc encryption done; no signer upload fields | Attachment field type; encrypt at sign; presigned PUT; sender decrypt |
-| **Shared template libraries (team key-sharing)** | Team Standard | Org templates + member keys partial | Per-org team symmetric key; wrap per member; re-encrypt templates |
+| **Shared template libraries (team key-sharing)** | Team | Org templates + member keys partial | Per-org team symmetric key; wrap per member; re-encrypt templates |
 | **Conditional field logic & calculations** | Team Pro | Static manifest only | Rules in manifest; evaluator on sign; **needs field value capture first** |
 | **Server-side WASM SDKs (Node/Go/Python)** | Platform Pro | Internal node WASM only | Public package, semver, docs; Go/Python via FFI or sidecar |
 
@@ -110,7 +110,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 ## Report vs codebase (gaps)
 
 - **Free Trial “standard fields”** — largely **already built**; tier work is gating + sign UX.  
-- **“Shared templates” (Team Standard)** — org templates exist; **team key-sharing** is the **L** row above.  
+- **“Shared templates” (Team)** — org templates exist; **team key-sharing** is the **L** row above.  
 - **`features.routing.advanced`** is in the catalog but **sequential signing is not implemented**.  
 - **Settlements / USDC** are implemented (on-chain rules + server `trySettle` relay + manual confirm + daily sync) but were outside the suggested-feature list in the report.
 

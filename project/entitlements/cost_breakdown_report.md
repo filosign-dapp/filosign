@@ -39,14 +39,14 @@ This report breaks down the fixed, variable, and per-user break-even costs for F
 * **Fee Structure:** 6% + \$0.40 USD per subscription payment transaction (international card + subscription rate).
 * **Monthly Billing Option:**
   * **Secure Solo (\$15.00/mo):** `(0.06 * \$15.00) + \$0.40 = \$1.30 USD fee` (Net Revenue: \$13.70/mo)
-  * **Secure Team Standard (\$35.00/mo):** `(0.06 * \$35.00) + \$0.40 = \$2.50 USD fee` (Net Revenue: \$32.50/mo)
+  * **Secure Team (\$35.00/mo):** `(0.06 * \$35.00) + \$0.40 = \$2.50 USD fee` (Net Revenue: \$32.50/mo)
   * **Secure Team Pro (\$55.00/mo):** `(0.06 * \$55.00) + \$0.40 = \$3.70 USD fee` (Net Revenue: \$51.30/mo)
   * **Platform Starter (\$99.00/mo):** `(0.06 * \$99.00) + \$0.40 = \$6.34 USD fee` (Net Revenue: \$92.66/mo)
   * **Platform Pro (\$349.00/mo):** `(0.06 * \$349.00) + \$0.40 = \$21.34 USD fee` (Net Revenue: \$327.66/mo)
   * **Secure Enterprise (\$125.00/mo modeled):** `(0.06 * \$125.00) + \$0.40 = \$7.90 USD fee` (Net Revenue: \$117.10/mo)
 * **Annual Billing Option (Paid upfront annually):**
   * **Secure Solo (\$9.00/mo, \$108.00/yr):** `(0.06 * \$108.00) + \$0.40 = \$6.88 USD fee/yr` (Monthly Equiv. Fee: \$0.57; Net Revenue: \$8.43/mo)
-  * **Secure Team Standard (\$25.00/mo, \$300.00/yr):** `(0.06 * \$300.00) + \$0.40 = \$18.40 USD fee/yr` (Monthly Equiv. Fee: \$1.53; Net Revenue: \$23.47/mo)
+  * **Secure Team (\$25.00/mo, \$300.00/yr):** `(0.06 * \$300.00) + \$0.40 = \$18.40 USD fee/yr` (Monthly Equiv. Fee: \$1.53; Net Revenue: \$23.47/mo)
   * **Secure Team Pro (\$40.00/mo, \$480.00/yr):** `(0.06 * \$480.00) + \$0.40 = \$29.20 USD fee/yr` (Monthly Equiv. Fee: \$2.43; Net Revenue: \$37.57/mo)
   * **Platform Starter (\$79.00/mo, \$948.00/yr):** `(0.06 * \$948.00) + \$0.40 = \$57.28 USD fee/yr` (Monthly Equiv. Fee: \$4.77; Net Revenue: \$74.23/mo)
   * **Platform Pro (\$299.00/mo, \$3,588.00/yr):** `(0.06 * \$3,588.00) + \$0.40 = \$215.68 USD fee/yr` (Monthly Equiv. Fee: \$17.97; Net Revenue: \$281.03/mo)
@@ -77,7 +77,7 @@ This report breaks down the fixed, variable, and per-user break-even costs for F
   * **Model B (Conservative):**
     `Fixed share (\$0.0897) + (10 docs * \$0.0214) = \$0.3037 USD / month` (Rounded to **... = \$0.30 / mo**)
 
-### 3. Secure Team Standard (With Payments & Templates)
+### 3. Secure Team (With Payments & Templates)
 * **Volume:** 30 documents per user / month (Avg. **3 recipients** per document, Web3 USDC Payments & Shared templates enabled).
 * **Variable Cost per Document:**
   * **Model A (Low):** **`\$0.0134 USD`** (Gas \$0.0120 + Resend email \$0.0014)
@@ -90,7 +90,7 @@ This report breaks down the fixed, variable, and per-user break-even costs for F
 
 ### 4. Secure Team Pro (With Advanced Payout Rules & Workspaces)
 * **Volume:** 30 documents per user / month (Avg. **3 recipients** per document, Custom Smart Contract rules, Web3 Payments enabled).
-* **Variable Cost per Document:** Same as Team Standard (payments enabled) = Model A: \$0.0134, Model B: \$0.0314.
+* **Variable Cost per Document:** Same as Team (payments enabled) = Model A: \$0.0134, Model B: \$0.0314.
 * **Total Cost per User / Month (Break-Even):**
   * **Model A (Low-Congestion):**
     `Fixed share (\$0.0897) + (30 docs * \$0.0134) = \$0.4917 USD / month` (Rounded to **... = \$0.49 / mo**)
@@ -99,7 +99,7 @@ This report breaks down the fixed, variable, and per-user break-even costs for F
 
 ### 5. Platform Starter (API)
 * **Volume:** 100 documents per user / month (Avg. **3 recipients** per document, E2EE, PQC, signing API & webhooks enabled).
-* **Variable Cost per Document:** Same as Team Standard (payments enabled) = Model A: \$0.0134, Model B: \$0.0314.
+* **Variable Cost per Document:** Same as Team (payments enabled) = Model A: \$0.0134, Model B: \$0.0314.
 * **Total Cost per User / Month (Break-Even):**
   * **Model A (Low-Congestion):**
     `Fixed share (\$0.0897) + (100 docs * \$0.0134) = \$1.4297 USD / month` (Rounded to **... = \$1.43 / mo**)
@@ -108,7 +108,7 @@ This report breaks down the fixed, variable, and per-user break-even costs for F
 
 ### 6. Secure Enterprise (Custom Pricing / Institutional)
 * **Volume:** 100 documents per user / month (Avg. **3 recipients** per document, Multi-sig, priority RPC relays).
-* **Variable Cost per Document:** Same as Team Standard (payments enabled) = Model A: \$0.0134, Model B: \$0.0314.
+* **Variable Cost per Document:** Same as Team (payments enabled) = Model A: \$0.0134, Model B: \$0.0314.
 * **Total Cost per User / Month (Break-Even):**
   * **Model A (Low-Congestion):**
     `Fixed share (\$0.0897) + (100 docs * \$0.0134) = \$1.4297 USD / month` (Rounded to **... = \$1.43 / mo**)
@@ -117,7 +117,7 @@ This report breaks down the fixed, variable, and per-user break-even costs for F
 
 ### 7. Platform Pro (Embedded)
 * **Volume:** 500 documents per user / month (Avg. **3 recipients** per document, full white-labeled embedded signing, JS SDK, priority RPC relays).
-* **Variable Cost per Document:** Same as Team Standard (payments enabled) = Model A: \$0.0134, Model B: \$0.0314.
+* **Variable Cost per Document:** Same as Team (payments enabled) = Model A: \$0.0134, Model B: \$0.0314.
 * **Total Cost per User / Month (Break-Even):**
   * **Model A (Low-Congestion):**
     `Fixed share (\$0.0897) + (500 docs * \$0.0134) = \$0.0897 + \$6.70 = \$6.7897 USD / month` (Rounded to **... = \$6.79 / mo**)
@@ -134,7 +134,7 @@ Assuming 3,000 paying users, here is the break-even run-rate compared side-by-si
 | :--- | :---: | :---: | :---: | :---: |
 | **Free Trial** | No | 3 (Lifetime, Invite-Only) | **\$0.07** (one-time support cost) | **\$0.09** (one-time support cost) |
 | **Secure Solo** | No | 10 | **\$0.18 / mo** | **\$0.30 / mo** |
-| **Secure Team Standard** | Yes | 30 | **      \$0.49 / mo** | **      \$1.03 / mo** |
+| **Secure Team** | Yes | 30 | **      \$0.49 / mo** | **      \$1.03 / mo** |
 | **Secure Team Pro** | Yes | 30 | **      \$0.49 / mo** | **      \$1.03 / mo** |
 | **Platform Starter** | Yes | 100 | **\$1.43 / mo** | **\$3.23 / mo** |
 | **Secure Enterprise** | Yes | 100 | **\$1.43 / mo** | **\$3.23 / mo** |
@@ -153,7 +153,7 @@ The following tables calculate the net profit margin per tier, deducting both th
 | Subscription Tier | Monthly Price | Dodo Fee | Net Revenue | Model A Cost | Model A Net Profit | Model A Net Margin | Model B Cost | Model B Net Profit | Model B Net Margin |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Secure Solo** | \$15.00 | \$1.30 | \$13.70 | \$0.18 | **\$13.52** | **90.1%** | \$0.30 | **\$13.40** | **89.3%** |
-| **Secure Team Standard**| \$35.00 | \$2.50 | \$32.50 | \$0.49 | **\$32.01** | **91.5%** | \$1.03 | **\$31.47** | **89.9%** |
+| **Secure Team**| \$35.00 | \$2.50 | \$32.50 | \$0.49 | **\$32.01** | **91.5%** | \$1.03 | **\$31.47** | **89.9%** |
 | **Secure Team Pro** | \$55.00 | \$3.70 | \$51.30 | \$0.49 | **\$50.81** | **92.4%** | \$1.03 | **\$50.27** | **91.4%** |
 | **Platform Starter** | \$99.00 | \$6.34 | \$92.66 | \$1.43 | **\$91.23** | **92.2%** | \$3.23 | **\$89.43** | **90.3%** |
 | **Secure Enterprise** | Custom (\$125.00)*| \$7.90 | \$117.10 | \$1.43 | **\$115.67** | **92.5%** | \$3.23 | **\$113.87** | **91.1%** |
@@ -169,7 +169,7 @@ The following tables calculate the net profit margin per tier, deducting both th
 | Subscription Tier | Monthly Equiv. Price | Annual Transaction | Dodo Fee (Monthly Equiv.) | Net Monthly Revenue | Model A Cost | Model A Net Profit | Model A Net Margin | Model B Cost | Model B Net Profit | Model B Net Margin |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Secure Solo** | \$9.00 (\$108/yr) | \$108.00 | \$0.57 | \$8.43 | \$0.18 | **\$8.25** | **91.7%** | \$0.30 | **\$8.13** | **90.3%** |
-| **Secure Team Standard**| \$25.00 (\$300/yr) | \$300.00 | \$1.53 | \$23.47 | \$0.49 | **\$22.98** | **91.9%** | \$1.03 | **\$22.44** | **89.8%** |
+| **Secure Team**| \$25.00 (\$300/yr) | \$300.00 | \$1.53 | \$23.47 | \$0.49 | **\$22.98** | **91.9%** | \$1.03 | **\$22.44** | **89.8%** |
 | **Secure Team Pro** | \$40.00 (\$480/yr) | \$480.00 | \$2.43 | \$37.57 | \$0.49 | **\$37.08** | **92.7%** | \$1.03 | **\$36.54** | **91.4%** |
 | **Platform Starter** | \$79.00 (\$948/yr) | \$948.00 | \$4.77 | \$74.23 | \$1.43 | **\$72.80** | **92.2%** | \$3.23 | **\$71.00** | **89.9%** |
 | **Secure Enterprise** | Custom (\$99.00)*| \$1,188.00 | \$5.97 | \$93.03 | \$1.43 | **\$91.60** | **92.5%** | \$3.23 | **\$89.80** | **90.7%** |
@@ -190,7 +190,7 @@ The following tables calculate the net profit margin per tier, deducting both th
 3. **Free User Subsidy Capacity (Model B):**
    * Since the Free Trial is restricted to a lifetime 3-document limit, it incurs a *one-time* marginal acquisition cost of \$0.0921 (Model B) rather than a monthly recurring liability. We calculate how many one-time Free Trial users can be subsidized by a single subscriber's monthly net profit:
      * **Secure Solo:** Supports **145 Free Trial Users** (Monthly Billing) or **88 Free Trial Users** (Annual Billing) one-time signup cost per month of active subscription.
-     * **Secure Team Standard:** Supports **341 Free Trial Users** (Monthly Billing) or **243 Free Trial Users** (Annual Billing).
+     * **Secure Team:** Supports **341 Free Trial Users** (Monthly Billing) or **243 Free Trial Users** (Annual Billing).
      * **Secure Team Pro:** Supports **545 Free Trial Users** (Monthly Billing) or **396 Free Trial Users** (Annual Billing).
      * **Platform Starter:** Supports **970 Free Trial Users** (Monthly Billing) or **770 Free Trial Users** (Annual Billing).
      * **Secure Enterprise:** Supports **1,236 Free Trial Users** (Monthly Billing) or **975 Free Trial Users** (Annual Billing).

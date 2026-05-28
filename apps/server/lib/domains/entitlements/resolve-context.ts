@@ -2,6 +2,7 @@ import {
 	DEFAULT_PLAN_ID,
 	type EntitlementContext,
 	type FeatureKey,
+	PLAN_IDS,
 	type PlanId,
 } from "@filosign/entitlements";
 import { and, eq, gte, lt, sql } from "drizzle-orm";
@@ -12,6 +13,7 @@ import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import { files } from "@/lib/platform/db/schema/file";
 import { organizationSubscriptions } from "@/lib/platform/db/schema/organization";
 import { calendarMonthPeriod } from "./calendar-month";
+import { effectivePlanIdFromStatus } from "./effective-plan";
 
 export async function resolveEntitlementContext(
 	wallet: Address,
@@ -20,6 +22,33 @@ export async function resolveEntitlementContext(
 	const walletNorm = getAddress(wallet);
 	const { periodStart, periodEnd } = calendarMonthPeriod();
 
+	// 1. Fetch user's subscription
+	const [sub] = await db
+		.select({
+			planId: userSubscriptions.planId,
+			status: userSubscriptions.status,
+			featureOverrides: userSubscriptions.featureOverrides,
+		})
+		.from(userSubscriptions)
+		.where(eq(userSubscriptions.walletAddress, walletNorm))
+		.limit(1);
+
+	const userPlanId = effectivePlanIdFromStatus(
+		sub ? { planId: sub.planId as PlanId, status: sub.status } : undefined,
+	);
+	const userOverrides =
+		sub && (sub.status === "active" || sub.status === "trialing")
+			? sub.featureOverrides
+			: undefined;
+
+	let planId: PlanId = userPlanId;
+	let overrides = userOverrides;
+	let subject: EntitlementContext["subject"] = {
+		type: "user",
+		wallet: walletNorm,
+	};
+
+	// 2. Fetch organization's subscription if organizationId is present
 	if (organizationId) {
 		const [orgSub] = await db
 			.select({
@@ -30,57 +59,47 @@ export async function resolveEntitlementContext(
 			.where(eq(organizationSubscriptions.organizationId, organizationId))
 			.limit(1);
 
-		const planId: PlanId =
+		const orgPlanId: PlanId =
 			(orgSub?.planId as PlanId | undefined) ?? DEFAULT_PLAN_ID;
-		const overrides =
+		const orgOverrides =
 			(orgSub?.featureOverrides as EntitlementContext["overrides"]) ??
 			undefined;
 
-		const [{ count }] = await db
-			.select({ count: sql<number>`count(*)::int` })
-			.from(files)
-			.where(
-				and(
-					eq(files.organizationId, organizationId),
-					gte(files.createdAt, periodStart),
-					lt(files.createdAt, periodEnd),
-				),
-			);
+		// Use whichever plan is higher/greater in PLAN_IDS hierarchy
+		const userIndex = (PLAN_IDS as readonly string[]).indexOf(userPlanId);
+		const orgIndex = (PLAN_IDS as readonly string[]).indexOf(orgPlanId);
 
-		return {
-			subject: {
-				type: "org_member",
-				orgId: organizationId,
-				wallet: walletNorm,
-			},
-			planId,
-			periodStart,
-			usage: { "documents.sent.monthly": count ?? 0 },
-			overrides,
+		if (orgIndex > userIndex) {
+			planId = orgPlanId;
+			overrides = orgOverrides;
+		} else {
+			planId = userPlanId;
+			overrides = userOverrides;
+		}
+
+		subject = {
+			type: "org_member",
+			orgId: organizationId,
+			wallet: walletNorm,
 		};
 	}
 
-	const [sub] = await db
-		.select({
-			planId: userSubscriptions.planId,
-			featureOverrides: userSubscriptions.featureOverrides,
-		})
-		.from(userSubscriptions)
-		.where(eq(userSubscriptions.walletAddress, walletNorm))
-		.limit(1);
-
-	const planId: PlanId = sub?.planId ?? DEFAULT_PLAN_ID;
-	const overrides = sub?.featureOverrides ?? undefined;
-
+	// 3. Count documents sent
 	const [{ count }] = await db
 		.select({ count: sql<number>`count(*)::int` })
 		.from(files)
 		.where(
-			and(
-				eq(files.sender, walletNorm),
-				gte(files.createdAt, periodStart),
-				lt(files.createdAt, periodEnd),
-			),
+			organizationId
+				? and(
+						eq(files.organizationId, organizationId),
+						gte(files.createdAt, periodStart),
+						lt(files.createdAt, periodEnd),
+					)
+				: and(
+						eq(files.sender, walletNorm),
+						gte(files.createdAt, periodStart),
+						lt(files.createdAt, periodEnd),
+					),
 		);
 
 	const usage: Partial<Record<FeatureKey, number>> = {
@@ -88,7 +107,7 @@ export async function resolveEntitlementContext(
 	};
 
 	return {
-		subject: { type: "user", wallet: walletNorm },
+		subject,
 		planId,
 		periodStart,
 		usage,

@@ -3,7 +3,10 @@ import { type Hex, toBytes } from "viem";
 import { decryptDraftComment } from "../../lib/draft-crypto";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 
-export function useDraftCommentsList(draftId: string | undefined) {
+export function useDraftCommentsList(
+	draftId: string | undefined,
+	options?: { enabled?: boolean },
+) {
 	const { rpcQuery, isAuthed } = useFilosignRpc();
 	const id = draftId?.trim();
 
@@ -15,7 +18,7 @@ export function useDraftCommentsList(draftId: string | undefined) {
 			if (!id) throw new Error("draftId required");
 			return rpcQuery.drafts.comments.list.call({ draftId: id });
 		},
-		enabled: isAuthed && Boolean(id),
+		enabled: isAuthed && Boolean(id) && options?.enabled !== false,
 	});
 }
 

@@ -1,7 +1,7 @@
 import { MotionReveal, Pressable } from "@filosign/motion";
 import { MoonIcon, SunIcon } from "@phosphor-icons/react";
-import { useTheme } from "next-themes";
 import { Button } from "@/src/lib/components/ui/button";
+import { useTheme } from "@/src/lib/components/ui/theme-provider";
 
 export default function ThemeSwitch() {
 	const { resolvedTheme, setTheme } = useTheme();

@@ -1,4 +1,7 @@
-import { useEntitlements } from "@filosign/react/billing";
+import {
+	useCreateCheckoutSession,
+	useEntitlements,
+} from "@filosign/react/billing";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import env from "@/src/env";
 import Logo from "@/src/lib/components/app/chrome/logo";
@@ -37,6 +40,14 @@ function pricingHref(): string {
 	return `${base}/pricing`;
 }
 
+function getUpgradeTargetPlan(
+	planId: string,
+): "individual" | "teams" | "teams_pro" {
+	if (planId === "free") return "individual";
+	if (planId === "individual") return "teams";
+	return "teams_pro";
+}
+
 export type UpgradePlanDialogProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -49,8 +60,10 @@ export function UpgradePlanDialog({
 	reason,
 }: UpgradePlanDialogProps) {
 	const { data } = useEntitlements();
+	const checkout = useCreateCheckoutSession();
 	const copy = COPY[reason];
 	const planLabel = data?.planId ?? "free";
+	const targetPlan = getUpgradeTargetPlan(planLabel);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -100,12 +113,23 @@ export function UpgradePlanDialog({
 						type="button"
 						variant="primary"
 						className="gap-1.5"
-						onClick={() => {
-							window.open(pricingHref(), "_blank", "noopener,noreferrer");
-							onOpenChange(false);
+						disabled={checkout.isPending}
+						onClick={async () => {
+							try {
+								const result = await checkout.mutateAsync({
+									planId: targetPlan,
+									interval: "monthly",
+									returnUrl: `${window.location.origin}/dashboard`,
+								});
+								window.location.href = result.checkoutUrl;
+								return;
+							} catch {
+								window.open(pricingHref(), "_blank", "noopener,noreferrer");
+								onOpenChange(false);
+							}
 						}}
 					>
-						Upgrade
+						{checkout.isPending ? "Preparing checkout…" : "Upgrade"}
 						<ArrowSquareOutIcon className="size-4" weight="bold" aria-hidden />
 					</Button>
 				</DialogFooter>

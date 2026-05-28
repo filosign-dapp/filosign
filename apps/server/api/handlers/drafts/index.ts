@@ -7,6 +7,7 @@ export {
 	draftsList,
 	draftsListExternalShares,
 	draftsMarkSent,
+	draftsPrepareSave,
 	draftsPresignDocuments,
 	draftsPresignSnapshot,
 	draftsReviewByToken,

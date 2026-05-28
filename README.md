@@ -135,6 +135,10 @@ Server configuration is defined in `apps/server/env.ts`. The main required value
 - `DRAGONFLY_URL` — `redis://127.0.0.1:6379` with root `docker compose up -d`
 - `THIRDWEB_CLIENT_ID` — same value as client `VITE_THIRDWEB_CLIENT_ID`
 - `THIRDWEB_SECRET_KEY` — project secret key (server only)
+- `DODO_API_KEY` / `DODO_WEBHOOK_KEY` / `DODO_API_BASE` (billing checkout + webhook)
+- `DODO_PRODUCT_ID_INDIVIDUAL_MONTHLY` / `DODO_PRODUCT_ID_INDIVIDUAL_YEARLY`
+- `DODO_PRODUCT_ID_TEAMS_MONTHLY` / `DODO_PRODUCT_ID_TEAMS_YEARLY`
+- `BILLING_RETURN_URL_ORIGINS` (optional allowlist for checkout return URLs)
 - `S3_ACCESS_KEY_ID`
 - `S3_SECRET_ACCESS_KEY`
 - `S3_BUCKET`

@@ -1,5 +1,5 @@
-# Update Sitemap URL if the site is deployed under a different origin than filosign.io
+# Canonical origin: https://filosign.xyz (override Sitemap if PUBLIC_ASTRO_URL differs in staging)
 User-agent: *
 Allow: /
 
-Sitemap: https://filosign.io/sitemap-index.xml
+Sitemap: https://filosign.xyz/sitemap-index.xml

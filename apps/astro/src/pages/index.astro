@@ -4,13 +4,11 @@ import FeaturesBento from "../components/FeaturesBento.astro";
 import Footer from "../components/Footer.astro";
 import HeroSection from "../components/HeroSection.astro";
 import Navbar from "../components/Navbar.astro";
+import { defaultDescription, defaultTitle } from "../config/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
-<BaseLayout
-	title="Filosign — Trustless standard for permanent agreements"
-	description="Send, sign, and verify sensitive documents with encrypted workflows. Private document signing on the blockchain with self-sovereign identity and end-to-end encryption."
->
+<BaseLayout title={defaultTitle} description={defaultDescription}>
 	<div class="[--section-gap:4rem] bg-background">
 		<Navbar pace="landing" />
 		<div class="h-[var(--section-gap)]"></div>

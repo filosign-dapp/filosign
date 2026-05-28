@@ -30,6 +30,7 @@
 		"@orpc/server": "catalog:",
 		"@orpc/zod": "catalog:",
 		"drizzle-orm": "0.45.2",
+		"dodopayments": "^2.1.0",
 		"fast-json-stable-stringify": "catalog:",
 		"hono": "catalog:",
 		"pg": "8.16.3",

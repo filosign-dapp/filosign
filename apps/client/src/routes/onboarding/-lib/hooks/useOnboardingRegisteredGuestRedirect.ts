@@ -27,6 +27,16 @@ export function useOnboardingRegisteredGuestRedirect(args: {
 		if (!isRegistered.data) return;
 		if (registrationStarted || recoveryPhrase) return;
 
+		const parsedSearch = coldInviteEntrySearchSchema.safeParse(
+			window.location.search,
+		);
+		const billingSearch = parsedSearch.success
+			? {
+					upgrade: parsedSearch.data.upgrade,
+					interval: parsedSearch.data.interval,
+				}
+			: undefined;
+
 		if (coldSignSearch) {
 			navigate({
 				to: "/dashboard/document/sign",
@@ -35,7 +45,14 @@ export function useOnboardingRegisteredGuestRedirect(args: {
 			});
 			return;
 		}
-		navigate({ to: "/dashboard", replace: true });
+		navigate({
+			to: "/dashboard",
+			replace: true,
+			search: {
+				upgrade: billingSearch?.upgrade,
+				interval: billingSearch?.interval,
+			},
+		});
 	}, [
 		ready,
 		isRegistered.data,

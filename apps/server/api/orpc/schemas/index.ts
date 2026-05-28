@@ -1,4 +1,8 @@
-import { rpcBillingEntitlementsOutputSchema } from "./billing-output";
+import {
+	rpcBillingCheckoutSessionOutputSchema,
+	rpcBillingEntitlementsOutputSchema,
+	rpcBillingPortalSessionOutputSchema,
+} from "./billing-output";
 import {
 	rpcDraftsArchiveOutputSchema,
 	rpcDraftsCommentsAppendOutputSchema,
@@ -8,6 +12,7 @@ import {
 	rpcDraftsListExternalSharesOutputSchema,
 	rpcDraftsListOutputSchema,
 	rpcDraftsMarkSentOutputSchema,
+	rpcDraftsPrepareSaveOutputSchema,
 	rpcDraftsPresignDocumentsOutputSchema,
 	rpcDraftsPresignSnapshotOutputSchema,
 	rpcDraftsReviewByTokenOutputSchema,
@@ -117,6 +122,8 @@ export const rpcOut = {
 	},
 	billing: {
 		entitlements: rpcBillingEntitlementsOutputSchema,
+		createCheckoutSession: rpcBillingCheckoutSessionOutputSchema,
+		createPortalSession: rpcBillingPortalSessionOutputSchema,
 	},
 	metrics: {
 		invitesSummary: rpcMetricsInvitesSummaryOutputSchema,
@@ -152,6 +159,7 @@ export const rpcOut = {
 		list: rpcDraftsListOutputSchema,
 		get: rpcDraftsGetOutputSchema,
 		presignSnapshot: rpcDraftsPresignSnapshotOutputSchema,
+		prepareSave: rpcDraftsPrepareSaveOutputSchema,
 		presignDocuments: rpcDraftsPresignDocumentsOutputSchema,
 		shareExternal: rpcDraftsShareExternalOutputSchema,
 		listExternalShares: rpcDraftsListExternalSharesOutputSchema,

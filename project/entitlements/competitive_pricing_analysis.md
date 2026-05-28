@@ -60,7 +60,7 @@ graph TD
   * **vs. DocuSign Personal (\$15/mo Monthly / \$10/mo Annual):** Matches DocuSign's monthly price (\$15/mo) exactly and beats its annual rate (\$9/mo vs. \$10/mo), while offering **2x the document volume** (10 vs. 5) and absolute privacy via client-side E2EE and quantum-resistant signatures. It delivers premium security at a lower annual entry point.
   * **vs. Documenso Individual (\$30/mo) / OpenSign Professional (\$29.99/mo Monthly / \$15/mo Annual):** Exceptionally competitive, offering premium security features (PQC) at a significantly lower cost than their solo plans.
 
-#### 3. Secure Team Standard
+#### 3. Secure Team
 * **Price:** \$35.00 / user / month (Monthly) or **\$25.00 / user / month (Billed Annually)**
 * **Offering:** 30 documents/user/mo, average of 3 recipients per document. Includes all security features plus automated blockchain payment settlements and shared team template libraries.
 * **Strategic Positioning:**
@@ -68,7 +68,7 @@ graph TD
 
 #### 4. Secure Team Pro
 * **Price:** \$55.00 / user / month (Monthly) or **\$40.00 / user / month (Billed Annually)**
-* **Offering:** 30 documents/user/mo. Includes all Team Standard features plus advanced smart contract payout rules (conditional escrows, multi-chain releases) and detailed team permissions.
+* **Offering:** 30 documents/user/mo. Includes all Team features plus advanced smart contract payout rules (conditional escrows, multi-chain releases) and detailed team permissions.
 * **Strategic Positioning:**
   * **vs. DocuSign Business Pro (\$65/mo Monthly / \$40/mo Annual):** Matches DocuSign's annual Business Pro rate *exactly* (\$40/user/mo). While DocuSign Business Pro only supports simple Stripe credit card payments, Filosign Team Pro offers E2EE, PQC, and custom smart contract escrows.
 

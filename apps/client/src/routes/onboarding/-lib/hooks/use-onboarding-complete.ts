@@ -85,6 +85,12 @@ export function useOnboardingComplete() {
 			return;
 		}
 
-		await navigate({ to: "/dashboard" });
+		await navigate({
+			to: "/dashboard",
+			search: {
+				upgrade: search.upgrade,
+				interval: search.interval,
+			},
+		});
 	};
 }

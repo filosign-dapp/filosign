@@ -6,6 +6,7 @@ import {
 	decryptDraftDocument,
 	decryptDraftSnapshot,
 } from "../../lib/draft-crypto";
+import { debugDraftLoad } from "../../lib/draft-load-debug";
 import {
 	draftOrganizationId,
 	resolveDraftDek,
@@ -30,7 +31,14 @@ export function useDecryptDraft() {
 				throw new Error("Wallet required");
 			}
 			const walletAddress = wallet.account.address as Address;
+			debugDraftLoad("start", { draftId: args.draftId });
 			const head = await rpc.drafts.get({ draftId: args.draftId });
+			debugDraftLoad("head.ok", {
+				draftId: args.draftId,
+				revision: head.draft.revision,
+				headSnapshotFromDb: !!head.headSnapshot,
+				documentCount: head.documents.length,
+			});
 
 			const organizationId = draftOrganizationId(head);
 			const myWrap = await rpcQuery.orgs.keys.wrapForMine.call({
@@ -47,13 +55,20 @@ export function useDecryptDraft() {
 				},
 			});
 
-			const snapRes = await fetch(head.snapshot.downloadUrl);
-			if (!snapRes.ok) throw new Error("Failed to download draft snapshot");
-			const snapshot = await decryptDraftSnapshot({
-				dek,
-				draftId: args.draftId,
-				ciphertext: new Uint8Array(await snapRes.arrayBuffer()),
-			});
+			let snapshot: DraftSnapshot;
+			if (head.headSnapshot) {
+				debugDraftLoad("snapshot.from_db");
+				snapshot = head.headSnapshot;
+			} else {
+				debugDraftLoad("snapshot.from_s3");
+				const snapRes = await fetch(head.snapshot.downloadUrl);
+				if (!snapRes.ok) throw new Error("Failed to download draft snapshot");
+				snapshot = await decryptDraftSnapshot({
+					dek,
+					draftId: args.draftId,
+					ciphertext: new Uint8Array(await snapRes.arrayBuffer()),
+				});
+			}
 
 			const documents: DecryptedDraft["documents"] = [];
 			for (const doc of head.documents) {

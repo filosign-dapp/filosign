@@ -39,7 +39,7 @@ export default function QuoteSectionIsland() {
 								Kartik
 							</span>
 							<span className="text-sm text-muted-foreground">
-								Co-Founder & CEO, Filosign
+								Founder & CEO, Filosign
 							</span>
 						</div>
 					</div>

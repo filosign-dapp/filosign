@@ -60,7 +60,14 @@ export function useSignInController() {
 			});
 			return;
 		}
-		void navigate({ to: "/dashboard", replace: true });
+		void navigate({
+			to: "/dashboard",
+			replace: true,
+			search: {
+				upgrade: coldSearch.upgrade,
+				interval: coldSearch.interval,
+			},
+		});
 	}, [
 		ready,
 		authenticated,
@@ -68,6 +75,8 @@ export function useSignInController() {
 		isRegistered.data,
 		navigate,
 		signSearch,
+		coldSearch.upgrade,
+		coldSearch.interval,
 	]);
 
 	const walletAddress = wallet?.account.address;
@@ -112,14 +121,13 @@ export function useSignInController() {
 	const goToOnboarding = () => {
 		void navigate({
 			to: "/onboarding",
-			...(coldReturn
-				? {
-						search: {
-							coldPieceCid: coldSearch.coldPieceCid,
-							coldInvite: coldSearch.coldInvite,
-						},
-					}
-				: {}),
+			search: {
+				coldPieceCid: coldSearch.coldPieceCid,
+				coldInvite: coldSearch.coldInvite,
+				skipColdSign: coldSearch.skipColdSign,
+				upgrade: coldSearch.upgrade,
+				interval: coldSearch.interval,
+			},
 		});
 	};
 

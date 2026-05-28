@@ -1,13 +1,14 @@
+import {
+	draftDocumentKey,
+	draftSnapshotKey,
+	zDraftSnapshot,
+} from "@filosign/shared";
 import { zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
-import {
-	assertEntitlement,
-	resolveEntitlementContext,
-} from "@/lib/domains/entitlements";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
 import db from "@/lib/platform/db";
 import { randomUuidV7 } from "@/lib/platform/db/random-uuid-v7";
@@ -18,14 +19,15 @@ import {
 	listDraftsForWallet,
 	loadDraftOrThrow,
 } from "./access";
-import { draftDocumentKey, draftSnapshotKey } from "./storage-keys";
+import { logDraftSave } from "./utils/draft-save-log";
+import {
+	assertDraftDocumentsExistOnS3,
+	assertDraftSnapshotExistsOnS3,
+	draftDocumentExistsOnS3,
+} from "./utils/verify-draft-storage";
 
-const {
-	envelopeDrafts,
-	envelopeDraftDocuments,
-	draftExternalShares,
-	organizationMembers,
-} = db.schema;
+const { envelopeDrafts, envelopeDraftDocuments, draftExternalShares } =
+	db.schema;
 
 const zCreateBody = z.object({
 	title: z.string().min(1).max(200).optional(),
@@ -44,9 +46,15 @@ const zSaveBody = z.object({
 	expectedRevision: z.number().int().nonnegative(),
 	title: z.string().min(1).max(200).optional(),
 	headSnapshotS3Key: z.string().min(1),
+	snapshot: zDraftSnapshot,
 	headDekWrappedOmk: zHexString().optional(),
 	headOmkKemCiphertext: zHexString().optional(),
 	documents: z.array(zDocumentRow),
+});
+
+const zPrepareSaveBody = z.object({
+	draftId: z.uuid(),
+	docIds: z.array(z.string().min(1).max(128)).max(20),
 });
 
 const zMarkSentBody = z.object({
@@ -70,25 +78,6 @@ export async function draftsCreate(
 
 	assertOrgPermission(activeOrg, "drafts:write");
 	const organizationId = activeOrg.organizationId;
-
-	const [memberCountRow] = await db
-		.select({ count: sql<number>`count(*)::int` })
-		.from(organizationMembers)
-		.where(
-			and(
-				eq(organizationMembers.organizationId, organizationId),
-				eq(organizationMembers.status, "active"),
-			),
-		);
-	const memberCount = memberCountRow?.count ?? 1;
-
-	if (memberCount > 1) {
-		const entitlementCtx = await resolveEntitlementContext(
-			getAddress(wallet),
-			organizationId,
-		);
-		assertEntitlement(entitlementCtx, "features.team_drafts");
-	}
 
 	const draftId = randomUuidV7();
 	const snapshotKey = draftSnapshotKey({
@@ -146,11 +135,36 @@ export async function draftsSave(
 ) {
 	const parsed = zSaveBody.safeParse(body);
 	if (!parsed.success) {
+		logDraftSave("save.parse_failed", { issues: parsed.error.message });
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
 
+	logDraftSave("save.start", {
+		draftId: parsed.data.draftId,
+		expectedRevision: parsed.data.expectedRevision,
+		documentCount: parsed.data.documents.length,
+		hasHeadSnapshot: true,
+	});
+
+	try {
+		return await draftsSaveInner(wallet, activeOrg, parsed.data);
+	} catch (error) {
+		logDraftSave("save.error", {
+			draftId: parsed.data.draftId,
+			message: error instanceof Error ? error.message : String(error),
+			code: error instanceof ORPCError ? error.code : undefined,
+		});
+		throw error;
+	}
+}
+
+async function draftsSaveInner(
+	wallet: Address,
+	activeOrg: ActiveOrgContext,
+	parsed: z.infer<typeof zSaveBody>,
+) {
 	assertOrgPermission(activeOrg, "drafts:write");
-	const draft = await loadDraftOrThrow(parsed.data.draftId);
+	const draft = await loadDraftOrThrow(parsed.draftId);
 	if (draft.organizationId !== activeOrg.organizationId) {
 		throw new ORPCError("BAD_REQUEST", {
 			message: "X-Org-Id must match this org draft",
@@ -161,14 +175,19 @@ export async function draftsSave(
 	if (draft.status !== "active") {
 		throw new ORPCError("BAD_REQUEST", { message: "Draft is not editable" });
 	}
-	if (draft.revision !== parsed.data.expectedRevision) {
+	if (draft.revision !== parsed.expectedRevision) {
+		logDraftSave("save.revision_conflict", {
+			draftId: draft.id,
+			expectedRevision: parsed.expectedRevision,
+			actualRevision: draft.revision,
+		});
 		throw new ORPCError("CONFLICT", {
 			message: "Draft was updated elsewhere; reload and try again",
 			data: { revision: draft.revision },
 		});
 	}
 
-	if (!parsed.data.headDekWrappedOmk || !parsed.data.headOmkKemCiphertext) {
+	if (!parsed.headDekWrappedOmk || !parsed.headOmkKemCiphertext) {
 		throw new ORPCError("BAD_REQUEST", {
 			message:
 				"headDekWrappedOmk and headOmkKemCiphertext required for org drafts",
@@ -183,15 +202,38 @@ export async function draftsSave(
 		organizationId: draft.organizationId,
 	});
 
+	logDraftSave("save.verify_s3.start", {
+		draftId: draft.id,
+		snapshotKey: computedSnapshotKey,
+		docIds: parsed.documents.map((d) => d.docId),
+	});
+
+	await assertDraftSnapshotExistsOnS3({
+		draftId: draft.id,
+		organizationId: draft.organizationId,
+	});
+
+	const docIds = parsed.documents.map((doc) => doc.docId);
+	if (docIds.length > 0) {
+		await assertDraftDocumentsExistOnS3({
+			draftId: draft.id,
+			organizationId: draft.organizationId,
+			docIds,
+		});
+	}
+
+	logDraftSave("save.verify_s3.ok", { draftId: draft.id });
+
 	await db.transaction(async (tx) => {
 		const [updated] = await tx
 			.update(envelopeDrafts)
 			.set({
-				title: parsed.data.title?.trim() ?? draft.title,
+				title: parsed.title?.trim() ?? draft.title,
 				revision: nextRevision,
 				headSnapshotS3Key: computedSnapshotKey,
-				headDekWrappedOmk: parsed.data.headDekWrappedOmk ?? null,
-				headOmkKemCiphertext: parsed.data.headOmkKemCiphertext ?? null,
+				headSnapshot: parsed.snapshot,
+				headDekWrappedOmk: parsed.headDekWrappedOmk ?? null,
+				headOmkKemCiphertext: parsed.headOmkKemCiphertext ?? null,
 				updatedAt: now,
 			})
 			.where(
@@ -213,9 +255,9 @@ export async function draftsSave(
 			.delete(envelopeDraftDocuments)
 			.where(eq(envelopeDraftDocuments.draftId, draft.id));
 
-		if (parsed.data.documents.length > 0) {
+		if (parsed.documents.length > 0) {
 			await tx.insert(envelopeDraftDocuments).values(
-				parsed.data.documents.map((doc) => {
+				parsed.documents.map((doc) => {
 					const computedDocKey = draftDocumentKey({
 						draftId: draft.id,
 						organizationId: draft.organizationId,
@@ -236,31 +278,17 @@ export async function draftsSave(
 		}
 	});
 
+	logDraftSave("save.complete", {
+		draftId: draft.id,
+		revision: nextRevision,
+	});
+
 	return { revision: nextRevision };
 }
 
 export async function draftsList(wallet: Address, activeOrg: ActiveOrgContext) {
 	assertOrgPermission(activeOrg, "drafts:read");
 	const organizationId = activeOrg.organizationId;
-
-	const [memberCountRow] = await db
-		.select({ count: sql<number>`count(*)::int` })
-		.from(organizationMembers)
-		.where(
-			and(
-				eq(organizationMembers.organizationId, organizationId),
-				eq(organizationMembers.status, "active"),
-			),
-		);
-	const memberCount = memberCountRow?.count ?? 1;
-
-	if (memberCount > 1) {
-		const entitlementCtx = await resolveEntitlementContext(
-			getAddress(wallet),
-			organizationId,
-		);
-		assertEntitlement(entitlementCtx, "features.team_drafts");
-	}
 
 	const drafts = await listDraftsForWallet({
 		wallet,
@@ -309,6 +337,10 @@ export async function draftsGet(
 		}),
 	}));
 
+	const headSnapshotParsed = draft.headSnapshot
+		? zDraftSnapshot.safeParse(draft.headSnapshot)
+		: null;
+
 	return {
 		draft: {
 			id: draft.id,
@@ -323,12 +355,104 @@ export async function draftsGet(
 		},
 		headDekWrappedOmk: draft.headDekWrappedOmk,
 		headOmkKemCiphertext: draft.headOmkKemCiphertext,
+		headSnapshot: headSnapshotParsed?.success ? headSnapshotParsed.data : null,
 		snapshot: {
 			s3Key: draft.headSnapshotS3Key,
 			downloadUrl: snapshotDownloadUrl,
 		},
 		documents: documentDownloads,
 	};
+}
+
+export async function draftsPrepareSave(
+	wallet: Address,
+	activeOrg: ActiveOrgContext,
+	body: unknown,
+) {
+	const parsed = zPrepareSaveBody.safeParse(body);
+	if (!parsed.success) {
+		logDraftSave("prepare.parse_failed", { issues: parsed.error.message });
+		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+	}
+
+	logDraftSave("prepare.start", {
+		draftId: parsed.data.draftId,
+		docIds: parsed.data.docIds,
+	});
+
+	assertOrgPermission(activeOrg, "drafts:write");
+	const draft = await loadDraftOrThrow(parsed.data.draftId);
+	if (draft.organizationId !== activeOrg.organizationId) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "X-Org-Id must match this org draft",
+		});
+	}
+	await assertDraftCreator(wallet, draft);
+
+	if (draft.status !== "active") {
+		throw new ORPCError("BAD_REQUEST", { message: "Draft is not editable" });
+	}
+
+	const snapshotKey = draftSnapshotKey({
+		draftId: draft.id,
+		organizationId: draft.organizationId,
+	});
+
+	const documents = await Promise.all(
+		parsed.data.docIds.map(async (docId) => {
+			const s3Key = draftDocumentKey({
+				draftId: draft.id,
+				organizationId: draft.organizationId,
+				docId,
+			});
+			const existsOnS3 = await draftDocumentExistsOnS3({
+				draftId: draft.id,
+				organizationId: draft.organizationId,
+				docId,
+			});
+			const needsUpload = !existsOnS3;
+			logDraftSave("prepare.doc", {
+				draftId: draft.id,
+				docId,
+				s3Key,
+				existsOnS3,
+				needsUpload,
+			});
+			return {
+				docId,
+				s3Key,
+				needsUpload,
+				uploadUrl: needsUpload
+					? bucket.presign(s3Key, {
+							method: "PUT",
+							expiresIn: 60 * 15,
+							type: "application/octet-stream",
+						})
+					: undefined,
+			};
+		}),
+	);
+
+	const result = {
+		snapshot: {
+			s3Key: snapshotKey,
+			uploadUrl: bucket.presign(snapshotKey, {
+				method: "PUT",
+				expiresIn: 60 * 15,
+				type: "application/octet-stream",
+			}),
+		},
+		documents,
+	};
+
+	logDraftSave("prepare.complete", {
+		draftId: draft.id,
+		snapshotKey,
+		uploadCount: documents.filter((d) => d.needsUpload).length,
+		skipCount: documents.filter((d) => !d.needsUpload).length,
+	});
+
+	return result;
 }
 
 export async function draftsPresignSnapshot(

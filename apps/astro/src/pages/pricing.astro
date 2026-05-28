@@ -1,5 +1,7 @@
 ---
 import Footer from "../components/Footer.astro";
+import PricingHeroIsland from "../components/islands/PricingHeroIsland";
+import PricingPlansIsland from "../components/islands/PricingPlansIsland";
 import Navbar from "../components/Navbar.astro";
 import { env } from "../env";
 import BaseLayout from "../layouts/BaseLayout.astro";
@@ -10,206 +12,99 @@ const plans = [
 	{
 		name: "Free",
 		description:
-			"For individuals just getting started with decentralized signing.",
-		price: { monthly: 0, yearly: 0 },
+			"Send a few agreements with full encryption and on-chain proof—no card required.",
+		price: { monthly: 0 },
 		features: [
-			"Up to 3 documents per month",
-			"Basic wallet integration",
-			"Filecoin storage (1GB)",
-			"Email support",
+			"3 documents per month",
+			"1 signer per envelope",
+			"Encrypted in the browser before anything is uploaded",
+			"Wallet-backed, quantum-resistant signatures",
+			"Standard fields and a basic audit trail",
+			"Manual reminder emails",
 		],
-		cta: "Get started",
+		cta: "Start free",
 		highlight: false,
 	},
 	{
-		name: "Starter",
-		description: "For freelancers and pro users who need more flexibility.",
-		price: { monthly: 19, yearly: 15 },
+		name: "Solo",
+		description:
+			"For freelancers, counsel, and operators who need provable signatures without IT overhead.",
+		price: { monthly: 15 },
 		features: [
-			"Up to 50 documents per month",
-			"Custom branding",
-			"Priority wallet support",
-			"Filecoin storage (10GB)",
-			"Audit trails",
+			"10 documents per month",
+			"Up to 3 signers per document",
+			"Long-term Filecoin archival (1, 5, or 10 years)",
+			"Signer ID attachments stay encrypted end-to-end",
+			"Advanced fields and CSV export for your records",
+			"Same wallet-native security as every Filosign plan",
 		],
-		cta: "Start 7-day free trial",
+		cta: "Start Solo",
 		highlight: false,
+		planId: "individual",
 	},
 	{
-		name: "Pro",
-		description: "For growing teams requiring advanced collaboration features.",
-		price: { monthly: 49, yearly: 39 },
+		name: "Teams",
+		description:
+			"For growing teams that need pooled volume, USDC settlements, and shared workflows.",
+		price: { monthly: 39 },
 		features: [
-			"Unlimited documents",
-			"Team management",
-			"API access",
-			"Filecoin storage (100GB)",
-			"Priority support",
-			"Advanced analytics",
+			"30 documents per teammate each month",
+			"Up to 10 signers per document",
+			"USDC settlements when signing rules are met",
+			"Shared templates and team envelope drafts",
+			"Signing order, review links, and draft comments",
+			"Team visibility on envelopes and automated reminders",
 		],
-		cta: "Start 7-day free trial",
+		cta: "Start Teams",
 		highlight: true,
 		badge: "Most popular",
+		planId: "teams",
 	},
 	{
-		name: "Enterprise",
-		description: "For large organizations needing custom security and scale.",
-		price: { monthly: 199, yearly: 169 },
+		name: "Teams Pro",
+		description:
+			"For high-volume teams that need room to scale signers, documents, and integrations.",
+		price: { monthly: 59 },
 		features: [
-			"Custom contract limits",
-			"SSO & dedicated success manager",
-			"On-premise deployment options",
-			"Unlimited storage",
-			"SLA guarantees",
+			"60 documents/month per seat",
+			"Up to 20 signers per document",
+			"Everything in Teams",
+			"Custom integrations with your stack",
+			"Compliance exports and signature audit records",
+			"Priority support for production workloads",
 		],
-		cta: "Chat with us!",
+		cta: "Start Teams Pro",
 		highlight: false,
+		planId: "teams_pro",
 	},
 ];
+
+const enterpriseBanner = {
+	headline: "Are you an enterprise?",
+	body: "Custom limits, security reviews, SLAs, and procurement-friendly contracts—contact us directly and we'll scope a plan with your team.",
+	cta: "Contact us",
+	href: "mailto:hello@filosign.xyz?subject=Filosign%20Enterprise",
+};
 ---
 
 <BaseLayout
-	title="Pricing — Secure signing for every scale"
-	description="From individual creators to global enterprises, Filosign has a plan that grows with you. Start for free."
+	title="Pricing — Encrypted signing with proof you can verify"
+	description="Filosign pricing: Free, Solo, Teams, and Teams Pro. Encrypted signing, Filecoin archival, and USDC settlements. Enterprise plans by request."
 >
 	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
 		<Navbar />
 		<main>
-			{/* Pricing Hero */}
-			<section class="pt-32 pb-12 px-4 md:px-8 lg:px-page bg-background relative overflow-hidden">
-				<div class="max-w-7xl mx-auto relative z-10 space-y-16">
-					<div class="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-8 lg:gap-12">
-						<div class="max-w-3xl" data-aos="fade-up">
-							<h1 class="text-4xl md:text-5xl lg:text-5xl font-medium font-manrope tracking-tight text-foreground mb-6 leading-[1.1]">
-								Secure signing for every scale.
-								<br />
-								Simple, transparent pricing.
-							</h1>
-							<p class="text-lg md:text-xl font-light font-manrope text-muted-foreground max-w-xl leading-relaxed">
-								From individual creators to global enterprises,
-								<br class="hidden md:block" />
-								we have a plan that grows with you.
-							</p>
-						</div>
+			<PricingHeroIsland client:load appUrl={appUrl} />
 
-						<div class="flex flex-wrap gap-4 shrink-0" data-aos="fade-up" data-aos-delay="100">
-						<a
-							href={appUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							class="inline-flex items-center justify-center px-8 py-3 h-12 bg-primary text-primary-foreground rounded-lg font-medium transition-all duration-200 hover:bg-primary/90 hover:scale-105"
-						>
-							Start for free
-						</a>
-							<a
-								href="#pricing"
-								class="inline-flex items-center justify-center gap-2 px-8 py-3 h-12 border border-border text-foreground rounded-lg font-medium transition-all duration-200 hover:bg-muted"
-							>
-								<svg class="size-4" viewBox="0 0 256 256" fill="currentColor">
-									<path d="m205.66 149.66-72 72a8 8 0 0 1-11.32 0l-72-72A8 8 0 0 1 56 136h64V40a8 8 0 0 1 16 0v96h64a8 8 0 0 1 5.66 13.66Z"/>
-								</svg>
-								Compare plans
-							</a>
-						</div>
-					</div>
-				</div>
-
-				{/* Background Decorative Elements */}
-				<div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none opacity-50">
-					<div class="absolute top-[-10%] right-[-5%] w-[30%] h-[30%] bg-primary/5 rounded-full blur-[120px]"></div>
-				</div>
-			</section>
-
-			{/* Pricing Section */}
-			<section id="pricing" class="py-20 px-4 md:px-8 lg:px-page bg-background">
-				<div class="max-w-7xl mx-auto">
-					{/* Toggle - Static Yearly Display */}
-					<div class="flex items-center justify-center gap-4 mb-16" data-aos="fade-up">
-						<span class="text-sm font-medium font-manrope text-muted-foreground">Monthly</span>
-						<div class="w-11 h-6 bg-primary rounded-full relative">
-							<div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full"></div>
-						</div>
-						<span class="text-sm font-medium font-manrope text-foreground flex items-center gap-2">
-							Yearly
-							<span class="text-xs text-secondary-foreground bg-secondary px-2 py-0.5 rounded-full">
-								Save 15%
-							</span>
-						</span>
-					</div>
-
-					{/* Cards Grid */}
-					<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 lg:gap-8">
-						{plans.map((plan, index) => (
-							<div class:list={[
-								"relative flex flex-col p-8 rounded-3xl transition-all duration-300",
-								plan.highlight
-									? "bg-background border-2 border-foreground text-foreground shadow-xl scale-[1.02] z-10"
-									: "bg-muted/30 border border-transparent hover:border-border/50",
-							]} data-aos="fade-up" data-aos-delay={index * 100}>
-								{plan.highlight && plan.badge && (
-									<div class="absolute -top-5 left-0 right-0 mx-auto w-fit bg-foreground text-background text-xs font-medium px-3 py-1 rounded-full">
-										{plan.badge}
-									</div>
-								)}
-
-								{/* Header */}
-								<div class="mb-4 flex flex-col">
-									<div class="inline-block w-fit px-3 py-1 rounded-full bg-background border border-border text-xs font-medium mb-4">
-										{plan.name}
-									</div>
-									<p class="text-sm text-muted-foreground min-h-12 font-manrope leading-relaxed">
-										{plan.description}
-									</p>
-								</div>
-
-								{/* Price */}
-								<div class="mb-8 min-h-[84px] flex flex-col justify-end">
-									<div class="flex items-baseline gap-1">
-										<span class="text-4xl font-medium font-manrope">${plan.price.yearly}</span>
-										<span class="text-sm text-muted-foreground">USD</span>
-									</div>
-									<div class="text-sm text-muted-foreground mt-1">
-										/month {plan.name !== "Free" && "for one user"}
-									</div>
-								</div>
-
-								{/* CTA */}
-								<div class="mb-8">
-								<a
-									href={appUrl}
-									target="_blank"
-									rel="noopener noreferrer"
-									class:list={[
-										"w-full h-10 flex items-center justify-center font-medium rounded-lg transition-colors",
-										plan.highlight
-											? "bg-secondary text-secondary-foreground hover:bg-secondary/90"
-											: "bg-primary text-primary-foreground hover:bg-primary/90",
-									]}
-								>
-									{plan.cta}
-								</a>
-								</div>
-
-								{/* Features */}
-								<div class="flex-grow">
-									<ul class="space-y-3">
-										{plan.features.map((feature) => (
-											<li class="flex items-start gap-3 text-sm text-muted-foreground font-manrope">
-												<svg class="size-4 shrink-0 text-foreground mt-0.5" viewBox="0 0 256 256" fill="currentColor">
-													<path d="M173.66 98.34a8 8 0 0 1 0 11.32l-56 56a8 8 0 0 1-11.32 0l-24-24a8 8 0 0 1 11.32-11.32L112 148.69l50.34-50.35a8 8 0 0 1 11.32 0ZM232 128A104 104 0 1 1 128 24a104.11 104.11 0 0 1 104 104Zm-16 0a88 88 0 1 0-88 88 88.1 88.1 0 0 0 88-88Z"/>
-												</svg>
-												<span>{feature}</span>
-											</li>
-											))}
-										</ul>
-									</div>
-								</div>
-							))}
-						</div>
-					</div>
-				</section>
-			</main>
-			<Footer />
-		</div>
-		</BaseLayout>
+			{/* Pricing Section with Dynamic Billing Toggle */}
+			<PricingPlansIsland
+				client:load
+				plans={plans}
+				appUrl={appUrl}
+				enterpriseBanner={enterpriseBanner}
+			/>
+		</main>
+		<Footer />
+	</div>
+</BaseLayout>
 														

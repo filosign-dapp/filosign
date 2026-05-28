@@ -4,14 +4,17 @@ Filosign is a web product for trust-minimized document signing: end-to-end encry
 
 ## Primary pages
 
-- https://filosign.io/
-- https://filosign.io/about/
-- https://filosign.io/pricing/
-- https://filosign.io/blog/
-- https://filosign.io/blog/introduction/
-- https://filosign.io/changelog/
+- https://filosign.xyz/
+- https://filosign.xyz/about/
+- https://filosign.xyz/pricing/
+- https://filosign.xyz/blog/
+- https://filosign.xyz/blog/introduction/
+- https://filosign.xyz/changelog/
+- https://filosign.xyz/privacy/
+- https://filosign.xyz/terms/
 
 ## Source & social
 
-- https://github.com/hetairoi-labs/filosign
+- https://github.com/filosign-dapp/filosign
 - https://x.com/filosign
+- https://x.com/ishtails

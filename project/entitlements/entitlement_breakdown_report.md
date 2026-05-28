@@ -62,7 +62,7 @@ This document outlines the detailed entitlement breakdown for each of Filosign's
 
 ---
 
-### 3. Secure Team Standard
+### 3. Secure Team
 *Designed for small businesses implementing automated cryptocurrency payments.*
 
 *   **Existing Features:**

@@ -1,3 +1,4 @@
+import type { DraftSnapshot } from "@filosign/shared";
 import * as t from "drizzle-orm/pg-core";
 import { tEvmAddress, tHex, timestamps } from "@/lib/platform/db/helpers";
 import { randomUuidV7 } from "@/lib/platform/db/random-uuid-v7";
@@ -25,6 +26,8 @@ export const envelopeDrafts = t.pgTable(
 		status: t.text({ enum: draftStatuses }).notNull().default("active"),
 		revision: t.integer().notNull().default(0),
 		headSnapshotS3Key: t.text(),
+		/** Plaintext form state (source of truth for the app). Encrypted S3 snapshot is dual-written for review links. */
+		headSnapshot: t.jsonb().$type<DraftSnapshot>(),
 		headDekWrappedOmk: tHex(),
 		headOmkKemCiphertext: tHex(),
 		sentPieceCid: t.text(),

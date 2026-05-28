@@ -1,399 +1,16 @@
 export const definitions = {
 	"0x14a34": {
-		FSManager: {
-			address: "0x13B7c847F5C69CB899fcDFf713BF42C3bF5516ea",
-			abi: [
-				{
-					inputs: [
-						{
-							internalType: "address",
-							name: "treasury_",
-							type: "address",
-						},
-					],
-					stateMutability: "nonpayable",
-					type: "constructor",
-				},
-				{
-					inputs: [],
-					name: "ApproveSignatureExpired",
-					type: "error",
-				},
-				{
-					inputs: [],
-					name: "CannotApproveSelf",
-					type: "error",
-				},
-				{
-					inputs: [],
-					name: "InvalidApproveNonce",
-					type: "error",
-				},
-				{
-					inputs: [],
-					name: "InvalidApproveSignature",
-					type: "error",
-				},
-				{
-					inputs: [],
-					name: "InvalidShortString",
-					type: "error",
-				},
-				{
-					inputs: [],
-					name: "OnlyServer",
-					type: "error",
-				},
-				{
-					inputs: [],
-					name: "SenderAlreadyApproved",
-					type: "error",
-				},
-				{
-					inputs: [],
-					name: "SenderNotApproved",
-					type: "error",
-				},
-				{
-					inputs: [],
-					name: "SenderNotRegistered",
-					type: "error",
-				},
-				{
-					inputs: [
-						{
-							internalType: "string",
-							name: "str",
-							type: "string",
-						},
-					],
-					name: "StringTooLong",
-					type: "error",
-				},
-				{
-					inputs: [],
-					name: "ZeroAddress",
-					type: "error",
-				},
-				{
-					anonymous: false,
-					inputs: [],
-					name: "EIP712DomainChanged",
-					type: "event",
-				},
-				{
-					anonymous: false,
-					inputs: [
-						{
-							indexed: true,
-							internalType: "address",
-							name: "recipient",
-							type: "address",
-						},
-						{
-							indexed: true,
-							internalType: "address",
-							name: "sender",
-							type: "address",
-						},
-					],
-					name: "SenderApproved",
-					type: "event",
-				},
-				{
-					anonymous: false,
-					inputs: [
-						{
-							indexed: true,
-							internalType: "address",
-							name: "recipient",
-							type: "address",
-						},
-						{
-							indexed: true,
-							internalType: "address",
-							name: "sender",
-							type: "address",
-						},
-					],
-					name: "SenderRevoked",
-					type: "event",
-				},
-				{
-					inputs: [
-						{
-							internalType: "address",
-							name: "",
-							type: "address",
-						},
-					],
-					name: "approveNonce",
-					outputs: [
-						{
-							internalType: "uint256",
-							name: "",
-							type: "uint256",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [
-						{
-							internalType: "address",
-							name: "recipient_",
-							type: "address",
-						},
-						{
-							internalType: "address",
-							name: "sender_",
-							type: "address",
-						},
-						{
-							internalType: "uint256",
-							name: "nonce_",
-							type: "uint256",
-						},
-						{
-							internalType: "uint256",
-							name: "deadline_",
-							type: "uint256",
-						},
-						{
-							internalType: "bytes",
-							name: "signature_",
-							type: "bytes",
-						},
-					],
-					name: "approveSender",
-					outputs: [],
-					stateMutability: "nonpayable",
-					type: "function",
-				},
-				{
-					inputs: [
-						{
-							internalType: "address",
-							name: "",
-							type: "address",
-						},
-						{
-							internalType: "address",
-							name: "",
-							type: "address",
-						},
-					],
-					name: "approvedSenders",
-					outputs: [
-						{
-							internalType: "bool",
-							name: "",
-							type: "bool",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [],
-					name: "eip712Domain",
-					outputs: [
-						{
-							internalType: "bytes1",
-							name: "fields",
-							type: "bytes1",
-						},
-						{
-							internalType: "string",
-							name: "name",
-							type: "string",
-						},
-						{
-							internalType: "string",
-							name: "version",
-							type: "string",
-						},
-						{
-							internalType: "uint256",
-							name: "chainId",
-							type: "uint256",
-						},
-						{
-							internalType: "address",
-							name: "verifyingContract",
-							type: "address",
-						},
-						{
-							internalType: "bytes32",
-							name: "salt",
-							type: "bytes32",
-						},
-						{
-							internalType: "uint256[]",
-							name: "extensions",
-							type: "uint256[]",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [],
-					name: "fileRegistry",
-					outputs: [
-						{
-							internalType: "address",
-							name: "",
-							type: "address",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [
-						{
-							internalType: "address",
-							name: "account_",
-							type: "address",
-						},
-					],
-					name: "isRegistered",
-					outputs: [
-						{
-							internalType: "bool",
-							name: "",
-							type: "bool",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [],
-					name: "keyRegistry",
-					outputs: [
-						{
-							internalType: "address",
-							name: "",
-							type: "address",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [
-						{
-							internalType: "address",
-							name: "sender_",
-							type: "address",
-						},
-					],
-					name: "revokeSender",
-					outputs: [],
-					stateMutability: "nonpayable",
-					type: "function",
-				},
-				{
-					inputs: [],
-					name: "server",
-					outputs: [
-						{
-							internalType: "address",
-							name: "",
-							type: "address",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [
-						{
-							internalType: "uint8",
-							name: "version_",
-							type: "uint8",
-						},
-					],
-					name: "setActiveVersion",
-					outputs: [],
-					stateMutability: "nonpayable",
-					type: "function",
-				},
-				{
-					inputs: [],
-					name: "treasury",
-					outputs: [
-						{
-							internalType: "address",
-							name: "",
-							type: "address",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [
-						{
-							internalType: "address",
-							name: "recipient_",
-							type: "address",
-						},
-						{
-							internalType: "address",
-							name: "sender_",
-							type: "address",
-						},
-						{
-							internalType: "uint256",
-							name: "nonce_",
-							type: "uint256",
-						},
-						{
-							internalType: "uint256",
-							name: "deadline_",
-							type: "uint256",
-						},
-						{
-							internalType: "bytes",
-							name: "signature_",
-							type: "bytes",
-						},
-					],
-					name: "validateApproveSenderSignature",
-					outputs: [
-						{
-							internalType: "bool",
-							name: "",
-							type: "bool",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [],
-					name: "version",
-					outputs: [
-						{
-							internalType: "uint8",
-							name: "",
-							type: "uint8",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-			],
-		},
 		FSFileRegistry: {
-			address: "0xffd23AE937143b9d3F38F5A33DeDE869190E148A",
+			address: "0xcEc2aD2aeB418182Fc8b36B275ebb31c2072D865",
 			abi: [
 				{
-					inputs: [],
+					inputs: [
+						{
+							internalType: "address",
+							name: "server_",
+							type: "address",
+						},
+					],
 					stateMutability: "nonpayable",
 					type: "constructor",
 				},
@@ -444,11 +61,6 @@ export const definitions = {
 				},
 				{
 					inputs: [],
-					name: "SenderNotRegistered",
-					type: "error",
-				},
-				{
-					inputs: [],
 					name: "SignatureExpired",
 					type: "error",
 				},
@@ -466,6 +78,11 @@ export const definitions = {
 				{
 					inputs: [],
 					name: "UnsortedSigners",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "ZeroAddress",
 					type: "error",
 				},
 				{
@@ -755,19 +372,6 @@ export const definitions = {
 					type: "function",
 				},
 				{
-					inputs: [],
-					name: "manager",
-					outputs: [
-						{
-							internalType: "contract IFSManager",
-							name: "",
-							type: "address",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
 					inputs: [
 						{
 							internalType: "address",
@@ -900,6 +504,19 @@ export const definitions = {
 					name: "registerFileSignature",
 					outputs: [],
 					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "server",
+					outputs: [
+						{
+							internalType: "address",
+							name: "",
+							type: "address",
+						},
+					],
+					stateMutability: "view",
 					type: "function",
 				},
 				{
@@ -1081,69 +698,118 @@ export const definitions = {
 				},
 			],
 		},
-		FSKeyRegistry: {
-			address: "0xAC6BAddD7d997cF302AF0375b87039fde5a1aB24",
+		FSPaymentValidator: {
+			address: "0x3B9eD3A5628C4dFa89525a6C057e524b473952CA",
 			abi: [
 				{
-					inputs: [],
+					inputs: [
+						{
+							internalType: "address",
+							name: "fileRegistry_",
+							type: "address",
+						},
+						{
+							internalType: "uint256",
+							name: "deploymentChainId_",
+							type: "uint256",
+						},
+					],
 					stateMutability: "nonpayable",
 					type: "constructor",
 				},
 				{
 					inputs: [],
-					name: "DataAlreadyRegistered",
+					name: "InvalidAmount",
 					type: "error",
 				},
 				{
 					inputs: [],
-					name: "InvalidCommitmentDilithiumPk",
+					name: "InvalidPayer",
 					type: "error",
 				},
 				{
 					inputs: [],
-					name: "InvalidCommitmentKyberPk",
+					name: "InvalidReleaseConfig",
 					type: "error",
 				},
 				{
 					inputs: [],
-					name: "InvalidRegistrantSignature",
+					name: "ReentrancyGuardReentrantCall",
 					type: "error",
 				},
 				{
 					inputs: [],
-					name: "InvalidSaltPin",
+					name: "RuleAlreadyExecuted",
 					type: "error",
 				},
 				{
 					inputs: [],
-					name: "InvalidSaltSeed",
-					type: "error",
-				},
-				{
-					inputs: [],
-					name: "InvalidServer",
-					type: "error",
-				},
-				{
-					inputs: [],
-					name: "InvalidShortString",
+					name: "RuleNotExecutable",
 					type: "error",
 				},
 				{
 					inputs: [
 						{
-							internalType: "string",
-							name: "str",
-							type: "string",
+							internalType: "address",
+							name: "token",
+							type: "address",
 						},
 					],
-					name: "StringTooLong",
+					name: "SafeERC20FailedOperation",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "UnauthorizedRuleRegistration",
 					type: "error",
 				},
 				{
 					anonymous: false,
-					inputs: [],
-					name: "EIP712DomainChanged",
+					inputs: [
+						{
+							indexed: true,
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+						{
+							indexed: true,
+							internalType: "bytes32",
+							name: "cidId",
+							type: "bytes32",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "payer",
+							type: "address",
+						},
+						{
+							indexed: false,
+							internalType: "address",
+							name: "recipient",
+							type: "address",
+						},
+						{
+							indexed: false,
+							internalType: "address",
+							name: "token",
+							type: "address",
+						},
+						{
+							indexed: false,
+							internalType: "uint256",
+							name: "amount",
+							type: "uint256",
+						},
+						{
+							indexed: false,
+							internalType: "enum FSPaymentValidator.ReleaseType",
+							name: "releaseType",
+							type: "uint8",
+						},
+					],
+					name: "PaymentRuleRegistered",
 					type: "event",
 				},
 				{
@@ -1151,51 +817,175 @@ export const definitions = {
 					inputs: [
 						{
 							indexed: true,
-							internalType: "address",
-							name: "user",
-							type: "address",
-						},
-					],
-					name: "KeygenDataRegistered",
-					type: "event",
-				},
-				{
-					inputs: [],
-					name: "eip712Domain",
-					outputs: [
-						{
-							internalType: "bytes1",
-							name: "fields",
-							type: "bytes1",
-						},
-						{
-							internalType: "string",
-							name: "name",
-							type: "string",
-						},
-						{
-							internalType: "string",
-							name: "version",
-							type: "string",
-						},
-						{
 							internalType: "uint256",
-							name: "chainId",
+							name: "ruleId",
 							type: "uint256",
 						},
 						{
-							internalType: "address",
-							name: "verifyingContract",
-							type: "address",
-						},
-						{
+							indexed: true,
 							internalType: "bytes32",
-							name: "salt",
+							name: "cidId",
 							type: "bytes32",
 						},
 						{
+							indexed: true,
+							internalType: "address",
+							name: "recipient",
+							type: "address",
+						},
+						{
+							indexed: false,
+							internalType: "uint256",
+							name: "amount",
+							type: "uint256",
+						},
+					],
+					name: "PayoutExecuted",
+					type: "event",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					name: "canExecute",
+					outputs: [
+						{
+							internalType: "bool",
+							name: "",
+							type: "bool",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "deploymentChainId",
+					outputs: [
+						{
+							internalType: "uint256",
+							name: "",
+							type: "uint256",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					name: "executePayout",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "fileRegistry",
+					outputs: [
+						{
+							internalType: "contract IFSFileRegistry",
+							name: "",
+							type: "address",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "nextRuleId",
+					outputs: [
+						{
+							internalType: "uint256",
+							name: "",
+							type: "uint256",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "payer_",
+							type: "address",
+						},
+						{
+							internalType: "address",
+							name: "recipient_",
+							type: "address",
+						},
+						{
+							internalType: "address",
+							name: "token_",
+							type: "address",
+						},
+						{
+							internalType: "uint256",
+							name: "amount_",
+							type: "uint256",
+						},
+						{
+							internalType: "bytes32",
+							name: "cidId_",
+							type: "bytes32",
+						},
+						{
+							internalType: "enum FSPaymentValidator.ReleaseType",
+							name: "releaseType_",
+							type: "uint8",
+						},
+						{
+							internalType: "bytes32",
+							name: "specificSignerCommitment_",
+							type: "bytes32",
+						},
+						{
+							internalType: "uint8",
+							name: "thresholdN_",
+							type: "uint8",
+						},
+						{
+							internalType: "bytes32[]",
+							name: "signerCommitments_",
+							type: "bytes32[]",
+						},
+					],
+					name: "registerRule",
+					outputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "bytes32",
+							name: "cidId_",
+							type: "bytes32",
+						},
+					],
+					name: "ruleIdsForCid",
+					outputs: [
+						{
 							internalType: "uint256[]",
-							name: "extensions",
+							name: "",
 							type: "uint256[]",
 						},
 					],
@@ -1205,16 +995,56 @@ export const definitions = {
 				{
 					inputs: [
 						{
-							internalType: "address",
-							name: "user_",
-							type: "address",
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
 						},
 					],
-					name: "isRegistered",
+					name: "rules",
 					outputs: [
 						{
+							internalType: "address",
+							name: "payer",
+							type: "address",
+						},
+						{
+							internalType: "address",
+							name: "recipient",
+							type: "address",
+						},
+						{
+							internalType: "address",
+							name: "token",
+							type: "address",
+						},
+						{
+							internalType: "uint256",
+							name: "amount",
+							type: "uint256",
+						},
+						{
+							internalType: "bytes32",
+							name: "cidId",
+							type: "bytes32",
+						},
+						{
+							internalType: "enum FSPaymentValidator.ReleaseType",
+							name: "releaseType",
+							type: "uint8",
+						},
+						{
+							internalType: "bytes32",
+							name: "specificSignerCommitment",
+							type: "bytes32",
+						},
+						{
+							internalType: "uint8",
+							name: "thresholdN",
+							type: "uint8",
+						},
+						{
 							internalType: "bool",
-							name: "",
+							name: "executed",
 							type: "bool",
 						},
 					],
@@ -1224,142 +1054,17 @@ export const definitions = {
 				{
 					inputs: [
 						{
-							internalType: "address",
-							name: "",
-							type: "address",
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
 						},
 					],
-					name: "keygenData",
+					name: "signerCommitments",
 					outputs: [
 						{
-							internalType: "bytes16",
-							name: "salt_pin",
-							type: "bytes16",
-						},
-						{
-							internalType: "bytes16",
-							name: "salt_seed",
-							type: "bytes16",
-						},
-						{
-							internalType: "bytes16",
-							name: "salt_challenge",
-							type: "bytes16",
-						},
-						{
-							internalType: "bytes20",
-							name: "commitment_kyber_pk",
-							type: "bytes20",
-						},
-						{
-							internalType: "bytes20",
-							name: "commitment_dilithium_pk",
-							type: "bytes20",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [],
-					name: "manager",
-					outputs: [
-						{
-							internalType: "contract IFSManager",
+							internalType: "bytes32[]",
 							name: "",
-							type: "address",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [
-						{
-							internalType: "bytes16",
-							name: "salt_pin_",
-							type: "bytes16",
-						},
-						{
-							internalType: "bytes16",
-							name: "salt_seed_",
-							type: "bytes16",
-						},
-						{
-							internalType: "bytes16",
-							name: "salt_challenge_",
-							type: "bytes16",
-						},
-						{
-							internalType: "bytes20",
-							name: "commitment_kyber_pk_",
-							type: "bytes20",
-						},
-						{
-							internalType: "bytes20",
-							name: "commitment_dilithium_pk_",
-							type: "bytes20",
-						},
-						{
-							internalType: "bytes",
-							name: "signature_",
-							type: "bytes",
-						},
-						{
-							internalType: "address",
-							name: "walletAddress_",
-							type: "address",
-						},
-					],
-					name: "registerKeygenData",
-					outputs: [],
-					stateMutability: "nonpayable",
-					type: "function",
-				},
-				{
-					inputs: [
-						{
-							internalType: "bytes16",
-							name: "salt_pin_",
-							type: "bytes16",
-						},
-						{
-							internalType: "bytes16",
-							name: "salt_seed_",
-							type: "bytes16",
-						},
-						{
-							internalType: "bytes16",
-							name: "salt_challenge_",
-							type: "bytes16",
-						},
-						{
-							internalType: "bytes20",
-							name: "commitment_kyber_pk_",
-							type: "bytes20",
-						},
-						{
-							internalType: "bytes20",
-							name: "commitment_dilithium_pk_",
-							type: "bytes20",
-						},
-						{
-							internalType: "bytes",
-							name: "signature_",
-							type: "bytes",
-						},
-						{
-							internalType: "address",
-							name: "walletAddress_",
-							type: "address",
-						},
-					],
-					name: "validateKeygenDataRegistrationSignature",
-					outputs: [
-						{
-							internalType: "bool",
-							name: "",
-							type: "bool",
+							type: "bytes32[]",
 						},
 					],
 					stateMutability: "view",

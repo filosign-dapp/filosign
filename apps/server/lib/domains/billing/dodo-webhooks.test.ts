@@ -1,0 +1,73 @@
+import { describe, expect, test } from "bun:test";
+import { resolvePlanIdFromProductId, shouldDowngradeToFree } from "./policy";
+import { assertTimestampWithinTolerance } from "./webhook-security";
+
+describe("dodo webhook plan mapping", () => {
+	test("maps known monthly and yearly products", () => {
+		expect(resolvePlanIdFromProductId("pdt_0NfmPizJ6Qed3qp9tEeim")).toBe(
+			"individual",
+		);
+		expect(resolvePlanIdFromProductId("pdt_0NfmfWinEiPodeNWGQ3ul")).toBe(
+			"individual",
+		);
+		expect(resolvePlanIdFromProductId("pdt_0NfmPufibqNnTIXEIbszF")).toBe(
+			"teams",
+		);
+		expect(resolvePlanIdFromProductId("pdt_0NfmfhPh81Fgklfe8WgQz")).toBe(
+			"teams",
+		);
+		expect(resolvePlanIdFromProductId("pdt_0NfmQBAAvXDqYiqWSz79B")).toBe(
+			"teams_pro",
+		);
+		expect(resolvePlanIdFromProductId("pdt_0Nfmg1rLmulqhqBBM2KHW")).toBe(
+			"teams_pro",
+		);
+
+		// Test keys
+		expect(resolvePlanIdFromProductId("pdt_0NfmyRtNYwE5g8OYgkbL3")).toBe(
+			"individual",
+		);
+		expect(resolvePlanIdFromProductId("pdt_0NfmyWM4nN9jYCspf5Scl")).toBe(
+			"individual",
+		);
+		expect(resolvePlanIdFromProductId("pdt_0NfmymopLpOgIv1IRallv")).toBe(
+			"teams",
+		);
+		expect(resolvePlanIdFromProductId("pdt_0NfmytI1yAAbhFZQEtUgK")).toBe(
+			"teams",
+		);
+		expect(resolvePlanIdFromProductId("pdt_0Nfmz3zlE8nPXI2lthZ9w")).toBe(
+			"teams_pro",
+		);
+		expect(resolvePlanIdFromProductId("pdt_0Nfmz9m978R3nH8g6DL3y")).toBe(
+			"teams_pro",
+		);
+	});
+
+	test("returns null for unknown products", () => {
+		expect(resolvePlanIdFromProductId("pdt_unknown")).toBeNull();
+		expect(resolvePlanIdFromProductId(undefined)).toBeNull();
+	});
+});
+
+describe("dodo webhook downgrade rules", () => {
+	test("downgrades on cancel and expire events", () => {
+		expect(shouldDowngradeToFree("subscription.cancelled")).toBe(true);
+		expect(shouldDowngradeToFree("subscription.expired")).toBe(true);
+		expect(shouldDowngradeToFree("subscription.active")).toBe(false);
+	});
+});
+
+describe("dodo webhook timestamp tolerance", () => {
+	test("accepts current timestamp", () => {
+		const nowSec = Math.floor(Date.now() / 1000).toString();
+		expect(() => assertTimestampWithinTolerance(nowSec)).not.toThrow();
+	});
+
+	test("rejects stale timestamp", () => {
+		const staleSec = Math.floor(
+			(Date.now() - 10 * 60 * 1000) / 1000,
+		).toString();
+		expect(() => assertTimestampWithinTolerance(staleSec)).toThrow();
+	});
+});

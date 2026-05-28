@@ -2,7 +2,11 @@ import { zHexString } from "@filosign/shared/zod";
 import type { RouterClient } from "@orpc/server";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
-import { billingEntitlements } from "@/api/handlers/billing-handlers";
+import {
+	billingCreateCheckoutSession,
+	billingCreatePortalSession,
+	billingEntitlements,
+} from "@/api/handlers/billing-handlers";
 import * as draftHandlers from "@/api/handlers/drafts";
 import * as fileHandlers from "@/api/handlers/files";
 import {
@@ -91,6 +95,16 @@ export const appRouter = {
 					context.userWallet,
 					context.activeOrg,
 					input.draftId,
+				),
+			),
+		prepareSave: orgProcedure
+			.input(z.record(z.string(), unk))
+			.output(out.drafts.prepareSave)
+			.handler(({ context, input }) =>
+				draftHandlers.draftsPrepareSave(
+					context.userWallet,
+					context.activeOrg,
+					input,
 				),
 			),
 		presignDocuments: orgProcedure
@@ -429,6 +443,26 @@ export const appRouter = {
 		entitlements: authenticatedProcedure
 			.output(out.billing.entitlements)
 			.handler(({ context }) => billingEntitlements(context.userWallet)),
+		createCheckoutSession: authenticatedProcedure
+			.input(
+				z.object({
+					planId: z.enum(["individual", "teams", "teams_pro"]),
+					interval: z.enum(["monthly", "yearly"]).default("monthly"),
+					returnUrl: z.url(),
+				}),
+			)
+			.output(out.billing.createCheckoutSession)
+			.handler(({ context, input }) =>
+				billingCreateCheckoutSession({
+					wallet: context.userWallet,
+					planId: input.planId,
+					interval: input.interval,
+					returnUrl: input.returnUrl,
+				}),
+			),
+		createPortalSession: authenticatedProcedure
+			.output(out.billing.createPortalSession)
+			.handler(({ context }) => billingCreatePortalSession(context.userWallet)),
 	},
 	metrics: {
 		invitesSummary: authenticatedProcedure

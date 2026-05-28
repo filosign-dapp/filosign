@@ -1,7 +1,13 @@
 import { z } from "zod";
 import type { FeatureKey } from "./features";
 
-export const PLAN_IDS = ["free", "individual", "teams", "enterprise"] as const;
+export const PLAN_IDS = [
+	"free",
+	"individual",
+	"teams",
+	"teams_pro",
+	"enterprise",
+] as const;
 
 export type PlanId = (typeof PLAN_IDS)[number];
 

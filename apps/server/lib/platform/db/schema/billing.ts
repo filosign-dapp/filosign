@@ -24,6 +24,15 @@ export const subscriptionProviders = ["manual", "dodo"] as const;
 
 export type SubscriptionProvider = (typeof subscriptionProviders)[number];
 
+export const billingWebhookEventStatuses = [
+	"received",
+	"processed",
+	"failed",
+] as const;
+
+export type BillingWebhookEventStatus =
+	(typeof billingWebhookEventStatuses)[number];
+
 export type SubscriptionFeatureOverrides = Partial<
 	Record<FeatureKey, number | boolean>
 >;
@@ -71,5 +80,33 @@ export const userSubscriptions = t.pgTable(
 	(table) => [
 		t.index("idx_user_subscriptions_plan").on(table.planId),
 		t.index("idx_user_subscriptions_status").on(table.status),
+	],
+);
+
+/**
+ * Dodo webhook delivery log for idempotency and replay-safe processing.
+ */
+export const billingWebhookEvents = t.pgTable(
+	"billing_webhook_events",
+	{
+		id: t.uuid().primaryKey().$defaultFn(randomUuidV7),
+		provider: t.text({ enum: subscriptionProviders }).notNull().default("dodo"),
+		providerEventId: t.text().notNull().unique(),
+		eventType: t.text().notNull(),
+		status: t
+			.text({ enum: billingWebhookEventStatuses })
+			.notNull()
+			.default("processed"),
+		deliveryTimestamp: t.timestamp({ withTimezone: true }),
+		processedAt: t.timestamp({ withTimezone: true }),
+		lastError: t.text(),
+		payloadJson: t.jsonb().notNull(),
+		...timestamps,
+	},
+	(table) => [
+		t
+			.index("idx_billing_webhook_events_provider_event")
+			.on(table.provider, table.providerEventId),
+		t.index("idx_billing_webhook_events_event_type").on(table.eventType),
 	],
 );

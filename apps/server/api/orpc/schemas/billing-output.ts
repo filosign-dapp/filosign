@@ -16,3 +16,12 @@ export const rpcBillingEntitlementsOutputSchema = z.object({
 	}),
 	features: z.record(z.string(), z.object({ enabled: z.boolean() })),
 });
+
+export const rpcBillingCheckoutSessionOutputSchema = z.object({
+	checkoutUrl: z.url(),
+	sessionId: z.string().min(1),
+});
+
+export const rpcBillingPortalSessionOutputSchema = z.object({
+	url: z.url(),
+});

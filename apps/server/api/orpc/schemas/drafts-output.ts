@@ -1,3 +1,4 @@
+import { zDraftSnapshot } from "@filosign/shared";
 import { z } from "zod";
 import { zDateWire } from "./rpc-wire";
 
@@ -45,11 +46,27 @@ export const rpcDraftsGetOutputSchema = z.object({
 	draft: rpcDraftSummarySchema,
 	headDekWrappedOmk: z.string().nullable().optional(),
 	headOmkKemCiphertext: z.string().nullable().optional(),
+	headSnapshot: zDraftSnapshot.nullable().optional(),
 	snapshot: z.object({
 		s3Key: z.string(),
 		downloadUrl: z.string(),
 	}),
 	documents: z.array(rpcDraftDocumentDownloadSchema),
+});
+
+export const rpcDraftsPrepareSaveOutputSchema = z.object({
+	snapshot: z.object({
+		s3Key: z.string(),
+		uploadUrl: z.string(),
+	}),
+	documents: z.array(
+		z.object({
+			docId: z.string(),
+			s3Key: z.string(),
+			needsUpload: z.boolean(),
+			uploadUrl: z.string().optional(),
+		}),
+	),
 });
 
 export const rpcDraftsPresignSnapshotOutputSchema = z.object({

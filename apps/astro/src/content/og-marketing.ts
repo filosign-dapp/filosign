@@ -1,32 +1,43 @@
+import { defaultDescription, defaultTitle } from "../config/site";
+
 /**
  * Open Graph card copy — keep in sync with each page’s `<BaseLayout title/description>`.
  * Keys map to URL → {@link ../lib/og-slug.ts ogSlugFromPathname}.
  */
 export const MARKETING_OG_PAGES = {
 	index: {
-		title: "Filosign — Trustless standard for permanent agreements",
-		description:
-			"Send, sign, and verify sensitive documents with encrypted workflows. Private document signing on the blockchain with self-sovereign identity and end-to-end encryption.",
+		title: defaultTitle,
+		description: defaultDescription,
 	},
 	about: {
 		title: "About Filosign — Transforming document signing",
 		description:
-			"Filosign is on a mission to transform document signing with secure, decentralized, and efficient solutions for the modern web.",
+			"Filosign transforms document signing with secure, decentralized workflows—wallet identity, E2EE, and on-chain proof for the modern web.",
 	},
 	pricing: {
 		title: "Pricing — Secure signing for every scale",
 		description:
-			"From individual creators to global enterprises, Filosign has a plan that grows with you. Start for free.",
+			"Filosign plans from free to enterprise: encrypted signing, Filecoin storage, and USDC settlements. Start free and scale with your team.",
 	},
 	changelog: {
 		title: "Changelog — What's new at Filosign",
 		description:
-			"A changelog of new features, design improvements and enhancements lately. Stay up to date with the latest changes to Filosign.",
+			"Product updates, design improvements, and new features on Filosign. Stay current with releases for signing, storage, and settlements.",
 	},
 	blog: {
 		title: "Blog — News and updates from Filosign",
 		description:
-			"Read about the latest updates, features, and insights from the Filosign team.",
+			"Engineering and product notes from Filosign: E2EE signing, placement manifests, wallet unlock, and decentralized agreement infrastructure.",
+	},
+	privacy: {
+		title: "Privacy Policy — Filosign",
+		description:
+			"How Filosign handles personal data for document signing, wallet authentication, and optional USDC payout features.",
+	},
+	terms: {
+		title: "Terms of Service — Filosign",
+		description:
+			"Terms of Service for Filosign document signing software and optional on-chain USDC payout automation.",
 	},
 	"blog-introduction": {
 		title: "Introducing Filosign — Filosign Blog",
@@ -38,6 +49,18 @@ export const MARKETING_OG_PAGES = {
 			"The future of digital agreements: Why we built Filosign — Filosign Blog",
 		description:
 			"Long-form perspective on platform risk in e-sign, Filosign's architecture on FVM, and post-quantum signing.",
+	},
+	"blog-unlocking-filosign-after-privy": {
+		title:
+			"What OAuth can't unwrap: wallet-derived unlock for Filosign's client keys — Filosign Blog",
+		description:
+			"Why Privy login and PQ signing seeds differ, what we tried first, and how we reuse the wallet signature chain from registration to unlock.",
+	},
+	"blog-placement-based-signing-infrastructure": {
+		title:
+			"Inside Filosign's Signing Flow: Infrastructure Built for Legal Certainty — Filosign Blog",
+		description:
+			"Placement manifests, Merkle proofs, compliance bundles, and on-chain attestations for independently verifiable e-signatures.",
 	},
 } as const;
 

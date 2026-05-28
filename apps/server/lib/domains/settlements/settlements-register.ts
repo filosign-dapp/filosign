@@ -22,6 +22,7 @@ export async function insertSettlementRulesForFile(
 	pieceCid: string,
 	payerWallet: `0x${string}`,
 	rules: z.infer<typeof zSettlementRulesRegisterBatch>,
+	validatorAddress: `0x${string}`,
 	executor: DbExecutor = db,
 ) {
 	if (rules.length === 0) return;
@@ -38,6 +39,7 @@ export async function insertSettlementRulesForFile(
 			amount: r.amount,
 			releaseType: r.releaseType,
 			releaseParams: r.releaseParams,
+			validatorAddress,
 			status: "pending" as const,
 			registerRuleTxHash: r.registerRuleTxHash,
 			approveTxHash: r.approveTxHash,

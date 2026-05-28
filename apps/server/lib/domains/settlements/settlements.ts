@@ -3,7 +3,7 @@ import { eq, ne } from "drizzle-orm";
 import type { Hex } from "viem";
 import { isHex } from "viem";
 import db from "@/lib/platform/db";
-import { fsContracts } from "@/lib/platform/evm";
+import { fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { tryExecuteSettlementPayout } from "./utils/execute-payout";
@@ -92,12 +92,11 @@ export async function settlementsListByFile(
 		});
 	}
 
-	const validator = fsContracts.FSPaymentValidator;
-
 	return Promise.all(
 		rows.map(async (r) => {
 			let canExecuteOnChain: boolean | null = null;
-			if (r.status !== "executed" && validator) {
+			if (r.status !== "executed") {
+				const validator = fsPaymentValidatorAt(r.validatorAddress);
 				const res = await tryCatch(
 					validator.read.canExecute([r.onChainRuleId]),
 				);
@@ -186,15 +185,10 @@ export async function settlementsConfirmSettlement(
 		};
 	}
 
-	if (!fsContracts.FSPaymentValidator) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: "Settlement validator not deployed",
-		});
-	}
-
 	const syncRes = await syncSettlementPayoutFromChain(
 		ruleId,
 		input.payoutTxHash,
+		rule.validatorAddress,
 	);
 	if (!syncRes.synced) {
 		throw new ORPCError("BAD_REQUEST", {
@@ -213,19 +207,21 @@ export async function runSyncSettlementRulesJob(): Promise<{
 	scanned: number;
 	synced: number;
 }> {
-	const validator = fsContracts.FSPaymentValidator;
-	if (!validator) {
-		return { scanned: 0, synced: 0 };
-	}
-
 	const rows = await db
-		.select({ onChainRuleId: fileSettlementRules.onChainRuleId })
+		.select({
+			onChainRuleId: fileSettlementRules.onChainRuleId,
+			validatorAddress: fileSettlementRules.validatorAddress,
+		})
 		.from(fileSettlementRules)
 		.where(ne(fileSettlementRules.status, "executed"));
 
 	let synced = 0;
 	for (const row of rows) {
-		const result = await syncSettlementPayoutFromChain(row.onChainRuleId);
+		const result = await syncSettlementPayoutFromChain(
+			row.onChainRuleId,
+			undefined,
+			row.validatorAddress,
+		);
 		if (result.synced) {
 			synced++;
 			logger.info(

@@ -28,6 +28,7 @@ export const fileSettlementRules = t.pgTable(
 		amount: t.numeric({ precision: 78, scale: 0 }).notNull(),
 		releaseType: t.text({ enum: settlementReleaseTypes }).notNull(),
 		releaseParams: t.jsonb().$type<Record<string, unknown>>().notNull(),
+		validatorAddress: tEvmAddress().notNull(),
 		status: t
 			.text({ enum: settlementRuleStatuses })
 			.notNull()
@@ -44,5 +45,6 @@ export const fileSettlementRules = t.pgTable(
 		t.uniqueIndex("uq_file_settlement_rules_on_chain").on(table.onChainRuleId),
 		t.index("idx_file_settlement_rules_piece").on(table.pieceCid),
 		t.index("idx_file_settlement_rules_status").on(table.status),
+		t.index("idx_file_settlement_rules_validator").on(table.validatorAddress),
 	],
 );

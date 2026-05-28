@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import type { Hex } from "viem";
 import db from "@/lib/platform/db";
-import { fsContracts } from "@/lib/platform/evm";
+import { fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const { fileSettlementRules } = db.schema;
@@ -25,9 +25,18 @@ async function markSettlementRuleExecuted(
 export async function syncSettlementPayoutFromChain(
 	onChainRuleId: bigint,
 	payoutTxHash?: Hex,
+	validatorAddress?: `0x${string}`,
 ): Promise<{ synced: boolean }> {
-	const validator = fsContracts.FSPaymentValidator;
-	if (!validator) return { synced: false };
+	const [row] = await db
+		.select({ validatorAddress: fileSettlementRules.validatorAddress })
+		.from(fileSettlementRules)
+		.where(eq(fileSettlementRules.onChainRuleId, onChainRuleId))
+		.limit(1);
+	if (!row && !validatorAddress) return { synced: false };
+
+	const validator = fsPaymentValidatorAt(
+		validatorAddress ?? row?.validatorAddress ?? null,
+	);
 
 	const rulesRes = await tryCatch(validator.read.rules([onChainRuleId]));
 	if (rulesRes.error) return { synced: false };

@@ -6,7 +6,7 @@ import type {
 import { ORPCError } from "@orpc/server";
 import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
-import { evmClient, fsContracts } from "@/lib/platform/evm";
+import { evmClient, fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const RELEASE_TYPE_UINT: Record<SettlementReleaseType, number> = {
@@ -29,10 +29,11 @@ export async function assertSettlementRulesVerifiedOnChain(
 	sender: Address,
 	pieceCid: string,
 	rules: SettlementRuleRegistrationInput[],
+	validatorAddress?: `0x${string}`,
 ) {
 	if (rules.length === 0) return;
 
-	const validator = fsContracts.FSPaymentValidator;
+	const validator = fsPaymentValidatorAt(validatorAddress ?? null);
 	if (!validator) {
 		throw new ORPCError("BAD_REQUEST", {
 			message:

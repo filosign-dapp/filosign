@@ -1,7 +1,7 @@
 import { useCryptoUnlocked } from "@filosign/react/auth";
 import { useViewFile, type ViewFileResult } from "@filosign/react/files";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useWalletUnlock } from "@/src/lib/auth/use-wallet-unlock";
+import { useCryptoRequired } from "@/src/lib/auth/use-crypto-required";
 
 export type DecryptableFileRecord = {
 	pieceCid: string;
@@ -38,7 +38,7 @@ export function useDecryptedFileView(options: {
 	const canDecrypt = hasDecryptKeys(file);
 	const needsCrypto = enabled && canDecrypt;
 	const cryptoUnlocked = useCryptoUnlocked();
-	const unlock = useWalletUnlock({ enabled: needsCrypto });
+	const cryptoRequired = useCryptoRequired({ enabled: needsCrypto });
 
 	const handleViewFile = useCallback(async () => {
 		if (!file || !canDecrypt) {
@@ -131,9 +131,9 @@ export function useDecryptedFileView(options: {
 
 	const docCanvasBusy =
 		needsCrypto &&
-		(unlock.showRecoveryGate
+		(cryptoRequired.needsRecovery
 			? false
-			: unlock.tryingWalletUnlock ||
+			: cryptoRequired.tryingWalletUnlock ||
 				cryptoUnlocked.isPending ||
 				cryptoUnlocked.data !== true ||
 				viewFile.isPending ||
@@ -155,11 +155,11 @@ export function useDecryptedFileView(options: {
 		previewPdfBytes,
 		canDecrypt,
 		docCanvasBusy,
-		showRecoveryInCanvas: needsCrypto && unlock.showRecoveryGate,
-		recoveryPhrase: unlock.recoveryPhrase,
-		setRecoveryPhrase: unlock.setRecoveryPhrase,
-		recoveryError: unlock.error,
-		submitRecovery: unlock.handleRecover,
-		recoveryPending: unlock.recoverWithPhrase.isPending,
+		showRecoveryInCanvas: needsCrypto && cryptoRequired.needsRecovery,
+		recoveryPhrase: cryptoRequired.recoveryPhrase,
+		setRecoveryPhrase: cryptoRequired.setRecoveryPhrase,
+		recoveryError: cryptoRequired.recoveryError,
+		submitRecovery: cryptoRequired.submitRecovery,
+		recoveryPending: cryptoRequired.recoveryPending,
 	};
 }

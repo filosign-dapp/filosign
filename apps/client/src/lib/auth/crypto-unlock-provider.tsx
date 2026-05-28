@@ -1,7 +1,15 @@
 import { useFilosignContext } from "@filosign/react";
 import { useLogin, useRecoverWithPhrase } from "@filosign/react/auth";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+	createContext,
+	type ReactNode,
+	useCallback,
+	useContext,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { hydrationMark } from "@/src/lib/utils/hydration-lifecycle";
 import {
 	attemptWalletLoginUnlock,
@@ -14,11 +22,25 @@ import {
 	useSessionGateFlags,
 } from "./use-session-gate";
 
-/**
- * Shared wallet → Filosign login unlock (dashboard protector + sign invite unlock).
- */
-export function useWalletUnlock(options?: { enabled?: boolean }) {
-	const enabled = options?.enabled ?? true;
+type CryptoUnlockContextValue = {
+	flags: ReturnType<typeof useSessionGateFlags>;
+	derived: ReturnType<typeof useSessionGateDerived>;
+	tryingWalletUnlock: boolean;
+	recoveryRequired: boolean;
+	recoveryPhrase: string;
+	setRecoveryPhrase: (value: string) => void;
+	error: string;
+	handleRecover: () => Promise<void>;
+	resetRecoveryGate: () => void;
+	login: ReturnType<typeof useLogin>;
+	recoverWithPhrase: ReturnType<typeof useRecoverWithPhrase>;
+};
+
+const CryptoUnlockContext = createContext<CryptoUnlockContextValue | null>(
+	null,
+);
+
+export function CryptoUnlockProvider({ children }: { children: ReactNode }) {
 	const flags = useSessionGateFlags();
 	const derived = useSessionGateDerived(flags);
 	const { wallet } = useFilosignContext();
@@ -26,22 +48,34 @@ export function useWalletUnlock(options?: { enabled?: boolean }) {
 	const recoverWithPhrase = useRecoverWithPhrase();
 	const queryClient = useQueryClient();
 
-	const [showRecoveryGate, setShowRecoveryGate] = useState(false);
+	const [recoveryRequired, setRecoveryRequired] = useState(false);
 	const [recoveryPhrase, setRecoveryPhrase] = useState("");
 	const [error, setError] = useState("");
 	const [tryingWalletUnlock, setTryingWalletUnlock] = useState(false);
 	const walletUnlockStartedRef = useRef(false);
+	const lastWalletRef = useRef<string | null>(null);
 
 	useSessionGateAnalytics();
 
 	useEffect(() => {
-		hydrationMark("wallet-unlock:flags", {
+		const walletAddress = wallet?.account?.address?.toLowerCase() ?? null;
+		if (lastWalletRef.current === walletAddress) return;
+		lastWalletRef.current = walletAddress;
+		walletUnlockStartedRef.current = false;
+		setRecoveryRequired(false);
+		setRecoveryPhrase("");
+		setError("");
+	}, [wallet?.account?.address]);
+
+	useEffect(() => {
+		hydrationMark("crypto-unlock:flags", {
 			ready: flags.ready,
 			authenticated: flags.authenticated,
 			isRegistered: flags.isRegistered,
 			isRegisteredPending: flags.isRegisteredPending,
 			isCryptoUnlocked: flags.isCryptoUnlocked,
 			isCryptoUnlockedPending: flags.isCryptoUnlockedPending,
+			recoveryRequired,
 		});
 	}, [
 		flags.ready,
@@ -50,29 +84,12 @@ export function useWalletUnlock(options?: { enabled?: boolean }) {
 		flags.isRegisteredPending,
 		flags.isCryptoUnlocked,
 		flags.isCryptoUnlockedPending,
-	]);
-
-	useEffect(() => {
-		hydrationMark("wallet-unlock:derived", {
-			canAttemptWalletLogin: derived.canAttemptWalletLogin,
-			shouldShowBootstrapLoader: derived.shouldShowBootstrapLoader,
-			filosignSessionActive: derived.filosignSessionActive,
-			shouldRedirectToSignIn: derived.shouldRedirectToSignIn,
-			tryingWalletUnlock,
-			showRecoveryGate,
-		});
-	}, [
-		derived.canAttemptWalletLogin,
-		derived.shouldShowBootstrapLoader,
-		derived.filosignSessionActive,
-		derived.shouldRedirectToSignIn,
-		tryingWalletUnlock,
-		showRecoveryGate,
+		recoveryRequired,
 	]);
 
 	useEffect(() => {
 		if (flags.isCryptoUnlocked) {
-			setShowRecoveryGate(false);
+			setRecoveryRequired(false);
 			setRecoveryPhrase("");
 			setError("");
 			walletUnlockStartedRef.current = false;
@@ -80,36 +97,33 @@ export function useWalletUnlock(options?: { enabled?: boolean }) {
 	}, [flags.isCryptoUnlocked]);
 
 	useEffect(() => {
-		if (!enabled) return;
 		if (flags.isCryptoUnlocked) return;
 		if (!derived.canAttemptWalletLogin) {
 			walletUnlockStartedRef.current = false;
 			return;
 		}
-		if (walletUnlockStartedRef.current) return;
-		if (showRecoveryGate) return;
+		if (walletUnlockStartedRef.current || recoveryRequired) return;
 
 		walletUnlockStartedRef.current = true;
 		setTryingWalletUnlock(true);
-		hydrationMark("wallet-unlock:effect-trigger-login");
+		hydrationMark("crypto-unlock:attempt-start");
 
 		void attemptWalletLoginUnlock({
 			login: {
 				mutateAsync: (args) => login.mutateAsync({ unlockOnly: true, ...args }),
 			},
 			onRecoveryRequired: () => {
-				setShowRecoveryGate(true);
+				setRecoveryRequired(true);
 				walletUnlockStartedRef.current = false;
 			},
 		}).finally(() => {
 			setTryingWalletUnlock(false);
 		});
 	}, [
-		enabled,
 		derived.canAttemptWalletLogin,
 		flags.isCryptoUnlocked,
 		login,
-		showRecoveryGate,
+		recoveryRequired,
 	]);
 
 	const handleRecover = useCallback(async () => {
@@ -122,10 +136,11 @@ export function useWalletUnlock(options?: { enabled?: boolean }) {
 				queryClient,
 				walletAddress: wallet?.account?.address,
 			});
-			setShowRecoveryGate(false);
+			setRecoveryRequired(false);
 			setRecoveryPhrase("");
 		} catch (recoverErr) {
 			setError(formatRecoveryPhraseError(recoverErr));
+			throw recoverErr;
 		}
 	}, [
 		recoveryPhrase,
@@ -137,21 +152,37 @@ export function useWalletUnlock(options?: { enabled?: boolean }) {
 	const resetRecoveryGate = useCallback(() => {
 		setRecoveryPhrase("");
 		setError("");
+		setRecoveryRequired(false);
 		walletUnlockStartedRef.current = false;
 	}, []);
 
-	return {
-		flags,
-		derived,
-		showRecoveryGate,
-		setShowRecoveryGate,
-		recoveryPhrase,
-		setRecoveryPhrase,
-		error,
-		tryingWalletUnlock,
-		handleRecover,
-		resetRecoveryGate,
-		login,
-		recoverWithPhrase,
-	};
+	return (
+		<CryptoUnlockContext.Provider
+			value={{
+				flags,
+				derived,
+				tryingWalletUnlock,
+				recoveryRequired,
+				recoveryPhrase,
+				setRecoveryPhrase,
+				error,
+				handleRecover,
+				resetRecoveryGate,
+				login,
+				recoverWithPhrase,
+			}}
+		>
+			{children}
+		</CryptoUnlockContext.Provider>
+	);
+}
+
+export function useCryptoUnlockContext() {
+	const context = useContext(CryptoUnlockContext);
+	if (!context) {
+		throw new Error(
+			"useCryptoUnlockContext must be used inside CryptoUnlockProvider",
+		);
+	}
+	return context;
 }

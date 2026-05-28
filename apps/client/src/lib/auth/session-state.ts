@@ -33,11 +33,13 @@ export function isFilosignSessionActive(flags: SessionGateFlags): boolean {
 }
 
 export function shouldRedirectToSignIn(flags: SessionGateFlags): boolean {
-	return (
-		flags.ready &&
-		(!flags.authenticated || flags.isRegistered === false) &&
-		!flags.isRegisteredPending
-	);
+	if (!flags.ready) return false;
+
+	// If no wallet session is connected/active, redirect immediately
+	if (!walletSessionUp(flags)) return true;
+
+	// If wallet is connected, redirect only if explicitly not registered and registration check has finished
+	return flags.isRegistered === false && !flags.isRegisteredPending;
 }
 
 export function shouldShowSessionBootstrapLoader(
@@ -52,7 +54,6 @@ export function shouldShowSessionBootstrapLoader(
 	return false;
 }
 
-/** Explicit crypto unlock (sign/view flows), not dashboard auto-unlock. */
 export function canAttemptWalletLogin(flags: SessionGateFlags): boolean {
 	return (
 		walletSessionUp(flags) &&

@@ -22,7 +22,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getAddress, type Hex } from "viem";
-import { useWalletUnlock } from "@/src/lib/auth/use-wallet-unlock";
+import { useCryptoRequired } from "@/src/lib/auth/use-crypto-required";
 import { coldInviteRecipientMatchesIdentity } from "@/src/lib/domains/invites/cold-invite-search";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import {
@@ -55,8 +55,7 @@ export function useSignInviteUnlock(args: {
 	} = useColdInvitePayload(active ? inviteToken : undefined);
 	const coldDecrypt = useColdInviteDecrypt();
 	const claimColdInvite = useClaimColdInvite();
-
-	const walletUnlock = useWalletUnlock({
+	const cryptoRequired = useCryptoRequired({
 		enabled:
 			active &&
 			ready &&
@@ -70,18 +69,18 @@ export function useSignInviteUnlock(args: {
 	const [decryptError, setDecryptError] = useState<string | null>(null);
 	const autoWalletLoginRef = useRef(false);
 
-	const showFilosignRecovery = walletUnlock.showRecoveryGate;
-	const tryingWalletUnlock = walletUnlock.tryingWalletUnlock;
-	const filosignRecoveryPhrase = walletUnlock.recoveryPhrase;
-	const setFilosignRecoveryPhrase = walletUnlock.setRecoveryPhrase;
+	const showFilosignRecovery = cryptoRequired.needsRecovery;
+	const tryingWalletUnlock = cryptoRequired.tryingWalletUnlock;
+	const filosignRecoveryPhrase = cryptoRequired.recoveryPhrase;
+	const setFilosignRecoveryPhrase = cryptoRequired.setRecoveryPhrase;
 
 	const resetWizardAfterSwitchAccount = useCallback(() => {
 		setPhrase("");
-		walletUnlock.setRecoveryPhrase("");
+		cryptoRequired.setRecoveryPhrase("");
 		setDecryptError(null);
-		walletUnlock.resetRecoveryGate();
+		cryptoRequired.resetRecovery();
 		autoWalletLoginRef.current = false;
-	}, [walletUnlock]);
+	}, [cryptoRequired]);
 
 	useEffect(() => {
 		if (!active || !invite || authenticated || autoWalletLoginRef.current)
@@ -270,7 +269,7 @@ export function useSignInviteUnlock(args: {
 		if (!filosignRecoveryPhrase.trim()) return;
 		setDecryptError(null);
 		try {
-			await walletUnlock.handleRecover();
+			await cryptoRequired.submitRecovery();
 			await queryClient.refetchQueries({
 				predicate: (q) =>
 					queryKeyHasNonRpcRoot(q.queryKey, filosignNonRpcRoots.cryptoUnlocked),
@@ -284,7 +283,7 @@ export function useSignInviteUnlock(args: {
 					: "Could not unlock with this phrase";
 			setDecryptError(msg);
 		}
-	}, [filosignRecoveryPhrase, walletUnlock, queryClient]);
+	}, [filosignRecoveryPhrase, cryptoRequired, queryClient]);
 
 	const handleUnlockDocument = useCallback(async () => {
 		if (!invite || !phrase.trim()) {
@@ -376,7 +375,7 @@ export function useSignInviteUnlock(args: {
 		shouldSwitchAccountPrompt,
 		signedInEmailForUi,
 		submitFilosignRecovery,
-		isFilosignRecoveryPending: walletUnlock.recoverWithPhrase.isPending,
+		isFilosignRecoveryPending: cryptoRequired.recoveryPending,
 		handleUnlockDocument,
 		runSwitchAccount,
 		resetWizardAfterSwitchAccount,

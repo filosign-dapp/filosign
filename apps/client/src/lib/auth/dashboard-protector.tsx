@@ -16,8 +16,7 @@ import { Label } from "@/src/lib/components/ui/label";
 import { Loader } from "@/src/lib/components/ui/loader";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { hydrationMark } from "@/src/lib/utils/hydration-lifecycle";
-import { RecoveryPhraseGate } from "./recovery-phrase-gate";
-import { useWalletUnlock } from "./use-wallet-unlock";
+import { useSessionGateDerived, useSessionGateFlags } from "./use-session-gate";
 
 interface DashboardProtectorProps {
 	children: React.ReactNode;
@@ -93,58 +92,46 @@ export default function DashboardProtector({
 	children,
 }: DashboardProtectorProps) {
 	const navigate = useNavigate();
-	const unlock = useWalletUnlock({ enabled: false });
-	const { derived, showRecoveryGate, tryingWalletUnlock } = unlock;
+	const flags = useSessionGateFlags();
+	const derived = useSessionGateDerived(flags);
 
 	const { data: orgsData, isLoading: orgsLoading } = useOrganizations();
 
 	useEffect(() => {
 		if (derived.shouldRedirectToSignIn) {
-			void navigate({ to: "/" });
+			const params = new URLSearchParams(window.location.search);
+			const upgrade = params.get("upgrade") || undefined;
+			const interval = params.get("interval") || undefined;
+
+			void navigate({
+				to: "/",
+				search: (prev) => ({
+					...prev,
+					...(upgrade ? { upgrade } : {}),
+					...(interval ? { interval } : {}),
+				}),
+			});
 		}
 	}, [derived.shouldRedirectToSignIn, navigate]);
 
-	const shouldShowLoader =
-		derived.shouldShowBootstrapLoader || tryingWalletUnlock;
+	const shouldShowLoader = derived.shouldShowBootstrapLoader;
 
 	useEffect(() => {
 		hydrationMark("dashboard-protector:ui-state", {
 			shouldShowLoader,
-			showRecoveryGate,
 			filosignSessionActive: derived.filosignSessionActive,
 			shouldRedirectToSignIn: derived.shouldRedirectToSignIn,
-			tryingWalletUnlock,
 			shouldShowBootstrapLoader: derived.shouldShowBootstrapLoader,
 		});
 	}, [
 		shouldShowLoader,
-		showRecoveryGate,
 		derived.filosignSessionActive,
 		derived.shouldRedirectToSignIn,
-		tryingWalletUnlock,
 		derived.shouldShowBootstrapLoader,
 	]);
 
 	if (shouldShowLoader || (derived.filosignSessionActive && orgsLoading)) {
 		return <Loader />;
-	}
-
-	if (showRecoveryGate) {
-		return (
-			<RecoveryPhraseGate
-				phraseInputId="dashboard-recovery-phrase"
-				recoveryPhrase={unlock.recoveryPhrase}
-				onRecoveryPhraseChange={unlock.setRecoveryPhrase}
-				error={unlock.error}
-				onRecover={() => void unlock.handleRecover()}
-				onCancel={() => {
-					unlock.resetRecoveryGate();
-					void navigate({ to: "/" });
-				}}
-				isRecoverPending={unlock.recoverWithPhrase.isPending}
-				isLoginPending={unlock.login.isPending}
-			/>
-		);
 	}
 
 	if (!derived.filosignSessionActive) {

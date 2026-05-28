@@ -4,7 +4,6 @@
  *
  * Usage:
  *   bun run contracts -- compile | test | node
- *   bun run contracts -- --deploy --local|testnet|mainnet
  *   bun run contracts -- --migrate --local|testnet|mainnet
  *   bun run contracts -- --help
  */
@@ -17,7 +16,6 @@ const rootDir = repoRoot(import.meta.url);
 const PACKAGE = "@filosign/contracts";
 
 type Profile = "local" | "testnet" | "mainnet";
-type Mode = "deploy" | "migrate";
 
 const HELP = `
 Filosign contracts orchestrator
@@ -27,15 +25,10 @@ Utilities (@filosign/contracts):
   bun run contracts -- test              compile + Hardhat tests
   bun run contracts -- node              Hardhat local node
 
-Deploy (contracts only — Hardhat deploy, updates definitions/):
-  bun run contracts -- --deploy --local
-  bun run contracts -- --deploy --testnet
-  bun run contracts -- --deploy --mainnet
-
-Migrate (deploy contracts, then db purge — local/testnet; purge includes push):
-  bun run contracts -- --migrate --local
-  bun run contracts -- --migrate --testnet
-  bun run contracts -- --migrate --mainnet
+Migrate (deploy contracts, then sync DB schema):
+  bun run contracts -- --migrate --local      (deploys + purges & pushes local DB)
+  bun run contracts -- --migrate --testnet    (deploys + pushes testnet DB schema)
+  bun run contracts -- --migrate --mainnet    (deploys + pushes mainnet DB schema)
 
 Profiles: local (.env.local), testnet (.env.staging), mainnet (.env.production)
 `.trim();
@@ -59,21 +52,16 @@ function deployScript(profile: Profile): string {
 	}
 }
 
-function dbCmd(
-	action: "push" | "purge",
-	profile: "local" | "testnet",
-): string[] {
+function dbCmd(action: "push" | "purge", profile: Profile): string[] {
 	return ["bun", "run", "db", "--", action, profile];
 }
 
 function parseArgv(argv: string[]) {
-	let deploy = false;
 	let migrate = false;
 	let profile: Profile | undefined;
 	let utility: UtilityCommand | undefined;
 
 	for (const arg of argv) {
-		if (arg === "--deploy") deploy = true;
 		if (arg === "--migrate") migrate = true;
 		if (arg === "--local") profile = "local";
 		if (arg === "--testnet") profile = "testnet";
@@ -81,12 +69,7 @@ function parseArgv(argv: string[]) {
 		if (arg in UTILITY_COMMANDS) utility = arg as UtilityCommand;
 	}
 
-	let mode: Mode | undefined;
-	if (deploy && migrate) die("Use either --deploy or --migrate, not both");
-	if (deploy) mode = "deploy";
-	if (migrate) mode = "migrate";
-
-	return { mode, profile, utility };
+	return { migrate, profile, utility };
 }
 
 function requireProfile(profile: Profile | undefined): Profile {
@@ -94,13 +77,6 @@ function requireProfile(profile: Profile | undefined): Profile {
 		return profile;
 	}
 	die("Pass a profile: --local, --testnet, or --mainnet");
-}
-
-async function runDeploy(profile: Profile) {
-	await runInheritExit(
-		rootDir,
-		packageRunCmd(rootDir, PACKAGE, deployScript(profile)),
-	);
 }
 
 async function runMigrate(profile: Profile) {
@@ -111,7 +87,9 @@ async function runMigrate(profile: Profile) {
 	if (profile === "local") {
 		steps.push(dbCmd("purge", "local"));
 	} else if (profile === "testnet") {
-		steps.push(dbCmd("purge", "testnet"));
+		steps.push(dbCmd("push", "testnet"));
+	} else if (profile === "mainnet") {
+		steps.push(dbCmd("push", "mainnet"));
 	}
 
 	await runSequentialExit(rootDir, steps);
@@ -121,30 +99,23 @@ runMain(async () => {
 	const argv = scriptArgv();
 	exitOnHelpOrEmpty(HELP, argv);
 
-	const { mode, profile, utility } = parseArgv(argv);
+	const { migrate, profile, utility } = parseArgv(argv);
 
 	if (utility) {
-		if (mode) die(`Do not combine --${mode} with ${utility}`);
+		if (migrate) die(`Do not combine --migrate with ${utility}`);
 		await runInheritExit(
 			rootDir,
 			packageRunCmd(rootDir, PACKAGE, UTILITY_COMMANDS[utility]),
 		);
 	}
 
-	if (!mode) {
-		console.error(
-			"Missing --deploy or --migrate. Try: bun run contracts -- --help\n",
-		);
+	if (!migrate) {
+		console.error("Missing --migrate. Try: bun run contracts -- --help\n");
 		console.log(HELP);
 		process.exit(1);
 	}
 
 	const p = requireProfile(profile);
-
-	if (mode === "deploy") {
-		await runDeploy(p);
-		return;
-	}
 
 	await runMigrate(p);
 });

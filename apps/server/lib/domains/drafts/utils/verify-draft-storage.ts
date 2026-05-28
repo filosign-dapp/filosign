@@ -50,37 +50,64 @@ export async function assertDraftDocumentsExistOnS3(args: {
 	organizationId: string | null;
 	docIds: string[];
 	probe?: DraftStorageProbe;
+	/** Per-docId retry overrides (e.g. 1 when object was not re-uploaded). */
+	retryByDocId?: Record<string, { attempts?: number; delayMs?: number }>;
+	defaultAttempts?: number;
+	defaultDelayMs?: number;
 }): Promise<void> {
 	const probe = args.probe ?? defaultDraftStorageProbe;
-	for (const docId of args.docIds) {
-		const s3Key = draftDocumentKey({
-			draftId: args.draftId,
-			organizationId: args.organizationId,
-			docId,
-		});
-		const ok = await existsWithRetry(s3Key, probe, 5, 150);
-		if (!ok) {
-			throw new ORPCError("PRECONDITION_FAILED", {
-				message: `Document "${docId}" is not uploaded yet. Upload the file before saving.`,
-				data: { docId, s3Key },
+	const defaultAttempts = args.defaultAttempts ?? 2;
+	const defaultDelayMs = args.defaultDelayMs ?? 100;
+
+	await Promise.all(
+		args.docIds.map(async (docId) => {
+			const s3Key = draftDocumentKey({
+				draftId: args.draftId,
+				organizationId: args.organizationId,
+				docId,
 			});
-		}
-	}
+			const retry = args.retryByDocId?.[docId];
+			const attempts = retry?.attempts ?? defaultAttempts;
+			const delayMs = retry?.delayMs ?? defaultDelayMs;
+			const ok = await existsWithRetry(s3Key, probe, attempts, delayMs);
+			if (!ok) {
+				throw new ORPCError("PRECONDITION_FAILED", {
+					message: `Document "${docId}" is not uploaded yet. Upload the file before saving.`,
+					data: { docId, s3Key },
+				});
+			}
+		}),
+	);
 }
 
 export async function assertDraftSnapshotExistsOnS3(args: {
 	draftId: string;
 	organizationId: string | null;
 	probe?: DraftStorageProbe;
+	attempts?: number;
+	delayMs?: number;
 }): Promise<void> {
 	const s3Key = draftSnapshotKey({
 		draftId: args.draftId,
 		organizationId: args.organizationId,
 	});
 	await assertDraftObjectExists(s3Key, args.probe, {
-		attempts: 5,
-		delayMs: 150,
+		attempts: args.attempts ?? 2,
+		delayMs: args.delayMs ?? 100,
 	});
+}
+
+export async function draftSnapshotExistsOnS3(args: {
+	draftId: string;
+	organizationId: string | null;
+	probe?: DraftStorageProbe;
+}): Promise<boolean> {
+	const probe = args.probe ?? defaultDraftStorageProbe;
+	const s3Key = draftSnapshotKey({
+		draftId: args.draftId,
+		organizationId: args.organizationId,
+	});
+	return probe.exists(s3Key);
 }
 
 export async function draftDocumentExistsOnS3(args: {

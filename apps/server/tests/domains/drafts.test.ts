@@ -19,6 +19,19 @@ describe("assertDraftDocumentsExistOnS3", () => {
 			organizationId: "org-1",
 			docIds: ["doc-a"],
 			probe: probeWith(keys),
+			defaultAttempts: 1,
+			defaultDelayMs: 0,
+		});
+	});
+
+	test("uses per-doc retry overrides", async () => {
+		const keys = new Set(["drafts/org-1/draft-1/doc-a.bin"]);
+		await assertDraftDocumentsExistOnS3({
+			draftId: "draft-1",
+			organizationId: "org-1",
+			docIds: ["doc-a"],
+			probe: probeWith(keys),
+			retryByDocId: { "doc-a": { attempts: 1, delayMs: 0 } },
 		});
 	});
 

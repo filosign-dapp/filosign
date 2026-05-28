@@ -57,7 +57,8 @@ export const rpcDraftsGetOutputSchema = z.object({
 export const rpcDraftsPrepareSaveOutputSchema = z.object({
 	snapshot: z.object({
 		s3Key: z.string(),
-		uploadUrl: z.string(),
+		needsUpload: z.boolean(),
+		uploadUrl: z.string().optional(),
 	}),
 	documents: z.array(
 		z.object({

@@ -4,10 +4,10 @@ Hono API, Drizzle/Postgres, thirdweb auth verification, S3, and chain/indexer he
 
 ## Run
 
-- Local: `bun run dev:local` (loads `.env.local`)
-- Staging/testnet profile: `bun run dev:testnet` (loads `.env.staging`)
+- Local: `bun run dev:local` (`.env.local` via `--env-file`)
+- Staging/testnet: `bun run dev:testnet` (Infisical env `staging`; run `infisical login` first)
 
-Bun reads `.env*` automatically per [environment variables — Bun](https://bun.com/docs/runtime/environment-variables); workspace scripts pin files with **`--env-file`** for predictable local/staging.
+Secrets layout: [`SECRETS.md`](SECRETS.md). Local server uses **`--env-file`**; staging/prod server uses **`infisical run`** (contracts keep `apps/contracts/.env.*`).
 
 ## Structure
 
@@ -39,7 +39,7 @@ Critical platform failures emit via [`lib/platform/analytics/platform-alerts.ts`
 
 **Manual staging verification** (not run in CI):
 
-1. Set `TG_ANALYTICS=true` plus valid bot token and group id in `.env.staging`.
+1. Set `TG_ANALYTICS=true` plus valid bot token and group id in Infisical **staging**.
 2. Trigger a known 5xx (or wait for a real failure) — expect one Telegram message.
 3. Repeat the same failure within 5 minutes — expect dedupe (no spam).
 4. Set `TG_ANALYTICS=false` and restart — expect no new messages.
@@ -48,6 +48,7 @@ Unit tests: `bun test tests/` in this package; see [TESTING.md](../../TESTING.md
 
 ## Ops
 
+- **Dokploy / Docker** — image uses [`scripts/infisical-entrypoint.sh`](scripts/infisical-entrypoint.sh); set bootstrap vars per [`SECRETS.md`](SECRETS.md). Do not paste app secrets into Dokploy env UI.
 - **`GET /health`** (root app, not under `/api`) — `{ ok: true }` for probes.
 - **Dodo billing webhook** — `POST /api/integrations/dodo/webhook` (Standard Webhooks signature headers: `webhook-id`, `webhook-timestamp`, `webhook-signature`). Stored idempotently in `billing_webhook_events`, then upserts `user_subscriptions`.
 - **`bun run db -- purge local|testnet`** (repo root) — `scripts/clear-db.ts` drops/recreates the Postgres `public` schema, then drizzle push (dev reset).

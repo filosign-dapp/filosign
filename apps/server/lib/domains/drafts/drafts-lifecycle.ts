@@ -1,4 +1,5 @@
 import {
+	digestDraftSnapshot,
 	draftDocumentKey,
 	draftSnapshotKey,
 	zDraftSnapshot,
@@ -24,6 +25,7 @@ import {
 	assertDraftDocumentsExistOnS3,
 	assertDraftSnapshotExistsOnS3,
 	draftDocumentExistsOnS3,
+	draftSnapshotExistsOnS3,
 } from "./utils/verify-draft-storage";
 
 const { envelopeDrafts, envelopeDraftDocuments, draftExternalShares } =
@@ -52,9 +54,12 @@ const zSaveBody = z.object({
 	documents: z.array(zDocumentRow),
 });
 
+const zSnapshotDigest = zHexString();
+
 const zPrepareSaveBody = z.object({
 	draftId: z.uuid(),
 	docIds: z.array(z.string().min(1).max(128)).max(20),
+	snapshotDigest: zSnapshotDigest.optional(),
 });
 
 const zMarkSentBody = z.object({
@@ -187,7 +192,12 @@ async function draftsSaveInner(
 		});
 	}
 
-	if (!parsed.headDekWrappedOmk || !parsed.headOmkKemCiphertext) {
+	const headDekWrappedOmk =
+		parsed.headDekWrappedOmk ?? draft.headDekWrappedOmk ?? undefined;
+	const headOmkKemCiphertext =
+		parsed.headOmkKemCiphertext ?? draft.headOmkKemCiphertext ?? undefined;
+
+	if (!headDekWrappedOmk || !headOmkKemCiphertext) {
 		throw new ORPCError("BAD_REQUEST", {
 			message:
 				"headDekWrappedOmk and headOmkKemCiphertext required for org drafts",
@@ -202,25 +212,58 @@ async function draftsSaveInner(
 		organizationId: draft.organizationId,
 	});
 
+	const incomingSnapshotDigest = digestDraftSnapshot(parsed.snapshot);
+	const headSnapshotParsed = draft.headSnapshot
+		? zDraftSnapshot.safeParse(draft.headSnapshot)
+		: null;
+	const headSnapshotDigest =
+		headSnapshotParsed?.success === true
+			? digestDraftSnapshot(headSnapshotParsed.data)
+			: null;
+	const snapshotUnchanged =
+		headSnapshotDigest != null && incomingSnapshotDigest === headSnapshotDigest;
+
+	const existingDocRows = await db
+		.select({ docId: envelopeDraftDocuments.docId })
+		.from(envelopeDraftDocuments)
+		.where(eq(envelopeDraftDocuments.draftId, draft.id));
+	const existingDocIds = new Set(existingDocRows.map((r) => r.docId));
+
 	logDraftSave("save.verify_s3.start", {
 		draftId: draft.id,
 		snapshotKey: computedSnapshotKey,
 		docIds: parsed.documents.map((d) => d.docId),
-	});
-
-	await assertDraftSnapshotExistsOnS3({
-		draftId: draft.id,
-		organizationId: draft.organizationId,
+		snapshotUnchanged,
 	});
 
 	const docIds = parsed.documents.map((doc) => doc.docId);
-	if (docIds.length > 0) {
-		await assertDraftDocumentsExistOnS3({
+	const snapshotVerifyAttempts = snapshotUnchanged ? 1 : 2;
+	const snapshotVerifyDelayMs = snapshotUnchanged ? 0 : 100;
+
+	await Promise.all([
+		assertDraftSnapshotExistsOnS3({
 			draftId: draft.id,
 			organizationId: draft.organizationId,
-			docIds,
-		});
-	}
+			attempts: snapshotVerifyAttempts,
+			delayMs: snapshotVerifyDelayMs,
+		}),
+		docIds.length > 0
+			? assertDraftDocumentsExistOnS3({
+					draftId: draft.id,
+					organizationId: draft.organizationId,
+					docIds,
+					retryByDocId: Object.fromEntries(
+						docIds.map((docId) => [
+							docId,
+							{
+								attempts: existingDocIds.has(docId) ? 1 : 2,
+								delayMs: existingDocIds.has(docId) ? 0 : 100,
+							},
+						]),
+					),
+				})
+			: Promise.resolve(),
+	]);
 
 	logDraftSave("save.verify_s3.ok", { draftId: draft.id });
 
@@ -232,8 +275,8 @@ async function draftsSaveInner(
 				revision: nextRevision,
 				headSnapshotS3Key: computedSnapshotKey,
 				headSnapshot: parsed.snapshot,
-				headDekWrappedOmk: parsed.headDekWrappedOmk ?? null,
-				headOmkKemCiphertext: parsed.headOmkKemCiphertext ?? null,
+				headDekWrappedOmk,
+				headOmkKemCiphertext,
 				updatedAt: now,
 			})
 			.where(
@@ -398,6 +441,25 @@ export async function draftsPrepareSave(
 		organizationId: draft.organizationId,
 	});
 
+	const headSnapshotParsed = draft.headSnapshot
+		? zDraftSnapshot.safeParse(draft.headSnapshot)
+		: null;
+	const headSnapshotDigest =
+		headSnapshotParsed?.success === true
+			? digestDraftSnapshot(headSnapshotParsed.data)
+			: null;
+	const snapshotExistsOnS3 = await draftSnapshotExistsOnS3({
+		draftId: draft.id,
+		organizationId: draft.organizationId,
+	});
+	const snapshotUnchanged =
+		draft.revision > 0 &&
+		parsed.data.snapshotDigest != null &&
+		headSnapshotDigest != null &&
+		parsed.data.snapshotDigest === headSnapshotDigest &&
+		snapshotExistsOnS3;
+	const snapshotNeedsUpload = !snapshotUnchanged;
+
 	const documents = await Promise.all(
 		parsed.data.docIds.map(async (docId) => {
 			const s3Key = draftDocumentKey({
@@ -436,11 +498,14 @@ export async function draftsPrepareSave(
 	const result = {
 		snapshot: {
 			s3Key: snapshotKey,
-			uploadUrl: bucket.presign(snapshotKey, {
-				method: "PUT",
-				expiresIn: 60 * 15,
-				type: "application/octet-stream",
-			}),
+			needsUpload: snapshotNeedsUpload,
+			uploadUrl: snapshotNeedsUpload
+				? bucket.presign(snapshotKey, {
+						method: "PUT",
+						expiresIn: 60 * 15,
+						type: "application/octet-stream",
+					})
+				: undefined,
 		},
 		documents,
 	};
@@ -448,6 +513,7 @@ export async function draftsPrepareSave(
 	logDraftSave("prepare.complete", {
 		draftId: draft.id,
 		snapshotKey,
+		snapshotNeedsUpload,
 		uploadCount: documents.filter((d) => d.needsUpload).length,
 		skipCount: documents.filter((d) => !d.needsUpload).length,
 	});

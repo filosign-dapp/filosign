@@ -1,4 +1,5 @@
-import type { ChainKey } from "@filosign/contracts";
+import { type ChainKey, getDefinitionsEntry } from "@filosign/contracts";
+import type { Chain } from "viem/chains";
 import { base, baseSepolia, hardhat } from "viem/chains";
 import env from "@/env";
 import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
@@ -37,9 +38,48 @@ if (!runtimeChain) {
 	throw new Error(error);
 }
 
+const RUNTIME_CONTRACT_NAMES = [
+	"FSFileRegistry",
+	"FSPaymentValidator",
+	"MockUSDC",
+] as const;
+
+function explorerAddressUrl(chain: Chain, address: string): string | undefined {
+	const base = chain.blockExplorers?.default?.url;
+	if (!base) return undefined;
+	return `${base.replace(/\/$/, "")}/address/${address}`;
+}
+
+const definitions = getDefinitionsEntry(chainKey);
+const contracts = Object.fromEntries(
+	RUNTIME_CONTRACT_NAMES.flatMap((name) => {
+		const def = definitions[name as keyof typeof definitions];
+		if (
+			!def ||
+			typeof def !== "object" ||
+			!("address" in def) ||
+			typeof def.address !== "string"
+		) {
+			return [];
+		}
+		return [
+			[
+				name,
+				{
+					address: def.address,
+					explorer: explorerAddressUrl(runtimeChain, def.address),
+				},
+			],
+		];
+	}),
+);
+
 console.log("runtime chain:", {
 	id: runtimeChain.id,
+	chainKey,
 	runtimeChain: runtimeChain.name,
+	rpc: runtimeChain.rpcUrls.default.http[0],
+	contracts,
 });
 
 const http = {

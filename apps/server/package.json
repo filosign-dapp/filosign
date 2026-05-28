@@ -8,12 +8,12 @@
 	},
 	"scripts": {
 		"dev:local": "bun run --env-file=.env.local --hot index.ts",
-		"dev:testnet": "bun run --env-file=.env.staging --hot index.ts",
+		"dev:testnet": "infisical run --env=staging -- bun run --hot index.ts",
 		"db:purge:local": "bun run --env-file=.env.local scripts/clear-db.ts",
 		"drizzle-kit:push": "bunx --bun drizzle-kit push",
 		"db:push:local": "bun run --env-file=.env.local drizzle-kit:push",
-		"db:push:testnet": "bun run --env-file=.env.staging drizzle-kit:push",
-		"db:push:mainnet": "bun run --env-file=.env.production drizzle-kit:push",
+		"db:push:testnet": "infisical run --env=staging -- bun run drizzle-kit:push",
+		"db:push:mainnet": "infisical run --env=prod -- bun run drizzle-kit:push",
 		"compile": "mkdir -p assets && cp -f ../../packages/crypto-utils/assets/dilithium.wasm assets/ && bun build --compile --minify --sourcemap --bytecode ./index.ts --outfile out/server",
 		"check-types": "tsc --noEmit && tsc --noEmit -p tsconfig.tests.json",
 		"test": "bun test tests/"

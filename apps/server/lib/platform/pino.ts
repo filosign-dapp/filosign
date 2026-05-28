@@ -1,32 +1,13 @@
-import { createRequire } from "node:module";
+import { createPinoLogger } from "@filosign/logger";
 import type { MiddlewareHandler } from "hono";
-import pino from "pino";
 import env from "@/env";
+import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
+import { emitCriticalPlatformEvent } from "@/lib/platform/analytics/platform-alerts";
 
-const level = env.DEBUG ? "debug" : "info";
-const require = createRequire(import.meta.url);
-
-function buildLogger(): pino.Logger {
-	if (env.CHAIN === "local") {
-		try {
-			const pretty = require("pino-pretty");
-			return pino(
-				{ level },
-				pretty({
-					colorize: true,
-					translateTime: "HH:MM:ss",
-					ignore: "pid,hostname",
-					singleLine: true,
-				}),
-			);
-		} catch {
-			// best effort
-		}
-	}
-	return pino({ level });
-}
-
-export const logger = buildLogger();
+export const logger = createPinoLogger({
+	debug: env.DEBUG,
+	chain: env.CHAIN,
+});
 
 /** Log every HTTP request with pino (replaces `hono/logger`). */
 export const requestLog: MiddlewareHandler = async (c, next) => {
@@ -34,4 +15,17 @@ export const requestLog: MiddlewareHandler = async (c, next) => {
 	await next();
 	const ms = Math.round(performance.now() - start);
 	logger.info(`${c.req.method} ${c.req.path} ${c.res.status} ${ms}ms`);
+	if (c.res.status >= 500) {
+		void emitCriticalPlatformEvent({
+			name: PLATFORM_ALERT_EVENTS.serverHttp500,
+			severity: "critical",
+			message: "HTTP request returned 5xx",
+			context: {
+				method: c.req.method,
+				path: c.req.path,
+				status: c.res.status,
+				durationMs: ms,
+			},
+		});
+	}
 };

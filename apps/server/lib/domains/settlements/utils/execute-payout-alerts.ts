@@ -1,0 +1,40 @@
+import type { SettlementRuleStatus } from "@filosign/shared";
+import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
+import { emitCriticalPlatformEvent } from "@/lib/platform/analytics/platform-alerts";
+
+export function mapExecuteErrorToStatus(message: string): SettlementRuleStatus {
+	const lower = message.toLowerCase();
+	if (
+		lower.includes("insufficient") ||
+		lower.includes("allowance") ||
+		lower.includes("transfer") ||
+		lower.includes("balance")
+	) {
+		return "failed_insufficient";
+	}
+	if (lower.includes("not executable") || lower.includes("conditions")) {
+		return "failed_conditions";
+	}
+	return "failed_relay";
+}
+
+export function alertSettlementRelayPayoutFailed(args: {
+	onChainRuleId: bigint;
+	pieceCid?: string;
+	status: SettlementRuleStatus;
+	error: string;
+	txHash?: string;
+}): void {
+	void emitCriticalPlatformEvent({
+		name: PLATFORM_ALERT_EVENTS.settlementsRelayPayoutFailed,
+		severity: "error",
+		message: "Settlement relay payout failed",
+		context: {
+			onChainRuleId: args.onChainRuleId.toString(),
+			pieceCid: args.pieceCid,
+			status: args.status,
+			error: args.error,
+			txHash: args.txHash,
+		},
+	});
+}

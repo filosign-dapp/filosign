@@ -3,11 +3,14 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import config from "@/config";
 import { shutdownPostHog } from "@/lib/platform/analytics/posthog";
+import { validateServerBootstrap } from "@/lib/platform/bootstrap/validate-server-bootstrap";
 import { initCache } from "@/lib/platform/cache/session-cache";
 import { startPlatformCron, stopPlatformCron } from "@/lib/platform/cron";
 import { csp } from "@/lib/platform/csp";
 import { requestLog } from "@/lib/platform/pino";
 import { apiRouter } from "./api/orpc/hono-mount";
+
+validateServerBootstrap();
 
 export const app = new Hono()
 	.use(requestLog)

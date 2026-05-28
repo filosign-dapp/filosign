@@ -1,17 +1,30 @@
-import { PostHog } from "posthog-node";
-import { readAnalyticsChain, readPostHogConfig } from "./posthog-config";
+import { createPostHogRuntime } from "@filosign/logger";
 
-let client: PostHog | null = null;
+/** Read PostHog config from process.env to keep tests isolated from full env loader. */
+function readPostHogConfig() {
+	const enabled = process.env.POSTHOG_ENABLED === "true";
+	const apiKey = process.env.POSTHOG_API_KEY;
+	const host = process.env.POSTHOG_HOST?.trim() || "https://us.i.posthog.com";
+	return { enabled, apiKey, host };
+}
 
-function getClient(): PostHog | null {
-	const { enabled, apiKey, host } = readPostHogConfig();
-	if (!enabled || !apiKey) {
-		return null;
-	}
-	if (!client) {
-		client = new PostHog(apiKey, { host });
-	}
-	return client;
+function readAnalyticsChain(): string {
+	return process.env.CHAIN?.trim() || "local";
+}
+
+let runtime: ReturnType<typeof createPostHogRuntime> | null = null;
+
+function getRuntime() {
+	if (runtime) return runtime;
+	const config = readPostHogConfig();
+	runtime = createPostHogRuntime({
+		enabled: config.enabled,
+		apiKey: config.apiKey,
+		host: config.host,
+		chain: readAnalyticsChain(),
+		service: "filosign-server",
+	});
+	return runtime;
 }
 
 export function captureEvent(args: {
@@ -20,30 +33,17 @@ export function captureEvent(args: {
 	properties?: Record<string, unknown>;
 	groups?: Record<string, string>;
 }): void {
-	const ph = getClient();
-	if (!ph) return;
-	ph.capture({
-		distinctId: args.distinctId.toLowerCase(),
-		event: args.event,
-		properties: {
-			chain: readAnalyticsChain(),
-			service: "filosign-server",
-			...args.properties,
-		},
-		...(args.groups && Object.keys(args.groups).length > 0
-			? { groups: args.groups }
-			: {}),
-	});
+	getRuntime().captureEvent(args);
 }
 
 export async function shutdownPostHog(): Promise<void> {
-	if (client) {
-		await client.shutdown();
-		client = null;
-	}
+	if (!runtime) return;
+	await runtime.shutdown();
+	runtime = null;
 }
 
 /** Test-only: clear singleton so mocks can take effect. */
 export function resetPostHogClientForTests(): void {
-	client = null;
+	runtime?.resetForTests();
+	runtime = null;
 }

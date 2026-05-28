@@ -1,6 +1,8 @@
 import type { ChainKey } from "@filosign/contracts";
 import { base, baseSepolia, hardhat } from "viem/chains";
 import env from "@/env";
+import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
+import { emitCriticalPlatformEvent } from "@/lib/platform/analytics/platform-alerts";
 
 const CHAIN_MAP = {
 	local: hardhat,
@@ -22,7 +24,17 @@ const INDEXER = {
 const chainKey = env.CHAIN as ChainKey;
 const runtimeChain = CHAIN_MAP[chainKey];
 if (!runtimeChain) {
-	throw new Error(`Invalid CHAIN: ${env.CHAIN}`);
+	const error = `Invalid CHAIN: ${env.CHAIN}`;
+	void emitCriticalPlatformEvent({
+		name: PLATFORM_ALERT_EVENTS.serverBootstrapFailed,
+		severity: "critical",
+		message: "Server bootstrap validation failed",
+		context: {
+			stage: "chain_config",
+			error,
+		},
+	});
+	throw new Error(error);
 }
 
 console.log("runtime chain:", {

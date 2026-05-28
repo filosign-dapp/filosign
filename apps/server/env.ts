@@ -1,14 +1,18 @@
 import { zEvmAddress, zEvmPrivateKey } from "@filosign/shared/zod";
 import { createEnv } from "@t3-oss/env-core";
-import { getAddress } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
 import { z } from "zod";
+import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
+import { emitCriticalPlatformEventFromProcessEnv } from "@/lib/platform/analytics/platform-alerts-env";
 
 export const env = createEnv({
 	server: {
 		NODE_ENV: z.enum(["development", "production"]).default("production"),
-		TG_ANALYTICS_BOT_GROUP_ID: z.string().min(1).optional(),
-		TG_ANALYTICS_BOT_TOKEN: z.string().min(1).optional(),
+		TG_ANALYTICS: z
+			.string()
+			.default("false")
+			.transform((v) => v === "true"),
+		TG_ANALYTICS_BOT_GROUP_ID: z.string().min(1),
+		TG_ANALYTICS_BOT_TOKEN: z.string().min(1),
 		S3_SECRET_ACCESS_KEY: z.string().min(1),
 		S3_ACCESS_KEY_ID: z.string().min(1),
 		S3_BUCKET: z.string().min(1),
@@ -64,17 +68,17 @@ export const env = createEnv({
 	emptyStringAsUndefined: true,
 	onValidationError: (issues) => {
 		console.error("Invalid server environment variables:", issues);
+		void emitCriticalPlatformEventFromProcessEnv({
+			name: PLATFORM_ALERT_EVENTS.serverBootstrapFailed,
+			severity: "critical",
+			message: "Server bootstrap validation failed",
+			context: {
+				stage: "env_validation",
+				error: JSON.stringify(issues),
+			},
+		});
 		throw new Error("Invalid environment variables");
 	},
 });
-
-const relayerFromKey = getAddress(
-	privateKeyToAccount(env.FC_SERVER_PRIVATE_KEY).address,
-);
-if (relayerFromKey !== env.FC_SERVER_ADDRESS) {
-	throw new Error(
-		`FC_SERVER_PRIVATE_KEY address ${relayerFromKey} does not match FC_SERVER_ADDRESS ${env.FC_SERVER_ADDRESS}`,
-	);
-}
 
 export default env;

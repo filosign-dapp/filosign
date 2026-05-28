@@ -1,6 +1,10 @@
 import { type DraftSummaryRow, useDraftsList } from "@filosign/react/drafts";
 import type { OrgFileRow } from "@filosign/react/files";
-import { useOrgFiles } from "@filosign/react/files";
+import {
+	useOrgFiles,
+	useReceivedFiles,
+	useSentFiles,
+} from "@filosign/react/files";
 import { useActiveOrgId } from "@filosign/react/orgs";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useState } from "react";
@@ -55,18 +59,35 @@ export function useDocumentsController() {
 	const walletNorm = useMemo(() => userWallet?.toLowerCase(), [userWallet]);
 
 	const orgFiles = useOrgFiles();
+	const sentFiles = useSentFiles();
+	const receivedFiles = useReceivedFiles();
 	const draftsList = useDraftsList();
 
 	const allFilesData = useMemo((): OrgFileRowView[] => {
-		return (orgFiles.data ?? []).map((file) => {
+		const mergedMap = new Map<string, OrgFileRowView>();
+
+		const processFile = (file: OrgFileRow) => {
+			if (!file.pieceCid) return;
 			const isSent = walletNorm && file.sender?.toLowerCase() === walletNorm;
-			return {
+			mergedMap.set(file.pieceCid, {
 				...file,
 				type: isSent ? "sent" : "received",
 				createdAt: file.createdAt ? new Date(file.createdAt) : new Date(),
-			};
-		});
-	}, [orgFiles.data, walletNorm]);
+			});
+		};
+
+		for (const file of orgFiles.data ?? []) {
+			processFile(file);
+		}
+		for (const file of sentFiles.data ?? []) {
+			processFile(file);
+		}
+		for (const file of receivedFiles.data ?? []) {
+			processFile(file);
+		}
+
+		return Array.from(mergedMap.values());
+	}, [orgFiles.data, sentFiles.data, receivedFiles.data, walletNorm]);
 
 	const draftsData = useMemo(
 		(): DraftRowView[] =>
@@ -120,7 +141,10 @@ export function useDocumentsController() {
 	const hasAnyContent = unifiedItems.length > 0;
 
 	const isLoading =
-		draftsList.isLoading || Boolean(activeOrgId && orgFiles.isLoading);
+		draftsList.isLoading ||
+		Boolean(activeOrgId && orgFiles.isLoading) ||
+		sentFiles.isLoading ||
+		receivedFiles.isLoading;
 
 	const handleViewModeChange = useCallback((newViewMode: "list" | "grid") => {
 		setViewMode((prev) => (newViewMode !== prev ? newViewMode : prev));

@@ -108,7 +108,8 @@ export function RecipientSettlementDialog({
 					<DialogTitle>Attach funds</DialogTitle>
 					<DialogDescription>
 						Optional USDC payout to <strong>{payeeLabel}</strong> when release
-						conditions are met. Funds stay in your wallet until payout executes.
+						conditions are met. Funds stay in your wallet until payout executes;
+						Filosign never takes custody.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -179,10 +180,11 @@ export function RecipientSettlementDialog({
 						) : null}
 
 						<p className="text-xs text-muted-foreground">
-							Token: {SUPPORTED_TOKENS[0].symbol} on this network. Filosign
-							enforces recipient rules only when you send through Filosign;
-							on-chain payouts are controlled by your wallet. You will approve
-							this amount when sending.
+							Token: {SUPPORTED_TOKENS[0].symbol} on this network. You will
+							approve this payout from your wallet when sending. Filosign does
+							not custody funds, cannot reverse executed blockchain
+							transactions, and only enforces recipient rules for documents sent
+							through Filosign.
 						</p>
 					</div>
 				)}

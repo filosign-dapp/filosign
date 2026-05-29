@@ -95,8 +95,11 @@ export function UpgradePlanDialog({
 						Upgrade to continue
 					</p>
 					<p className="text-xs leading-relaxed text-muted-foreground">
-						Compare plans and unlock higher monthly limits on the Filosign
-						pricing page.
+						Checkout is handled by Dodo Payments. For billing mistakes, refund
+						requests, or renewal questions, contact support@filosign.xyz before
+						opening a bank dispute. Payment disputes may suspend paid features
+						and settlement access while preserving reasonable export access
+						where possible.
 					</p>
 				</div>
 

@@ -84,14 +84,16 @@ export function SettlementStatusPanel({
 				</h4>
 				{isSender ? (
 					<p className="text-xs text-muted-foreground">
-						USDC stays in your wallet until payout executes. Filosign settles
-						from the server when you click Settle payment. Revoke approval below
-						to cancel unfunded payouts.
+						USDC stays in your wallet until payout executes. Filosign can relay
+						the settlement transaction, but the contract pulls funds only from
+						your wallet approval. Revoke approval below to cancel unfunded
+						payouts.
 					</p>
 				) : (
 					<p className="text-xs text-muted-foreground">
-						When release conditions are met, Filosign settles automatically. Use
-						Settle payment on this page, or settle from your wallet if needed.
+						When release conditions are met, settlement can execute on-chain.
+						Use Settle payment on this page, or settle from your wallet if
+						needed.
 					</p>
 				)}
 			</div>

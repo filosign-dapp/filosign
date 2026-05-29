@@ -61,6 +61,24 @@ All marketing pages migrated from the React app:
 
 All "Connect", "Get Started", "Try Filosign" buttons redirect to `PUBLIC_CLIENT_URL`. Update your `.env` to point to your React app deployment.
 
+## Marketing mocks
+
+Decorative product UI panels for landing sections live in [`src/components/marketing-mocks/`](src/components/marketing-mocks/) — not under `islands/` (islands are hydration entry points only).
+
+| Layer | Folder | When to add |
+|-------|--------|-------------|
+| **Kit** | `kit/` | Reusable visual primitive used 2+ times (panel shell, badge, row, avatar, chip) |
+| **Patterns** | `patterns/` | Filosign product concept reused across sections (proof list, payout rule, doc header) |
+| **Scenes** | `scenes/<section>/` | One-off assembly for a specific landing block |
+
+Import from the barrel in islands:
+
+```tsx
+import { SendStepMock, ProofOutsideMock } from "../marketing-mocks";
+```
+
+`MockPanel` variants (`tokens.ts`): `compact` (168px timeline), `default` (192px bento tiles), `auto` (wide cards). Use design tokens only — no hardcoded hex.
+
 ## Tailwind
 
 Tailwind runs via **PostCSS** (`@tailwindcss/postcss` + `postcss.config.mjs`), not `@tailwindcss/vite`, so builds stay compatible with the workspace's Vite 8 resolution.

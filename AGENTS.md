@@ -10,7 +10,7 @@ Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-pack
 | `apps/client`           | [README](apps/client/README.md)                                           | Thin Vite UI → `@filosign/react`                             |
 | `apps/server`           | [README](apps/server/README.md)                                           | Hono, Drizzle, `/api/rpc`, `rpc.runtime`                     |
 | `apps/contracts`        | [README](apps/contracts/README.md) · [TESTING](apps/contracts/TESTING.md) | Solidity, `definitions/`, EIP-712; tests in `test/`          |
-| `apps/astro`            | [README](apps/astro/README.md)                                            | Marketing                                                    |
+| `apps/astro`            | [README](apps/astro/README.md)                                            | Marketing — landing mocks in `src/components/marketing-mocks/` |
 | `packages/react-sdk`    | [README](packages/react-sdk/README.md)                                    | `FilosignProvider`, typed `rpc`, `rpcQuery`, hooks           |
 | `packages/shared`       | [AGENTS.md](packages/shared/AGENTS.md)                                    | Types, Zod, manifests (browser+server)                       |
 | `packages/entitlements` | —                                                                         | Plan catalog + pure evaluator (no DB; server wires later)    |

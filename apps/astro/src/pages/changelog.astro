@@ -1,22 +1,17 @@
 ---
-import Footer from "../components/Footer.astro";
 import ChangelogHeroIsland from "../components/islands/ChangelogHeroIsland";
 import ChangelogListIsland from "../components/islands/ChangelogListIsland";
-import Navbar from "../components/Navbar.astro";
+import MarketingPageShell from "../components/MarketingPageShell.astro";
 import { ChangelogEntries } from "../content/changelog";
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
 <BaseLayout
 	title="Changelog — What's new at Filosign"
-	description="Product updates, design improvements, and new features on Filosign. Stay current with releases for signing, storage, and settlements."
+	description="Release notes for encrypted signing, verifiable proof exports, and attached payouts on Filosign."
 >
-	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
-		<Navbar />
-		<main>
-			<ChangelogHeroIsland client:load />
-			<ChangelogListIsland client:visible entries={ChangelogEntries} />
-		</main>
-		<Footer />
-	</div>
+	<MarketingPageShell>
+		<ChangelogHeroIsland client:load />
+		<ChangelogListIsland client:visible entries={ChangelogEntries} />
+	</MarketingPageShell>
 </BaseLayout>

@@ -9,93 +9,141 @@ export type ChangelogEntry = {
 	image?: string;
 };
 
+/** Newest first (top → bottom). Scroll down for the build story from sign-in upward. */
 export const ChangelogEntries: ChangelogEntry[] = [
 	{
-		id: "9",
-		date: "Mar 31, 2026",
-		type: "Enhancement",
-		title: "End-to-End Gasless User Experience",
+		id: "15",
+		date: "May 27, 2026",
+		type: "Feature",
+		title: "Save drafts before you send",
 		description: [
-			"Implemented server-sponsored meta-transactions to eliminate the need for users to hold native gas tokens.",
-			"Covers 99% of platform actions including key registration, document sending, and the entire signing workflow.",
-			"Dramatically reduces onboarding friction, allowing new users to participate in the web3 ecosystem with zero initial funding.",
+			"Pause mid-envelope and pick up recipients and field placement later—nothing lost when you're not ready to send.",
+		],
+	},
+	{
+		id: "14",
+		date: "May 18, 2026",
+		type: "Feature",
+		title: "Attached payouts",
+		description: [
+			"Attach a payout to a document so payment releases when signing completes—funds move directly between payer and recipient, and Filosign never holds your money.",
+		],
+	},
+	{
+		id: "13",
+		date: "May 10, 2026",
+		type: "Feature",
+		title: "Team workspaces",
+		description: [
+			"Share documents, members, and templates in one workspace instead of juggling personal inboxes.",
+		],
+	},
+	{
+		id: "12",
+		date: "Apr 29, 2026",
+		type: "Feature",
+		title: "Introducing Filosign",
+		description: [
+			"Encrypted agreements with verifiable signing records—built so you control your files and your proof.",
+		],
+	},
+	{
+		id: "11",
+		date: "Apr 22, 2026",
+		type: "Feature",
+		title: "Field-level signing proof you can export",
+		description: [
+			"See which fields each person signed and export a proof package for counsel, auditors, or counterparties—stronger audit trails when you need field-by-field evidence.",
 		],
 	},
 	{
 		id: "10",
-		date: "Mar 31, 2026",
+		date: "Apr 10, 2026",
 		type: "Enhancement",
-		title: "Mobile-First Design & Compliance Reporting",
+		title: "Proof packets and mobile signing",
 		description: [
-			"Complete architectural overhaul to ensure a flawless mobile-first experience within webviews.",
-			"New automated Compliance Report generation that produces human-readable PDFs with embedded cryptographic proofs of all on-chain actions.",
-			"Optimized WASM performance and reduced load times by 50% through improved edge deployment and library optimizations.",
+			"Download a proof packet PDF for compliance review and sign from your phone browser—no native app required.",
 		],
 	},
 	{
-		id: "1",
-		date: "Jan 11, 2026",
+		id: "9",
+		date: "Mar 28, 2026",
 		type: "Feature",
-		title: "Post-quantum signature library",
+		title: "Sign from an email link",
 		description: [
-			"We've launched a comprehensive signature management system with support for multiple signature types: draw, type, or upload your own signature image.",
-			"All signatures are now secured with Dilithium post-quantum cryptography and anchored to FVM smart contracts, ensuring long-term verifiability even as quantum computing advances.",
-			"The signature library includes visual hash verification, allowing you to confirm document integrity at a glance before signing.",
+			"Recipients open a secure link, set up once, and sign without digging through email threads.",
 		],
 	},
 	{
-		id: "2",
-		date: "Dec 20, 2025",
-		type: "Enhancement",
-		title: "Enhanced document sharing with permission system",
-		description: [
-			"Our secure document sharing now includes a comprehensive approval workflow. Senders must request permission before sharing documents, ensuring you have full control over who can send you files.",
-			"The system uses ECDH key exchange for end-to-end encryption, guaranteeing that only approved recipients can decrypt shared documents.",
-			"We've also added network discovery features, making it easy to see who you can send to and who can send to you based on mutual approvals.",
-		],
-	},
-	{
-		id: "3",
-		date: "Nov 28, 2025",
+		id: "8",
+		date: "Mar 15, 2026",
 		type: "Feature",
-		title: "User profiles with decentralized identity",
+		title: "Place signature fields on the page",
 		description: [
-			"Introducing user profiles with unique usernames, display names, avatars, and rich metadata. Your profile is stored off-chain for privacy while maintaining decentralized identity principles.",
-			"Profile information makes it easier to identify collaborators in your document network, with real-time username availability checking and profile existence validation.",
-			"All profile data integrates seamlessly with our existing document sharing and acknowledgment system.",
+			"Drag signature, date, and text fields onto the PDF so every signer knows exactly where to sign.",
 		],
 	},
 	{
-		id: "4",
-		date: "Nov 12, 2025",
+		id: "7",
+		date: "Feb 13, 2026",
 		type: "Enhancement",
-		title: "Filecoin storage migration and optimization",
+		title: "No gas fees for signing",
 		description: [
-			"Documents now automatically migrate from temporary S3 storage to permanent Filecoin storage via FilCDN, ensuring long-term availability and immutability.",
-			"We've optimized the storage pipeline to reduce upload times while maintaining end-to-end encryption throughout the process.",
-			"All documents are now content-addressed using IPFS CIDs, making them verifiable and accessible through any IPFS gateway.",
+			"Register, send, and sign without buying ETH first—onboarding feels like a normal web app.",
+		],
+	},
+	{
+		id: "6",
+		date: "Nov 3, 2025",
+		type: "Enhancement",
+		title: "Contact approvals",
+		description: [
+			"Approve senders before they can reach you; documents stay encrypted end-to-end for people you allow in.",
 		],
 	},
 	{
 		id: "5",
 		date: "Oct 25, 2025",
-		type: "Fix",
-		title: "Dual-factor authentication improvements",
+		type: "Feature",
+		title: "User profiles",
 		description: [
-			"Enhanced the PIN + wallet signature authentication flow with improved error handling and clearer feedback during the registration and login process.",
-			"Fixed an issue where Argon2id PIN hashing could timeout on slower devices. We've optimized the memory-hard function parameters for better performance across all devices.",
-			"Improved the master seed derivation process, ensuring consistent key generation across sessions.",
+			"Add a username, display name, and avatar so collaborators recognize you in signing and sharing flows.",
 		],
 	},
 	{
-		id: "6",
-		date: "Oct 8, 2025",
+		id: "4",
+		date: "Oct 12, 2025",
 		type: "Feature",
-		title: "React SDK with IndexedDB caching",
+		title: "Signature styles and long-term proof",
 		description: [
-			"Launched our comprehensive React SDK with type-safe hooks, automatic IndexedDB caching, and seamless integration with the FilosignProvider.",
-			"The SDK now includes automatic cache invalidation, offline support for cached data, and comprehensive error handling with detailed error types.",
-			"Developers can now build Filosign-powered applications with full TypeScript support and React Query integration for optimal performance.",
+			"Draw, type, or upload signatures and reuse them from your library, with records built for long-term verification.",
+		],
+	},
+	{
+		id: "3",
+		date: "Oct 4, 2025",
+		type: "Feature",
+		title: "Send and sign your first document",
+		description: [
+			"Create an envelope, add recipients, and complete signing—the core flow everything else builds on.",
+		],
+	},
+	{
+		id: "2",
+		date: "Sep 20, 2025",
+		type: "Feature",
+		title: "Encrypted document upload",
+		description: [
+			"Upload PDFs encrypted end-to-end—only you and your recipients can read them.",
+		],
+	},
+	{
+		id: "1",
+		date: "Sep 6, 2025",
+		type: "Feature",
+		title: "Sign in with Google or your wallet",
+		description: [
+			"Get started with Google or connect a wallet—one sign-in, then straight into sending or signing.",
 		],
 	},
 ];

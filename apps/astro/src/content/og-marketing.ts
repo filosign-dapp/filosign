@@ -12,17 +12,17 @@ export const MARKETING_OG_PAGES = {
 	about: {
 		title: "About Filosign — Signing you can trust after the ink dries",
 		description:
-			"Why Filosign exists: private agreements, records you can verify anywhere, and optional non-custodial USDC payouts.",
+			"Why Filosign exists: private agreements, records you can verify anywhere, and attached payouts.",
 	},
 	pricing: {
 		title: "Pricing — Encrypted signing with proof you can verify",
 		description:
-			"Free, Solo, Teams ($29), and Teams Pro ($49). Pooled team quotas, encrypted signing, proof exports, and optional USDC settlements.",
+			"Free, Solo, Teams ($29), and Teams Pro ($49). Pooled team quotas, encrypted signing, proof exports, and attached payouts.",
 	},
 	changelog: {
 		title: "Changelog — What's new at Filosign",
 		description:
-			"Product updates, design improvements, and new features on Filosign. Stay current with releases for signing, storage, and settlements.",
+			"How Filosign grew—sign-in and encrypted uploads first, then proof, teams, payouts, and drafts on top.",
 	},
 	blog: {
 		title: "Blog — News and updates from Filosign",
@@ -32,12 +32,12 @@ export const MARKETING_OG_PAGES = {
 	privacy: {
 		title: "Privacy Policy — Filosign",
 		description:
-			"How Filosign handles personal data for document signing, wallet authentication, and optional USDC payout features.",
+			"How Filosign handles personal data for document signing, wallet authentication, and attached payout features.",
 	},
 	terms: {
 		title: "Terms of Service — Filosign",
 		description:
-			"Terms of Service for Filosign document signing software and optional on-chain USDC payout automation.",
+			"Terms of Service for Filosign document signing software and on-chain attached payout automation.",
 	},
 	security: {
 		title: "Security — Filosign",
@@ -59,30 +59,30 @@ export const MARKETING_OG_PAGES = {
 	},
 	"legal-non-custodial-settlement": {
 		title: "Non-custodial Settlement — Filosign",
-		description: "How optional USDC settlement works in Filosign.",
+		description: "How attached payouts work in Filosign.",
 	},
 	"blog-introduction": {
 		title: "Introducing Filosign — Filosign Blog",
 		description:
-			"Introducing Filosign: private agreement workflows with encrypted documents, proof packets, and optional USDC settlement.",
+			"Private agreement workflows with E2EE documents, FSFileRegistry proof on Base, proof packets, and attached payouts.",
 	},
 	"blog-future-of-digital-agreements": {
 		title:
 			"The future of digital agreements: Why we built Filosign — Filosign Blog",
 		description:
-			"Why agreements should be private, verifiable, and able to connect to real workflow outcomes.",
+			"Platform risk in centralized e-sign, and how Filosign combines client-side encryption, on-chain attestations, and attached payouts.",
 	},
 	"blog-unlocking-filosign-after-privy": {
 		title:
 			"What OAuth can't unwrap: wallet-derived unlock for Filosign's client keys — Filosign Blog",
 		description:
-			"Why Privy login and PQ signing seeds differ, what we tried first, and how we reuse the wallet signature chain from registration to unlock.",
+			"Why social login and PQ signing keys differ, how keygen commitments live off-chain, and how wallet-derived unlock reuses registration math.",
 	},
 	"blog-placement-based-signing-infrastructure": {
 		title:
 			"Inside Filosign's Signing Flow: Infrastructure Built for Legal Certainty — Filosign Blog",
 		description:
-			"Placement manifests, proof bundles, and signing records for independently verifiable e-signature evidence.",
+			"Placement manifests, Merkle proofs, compliance bundles, and FSFileRegistry attestations for independently verifiable signing evidence.",
 	},
 	"blog-milestone-payments-non-custodial-settlement": {
 		title:

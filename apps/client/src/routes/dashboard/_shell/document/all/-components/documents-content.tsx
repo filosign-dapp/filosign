@@ -1,6 +1,5 @@
 import { MotionReveal, Pressable } from "@filosign/motion";
 import { PlusIcon } from "@phosphor-icons/react";
-import { Link } from "@tanstack/react-router";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";

@@ -1,8 +1,4 @@
-import {
-	type DraftSnapshot,
-	digestDraftSnapshot,
-	draftDocumentKey,
-} from "@filosign/shared";
+import { type DraftSnapshot, draftDocumentKey } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import type { Address, Hex } from "viem";

@@ -7,6 +7,7 @@ import type { PlacementManifest } from "./placement-manifest";
 export * from "./auth-subject";
 export * from "./completions-merkle";
 export * from "./compliance-bundle";
+export * from "./deployment";
 export * from "./draft-crypto";
 export * from "./draft-snapshot";
 export * from "./draft-snapshot-digest";

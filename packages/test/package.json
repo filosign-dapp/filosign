@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "VITE_CHAIN=local vite",
-		"dev:testnet": "VITE_CHAIN=testnet vite",
+		"dev:sandbox": "VITE_DEPLOYMENT=sandbox VITE_CHAIN=testnet vite",
 		"dev:mainnet": "VITE_CHAIN=mainnet vite",
 		"build": "vite build",
 		"serve": "bunx --bun serve -s dist",

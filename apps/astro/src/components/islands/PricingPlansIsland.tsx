@@ -11,6 +11,7 @@ import {
 	marketingGhostLgClass,
 	marketingPrimaryMdClass,
 } from "../../lib/marketing-button";
+import { marketingSectionClass } from "../../lib/marketing-layout";
 import {
 	MARKETING_PRESSABLE_HOVER,
 	MARKETING_PRESSABLE_TAP,
@@ -26,6 +27,7 @@ import {
 	YEARLY_DISCOUNT_RATE,
 	yearlyPerMonthPrice,
 } from "../../lib/pricing-display";
+import ComparisonAccordion from "./ComparisonAccordion";
 import { MarketingPageBody, MarketingPageShell } from "./MarketingPageSequence";
 import { MotionProvider } from "./MotionProvider";
 
@@ -70,7 +72,7 @@ function BillingIntervalToggle({
 	savePercentLabel: string;
 }) {
 	return (
-		<div className="flex items-center justify-center gap-4 mb-4 col-span-full">
+		<div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mb-4 col-span-full">
 			<button
 				type="button"
 				onClick={() => onChange("monthly")}
@@ -221,7 +223,7 @@ function PricingPlanCard({
 			transition={{ duration: 0.5, delay: index * 0.1 }}
 			className={
 				plan.highlight
-					? "relative flex flex-col p-8 rounded-3xl bg-background border-2 border-foreground text-foreground shadow-xl scale-[1.02] z-10"
+					? "relative flex flex-col p-8 rounded-3xl bg-background border-2 border-foreground text-foreground shadow-xl md:scale-[1.02] z-10"
 					: "relative flex flex-col p-8 rounded-3xl bg-muted/80 border border-transparent hover:border-border/50"
 			}
 		>
@@ -292,14 +294,17 @@ function ComparisonCell({ value }: { value: ComparisonCellValue }) {
 	return <span className="text-foreground font-medium">{value}</span>;
 }
 
-function ComparisonSection() {
+function ComparisonTable() {
 	return (
 		<section
-			className="col-span-full mt-8 py-4"
+			className="hidden lg:block col-span-full mt-8 py-4"
 			aria-label="Plan feature comparison"
 		>
+			<p className="mb-2 text-xs text-muted-foreground lg:block xl:hidden">
+				Scroll horizontally to view all columns
+			</p>
 			<div className="overflow-x-auto pb-2">
-				<div className="min-w-[860px]">
+				<div className="min-w-215">
 					<div className="grid grid-cols-5 gap-4 mb-6 px-4">
 						<div className="sticky left-0 z-10 bg-background" />
 						{COMPARISON_PLAN_IDS.map((planId) => (
@@ -370,15 +375,12 @@ function PricingPlansContent({
 
 	return (
 		<MarketingPageShell>
-			<section
-				id="pricing"
-				className="py-20 px-4 md:px-8 lg:px-page bg-background"
-			>
+			<section id="pricing" className="bg-background py-20">
 				<MarketingPageBody
 					pace="page"
 					heroTopChildCount={PRICING_HERO_TOP_COUNT}
 					heroBottomChildCount={1}
-					className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 lg:gap-12 *:first:col-span-full"
+					className={`${marketingSectionClass} grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8 lg:gap-12 *:first:col-span-full`}
 				>
 					<BillingIntervalToggle
 						billingInterval={billingInterval}
@@ -394,7 +396,10 @@ function PricingPlansContent({
 							index={index}
 						/>
 					))}
-					<ComparisonSection />
+					<ComparisonTable />
+					<div className="col-span-full">
+						<ComparisonAccordion />
+					</div>
 					{enterpriseBanner ? (
 						<div className="col-span-full flex flex-col gap-6 rounded-3xl border border-border/60 bg-muted/25 p-8 md:flex-row md:items-center md:justify-between md:gap-10">
 							<div className="max-w-2xl space-y-2">

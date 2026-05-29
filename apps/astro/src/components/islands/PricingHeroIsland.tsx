@@ -5,6 +5,7 @@ import {
 	marketingGhostLgClass,
 	marketingPrimaryLgClass,
 } from "../../lib/marketing-button";
+import { marketingSectionClass } from "../../lib/marketing-layout";
 import {
 	MARKETING_PRESSABLE_HOVER,
 	MARKETING_PRESSABLE_TAP,
@@ -19,8 +20,8 @@ type PricingHeroIslandProps = {
 export default function PricingHeroIsland({ appUrl }: PricingHeroIslandProps) {
 	return (
 		<MotionProvider>
-			<section className="pt-32 px-4 md:px-8 lg:px-page bg-background relative overflow-hidden">
-				<div className="max-w-7xl mx-auto relative z-10 space-y-16">
+			<section className="relative overflow-hidden bg-background pt-4 sm:pt-20">
+				<div className={`${marketingSectionClass} relative z-10 space-y-16`}>
 					<MarketingStagger
 						pace="page"
 						className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-8 lg:gap-12"
@@ -33,12 +34,12 @@ export default function PricingHeroIsland({ appUrl }: PricingHeroIslandProps) {
 							</h1>
 							<p className="text-lg md:text-xl font-light font-manrope text-muted-foreground max-w-xl leading-relaxed">
 								Wallet-native encryption, verifiable signatures, and optional
-								USDC settlements — from three documents a month to team-scale
+								attached payouts — from three documents a month to team-scale
 								volume.
 							</p>
 						</div>
 
-						<div className="flex flex-wrap gap-4 shrink-0">
+						<div className="flex flex-col w-full sm:w-auto gap-4 shrink-0">
 							<Pressable
 								preset="snappy"
 								whileHover={MARKETING_PRESSABLE_HOVER}

@@ -158,7 +158,7 @@ export function buildPricingComparisonRows(): ComparisonRow[] {
 		),
 
 		section("Settlement"),
-		staticRow("marketing.usdc_settlement", "USDC settlement on sign", {
+		staticRow("marketing.usdc_settlement", "Attached payouts on sign", {
 			free: null,
 			individual: null,
 			teams: true,

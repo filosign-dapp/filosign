@@ -1,8 +1,7 @@
 ---
-import Footer from "../components/Footer.astro";
 import PricingHeroIsland from "../components/islands/PricingHeroIsland";
 import PricingPlansIsland from "../components/islands/PricingPlansIsland";
-import Navbar from "../components/Navbar.astro";
+import MarketingPageShell from "../components/MarketingPageShell.astro";
 import { env } from "../env";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
@@ -46,7 +45,7 @@ const plans = [
 	{
 		name: "Teams",
 		description:
-			"For startups that need pooled quotas, shared workflows, and optional USDC settlement.",
+			"For startups that need pooled quotas, shared workflows, and attached payouts.",
 		price: { monthly: 29 },
 		features: [
 			"15 documents per user per month (pooled)",
@@ -54,7 +53,7 @@ const plans = [
 			"Shared templates and team envelope drafts",
 			"Advanced routing and draft review links",
 			"Team envelope visibility",
-			"Optional USDC settlement when signing rules are met",
+			"Attached payouts when signing rules are met",
 		],
 		cta: "Start Teams",
 		highlight: true,
@@ -93,28 +92,16 @@ const enterpriseBanner = {
 
 <BaseLayout
 	title="Pricing — Encrypted signing with proof you can verify"
-	description="Filosign pricing: Free, Solo, Teams, and Teams Pro. Encrypted signing, proof exports, and optional USDC settlements. Enterprise plans by request."
+	description="Filosign pricing: Free, Solo, Teams, and Teams Pro. Encrypted signing, proof exports, and attached payouts. Enterprise plans by request."
 >
-	<a
-		href="#main-content"
-		class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-100 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:ring-3 focus:ring-ring/50"
-	>
-		Skip to main content
-	</a>
-	<div class="[--section-gap:4rem] min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
-		<Navbar />
-		<div class="h-(--section-gap)"></div>
-		<main id="main-content">
-			<PricingHeroIsland client:load appUrl={appUrl} />
+	<MarketingPageShell>
+		<PricingHeroIsland client:load appUrl={appUrl} />
 
-			<PricingPlansIsland
-				client:load
-				plans={plans}
-				appUrl={appUrl}
-				enterpriseBanner={enterpriseBanner}
-			/>
-		</main>
-		<div class="h-(--section-gap)"></div>
-		<Footer />
-	</div>
+		<PricingPlansIsland
+			client:load
+			plans={plans}
+			appUrl={appUrl}
+			enterpriseBanner={enterpriseBanner}
+		/>
+	</MarketingPageShell>
 </BaseLayout>

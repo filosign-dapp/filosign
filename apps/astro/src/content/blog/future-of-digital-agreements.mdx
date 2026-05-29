@@ -1,107 +1,80 @@
 ---
 title: "The future of digital agreements: Why we built Filosign"
-description: Long-form perspective on platform risk in e-sign, Filosign's architecture on FVM, and post-quantum signing.
+description: Platform risk in centralized e-sign, and how Filosign combines E2EE, on-chain proof on Base, and attached payouts.
 readingTime: 5 min
-dateDisplay: Jan 6, 2025
-publishedISO: "2025-01-06T12:00:00.000Z"
+dateDisplay: May 5, 2026
+publishedISO: "2026-05-05T12:00:00.000Z"
 author:
-  name: Kartikay Tiwari
-  role: Article written by
-  avatar: /banner.webp
+  name: Kartik
+  role: Written by
+  avatar: /kartik.jpeg
 heroImage: /banner.webp
-quote: '"We needed a way to sign documents that didn''t rely on a central authority holding the keys," says Sarah Chen, CTO of OpenDocs.'
 draft: false
 featured: false
+tags: ["Company", "Security"]
 ---
 
-In the world of digital agreements, trust has always been outsourced. When you sign a document using a traditional e-signature platform, you're not just trusting the other party—you're trusting the platform itself to store, secure, and verify that signature. But what happens when that centralized trust fails? Or when privacy is paramount?
+When you sign with a traditional e-signature platform, you trust two parties: the counterparty and the vendor. The vendor stores your documents, hosts your audit trail, and controls whether you can export verifiable proof years later.
 
-At **Filosign**, we asked a simple question: _What if you could prove a document was signed without trusting a middleman?_
+That is **platform risk**—and it shows up in ways legal teams actually worry about:
 
-## The Problem with Centralized Signing
+- **Data exposure:** Centralized document stores are high-value breach targets.
+- **Vendor lock-in:** Leaving often means losing verification context, not just UI.
+- **Fragile proof:** If the vendor's database disappears, your "signed" status may become hard to defend.
+- **Privacy by policy, not math:** The platform can technically read everything you upload.
 
-Enterprises using centralized e-signature platforms are exposed to significant, unaddressed "platform risk." They must trust their provider's security, internal policies, and long-term viability. This creates a central point of failure for their most critical assets: their signed agreements.
+We built Filosign to shrink that trust surface: **your documents stay encrypted, your signing keys stay client-side, and your proof is anchored on-chain**—while day-to-day UX still feels like a modern web app.
 
-- **Data Vulnerability**: Centralized servers are prime targets for hacks.
-- **Vendor Lock-in**: Moving your signed contracts out of a proprietary platform is often difficult and costly.
-- **Privacy Concerns**: The platform provider technically has access to every sensitive contract you sign.
-- **Platform Risk**: A security breach, policy change, or service shutdown could invalidate legally binding documents.
+## What Filosign does differently
 
-We believe your agreements should belong to you, not a SaaS provider. That's why we built Filosign on top of the Filecoin Virtual Machine (FVM) and post-quantum cryptographic principles.
+Filosign is not "blockchain e-sign" as a gimmick. It is a deliberate split between what must be private, what must be permanent, and what should stay optional.
 
-### A New Architecture for Trust
+| | Traditional e-sign | Filosign |
+| :-- | :-- | :-- |
+| **Document storage** | Vendor-controlled cloud | Encrypted on private storage; archived to Filecoin |
+| **Proof of signing** | Vendor database + PDF certificate | **`FSFileRegistry`** on Base + exportable compliance bundle |
+| **Privacy** | Vendor can read uploads | End-to-end encryption in the browser |
+| **Cryptography** | Platform-managed keys | Wallet-bound client keys (Kyber + Dilithium) |
+| **Authentication** | Email + password | Wallet identity; social login provisions an embedded wallet |
+| **Payments** | Separate invoicing / escrow products | Attached **`FSPaymentValidator`** payout rules—non-custodial |
 
-Filosign leverages the power of the Filecoin network and quantum-resistant cryptography to create a signing experience that is secure, permanent, and private by default.
+You get familiar flows—upload, place fields, collect signatures—backed by evidence that does not require Filosign to stay online forever.
 
-| Feature | Traditional E-Sign | Filosign |
-| :------ | :------------------- | :------- |
-| **Storage** | Centralized Cloud | Decentralized (Filecoin/IPFS) |
-| **Verification** | Platform-Dependent | Cryptographically Verifiable Anywhere |
-| **Privacy** | Platform Can Read Docs | End-to-End Client-Side Encryption |
-| **Cryptography** | Standard RSA/ECDSA | Post-Quantum (Kyber + Dilithium) |
-| **Authentication** | Password/2FA | Wallet Identity + Local PIN Unlock |
-| **Cost** | High Per-User Fees | Pay-as-you-go / Low Flat Rate |
+## On-chain vs off-chain (on purpose)
 
-> "Decentralized identity isn't just about privacy; it's about ownership. When you sign with your own keys, you own the attestation forever." — _Dr. Gavin Wood_
+Our v1 contracts are intentionally small: **`FSFileRegistry`** and **`FSPaymentValidator`**, deployed on **Base**. No upgrade proxies. Identity, key material, and sharing approvals live **off-chain** in Postgres and your browser.
 
-## How Filosign Works
+| Lives on-chain | Lives off-chain |
+| :-- | :-- |
+| File registration commitments (document ID hash, placement hash, participant commitments) | Encrypted document bytes |
+| Signature attestations per signer | Kyber/Dilithium key seeds and wraps |
+| Attached payout rules and payout execution | Contact graph, org settings, UX state |
 
-Under the hood, Filosign combines user-friendly design with robust web3 technologies. You don't need to be a crypto expert to use it—it feels just like the tools you already know, but with mathematical certainty.
+The chain stores **commitments and attestations**, not your PDF. That is how you get permanent proof without publishing sensitive content.
 
-### Wallet Identity + Local PIN Protection
+## How it feels to use
 
-Filosign uses a non-custodial model where your wallet proves identity and your PIN protects local seed storage:
+1. **Sign in** with a wallet or social account (we create an embedded wallet when needed).
+2. **Encrypt and send** a document; recipients decrypt only with keys shared to their wallet.
+3. **Collect signatures** on placed fields; each completion is validated and relayed to **`FSFileRegistry`**.
+4. **Export proof** as a compliance bundle or proof packet PDF whenever you need an audit trail.
+5. **Attach payouts** so signing conditions can trigger a direct transfer—no custodial escrow.
 
-1. **Wallet Signature**: You prove ownership of your address by signing a unique challenge.
-2. **Deterministic Seed**: A secure seed is derived client-side from wallet signature material and on-chain salts.
-3. **PIN Wrapping**: The local seed is encrypted with a PIN-derived key (Argon2id + AES-GCM), so a stolen browser profile is still protected.
-4. **Recovery Phrase**: A 24-word recovery phrase can restore access if you forget your PIN.
+We cover gas for relayed writes during beta so users are not forced to manage ETH just to sign a document.
 
-### Document Encryption & Storage
+## Optional programmable payout
 
-1. **Client-Side Encryption**: Your document is encrypted locally using AES-GCM with a randomly generated file encryption key.
-2. **Filecoin Storage**: The encrypted file is uploaded to the Filecoin network via FilCDN, returning a unique Content ID (CID).
-3. **Key Sharing**: Using Kyber/ML-KEM-1024 (post-quantum key exchange), we create a shared secret with each recipient's public key, ensuring only intended recipients can decrypt.
-4. **Blockchain Anchoring**: Document metadata and signature commitments are stored on FVM smart contracts, creating an immutable audit trail.
+Because settlement runs through **`FSPaymentValidator`**, agreements can connect to real outcomes without Filosign holding funds:
 
-### Post-Quantum Signatures
+- A **freelancer** signs a final delivery doc and receives payment in the same ceremony.
+- A **grantor** attaches a rule that pays when a milestone signature is recorded on-chain.
 
-Filosign uses **Dilithium** (NIST Level 2) for document signing, providing quantum-resistant signatures that will remain secure even when quantum computers become a threat:
+The payer registers the rule and approves funds from their wallet. When conditions are met, payout execution is **permissionless**—our server relays it for convenience, but the chain enforces the rule.
 
-```typescript
-// Example: How we verify a signature locally
-import { verifyMessage } from "@filosign/react-sdk";
+## Why this matters
 
-async function checkDocument(
-	documentHash: Uint8Array,
-	signature: Uint8Array,
-	publicKey: Uint8Array,
-) {
-	const isValid = await verifyMessage(documentHash, signature, publicKey);
+Digital agreements should not expire when a SaaS vendor changes pricing, gets acquired, or shuts down. Filosign treats cryptography and chain attestations as the source of truth, with our product as a convenience layer on top—not the other way around.
 
-	return isValid; // True if the Dilithium signature matches
-}
-```
+Your documents stay yours. Your signatures stay provably yours. And anyone can verify that, with math and a public RPC node.
 
-## Built for the Modern Workflow
-
-We didn't just build a protocol; we built a product. Filosign integrates seamlessly into your existing workflow with a comprehensive React SDK.
-
-- **Document Management**: Upload, encrypt, and share documents with granular access control.
-- **Signature Library**: Create, manage, and reuse multiple signature styles (draw, type, or upload).
-- **Secure Sharing**: Permission-based sharing with ECDH key exchange ensures only approved recipients can access documents.
-- **User Profiles**: Decentralized identity with usernames, avatars, and rich metadata.
-- **API Access**: Type-safe React hooks and REST API for automating signing flows.
-
-### Architecture Highlights
-
-Filosign's architecture is fully non-custodial with zero-trust design:
-
-- **Smart Contracts**: FVM Solidity contracts (FSManager, FSKeyRegistry, FSFileRegistry) handle on-chain logic
-- **Backend API**: Hono REST API orchestrates Filecoin storage and blockchain interactions
-- **Crypto Utils**: WebAssembly cryptographic primitives (Kyber, Dilithium, AES-GCM) for high-performance operations
-- **React SDK**: TypeScript client library with React hooks, IndexedDB caching, and automatic error handling
-
-As we move towards a more decentralized web, the tools we use to agree and transact must evolve. Filosign is the first step towards a future where digital signatures are as permanent and sovereign as ink on paper—but mathematically verifiable and quantum-resistant.
-
-Ready to take control of your documents? [Start for free](/onboarding) today.
+**[Try the public beta →](https://app.filosign.xyz)**

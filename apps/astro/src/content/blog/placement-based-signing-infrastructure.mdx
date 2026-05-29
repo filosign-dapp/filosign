@@ -1,6 +1,6 @@
 ---
 title: "Inside Filosign's Signing Flow: Infrastructure Built for Legal Certainty"
-description: A technical deep dive into our placement-based signing architecture, Merkle proofs, compliance bundles, and how we built a system that is independently verifiable, legally compliant, and tamper-proof from day one.
+description: Placement manifests, Merkle proofs, compliance bundles, and on-chain attestations in FSFileRegistry—evidence you can verify without trusting our servers.
 readingTime: 8 min
 dateDisplay: May 11, 2026
 publishedISO: "2026-05-11T12:00:00.000Z"
@@ -10,36 +10,37 @@ author:
   avatar: /kartik.jpeg
 heroImage: /banner.webp
 draft: false
-featured: true
+featured: false
+tags: ["Tech", "Security"]
 ---
 
-When we set out to rebuild Filosign's signing flow, we had one non-negotiable requirement: **every signature must be independently verifiable by anyone, anywhere, without trusting Filosign's servers.** This sounds obvious, but most e-signature platforms create "platform risk"—if their database disappears, your proof of signature might too.
+When we rebuilt Filosign's signing flow, we had one non-negotiable requirement: **every signature must be independently verifiable by anyone, anywhere, without trusting Filosign's servers.**
 
-Our new placement-based signing infrastructure solves this. It combines **cryptographic placement manifests**, **Merkle inclusion proofs**, and **on-chain attestations** to create a system that is:
+Most e-signature platforms store proof as database rows and PDF certificates with a vendor logo. If that database disappears, your audit trail may disappear with it.
 
-- **Legally compliant** — satisfies ESIGN, eIDAS, and other frameworks
-- **Independently verifiable** — anyone can validate signatures without our servers
-- **Tamper-evident** — any modification breaks the cryptographic chain
-- **Privacy-preserving** — zero-knowledge of document contents during verification
+Our placement-based signing infrastructure combines **cryptographic placement manifests**, **Merkle inclusion proofs**, and **`FSFileRegistry` attestations on Base** to produce evidence that is:
 
-Here's how we built it.
+- **Legally grounded** — built around identity, intent, association, and timestamps frameworks like ESIGN and eIDAS expect
+- **Independently verifiable** — compliance bundle + public chain data, no API key required
+- **Tamper-evident** — any change to fields, assignments, or completions breaks the hash chain
+- **Privacy-preserving** — document plaintext is never written on-chain; the bundle does not expose encrypted bytes
 
-## The Problem with Traditional E-Signatures
+## The problem with traditional e-signatures
 
-Traditional platforms store signatures as database rows. The "proof" is a PDF certificate with the platform's logo. This has several failure modes:
+Traditional platforms optimize for convenience, not portability of proof:
 
-1. **Platform Risk**: If the company shuts down, your proof may become unverifiable
-2. **Database Tampering**: An insider could modify signature records undetected
-3. **No Field-Level Granularity**: You can prove *who* signed, but not *what* they specifically agreed to
-4. **Vendor Lock-in**: Exporting your signed documents often loses the verification context
+1. **Platform risk:** If the vendor shuts down, verification may become impossible
+2. **Database tampering:** An insider could alter records without external detection
+3. **No field-level granularity:** You can prove *who* signed, but not *which fields* they completed
+4. **Vendor lock-in:** Exports often lose the verification context
 
-We needed a better foundation.
+We needed a foundation where math and chain state—not our Postgres row—carry the proof.
 
-## Core Architecture: Placement Manifests + Merkle Trees
+## Core architecture: placement manifests + Merkle trees
 
-At the heart of our system is the **Placement Manifest** — a cryptographic commitment to exactly where and what each signer must sign.
+At the heart of the system is the **Placement Manifest** — a cryptographic commitment to exactly where and what each signer must sign.
 
-### What is a Placement Manifest?
+### What is a placement manifest?
 
 When a sender prepares a document, they place signature fields on specific pages at specific coordinates. The manifest captures:
 
@@ -54,51 +55,50 @@ When a sender prepares a document, they place signature fields on specific pages
 interface PlacementManifest {
   version: 1;
   fields: Array<{
-    id: string;           // unique field identifier
-    pageIndex: number;    // 0-based page number
+    id: string;
+    pageIndex: number;
     rect: {
-      x: number;          // 0-1, normalized to page width
-      y: number;          // 0-1, normalized to page height
-      width: number;      // 0-1, normalized
-      height: number;     // 0-1, normalized
+      x: number;
+      y: number;
+      width: number;
+      height: number;
     };
-    assignedSigner: `0x${string}`;  // Ethereum address
+    assignedSigner: `0x${string}`;
     required: boolean;
     type: "signature" | "initial" | "date" | "name" | "email" | "text" | "checkbox";
   }>;
 }
 ```
 
-The manifest is serialized to **canonical JSON** (sorted keys, no whitespace) and hashed to create the **Placement Commitment** — a `bytes32` value stored on-chain. This commitment is immutable; any change to field positions, assignments, or requirements changes the hash.
+The manifest is serialized to **canonical JSON** (sorted keys, no whitespace) and hashed to create the **placement commitment** — a `bytes32` value stored on-chain. Any change to field positions, assignments, or requirements changes the hash.
 
-### The Signer's Merkle Root
+### The signer's Merkle root
 
-When a signer completes their fields, we don't just store "signed: true". We compute a **Merkle root** of their completed field IDs:
+When a signer completes their fields, we compute a **Merkle root** of their completed field IDs:
 
 1. Collect all field IDs the signer marked complete (sorted, deduplicated)
 2. Compute each leaf as `keccak256(abi.encode(fieldId, placementCommitment, cidIdentifier, signerAddress))`
 3. Build a standard Merkle tree (sorted pairwise hashing)
-4. Store the root on-chain with their signature
+4. Store the root on-chain with their signature attestation
 
-This creates **field-level accountability**. A verifier can later check: "Did signer 0x123... specifically complete field 'sig-abc' on this document?" The Merkle proof provides cryptographic evidence without revealing other signers' data.
+This creates **field-level accountability**. A verifier can later ask: "Did signer `0x123…` specifically complete field `sig-abc` on this document?" The Merkle proof provides cryptographic evidence without revealing other signers' completions.
 
 ```typescript
-// Each leaf binds the field to the specific document and signer
 leaf = keccak256(abi.encode(
-  fieldId,              // "80b15efc-2037-46a6-a3ef-5a65e1a1a95e"
-  placementCommitment,  // 0x7a3f...e2b (32 bytes)
-  cidIdentifier,        // keccak256(pieceCid) for privacy
-  signerAddress         // 0x263C...782a
+  fieldId,
+  placementCommitment,
+  cidIdentifier,   // keccak256(pieceCid) — not the raw CID on-chain
+  signerAddress
 ))
 ```
 
-## The Compliance Bundle: A Complete Audit Record
+## The compliance bundle: a complete audit record
 
 For legal proceedings or compliance audits, we generate a **Compliance Bundle** — a server-built JSON document containing everything needed to verify the signing ceremony:
 
 ```typescript
 interface ComplianceBundle {
-  version: 2;
+  version: 5;
   pieceCid: string;
   chainId: number;
   exportedAtIso: string;
@@ -131,12 +131,7 @@ interface ComplianceBundle {
     timestamp: string;
   } | null;
   transactions: Array<{
-    kind:
-      | "file_registered"
-      | "file_signed"
-      | "sender_approved"
-      | "sender_revoked"
-      | "payout_executed";
+    kind: "file_registered" | "file_signed" | "payout_executed";
     txHash: `0x${string}`;
     chainId: number;
     contractAddress: `0x${string}`;
@@ -158,7 +153,6 @@ interface ComplianceBundle {
     signedAtIso: string | null;
     messageTimestampIso: string | null;
     blockTimestampFromTx: number | null;
-    approveSenderTxHash: `0x${string}` | null;
     completedFieldIds: string[];
     completionsRoot: `0x${string}` | null;
     leafSchemaVersion: number | null;
@@ -169,6 +163,19 @@ interface ComplianceBundle {
       siblings: `0x${string}`[];
     }>;
     draftCompletedFieldIds: string[];
+  }>;
+  settlements: Array<{
+    onChainRuleId: string;
+    recipientWallet: `0x${string}`;
+    tokenAddress: `0x${string}`;
+    amount: string;
+    releaseType: string;
+    status: string;
+    registerRuleTxHash: `0x${string}`;
+    approveTxHash: `0x${string}`;
+    payoutTxHash: `0x${string}` | null;
+    executedAtIso: string | null;
+    lastError: string | null;
   }>;
   offChainEvidence: {
     acknowledgements: Array<{
@@ -182,106 +189,87 @@ interface ComplianceBundle {
 }
 ```
 
-### Bundle Integrity
+### Bundle integrity
 
-The bundle is **canonicalized** (sorted keys recursively) and hashed with SHA-256. The server stores this hash in `compliance_export_logs` with:
+The bundle is **canonicalized** (sorted keys recursively) and hashed with SHA-256. The server stores this hash in `compliance_export_logs` with export metadata. That gives you a timestamped record of what was exported, when, and by whom—separate from the on-chain attestations themselves.
 
-- Export ID
-- Bundle hash
-- Requesting user's address
-- Optional document SHA-256 (if decrypted bytes available)
-- User agent and IP (for audit trails)
+## On-chain registration flow
 
-This creates a **timestamped, tamper-evident record** of what was exported, when, and by whom.
+When a signer finalizes, the following happens:
 
-## On-Chain Registration Flow
-
-When a signer completes the process, the following happens atomically:
-
-1. **Client-side preparation**:
+1. **Client-side preparation:**
    - Compute Merkle root of completed field IDs
-   - Generate Dilithium (post-quantum) signature of the message
-   - Create EIP-712 Ethereum signature for the transaction
+   - Generate Dilithium (post-quantum) signature commitment for the signing message
+   - Produce EIP-712 typed data signature for the relay transaction
 
-2. **Server validation**:
-   - Verify both signatures cryptographically
-   - Check all required fields are present in the Merkle tree
-   - Ensure field IDs match the signer's assigned fields in manifest
+2. **Server validation:**
+   - Verify signatures cryptographically
+   - Check required fields are present in the Merkle tree
+   - Ensure field IDs match the signer's assigned fields in the manifest
    - Simulate the on-chain transaction (catches revert conditions)
 
-3. **On-chain registration**:
+3. **On-chain registration** (KMS server relay, `onlyServer`):
+
    ```solidity
    function registerFileSignature(
-     string calldata pieceCid,
-     address sender,
-     address signer,
-     bytes20 dl3SignatureCommitment,  // Commitment to Dilithium sig
-     bytes32 completionsRoot,         // Merkle root of field IDs
-     uint8 leafSchemaVersion,         // Always 1 for now
-     uint256 timestamp,
-     uint256 nonce,
-     bytes calldata signature          // EIP-712 ECDSA signature
-   )
+     string calldata pieceCid_,
+     address sender_,
+     address signerWallet_,
+     bytes32 signerEmailCommitment_,
+     bytes32 privySubjectCommitment_,
+     bytes20 dl3SignatureCommitment_,
+     uint256 timestamp_,
+     bytes calldata signature_,
+     bytes32 completionsRoot_,
+     uint8 leafSchemaVersion_
+   ) external onlyServer
    ```
 
-4. **Database persistence**:
+4. **Database persistence:**
    - Store `completedFieldIds`, `completionsRoot`, `onchainTxHash` in `file_signatures`
-   - Delete any draft state (signer can't modify after finalizing)
+   - Clear draft state after finalization
 
-## Independent Verification (No Trust Required)
+## Independent verification (no trust required)
 
-The most powerful feature: **anyone can verify a signature without Filosign's servers.** Given just the Compliance Bundle and public blockchain data:
+Given the Compliance Bundle and public blockchain data, a verifier can:
 
-1. **Verify the document**: Check that `pieceCid` resolves to the expected encrypted bytes
-2. **Verify the manifest**: Recompute `placementCommitment` from manifest JSON, compare to on-chain value
-3. **Verify field completion**: For any field ID, use the Merkle proof to verify inclusion in `completionsRoot`
-4. **Verify the signature**: Check that `completionsRoot` was registered by the claimed signer address in the `FSFileRegistry` contract
-5. **Verify timestamp**: Cross-reference the on-chain transaction timestamp
+1. **Verify the manifest:** Recompute `placementCommitment` from manifest JSON; compare to on-chain value
+2. **Verify field completion:** For any field ID, use the Merkle proof to verify inclusion in `completionsRoot`
+3. **Verify the attestation:** Confirm `completionsRoot` was registered for the claimed signer in **`FSFileRegistry`**
+4. **Verify timestamp:** Cross-reference the on-chain transaction block time
 
-All of this can be done with:
+All of this requires:
+
 - The Compliance Bundle JSON
 - An EVM RPC endpoint (any public node)
 - Standard cryptographic libraries
 
-No API keys. No platform access. No trust required.
+No Filosign API keys. No platform login. The server **builds** the bundle for convenience; verification is **math + chain**.
 
-## Privacy Architecture
+## Privacy architecture
 
-We've designed the system to minimize data leakage:
+- **CID hash on-chain:** We store `keccak256(pieceCid)` in public logs, not the raw Content ID. Only parties with the original CID can fetch encrypted bytes from storage.
+- **Encrypted metadata:** Document names, signer emails, and other PII are not written on-chain.
+- **Selective disclosure:** Merkle proofs attest to specific field completions without exposing unrelated signers' selections in the proof path.
 
-- **CID instead of pieceCid on-chain**: We store `keccak256(pieceCid)` in public logs, not the actual Content ID. Only parties with the original CID can fetch the document from Filecoin.
-- **Encrypted metadata**: Document names, signer emails, and other PII are never stored on-chain. They're in the encrypted bundle only.
-- **Selective disclosure**: A compliance bundle can be shared with just the necessary parties. The Merkle proofs don't expose other signers' field completions.
+## Compliance and legal framework
 
-## Compliance & Legal Framework
-
-Our infrastructure satisfies the technical requirements of major e-signature frameworks:
-
-| Requirement | How We Satisfy It |
+| Requirement | How we satisfy it |
 | :---------- | :---------------- |
-| **Identity Authentication** | Wallet signatures prove private key ownership; optional Privy linking adds social identity |
-| **Intent to Sign** | EIP-712 typed data clearly shows what is being signed; Dilithium adds post-quantum intent |
-| **Association with Document** | `placementCommitment` and `cidIdentifier` cryptographically bind signature to specific document |
-| **Timestamping** | Blockchain block timestamp is immutable and publicly auditable |
-| **Tamper Detection** | Any modification to document, manifest, or signatures breaks Merkle proofs or on-chain hashes |
-| **Audit Trail** | Compliance Bundles provide complete, exportable, timestamped records |
-| **Long-term Validity** | Post-quantum signatures ensure validity even if ECDSA is broken |
-
-## The Future: Programmable Compliance
-
-This infrastructure enables features traditional platforms cannot offer:
-
-- **Conditional signatures**: "Only valid if fields A, B, and C are all completed"
-- **Multi-sig documents**: Require M-of-N signers with Merkle proof verification
-- **ZK proofs of signing**: Prove you signed without revealing which fields
-- **Automated compliance audits**: Smart contracts can verify bundle integrity programmatically
+| **Identity authentication** | Wallet signatures prove private key ownership; optional social login links via commitments |
+| **Intent to sign** | EIP-712 typed data shows what is being signed; Dilithium adds post-quantum intent binding |
+| **Association with document** | `placementCommitment` and `cidIdentifier` bind signatures to a specific document |
+| **Timestamping** | Block timestamp on `FileSigned` is immutable and publicly auditable |
+| **Tamper detection** | Manifest or completion changes break Merkle proofs or on-chain hash checks |
+| **Audit trail** | Compliance bundles provide exportable, hash-stamped records |
+| **Long-term validity** | Post-quantum signatures reduce dependence on ECDSA alone for document intent |
 
 ## Conclusion
 
-We've rebuilt the signing flow from the ground up with a simple principle: **cryptography first, platform second**. The result is a system where Filosign's servers are merely a convenience layer—one that can be replaced, audited, or ignored without compromising the legal validity of your signatures.
+We rebuilt the signing flow with a simple principle: **cryptography first, platform second**. Filosign's servers assemble bundles and relay transactions—but the legal weight sits in hashes, Merkle proofs, and **`FSFileRegistry`** state that anyone can re-check.
 
-Your documents are yours. Your signatures are provably yours. And anyone can verify that, forever.
+Your documents stay encrypted. Your field-level completions stay provably yours. And anyone with the bundle and an RPC endpoint can verify that.
 
 ---
 
-**Try it yourself**: The next time you receive a document on Filosign, download the Compliance Bundle and try to verify the Merkle proof independently. The math doesn't lie.
+**Try it yourself:** The next time you sign on Filosign, export the Compliance Bundle and walk through a Merkle proof against Base. The math does not depend on us.

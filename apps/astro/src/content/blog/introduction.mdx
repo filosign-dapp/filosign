@@ -1,9 +1,9 @@
 ---
 title: Introducing Filosign
-description: Six months ago, we started working on Filosign; an idea focused on creating a completely private and end-to-end encrypted document signing standard.
+description: Private agreement workflows with end-to-end encrypted documents, verifiable signing records on Base, and attached payouts.
 readingTime: 3 min
-dateDisplay: Apr 29, 2026
-publishedISO: "2026-04-29T12:00:00.000Z"
+dateDisplay: Apr 15, 2026
+publishedISO: "2026-04-15T12:00:00.000Z"
 author:
   name: Kartik
   role: Written by
@@ -12,57 +12,56 @@ heroImage: /banner.webp
 heroVideo: /media/demo.webm
 draft: false
 featured: true
+tags: ["Guides", "Product"]
 ---
 
-Six months ago, we started working on Filosign; an idea focused on creating a completely private and end-to-end encrypted document signing standard.
+Six months ago, we started building Filosign—a document signing product where you control your files and your proof, not a vendor.
 
-_"But e-sign is a commodity, so why do we need a new app for it?"_
+_"But e-sign is a commodity. Why do we need another app?"_
 
-Because almost all of the e-signature solutions out there are tied to a particular vendor and the vendor controls your files as well as your signatures, not you. If that vendor gets breached, all your sensitive data is at the risk of being exposed to bad actors. If their database disappears, your proof disappears. We propose a new standard that overcomes these flaws.
+Because most e-signature tools tie your agreements to one company. They hold your documents, host your audit trail, and decide what happens if their servers go down or get breached. We wanted something different: encrypted documents, signing records anyone can verify, and optional payouts that never sit in our custody.
 
-To achieve that, our main challenges were:
+Two problems kept coming up:
 
-- Nobody apart from the sender and the recipients should be able to access the files.
-- The signature needs to be permanently tied to the sender and recipient in a way that it is verifiable (and accessible) by anyone, from anywhere.
+- Only senders and recipients should be able to read the files.
+- Proof of who signed what should survive Filosign's database—and be checkable without trusting us.
 
-Filosign solves these challenges using a combination of cryptography and blockchain technology:
+Filosign addresses both with client-side encryption and on-chain attestations on **Base**:
 
-- End-to-end client-side encryption of files, encrypted such that only the senders and recipients can decrypt and view them with their identity (a wallet).
-- Recipients can sign the document using their wallet directly, which means, signatures are now transactions on a blockchain. Blockchain transactions are permanent records stored publicly with a unique hash, and can be verified by anyone.
+- **End-to-end encryption:** Documents are encrypted in your browser. Only wallets you share with can decrypt them.
+- **Verifiable signing records:** When someone signs, an attestation is relayed to **`FSFileRegistry`** on Base. Anyone with the compliance bundle and a public RPC node can verify it—no Filosign login required.
 
-### As of today, Filosign has the following capabilities:
+### What you can do today
 
-- **Wallet-Native Identity:** In web3, wallets are the primary way to prove ownership and take action. So it makes sense to use the exact same wallet to sign documents on your behalf. You can bring your own wallet, or sign up using a social provider like Google or X, and we will create one for you internally.
-- **Controlled Permissions:** You have full control over who you receive signing requests from. Senders have to add you as a contact and wait for you to accept before they can send a file, which completely prevents spam.
-- **End-to-End Encryption:** Your documents are encrypted right in your browser. Only you and your recipients hold the keys to decrypt and view the content. To us or anyone on the outside, the files are just gibberish.
-- **Decentralized Storage:** We store the encrypted documents on a decentralized service (Filecoin Onchain Cloud) instead of a centralized database. Being stored in this way, your files are always available, even if our own servers go down.
-- **On-Chain Proofs:** Signatures are permanent transactions on the blockchain. They are tamper-proof, and are stored publicly so anyone can independently verify them from anywhere.
-- **No Gas Required:** You can use the entire platform without needing anything more than a free account. We cover all the gas for users internally so you don't ever have to worry about it, just how it should be.
-- **Compliance Report:** For convenience, you can generate a proof packet (a PDF report) that contains all the details about the contract, including the specific on-chain transaction hashes for the signature. This is handy for legal purposes.
+- **Wallet-native identity:** Sign with your own wallet, or sign up with Google or X and we provision an embedded wallet for you.
+- **Controlled permissions:** Senders add you as a contact and wait for your approval before sending—no signing spam.
+- **End-to-end encryption:** We only ever store ciphertext. Plaintext never touches our servers.
+- **Durable encrypted storage:** Files live on private object storage and are archived to **Filecoin** via FilCDN so encrypted payloads stay available even if our hot storage fails.
+- **On-chain proof:** Registration and signature events are written to **`FSFileRegistry`**. Tamper-evident, publicly auditable, independent of our database.
+- **No gas for you:** We relay on-chain writes so you can use the product without holding ETH for fees.
+- **Proof packet:** Export a PDF report with ceremony details and transaction hashes for legal or compliance review.
 
 _Here is what a Filosign proof packet looks like:_
 
 ![Filosign proof packet](https://cdn.filosign.ishtails.xyz/assets/proof.webp)
 
-_This includes a record of who sent it, who signed it, when was it signed and the transaction hash for the signature._
+_It records who sent the document, who signed, when they signed, and the on-chain transaction hash._
 
-On Legality: By utilizing cryptographic identity and blockchain timestamps, Filosign is designed to satisfy the core requirements of frameworks like the ESIGN Act and eIDAS. We provide the mathematical proof; you provide the intent.
+On legality: Filosign is designed around cryptographic identity, intent, and timestamps—the core building blocks frameworks like the ESIGN Act and eIDAS expect. We provide the evidence; you provide the intent.
 
-## Programmable Settlement
+## Programmable settlement
 
-Because of this chosen architecture, we can do some things that traditional platforms simply cannot: Programmable Settlement. Here is an example of what is possible:
+The same architecture unlocks something traditional platforms cannot offer cleanly: **attached payouts**.
 
-Senders can attach USDC settlement rules to a document so recipients are paid when signing conditions are met—no custodial escrow, just an on-chain approve and permissionless `executePayout` (Filosign server relay or your wallet). This unifies signatures and settlements in a single flow. Consider the following examples:
+Senders attach rules via **`FSPaymentValidator`**. The payer approves funds from their wallet. When signing conditions are met, **`executePayout`** moves funds directly—Filosign never holds the money. Our server can relay the transaction for convenience; anyone can call it permissionlessly on-chain.
 
-- **Cross-Border Payouts:** Contractors / Freelancers across the globe can sign a final handover agreement and instantly receives their payment, eliminating invoice delays and wire fees.
-- **Open Source and DAO Grants:** Developers signing a milestone document to automatically unlock treasury funds.
+Examples:
 
-During the past six months, Filosign has evolved a lot, thanks to all the people who nudged us in the right direction and believed in our vision. We have kept building it quietly until now, trying to get the core right and now we need your feedback to make it perfect!
+- **Cross-border payouts:** A contractor signs a handover doc and receives payment in the same flow—no invoice chase or wire delay.
+- **Milestone grants:** A funder releases payment when a signed milestone is recorded on-chain.
 
-So today, we are releasing the public beta for Filosign for you to try, test and break. You can get started by connecting your social account or your wallet if you have one. Nothing else required. Send a file to a friend, attach a USDC payment if you like, sign a doc, and tell us what breaks or is missing so we can fix it.
+After six months of quiet building, we are opening a **public beta** on **Base Sepolia**. Connect a social account or wallet, send a file, attach a test payout if you like, sign something, and tell us what breaks.
 
-We are excited to hear what you think about it, what features do you want, or any issues you face while trying to use it. We will use this feedback to improve the platform!
+**[Try the public beta →](https://app.filosign.xyz)**
 
-Here's the link: [staging.filosign.xyz](http://staging.filosign.xyz)
-
-> Note: Filosign is currently in Beta and is deployed on a testnet (Base Sepolia). USDC attached to documents here is testnet USDC from faucets for experimentation; uploaded files may be wiped in future. This environment is a playground without financial risk or permanent record. Behavior matches mainnet design. A stable mainnet launch with permanent storage will follow soon.
+> Note: Filosign is in beta on **Base Sepolia**. Payouts on documents use testnet funds from faucets. Uploaded files may be wiped during beta. This is a playground without financial risk or permanent record. Behavior matches our mainnet design; a stable mainnet launch will follow.

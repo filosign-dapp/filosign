@@ -1,6 +1,6 @@
 ---
 title: "What OAuth can't unwrap: wallet-derived unlock for Filosign's client keys"
-description: A technical walkthrough of why Privy login and a PQ signing seed are different problems, what we tried first (PIN, sessionStorage), and how we reuse the same wallet signature chain from registration to unlock without custody.
+description: Why social login and post-quantum signing keys are separate problems, how keygen commitments live off-chain, and how wallet-derived unlock reuses the registration signature chain.
 readingTime: 10 min
 dateDisplay: May 10, 2026
 publishedISO: "2026-05-10T12:00:00.000Z"
@@ -11,40 +11,44 @@ author:
 heroImage: /banner.webp
 draft: false
 featured: false
+tags: ["Guides", "Tech"]
 ---
 
 _"You already logged in with Google. Why are you asking for six more digits?"_
 
-That complaint was fair. From the outside, Filosign looked like it stacked OAuth on top of a second password. Under the hood it was never that simple. OAuth answered **identity**. Our post-quantum signing keys still needed **material only the client should ever possess**, bound to the embedded wallet and anchored on-chain as commitments. This post is for anyone reviewing our architecture: how we separated those concerns, what we rejected along the way, and how returning users now unlock with the **same cryptographic path we already used at registration**, with the PIN demoted to a real fallback instead of the default ritual.
+That complaint was fair. From the outside, Filosign looked like OAuth stacked on a second password. Under the hood it was never that simple.
+
+**OAuth answers identity.** Our post-quantum signing keys still need **material only the client should ever possess**, bound to the embedded wallet and anchored as commitments the server can verify. This post is for anyone reviewing our architecture: how we separated those concerns, what we rejected, and how returning users unlock with the **same cryptographic path we use at registration**—with PIN as a real fallback, not the default ritual.
 
 ## Two problems dressed as one
 
-**Privy** (and any hosted auth provider in this role) solves session and wallet custody at the product layer: prove you control an account, get an embedded `WalletClient`, talk to contracts. That is not the same as saying "here is the expanded Filosign seed that derives Kyber1024 and Dilithium keypairs whose commitments live in `FSKeyRegistry`."
+**Privy** (and any hosted auth provider in this role) solves session and wallet custody at the product layer: prove you control an account, get an embedded `WalletClient`, talk to contracts. That is not the same as handing over the expanded Filosign seed that derives Kyber1024 and Dilithium keypairs.
 
-Those commitments are public. The seed is not. So every serious design had to answer:
+Those commitments are auditable. The seed is not. Every serious design had to answer:
 
 1. Where does the seed live between visits?
 2. Who can derive it again without our servers ever holding plaintext?
 
 Early Filosign answered (2) with **local encryption**: user-chosen PIN, Argon2id, AES-GCM envelope in IndexedDB keyed per wallet address. Answer (1) was "encrypted at rest, decrypted into memory after PIN."
 
-That model is honest for auditors: **non-custodial** from Filosign's perspective if we never see the PIN or plaintext seed. It is brutal for UX when product expectation is "I'm already in."
+That model is honest for auditors: **non-custodial** from Filosign's perspective if we never see the PIN or plaintext seed. It is brutal for UX when the expectation is "I'm already in."
 
 ## What actually sits in the browser
 
-Roughly, three layers matter for this discussion:
+Roughly, three layers matter:
 
 | Piece | Role |
 | :---- | :--- |
-| **`FSKeyRegistry` (chain)** | Stores salts (`salt_pin`, `salt_seed`, `salt_challenge`) and **commitments** to Kyber and Dilithium public keys. Anyone can read it. No seed. |
-| **PIN envelope (IndexedDB)** | Ciphertext of the expanded seed, wrapped with Argon2id + AES-GCM using the PIN. Survives refresh of the app; does not survive a forgotten PIN without recovery phrase. |
+| **Registration snapshot (server / Postgres)** | Stores salts (`salt_seed`, `salt_challenge`) and **commitments** to Kyber and Dilithium public keys in `users.keygenDataJson`. Returned via the registration snapshot API after auth—not readable on-chain. |
+| **Registration EIP-712 (wallet signature)** | At signup, the wallet signs `RegisterKeygenData` with **`FSFileRegistry`** as the verifying contract. This binds commitments to the wallet without writing key material on-chain. |
+| **PIN envelope (IndexedDB)** | Ciphertext of the expanded seed, wrapped with Argon2id + AES-GCM using the PIN. Survives refresh; does not survive a forgotten PIN without recovery phrase. |
 | **Session seed (RAM)** | After unlock, the expanded seed lives in a process-local map so Dilithium and KEM operations can run in-session. |
 
-Privy never replaces the envelope by itself. It gets you a wallet that can **sign**. Signing is the bridge we finally leaned on harder.
+Privy never replaces the envelope by itself. It gets you a wallet that can **sign**. Signing is the bridge we leaned on harder.
 
 ## The sessionStorage detour
 
-For a while we mirrored the decrypted seed into **`sessionStorage`** so a full tab reload did not force another unlock step. That traded convenience for a wider persistence story than we wanted for high-value key material. Session seed is now **memory-only**: it dies with a hard reload, and the next paint runs wallet-derived unlock first, then PIN if needed. Fewer persistence layers keeps the mental model simple for integrators: chain commitments are durable, the envelope is durable, the unlocked seed is ephemeral for that browsing session.
+For a while we mirrored the decrypted seed into **`sessionStorage`** so a full tab reload did not force another unlock step. That traded convenience for a wider persistence story than we wanted for high-value key material. Session seed is now **memory-only**: it dies with a hard reload, and the next paint runs wallet-derived unlock first, then PIN if needed.
 
 ## Options we seriously considered
 
@@ -72,25 +76,25 @@ When a user first registers, `walletKeyGen` samples random salts, then calls `de
 filosign:${walletAddress}:${saltChallenge}:filosign-keygen-v2
 ```
 
-It asks the embedded wallet for **`personal_sign`** over that string (via `wallet.signMessage` in viem). The resulting **65-byte ECDSA signature** is fed into HKDF-SHA256 with `salt_seed` and domain string `fs-key-seed-core-v2` to produce a **32-byte core**. That core expands with another HKDF stage (`fs-key-seed-expand-v1`) into the 64-byte seed that seeds Kyber and Dilithium key generation. Commitments to those public keys are what land on-chain.
+It asks the embedded wallet for **`personal_sign`** over that string (via `wallet.signMessage` in viem). The resulting **65-byte ECDSA signature** is fed into HKDF-SHA256 with `salt_seed` and domain string `fs-key-seed-core-v2` to produce a **32-byte core**. That core expands with another HKDF stage (`fs-key-seed-expand-v1`) into the 64-byte seed that seeds Kyber and Dilithium key generation. Commitments to those public keys are stored server-side and bound by the registration EIP-712 signature.
 
 None of that required the PIN for math. The PIN only encrypts the expanded seed for **offline-ish recovery** when you cannot or will not use the wallet path.
 
-So for a **returning** user who still has the same embedded wallet and the same on-chain salts, the unlock question becomes mechanical:
+So for a **returning** user who still has the same embedded wallet and the same stored salts, the unlock question becomes mechanical:
 
-1. Read `salt_seed` and `salt_challenge` from `FSKeyRegistry`.
+1. Fetch `storedKeygenData` from the **registration snapshot** API (`salt_seed`, `salt_challenge`, commitments).
 2. Rebuild the same challenge string. Call `signMessage` again.
-3. Run the same HKDF pipeline. Expand. Run `seedKeyGen` and check `commitmentKem` and `commitmentSig` against the registry.
+3. Run the same HKDF pipeline. Expand. Run `seedKeyGen` and check `commitmentKem` and `commitmentSig` against the snapshot.
 
-Most Ethereum-compatible wallets use deterministic signing for the same message and key (RFC 6979 style). When that holds, you recover the **exact** seed you registered: same commitments, no PIN round-trip, no new primitive. If an unusual wallet environment disagrees, our registry check fails cleanly and the user continues through PIN or recovery, same as before.
+Most Ethereum-compatible wallets use deterministic signing for the same message and key (RFC 6979 style). When that holds, you recover the **exact** seed you registered: same commitments, no PIN round-trip, no new primitive. If an unusual wallet environment disagrees, our commitment check fails cleanly and the user continues through PIN or recovery, same as before.
 
 We packaged that path as `unlockSeedFromWallet` in the React SDK and call it from `useLogin` **before** we ask for a PIN.
 
 ## What shipped in product behavior
 
-**Dashboard load:** when Privy says authenticated, the user is registered on-chain, and our `useIsLoggedIn` query says "no session seed yet," we automatically run `login.mutateAsync({})`. That tries wallet-derived unlock first. Embedded wallets (including Privy's) often sign **without** surfacing another modal once the session is warm, which is why the product suddenly feels like "one login."
+**Dashboard load:** when Privy says authenticated, the user is registered, and our `useIsLoggedIn` query says "no session seed yet," we automatically run `login.mutateAsync({})`. That tries wallet-derived unlock first. Embedded wallets (including Privy's) often sign **without** surfacing another modal once the session is warm, which is why the product suddenly feels like "one login."
 
-**When PIN still appears:** wallet unavailable, uncommon signer behavior, cleared local state without on-chain changes, wrong account connected, or any path where commitments fail to match after derivation. Then we throw `LOGIN_PIN_REQUIRED` and show the existing PIN UI. Recovery phrase flows are unchanged.
+**When PIN still appears:** wallet unavailable, uncommon signer behavior, cleared local state without server-side changes, wrong account connected, or any path where commitments fail to match after derivation. Then we throw `LOGIN_PIN_REQUIRED` and show the existing PIN UI. Recovery phrase flows are unchanged.
 
 **Registration:** unchanged requirement to set a PIN and capture recovery phrase so backup unlock paths stay available.
 
@@ -98,10 +102,10 @@ Auditors can trace the branching in `useLogin`: registered branch tries `unlockS
 
 ---
 
-Filosign never treated OAuth as the cryptographic root of signing keys. It only ever solved who gets to drive the embedded wallet in this browser profile. The PQ seed always lived downstream of **wallet-mediated entropy** plus **public commitments** anyone can audit on-chain. Wallet-first unlock makes that story explicit in the product: the same signature pipeline we relied on at registration runs again on every fresh session, silently when the stack cooperates, until something genuinely requires human-readable backup.
+Filosign never treated OAuth as the cryptographic root of signing keys. It only ever solved who gets to drive the embedded wallet in this browser profile. The PQ seed always lived downstream of **wallet-mediated entropy** plus **verifiable commitments** stored off-chain and bound by EIP-712 at registration.
+
+Wallet-first unlock makes that story explicit in the product: the same signature pipeline we relied on at registration runs again on every fresh session, silently when the stack cooperates, until something genuinely requires human-readable backup.
 
 PIN and recovery phrase are still first-class. They are how humans survive device churn and offline scenarios without asking Filosign to hold keys. Passkeys and PRF sit next on the roadmap when we want unlock rituals that line up even more tightly with platform authenticators while preserving non-custodial assumptions.
 
-If you are wiring Filosign into your stack or reading our SDK for review: treat chain commitments as ground truth, wallet-derived unlock as the default restore path for returning embedded-wallet sessions, and the envelope plus mnemonic as portable continuity when life gets messy. That is the architecture we intended once we stopped pretending a login banner could substitute for key derivation math.
-
-We built Filosign so signatures stay tied to verifiable commitments and client-held entropy, not because we liked shipping extra screens. We shipped fewer screens once our own crypto layout pointed the way.
+If you are wiring Filosign into your stack or reading our SDK for review: treat the registration snapshot as ground truth for salts and commitments, wallet-derived unlock as the default restore path for returning embedded-wallet sessions, and the envelope plus mnemonic as portable continuity when life gets messy. That is the architecture we intended once we stopped pretending a login banner could substitute for key derivation math.

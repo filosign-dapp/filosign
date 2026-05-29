@@ -2,12 +2,13 @@ import { env } from "../env";
 
 export const siteName = "Filosign";
 
-export const siteTagline = "Trustless standard for permanent agreements";
+export const siteTagline =
+	"Private agreement workflows with optional USDC settlement";
 
 export const defaultTitle = `${siteName} — ${siteTagline}`;
 
 export const defaultDescription =
-	"Send, sign, and verify sensitive documents with encrypted workflows. Private document signing on the blockchain with self-sovereign identity and E2EE.";
+	"Send encrypted documents, collect verifiable signatures, and optionally release USDC when signing conditions are met.";
 
 export const twitterSite = "@filosign";
 
@@ -15,12 +16,13 @@ export const themeColor = "#202223";
 
 export const social = {
 	x: "https://x.com/filosign",
-	github: "https://github.com/hetairoi-labs/filosign",
 } as const;
 
+export const siteUrl = env.PUBLIC_ASTRO_URL.replace(/\/$/, "");
+
 export const parentOrganization = {
-	name: "Hetairoi Labs",
-	url: "https://hetairoi.xyz",
+	name: "Filosign",
+	url: siteUrl,
 } as const;
 
 export const logo = {
@@ -32,8 +34,6 @@ export const logo = {
 	width: 512,
 	height: 512,
 } as const;
-
-export const siteUrl = env.PUBLIC_ASTRO_URL.replace(/\/$/, "");
 
 /** Inner pages: `About — Filosign` */
 export function titleWithBrand(pageTitle: string): string {

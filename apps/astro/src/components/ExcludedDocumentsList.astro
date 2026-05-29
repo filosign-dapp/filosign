@@ -1,0 +1,11 @@
+---
+import { EXCLUDED_DOCUMENT_CATEGORIES } from "../config/legal-content";
+---
+
+<ul>
+	{
+		EXCLUDED_DOCUMENT_CATEGORIES.map((item) => (
+			<li>{item}</li>
+		))
+	}
+</ul>

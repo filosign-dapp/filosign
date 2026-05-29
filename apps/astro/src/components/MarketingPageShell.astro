@@ -1,0 +1,29 @@
+---
+import Footer from "./Footer.astro";
+import Navbar from "./Navbar.astro";
+
+interface Props {
+	/** Navbar intro pace — `landing` on homepage only. */
+	pace?: "landing" | "page";
+}
+
+const { pace = "page" } = Astro.props;
+---
+
+<a
+	href="#main-content"
+	class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-100 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:ring-3 focus:ring-ring/50"
+>
+	Skip to main content
+</a>
+<div
+	class="[--section-gap:1.5rem] md:[--section-gap:0rem] min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary"
+>
+	<Navbar pace={pace} />
+	<div class="h-(--section-gap)"></div>
+	<main id="main-content">
+		<slot />
+	</main>
+	<div class="h-(--section-gap)"></div>
+	<Footer />
+</div>

@@ -39,20 +39,20 @@ function BentoCard({
 export default function FeaturesBentoIsland() {
 	const cards = [
 		{
-			title: "You Control Everything",
+			title: "Proof outside the vendor",
 			description:
-				"Unlike other platforms, you own your identity, files, and signatures. No vendor lock-in. If we disappear, your proofs remain permanently verifiable on the blockchain.",
+				"Proof records are designed to be independently verifiable outside Filosign, so your audit trail is not just a database row behind a vendor login.",
 			body: (
 				<div className="bg-white rounded-2xl p-5 shadow-sm border border-border/40 w-full space-y-3.5 h-[192px] flex flex-col justify-center">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-3">
 							<ShieldCheckIcon className="size-5 text-primary" weight="fill" />
 							<span className="text-sm font-medium font-manrope">
-								Self-Sovereign
+								Verifiable proof
 							</span>
 						</div>
 						<span className="text-[10px] font-medium bg-secondary text-primary px-2.5 font-manrope py-1 rounded-full">
-							You Own It
+							Portable
 						</span>
 					</div>
 					<div className="flex items-center justify-between opacity-40">
@@ -60,10 +60,10 @@ export default function FeaturesBentoIsland() {
 							<div className="size-5 rounded-full border border-foreground/30 flex items-center justify-center text-[10px] font-medium font-manrope">
 								V
 							</div>
-							<span className="text-sm font-manrope">Vendor Controlled</span>
+							<span className="text-sm font-manrope">Vendor-only record</span>
 						</div>
 						<span className="text-[10px] font-medium bg-muted text-muted-foreground px-2.5 font-manrope py-1 rounded-full">
-							They Own It
+							Locked in
 						</span>
 					</div>
 					<div className="flex items-center justify-between opacity-40 pb-1">
@@ -71,17 +71,19 @@ export default function FeaturesBentoIsland() {
 							<div className="size-5 rounded-full border border-foreground/30 flex items-center justify-center text-[10px] font-medium font-manrope">
 								D
 							</div>
-							<span className="text-sm font-manrope">Database Storage</span>
+							<span className="text-sm font-manrope">
+								Screenshot audit trail
+							</span>
 						</div>
 						<span className="text-[10px] font-medium bg-muted text-muted-foreground px-2.5 font-manrope py-1 rounded-full">
-							Can Be Lost
+							Manual
 						</span>
 					</div>
 				</div>
 			),
 		},
 		{
-			title: "True End-to-End Encryption",
+			title: "Private by default",
 			description:
 				"Documents are encrypted in your browser before they ever leave your device. Only you and your recipients hold the keys. To us and everyone else, your files are just gibberish.",
 			body: (
@@ -98,9 +100,9 @@ export default function FeaturesBentoIsland() {
 			),
 		},
 		{
-			title: "Spam-Free by Design",
+			title: "Recipient control",
 			description:
-				"Senders must request permission before they can send you files. You have full control over who can contact you, completely preventing unwanted signing requests and document spam.",
+				"Senders request permission before they can route documents to you. Teams get cleaner workflows and recipients avoid unsolicited signing requests.",
 			body: (
 				<div className="bg-white rounded-2xl p-5 shadow-sm border border-border/40 w-full h-[192px] flex flex-col justify-center">
 					<div className="space-y-2">
@@ -161,8 +163,8 @@ export default function FeaturesBentoIsland() {
 					transition={{ delay: 0.1 }}
 					className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto font-manrope font-light"
 				>
-					Self-sovereign identity, end-to-end encryption, and programmable
-					settlement. You control everything.
+					Encrypted documents, portable proof, and optional settlement for
+					agreements that should not stop at a PDF.
 				</motion.p>
 			</div>
 
@@ -193,17 +195,16 @@ export default function FeaturesBentoIsland() {
 								<div className="flex items-center gap-2 text-primary mb-1">
 									<ChartBarIcon className="size-5" />
 									<span className="font-medium text-sm font-manrope">
-										Compliance-ready records
+										Proof-ready records
 									</span>
 								</div>
 								<h3 className="text-2xl md:text-3xl font-manrope font-light">
-									Proof you can export and verify
+									Proof you can export and explain
 								</h3>
 								<p className="text-muted-foreground text-base leading-relaxed font-manrope font-light">
-									Every signature is anchored on-chain with a structured
-									compliance bundle—who signed, when, and how fields map to the
-									document. Export a PDF audit trail without stitching emails
-									and screenshots.
+									Every completed workflow can produce a structured proof
+									packet: who signed, when, what fields were completed, and
+									which records back the signing event.
 								</p>
 							</div>
 
@@ -215,10 +216,10 @@ export default function FeaturesBentoIsland() {
 										</div>
 										<div>
 											<div className="text-sm font-semibold text-foreground font-manrope">
-												Sign & Get Paid
+												Sign and settle
 											</div>
 											<div className="text-xs text-muted-foreground font-manrope">
-												Instant settlement
+												Optional settlement
 											</div>
 										</div>
 									</div>
@@ -248,7 +249,7 @@ export default function FeaturesBentoIsland() {
 											weight="bold"
 										/>
 										<span className="text-sm font-manrope">
-											Payment releases instantly
+											Payment can settle on-chain
 										</span>
 									</div>
 									<div className="flex items-center gap-3 p-3 bg-[#F2F9F0] rounded-xl">
@@ -257,7 +258,7 @@ export default function FeaturesBentoIsland() {
 											weight="bold"
 										/>
 										<span className="text-sm font-manrope">
-											No invoices, no delays
+											Less payout follow-up
 										</span>
 									</div>
 								</div>

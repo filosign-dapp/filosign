@@ -86,10 +86,10 @@ export default function BentoGridIsland() {
 					badgeIcon={<GlobeIcon className="size-5 text-black" weight="fill" />}
 					badgeText="Global"
 					badgeBgColor="bg-primary-light"
-					stat="180+"
-					subtitle="Countries Accepted"
-					title="Legally Binding"
-					description="Compliant with eIDAS, ESIGN, and UETA standards. Your signatures hold up in court anywhere."
+					stat="4"
+					subtitle="Evidence pillars"
+					title="Built for legal evidence"
+					description="Designed to support evidence of intent, attribution, record integrity, and retention patterns used in e-signature frameworks."
 					delay={0.1}
 				/>
 
@@ -102,9 +102,9 @@ export default function BentoGridIsland() {
 					badgeText="Perpetual"
 					badgeBgColor="bg-primary-light"
 					stat={<InfinityIcon className="size-16 -my-2 text-white" />}
-					subtitle="Storage Forever"
-					title="Irrevocable Access"
-					description="Documents are stored on the decentralized Filecoin network, ensuring they outlive any centralized server."
+					subtitle="Verifiable records"
+					title="Long-term proof options"
+					description="Encrypted documents and proof records can use long-term verifiable storage options without exposing agreement contents."
 					delay={0.2}
 				/>
 
@@ -116,10 +116,10 @@ export default function BentoGridIsland() {
 					}
 					badgeText="Velocity"
 					badgeBgColor="bg-secondary-medium"
-					stat="5x"
-					subtitle="Faster Closing"
+					stat="1"
+					subtitle="Workflow"
 					title="Programmable Settlement"
-					description="Attach payments directly to signatures. Signers automatically receive payment the moment they sign."
+					description="Attach non-custodial USDC payout rules so payment can settle on-chain when signing conditions are met."
 					delay={0.3}
 				/>
 			</div>

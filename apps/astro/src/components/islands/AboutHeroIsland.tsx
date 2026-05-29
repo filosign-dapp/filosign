@@ -31,11 +31,12 @@ export default function AboutHeroIsland() {
 						className="max-w-4xl mx-auto text-center mb-16 flex flex-col items-center"
 					>
 						<h1 className="text-4xl md:text-5xl lg:text-6xl font-medium font-manrope tracking-tight text-foreground mb-6">
-							Filosign is on a mission to transform document signing.
+							Filosign is building private agreement workflows.
 						</h1>
 						<p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-							Empowering users with secure, decentralized, and efficient
-							document signing solutions for the modern web.
+							Encrypted documents, verifiable signatures, proof packets, and
+							optional USDC settlement for teams whose agreements should not
+							stop at a PDF.
 						</p>
 					</MarketingStagger>
 				</div>

@@ -1,4 +1,3 @@
-import { ArrowSquareOutIcon, GithubLogoIcon } from "@phosphor-icons/react";
 import { MarketingStagger } from "./MarketingStagger";
 import { MotionProvider } from "./MotionProvider";
 
@@ -15,22 +14,9 @@ export default function ChangelogHeroIsland() {
 					</h1>
 
 					<p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10">
-						A changelog of new features, design improvements and enhancements
-						lately
+						Product updates across private signing, proof exports, settlement,
+						and workflow improvements.
 					</p>
-
-					<a
-						href="https://github.com/hetairoi-labs/filosign/blob/main/CHANGELOG.md"
-						target="_blank"
-						rel="noreferrer"
-						className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-background hover:bg-secondary/50 transition-colors text-muted-foreground hover:text-foreground ring-1 ring-border/50 mb-6"
-					>
-						<GithubLogoIcon className="size-4" weight="fill" />
-						<span className="text-sm font-medium font-manrope">
-							Changelog on GitHub
-						</span>
-						<ArrowSquareOutIcon className="size-4" />
-					</a>
 				</MarketingStagger>
 
 				<div className="absolute inset-0 pointer-events-none select-none overflow-hidden">

@@ -20,9 +20,8 @@ export default function QuoteSectionIsland() {
 					<h2 className="text-3xl sm:text-4xl md:text-5xl font-medium leading-tight tracking-tight font-manrope text-foreground">
 						<blockquote>
 							"We started Filosign with one mission: To revolutionize the
-							traditional centralized document signing infrastructure and
-							replace the trust with trustless, modern, privacy-centric, and
-							mathematically verified foundation."
+							document workflow after the signature: private records, clear
+							proof, and settlement when the agreement calls for it."
 						</blockquote>
 					</h2>
 

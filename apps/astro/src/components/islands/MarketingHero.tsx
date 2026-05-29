@@ -7,6 +7,7 @@ import {
 	marketingGhostLgClass,
 	marketingPrimaryLgClass,
 } from "../../lib/marketing-button";
+import { marketingHeroSectionClass } from "../../lib/marketing-layout";
 import {
 	MARKETING_PRESSABLE_HOVER,
 	MARKETING_PRESSABLE_TAP,
@@ -15,7 +16,7 @@ import MotionAwareVideo from "./MotionAwareVideo";
 import { MotionProvider } from "./MotionProvider";
 
 const badgeClass =
-	"group/badge inline-flex h-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap bg-primary text-primary-foreground";
+	"group/badge inline-flex h-fit max-w-full shrink-0 items-center justify-center gap-1 overflow-hidden rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium text-balance bg-primary text-primary-foreground";
 
 interface MarketingHeroProps {
 	appUrl: string;
@@ -28,7 +29,12 @@ export default function MarketingHero({ appUrl }: MarketingHeroProps) {
 
 	return (
 		<MotionProvider>
-			<section className="lg:max-w-[80dvw] mx-auto flex flex-col gap-6 md:gap-8 py-12 p-8 md:p-page">
+			<section
+				className={cn(
+					marketingHeroSectionClass,
+					"flex flex-col gap-6 md:gap-8",
+				)}
+			>
 				<motion.div
 					className="flex flex-col gap-4"
 					initial={reducedMotion ? false : { opacity: 0, y: 30 }}
@@ -64,7 +70,7 @@ export default function MarketingHero({ appUrl }: MarketingHeroProps) {
 							...SPRING_TOKENS.soft,
 							delay: itemDelay + 0.1,
 						}}
-						className="text-3xl sm:text-4xl md:text-5xl xl:text-7xl leading-tight text-balance"
+						className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-tight text-balance max-w-full"
 					>
 						Private agreement workflows that can settle themselves
 					</motion.h1>
@@ -78,9 +84,8 @@ export default function MarketingHero({ appUrl }: MarketingHeroProps) {
 						}}
 						className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed -mt-2 font-manrope font-light text-pretty"
 					>
-						Send encrypted documents, collect verifiable signatures, and
-						optionally release USDC when signing conditions are met. Familiar
-						e-signing UX, with proof and settlement built in.
+						Send encrypted documents, collect verifiable signatures, and attach
+						payouts on signing conditions.
 					</motion.p>
 
 					<motion.div

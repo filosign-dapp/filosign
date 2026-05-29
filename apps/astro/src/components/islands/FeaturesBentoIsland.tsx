@@ -1,6 +1,7 @@
 import { ChartBarIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
+import { marketingSectionShellClass } from "../../lib/marketing-layout";
 import {
 	PrivateByDefaultMock,
 	ProofOutsideMock,
@@ -22,7 +23,7 @@ function BentoCard({
 	return (
 		<div
 			className={[
-				"h-full bg-card border-none shadow-none rounded-2xl overflow-hidden p-4 flex flex-col",
+				"@container h-full bg-card border-none shadow-none rounded-2xl overflow-hidden p-4 flex flex-col",
 				cardClassName ?? "",
 			].join(" ")}
 		>
@@ -60,7 +61,7 @@ export default function FeaturesBentoIsland() {
 	];
 
 	return (
-		<section className="py-24 px-8 md:px-page max-w-7xl mx-auto">
+		<section className={marketingSectionShellClass}>
 			<div className="text-center mb-16 space-y-4">
 				<motion.h2
 					initial={{ opacity: 0, y: 20 }}
@@ -78,11 +79,11 @@ export default function FeaturesBentoIsland() {
 					className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto font-manrope font-light"
 				>
 					Encrypted documents, a record you can share and verify, and optional
-					USDC payouts when everyone has signed.
+					Attached payouts when everyone has signed.
 				</motion.p>
 			</div>
 
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 				{cards.map((card, i) => (
 					<motion.div
 						key={card.title}
@@ -101,10 +102,10 @@ export default function FeaturesBentoIsland() {
 					whileInView={{ opacity: 1, y: 0 }}
 					viewport={{ once: true }}
 					transition={{ delay: 0.5 }}
-					className="md:col-span-3"
+					className="md:col-span-2 lg:col-span-3"
 				>
 					<div className="h-full bg-card border-none shadow-none rounded-2xl overflow-hidden p-2 md:p-4">
-						<div className="grid md:grid-cols-2 gap-6 p-6 md:p-8 items-center h-full">
+						<div className="grid gap-6 p-6 md:p-8 items-center h-full lg:grid-cols-2">
 							<div className="flex flex-col justify-center h-full space-y-4">
 								<div className="flex items-center gap-2 text-primary mb-1">
 									<ChartBarIcon className="size-5" aria-hidden />

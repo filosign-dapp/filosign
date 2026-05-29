@@ -1,11 +1,12 @@
 import { motion } from "motion/react";
 import { landingMedia } from "../../config/landing-media";
+import { marketingSectionShellClass } from "../../lib/marketing-layout";
 import { MotionProvider } from "./MotionProvider";
 
 export default function ProblemSectionIsland() {
 	return (
 		<MotionProvider>
-			<section className="mx-auto max-w-7xl px-8 py-20 md:px-page">
+			<section className={marketingSectionShellClass}>
 				<div className="grid gap-12 lg:grid-cols-2 lg:items-center">
 					<div className="space-y-5">
 						<p className="font-manrope text-muted-foreground italic text-sm font-medium">
@@ -27,7 +28,7 @@ export default function ProblemSectionIsland() {
 							</div>
 							<div className="rounded-xl bg-primary p-4 font-manrope text-sm text-primary-foreground">
 								After: encrypted agreement, verifiable signature record, proof
-								packet, and optional USDC settlement.
+								packet, and attached payouts.
 							</div>
 						</div>
 					</div>
@@ -35,7 +36,7 @@ export default function ProblemSectionIsland() {
 						initial={{ opacity: 0, y: 24 }}
 						whileInView={{ opacity: 1, y: 0 }}
 						viewport={{ once: true }}
-						className="relative min-h-full overflow-hidden rounded-3xl"
+						className="relative aspect-4/5 overflow-hidden rounded-3xl sm:aspect-3/4 lg:aspect-auto lg:min-h-120"
 					>
 						<img
 							src={landingMedia.problemArch}
@@ -44,7 +45,7 @@ export default function ProblemSectionIsland() {
 							height={1200}
 							loading="lazy"
 							decoding="async"
-							className="absolute inset-0 h-full w-full object-cover"
+							className="h-full w-full object-cover"
 						/>
 					</motion.div>
 				</div>

@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
+import { marketingSectionShellClass } from "../../lib/marketing-layout";
 import {
 	ProofStepMock,
 	SendStepMock,
@@ -30,7 +31,7 @@ const steps = [
 	{
 		kicker: "04",
 		title: "Settle when needed",
-		body: "Attach USDC payout rules that execute after signing conditions are met.",
+		body: "Attach payout rules that execute after signing conditions are met.",
 		mock: <SettleStepMock />,
 	},
 ] as const satisfies ReadonlyArray<{
@@ -45,7 +46,7 @@ export default function HowItWorksIsland() {
 		<MotionProvider>
 			<section
 				id="how-it-works"
-				className="mx-auto max-w-7xl scroll-mt-28 px-8 py-20 md:px-page"
+				className={`${marketingSectionShellClass} scroll-mt-28`}
 			>
 				<div className="mb-12 max-w-2xl space-y-4">
 					<p className="font-manrope text-sm font-medium text-primary">
@@ -60,6 +61,38 @@ export default function HowItWorksIsland() {
 						it.
 					</p>
 				</div>
+
+				{/* Tablet: 2-column grid */}
+				<ol className="relative hidden md:grid md:grid-cols-2 md:gap-8 lg:hidden">
+					{steps.map((step, i) => (
+						<motion.li
+							key={`tablet-${step.kicker}`}
+							initial={{ opacity: 0, y: 20 }}
+							whileInView={{ opacity: 1, y: 0 }}
+							viewport={{ once: true }}
+							transition={{ delay: i * 0.08 }}
+							className="flex flex-col gap-4"
+						>
+							<span
+								aria-hidden
+								className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-background font-manrope text-xs font-semibold text-primary"
+							>
+								{step.kicker}
+							</span>
+							<div className="space-y-2">
+								<h3 className="font-manrope text-lg font-medium">
+									{step.title}
+								</h3>
+								<p className="font-manrope text-sm leading-relaxed text-muted-foreground">
+									{step.body}
+								</p>
+							</div>
+							<div aria-hidden className="mt-auto shrink-0">
+								{step.mock}
+							</div>
+						</motion.li>
+					))}
+				</ol>
 
 				{/* Desktop: horizontal timeline */}
 				<ol className="relative hidden lg:grid lg:grid-cols-4 lg:items-stretch lg:gap-6">
@@ -82,7 +115,7 @@ export default function HowItWorksIsland() {
 								{i < steps.length - 1 ? (
 									<span
 										aria-hidden
-										className="pointer-events-none absolute top-1/2 left-5 h-px w-[calc(100%+1.5rem)] -translate-y-1/2 bg-border"
+										className="pointer-events-none absolute top-1/2 left-5 hidden h-px w-[calc(100%+1.5rem)] max-w-[calc(100%+1.5rem)] -translate-y-1/2 bg-border lg:block"
 									/>
 								) : null}
 							</div>
@@ -102,7 +135,7 @@ export default function HowItWorksIsland() {
 				</ol>
 
 				{/* Mobile: vertical timeline rail */}
-				<ol className="flex flex-col gap-10 border-l-2 border-border pl-6 lg:hidden">
+				<ol className="flex flex-col gap-10 border-l-2 border-border pl-6 md:hidden">
 					{steps.map((step, i) => (
 						<motion.li
 							key={step.kicker}
@@ -114,7 +147,7 @@ export default function HowItWorksIsland() {
 						>
 							<span
 								aria-hidden
-								className="absolute -left-[calc(1.5rem+5px)] top-0 flex size-10 items-center justify-center rounded-full border border-border bg-background font-manrope text-xs font-semibold text-primary"
+								className="absolute -left-11.25 top-0 flex size-10 items-center justify-center rounded-full border border-border bg-background font-manrope text-xs font-semibold text-primary"
 							>
 								{step.kicker}
 							</span>

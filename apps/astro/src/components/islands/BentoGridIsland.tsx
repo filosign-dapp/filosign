@@ -6,6 +6,7 @@ import {
 } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
+import { marketingSectionShellClass } from "../../lib/marketing-layout";
 
 function BentoCard({
 	imageSrc,
@@ -38,7 +39,7 @@ function BentoCard({
 			transition={{ delay }}
 			className="md:col-span-1 group"
 		>
-			<div className="relative h-[400px] md:h-[500px] rounded-3xl overflow-hidden mb-6">
+			<div className="relative h-100 md:h-125 rounded-3xl overflow-hidden mb-6">
 				<img
 					src={imageSrc}
 					alt={imageAlt}
@@ -78,7 +79,7 @@ function BentoCard({
 
 export default function BentoGridIsland() {
 	return (
-		<section className="py-24 px-8 md:px-page max-w-7xl mx-auto">
+		<section className={marketingSectionShellClass}>
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 				<BentoCard
 					imageSrc="/images/stock_1.webp"
@@ -119,7 +120,7 @@ export default function BentoGridIsland() {
 					stat="1"
 					subtitle="Workflow"
 					title="Programmable Settlement"
-					description="Attach non-custodial USDC payout rules so payment can settle on-chain when signing conditions are met."
+					description="Attach non-custodial payout rules so payment can settle on-chain when signing conditions are met."
 					delay={0.3}
 				/>
 			</div>

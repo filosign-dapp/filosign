@@ -2,8 +2,7 @@ import { env } from "../env";
 
 export const siteName = "Filosign";
 
-export const siteTagline =
-	"Private agreement workflows with attached payouts";
+export const siteTagline = "Private agreement workflows with attached payouts";
 
 export const defaultTitle = `${siteName} — ${siteTagline}`;
 

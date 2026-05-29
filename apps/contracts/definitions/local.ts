@@ -1,7 +1,7 @@
 export const definitions = {
 	"0x7a69": {
 		FSFileRegistry: {
-			address: "0x73511669fd4dE447feD18BB79bAFeAC93aB7F31f",
+			address: "0xE9061F92bA9A3D9ef3f4eb8456ac9E552B3Ff5C8",
 			abi: [
 				{
 					inputs: [
@@ -855,7 +855,7 @@ export const definitions = {
 			],
 		},
 		FSPaymentValidator: {
-			address: "0xB581C9264f59BF0289fA76D61B2D0746dCE3C30D",
+			address: "0xA7c8B0D74b68EF10511F27e97c379FB1651e1eD2",
 			abi: [
 				{
 					inputs: [
@@ -1229,7 +1229,7 @@ export const definitions = {
 			],
 		},
 		MockUSDC: {
-			address: "0xb09da8a5B236fE0295A345035287e80bb0008290",
+			address: "0xC92B72ecf468D2642992b195bea99F9B9BB4A838",
 			abi: [
 				{
 					inputs: [

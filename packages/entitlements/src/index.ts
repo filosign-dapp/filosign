@@ -29,7 +29,11 @@ export {
 	QUOTA_FEATURE_KEYS,
 } from "./features";
 
-export { planIncludesFeature, planMarketingLines } from "./marketing";
+export {
+	featureMarketingLabel,
+	planIncludesFeature,
+	planMarketingLines,
+} from "./marketing";
 export type {
 	BooleanEntitlementDef,
 	CheckOptions,

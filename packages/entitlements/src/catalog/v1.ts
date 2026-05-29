@@ -1,36 +1,74 @@
 import type { FeatureKey } from "../features";
 import type { PlanEntitlements, PlanId } from "../types";
 
-const teamProductFeatures = {
+const teamCollaborationFeatures = {
 	"features.shared_templates": { kind: "boolean", enabled: true },
 	"features.team_drafts": { kind: "boolean", enabled: true },
 	"features.draft_review_links": { kind: "boolean", enabled: true },
-	"features.draft_comments": { kind: "boolean", enabled: true },
-	"features.comments": { kind: "boolean", enabled: true },
 	"features.envelope.team_visibility": { kind: "boolean", enabled: true },
 	"features.routing.advanced": { kind: "boolean", enabled: true },
-	"features.integrations.custom": { kind: "boolean", enabled: false },
 } as const satisfies Pick<
 	PlanEntitlements,
 	| "features.shared_templates"
 	| "features.team_drafts"
 	| "features.draft_review_links"
-	| "features.draft_comments"
-	| "features.comments"
 	| "features.envelope.team_visibility"
 	| "features.routing.advanced"
+>;
+
+const proOnlyFeatures = {
+	"features.draft_comments": { kind: "boolean", enabled: true },
+	"features.comments": { kind: "boolean", enabled: true },
+	"features.integrations.custom": { kind: "boolean", enabled: true },
+	"features.quota_allocation": { kind: "boolean", enabled: true },
+	"features.bulk_send": { kind: "boolean", enabled: true },
+	"features.template_folders": { kind: "boolean", enabled: true },
+	"features.branding.custom": { kind: "boolean", enabled: true },
+	"features.webhooks": { kind: "boolean", enabled: true },
+	"features.metadata.tags": { kind: "boolean", enabled: true },
+} as const satisfies Pick<
+	PlanEntitlements,
+	| "features.draft_comments"
+	| "features.comments"
 	| "features.integrations.custom"
+	| "features.quota_allocation"
+	| "features.bulk_send"
+	| "features.template_folders"
+	| "features.branding.custom"
+	| "features.webhooks"
+	| "features.metadata.tags"
+>;
+
+const disabledProFeatures = {
+	"features.draft_comments": { kind: "boolean", enabled: false },
+	"features.comments": { kind: "boolean", enabled: false },
+	"features.integrations.custom": { kind: "boolean", enabled: false },
+	"features.quota_allocation": { kind: "boolean", enabled: false },
+	"features.bulk_send": { kind: "boolean", enabled: false },
+	"features.template_folders": { kind: "boolean", enabled: false },
+	"features.branding.custom": { kind: "boolean", enabled: false },
+	"features.webhooks": { kind: "boolean", enabled: false },
+	"features.metadata.tags": { kind: "boolean", enabled: false },
+} as const satisfies Pick<
+	PlanEntitlements,
+	| "features.draft_comments"
+	| "features.comments"
+	| "features.integrations.custom"
+	| "features.quota_allocation"
+	| "features.bulk_send"
+	| "features.template_folders"
+	| "features.branding.custom"
+	| "features.webhooks"
+	| "features.metadata.tags"
 >;
 
 const disabledProductFeatures = {
 	"features.shared_templates": { kind: "boolean", enabled: false },
 	"features.team_drafts": { kind: "boolean", enabled: false },
 	"features.draft_review_links": { kind: "boolean", enabled: false },
-	"features.draft_comments": { kind: "boolean", enabled: false },
-	"features.comments": { kind: "boolean", enabled: false },
 	"features.envelope.team_visibility": { kind: "boolean", enabled: false },
 	"features.routing.advanced": { kind: "boolean", enabled: false },
-	"features.integrations.custom": { kind: "boolean", enabled: false },
+	...disabledProFeatures,
 } as const satisfies Pick<
 	PlanEntitlements,
 	| "features.shared_templates"
@@ -41,6 +79,12 @@ const disabledProductFeatures = {
 	| "features.envelope.team_visibility"
 	| "features.routing.advanced"
 	| "features.integrations.custom"
+	| "features.quota_allocation"
+	| "features.bulk_send"
+	| "features.template_folders"
+	| "features.branding.custom"
+	| "features.webhooks"
+	| "features.metadata.tags"
 >;
 
 const paidArchivalFeatures = {
@@ -89,24 +133,25 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 	teams: {
 		"documents.sent.monthly": {
 			kind: "quota",
-			limit: 30,
+			limit: 15,
 			period: "calendar_month",
 			scope: "per_seat",
 		},
 		"envelope.recipients.max": { kind: "max", limit: 10 },
-		...teamProductFeatures,
+		...teamCollaborationFeatures,
+		...disabledProFeatures,
 		...paidArchivalFeatures,
 	},
 	teams_pro: {
 		"documents.sent.monthly": {
 			kind: "quota",
-			limit: 60,
+			limit: 25,
 			period: "calendar_month",
 			scope: "per_seat",
 		},
-		"envelope.recipients.max": { kind: "max", limit: 20 },
-		...teamProductFeatures,
-		"features.integrations.custom": { kind: "boolean", enabled: true },
+		"envelope.recipients.max": { kind: "max", limit: 15 },
+		...teamCollaborationFeatures,
+		...proOnlyFeatures,
 		...paidArchivalFeatures,
 	},
 	enterprise: {
@@ -117,8 +162,8 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 			scope: "account",
 		},
 		"envelope.recipients.max": { kind: "max", limit: null },
-		...teamProductFeatures,
-		"features.integrations.custom": { kind: "boolean", enabled: true },
+		...teamCollaborationFeatures,
+		...proOnlyFeatures,
 		...paidArchivalFeatures,
 	},
 };

@@ -14,25 +14,38 @@ const MARKETING_LABELS: Record<FeatureKey, string> = {
 	"features.envelope.team_visibility": "Team envelope visibility",
 	"features.routing.advanced": "Advanced routing",
 	"features.integrations.custom": "Custom integrations",
-	"archival.1y": "Filecoin archival (1 year)",
-	"archival.5y": "Filecoin archival (5 years)",
-	"archival.10y": "Filecoin archival (10 years)",
+	"features.quota_allocation": "Seat quota allocation",
+	"features.bulk_send": "Bulk send from CSV",
+	"features.template_folders": "Shared template folders",
+	"features.branding.custom": "Custom branding on sign pages",
+	"features.webhooks": "Webhook notifications",
+	"features.metadata.tags": "Envelope metadata tags",
+	"archival.1y": "Extended archival options",
+	"archival.5y": "Extended archival options",
+	"archival.10y": "Extended archival options",
 };
+
+/** Customer-facing label for pricing / comparison tables. */
+export function featureMarketingLabel(featureKey: FeatureKey): string {
+	return MARKETING_LABELS[featureKey];
+}
 
 /** Human-readable bullets for pricing pages (derived from catalog). */
 export function planMarketingLines(planId: PlanId): PlanMarketingLine[] {
 	const entitlements = catalogV1[planId];
 	const lines: PlanMarketingLine[] = [];
+	const seenLabels = new Set<string>();
 
 	for (const featureKey of Object.keys(entitlements) as FeatureKey[]) {
 		const def = entitlements[featureKey];
 		const label = MARKETING_LABELS[featureKey];
 
 		if (def.kind === "quota" && def.limit !== null) {
-			const scope = def.scope === "per_seat" ? " per user" : "";
+			const scope =
+				def.scope === "per_seat" ? " per user (pooled team quota)" : "";
 			lines.push({
 				featureKey,
-				label: `Up to ${def.limit} ${label.toLowerCase()}${scope}`,
+				label: `${def.limit} documents per month${scope}`,
 			});
 			continue;
 		}
@@ -40,12 +53,17 @@ export function planMarketingLines(planId: PlanId): PlanMarketingLine[] {
 		if (def.kind === "max" && def.limit !== null) {
 			lines.push({
 				featureKey,
-				label: `Up to ${def.limit} ${label.toLowerCase()}`,
+				label: `Up to ${def.limit} signers per document`,
 			});
 			continue;
 		}
 
 		if (def.kind === "boolean" && def.enabled) {
+			if (featureKey === "archival.5y" || featureKey === "archival.10y") {
+				continue;
+			}
+			if (seenLabels.has(label)) continue;
+			seenLabels.add(label);
 			lines.push({ featureKey, label });
 		}
 	}

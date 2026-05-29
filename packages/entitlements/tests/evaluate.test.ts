@@ -57,8 +57,8 @@ describe("quota documents.sent.monthly", () => {
 	}[] = [
 		{ planId: "free", limit: 3, scope: "account" },
 		{ planId: "individual", limit: 10, scope: "account" },
-		{ planId: "teams", limit: 30, scope: "per_seat" },
-		{ planId: "teams_pro", limit: 60, scope: "per_seat" },
+		{ planId: "teams", limit: 15, scope: "per_seat" },
+		{ planId: "teams_pro", limit: 25, scope: "per_seat" },
 		{ planId: "enterprise", limit: null },
 	];
 
@@ -125,7 +125,7 @@ describe("max envelope.recipients.max", () => {
 		free: 1,
 		individual: 3,
 		teams: 10,
-		teams_pro: 20,
+		teams_pro: 15,
 		enterprise: null,
 	};
 
@@ -158,14 +158,13 @@ describe("max envelope.recipients.max", () => {
 });
 
 describe("boolean features", () => {
-	const teamOnly: FeatureKey[] = [
+	const teamCollaboration: FeatureKey[] = [
 		"features.shared_templates",
-		"features.comments",
 		"features.envelope.team_visibility",
 		"features.routing.advanced",
 	];
 
-	for (const key of teamOnly) {
+	for (const key of teamCollaboration) {
 		test(`${key} enabled on teams, teams_pro, and enterprise`, () => {
 			expect(check(ctx("free"), key).allowed).toBe(false);
 			expect(check(ctx("individual"), key).allowed).toBe(false);
@@ -175,23 +174,33 @@ describe("boolean features", () => {
 		});
 	}
 
-	test("features.integrations.custom enterprise & teams_pro only", () => {
-		expect(check(ctx("teams"), "features.integrations.custom").allowed).toBe(
-			false,
-		);
-		expect(
-			check(ctx("teams_pro"), "features.integrations.custom").allowed,
-		).toBe(true);
-		expect(
-			check(ctx("enterprise"), "features.integrations.custom").allowed,
-		).toBe(true);
-	});
+	const proOnly: FeatureKey[] = [
+		"features.comments",
+		"features.draft_comments",
+		"features.integrations.custom",
+		"features.quota_allocation",
+		"features.bulk_send",
+		"features.template_folders",
+		"features.branding.custom",
+		"features.webhooks",
+		"features.metadata.tags",
+	];
+
+	for (const key of proOnly) {
+		test(`${key} enabled on teams_pro and enterprise only`, () => {
+			expect(check(ctx("free"), key).allowed).toBe(false);
+			expect(check(ctx("individual"), key).allowed).toBe(false);
+			expect(check(ctx("teams"), key).allowed).toBe(false);
+			expect(check(ctx("teams_pro"), key).allowed).toBe(true);
+			expect(check(ctx("enterprise"), key).allowed).toBe(true);
+		});
+	}
 });
 
 describe("org_member context", () => {
 	test("teams per-seat scope is exposed for server metering", () => {
 		const context = orgCtx("teams");
 		expect(getQuotaScope(context, "documents.sent.monthly")).toBe("per_seat");
-		expect(check(context, "features.comments").allowed).toBe(true);
+		expect(check(context, "features.shared_templates").allowed).toBe(true);
 	});
 });

@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { aboutMedia } from "../../config/about-media";
 import { cn } from "../../lib/cn";
 import { marketingPrimaryMdClass } from "../../lib/marketing-button";
+import { marketingSectionShellClass } from "../../lib/marketing-layout";
 import {
 	MARKETING_PRESSABLE_HOVER,
 	MARKETING_PRESSABLE_TAP,
@@ -17,7 +18,7 @@ type AboutCtaBandProps = {
 export default function AboutCtaBand({ appUrl }: AboutCtaBandProps) {
 	return (
 		<MotionProvider>
-			<section className="mx-auto max-w-7xl px-8 py-20 md:px-page">
+			<section className={marketingSectionShellClass}>
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					whileInView={{ opacity: 1, y: 0 }}
@@ -30,7 +31,7 @@ export default function AboutCtaBand({ appUrl }: AboutCtaBandProps) {
 							whileInView={{ opacity: 1, y: 0 }}
 							viewport={{ once: true }}
 							transition={{ delay: 0.05 }}
-							className="relative aspect-4/3 overflow-hidden rounded-2xl lg:aspect-auto lg:min-h-[280px]"
+							className="relative aspect-4/3 overflow-hidden rounded-2xl lg:aspect-auto lg:min-h-70"
 						>
 							<img
 								src={aboutMedia.ctaImage}

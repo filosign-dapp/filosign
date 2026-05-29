@@ -107,7 +107,7 @@ export default function AboutImageMarquee({
 	});
 
 	return (
-		<div className="w-full overflow-hidden" aria-hidden>
+		<div className="w-full overflow-hidden px-4 sm:px-6" aria-hidden>
 			<motion.div
 				ref={trackRef}
 				className="flex w-max gap-4 will-change-transform"
@@ -116,7 +116,7 @@ export default function AboutImageMarquee({
 				{loopImages.map((src, index) => (
 					<div
 						key={`${src}-${index}`}
-						className="relative h-[50vh] min-h-[400px] w-[78vw] shrink-0 overflow-hidden rounded-3xl md:h-[60vh] md:w-[52vw] lg:w-[38vw]"
+						className="relative min-h-[min(400px,55dvh)] w-[85vw] shrink-0 overflow-hidden rounded-3xl sm:w-[72vw] sm:min-h-[min(420px,50dvh)] md:h-[55vh] md:w-[52vw] lg:w-[38vw]"
 					>
 						<img
 							src={src}

@@ -1,8 +1,8 @@
 import {
-	InfinityIcon,
 	LockKeyIcon,
 	ShieldCheckIcon,
 	UsersThreeIcon,
+	WalletIcon,
 } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import { MarketingInViewStagger } from "./MarketingStagger";
@@ -27,9 +27,9 @@ type ValueItem =
 const values: ValueItem[] = [
 	{
 		type: "text",
-		title: "Trustless Security",
+		title: "Verifiable Evidence",
 		description:
-			"Building on decentralized networks to ensure your documents are verifiable and tamper-proof, removing the need for blind trust.",
+			"Signing workflows should produce records that can be explained outside a normal vendor dashboard.",
 		icon: <ShieldCheckIcon className="size-6" />,
 	},
 	{
@@ -39,9 +39,9 @@ const values: ValueItem[] = [
 	},
 	{
 		type: "text",
-		title: "User Sovereignty",
+		title: "Private by Default",
 		description:
-			"You own your data. Our non-custodial architecture means we never hold your private keys or document contents.",
+			"Documents are encrypted before upload, and Filosign should not need plaintext access to agreement contents.",
 		icon: <LockKeyIcon className="size-6" />,
 	},
 	{
@@ -56,9 +56,9 @@ const values: ValueItem[] = [
 	},
 	{
 		type: "text",
-		title: "Seamless Experience",
+		title: "Familiar UX",
 		description:
-			"Complex cryptography under the hood, simple interface on the surface. We make Web3 signing accessible to everyone.",
+			"Crypto infrastructure should stay mostly invisible. Users should be able to sign and move on.",
 		icon: <UsersThreeIcon className="size-6" />,
 	},
 	{
@@ -68,10 +68,10 @@ const values: ValueItem[] = [
 	},
 	{
 		type: "text",
-		title: "Built for Forever",
+		title: "Non-custodial Settlement",
 		description:
-			"Storage on Filecoin ensures your documents are preserved permanently and reliably, independent of any single entity.",
-		icon: <InfinityIcon className="size-6" />,
+			"Optional USDC settlement uses exact user approvals. Filosign does not custody funds.",
+		icon: <WalletIcon className="size-6" />,
 	},
 ];
 
@@ -90,7 +90,8 @@ export default function ValuesSectionIsland() {
 						</div>
 
 						<h2 className="text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight max-w-3xl mx-auto font-manrope">
-							We're founders who think privacy should be a fundamental right!
+							We believe agreements should be private, verifiable, and able to
+							execute the workflow they represent.
 						</h2>
 					</MarketingInViewStagger>
 

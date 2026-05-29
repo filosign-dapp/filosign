@@ -1,9 +1,5 @@
 import { Pressable, SPRING_TOKENS } from "@filosign/motion";
-import {
-	CaretRightIcon,
-	CircleIcon,
-	GithubLogoIcon,
-} from "@phosphor-icons/react";
+import { CaretRightIcon, CircleIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import { cn } from "../../lib/cn";
 
@@ -14,7 +10,7 @@ const primaryLgClass =
 	"group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none h-10 gap-1.5 px-2.5 bg-primary text-primary-foreground hover:bg-primary/80 w-full sm:w-auto";
 
 const ghostLgClass =
-	"group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none h-10 gap-1.5 px-2.5 hover:bg-muted hover:text-foreground w-full sm:w-auto";
+	"group/button inline-flex shrink-0 items-center justify-center rounded-md border border-border bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none h-10 gap-1.5 px-3 hover:bg-muted hover:text-foreground w-full sm:w-auto";
 
 interface MarketingHeroProps {
 	appUrl: string;
@@ -46,7 +42,7 @@ export default function MarketingHero({ appUrl }: MarketingHeroProps) {
 							className="size-4 animate-pulse text-secondary"
 							weight="fill"
 						/>{" "}
-						Public Beta
+						Public beta
 					</span>
 				</motion.div>
 
@@ -59,7 +55,7 @@ export default function MarketingHero({ appUrl }: MarketingHeroProps) {
 					}}
 					className="text-3xl sm:text-4xl md:text-5xl xl:text-7xl leading-tight"
 				>
-					Trustless standard for permanent agreements.
+					Private agreement workflows that can settle themselves
 				</motion.h1>
 
 				<motion.p
@@ -71,7 +67,9 @@ export default function MarketingHero({ appUrl }: MarketingHeroProps) {
 					}}
 					className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed -mt-2 font-manrope font-light"
 				>
-					Send, sign, and verify sensitive documents with encrypted workflows.
+					Send encrypted documents, collect verifiable signatures, and
+					optionally release USDC when signing conditions are met. Familiar
+					e-signing UX, with proof and settlement built in.
 				</motion.p>
 
 				<motion.div
@@ -93,23 +91,20 @@ export default function MarketingHero({ appUrl }: MarketingHeroProps) {
 								"flex items-center justify-center gap-2 group",
 							)}
 						>
-							Get Started
+							Try beta
 							<CaretRightIcon className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
 						</a>
 					</Pressable>
 
 					<Pressable preset="snappy">
 						<a
-							href="https://github.com/hetairoi-labs/filosign"
-							target="_blank"
-							rel="noreferrer"
+							href="#how-it-works"
 							className={cn(
 								ghostLgClass,
 								"flex items-center justify-center gap-2 group",
 							)}
 						>
-							<GithubLogoIcon className="size-4" weight="fill" />
-							Source code
+							See how it works
 						</a>
 					</Pressable>
 				</motion.div>

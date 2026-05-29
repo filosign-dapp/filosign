@@ -1,37 +1,28 @@
-import {
-	GithubLogoIcon,
-	SparkleIcon,
-	TwitterLogoIcon,
-} from "@phosphor-icons/react";
+import { SparkleIcon, TwitterLogoIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import MarketingLogo from "./MarketingLogo";
 
-function getFooterSections(appUrl: string) {
+function getFooterSections() {
 	return [
 		{
 			title: "Product",
 			links: [
-				{ label: "Why Filosign", href: "/about" },
-				{ label: "What's new", href: "/changelog" },
 				{ label: "Pricing", href: "/pricing" },
+				{ label: "What's new", href: "/changelog" },
 			],
 		},
 		{
 			title: "Company",
 			links: [
-				{ label: "About us", href: "https://hetairoi.xyz" },
-				{ label: "Contact", href: "https://x.com/filosign" },
+				{ label: "About us", href: "/about" },
+				{ label: "Blogs", href: "/blog" },
 			],
 		},
 		{
-			title: "Resources",
+			title: "Support",
 			links: [
-				{ label: "Blogs", href: "/blog" },
-				{ label: "Customer center", href: appUrl },
-				{
-					label: "Open source",
-					href: "https://github.com/hetairoi-labs/filosign",
-				},
+				{ label: "Security overview", href: "/security" },
+				{ label: "Contact Support", href: "mailto:support@filosign.xyz" },
 			],
 		},
 		{
@@ -39,6 +30,13 @@ function getFooterSections(appUrl: string) {
 			links: [
 				{ label: "Terms of Service", href: "/terms" },
 				{ label: "Privacy Policy", href: "/privacy" },
+				{ label: "Acceptable Use", href: "/acceptable-use" },
+				{ label: "Subprocessors", href: "/subprocessors" },
+				{ label: "E-signature validity", href: "/legal/e-signature-validity" },
+				{
+					label: "Non-custodial settlement",
+					href: "/legal/non-custodial-settlement",
+				},
 			],
 		},
 	];
@@ -52,10 +50,10 @@ interface MarketingFooterProps {
 }
 
 export default function MarketingFooter({ appUrl }: MarketingFooterProps) {
-	const footerSections = getFooterSections(appUrl);
+	const footerSections = getFooterSections();
 
 	return (
-		<footer className="bg-card rounded-t-[3rem] py-24 min-h-[80dvh] flex flex-col justify-between">
+		<footer className="bg-card rounded-t-[3rem] py-24 flex flex-col justify-between">
 			<div className="max-w-7xl mx-auto px-8 md:px-page w-full flex-1 flex flex-col justify-between">
 				<div>
 					<div className="flex flex-col lg:flex-row justify-between mb-4">
@@ -66,7 +64,7 @@ export default function MarketingFooter({ appUrl }: MarketingFooterProps) {
 								viewport={{ once: true }}
 								className="text-4xl md:text-5xl font-semibold tracking-tight mb-8 font-manrope"
 							>
-								Get started with filosign
+								Start a private agreement workflow
 							</motion.h2>
 						</div>
 						<motion.div
@@ -82,12 +80,12 @@ export default function MarketingFooter({ appUrl }: MarketingFooterProps) {
 								className={`${primaryCtaClass} flex items-center justify-center gap-2`}
 							>
 								<SparkleIcon className="size-4" weight="fill" />
-								Try Filosign today
+								Try Filosign beta
 							</a>
 						</motion.div>
 					</div>
 
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-4 border-t border-border/50 pt-16">
+					<div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-4 border-t border-border/50 pt-16">
 						{footerSections.map((section) => (
 							<div key={section.title} className="flex flex-col gap-6">
 								<h4 className="text-sm font-medium text-muted-foreground font-manrope">
@@ -139,14 +137,6 @@ export default function MarketingFooter({ appUrl }: MarketingFooterProps) {
 							className="p-2 rounded-full bg-background hover:bg-secondary/50 transition-colors text-muted-foreground hover:text-foreground"
 						>
 							<TwitterLogoIcon className="size-6" weight="fill" />
-						</a>
-						<a
-							href="https://github.com/hetairoi-labs/filosign"
-							target="_blank"
-							rel="noreferrer"
-							className="p-2 rounded-full bg-background hover:bg-secondary/50 transition-colors text-muted-foreground hover:text-foreground"
-						>
-							<GithubLogoIcon className="size-6" weight="fill" />
 						</a>
 					</div>
 				</div>

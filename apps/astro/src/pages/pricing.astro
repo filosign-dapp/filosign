@@ -12,13 +12,13 @@ const plans = [
 	{
 		name: "Free",
 		description:
-			"Send a few agreements with full encryption and on-chain proof—no card required.",
+			"Test private signing workflows with encryption and proof exports—no card required.",
 		price: { monthly: 0 },
 		features: [
 			"3 documents per month",
 			"1 signer per envelope",
 			"Encrypted in the browser before anything is uploaded",
-			"Wallet-backed, quantum-resistant signatures",
+			"Wallet-backed signing records",
 			"Standard fields and a basic audit trail",
 			"Manual reminder emails",
 		],
@@ -28,12 +28,12 @@ const plans = [
 	{
 		name: "Solo",
 		description:
-			"For freelancers, counsel, and operators who need provable signatures without IT overhead.",
+			"For freelancers, counsel, and operators who need private signing and clean proof records.",
 		price: { monthly: 15 },
 		features: [
 			"10 documents per month",
 			"Up to 3 signers per document",
-			"Long-term Filecoin archival (1, 5, or 10 years)",
+			"Long-term verifiable storage options",
 			"Signer ID attachments stay encrypted end-to-end",
 			"Advanced fields and CSV export for your records",
 			"Same wallet-native security as every Filosign plan",
@@ -45,12 +45,12 @@ const plans = [
 	{
 		name: "Teams",
 		description:
-			"For growing teams that need pooled volume, USDC settlements, and shared workflows.",
+			"For teams that need shared workflows, proof packets, and optional USDC settlement.",
 		price: { monthly: 39 },
 		features: [
 			"30 documents per teammate each month",
 			"Up to 10 signers per document",
-			"USDC settlements when signing rules are met",
+			"Optional USDC settlement when signing rules are met",
 			"Shared templates and team envelope drafts",
 			"Signing order, review links, and draft comments",
 			"Team visibility on envelopes and automated reminders",
@@ -63,14 +63,14 @@ const plans = [
 	{
 		name: "Teams Pro",
 		description:
-			"For high-volume teams that need room to scale signers, documents, and integrations.",
+			"For high-volume teams that need more seats, workflows, and integration support.",
 		price: { monthly: 59 },
 		features: [
 			"60 documents/month per seat",
 			"Up to 20 signers per document",
 			"Everything in Teams",
 			"Custom integrations with your stack",
-			"Compliance exports and signature audit records",
+			"Advanced proof exports and signature audit records",
 			"Priority support for production workloads",
 		],
 		cta: "Start Teams Pro",
@@ -81,7 +81,7 @@ const plans = [
 
 const enterpriseBanner = {
 	headline: "Are you an enterprise?",
-	body: "Custom limits, security reviews, SLAs, and procurement-friendly contracts—contact us directly and we'll scope a plan with your team.",
+	body: "Custom limits, security reviews, support terms, and procurement-friendly contracts—contact us directly and we'll scope a plan with your team.",
 	cta: "Contact us",
 	href: "mailto:hello@filosign.xyz?subject=Filosign%20Enterprise",
 };
@@ -89,7 +89,7 @@ const enterpriseBanner = {
 
 <BaseLayout
 	title="Pricing — Encrypted signing with proof you can verify"
-	description="Filosign pricing: Free, Solo, Teams, and Teams Pro. Encrypted signing, Filecoin archival, and USDC settlements. Enterprise plans by request."
+	description="Filosign pricing: Free, Solo, Teams, and Teams Pro. Encrypted signing, proof exports, and optional USDC settlements. Enterprise plans by request."
 >
 	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
 		<Navbar />

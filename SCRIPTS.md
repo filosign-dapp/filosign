@@ -13,7 +13,8 @@
 | Bootstrap + API only | `bun run dev -- --serloc` |
 | Client + marketing + email preview | `bun run dev -- --web` |
 | React Email preview only | `bun run dev -- --emails` |
-| Staging (client + server) | `bun run dev -- --testnet` |
+| Staging (internal QA) | `bun run dev -- --staging` |
+| Sandbox (public demo) | `bun run dev -- --sandbox` |
 | One app | `bun run dev -- --client --local` etc. or `--cwd apps/<app> dev:local` |
 | Format + types (writes files) | `bun run check` |
 | CI / pre-push verify (no writes) | `bun run sanity` |
@@ -23,8 +24,8 @@
 | All tests | `bun run test` |
 | Hardhat only | `bun run test -- --contracts` or `bun run contracts -- test` |
 | Release builds | `bun run build` (+ flags) |
-| DB schema push only | `bun run db -- push local\|testnet` |
-| Wipe DB + re-push schema | `bun run db -- purge local\|testnet` |
+| DB schema push only | `bun run db -- push local\|staging\|sandbox\|production` |
+| Wipe DB + re-push schema | `bun run db -- purge local\|staging\|sandbox` |
 | Contracts ops | `bun run contracts -- …` |
 | Nuke deps | `bun run purge` then `bun install` |
 | Email package tests | `bun run test -- --emails` |
@@ -45,11 +46,11 @@
 | `contracts` | `contracts.ts` | Hardhat + deploy/migrate |
 | `purge` | `shell/purge.sh` | rm all `node_modules` + `bun.lock` |
 
-**Env profiles:** `local` → `.env.local` · server testnet/mainnet → Infisical `staging` / `prod` · contracts testnet/mainnet → `apps/contracts/.env.staging` / `.env.production`. See [`apps/server/SECRETS.md`](apps/server/SECRETS.md).
+**Env profiles:** `local` → `.env.local` · server `staging`/`sandbox`/`production` → Infisical · client staging/sandbox → `.env.staging` / `.env.sandbox` · contracts testnet/mainnet → `apps/contracts/.env.staging` / `.env.production`. See [`project/launch/environments.md`](project/launch/environments.md) and [`apps/server/SECRETS.md`](apps/server/SECRETS.md).
 
 ## `dev`
 
-`dev` / `--local` → `docker compose up -d` + bootstrap + server + client + astro · `--deps` → compose only (foreground) · `--no-deps` → skip compose · `--serloc` → bootstrap + server · `--web` → client + astro + emails (:30010) · `--emails` → emails only (:30010) · `--testnet` → client + server (no bootstrap) · `--client --local` → Vite only · `--server --local` → bootstrap + API · `--astro` → marketing site only.
+`dev` / `--local` → `docker compose up -d` + bootstrap + server + client + astro · `--deps` → compose only (foreground) · `--no-deps` → skip compose · `--serloc` → bootstrap + server · `--web` → client + astro + emails (:30010) · `--emails` → emails only (:30010) · `--staging` / `--sandbox` → client + server (no bootstrap) · `--client --local` → Vite only · `--server --local` → bootstrap + API · `--astro` → marketing site only.
 
 Harness: `bun run --cwd packages/test dev` (`VITE_CHAIN`, not env files).
 

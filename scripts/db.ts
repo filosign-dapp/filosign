@@ -4,9 +4,12 @@
  *
  * Usage:
  *   bun run db -- push local
- *   bun run db -- push testnet
- *   bun run db -- push mainnet
- *   bun run db -- purge local      clear schema + drizzle push (.env.local)
+ *   bun run db -- push staging
+ *   bun run db -- push sandbox
+ *   bun run db -- push production
+ *   bun run db -- purge local
+ *   bun run db -- purge staging
+ *   bun run db -- purge sandbox
  *   bun run db -- --help
  */
 
@@ -20,19 +23,18 @@ const rootDir = repoRoot(import.meta.url);
 const HELP = `
 Filosign database orchestrator (@filosign/server)
 
-  bun run db -- push local      drizzle push (.env.local)
-  bun run db -- push testnet    drizzle push (Infisical staging)
-  bun run db -- push mainnet    drizzle push (Infisical prod)
-  bun run db -- purge local     clear schema + Dragonfly flush, then push (.env.local)
+  bun run db -- push local        drizzle push (.env.local)
+  bun run db -- push staging      drizzle push (Infisical staging)
+  bun run db -- push sandbox      drizzle push (Infisical sandbox)
+  bun run db -- push production   drizzle push (Infisical prod)
+  bun run db -- purge local       clear schema + push (.env.local)
+  bun run db -- purge staging     clear schema + push (Infisical staging)
+  bun run db -- purge sandbox     clear schema + push (Infisical sandbox)
 `.trim();
 
 type Action = "push" | "purge";
-type Profile = "local" | "testnet" | "mainnet";
-type PushProfile = Profile;
-type PurgeProfile = "local";
+type Profile = "local" | "staging" | "sandbox" | "production";
 
-function scriptFor(action: "push", profile: PushProfile): string;
-function scriptFor(action: "purge", profile: PurgeProfile): string;
 function scriptFor(action: Action, profile: Profile): string {
 	return `db:${action}:${profile}`;
 }
@@ -47,18 +49,24 @@ runMain(async () => {
 	if (action !== "push" && action !== "purge") {
 		die(`Unknown action: ${action}`);
 	}
-	if (profile !== "local" && profile !== "testnet" && profile !== "mainnet") {
+	if (
+		profile !== "local" &&
+		profile !== "staging" &&
+		profile !== "sandbox" &&
+		profile !== "production"
+	) {
 		die(`Unknown profile: ${profile}`);
 	}
+	if (action === "purge" && profile === "production") {
+		die('Purge is not allowed for the "production" profile');
+	}
+
 	const server = "@filosign/server";
 
 	if (action === "purge") {
-		if (profile !== "local") {
-			die(`Purge action is only allowed for the "local" profile`);
-		}
 		await runSequentialExit(rootDir, [
-			packageRunCmd(rootDir, server, scriptFor("purge", "local")),
-			packageRunCmd(rootDir, server, scriptFor("push", "local")),
+			packageRunCmd(rootDir, server, scriptFor("purge", profile)),
+			packageRunCmd(rootDir, server, scriptFor("push", profile)),
 		]);
 		return;
 	}

@@ -105,10 +105,11 @@ Run the local stack (Hardhat bootstrap + client):
 bun run dev -- --local
 ```
 
-Run client + API against staging:
+Run client + API against staging or sandbox:
 
 ```bash
-bun run dev -- --testnet
+bun run dev -- --staging   # internal QA (Infisical staging)
+bun run dev -- --sandbox   # public sandbox (Infisical sandbox)
 ```
 
 See [`SCRIPTS.md`](SCRIPTS.md) for all dev/db commands.
@@ -123,6 +124,7 @@ bun run test:dev
 
 Server configuration is defined in `apps/server/env.ts`. The main required values are:
 
+- `DEPLOYMENT` — `local` | `staging` | `sandbox` | `production` (must match `CHAIN`; see [`project/launch/environments.md`](project/launch/environments.md))
 - `CHAIN`
 - `SERVER_URL` — public API origin (no trailing slash).
 - `CLIENT_URL` — React app origin; email CTAs and CORS. Must not be `http://localhost` in deployed (`testnet` / `mainnet`) environments.
@@ -135,7 +137,7 @@ Server configuration is defined in `apps/server/env.ts`. The main required value
 - `DRAGONFLY_URL` — `redis://127.0.0.1:6379` with root `docker compose up -d`
 - `THIRDWEB_CLIENT_ID` — same value as client `VITE_THIRDWEB_CLIENT_ID`
 - `THIRDWEB_SECRET_KEY` — project secret key (server only)
-- `DODO_API_KEY` / `DODO_WEBHOOK_KEY` / `DODO_API_BASE` (billing checkout + webhook)
+- `DODO_API_KEY` / `DODO_WEBHOOK_KEY` — required for `staging` and `production`; optional for `local` and `sandbox`
 - `DODO_PRODUCT_ID_INDIVIDUAL_MONTHLY` / `DODO_PRODUCT_ID_INDIVIDUAL_YEARLY`
 - `DODO_PRODUCT_ID_TEAMS_MONTHLY` / `DODO_PRODUCT_ID_TEAMS_YEARLY`
 - `BILLING_RETURN_URL_ORIGINS` (optional allowlist for checkout return URLs)
@@ -146,7 +148,9 @@ Server configuration is defined in `apps/server/env.ts`. The main required value
 - `TG_ANALYTICS_BOT_GROUP_ID`
 - `TG_ANALYTICS_BOT_TOKEN`
 
-Client (`apps/client/.env.example`): `VITE_SERVER_URL`, `VITE_ASTRO_URL`, `VITE_THIRDWEB_CLIENT_ID`, `VITE_CHAIN`.
+Client ([`apps/client/.env.example`](apps/client/.env.example)): `VITE_DEPLOYMENT`, `VITE_CHAIN`, `VITE_SERVER_URL`, `VITE_ASTRO_URL`, `VITE_CLIENT_URL`, `VITE_THIRDWEB_CLIENT_ID`. Tier templates: [`.env.staging.example`](apps/client/.env.staging.example), [`.env.sandbox.example`](apps/client/.env.sandbox.example), [`.env.production.example`](apps/client/.env.production.example).
+
+Server ([`apps/server/.env.example`](apps/server/.env.example)): `DEPLOYMENT`, `CHAIN`, plus keys listed above.
 
 Astro (`apps/astro/.env.example`): `PUBLIC_ASTRO_URL`, `PUBLIC_CLIENT_URL`, `PUBLIC_SERVER_URL`.
 
@@ -157,7 +161,8 @@ Emails preview (`packages/emails/.env.example`): `ASTRO_URL` (same unprefixed na
 | Tier | Server | Contracts (deploy) | Client + Astro |
 |------|--------|-------------------|----------------|
 | Local | `apps/server/.env.local` | `apps/contracts/.env.local` | `.env.local` |
-| Staging | [Infisical](https://app.infisical.com) `staging` — [`apps/server/SECRETS.md`](apps/server/SECRETS.md) | `apps/contracts/.env.staging` | CF Pages; local client: [`.env.staging.example`](.env.staging.example) |
+| Staging | Infisical `staging` | `apps/contracts/.env.staging` | [`apps/client/.env.staging.example`](apps/client/.env.staging.example) |
+| Sandbox | Infisical `sandbox` | `apps/contracts/.env.staging` | [`apps/client/.env.sandbox.example`](apps/client/.env.sandbox.example) |
 | Production | Infisical `prod` | `apps/contracts/.env.production` | CF Pages |
 
 Rename keys in Infisical / env files when upgrading (no runtime aliases).
@@ -171,7 +176,8 @@ Rename keys in Infisical / env files when upgrading (no runtime aliases).
 | `bun run dev` | Local bootstrap (chain + DB + deploy) + server + client + astro. |
 | `bun run dev -- --serloc` | Bootstrap + server only. |
 | `bun run dev -- --web` | Client + astro (no bootstrap). |
-| `bun run dev -- --testnet` | Client + server (staging env). |
+| `bun run dev -- --staging` | Client + server (Infisical staging). |
+| `bun run dev -- --sandbox` | Client + server (Infisical sandbox). |
 | `bun run db -- push local` | Push Drizzle schema (local). |
 | `bun run sanity` | Lint + types + unit tests + Hardhat (CI / pre-push). |
 | `bun run sanity -- --fast` | Same without Hardhat. |

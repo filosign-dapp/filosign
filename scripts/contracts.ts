@@ -27,10 +27,10 @@ Utilities (@filosign/contracts):
 
 Migrate (deploy contracts, then sync DB schema):
   bun run contracts -- --migrate --local      (deploys + purges & pushes local DB)
-  bun run contracts -- --migrate --testnet    (deploys + pushes testnet DB schema)
-  bun run contracts -- --migrate --mainnet    (deploys + pushes mainnet DB schema)
+  bun run contracts -- --migrate --testnet    (deploys + pushes staging DB schema)
+  bun run contracts -- --migrate --mainnet    (deploys + pushes production DB schema)
 
-Profiles: local (.env.local), testnet (.env.staging), mainnet (.env.production) in apps/contracts
+Profiles: local (.env.local), testnet (.env.staging chain deploy), mainnet (.env.production) in apps/contracts
 `.trim();
 
 const UTILITY_COMMANDS = {
@@ -87,9 +87,9 @@ async function runMigrate(profile: Profile) {
 	if (profile === "local") {
 		steps.push(dbCmd("purge", "local"));
 	} else if (profile === "testnet") {
-		steps.push(dbCmd("push", "testnet"));
+		steps.push(dbCmd("push", "staging"));
 	} else if (profile === "mainnet") {
-		steps.push(dbCmd("push", "mainnet"));
+		steps.push(dbCmd("push", "production"));
 	}
 
 	await runSequentialExit(rootDir, steps);

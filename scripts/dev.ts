@@ -8,7 +8,7 @@ import { runParallelExit, type SpawnTask } from "./lib/spawn.ts";
 
 const rootDir = repoRoot(import.meta.url);
 
-type Profile = "local" | "testnet";
+type Profile = "local" | "staging" | "sandbox";
 
 const PRESET_FLAGS = ["serloc", "web", "emails"] as const;
 
@@ -20,9 +20,10 @@ Stacks (pick one):
   dev -- --serloc     hardhat bootstrap + server                    [local only]
   dev -- --web        client + astro + emails                       [:30010]
   dev -- --emails     React Email preview only                      [:30010]
-  dev -- --testnet    client + server    [server: Infisical staging; client: .env.staging VITE_*]
+  dev -- --staging    client + server    [Infisical staging; client: .env.staging]
+  dev -- --sandbox    client + server    [Infisical sandbox; client: .env.sandbox]
 
-Or mix apps:  dev -- --client  --server  --astro  [--local | --testnet]
+Or mix apps:  dev -- --client  --server  --astro  [--local | --staging | --sandbox]
   (--server on --local runs with hardhat bootstrap first)
 e.g. bun run dev -- --client --local
 
@@ -46,7 +47,13 @@ function parseArgv(argv: string[]) {
 			return { help: true as const, flags, profile, withDeps };
 		}
 		if (arg === "--local") profile = "local";
-		if (arg === "--testnet") profile = "testnet";
+		if (arg === "--staging") profile = "staging";
+		if (arg === "--sandbox") profile = "sandbox";
+		if (arg === "--testnet") {
+			die(
+				"Removed --testnet; use --staging (internal QA) or --sandbox (public demo)",
+			);
+		}
 		if (arg === "--full") {
 			die("Removed --full; astro is included in the default bun run dev stack");
 		}
@@ -98,7 +105,11 @@ function workspaceTask(packageName: string, script: string): SpawnTask {
 }
 
 function serverDevScript(profile: Profile): string {
-	return profile === "local" ? "dev:local" : "dev:testnet";
+	return profile === "local" ? "dev:local" : `dev:${profile}`;
+}
+
+function clientDevScript(profile: Profile): string {
+	return profile === "local" ? "dev:local" : `dev:${profile}`;
 }
 
 function activePresets(flags: Set<string>): string[] {
@@ -122,7 +133,7 @@ function resolveTasks(
 
 	if (flags.has("serloc")) {
 		assertNoComponentFlags(flags, "--serloc");
-		if (profile === "testnet") {
+		if (profile !== "local") {
 			die("--serloc is local only (bootstrap + server)");
 		}
 		return [workspaceTask("@filosign/server", "dev:local")];
@@ -132,7 +143,7 @@ function resolveTasks(
 		assertNoComponentFlags(flags, "--web");
 		const p = profile ?? "local";
 		return [
-			workspaceTask("@filosign/client", `dev:${p}`),
+			workspaceTask("@filosign/client", clientDevScript(p)),
 			workspaceTask("@filosign/astro", "dev:local"),
 			workspaceTask("@filosign/emails", "dev"),
 		];
@@ -151,7 +162,7 @@ function resolveTasks(
 		const p = profile ?? "local";
 
 		if (flags.has("client")) {
-			tasks.push(workspaceTask("@filosign/client", `dev:${p}`));
+			tasks.push(workspaceTask("@filosign/client", clientDevScript(p)));
 		}
 		if (flags.has("server")) {
 			tasks.push(workspaceTask("@filosign/server", serverDevScript(p)));
@@ -174,10 +185,10 @@ function resolveTasks(
 		];
 	}
 
-	if (profile === "testnet") {
+	if (profile === "staging" || profile === "sandbox") {
 		return [
-			workspaceTask("@filosign/client", "dev:testnet"),
-			workspaceTask("@filosign/server", "dev:testnet"),
+			workspaceTask("@filosign/client", clientDevScript(profile)),
+			workspaceTask("@filosign/server", serverDevScript(profile)),
 		];
 	}
 

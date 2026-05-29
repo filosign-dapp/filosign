@@ -27,9 +27,6 @@ export const parentOrganization = {
 
 export const logo = {
 	webp: "/logo.webp",
-	faviconSvg: "/favicon.svg",
-	faviconIco: "/favicon.ico",
-	appleTouch: "/logo.webp",
 	/** Used in JSON-LD ImageObject */
 	width: 512,
 	height: 512,

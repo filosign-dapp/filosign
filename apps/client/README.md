@@ -21,7 +21,7 @@ Deeper SDK detail: [`packages/react-sdk/README.md`](../../packages/react-sdk/REA
 From repo root (see [SCRIPTS.md](../../SCRIPTS.md)):
 
 - `bun run dev` — local stack (client + server)
-- `bun run dev:local` / `dev:testnet` — Vite with `.env.local` or repo-root `.env.staging` (`VITE_*` only; see [`.env.staging.example`](../.env.staging.example))
+- `bun run dev:local` / `dev:staging` / `dev:sandbox` — copy [`apps/client/.env.example`](.env.example) to `.env.local`, or [`.env.staging.example`](.env.staging.example) / [`.env.sandbox.example`](.env.sandbox.example) to `.env.staging` / `.env.sandbox` **in this folder**
 
 ## Boundaries
 

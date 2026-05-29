@@ -5,7 +5,8 @@
 	"scripts": {
 		"vite:dev": "bunx --bun vite",
 		"dev:local": "bun run --env-file=.env.local vite:dev",
-		"dev:testnet": "bun run --env-file=.env.staging vite:dev",
+		"dev:staging": "bun run --env-file=.env.staging vite:dev",
+		"dev:sandbox": "bun run --env-file=.env.sandbox vite:dev",
 		"start": "vite preview",
 		"build": "vite build",
 		"lint": "bunx biome check .",

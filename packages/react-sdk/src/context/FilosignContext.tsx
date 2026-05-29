@@ -33,6 +33,7 @@ export type Runtime = {
 	uptime: number;
 	chain: unknown;
 	chainKey: ChainKey;
+	deployment: "local" | "staging" | "sandbox" | "production";
 };
 
 export const FilosignContext = createContext<FilosignContextValue>({

@@ -14,6 +14,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/src/lib/components/ui/dialog";
+import { billingUiEnabled } from "@/src/lib/deployment";
 
 export type UpgradePlanLimitReason =
 	| "documents.sent.monthly"
@@ -64,6 +65,7 @@ export function UpgradePlanDialog({
 	const copy = COPY[reason];
 	const planLabel = data?.planId ?? "free";
 	const targetPlan = getUpgradeTargetPlan(planLabel);
+	const checkoutEnabled = billingUiEnabled();
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
@@ -90,18 +92,20 @@ export function UpgradePlanDialog({
 					</DialogHeader>
 				</div>
 
-				<div className="space-y-1 px-6 py-5">
-					<p className="text-sm font-medium text-foreground">
-						Upgrade to continue
-					</p>
-					<p className="text-xs leading-relaxed text-muted-foreground">
-						Checkout is handled by Dodo Payments. For billing mistakes, refund
-						requests, or renewal questions, contact support@filosign.xyz before
-						opening a bank dispute. Payment disputes may suspend paid features
-						and settlement access while preserving reasonable export access
-						where possible.
-					</p>
-				</div>
+				{checkoutEnabled ? (
+					<div className="space-y-1 px-6 py-5">
+						<p className="text-sm font-medium text-foreground">
+							Upgrade to continue
+						</p>
+						<p className="text-xs leading-relaxed text-muted-foreground">
+							Checkout is handled by Dodo Payments. For billing mistakes, refund
+							requests, or renewal questions, contact support@filosign.xyz
+							before opening a bank dispute. Payment disputes may suspend paid
+							features and settlement access while preserving reasonable export
+							access where possible.
+						</p>
+					</div>
+				) : null}
 
 				<DialogFooter className="border-t border-border/60 bg-muted/10 px-6 py-4 sm:justify-end">
 					<Button
@@ -112,29 +116,35 @@ export function UpgradePlanDialog({
 					>
 						Close
 					</Button>
-					<Button
-						type="button"
-						variant="primary"
-						className="gap-1.5"
-						disabled={checkout.isPending}
-						onClick={async () => {
-							try {
-								const result = await checkout.mutateAsync({
-									planId: targetPlan,
-									interval: "monthly",
-									returnUrl: `${window.location.origin}/dashboard`,
-								});
-								window.location.href = result.checkoutUrl;
-								return;
-							} catch {
-								window.open(pricingHref(), "_blank", "noopener,noreferrer");
-								onOpenChange(false);
-							}
-						}}
-					>
-						{checkout.isPending ? "Preparing checkout…" : "Upgrade"}
-						<ArrowSquareOutIcon className="size-4" weight="bold" aria-hidden />
-					</Button>
+					{checkoutEnabled ? (
+						<Button
+							type="button"
+							variant="primary"
+							className="gap-1.5"
+							disabled={checkout.isPending}
+							onClick={async () => {
+								try {
+									const result = await checkout.mutateAsync({
+										planId: targetPlan,
+										interval: "monthly",
+										returnUrl: `${window.location.origin}/dashboard`,
+									});
+									window.location.href = result.checkoutUrl;
+									return;
+								} catch {
+									window.open(pricingHref(), "_blank", "noopener,noreferrer");
+									onOpenChange(false);
+								}
+							}}
+						>
+							{checkout.isPending ? "Preparing checkout…" : "Upgrade"}
+							<ArrowSquareOutIcon
+								className="size-4"
+								weight="bold"
+								aria-hidden
+							/>
+						</Button>
+					) : null}
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

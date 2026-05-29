@@ -268,7 +268,7 @@ export default function Crop({
 					</div>
 				) : (
 					<>
-						<div className="relative h-[500px] w-full bg-black">
+						<div className="relative h-125 w-full bg-black">
 							{isLoading && (
 								<div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
 									<div className="text-white text-sm">Loading image...</div>

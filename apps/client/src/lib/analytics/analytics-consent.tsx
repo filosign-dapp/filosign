@@ -43,7 +43,7 @@ export function AnalyticsConsentBanner({
 	if (!needsConsent) return null;
 
 	return (
-		<div className="fixed inset-x-3 bottom-3 z-[120] mx-auto max-w-2xl rounded-lg border border-border bg-background p-4 shadow-lg">
+		<div className="fixed inset-x-3 bottom-3 z-120 mx-auto max-w-2xl rounded-lg border border-border bg-background p-4 shadow-lg">
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<p className="text-xs leading-relaxed text-muted-foreground">
 					Filosign uses optional product analytics to improve workflows. We do

@@ -94,7 +94,7 @@ export function SignatureCreatePage() {
 					<Tabs
 						defaultValue="choose"
 						onValueChange={handleTabChange}
-						className="w-full min-h-[32rem]"
+						className="w-full min-h-128"
 					>
 						<TabsList className="grid w-full grid-cols-3">
 							<TabsTrigger value="choose">

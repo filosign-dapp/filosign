@@ -150,7 +150,7 @@ export function SignatureChoose() {
 							)}
 							onClick={() => handleSignatureSelection(option.id)}
 						>
-							<div className="flex-shrink-0">
+							<div className="shrink-0">
 								<div
 									className={cn(
 										"w-4 h-4 rounded-full border-2 flex items-center justify-center",
@@ -181,7 +181,7 @@ export function SignatureChoose() {
 								</div>
 							</div>
 
-							<div className="flex-shrink-0 text-right">
+							<div className="shrink-0 text-right">
 								<div className="space-y-2">
 									<div className="text-xs text-muted-foreground">DS</div>
 									<div

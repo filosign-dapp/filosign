@@ -86,7 +86,7 @@ function UploadArea({
 			/>
 			<button
 				type="button"
-				className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center min-h-[16rem] flex flex-col items-center justify-center bg-card w-full"
+				className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center min-h-64 flex flex-col items-center justify-center bg-card w-full"
 				onClick={handleUploadClick}
 			>
 				{uploadedFile ? (

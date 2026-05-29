@@ -1,5 +1,9 @@
 import { SPRING_TOKENS, type SpringPreset } from "@filosign/motion";
 
+/** Translational press feedback for marketing CTAs (no scale). */
+export const MARKETING_PRESSABLE_HOVER = { y: 0 } as const;
+export const MARKETING_PRESSABLE_TAP = { y: 0 } as const;
+
 /** Nav intro timing — landing (dramatic) vs inner pages (faster). */
 export const NAV_INTRO_DELAYS = {
 	landing: {

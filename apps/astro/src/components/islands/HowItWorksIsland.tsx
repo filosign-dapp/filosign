@@ -1,0 +1,136 @@
+import { motion } from "motion/react";
+import type { ReactNode } from "react";
+import {
+	ProofStepMock,
+	SendStepMock,
+	SettleStepMock,
+	SignStepMock,
+} from "../marketing-mocks";
+import { MotionProvider } from "./MotionProvider";
+
+const steps = [
+	{
+		kicker: "01",
+		title: "Send the document",
+		body: "Upload an agreement, add recipients, and route it through an encrypted signing workflow.",
+		mock: <SendStepMock />,
+	},
+	{
+		kicker: "02",
+		title: "Collect signatures",
+		body: "Signers complete assigned fields while Filosign records who signed and what was completed.",
+		mock: <SignStepMock />,
+	},
+	{
+		kicker: "03",
+		title: "Export proof",
+		body: "Generate an exportable proof packet — no stitching together emails and screenshots.",
+		mock: <ProofStepMock />,
+	},
+	{
+		kicker: "04",
+		title: "Settle when needed",
+		body: "Attach USDC payout rules that execute after signing conditions are met.",
+		mock: <SettleStepMock />,
+	},
+] as const satisfies ReadonlyArray<{
+	kicker: string;
+	title: string;
+	body: string;
+	mock: ReactNode;
+}>;
+
+export default function HowItWorksIsland() {
+	return (
+		<MotionProvider>
+			<section
+				id="how-it-works"
+				className="mx-auto max-w-7xl scroll-mt-28 px-8 py-20 md:px-page"
+			>
+				<div className="mb-12 max-w-2xl space-y-4">
+					<p className="font-manrope text-sm font-medium text-primary">
+						How it works
+					</p>
+					<h2 className="text-3xl tracking-tight md:text-5xl">
+						The signed document becomes the workflow record.
+					</h2>
+					<p className="font-manrope text-base leading-relaxed text-muted-foreground md:text-lg">
+						Filosign keeps the signing experience familiar while adding
+						encryption, proof, and optional settlement where the workflow needs
+						it.
+					</p>
+				</div>
+
+				{/* Desktop: horizontal timeline */}
+				<ol className="relative hidden lg:grid lg:grid-cols-4 lg:items-stretch lg:gap-6">
+					{steps.map((step, i) => (
+						<motion.li
+							key={step.kicker}
+							initial={{ opacity: 0, y: 20 }}
+							whileInView={{ opacity: 1, y: 0 }}
+							viewport={{ once: true }}
+							transition={{ delay: i * 0.08 }}
+							className="relative flex h-full flex-col gap-4"
+						>
+							<div className="relative z-10 flex items-center">
+								<span
+									aria-hidden
+									className="relative z-10 flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-background font-manrope text-xs font-semibold text-primary"
+								>
+									{step.kicker}
+								</span>
+								{i < steps.length - 1 ? (
+									<span
+										aria-hidden
+										className="pointer-events-none absolute top-1/2 left-5 h-px w-[calc(100%+1.5rem)] -translate-y-1/2 bg-border"
+									/>
+								) : null}
+							</div>
+							<div className="min-h-0 flex-1 space-y-2">
+								<h3 className="font-manrope text-lg font-medium">
+									{step.title}
+								</h3>
+								<p className="font-manrope text-sm leading-relaxed text-muted-foreground">
+									{step.body}
+								</p>
+							</div>
+							<div aria-hidden className="mt-auto shrink-0">
+								{step.mock}
+							</div>
+						</motion.li>
+					))}
+				</ol>
+
+				{/* Mobile: vertical timeline rail */}
+				<ol className="flex flex-col gap-10 border-l-2 border-border pl-6 lg:hidden">
+					{steps.map((step, i) => (
+						<motion.li
+							key={step.kicker}
+							initial={{ opacity: 0, y: 20 }}
+							whileInView={{ opacity: 1, y: 0 }}
+							viewport={{ once: true }}
+							transition={{ delay: i * 0.08 }}
+							className="relative space-y-4"
+						>
+							<span
+								aria-hidden
+								className="absolute -left-[calc(1.5rem+5px)] top-0 flex size-10 items-center justify-center rounded-full border border-border bg-background font-manrope text-xs font-semibold text-primary"
+							>
+								{step.kicker}
+							</span>
+							<div className="space-y-2 pt-1">
+								<h3 className="font-manrope text-lg font-medium">
+									{step.title}
+								</h3>
+								<p className="font-manrope text-sm leading-relaxed text-muted-foreground">
+									{step.body}
+								</p>
+							</div>
+							<div aria-hidden>{step.mock}</div>
+						</motion.li>
+					))}
+				</ol>
+			</section>
+		</MotionProvider>
+	);
+}

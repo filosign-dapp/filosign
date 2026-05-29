@@ -1,203 +1,34 @@
 ---
-import BentoGridSection from "../components/BentoGridSection.astro";
 import FeaturesBento from "../components/FeaturesBento.astro";
 import Footer from "../components/Footer.astro";
 import HeroSection from "../components/HeroSection.astro";
+import HowItWorksSection from "../components/HowItWorksSection.astro";
+import LandingUseCasesSection from "../components/LandingUseCasesSection.astro";
 import Navbar from "../components/Navbar.astro";
+import ProblemSection from "../components/ProblemSection.astro";
+import TrustCtaSection from "../components/TrustCtaSection.astro";
 import { defaultDescription, defaultTitle } from "../config/site";
 import BaseLayout from "../layouts/BaseLayout.astro";
-
-const workflowSteps = [
-	{
-		kicker: "01",
-		title: "Send the document",
-		body: "Upload an agreement, add recipients, and route it through an encrypted signing workflow.",
-	},
-	{
-		kicker: "02",
-		title: "Collect signatures",
-		body: "Signers complete assigned fields while Filosign records proof of who signed and what was completed.",
-	},
-	{
-		kicker: "03",
-		title: "Export proof",
-		body: "Generate a proof packet that explains the signing event without stitching together emails and screenshots.",
-	},
-	{
-		kicker: "04",
-		title: "Settle when needed",
-		body: "For crypto-native workflows, attach USDC payout rules that can execute after signing conditions are met.",
-	},
-];
-
-const useCases = [
-	"Grant milestone approvals",
-	"Contractor forms and handovers",
-	"DAO contributor agreements",
-	"Bounty and hackathon payouts",
-	"Secure document approvals",
-];
 ---
 
 <BaseLayout title={defaultTitle} description={defaultDescription}>
+	<a
+		href="#main-content"
+		class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:ring-3 focus:ring-ring/50"
+	>
+		Skip to main content
+	</a>
 	<div class="[--section-gap:4rem] bg-background">
 		<Navbar pace="landing" />
 		<div class="h-[var(--section-gap)]"></div>
-		<HeroSection />
-		<section
-			id="how-it-works"
-			class="mx-auto max-w-7xl px-8 py-20 md:px-page"
-		>
-			<div class="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-				<div class="space-y-4">
-					<p class="font-manrope text-sm font-medium text-primary">
-						How it works
-					</p>
-					<h2 class="text-3xl tracking-tight md:text-5xl">
-						The signed document becomes the workflow record.
-					</h2>
-					<p class="max-w-xl font-manrope text-base leading-relaxed text-muted-foreground md:text-lg">
-						Filosign keeps the signing experience familiar while adding
-						encryption, proof, and optional settlement where the workflow needs
-						it.
-					</p>
-				</div>
-				<div class="grid gap-4 sm:grid-cols-2">
-					{workflowSteps.map((step) => (
-						<div class="rounded-2xl bg-card p-6">
-							<p class="mb-8 font-manrope text-xs font-semibold text-primary">
-								{step.kicker}
-							</p>
-							<h3 class="mb-2 font-manrope text-xl">{step.title}</h3>
-							<p class="font-manrope text-sm leading-relaxed text-muted-foreground">
-								{step.body}
-							</p>
-						</div>
-					))}
-				</div>
-			</div>
-		</section>
-		<FeaturesBento />
-		<section class="mx-auto max-w-7xl px-8 py-20 md:px-page">
-			<div class="grid gap-10 lg:grid-cols-2 lg:items-center">
-				<div class="space-y-5">
-					<p class="font-manrope text-sm font-medium text-primary">
-						Why teams need this
-					</p>
-					<h2 class="text-3xl tracking-tight md:text-5xl">
-						Agreements, approvals, and payments are split across tools.
-					</h2>
-					<p class="font-manrope text-base leading-relaxed text-muted-foreground md:text-lg">
-						A grant, contractor form, DAO agreement, or bounty payout rarely ends
-						when someone signs. Teams still chase forms, approvals, transfers,
-						and audit evidence. Filosign brings the workflow into one place.
-					</p>
-				</div>
-				<div class="rounded-2xl bg-card p-6 md:p-8">
-					<div class="space-y-4">
-						<div class="rounded-xl bg-background p-4 font-manrope text-sm">
-							<span class="text-muted-foreground">Before:</span> document in one
-							tool, approval in chat, payout in a wallet, evidence in a folder.
-						</div>
-						<div class="rounded-xl bg-primary p-4 font-manrope text-sm text-primary-foreground">
-							After: encrypted agreement, verifiable signature record, proof
-							packet, and optional USDC settlement.
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-		<section class="mx-auto max-w-7xl px-8 py-20 md:px-page">
-			<div class="mb-10 max-w-2xl space-y-4">
-				<p class="font-manrope text-sm font-medium text-primary">
-					Built for high-stakes workflows
-				</p>
-				<h2 class="text-3xl tracking-tight md:text-5xl">
-					Start where signing and payment already meet.
-				</h2>
-			</div>
-			<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-				{useCases.map((item) => (
-					<div class="rounded-2xl bg-card p-5 font-manrope text-sm font-medium">
-						{item}
-					</div>
-				))}
-			</div>
-		</section>
-		<BentoGridSection />
-		<section class="mx-auto max-w-7xl px-8 py-20 md:px-page">
-			<div class="grid gap-8 lg:grid-cols-[1fr_1.2fr] lg:items-center">
-				<div class="space-y-4">
-					<p class="font-manrope text-sm font-medium text-primary">
-						Ecosystem validation
-					</p>
-					<h2 class="text-3xl tracking-tight md:text-5xl">
-						Built with feedback from the Filecoin ecosystem.
-					</h2>
-					<p class="font-manrope text-base leading-relaxed text-muted-foreground">
-						Filosign ranked #1 overall in the Filecoin Onchain Cloud Alpha
-						Cohort and was mentioned by FIL-B as part of the FOC builder cohort.
-						Cohort feedback highlighted strong UI/UX, enterprise potential, and
-						the need to validate directly with customers.
-					</p>
-				</div>
-				<div class="grid gap-4 sm:grid-cols-2">
-					<a
-						href="https://medium.com/@filbuilders/building-on-the-sovereign-cloud-meet-the-filecoin-onchain-cloud-alpha-cohort-e6090bc90b66"
-						target="_blank"
-						rel="noreferrer"
-						class="rounded-2xl bg-card p-6 transition-colors hover:bg-muted"
-					>
-						<p class="font-manrope text-sm text-muted-foreground">Cohort</p>
-						<h3 class="mt-2 font-manrope text-xl">
-							Filecoin Onchain Cloud Alpha
-						</h3>
-					</a>
-					<a
-						href="https://depinspace.co/depinday/"
-						target="_blank"
-						rel="noreferrer"
-						class="rounded-2xl bg-card p-6 transition-colors hover:bg-muted"
-					>
-						<p class="font-manrope text-sm text-muted-foreground">Showcase</p>
-						<h3 class="mt-2 font-manrope text-xl">
-							DePIN Day / Devconnect 2025
-						</h3>
-					</a>
-				</div>
-			</div>
-		</section>
-		<section class="mx-auto max-w-7xl px-8 py-20 md:px-page">
-			<div class="grid gap-8 lg:grid-cols-2">
-				<div class="rounded-2xl bg-card p-6 md:p-8">
-					<p class="mb-3 font-manrope text-sm font-medium text-primary">
-						Proof packet preview
-					</p>
-					<h2 class="mb-5 text-3xl tracking-tight">
-						An audit trail people can actually read.
-					</h2>
-					<ul class="space-y-3 font-manrope text-sm text-muted-foreground">
-						<li>Who sent and signed the agreement</li>
-						<li>When the workflow was completed</li>
-						<li>Which fields and records back the signature</li>
-						<li>What settlement events are linked to the workflow</li>
-					</ul>
-				</div>
-				<div class="rounded-2xl bg-card p-6 md:p-8">
-					<p class="mb-3 font-manrope text-sm font-medium text-primary">
-						Non-custodial settlement
-					</p>
-					<h2 class="mb-5 text-3xl tracking-tight">
-						Users approve exact payouts. Filosign does not custody funds.
-					</h2>
-					<p class="font-manrope text-sm leading-relaxed text-muted-foreground">
-						For supported workflows, the payer registers a rule and approves the
-						validator from their own wallet. When signing conditions are met,
-						settlement can execute on-chain from payer to recipient.
-					</p>
-				</div>
-			</div>
-		</section>
+		<main id="main-content">
+			<HeroSection />
+			<ProblemSection />
+			<HowItWorksSection />
+			<FeaturesBento />
+			<LandingUseCasesSection />
+			<TrustCtaSection />
+		</main>
 		<div class="h-[var(--section-gap)]"></div>
 		<Footer />
 	</div>

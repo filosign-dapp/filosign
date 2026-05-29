@@ -5,26 +5,44 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-	--background: hsl(0, 0%, 100%);
-	--foreground: hsl(210, 6%, 13%);
-	--card: hsl(240, 11%, 96%);
-	--card-foreground: hsl(210, 6%, 13%);
-	--border: hsl(240, 11%, 85%);
-	--input: hsl(0, 0%, 100%);
+	/* Surfaces — light, airy greys (aligned with apps/client) */
+	--background: oklch(1 0 0);
+	--foreground: oklch(0.141 0.005 285.823);
 
-	--popover: hsl(75, 20%, 99%);
-	--popover-foreground: hsl(210, 6%, 13%);
-	--primary: #202223;
-	--primary-foreground: hsl(60, 100%, 99%);
-	--secondary: hsl(90, 84%, 84%);
-	--secondary-foreground: hsl(210, 6%, 13%);
-	--muted: hsl(240, 11%, 76%);
-	--muted-foreground: hsl(0, 1%, 44%);
-	--accent: hsla(90, 67%, 83%);
-	--accent-foreground: hsl(210, 6%, 13%);
+	--card: oklch(0.97 0.001 286.375);
+	--card-foreground: oklch(0.141 0.005 285.823);
+
+	--border: oklch(0.92 0.004 286.32);
+	--input: oklch(0.92 0.004 286.32);
+
+	--popover: oklch(1 0 0);
+	--popover-foreground: oklch(0.141 0.005 285.823);
+
+	--primary: oklch(0.21 0.006 285.885);
+	--primary-foreground: oklch(0.985 0 0);
+
+	--secondary: oklch(94% 0.097 130);
+	--secondary-foreground: oklch(0.21 0.006 285.885);
+
+	--muted: oklch(0.967 0.001 286.375);
+	--muted-foreground: oklch(0.552 0.016 285.938);
+
+	--accent: oklch(0.967 0.001 286.375);
+	--accent-foreground: oklch(0.21 0.006 285.885);
+
 	--destructive: hsl(0, 84%, 58%);
 	--destructive-foreground: hsl(0, 0%, 100%);
-	--ring: hsl(90, 50%, 38%);
+
+	--warning: oklch(0.8426 0.1688 83.88);
+	--warning-foreground: oklch(0.26 0.07 82);
+
+	--ring: hsl(90, 56%, 71%);
+
+	--chart-1: hsl(38, 92%, 50%);
+	--chart-2: hsl(160, 84%, 37%);
+	--chart-3: hsl(217, 91%, 60%);
+	--chart-4: hsl(262, 83%, 58%);
+	--chart-5: hsl(0, 84%, 58%);
 
 	--primary-light: hsl(90, 67%, 83%);
 	--primary-medium: hsl(90, 50%, 38%);
@@ -59,9 +77,23 @@
 	--color-accent-foreground: var(--accent-foreground);
 	--color-destructive: var(--destructive);
 	--color-destructive-foreground: var(--destructive-foreground);
+	--color-warning: var(--warning);
+	--color-warning-foreground: var(--warning-foreground);
 	--color-border: var(--border);
 	--color-input: var(--input);
 	--color-ring: var(--ring);
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+
+	--color-primary-light: var(--primary-light);
+	--color-primary-medium: var(--primary-medium);
+	--color-primary-dark: var(--primary-dark);
+	--color-secondary-light: var(--secondary-light);
+	--color-secondary-medium: var(--secondary-medium);
+	--color-secondary-dark: var(--secondary-dark);
 
 	--radius-sm: calc(var(--radius) * 0.6);
 	--radius-md: calc(var(--radius) * 0.8);
@@ -84,8 +116,7 @@
 	}
 
 	* {
-		border-color: var(--border);
-		font-family: var(--font-manrope);
+		@apply border-border outline-ring/50 font-manrope;
 	}
 
 	html {
@@ -98,40 +129,23 @@
 	}
 
 	body {
-		background-color: var(--background);
-		color: var(--foreground);
+		@apply bg-background text-foreground;
 	}
 
 	h1 {
-		font-size: 2.25rem;
-		font-weight: 500;
-		line-height: 1.25;
-		letter-spacing: -0.025em;
-		font-family: var(--font-inter);
+		@apply text-4xl font-medium leading-tight tracking-tight font-inter;
 	}
 
 	h2 {
-		font-size: 1.875rem;
-		font-weight: 500;
-		line-height: 1.25;
-		letter-spacing: -0.025em;
-		font-family: var(--font-inter);
+		@apply text-3xl font-medium leading-tight tracking-tight font-inter;
 	}
 
 	h3 {
-		font-size: 1.5rem;
-		font-weight: 500;
-		line-height: 1.25;
-		letter-spacing: -0.025em;
-		font-family: var(--font-inter);
+		@apply text-2xl font-medium leading-tight tracking-tight font-inter;
 	}
 
 	h4 {
-		font-size: 1.25rem;
-		font-weight: 500;
-		line-height: 1.25;
-		letter-spacing: -0.025em;
-		font-family: var(--font-inter);
+		@apply text-xl font-medium leading-tight tracking-tight font-inter;
 	}
 
 	p,
@@ -139,47 +153,44 @@
 	div,
 	a,
 	button {
-		font-family: var(--font-inter);
+		@apply font-inter;
 	}
 
 	button {
-		cursor: pointer;
+		@apply cursor-pointer;
 	}
 }
 
 @utility glass {
-	background-color: color-mix(in hsl, var(--foreground) 80%, transparent);
-	backdrop-filter: blur(4px);
-	border-color: color-mix(in hsl, var(--foreground) 10%, transparent);
+	@apply bg-foreground/80 backdrop-blur-sm border-foreground/10;
 }
 
 @utility rounded-main {
-	border-radius: var(--radius-md);
+	@apply rounded-md;
 }
 
 @utility rounded-large {
-	border-radius: var(--radius-xl);
+	@apply rounded-xl;
 }
 
 @utility p-square {
-	padding: 1rem 1.5rem;
+	@apply px-6 py-4;
 }
 
 @utility p-rect {
-	padding: 1rem 1.5rem;
+	@apply px-6 py-4;
 }
 
 @utility p-page {
-	padding-left: 2rem;
-	padding-right: 2rem;
+	@apply px-8;
 }
 
 @utility m-square {
-	margin: 1rem 1.5rem;
+	@apply mx-6 my-4;
 }
 
 @utility m-rect {
-	margin: 1rem 1.5rem;
+	@apply mx-6 my-4;
 }
 
 @utility hide-scrollbar {

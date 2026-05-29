@@ -205,21 +205,8 @@ const isArticle = schemaVariant === "article" && article;
 
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-
-		<link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet" />
 	</head>
 	<body class="min-h-dvh antialiased bg-background text-foreground">
 		<slot />
-
-		<script is:inline src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
-		<script is:inline>
-			AOS.init({
-				duration: 800,
-				easing: 'ease-out-cubic',
-				once: true,
-				offset: 100,
-				delay: 0,
-			});
-		</script>
 	</body>
 </html>

@@ -1,3 +1,4 @@
+import { billingEnabled, dodoLive } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import DodoPayments from "dodopayments";
 import { and, eq } from "drizzle-orm";
@@ -59,7 +60,7 @@ function createDodoClient() {
 	const apiKey = requireDodoApiKey();
 	return new DodoPayments({
 		bearerToken: apiKey,
-		environment: env.DODO_LIVE ? "live_mode" : "test_mode",
+		environment: dodoLive(env.DEPLOYMENT) ? "live_mode" : "test_mode",
 	});
 }
 
@@ -74,7 +75,7 @@ function resolveProductId(planId: CheckoutPlanId, interval: BillingInterval) {
 		if (planId === "teams_pro" && env.DODO_PRODUCT_ID_TEAMS_PRO_YEARLY) {
 			return env.DODO_PRODUCT_ID_TEAMS_PRO_YEARLY;
 		}
-		return env.DODO_LIVE
+		return dodoLive(env.DEPLOYMENT)
 			? DODO_LIVE_PLAN_PRODUCT_IDS_YEARLY[planId]
 			: DODO_TEST_PLAN_PRODUCT_IDS_YEARLY[planId];
 	} else {
@@ -87,7 +88,7 @@ function resolveProductId(planId: CheckoutPlanId, interval: BillingInterval) {
 		if (planId === "teams_pro" && env.DODO_PRODUCT_ID_TEAMS_PRO_MONTHLY) {
 			return env.DODO_PRODUCT_ID_TEAMS_PRO_MONTHLY;
 		}
-		return env.DODO_LIVE
+		return dodoLive(env.DEPLOYMENT)
 			? DODO_LIVE_PLAN_PRODUCT_IDS[planId]
 			: DODO_TEST_PLAN_PRODUCT_IDS[planId];
 	}
@@ -183,6 +184,12 @@ export async function createBillingCheckoutSession(args: {
 	interval: BillingInterval;
 	returnUrl: string;
 }): Promise<{ checkoutUrl: string; sessionId: string }> {
+	if (!billingEnabled(env.DEPLOYMENT)) {
+		throw new ORPCError("FORBIDDEN", {
+			message: "Billing is not available in this environment",
+		});
+	}
+
 	assertAllowedReturnUrl(args.returnUrl);
 
 	const walletNorm = getAddress(args.wallet);
@@ -233,6 +240,12 @@ export async function createBillingCheckoutSession(args: {
 export async function createBillingPortalSession(args: {
 	wallet: Address;
 }): Promise<{ url: string }> {
+	if (!billingEnabled(env.DEPLOYMENT)) {
+		throw new ORPCError("FORBIDDEN", {
+			message: "Billing is not available in this environment",
+		});
+	}
+
 	const walletNorm = getAddress(args.wallet);
 	const [sub] = await db
 		.select({ dodoCustomerId: userSubscriptions.dodoCustomerId })

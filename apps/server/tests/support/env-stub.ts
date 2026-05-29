@@ -23,6 +23,7 @@ export const testEnvStub = {
 	RESEND_API_KEY: "re_test",
 	RESEND_FROM_EMAIL: "test@example.com",
 	CHAIN: "local" as const,
+	DEPLOYMENT: "local" as const,
 	DRAGONFLY_URL: "redis://localhost:6379",
 	THIRDWEB_CLIENT_ID: "test-client",
 	THIRDWEB_SECRET_KEY: "test-secret",

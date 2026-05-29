@@ -1,3 +1,4 @@
+import { dodoLive } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import DodoPayments from "dodopayments";
 import { and, eq } from "drizzle-orm";
@@ -55,7 +56,7 @@ function createDodoClient() {
 	return new DodoPayments({
 		bearerToken: env.DODO_API_KEY,
 		webhookKey: env.DODO_WEBHOOK_KEY,
-		environment: env.DODO_LIVE ? "live_mode" : "test_mode",
+		environment: dodoLive(env.DEPLOYMENT) ? "live_mode" : "test_mode",
 	});
 }
 

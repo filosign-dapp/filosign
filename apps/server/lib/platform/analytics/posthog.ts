@@ -12,6 +12,10 @@ function readAnalyticsChain(): string {
 	return process.env.CHAIN?.trim() || "local";
 }
 
+function readAnalyticsDeployment(): string {
+	return process.env.DEPLOYMENT?.trim() || "local";
+}
+
 let runtime: ReturnType<typeof createPostHogRuntime> | null = null;
 
 function getRuntime() {
@@ -27,13 +31,26 @@ function getRuntime() {
 	return runtime;
 }
 
+function baseEventProperties(): Record<string, string> {
+	return {
+		chain: readAnalyticsChain(),
+		deployment: readAnalyticsDeployment(),
+	};
+}
+
 export function captureEvent(args: {
 	distinctId: string;
 	event: string;
 	properties?: Record<string, unknown>;
 	groups?: Record<string, string>;
 }): void {
-	getRuntime().captureEvent(args);
+	getRuntime().captureEvent({
+		...args,
+		properties: {
+			...baseEventProperties(),
+			...args.properties,
+		},
+	});
 }
 
 export async function shutdownPostHog(): Promise<void> {

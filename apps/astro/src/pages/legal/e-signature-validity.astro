@@ -1,0 +1,82 @@
+---
+import Footer from "../../components/Footer.astro";
+import ExcludedDocumentsList from "../../components/ExcludedDocumentsList.astro";
+import LegalDocument from "../../components/LegalDocument.astro";
+import Navbar from "../../components/Navbar.astro";
+import { EXCLUDED_DOCUMENTS_INTRO_ESIGN } from "../../config/legal-content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+	title="E-signature Validity — Filosign"
+	description="How Filosign thinks about electronic-signature evidence and legal suitability."
+>
+	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
+		<Navbar />
+		<main>
+			<LegalDocument
+				title="E-signature Validity"
+				description="This page explains Filosign's electronic-signature evidence model. It is not legal advice and does not decide legal suitability for your workflow."
+				lastUpdated="May 2026"
+			>
+				<h2>Short version</h2>
+				<p>
+					Filosign is designed to support evidence used in many electronic
+					signature workflows: intent, consent, attribution, record integrity,
+					timestamps, and retention. Filosign does not decide whether a specific
+					document is valid in your jurisdiction.
+				</p>
+
+				<h2>Intent and consent</h2>
+				<p>
+					Before signing, users should be told they are using electronic records
+					and signatures. Clicking a signing control, completing required
+					fields, and authorizing a wallet signature may help show signer intent
+					for that workflow.
+				</p>
+
+				<h2>Attribution</h2>
+				<p>
+					Filosign connects signing actions to account information, the email
+					associated with the signing session, wallet authorization, timestamps,
+					and workflow records. Those records can help explain who completed a signing step.
+				</p>
+
+				<h2>Integrity and audit trail</h2>
+				<p>
+					Filosign proof packets are intended to explain the signing workflow:
+					who sent the document, who signed, when events occurred, which
+					records back those events, and whether settlement rules were attached.
+					Encrypted document storage and on-chain proofs are designed to support
+					tamper-evidence, not to replace legal review.
+				</p>
+
+				<h2>Jurisdiction matters</h2>
+				<p>
+					Not every document, transaction, or jurisdiction has the same
+					requirements. Consumer disclosures, notarization, witnessing,
+					qualified signatures, industry rules, or paper-record requirements may
+					apply. Users are responsible for deciding whether Filosign is suitable
+					for their workflow.
+				</p>
+
+				<h2>Documents that may not fit</h2>
+				<p>
+					{EXCLUDED_DOCUMENTS_INTRO_ESIGN}
+				</p>
+				<ExcludedDocumentsList />
+				<p>
+					Always consult qualified legal counsel to verify whether a particular document is suitable for electronic signature under local laws and regulations.
+				</p>
+
+				<h2>eIDAS and QES</h2>
+				<p>
+					Filosign does not currently claim qualified electronic signature status.
+					QES/eIDAS-qualified workflows require additional identity, process, and
+					provider requirements.
+				</p>
+			</LegalDocument>
+		</main>
+		<Footer />
+	</div>
+</BaseLayout>

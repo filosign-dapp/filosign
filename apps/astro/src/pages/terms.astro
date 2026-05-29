@@ -1,122 +1,359 @@
 ---
 import Footer from "../components/Footer.astro";
+import ExcludedDocumentsList from "../components/ExcludedDocumentsList.astro";
 import LegalDocument from "../components/LegalDocument.astro";
 import Navbar from "../components/Navbar.astro";
+import {
+	DODO_PAYMENTS,
+	EXCLUDED_DOCUMENTS_INTRO_TERMS,
+	LEGAL_OPERATOR,
+	operatorIdentitySentence,
+} from "../config/legal-content";
 import BaseLayout from "../layouts/BaseLayout.astro";
+
+const operator = operatorIdentitySentence();
 ---
 
 <BaseLayout
 	title="Terms of Service — Filosign"
-	description="Terms of Service for Filosign document signing software and optional on-chain USDC payout automation."
+	description="Terms for Filosign document signing software and optional non-custodial USDC settlement workflows."
 >
-	<div
-		class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary"
-	>
+	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
 		<Navbar />
 		<main>
 			<LegalDocument
 				title="Terms of Service"
-				description="These terms describe how Filosign provides document signing software and optional on-chain payment automation. They are not legal advice."
+				description="These terms describe how Filosign provides private document workflow software and optional non-custodial USDC settlement. They are not legal advice and should be reviewed with counsel before production launch."
 				lastUpdated="May 2026"
 			>
-				<h2>1. Service</h2>
+				<h2>1. Acceptance</h2>
 				<p>
-					Filosign provides software for sending, signing, and verifying
-					documents. Optional features may include USDC payout rules executed via
-					public smart contracts on supported networks.
+					By accessing or using Filosign, you agree to these Terms, our <a
+						href="/privacy"
+						class="underline">Privacy Policy</a
+					>, our <a href="/acceptable-use" class="underline"
+						>Acceptable Use Policy</a
+					> (the "<strong>Acceptable Use Policy</strong>"), and any product limits
+					shown in the service. The Service is operated by {operator}.
+				</p>
+				<p>
+					If you use Filosign for an organization, you represent that you have
+					authority to bind that organization and manage documents, recipients,
+					payments, and subscriptions on its behalf.
 				</p>
 
-				<h2>2. Non-custodial payments</h2>
+				<h2>2. Product Stage and Environments</h2>
 				<p>
-					Filosign does not hold, pool, or transmit your USDC. Payouts use a
-					pull-payment model: you register rules and approve the settlement validator
-					from your own wallet; settlement is <code>transferFrom</code> from your
-					wallet to the recipient when release conditions on the document registry
-					are met.
+					We operate two distinct environments of the Service:
 				</p>
 				<ul>
 					<li>
-						You control <code>registerRule</code> and token <code>approve</code>
-						transactions from your wallet.
+						<strong>Production Environment:</strong> Running on Base Mainnet. This environment is intended for real, sensitive, and confidential agreements. Access is subject to paid subscription entitlements managed by {DODO_PAYMENTS.name} as the Merchant of Record.
 					</li>
 					<li>
-						Filosign does not sign payout transactions on your behalf.
-					</li>
-					<li>
-						You may revoke funding by setting token approval to zero (e.g.
-						<code>approve(validator, 0)</code>) before a payout executes.
+						<strong>Sandbox Environment:</strong> Running on Base Sepolia (Testnet). This environment is provided strictly for free testing, evaluation, and demonstration purposes. No real funds are used, and no warranties of any kind are provided. We reserve the right to wipe Sandbox data, clear user accounts, and modify Sandbox state at any time without notice or liability. Do not upload sensitive or confidential documents to the Sandbox environment.
 					</li>
 				</ul>
 
-				<h2>3. Supported product path vs direct contract use</h2>
+				<h2>3. Eligibility and accounts</h2>
 				<p>
-					<strong>Supported path:</strong> creating payments through the Filosign
-					app or API when sending a document. On that path, Filosign enforces
-					product rules (for example, payout recipients limited to envelope
-					participants or your organization&apos;s linked payout wallet) and may
-					index payment status for the UI and compliance exports.
+					You must be at least 18 years old, or the age required for the
+					service to lawfully process your data in your jurisdiction. You may
+					use Filosign as an individual, professional, or organization, but you
+					are responsible for complying with laws that apply to your use.
 				</p>
 				<p>
-					<strong>Direct contract use:</strong> you may interact with deployed
-					contracts without the app. Filosign does not apply product policies to
-					those transactions and does not guarantee that status, indexing, or
-					automation covers rules created outside the supported path.
-				</p>
-				<p>
-					<strong
-						>Filosign does not control or screen, and hence is not responsible
-						for, all on-chain payouts.</strong
-					>
-					Execution of <code>executePayout</code> is permissionless when contract
-					conditions are met: any address (including Filosign server relay or your
-					wallet) may submit the transaction. Paying gas does not bypass signature
-					requirements enforced by the contracts.
+					You are responsible for your account, wallet, authentication method,
+					recovery materials, transactions, documents, recipients, and activity
+					under your account. Do not use Filosign if you are legally prohibited
+					from doing so.
 				</p>
 
-				<h2>4. Automation and indexing</h2>
+				<h2>4. What Filosign provides</h2>
+				<p>
+					Filosign provides software for sending, viewing, signing, storing,
+					and exporting proof records for encrypted document workflows. Optional
+					features may let approved users attach USDC settlement rules that
+					execute through public smart contracts on supported networks.
+				</p>
+				<p>
+					Filosign does not provide legal, tax, accounting, payroll,
+					identity-verification, fund-holding, custodial wallet, money transmission,
+					or regulated financial services.
+				</p>
+
+				<h2>5. Electronic records and signatures</h2>
+				<p>
+					By using Filosign to send, acknowledge, or sign a document, you
+					consent to using electronic records and electronic signatures for that
+					workflow. You agree that clicking signing controls, authorizing wallet
+					signatures, or otherwise completing a signing step may be used as
+					evidence of your intent to sign.
+				</p>
+				<p>
+					Filosign is designed to support evidence of intent, attribution,
+					integrity, timestamps, and record retention. You are responsible for
+					deciding whether a Filosign workflow is valid and appropriate for your
+					document, counterparty, jurisdiction, and required legal standard. See our
+					<a href="/legal/e-signature-validity" class="underline"
+						>E-signature Validity</a
+					> page for more context (not legal advice).
+				</p>
+
+				<h2>6. Excluded and high-risk documents</h2>
+				<p>
+					{EXCLUDED_DOCUMENTS_INTRO_TERMS}
+				</p>
+				<ExcludedDocumentsList />
+
+				<h2>7. Document and data responsibility</h2>
+				<p>
+					You are responsible for the legality, accuracy, confidentiality, and
+					suitability of documents you upload, send, view, sign, store, or
+					export through Filosign. Filosign does not review document contents for
+					legal sufficiency.
+				</p>
+				<p>
+					Documents are designed to be encrypted before upload. Filosign still
+					processes metadata, participant data, wallet addresses, transaction
+					hashes, and operational records needed to run the service.
+				</p>
+
+				<h2>8. Subscriptions, billing, and refunds</h2>
+				<p>
+					Paid plans may be billed monthly or annually. <strong
+						>{DODO_PAYMENTS.name}</strong
+					> acts as the <strong>Merchant of Record</strong> for subscription checkout:
+					it is the legal seller on the charge, handles applicable tax calculation
+					and remittance, and processes payment operations. Filosign provisions your
+					plan using identifiers and status we receive from Dodo (such as customer
+					id, plan, and subscription state). Payment card and checkout data are processed
+					by Dodo under <a
+						href={DODO_PAYMENTS.privacyPolicyUrl}
+						class="underline"
+						target="_blank"
+						rel="noopener noreferrer">Dodo's privacy policy</a
+					> as an independent controller.
+				</p>
+				<p>
+					Fees are non-refundable except where required by law, required by Dodo as
+					Merchant of Record, or approved by Filosign support. If you bought the wrong
+					plan, forgot to cancel, or believe a charge was made in error, contact
+					<a href={`mailto:${LEGAL_OPERATOR.supportEmail}`} class="underline"
+						>{LEGAL_OPERATOR.supportEmail}</a
+					> within 7 days. We may grant goodwill refunds for legitimate mistakes at our
+					discretion.
+				</p>
+				<p>
+					Cancelling a subscription prevents future renewals but does not
+					automatically refund the current billing period.
+				</p>
+				<p>
+					<strong>Payment Disputes and Chargebacks:</strong> Contact
+					{LEGAL_OPERATOR.supportEmail} to resolve product or access issues before
+					disputing a charge with your bank when possible. Filing a dispute or chargeback
+					without contacting us first could result in suspension of your account, paid
+					features, and settlement access while the dispute is reviewed. Repeated or
+					fraudulent disputes may lead to permanent termination. We will preserve reasonable
+					access to export your existing signed documents and proofs where operationally
+					and legally permitted.
+				</p>
+
+				<h2>9. Non-custodial USDC settlement</h2>
+				<p>
+					Filosign provides a software interface and transaction relay features that
+					facilitate non-custodial payouts. This feature is optional, requires a
+					paid plan, and is subject to manual approval or feature access. For v1,
+					supported settlement is USDC on Base.
+				</p>
+				<p>
+					<strong>Feature Access vs. Fund Custody:</strong> Filosign does not
+					hold, pool, custody, transmit, or control your USDC or blockchain
+					assets. Your funds remain in your self-custodied wallet at all times;
+					we cannot access, freeze, block, or reverse them, and you can transact
+					directly with the blockchain independent of our services. However, your
+					access to Filosign’s software features (including our UI, API endpoints,
+					and transaction relay) is provided at our discretion. We reserve the
+					right to suspend or restrict access to these interface tools at any time
+					to address security, regulatory compliance, abuse, or operational risk.
+				</p>
+				<p>
+					Payouts use a pull-payment model where you register rules on-chain and
+					approve the settlement smart contract from your wallet:
+				</p>
 				<ul>
+					<li>You control token approvals and wallet transactions.</li>
+					<li>Filosign does not approve, custody, or reverse funds for you.</li>
+					<li>Filosign does not charge settlement-volume fees.</li>
 					<li>
-						Filosign may automatically relay <code>executePayout</code> from its
-						server when conditions are met (server-paid gas). You may also submit
-						settlement yourself from the sign page when offered.
-					</li>
-					<li>
-						Database and in-app payment status generally reflect rules submitted
-						through <code>files.register</code> after on-chain verification.
-						On-chain rules created only outside Filosign may still execute on-chain
-						but may not appear in the app.
-					</li>
-					<li>
-						Filosign does not guarantee that a payout will execute (for example,
-						insufficient balance, revoked approval, or unmet release conditions).
-					</li>
-					<li>
-						If a payout is executed outside Filosign (without using Settle payment
-						or Settle from wallet on the sign page), in-app status and compliance
-						indexing may update within approximately one day via a daily on-chain
-						scan. Funds still transfer on-chain regardless of dashboard timing.
+						You may revoke funding by setting token approval to zero directly via
+						your wallet before a payout executes.
 					</li>
 				</ul>
-
-				<h2>5. Compliance screening</h2>
 				<p>
-					When wallet screening is enabled, it applies to the Filosign send and
-					registration path—not to every <code>registerRule</code> call on the
-					blockchain by wallets that do not use Filosign.
+					You are solely responsible for wallet security, recipient correctness,
+					token approvals, tax reporting, invoices, accounting, payout legality,
+					and any funds sent to or from your wallet. Blockchain transactions may
+					be public and irreversible.
 				</p>
 
-				<h2>6. Assumption of risk</h2>
+				<h2>10. Supported path vs direct contract use</h2>
 				<p>
-					Smart contracts, wallets, and blockchain networks involve technical
-					risk (bugs, chain reorganizations, failed transactions). You are
-					responsible for reviewing amounts, recipients, and approvals before you
-					sign transactions.
+					The supported path is creating settlement-linked workflows through the
+					Filosign app or API. On that path, Filosign may enforce product rules,
+					index status, and include related records in proof exports. Direct
+					contract interactions may still happen on-chain, but Filosign does not
+					guarantee product policy enforcement, indexing, or automation for those
+					transactions.
 				</p>
 
-				<p class="text-xs text-muted-foreground pt-6">
-					Contact: <a href="https://x.com/filosign" class="underline"
-						>@filosign</a
-					>. See also our <a href="/privacy" class="underline">Privacy Policy</a>.
+				<h2>11. Prohibited use</h2>
+				<p>
+					You must comply with the <a href="/acceptable-use" class="underline"
+						>Acceptable Use Policy</a
+					>. Prohibited conduct includes fraud, sanctions evasion, illegal payments,
+					unauthorized document sharing, malware, harassment, and any activity that
+					violates applicable law or the Acceptable Use Policy.
+				</p>
+
+				<h2>12. Automation and availability</h2>
+				<p>
+					Filosign may relay supported settlement transactions when conditions
+					are met, but does not guarantee payout execution. Transactions may fail
+					due to insufficient balance, revoked approval, network issues, unmet
+					conditions, or smart contract/network risk.
+				</p>
+				<p>
+					The service is provided as available. Filosign does not currently
+					offer uptime, support, recovery-time, or service-level commitments.
+				</p>
+
+				<h2>13. Suspension and termination</h2>
+				<p>
+					We may suspend, limit, or terminate access if we believe your use
+					creates legal, security, payment, sanctions, fraud, abuse, or
+					operational risk. We may also restrict settlement features separately
+					from document features.
+				</p>
+
+				<h2>14. Intellectual property</h2>
+				<p>
+					Filosign and its licensors own the Service, software, branding, and
+					documentation. We grant you a limited, non-exclusive, non-transferable
+					license to use the Service during an active account or permitted trial,
+					subject to these Terms.
+				</p>
+				<p>
+					You retain ownership of documents and content you upload. You grant
+					Filosign a license to host, encrypt, transmit, display, and process your
+					content only as needed to operate the Service, provide support, enforce
+					these Terms, and comply with law.
+				</p>
+				<p>
+					If you provide feedback or suggestions, you grant us a perpetual,
+					royalty-free license to use them without restriction or compensation.
+				</p>
+
+				<h2>15. Indemnification</h2>
+				<p>
+					To the maximum extent permitted by law, you will defend, indemnify, and
+					hold harmless {operator}, and its affiliates and personnel, from claims,
+					damages, losses, and expenses (including reasonable legal fees) arising
+					from your content, your use of the Service, your violation of these Terms
+					or the Acceptable Use Policy, or your violation of applicable law or
+					third-party rights.
+				</p>
+
+				<h2>16. Export controls and sanctions</h2>
+				<p>
+					You may not use the Service in violation of applicable export control,
+					sanctions, or trade laws. You represent that you are not located in, organized
+					under, or ordinarily resident in a comprehensively sanctioned jurisdiction,
+					and are not a prohibited or restricted party under applicable sanctions lists,
+					unless authorized by law.
+				</p>
+
+				<h2>17. Third-party services</h2>
+				<p>
+					The Service integrates with third parties such as wallet providers,
+					blockchain networks, email providers, analytics tools, hosting providers,
+					and {DODO_PAYMENTS.name}. Your use of those services may be subject to
+					separate terms. See our <a href="/subprocessors" class="underline"
+						>Subprocessors</a
+					> page for providers that process personal data on our behalf.
+				</p>
+
+				<h2>18. Changes to these Terms</h2>
+				<p>
+					We may update these Terms from time to time. We will post the updated
+					Terms on this page and update the "Last updated" date. Material changes
+					may also be notified through the Service or by email where appropriate.
+					Continued use after the effective date constitutes acceptance of the
+					updated Terms, except where prohibited by law.
+				</p>
+
+				<h2>19. Disclaimers and limitation of liability</h2>
+				<p>
+					To the maximum extent permitted by law, the Service is provided "as is"
+					and "as available" without warranties of any kind, whether express,
+					implied, or statutory, including merchantability, fitness for a
+					particular purpose, and non-infringement.
+				</p>
+				<p>
+					To the maximum extent permitted by law, {LEGAL_OPERATOR.tradingName} and
+					{LEGAL_OPERATOR.legalName} will not be liable for indirect, incidental,
+					special, consequential, exemplary, or punitive damages; lost profits; lost
+					data; failed transactions; wallet compromise; or third-party service failures.
+				</p>
+				<p>
+					To the maximum extent permitted by law, our total aggregate liability for
+					claims arising out of or relating to the Service or these Terms is limited
+					to the greater of (a) amounts you paid to Filosign for the Service in the
+					twelve (12) months before the event giving rise to liability, or (b) one
+					hundred U.S. dollars (USD $100). Some jurisdictions do not allow certain
+					limitations; in those cases, the limit applies to the fullest extent permitted.
+				</p>
+
+				<h2>20. Governing Law and Dispute Resolution</h2>
+				<p>
+					These Terms and any dispute, claim, or controversy arising out of or in
+					connection with them or your use of the Service shall be governed by, and
+					construed in accordance with, the laws of the Republic of India, with jurisdiction
+					and venue in the courts of {LEGAL_OPERATOR.location}.
+				</p>
+				<p>
+					Any dispute arising out of or in connection with these Terms, including any
+					question regarding their existence, validity, or termination, shall be referred
+					to and finally resolved by arbitration in {LEGAL_OPERATOR.location}, in accordance with the
+					Arbitration and Conciliation Act, 1996. The arbitral tribunal shall consist of a sole arbitrator
+					appointed by mutual agreement, or failing agreement, in accordance with the Act.
+					The language of the arbitration shall be English.
+				</p>
+
+				<h2>21. General</h2>
+				<p>
+					If any provision is held invalid, the remaining provisions remain in effect.
+					Our failure to enforce a provision is not a waiver. You may not assign these
+					Terms without our consent; we may assign them in connection with a merger,
+					acquisition, or sale of assets. These Terms, together with the Privacy Policy,
+					Acceptable Use Policy, and documents incorporated by reference, are the entire
+					agreement regarding the Service.
+				</p>
+
+				<h2>22. Contact</h2>
+				<p>
+					Operator: {operator}.
+				</p>
+				<p>
+					Contact us at
+					<a href={`mailto:${LEGAL_OPERATOR.supportEmail}`} class="underline"
+						>{LEGAL_OPERATOR.supportEmail}</a
+					>. See also our <a href="/privacy" class="underline">Privacy Policy</a>,
+					<a href="/acceptable-use" class="underline">Acceptable Use Policy</a>,
+					<a href="/subprocessors" class="underline">Subprocessors</a>, and
+					<a href="/legal/non-custodial-settlement" class="underline"
+						>Non-custodial Settlement</a
+					> page.
 				</p>
 			</LegalDocument>
 		</main>

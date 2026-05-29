@@ -2,68 +2,251 @@
 import Footer from "../components/Footer.astro";
 import LegalDocument from "../components/LegalDocument.astro";
 import Navbar from "../components/Navbar.astro";
+import {
+	DODO_PAYMENTS,
+	LEGAL_OPERATOR,
+	operatorIdentitySentence,
+} from "../config/legal-content";
 import BaseLayout from "../layouts/BaseLayout.astro";
+
+const operator = operatorIdentitySentence();
 ---
 
 <BaseLayout
 	title="Privacy Policy — Filosign"
 	description="How Filosign handles personal data for document signing, wallet authentication, and optional USDC payout features."
 >
-	<div
-		class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary"
-	>
+	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
 		<Navbar />
 		<main>
 			<LegalDocument
 				title="Privacy Policy"
-				description="This policy describes data Filosign processes when you use our applications. It is not legal advice."
+				description="This policy describes how Filosign processes personal data for encrypted document workflows, wallet-based signing, analytics, billing, and optional USDC settlement."
 				lastUpdated="May 2026"
 			>
-				<h2>1. What we process</h2>
+				<h2>1. Who operates Filosign</h2>
+				<p>
+					The Service is operated by {operator}. Contact:
+					<a href={`mailto:${LEGAL_OPERATOR.privacyEmail}`} class="underline"
+						>{LEGAL_OPERATOR.privacyEmail}</a
+					> (privacy) and
+					<a href={`mailto:${LEGAL_OPERATOR.supportEmail}`} class="underline"
+						>{LEGAL_OPERATOR.supportEmail}</a
+					> (support).
+				</p>
+
+				<h2>2. Data Fiduciary, Processor, and Merchant of Record roles</h2>
+				<p>
+					Under applicable data protection frameworks, including the India Digital Personal Data
+					Protection (DPDP) Act, 2023 and the EU/UK General Data Protection Regulation (GDPR),
+					different parties may process personal data as follows:
+				</p>
 				<ul>
 					<li>
-						Account and profile data (for example email, wallet address, display
-						name) to operate signing workflows.
+						<strong>Filosign as Data Fiduciary (DPDP) / Data Controller (GDPR):</strong> We act as controller for personal data needed to operate the Service, including account registration, display profiles, workspace and signing metadata, security and operation logs, support communications, and non-essential product analytics (where consent applies).
 					</li>
 					<li>
-						Document metadata, participant information, and encrypted document
-						content according to product design.
+						<strong>{DODO_PAYMENTS.name} as Merchant of Record:</strong> When you purchase a paid subscription, {DODO_PAYMENTS.name} is the legal seller and acts as an <strong>independent controller</strong> for checkout and payment data (such as payment method details, billing address where collected, tax identifiers, fraud signals, and transaction records). That processing is described in <a
+							href={DODO_PAYMENTS.privacyPolicyUrl}
+							class="underline"
+							target="_blank"
+							rel="noopener noreferrer">Dodo's privacy policy</a
+						>. We receive limited billing identifiers and subscription status from Dodo to provision your plan.
 					</li>
 					<li>
-						When you attach optional USDC payouts through Filosign: payout
-						amounts, token and validator addresses, on-chain rule identifiers,
-						transaction hashes, and status fields used for UI and compliance
-						exports.
+						<strong>Filosign as Data Processor:</strong> When a customer uploads encrypted documents, recipient details, and signer inputs to run an envelope, we process that data on the customer's instructions. The customer initiating the workflow remains the controller for their recipients and signers unless applicable law treats us as an independent controller for specific processing (for example, providing the Service directly to signers).
 					</li>
 				</ul>
 
-				<h2>2. On-chain data</h2>
+				<h2>3. Who this policy covers</h2>
 				<p>
-					Blockchain transactions you sign (including <code>registerRule</code>
-					and <code>approve</code>) are public on the network. Filosign does not
-					control public chain data. Rules created without the Filosign app are
-					not indexed by us unless they are later associated through a supported
-					send flow.
+					This policy applies to individuals whose personal data is processed by Filosign
+					websites, applications, and APIs ("Service"). In these terms, individuals are referred to as 
+					"Data Principals" (under the DPDP Act) or "Data Subjects" (under the GDPR).
 				</p>
 
-				<h2>3. Third parties</h2>
+				<h2>4. Data we process</h2>
 				<p>
-					We may use infrastructure and service providers (hosting, email,
-					analytics, wallet authentication, and optional automated payout relay).
-					Their processing is limited to operating Filosign.
+					We process the following categories of personal data:
+				</p>
+				<ul>
+					<li>
+						Account and profile data such as email, wallet address, display
+						name, profile fields, authentication identifiers, and linked
+						accounts.
+					</li>
+					<li>
+						Organization and team data such as members, roles, invitations,
+						subscription status, and workspace settings.
+					</li>
+					<li>
+						Recipient and workflow data such as names, emails, roles,
+						permissions, timestamps, document titles, status, and audit events.
+					</li>
+					<li>Encrypted document content and encrypted key envelopes.</li>
+					<li>
+						Signing records, proof packets, acknowledgements, signature
+						metadata, and related audit records.
+					</li>
+					<li>
+						Optional settlement metadata such as token, amount, payer,
+						recipient, rule identifiers, transaction hashes, allowance status,
+						and payout status.
+					</li>
+					<li>
+						Billing identifiers such as plan, checkout status, Dodo customer or
+						subscription identifiers, and subscription events (not full payment card data).
+					</li>
+					<li>
+						Operational data such as device, browser, IP address, logs,
+						analytics events, crash reports, support messages, and security
+						events.
+					</li>
+				</ul>
+
+				<h2>5. Legal bases (GDPR)</h2>
+				<p>
+					Where GDPR applies, we rely on appropriate legal bases such as contract
+					(operating your account and workflows), legitimate interests (security,
+					abuse prevention, and product improvement, balanced against your rights),
+					legal obligation, and consent where required (for example, non-essential analytics).
 				</p>
 
-				<h2>4. Payments disclaimer</h2>
+				<h2>6. Encrypted document content</h2>
 				<p>
-					Filosign does not control or screen all on-chain payouts. Payment
-					status shown in the product reflects our indexing of the supported send
-					path where applicable, not a complete view of all activity on public
-					contracts.
+					Filosign is designed so document contents are encrypted client-side in the browser before upload.
+					We store encrypted ciphertext and encrypted key material needed to
+					run the workflow. Filosign does not hold decryption keys, and in normal operation,
+					we cannot read plaintext document contents.
+				</p>
+				<p>
+					Encryption does not make all related data private. We still process
+					metadata, participant details, wallet addresses, timestamps,
+					transaction hashes, billing records, and support information needed to
+					operate the service.
 				</p>
 
-				<p class="text-xs text-muted-foreground pt-6">
-					See our <a href="/terms" class="underline">Terms of Service</a> for
-					payment and non-custody terms.
+				<h2>7. On-chain data</h2>
+				<p>
+					Blockchain transactions and contract records are public. Filosign does
+					not control public network data, and deletion requests cannot remove
+					data from a public blockchain. On-chain records are designed to avoid
+					plaintext document contents, but transaction metadata may still be
+					publicly observable.
+				</p>
+
+				<h2>8. How we use data</h2>
+				<p>
+					We use data to operate signing workflows, authenticate users, route
+					documents, generate proof exports, show settlement status, prevent
+					abuse, enforce entitlements, provision subscriptions, improve the product,
+					respond to support requests, and protect the service.
+				</p>
+				<p>
+					Filosign does not sell personal data for advertising and does not use
+					user documents to train AI models. The app does not currently use AI
+					vendors to process document contents.
+				</p>
+
+				<h2>9. Service providers</h2>
+				<p>
+					We use service providers for hosting, storage, email, analytics,
+					authentication, billing, blockchain infrastructure, and support. See
+					our <a href="/subprocessors" class="underline">Subprocessors</a> page
+					for the current register.
+				</p>
+
+				<h2>10. Analytics and cookies</h2>
+				<p>
+					We may use PostHog or similar analytics to understand product usage
+					and improve workflows. Analytics are non-essential. Where required by law,
+					we ask for consent before enabling non-essential analytics or similar
+					tracking.
+				</p>
+				<p>
+					Some cookies or local storage may be necessary for authentication,
+					session state, preferences, wallet flows, and security. You can control
+					browser cookies through your browser settings, but disabling necessary
+					storage may break parts of the app.
+				</p>
+
+				<h2>11. Retention, export, and deletion</h2>
+				<p>
+					Production document retention is plan-based. We generally retain
+					encrypted documents and proof records while your subscription or
+					workspace remains active, then provide a reasonable export or grace
+					period before deletion where feasible. Optional archival storage may
+					have separate retention terms.
+				</p>
+				<p>
+					You may request export or deletion of account data, encrypted
+					documents, metadata, and stored files where feasible. We may retain
+					records needed for security, billing, taxes, fraud prevention, dispute
+					handling, legal obligations, backups, or service integrity. Public
+					blockchain records cannot be deleted by Filosign.
+				</p>
+
+				<h2>12. Rights of Data Principals (EEA, UK, India, US)</h2>
+				<p>
+					Depending on your location, you may have rights such as access, correction,
+					deletion, restriction, objection, portability, withdrawal of consent, nomination
+					(under India's DPDP Act), and grievance redressal. US state laws may provide
+					additional rights for residents of certain states.
+				</p>
+				<ul>
+					<li><strong>Access and information:</strong> Request details about personal data we process about you.</li>
+					<li><strong>Correction:</strong> Request correction of inaccurate or incomplete data.</li>
+					<li><strong>Deletion:</strong> Request erasure where applicable. We cannot erase public blockchain records or data we must retain for legal compliance.</li>
+					<li><strong>Consent withdrawal:</strong> Where processing is based on consent (e.g., analytics), withdraw consent via in-product controls.</li>
+					<li><strong>Portability / objection / restriction:</strong> Available where required by applicable law.</li>
+					<li><strong>Nomination (India):</strong> Nominate another individual to exercise your rights upon death or incapacity, as permitted by law.</li>
+				</ul>
+
+				<h2>13. Grievance Redressal and Contact Details</h2>
+				<p>
+					For privacy questions, rights requests, or complaints, contact our Grievance Officer:
+				</p>
+				<ul>
+					<li><strong>Grievance Officer:</strong> {LEGAL_OPERATOR.legalName}</li>
+					<li><strong>Address:</strong> {LEGAL_OPERATOR.location}</li>
+					<li><strong>Email:</strong> <a href={`mailto:${LEGAL_OPERATOR.privacyEmail}`} class="underline">{LEGAL_OPERATOR.privacyEmail}</a></li>
+				</ul>
+				<p>
+					We will acknowledge legitimate requests within a reasonable time and respond
+					within timelines required by applicable law. If you are unsatisfied with our response,
+					you may escalate to the Data Protection Board of India or your local data protection authority where applicable.
+				</p>
+
+				<h2>14. International transfers</h2>
+				<p>
+					Filosign may process data using infrastructure and service providers
+					in multiple jurisdictions. Where required, we rely on appropriate
+					transfer mechanisms, contractual protections, or other lawful bases
+					for international data transfers.
+				</p>
+
+				<h2>15. Children</h2>
+				<p>
+					Filosign is not intended for children. You must be at least 18 years
+					old, or the age required in your jurisdiction, to use the service.
+				</p>
+
+				<h2>16. Contact</h2>
+				<p>
+					Operator: {operator}.
+				</p>
+				<p>
+					Privacy requests:
+					<a href={`mailto:${LEGAL_OPERATOR.privacyEmail}`} class="underline"
+						>{LEGAL_OPERATOR.privacyEmail}</a
+					>. Support:
+					<a href={`mailto:${LEGAL_OPERATOR.supportEmail}`} class="underline"
+						>{LEGAL_OPERATOR.supportEmail}</a
+					>. Security:
+					<a href={`mailto:${LEGAL_OPERATOR.securityEmail}`} class="underline"
+						>{LEGAL_OPERATOR.securityEmail}</a
+					>. See our <a href="/terms" class="underline">Terms of Service</a> for
+					payment, governing law, and non-custody terms.
 				</p>
 			</LegalDocument>
 		</main>

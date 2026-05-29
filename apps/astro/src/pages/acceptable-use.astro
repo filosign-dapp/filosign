@@ -1,0 +1,61 @@
+---
+import Footer from "../components/Footer.astro";
+import ExcludedDocumentsList from "../components/ExcludedDocumentsList.astro";
+import LegalDocument from "../components/LegalDocument.astro";
+import Navbar from "../components/Navbar.astro";
+import { EXCLUDED_DOCUMENTS_INTRO_ESIGN, LEGAL_OPERATOR } from "../config/legal-content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+	title="Acceptable Use — Filosign"
+	description="Acceptable use rules for Filosign."
+>
+	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
+		<Navbar />
+		<main>
+			<LegalDocument
+				title="Acceptable Use"
+				description="Rules for using Filosign document workflows and optional settlement features safely and legally."
+				lastUpdated="May 2026"
+			>
+				<h2>Do not use Filosign for</h2>
+				<ul>
+					<li>fraud, phishing, impersonation, or deceptive documents</li>
+					<li>money laundering, terrorist financing, sanctions evasion, or prohibited transactions</li>
+					<li>illegal payments, illegal goods or services, illegal content, or unlawful agreements</li>
+					<li>regulated financial, securities, lending, gambling, payroll, tax, or money-services activity without required authorization</li>
+					<li>malware, credential theft, spam, scraping, harassment, or abuse of recipients</li>
+					<li>unauthorized sharing of confidential, personal, health, financial, or sensitive data</li>
+					<li>attempts to bypass product limits, entitlements, manual settlement approval, screening, security controls, or rate limits</li>
+					<li>interference with Filosign infrastructure, other users, or third-party providers</li>
+				</ul>
+
+				<h2>High-risk document categories</h2>
+				<p>
+					{EXCLUDED_DOCUMENTS_INTRO_ESIGN}
+				</p>
+				<ExcludedDocumentsList />
+
+				<h2>Enforcement</h2>
+				<p>
+					Filosign may restrict, suspend, or remove access where we believe use
+					violates these rules, our <a href="/terms" class="underline">Terms of Service</a>,
+					or creates legal, security, or operational risk.
+					We may restrict settlement features separately from document features.
+				</p>
+				<h2>Reporting abuse</h2>
+				<p>
+					Report abuse, fraud, or security issues to
+					<a href={`mailto:${LEGAL_OPERATOR.supportEmail}`} class="underline"
+						>{LEGAL_OPERATOR.supportEmail}</a
+					>. Security-sensitive reports may be sent to
+					<a href={`mailto:${LEGAL_OPERATOR.securityEmail}`} class="underline"
+						>{LEGAL_OPERATOR.securityEmail}</a
+					>.
+				</p>
+			</LegalDocument>
+		</main>
+		<Footer />
+	</div>
+</BaseLayout>

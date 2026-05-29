@@ -1,0 +1,88 @@
+---
+import Footer from "../components/Footer.astro";
+import LegalDocument from "../components/LegalDocument.astro";
+import Navbar from "../components/Navbar.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+	title="Security Overview — Filosign"
+	description="How Filosign approaches private document workflows, client-side encryption, and signing proof."
+>
+	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
+		<Navbar />
+		<main>
+			<LegalDocument
+				title="Security Overview"
+				description="A plain-English summary of Filosign's current security model, what the service can see, and what remains your responsibility. This is not a certification or audit report."
+				lastUpdated="May 2026"
+			>
+				<h2>Client-side encryption</h2>
+				<p>
+					Documents are encrypted in the browser before upload, including drafts.
+					We store encrypted ciphertext, encrypted key material, and workflow metadata.
+					We do not hold document decryption keys and do not need plaintext document
+					contents for normal operation.
+				</p>
+
+				<h2>Key handling and access</h2>
+				<p>
+					Signing and document access rely on user authentication and wallet authorization.
+					You are responsible for securing wallets, login methods, recovery materials, and
+					invite or share links.
+				</p>
+
+				<h2>Proof records</h2>
+				<p>
+					Completed workflows can produce audit records and proof exports describing
+					participants, timestamps, workflow status, and supporting application or on-chain
+					references where applicable.
+				</p>
+
+				<h2>What Filosign processes</h2>
+				<p>
+					We process account data, workflow metadata, recipient emails, wallet addresses,
+					transaction hashes, billing identifiers, support messages, operational logs,
+					consent-gated analytics events, and encrypted files. See our
+					<a href="/privacy" class="underline">Privacy Policy</a> and
+					<a href="/subprocessors" class="underline">Subprocessors</a> list.
+				</p>
+
+				<h2>Administrative access</h2>
+				<p>
+					Production administrative access is limited to personnel who need it to operate,
+					secure, and support the Service. We log sensitive administrative actions that affect
+					accounts, entitlements, settlement access, or customer data where our tooling supports it.
+				</p>
+
+				<h2>Backups and availability</h2>
+				<p>
+					Production databases and object storage use provider backups to improve recoverability.
+					Backups do not constitute an uptime, recovery-time, or service-level commitment.
+				</p>
+
+				<h2>Smart contract risk</h2>
+				<p>
+					Optional settlement uses public smart contracts on supported networks. Contracts are
+					<strong>not</strong> represented as formally audited unless and until we publish an audit.
+					Use settlement only for amounts and counterparties you understand and accept.
+				</p>
+
+				<h2>Incident response</h2>
+				<p>
+					If we confirm a security incident affecting users, we investigate, take containment steps,
+					and notify affected users or regulators where required by law.
+				</p>
+
+				<h2>Report a vulnerability</h2>
+				<p>
+					Report security issues to
+					<a href="mailto:security@filosign.xyz" class="underline"
+						>security@filosign.xyz</a
+					>. Include reproduction steps. Do not access, modify, or disclose other users' data.
+				</p>
+			</LegalDocument>
+		</main>
+		<Footer />
+	</div>
+</BaseLayout>

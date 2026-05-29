@@ -1,0 +1,101 @@
+---
+import Footer from "../components/Footer.astro";
+import LegalDocument from "../components/LegalDocument.astro";
+import Navbar from "../components/Navbar.astro";
+import { DODO_PAYMENTS } from "../config/legal-content";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+	title="Subprocessors — Filosign"
+	description="Service providers used to operate Filosign."
+>
+	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
+		<Navbar />
+		<main>
+			<LegalDocument
+				title="Subprocessors"
+				description="Third-party providers that process personal data to operate Filosign. Subscription checkout data may also be processed by Dodo Payments as Merchant of Record under Dodo's privacy policy."
+				lastUpdated="May 2026"
+			>
+				<h2>Overview</h2>
+				<p>
+					Filosign uses service providers ("Subprocessors") to host the Service, deliver email,
+					authenticate users, store encrypted files, run analytics, and process subscriptions.
+					We review security and privacy practices before engaging providers. This list reflects
+					our production stack as of the date above.
+				</p>
+				<p>
+					<strong>Merchant of Record:</strong> {DODO_PAYMENTS.name} processes subscription checkout
+					and payment data as an independent controller when you purchase a paid plan. See
+					<a
+						href={DODO_PAYMENTS.privacyPolicyUrl}
+						class="underline"
+						target="_blank"
+						rel="noopener noreferrer">Dodo's privacy policy</a
+					> and our <a href="/privacy" class="underline">Privacy Policy</a>.
+				</p>
+
+				<div class="overflow-x-auto">
+					<table class="w-full border-collapse text-left text-xs">
+						<thead>
+							<tr class="border-b border-border">
+								<th class="py-2 pr-3 font-semibold">Entity</th>
+								<th class="py-2 pr-3 font-semibold">Purpose</th>
+								<th class="py-2 pr-3 font-semibold">Data processed</th>
+								<th class="py-2 font-semibold">Location</th>
+							</tr>
+						</thead>
+						<tbody class="[&_tr]:border-b [&_tr]:border-border/60 [&_td]:py-2 [&_td]:pr-3 [&_td]:align-top">
+							<tr>
+								<td>Cloudflare, Inc.</td>
+								<td>Marketing site hosting, CDN, DNS, and R2 object storage</td>
+								<td>Site traffic, encrypted document blobs, and storage metadata</td>
+								<td>Global / EU regions (as configured)</td>
+							</tr>
+							<tr>
+								<td>Hetzner Online GmbH</td>
+								<td>Application and database hosting</td>
+								<td>Account data, document metadata, audit logs, application and API logs</td>
+								<td>Germany / Finland (EU)</td>
+							</tr>
+							<tr>
+								<td>Resend, Inc.</td>
+								<td>Transactional email delivery</td>
+								<td>Recipient names, email addresses, and delivery events</td>
+								<td>US / Global</td>
+							</tr>
+							<tr>
+								<td>thirdweb, Inc.</td>
+								<td>Wallet authentication, embedded wallets, and RPC</td>
+								<td>Wallet addresses, auth identifiers, and chain interaction logs</td>
+								<td>US / Global</td>
+							</tr>
+							<tr>
+								<td>PostHog, Inc.</td>
+								<td>Product analytics (consent-gated where required)</td>
+								<td>Usage events, device/browser metadata, and session identifiers</td>
+								<td>EU (Frankfurt, Germany) when EU hosting is enabled</td>
+							</tr>
+							<tr>
+								<td>{DODO_PAYMENTS.name}</td>
+								<td>Merchant of Record — subscription checkout, tax, and billing</td>
+								<td>Customer email, plan, invoices, payment tokens, and fraud/compliance signals</td>
+								<td>US / Global</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<h2>Changes</h2>
+				<p>
+					We update this list when our infrastructure changes. For material additions of
+					Subprocessors that process personal data on our behalf, we will provide notice through
+					the Service or by email to registered account holders where practicable, and update
+					this page.
+				</p>
+			</LegalDocument>
+		</main>
+		<Footer />
+	</div>
+</BaseLayout>

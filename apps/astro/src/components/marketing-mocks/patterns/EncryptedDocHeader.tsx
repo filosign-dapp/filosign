@@ -14,8 +14,8 @@ export default function EncryptedDocHeader({
 	recipients = ["0xAB…CD", "0x12…89"],
 }: EncryptedDocHeaderProps) {
 	return (
-		<div className="space-y-3">
-			<div className="flex items-center gap-3">
+		<div className="space-y-4">
+			<div className="flex items-start gap-3">
 				<div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
 					<FileTextIcon className="size-5" weight="fill" aria-hidden />
 				</div>

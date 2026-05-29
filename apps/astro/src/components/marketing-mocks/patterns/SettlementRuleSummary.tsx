@@ -9,7 +9,7 @@ type SettlementRuleSummaryProps = {
 };
 
 export default function SettlementRuleSummary({
-	amount = "500 USDC",
+	amount = "$500 payout",
 	condition = "When all parties sign",
 	status = "Ready",
 }: SettlementRuleSummaryProps) {

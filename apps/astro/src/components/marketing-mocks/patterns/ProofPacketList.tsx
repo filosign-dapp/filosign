@@ -17,7 +17,7 @@ export default function ProofPacketList({
 }: ProofPacketListProps) {
 	return (
 		<div className="space-y-2">
-			<div className="mb-1 flex items-center gap-2 text-primary">
+			<div className="mb-3 flex items-center gap-2 text-primary">
 				<ShieldCheckIcon className="size-4" weight="fill" aria-hidden />
 				<span className="font-manrope text-xs font-medium">{title}</span>
 			</div>

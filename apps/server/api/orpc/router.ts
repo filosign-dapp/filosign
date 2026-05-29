@@ -1,3 +1,4 @@
+import { DEPLOYMENTS } from "@filosign/shared";
 import { zHexString } from "@filosign/shared/zod";
 import type { RouterClient } from "@orpc/server";
 import { ORPCError } from "@orpc/server";
@@ -39,6 +40,7 @@ const platformRuntimeSchema = z.object({
 	uptime: z.number(),
 	chain: z.unknown(),
 	chainKey: z.enum(["local", "testnet", "mainnet"]),
+	deployment: z.enum(DEPLOYMENTS),
 });
 
 const unk = z.unknown();
@@ -53,6 +55,7 @@ export const appRouter = {
 			uptime: r.uptime,
 			chain: r.chain,
 			chainKey: r.chainKey,
+			deployment: r.deployment,
 		};
 	}),
 	drafts: {

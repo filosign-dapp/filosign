@@ -1,11 +1,14 @@
+import { DEPLOYMENTS } from "@filosign/shared";
 import { zEvmAddress, zEvmPrivateKey } from "@filosign/shared/zod";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
 import { emitCriticalPlatformEventFromProcessEnv } from "@/lib/platform/analytics/platform-alerts-env";
+import { validateDeploymentEnv } from "@/lib/platform/validate-deployment-env";
 
-export const env = createEnv({
+const parsedEnv = createEnv({
 	server: {
+		DEPLOYMENT: z.enum(DEPLOYMENTS),
 		NODE_ENV: z.enum(["development", "production"]).default("production"),
 		TG_ANALYTICS: z
 			.string()
@@ -46,8 +49,8 @@ export const env = createEnv({
 			.transform((v) => v === "true"),
 		ADMIN_WALLETS: z.string().optional(),
 		INVITE_TTL_DAYS: z.coerce.number().int().min(1).default(7),
-		DODO_API_KEY: z.string().min(1),
-		DODO_WEBHOOK_KEY: z.string().min(1),
+		DODO_API_KEY: z.string().min(1).optional(),
+		DODO_WEBHOOK_KEY: z.string().min(1).optional(),
 		DODO_API_BASE: z
 			.url()
 			.default("https://test.dodopayments.com")
@@ -59,10 +62,6 @@ export const env = createEnv({
 		DODO_PRODUCT_ID_TEAMS_YEARLY: z.string().min(1).optional(),
 		DODO_PRODUCT_ID_TEAMS_PRO_MONTHLY: z.string().min(1).optional(),
 		DODO_PRODUCT_ID_TEAMS_PRO_YEARLY: z.string().min(1).optional(),
-		DODO_LIVE: z
-			.string()
-			.default("true")
-			.transform((v) => v === "true"),
 	},
 	runtimeEnv: Bun.env,
 	emptyStringAsUndefined: true,
@@ -81,4 +80,23 @@ export const env = createEnv({
 	},
 });
 
+try {
+	validateDeploymentEnv(parsedEnv);
+} catch (error) {
+	const message =
+		error instanceof Error ? error.message : "Invalid deployment configuration";
+	console.error(message);
+	void emitCriticalPlatformEventFromProcessEnv({
+		name: PLATFORM_ALERT_EVENTS.serverBootstrapFailed,
+		severity: "critical",
+		message: "Server bootstrap validation failed",
+		context: {
+			stage: "deployment_validation",
+			error: message,
+		},
+	});
+	throw error;
+}
+
+export const env = parsedEnv;
 export default env;

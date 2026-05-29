@@ -74,7 +74,8 @@ const contracts = Object.fromEntries(
 	}),
 );
 
-console.log("runtime chain:", {
+console.log("runtime deployment:", {
+	deployment: env.DEPLOYMENT,
 	id: runtimeChain.id,
 	chainKey,
 	runtimeChain: runtimeChain.name,

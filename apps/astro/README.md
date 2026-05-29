@@ -100,6 +100,15 @@ Every page includes:
 
 Direct dependency **`canvaskit-wasm`** is required for OG generation (see astro-og-canvas README).
 
+## Responsive layout
+
+Marketing pages share a shell via [`MarketingPageShell.astro`](src/components/MarketingPageShell.astro): skip link, navbar, section gap, footer.
+
+Horizontal padding uses the `px-page` / `p-page` utilities in [`global.css`](src/styles/global.css) (`px-4` → `sm:px-6` → `md:px-8` → `lg:px-10`). Section width is capped at `90rem` (~1440px) via `marketingMaxWidthClass` in [`marketing-layout.ts`](src/lib/marketing-layout.ts).
+
+- **Navigation:** below `md`, a bottom drawer exposes About / Pricing / Blog / Changelog plus Start free (44px touch targets).
+- **Pricing comparison:** desktop table (`lg+`); stacked plan accordions below `lg` (`ComparisonAccordion.tsx`), default open on Teams.
+
 ## Animations
 
 AOS (Animate On Scroll) is used for scroll-triggered animations:

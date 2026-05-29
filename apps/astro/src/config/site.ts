@@ -3,12 +3,12 @@ import { env } from "../env";
 export const siteName = "Filosign";
 
 export const siteTagline =
-	"Private agreement workflows with optional USDC settlement";
+	"Private agreement workflows with attached payouts";
 
 export const defaultTitle = `${siteName} — ${siteTagline}`;
 
 export const defaultDescription =
-	"Send encrypted documents, collect verifiable signatures, and optionally release USDC when signing conditions are met.";
+	"Send encrypted documents, collect verifiable signatures, and release attached payouts when signing conditions are met.";
 
 export const twitterSite = "@filosign";
 

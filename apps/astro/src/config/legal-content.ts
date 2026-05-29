@@ -3,7 +3,7 @@
 export const LEGAL_OPERATOR = {
 	legalName: "Kartikay Tiwari",
 	tradingName: "Filosign",
-	location: "Jaunpur, India",
+	location: "Mumbai, India",
 	supportEmail: "support@filosign.xyz",
 	privacyEmail: "privacy@filosign.xyz",
 	securityEmail: "security@filosign.xyz",

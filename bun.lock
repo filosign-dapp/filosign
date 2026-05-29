@@ -21,6 +21,7 @@
         "@astrojs/mdx": "5.0.4",
         "@astrojs/react": "^5.0.4",
         "@astrojs/sitemap": "3.7.2",
+        "@filosign/motion": "workspace:*",
         "@fontsource-variable/inter": "catalog:",
         "@fontsource-variable/manrope": "catalog:",
         "@phosphor-icons/react": "catalog:",

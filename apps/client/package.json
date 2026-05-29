@@ -19,6 +19,7 @@
 		"@base-ui/react": "1.4.1",
 		"@filosign/contracts": "workspace:*",
 		"@filosign/crypto-utils": "workspace:*",
+		"@filosign/motion": "workspace:*",
 		"@filosign/react": "workspace:*",
 		"@filosign/shared": "workspace:*",
 		"@fontsource-variable/inter": "catalog:",

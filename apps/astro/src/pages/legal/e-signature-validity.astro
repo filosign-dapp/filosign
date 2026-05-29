@@ -1,8 +1,7 @@
 ---
 import ExcludedDocumentsList from "../../components/ExcludedDocumentsList.astro";
-import Footer from "../../components/Footer.astro";
 import LegalDocument from "../../components/LegalDocument.astro";
-import Navbar from "../../components/Navbar.astro";
+import MarketingPageShell from "../../components/MarketingPageShell.astro";
 import { EXCLUDED_DOCUMENTS_INTRO_ESIGN } from "../../config/legal-content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
@@ -11,9 +10,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 	title="E-signature Validity — Filosign"
 	description="How Filosign thinks about electronic-signature evidence and legal suitability."
 >
-	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
-		<Navbar />
-		<main>
+	<MarketingPageShell>
 			<LegalDocument
 				title="E-signature Validity"
 				description="This page explains Filosign's electronic-signature evidence model. It is not legal advice and does not decide legal suitability for your workflow."
@@ -76,7 +73,5 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 					provider requirements.
 				</p>
 			</LegalDocument>
-		</main>
-		<Footer />
-	</div>
+	</MarketingPageShell>
 </BaseLayout>

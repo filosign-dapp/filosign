@@ -1,45 +1,42 @@
 ---
-import Footer from "../../components/Footer.astro";
 import LegalDocument from "../../components/LegalDocument.astro";
-import Navbar from "../../components/Navbar.astro";
+import MarketingPageShell from "../../components/MarketingPageShell.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 
 <BaseLayout
 	title="Non-custodial Settlement — Filosign"
-	description="How optional USDC settlement works in Filosign."
+	description="How attached payouts work in Filosign."
 >
-	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
-		<Navbar />
-		<main>
+	<MarketingPageShell>
 			<LegalDocument
 				title="Non-custodial Settlement"
-				description="Plain-English explanation of Filosign's optional USDC settlement model, user approvals, and wallet risk."
+				description="Plain-English explanation of Filosign's attached payout model, user approvals, and wallet risk."
 				lastUpdated="May 2026"
 			>
 				<h2>Short version</h2>
 				<p>
-					Filosign does not custody funds. Approved users can attach USDC
-					payout rules to a document workflow. The payer approves USDC from
-					their own wallet, and when signing conditions are met, settlement can
-					execute on-chain from payer to recipient.
+					Filosign does not custody funds. Approved users can attach payout
+					rules to a document workflow. The payer approves funds from their own
+					wallet, and when signing conditions are met, settlement can execute
+					on-chain from payer to recipient.
 				</p>
 
-				<h2>Supported network and token</h2>
+				<h2>Supported network</h2>
 				<p>
-					For v1 production, Filosign expects to support USDC on Base. Other
-					tokens, chains, fiat on-ramps, and off-ramps may rely on third-party
-					providers and are not part of Filosign custody.
+					For v1 production, attached payouts run on Base. Other tokens, chains,
+					fiat on-ramps, and off-ramps may rely on third-party providers and
+					are not part of Filosign custody.
 				</p>
 
 				<h2>How it works</h2>
 				<ul>
 					<li>The payer creates a settlement rule in the Filosign app.</li>
-					<li>The payer approves the settlement validator for the USDC amount.</li>
+					<li>The payer approves the settlement validator for the payout amount.</li>
 					<li>The document is sent and signed through the workflow.</li>
 					<li>
-						When the rule conditions are met, the validator can transfer USDC
-						from payer to recipient using the payer's approval.
+						When the rule conditions are met, the validator can transfer approved
+						funds from payer to recipient using the payer's approval.
 					</li>
 					<li>
 						The transaction may be submitted by the Filosign relay, a user
@@ -49,7 +46,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 
 				<h2>Feature access vs. fund custody</h2>
 				<p>
-					Filosign does not hold, pool, custody, transmit, or control your USDC
+					Filosign does not hold, pool, custody, transmit, or control your funds
 					or blockchain assets. Your funds remain in your self-custodied wallet
 					at all times. We cannot access, freeze, block, or reverse your funds,
 					and you can transact directly with the smart contracts independent of
@@ -95,7 +92,5 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 					recipient return funds.
 				</p>
 			</LegalDocument>
-		</main>
-		<Footer />
-	</div>
+	</MarketingPageShell>
 </BaseLayout>

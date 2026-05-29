@@ -6,6 +6,7 @@ declare module "*.svg" {
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
+	readonly VITE_DEPLOYMENT: "local" | "staging" | "sandbox" | "production";
 	readonly VITE_CHAIN: "local" | "testnet" | "mainnet";
 	readonly VITE_THIRDWEB_CLIENT_ID: string;
 	readonly VITE_SERVER_URL: string;

@@ -1,9 +1,11 @@
+import { assertDeploymentChain, DEPLOYMENTS } from "@filosign/shared";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
-export const env = createEnv({
+const parsedEnv = createEnv({
 	clientPrefix: "VITE_",
 	client: {
+		VITE_DEPLOYMENT: z.enum(DEPLOYMENTS),
 		VITE_CHAIN: z.enum(["local", "testnet", "mainnet"]),
 		VITE_THIRDWEB_CLIENT_ID: z.string().min(1),
 		VITE_SERVER_URL: z.url(),
@@ -20,4 +22,10 @@ export const env = createEnv({
 	emptyStringAsUndefined: true,
 });
 
+assertDeploymentChain({
+	deployment: parsedEnv.VITE_DEPLOYMENT,
+	chain: parsedEnv.VITE_CHAIN,
+});
+
+export const env = parsedEnv;
 export default env;

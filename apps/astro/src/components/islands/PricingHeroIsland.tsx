@@ -1,4 +1,14 @@
+import { Pressable } from "@filosign/motion";
 import { ArrowDownIcon } from "@phosphor-icons/react";
+import { cn } from "../../lib/cn";
+import {
+	marketingGhostLgClass,
+	marketingPrimaryLgClass,
+} from "../../lib/marketing-button";
+import {
+	MARKETING_PRESSABLE_HOVER,
+	MARKETING_PRESSABLE_TAP,
+} from "../../lib/marketing-motion";
 import { MarketingStagger } from "./MarketingStagger";
 import { MotionProvider } from "./MotionProvider";
 
@@ -23,27 +33,39 @@ export default function PricingHeroIsland({ appUrl }: PricingHeroIslandProps) {
 							</h1>
 							<p className="text-lg md:text-xl font-light font-manrope text-muted-foreground max-w-xl leading-relaxed">
 								Wallet-native encryption, verifiable signatures, and optional
-								USDC settlements, whether you send three documents a month or
-								three thousand.
+								USDC settlements — from three documents a month to team-scale
+								volume.
 							</p>
 						</div>
 
 						<div className="flex flex-wrap gap-4 shrink-0">
-							<a
-								href={appUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="inline-flex items-center justify-center px-8 py-3 h-12 bg-primary text-primary-foreground rounded-lg font-medium transition-all duration-200 hover:bg-primary/90 hover:scale-105"
+							<Pressable
+								preset="snappy"
+								whileHover={MARKETING_PRESSABLE_HOVER}
+								whileTap={MARKETING_PRESSABLE_TAP}
 							>
-								Start free
-							</a>
-							<a
-								href="#pricing"
-								className="inline-flex items-center justify-center gap-2 px-8 py-3 h-12 border border-border text-foreground rounded-lg font-medium transition-all duration-200 hover:bg-muted"
+								<a
+									href={appUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									className={marketingPrimaryLgClass}
+								>
+									Start free
+								</a>
+							</Pressable>
+							<Pressable
+								preset="snappy"
+								whileHover={MARKETING_PRESSABLE_HOVER}
+								whileTap={MARKETING_PRESSABLE_TAP}
 							>
-								<ArrowDownIcon className="size-4" aria-hidden />
-								Compare plans
-							</a>
+								<a
+									href="#pricing"
+									className={cn(marketingGhostLgClass, "gap-2")}
+								>
+									<ArrowDownIcon className="size-4" aria-hidden />
+									Compare plans
+								</a>
+							</Pressable>
 						</div>
 					</MarketingStagger>
 				</div>

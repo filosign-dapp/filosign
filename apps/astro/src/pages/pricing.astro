@@ -31,12 +31,13 @@ const plans = [
 			"For freelancers, counsel, and operators who need private signing and clean proof records.",
 		price: { monthly: 15 },
 		features: [
+			"Everything in Free, plus:",
 			"10 documents per month",
 			"Up to 3 signers per document",
 			"Long-term verifiable storage options",
-			"Signer ID attachments stay encrypted end-to-end",
-			"Advanced fields and CSV export for your records",
-			"Same wallet-native security as every Filosign plan",
+			"Full proof packet export",
+			"Draft review links for clients",
+			"Advanced fields and CSV export",
 		],
 		cta: "Start Solo",
 		highlight: false,
@@ -45,33 +46,36 @@ const plans = [
 	{
 		name: "Teams",
 		description:
-			"For teams that need shared workflows, proof packets, and optional USDC settlement.",
-		price: { monthly: 39 },
+			"For startups that need pooled quotas, shared workflows, and optional USDC settlement.",
+		price: { monthly: 29 },
 		features: [
-			"30 documents per teammate each month",
+			"15 documents per user per month (pooled)",
 			"Up to 10 signers per document",
-			"Optional USDC settlement when signing rules are met",
 			"Shared templates and team envelope drafts",
-			"Signing order, review links, and draft comments",
-			"Team visibility on envelopes and automated reminders",
+			"Advanced routing and draft review links",
+			"Team envelope visibility",
+			"Optional USDC settlement when signing rules are met",
 		],
 		cta: "Start Teams",
 		highlight: true,
-		badge: "Most popular",
+		badge: "Best Value",
 		planId: "teams",
 	},
 	{
 		name: "Teams Pro",
 		description:
-			"For high-volume teams that need more seats, workflows, and integration support.",
-		price: { monthly: 59 },
+			"For growing teams that need higher volume and operational control.",
+		price: { monthly: 49 },
 		features: [
-			"60 documents/month per seat",
-			"Up to 20 signers per document",
-			"Everything in Teams",
-			"Custom integrations with your stack",
-			"Advanced proof exports and signature audit records",
-			"Priority support for production workloads",
+			"Everything in Teams, plus:",
+			"25 documents per user per month (pooled)",
+			"Up to 15 signers per document",
+			"Custom integrations",
+			"Seat quota allocation",
+			"Bulk send from CSV",
+			"Shared template folders",
+			"Custom branding on sign pages",
+			"Webhooks and metadata tags",
 		],
 		cta: "Start Teams Pro",
 		highlight: false,
@@ -83,7 +87,7 @@ const enterpriseBanner = {
 	headline: "Are you an enterprise?",
 	body: "Custom limits, security reviews, support terms, and procurement-friendly contracts—contact us directly and we'll scope a plan with your team.",
 	cta: "Contact us",
-	href: "mailto:hello@filosign.xyz?subject=Filosign%20Enterprise",
+	href: "mailto:sales@filosign.xyz?subject=Filosign%20Enterprise",
 };
 ---
 
@@ -91,12 +95,18 @@ const enterpriseBanner = {
 	title="Pricing — Encrypted signing with proof you can verify"
 	description="Filosign pricing: Free, Solo, Teams, and Teams Pro. Encrypted signing, proof exports, and optional USDC settlements. Enterprise plans by request."
 >
-	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
+	<a
+		href="#main-content"
+		class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-100 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:ring-3 focus:ring-ring/50"
+	>
+		Skip to main content
+	</a>
+	<div class="[--section-gap:4rem] min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
 		<Navbar />
-		<main>
+		<div class="h-(--section-gap)"></div>
+		<main id="main-content">
 			<PricingHeroIsland client:load appUrl={appUrl} />
 
-			{/* Pricing Section with Dynamic Billing Toggle */}
 			<PricingPlansIsland
 				client:load
 				plans={plans}
@@ -104,7 +114,7 @@ const enterpriseBanner = {
 				enterpriseBanner={enterpriseBanner}
 			/>
 		</main>
+		<div class="h-(--section-gap)"></div>
 		<Footer />
 	</div>
 </BaseLayout>
-														

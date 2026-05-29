@@ -1,17 +1,26 @@
-import { AnimatePresence, motion, SPRING_TOKENS } from "@filosign/motion";
 import {
-	ChatCenteredTextIcon,
-	CheckIcon,
-	CodeIcon,
-	CoinsIcon,
-	FileTextIcon,
-	FoldersIcon,
-	GitForkIcon,
-	HardDrivesIcon,
-	ShieldCheckIcon,
-	UsersIcon,
-} from "@phosphor-icons/react";
-import { type ReactNode, useState } from "react";
+	AnimatePresence,
+	motion,
+	Pressable,
+	SPRING_TOKENS,
+} from "@filosign/motion";
+import { CheckIcon } from "@phosphor-icons/react";
+import { useState } from "react";
+import { cn } from "../../lib/cn";
+import {
+	marketingGhostLgClass,
+	marketingPrimaryMdClass,
+} from "../../lib/marketing-button";
+import {
+	MARKETING_PRESSABLE_HOVER,
+	MARKETING_PRESSABLE_TAP,
+} from "../../lib/marketing-motion";
+import {
+	buildPricingComparisonRows,
+	COMPARISON_PLAN_IDS,
+	COMPARISON_PLAN_LABELS,
+	type ComparisonCellValue,
+} from "../../lib/pricing-comparison";
 import {
 	formatUsdAmount,
 	YEARLY_DISCOUNT_RATE,
@@ -49,61 +58,7 @@ interface PricingPlansIslandProps {
 	enterpriseBanner?: EnterprisePricingBanner;
 }
 
-type ComparisonFeature = {
-	name: string;
-	icon: ReactNode;
-	values: (string | boolean | null)[];
-};
-
-const comparisonPlans = ["Free", "Solo", "Team", "Team Pro"] as const;
-
-const comparisonFeatures: ComparisonFeature[] = [
-	{
-		name: "Documents per month",
-		icon: <FileTextIcon className="size-5" weight="bold" />,
-		values: ["3", "10", "30 per teammate", "Unlimited (fair use)"],
-	},
-	{
-		name: "Recipients per document",
-		icon: <UsersIcon className="size-5" weight="bold" />,
-		values: ["1", "3", "10", "Unlimited"],
-	},
-	{
-		name: "Long-term archival",
-		icon: <HardDrivesIcon className="size-5" weight="bold" />,
-		values: ["-", "1y / 5y / 10y", "1y / 5y / 10y", "1y / 5y / 10y"],
-	},
-	{
-		name: "Shared templates",
-		icon: <FoldersIcon className="size-5" weight="bold" />,
-		values: [null, null, true, true],
-	},
-	{
-		name: "Team drafts and comments",
-		icon: <ChatCenteredTextIcon className="size-5" weight="bold" />,
-		values: [null, null, true, true],
-	},
-	{
-		name: "Advanced routing",
-		icon: <GitForkIcon className="size-5" weight="bold" />,
-		values: [null, null, true, true],
-	},
-	{
-		name: "USDC settlements",
-		icon: <CoinsIcon className="size-5" weight="bold" />,
-		values: [null, null, true, true],
-	},
-	{
-		name: "Custom integrations",
-		icon: <CodeIcon className="size-5" weight="bold" />,
-		values: [null, null, null, true],
-	},
-	{
-		name: "Compliance exports",
-		icon: <ShieldCheckIcon className="size-5" weight="bold" />,
-		values: ["Basic", "CSV export", "Standard", "Advanced"],
-	},
-];
+const comparisonRows = buildPricingComparisonRows();
 
 function BillingIntervalToggle({
 	billingInterval,
@@ -267,7 +222,7 @@ function PricingPlanCard({
 			className={
 				plan.highlight
 					? "relative flex flex-col p-8 rounded-3xl bg-background border-2 border-foreground text-foreground shadow-xl scale-[1.02] z-10"
-					: "relative flex flex-col p-8 rounded-3xl bg-muted/30 border border-transparent hover:border-border/50"
+					: "relative flex flex-col p-8 rounded-3xl bg-muted/80 border border-transparent hover:border-border/50"
 			}
 		>
 			{plan.highlight && plan.badge ? (
@@ -288,18 +243,20 @@ function PricingPlanCard({
 			<PlanPriceBlock plan={plan} billingInterval={billingInterval} />
 
 			<div className="mb-8">
-				<a
-					href={checkoutUrl}
-					target="_blank"
-					rel="noopener noreferrer"
-					className={
-						plan.highlight
-							? "w-full h-10 flex items-center justify-center font-medium rounded-lg transition-colors bg-secondary text-secondary-foreground hover:bg-secondary/90"
-							: "w-full h-10 flex items-center justify-center font-medium rounded-lg transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
-					}
+				<Pressable
+					preset="snappy"
+					whileHover={MARKETING_PRESSABLE_HOVER}
+					whileTap={MARKETING_PRESSABLE_TAP}
 				>
-					{plan.cta}
-				</a>
+					<a
+						href={checkoutUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						className={cn(marketingPrimaryMdClass, "w-full")}
+					>
+						{plan.cta}
+					</a>
+				</Pressable>
 			</div>
 
 			<div className="grow">
@@ -323,67 +280,78 @@ function PricingPlanCard({
 	);
 }
 
+function ComparisonCell({ value }: { value: ComparisonCellValue }) {
+	if (value === true) {
+		return (
+			<CheckIcon className="size-5 text-foreground" weight="bold" aria-hidden />
+		);
+	}
+	if (value === null) {
+		return <span className="text-muted-foreground/30">—</span>;
+	}
+	return <span className="text-foreground font-medium">{value}</span>;
+}
+
 function ComparisonSection() {
 	return (
-		<section className="col-span-full mt-16 py-4">
-			<motion.h2
-				initial={{ opacity: 0, y: 20 }}
-				whileInView={{ opacity: 1, y: 0 }}
-				viewport={{ once: true }}
-				transition={{ duration: 0.5 }}
-				className="text-3xl md:text-4xl font-semibold text-center font-manrope mb-12"
-			>
-				Compare plan features
-			</motion.h2>
-
+		<section
+			className="col-span-full mt-8 py-4"
+			aria-label="Plan feature comparison"
+		>
 			<div className="overflow-x-auto pb-2">
 				<div className="min-w-[860px]">
-					<div className="grid grid-cols-5 gap-4 mb-8 px-4">
-						<div />
-						{comparisonPlans.map((plan) => (
-							<div key={plan} className="flex items-center justify-center">
+					<div className="grid grid-cols-5 gap-4 mb-6 px-4">
+						<div className="sticky left-0 z-10 bg-background" />
+						{COMPARISON_PLAN_IDS.map((planId) => (
+							<div
+								key={planId}
+								className="flex items-center justify-center py-2"
+							>
 								<span className="font-medium text-xl md:text-2xl font-manrope text-center">
-									{plan}
+									{COMPARISON_PLAN_LABELS[planId]}
 								</span>
 							</div>
 						))}
 					</div>
 
 					<div className="space-y-0">
-						{comparisonFeatures.map((feature, index) => (
-							<motion.div
-								key={feature.name}
-								initial={{ opacity: 0, y: 10 }}
-								whileInView={{ opacity: 1, y: 0 }}
-								viewport={{ once: true }}
-								transition={{ duration: 0.3, delay: index * 0.05 }}
-								className="grid grid-cols-5 gap-4 py-5 px-4 border-t border-border/40 hover:bg-muted/30 transition-colors"
-							>
-								<div className="flex items-center gap-3 text-muted-foreground font-medium font-manrope">
-									{feature.icon}
-									{feature.name}
-								</div>
-								{feature.values.map((value, idx) => (
+						{comparisonRows.map((row, index) => {
+							if (row.kind === "section") {
+								return (
 									<div
-										key={`${feature.name}-${idx}`}
-										className="flex items-center justify-center text-sm font-manrope text-center"
+										key={row.id}
+										className="sticky left-0 px-4 pt-8 pb-2 first:pt-0"
 									>
-										{value === true ? (
-											<CheckIcon
-												className="size-5 text-foreground"
-												weight="bold"
-											/>
-										) : value === null ? (
-											<span className="text-muted-foreground/30">-</span>
-										) : (
-											<span className="text-foreground font-medium">
-												{value}
-											</span>
-										)}
+										<p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-manrope">
+											{row.label}
+										</p>
 									</div>
-								))}
-							</motion.div>
-						))}
+								);
+							}
+
+							return (
+								<motion.div
+									key={row.id}
+									initial={{ opacity: 0, y: 10 }}
+									whileInView={{ opacity: 1, y: 0 }}
+									viewport={{ once: true }}
+									transition={{ duration: 0.3, delay: index * 0.02 }}
+									className="grid grid-cols-5 gap-4 py-4 px-4 border-t border-border/40 hover:bg-muted/30 transition-colors"
+								>
+									<div className="sticky left-0 z-10 flex items-center bg-background pr-4 text-sm font-medium font-manrope text-muted-foreground">
+										{row.label}
+									</div>
+									{COMPARISON_PLAN_IDS.map((planId) => (
+										<div
+											key={`${row.id}-${planId}`}
+											className="flex items-center justify-center text-sm font-manrope text-center"
+										>
+											<ComparisonCell value={row.values[planId]} />
+										</div>
+									))}
+								</motion.div>
+							);
+						})}
 					</div>
 				</div>
 			</div>
@@ -410,7 +378,7 @@ function PricingPlansContent({
 					pace="page"
 					heroTopChildCount={PRICING_HERO_TOP_COUNT}
 					heroBottomChildCount={1}
-					className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 lg:gap-8 *:first:col-span-full"
+					className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8 lg:gap-12 *:first:col-span-full"
 				>
 					<BillingIntervalToggle
 						billingInterval={billingInterval}
@@ -437,12 +405,18 @@ function PricingPlansContent({
 									{enterpriseBanner.body}
 								</p>
 							</div>
-							<a
-								href={enterpriseBanner.href}
-								className="inline-flex h-11 shrink-0 items-center justify-center rounded-lg border border-foreground bg-transparent px-6 text-sm font-medium text-foreground transition-colors hover:bg-foreground hover:text-background"
+							<Pressable
+								preset="snappy"
+								whileHover={MARKETING_PRESSABLE_HOVER}
+								whileTap={MARKETING_PRESSABLE_TAP}
 							>
-								{enterpriseBanner.cta}
-							</a>
+								<a
+									href={enterpriseBanner.href}
+									className={cn(marketingGhostLgClass, "shrink-0")}
+								>
+									{enterpriseBanner.cta}
+								</a>
+							</Pressable>
 						</div>
 					) : null}
 				</MarketingPageBody>

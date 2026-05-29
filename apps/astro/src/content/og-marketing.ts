@@ -10,14 +10,14 @@ export const MARKETING_OG_PAGES = {
 		description: defaultDescription,
 	},
 	about: {
-		title: "About Filosign — Private agreement workflows",
+		title: "About Filosign — Signing you can trust after the ink dries",
 		description:
-			"Filosign helps teams send encrypted documents, collect verifiable signatures, and optionally settle USDC payouts.",
+			"Why Filosign exists: private agreements, records you can verify anywhere, and optional non-custodial USDC payouts.",
 	},
 	pricing: {
-		title: "Pricing — Secure signing for every scale",
+		title: "Pricing — Encrypted signing with proof you can verify",
 		description:
-			"Filosign plans from free to enterprise: encrypted signing, proof exports, and optional USDC settlements.",
+			"Free, Solo, Teams ($29), and Teams Pro ($49). Pooled team quotas, encrypted signing, proof exports, and optional USDC settlements.",
 	},
 	changelog: {
 		title: "Changelog — What's new at Filosign",

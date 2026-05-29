@@ -1,23 +1,34 @@
 ---
 import Footer from "../components/Footer.astro";
+import AboutCtaBand from "../components/islands/AboutCtaBand";
 import AboutHeroIsland from "../components/islands/AboutHeroIsland";
-import QuoteSectionIsland from "../components/islands/QuoteSectionIsland";
 import ValuesSectionIsland from "../components/islands/ValuesSectionIsland";
 import Navbar from "../components/Navbar.astro";
+import { env } from "../env";
 import BaseLayout from "../layouts/BaseLayout.astro";
+
+const appUrl = env.PUBLIC_CLIENT_URL;
 ---
 
 <BaseLayout
-	title="About Filosign — Private agreement workflows"
-	description="Filosign helps teams send encrypted documents, collect verifiable signatures, and optionally settle USDC payouts."
+	title="About Filosign — Signing you can trust after the ink dries"
+	description="Why Filosign exists: private agreements, records you can verify anywhere, and optional non-custodial USDC payouts."
 >
-	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
+	<a
+		href="#main-content"
+		class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-100 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:ring-3 focus:ring-ring/50"
+	>
+		Skip to main content
+	</a>
+	<div class="[--section-gap:4rem] bg-background font-manrope selection:bg-primary/10 selection:text-primary">
 		<Navbar />
-		<main>
+		<div class="h-(--section-gap)"></div>
+		<main id="main-content">
 			<AboutHeroIsland client:load />
-			<QuoteSectionIsland client:visible />
 			<ValuesSectionIsland client:visible />
+			<AboutCtaBand client:visible appUrl={appUrl} />
 		</main>
+		<div class="h-(--section-gap)"></div>
 		<Footer />
 	</div>
 </BaseLayout>

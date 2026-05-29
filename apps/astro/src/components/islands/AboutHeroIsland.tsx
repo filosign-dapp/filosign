@@ -1,42 +1,25 @@
 import { SPRING_TOKENS } from "@filosign/motion";
 import { motion } from "motion/react";
+import AboutImageMarquee from "./AboutImageMarquee";
 import { MarketingStagger } from "./MarketingStagger";
 import { MotionProvider } from "./MotionProvider";
-import {
-	Carousel,
-	CarouselContent,
-	CarouselItem,
-	CarouselNext,
-	CarouselPrevious,
-} from "./marketing-carousel";
-
-const heroImages = [
-	"/images/stock_1.webp",
-	"/images/stock_2.webp",
-	"/images/stock_3.webp",
-	"/images/stock_4.webp",
-	"/images/stock_5.webp",
-	"/images/stock_6.webp",
-	"/images/stock_7.webp",
-	"/images/stock_8.webp",
-];
 
 export default function AboutHeroIsland() {
 	return (
 		<MotionProvider>
-			<section className="relative pt-32 pb-24 overflow-hidden">
-				<div className="container mx-auto px-4">
+			<section className="relative overflow-hidden pb-24 pt-16">
+				<div className="mx-auto mb-16 max-w-4xl px-8 md:px-page">
 					<MarketingStagger
 						pace="page"
-						className="max-w-4xl mx-auto text-center mb-16 flex flex-col items-center"
+						className="flex flex-col items-center text-center"
 					>
-						<h1 className="text-4xl md:text-5xl lg:text-6xl font-medium font-manrope tracking-tight text-foreground mb-6">
-							Filosign is building private agreement workflows.
+						<h1 className="mb-6 font-manrope text-4xl font-medium tracking-tight text-foreground text-balance md:text-5xl lg:text-6xl">
+							We build signing workflows you can trust after the ink dries.
 						</h1>
-						<p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-							Encrypted documents, verifiable signatures, proof packets, and
-							optional USDC settlement for teams whose agreements should not
-							stop at a PDF.
+						<p className="max-w-2xl font-manrope text-xl leading-relaxed text-muted-foreground text-pretty">
+							Encrypted agreements, records you can verify, and optional payouts
+							when everyone has signed — for teams whose deals should not stop
+							at a PDF.
 						</p>
 					</MarketingStagger>
 				</div>
@@ -50,40 +33,7 @@ export default function AboutHeroIsland() {
 					}}
 					className="relative w-full"
 				>
-					<Carousel
-						opts={{
-							align: "center",
-							loop: true,
-							skipSnaps: false,
-							duration: 20,
-						}}
-						className="w-full"
-					>
-						<CarouselContent className="-ml-4">
-							{heroImages.map((src, index) => (
-								<CarouselItem
-									key={src}
-									className="pl-4 basis-[85%] md:basis-[70%] lg:basis-[60%]"
-								>
-									<div className="relative w-full h-[50vh] md:h-[60vh] min-h-[400px] overflow-hidden rounded-3xl transform-gpu">
-										<img
-											src={src}
-											alt={`Filosign office scene ${index + 1}`}
-											className="object-cover w-full h-full will-change-transform"
-											decoding="async"
-											loading={index < 2 ? "eager" : "lazy"}
-											style={{
-												transform: "translate3d(0, 0, 0)",
-												backfaceVisibility: "hidden",
-											}}
-										/>
-									</div>
-								</CarouselItem>
-							))}
-						</CarouselContent>
-						<CarouselPrevious className="left-4 md:left-12 bg-background/80 backdrop-blur-sm hover:bg-background z-10 h-12 w-12" />
-						<CarouselNext className="right-4 md:right-12 bg-background/80 backdrop-blur-sm hover:bg-background z-10 h-12 w-12" />
-					</Carousel>
+					<AboutImageMarquee />
 				</motion.div>
 			</section>
 		</MotionProvider>

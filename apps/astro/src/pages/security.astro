@@ -1,7 +1,6 @@
 ---
-import Footer from "../components/Footer.astro";
 import LegalDocument from "../components/LegalDocument.astro";
-import Navbar from "../components/Navbar.astro";
+import MarketingPageShell from "../components/MarketingPageShell.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
@@ -9,9 +8,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 	title="Security Overview — Filosign"
 	description="How Filosign approaches private document workflows, client-side encryption, and signing proof."
 >
-	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
-		<Navbar />
-		<main>
+	<MarketingPageShell>
 			<LegalDocument
 				title="Security Overview"
 				description="A plain-English summary of Filosign's current security model, what the service can see, and what remains your responsibility. This is not a certification or audit report."
@@ -82,7 +79,5 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 					>. Include reproduction steps. Do not access, modify, or disclose other users' data.
 				</p>
 			</LegalDocument>
-		</main>
-		<Footer />
-	</div>
+	</MarketingPageShell>
 </BaseLayout>

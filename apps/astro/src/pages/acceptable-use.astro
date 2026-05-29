@@ -1,8 +1,7 @@
 ---
 import ExcludedDocumentsList from "../components/ExcludedDocumentsList.astro";
-import Footer from "../components/Footer.astro";
 import LegalDocument from "../components/LegalDocument.astro";
-import Navbar from "../components/Navbar.astro";
+import MarketingPageShell from "../components/MarketingPageShell.astro";
 import {
 	EXCLUDED_DOCUMENTS_INTRO_ESIGN,
 	LEGAL_OPERATOR,
@@ -14,9 +13,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 	title="Acceptable Use — Filosign"
 	description="Acceptable use rules for Filosign."
 >
-	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
-		<Navbar />
-		<main>
+	<MarketingPageShell>
 			<LegalDocument
 				title="Acceptable Use"
 				description="Rules for using Filosign document workflows and optional settlement features safely and legally."
@@ -58,7 +55,5 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 					>.
 				</p>
 			</LegalDocument>
-		</main>
-		<Footer />
-	</div>
+	</MarketingPageShell>
 </BaseLayout>

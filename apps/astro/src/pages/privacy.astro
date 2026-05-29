@@ -1,7 +1,6 @@
 ---
-import Footer from "../components/Footer.astro";
 import LegalDocument from "../components/LegalDocument.astro";
-import Navbar from "../components/Navbar.astro";
+import MarketingPageShell from "../components/MarketingPageShell.astro";
 import {
 	DODO_PAYMENTS,
 	LEGAL_OPERATOR,
@@ -14,14 +13,12 @@ const operator = operatorIdentitySentence();
 
 <BaseLayout
 	title="Privacy Policy — Filosign"
-	description="How Filosign handles personal data for document signing, wallet authentication, and optional USDC payout features."
+	description="How Filosign handles personal data for document signing, wallet authentication, and attached payout features."
 >
-	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
-		<Navbar />
-		<main>
+	<MarketingPageShell>
 			<LegalDocument
 				title="Privacy Policy"
-				description="This policy describes how Filosign processes personal data for encrypted document workflows, wallet-based signing, analytics, billing, and optional USDC settlement."
+				description="This policy describes how Filosign processes personal data for encrypted document workflows, wallet-based signing, analytics, billing, and attached payouts."
 				lastUpdated="May 2026"
 			>
 				<h2>1. Who operates Filosign</h2>
@@ -249,7 +246,5 @@ const operator = operatorIdentitySentence();
 					payment, governing law, and non-custody terms.
 				</p>
 			</LegalDocument>
-		</main>
-		<Footer />
-	</div>
+	</MarketingPageShell>
 </BaseLayout>

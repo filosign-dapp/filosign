@@ -10,9 +10,9 @@ const fail = (message: string, error?: unknown): never => {
 	throw new Error(message);
 };
 
-if (env.CHAIN !== "local") {
+if (env.DEPLOYMENT === "production") {
 	fail(
-		`✗ Safeguard Error: Database clear script is only allowed when CHAIN is "local". Current CHAIN: "${env.CHAIN}"`,
+		`✗ Safeguard Error: Database clear script is not allowed when DEPLOYMENT is "production".`,
 	);
 }
 
@@ -24,14 +24,14 @@ try {
 	fail("✗ Safeguard Error: PG_URI does not parse as a valid URL:", err);
 }
 
-if (!ALLOWED_LOCAL_HOSTS.has(hostname)) {
+if (env.DEPLOYMENT === "local" && !ALLOWED_LOCAL_HOSTS.has(hostname)) {
 	fail(
-		`✗ Safeguard Error: Database clear script is only allowed to run against local databases. Target hostname "${hostname}" is not in the allowed list: ${[...ALLOWED_LOCAL_HOSTS].join(", ")}`,
+		`✗ Safeguard Error: Local database clear is only allowed against localhost. Target hostname "${hostname}" is not allowed.`,
 	);
 }
 
 console.log(
-	`Connecting to: ${connectionString.replace(/:\/\/.*@/, "://***@")}`,
+	`Connecting (${env.DEPLOYMENT}): ${connectionString.replace(/:\/\/.*@/, "://***@")}`,
 );
 
 const client = new Client({ connectionString });

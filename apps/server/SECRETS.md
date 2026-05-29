@@ -1,14 +1,22 @@
 # Secrets (Infisical — server only)
 
-Staging and production **server** secrets live in [Infisical Cloud](https://app.infisical.com). Local dev uses **`.env.local`**. **Contracts** deploy/migrate still use **`apps/contracts/.env.local`**, **`.env.staging`**, and **`.env.production`** (gitignored).
+Server secrets for deployed tiers live in [Infisical Cloud](https://app.infisical.com). Local dev uses **`apps/server/.env.local`**. **Contracts** deploy/migrate use **`apps/contracts/.env.local`**, **`.env.staging`**, and **`.env.production`** (gitignored).
 
-| Tier | Server | Contracts (local laptop) |
-|------|--------|-------------------------|
-| Local | `apps/server/.env.local` | `apps/contracts/.env.local` |
-| Staging / testnet | Infisical `staging` | `apps/contracts/.env.staging` |
-| Production / mainnet | Infisical `prod` (Dokploy) | `apps/contracts/.env.production` |
+| `DEPLOYMENT` | Infisical env | Server secrets | Contracts (laptop deploy) |
+|--------------|---------------|----------------|---------------------------|
+| `local` | — | `apps/server/.env.local` | `apps/contracts/.env.local` |
+| `staging` | `staging` | Infisical | `apps/contracts/.env.staging` |
+| `sandbox` | `sandbox` | Infisical | `apps/contracts/.env.staging` (same testnet chain) |
+| `production` | `prod` | Infisical (Dokploy) | `apps/contracts/.env.production` |
 
-**Client** and **Astro** stay on **Cloudflare Pages** (`VITE_*` / `PUBLIC_*`). For local testnet UI, use [`.env.staging.example`](../../.env.staging.example) → repo-root `.env.staging` (`VITE_*` only).
+**Client** and **Astro** on Cloudflare Pages (`VITE_*` / `PUBLIC_*`). Local client env:
+
+- Internal staging: [`apps/client/.env.staging.example`](../client/.env.staging.example) → `apps/client/.env.staging`
+- Public sandbox: [`apps/client/.env.sandbox.example`](../client/.env.sandbox.example) → `apps/client/.env.sandbox`
+
+Full matrix: [`project/launch/environments.md`](../../project/launch/environments.md).
+
+Every server env must set **`DEPLOYMENT`** and matching **`CHAIN`** (`staging`/`sandbox` → `testnet`, `production` → `mainnet`).
 
 Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`, `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY` (see [`apps/contracts/env.ts`](../contracts/env.ts)).
 
@@ -16,23 +24,24 @@ Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`, `FC_OWNER_ADD
 
 ## 1. Infisical dashboard (server)
 
-1. Open project **Filosign - Staging** (linked via [`.infisical.json`](../../.infisical.json)).
-2. Environments **`staging`** and **`prod`** with server keys from [README Environment](../../README.md).
-3. Set **`CHAIN=testnet`** in staging, **`CHAIN=mainnet`** in prod.
+1. Open project **Filosign** (linked via [`.infisical.json`](../../.infisical.json)).
+2. Environments **`staging`**, **`sandbox`**, and **`prod`** with server keys from [README Environment](../../README.md).
+3. Per env: set `DEPLOYMENT` + `CHAIN` (see table above). `DODO_*` required for `staging` and `prod`; optional for `sandbox`.
 4. Copy **Project ID** → `INFISICAL_PROJECT_ID` in Dokploy.
 
-**Laptop (server only):** `infisical login`, then `bun run dev:testnet` / `db:push:testnet` in `apps/server`.
+**Laptop (server):** `infisical login`, then e.g. `bun run dev:staging` / `db:push:staging` in `apps/server`.
 
 ---
 
 ## 2. Machine identities (Dokploy)
 
-| Identity | Infisical env |
-|----------|----------------|
-| `filosign-server-staging` | `staging` |
-| `filosign-server-prod` | `prod` |
+| Identity | Infisical env | `DEPLOYMENT` |
+|----------|---------------|--------------|
+| `filosign-server-staging` | `staging` | `staging` |
+| `filosign-server-sandbox` | `sandbox` | `sandbox` |
+| `filosign-server-production` | `prod` | `production` |
 
-Bootstrap env only: `INFISICAL_CLIENT_ID`, `INFISICAL_CLIENT_SECRET`, `INFISICAL_PROJECT_ID`, `INFISICAL_ENV` (`staging` | `prod`).
+Bootstrap env only: `INFISICAL_CLIENT_ID`, `INFISICAL_CLIENT_SECRET`, `INFISICAL_PROJECT_ID`, `INFISICAL_ENV`.
 
 Entrypoint: [`scripts/infisical-entrypoint.sh`](scripts/infisical-entrypoint.sh).
 
@@ -42,13 +51,17 @@ Entrypoint: [`scripts/infisical-entrypoint.sh`](scripts/infisical-entrypoint.sh)
 
 ```bash
 # Server (apps/server, after infisical login)
-bun run dev:testnet
-bun run db:push:testnet
+bun run dev:staging
+bun run dev:sandbox
+bun run db:push:staging
+bun run db:push:sandbox
+bun run db:purge:sandbox
 
-# Contracts (apps/contracts — .env.staging / .env.production, no Infisical)
+# Contracts (apps/contracts — no Infisical)
 bun run deploy:testnet
 bun run migrate:testnet
 
-# Full testnet stack: server via Infisical; client VITE_* in .env.staging
-bun run dev -- --testnet
+# Full stacks from repo root
+bun run dev -- --staging    # internal QA
+bun run dev -- --sandbox    # public sandbox parity
 ```

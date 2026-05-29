@@ -5,7 +5,8 @@ Hono API, Drizzle/Postgres, thirdweb auth verification, S3, and chain/indexer he
 ## Run
 
 - Local: `bun run dev:local` (`.env.local` via `--env-file`)
-- Staging/testnet: `bun run dev:testnet` (Infisical env `staging`; run `infisical login` first)
+- Staging: `bun run dev:staging` (Infisical `staging`; `infisical login` first)
+- Sandbox: `bun run dev:sandbox` (Infisical `sandbox`)
 
 Secrets layout: [`SECRETS.md`](SECRETS.md). Local server uses **`--env-file`**; staging/prod server uses **`infisical run`** (contracts keep `apps/contracts/.env.*`).
 
@@ -51,7 +52,7 @@ Unit tests: `bun test tests/` in this package; see [TESTING.md](../../TESTING.md
 - **Dokploy / Docker** — image uses [`scripts/infisical-entrypoint.sh`](scripts/infisical-entrypoint.sh); set bootstrap vars per [`SECRETS.md`](SECRETS.md). Do not paste app secrets into Dokploy env UI.
 - **`GET /health`** (root app, not under `/api`) — `{ ok: true }` for probes.
 - **Dodo billing webhook** — `POST /api/integrations/dodo/webhook` (Standard Webhooks signature headers: `webhook-id`, `webhook-timestamp`, `webhook-signature`). Stored idempotently in `billing_webhook_events`, then upserts `user_subscriptions`.
-- **`bun run db -- purge local|testnet`** (repo root) — `scripts/clear-db.ts` drops/recreates the Postgres `public` schema, then drizzle push (dev reset).
+- **`bun run db -- purge local|staging|sandbox`** (repo root) — drops/recreates Postgres `public` schema, then drizzle push (`production` purge blocked).
 - **Invite expiry** — `INVITE_TTL_DAYS` in env (default `7`). All invite types set `expiresAt` at creation via [`inviteExpiresAt()`](lib/domains/invites/ttl.ts): `file_cold_invites`, `user_invites`, `organization_invites`. Hourly `Bun.cron` in [`lib/platform/cron/`](lib/platform/cron/) marks overdue `pending` rows `expired`; handlers use `pending*InviteFilter()` immediately after expiry. PostHog: `cold_invite_expired` for document invites.
 - **Settlements** — `file_settlement_rules` tracks on-chain payout rules (status, tx hashes). After each signature the server attempts `executePayout` for executable rules. Sign page **Settle payment** calls `settlements.trySettle` (server relay + chain sync). **Settle from wallet** uses `settlements.confirmSettlement` (hash + `rules()` sync, no receipt RPC). Daily `sync-settlement-rules` cron backfills `executed` from chain for off-platform payouts. oRPC: `settlements.listByFile`, `settlements.trySettle`, `settlements.confirmSettlement`. Compliance bundles are **version 4** and include `settlements[]`. See [`project/settlements/architecture-and-non-custody.md`](../../project/settlements/architecture-and-non-custody.md).
 
@@ -82,8 +83,8 @@ Billing security notes:
 ## Database
 
 - **Drizzle** uses **`pg.Pool`** in `lib/platform/db/client.ts`; tune **`max`** / **`idleTimeoutMillis`** for your Postgres limits.
-- Push schema (dev): `bun run db -- push local` or `bun run db -- push testnet` (from repo root)
-- Purge (destructive): `bun run db -- purge local|testnet`
+- Push schema (dev): `bun run db -- push local|staging|sandbox|production` (from repo root)
+- Purge (destructive): `bun run db -- purge local|staging|sandbox`
 
 ## Checks
 

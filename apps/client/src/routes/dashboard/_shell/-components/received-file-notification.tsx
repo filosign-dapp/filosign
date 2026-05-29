@@ -143,7 +143,7 @@ export function ReceivedFileNotification({
 		<div className="p-4 rounded-lg border bg-card">
 			<div className="flex items-center justify-between gap-3">
 				<div className="flex items-center gap-3 flex-1 min-w-0">
-					<div className="flex-shrink-0 mt-0.5">
+					<div className="shrink-0 mt-0.5">
 						<FileTextIcon className="h-4 w-4 text-primary" />
 					</div>
 					<div className="flex-1 min-w-0">
@@ -157,7 +157,7 @@ export function ReceivedFileNotification({
 						</p>
 					</div>
 				</div>
-				<div className="flex items-center gap-2 flex-shrink-0">
+				<div className="flex items-center gap-2 shrink-0">
 					<Button
 						size="sm"
 						variant="default"

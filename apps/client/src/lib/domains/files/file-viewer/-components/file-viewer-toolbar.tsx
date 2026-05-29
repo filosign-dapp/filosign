@@ -31,7 +31,7 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 	} = useFileViewer();
 
 	return (
-		<div className="absolute top-0 left-0 right-0 z-50 flex-shrink-0 border-b border-border bg-transparent px-4 py-3 @md:px-6 @md:py-4 glass">
+		<div className="absolute top-0 left-0 right-0 z-50 shrink-0 border-b border-border bg-transparent px-4 py-3 @md:px-6 @md:py-4 glass">
 			<div className="flex flex-col gap-3 @md:gap-3">
 				<div className="flex min-w-0 items-center justify-between gap-3">
 					<h2 className="truncate pr-2 text-base font-semibold text-primary-foreground @md:text-lg">
@@ -49,7 +49,7 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 					</Button>
 				</div>
 
-				<div className="relative flex min-h-[48px] w-full items-center">
+				<div className="relative flex min-h-12 w-full items-center">
 					<div className="relative z-10 flex min-w-0 flex-1 items-center justify-start gap-1 @md:gap-2">
 						<Button
 							variant="ghost"
@@ -92,7 +92,7 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 							>
 								<MagnifyingGlassMinusIcon className={toolbarIconClass} />
 							</Button>
-							<span className="min-w-[2.75rem] text-center text-sm font-medium tabular-nums text-primary-foreground @md:min-w-[3.25rem] @md:text-base">
+							<span className="min-w-11 text-center text-sm font-medium tabular-nums text-primary-foreground @md:min-w-13 @md:text-base">
 								{zoom}%
 							</span>
 							<Button

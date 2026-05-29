@@ -58,7 +58,7 @@ export default function DashboardLayout({
 		<TooltipProvider delay={200}>
 			<DeploymentBanner />
 			{isCheckingOut && billingUiEnabled() && (
-				<div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-xs flex items-center justify-center">
+				<div className="fixed inset-0 z-100 bg-background/80 backdrop-blur-xs flex items-center justify-center">
 					<Loader text="Preparing your secure checkout..." />
 				</div>
 			)}

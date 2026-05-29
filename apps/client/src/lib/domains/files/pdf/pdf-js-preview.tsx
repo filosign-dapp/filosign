@@ -129,7 +129,7 @@ export function PdfJsPreview({
 			}}
 		>
 			{loadError ? (
-				<div className="flex min-h-[120px] w-full items-center justify-center p-4 text-center text-sm text-muted-foreground">
+				<div className="flex min-h-30 w-full items-center justify-center p-4 text-center text-sm text-muted-foreground">
 					{loadError}
 				</div>
 			) : (
@@ -146,7 +146,7 @@ export function PdfJsPreview({
 						onNumPagesLoadedRef.current?.(pdf.numPages);
 					}}
 					loading={
-						<div className="flex min-h-[120px] w-full items-center justify-center p-4 text-sm text-muted-foreground">
+						<div className="flex min-h-30 w-full items-center justify-center p-4 text-sm text-muted-foreground">
 							Loading PDF…
 						</div>
 					}

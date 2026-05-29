@@ -39,7 +39,7 @@ export function NotificationItemCard({
 		>
 			<div className="flex items-center justify-between gap-3">
 				<div className="flex items-center gap-3 flex-1 min-w-0">
-					<div className="flex-shrink-0 mt-0.5">{icon}</div>
+					<div className="shrink-0 mt-0.5">{icon}</div>
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2 mb-1">
 							<h4 className="text-sm font-medium text-foreground truncate">
@@ -64,7 +64,7 @@ export function NotificationItemCard({
 						variant={actionButton.variant || "default"}
 						onClick={actionButton.onClick}
 						disabled={actionButton.loading}
-						className="flex-shrink-0 text-xs px-3 py-1 h-7"
+						className="shrink-0 text-xs px-3 py-1 h-7"
 					>
 						{actionButton.loading ? "..." : actionButton.label}
 					</Button>

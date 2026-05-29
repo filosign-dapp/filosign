@@ -16,6 +16,7 @@
 		"check-types": "astro check"
 	},
 	"dependencies": {
+		"@filosign/motion": "workspace:*",
 		"@astrojs/mdx": "5.0.4",
 		"@astrojs/react": "^5.0.4",
 		"@astrojs/sitemap": "3.7.2",

@@ -1,10 +1,10 @@
 ---
 import { type CollectionEntry, getCollection, render } from "astro:content";
-import Footer from "../../components/Footer.astro";
 import BlogPostIsland from "../../components/islands/BlogPostIsland";
-import Navbar from "../../components/Navbar.astro";
+import MarketingPageShell from "../../components/MarketingPageShell.astro";
 import { blogTitleWithBrand } from "../../config/site";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { blogPostShellClass } from "../../lib/marketing-layout";
 import "../../styles/blog-content.css";
 
 export async function getStaticPaths() {
@@ -35,10 +35,8 @@ const pageTitle = blogTitleWithBrand(post.data.title);
 		authorName: post.data.author.name,
 	}}
 >
-	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
-		<Navbar />
-		<main>
-			<BlogPostIsland
+	<MarketingPageShell>
+		<BlogPostIsland
 				client:load
 				title={post.data.title}
 				readingTime={post.data.readingTime}
@@ -46,10 +44,8 @@ const pageTitle = blogTitleWithBrand(post.data.title);
 				heroImage={post.data.heroImage}
 				heroVideo={post.data.heroVideo}
 			/>
-			<div class="blog-mdx pb-24">
-				<Content />
-			</div>
-		</main>
-		<Footer />
-	</div>
+		<div class={`blog-mdx ${blogPostShellClass} pb-12 md:pb-20`}>
+			<Content />
+		</div>
+	</MarketingPageShell>
 </BaseLayout>

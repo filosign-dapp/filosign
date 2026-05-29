@@ -2,6 +2,7 @@ import {
 	marketingButtonFocus,
 	marketingButtonMotion,
 } from "../../lib/marketing-button";
+import { marketingSectionClass } from "../../lib/marketing-layout";
 import { MarketingStagger } from "./MarketingStagger";
 import { MotionProvider } from "./MotionProvider";
 
@@ -26,18 +27,23 @@ export default function BlogHeroIsland({
 }: BlogHeroIslandProps) {
 	return (
 		<MotionProvider>
-			<section className="pt-32 pb-20 px-4 md:px-8 lg:px-page bg-background">
-				<div className="max-w-7xl mx-auto">
+			<section className="bg-background pb-20 pt-4 sm:pt-20">
+				<div className={marketingSectionClass}>
 					<div className="grid lg:grid-cols-2 gap-12 lg:gap-24 items-center">
-						<MarketingStagger pace="page" className="space-y-6">
-							<div className="text-sm font-medium text-muted-foreground">
+						<MarketingStagger
+							pace="page"
+							className="flex flex-col items-start text-left"
+						>
+							<div className="text-sm font-medium text-muted-foreground mb-3">
 								{dateDisplay}
 							</div>
-							<h1 className="text-4xl md:text-5xl lg:text-6xl font-medium font-manrope tracking-tight text-foreground leading-[1.1]">
+							<h1 className="text-4xl md:text-5xl lg:text-6xl font-medium font-manrope tracking-tight text-foreground leading-[1.1] text-balance mb-6">
 								{title}
 							</h1>
-							<p className="text-lg text-muted-foreground">{description}</p>
-							<div className="pt-4">
+							<p className="text-lg text-muted-foreground mb-8 md:mb-10 leading-relaxed">
+								{description}
+							</p>
+							<div>
 								<a href={readHref} className={primaryLgRounded}>
 									Read article
 								</a>
@@ -45,9 +51,9 @@ export default function BlogHeroIsland({
 						</MarketingStagger>
 
 						<MarketingStagger pace="page">
-							<div className="relative rounded-3xl overflow-hidden aspect-[4/3] lg:aspect-[5/4]">
+							<div className="relative rounded-3xl overflow-hidden aspect-4/3 lg:aspect-5/4">
 								<img
-									src="/images/stock_4.webp"
+									src="/images/stock_12.webp"
 									alt=""
 									width={1280}
 									height={720}

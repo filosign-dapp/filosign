@@ -1,8 +1,9 @@
 ---
 import { getCollection } from "astro:content";
-import Footer from "../../components/Footer.astro";
 import BlogHeroIsland from "../../components/islands/BlogHeroIsland";
-import Navbar from "../../components/Navbar.astro";
+import BlogListIsland from "../../components/islands/BlogListIsland";
+import MarketingPageShell from "../../components/MarketingPageShell.astro";
+import { env } from "../../env";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 const posts = await getCollection("blog", ({ data }) => !data.draft);
@@ -18,49 +19,19 @@ const featured = sorted.find((p) => p.data.featured) ?? sorted[0];
 	title="Blog — News and updates from Filosign"
 	description="Engineering and product notes from Filosign: E2EE signing, placement manifests, wallet unlock, and decentralized agreement infrastructure."
 >
-	<div class="min-h-screen bg-background font-manrope selection:bg-primary/10 selection:text-primary">
-		<Navbar />
-		<main>
-			{
-				featured && (
-					<BlogHeroIsland
-						client:load
-						title={featured.data.title}
-						description={featured.data.description}
-						dateDisplay={featured.data.dateDisplay}
-						readHref={`/blog/${featured.id}`}
-					/>
-				)
-			}
+	<MarketingPageShell>
+		{
+			featured && (
+				<BlogHeroIsland
+					client:load
+					title={featured.data.title}
+					description={featured.data.description}
+					dateDisplay={featured.data.dateDisplay}
+					readHref={`/blog/${featured.id}`}
+				/>
+			)
+		}
 
-			<section class="max-w-3xl mx-auto px-4 md:px-8 lg:px-page pb-24">
-				<h2 class="text-2xl font-medium font-manrope tracking-tight text-foreground mb-10">
-					All posts
-				</h2>
-				<ul class="flex flex-col gap-10">
-					{
-						sorted.map((p) => (
-							<li>
-								<a
-									href={`/blog/${p.id}`}
-									class="group block rounded-xl border border-transparent hover:border-border/80 transition-colors -m-4 p-4"
-								>
-									<span class="text-sm font-medium text-muted-foreground">
-										{p.data.dateDisplay}
-									</span>
-									<span class="block text-xl font-medium font-manrope text-foreground mt-1 group-hover:text-primary transition-colors">
-										{p.data.title}
-									</span>
-									<span class="block text-muted-foreground mt-2 leading-relaxed">
-										{p.data.description}
-									</span>
-								</a>
-							</li>
-						))
-					}
-				</ul>
-			</section>
-		</main>
-		<Footer />
-	</div>
+		<BlogListIsland client:load posts={sorted} appUrl={env.PUBLIC_CLIENT_URL} />
+	</MarketingPageShell>
 </BaseLayout>

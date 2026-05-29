@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { landingMedia } from "../../config/landing-media";
+import { marketingSectionShellClass } from "../../lib/marketing-layout";
 import { MotionProvider } from "./MotionProvider";
 
 const useCases = [
@@ -17,7 +18,7 @@ const useCases = [
 	{
 		title: "Bounty and hackathon payouts",
 		outcome:
-			"Collect signatures first, then settle USDC when conditions are met.",
+			"Collect signatures first, then settle attached payouts when conditions are met.",
 		image: landingMedia.useCases.bounties,
 	},
 ] as const;
@@ -25,7 +26,7 @@ const useCases = [
 export default function LandingUseCasesIsland() {
 	return (
 		<MotionProvider>
-			<section className="mx-auto max-w-7xl px-8 py-20 md:px-page">
+			<section className={marketingSectionShellClass}>
 				<div className="mb-10 max-w-2xl space-y-4">
 					<p className="font-manrope text-sm font-medium text-primary">
 						Built for high-stakes workflows
@@ -49,7 +50,7 @@ export default function LandingUseCasesIsland() {
 							transition={{ delay: i * 0.08 }}
 							className="group overflow-hidden rounded-2xl bg-muted"
 						>
-							<div className="relative h-48 overflow-hidden">
+							<div className="relative aspect-4/3 min-h-48 overflow-hidden">
 								<img
 									src={item.image}
 									alt=""

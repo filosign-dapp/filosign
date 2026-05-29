@@ -2,6 +2,7 @@ import { Pressable } from "@filosign/motion";
 import { TwitterLogoIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import { marketingPrimaryLgClass } from "../../lib/marketing-button";
+import { marketingSectionClass } from "../../lib/marketing-layout";
 import {
 	MARKETING_PRESSABLE_HOVER,
 	MARKETING_PRESSABLE_TAP,
@@ -61,8 +62,10 @@ export default function MarketingFooter({ appUrl }: MarketingFooterProps) {
 	const footerSections = getFooterSections();
 
 	return (
-		<footer className="bg-card rounded-t-[3rem] py-24 flex flex-col justify-between">
-			<div className="max-w-7xl mx-auto px-8 md:px-page w-full flex-1 flex flex-col justify-between">
+		<footer className="bg-card rounded-t-[2rem] md:rounded-t-[3rem] py-12 md:py-24 flex flex-col justify-between">
+			<div
+				className={`${marketingSectionClass} flex-1 flex flex-col justify-between`}
+			>
 				<div>
 					<div className="flex flex-col lg:flex-row justify-between mb-4">
 						<div className="max-w-xl">
@@ -70,7 +73,7 @@ export default function MarketingFooter({ appUrl }: MarketingFooterProps) {
 								initial={{ opacity: 0, y: 20 }}
 								whileInView={{ opacity: 1, y: 0 }}
 								viewport={{ once: true }}
-								className="text-4xl md:text-5xl font-semibold tracking-tight mb-8 font-manrope"
+								className="text-4xl md:text-5xl font-semibold tracking-tight mb-8 font-manrope text-balance"
 							>
 								Start a private agreement workflow
 							</motion.h2>
@@ -90,7 +93,7 @@ export default function MarketingFooter({ appUrl }: MarketingFooterProps) {
 									href={appUrl}
 									target="_blank"
 									rel="noopener noreferrer"
-									className={`${primaryCtaClass} flex items-center justify-center gap-2`}
+									className={`${primaryCtaClass} flex w-full sm:w-auto items-center justify-center gap-2`}
 								>
 									Start free
 								</a>
@@ -98,7 +101,7 @@ export default function MarketingFooter({ appUrl }: MarketingFooterProps) {
 						</motion.div>
 					</div>
 
-					<div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-4 border-t border-border/50 pt-16">
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-4 border-t border-border/50 pt-16">
 						{footerSections.map((section) => (
 							<div key={section.title} className="flex flex-col gap-6">
 								<h4 className="text-sm font-medium text-muted-foreground font-manrope">
@@ -130,7 +133,7 @@ export default function MarketingFooter({ appUrl }: MarketingFooterProps) {
 					</div>
 				</div>
 
-				<div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-8 border-t border-border/50 pt-4">
+				<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 border-t border-border/50 pt-4">
 					<div className="space-y-2">
 						<MarketingLogo
 							className="px-0"

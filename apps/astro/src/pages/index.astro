@@ -1,10 +1,9 @@
 ---
 import FeaturesBento from "../components/FeaturesBento.astro";
-import Footer from "../components/Footer.astro";
 import HeroSection from "../components/HeroSection.astro";
 import HowItWorksSection from "../components/HowItWorksSection.astro";
 import LandingUseCasesSection from "../components/LandingUseCasesSection.astro";
-import Navbar from "../components/Navbar.astro";
+import MarketingPageShell from "../components/MarketingPageShell.astro";
 import ProblemSection from "../components/ProblemSection.astro";
 import TrustCtaSection from "../components/TrustCtaSection.astro";
 import { defaultDescription, defaultTitle } from "../config/site";
@@ -12,24 +11,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
 <BaseLayout title={defaultTitle} description={defaultDescription}>
-	<a
-		href="#main-content"
-		class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:ring-3 focus:ring-ring/50"
-	>
-		Skip to main content
-	</a>
-	<div class="[--section-gap:4rem] bg-background">
-		<Navbar pace="landing" />
-		<div class="h-[var(--section-gap)]"></div>
-		<main id="main-content">
-			<HeroSection />
-			<ProblemSection />
-			<HowItWorksSection />
-			<FeaturesBento />
-			<LandingUseCasesSection />
-			<TrustCtaSection />
-		</main>
-		<div class="h-[var(--section-gap)]"></div>
-		<Footer />
-	</div>
+	<MarketingPageShell pace="landing">
+		<HeroSection />
+		<ProblemSection />
+		<HowItWorksSection />
+		<FeaturesBento />
+		<LandingUseCasesSection />
+		<TrustCtaSection />
+	</MarketingPageShell>
 </BaseLayout>

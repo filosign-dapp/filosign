@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { landingMedia } from "../../config/landing-media";
 import { cn } from "../../lib/cn";
 import { marketingPrimaryMdClass } from "../../lib/marketing-button";
+import { marketingSectionShellClass } from "../../lib/marketing-layout";
 import {
 	MARKETING_PRESSABLE_HOVER,
 	MARKETING_PRESSABLE_TAP,
@@ -18,14 +19,14 @@ type TrustCtaBandProps = {
 export default function TrustCtaBand({ appUrl }: TrustCtaBandProps) {
 	return (
 		<MotionProvider>
-			<section className="relative mx-auto max-w-7xl py-20 md:px-page">
+			<section className={marketingSectionShellClass}>
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					whileInView={{ opacity: 1, y: 0 }}
 					viewport={{ once: true }}
-					className="relative overflow-hidden rounded-3xl border border-border/60 bg-card p-8"
+					className="relative overflow-hidden rounded-3xl border border-border/60 bg-card p-8 md:p-12"
 				>
-					<div className="grid gap-16 lg:grid-cols-2 lg:items-center">
+					<div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-16">
 						<motion.div
 							initial={{ opacity: 0, y: 16 }}
 							whileInView={{ opacity: 1, y: 0 }}

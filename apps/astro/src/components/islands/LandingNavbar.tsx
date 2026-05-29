@@ -1,23 +1,25 @@
-import { SPRING_TOKENS } from "@filosign/motion";
+import { Pressable, SPRING_TOKENS } from "@filosign/motion";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
-import { cn } from "../../lib/cn";
+import { marketingNavCtaClass } from "../../lib/marketing-button";
 import {
+	MARKETING_PRESSABLE_HOVER,
+	MARKETING_PRESSABLE_TAP,
 	type MarketingPace,
 	NAV_INTRO_DELAYS,
 	NAV_SCROLL_SPRING,
 } from "../../lib/marketing-motion";
 import MarketingLogo from "./MarketingLogo";
 
+const navLinkClass =
+	"font-medium rounded-md px-2 py-2 text-background/90 transition-colors duration-200 hover:bg-background/10 hover:text-background focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
+
 const navLinks = [
 	{ label: "About", href: "/about" },
 	{ label: "Pricing", href: "/pricing" },
 	{ label: "Blog", href: "/blog" },
 	{ label: "Changelog", href: "/changelog" },
-];
-
-const secondaryButtonClass =
-	"group/button inline-flex shrink-0 items-center justify-center rounded-md border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none h-9 gap-1.5 px-2.5 bg-secondary text-secondary-foreground hover:bg-secondary/80 min-w-28 font-semibold";
+] as const;
 
 interface LandingNavbarProps {
 	appUrl: string;
@@ -53,7 +55,8 @@ export default function LandingNavbar({
 	return (
 		<section className="sticky top-10 z-50 p-page">
 			<motion.nav
-				className="flex justify-between items-center mx-auto max-w-3xl p-rect rounded-large glass text-background bg-foreground/90"
+				className="flex justify-between items-center mx-auto max-w-3xl p-rect rounded-large border border-foreground/10 bg-foreground text-background shadow-md"
+				aria-label="Primary"
 				initial={{ opacity: 0, y: -50 }}
 				animate={{
 					opacity: 1,
@@ -96,7 +99,7 @@ export default function LandingNavbar({
 						<motion.a
 							key={link.label}
 							href={link.href}
-							className="font-medium transition-colors duration-200 hover:bg-foreground/50 rounded-md px-2 py-2"
+							className={navLinkClass}
 							initial={{ opacity: 0, y: -15 }}
 							animate={{ opacity: 1, y: 0 }}
 							transition={{
@@ -118,14 +121,20 @@ export default function LandingNavbar({
 						delay: intro.cta,
 					}}
 				>
-					<a
-						href={appUrl}
-						target="_blank"
-						rel="noopener noreferrer"
-						className={cn(secondaryButtonClass)}
+					<Pressable
+						preset="snappy"
+						whileHover={MARKETING_PRESSABLE_HOVER}
+						whileTap={MARKETING_PRESSABLE_TAP}
 					>
-						Get Started
-					</a>
+						<a
+							href={appUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							className={marketingNavCtaClass}
+						>
+							Start free
+						</a>
+					</Pressable>
 				</motion.div>
 			</motion.nav>
 		</section>

@@ -1,8 +1,15 @@
+import {
+	marketingButtonFocus,
+	marketingButtonMotion,
+} from "../../lib/marketing-button";
 import { MarketingStagger } from "./MarketingStagger";
 import { MotionProvider } from "./MotionProvider";
 
-const primaryLgRounded =
-	"group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none h-10 gap-1.5 px-8 bg-primary text-primary-foreground hover:bg-primary/80";
+const primaryLgRounded = [
+	"group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap select-none h-10 gap-1.5 px-8 bg-primary text-primary-foreground hover:bg-primary/80",
+	marketingButtonFocus,
+	marketingButtonMotion,
+].join(" ");
 
 interface BlogHeroIslandProps {
 	title: string;
@@ -44,7 +51,7 @@ export default function BlogHeroIsland({
 									alt=""
 									width={1280}
 									height={720}
-									className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+									className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:-translate-y-1"
 								/>
 							</div>
 						</MarketingStagger>

@@ -1,5 +1,11 @@
-import { SparkleIcon, TwitterLogoIcon } from "@phosphor-icons/react";
+import { Pressable } from "@filosign/motion";
+import { TwitterLogoIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
+import { marketingPrimaryLgClass } from "../../lib/marketing-button";
+import {
+	MARKETING_PRESSABLE_HOVER,
+	MARKETING_PRESSABLE_TAP,
+} from "../../lib/marketing-motion";
 import MarketingLogo from "./MarketingLogo";
 
 function getFooterSections() {
@@ -42,8 +48,10 @@ function getFooterSections() {
 	];
 }
 
-const primaryCtaClass =
-	"group inline-flex shrink-0 items-center justify-center rounded-xl border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none h-12 px-6 gap-2 bg-primary text-primary-foreground hover:bg-primary/80";
+const primaryCtaClass = marketingPrimaryLgClass;
+
+const footerLinkClass =
+	"text-sm font-medium hover:text-primary transition-colors duration-200 font-manrope flex items-center gap-2 group focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-sm";
 
 interface MarketingFooterProps {
 	appUrl: string;
@@ -73,15 +81,20 @@ export default function MarketingFooter({ appUrl }: MarketingFooterProps) {
 							viewport={{ once: true }}
 							transition={{ delay: 0.1 }}
 						>
-							<a
-								href={appUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								className={`${primaryCtaClass} flex items-center justify-center gap-2`}
+							<Pressable
+								preset="snappy"
+								whileHover={MARKETING_PRESSABLE_HOVER}
+								whileTap={MARKETING_PRESSABLE_TAP}
 							>
-								<SparkleIcon className="size-4" weight="fill" />
-								Try Filosign beta
-							</a>
+								<a
+									href={appUrl}
+									target="_blank"
+									rel="noopener noreferrer"
+									className={`${primaryCtaClass} flex items-center justify-center gap-2`}
+								>
+									Start free
+								</a>
+							</Pressable>
 						</motion.div>
 					</div>
 
@@ -98,7 +111,7 @@ export default function MarketingFooter({ appUrl }: MarketingFooterProps) {
 											<li key={link.label}>
 												<a
 													href={link.href}
-													className="text-sm font-medium hover:text-primary transition-colors font-manrope flex items-center gap-2 group"
+													className={footerLinkClass}
 													{...(external
 														? {
 																target: "_blank",
@@ -134,7 +147,8 @@ export default function MarketingFooter({ appUrl }: MarketingFooterProps) {
 							href="https://x.com/filosign"
 							target="_blank"
 							rel="noreferrer"
-							className="p-2 rounded-full bg-background hover:bg-secondary/50 transition-colors text-muted-foreground hover:text-foreground"
+							aria-label="Filosign on X"
+							className="p-2 rounded-full bg-background hover:bg-secondary/50 transition-colors duration-200 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
 						>
 							<TwitterLogoIcon className="size-6" weight="fill" />
 						</a>

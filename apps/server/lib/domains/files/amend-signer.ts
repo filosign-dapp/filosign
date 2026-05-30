@@ -5,11 +5,10 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import db from "@/lib/platform/db";
-import { fsContracts } from "@/lib/platform/evm";
+import { fsFileRegistryAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const { files, fileSignerAmendments } = db.schema;
-const { FSFileRegistry } = fsContracts;
 
 export const zAmendSignerBody = z.object({
 	pieceCid: z.string().min(1),
@@ -42,14 +41,21 @@ export async function filesAmendSigner(sender: Address, rawBody: unknown) {
 		});
 	}
 
+	const registry = fsFileRegistryAt(file.registryAddress);
+	const amendArgs = [
+		pieceCid,
+		oldCommitment,
+		newCommitment,
+		BigInt(timestamp),
+		signature,
+	] as const;
+
 	const txHash = await tryCatch(
-		FSFileRegistry.write.amendSigner([
-			pieceCid,
-			oldCommitment,
-			newCommitment,
-			BigInt(timestamp),
-			signature,
-		]),
+		(
+			registry.write as unknown as {
+				amendSigner: (args: readonly unknown[]) => Promise<`0x${string}`>;
+			}
+		).amendSigner(amendArgs),
 	);
 	if (txHash.error) {
 		throw new ORPCError("BAD_REQUEST", {

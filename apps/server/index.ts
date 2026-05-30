@@ -10,17 +10,48 @@ import { csp } from "@/lib/platform/csp";
 import { requestLog } from "@/lib/platform/pino";
 import { apiRouter } from "./api/orpc/hono-mount";
 
-validateServerBootstrap();
+/** True after bootstrap + cache init; gates HTTP until ready. */
+let bootstrapReady = false;
+
+const bootstrapFailedResponse = () =>
+	new Response(JSON.stringify({ ok: false, status: "bootstrap_failed" }), {
+		status: 503,
+		headers: { "Content-Type": "application/json" },
+	});
+
+const bootstrapPromise = (async () => {
+	try {
+		await validateServerBootstrap();
+		await initCache();
+		bootstrapReady = true;
+		startPlatformCron();
+	} catch (err) {
+		console.error("Server bootstrap failed:", err);
+		process.exit(1);
+	}
+})();
 
 export const app = new Hono()
+	.use(async (_c, next) => {
+		if (!bootstrapReady) {
+			await bootstrapPromise;
+		}
+		if (!bootstrapReady) {
+			return bootstrapFailedResponse();
+		}
+		await next();
+	})
 	.use(requestLog)
 	.use(cors(config.http.cors))
 	.use(csp)
 	.get("/", (c) => c.text("OK"))
-	.get("/health", (c) => c.json({ ok: true }))
+	.get("/health", (c) => {
+		if (!bootstrapReady) {
+			return c.json({ ok: false, status: "starting" }, 503);
+		}
+		return c.json({ ok: true });
+	})
 	.route("/api", apiRouter);
-
-startPlatformCron();
 
 let shuttingDown = false;
 
@@ -39,11 +70,21 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
 	});
 }
 
-/** Required for `bun build --compile` — the executable calls `Bun.serve(default)`. */
+async function gatedFetch(
+	request: Request,
+	server: Parameters<NonNullable<(typeof app)["fetch"]>>[1],
+): Promise<Response> {
+	if (!bootstrapReady) {
+		await bootstrapPromise;
+	}
+	if (!bootstrapReady) {
+		return bootstrapFailedResponse();
+	}
+	return app.fetch(request, server);
+}
+
+/** Bun serve + `bun build --compile` entry (no top-level await — bytecode-safe). */
 export default {
 	port: config.http.port,
-	fetch: app.fetch,
-	async start() {
-		await initCache();
-	},
+	fetch: gatedFetch,
 };

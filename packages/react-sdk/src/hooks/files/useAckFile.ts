@@ -7,6 +7,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAddress } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
+import { latestChainTimestamp } from "../../lib/chain-time";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import { useUserProfile } from "../users/useUserProfile";
 
@@ -31,8 +32,7 @@ export function useAckFile() {
 			const { sender, signers, viewers } = fileResponse;
 
 			const cidIdentifier = computeCidIdentifier(pieceCid);
-
-			const timestamp = Math.floor(Date.now() / 1000);
+			const timestamp = await latestChainTimestamp(contracts);
 
 			const addr = getAddress(wallet.account.address);
 			let rawEmail: string | null = null;

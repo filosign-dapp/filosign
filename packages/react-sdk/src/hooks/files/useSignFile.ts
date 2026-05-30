@@ -17,6 +17,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Hex } from "viem";
 import { getAddress } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
+import { latestChainTimestamp } from "../../lib/chain-time";
 import { invalidateInboxQueries } from "../../lib/invalidate-queries";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import type { AppRouterClient } from "../../orpc/app-router-types";
@@ -41,13 +42,14 @@ export function useSignFile() {
 			let success = false;
 
 			const { pieceCid, completedFieldIds } = args;
-			const timestamp = Math.floor(Date.now() / 1000);
 			const textEncoder = new TextEncoder();
 
 			const dilithium = wasm.dilithium;
 			if (!contracts || !wallet || !dilithium || !isAuthed) {
 				throw new Error("not connected");
 			}
+
+			const timestamp = await latestChainTimestamp(contracts);
 
 			await cryptoAction(async (seed: Uint8Array) => {
 				const fileResponse: PieceDetail =

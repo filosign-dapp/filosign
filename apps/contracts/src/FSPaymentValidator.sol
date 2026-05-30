@@ -65,7 +65,7 @@ contract FSPaymentValidator is ReentrancyGuard {
         }
     }
 
-    /// @notice Register a payout rule. Caller must be the payer (Alice's smart account).
+    /// @notice Register a payout rule. Caller must be the payer.
     function registerRule(
         address payer_,
         address recipient_,

@@ -1,5 +1,12 @@
+import { useFilosignContext } from "@filosign/react";
 import { useCryptoUnlocked } from "@filosign/react/auth";
-import { useViewFile, type ViewFileResult } from "@filosign/react/files";
+import {
+	useRecordDocumentView,
+	useViewFile,
+	type ViewFileResult,
+} from "@filosign/react/files";
+import type { DocumentViewSource } from "@filosign/shared";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useCryptoRequired } from "@/src/lib/auth/use-crypto-required";
 
@@ -11,6 +18,10 @@ export type DecryptableFileRecord = {
 	organizationId?: string | null;
 	orgKemCiphertext?: string | null;
 	orgEncryptedEncryptionKey?: string | null;
+	participantAccess?: {
+		acknowledged: boolean;
+		firstViewedAt: string | null;
+	};
 };
 
 function hasDecryptKeys(file: DecryptableFileRecord | null | undefined) {
@@ -28,9 +39,18 @@ export function useDecryptedFileView(options: {
 	file: DecryptableFileRecord | null | undefined;
 	enabled?: boolean;
 	acknowledgeHint?: boolean;
+	viewSource?: DocumentViewSource;
 }) {
-	const { file, enabled = true, acknowledgeHint = false } = options;
+	const {
+		file,
+		enabled = true,
+		acknowledgeHint = false,
+		viewSource = "sign_page",
+	} = options;
 	const viewFile = useViewFile();
+	const recordView = useRecordDocumentView();
+	const { rpcQuery } = useFilosignContext();
+	const queryClient = useQueryClient();
 	const [fileData, setFileData] = useState<ViewFileResult | null>(null);
 	const [viewError, setViewError] = useState<string | null>(null);
 	const autoDecryptStartedRef = useRef(false);
@@ -82,6 +102,21 @@ export function useDecryptedFileView(options: {
 						mimeType: result.metadata.mimeType ?? "application/octet-stream",
 					},
 				});
+				if (file.participantAccess?.acknowledged) {
+					try {
+						await recordView.mutateAsync({
+							pieceCid: file.pieceCid,
+							source: viewSource,
+						});
+						void queryClient.invalidateQueries({
+							queryKey: rpcQuery.files.piece.detail.key({
+								input: { pieceCid: file.pieceCid },
+							}),
+						});
+					} catch (err) {
+						console.warn("[document-view] recordView failed", err);
+					}
+				}
 			}
 		} catch (error) {
 			const message =
@@ -94,7 +129,16 @@ export function useDecryptedFileView(options: {
 					: message,
 			);
 		}
-	}, [file, canDecrypt, viewFile, acknowledgeHint]);
+	}, [
+		file,
+		canDecrypt,
+		viewFile,
+		acknowledgeHint,
+		recordView,
+		viewSource,
+		queryClient,
+		rpcQuery.files.piece.detail,
+	]);
 
 	useEffect(() => {
 		setFileData(null);

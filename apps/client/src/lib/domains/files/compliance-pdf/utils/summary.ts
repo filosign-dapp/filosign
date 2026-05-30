@@ -438,8 +438,9 @@ export function buildCompliancePdfSummaryFromBundle(
 		for (let i = 0; i < bundle.offChainEvidence.acknowledgements.length; i++) {
 			const a = bundle.offChainEvidence.acknowledgements[i];
 			ackLines.push({
-				text: `${i + 1}. Wallet ${a.wallet} at ${a.createdAtIso}`,
+				text: `${i + 1}. Wallet ${a.wallet} acknowledged at ${a.acknowledgedAtIso}`,
 			});
+			ackLines.push({ text: `   intentVersion: ${a.intentVersion}` });
 			ackLines.push({ text: `   emailCommitment: ${a.emailCommitment}` });
 			if (a.privySubjectCommitment) {
 				ackLines.push({
@@ -493,6 +494,26 @@ export function buildCompliancePdfSummaryFromBundle(
 		}
 	}
 
+	const viewLines: CompliancePdfLine[] = [];
+	if (bundle.offChainEvidence.documentViews.length > 0) {
+		viewLines.push(
+			{
+				text: "Server-recorded document open events (decrypt/view), distinct from acknowledgement.",
+				textStyle: "lead",
+			},
+			{ text: "" },
+		);
+		for (let i = 0; i < bundle.offChainEvidence.documentViews.length; i++) {
+			const v = bundle.offChainEvidence.documentViews[i];
+			viewLines.push({
+				text: `${i + 1}. Wallet ${v.wallet} first opened ${v.firstViewedAtIso} (${v.source}, ${v.viewCount} view(s))`,
+			});
+			if (i < bundle.offChainEvidence.documentViews.length - 1) {
+				viewLines.push({ text: "" });
+			}
+		}
+	}
+
 	const appendixLines: CompliancePdfLine[] = buildAppendixLines();
 
 	return {
@@ -516,6 +537,9 @@ export function buildCompliancePdfSummaryFromBundle(
 			},
 			...(ackLines.length > 0
 				? [{ title: "Off-chain acknowledgements", lines: ackLines }]
+				: []),
+			...(viewLines.length > 0
+				? [{ title: "Document view events", lines: viewLines }]
 				: []),
 			{
 				title: COMPLIANCE_PDF_APPENDIX_SECTION_TITLE,

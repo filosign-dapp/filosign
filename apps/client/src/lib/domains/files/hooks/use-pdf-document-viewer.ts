@@ -6,6 +6,7 @@ type PdfDocumentViewerOptions = {
 	file: DecryptableFileRecord | null | undefined;
 	enabled?: boolean;
 	acknowledgeHint?: boolean;
+	viewSource?: import("@filosign/shared").DocumentViewSource;
 	initialZoom?: number;
 	mobile?: { width: number; height: number };
 	desktop?: { width: number; height: number };
@@ -17,6 +18,7 @@ export function usePdfDocumentViewer(options: PdfDocumentViewerOptions) {
 		file,
 		enabled = true,
 		acknowledgeHint = false,
+		viewSource,
 		initialZoom,
 		mobile,
 		desktop,
@@ -26,6 +28,7 @@ export function usePdfDocumentViewer(options: PdfDocumentViewerOptions) {
 		file,
 		enabled,
 		acknowledgeHint,
+		viewSource,
 	});
 
 	const viewport = usePdfViewport({ initialZoom, mobile, desktop });

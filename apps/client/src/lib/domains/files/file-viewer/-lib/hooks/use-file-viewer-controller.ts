@@ -22,6 +22,7 @@ export function useFileViewerController(
 		file: fileInfo ?? null,
 		enabled: viewerOpen && Boolean(fileInfo),
 		acknowledgeHint: !isSender,
+		viewSource: "file_viewer",
 		initialZoom: 75,
 	});
 

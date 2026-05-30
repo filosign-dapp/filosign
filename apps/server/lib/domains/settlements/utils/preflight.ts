@@ -1,7 +1,7 @@
 import { type ChainKey, getContractAbi } from "@filosign/contracts";
 import type { Address } from "viem";
 import config from "@/config";
-import { evmClient, fsContracts } from "@/lib/platform/evm";
+import { evmClient, fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 function erc20BalanceAllowanceAbi(chainKey: ChainKey) {
@@ -19,8 +19,7 @@ export async function payerCanFundSettlement(args: {
 	amount: bigint;
 	validator: Address;
 }): Promise<boolean> {
-	const validator = fsContracts.FSPaymentValidator;
-	if (!validator) return false;
+	const validator = fsPaymentValidatorAt(args.validator);
 
 	const ruleRes = await tryCatch(validator.read.rules([args.onChainRuleId]));
 	if (ruleRes.error) return false;

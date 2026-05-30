@@ -6,14 +6,22 @@ const teamCollaborationFeatures = {
 	"features.team_drafts": { kind: "boolean", enabled: true },
 	"features.draft_review_links": { kind: "boolean", enabled: true },
 	"features.envelope.team_visibility": { kind: "boolean", enabled: true },
-	"features.routing.advanced": { kind: "boolean", enabled: true },
+	"features.settlement.basic": { kind: "boolean", enabled: true },
 } as const satisfies Pick<
 	PlanEntitlements,
 	| "features.shared_templates"
 	| "features.team_drafts"
 	| "features.draft_review_links"
 	| "features.envelope.team_visibility"
-	| "features.routing.advanced"
+	| "features.settlement.basic"
+>;
+
+const teamsProFeatures = {
+	"features.routing.advanced": { kind: "boolean", enabled: true },
+	"features.settlement.advanced": { kind: "boolean", enabled: true },
+} as const satisfies Pick<
+	PlanEntitlements,
+	"features.routing.advanced" | "features.settlement.advanced"
 >;
 
 const proOnlyFeatures = {
@@ -68,6 +76,8 @@ const disabledProductFeatures = {
 	"features.draft_review_links": { kind: "boolean", enabled: false },
 	"features.envelope.team_visibility": { kind: "boolean", enabled: false },
 	"features.routing.advanced": { kind: "boolean", enabled: false },
+	"features.settlement.basic": { kind: "boolean", enabled: false },
+	"features.settlement.advanced": { kind: "boolean", enabled: false },
 	...disabledProFeatures,
 } as const satisfies Pick<
 	PlanEntitlements,
@@ -78,6 +88,8 @@ const disabledProductFeatures = {
 	| "features.comments"
 	| "features.envelope.team_visibility"
 	| "features.routing.advanced"
+	| "features.settlement.basic"
+	| "features.settlement.advanced"
 	| "features.integrations.custom"
 	| "features.quota_allocation"
 	| "features.bulk_send"
@@ -139,6 +151,8 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		},
 		"envelope.recipients.max": { kind: "max", limit: 10 },
 		...teamCollaborationFeatures,
+		"features.routing.advanced": { kind: "boolean", enabled: false },
+		"features.settlement.advanced": { kind: "boolean", enabled: false },
 		...disabledProFeatures,
 		...paidArchivalFeatures,
 	},
@@ -151,6 +165,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		},
 		"envelope.recipients.max": { kind: "max", limit: 15 },
 		...teamCollaborationFeatures,
+		...teamsProFeatures,
 		...proOnlyFeatures,
 		...paidArchivalFeatures,
 	},
@@ -163,6 +178,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		},
 		"envelope.recipients.max": { kind: "max", limit: null },
 		...teamCollaborationFeatures,
+		...teamsProFeatures,
 		...proOnlyFeatures,
 		...paidArchivalFeatures,
 	},

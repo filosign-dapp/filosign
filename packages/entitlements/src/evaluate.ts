@@ -65,12 +65,26 @@ export function getQuotaScope(ctx: EntitlementContext, key: FeatureKey) {
 	return def.scope ?? "account";
 }
 
+function effectiveQuotaLimit(
+	ctx: EntitlementContext,
+	def: Extract<EntitlementDef, { kind: "quota" }>,
+	key: FeatureKey,
+): number | null {
+	const limit = effectiveNumericLimit(def.limit, overrideFor(ctx, key));
+	if (limit === null) return null;
+	const scope = def.scope ?? "account";
+	if (scope === "per_seat") {
+		return limit * Math.max(1, ctx.seatCount ?? 1);
+	}
+	return limit;
+}
+
 function checkQuota(
 	ctx: EntitlementContext,
 	key: FeatureKey,
 	def: Extract<EntitlementDef, { kind: "quota" }>,
 ): EntitlementDecision {
-	const limit = effectiveNumericLimit(def.limit, overrideFor(ctx, key));
+	const limit = effectiveQuotaLimit(ctx, def, key);
 	const used = ctx.usage[key] ?? 0;
 
 	if (limit === null) {

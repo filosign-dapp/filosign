@@ -161,7 +161,7 @@ describe("boolean features", () => {
 	const teamCollaboration: FeatureKey[] = [
 		"features.shared_templates",
 		"features.envelope.team_visibility",
-		"features.routing.advanced",
+		"features.settlement.basic",
 	];
 
 	for (const key of teamCollaboration) {
@@ -173,6 +173,30 @@ describe("boolean features", () => {
 			expect(check(ctx("enterprise"), key).allowed).toBe(true);
 		});
 	}
+
+	test("features.routing.advanced enabled on teams_pro and enterprise only", () => {
+		expect(check(ctx("teams"), "features.routing.advanced").allowed).toBe(
+			false,
+		);
+		expect(check(ctx("teams_pro"), "features.routing.advanced").allowed).toBe(
+			true,
+		);
+		expect(check(ctx("enterprise"), "features.routing.advanced").allowed).toBe(
+			true,
+		);
+	});
+
+	test("features.settlement.advanced enabled on teams_pro and enterprise only", () => {
+		expect(check(ctx("teams"), "features.settlement.advanced").allowed).toBe(
+			false,
+		);
+		expect(
+			check(ctx("teams_pro"), "features.settlement.advanced").allowed,
+		).toBe(true);
+		expect(
+			check(ctx("enterprise"), "features.settlement.advanced").allowed,
+		).toBe(true);
+	});
 
 	const proOnly: FeatureKey[] = [
 		"features.comments",
@@ -202,5 +226,17 @@ describe("org_member context", () => {
 		const context = orgCtx("teams");
 		expect(getQuotaScope(context, "documents.sent.monthly")).toBe("per_seat");
 		expect(check(context, "features.shared_templates").allowed).toBe(true);
+	});
+
+	test("per-seat quota multiplies by seatCount", () => {
+		const context = {
+			...orgCtx("teams"),
+			seatCount: 4,
+			usage: { "documents.sent.monthly": 50 },
+		};
+		const decision = check(context, "documents.sent.monthly");
+		expect(decision.limit).toBe(60);
+		expect(decision.allowed).toBe(true);
+		expect(decision.remaining).toBe(10);
 	});
 });

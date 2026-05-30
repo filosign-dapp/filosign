@@ -51,6 +51,8 @@ export type EntitlementContext = {
 	planId: PlanId;
 	periodStart: Date;
 	usage: Partial<Record<FeatureKey, number>>;
+	/** Paid org seats — multiplies `per_seat` quota limits (Teams / Teams Pro). */
+	seatCount?: number;
 	/** Per-contract or admin overrides (enterprise, promos). */
 	overrides?: Partial<Record<FeatureKey, number | boolean>>;
 	/** Server-set: skip catalog limits (non-prod developer bypass). */

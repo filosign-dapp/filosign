@@ -5,26 +5,13 @@ export function useSignDraftState(
 	pieceCid: string | undefined,
 	file:
 		| {
-				kemCiphertext?: string | null;
-				encryptedEncryptionKey?: string | null;
-				organizationId?: string | null;
-				orgKemCiphertext?: string | null;
-				orgEncryptedEncryptionKey?: string | null;
+				participantAccess?: { canDecrypt: boolean };
 		  }
 		| undefined,
 	alreadySigned: boolean,
 ) {
 	const signDraftPieceCid =
-		pieceCid &&
-		file &&
-		(Boolean(file.kemCiphertext && file.encryptedEncryptionKey) ||
-			Boolean(
-				file.organizationId &&
-					file.orgKemCiphertext &&
-					file.orgEncryptedEncryptionKey,
-			))
-			? pieceCid
-			: undefined;
+		pieceCid && file?.participantAccess?.canDecrypt ? pieceCid : undefined;
 
 	const { data: serverDraftIds } = useSignDraft(signDraftPieceCid);
 	const updateSignDraft = useUpdateSignDraft();

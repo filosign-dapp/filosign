@@ -1,4 +1,8 @@
-import type { PlacementField } from "@filosign/shared";
+import {
+	FILE_ACK_INTENT_LABELS,
+	FILE_ACK_INTENT_VERSION_V1,
+	type PlacementField,
+} from "@filosign/shared";
 import { DownloadIcon, FileTextIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
@@ -122,13 +126,7 @@ export function SignDocumentFileContent() {
 	);
 
 	const needsAck =
-		file &&
-		!(
-			(file.kemCiphertext && file.encryptedEncryptionKey) ||
-			(file.organizationId &&
-				file.orgKemCiphertext &&
-				file.orgEncryptedEncryptionKey)
-		);
+		file?.participantAccess && !file.participantAccess.canDecrypt;
 
 	if (filePending && !file) {
 		return <DocCanvasPanel busy />;
@@ -146,13 +144,16 @@ export function SignDocumentFileContent() {
 
 	if (needsAck) {
 		return (
-			<div className="flex w-full h-full items-center justify-center p-6">
+			<div className="flex w-full h-full flex-col items-center justify-center gap-3 p-6 text-center">
+				<p className="max-w-md text-sm text-muted-foreground">
+					{FILE_ACK_INTENT_LABELS[FILE_ACK_INTENT_VERSION_V1]}
+				</p>
 				<Button
 					variant="primary"
 					onClick={() => void handleAcknowledge()}
 					disabled={acknowledgeFile.isPending}
 				>
-					Accept file
+					{acknowledgeFile.isPending ? "Accepting…" : "Accept file"}
 				</Button>
 			</div>
 		);

@@ -9,6 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
+import { invalidateInboxQueries } from "@/src/lib/query/invalidate-inbox";
 
 export function useSignActions(options: {
 	pieceCid: string | undefined;
@@ -55,11 +56,14 @@ export function useSignActions(options: {
 		}
 		try {
 			await signFile.mutateAsync({ pieceCid, completedFieldIds });
-			await queryClient.invalidateQueries({
-				queryKey: rpcQuery.files.piece.detail.key({
-					input: { pieceCid },
+			await Promise.all([
+				queryClient.invalidateQueries({
+					queryKey: rpcQuery.files.piece.detail.key({
+						input: { pieceCid },
+					}),
 				}),
-			});
+				invalidateInboxQueries(queryClient, rpcQuery),
+			]);
 			setSignSuccessDialogOpen(true);
 		} catch (error) {
 			console.error(error);

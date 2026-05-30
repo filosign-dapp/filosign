@@ -20,6 +20,7 @@ import { Button } from "@/src/lib/components/ui/button";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
 import { SettlementHeaderBadge } from "@/src/routes/dashboard/document/sign/-components/settlement-header-badge";
 import { SettlementRevokeAllowanceButton } from "@/src/routes/dashboard/document/sign/-components/settlement-revoke-allowance-button";
+import { SignConfirmDialog } from "@/src/routes/dashboard/document/sign/-components/sign-confirm-dialog";
 import {
 	useSignColdShare,
 	useSignCompliance,
@@ -51,7 +52,10 @@ export function SignDocumentStickyHeader() {
 		fileData,
 		docCanvasBusy,
 	} = useSignViewer();
+	const { canSubmitPlacementSign } = useSignPlacement();
 	const docReady = Boolean(fileData) && !docCanvasBusy;
+	const hasViewed = Boolean(file?.participantAccess?.firstViewedAt);
+	const canSubmitSign = canSubmitPlacementSign && docReady && hasViewed;
 	const {
 		pdfExportBusy,
 		handleDownload,
@@ -60,7 +64,7 @@ export function SignDocumentStickyHeader() {
 	} = useSignCompliance();
 	const { executeRotateInvite, regenerateColdInvite } = useSignColdShare();
 	const [rotateInviteOpen, setRotateInviteOpen] = useState(false);
-	const { canSubmitPlacementSign } = useSignPlacement();
+	const [signConfirmOpen, setSignConfirmOpen] = useState(false);
 	const {
 		rules: settlementRules,
 		revokePending,
@@ -222,10 +226,8 @@ export function SignDocumentStickyHeader() {
 							<Button
 								variant="primary"
 								size="sm"
-								onClick={() => void handleSign()}
-								disabled={
-									signFile.isPending || !canSubmitPlacementSign || !docReady
-								}
+								onClick={() => setSignConfirmOpen(true)}
+								disabled={signFile.isPending || !canSubmitSign}
 							>
 								{signFile.isPending ? (
 									<>
@@ -239,13 +241,6 @@ export function SignDocumentStickyHeader() {
 						)}
 					</div>
 				</div>
-				{canSign && signerAddress ? (
-					<p className="border-t border-border/50 px-3 py-2 text-[11px] leading-snug text-muted-foreground">
-						By clicking Sign, I agree to use electronic records and signatures
-						for this document and understand Filosign does not determine legal
-						suitability.
-					</p>
-				) : null}
 			</div>
 
 			<div className="hidden md:flex items-center justify-between w-full px-6 py-3">
@@ -427,34 +422,31 @@ export function SignDocumentStickyHeader() {
 					{canSign && signerAddress && (
 						<>
 							<div className="w-px h-6 bg-border mx-2" />
-							<div className="max-w-64 space-y-1">
-								<Button
-									variant="primary"
-									size="sm"
-									onClick={() => void handleSign()}
-									disabled={
-										signFile.isPending || !canSubmitPlacementSign || !docReady
-									}
-								>
-									{signFile.isPending ? (
-										<>
-											<SpinnerIcon className="size-4 animate-spin" />
-											Signing…
-										</>
-									) : (
-										"Sign document"
-									)}
-								</Button>
-								<p className="text-[11px] leading-snug text-muted-foreground">
-									By clicking Sign, I agree to electronic records and signatures
-									for this document. Filosign does not determine legal
-									suitability.
-								</p>
-							</div>
+							<Button
+								variant="primary"
+								size="sm"
+								onClick={() => setSignConfirmOpen(true)}
+								disabled={signFile.isPending || !canSubmitSign}
+							>
+								{signFile.isPending ? (
+									<>
+										<SpinnerIcon className="size-4 animate-spin" />
+										Signing…
+									</>
+								) : (
+									"Sign document"
+								)}
+							</Button>
 						</>
 					)}
 				</div>
 			</div>
+			<SignConfirmDialog
+				open={signConfirmOpen}
+				onOpenChange={setSignConfirmOpen}
+				pending={signFile.isPending}
+				onConfirm={() => handleSign()}
+			/>
 			<ConfirmAlertDialog
 				open={rotateInviteOpen}
 				onOpenChange={setRotateInviteOpen}

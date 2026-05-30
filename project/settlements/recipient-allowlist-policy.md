@@ -15,8 +15,10 @@
 ## Enforcement
 
 - **Client:** Settlement attach UI only offers envelope participants and org payout wallet (when linked).
-- **Server:** `assertSettlementRecipientsAllowlisted` on `files.register` when `settlementRules` are present.
-- **Server:** `assertSettlementRulesVerifiedOnChain` — payer, `cidId`, amount, recipient, and token must match on-chain `FSPaymentValidator.rules` plus successful `registerRule` / `approve` receipts.
+- **Server:** `assertSettlementRecipientsAllowlisted` on **`settlements.registerForFile`** (each leg in `legs[]`).
+- **Server:** `assertSettlementRulesVerifiedOnChain` — payer, `cidId`, token, release type/params, and **each leg** (recipient + amount) must match on-chain `FSPaymentValidator.rules` plus successful `registerRule` / `approve` receipts.
+
+Multi-leg rules: allowlist is checked **per leg**. Product cap: **5 legs** per rule (`MAX_SETTLEMENT_LEGS_PRODUCT`); on-chain max **32**.
 
 ## On-chain bypass
 
@@ -30,4 +32,4 @@ Stored on `organizations.orgWalletAddress`. Intended for a team-controlled Safe.
 
 ## Wallet screening (planned)
 
-When enabled, screening applies to wallets on the **Filosign send + `files.register` path**, not to all rules registered on-chain by non-app wallets.
+When enabled, screening applies to wallets on the **Filosign send + `settlements.registerForFile` path**, not to all rules registered on-chain by non-app wallets.

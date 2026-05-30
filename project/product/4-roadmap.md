@@ -91,17 +91,14 @@ Initial business model:
 
 Do not lead with a full pricing table in sales. Lead with the pilot workflow.
 
-Pricing source:
-
-- `../entitlements/entitlement_breakdown_report.md`
-- `../entitlements/cost_breakdown_report.md`
-- `../entitlements/competitive_pricing_analysis.md`
+Pricing source (catalog v1 — [`packages/entitlements/src/catalog/v1.ts`](../../packages/entitlements/src/catalog/v1.ts)):
 
 ## Launch-Critical Product Work
 
 Near-term priorities:
 
-- mainnet-ready settlement path
+- **v1 shipped (contracts + app):** on-chain routing/quorum, `amendSigner`, multi-leg settlement CRUD, `settlements.registerForFile` indexing, compliance bundle v7
+- mainnet deploy + Dodo live SKUs aligned to catalog v1 pricing
 - clear non-custodial payment wording
 - request-access / design-partner onboarding
 - support channel

@@ -197,14 +197,13 @@ Filosign can monetize as a premium B2B SaaS product and later as a developer pla
 
 The strongest near-term monetization is Web3 teams that already pay for ops tooling and need fewer manual payout workflows.
 
-Internal planned pricing from entitlement docs:
+Internal planned pricing (catalog v1 shipped + future tiers):
 
-- Secure Solo: $15/mo monthly or $9/mo annual
-- Secure Team: $35/user/mo monthly or $25/user/mo annual
-- Secure Team Pro: $55/user/mo monthly or $40/user/mo annual
-- Platform Starter: $99/mo monthly or $79/mo annual
-- Platform Pro: $349/mo monthly or $299/mo annual
-- Enterprise: custom
+- Solo: $20/mo monthly or $15/mo annual
+- Teams: $35/user/mo monthly or $29/user/mo annual
+- Teams Pro: $59/user/mo monthly or $49/user/mo annual
+- Enterprise: custom (catalog entry; sales-led)
+- Platform Starter / Platform Pro: planned (not in catalog v1 yet)
 
 Application note: do not lead with the full pricing table unless asked. A cleaner answer is: “B2B SaaS plans for individuals and teams, with higher-priced team and platform tiers for settlement workflows and embedded/API use.”
 

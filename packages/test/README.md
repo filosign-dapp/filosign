@@ -1,73 +1,33 @@
-# React + TypeScript + Vite
+# `@filosign/test` — local harness
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Minimal Vite app for exercising `@filosign/react` against a running API + chain without the full client UI.
 
-Currently, two official plugins are available:
+## Run
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+From repo root:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+bun run test:dev          # harness only (default VITE_CHAIN=local)
+bun run dev -- --local    # full stack + harness optional
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+From this package:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+bun run dev               # VITE_CHAIN=local
+bun run dev:sandbox       # VITE_DEPLOYMENT=sandbox VITE_CHAIN=testnet
 ```
+
+## Env
+
+The harness uses Vite env vars (not `.env` files by default in scripts):
+
+- `VITE_CHAIN` — `local` | `testnet` | `mainnet`
+- `VITE_DEPLOYMENT` — when using sandbox profile
+- `VITE_SERVER_URL`, `VITE_THIRDWEB_CLIENT_ID` — point at your running stack
+
+See [`SCRIPTS.md`](../../SCRIPTS.md) and [`packages/react-sdk/README.md`](../react-sdk/README.md) for SDK usage patterns.
+
+## Scope
+
+Integration/dev smoke only — not CI unit tests. Repo tests: `bun run test` / `bun run sanity`.

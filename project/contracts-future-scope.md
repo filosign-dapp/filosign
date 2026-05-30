@@ -10,9 +10,11 @@
 4. **New attestations / QES / NFT proof** — sidecar contract + server indexer; v1 sign record unchanged.
 5. **Marketing** — do not imply a mutable “core”; Team Pro “multichain / custom escrow” = per-chain bundle or new validator, not upgrades to v1 registries.
 
-## What does not need v1 contract changes (~85% of roadmap)
+## What does not need v1 contract changes
 
-Server, DB, client, and auth only: fields/placement manifest, sequential signing, reminders/expiration, audit PDF, metadata/tags/templates/branding, webhooks/API keys, bulk send, E2EE comments/attachments, team keys, SSO/LDAP/BYOK, SIEM/logs, embed/postMessage, anchor-text assembly, entitlements/Dodo/legal/ops items in `project/todo.md`.
+Server, DB, client, and auth only: fields/placement manifest, **reminders/expiration**, audit PDF, metadata/tags/templates/branding, webhooks/API keys, bulk send, E2EE comments/attachments, team keys, SSO/LDAP/BYOK, SIEM/logs, embed/postMessage, anchor-text assembly, entitlements/Dodo/legal/ops items in `project/todo.md`.
+
+**Already on-chain in v1 (not future work):** parallel/sequential **routing**, optional signers, registry **quorum**, **`amendSigner`**, multi-leg settlement CRUD on `FSPaymentValidator`.
 
 ## Allowed on-chain evolution (without touching v1 core)
 
@@ -21,7 +23,7 @@ Server, DB, client, and auth only: fields/placement manifest, sequential signing
 | New release types / tokens | New immutable validator per chain |
 | Multichain | Full v1 stack per chain in definitions |
 | QES / attestations | Sidecar + indexer |
-| Wallet screening | Server on register path ([`settlements/architecture-and-non-custody.md`](settlements/architecture-and-non-custody.md)) |
+| Wallet screening | Server on `settlements.registerForFile` path ([`settlements/architecture-and-non-custody.md`](settlements/architecture-and-non-custody.md)) |
 
 ## New registry address only if (rare)
 

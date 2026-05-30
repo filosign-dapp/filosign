@@ -5,13 +5,13 @@ alwaysApply: false
 
 # Filosign API routes
 
-Backend: **`apps/server`**. **`/api`** mounts [`api/integrations/`](apps/server/api/integrations/) **before** JWT/oRPC middleware, then **oRPC** on **`/api/rpc`** and **OpenAPI UI** on **`/api/api-reference`** — [`api/orpc/hono-mount.ts`](apps/server/api/orpc/hono-mount.ts) exports **`apiRouter`**. **Integration webhooks** (`/api/integrations/*`, when added) use shared-secret headers, not oRPC. Procedure handlers live under [`api/handlers/*`](apps/server/api/handlers/) and compose [`api/orpc/router.ts`](apps/server/api/orpc/router.ts) (`appRouter`). Business rules: [`lib/domains/*`](apps/server/lib/domains/). Infra (db, evm, s3, indexer): [`lib/platform/*`](apps/server/lib/platform/). Details in **[`AGENTS.md`](AGENTS.md)**.
+Backend: **`apps/server`**. **`/api`** mounts [`api/integrations/`](apps/server/api/integrations/) **before** session/oRPC middleware, then **oRPC** on **`/api/rpc`** and **OpenAPI UI** on **`/api/api-reference`** — [`api/orpc/hono-mount.ts`](apps/server/api/orpc/hono-mount.ts) exports **`apiRouter`**. **Integration webhooks** (`/api/integrations/*`) use shared-secret headers, not oRPC. Procedure handlers live under [`api/handlers/*`](apps/server/api/handlers/) and compose [`api/orpc/router.ts`](apps/server/api/orpc/router.ts) (`appRouter`). Business rules: [`lib/domains/*`](apps/server/lib/domains/). Infra (db, evm, s3, indexer): [`lib/platform/*`](apps/server/lib/platform/). Details in **[`AGENTS.md`](AGENTS.md)**.
 
 ## Conventions
 
 - **Responses:** Native procedure outputs; **`ORPCError`** in handlers (`api/handlers/`).
-- **Auth:** `optionalJwtWalletForOrpc` sets **`ctx.var.userWallet`** when Bearer JWT verifies (**invalid Bearer is skipped** → anonymous context). **`authenticatedProcedure`** (`api/orpc/procedures.ts`) throws **`UNAUTHORIZED`** via oRPC when the wallet is absent.
-- **Debug logs:** JWT verify failures logs only when **`DEBUG=true`** ([`env.ts`](apps/server/env.ts)).
+- **Auth:** `optionalThirdwebSessionForOrpc` sets session context when thirdweb Bearer + `X-Wallet-Address` verify (**invalid/missing session is skipped** → anonymous context). **`authenticatedProcedure`** (`api/orpc/procedures.ts`) throws **`UNAUTHORIZED`** via oRPC when the wallet is absent.
+- **Debug logs:** Session verify failures log only when **`DEBUG=true`** ([`env.ts`](apps/server/env.ts)).
 - **Inputs:** Zod at the procedure boundary (`.input` / `.safeParse`).
 - **Fallible async:** **`tryCatch`** / **`tryCatchSync`** ([`patterns.mdc`](patterns.mdc)); map failures to **`ORPCError`** in handlers.
 
@@ -19,10 +19,18 @@ Backend: **`apps/server`**. **`/api`** mounts [`api/integrations/`](apps/server/
 
 - **`rpcQuery`** exposes **`createTanstackQueryUtils` per subtree** — `filosign` root + **`auth`**, **`files`**, **`settlements`**, **`sharing`**, **`storage`**, **`users`**, **`tx`**, plus leaf utils for **`healthCheck`** / **`runtime`** ([`rpc-query-utils.ts`](packages/react-sdk/src/orpc/rpc-query-utils.ts)). Invalidate a subtree with **`rpcQuery.settlements.key()`** (same pattern as **`orgs`**).
 
+## Files (register + amend)
+
+- **`files.register`** — relay `registerFile` on `FSFileRegistry`; optional **`routing`** (parallel/sequential, optional signers, quorum) gated by **`features.routing.advanced`**. Does **not** index settlement rules.
+- **`files.amendSigner`** — sender-only; relay `amendSigner` before old commitment signs; audit row in `file_signer_amendments`.
+
 ## Settlements
 
-- **`settlements.trySettle`** — primary: server relay `executePayout` + `syncSettlementPayoutFromChain` (sign page **Settle payment**).
-- **`settlements.confirmSettlement`** — manual fallback only: wallet tx hash + chain sync (**Settle from wallet**); no receipt RPC.
+- **`settlements.registerForFile`** — index on-chain rules after `registerRule` + `approve`; recipient allowlist + entitlement checks per leg.
+- **`settlements.listByFile`** — list rules for a piece (legacy top-level fields derived from first leg).
+- **`settlements.trySettle`** — primary: server relay `executePayout` + chain sync (sign page **Settle payment**).
+- **`settlements.confirmSettlement`** — manual fallback: wallet tx hash + chain sync (**Settle from wallet**); no receipt RPC.
+- **`settlements.updateRule`** / **`settlements.cancelRule`** — Teams Pro; sync after on-chain `updatePayoutRule` / `cancelPayoutRule`.
 - Daily cron backfills `executed` from chain for off-platform payouts (up to ~24h dashboard lag; see Terms).
 
 ## Client

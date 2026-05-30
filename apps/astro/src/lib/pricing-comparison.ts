@@ -151,19 +151,22 @@ export function buildPricingComparisonRows(): ComparisonRow[] {
 			featureMarketingLabel("features.envelope.team_visibility"),
 			"features.envelope.team_visibility",
 		),
+		section("Settlement"),
+		booleanRow(
+			"features.settlement.basic",
+			featureMarketingLabel("features.settlement.basic"),
+			"features.settlement.basic",
+		),
+		booleanRow(
+			"features.settlement.advanced",
+			featureMarketingLabel("features.settlement.advanced"),
+			"features.settlement.advanced",
+		),
 		booleanRow(
 			"features.routing.advanced",
 			featureMarketingLabel("features.routing.advanced"),
 			"features.routing.advanced",
 		),
-
-		section("Settlement"),
-		staticRow("marketing.usdc_settlement", "Attached payouts on sign", {
-			free: null,
-			individual: null,
-			teams: true,
-			teams_pro: true,
-		}),
 
 		section("Advanced features"),
 		booleanRow(

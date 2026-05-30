@@ -37,7 +37,7 @@ FiloSign has five main layers:
 - **Client app:** React 19, TanStack Router, TanStack Query, thirdweb (embedded wallet + Connect UI) with Viem via `viemAdapter`, Tailwind, Radix UI, and Motion.
 - **API server:** Bun + Hono service for auth, users, files, sharing, uploads, indexing, and server-side protocol actions.
 - **React SDK:** Hooks and provider logic for authentication, file workflows, sharing approvals, signing, and profiles.
-- **Contracts:** Protocol contracts for sender approvals, key registration, file registration, signer records, and pull-based USDC payouts (`FSPaymentValidator`).
+- **Contracts (v1, immutable):** On-chain surface is **`FSFileRegistry`** (file registration, routing, quorum, `amendSigner`) and **`FSPaymentValidator`** (multi-leg USDC pull payouts, rule CRUD). Identity, KEM, and sharing approvals are off-chain.
 - **Crypto/shared libraries:** ML-KEM/Kyber, Dilithium, AES-GCM, stable encoding, Zod schemas, and EVM helpers.
 
 ## Core Workflow
@@ -124,8 +124,8 @@ bun run test:dev
 
 Server configuration is defined in `apps/server/env.ts`. The main required values are:
 
-- `DEPLOYMENT` — `local` | `staging` | `sandbox` | `production` (must match `CHAIN`; see [`project/launch/environments.md`](project/launch/environments.md))
-- `CHAIN`
+- `DEPLOYMENT` — `local` | `staging` | `sandbox` | `production` (drives billing, Dodo mode, entitlement policy; see [`project/launch/environments.md`](project/launch/environments.md))
+- `CHAIN` — must match `DEPLOYMENT` (`local`→`local`, `staging`/`sandbox`→`testnet`, `production`→`mainnet`); not auto-derived — set both explicitly
 - `SERVER_URL` — public API origin (no trailing slash).
 - `CLIENT_URL` — React app origin; email CTAs and CORS. Must not be `http://localhost` in deployed (`testnet` / `mainnet`) environments.
 - `ASTRO_URL` — marketing site origin; email static assets (`/logo.webp`, `/icons/*`).
@@ -140,6 +140,7 @@ Server configuration is defined in `apps/server/env.ts`. The main required value
 - `DODO_API_KEY` / `DODO_WEBHOOK_KEY` — required for `staging` and `production`; optional for `local` and `sandbox`
 - `DODO_PRODUCT_ID_INDIVIDUAL_MONTHLY` / `DODO_PRODUCT_ID_INDIVIDUAL_YEARLY`
 - `DODO_PRODUCT_ID_TEAMS_MONTHLY` / `DODO_PRODUCT_ID_TEAMS_YEARLY`
+- `DODO_PRODUCT_ID_TEAMS_PRO_MONTHLY` / `DODO_PRODUCT_ID_TEAMS_PRO_YEARLY`
 - `BILLING_RETURN_URL_ORIGINS` (optional allowlist for checkout return URLs)
 - `S3_ACCESS_KEY_ID`
 - `S3_SECRET_ACCESS_KEY`

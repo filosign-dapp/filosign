@@ -1,26 +1,28 @@
 # Filosign Subscription Tiers Entitlement & Feature Roadmap
 
-This document outlines the detailed entitlement breakdown for each of Filosign's subscription tiers. For each tier, it lists the **Existing Features** (already modeled/provided) and the **Suggested Features** that need to be built to support our E2EE, PQC, and Web3-integrated signature architecture.
+> **Source of truth (shipped):** [`packages/entitlements/src/catalog/v1.ts`](../../packages/entitlements/src/catalog/v1.ts). Marketing names: Free, Solo, Teams, Teams Pro, Enterprise. **Future (not in catalog v1):** Platform Starter, Platform Pro.
+
+This document outlines entitlements per tier: **Existing Features** (in catalog / built) and **Suggested Features** (roadmap).
 
 ---
 
-## Entitlement Matrix Overview
+## Entitlement Matrix Overview (catalog v1)
 
-| Tier | Type | Monthly Rate (Monthly / Annual) | Doc Limit | Existing Core Features | Suggested Features to Build |
-| :--- | :--- | :---: | :---: | :--- | :--- |
-| **Free Trial** | SaaS | \$0.00 | 3 lifetime (Invite-only) | E2EE + PQC, Max 1 Recipient | Standard Fields, Manual Reminders, Basic Audit Trail |
-| **Secure Solo** | SaaS | \$15.00 / \$9.00 | 10 / mo | E2EE + PQC, 3 Recipients | E2EE Signer Attachments, Advanced Fields, CSV Export |
-| **Secure Team Std** | SaaS | \$35.00 / \$25.00 | 30 / user/mo | USDC Escrows & Settlements, Shared Templates | Shared Template Libraries (Team Keys), Sequential Signing (Signing Order), Team Address Book, Auto-Reminders |
-| **Secure Team Pro** | SaaS | \$55.00 / \$40.00 | 30 / user/mo | Custom Escrows, Multichain, Workspace Permissions | Bulk Send (Client Loop), E2EE Comments, Conditional Logic, Custom Branding, Quota Allocation, Custom Subdomains, Shared Template Folders, Advanced Audit Export, Metadata Tagging |
-| **Platform Starter** | Developer | \$99.00 / \$79.00 | 100 / mo | PQC Signing API, Webhooks | API Key Mgmt, Webhook Signatures, Testnet Sandbox, Custom Metadata Passthrough |
-| **Secure Enterprise** | Enterprise | Custom (\$125.00 / \$99.00) | 100 / user/mo | Multi-sig, Dedicated KMS, Organization Rules | BYOK (AWS KMS/Vault), SSO/SAML, AD Sync, Log Streaming, Custom SMTP Relay, Activity Logs |
-| **Platform Pro** | Developer | \$349.00 / \$299.00 | 500 / mo | Embedded Iframe, JS SDK, Priority RPC | `postMessage` Events, Document Assembly API, Node/Go WASM SDKs, SDK White-labeled SMTP |
+| Tier | Plan ID | Monthly / Annual | Doc limit | Key entitlements (shipped) |
+| :--- | :--- | :---: | :---: | :--- |
+| **Free** | `free` | \$0 | 3 / mo, 1 recipient | E2EE + PQC, basic fields |
+| **Solo** | `individual` | \$20 / \$15 | 10 / mo, 3 recipients | + draft review links, extended archival, proof export |
+| **Teams** | `teams` | \$35 / \$29 per seat | 15 / seat / mo (pooled), 10 recipients | + team templates/drafts, **`settlement.basic`** |
+| **Teams Pro** | `teams_pro` | \$59 / \$49 per seat | 25 / seat / mo (pooled), 15 recipients | + **`settlement.advanced`**, **`routing.advanced`**, bulk send, webhooks, branding, … |
+| **Enterprise** | `enterprise` | Custom | Unlimited | All Teams Pro features + custom limits |
+| **Platform Starter** | — | *planned* | TBD | API / webhooks (future) |
+| **Platform Pro** | — | *planned* | TBD | Embedded / SDK (future) |
 
 ---
 
 ## Detailed Tier Entitlements & Suggested Roadmap
 
-### 1. Free Trial
+### 1. Free (`free`)
 *Designed as a zero-barrier entry point for testing the E2EE signing flow.*
 
 *   **Existing Features:**
@@ -46,7 +48,7 @@ This document outlines the detailed entitlement breakdown for each of Filosign's
 
 ---
 
-### 2. Secure Solo
+### 2. Solo (`individual`)
 *Designed for independent professionals, lawyers, and freelancers requiring high security.*
 
 *   **Existing Features:**
@@ -62,25 +64,26 @@ This document outlines the detailed entitlement breakdown for each of Filosign's
 
 ---
 
-### 3. Secure Team
+### 3. Teams (`teams`)
 *Designed for small businesses implementing automated cryptocurrency payments.*
 
-*   **Existing Features:**
-    *   30 documents per user/mo (pooled across team members).
-    *   Automated blockchain settlements (escrowing stablecoins like USDC and releasing payouts upon signature).
-    *   Shared document templates.
+*   **Existing Features (catalog v1):**
+    *   15 documents per user/mo (pooled), 10 recipients max.
+    *   Team collaboration: shared templates, team drafts, draft review links, team envelope visibility.
+    *   **`features.settlement.basic`** — single-leg USDC settlement at send or post-send attach.
+    *   Client-side E2EE + PQC.
 *   **Suggested Features to Build:**
     *   **Shared Template Libraries (Team Key-Sharing):** Team members need to share encrypted templates.
         *   *Why E2EE Templates:* Storing templates in plaintext compromises our "Zero-Knowledge" claim (since templates contain 90% of proprietary contract text, IP terms, and pricing). It also keeps codebase rendering pipelines unified.
         *   *E2EE Architecture:* Templates are encrypted with a symmetric *Team Key*. This Team Key is encrypted for each member using their public key, allowing them to decrypt the templates on login.
-    *   **Sequential Signing Workflows (Signing Order):** Allow teams to enforce a strict ordering for document completion (e.g., Recipient 1 must sign before Recipient 2 receives the invitation). Senders can toggle between parallel and sequential signing during envelope creation.
+    *   **Sequential signing / routing** — **shipped on-chain (Teams Pro):** parallel/sequential, optional signers, quorum via `FSFileRegistry` + client routing UI.
     *   **Basic Webhook Integrations:** Outgoing webhooks to push basic status changes to external URLs (e.g., notifying a Discord/Slack channel on signature).
     *   **Encrypted Shared Contacts & Team Address Book:** A central workspace directory where members can save frequently used signer details and pre-fetched public encryption keys to streamline signing workflows.
     *   **Automated Reminder Rules & Expiration Scheduler:** Senders can configure automated expiration limits and custom reminder schedules (e.g., daily/weekly follow-ups) for envelopes.
 
 ---
 
-### 4. Secure Team Pro
+### 4. Teams Pro (`teams_pro`)
 *Designed for advanced Web3 teams requiring custom settlement rules and complex workspaces.*
 
 *   **Existing Features:**
@@ -101,7 +104,7 @@ This document outlines the detailed entitlement breakdown for each of Filosign's
 
 ---
 
-### 5. Platform Starter (API)
+### 5. Platform Starter (API) — *planned, not in catalog v1*
 *Designed for developers building basic apps requiring cryptographically secure, automated sign flows.*
 
 *   **Existing Features:**
@@ -116,7 +119,7 @@ This document outlines the detailed entitlement breakdown for each of Filosign's
 
 ---
 
-### 6. Secure Enterprise
+### 6. Enterprise (`enterprise`) — *custom; catalog entry exists, sales-led*
 *Designed for VC firms, OTC trading desks, and protocols handling institutional agreements.*
 
 *   **Existing Features:**
@@ -135,7 +138,7 @@ This document outlines the detailed entitlement breakdown for each of Filosign's
 
 ---
 
-### 7. Platform Pro (Embedded)
+### 7. Platform Pro (Embedded) — *planned, not in catalog v1*
 *Designed for Web3 SaaS products embedding white-labeled cryptographic signatures into their user journeys.*
 
 *   **Existing Features:**

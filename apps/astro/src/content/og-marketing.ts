@@ -17,7 +17,7 @@ export const MARKETING_OG_PAGES = {
 	pricing: {
 		title: "Pricing — Encrypted signing with proof you can verify",
 		description:
-			"Free, Solo, Teams ($29), and Teams Pro ($49). Pooled team quotas, encrypted signing, proof exports, and attached payouts.",
+			"Free, Solo, Teams ($35), and Teams Pro ($59). Pooled team quotas, encrypted signing, proof exports, and attached payouts.",
 	},
 	changelog: {
 		title: "Changelog — What's new at Filosign",

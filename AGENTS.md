@@ -44,7 +44,7 @@ Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).
 ## Boundaries
 
 - **HTTP (client):** `useFilosignContext().rpc` + `@filosign/react` hooks only. No `fetch`/axios to JSON API except: blob/doc bytes ([send-envelope.ts](apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope.ts)), static assets ([compliance-pdf/utils/images.ts](apps/client/src/lib/domains/files/compliance-pdf/utils/images.ts)), **PUT to `storage.presignPut` URLs** (no API body proxy).
-- **Settlements:** Server never custodies USDC. Client registers rules + `approve` on-chain; sign page **Settle payment** → `settlements.trySettle` (server relay); fallback **Settle from wallet** → `settlements.confirmSettlement`. Daily cron syncs off-platform `executed` state. See `[lib/domains/settlements/](apps/server/lib/domains/settlements/)`.
+- **Settlements:** Server never custodies USDC. Client `registerRule` + `approve` on-chain; server indexes via **`settlements.registerForFile`**. Sign page **Settle payment** → `settlements.trySettle` (server relay); fallback **Settle from wallet** → `settlements.confirmSettlement`. **Teams Pro:** `updateRule` / `cancelRule` + post-send attach. **`files.amendSigner`** for pre-sign roster changes. Daily cron syncs off-platform `executed` state. See [`lib/domains/settlements/`](apps/server/lib/domains/settlements/) and [`project/settlements/architecture-and-non-custody.md`](project/settlements/architecture-and-non-custody.md).
 - **Logic:** UI `apps/client` | hooks/SDK `packages/react-sdk` | API/DB/relay `apps/server`.
 - **Imports:** Client uses minimal `@filosign/contracts` ([constants](apps/client/src/constants.ts)); prefer SDK/runtime for new code.
 - **Definitions:** Never hand-edit `apps/contracts/definitions/`. Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy).
@@ -66,9 +66,9 @@ Mount: `[api/orpc/hono-mount.ts](apps/server/api/orpc/hono-mount.ts)` (`apiRoute
 ## Vertical slice
 
 1. Contracts `src` → compile → tests ([TESTING.md](apps/contracts/TESTING.md)) aligned in same PR.
-2. Server: oRPC `api/orpc/` + handlers + `fsContracts`; `file_settlement_rules`; post-sign + `trySettle` auto-execute; daily cron backfill.
-3. SDK: hooks + `useFilosignContext()` (`registerSettlementRulesOnChain`, `useSettlementsListByFile`, `useTrySettleSettlement`, `useManualSettlementPayout`).
-4. Client: UI only, `@filosign/react` (settlement attachment panel, sign-page settle CTAs).
+2. Server: oRPC `api/orpc/` + handlers + `fsContracts`; `file_settlement_rules` (legs jsonb); register routing on `files.register`; `settlements.registerForFile` / update / cancel; `files.amendSigner`; post-sign + `trySettle` auto-execute; daily cron backfill; compliance v7.
+3. SDK: hooks + `useFilosignContext()` (`registerSettlementRulesOnChain`, `buildValidatedRegisterRouting`, `useSettlementsListByFile`, `useTrySettleSettlement`, `useManualSettlementPayout`, `useUpdateSettlementRule`, `useCancelSettlementRule`, `useAmendSigner`).
+4. Client: UI only, `@filosign/react` (envelope routing/settlement create, sign-page settle/attach/update/cancel/amend).
 5. Verify: [SCRIPTS.md](SCRIPTS.md) — `check`, `test`; contract changes: `bun run sanity` (includes Hardhat) or `bun run sanity -- --fast` without Hardhat.
 
 ## Scripts & CI

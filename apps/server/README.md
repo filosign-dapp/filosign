@@ -32,7 +32,7 @@ Secrets layout: [`SECRETS.md`](SECRETS.md). Local server uses **`--env-file`**; 
 
 ## Analytics (PostHog)
 
-Server-side product events via `lib/analytics/` (`posthog-node`). Set `POSTHOG_ENABLED`, `POSTHOG_API_KEY` in `.env.local`. Full event catalog and funnel guidance: [`ANALYTICS.md`](../../ANALYTICS.md).
+Server-side product events via [`lib/platform/analytics/posthog.ts`](lib/platform/analytics/posthog.ts) (`posthog-node`). Set `POSTHOG_ENABLED`, `POSTHOG_API_KEY` in `.env.local`. Full event catalog and funnel guidance: [`project/posthog-integration.md`](../../project/posthog-integration.md).
 
 ## Platform alerts (Telegram)
 
@@ -54,7 +54,7 @@ Unit tests: `bun test tests/` in this package; see [TESTING.md](../../TESTING.md
 - **Dodo billing webhook** — `POST /api/integrations/dodo/webhook` (Standard Webhooks signature headers: `webhook-id`, `webhook-timestamp`, `webhook-signature`). Stored idempotently in `billing_webhook_events`, then upserts `user_subscriptions`.
 - **`bun run db -- purge local|staging|sandbox`** (repo root) — drops/recreates Postgres `public` schema, then drizzle push (`production` purge blocked).
 - **Invite expiry** — `INVITE_TTL_DAYS` in env (default `7`). All invite types set `expiresAt` at creation via [`inviteExpiresAt()`](lib/domains/invites/ttl.ts): `file_cold_invites`, `user_invites`, `organization_invites`. Hourly `Bun.cron` in [`lib/platform/cron/`](lib/platform/cron/) marks overdue `pending` rows `expired`; handlers use `pending*InviteFilter()` immediately after expiry. PostHog: `cold_invite_expired` for document invites.
-- **Settlements** — `file_settlement_rules` tracks on-chain payout rules (status, tx hashes). After each signature the server attempts `executePayout` for executable rules. Sign page **Settle payment** calls `settlements.trySettle` (server relay + chain sync). **Settle from wallet** uses `settlements.confirmSettlement` (hash + `rules()` sync, no receipt RPC). Daily `sync-settlement-rules` cron backfills `executed` from chain for off-platform payouts. oRPC: `settlements.listByFile`, `settlements.trySettle`, `settlements.confirmSettlement`. Compliance bundles are **version 4** and include `settlements[]`. See [`project/settlements/architecture-and-non-custody.md`](../../project/settlements/architecture-and-non-custody.md).
+- **Settlements** — `file_settlement_rules` stores on-chain payout rules (`legs` jsonb, status, tx hashes). Indexing path: client `registerRule` + `approve` on-chain, then **`settlements.registerForFile`** (not `files.register`). After each signature the server attempts `executePayout` for executable rules. Sign page **Settle payment** → `settlements.trySettle` (server relay + chain sync). **Settle from wallet** → `settlements.confirmSettlement` (hash + `rules()` sync, no receipt RPC). **Teams Pro:** `settlements.updateRule` / `settlements.cancelRule` after on-chain `updatePayoutRule` / `cancelPayoutRule`. Daily `sync-settlement-rules` cron backfills `executed` from chain. oRPC: `settlements.listByFile`, `settlements.registerForFile`, `settlements.trySettle`, `settlements.confirmSettlement`, `settlements.updateRule`, `settlements.cancelRule`. **`files.amendSigner`** — sender-only on-chain signer commitment swap. Compliance bundles are **version 7** (`onchainRegistration`, multi-leg `settlements[]`, `signer_amended` tx kind). See [`project/settlements/architecture-and-non-custody.md`](../../project/settlements/architecture-and-non-custody.md).
 
 ## API envelope
 

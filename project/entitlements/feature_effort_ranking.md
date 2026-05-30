@@ -1,6 +1,6 @@
 # Feature effort ranking (suggested roadmap)
 
-Ranked against the current codebase and [entitlement_breakdown_report.md](./entitlement_breakdown_report.md). Marketing tiers in the report map to code plans in [`packages/entitlements/src/catalog/v1.ts`](../../packages/entitlements/src/catalog/v1.ts): `free`, `individual`, `teams`, `enterprise`.
+Ranked against the current codebase and [entitlement_breakdown_report.md](./entitlement_breakdown_report.md). Marketing tiers map to code plans in [`packages/entitlements/src/catalog/v1.ts`](../../packages/entitlements/src/catalog/v1.ts): `free`, `individual` (Solo), `teams`, `teams_pro`, `enterprise`. **Future:** Platform Starter, Platform Pro (not in catalog v1).
 
 **Effort scale (relative):**
 
@@ -18,9 +18,9 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 
 | Feature | Tier | Why so low | How to build |
 | ------- | ---- | ---------- | ------------ |
-| **Standard form fields** | Free Trial | **Done:** 7 placement types in [`field-types.ts`](../../apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types.ts); manifest + send path exists | Entitlement gates per tier; sign flow still tracks `completedFieldIds` only (not rich field values) |
-| **Basic audit trail** | Free Trial | **Done:** compliance PDF (bundle v4, [`compliance-pdf/`](../../apps/client/src/lib/domains/files/compliance-pdf/)) | Add signer IP capture on register/sign in [`lib/domains/files/`](../../apps/server/lib/domains/files/); include in compliance bundle |
-| **Mobile-responsive signing UI** | Free Trial | **Partial:** sticky header, responsive sign layout | Polish breakpoints, touch targets, field overlays on small screens |
+| **Standard form fields** | Free | **Done:** 7 placement types in [`field-types.ts`](../../apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types.ts); manifest + send path exists | Entitlement gates per tier; sign flow still tracks `completedFieldIds` only (not rich field values) |
+| **Basic audit trail** | Free | **Done:** compliance PDF (bundle **v7**, [`compliance-pdf/`](../../apps/client/src/lib/domains/files/compliance-pdf/)) | Add signer IP capture on register/sign in [`lib/domains/files/`](../../apps/server/lib/domains/files/); include in compliance bundle |
+| **Mobile-responsive signing UI** | Free | **Partial:** sticky header, responsive sign layout | Polish breakpoints, touch targets, field overlays on small screens |
 | **Embedded signing sandbox (testnet)** | Platform Starter | **Partial:** `VITE_CHAIN=testnet`, Base Sepolia | Document sandbox for API consumers; optional testnet-only API base URL / keys |
 
 ---
@@ -33,11 +33,11 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | **Cryptographically signed webhooks** | Platform Starter | No product webhooks yet; use shared-secret integration pattern under `api/integrations/` when added | Per-API-key secret; HMAC on outbound POST body |
 | **Custom metadata passthrough** | Platform Starter | No `metadata` on files yet | `jsonb` on `files`; include in register, detail, webhooks |
 | **API key management dashboard** | Platform Starter | Auth is JWT wallet today; OpenAPI mount exists | `api_keys` table; middleware; rotation/revoke UI |
-| **Shared template folders** | Team Pro | Org templates done ([`connections-templates.ts`](../../apps/server/api/handlers/orgs/connections-templates.ts)) | `folder_id` + permissions; UI tree |
-| **Custom metadata tagging & dashboard filters** | Team Pro | File list RPCs exist | `tags` column or junction; filter `list/sent` |
-| **Seat quota allocation / redistribution** | Team Pro | Seats + pooled quota partial ([`billing.ts`](../../apps/server/lib/platform/db/schema/billing.ts)) | Admin UI for per-member caps; enforce on send |
-| **Advanced audit export (CSV/JSON)** | Team Pro | Compliance bundle done client-side | Reuse decrypt + bundle; CSV/JSON download |
-| **Advanced field types** (radio, dropdown, regex) | Secure Solo | Checkbox + text exist | Extend [`placement-manifest`](../../packages/shared/placement-manifest.ts); palette + sign UX |
+| **Shared template folders** | Teams Pro | Org templates done ([`connections-templates.ts`](../../apps/server/api/handlers/orgs/connections-templates.ts)) | `folder_id` + permissions; UI tree |
+| **Custom metadata tagging & dashboard filters** | Teams Pro | File list RPCs exist | `tags` column or junction; filter `list/sent` |
+| **Seat quota allocation / redistribution** | Teams Pro | Seats + pooled quota partial ([`billing.ts`](../../apps/server/lib/platform/db/schema/billing.ts)) | Admin UI for per-member caps; enforce on send |
+| **Advanced audit export (CSV/JSON)** | Teams Pro | Compliance bundle done client-side | Reuse decrypt + bundle; CSV/JSON download |
+| **Advanced field types** (radio, dropdown, regex) | Solo | Checkbox + text exist | Extend [`placement-manifest`](../../packages/shared/placement-manifest.ts); palette + sign UX |
 | **Iframe `postMessage` events** | Platform Pro | No embed route | Embed route + `postMessage` on sign/decline/complete |
 | **SDK white-labeled SMTP relay** | Platform Pro | — | Per-dev/org SMTP settings on email transport |
 | **Bring your own SMTP** | Enterprise | Resend wired | Per-org SMTP config; template from-domain |
@@ -52,7 +52,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | **Automated reminder rules & expiration** | Team | Invite TTL cron partial | Envelope `expires_at` + `reminder_schedule`; cron → email |
 | **Sequential signing workflows** | Team | Order passed but not enforced | Server gate: no invite/sign until prior signer done; optional delayed emails |
 | **Encrypted shared contacts & team address book** | Team | Connections graph partial | Org-scoped contacts; optional encrypted notes |
-| **Local CSV data export** | Secure Solo | No CSV; decrypt path exists | Client: fetch blobs → decrypt → flatten manifest + fields → CSV |
+| **Local CSV data export** | Solo | No CSV; decrypt path exists | Client: fetch blobs → decrypt → flatten manifest + fields → CSV |
 | **Custom branding** | Team Pro | Not in app UI | Org logo/colors; email template vars on sign + emails |
 | **Bulk send (client-side loop)** | Team Pro | Single send pipeline done | CSV → loop `useSendFile`; progress UI; rate limits |
 | **E2EE collaborative comments** | Team Pro | Catalog flag only | Encrypted comment blob; sidebar; oRPC append/list |
@@ -66,7 +66,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 
 | Feature | Tier | Why | How to build |
 | ------- | ---- | --- | ------------ |
-| **Encrypted signer attachments** | Secure Solo | Doc encryption done; no signer upload fields | Attachment field type; encrypt at sign; presigned PUT; sender decrypt |
+| **Encrypted signer attachments** | Solo | Doc encryption done; no signer upload fields | Attachment field type; encrypt at sign; presigned PUT; sender decrypt |
 | **Shared template libraries (team key-sharing)** | Team | Org templates + member keys partial | Per-org team symmetric key; wrap per member; re-encrypt templates |
 | **Conditional field logic & calculations** | Team Pro | Static manifest only | Rules in manifest; evaluator on sign; **needs field value capture first** |
 | **Server-side WASM SDKs (Node/Go/Python)** | Platform Pro | Internal node WASM only | Public package, semver, docs; Go/Python via FFI or sidecar |

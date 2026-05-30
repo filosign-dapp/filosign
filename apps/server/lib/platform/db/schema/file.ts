@@ -130,6 +130,14 @@ export const fileColdInvites = t.pgTable(
 	],
 );
 
+export const documentViewSources = [
+	"sign_page",
+	"file_viewer",
+	"inbox",
+] as const;
+
+export type DocumentViewSource = (typeof documentViewSources)[number];
+
 export const fileAcknowledgements = t.pgTable(
 	"file_acknowledgements",
 	{
@@ -141,6 +149,10 @@ export const fileAcknowledgements = t.pgTable(
 			.notNull()
 			.references(() => users.walletAddress),
 		ack: tHex().notNull(),
+		acknowledgedAt: t.timestamp({ withTimezone: true }).notNull(),
+		intentVersion: t.text().notNull(),
+		requestIp: t.text(),
+		requestUserAgent: t.text(),
 
 		...timestamps,
 	},
@@ -151,6 +163,32 @@ export const fileAcknowledgements = t.pgTable(
 		}),
 		t.index("idx_acknowledgements_file").on(table.filePieceCid),
 		t.index("idx_acknowledgements_wallet").on(table.wallet),
+	],
+);
+
+export const fileDocumentViews = t.pgTable(
+	"file_document_views",
+	{
+		filePieceCid: t
+			.text()
+			.notNull()
+			.references(() => files.pieceCid, { onDelete: "cascade" }),
+		wallet: tEvmAddress()
+			.notNull()
+			.references(() => users.walletAddress),
+		firstViewedAt: t.timestamp({ withTimezone: true }).notNull(),
+		lastViewedAt: t.timestamp({ withTimezone: true }).notNull(),
+		viewCount: t.integer().notNull().default(1),
+		source: t.text({ enum: documentViewSources }).notNull(),
+		...timestamps,
+	},
+	(table) => [
+		t.primaryKey({
+			columns: [table.filePieceCid, table.wallet],
+			name: "pk_file_document_views",
+		}),
+		t.index("idx_document_views_file").on(table.filePieceCid),
+		t.index("idx_document_views_wallet").on(table.wallet),
 	],
 );
 

@@ -2,11 +2,14 @@ import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import {
+	getDocumentView,
+	getValidAck,
+} from "@/lib/domains/files/utils/participant-access";
 import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs";
 import db from "@/lib/platform/db";
 
-const { files, fileAcknowledgements, fileParticipants, fileSignatures, users } =
-	db.schema;
+const { files, fileParticipants, fileSignatures, users } = db.schema;
 
 export async function pieceDetail(userWallet: Address, pieceCid: string) {
 	const [fileRecord] = await db
@@ -95,18 +98,38 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		}))
 		.sort((a, b) => a.wallet.localeCompare(b.wallet));
 
-	const [acked] = await db
-		.select()
-		.from(fileAcknowledgements)
-		.where(
-			and(
-				eq(fileAcknowledgements.filePieceCid, pieceCid),
-				eq(fileAcknowledgements.wallet, userWalletNorm),
-			),
-		);
 	const isSender = getAddress(fileRecord.sender) === userWalletNorm;
-	const canReadParticipant = participantUser && (!!acked || isSender);
+	const validAck = participantUser
+		? await getValidAck(userWalletNorm, pieceCid)
+		: null;
+	const documentView = participantUser
+		? await getDocumentView(userWalletNorm, pieceCid)
+		: null;
+
+	const mySignature = fileSignaturesRecord.find(
+		(s) => getAddress(s.signer) === userWalletNorm,
+	);
+	const isSigner =
+		participantUser?.role === "signer" && !isSender && !mySignature;
+
+	const canDecryptParticipant =
+		Boolean(participantUser) && (isSender || Boolean(validAck));
 	const canReadOrg = Boolean(orgRead);
+
+	const acknowledged = Boolean(validAck);
+	const acknowledgedAt = validAck?.acknowledgedAt.toISOString() ?? null;
+	const firstViewedAt = documentView?.firstViewedAt.toISOString() ?? null;
+
+	const canSign = Boolean(
+		isSigner && acknowledged && firstViewedAt && !mySignature,
+	);
+
+	const manifestUnlocked =
+		isSender ||
+		canReadOrg ||
+		(participantUser?.role === "signer"
+			? acknowledged && Boolean(firstViewedAt)
+			: acknowledged);
 
 	return {
 		pieceCid: fileRecord.pieceCid,
@@ -115,17 +138,29 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		onchainTxHash: fileRecord.onchainTxHash,
 		createdAt: fileRecord.createdAt,
 		placementCommitment: fileRecord.placementCommitment,
-		placementManifest: fileRecord.placementManifestJson,
+		placementManifest: manifestUnlocked
+			? fileRecord.placementManifestJson
+			: null,
 		signers,
 		viewers,
 		signatures: fileSignaturesRecord,
+		participantAccess: {
+			acknowledged,
+			acknowledgedAt,
+			firstViewedAt,
+			canDecrypt:
+				canDecryptParticipant ||
+				canReadOrg ||
+				(isSender && Boolean(participantUser)),
+			canSign,
+		},
 
 		kemCiphertext:
-			canReadParticipant && participantUser
+			canDecryptParticipant && participantUser
 				? participantUser.kemCiphertext
 				: null,
 		encryptedEncryptionKey:
-			canReadParticipant && participantUser
+			canDecryptParticipant && participantUser
 				? participantUser.encryptedEncryptionKey
 				: null,
 		orgKemCiphertext: canReadOrg ? fileRecord.orgKemCiphertext : null,

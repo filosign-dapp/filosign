@@ -289,20 +289,27 @@ export function mergeSortedCommitments(
 	let i = 0;
 	let j = 0;
 	while (i < required.length && j < optional.length) {
-		if (required[i]! < optional[j]!) {
-			merged.push(required[i]!);
+		const req = required[i];
+		const opt = optional[j];
+		if (req === undefined || opt === undefined) break;
+		if (req < opt) {
+			merged.push(req);
 			i++;
 		} else {
-			merged.push(optional[j]!);
+			merged.push(opt);
 			j++;
 		}
 	}
 	while (i < required.length) {
-		merged.push(required[i]!);
+		const req = required[i];
+		if (req === undefined) break;
+		merged.push(req);
 		i++;
 	}
 	while (j < optional.length) {
-		merged.push(optional[j]!);
+		const opt = optional[j];
+		if (opt === undefined) break;
+		merged.push(opt);
 		j++;
 	}
 	return merged;

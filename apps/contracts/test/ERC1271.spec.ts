@@ -4,14 +4,10 @@ import type { Hex } from "viem";
 import { getAddress } from "viem";
 import {
 	buildRegisterFileInput,
-	defaultPlacement,
-	defaultSenderEmail,
-	defaultSenderPrivy,
 	deployFullSystem,
 	deployMock1271,
 	registerFileOnly,
 	setMock1271Valid,
-	zeroOrg,
 } from "./fixtures.js";
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
 import { walletAccount } from "./helpers/walletAccount.js";

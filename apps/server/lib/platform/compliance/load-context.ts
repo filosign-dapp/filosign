@@ -6,6 +6,8 @@ import { getAddress } from "viem";
 import type db from "@/lib/platform/db";
 import {
 	fileAcknowledgements,
+	fileColdInvites,
+	fileDocumentViews,
 	fileSignatures,
 	fileSignerDrafts,
 	files,
@@ -41,9 +43,24 @@ export type ComplianceLoadContext = {
 	ackRowsRaw: {
 		wallet: Address;
 		ackCreatedAt: Date;
+		acknowledgedAt: Date;
+		intentVersion: string;
 		ack: string;
 		email: string | null;
 		authProviderId: string | null;
+	}[];
+	viewRowsRaw: {
+		wallet: Address;
+		firstViewedAt: Date;
+		lastViewedAt: Date;
+		viewCount: number;
+		source: "sign_page" | "file_viewer" | "inbox";
+	}[];
+	coldInviteClaimRows: {
+		email: string;
+		wallet: Address;
+		claimedAt: Date;
+		isSigner: boolean;
 	}[];
 	onchainRegistration: import("@filosign/shared").ComplianceBundle["onchainRegistration"];
 	executionStatus: "fully_executed" | "partially_executed";
@@ -119,6 +136,8 @@ export async function loadComplianceContext(args: {
 		.select({
 			wallet: fileAcknowledgements.wallet,
 			ackCreatedAt: fileAcknowledgements.createdAt,
+			acknowledgedAt: fileAcknowledgements.acknowledgedAt,
+			intentVersion: fileAcknowledgements.intentVersion,
 			ack: fileAcknowledgements.ack,
 			email: users.email,
 			authProviderId: users.authProviderId,
@@ -126,6 +145,36 @@ export async function loadComplianceContext(args: {
 		.from(fileAcknowledgements)
 		.innerJoin(users, eq(fileAcknowledgements.wallet, users.walletAddress))
 		.where(eq(fileAcknowledgements.filePieceCid, pieceCid));
+
+	const viewRowsRaw = await database
+		.select({
+			wallet: fileDocumentViews.wallet,
+			firstViewedAt: fileDocumentViews.firstViewedAt,
+			lastViewedAt: fileDocumentViews.lastViewedAt,
+			viewCount: fileDocumentViews.viewCount,
+			source: fileDocumentViews.source,
+		})
+		.from(fileDocumentViews)
+		.where(eq(fileDocumentViews.filePieceCid, pieceCid));
+
+	const coldInviteClaimRowsRaw = await database
+		.select({
+			email: fileColdInvites.email,
+			wallet: fileColdInvites.claimedByWallet,
+			claimedAt: fileColdInvites.claimedAt,
+			isSigner: fileColdInvites.isSigner,
+		})
+		.from(fileColdInvites)
+		.where(eq(fileColdInvites.filePieceCid, pieceCid));
+
+	const coldInviteClaimRows = coldInviteClaimRowsRaw
+		.filter((r) => r.wallet != null && r.claimedAt != null)
+		.map((r) => ({
+			email: r.email,
+			wallet: getAddress(r.wallet as Address),
+			claimedAt: r.claimedAt as Date,
+			isSigner: r.isSigner,
+		}));
 
 	const draftByWallet = new Map(
 		draftRows.map((d) => [
@@ -243,6 +292,14 @@ export async function loadComplianceContext(args: {
 		draftByWallet,
 		sigByWallet,
 		ackRowsRaw,
+		viewRowsRaw: viewRowsRaw.map((r) => ({
+			wallet: getAddress(r.wallet),
+			firstViewedAt: r.firstViewedAt,
+			lastViewedAt: r.lastViewedAt,
+			viewCount: r.viewCount,
+			source: r.source,
+		})),
+		coldInviteClaimRows,
 		onchainRegistration,
 		executionStatus,
 		exportedAtIso,

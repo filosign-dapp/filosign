@@ -5,14 +5,14 @@ import type {
 } from "@filosign/shared";
 import {
 	completionsMerkleProofsV1,
-	FILE_ACK_COLD_CLAIM_SENTINEL_V1,
 	fieldIdsForRecipientEmail,
 	hashAuthSubjectCommitment,
 	hashNormalizedSignerEmail,
+	isValidAckSignature,
 	normalizePlacementRecipientEmail,
 	requiredFieldIdsForRecipientEmail,
 } from "@filosign/shared";
-import type { Hex } from "viem";
+import type { Address, Hex } from "viem";
 import { getAddress, isHex } from "viem";
 import config from "@/config";
 import { fsContracts } from "@/lib/platform/evm";
@@ -35,6 +35,8 @@ export async function assembleComplianceBundle(
 		draftByWallet,
 		sigByWallet,
 		ackRowsRaw,
+		viewRowsRaw,
+		coldInviteClaimRows,
 		onchainRegistration,
 		executionStatus,
 		exportedAtIso,
@@ -73,6 +75,25 @@ export async function assembleComplianceBundle(
 		};
 	});
 
+	const ackByWallet = new Map(
+		ackRowsRaw
+			.filter((r) => isValidAckSignature(r.ack))
+			.map((r) => [getAddress(r.wallet).toLowerCase(), r]),
+	);
+	const viewByWallet = new Map(
+		viewRowsRaw.map((r) => [getAddress(r.wallet).toLowerCase(), r]),
+	);
+
+	const timelineForWallet = (wallet: Address) => {
+		const key = wallet.toLowerCase();
+		const ack = ackByWallet.get(key);
+		const view = viewByWallet.get(key);
+		return {
+			acknowledgedAtIso: ack?.acknowledgedAt.toISOString() ?? null,
+			firstViewedAtIso: view?.firstViewedAt.toISOString() ?? null,
+		};
+	};
+
 	const signers: ComplianceBundle["signers"] = signerParticipants.map((p) => {
 		const wallet = getAddress(p.wallet);
 		const walletKey = wallet.toLowerCase();
@@ -93,6 +114,7 @@ export async function assembleComplianceBundle(
 
 		const sig = sigByWallet.get(walletKey);
 		const draftIds = draftByWallet.get(walletKey) ?? [];
+		const timeline = timelineForWallet(wallet);
 
 		if (sig) {
 			const completedFieldIds = sig.completedFieldIds;
@@ -126,6 +148,8 @@ export async function assembleComplianceBundle(
 				leafSchemaVersion: sig.leafSchemaVersion,
 				merkleProofs,
 				draftCompletedFieldIds: [] as string[],
+				acknowledgedAtIso: timeline.acknowledgedAtIso,
+				firstViewedAtIso: timeline.firstViewedAtIso,
 			};
 		}
 
@@ -148,6 +172,8 @@ export async function assembleComplianceBundle(
 			draftCompletedFieldIds: draftIds.filter((id) =>
 				assignedFieldIds.includes(id),
 			),
+			acknowledgedAtIso: timeline.acknowledgedAtIso,
+			firstViewedAtIso: timeline.firstViewedAtIso,
 		};
 	});
 
@@ -239,7 +265,7 @@ export async function assembleComplianceBundle(
 	const acknowledgements: ComplianceBundle["offChainEvidence"]["acknowledgements"] =
 		[];
 	for (const row of ackRowsRaw) {
-		if (row.ack === FILE_ACK_COLD_CLAIM_SENTINEL_V1) continue;
+		if (!isValidAckSignature(row.ack)) continue;
 		const w = getAddress(row.wallet);
 		const emailRaw = row.email?.trim();
 		if (!emailRaw) continue;
@@ -253,11 +279,30 @@ export async function assembleComplianceBundle(
 		acknowledgements.push({
 			wallet: w,
 			createdAtIso: row.ackCreatedAt.toISOString(),
+			acknowledgedAtIso: row.acknowledgedAt.toISOString(),
+			intentVersion: row.intentVersion,
 			emailCommitment,
 			privySubjectCommitment,
 			ackSha256,
 		});
 	}
+
+	const documentViews: ComplianceBundle["offChainEvidence"]["documentViews"] =
+		viewRowsRaw.map((row) => ({
+			wallet: getAddress(row.wallet),
+			firstViewedAtIso: row.firstViewedAt.toISOString(),
+			lastViewedAtIso: row.lastViewedAt.toISOString(),
+			viewCount: row.viewCount,
+			source: row.source,
+		}));
+
+	const coldInviteClaims: ComplianceBundle["offChainEvidence"]["coldInviteClaims"] =
+		coldInviteClaimRows.map((row) => ({
+			email: row.email,
+			wallet: row.wallet,
+			claimedAtIso: row.claimedAt.toISOString(),
+			isSigner: row.isSigner,
+		}));
 
 	const settlements: ComplianceBundle["settlements"] = settlementRows.map(
 		(pay) => ({
@@ -276,7 +321,7 @@ export async function assembleComplianceBundle(
 	);
 
 	return {
-		version: 5,
+		version: 6,
 		pieceCid,
 		chainId,
 		exportedAtIso,
@@ -293,6 +338,6 @@ export async function assembleComplianceBundle(
 		transactions,
 		signers,
 		settlements,
-		offChainEvidence: { acknowledgements },
+		offChainEvidence: { acknowledgements, documentViews, coldInviteClaims },
 	};
 }

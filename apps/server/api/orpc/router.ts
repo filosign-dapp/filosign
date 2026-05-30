@@ -1,12 +1,23 @@
-import { DEPLOYMENTS } from "@filosign/shared";
+import {
+	DEPLOYMENTS,
+	zSettlementRuleCancelInput,
+	zSettlementRuleUpdateInput,
+} from "@filosign/shared";
 import { zHexString } from "@filosign/shared/zod";
 import type { RouterClient } from "@orpc/server";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import {
+	billingChangeOrgPlan,
 	billingCreateCheckoutSession,
+	billingCreateOrgCheckoutSession,
+	billingCreateOrgPortalSession,
 	billingCreatePortalSession,
 	billingEntitlements,
+	billingGetOrgSummary,
+	billingPreviewOrgPlanChange,
+	billingPreviewOrgSeatChange,
+	billingUpdateOrgSeats,
 } from "@/api/handlers/billing-handlers";
 import * as draftHandlers from "@/api/handlers/drafts";
 import * as fileHandlers from "@/api/handlers/files";
@@ -16,9 +27,13 @@ import {
 } from "@/api/handlers/metrics-handlers";
 import * as orgsHandlers from "@/api/handlers/orgs";
 import {
+	settlementsCancelRule,
 	settlementsConfirmSettlement,
 	settlementsListByFile,
+	settlementsRegisterForFile,
 	settlementsTrySettle,
+	settlementsUpdateRule,
+	zSettlementRulesRegisterBatch,
 } from "@/api/handlers/settlements";
 import * as sharingHandlers from "@/api/handlers/sharing";
 import {
@@ -237,6 +252,30 @@ export const appRouter = {
 					payoutTxHash: input.payoutTxHash as `0x${string}`,
 				}),
 			),
+		registerForFile: authenticatedProcedure
+			.input(
+				z.object({
+					pieceCid: z.string().min(1),
+					organizationId: z.string().uuid().optional(),
+					rules: zSettlementRulesRegisterBatch.min(1),
+				}),
+			)
+			.output(out.settlements.registerForFile)
+			.handler(({ context, input }) =>
+				settlementsRegisterForFile(context.userWallet, input),
+			),
+		updateRule: authenticatedProcedure
+			.input(zSettlementRuleUpdateInput)
+			.output(out.settlements.updateRule)
+			.handler(({ context, input }) =>
+				settlementsUpdateRule(context.userWallet, input),
+			),
+		cancelRule: authenticatedProcedure
+			.input(zSettlementRuleCancelInput)
+			.output(out.settlements.cancelRule)
+			.handler(({ context, input }) =>
+				settlementsCancelRule(context.userWallet, input),
+			),
 	},
 	tx: {
 		processIndexerHash: authenticatedProcedure
@@ -275,6 +314,12 @@ export const appRouter = {
 					input,
 					context.activeOrg ?? null,
 				),
+			),
+		amendSigner: authenticatedProcedure
+			.input(fileHandlers.zAmendSignerBody)
+			.output(out.files.amendSigner)
+			.handler(({ context, input }) =>
+				fileHandlers.filesAmendSigner(context.userWallet, input),
 			),
 		list: {
 			sent: authenticatedProcedure
@@ -493,6 +538,70 @@ export const appRouter = {
 		createPortalSession: authenticatedProcedure
 			.output(out.billing.createPortalSession)
 			.handler(({ context }) => billingCreatePortalSession(context.userWallet)),
+		getOrgSummary: authenticatedProcedure
+			.output(out.billing.getOrgSummary)
+			.handler(({ context }) => billingGetOrgSummary(context.activeOrg)),
+		createOrgCheckoutSession: authenticatedProcedure
+			.input(
+				z.object({
+					planId: z.enum(["teams", "teams_pro"]),
+					interval: z.enum(["monthly", "yearly"]).default("monthly"),
+					seatCount: z.number().int().min(1),
+					returnUrl: z.url(),
+				}),
+			)
+			.output(out.billing.createCheckoutSession)
+			.handler(({ context, input }) =>
+				billingCreateOrgCheckoutSession({
+					wallet: context.userWallet,
+					activeOrg: context.activeOrg,
+					planId: input.planId,
+					interval: input.interval,
+					seatCount: input.seatCount,
+					returnUrl: input.returnUrl,
+				}),
+			),
+		previewOrgSeatChange: authenticatedProcedure
+			.input(z.object({ seatCount: z.number().int().min(1) }))
+			.output(out.billing.previewOrgSeatChange)
+			.handler(({ context, input }) =>
+				billingPreviewOrgSeatChange({
+					activeOrg: context.activeOrg,
+					seatCount: input.seatCount,
+				}),
+			),
+		updateOrgSeats: authenticatedProcedure
+			.input(z.object({ seatCount: z.number().int().min(1) }))
+			.output(out.billing.updateOrgSeats)
+			.handler(({ context, input }) =>
+				billingUpdateOrgSeats({
+					activeOrg: context.activeOrg,
+					seatCount: input.seatCount,
+				}),
+			),
+		createOrgPortalSession: authenticatedProcedure
+			.output(out.billing.createPortalSession)
+			.handler(({ context }) =>
+				billingCreateOrgPortalSession(context.activeOrg),
+			),
+		previewOrgPlanChange: authenticatedProcedure
+			.input(z.object({ planId: z.enum(["teams", "teams_pro"]) }))
+			.output(out.billing.previewOrgPlanChange)
+			.handler(({ context, input }) =>
+				billingPreviewOrgPlanChange({
+					activeOrg: context.activeOrg,
+					planId: input.planId,
+				}),
+			),
+		changeOrgPlan: authenticatedProcedure
+			.input(z.object({ planId: z.enum(["teams", "teams_pro"]) }))
+			.output(out.billing.changeOrgPlan)
+			.handler(({ context, input }) =>
+				billingChangeOrgPlan({
+					activeOrg: context.activeOrg,
+					planId: input.planId,
+				}),
+			),
 	},
 	metrics: {
 		invitesSummary: authenticatedProcedure

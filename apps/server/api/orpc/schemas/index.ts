@@ -1,6 +1,10 @@
 import {
 	rpcBillingCheckoutSessionOutputSchema,
 	rpcBillingEntitlementsOutputSchema,
+	rpcBillingOrgPlanChangeOutputSchema,
+	rpcBillingOrgSeatPreviewOutputSchema,
+	rpcBillingOrgSeatsOutputSchema,
+	rpcBillingOrgSummaryOutputSchema,
 	rpcBillingPortalSessionOutputSchema,
 } from "./billing-output";
 import {
@@ -29,6 +33,7 @@ import {
 	rpcColdInviteByTokenOutputSchema,
 	rpcColdInviteClaimOutputSchema,
 	rpcColdInviteRegenerateOutputSchema,
+	rpcFilesAmendSignerOutputSchema,
 	rpcFilesListReceivedOutputSchema,
 	rpcFilesListSentOutputSchema,
 	rpcFilesRegisterOutputSchema,
@@ -61,9 +66,12 @@ import {
 	rpcOrgsUpdateOutputSchema,
 } from "./orgs-output";
 import {
+	rpcSettlementsCancelRuleOutputSchema,
 	rpcSettlementsConfirmSettlementOutputSchema,
 	rpcSettlementsListByFileOutputSchema,
+	rpcSettlementsRegisterForFileOutputSchema,
 	rpcSettlementsTrySettleOutputSchema,
+	rpcSettlementsUpdateRuleOutputSchema,
 } from "./settlements-output";
 import {
 	rpcSharingEmailInvitesOutputSchema,
@@ -98,6 +106,7 @@ export const rpcOut = {
 	files: {
 		uploadStart: rpcFilesUploadStartOutputSchema,
 		register: rpcFilesRegisterOutputSchema,
+		amendSigner: rpcFilesAmendSignerOutputSchema,
 		list: {
 			sent: rpcFilesListSentOutputSchema,
 			received: rpcFilesListReceivedOutputSchema,
@@ -126,6 +135,11 @@ export const rpcOut = {
 		entitlements: rpcBillingEntitlementsOutputSchema,
 		createCheckoutSession: rpcBillingCheckoutSessionOutputSchema,
 		createPortalSession: rpcBillingPortalSessionOutputSchema,
+		getOrgSummary: rpcBillingOrgSummaryOutputSchema,
+		previewOrgSeatChange: rpcBillingOrgSeatPreviewOutputSchema,
+		updateOrgSeats: rpcBillingOrgSeatsOutputSchema,
+		previewOrgPlanChange: rpcBillingOrgSeatPreviewOutputSchema,
+		changeOrgPlan: rpcBillingOrgPlanChangeOutputSchema,
 	},
 	metrics: {
 		invitesSummary: rpcMetricsInvitesSummaryOutputSchema,
@@ -154,6 +168,9 @@ export const rpcOut = {
 		listByFile: rpcSettlementsListByFileOutputSchema,
 		trySettle: rpcSettlementsTrySettleOutputSchema,
 		confirmSettlement: rpcSettlementsConfirmSettlementOutputSchema,
+		registerForFile: rpcSettlementsRegisterForFileOutputSchema,
+		updateRule: rpcSettlementsUpdateRuleOutputSchema,
+		cancelRule: rpcSettlementsCancelRuleOutputSchema,
 	},
 	drafts: {
 		create: rpcDraftsCreateOutputSchema,

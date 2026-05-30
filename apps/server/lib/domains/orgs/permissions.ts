@@ -47,6 +47,7 @@ const ROLE_PERMISSIONS: Record<OrgMemberRole, ReadonlySet<OrgPermission>> = {
 		"connections:manage",
 		"connections:request",
 		"connections:view",
+		"billing:manage",
 	]),
 	sender: new Set([
 		"templates:use",

@@ -1,6 +1,5 @@
 import { billingEnabled, dodoLive } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
-import DodoPayments from "dodopayments";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -11,6 +10,7 @@ import {
 	userSubscriptions,
 } from "@/lib/platform/db/schema/billing";
 import { users } from "@/lib/platform/db/schema/user";
+import { createDodoClient, requireDodoApiKey } from "./dodo-client";
 import { isAllowedReturnUrlOrigin } from "./policy";
 
 export type BillingInterval = "monthly" | "yearly";
@@ -47,24 +47,19 @@ const DODO_LIVE_PLAN_PRODUCT_IDS_YEARLY: Record<CheckoutPlanId, string> = {
 	teams_pro: "pdt_0Nfmg1rLmulqhqBBM2KHW",
 };
 
-function requireDodoApiKey(): string {
-	if (!env.DODO_API_KEY) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: "Dodo Payments is not configured",
-		});
-	}
-	return env.DODO_API_KEY;
+function createBillingDodoClient() {
+	requireDodoApiKey();
+	return createDodoClient({ includeWebhookKey: false });
 }
 
-function createDodoClient() {
-	const apiKey = requireDodoApiKey();
-	return new DodoPayments({
-		bearerToken: apiKey,
-		environment: dodoLive(env.DEPLOYMENT) ? "live_mode" : "test_mode",
-	});
+function defaultWalletPortalReturnUrl() {
+	return `${env.CLIENT_URL.replace(/\/$/, "")}/dashboard/settings/profile`;
 }
 
-function resolveProductId(planId: CheckoutPlanId, interval: BillingInterval) {
+export function resolveProductId(
+	planId: CheckoutPlanId,
+	interval: BillingInterval,
+) {
 	if (interval === "yearly") {
 		if (planId === "individual" && env.DODO_PRODUCT_ID_INDIVIDUAL_YEARLY) {
 			return env.DODO_PRODUCT_ID_INDIVIDUAL_YEARLY;
@@ -140,7 +135,7 @@ async function getOrCreateDodoCustomer(wallet: Address): Promise<string> {
 		});
 	}
 
-	const client = createDodoClient();
+	const client = createBillingDodoClient();
 	let customerId: string;
 	try {
 		const customer = (await client.customers.create({
@@ -190,12 +185,19 @@ export async function createBillingCheckoutSession(args: {
 		});
 	}
 
+	if (args.planId === "teams" || args.planId === "teams_pro") {
+		throw new ORPCError("BAD_REQUEST", {
+			message:
+				"Teams plans are billed per workspace. Open Workspace Settings → Billing.",
+		});
+	}
+
 	assertAllowedReturnUrl(args.returnUrl);
 
 	const walletNorm = getAddress(args.wallet);
 	const productId = resolveProductId(args.planId, args.interval);
 	const customerId = await getOrCreateDodoCustomer(walletNorm);
-	const client = createDodoClient();
+	const client = createBillingDodoClient();
 
 	let checkout: {
 		session_id: string;
@@ -264,11 +266,11 @@ export async function createBillingPortalSession(args: {
 		});
 	}
 
-	const client = createDodoClient();
+	const client = createBillingDodoClient();
 	try {
 		const portal = (await client.customers.customerPortal.create(
 			sub.dodoCustomerId,
-			{},
+			{ return_url: defaultWalletPortalReturnUrl() },
 		)) as {
 			link: string;
 			url?: string;

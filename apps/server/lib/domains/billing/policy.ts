@@ -3,7 +3,6 @@ export const DODO_PRODUCT_PLAN_IDS: Record<
 	string,
 	"individual" | "teams" | "teams_pro"
 > = {
-	// Live Mode
 	pdt_0NfmPizJ6Qed3qp9tEeim: "individual",
 	pdt_0NfmfWinEiPodeNWGQ3ul: "individual",
 	pdt_0NfmPufibqNnTIXEIbszF: "teams",
@@ -35,7 +34,53 @@ export function resolvePlanIdFromProductId(productId: string | undefined) {
 	return DODO_PRODUCT_PLAN_IDS[productId] ?? null;
 }
 
+const DODO_YEARLY_PRODUCT_IDS = new Set([
+	"pdt_0NfmfWinEiPodeNWGQ3ul",
+	"pdt_0NfmfhPh81Fgklfe8WgQz",
+	"pdt_0Nfmg1rLmulqhqBBM2KHW",
+	"pdt_0NfmyWM4nN9jYCspf5Scl",
+	"pdt_0NfmytI1yAAbhFZQEtUgK",
+	"pdt_0Nfmz9m978R3nH8g6DL3y",
+]);
+
+export function resolveIntervalFromProductId(
+	productId: string | undefined,
+): "monthly" | "yearly" | null {
+	if (!productId || !DODO_PRODUCT_PLAN_IDS[productId]) return null;
+	return DODO_YEARLY_PRODUCT_IDS.has(productId) ? "yearly" : "monthly";
+}
+
+export function isOrgBillingPlanId(
+	planId: string,
+): planId is "teams" | "teams_pro" {
+	return planId === "teams" || planId === "teams_pro";
+}
+
+/** Immediate entitlement revocation — term ended or hard cancel (not at period end). */
 export function shouldDowngradeToFree(eventType: string) {
+	return eventType === "subscription.expired";
+}
+
+export function isScheduledCancellation(args: {
+	eventType: string;
+	cancelAtNextBillingDate: boolean;
+}) {
+	return (
+		args.eventType === "subscription.cancelled" && args.cancelAtNextBillingDate
+	);
+}
+
+export function isImmediateCancellation(args: {
+	eventType: string;
+	cancelAtNextBillingDate: boolean;
+}) {
+	return (
+		args.eventType === "subscription.cancelled" && !args.cancelAtNextBillingDate
+	);
+}
+
+/** Webhook events that may omit product_id (cancel/expire). */
+export function allowsMissingProductId(eventType: string) {
 	return (
 		eventType === "subscription.cancelled" ||
 		eventType === "subscription.expired"

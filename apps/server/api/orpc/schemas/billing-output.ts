@@ -25,3 +25,35 @@ export const rpcBillingCheckoutSessionOutputSchema = z.object({
 export const rpcBillingPortalSessionOutputSchema = z.object({
 	url: z.url(),
 });
+
+export const rpcBillingOrgSummaryOutputSchema = z.object({
+	planId: z.enum(PLAN_IDS),
+	seatCount: z.number().int(),
+	usedSeats: z.number().int(),
+	status: z.string(),
+	provider: z.string(),
+	billingInterval: z.enum(["monthly", "yearly"]).nullable(),
+	periodStart: z.string().datetime().nullable(),
+	periodEnd: z.string().datetime().nullable(),
+	cancelAtPeriodEnd: z.boolean(),
+	hasDodoSubscription: z.boolean(),
+});
+
+export const rpcBillingOrgSeatPreviewOutputSchema = z.object({
+	planId: z.enum(["teams", "teams_pro"]).optional(),
+	currentPlanId: z.enum(["teams", "teams_pro"]).optional(),
+	seatCount: z.number().int(),
+	currentSeatCount: z.number().int(),
+	effectiveAt: z.string(),
+	immediateChargeCents: z.number().int(),
+	currency: z.string(),
+});
+
+export const rpcBillingOrgSeatsOutputSchema = z.object({
+	seatCount: z.number().int(),
+});
+
+export const rpcBillingOrgPlanChangeOutputSchema = z.object({
+	planId: z.enum(["teams", "teams_pro"]),
+	seatCount: z.number().int(),
+});

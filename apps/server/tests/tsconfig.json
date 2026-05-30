@@ -1,0 +1,9 @@
+{
+	"extends": "../tsconfig.tests.json",
+	"compilerOptions": {
+		"paths": {
+			"@/*": ["../*"]
+		}
+	},
+	"include": ["./**/*.ts"]
+}

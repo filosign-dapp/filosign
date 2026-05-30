@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
 	isAllowedReturnUrlOrigin,
+	isOrgBillingPlanId,
+	resolveIntervalFromProductId,
 	resolvePlanIdFromProductId,
 	shouldDowngradeToFree,
 } from "@/lib/domains/billing/policy";
@@ -85,10 +87,27 @@ describe("dodo webhook plan mapping", () => {
 });
 
 describe("dodo webhook downgrade rules", () => {
-	test("downgrades on cancel and expire events", () => {
-		expect(shouldDowngradeToFree("subscription.cancelled")).toBe(true);
+	test("downgrades only on expire events", () => {
+		expect(shouldDowngradeToFree("subscription.cancelled")).toBe(false);
 		expect(shouldDowngradeToFree("subscription.expired")).toBe(true);
 		expect(shouldDowngradeToFree("subscription.active")).toBe(false);
+	});
+});
+
+describe("dodo product interval mapping", () => {
+	test("maps yearly SKUs", () => {
+		expect(resolveIntervalFromProductId("pdt_0NfmfWinEiPodeNWGQ3ul")).toBe(
+			"yearly",
+		);
+		expect(resolveIntervalFromProductId("pdt_0NfmPufibqNnTIXEIbszF")).toBe(
+			"monthly",
+		);
+	});
+
+	test("identifies org billing plans", () => {
+		expect(isOrgBillingPlanId("teams")).toBe(true);
+		expect(isOrgBillingPlanId("teams_pro")).toBe(true);
+		expect(isOrgBillingPlanId("individual")).toBe(false);
 	});
 });
 

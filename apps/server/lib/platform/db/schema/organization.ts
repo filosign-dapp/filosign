@@ -1,9 +1,16 @@
-import { PLAN_IDS } from "@filosign/entitlements";
 import { sql } from "drizzle-orm";
 import * as t from "drizzle-orm/pg-core";
 import { tEvmAddress, tHex, timestamps } from "@/lib/platform/db/helpers";
 import { randomUuidV7 } from "@/lib/platform/db/random-uuid-v7";
+import {
+	subscriptionPlanIds,
+	subscriptionProviders,
+	subscriptionStatuses,
+} from "./billing";
 import { users } from "./user";
+
+export const orgBillingIntervals = ["monthly", "yearly"] as const;
+export type OrgBillingInterval = (typeof orgBillingIntervals)[number];
 
 export const orgSigningModes = ["acting_member", "org_safe"] as const;
 export type OrgSigningMode = (typeof orgSigningModes)[number];
@@ -190,14 +197,24 @@ export const organizationSubscriptions = t.pgTable(
 			.notNull()
 			.references(() => organizations.id, { onDelete: "cascade" })
 			.unique(),
-		planId: t.text({ enum: PLAN_IDS }).notNull().default("free"),
+		planId: t.text({ enum: subscriptionPlanIds }).notNull().default("free"),
 		seatCount: t.integer().notNull().default(1),
-		status: t.text().notNull().default("active"),
-		provider: t.text().notNull().default("manual"),
+		status: t.text({ enum: subscriptionStatuses }).notNull().default("active"),
+		provider: t
+			.text({ enum: subscriptionProviders })
+			.notNull()
+			.default("manual"),
+		billingInterval: t.text({ enum: orgBillingIntervals }),
+		cancelAtPeriodEnd: t.boolean().notNull().default(false),
 		featureOverrides: t.jsonb().notNull().default({}),
 		periodStart: t.timestamp({ withTimezone: true }).notNull().defaultNow(),
 		periodEnd: t.timestamp({ withTimezone: true }),
+		dodoCustomerId: t.text(),
+		dodoSubscriptionId: t.text().unique(),
 		...timestamps,
 	},
-	(table) => [t.index("idx_org_subscriptions_plan").on(table.planId)],
+	(table) => [
+		t.index("idx_org_subscriptions_plan").on(table.planId),
+		t.index("idx_org_subscriptions_dodo_customer").on(table.dodoCustomerId),
+	],
 );

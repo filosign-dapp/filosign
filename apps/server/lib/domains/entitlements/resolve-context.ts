@@ -1,5 +1,4 @@
 import {
-	DEFAULT_PLAN_ID,
 	type EntitlementContext,
 	type FeatureKey,
 	PLAN_IDS,
@@ -37,17 +36,25 @@ export async function resolveEntitlementContext(
 		.select({
 			planId: userSubscriptions.planId,
 			status: userSubscriptions.status,
+			cancelAtPeriodEnd: userSubscriptions.cancelAtPeriodEnd,
+			periodEnd: userSubscriptions.periodEnd,
 			featureOverrides: userSubscriptions.featureOverrides,
 		})
 		.from(userSubscriptions)
 		.where(eq(userSubscriptions.walletAddress, walletNorm))
 		.limit(1);
 
-	const userPlanId = effectivePlanIdFromStatus(
-		sub ? { planId: sub.planId as PlanId, status: sub.status } : undefined,
-	);
+	const userAccessInput = sub
+		? {
+				planId: sub.planId as PlanId,
+				status: sub.status,
+				cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
+				periodEnd: sub.periodEnd,
+			}
+		: undefined;
+	const userPlanId = effectivePlanIdFromStatus(userAccessInput);
 	const userOverrides =
-		sub && (sub.status === "active" || sub.status === "trialing")
+		sub && userPlanId === (sub.planId as PlanId) && userPlanId !== "free"
 			? sub.featureOverrides
 			: undefined;
 
@@ -59,21 +66,34 @@ export async function resolveEntitlementContext(
 	};
 
 	// 2. Fetch organization's subscription if organizationId is present
+	let seatCount: number | undefined;
 	if (organizationId) {
 		const [orgSub] = await db
 			.select({
 				planId: organizationSubscriptions.planId,
+				status: organizationSubscriptions.status,
+				seatCount: organizationSubscriptions.seatCount,
+				cancelAtPeriodEnd: organizationSubscriptions.cancelAtPeriodEnd,
+				periodEnd: organizationSubscriptions.periodEnd,
 				featureOverrides: organizationSubscriptions.featureOverrides,
 			})
 			.from(organizationSubscriptions)
 			.where(eq(organizationSubscriptions.organizationId, organizationId))
 			.limit(1);
 
-		const orgPlanId: PlanId =
-			(orgSub?.planId as PlanId | undefined) ?? DEFAULT_PLAN_ID;
+		const orgAccessInput = orgSub
+			? {
+					planId: orgSub.planId as PlanId,
+					status: orgSub.status,
+					cancelAtPeriodEnd: orgSub.cancelAtPeriodEnd,
+					periodEnd: orgSub.periodEnd,
+				}
+			: undefined;
+		const orgPlanId: PlanId = effectivePlanIdFromStatus(orgAccessInput);
 		const orgOverrides =
-			(orgSub?.featureOverrides as EntitlementContext["overrides"]) ??
-			undefined;
+			orgSub && orgPlanId === (orgSub.planId as PlanId) && orgPlanId !== "free"
+				? (orgSub.featureOverrides as EntitlementContext["overrides"])
+				: undefined;
 
 		// Use whichever plan is higher/greater in PLAN_IDS hierarchy
 		const userIndex = (PLAN_IDS as readonly string[]).indexOf(userPlanId);
@@ -85,6 +105,10 @@ export async function resolveEntitlementContext(
 		} else {
 			planId = userPlanId;
 			overrides = userOverrides;
+		}
+
+		if (planId === "teams" || planId === "teams_pro") {
+			seatCount = orgSub?.seatCount ?? 1;
 		}
 
 		subject = {
@@ -122,6 +146,7 @@ export async function resolveEntitlementContext(
 		periodStart,
 		usage,
 		overrides,
+		seatCount,
 		...(devBypass ? { bypass: true as const } : {}),
 	};
 }

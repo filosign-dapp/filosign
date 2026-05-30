@@ -15,13 +15,10 @@ import {
 import type { Address, Hex } from "viem";
 import { getAddress, isHex } from "viem";
 import config from "@/config";
-import { fsContracts } from "@/lib/platform/evm";
 import { sha256HexOfHexBytes } from "./hash";
 import type { ComplianceLoadContext } from "./load-context";
 import { receiptMeta } from "./receipt-meta";
 import { displayNameFromUser, roleOrder, type TxDraft } from "./types";
-
-const { FSFileRegistry, FSPaymentValidator } = fsContracts;
 
 export async function assembleComplianceBundle(
 	ctx: ComplianceLoadContext,
@@ -178,7 +175,7 @@ export async function assembleComplianceBundle(
 		};
 	});
 
-	const regAddr = getAddress(FSFileRegistry.address);
+	const regAddr = getAddress(fileRecord.registryAddress);
 	const chainId = config.runtimeChain.id;
 	const fetchedAtIso = exportedAtIso;
 
@@ -203,22 +200,19 @@ export async function assembleComplianceBundle(
 		});
 	}
 
-	const validatorAddr = FSPaymentValidator?.address
-		? getAddress(FSPaymentValidator.address)
-		: null;
-
 	for (const amend of amendmentRows) {
 		txDrafts.push({
 			kind: "signer_amended",
 			txHash: amend.amendTxHash,
-			contractAddress: getAddress(FSFileRegistry.address),
+			contractAddress: regAddr,
 			summary: `amendSigner — ${amend.oldCommitment} → ${amend.newCommitment}`,
 			relatedAddresses: [senderNorm],
 		});
 	}
 
 	for (const pay of settlementRows) {
-		if (!pay.payoutTxHash || !validatorAddr) continue;
+		if (!pay.payoutTxHash) continue;
+		const payValidatorAddr = getAddress(pay.validatorAddress);
 		const recipients = [
 			...new Set(
 				pay.legs.map((leg) => getAddress(leg.recipientWallet).toLowerCase()),
@@ -228,7 +222,7 @@ export async function assembleComplianceBundle(
 		txDrafts.push({
 			kind: "payout_executed",
 			txHash: pay.payoutTxHash,
-			contractAddress: validatorAddr,
+			contractAddress: payValidatorAddr,
 			summary: `executePayout — rule ${pay.onChainRuleId.toString()} to ${recipientSummary}`,
 			relatedAddresses: [senderNorm, ...recipients],
 		});

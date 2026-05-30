@@ -71,6 +71,7 @@ export type ComplianceLoadContext = {
 		onChainRuleId: bigint;
 		legs: import("@filosign/shared").SettlementPayoutLegInput[];
 		tokenAddress: Address;
+		validatorAddress: Address;
 		releaseType: string;
 		status: string;
 		registerRuleTxHash: Hex;
@@ -290,6 +291,7 @@ export async function loadComplianceContext(args: {
 			onChainRuleId: fileSettlementRules.onChainRuleId,
 			legs: fileSettlementRules.legs,
 			tokenAddress: fileSettlementRules.tokenAddress,
+			validatorAddress: fileSettlementRules.validatorAddress,
 			releaseType: fileSettlementRules.releaseType,
 			status: fileSettlementRules.status,
 			registerRuleTxHash: fileSettlementRules.registerRuleTxHash,
@@ -315,6 +317,7 @@ export async function loadComplianceContext(args: {
 		onChainRuleId: r.onChainRuleId,
 		legs: r.legs,
 		tokenAddress: getAddress(r.tokenAddress),
+		validatorAddress: getAddress(r.validatorAddress),
 		releaseType: r.releaseType,
 		status: r.status,
 		registerRuleTxHash: r.registerRuleTxHash as Hex,

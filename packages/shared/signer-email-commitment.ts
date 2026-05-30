@@ -1,5 +1,11 @@
 import type { Hex } from "viem";
-import { concatHex, keccak256, ripemd160, stringToBytes } from "viem";
+import {
+	concatHex,
+	encodePacked,
+	keccak256,
+	ripemd160,
+	stringToBytes,
+} from "viem";
 import type { PlacementManifest } from "./placement-manifest";
 import { normalizePlacementRecipientEmail } from "./placement-manifest";
 
@@ -38,26 +44,52 @@ export function sortedCommitsForEmails(emails: Iterable<string>): Hex[] {
 	return sortBytes32Asc(list.map(hashNormalizedSignerEmail));
 }
 
+/** Maps emails to commitments in input order (for sequential routingOrder). */
+export function commitsForEmails(emails: Iterable<string>): Hex[] {
+	const seen = new Set<string>();
+	const list: string[] = [];
+	for (const e of emails) {
+		const n = normalizePlacementRecipientEmail(e);
+		if (!seen.has(n)) {
+			seen.add(n);
+			list.push(n);
+		}
+	}
+	return list.map(hashNormalizedSignerEmail);
+}
+
 export function sortedSignerCommitsForManifest(
 	manifest: PlacementManifest,
 ): Hex[] {
 	return sortedCommitsForEmails(uniqueSignerEmailsFromManifest(manifest));
 }
 
+export function hashCommitmentsPacked(commitments: readonly Hex[]): Hex {
+	if (commitments.length === 0) {
+		return keccak256(new Uint8Array(0));
+	}
+	return keccak256(
+		encodePacked(
+			commitments.map(() => "bytes32" as const),
+			[...commitments],
+		),
+	);
+}
+
 export function buildRegistrationEmailCommitments(args: {
 	placementManifest: PlacementManifest;
 	viewerEmails: string[];
 }) {
-	const signerEmailCommitmentsSorted = sortedSignerCommitsForManifest(
+	const requiredCommitments = sortedSignerCommitsForManifest(
 		args.placementManifest,
 	);
 	const viewerEmailCommitmentsSorted = sortedCommitsForEmails(
 		args.viewerEmails,
 	);
 	return {
-		signerEmailCommitmentsSorted,
+		requiredCommitments,
 		viewerEmailCommitmentsSorted,
-		signersCommitment: emailCommitRoot(signerEmailCommitmentsSorted),
+		signersCommitment: emailCommitRoot(requiredCommitments),
 		viewersCommitment: emailCommitRoot(viewerEmailCommitmentsSorted),
 	};
 }

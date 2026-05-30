@@ -17,6 +17,7 @@ export { zFileData } from "./file-data";
 export * from "./org-commitment";
 export * from "./org-crypto";
 export * from "./placement-manifest";
+export * from "./register-routing";
 export * from "./settlement-rules";
 export * from "./settlement-status-label";
 export * from "./signer-email-commitment";

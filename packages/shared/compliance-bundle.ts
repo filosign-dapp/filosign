@@ -58,8 +58,18 @@ export const zOnchainRegistrationSnapshot = z.object({
 	placementCommitment: zHexString(),
 	senderEmailCommitment: zHexString(),
 	senderPrivySubjectCommitment: zHexString(),
+	requiredSignersCount: z.number().int().min(0).max(255),
+	requiredSignaturesCount: z.number().int().min(0).max(255),
+	optionalSignersCount: z.number().int().min(0).max(255),
+	optionalSignaturesCount: z.number().int().min(0).max(255),
 	signersCount: z.number().int().min(0).max(255),
 	signaturesCount: z.number().int().min(0).max(255),
+	quorumN: z.number().int().min(0).max(255),
+	routingMode: z.number().int().min(0).max(255),
+	allRequiredSigned: z.boolean(),
+	allSigned: z.boolean(),
+	quorumMet: z.boolean(),
+	rosterSignedCount: z.number().int().min(0).max(255),
 	/** Registration `timestamp` from contract (`uint256` as decimal string). */
 	timestamp: z.string(),
 });
@@ -67,14 +77,19 @@ export const zOnchainRegistrationSnapshot = z.object({
 export const zChainTxKind = z.enum([
 	"file_registered",
 	"file_signed",
+	"signer_amended",
 	"payout_executed",
 ]);
 
 export const zSettlementComplianceRow = z.object({
 	onChainRuleId: z.string(),
-	recipientWallet: zEvmAddress(),
+	legs: z.array(
+		z.object({
+			recipientWallet: zEvmAddress(),
+			amount: z.string(),
+		}),
+	),
 	tokenAddress: zEvmAddress(),
-	amount: z.string(),
 	releaseType: z.enum(settlementReleaseTypes),
 	status: z.enum(settlementRuleStatuses),
 	registerRuleTxHash: zHexString(),
@@ -132,7 +147,7 @@ export const zOffChainEvidence = z.object({
 });
 
 export const zComplianceBundle = z.object({
-	version: z.literal(6),
+	version: z.literal(7),
 	pieceCid: z.string(),
 	chainId: z.number().int(),
 	exportedAtIso: z.string(),

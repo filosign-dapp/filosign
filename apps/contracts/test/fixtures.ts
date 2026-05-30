@@ -2,6 +2,7 @@ import hre from "hardhat";
 import type { Address, Hex, PublicClient, WalletClient } from "viem";
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
 import {
+	mergeSortedCommitments,
 	signRegisterFile,
 	signRegisterFileSignature,
 	signRegisterKeygen,
@@ -26,6 +27,12 @@ export type FullSystemFixture = {
 	publicClient: PublicClient;
 	chainId: number;
 };
+
+export const defaultPlacement = `0x${"ab".repeat(32)}` as Hex;
+export const defaultSenderEmail = `0x${"cd".repeat(32)}` as Hex;
+export const defaultSenderPrivy = `0x${"ef".repeat(32)}` as Hex;
+export const zeroOrg =
+	"0x0000000000000000000000000000000000000000000000000000000000000000" as Hex;
 
 /** Stand-in for Safe / ERC-1271 contract wallets in signature tests. */
 export async function deployMock1271(valid: boolean): Promise<Address> {
@@ -113,7 +120,6 @@ export async function deployFullSystem(): Promise<FullSystemFixture> {
 	});
 }
 
-// Legacy helper name used by ERC1271 tests — keygen is off-chain; no-op on chain.
 export async function registerKeygenForWallet(
 	_ctx: FullSystemFixture,
 	_walletAddress: Address,
@@ -124,52 +130,125 @@ export async function deployFullSystemWithoutSenderKeygen(): Promise<FullSystemF
 	return deployFullSystem();
 }
 
-const defaultPlacement = `0x${"ab".repeat(32)}` as Hex;
-const defaultSenderEmail = `0x${"cd".repeat(32)}` as Hex;
-const defaultSenderPrivy = `0x${"ef".repeat(32)}` as Hex;
+export type RegisterFileOptions = {
+	pieceCid: string;
+	requiredCommitments: Hex[];
+	optionalCommitments?: Hex[];
+	viewerEmailCommitments?: Hex[];
+	sender?: WalletClient | Address;
+	routingMode?: number;
+	routingOrder?: Hex[];
+	quorumN?: number;
+	quorumSet?: Hex[];
+	signature?: Hex;
+	placementCommitment?: Hex;
+	senderEmailCommitment?: Hex;
+	senderPrivySubjectCommitment?: Hex;
+	orgIdCommitment?: Hex;
+};
+
+export async function buildRegisterFileInput(
+	ctx: FullSystemFixture,
+	options: RegisterFileOptions,
+) {
+	const senderWallet =
+		typeof options.sender === "string" || options.sender === undefined
+			? ctx.sender
+			: options.sender;
+	const senderAddress =
+		typeof options.sender === "string"
+			? options.sender
+			: walletAccount(senderWallet).address;
+	const optionalCommitments = options.optionalCommitments ?? [];
+	const viewerEmailCommitments = options.viewerEmailCommitments ?? [];
+	const routingMode = options.routingMode ?? 0;
+	const routingOrder = options.routingOrder ?? [];
+	const quorumN = options.quorumN ?? 0;
+	const quorumSet = options.quorumSet ?? [];
+	const timestamp = await latestBlockTimestamp(ctx.publicClient);
+	const nonce = await ctx.fileRegistry.read.nonce([senderAddress]);
+	const merged = mergeSortedCommitments(
+		options.requiredCommitments,
+		optionalCommitments,
+	);
+	const signersCommitment =
+		await ctx.fileRegistry.read.computeEmailSignerCommitment([merged]);
+	const viewersCommitment =
+		viewerEmailCommitments.length === 0
+			? ("0x0000000000000000000000000000000000000000" as Hex)
+			: await ctx.fileRegistry.read.computeEmailSignerCommitment([
+					viewerEmailCommitments,
+				]);
+
+	const signature =
+		options.signature ??
+		(typeof options.sender === "string"
+			? (() => {
+					throw new Error(
+						"registerFile with contract sender requires an explicit signature",
+					);
+				})()
+			: await signRegisterFile({
+					wallet: senderWallet,
+					fileRegistryAddress: ctx.fileRegistry.address,
+					chainId: ctx.chainId,
+					pieceCid: options.pieceCid,
+					requiredCommitments: options.requiredCommitments,
+					optionalCommitments,
+					signersCommitment,
+					viewersCommitment,
+					placementCommitment: options.placementCommitment ?? defaultPlacement,
+					senderEmailCommitment:
+						options.senderEmailCommitment ?? defaultSenderEmail,
+					senderPrivySubjectCommitment:
+						options.senderPrivySubjectCommitment ?? defaultSenderPrivy,
+					orgIdCommitment: options.orgIdCommitment ?? zeroOrg,
+					routingMode,
+					routingOrder,
+					quorumN,
+					quorumSet,
+					timestamp,
+					nonce,
+				}));
+
+	if (!signature) {
+		throw new Error("registerFile requires a signature");
+	}
+
+	return {
+		pieceCid: options.pieceCid,
+		sender: senderAddress,
+		requiredCommitments: options.requiredCommitments,
+		optionalCommitments,
+		viewerEmailCommitments,
+		senderEmailCommitment: options.senderEmailCommitment ?? defaultSenderEmail,
+		senderPrivySubjectCommitment:
+			options.senderPrivySubjectCommitment ?? defaultSenderPrivy,
+		orgIdCommitment: options.orgIdCommitment ?? zeroOrg,
+		routingMode,
+		routingOrder,
+		quorumN,
+		quorumSet,
+		timestamp,
+		signature,
+		placementCommitment: options.placementCommitment ?? defaultPlacement,
+	};
+}
 
 export async function registerFileOnly(
 	ctx: FullSystemFixture,
 	pieceCid: string,
 	signerCommitments: Hex[],
+	options: Omit<RegisterFileOptions, "pieceCid" | "requiredCommitments"> = {},
 ): Promise<void> {
-	const { fileRegistry, server, sender, chainId, publicClient } = ctx;
-	const timestamp = await latestBlockTimestamp(publicClient);
-	const nonce = await fileRegistry.read.nonce([walletAccount(sender).address]);
-	const signersCommitment =
-		await fileRegistry.read.computeEmailSignerCommitment([signerCommitments]);
-
-	const regSig = await signRegisterFile({
-		wallet: sender,
-		fileRegistryAddress: fileRegistry.address,
-		chainId,
+	const input = await buildRegisterFileInput(ctx, {
 		pieceCid,
-		signersCommitment,
-		placementCommitment: defaultPlacement,
-		senderEmailCommitment: defaultSenderEmail,
-		senderPrivySubjectCommitment: defaultSenderPrivy,
-		timestamp,
-		nonce,
+		requiredCommitments: signerCommitments,
+		...options,
 	});
-
-	const zeroOrg =
-		"0x0000000000000000000000000000000000000000000000000000000000000000" as Hex;
-
-	await fileRegistry.write.registerFile(
-		[
-			pieceCid,
-			walletAccount(sender).address,
-			signerCommitments,
-			[],
-			defaultSenderEmail,
-			defaultSenderPrivy,
-			zeroOrg,
-			timestamp,
-			regSig,
-			defaultPlacement,
-		],
-		{ account: walletAccount(server) },
-	);
+	await ctx.fileRegistry.write.registerFile([input], {
+		account: walletAccount(ctx.server),
+	});
 }
 
 const signDefaults = {
@@ -221,4 +300,37 @@ export async function registerFileSignatureStep(args: {
 		],
 		{ account: walletAccount(ctx.server) },
 	);
+}
+
+export type PaymentRuleOptions = {
+	payer: Address;
+	token: Address;
+	cidId: Hex;
+	releaseType: number;
+	specificSignerCommitment?: Hex;
+	thresholdN?: number;
+	expiresAt?: bigint;
+	signerCommitments?: Hex[];
+	legs: { recipient: Address; amount: bigint }[];
+};
+
+export async function registerPaymentRule(
+	ctx: FullSystemFixture,
+	options: PaymentRuleOptions,
+): Promise<bigint> {
+	await ctx.paymentValidator.write.registerRule(
+		[
+			options.payer,
+			options.token,
+			options.cidId,
+			options.releaseType,
+			options.specificSignerCommitment ?? (`0x${"00".repeat(32)}` as Hex),
+			options.thresholdN ?? 0,
+			options.expiresAt ?? 0n,
+			options.signerCommitments ?? [],
+			options.legs,
+		],
+		{ account: options.payer },
+	);
+	return (await ctx.paymentValidator.read.nextRuleId()) - 1n;
 }

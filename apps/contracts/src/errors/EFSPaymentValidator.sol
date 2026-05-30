@@ -2,8 +2,13 @@
 pragma solidity ^0.8.26;
 
 error RuleAlreadyExecuted();
+error RuleAlreadyCancelled();
 error RuleNotExecutable();
 error InvalidPayer();
 error InvalidAmount();
 error InvalidReleaseConfig();
 error UnauthorizedRuleRegistration();
+error FileNotRegistered();
+error InsufficientTransferReceived();
+error ExceedsMaxLegs();
+error ExceedsMaxCommitments();

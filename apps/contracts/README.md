@@ -1,6 +1,6 @@
 # `@filosign/contracts`
 
-Solidity contracts for Filosign: document registration and signing (`FSFileRegistry`) and pull-based USDC payouts (`FSPaymentValidator`). Hardhat-only `MockUSDCToken` supports local testing.
+Solidity contracts for Filosign: document registration and signing (`FSFileRegistry`) and pull-based settlement (`FSPaymentValidator`). Hardhat mocks (`MockUSDCToken`, `MockFeeOnTransferToken`, `MockERC1271Signer`) support local testing only.
 
 Wallet identity, keygen, and sharing approvals are **server-side** — not on-chain.
 
@@ -9,114 +9,246 @@ Wallet identity, keygen, and sharing approvals are **server-side** — not on-ch
 | Section | Audience |
 | -------- | -------- |
 | [Architecture](#architecture) | Everyone |
-| [Contract roles](#contract-roles) | Engineers and agents |
+| [Capacity limits](#capacity-limits) | Engineers and product |
+| [FSFileRegistry](#fsfileregistry) | Engineers |
+| [FSPaymentValidator](#fspaymentvalidator) | Product and backends |
 | [Payment flow](#payment-flow) | Product and backends |
 | [Trust model](#trust-model) | Security |
+| [Static analysis (Slither)](#static-analysis-slither) | Security / pre-mainnet |
 | [Repository layout](#repository-layout) | Maintainers |
 | [Testing](#testing) | Engineers |
 
 ## Architecture
 
-**Immutable v1:** deploy `FSFileRegistry(server)` then `FSPaymentValidator(fileRegistry, chainId)`.
+**Immutable v1:** deploy `FSFileRegistry(server)` then `FSPaymentValidator(fileRegistry, chainId)`. No proxies. EIP-712 domain version **"2"** on the registry.
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) and [`project/contracts-future-scope.md`](../../project/contracts-future-scope.md).
 
 ```mermaid
 flowchart TB
   subgraph deploy [Deployment]
-    FR[FSFileRegistry]
-    PV[FSPaymentValidator]
+    FR[FSFileRegistry server]
+    PV[FSPaymentValidator fileRegistry chainId]
     FR --> PV
   end
   subgraph runtime [Runtime]
     Sender[Sender wallet]
-    Relay[Filosign server relay]
-    PV -->|canExecute reads| FR
-    Relay -->|executePayout| PV
-    Sender -->|registerRule approve USDC| PV
-    Sender -->|registerFile| FR
-    Signers[Signers] -->|registerFileSignature| FR
+    Relay[Filosign server relay KMS]
+    Signers[Signers]
+    Anyone[Any address]
+    Relay -->|onlyServer registerFile registerFileSignature| FR
+    Sender -->|registerFile via relay| FR
+    Signers -->|signatures via relay| FR
+    Sender -->|registerRule approve token| PV
+    Anyone -->|executePayout when canExecute| PV
+    PV -->|reads sign state| FR
   end
 ```
 
-- **Document state** (who signed, commitments, placement) lives in `FSFileRegistry`.
-- **Payments** are not custodied by Filosign. The sender approves `FSPaymentValidator` for an exact USDC amount per rule; when release conditions hold, `executePayout` performs `transferFrom` (callable by anyone).
+- **Document state** (required/optional signers, routing, quorum, signatures, amendments) lives in `FSFileRegistry`.
+- **Payments** are not custodied by Filosign. The payer approves `FSPaymentValidator` for a rule total; when release conditions hold, `executePayout` performs `transferFrom(payer, recipient)` per leg (callable by anyone).
+- **Product target:** USDC on Base. The validator accepts any ERC20 at `registerRule` today; the app wires USDC only. An on-chain token allowlist is deferred (see future scope).
 
-## Contract roles
+## Capacity limits
 
-| Contract | Role |
-| -------- | ---- |
-| `FSFileRegistry` | File registration, signatures, viewer/signer commitments, `allSigned`, `FileSigned` events. `onlyServer` relay writes with owner-controlled `setServer`; ownership via OZ `Ownable2Step`. |
-| `FSPaymentValidator` | Settlement rules per `cidId`: `registerRule` (payer only), `canExecute`, `executePayout` (permissionless when conditions met). |
-| `MockUSDCToken` | Local Hardhat USDC stand-in. |
+Bytecode constants — not product tier limits. Entitlements + server enforce stricter caps per plan.
 
-### FSPaymentValidator release types
+| Constant | Value | Applies to |
+| -------- | ----: | ---------- |
+| `MAX_SIGNERS_PER_FILE` | **128** | Required + optional signers; `routingOrder`; `quorumSet` |
+| `MAX_VIEWERS_PER_FILE` | **128** | Viewer roster at register |
+| `MAX_RULE_COMMITMENTS` | **128** | Payer commitment lists on rules (`AtLeastN`, `QuorumSet`, `AllOfSet`, …) |
+| `MAX_PAYOUT_LEGS` | **32** | `PayoutLeg[]` per rule |
 
-| Enum | Meaning |
+## FSFileRegistry
+
+Permanent on-chain send + sign trail. Writes are **`onlyServer`** (KMS relayer); owner can rotate `server` via `Ownable2Step`.
+
+### RegisterFile (EIP-712 v2)
+
+Sender-signed at send. Stored per file:
+
+- **Required** and **optional** signer commitments (disjoint partition of roster)
+- **Routing:** `Parallel` (default) or `Sequential` + `routingOrder[]`
+- **Quorum:** `quorumN` + `quorumSet[]` (subset of roster)
+- Existing: placement, viewer commitments, per-signer signature blobs, counters
+
+### Completion views
+
+| View | Meaning |
 | ---- | ------- |
-| `AllSigned` | Payout when every required signer has signed. |
-| `SpecificSigner` | Payout when a signer matching an email commitment signs. |
-| `AtLeastN` | Payout when at least N **distinct** signers from a commitment set have signed (duplicates and zero commitments rejected at `registerRule`). |
+| `allRequiredSigned(cid)` | Every required signer has signed |
+| `allSigned(cid)` | All required **and** all optional signers have signed |
+| `quorumMet(cid)` | ≥ `quorumN` signed from `quorumSet` |
+| `rosterSignedCount(cid)` | Signed count across full roster |
+| `hasSigned(cid, commitment)` | Single signer signed |
+
+### Other registry APIs
+
+- **`registerFileSignature`** — sequential order enforced when configured; increments required/optional counters
+- **`amendSigner`** — sender EIP-712; replace commitment before sign; patches routing/quorum/roster
+- **`validateFileAckSignature`** — viewer/signer ack validation (off-chain consent; not used for payout release)
+- **ERC-1271** — Safe-compatible wallets via `FSSignatureValidation`
+
+Signature validity: timestamps must be within **`SIGNATURE_CLOCK_DRIFT_TOLERANCE` (5 minutes)** of `block.timestamp` (`SignatureFuture` if too far ahead) and **`SIGNATURE_VALIDITY_PERIOD` (2 minutes)** after the signed timestamp (`SignatureExpired` if too late). Effective acceptance window: roughly `[timestamp, timestamp + 2 minutes]`, with `timestamp` not more than 5 minutes ahead of chain time.
+
+## FSPaymentValidator
+
+Document-linked settlement rules. **`registerRule` requires the file to exist** on the registry (`FileNotRegistered` otherwise).
+
+### Rule shape
+
+One rule = one `ruleId` = shared token + release type + optional expiry, with **multiple payout legs**:
+
+```solidity
+struct PayoutLeg { address recipient; uint256 amount; }
+```
+
+- One **`approve`** for the sum of leg amounts
+- **`executePayout(ruleId)`** — atomic multi-leg transfer; balance-delta check per leg (`InsufficientTransferReceived` on fee-on-transfer tokens)
+- **`expiresAt`** — `0` = none; else must be in the future at register/update and blocks execute after deadline
+
+### Release types
+
+| Enum | On-chain condition |
+| ---- | ------------------ |
+| `AllSigned` | Legacy alias → `allRequiredSigned` |
+| `AllRequiredSigned` | `allRequiredSigned(cid)` |
+| `AllSignedComplete` | `allSigned(cid)` (required + optional) |
+| `SpecificSigner` | `hasSigned(cid, commitment)` |
+| `AtLeastN` | ≥ N distinct signers from payer-supplied commitment list |
+| `QuorumRequired` | Registry quorum (`quorumMet`) when file has `quorumN`; else ≥ `thresholdN` required signers signed |
+| `QuorumSet` | ≥ N signed from payer-supplied commitment list |
+| `QuorumAll` | ≥ N signed from **full roster** (`rosterSignedCount`) |
+| `AllOfSet` | Every commitment in payer list signed |
+
+Teams/basic app flows use `AllSigned`, `SpecificSigner`, and `AtLeastN`. Advanced types are on-chain for Teams Pro; server entitlements gate who may register them.
+
+### Rule CRUD (payer-only, before execute)
+
+| Op | Function | Notes |
+| -- | -------- | ----- |
+| Create | `registerRule` | `msg.sender == payer`; file must be registered |
+| Update | `updatePayoutRule` | Payer; `!executed && !cancelled`; legs, expiry, release params |
+| Cancel | `cancelPayoutRule` | Payer; `!executed` → `cancelled`, `canExecute` false |
+| Execute | `executePayout` | Anyone when `canExecute`; `nonReentrant`; sets `executed` after successful transfers |
+
+Revoking **`approve(validator, 0)`** off-chain also blocks execution even if the rule is active.
+
+### Security primitives
+
+- OpenZeppelin **`SafeERC20`** and **`ReentrancyGuard`**
+- **Chain-id pin** in constructor (`deploymentChainId`)
+- Custom errors throughout (no string reverts)
 
 ## Payment flow
 
-1. **Send (client):** For each payment line, the sender’s wallet calls `USDC.approve(validator, amount)` then `registerRule(...)` on `FSPaymentValidator`, then `registerFile` on the registry via the server relay path.
-2. **Sign:** Recipients sign; the registry emits `FileSigned` per signature.
-3. **Execute (server / user):** After signatures, the Filosign server relay (or sender/recipient via the app) calls `executePayout(ruleId)` when `canExecute` is true.
-4. **Index (server):** `file_settlement_rules` rows track status from relay results and `settlements.confirmSettlement`.
+1. **Register file (client → server relay):** `registerFile` on `FSFileRegistry` with routing/quorum calldata per tier.
+2. **Attach settlement (client):** Payer `approve(validator, totalAmount)` then `registerRule(...)` on `FSPaymentValidator` (legs, release type, optional `expiresAt`). Server indexes via `settlements.registerForFile` after on-chain verification.
+3. **Sign:** Recipients sign; registry emits `FileSigned` per signature.
+4. **Execute (server / user):** When `canExecute(ruleId)`, anyone calls `executePayout` (Filosign relay or wallet in app).
+5. **Index (server):** `file_settlement_rules` tracks status from relay results and `settlements.confirmSettlement`; daily cron syncs off-platform `executed` state.
 
-Filosign never holds USDC. Payout txs are permissionless `executePayout` calls; the server relay only pays gas.
+Filosign never holds funds. Payout txs are permissionless; the server relay only pays gas.
 
-### Cancelling a payout before execution
+### Cancelling before execution
 
-There is no `cancelRule` on-chain. The payer controls funding:
+1. **`cancelPayoutRule(ruleId)`** — payer-only; sets `cancelled` on-chain.
+2. **Revoke allowance** — `token.approve(FSPaymentValidator, 0)` from the payer wallet. `executePayout` reverts on `transferFrom` even when release conditions are met.
 
-1. **Revoke allowance** — `USDC.approve(FSPaymentValidator, 0)` from the payer wallet (exposed in the sign UI for senders). `executePayout` will revert on `transferFrom` even when release conditions are met.
-2. **Leave rule unfunded** — skip or revoke approval before signers finish.
-
-The rule row remains on-chain and in `file_settlement_rules` until executed or marked failed. **Filosign does not control or screen all on-chain payouts** — see marketing Terms of Service.
+Pair both in product UX for clarity. The rule row may remain on-chain and in Postgres until marked executed or failed.
 
 ### Indexing (supported path)
 
-Server `files.register` verifies each settlement rule on-chain (`assertSettlementRulesVerifiedOnChain`) before inserting into `file_settlement_rules`. Rules created only outside the app are not indexed.
+After the payer registers rules on-chain (`registerRule` + `approve`), the server indexes them via **`settlements.registerForFile`**, verifying on-chain state with `assertSettlementRulesVerifiedOnChain` before inserting into `file_settlement_rules`. `files.register` does not write settlement rows. Rules created only outside the app are not indexed.
 
-See [`apps/server/README.md`](../server/README.md) for auto-execution cron and [`project/settlements/architecture-and-non-custody.md`](../../project/settlements/architecture-and-non-custody.md).
+See [`apps/server/README.md`](../server/README.md) and [`project/settlements/architecture-and-non-custody.md`](../../project/settlements/architecture-and-non-custody.md).
 
 ## Trust model
 
-- **Server (`onlyServer` on file registry):** Can register files and signatures on behalf of users who have authenticated; cannot move USDC without the payer’s on-chain approve.
-- **Owner (governance):** Can rotate `FSFileRegistry.server` and transfer ownership (2-step). This does not grant access to user settlement funds.
-- **Relayers:** Any address may call `executePayout` once `canExecute` is true; Filosign server relay and users provide the primary paths.
-- **Payer:** Must call `registerRule` as `msg.sender == payer`; approval is exact-amount per rule.
-- **Recipients (product):** Filosign UI only allows envelope participants or a linked organization payout wallet.
+- **Server (`onlyServer` on registry):** Relays authenticated users’ register/sign txs; cannot move tokens without the payer’s on-chain `approve`.
+- **Owner (governance):** Rotates `FSFileRegistry.server` and ownership (2-step). Does not grant access to user settlement funds.
+- **Relayers:** Any address may call `executePayout` once `canExecute` is true.
+- **Payer:** Must call `registerRule` / `updatePayoutRule` / `cancelPayoutRule` as `msg.sender == payer`; chooses token, recipients, and release params.
+- **Recipients (product):** Filosign UI restricts envelope participants or org payout wallets; chain allows arbitrary leg recipients by payer choice.
+
+Release conditions are **verifiable on-chain** so execute stays permissionless — the server facilitates relay/UX only.
+
+## Static analysis (Slither)
+
+Recommended before mainnet (see [TESTING.md](./TESTING.md)):
+
+```bash
+cd apps/contracts && bun run compile && slither . --exclude-dependencies
+```
+
+### Expected finding: `arbitrary-send-erc20`
+
+Slither flags `executePayout` because it uses:
+
+```solidity
+IERC20(rule.token).safeTransferFrom(rule.payer, leg.recipient, leg.amount);
+```
+
+where **`from != msg.sender`**.
+
+**This is intentional.** Filosign uses a **pull-payment validator** model:
+
+- The **payer** creates the rule (`msg.sender == payer`) and **`approve`s** the validator.
+- **`from` is not a free parameter at execute time** — it is always the stored `rule.payer`.
+- **Anyone** may execute when sign conditions are met (permissionless settlement / gas sponsorship).
+
+Slither’s generic exploit assumes a function lets callers pass an arbitrary `from` and drain any approver. That does not apply here: only pre-registered rules pull from the payer who opted in.
+
+**Industry resolution:** accept the pattern, document it (this section), and triage in audit/CI — do **not** switch to `transferFrom(msg.sender, …)`, which would break permissionless execute.
+
+Optional hardening (product, not a Slither fix): **immutable USDC allowlist** at `registerRule` for v1 mainnet — deferred; see future scope.
+
+### Informational noise (safe to ignore)
+
+- **Cyclomatic complexity** on `amendSigner` / `_validateRegisterRouting` — complex validation, no known exploit.
+- **Uninitialized local** on `uint8 signed` / loop flags — Solidity defaults to zero; Slither false positive.
+
+Triage real high/medium findings: reentrancy (mitigated by `nonReentrant` + CEI), unchecked returns (mitigated by `SafeERC20`), unprotected privileged functions.
 
 ## Repository layout
 
 | Path | Role |
 | ---- | ---- |
-| `src/*.sol` | Contract source |
-| `test/*.spec.ts` | Hardhat + viem tests |
-| `scripts/deploy.ts` | Deploy file registry + validator; `FC_SERVER_ADDRESS`; write `definitions/` |
-| `ARCHITECTURE.md` | Ledger vs KMS, frozen v1, deploy order |
-| `definitions/` | Generated addresses and ABIs (do not hand-edit) |
+| `src/FSFileRegistry.sol` | Registry v2 |
+| `src/FSPaymentValidator.sol` | Settlement validator |
+| `src/libraries/FSSignatureValidation.sol` | ECDSA + ERC-1271 |
+| `src/errors/*.sol` | Custom errors |
+| `src/Mock*.sol` | Hardhat test doubles only |
+| `test/*.spec.ts` | Hardhat + viem tests (~57 cases) |
+| `test/fixtures.ts` | Deploy helpers, EIP-712 register/sign flows |
+| `scripts/deploy.ts` | Deploy registry + validator; write `definitions/` |
+| `ARCHITECTURE.md` | Roles, deploy order, owner runbook |
+| `TESTING.md` | Test conventions and Slither |
+| `definitions/` | Generated addresses and ABIs (**do not hand-edit**) |
 | `services/contracts.ts` | `getContracts()` for server and SDK |
 
 ## Testing
 
 ```bash
-bun run --cwd apps/contracts test
+bun run --cwd apps/contracts test        # compile + hardhat test
 bun run --cwd apps/contracts check-types
 ```
 
-`FSPaymentValidator.spec.ts` covers register, approve, execute, and release-type gating. See [TESTING.md](./TESTING.md).
+Coverage includes: registry routing/quorum/amend/bounds, all validator release types, multi-leg atomic execute (32 legs), expiry, fee-on-transfer revert, payer CRUD, ERC-1271 paths, allowance failure leaving `executed` false.
 
-Deploy env (testnet/mainnet): `FC_DEPLOYER_PRIVATE_KEY` (deployer), `FC_SERVER_ADDRESS` (KMS relayer), optional `FC_OWNER_ADDRESS` (cold wallet ownership handoff target).
+See [TESTING.md](./TESTING.md).
 
-Deploy with migrate (runs tests first):
+### Deploy env
+
+Testnet/mainnet: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS` (KMS relayer), optional `FC_OWNER_ADDRESS` (cold ownership handoff), `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY`.
+
+### Migrate (runs tests first)
 
 ```bash
 bun run contracts -- --migrate
 bun run --cwd apps/contracts migrate:testnet
+bun run --cwd apps/contracts migrate:mainnet
 ```
 
-Pre-mainnet: run tests + `slither .` from this package (see [TESTING.md](./TESTING.md)).
+Pre-mainnet: green tests + `check-types` + `slither .` triage + verify `owner()`, `server()`, and contract addresses on Base scan after deploy.

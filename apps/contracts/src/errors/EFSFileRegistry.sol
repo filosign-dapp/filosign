@@ -5,6 +5,7 @@ import "./EFSCommon.sol";
 
 error OnlyServer();
 error SignatureExpired();
+error SignatureFuture();
 error SenderNotRegistered();
 error BadSignersLength();
 error DuplicateSigner(address signer);
@@ -18,3 +19,9 @@ error AlreadySigned();
 error InvalidSignature();
 error InvalidSignersCommitment();
 error ServerUnchanged();
+error ExceedsMaxSigners();
+error ExceedsMaxViewers();
+error DuplicateCommitment();
+error InvalidRoutingConfig();
+error InvalidQuorumConfig();
+error SequentialOrderViolation();

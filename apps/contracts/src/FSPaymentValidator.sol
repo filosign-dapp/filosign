@@ -11,22 +11,36 @@ import "./interfaces/IFSFileRegistry.sol";
 contract FSPaymentValidator is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    uint8 internal constant MAX_PAYOUT_LEGS = 32;
+    uint8 internal constant MAX_RULE_COMMITMENTS = 128;
+
     enum ReleaseType {
         AllSigned,
         SpecificSigner,
-        AtLeastN
+        AtLeastN,
+        AllRequiredSigned,
+        AllSignedComplete,
+        QuorumRequired,
+        QuorumSet,
+        QuorumAll,
+        AllOfSet
+    }
+
+    struct PayoutLeg {
+        address recipient;
+        uint256 amount;
     }
 
     struct PaymentRule {
         address payer;
-        address recipient;
         address token;
-        uint256 amount;
         bytes32 cidId;
         ReleaseType releaseType;
         bytes32 specificSignerCommitment;
         uint8 thresholdN;
+        uint64 expiresAt;
         bool executed;
+        bool cancelled;
     }
 
     IFSFileRegistry public immutable fileRegistry;
@@ -34,6 +48,7 @@ contract FSPaymentValidator is ReentrancyGuard {
 
     uint256 public nextRuleId;
     mapping(uint256 ruleId => PaymentRule) public rules;
+    mapping(uint256 ruleId => PayoutLeg[]) private _ruleLegs;
     mapping(uint256 ruleId => bytes32[]) private _ruleSignerCommitments;
     mapping(bytes32 cidId => uint256[]) private _ruleIdsByCid;
 
@@ -41,12 +56,12 @@ contract FSPaymentValidator is ReentrancyGuard {
         uint256 indexed ruleId,
         bytes32 indexed cidId,
         address indexed payer,
-        address recipient,
         address token,
-        uint256 amount,
         ReleaseType releaseType
     );
 
+    event PaymentRuleUpdated(uint256 indexed ruleId, bytes32 indexed cidId);
+    event PaymentRuleCancelled(uint256 indexed ruleId, bytes32 indexed cidId);
     event PayoutExecuted(
         uint256 indexed ruleId,
         bytes32 indexed cidId,
@@ -65,51 +80,47 @@ contract FSPaymentValidator is ReentrancyGuard {
         }
     }
 
-    /// @notice Register a payout rule. Caller must be the payer.
     function registerRule(
         address payer_,
-        address recipient_,
         address token_,
-        uint256 amount_,
         bytes32 cidId_,
         ReleaseType releaseType_,
         bytes32 specificSignerCommitment_,
         uint8 thresholdN_,
-        bytes32[] calldata signerCommitments_
+        uint64 expiresAt_,
+        bytes32[] calldata signerCommitments_,
+        PayoutLeg[] calldata legs_
     ) external returns (uint256 ruleId) {
         if (msg.sender != payer_) revert UnauthorizedRuleRegistration();
-        if (
-            payer_ == address(0) ||
-            recipient_ == address(0) ||
-            token_ == address(0)
-        ) {
-            revert InvalidPayer();
+        _assertFileRegistered(cidId_);
+        _validateLegs(payer_, token_, legs_);
+        _validateReleaseConfig(
+            releaseType_,
+            specificSignerCommitment_,
+            thresholdN_,
+            signerCommitments_
+        );
+        if (releaseType_ == ReleaseType.QuorumRequired) {
+            _validateQuorumRequiredThreshold(cidId_, thresholdN_);
         }
-        if (amount_ == 0) revert InvalidAmount();
-        if (
-            !_validateReleaseConfig(
-                releaseType_,
-                specificSignerCommitment_,
-                thresholdN_,
-                signerCommitments_
-            )
-        ) {
-            revert InvalidReleaseConfig();
+        if (releaseType_ == ReleaseType.QuorumAll) {
+            _validateQuorumAllThreshold(cidId_, thresholdN_);
         }
+        _validateExpiresAt(expiresAt_);
 
         ruleId = nextRuleId++;
         PaymentRule storage rule = rules[ruleId];
         rule.payer = payer_;
-        rule.recipient = recipient_;
         rule.token = token_;
-        rule.amount = amount_;
         rule.cidId = cidId_;
         rule.releaseType = releaseType_;
         rule.specificSignerCommitment = specificSignerCommitment_;
         rule.thresholdN = thresholdN_;
+        rule.expiresAt = expiresAt_;
 
-        if (releaseType_ == ReleaseType.AtLeastN) {
-            _storeAtLeastNCommitments(ruleId, signerCommitments_);
+        _storeLegs(ruleId, legs_);
+        if (_needsCommitmentList(releaseType_)) {
+            _storeSignerCommitments(ruleId, signerCommitments_);
         }
 
         _ruleIdsByCid[cidId_].push(ruleId);
@@ -118,34 +129,105 @@ contract FSPaymentValidator is ReentrancyGuard {
             ruleId,
             cidId_,
             payer_,
-            recipient_,
             token_,
-            amount_,
             releaseType_
         );
     }
 
-    /// @notice Pull USDC to recipient when release conditions are met. Callable by anyone (Gelato or self-relay).
+    function updatePayoutRule(
+        uint256 ruleId,
+        ReleaseType releaseType_,
+        bytes32 specificSignerCommitment_,
+        uint8 thresholdN_,
+        uint64 expiresAt_,
+        bytes32[] calldata signerCommitments_,
+        PayoutLeg[] calldata legs_
+    ) external nonReentrant {
+        PaymentRule storage rule = rules[ruleId];
+        if (rule.payer == address(0)) revert InvalidPayer();
+        if (msg.sender != rule.payer) revert UnauthorizedRuleRegistration();
+        if (rule.executed || rule.cancelled) revert RuleAlreadyExecuted();
+
+        _validateLegs(rule.payer, rule.token, legs_);
+        _validateReleaseConfig(
+            releaseType_,
+            specificSignerCommitment_,
+            thresholdN_,
+            signerCommitments_
+        );
+        if (releaseType_ == ReleaseType.QuorumRequired) {
+            _validateQuorumRequiredThreshold(rule.cidId, thresholdN_);
+        }
+        if (releaseType_ == ReleaseType.QuorumAll) {
+            _validateQuorumAllThreshold(rule.cidId, thresholdN_);
+        }
+        _validateExpiresAt(expiresAt_);
+
+        rule.releaseType = releaseType_;
+        rule.specificSignerCommitment = specificSignerCommitment_;
+        rule.thresholdN = thresholdN_;
+        rule.expiresAt = expiresAt_;
+
+        delete _ruleLegs[ruleId];
+        delete _ruleSignerCommitments[ruleId];
+        _storeLegs(ruleId, legs_);
+        if (_needsCommitmentList(releaseType_)) {
+            _storeSignerCommitments(ruleId, signerCommitments_);
+        }
+
+        emit PaymentRuleUpdated(ruleId, rule.cidId);
+    }
+
+    function cancelPayoutRule(uint256 ruleId) external nonReentrant {
+        PaymentRule storage rule = rules[ruleId];
+        if (rule.payer == address(0)) revert InvalidPayer();
+        if (msg.sender != rule.payer) revert UnauthorizedRuleRegistration();
+        if (rule.executed) revert RuleAlreadyExecuted();
+        if (rule.cancelled) revert RuleAlreadyCancelled();
+        rule.cancelled = true;
+        emit PaymentRuleCancelled(ruleId, rule.cidId);
+    }
+
     function executePayout(uint256 ruleId) external nonReentrant {
         PaymentRule storage rule = rules[ruleId];
-        if (rule.executed) revert RuleAlreadyExecuted();
+        if (rule.executed || rule.cancelled) revert RuleNotExecutable();
         if (!_releaseConditionsMet(ruleId, rule)) revert RuleNotExecutable();
+        if (rule.expiresAt != 0 && block.timestamp > rule.expiresAt)
+            revert RuleNotExecutable();
+
+        PayoutLeg[] storage legs = _ruleLegs[ruleId];
 
         rule.executed = true;
 
-        IERC20(rule.token).safeTransferFrom(
-            rule.payer,
-            rule.recipient,
-            rule.amount
-        );
+        address token = rule.token;
+        address payer = rule.payer;
+        uint256 len = legs.length;
 
-        emit PayoutExecuted(ruleId, rule.cidId, rule.recipient, rule.amount);
+        for (uint256 i = 0; i < len; ) {
+            PayoutLeg storage leg = legs[i];
+            uint256 beforeBal = IERC20(token).balanceOf(leg.recipient);
+            IERC20(token).safeTransferFrom(payer, leg.recipient, leg.amount);
+            uint256 afterBal = IERC20(token).balanceOf(leg.recipient);
+            if (afterBal - beforeBal < leg.amount)
+                revert InsufficientTransferReceived();
+            emit PayoutExecuted(ruleId, rule.cidId, leg.recipient, leg.amount);
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     function canExecute(uint256 ruleId) external view returns (bool) {
         PaymentRule storage rule = rules[ruleId];
-        if (rule.executed || rule.payer == address(0)) return false;
+        if (rule.executed || rule.cancelled || rule.payer == address(0))
+            return false;
+        if (rule.expiresAt != 0 && block.timestamp > rule.expiresAt)
+            return false;
         return _releaseConditionsMet(ruleId, rule);
+    }
+
+    function ruleLegs(uint256 ruleId) external view returns (PayoutLeg[] memory) {
+        return _ruleLegs[ruleId];
     }
 
     function signerCommitments(
@@ -160,11 +242,52 @@ contract FSPaymentValidator is ReentrancyGuard {
         return _ruleIdsByCid[cidId_];
     }
 
-    /// @dev Reverts on zero or duplicate commitments (distinct signers required for threshold).
-    function _storeAtLeastNCommitments(
+    function _assertFileRegistered(bytes32 cidId_) private view {
+        if (fileRegistry.fileRegistrations(cidId_).timestamp == 0) {
+            revert FileNotRegistered();
+        }
+    }
+
+    function _validateLegs(
+        address payer_,
+        address token_,
+        PayoutLeg[] calldata legs_
+    ) private pure {
+        if (payer_ == address(0) || token_ == address(0)) revert InvalidPayer();
+        if (legs_.length == 0 || legs_.length > MAX_PAYOUT_LEGS)
+            revert ExceedsMaxLegs();
+        for (uint256 i = 0; i < legs_.length; i++) {
+            if (legs_[i].recipient == address(0)) revert InvalidPayer();
+            if (legs_[i].amount == 0) revert InvalidAmount();
+        }
+    }
+
+    function _validateExpiresAt(uint64 expiresAt_) private view {
+        if (expiresAt_ != 0 && expiresAt_ <= block.timestamp)
+            revert InvalidReleaseConfig();
+    }
+
+    function _storeLegs(uint256 ruleId, PayoutLeg[] calldata legs_) private {
+        PayoutLeg[] storage stored = _ruleLegs[ruleId];
+        for (uint256 i = 0; i < legs_.length; i++) {
+            stored.push(legs_[i]);
+        }
+    }
+
+    function _needsCommitmentList(
+        ReleaseType releaseType_
+    ) private pure returns (bool) {
+        return releaseType_ == ReleaseType.AtLeastN ||
+            releaseType_ == ReleaseType.QuorumSet ||
+            releaseType_ == ReleaseType.AllOfSet;
+    }
+
+    function _storeSignerCommitments(
         uint256 ruleId,
         bytes32[] calldata signerCommitments_
     ) private {
+        if (signerCommitments_.length > MAX_RULE_COMMITMENTS)
+            revert ExceedsMaxCommitments();
         bytes32[] storage stored = _ruleSignerCommitments[ruleId];
         for (uint256 i = 0; i < signerCommitments_.length; i++) {
             bytes32 commitment = signerCommitments_[i];
@@ -183,20 +306,61 @@ contract FSPaymentValidator is ReentrancyGuard {
         bytes32 specificSignerCommitment_,
         uint8 thresholdN_,
         bytes32[] calldata signerCommitments_
-    ) private pure returns (bool) {
-        if (releaseType_ == ReleaseType.AllSigned) {
-            return true;
-        }
+    ) private pure {
         if (releaseType_ == ReleaseType.SpecificSigner) {
-            return specificSignerCommitment_ != bytes32(0);
+            if (specificSignerCommitment_ == bytes32(0))
+                revert InvalidReleaseConfig();
+            return;
         }
-        if (releaseType_ == ReleaseType.AtLeastN) {
-            return
-                thresholdN_ > 0 &&
-                signerCommitments_.length > 0 &&
-                thresholdN_ <= signerCommitments_.length;
+        if (
+            releaseType_ == ReleaseType.AtLeastN ||
+            releaseType_ == ReleaseType.QuorumSet
+        ) {
+            if (
+                thresholdN_ == 0 ||
+                signerCommitments_.length == 0 ||
+                thresholdN_ > signerCommitments_.length
+            ) revert InvalidReleaseConfig();
+            return;
         }
-        return false;
+        if (releaseType_ == ReleaseType.AllOfSet) {
+            if (signerCommitments_.length == 0) revert InvalidReleaseConfig();
+            return;
+        }
+        if (releaseType_ == ReleaseType.QuorumAll) {
+            if (thresholdN_ == 0) revert InvalidReleaseConfig();
+            return;
+        }
+        if (releaseType_ == ReleaseType.QuorumRequired) {
+            if (thresholdN_ == 0) revert InvalidReleaseConfig();
+            return;
+        }
+    }
+
+    function _validateQuorumRequiredThreshold(
+        bytes32 cidId_,
+        uint8 thresholdN_
+    ) private view {
+        IFSFileRegistry.FileRegistrationView memory reg = fileRegistry
+            .fileRegistrations(cidId_);
+        if (reg.quorumN > 0) {
+            if (thresholdN_ != reg.quorumN) revert InvalidReleaseConfig();
+            return;
+        }
+        if (
+            thresholdN_ == 0 || thresholdN_ > reg.requiredSignersCount
+        ) revert InvalidReleaseConfig();
+    }
+
+    function _validateQuorumAllThreshold(
+        bytes32 cidId_,
+        uint8 thresholdN_
+    ) private view {
+        IFSFileRegistry.FileRegistrationView memory reg = fileRegistry
+            .fileRegistrations(cidId_);
+        if (thresholdN_ == 0 || thresholdN_ > reg.signersCount) {
+            revert InvalidReleaseConfig();
+        }
     }
 
     function _releaseConditionsMet(
@@ -204,13 +368,37 @@ contract FSPaymentValidator is ReentrancyGuard {
         PaymentRule storage rule
     ) private view returns (bool) {
         bytes32 cidId = rule.cidId;
-        if (rule.releaseType == ReleaseType.AllSigned) {
+        ReleaseType rt = rule.releaseType;
+
+        if (rt == ReleaseType.AllSigned || rt == ReleaseType.AllRequiredSigned) {
+            return fileRegistry.allRequiredSigned(cidId);
+        }
+        if (rt == ReleaseType.AllSignedComplete) {
             return fileRegistry.allSigned(cidId);
         }
-        if (rule.releaseType == ReleaseType.SpecificSigner) {
+        if (rt == ReleaseType.SpecificSigner) {
             return fileRegistry.hasSigned(cidId, rule.specificSignerCommitment);
         }
+        if (rt == ReleaseType.QuorumRequired) {
+            IFSFileRegistry.FileRegistrationView memory reg = fileRegistry
+                .fileRegistrations(cidId);
+            if (reg.quorumN > 0) {
+                return fileRegistry.quorumMet(cidId);
+            }
+            return reg.requiredSignaturesCount >= rule.thresholdN;
+        }
+        if (rt == ReleaseType.QuorumAll) {
+            return fileRegistry.rosterSignedCount(cidId) >= rule.thresholdN;
+        }
+
         bytes32[] storage commitments = _ruleSignerCommitments[ruleId];
+        if (rt == ReleaseType.AllOfSet) {
+            for (uint256 i = 0; i < commitments.length; i++) {
+                if (!fileRegistry.hasSigned(cidId, commitments[i])) return false;
+            }
+            return commitments.length > 0;
+        }
+
         uint8 signed;
         for (uint256 i = 0; i < commitments.length; i++) {
             if (fileRegistry.hasSigned(cidId, commitments[i])) {

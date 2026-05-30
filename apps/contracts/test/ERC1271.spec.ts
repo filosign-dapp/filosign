@@ -3,21 +3,20 @@ import { expect } from "chai";
 import type { Hex } from "viem";
 import { getAddress } from "viem";
 import {
+	buildRegisterFileInput,
+	defaultPlacement,
+	defaultSenderEmail,
+	defaultSenderPrivy,
 	deployFullSystem,
 	deployMock1271,
 	registerFileOnly,
 	setMock1271Valid,
+	zeroOrg,
 } from "./fixtures.js";
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
-import { signRegisterFile } from "./helpers/signatures.js";
 import { walletAccount } from "./helpers/walletAccount.js";
 
-const defaultPlacement = `0x${"ab".repeat(32)}` as Hex;
-const defaultSenderEmail = `0x${"cd".repeat(32)}` as Hex;
-const defaultSenderPrivy = `0x${"ef".repeat(32)}` as Hex;
 const defaultViewerPrivy = `0x${"99".repeat(32)}` as Hex;
-const zeroOrg =
-	"0x0000000000000000000000000000000000000000000000000000000000000000" as Hex;
 const dummy1271Sig = "0x1234" as Hex;
 
 describe("ERC-1271 signature paths (Safe-compatible)", () => {
@@ -28,23 +27,16 @@ describe("ERC-1271 signature paths (Safe-compatible)", () => {
 
 			const signerCommitment = `0x${"f1".repeat(32)}` as Hex;
 			const pieceCid = "erc1271-register-file";
-			const ts = await latestBlockTimestamp(ctx.publicClient);
+			const input = await buildRegisterFileInput(ctx, {
+				pieceCid,
+				requiredCommitments: [signerCommitment],
+				sender: contractSender,
+				signature: dummy1271Sig,
+			});
 
-			await ctx.fileRegistry.write.registerFile(
-				[
-					pieceCid,
-					contractSender,
-					[signerCommitment],
-					[],
-					defaultSenderEmail,
-					defaultSenderPrivy,
-					zeroOrg,
-					ts,
-					dummy1271Sig,
-					defaultPlacement,
-				],
-				{ account: walletAccount(ctx.server) },
-			);
+			await ctx.fileRegistry.write.registerFile([input], {
+				account: walletAccount(ctx.server),
+			});
 
 			const cidId = await ctx.fileRegistry.read.cidIdentifier([pieceCid]);
 			const file = await ctx.fileRegistry.read.fileRegistrations([cidId]);
@@ -58,24 +50,17 @@ describe("ERC-1271 signature paths (Safe-compatible)", () => {
 
 			const signerCommitment = `0x${"f2".repeat(32)}` as Hex;
 			const pieceCid = "erc1271-bad-register";
-			const ts = await latestBlockTimestamp(ctx.publicClient);
+			const input = await buildRegisterFileInput(ctx, {
+				pieceCid,
+				requiredCommitments: [signerCommitment],
+				sender: contractSender,
+				signature: dummy1271Sig,
+			});
 
 			await assert.rejects(
-				ctx.fileRegistry.write.registerFile(
-					[
-						pieceCid,
-						contractSender,
-						[signerCommitment],
-						[],
-						defaultSenderEmail,
-						defaultSenderPrivy,
-						zeroOrg,
-						ts,
-						dummy1271Sig,
-						defaultPlacement,
-					],
-					{ account: walletAccount(ctx.server) },
-				),
+				ctx.fileRegistry.write.registerFile([input], {
+					account: walletAccount(ctx.server),
+				}),
 			);
 		});
 
@@ -146,45 +131,14 @@ describe("ERC-1271 signature paths (Safe-compatible)", () => {
 			viewerCommitment: Hex;
 		}) {
 			const { ctx, pieceCid, signerC, viewerCommitment } = args;
-			const signersCommitment =
-				await ctx.fileRegistry.read.computeEmailSignerCommitment([[signerC]]);
-			const viewersCommitment =
-				await ctx.fileRegistry.read.computeEmailSignerCommitment([
-					[viewerCommitment],
-				]);
-			const ts = await latestBlockTimestamp(ctx.publicClient);
-			const nonce = await ctx.fileRegistry.read.nonce([
-				walletAccount(ctx.sender).address,
-			]);
-			const regSig = await signRegisterFile({
-				wallet: ctx.sender,
-				fileRegistryAddress: ctx.fileRegistry.address,
-				chainId: ctx.chainId,
+			const input = await buildRegisterFileInput(ctx, {
 				pieceCid,
-				signersCommitment,
-				viewersCommitment,
-				placementCommitment: defaultPlacement,
-				senderEmailCommitment: defaultSenderEmail,
-				senderPrivySubjectCommitment: defaultSenderPrivy,
-				timestamp: ts,
-				nonce,
+				requiredCommitments: [signerC],
+				viewerEmailCommitments: [viewerCommitment],
 			});
-
-			await ctx.fileRegistry.write.registerFile(
-				[
-					pieceCid,
-					walletAccount(ctx.sender).address,
-					[signerC],
-					[viewerCommitment],
-					defaultSenderEmail,
-					defaultSenderPrivy,
-					zeroOrg,
-					ts,
-					regSig,
-					defaultPlacement,
-				],
-				{ account: walletAccount(ctx.server) },
-			);
+			await ctx.fileRegistry.write.registerFile([input], {
+				account: walletAccount(ctx.server),
+			});
 		}
 
 		it("validateFileAckSignature returns true for ERC-1271 viewerWallet", async () => {

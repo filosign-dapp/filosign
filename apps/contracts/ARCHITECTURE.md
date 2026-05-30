@@ -39,8 +39,8 @@ flowchart TB
   end
 ```
 
-1. **`FSFileRegistry(server)`** — permanent auditable send + sign trail (EIP-712, email commitments).
-2. **`FSPaymentValidator(fileRegistry, chainId)`** — permissionless USDC settlement on sign; no custody.
+1. **`FSFileRegistry(server)`** — permanent auditable send + sign trail (EIP-712 **v2**, required/optional signers, parallel/sequential routing, quorum, `amendSigner`).
+2. **`FSPaymentValidator(fileRegistry, chainId)`** — permissionless pull settlement on sign; multi-leg rules, release types, payer CRUD, `expiresAt`; no custody.
 
 ## Trust boundaries
 
@@ -53,9 +53,10 @@ flowchart TB
 ## Security practices (pre-mainnet)
 
 - Run `bun run --cwd apps/contracts test` (required before migrate).
-- Run `slither .` from `apps/contracts` (see [TESTING.md](./TESTING.md)).
+- Run `slither .` from `apps/contracts` (see [TESTING.md](./TESTING.md) and [README — Static analysis](./README.md#static-analysis-slither)).
 - USDC is **6 decimals** on Base; never assume `1e18` in app or contract math.
-- `FSPaymentValidator` uses OpenZeppelin `SafeERC20` and `ReentrancyGuard`.
+- `FSPaymentValidator` uses OpenZeppelin `SafeERC20`, balance-delta per leg, and `ReentrancyGuard`.
+- Slither **`arbitrary-send-erc20`** on `executePayout` is expected (pull from `rule.payer`, not `msg.sender`); see README for triage rationale.
 
 ## Future contract changes
 

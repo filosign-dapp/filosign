@@ -1,5 +1,5 @@
 import type { Account, Address, Hex, WalletClient } from "viem";
-import { keccak256, toBytes } from "viem";
+import { encodePacked, keccak256, toBytes } from "viem";
 
 const ZERO_BYTES20 = "0x0000000000000000000000000000000000000000" as const;
 
@@ -8,6 +8,18 @@ export const SALT_SEED = `0x${"02".repeat(16)}` as Hex;
 export const SALT_CHALLENGE = `0x${"03".repeat(16)}` as Hex;
 export const COMMIT_KYBER = `0x${"04".repeat(20)}` as Hex;
 export const COMMIT_DILITHIUM = `0x${"05".repeat(20)}` as Hex;
+
+export function hashCommitments(commitments: readonly Hex[]): Hex {
+	if (commitments.length === 0) {
+		return keccak256(new Uint8Array(0));
+	}
+	return keccak256(
+		encodePacked(
+			commitments.map(() => "bytes32" as const),
+			commitments,
+		),
+	);
+}
 
 export async function signRegisterKeygen(
 	wallet: WalletClient,
@@ -50,27 +62,38 @@ export async function signRegisterFile(args: {
 	fileRegistryAddress: Address;
 	chainId: number;
 	pieceCid: string;
+	requiredCommitments: Hex[];
+	optionalCommitments?: Hex[];
 	signersCommitment: Hex;
 	viewersCommitment?: Hex;
 	placementCommitment: Hex;
 	senderEmailCommitment: Hex;
 	senderPrivySubjectCommitment: Hex;
 	orgIdCommitment?: Hex;
+	routingMode?: number;
+	routingOrder?: Hex[];
+	quorumN?: number;
+	quorumSet?: Hex[];
 	timestamp: bigint;
 	nonce: bigint;
 }): Promise<Hex> {
 	const account = args.wallet.account as Account;
 	const cidId = keccak256(toBytes(args.pieceCid));
+	const optionalCommitments = args.optionalCommitments ?? [];
 	const viewersCommitment = args.viewersCommitment ?? ZERO_BYTES20;
 	const orgIdCommitment =
 		args.orgIdCommitment ??
 		("0x0000000000000000000000000000000000000000000000000000000000000000" as Hex);
+	const routingMode = args.routingMode ?? 0;
+	const routingOrder = args.routingOrder ?? [];
+	const quorumN = args.quorumN ?? 0;
+	const quorumSet = args.quorumSet ?? [];
 
 	return args.wallet.signTypedData({
 		account,
 		domain: {
 			name: "FSFileRegistry",
-			version: "1",
+			version: "2",
 			chainId: args.chainId,
 			verifyingContract: args.fileRegistryAddress,
 		},
@@ -84,6 +107,12 @@ export async function signRegisterFile(args: {
 				{ name: "senderEmailCommitment", type: "bytes32" },
 				{ name: "senderPrivySubjectCommitment", type: "bytes32" },
 				{ name: "orgIdCommitment", type: "bytes32" },
+				{ name: "requiredCommitmentsHash", type: "bytes32" },
+				{ name: "optionalCommitmentsHash", type: "bytes32" },
+				{ name: "routingMode", type: "uint8" },
+				{ name: "routingOrderHash", type: "bytes32" },
+				{ name: "quorumN", type: "uint8" },
+				{ name: "quorumSetHash", type: "bytes32" },
 				{ name: "timestamp", type: "uint256" },
 				{ name: "nonce", type: "uint256" },
 			],
@@ -98,6 +127,55 @@ export async function signRegisterFile(args: {
 			senderEmailCommitment: args.senderEmailCommitment,
 			senderPrivySubjectCommitment: args.senderPrivySubjectCommitment,
 			orgIdCommitment,
+			requiredCommitmentsHash: hashCommitments(args.requiredCommitments),
+			optionalCommitmentsHash: hashCommitments(optionalCommitments),
+			routingMode,
+			routingOrderHash: hashCommitments(routingOrder),
+			quorumN,
+			quorumSetHash: hashCommitments(quorumSet),
+			timestamp: args.timestamp,
+			nonce: args.nonce,
+		},
+	});
+}
+
+export async function signAmendSigner(args: {
+	wallet: WalletClient;
+	fileRegistryAddress: Address;
+	chainId: number;
+	pieceCid: string;
+	oldCommitment: Hex;
+	newCommitment: Hex;
+	timestamp: bigint;
+	nonce: bigint;
+}): Promise<Hex> {
+	const account = args.wallet.account as Account;
+	const cidId = keccak256(toBytes(args.pieceCid));
+
+	return args.wallet.signTypedData({
+		account,
+		domain: {
+			name: "FSFileRegistry",
+			version: "2",
+			chainId: args.chainId,
+			verifyingContract: args.fileRegistryAddress,
+		},
+		types: {
+			AmendSigner: [
+				{ name: "cidIdentifier", type: "bytes32" },
+				{ name: "sender", type: "address" },
+				{ name: "oldCommitment", type: "bytes32" },
+				{ name: "newCommitment", type: "bytes32" },
+				{ name: "timestamp", type: "uint256" },
+				{ name: "nonce", type: "uint256" },
+			],
+		},
+		primaryType: "AmendSigner",
+		message: {
+			cidIdentifier: cidId,
+			sender: account.address,
+			oldCommitment: args.oldCommitment,
+			newCommitment: args.newCommitment,
 			timestamp: args.timestamp,
 			nonce: args.nonce,
 		},
@@ -125,7 +203,7 @@ export async function signRegisterFileSignature(args: {
 		account,
 		domain: {
 			name: "FSFileRegistry",
-			version: "1",
+			version: "2",
 			chainId: args.chainId,
 			verifyingContract: args.fileRegistryAddress,
 		},
@@ -201,4 +279,31 @@ export async function signMockUsdcPermit(args: {
 	let v = Number.parseInt(sig.slice(130, 132), 16);
 	if (v < 27) v += 27;
 	return { v, r, s };
+}
+
+export function mergeSortedCommitments(
+	required: readonly Hex[],
+	optional: readonly Hex[],
+): Hex[] {
+	const merged: Hex[] = [];
+	let i = 0;
+	let j = 0;
+	while (i < required.length && j < optional.length) {
+		if (required[i]! < optional[j]!) {
+			merged.push(required[i]!);
+			i++;
+		} else {
+			merged.push(optional[j]!);
+			j++;
+		}
+	}
+	while (i < required.length) {
+		merged.push(required[i]!);
+		i++;
+	}
+	while (j < optional.length) {
+		merged.push(optional[j]!);
+		j++;
+	}
+	return merged;
 }

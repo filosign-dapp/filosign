@@ -3,6 +3,10 @@ import {
 	ComposeDocumentsField,
 	ComposeRecipientsField,
 } from "@/src/routes/dashboard/envelope/create/-components/compose-form-fields";
+import {
+	ComposeRoutingField,
+	ComposeSettlementOptionsField,
+} from "@/src/routes/dashboard/envelope/create/-components/compose-routing-field";
 
 export function EnvelopeFormBody() {
 	return (
@@ -10,6 +14,8 @@ export function EnvelopeFormBody() {
 			<EntitlementPlanHint />
 			<ComposeDocumentsField />
 			<ComposeRecipientsField />
+			<ComposeRoutingField />
+			<ComposeSettlementOptionsField />
 		</main>
 	);
 }

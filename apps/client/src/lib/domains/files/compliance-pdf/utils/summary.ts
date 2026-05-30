@@ -468,9 +468,14 @@ export function buildCompliancePdfSummaryFromBundle(
 		);
 		for (let i = 0; i < bundle.settlements.length; i++) {
 			const p = bundle.settlements[i];
-			const amount = formatUnits(BigInt(p.amount), decimals);
+			const legSummary = p.legs
+				.map(
+					(leg) =>
+						`${leg.recipientWallet} — ${formatUnits(BigInt(leg.amount), decimals)} USDC`,
+				)
+				.join("; ");
 			settlementLines.push({
-				text: `${i + 1}. ${p.recipientWallet} — ${amount} USDC`,
+				text: `${i + 1}. ${legSummary}`,
 			});
 			settlementLines.push({
 				text: `   Release: ${settlementReleaseTypeLabel(p.releaseType)} · Status: ${settlementStatusLabel(p.status)}`,

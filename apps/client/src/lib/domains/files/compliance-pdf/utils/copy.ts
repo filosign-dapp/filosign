@@ -88,6 +88,8 @@ const TX_KIND_GLOSSARY: Record<ChainTxKind, string> = {
 		"Initial registration of the file’s commitments (placements, signers, viewers, sender bindings) on FSFileRegistry.",
 	file_signed:
 		"A signer’s signature recorded on-chain for this file (registry `registerFileSignature`).",
+	signer_amended:
+		"Sender replaced a signer email commitment before signing (`amendSigner` on FSFileRegistry).",
 	payout_executed:
 		"FSPaymentValidator `executePayout` — USDC transferFrom sender to recipient when release conditions were met.",
 };

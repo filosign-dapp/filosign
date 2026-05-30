@@ -23,6 +23,7 @@ import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
+import { BillingSection } from "./billing-section";
 import { MembersSection } from "./members-section";
 import { TemplatesSection } from "./templates-section";
 
@@ -269,6 +270,7 @@ export function WorkspaceSettingsPage() {
 			{activeOrgId ? (
 				<div className="space-y-8">
 					<WorkspaceDetailsSection />
+					<BillingSection />
 					<MembersSection />
 					<TemplatesSection />
 				</div>

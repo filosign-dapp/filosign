@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { Button } from "@/src/lib/components/ui/button";
 import { cn } from "@/src/lib/utils/utils";
+import { ComposeSettlementOptionsField } from "@/src/routes/dashboard/envelope/create/-components/compose-routing-field";
 import { useAddSignPlacement } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
 
@@ -76,6 +77,7 @@ export default function SignatureFieldsSidebar() {
 					) : null}
 				</div>
 			</div>
+			<ComposeSettlementOptionsField />
 		</div>
 	);
 }

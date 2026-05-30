@@ -1,5 +1,14 @@
+import { useEntitlements } from "@filosign/react/billing";
+import {
+	canUseAdvancedSettlements,
+	canUseBasicSettlements,
+} from "@filosign/react/files";
 import type { SettlementReleaseType } from "@filosign/shared";
-import { normalizePlacementRecipientEmail } from "@filosign/shared";
+import {
+	isAdvancedSettlementReleaseType,
+	normalizePlacementRecipientEmail,
+	settlementReleaseTypeLabel,
+} from "@filosign/shared";
 import { useEffect, useMemo, useState } from "react";
 import { SUPPORTED_TOKENS } from "@/src/constants";
 import { Button } from "@/src/lib/components/ui/button";
@@ -20,6 +29,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/src/lib/components/ui/select";
+import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
 import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
@@ -27,6 +37,21 @@ import {
 	buildDraftFromRecipient,
 	recipientSettlementLabel,
 } from "@/src/routes/dashboard/envelope/create/-lib/utils/settlement-drafts";
+
+const BASIC_RELEASE_TYPES: SettlementReleaseType[] = [
+	"all_signed",
+	"specific_signer",
+];
+
+const ADVANCED_RELEASE_TYPES: SettlementReleaseType[] = [
+	"all_required_signed",
+	"all_signed_complete",
+	"at_least_n",
+	"quorum_required",
+	"quorum_set",
+	"quorum_all",
+	"all_of_set",
+];
 
 type Props = {
 	open: boolean;
@@ -47,10 +72,30 @@ export function RecipientSettlementDialog({
 	onSave,
 	onRemove,
 }: Props) {
+	const { data: entitlements } = useEntitlements();
+	const promptPlanUpgrade = usePromptPlanUpgrade();
+	const canBasic = canUseBasicSettlements(entitlements);
+	const canAdvanced = canUseAdvancedSettlements(entitlements);
+
 	const [amountUsdc, setAmountUsdc] = useState("");
 	const [releaseType, setReleaseType] =
 		useState<SettlementReleaseType>("all_signed");
 	const [specificSignerEmail, setSpecificSignerEmail] = useState("");
+	const [thresholdN, setThresholdN] = useState("2");
+
+	const releaseOptions = useMemo(() => {
+		const basic = BASIC_RELEASE_TYPES.map((value) => ({
+			value,
+			label: settlementReleaseTypeLabel(value),
+			advanced: false,
+		}));
+		const advanced = ADVANCED_RELEASE_TYPES.map((value) => ({
+			value,
+			label: settlementReleaseTypeLabel(value),
+			advanced: true,
+		}));
+		return [...basic, ...advanced];
+	}, []);
 
 	const signerOptions = useMemo(() => {
 		return allRecipients
@@ -73,12 +118,31 @@ export function RecipientSettlementDialog({
 		setSpecificSignerEmail(
 			existingDraft?.specificSignerEmail ?? signerOptions[0]?.email ?? "",
 		);
+		setThresholdN(String(existingDraft?.thresholdN ?? 2));
 	}, [open, existingDraft, signerOptions]);
 
 	const payeeLabel = recipientSettlementLabel(recipient);
 	const emailValid = isValidRecipientEmail(recipient.email ?? "");
 
+	const needsThreshold =
+		releaseType === "at_least_n" ||
+		releaseType === "quorum_required" ||
+		releaseType === "quorum_set" ||
+		releaseType === "quorum_all";
+
+	const handleReleaseChange = (value: SettlementReleaseType) => {
+		if (isAdvancedSettlementReleaseType(value) && !canAdvanced) {
+			promptPlanUpgrade("features.settlement.advanced");
+			return;
+		}
+		setReleaseType(value);
+	};
+
 	const handleSave = () => {
+		if (!canBasic) {
+			promptPlanUpgrade("features.settlement.basic");
+			return;
+		}
 		const trimmed = amountUsdc.trim();
 		if (!trimmed || Number(trimmed) <= 0) return;
 		if (!emailValid) return;
@@ -89,6 +153,7 @@ export function RecipientSettlementDialog({
 			releaseType,
 			specificSignerEmail:
 				releaseType === "specific_signer" ? specificSignerEmail : undefined,
+			thresholdN: needsThreshold ? Number(thresholdN) || 1 : undefined,
 		});
 		if (!draft) return;
 
@@ -135,17 +200,19 @@ export function RecipientSettlementDialog({
 							<Select
 								value={releaseType}
 								onValueChange={(v) =>
-									setReleaseType(v as SettlementReleaseType)
+									handleReleaseChange(v as SettlementReleaseType)
 								}
 							>
 								<SelectTrigger id="recipient-settlement-release">
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="all_signed">All signers signed</SelectItem>
-									<SelectItem value="specific_signer">
-										Specific signer signed
-									</SelectItem>
+									{releaseOptions.map((option) => (
+										<SelectItem key={option.value} value={option.value}>
+											{option.label}
+											{option.advanced ? " (Teams Pro)" : ""}
+										</SelectItem>
+									))}
 								</SelectContent>
 							</Select>
 						</div>
@@ -179,12 +246,24 @@ export function RecipientSettlementDialog({
 							</div>
 						) : null}
 
+						{needsThreshold ? (
+							<div className="grid gap-2">
+								<Label htmlFor="recipient-settlement-threshold">
+									Threshold N
+								</Label>
+								<Input
+									id="recipient-settlement-threshold"
+									type="number"
+									min={1}
+									value={thresholdN}
+									onChange={(e) => setThresholdN(e.target.value)}
+								/>
+							</div>
+						) : null}
+
 						<p className="text-xs text-muted-foreground">
 							Token: {SUPPORTED_TOKENS[0].symbol} on this network. You will
-							approve this payout from your wallet when sending. Filosign does
-							not custody funds, cannot reverse executed blockchain
-							transactions, and only enforces recipient rules for documents sent
-							through Filosign.
+							approve this payout from your wallet when sending.
 						</p>
 					</div>
 				)}

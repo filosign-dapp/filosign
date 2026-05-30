@@ -10,10 +10,15 @@ import {
 	ClockIcon,
 	WarningIcon,
 } from "@phosphor-icons/react";
-import { formatUnits } from "viem";
 import { defaultChain, SUPPORTED_TOKENS } from "@/src/constants";
 import { Button } from "@/src/lib/components/ui/button";
+import {
+	formatSettlementAmountLine,
+	formatSettlementRecipientLine,
+	isSettlementRecipient,
+} from "@/src/lib/domains/settlements/settlement-display";
 import { cn } from "@/src/lib/utils";
+import { SettlementManageActions } from "@/src/routes/dashboard/document/sign/-components/settlement-manage-actions";
 import { SettlementRevokeAllowanceButton } from "@/src/routes/dashboard/document/sign/-components/settlement-revoke-allowance-button";
 
 type Props = {
@@ -29,6 +34,11 @@ type Props = {
 	onManualSettleRule: (onChainRuleId: string) => void;
 	revokePending: boolean;
 	onRevokeAllowance: () => void;
+	canManageSettlements?: boolean;
+	onCancelRule?: (onChainRuleId: string) => void;
+	onUpdateRule?: (rule: SettlementRuleRow) => void;
+	cancelPending?: boolean;
+	updatePending?: boolean;
 };
 
 function explorerTxUrl(hash: string) {
@@ -54,7 +64,7 @@ function canActOnRule(
 ): boolean {
 	if (!walletAddress) return false;
 	if (isSender) return true;
-	return rule.recipientWallet.toLowerCase() === walletAddress.toLowerCase();
+	return isSettlementRecipient(rule, walletAddress);
 }
 
 export function SettlementStatusPanel({
@@ -70,6 +80,11 @@ export function SettlementStatusPanel({
 	onManualSettleRule,
 	revokePending,
 	onRevokeAllowance,
+	canManageSettlements = false,
+	onCancelRule,
+	onUpdateRule,
+	cancelPending,
+	updatePending,
 }: Props) {
 	if (rules.length === 0) return null;
 
@@ -100,6 +115,7 @@ export function SettlementStatusPanel({
 			<div className="space-y-2">
 				{rules.map((rule) => {
 					const paid = rule.status === "executed";
+					const cancelled = rule.status === "cancelled";
 					const failed = rule.status.startsWith("failed_");
 					const payoutUrl = rule.payoutTxHash
 						? explorerTxUrl(rule.payoutTxHash)
@@ -110,8 +126,10 @@ export function SettlementStatusPanel({
 						trySettlePending && settlingRuleId === rule.onChainRuleId;
 					const canSettle =
 						!paid &&
+						!cancelled &&
 						canSettleByRuleId.get(rule.onChainRuleId) === true &&
 						canActOnRule(rule, walletAddress, isSender);
+					const legCount = rule.legs?.length ?? 1;
 
 					return (
 						<div
@@ -122,7 +140,9 @@ export function SettlementStatusPanel({
 									? "bg-chart-2/10 border-chart-2/30"
 									: failed
 										? "bg-amber-500/10 border-amber-500/30"
-										: "bg-muted/30 border-border",
+										: cancelled
+											? "bg-muted/20 border-border/80"
+											: "bg-muted/30 border-border",
 							)}
 						>
 							<div
@@ -139,10 +159,11 @@ export function SettlementStatusPanel({
 							</div>
 							<div className="flex-1 min-w-0 space-y-0.5">
 								<p className="text-sm font-medium truncate">
-									{formatAddress(rule.recipientWallet)}
+									{formatSettlementRecipientLine(rule, formatAddress)}
 								</p>
 								<p className="text-xs text-muted-foreground">
-									{formatUnits(BigInt(rule.amount), decimals)} USDC ·{" "}
+									{formatSettlementAmountLine(rule, decimals)}
+									{legCount > 1 ? ` · ${legCount} legs` : ""} ·{" "}
 									{settlementReleaseTypeLabel(rule.releaseType)}
 								</p>
 								<p
@@ -183,6 +204,20 @@ export function SettlementStatusPanel({
 												: "Settle from wallet"}
 										</Button>
 									</div>
+								) : null}
+								{canManageSettlements &&
+								isSender &&
+								!paid &&
+								!cancelled &&
+								onCancelRule &&
+								onUpdateRule ? (
+									<SettlementManageActions
+										rule={rule}
+										onCancel={() => onCancelRule(rule.onChainRuleId)}
+										onUpdate={() => onUpdateRule(rule)}
+										cancelPending={cancelPending}
+										updatePending={updatePending}
+									/>
 								) : null}
 							</div>
 							{payoutUrl ? (

@@ -6,6 +6,7 @@ import {
 	UserIcon,
 } from "@phosphor-icons/react";
 import { defaultChain } from "@/src/constants";
+import { Button } from "@/src/lib/components/ui/button";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
 import { cn } from "@/src/lib/utils";
 import { SettlementStatusPanel } from "@/src/routes/dashboard/document/sign/-components/settlement-status-panel";
@@ -40,6 +41,14 @@ export function SignDocumentSidebar() {
 		onManualSettleRule,
 		revokePending,
 		onRevokeAllowance,
+		canManageSettlements,
+		onCancelRule,
+		onUpdateRule,
+		cancelPending,
+		updatePending,
+		canAttachSettlement,
+		setAttachDialogOpen,
+		setAmendDialogOpen,
 	} = useSignSettlements();
 	const signers = file?.signers ?? [];
 	const signatures = file?.signatures;
@@ -221,6 +230,33 @@ export function SignDocumentSidebar() {
 					)}
 				</div>
 
+				{isSender ? (
+					<div className="flex flex-wrap gap-2">
+						{canAttachSettlement ? (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="h-8 text-xs"
+								onClick={() => setAttachDialogOpen(true)}
+							>
+								Attach payout
+							</Button>
+						) : null}
+						{canManageSettlements ? (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="h-8 text-xs"
+								onClick={() => setAmendDialogOpen(true)}
+							>
+								Amend signer
+							</Button>
+						) : null}
+					</div>
+				) : null}
+
 				<SettlementStatusPanel
 					rules={settlementRules}
 					formatAddress={formatAddress}
@@ -234,6 +270,11 @@ export function SignDocumentSidebar() {
 					onManualSettleRule={onManualSettleRule}
 					revokePending={revokePending}
 					onRevokeAllowance={onRevokeAllowance}
+					canManageSettlements={canManageSettlements}
+					onCancelRule={onCancelRule}
+					onUpdateRule={onUpdateRule}
+					cancelPending={cancelPending}
+					updatePending={updatePending}
 				/>
 
 				{viewers && viewers.length > 0 && (

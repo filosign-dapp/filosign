@@ -4,8 +4,9 @@ import {
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
 import { useCryptoUnlocked } from "@filosign/react/auth";
+import { useEntitlements } from "@filosign/react/billing";
 import { useMarkDraftSent } from "@filosign/react/drafts";
-import { useSendFile } from "@filosign/react/files";
+import { canUseAdvancedSettlements, useSendFile } from "@filosign/react/files";
 import { useActiveOrganization } from "@filosign/react/orgs";
 import { useProfilesByAddresses } from "@filosign/react/users";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
@@ -22,6 +23,7 @@ import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types
 import { constrainFieldTopLeft } from "@/src/lib/domains/files/placement-viewport";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
+import { buildRegisterRoutingFromForm } from "@/src/lib/domains/settlements/build-routing-input";
 import {
 	useStorePersist,
 	useStorePersistHydrated,
@@ -78,6 +80,7 @@ export function useAddSignController() {
 	const captureAppEvent = useCaptureAppEvent();
 	const sendFile = useSendFile();
 	const markDraftSent = useMarkDraftSent();
+	const { data: entitlements } = useEntitlements();
 	const { rpcQuery } = useFilosignContext();
 	const activeOrg = useActiveOrganization();
 
@@ -479,9 +482,17 @@ export function useAddSignController() {
 				return;
 			}
 
-			const settlementRules = buildSettlementRulesForSend(
-				resolvedSettlementDrafts,
-			);
+			const settlementRules = buildSettlementRulesForSend({
+				drafts: resolvedSettlementDrafts,
+				recipients: createForm.recipients,
+				combineLegs: createForm.combineSettlementLegs,
+				canUseAdvancedSettlements: canUseAdvancedSettlements(entitlements),
+			});
+
+			const routing = buildRegisterRoutingFromForm({
+				recipients: createForm.recipients,
+				routing: createForm.registerRouting,
+			});
 
 			const result = await sendFile.mutateAsync({
 				signers,
@@ -492,6 +503,7 @@ export function useAddSignController() {
 				viewerEmails,
 				...(coldInvitePayload ? { coldInvites: coldInvitePayload } : {}),
 				...(settlementRules.length > 0 ? { settlementRules } : {}),
+				...(routing ? { routing } : {}),
 				...(activeOrg
 					? {
 							organizationId: activeOrg.id,

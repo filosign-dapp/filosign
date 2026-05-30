@@ -38,6 +38,24 @@ From repo root (see [SCRIPTS.md](../../SCRIPTS.md)):
 - Static assets for compliance PDF: [`utils/images.ts`](src/lib/domains/files/compliance-pdf/utils/images.ts)
 - **PUT** to `storage.presignPut` URLs (no API body proxy)
 
+### Settlements and routing (v1 UI)
+
+Envelope create (`/dashboard/envelope/create`):
+
+- **`ComposeRoutingField`** — parallel/sequential signing, optional signers, quorum N (**Teams Pro**, `features.routing.advanced`).
+- **`RecipientSettlementDialog`** — per-recipient USDC payout + release type (basic types on **Teams**, advanced on **Teams Pro**).
+- **`ComposeSettlementOptionsField`** — combine recipient drafts into one multi-leg rule (**Teams Pro**).
+- Send step passes routing + settlement drafts via `useSendFile`.
+
+Sign page (`/dashboard/document/sign`):
+
+- **`SettlementStatusPanel`** — multi-leg display, settle CTAs (relay + wallet), revoke allowance.
+- **`SettlementManageActions`** — edit/cancel rule (**Teams Pro** sender).
+- **`AttachSettlementDialog`** — post-send attach payout (**Teams+**).
+- **`AmendSignerDialog`** — replace signer email commitment before sign (**Teams Pro** sender).
+
+Entitlement gates use `@filosign/react/files` helpers + [`upgrade-plan-dialog.tsx`](src/lib/domains/entitlements/upgrade-plan-dialog.tsx).
+
 ---
 
 ## Routing (TanStack Router)
@@ -212,7 +230,6 @@ Prefer grouped helpers from [`@filosign/react/invalidate-queries`](../../package
 |--------|------|
 | `invalidateInboxQueries(qc, rpcQuery)` | Notifications: received files + share requests |
 | `invalidateSharingQueries(qc, rpcQuery)` | Connections / sharing domain |
-| `invalidateConnectionsContactsTab` / `invalidateConnectionsRequestsTab` | Connections tab switch |
 | `invalidateOrgsQueries(qc, rpcQuery)` | Org membership / settings mutations |
 | `invalidateAuthQueries(qc, address)` | After login or recovery |
 | `invalidateUserProfile(qc, rpcQuery)` | Profile or email changes |

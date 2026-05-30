@@ -4,6 +4,8 @@ export type Recipient = {
 	email: string;
 	walletAddress?: string;
 	role: "signer" | "viewer";
+	/** When false on a signer, they are optional for registry quorum (Teams Pro). */
+	signerRequired?: boolean;
 };
 
 export type UploadedFile = {
@@ -67,6 +69,8 @@ export type SignatureField = {
 	label?: string;
 };
 
+import type { RegisterRoutingInput } from "@filosign/shared";
+
 export type CreateForm = {
 	/** Local IndexedDB scope for document bytes (compose buffer). */
 	draftId: string;
@@ -82,4 +86,8 @@ export type CreateForm = {
 	documents: StoredDocument[];
 	settlementDrafts: SettlementAttachmentDraft[];
 	signatureFields: SignatureField[];
+	/** Teams Pro: sequential routing, quorum, optional signers. */
+	registerRouting?: RegisterRoutingInput;
+	/** Teams Pro: merge recipient payouts into one multi-leg rule. */
+	combineSettlementLegs?: boolean;
 };

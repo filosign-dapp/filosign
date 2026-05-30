@@ -1,10 +1,18 @@
 import type { ReactNode } from "react";
 import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import {
+	AmendSignerDialog,
+	signerOptionsFromFile,
+} from "@/src/routes/dashboard/document/sign/-components/amend-signer-dialog";
+import { AttachSettlementDialog } from "@/src/routes/dashboard/document/sign/-components/attach-settlement-dialog";
+import { SettlementUpdateDialog } from "@/src/routes/dashboard/document/sign/-components/settlement-update-dialog";
+import {
 	type SignDocumentContextValue,
 	SignDocumentProvider,
 	useSignColdShare,
 	useSignDocumentContext,
+	useSignFile,
+	useSignSettlements,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
 import { SignDocumentBody } from "./body";
 import { SignDocumentShell } from "./shell";
@@ -62,6 +70,38 @@ function SignSuccessDialogSlot() {
 	);
 }
 
+function SignSettlementDialogs() {
+	const { file } = useSignFile();
+	const settlements = useSignSettlements();
+	const signerOptions = signerOptionsFromFile(file?.signers ?? []);
+
+	return (
+		<>
+			<SettlementUpdateDialog
+				open={settlements.updateDialogOpen}
+				onOpenChange={settlements.setUpdateDialogOpen}
+				rule={settlements.updateRuleTarget}
+				onConfirm={settlements.onConfirmUpdateRule}
+				pending={settlements.updatePending}
+			/>
+			<AmendSignerDialog
+				open={settlements.amendDialogOpen}
+				onOpenChange={settlements.setAmendDialogOpen}
+				signers={signerOptions}
+				onConfirm={settlements.onConfirmAmendSigner}
+				pending={settlements.amendPending}
+			/>
+			<AttachSettlementDialog
+				open={settlements.attachDialogOpen}
+				onOpenChange={settlements.setAttachDialogOpen}
+				payees={settlements.attachPayeeOptions}
+				onConfirm={settlements.onConfirmAttachSettlement}
+				pending={settlements.attachPending}
+			/>
+		</>
+	);
+}
+
 export const Sign = {
 	Root: SignRoot,
 	Shell: SignShell,
@@ -70,6 +110,7 @@ export const Sign = {
 			<>
 				<SignColdShareDialog />
 				<SignSuccessDialogSlot />
+				<SignSettlementDialogs />
 			</>
 		);
 	},

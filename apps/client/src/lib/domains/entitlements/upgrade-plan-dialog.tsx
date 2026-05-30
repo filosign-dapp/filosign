@@ -18,7 +18,10 @@ import { billingUiEnabled } from "@/src/lib/deployment";
 
 export type UpgradePlanLimitReason =
 	| "documents.sent.monthly"
-	| "envelope.recipients.max";
+	| "envelope.recipients.max"
+	| "features.settlement.basic"
+	| "features.settlement.advanced"
+	| "features.routing.advanced";
 
 const COPY: Record<
 	UpgradePlanLimitReason,
@@ -33,6 +36,21 @@ const COPY: Record<
 		title: "Recipient limit reached",
 		description:
 			"You've reached the maximum recipients per envelope on your current plan. Upgrade to add more recipients.",
+	},
+	"features.settlement.basic": {
+		title: "Settlement not included on your plan",
+		description:
+			"Attach USDC payouts to documents on Teams or higher. Upgrade to link settlement rules to your envelopes.",
+	},
+	"features.settlement.advanced": {
+		title: "Advanced settlement requires Teams Pro",
+		description:
+			"Multi-recipient splits, quorum releases, and rule updates need Teams Pro or Enterprise.",
+	},
+	"features.routing.advanced": {
+		title: "Advanced routing requires Teams Pro",
+		description:
+			"Optional signers, sequential routing, and registry quorum need Teams Pro or Enterprise.",
 	},
 };
 

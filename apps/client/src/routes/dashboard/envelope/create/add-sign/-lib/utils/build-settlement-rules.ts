@@ -1,10 +1,9 @@
 import type { SettlementRuleDraft } from "@filosign/react/files";
-import {
-	hashNormalizedSignerEmail,
-	type SettlementReleaseType,
-} from "@filosign/shared";
+import { isAdvancedSettlementReleaseType } from "@filosign/shared";
 import { parseUnits } from "viem";
 import { SUPPORTED_TOKENS } from "@/src/constants";
+import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
+import { buildReleaseParamsFromDraft } from "@/src/lib/domains/settlements/build-release-params";
 import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
 
 function draftWithRecipientWallet(
@@ -13,46 +12,89 @@ function draftWithRecipientWallet(
 	return Boolean(d.recipientWallet);
 }
 
-export function buildSettlementRulesForSend(
-	drafts: SettlementAttachmentDraft[],
-): SettlementRuleDraft[] {
+function draftToLeg(
+	d: SettlementAttachmentDraft & { recipientWallet: `0x${string}` },
+) {
 	const token = SUPPORTED_TOKENS[0];
-	const rules: SettlementRuleDraft[] = [];
+	return {
+		recipientWallet: d.recipientWallet,
+		recipientSource: d.recipientSource,
+		amount: parseUnits(d.amountUsdc.trim(), token.decimals),
+	};
+}
 
-	for (const d of drafts) {
-		if (!d.amountUsdc.trim() || Number(d.amountUsdc) <= 0) continue;
-		if (!draftWithRecipientWallet(d)) continue;
+function draftToRule(
+	draft: SettlementAttachmentDraft & { recipientWallet: `0x${string}` },
+	recipients: Recipient[],
+): SettlementRuleDraft {
+	const token = SUPPORTED_TOKENS[0];
+	const releaseType = draft.releaseType;
+	return {
+		tokenAddress: token.address,
+		releaseType,
+		releaseParams: buildReleaseParamsFromDraft(draft, recipients),
+		legs: [draftToLeg(draft)],
+	};
+}
 
-		const releaseType = d.releaseType satisfies SettlementReleaseType;
-		const amount = parseUnits(d.amountUsdc.trim(), token.decimals);
-		const recipientWallet = d.recipientWallet;
+function canCombineDrafts(
+	drafts: (SettlementAttachmentDraft & { recipientWallet: `0x${string}` })[],
+): boolean {
+	if (drafts.length < 2) return false;
+	const first = drafts[0];
+	if (!first) return false;
+	return drafts.every(
+		(d) =>
+			d.releaseType === first.releaseType &&
+			d.specificSignerEmail === first.specificSignerEmail &&
+			d.thresholdN === first.thresholdN,
+	);
+}
 
-		if (releaseType === "specific_signer" && d.specificSignerEmail) {
-			rules.push({
-				recipientWallet,
-				recipientSource: d.recipientSource,
-				amount,
+export function buildSettlementRulesForSend(args: {
+	drafts: SettlementAttachmentDraft[];
+	recipients: Recipient[];
+	combineLegs?: boolean;
+	canUseAdvancedSettlements?: boolean;
+}): SettlementRuleDraft[] {
+	const token = SUPPORTED_TOKENS[0];
+	const resolved = args.drafts.filter(
+		(d): d is SettlementAttachmentDraft & { recipientWallet: `0x${string}` } =>
+			Boolean(d.amountUsdc.trim()) &&
+			Number(d.amountUsdc) > 0 &&
+			draftWithRecipientWallet(d),
+	);
+
+	if (resolved.length === 0) return [];
+
+	const combine =
+		Boolean(args.canUseAdvancedSettlements) &&
+		Boolean(args.combineLegs) &&
+		canCombineDrafts(resolved);
+
+	if (combine) {
+		const first = resolved[0];
+		if (!first) return [];
+		return [
+			{
 				tokenAddress: token.address,
-				releaseType: "specific_signer",
-				releaseParams: {
-					releaseType: "specific_signer",
-					signerEmailCommitment: hashNormalizedSignerEmail(
-						d.specificSignerEmail,
-					),
-				},
-			});
-			continue;
-		}
-
-		rules.push({
-			recipientWallet,
-			recipientSource: d.recipientSource,
-			amount,
-			tokenAddress: token.address,
-			releaseType: "all_signed",
-			releaseParams: { releaseType: "all_signed" },
-		});
+				releaseType: first.releaseType,
+				releaseParams: buildReleaseParamsFromDraft(first, args.recipients),
+				legs: resolved.map(draftToLeg),
+			},
+		];
 	}
 
-	return rules;
+	return resolved.map((draft) => {
+		if (
+			!args.canUseAdvancedSettlements &&
+			(isAdvancedSettlementReleaseType(draft.releaseType) ||
+				resolved.length > 1)
+		) {
+			throw new Error(
+				"Advanced settlement rules require a Teams Pro plan or higher.",
+			);
+		}
+		return draftToRule(draft, args.recipients);
+	});
 }

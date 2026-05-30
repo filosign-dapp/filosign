@@ -58,3 +58,7 @@ export const rpcColdInviteRegenerateOutputSchema = z.object({
 });
 
 export const rpcFilesRegisterOutputSchema = rpcEmptyOutputSchema;
+
+export const rpcFilesAmendSignerOutputSchema = z.object({
+	txHash: zHexString(),
+});

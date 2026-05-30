@@ -1,11 +1,15 @@
 import {
+	buildRegisterRoutingCalldata,
 	buildRegistrationEmailCommitments,
 	computePlacementCommitment,
 	hashAuthSubjectCommitment,
 	hashNormalizedSignerEmail,
 	hashOrgIdCommitment,
 	normalizePlacementRecipientEmail,
+	usesAdvancedRegisterRouting,
+	validateRegisterRoutingCalldata,
 	zPlacementManifest,
+	zRegisterRoutingInput,
 } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
@@ -21,12 +25,6 @@ import {
 } from "@/lib/domains/entitlements";
 import { inviteExpiresAt } from "@/lib/domains/invites";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
-import {
-	assertSettlementRecipientsAllowlisted,
-	assertSettlementRulesVerifiedOnChain,
-	insertSettlementRulesForFile,
-	zSettlementRulesRegisterBatch,
-} from "@/lib/domains/settlements";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
 import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
@@ -76,10 +74,10 @@ export const zFileRegisterBody = z.object({
 	organizationId: z.uuid(),
 	orgKemCiphertext: zHexString(),
 	orgEncryptedEncryptionKey: zHexString(),
-	settlementRules: zSettlementRulesRegisterBatch.optional(),
 	displayName: z.string().min(1).max(512),
 	mimeType: z.string().min(1).max(255),
 	ciphertextByteLength: z.number().int().positive(),
+	routing: zRegisterRoutingInput.optional(),
 });
 
 export async function filesRegister(
@@ -105,10 +103,10 @@ export async function filesRegister(
 		organizationId,
 		orgKemCiphertext,
 		orgEncryptedEncryptionKey,
-		settlementRules = [],
 		displayName,
 		mimeType,
 		ciphertextByteLength,
+		routing,
 	} = parsedBody.data;
 
 	assertOrgPermission(activeOrg, "documents:send");
@@ -138,11 +136,40 @@ export async function filesRegister(
 		participants,
 		coldInvites,
 	});
-	const { signerEmailCommitmentsSorted, viewerEmailCommitmentsSorted } =
-		buildRegistrationEmailCommitments({
-			placementManifest,
-			viewerEmails,
+	const {
+		requiredCommitments: requiredCommitmentsSorted,
+		viewerEmailCommitmentsSorted,
+	} = buildRegistrationEmailCommitments({
+		placementManifest,
+		viewerEmails,
+	});
+	const routingCalldata = buildRegisterRoutingCalldata({
+		placementManifest,
+		routing,
+	});
+	const routingError = validateRegisterRoutingCalldata(routingCalldata);
+	if (routingError) {
+		throw new ORPCError("BAD_REQUEST", { message: routingError });
+	}
+	const {
+		requiredCommitments: routingRequiredCommitments,
+		optionalCommitments: optionalCommitmentsSorted,
+		routingMode,
+		routingOrder,
+		quorumN,
+		quorumSet,
+	} = routingCalldata;
+	if (
+		requiredCommitmentsSorted.some(
+			(c, i) =>
+				c.toLowerCase() !== routingRequiredCommitments[i]?.toLowerCase(),
+		) ||
+		requiredCommitmentsSorted.length !== routingRequiredCommitments.length
+	) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "Routing required signers do not match manifest roster",
 		});
+	}
 
 	const [senderUser] = await db
 		.select({
@@ -171,16 +198,23 @@ export async function filesRegister(
 
 	const valid = await tryCatch(
 		FSFileRegistry.read.validateFileRegistrationSignature([
-			pieceCid,
-			sender,
-			signerEmailCommitmentsSorted,
-			viewerEmailCommitmentsSorted,
-			senderEmailCommitment,
-			senderPrivySubjectCommitment,
-			orgIdCommitment,
-			BigInt(timestamp),
-			signature,
-			placementCommitment,
+			{
+				pieceCid,
+				sender,
+				requiredCommitments: routingRequiredCommitments,
+				optionalCommitments: optionalCommitmentsSorted,
+				viewerEmailCommitments: viewerEmailCommitmentsSorted,
+				senderEmailCommitment,
+				senderPrivySubjectCommitment,
+				orgIdCommitment,
+				routingMode,
+				routingOrder,
+				quorumN,
+				quorumSet,
+				timestamp: BigInt(timestamp),
+				signature,
+				placementCommitment,
+			},
 		]),
 	);
 
@@ -220,33 +254,29 @@ export async function filesRegister(
 	assertEntitlement(entitlementCtx, "envelope.recipients.max", {
 		requested: slotCounts.recipientSlotCount,
 	});
+	if (usesAdvancedRegisterRouting(routing)) {
+		assertEntitlement(entitlementCtx, "features.routing.advanced");
+	}
 
 	const txHash = await FSFileRegistry.write.registerFile([
-		pieceCid,
-		sender,
-		signerEmailCommitmentsSorted,
-		viewerEmailCommitmentsSorted,
-		senderEmailCommitment,
-		senderPrivySubjectCommitment,
-		orgIdCommitment,
-		BigInt(timestamp),
-		signature,
-		placementCommitment,
-	]);
-
-	if (settlementRules.length > 0) {
-		await assertSettlementRecipientsAllowlisted({
-			participantWallets: participants.map((p) => getAddress(p.address)),
-			organizationId,
-			rules: settlementRules,
-		});
-		await assertSettlementRulesVerifiedOnChain(
-			getAddress(sender),
+		{
 			pieceCid,
-			settlementRules,
-			getAddress(fsContracts.FSPaymentValidator.address),
-		);
-	}
+			sender,
+			requiredCommitments: routingRequiredCommitments,
+			optionalCommitments: optionalCommitmentsSorted,
+			viewerEmailCommitments: viewerEmailCommitmentsSorted,
+			senderEmailCommitment,
+			senderPrivySubjectCommitment,
+			orgIdCommitment,
+			routingMode,
+			routingOrder,
+			quorumN,
+			quorumSet,
+			timestamp: BigInt(timestamp),
+			signature,
+			placementCommitment,
+		},
+	]);
 
 	await db.transaction(async (tx) => {
 		await tx
@@ -303,14 +333,6 @@ export async function filesRegister(
 				})),
 			);
 		}
-
-		await insertSettlementRulesForFile(
-			pieceCid,
-			getAddress(sender),
-			settlementRules,
-			getAddress(fsContracts.FSPaymentValidator.address),
-			tx,
-		);
 	});
 
 	const participantWallets = [

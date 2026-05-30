@@ -9,7 +9,6 @@ import {
 	isHash,
 	isHex,
 } from "viem";
-import { jsonParse, jsonStringify } from "@/lib/platform/utils/json";
 
 export const timestamps = {
 	createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -32,22 +31,6 @@ export const tEvmAddress = customType<{
 	},
 	fromDriver(value) {
 		return getAddress(value);
-	},
-});
-
-// TODO please remove
-export const tJsonString = customType<{
-	data: Record<string, unknown>;
-	driverData: string;
-}>({
-	dataType() {
-		return "text";
-	},
-	toDriver(value) {
-		return jsonStringify(value);
-	},
-	fromDriver(value) {
-		return jsonParse(value);
 	},
 });
 
@@ -90,22 +73,5 @@ export const tHex = customType<{
 			throw new Error(`Invalid hex: ${value}`);
 		}
 		return value;
-	},
-});
-
-// TODO please reconsider
-
-export const tBigInt = customType<{
-	data: bigint;
-	driverData: string;
-}>({
-	dataType() {
-		return "text";
-	},
-	toDriver(value) {
-		return value.toString();
-	},
-	fromDriver(value) {
-		return BigInt(value);
 	},
 });

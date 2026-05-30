@@ -301,3 +301,24 @@ export const complianceExportLogs = t.pgTable(
 		t.index("idx_compliance_export_requester").on(table.requestedBy),
 	],
 );
+
+export const fileSignerAmendments = t.pgTable(
+	"file_signer_amendments",
+	{
+		id: t
+			.uuid()
+			.primaryKey()
+			.$defaultFn(() => randomUuidV7()),
+		filePieceCid: t
+			.text()
+			.notNull()
+			.references(() => files.pieceCid, { onDelete: "cascade" }),
+		oldCommitment: tBytes32().notNull(),
+		newCommitment: tBytes32().notNull(),
+		amendTxHash: tBytes32().notNull(),
+		createdAt: t.timestamp({ withTimezone: true }).notNull().defaultNow(),
+	},
+	(table) => [
+		t.index("idx_file_signer_amendments_piece").on(table.filePieceCid),
+	],
+);

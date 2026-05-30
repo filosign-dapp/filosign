@@ -9,6 +9,7 @@ import {
 	fileColdInvites,
 	fileDocumentViews,
 	fileSignatures,
+	fileSignerAmendments,
 	fileSignerDrafts,
 	files,
 } from "@/lib/platform/db/schema/file";
@@ -68,9 +69,8 @@ export type ComplianceLoadContext = {
 	senderNorm: Address;
 	settlementRows: {
 		onChainRuleId: bigint;
-		recipientWallet: Address;
+		legs: import("@filosign/shared").SettlementPayoutLegInput[];
 		tokenAddress: Address;
-		amount: string;
 		releaseType: string;
 		status: string;
 		registerRuleTxHash: Hex;
@@ -78,6 +78,12 @@ export type ComplianceLoadContext = {
 		payoutTxHash: Hex | null;
 		executedAt: Date | null;
 		lastError: string | null;
+	}[];
+	amendmentRows: {
+		oldCommitment: Hex;
+		newCommitment: Hex;
+		amendTxHash: Hex;
+		createdAt: Date;
 	}[];
 };
 
@@ -224,12 +230,36 @@ export async function loadComplianceContext(args: {
 					placementCommitment: Hex;
 					senderEmailCommitment: Hex;
 					senderPrivySubjectCommitment: Hex;
+					requiredSignersCount: number | bigint;
+					requiredSignaturesCount: number | bigint;
+					optionalSignersCount: number | bigint;
+					optionalSignaturesCount: number | bigint;
 					signersCount: number | bigint;
 					signaturesCount: number | bigint;
+					quorumN: number | bigint;
+					routingMode: number | bigint;
 					timestamp: bigint;
 			  }
 			| undefined;
-		if (reg) {
+		if (reg && reg.timestamp > 0n) {
+			const [allRequiredSigned, allSigned, quorumMet] = await Promise.all([
+				tryCatch(registry.read.allRequiredSigned([cidId])),
+				tryCatch(registry.read.allSigned([cidId])),
+				tryCatch(registry.read.quorumMet([cidId])),
+			]);
+			let rosterSignedCount = Number(reg.signaturesCount);
+			const rosterRes = await tryCatch(
+				(
+					registry.read as typeof registry.read & {
+						rosterSignedCount: (
+							args: readonly [Hex],
+						) => Promise<number | bigint>;
+					}
+				).rosterSignedCount([cidId]),
+			);
+			if (!rosterRes.error && rosterRes.data != null) {
+				rosterSignedCount = Number(rosterRes.data);
+			}
 			onchainRegistration = {
 				cidIdentifier: cidId,
 				sender: getAddress(reg.sender),
@@ -238,8 +268,18 @@ export async function loadComplianceContext(args: {
 				placementCommitment: reg.placementCommitment as Hex,
 				senderEmailCommitment: reg.senderEmailCommitment as Hex,
 				senderPrivySubjectCommitment: reg.senderPrivySubjectCommitment as Hex,
+				requiredSignersCount: Number(reg.requiredSignersCount),
+				requiredSignaturesCount: Number(reg.requiredSignaturesCount),
+				optionalSignersCount: Number(reg.optionalSignersCount),
+				optionalSignaturesCount: Number(reg.optionalSignaturesCount),
 				signersCount: Number(reg.signersCount),
 				signaturesCount: Number(reg.signaturesCount),
+				quorumN: Number(reg.quorumN),
+				routingMode: Number(reg.routingMode),
+				allRequiredSigned: allRequiredSigned.data ?? false,
+				allSigned: allSigned.data ?? false,
+				quorumMet: quorumMet.data ?? false,
+				rosterSignedCount,
 				timestamp: reg.timestamp.toString(),
 			};
 		}
@@ -248,9 +288,8 @@ export async function loadComplianceContext(args: {
 	const settlementRowsRaw = await database
 		.select({
 			onChainRuleId: fileSettlementRules.onChainRuleId,
-			recipientWallet: fileSettlementRules.recipientWallet,
+			legs: fileSettlementRules.legs,
 			tokenAddress: fileSettlementRules.tokenAddress,
-			amount: fileSettlementRules.amount,
 			releaseType: fileSettlementRules.releaseType,
 			status: fileSettlementRules.status,
 			registerRuleTxHash: fileSettlementRules.registerRuleTxHash,
@@ -262,11 +301,20 @@ export async function loadComplianceContext(args: {
 		.from(fileSettlementRules)
 		.where(eq(fileSettlementRules.pieceCid, pieceCid));
 
+	const amendmentRowsRaw = await database
+		.select({
+			oldCommitment: fileSignerAmendments.oldCommitment,
+			newCommitment: fileSignerAmendments.newCommitment,
+			amendTxHash: fileSignerAmendments.amendTxHash,
+			createdAt: fileSignerAmendments.createdAt,
+		})
+		.from(fileSignerAmendments)
+		.where(eq(fileSignerAmendments.filePieceCid, pieceCid));
+
 	const settlementRows = settlementRowsRaw.map((r) => ({
 		onChainRuleId: r.onChainRuleId,
-		recipientWallet: getAddress(r.recipientWallet),
+		legs: r.legs,
 		tokenAddress: getAddress(r.tokenAddress),
-		amount: r.amount,
 		releaseType: r.releaseType,
 		status: r.status,
 		registerRuleTxHash: r.registerRuleTxHash as Hex,
@@ -274,6 +322,13 @@ export async function loadComplianceContext(args: {
 		payoutTxHash: r.payoutTxHash ? (r.payoutTxHash as Hex) : null,
 		executedAt: r.executedAt,
 		lastError: r.lastError,
+	}));
+
+	const amendmentRows = amendmentRowsRaw.map((r) => ({
+		oldCommitment: r.oldCommitment as Hex,
+		newCommitment: r.newCommitment as Hex,
+		amendTxHash: r.amendTxHash as Hex,
+		createdAt: r.createdAt,
 	}));
 
 	return {
@@ -305,5 +360,6 @@ export async function loadComplianceContext(args: {
 		exportedAtIso,
 		senderNorm,
 		settlementRows,
+		amendmentRows,
 	};
 }

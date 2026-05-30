@@ -1,5 +1,8 @@
+import type {
+	SettlementPayoutLegInput,
+	SettlementReleaseType,
+} from "@filosign/shared";
 import {
-	settlementRecipientSources,
 	settlementReleaseTypes,
 	settlementRuleStatuses,
 } from "@filosign/shared";
@@ -22,10 +25,9 @@ export const fileSettlementRules = t.pgTable(
 		onChainRuleId: t.bigint({ mode: "bigint" }).notNull(),
 		cidIdentifier: tBytes32().notNull(),
 		payerWallet: tEvmAddress().notNull(),
-		recipientWallet: tEvmAddress().notNull(),
-		recipientSource: t.text({ enum: settlementRecipientSources }).notNull(),
 		tokenAddress: tEvmAddress().notNull(),
-		amount: t.numeric({ precision: 78, scale: 0 }).notNull(),
+		legs: t.jsonb().$type<SettlementPayoutLegInput[]>().notNull(),
+		expiresAt: t.numeric({ precision: 78, scale: 0 }),
 		releaseType: t.text({ enum: settlementReleaseTypes }).notNull(),
 		releaseParams: t.jsonb().$type<Record<string, unknown>>().notNull(),
 		validatorAddress: tEvmAddress().notNull(),
@@ -35,9 +37,10 @@ export const fileSettlementRules = t.pgTable(
 			.default("pending"),
 		registerRuleTxHash: tBytes32().notNull(),
 		approveTxHash: tBytes32().notNull(),
+		updateRuleTxHash: tBytes32(),
+		cancelRuleTxHash: tBytes32(),
 		payoutTxHash: tBytes32(),
 		lastError: t.text(),
-		lastGelatoRunId: t.text(),
 		executedAt: t.timestamp({ withTimezone: true }),
 		...timestamps,
 	},
@@ -48,3 +51,5 @@ export const fileSettlementRules = t.pgTable(
 		t.index("idx_file_settlement_rules_validator").on(table.validatorAddress),
 	],
 );
+
+export type DbSettlementReleaseType = SettlementReleaseType;

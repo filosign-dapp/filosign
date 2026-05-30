@@ -1,5 +1,9 @@
+import {
+	settlementRuleLegacyTopLevel,
+	settlementRuleTotalAmount,
+} from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
-import { eq, ne } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import type { Hex } from "viem";
 import { isHex } from "viem";
 import db from "@/lib/platform/db";
@@ -11,6 +15,10 @@ import { syncSettlementPayoutFromChain } from "./utils/sync-from-chain";
 
 const { fileSettlementRules, files, fileParticipants } = db.schema;
 
+export {
+	settlementsCancelRule,
+	settlementsUpdateRule,
+} from "./settlements-crud";
 export {
 	tryExecuteSettlementPayout,
 	tryExecuteSettlementRulesForPiece,
@@ -42,7 +50,9 @@ async function assertCanSettleSettlementRule(
 
 	const wallet = userWallet.toLowerCase();
 	const isSender = file.sender.toLowerCase() === wallet;
-	const isRecipient = rule.recipientWallet.toLowerCase() === wallet;
+	const isRecipient = rule.legs.some(
+		(leg) => leg.recipientWallet.toLowerCase() === wallet,
+	);
 
 	if (!isSender && !isRecipient) {
 		throw new ORPCError("FORBIDDEN", {
@@ -95,7 +105,7 @@ export async function settlementsListByFile(
 	return Promise.all(
 		rows.map(async (r) => {
 			let canExecuteOnChain: boolean | null = null;
-			if (r.status !== "executed") {
+			if (r.status !== "executed" && r.status !== "cancelled") {
 				const validator = fsPaymentValidatorAt(r.validatorAddress);
 				const res = await tryCatch(
 					validator.read.canExecute([r.onChainRuleId]),
@@ -103,16 +113,24 @@ export async function settlementsListByFile(
 				canExecuteOnChain = res.error ? null : res.data;
 			}
 
+			const legacyTopLevel = settlementRuleLegacyTopLevel(r.legs);
+
 			return {
 				id: r.id,
 				onChainRuleId: r.onChainRuleId.toString(),
-				recipientWallet: r.recipientWallet,
-				recipientSource: r.recipientSource,
-				amount: r.amount,
+				legs: r.legs,
+				recipientWallet: legacyTopLevel.recipientWallet,
+				recipientSource: legacyTopLevel.recipientSource,
+				amount: legacyTopLevel.amount,
+				totalAmount: settlementRuleTotalAmount(r.legs).toString(),
 				tokenAddress: r.tokenAddress,
 				releaseType: r.releaseType,
+				releaseParams: r.releaseParams,
+				expiresAt: r.expiresAt ?? null,
 				status: r.status,
 				payoutTxHash: r.payoutTxHash ?? null,
+				updateRuleTxHash: r.updateRuleTxHash ?? null,
+				cancelRuleTxHash: r.cancelRuleTxHash ?? null,
 				lastError: r.lastError ?? null,
 				executedAt: r.executedAt?.toISOString() ?? null,
 				canExecuteOnChain,
@@ -135,6 +153,11 @@ export async function settlementsTrySettle(
 			payoutTxHash: rule.payoutTxHash,
 			status: "executed" as const,
 		};
+	}
+	if (rule.status === "cancelled") {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "Settlement rule was cancelled",
+		});
 	}
 
 	const result = await tryExecuteSettlementPayout(ruleId);
@@ -213,7 +236,12 @@ export async function runSyncSettlementRulesJob(): Promise<{
 			validatorAddress: fileSettlementRules.validatorAddress,
 		})
 		.from(fileSettlementRules)
-		.where(ne(fileSettlementRules.status, "executed"));
+		.where(
+			and(
+				ne(fileSettlementRules.status, "executed"),
+				ne(fileSettlementRules.status, "cancelled"),
+			),
+		);
 
 	let synced = 0;
 	for (const row of rows) {

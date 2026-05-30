@@ -42,6 +42,7 @@ export async function assembleComplianceBundle(
 		exportedAtIso,
 		senderNorm,
 		settlementRows,
+		amendmentRows,
 	} = ctx;
 
 	const signerParticipants = participantRows.filter((p) => p.role === "signer");
@@ -206,14 +207,30 @@ export async function assembleComplianceBundle(
 		? getAddress(FSPaymentValidator.address)
 		: null;
 
+	for (const amend of amendmentRows) {
+		txDrafts.push({
+			kind: "signer_amended",
+			txHash: amend.amendTxHash,
+			contractAddress: getAddress(FSFileRegistry.address),
+			summary: `amendSigner — ${amend.oldCommitment} → ${amend.newCommitment}`,
+			relatedAddresses: [senderNorm],
+		});
+	}
+
 	for (const pay of settlementRows) {
 		if (!pay.payoutTxHash || !validatorAddr) continue;
+		const recipients = [
+			...new Set(
+				pay.legs.map((leg) => getAddress(leg.recipientWallet).toLowerCase()),
+			),
+		].map((addr) => getAddress(addr));
+		const recipientSummary = recipients.join(", ");
 		txDrafts.push({
 			kind: "payout_executed",
 			txHash: pay.payoutTxHash,
 			contractAddress: validatorAddr,
-			summary: `executePayout — rule ${pay.onChainRuleId.toString()} to ${getAddress(pay.recipientWallet)}`,
-			relatedAddresses: [senderNorm, getAddress(pay.recipientWallet)],
+			summary: `executePayout — rule ${pay.onChainRuleId.toString()} to ${recipientSummary}`,
+			relatedAddresses: [senderNorm, ...recipients],
 		});
 	}
 
@@ -307,9 +324,11 @@ export async function assembleComplianceBundle(
 	const settlements: ComplianceBundle["settlements"] = settlementRows.map(
 		(pay) => ({
 			onChainRuleId: pay.onChainRuleId.toString(),
-			recipientWallet: getAddress(pay.recipientWallet),
+			legs: pay.legs.map((leg) => ({
+				recipientWallet: getAddress(leg.recipientWallet),
+				amount: leg.amount,
+			})),
 			tokenAddress: getAddress(pay.tokenAddress),
-			amount: pay.amount,
 			releaseType: pay.releaseType as SettlementReleaseType,
 			status: pay.status as SettlementRuleStatus,
 			registerRuleTxHash: pay.registerRuleTxHash,
@@ -321,7 +340,7 @@ export async function assembleComplianceBundle(
 	);
 
 	return {
-		version: 6,
+		version: 7,
 		pieceCid,
 		chainId,
 		exportedAtIso,

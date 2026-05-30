@@ -1,4 +1,5 @@
 import type { SettlementRuleStatus } from "@filosign/shared";
+import { settlementRuleTotalAmount } from "@filosign/shared";
 import { and, eq, inArray } from "drizzle-orm";
 import { getAddress } from "viem";
 import db from "@/lib/platform/db";
@@ -35,12 +36,23 @@ export async function tryExecuteSettlementPayout(
 	if (row.status === "executed") {
 		return { executed: true, skipped: "already_executed" };
 	}
+	if (row.status === "cancelled") {
+		return { executed: false, skipped: "cancelled" };
+	}
 	const validator = fsPaymentValidatorAt(row.validatorAddress);
 
 	const validatorAddress = getAddress(validator.address);
 
 	const executedOnChain = await tryCatch(validator.read.rules([onChainRuleId]));
 	if (!executedOnChain.error && executedOnChain.data[8]) {
+		await syncSettlementPayoutFromChain(
+			onChainRuleId,
+			undefined,
+			row.validatorAddress,
+		);
+		return { executed: false, skipped: "cancelled" };
+	}
+	if (!executedOnChain.error && executedOnChain.data[7]) {
 		await syncSettlementPayoutFromChain(
 			onChainRuleId,
 			undefined,
@@ -59,7 +71,7 @@ export async function tryExecuteSettlementPayout(
 			onChainRuleId,
 			payer: getAddress(row.payerWallet),
 			token: getAddress(row.tokenAddress),
-			amount: BigInt(row.amount),
+			amount: settlementRuleTotalAmount(row.legs),
 			validator: validatorAddress,
 		}),
 	);

@@ -26,7 +26,7 @@ export async function syncSettlementPayoutFromChain(
 	onChainRuleId: bigint,
 	payoutTxHash?: Hex,
 	validatorAddress?: `0x${string}`,
-): Promise<{ synced: boolean }> {
+): Promise<{ synced: boolean; status?: "executed" | "cancelled" }> {
 	const [row] = await db
 		.select({ validatorAddress: fileSettlementRules.validatorAddress })
 		.from(fileSettlementRules)
@@ -41,8 +41,23 @@ export async function syncSettlementPayoutFromChain(
 	const rulesRes = await tryCatch(validator.read.rules([onChainRuleId]));
 	if (rulesRes.error) return { synced: false };
 
-	if (!rulesRes.data[8]) return { synced: false };
+	const executed = rulesRes.data[7];
+	const cancelled = rulesRes.data[8];
+
+	if (cancelled) {
+		await db
+			.update(fileSettlementRules)
+			.set({
+				status: "cancelled",
+				lastError: null,
+				updatedAt: new Date(),
+			})
+			.where(eq(fileSettlementRules.onChainRuleId, onChainRuleId));
+		return { synced: true, status: "cancelled" };
+	}
+
+	if (!executed) return { synced: false };
 
 	await markSettlementRuleExecuted(onChainRuleId, payoutTxHash);
-	return { synced: true };
+	return { synced: true, status: "executed" };
 }

@@ -1,19 +1,16 @@
 import { computeCidIdentifier } from "@filosign/contracts";
-import type {
-	SettlementReleaseType,
-	SettlementRuleRegistrationInput,
-} from "@filosign/shared";
+import type { SettlementRuleRegistrationInput } from "@filosign/shared";
+import { SETTLEMENT_RELEASE_TYPE_UINT } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
-import { evmClient, fsPaymentValidatorAt } from "@/lib/platform/evm";
+import {
+	evmClient,
+	fsFileRegistryAt,
+	fsPaymentValidatorAt,
+} from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
-
-const RELEASE_TYPE_UINT: Record<SettlementReleaseType, number> = {
-	all_signed: 0,
-	specific_signer: 1,
-	at_least_n: 2,
-};
+import { assertSettlementUsdcToken } from "./assert-settlement-token";
 
 async function assertTxSucceeded(hash: Hex, label: string) {
 	const res = await tryCatch(evmClient.getTransactionReceipt({ hash }));
@@ -24,12 +21,215 @@ async function assertTxSucceeded(hash: Hex, label: string) {
 	}
 }
 
+async function assertFileRegisteredOnChain(
+	pieceCid: string,
+	registryAddress?: `0x${string}` | null,
+) {
+	const registry = fsFileRegistryAt(registryAddress ?? null);
+	const cidRes = await tryCatch(registry.read.cidIdentifier([pieceCid]));
+	if (cidRes.error || !cidRes.data) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "Could not resolve document identifier on registry",
+		});
+	}
+	const regRes = await tryCatch(
+		registry.read.fileRegistrations([cidRes.data as Hex]),
+	);
+	if (regRes.error || !regRes.data || regRes.data.timestamp === 0n) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "Document is not registered on-chain",
+		});
+	}
+}
+
+function normHex(a: string) {
+	return a.toLowerCase();
+}
+
+async function assertRuleMatchesOnChain(args: {
+	validator: ReturnType<typeof fsPaymentValidatorAt>;
+	sender: Address;
+	expectedCid: Hex;
+	rule: SettlementRuleRegistrationInput;
+}) {
+	const { validator, sender, expectedCid, rule } = args;
+	const senderAddr = getAddress(sender);
+
+	assertSettlementUsdcToken(rule.tokenAddress);
+
+	if (rule.cidIdentifier.toLowerCase() !== expectedCid.toLowerCase()) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "Settlement rule cidIdentifier does not match document",
+		});
+	}
+
+	const ruleId = BigInt(rule.onChainRuleId);
+	const readRes = await tryCatch(validator.read.rules([ruleId]));
+	if (readRes.error || !readRes.data) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: `Settlement rule ${rule.onChainRuleId} not found on-chain`,
+		});
+	}
+
+	const [
+		payer,
+		token,
+		cidId,
+		releaseType,
+		specificCommitment,
+		thresholdN,
+		expiresAtOnChain,
+		executed,
+		cancelled,
+	] = readRes.data;
+
+	if (executed || cancelled) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: `Settlement rule ${rule.onChainRuleId} is not active on-chain`,
+		});
+	}
+	if (getAddress(payer) !== senderAddr) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "On-chain payer does not match sender wallet",
+		});
+	}
+	if (getAddress(token) !== getAddress(rule.tokenAddress)) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "On-chain token does not match submitted settlement rule",
+		});
+	}
+	if (cidId.toLowerCase() !== expectedCid.toLowerCase()) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "On-chain cidId does not match document",
+		});
+	}
+	if (Number(releaseType) !== SETTLEMENT_RELEASE_TYPE_UINT[rule.releaseType]) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "On-chain release type does not match submitted settlement rule",
+		});
+	}
+
+	const expectedExpires = rule.expiresAt ? BigInt(rule.expiresAt) : 0n;
+	if (expiresAtOnChain !== expectedExpires) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "On-chain expiresAt does not match submitted settlement rule",
+		});
+	}
+
+	const legsRes = await tryCatch(validator.read.ruleLegs([ruleId]));
+	if (legsRes.error || !legsRes.data?.length) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "On-chain payout legs missing for settlement rule",
+		});
+	}
+	if (legsRes.data.length !== rule.legs.length) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "On-chain leg count does not match submitted settlement rule",
+		});
+	}
+	for (let i = 0; i < rule.legs.length; i++) {
+		const submitted = rule.legs[i];
+		const onChain = legsRes.data[i];
+		if (
+			getAddress(onChain.recipient) !== getAddress(submitted.recipientWallet)
+		) {
+			throw new ORPCError("BAD_REQUEST", {
+				message: "On-chain payout recipient does not match submitted leg",
+			});
+		}
+		if (onChain.amount !== BigInt(submitted.amount)) {
+			throw new ORPCError("BAD_REQUEST", {
+				message: "On-chain payout amount does not match submitted leg",
+			});
+		}
+	}
+
+	if (
+		rule.releaseType === "specific_signer" &&
+		rule.releaseParams.releaseType === "specific_signer"
+	) {
+		if (
+			normHex(specificCommitment) !==
+			normHex(rule.releaseParams.signerEmailCommitment)
+		) {
+			throw new ORPCError("BAD_REQUEST", {
+				message: "On-chain signer commitment does not match settlement rule",
+			});
+		}
+	}
+
+	const needsCommitments =
+		rule.releaseType === "at_least_n" ||
+		rule.releaseType === "quorum_set" ||
+		rule.releaseType === "all_of_set";
+	if (needsCommitments) {
+		const commitmentsRes = await tryCatch(
+			validator.read.signerCommitments([ruleId]),
+		);
+		if (commitmentsRes.error || !commitmentsRes.data) {
+			throw new ORPCError("BAD_REQUEST", {
+				message: "On-chain signer commitments missing for settlement rule",
+			});
+		}
+		const onChain = commitmentsRes.data.map(normHex).sort();
+		const submitted =
+			rule.releaseParams.releaseType === "at_least_n" ||
+			rule.releaseParams.releaseType === "quorum_set" ||
+			rule.releaseParams.releaseType === "all_of_set"
+				? [...rule.releaseParams.signerEmailCommitments].map(normHex).sort()
+				: [];
+		if (
+			onChain.length !== submitted.length ||
+			onChain.some((c, i) => c !== submitted[i])
+		) {
+			throw new ORPCError("BAD_REQUEST", {
+				message:
+					"On-chain signer commitments do not match submitted settlement rule",
+			});
+		}
+	}
+
+	if (
+		rule.releaseType === "at_least_n" &&
+		rule.releaseParams.releaseType === "at_least_n"
+	) {
+		if (Number(thresholdN) !== rule.releaseParams.thresholdN) {
+			throw new ORPCError("BAD_REQUEST", {
+				message: "On-chain threshold does not match settlement rule",
+			});
+		}
+	}
+	if (
+		rule.releaseType === "quorum_set" &&
+		rule.releaseParams.releaseType === "quorum_set"
+	) {
+		if (Number(thresholdN) !== rule.releaseParams.thresholdN) {
+			throw new ORPCError("BAD_REQUEST", {
+				message: "On-chain quorum threshold does not match settlement rule",
+			});
+		}
+	}
+	if (
+		(rule.releaseType === "quorum_required" &&
+			rule.releaseParams.releaseType === "quorum_required") ||
+		(rule.releaseType === "quorum_all" &&
+			rule.releaseParams.releaseType === "quorum_all")
+	) {
+		if (Number(thresholdN) !== rule.releaseParams.thresholdN) {
+			throw new ORPCError("BAD_REQUEST", {
+				message: "On-chain threshold does not match settlement rule",
+			});
+		}
+	}
+}
+
 /** Ensures indexed settlement rules exist on-chain for this sender and document. */
 export async function assertSettlementRulesVerifiedOnChain(
 	sender: Address,
 	pieceCid: string,
 	rules: SettlementRuleRegistrationInput[],
 	validatorAddress?: `0x${string}`,
+	registryAddress?: `0x${string}` | null,
 ) {
 	if (rules.length === 0) return;
 
@@ -41,99 +241,36 @@ export async function assertSettlementRulesVerifiedOnChain(
 		});
 	}
 
+	await assertFileRegisteredOnChain(pieceCid, registryAddress);
+
 	const expectedCid = computeCidIdentifier(pieceCid);
-	const senderAddr = getAddress(sender);
 
 	for (const rule of rules) {
-		if (rule.cidIdentifier.toLowerCase() !== expectedCid.toLowerCase()) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "Settlement rule cidIdentifier does not match document",
-			});
-		}
-
-		const ruleId = BigInt(rule.onChainRuleId);
-		const readRes = await tryCatch(validator.read.rules([ruleId]));
-		if (readRes.error || !readRes.data) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: `Settlement rule ${rule.onChainRuleId} not found on-chain`,
-			});
-		}
-
-		const [
-			payer,
-			recipient,
-			token,
-			amount,
-			cidId,
-			releaseType,
-			specificCommitment,
-			thresholdN,
-			executed,
-		] = readRes.data;
-
-		if (executed) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: `Settlement rule ${rule.onChainRuleId} is already executed`,
-			});
-		}
-		if (getAddress(payer) !== senderAddr) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "On-chain payer does not match sender wallet",
-			});
-		}
-		if (getAddress(recipient) !== getAddress(rule.recipientWallet)) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "On-chain recipient does not match submitted settlement rule",
-			});
-		}
-		if (getAddress(token) !== getAddress(rule.tokenAddress)) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "On-chain token does not match submitted settlement rule",
-			});
-		}
-		if (amount !== BigInt(rule.amount)) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "On-chain amount does not match submitted settlement rule",
-			});
-		}
-		if (cidId.toLowerCase() !== expectedCid.toLowerCase()) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "On-chain cidId does not match document",
-			});
-		}
-		if (Number(releaseType) !== RELEASE_TYPE_UINT[rule.releaseType]) {
-			throw new ORPCError("BAD_REQUEST", {
-				message:
-					"On-chain release type does not match submitted settlement rule",
-			});
-		}
-
-		if (
-			rule.releaseType === "specific_signer" &&
-			rule.releaseParams.releaseType === "specific_signer"
-		) {
-			if (
-				specificCommitment.toLowerCase() !==
-				rule.releaseParams.signerEmailCommitment.toLowerCase()
-			) {
-				throw new ORPCError("BAD_REQUEST", {
-					message: "On-chain signer commitment does not match settlement rule",
-				});
-			}
-		}
-
-		if (
-			rule.releaseType === "at_least_n" &&
-			rule.releaseParams.releaseType === "at_least_n"
-		) {
-			if (Number(thresholdN) !== rule.releaseParams.thresholdN) {
-				throw new ORPCError("BAD_REQUEST", {
-					message: "On-chain threshold does not match settlement rule",
-				});
-			}
-		}
-
+		await assertRuleMatchesOnChain({
+			validator,
+			sender,
+			expectedCid,
+			rule,
+		});
 		await assertTxSucceeded(rule.registerRuleTxHash, "registerRule");
 		await assertTxSucceeded(rule.approveTxHash, "approve");
 	}
+}
+
+/** Verifies on-chain rule fields after a client `updatePayoutRule` tx. */
+export async function assertSettlementRuleUpdateOnChain(
+	sender: Address,
+	pieceCid: string,
+	rule: SettlementRuleRegistrationInput,
+	updateRuleTxHash: Hex,
+	validatorAddress: `0x${string}`,
+) {
+	const validator = fsPaymentValidatorAt(validatorAddress);
+	await assertTxSucceeded(updateRuleTxHash, "updateRule");
+	await assertRuleMatchesOnChain({
+		validator,
+		sender,
+		expectedCid: computeCidIdentifier(pieceCid),
+		rule,
+	});
 }

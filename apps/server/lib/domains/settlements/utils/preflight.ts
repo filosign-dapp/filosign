@@ -24,8 +24,8 @@ export async function payerCanFundSettlement(args: {
 
 	const ruleRes = await tryCatch(validator.read.rules([args.onChainRuleId]));
 	if (ruleRes.error) return false;
-	const [, , , amount, , , , , executed] = ruleRes.data;
-	if (executed || amount === 0n) return false;
+	const executed = ruleRes.data[7];
+	if (executed || args.amount === 0n) return false;
 
 	const tokenAbi = erc20BalanceAllowanceAbi(config.chainKey);
 	const [balance, allowance] = await Promise.all([

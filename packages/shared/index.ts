@@ -12,6 +12,7 @@ export * from "./draft-crypto";
 export * from "./draft-snapshot";
 export * from "./draft-snapshot-digest";
 export * from "./draft-storage-keys";
+export * from "./file-audit";
 export { zFileData } from "./file-data";
 export * from "./org-commitment";
 export * from "./org-crypto";

@@ -9,7 +9,3 @@ export function hashAuthSubjectCommitment(authProviderId: string): Hex {
 	if (!d) throw new Error("authProviderId is required");
 	return keccak256(stringToBytes(`${PREFIX}${d}`)) as Hex;
 }
-
-export const FILE_ACK_COLD_CLAIM_SENTINEL_V1 = keccak256(
-	stringToBytes("filosign:file_ack:cold_claim_only:v1"),
-) as Hex;

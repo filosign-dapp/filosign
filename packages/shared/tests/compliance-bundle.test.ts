@@ -23,7 +23,7 @@ const minimalManifest: PlacementManifest = {
 describe("ComplianceBundle", () => {
 	it("parses minimal bundle and canonical JSON is stable", () => {
 		const raw = {
-			version: 5 as const,
+			version: 6 as const,
 			pieceCid: "bafyTEST",
 			chainId: 84532,
 			exportedAtIso: "2026-01-01T00:00:00.000Z",
@@ -78,6 +78,8 @@ describe("ComplianceBundle", () => {
 					signedAtIso: "2026-01-01T00:00:00.000Z",
 					messageTimestampIso: "2026-01-01T00:00:00.000Z",
 					blockTimestampFromTx: null,
+					acknowledgedAtIso: "2026-01-01T00:00:00.000Z",
+					firstViewedAtIso: "2026-01-01T00:00:01.000Z",
 					completedFieldIds: ["f1"],
 					completionsRoot:
 						"0x0000000000000000000000000000000000000000000000000000000000000006",
@@ -95,7 +97,11 @@ describe("ComplianceBundle", () => {
 				},
 			],
 			settlements: [],
-			offChainEvidence: { acknowledgements: [] },
+			offChainEvidence: {
+				acknowledgements: [],
+				documentViews: [],
+				coldInviteClaims: [],
+			},
 		};
 		const a = zComplianceBundle.parse(raw);
 		const b = zComplianceBundle.parse(raw);

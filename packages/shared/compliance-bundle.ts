@@ -34,6 +34,8 @@ export const zSignerComplianceRow = z.object({
 	messageTimestampIso: z.string().nullable(),
 	/** Block time from `FileSigned` tx receipt when fetched. */
 	blockTimestampFromTx: z.number().int().nonnegative().nullable(),
+	acknowledgedAtIso: z.string().nullable(),
+	firstViewedAtIso: z.string().nullable(),
 });
 
 export const zPartyRole = z.enum(["sender", "signer", "viewer"]);
@@ -101,17 +103,36 @@ export const zChainTxRef = z.object({
 export const zAckEvidenceRow = z.object({
 	wallet: zEvmAddress(),
 	createdAtIso: z.string(),
+	acknowledgedAtIso: z.string(),
+	intentVersion: z.string(),
 	emailCommitment: zHexString(),
 	privySubjectCommitment: zHexString().nullable(),
 	ackSha256: zHexString().nullable(),
 });
 
+export const zDocumentViewRow = z.object({
+	wallet: zEvmAddress(),
+	firstViewedAtIso: z.string(),
+	lastViewedAtIso: z.string(),
+	viewCount: z.number().int().min(1),
+	source: z.enum(["sign_page", "file_viewer", "inbox"]),
+});
+
+export const zColdInviteClaimRow = z.object({
+	email: z.string(),
+	wallet: zEvmAddress(),
+	claimedAtIso: z.string(),
+	isSigner: z.boolean(),
+});
+
 export const zOffChainEvidence = z.object({
 	acknowledgements: z.array(zAckEvidenceRow),
+	documentViews: z.array(zDocumentViewRow),
+	coldInviteClaims: z.array(zColdInviteClaimRow),
 });
 
 export const zComplianceBundle = z.object({
-	version: z.literal(5),
+	version: z.literal(6),
 	pieceCid: z.string(),
 	chainId: z.number().int(),
 	exportedAtIso: z.string(),

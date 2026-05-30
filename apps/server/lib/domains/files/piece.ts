@@ -1,5 +1,7 @@
 import {
-	FILE_ACK_COLD_CLAIM_SENTINEL_V1,
+	type DocumentViewSource,
+	documentViewSources,
+	FILE_ACK_INTENT_VERSION_V1,
 	hashAuthSubjectCommitment,
 	hashNormalizedSignerEmail,
 	normalizePlacementRecipientEmail,
@@ -12,6 +14,10 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { primaryEmailForWallet } from "@/lib/domains/files/file-invites";
+import {
+	getValidAck,
+	requireAckForParticipantAccess,
+} from "@/lib/domains/files/utils/participant-access";
 import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
 import { trackServerEvent } from "@/lib/platform/analytics/track";
@@ -26,6 +32,7 @@ export { pieceDetail } from "./utils/piece-detail";
 const {
 	files,
 	fileAcknowledgements,
+	fileDocumentViews,
 	fileParticipants,
 	fileSignerDrafts,
 	users,
@@ -34,12 +41,15 @@ const {
 const zPieceAckBody = z.object({
 	signature: zHexString(),
 	timestamp: z.number({ error: "timestamp must be a number" }),
+	intentVersion: z.literal(FILE_ACK_INTENT_VERSION_V1).optional(),
 });
 
 export async function pieceAck(args: {
 	userWallet: Address;
 	pieceCid: string;
 	body: unknown;
+	requestIp?: string | null;
+	requestUserAgent?: string | null;
 }) {
 	const parsedBody = zPieceAckBody.safeParse(args.body);
 	if (parsedBody.error) {
@@ -48,6 +58,8 @@ export async function pieceAck(args: {
 		});
 	}
 	const { signature, timestamp } = parsedBody.data;
+	const intentVersion =
+		parsedBody.data.intentVersion ?? FILE_ACK_INTENT_VERSION_V1;
 
 	const [fileRecord] = await db
 		.select({
@@ -82,16 +94,8 @@ export async function pieceAck(args: {
 		});
 	}
 
-	const [existingAck] = await db
-		.select()
-		.from(fileAcknowledgements)
-		.where(
-			and(
-				eq(fileAcknowledgements.filePieceCid, args.pieceCid),
-				eq(fileAcknowledgements.wallet, args.userWallet),
-			),
-		);
-	if (existingAck && existingAck.ack !== FILE_ACK_COLD_CLAIM_SENTINEL_V1) {
+	const existingAck = await getValidAck(args.userWallet, args.pieceCid);
+	if (existingAck) {
 		throw new ORPCError("CONFLICT", { message: "File already acked" });
 	}
 
@@ -123,42 +127,137 @@ export async function pieceAck(args: {
 		throw new ORPCError("BAD_REQUEST", { message: "Invalid signature" });
 	}
 	const walletNorm = getAddress(participantRecord.wallet);
-	const createdAt = new Date(timestamp * 1000);
-	const updatedAt = new Date();
-	if (existingAck) {
-		await db
-			.update(fileAcknowledgements)
-			.set({
-				ack: signature,
-				createdAt,
-				updatedAt,
-			})
-			.where(
-				and(
-					eq(fileAcknowledgements.filePieceCid, args.pieceCid),
-					eq(fileAcknowledgements.wallet, walletNorm),
-				),
-			);
-	} else {
-		await db.insert(fileAcknowledgements).values({
-			filePieceCid: fileRecord.pieceCid,
-			wallet: walletNorm,
-			ack: signature,
-			createdAt,
-			updatedAt,
-		});
-	}
+	const acknowledgedAt = new Date(timestamp * 1000);
+	const now = new Date();
 
-	const ackMode =
-		existingAck?.ack === FILE_ACK_COLD_CLAIM_SENTINEL_V1 ? "cold" : "warm";
+	await db.insert(fileAcknowledgements).values({
+		filePieceCid: fileRecord.pieceCid,
+		wallet: walletNorm,
+		ack: signature,
+		acknowledgedAt,
+		intentVersion,
+		requestIp: args.requestIp ?? null,
+		requestUserAgent: args.requestUserAgent ?? null,
+		createdAt: acknowledgedAt,
+		updatedAt: now,
+	});
+
 	trackServerEvent({
 		distinctId: walletNorm,
 		event: SERVER_ANALYTICS_EVENTS.pieceAcknowledged,
 		pieceCid: args.pieceCid,
-		properties: { mode: ackMode },
+		properties: { intent_version: intentVersion },
 	});
 
 	return {};
+}
+
+const zRecordViewBody = z.object({
+	source: z.enum(documentViewSources).optional(),
+});
+
+export async function pieceRecordView(args: {
+	userWallet: Address;
+	pieceCid: string;
+	body: unknown;
+}) {
+	const parsedBody = zRecordViewBody.safeParse(args.body ?? {});
+	if (parsedBody.error) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: zodSafeParseMessage(parsedBody.error),
+		});
+	}
+	const source: DocumentViewSource = parsedBody.data.source ?? "sign_page";
+	const walletNorm = getAddress(args.userWallet);
+
+	const [participantRecord] = await db
+		.select({ wallet: fileParticipants.wallet })
+		.from(fileParticipants)
+		.where(
+			and(
+				eq(fileParticipants.filePieceCid, args.pieceCid),
+				eq(fileParticipants.wallet, walletNorm),
+			),
+		);
+	if (!participantRecord) {
+		throw new ORPCError("FORBIDDEN", {
+			message: "You dont have access to this file",
+		});
+	}
+
+	await requireAckForParticipantAccess(walletNorm, args.pieceCid);
+
+	const now = new Date();
+	const [existing] = await db
+		.select({ viewCount: fileDocumentViews.viewCount })
+		.from(fileDocumentViews)
+		.where(
+			and(
+				eq(fileDocumentViews.filePieceCid, args.pieceCid),
+				eq(fileDocumentViews.wallet, walletNorm),
+			),
+		);
+
+	if (existing) {
+		await db
+			.update(fileDocumentViews)
+			.set({
+				lastViewedAt: now,
+				viewCount: existing.viewCount + 1,
+				source,
+				updatedAt: now,
+			})
+			.where(
+				and(
+					eq(fileDocumentViews.filePieceCid, args.pieceCid),
+					eq(fileDocumentViews.wallet, walletNorm),
+				),
+			);
+	} else {
+		await db.insert(fileDocumentViews).values({
+			filePieceCid: args.pieceCid,
+			wallet: walletNorm,
+			firstViewedAt: now,
+			lastViewedAt: now,
+			viewCount: 1,
+			source,
+			createdAt: now,
+			updatedAt: now,
+		});
+		trackServerEvent({
+			distinctId: walletNorm,
+			event: SERVER_ANALYTICS_EVENTS.documentViewed,
+			pieceCid: args.pieceCid,
+			properties: { source },
+		});
+	}
+
+	const view = await db
+		.select({
+			firstViewedAt: fileDocumentViews.firstViewedAt,
+			lastViewedAt: fileDocumentViews.lastViewedAt,
+			viewCount: fileDocumentViews.viewCount,
+		})
+		.from(fileDocumentViews)
+		.where(
+			and(
+				eq(fileDocumentViews.filePieceCid, args.pieceCid),
+				eq(fileDocumentViews.wallet, walletNorm),
+			),
+		);
+
+	const row = view[0];
+	if (!row) {
+		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+			message: "Failed to record document view",
+		});
+	}
+
+	return {
+		firstViewedAt: row.firstViewedAt.toISOString(),
+		lastViewedAt: row.lastViewedAt.toISOString(),
+		viewCount: row.viewCount,
+	};
 }
 
 /** --- draft --- */
@@ -190,6 +289,8 @@ export async function pieceSignDraftGet(userWallet: Address, pieceCid: string) {
 			message: "You are not required to sign this file",
 		});
 	}
+
+	await requireAckForParticipantAccess(userWallet, pieceCid);
 
 	const manifestParsed = zPlacementManifest.safeParse(
 		fileRecord.placementManifestJson,
@@ -247,6 +348,8 @@ export async function pieceSignDraftPut(args: {
 	const { completedFieldIds: bodyIds } = parsedBody.data;
 	const pieceCid = args.pieceCid;
 	const userWallet = args.userWallet;
+
+	await requireAckForParticipantAccess(userWallet, pieceCid);
 
 	const [fileRecord] = await db
 		.select({
@@ -352,6 +455,8 @@ export async function pieceDownloadUrl(userWallet: Address, pieceCid: string) {
 		});
 	}
 
+	const isSender = getAddress(fileRecord.sender) === userWalletNorm;
+
 	const [participantRecord] = await db
 		.select({
 			wallet: fileParticipants.wallet,
@@ -376,6 +481,10 @@ export async function pieceDownloadUrl(userWallet: Address, pieceCid: string) {
 		throw new ORPCError("NOT_FOUND", {
 			message: "File not found or not allowed to access",
 		});
+	}
+
+	if (participantRecord && !isSender) {
+		await requireAckForParticipantAccess(userWalletNorm, pieceCid);
 	}
 
 	const fileExists = await bucket.exists(`uploads/${pieceCid}`);

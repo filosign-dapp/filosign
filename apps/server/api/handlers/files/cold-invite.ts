@@ -1,4 +1,3 @@
-import { FILE_ACK_COLD_CLAIM_SENTINEL_V1 } from "@filosign/shared";
 import { zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
@@ -19,13 +18,7 @@ import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
 import { bucket } from "@/lib/platform/s3/client";
 
-const {
-	files,
-	fileColdInvites,
-	fileParticipants,
-	fileAcknowledgements,
-	users,
-} = db.schema;
+const { files, fileColdInvites, fileParticipants, users } = db.schema;
 
 export async function filesColdInviteByToken(inviteToken: string) {
 	if (!inviteToken || inviteToken.length < 8) {
@@ -181,17 +174,6 @@ export async function filesColdInviteClaim(args: {
 			.update(fileColdInvites)
 			.set(redactColdInviteRow(userWallet))
 			.where(eq(fileColdInvites.id, invite.id));
-
-		await tx
-			.insert(fileAcknowledgements)
-			.values({
-				filePieceCid: invite.filePieceCid,
-				wallet: userWallet,
-				ack: FILE_ACK_COLD_CLAIM_SENTINEL_V1,
-				createdAt: now,
-				updatedAt: now,
-			})
-			.onConflictDoNothing();
 	});
 
 	trackServerEvent({
@@ -199,13 +181,6 @@ export async function filesColdInviteClaim(args: {
 		event: SERVER_ANALYTICS_EVENTS.coldInviteClaimed,
 		pieceCid: invite.filePieceCid,
 		properties: { is_signer: invite.isSigner },
-	});
-	// Cold claim inserts FILE_ACK_COLD_CLAIM_SENTINEL; sign UI skips warm ack.
-	trackServerEvent({
-		distinctId: userWallet,
-		event: SERVER_ANALYTICS_EVENTS.pieceAcknowledged,
-		pieceCid: invite.filePieceCid,
-		properties: { mode: "cold" as const },
 	});
 
 	return {

@@ -18,6 +18,7 @@ import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
+import { requireCanSign } from "@/lib/domains/files/utils/participant-access";
 import { tryExecuteSettlementRulesForPiece } from "@/lib/domains/settlements";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
 import { trackServerEvent } from "@/lib/platform/analytics/track";
@@ -46,7 +47,7 @@ export async function pieceSign(args: {
 			signature: zHexString(),
 			timestamp: z.number({ error: "timestamp must be a number" }),
 			dl3Signature: zHexString(),
-			completedFieldIds: z.array(z.string()).optional(),
+			completedFieldIds: z.array(z.string()),
 		})
 		.safeParse(args.body);
 	if (parsedBody.error) {
@@ -93,6 +94,13 @@ export async function pieceSign(args: {
 		});
 	}
 
+	const signAt = new Date(timestamp * 1000);
+	await requireCanSign({
+		wallet: userWallet,
+		pieceCid,
+		signAt,
+	});
+
 	const manifestParsed = zPlacementManifest.safeParse(
 		fileRecord.placementManifestJson,
 	);
@@ -121,25 +129,21 @@ export async function pieceSign(args: {
 	);
 
 	let fieldIds: string[];
-	if (completedFieldIds !== undefined) {
-		fieldIds = completedFieldIds;
-		const completedSet = new Set(fieldIds);
-		for (const id of fieldIds) {
-			if (!allowedIds.has(id)) {
-				throw new ORPCError("BAD_REQUEST", {
-					message: "completedFieldIds must match manifest fields for signer",
-				});
-			}
+	fieldIds = completedFieldIds;
+	const completedSet = new Set(fieldIds);
+	for (const id of fieldIds) {
+		if (!allowedIds.has(id)) {
+			throw new ORPCError("BAD_REQUEST", {
+				message: "completedFieldIds must match manifest fields for signer",
+			});
 		}
-		for (const req of requiredIds) {
-			if (!completedSet.has(req)) {
-				throw new ORPCError("BAD_REQUEST", {
-					message: "All required fields must be marked complete before signing",
-				});
-			}
+	}
+	for (const req of requiredIds) {
+		if (!completedSet.has(req)) {
+			throw new ORPCError("BAD_REQUEST", {
+				message: "All required fields must be marked complete before signing",
+			});
 		}
-	} else {
-		fieldIds = assignedForSigner.map((f) => f.id);
 	}
 
 	if (fieldIds.length === 0) {

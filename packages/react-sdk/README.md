@@ -38,7 +38,7 @@ Deeper context: [`AGENTS.md`](../../AGENTS.md), [api-routes.mdc](../../.cursor/r
 |---------|---------|
 | `@filosign/react` | `FilosignProvider`, `useFilosignContext` (`rpc`, `rpcQuery`, `session`, `contracts`, `runtime`, `wallet`, `wasm`) |
 | `@filosign/react/auth` | Login, logout, `useAuthedApi`, registration, recovery |
-| `@filosign/react/files` | Documents, cold invite, sign/ack/view/send, settlement rules (`useSettlementsListByFile`, `useTrySettleSettlement`, `useManualSettlementPayout`) |
+| `@filosign/react/files` | Documents, cold invite, sign/ack/view/send, register routing (`useSendFile` + `routing`), amend signer (`useAmendSigner`), settlements (`useSettlementsListByFile`, `useTrySettleSettlement`, `useManualSettlementPayout`, `useUpdateSettlementRule`, `useCancelSettlementRule`) |
 | `@filosign/react/sharing` | Connections, approvals, requests |
 | `@filosign/react/users` | Profile, Privy email, lookup |
 | `@filosign/react/runtime` | `useRuntimeChain` |
@@ -136,6 +136,33 @@ Non-RPC only: `useAuthedApi`, `useIsLoggedIn`, `useIsRegistered`, `useStoredKeyg
 4. Invalidate with `rpcQuery.*.key()` or `filosignKeys` as appropriate.
 5. Client: `@filosign/react/<domain>` only.
 6. `turbo run check-types --filter=@filosign/react`; `bun run check:ci` (or scoped Biome on changed paths).
+
+---
+
+## v1 contracts slice (`@filosign/react/files`)
+
+### Send + register routing
+
+`useSendFile` accepts optional `routing?: RegisterRoutingInput` (from `@filosign/shared`). The SDK builds validated routing calldata, signs EIP-712 v2 `RegisterFile` with routing hashes, and passes `routing` to `files.register`. Timestamps use latest chain block time.
+
+Helpers: `buildValidatedRegisterRouting`, `canUseAdvancedRouting` (entitlement pre-check for UI).
+
+### Settlements
+
+`SettlementRuleDraft` uses `legs[]` (1–32), all nine release types, and optional `expiresAt`.
+
+| Hook | Server + chain |
+|------|----------------|
+| `useSendFile` + `registerSettlementRulesOnChain` | register + index |
+| `useSettlementsListByFile` | list |
+| `useTrySettleSettlement` | relay execute |
+| `useManualSettlementPayout` | wallet execute + confirm |
+| `useUpdateSettlementRule` | update + index |
+| `useCancelSettlementRule` | cancel + index |
+| `useRevokeSettlementAllowance` | ERC-20 approve(0) |
+| `useAmendSigner` | amend signer relay |
+
+On-chain helpers exported from `@filosign/react/files`: `registerSettlementRulesOnChain`, `updateSettlementRuleOnChain`, `cancelSettlementRuleOnChain`, etc.
 
 ---
 

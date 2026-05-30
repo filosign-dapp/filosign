@@ -77,19 +77,3 @@ export function invalidateOrgsQueries(
 		queryKey: rpcQuery.orgs.key(),
 	});
 }
-
-/** Connections page: email invites. */
-export function invalidateConnectionsContactsTab(
-	queryClient: QueryClient,
-	rpcQuery: FilosignRpcQueryUtils,
-) {
-	return invalidateSharingQueries(queryClient, rpcQuery);
-}
-
-/** @deprecated Share requests removed — use {@link invalidateSharingQueries}. */
-export function invalidateConnectionsRequestsTab(
-	queryClient: QueryClient,
-	rpcQuery: FilosignRpcQueryUtils,
-) {
-	return invalidateSharingQueries(queryClient, rpcQuery);
-}

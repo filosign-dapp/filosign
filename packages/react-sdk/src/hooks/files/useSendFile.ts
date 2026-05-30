@@ -15,6 +15,7 @@ import {
 	hashNormalizedSignerEmail,
 	hashOrgIdCommitment,
 	normalizePlacementRecipientEmail,
+	type RegisterRoutingInput,
 	ZERO_ORG_ID_COMMITMENT,
 	type zFileData,
 } from "@filosign/shared";
@@ -22,7 +23,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Address, Hex } from "viem";
 import z from "zod";
 import { useFilosignContext } from "../../context/useFilosignContext";
+import { latestChainTimestamp } from "../../lib/chain-time";
 import { invalidateEntitlements } from "../../lib/invalidate-entitlements";
+import { buildValidatedRegisterRouting } from "../../lib/register-routing";
 import {
 	registerSettlementRulesOnChain,
 	type SettlementRuleDraft,
@@ -62,6 +65,8 @@ export function useSendFile() {
 			orgEncryptionPublicKey?: Hex;
 			/** On-chain settlement rules (register + approve before files.register). */
 			settlementRules?: SettlementRuleDraft[];
+			/** Advanced registry routing (sequential, optional signers, quorum). */
+			routing?: RegisterRoutingInput;
 		}) => {
 			const {
 				signers,
@@ -74,14 +79,16 @@ export function useSendFile() {
 				organizationId,
 				orgEncryptionPublicKey,
 				settlementRules = [],
+				routing,
 			} = args;
-			const timestamp = Math.floor(Date.now() / 1000);
 
 			if (!contracts || !wallet || !user || !isAuthed) {
 				throw new Error(
 					"Not connected: contracts, wallet, profile, and auth required",
 				);
 			}
+
+			const timestamp = await latestChainTimestamp(contracts);
 
 			const rawSenderEmail = user.email?.trim();
 			if (!rawSenderEmail) {
@@ -223,11 +230,18 @@ export function useSendFile() {
 
 			const cidIdentifier = computeCidIdentifier(pieceCid.toString());
 
-			const { signersCommitment, viewersCommitment } =
-				buildRegistrationEmailCommitments({
-					placementManifest,
-					viewerEmails,
-				});
+			const { viewersCommitment } = buildRegistrationEmailCommitments({
+				placementManifest,
+				viewerEmails,
+			});
+			const {
+				calldata: routingCalldata,
+				signersCommitment,
+				requiredCommitmentsHash,
+				optionalCommitmentsHash,
+				routingOrderHash,
+				quorumSetHash,
+			} = buildValidatedRegisterRouting({ placementManifest, routing });
 
 			const orgIdCommitment = organizationId
 				? hashOrgIdCommitment(organizationId)
@@ -244,6 +258,12 @@ export function useSendFile() {
 						{ name: "senderEmailCommitment", type: "bytes32" },
 						{ name: "senderPrivySubjectCommitment", type: "bytes32" },
 						{ name: "orgIdCommitment", type: "bytes32" },
+						{ name: "requiredCommitmentsHash", type: "bytes32" },
+						{ name: "optionalCommitmentsHash", type: "bytes32" },
+						{ name: "routingMode", type: "uint8" },
+						{ name: "routingOrderHash", type: "bytes32" },
+						{ name: "quorumN", type: "uint8" },
+						{ name: "quorumSetHash", type: "bytes32" },
 						{ name: "timestamp", type: "uint256" },
 						{ name: "nonce", type: "uint256" },
 					],
@@ -258,6 +278,12 @@ export function useSendFile() {
 					senderEmailCommitment,
 					senderPrivySubjectCommitment,
 					orgIdCommitment,
+					requiredCommitmentsHash,
+					optionalCommitmentsHash,
+					routingMode: routingCalldata.routingMode,
+					routingOrderHash,
+					quorumN: routingCalldata.quorumN,
+					quorumSetHash,
 					timestamp: BigInt(timestamp),
 					nonce: BigInt(nonce),
 				},
@@ -296,18 +322,6 @@ export function useSendFile() {
 					}
 				: undefined;
 
-			const settlementRuleRecords =
-				settlementRules.length > 0
-					? await registerSettlementRulesOnChain({
-							wallet,
-							contracts,
-							chainKey,
-							payer: wallet.account.address,
-							cidIdentifier,
-							rules: settlementRules,
-						})
-					: [];
-
 			const requestPayload = {
 				pieceCid: pieceCid.toString(),
 				participants: participants,
@@ -325,9 +339,7 @@ export function useSendFile() {
 						}
 					: {}),
 				...(coldInviteRows.length > 0 ? { coldInvites: coldInviteRows } : {}),
-				...(settlementRuleRecords.length > 0
-					? { settlementRules: settlementRuleRecords }
-					: {}),
+				...(routing ? { routing } : {}),
 			};
 
 			await rpcQuery.files.register.call({
@@ -335,7 +347,27 @@ export function useSendFile() {
 				displayName: metadata.name,
 				mimeType: "application/pdf",
 				ciphertextByteLength: encryptedData.byteLength,
-			} as Record<string, unknown>);
+			});
+
+			const settlementRuleRecords =
+				settlementRules.length > 0
+					? await registerSettlementRulesOnChain({
+							wallet,
+							contracts,
+							chainKey,
+							payer: wallet.account.address,
+							cidIdentifier,
+							rules: settlementRules,
+						})
+					: [];
+
+			if (settlementRuleRecords.length > 0) {
+				await rpcQuery.settlements.registerForFile.call({
+					pieceCid: pieceCid.toString(),
+					...(organizationId ? { organizationId } : {}),
+					rules: settlementRuleRecords,
+				});
+			}
 
 			void queryClient.invalidateQueries({
 				queryKey: rpcQuery.files.list.sent.key(),

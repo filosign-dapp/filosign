@@ -1,24 +1,35 @@
 import type { FilosignContracts } from "@filosign/contracts";
 import { type ChainKey, getContractAbi } from "@filosign/contracts";
 import type {
+	SettlementRecipientSource,
 	SettlementReleaseType,
+	SettlementRuleCancelInput,
 	SettlementRuleRegistrationInput,
+	SettlementRuleUpdateInput,
+} from "@filosign/shared";
+import {
+	SETTLEMENT_RELEASE_TYPE_UINT,
+	settlementRuleTotalAmount,
 } from "@filosign/shared";
 import { type Address, encodeFunctionData, type Hex } from "viem";
 import type { FilosignWallet } from "./wallet";
 
-export type SettlementRuleDraft = {
+export type SettlementRuleDraftLeg = {
 	recipientWallet: Address;
-	recipientSource: "signer" | "viewer" | "org_wallet";
+	recipientSource: SettlementRecipientSource;
 	amount: bigint;
+};
+
+export type SettlementRuleDraft = {
+	legs: SettlementRuleDraftLeg[];
 	tokenAddress: Address;
 	releaseType: SettlementReleaseType;
 	releaseParams: SettlementRuleRegistrationInput["releaseParams"];
+	expiresAt?: bigint;
 };
 
 const ZERO_COMMITMENT = `0x${"00".repeat(32)}` as Hex;
 
-/** Matches on-chain AtLeastN rules: no zero or duplicate email commitments. */
 function uniqueSignerCommitments(
 	commitments: Hex[],
 	thresholdN: number,
@@ -31,7 +42,7 @@ function uniqueSignerCommitments(
 		}
 		const key = c.toLowerCase();
 		if (seen.has(key)) {
-			throw new Error("Duplicate signer commitment in at_least_n rule");
+			throw new Error("Duplicate signer commitment in settlement rule");
 		}
 		seen.add(key);
 		unique.push(c);
@@ -45,17 +56,10 @@ function uniqueSignerCommitments(
 }
 
 function releaseTypeToUint8(releaseType: SettlementReleaseType): number {
-	switch (releaseType) {
-		case "all_signed":
-			return 0;
-		case "specific_signer":
-			return 1;
-		case "at_least_n":
-			return 2;
-	}
+	return SETTLEMENT_RELEASE_TYPE_UINT[releaseType];
 }
 
-function releaseParamsToContractArgs(
+export function releaseParamsToContractArgs(
 	releaseType: SettlementReleaseType,
 	releaseParams: SettlementRuleDraft["releaseParams"],
 ): {
@@ -78,7 +82,7 @@ function releaseParamsToContractArgs(
 		releaseParams.releaseType === "at_least_n"
 	) {
 		return {
-			specificSignerCommitment: `0x${"00".repeat(32)}` as Hex,
+			specificSignerCommitment: ZERO_COMMITMENT,
 			thresholdN: releaseParams.thresholdN,
 			signerCommitments: uniqueSignerCommitments(
 				releaseParams.signerEmailCommitments,
@@ -86,11 +90,63 @@ function releaseParamsToContractArgs(
 			),
 		};
 	}
+	if (
+		releaseType === "quorum_required" &&
+		releaseParams.releaseType === "quorum_required"
+	) {
+		return {
+			specificSignerCommitment: ZERO_COMMITMENT,
+			thresholdN: releaseParams.thresholdN,
+			signerCommitments: [],
+		};
+	}
+	if (
+		releaseType === "quorum_set" &&
+		releaseParams.releaseType === "quorum_set"
+	) {
+		return {
+			specificSignerCommitment: ZERO_COMMITMENT,
+			thresholdN: releaseParams.thresholdN,
+			signerCommitments: uniqueSignerCommitments(
+				releaseParams.signerEmailCommitments,
+				releaseParams.thresholdN,
+			),
+		};
+	}
+	if (
+		releaseType === "quorum_all" &&
+		releaseParams.releaseType === "quorum_all"
+	) {
+		return {
+			specificSignerCommitment: ZERO_COMMITMENT,
+			thresholdN: releaseParams.thresholdN,
+			signerCommitments: [],
+		};
+	}
+	if (
+		releaseType === "all_of_set" &&
+		releaseParams.releaseType === "all_of_set"
+	) {
+		return {
+			specificSignerCommitment: ZERO_COMMITMENT,
+			thresholdN: 0,
+			signerCommitments: uniqueSignerCommitments(
+				releaseParams.signerEmailCommitments,
+				releaseParams.signerEmailCommitments.length,
+			),
+		};
+	}
 	return {
-		specificSignerCommitment: `0x${"00".repeat(32)}` as Hex,
+		specificSignerCommitment: ZERO_COMMITMENT,
 		thresholdN: 0,
 		signerCommitments: [],
 	};
+}
+
+function assertSettlementLegs(legs: SettlementRuleDraftLeg[]) {
+	if (legs.length === 0 || legs.length > 32) {
+		throw new Error("Settlement rule must have 1–32 payout legs");
+	}
 }
 
 function erc20ApproveAbi(chainKey: ChainKey) {
@@ -99,6 +155,21 @@ function erc20ApproveAbi(chainKey: ChainKey) {
 	} catch {
 		return getContractAbi("MockUSDC", "local");
 	}
+}
+
+function toRegistrationLegs(legs: SettlementRuleDraftLeg[]) {
+	return legs.map((leg) => ({
+		recipientWallet: leg.recipientWallet,
+		recipientSource: leg.recipientSource,
+		amount: leg.amount.toString(),
+	}));
+}
+
+function toContractPayoutLegs(legs: SettlementRuleDraftLeg[]) {
+	return legs.map((leg) => ({
+		recipient: leg.recipientWallet,
+		amount: leg.amount,
+	}));
 }
 
 export async function registerSettlementRulesOnChain(args: {
@@ -121,13 +192,19 @@ export async function registerSettlementRulesOnChain(args: {
 	const registered: SettlementRuleRegistrationInput[] = [];
 
 	for (const rule of args.rules) {
+		assertSettlementLegs(rule.legs);
+		const totalAmount = settlementRuleTotalAmount(
+			rule.legs.map((leg) => ({ amount: leg.amount.toString() })),
+		);
+		const expiresAt = rule.expiresAt ?? 0n;
 		const { specificSignerCommitment, thresholdN, signerCommitments } =
 			releaseParamsToContractArgs(rule.releaseType, rule.releaseParams);
+		const contractLegs = toContractPayoutLegs(rule.legs);
 
 		const approveData = encodeFunctionData({
 			abi: approveAbi,
 			functionName: "approve",
-			args: [validator.address, rule.amount],
+			args: [validator.address, totalAmount],
 		});
 
 		const registerData = encodeFunctionData({
@@ -135,14 +212,14 @@ export async function registerSettlementRulesOnChain(args: {
 			functionName: "registerRule",
 			args: [
 				args.payer,
-				rule.recipientWallet,
 				rule.tokenAddress,
-				rule.amount,
 				args.cidIdentifier,
 				releaseTypeToUint8(rule.releaseType),
 				specificSignerCommitment,
 				thresholdN,
+				expiresAt,
 				signerCommitments,
+				contractLegs,
 			],
 		});
 
@@ -164,13 +241,12 @@ export async function registerSettlementRulesOnChain(args: {
 
 		registered.push({
 			onChainRuleId: onChainRuleId.toString(10),
-			recipientWallet: rule.recipientWallet,
-			recipientSource: rule.recipientSource,
+			legs: toRegistrationLegs(rule.legs),
 			tokenAddress: rule.tokenAddress,
-			amount: rule.amount.toString(),
 			cidIdentifier: args.cidIdentifier,
 			releaseType: rule.releaseType,
 			releaseParams: rule.releaseParams,
+			expiresAt: expiresAt === 0n ? undefined : expiresAt.toString(),
 			registerRuleTxHash: registerHash,
 			approveTxHash: approveHash,
 		});
@@ -179,7 +255,80 @@ export async function registerSettlementRulesOnChain(args: {
 	return registered;
 }
 
-/** Relays executePayout when release conditions and payer funding are met. */
+export async function updateSettlementRuleOnChain(args: {
+	wallet: FilosignWallet;
+	contracts: FilosignContracts;
+	onChainRuleId: string;
+	releaseType: SettlementReleaseType;
+	releaseParams: SettlementRuleDraft["releaseParams"];
+	legs: SettlementRuleDraftLeg[];
+	expiresAt?: bigint;
+}): Promise<Pick<SettlementRuleUpdateInput, "updateRuleTxHash">> {
+	const validator = args.contracts.FSPaymentValidator;
+	if (!validator) {
+		throw new Error(
+			"FSPaymentValidator is not deployed on this chain. Run contracts deploy/migrate first.",
+		);
+	}
+
+	assertSettlementLegs(args.legs);
+
+	const expiresAt = args.expiresAt ?? 0n;
+	const { specificSignerCommitment, thresholdN, signerCommitments } =
+		releaseParamsToContractArgs(args.releaseType, args.releaseParams);
+
+	const data = encodeFunctionData({
+		abi: validator.abi,
+		functionName: "updatePayoutRule",
+		args: [
+			BigInt(args.onChainRuleId),
+			releaseTypeToUint8(args.releaseType),
+			specificSignerCommitment,
+			thresholdN,
+			expiresAt,
+			signerCommitments,
+			toContractPayoutLegs(args.legs),
+		],
+	});
+
+	const updateRuleTxHash = await args.wallet.sendTransaction({
+		to: validator.address,
+		data,
+		account: args.wallet.account,
+		chain: args.wallet.chain,
+	});
+
+	return { updateRuleTxHash };
+}
+
+export async function cancelSettlementRuleOnChain(args: {
+	wallet: FilosignWallet;
+	contracts: FilosignContracts;
+	onChainRuleId: string;
+}): Promise<Pick<SettlementRuleCancelInput, "cancelRuleTxHash">> {
+	const validator = args.contracts.FSPaymentValidator;
+	if (!validator) {
+		throw new Error(
+			"FSPaymentValidator is not deployed on this chain. Run contracts deploy/migrate first.",
+		);
+	}
+
+	const data = encodeFunctionData({
+		abi: validator.abi,
+		functionName: "cancelPayoutRule",
+		args: [BigInt(args.onChainRuleId)],
+	});
+
+	const cancelRuleTxHash = await args.wallet.sendTransaction({
+		to: validator.address,
+		data,
+		account: args.wallet.account,
+		chain: args.wallet.chain,
+	});
+
+	return { cancelRuleTxHash };
+}
+
 export async function executeSettlementPayoutOnChain(args: {
 	wallet: FilosignWallet;
 	contracts: FilosignContracts;
@@ -206,7 +355,6 @@ export async function executeSettlementPayoutOnChain(args: {
 	});
 }
 
-/** Revokes ERC-20 allowance for FSPaymentValidator (approve 0). Blocks future executePayout. */
 export async function revokeSettlementValidatorAllowance(args: {
 	wallet: FilosignWallet;
 	contracts: FilosignContracts;

@@ -3,10 +3,7 @@
  *
  * Helper functions for working with Filecoin Piece CIDs
  */
-import type {
-	// LegacyPieceLink as LegacyPieceCIDType,
-	PieceLink as PieceCIDType,
-} from "@web3-storage/data-segment";
+import type { PieceLink as PieceCIDType } from "@web3-storage/data-segment";
 import * as Hasher from "@web3-storage/data-segment/multihash";
 
 import * as Raw from "multiformats/codecs/raw";

@@ -204,7 +204,7 @@ useQuery({
 | Key factory | Purpose |
 |-------------|---------|
 | `filosignKeys.authedApi(address)` | JWT session query |
-| `filosignKeys.keyRegistrySnapshot(address)` | On-chain registration + keygen |
+| `filosignKeys.keyRegistrySnapshot(address)` | Off-chain registration snapshot (Postgres + keygen commitments) |
 | `filosignKeys.isLoggedIn(address)` | Seed matches commitments |
 | `filosignKeys.decryptedFileMetadata(…)` | Document card preview cache |
 

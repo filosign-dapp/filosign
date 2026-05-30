@@ -6,16 +6,16 @@ Ranked **high → low**. Keep bullets actionable; link detail docs in `project/e
 
 ## P0 — Urgent / gate launch
 
-- Modular Smart Contract Migration for mainnet
-- **Secrets & key custody:** server relay key (KMS), deployer (KMS), JWT, no keys in client. No .env at all. 
+- **Immutable v1 mainnet deploy:** `bun run --cwd apps/contracts migrate:mainnet` → verify `owner()`, `server()`, addresses on Base scan → [`launch/production-checklist.md`](launch/production-checklist.md)
+- **Secrets & key custody:** server relay key (KMS), deployer (KMS), JWT, no keys in client. No .env at all.
 - **Support channel** (email, status page, SLA for paid tiers)!!!
 - **Analytics & consent:** PostHog/opt-in if EU traffic.
 - **Request Access (invite-only trial):** no signup without code; work-email domains → auto invite; public domains → manual review queue + superadmin tools ([entitlement report § Free Trial](entitlements/entitlement_breakdown_report.md)).
 - **Terms of Service + Privacy Policy:** publish on Astro; link from client sign-in / wallet; align with payments, webhooks, zero-knowledge claims — **outline risks with counsel**, not DIY-only. (Search templates and design to reduce risk)
-- **Dodo payments:** wire checkout/subscriptions to plans (`[packages/entitlements](../../packages/entitlements)`); test upgrade/downgrade + webhooks. ****Merchant of record terms, refunds, chargebacks, supported countries vs your pricing page.
+- **Dodo payments:** code wired (wallet Solo + org seat billing, webhooks, portal). **Remaining:** live smoke on prod + merchant terms / refunds / countries vs pricing page.
 - **Pricing page:** redesign from new entitlements + `[feature_effort_ranking.md](entitlements/feature_effort_ranking.md)` + competitive/cost reports.
 - **Deploy path:** decide Hetzner (multi-node + Docker Swarm) vs managed DB/PaaS; document server + Postgres + secrets + backups.
-- **Uptime monitoring + backups** (DB, R2, secrets rotation).
+- **Uptime monitoring + backups** (DB, R2, secrets rotation). See [`launch/production-checklist.md`](launch/production-checklist.md) §5.
 - **Launch funds:** budget ETH/USDC (contracts), server settlement relay gas, Thirdweb credits, Hetzner, domains, legal, first year ops.
 - **Counsel review** of ToS, Privacy, cookie/consent (GDPR if EU users), acceptable use, limitation of liability, arbitration venue.
 - **Payments & crypto wording:** non-custodial USDC, server/wallet settlement relay (no custody), no money-transmitter claims you can’t support.

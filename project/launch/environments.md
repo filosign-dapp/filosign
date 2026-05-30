@@ -77,3 +77,4 @@ Three client projects (staging, sandbox, production) from the same `main` commit
 
 - Purge `staging` or `sandbox` DB anytime: `bun run db -- purge staging|sandbox`
 - Production stack can remain undeployed until mainnet contracts and live Dodo products are ready
+- **Production launch:** follow [`production-checklist.md`](production-checklist.md) (deploy, env, smoke, legal gates)

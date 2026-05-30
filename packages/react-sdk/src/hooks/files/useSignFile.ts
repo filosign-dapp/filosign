@@ -13,10 +13,11 @@ import {
 	zPlacementManifest,
 } from "@filosign/shared";
 import type { InferClientOutputs } from "@orpc/client";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Hex } from "viem";
 import { getAddress } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
+import { invalidateInboxQueries } from "../../lib/invalidate-queries";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import type { AppRouterClient } from "../../orpc/app-router-types";
 import { useCryptoSeed } from "../auth";
@@ -25,6 +26,7 @@ import { useUserProfile } from "../users/useUserProfile";
 export function useSignFile() {
 	const { contracts, wallet, wasm } = useFilosignContext();
 	const { rpcQuery, isAuthed } = useFilosignRpc();
+	const queryClient = useQueryClient();
 	const { action: cryptoAction } = useCryptoSeed();
 	const { data: userProfile } = useUserProfile();
 
@@ -34,7 +36,7 @@ export function useSignFile() {
 	return useMutation({
 		mutationFn: async (args: {
 			pieceCid: string;
-			completedFieldIds?: string[];
+			completedFieldIds: string[];
 		}) => {
 			let success = false;
 
@@ -59,6 +61,11 @@ export function useSignFile() {
 					placementManifest: manifestRaw,
 				} = fileResponse;
 
+				if (manifestRaw == null) {
+					throw new Error(
+						"Document manifest unavailable; acknowledge and view the document first",
+					);
+				}
 				const manifest = zPlacementManifest.parse(manifestRaw);
 				const signerAddr = getAddress(wallet.account.address);
 
@@ -87,20 +94,15 @@ export function useSignFile() {
 					.filter((f) => f.assignedRecipientEmail === signerEmail)
 					.map((f) => f.id);
 
-				let fieldIds: string[];
-				if (completedFieldIds !== undefined) {
-					const allowed = new Set(assignedIds);
-					for (const id of completedFieldIds) {
-						if (!allowed.has(id)) {
-							throw new Error(
-								"completedFieldIds must match manifest fields for signer",
-							);
-						}
+				const allowed = new Set(assignedIds);
+				for (const id of completedFieldIds) {
+					if (!allowed.has(id)) {
+						throw new Error(
+							"completedFieldIds must match manifest fields for signer",
+						);
 					}
-					fieldIds = completedFieldIds;
-				} else {
-					fieldIds = assignedIds;
 				}
+				const fieldIds = completedFieldIds;
 
 				if (fieldIds.length === 0) {
 					throw new Error("No fields assigned to this signer");
@@ -173,13 +175,16 @@ export function useSignFile() {
 						signature,
 						timestamp,
 						dl3Signature: toHex(dl3Signature),
-						...(completedFieldIds !== undefined ? { completedFieldIds } : {}),
+						completedFieldIds,
 					},
 				});
 				success = true;
 			});
 
 			return success;
+		},
+		onSuccess: () => {
+			void invalidateInboxQueries(queryClient, rpcQuery);
 		},
 	});
 }

@@ -10,6 +10,7 @@ export * from "./useFileInfo";
 export * from "./useManualSettlementPayout";
 export * from "./useOrgFiles";
 export * from "./useReceivedFiles";
+export * from "./useRecordDocumentView";
 export * from "./useRegenerateColdInvite";
 export * from "./useRevokeSettlementAllowance";
 export * from "./useSendFile";

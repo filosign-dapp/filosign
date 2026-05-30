@@ -1,5 +1,6 @@
 import { computeCidIdentifier, eip712signature } from "@filosign/contracts";
 import {
+	FILE_ACK_INTENT_VERSION_V1,
 	hashNormalizedSignerEmail,
 	normalizePlacementRecipientEmail,
 } from "@filosign/shared";
@@ -98,6 +99,7 @@ export function useAckFile() {
 				body: {
 					signature,
 					timestamp,
+					intentVersion: FILE_ACK_INTENT_VERSION_V1,
 				},
 			});
 

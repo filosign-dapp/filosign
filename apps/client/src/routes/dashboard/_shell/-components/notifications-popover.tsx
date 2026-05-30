@@ -73,18 +73,18 @@ export function NotificationsPopover() {
 						</div>
 					)}
 
-					{n.allReceivedFiles.length > 0 && (
+					{n.visibleReceivedFiles.length > 0 && (
 						<div className="p-4">
 							<div className="flex items-center gap-2 mb-4">
 								<FileTextIcon className="h-4 w-4 text-primary" />
 								<h4 className="text-sm font-semibold">Received Files</h4>
 								<Badge variant="secondary" className="text-xs">
-									{n.allReceivedFiles.length}
+									{n.visibleReceivedFiles.length}
 								</Badge>
 							</div>
 
 							<div className="space-y-3">
-								{n.allReceivedFiles.map((file) => (
+								{n.visibleReceivedFiles.map((file) => (
 									<ReceivedFileNotification
 										key={file.pieceCid}
 										pieceCid={file.pieceCid}

@@ -10,8 +10,7 @@ export function useNotificationsController() {
 
 	const queryClient = useQueryClient();
 	const { rpcQuery } = useFilosignContext();
-	const inboxEnabled = open;
-	const receivedFiles = useReceivedFiles({ enabled: inboxEnabled });
+	const receivedFiles = useReceivedFiles();
 
 	const allReceivedFiles = useMemo(
 		() =>
@@ -21,14 +20,19 @@ export function useNotificationsController() {
 		[receivedFiles.data],
 	);
 
-	const pieceCids = useMemo(
-		() => allReceivedFiles.map((f) => f.pieceCid),
+	const visibleReceivedFiles = useMemo(
+		() => allReceivedFiles.filter((row) => !row.signedByMe),
 		[allReceivedFiles],
 	);
 
-	const fileInfos = useFileInfosByPieceCids(inboxEnabled ? pieceCids : []);
+	const pieceCids = useMemo(
+		() => visibleReceivedFiles.map((f) => f.pieceCid),
+		[visibleReceivedFiles],
+	);
 
-	const notificationCount = allReceivedFiles.length;
+	const fileInfos = useFileInfosByPieceCids(open ? pieceCids : []);
+
+	const notificationCount = visibleReceivedFiles.length;
 
 	const isLoading = receivedFiles.isLoading;
 	const isFetching = receivedFiles.isFetching;
@@ -48,6 +52,7 @@ export function useNotificationsController() {
 		isLoading,
 		isFetching,
 		allReceivedFiles,
+		visibleReceivedFiles,
 		fileInfoByPieceCid: fileInfos.byPieceCid,
 		formatAddress,
 		refetchInbox,

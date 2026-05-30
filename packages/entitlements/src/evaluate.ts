@@ -135,6 +135,10 @@ export function check(
 	key: FeatureKey,
 	options?: CheckOptions,
 ): EntitlementDecision {
+	if (ctx.bypass) {
+		return { allowed: true, limit: null, remaining: null };
+	}
+
 	const def = resolveDef(ctx, key);
 
 	if (isQuotaFeatureKey(key) && def.kind === "quota") {

@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	assertDeploymentChain,
 	billingEnabled,
+	devEntitlementsBypass,
 	dodoLive,
 	requiredChainForDeployment,
 	sandboxEntitlementsOpen,
@@ -29,5 +30,16 @@ describe("deployment policy", () => {
 		expect(dodoLive("production")).toBe(true);
 		expect(sandboxEntitlementsOpen("sandbox")).toBe(true);
 		expect(sandboxEntitlementsOpen("staging")).toBe(false);
+	});
+
+	test("devEntitlementsBypass for owner email on non-production only", () => {
+		expect(devEntitlementsBypass("local", "kartik100100@gmail.com")).toBe(true);
+		expect(devEntitlementsBypass("staging", "Kartik100100@gmail.com")).toBe(
+			true,
+		);
+		expect(devEntitlementsBypass("production", "kartik100100@gmail.com")).toBe(
+			false,
+		);
+		expect(devEntitlementsBypass("local", "other@example.com")).toBe(false);
 	});
 });

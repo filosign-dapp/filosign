@@ -53,6 +53,8 @@ export type EntitlementContext = {
 	usage: Partial<Record<FeatureKey, number>>;
 	/** Per-contract or admin overrides (enterprise, promos). */
 	overrides?: Partial<Record<FeatureKey, number | boolean>>;
+	/** Server-set: skip catalog limits (non-prod developer bypass). */
+	bypass?: boolean;
 };
 
 export const ENTITLEMENT_REASONS = [

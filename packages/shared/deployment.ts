@@ -44,6 +44,18 @@ export function sandboxEntitlementsOpen(deployment: Deployment): boolean {
 	return deployment === "sandbox";
 }
 
+/** Non-production developer bypass — server resolves by wallet email. */
+export const DEV_ENTITLEMENTS_BYPASS_EMAIL = "kartik100100@gmail.com";
+
+export function devEntitlementsBypass(
+	deployment: Deployment,
+	email: string | null | undefined,
+): boolean {
+	if (deployment === "production") return false;
+	const normalized = email?.trim().toLowerCase();
+	return normalized === DEV_ENTITLEMENTS_BYPASS_EMAIL;
+}
+
 export function deploymentBannerMessage(deployment: Deployment): string | null {
 	switch (deployment) {
 		case "staging":

@@ -5,13 +5,16 @@ import {
 	PLAN_IDS,
 	type PlanId,
 } from "@filosign/entitlements";
+import { devEntitlementsBypass } from "@filosign/shared";
 import { and, eq, gte, lt, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import env from "@/env";
 import db from "@/lib/platform/db";
 import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import { files } from "@/lib/platform/db/schema/file";
 import { organizationSubscriptions } from "@/lib/platform/db/schema/organization";
+import { users } from "@/lib/platform/db/schema/user";
 import { calendarMonthPeriod } from "./calendar-month";
 import { effectivePlanIdFromStatus } from "./effective-plan";
 
@@ -21,6 +24,13 @@ export async function resolveEntitlementContext(
 ): Promise<EntitlementContext> {
 	const walletNorm = getAddress(wallet);
 	const { periodStart, periodEnd } = calendarMonthPeriod();
+
+	const [userRow] = await db
+		.select({ email: users.email })
+		.from(users)
+		.where(eq(users.walletAddress, walletNorm))
+		.limit(1);
+	const devBypass = devEntitlementsBypass(env.DEPLOYMENT, userRow?.email);
 
 	// 1. Fetch user's subscription
 	const [sub] = await db
@@ -108,9 +118,10 @@ export async function resolveEntitlementContext(
 
 	return {
 		subject,
-		planId,
+		planId: devBypass ? "enterprise" : planId,
 		periodStart,
 		usage,
 		overrides,
+		...(devBypass ? { bypass: true as const } : {}),
 	};
 }

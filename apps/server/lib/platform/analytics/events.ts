@@ -19,6 +19,7 @@ export const PLATFORM_ALERT_EVENTS = {
 	serverCronJobFailed: "server.cron_job_failed",
 	serverBootstrapFailed: "server.bootstrap_failed",
 	serverDbInfraError: "server.db_infra_error",
+	serverRelayerGasLow: "server.relayer_gas_low",
 	settlementsRelayPayoutFailed: "settlements.relay_payout_failed",
 } as const;
 
@@ -60,6 +61,16 @@ export type PlatformAlertEvent =
 			context: {
 				source: string;
 				error: string;
+			};
+	  })
+	| (BaseAlertEvent & {
+			name: typeof PLATFORM_ALERT_EVENTS.serverRelayerGasLow;
+			context: {
+				wallet: string;
+				balanceWei: string;
+				thresholdWei: string;
+				deployment: string;
+				chain: string;
 			};
 	  })
 	| (BaseAlertEvent & {

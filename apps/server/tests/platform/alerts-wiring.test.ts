@@ -151,6 +151,7 @@ describe("validateServerBootstrap", () => {
 	test("emits bootstrap alert and throws on relayer wallet mismatch", async () => {
 		mock.module("@/env", () => ({
 			default: {
+				...testEnvStub,
 				TG_ANALYTICS: true,
 				TG_ANALYTICS_BOT_TOKEN: "bot",
 				TG_ANALYTICS_BOT_GROUP_ID: "group",
@@ -161,7 +162,7 @@ describe("validateServerBootstrap", () => {
 		const { validateServerBootstrap } = await import(
 			"@/lib/platform/bootstrap/validate-server-bootstrap"
 		);
-		expect(() => validateServerBootstrap()).toThrow(/does not match/);
+		await expect(validateServerBootstrap()).rejects.toThrow(/does not match/);
 		await flushPlatformAlerts();
 		expect(capturedTelegramEvents).toHaveLength(1);
 		expect(capturedTelegramEvents[0]?.name).toBe(
@@ -172,9 +173,10 @@ describe("validateServerBootstrap", () => {
 		});
 	});
 
-	test("passes when relayer key matches configured address", async () => {
+	test("emits bootstrap alert when registry server mismatches configured relayer", async () => {
 		mock.module("@/env", () => ({
 			default: {
+				...testEnvStub,
 				TG_ANALYTICS: true,
 				TG_ANALYTICS_BOT_TOKEN: "bot",
 				TG_ANALYTICS_BOT_GROUP_ID: "group",
@@ -182,10 +184,116 @@ describe("validateServerBootstrap", () => {
 				FC_SERVER_ADDRESS: relayerAddress,
 			},
 		}));
+		mock.module("@/lib/platform/evm", () => ({
+			fsContracts: {
+				FSFileRegistry: {
+					read: {
+						server: async () => otherAddress,
+					},
+				},
+			},
+			evmClient: { getBalance: async () => 0n },
+			fsFileRegistryAt: () => ({}),
+			fsPaymentValidatorAt: () => ({}),
+		}));
 		const { validateServerBootstrap } = await import(
 			"@/lib/platform/bootstrap/validate-server-bootstrap"
 		);
-		expect(() => validateServerBootstrap()).not.toThrow();
+		await expect(validateServerBootstrap()).rejects.toThrow(
+			/FSFileRegistry\.server\(\)/,
+		);
+		await flushPlatformAlerts();
+		expect(capturedTelegramEvents).toHaveLength(1);
+		expect(capturedTelegramEvents[0]?.context).toMatchObject({
+			stage: "registry_server_mismatch",
+		});
+	});
+
+	test("passes when relayer key and registry server match configured address", async () => {
+		mock.module("@/env", () => ({
+			default: {
+				...testEnvStub,
+				TG_ANALYTICS: true,
+				TG_ANALYTICS_BOT_TOKEN: "bot",
+				TG_ANALYTICS_BOT_GROUP_ID: "group",
+				FC_SERVER_PRIVATE_KEY: relayerKey,
+				FC_SERVER_ADDRESS: relayerAddress,
+			},
+		}));
+		mock.module("@/lib/platform/evm", () => ({
+			fsContracts: {
+				FSFileRegistry: {
+					read: {
+						server: async () => relayerAddress,
+					},
+				},
+			},
+			evmClient: { getBalance: async () => 0n },
+			fsFileRegistryAt: () => ({}),
+			fsPaymentValidatorAt: () => ({}),
+		}));
+		const { validateServerBootstrap } = await import(
+			"@/lib/platform/bootstrap/validate-server-bootstrap"
+		);
+		await expect(validateServerBootstrap()).resolves.toBeUndefined();
+	});
+});
+
+describe("monitor relayer gas", () => {
+	beforeEach(resetAlertsRuntime);
+
+	test("skips balance check on local deployment", async () => {
+		mock.module("@/env", () => ({
+			default: {
+				...testEnvStub,
+				DEPLOYMENT: "local",
+				CHAIN: "local",
+			},
+		}));
+		const { runMonitorRelayerGasJob } = await import(
+			"@/lib/platform/cron/monitor-relayer-gas"
+		);
+		const result = await runMonitorRelayerGasJob();
+		expect(result.checked).toBe(false);
+		expect(result.alerted).toBe(false);
+	});
+
+	test("emits critical alert when production relayer balance is below threshold", async () => {
+		mock.module("@/env", () => ({
+			default: {
+				...testEnvStub,
+				TG_ANALYTICS: true,
+				TG_ANALYTICS_BOT_TOKEN: "bot",
+				TG_ANALYTICS_BOT_GROUP_ID: "group",
+				DEPLOYMENT: "production",
+				CHAIN: "mainnet",
+			},
+		}));
+		mock.module("@/lib/platform/evm", () => ({
+			evmClient: {
+				getBalance: async () => 1n,
+			},
+			fsContracts: {
+				FSFileRegistry: {
+					read: {
+						server: async () => relayerAddress,
+					},
+				},
+			},
+			fsFileRegistryAt: () => ({}),
+			fsPaymentValidatorAt: () => ({}),
+		}));
+		const { runMonitorRelayerGasJob } = await import(
+			"@/lib/platform/cron/monitor-relayer-gas"
+		);
+		const result = await runMonitorRelayerGasJob();
+		expect(result.checked).toBe(true);
+		expect(result.alerted).toBe(true);
+		await flushPlatformAlerts();
+		expect(capturedTelegramEvents).toHaveLength(1);
+		expect(capturedTelegramEvents[0]?.name).toBe(
+			PLATFORM_ALERT_EVENTS.serverRelayerGasLow,
+		);
 	});
 });
 

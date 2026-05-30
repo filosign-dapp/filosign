@@ -1,11 +1,11 @@
 import { ORPCError } from "@orpc/server";
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import z from "zod";
 import db from "@/lib/platform/db";
 import { bucket } from "@/lib/platform/s3/client";
 
-const { files, fileParticipants } = db.schema;
+const { files, fileParticipants, fileSignatures } = db.schema;
 
 export const zUploadStartBody = z.object({
 	pieceCid: z.string().min(1),
@@ -56,11 +56,19 @@ export async function filesListReceived(userWallet: Address) {
 			createdAt: files.createdAt,
 			encryptedEncryptionKey: fileParticipants.encryptedEncryptionKey,
 			kemCiphertext: fileParticipants.kemCiphertext,
+			signedByMe: sql<boolean>`${fileSignatures.signer} IS NOT NULL`,
 		})
 		.from(files)
 		.innerJoin(
 			fileParticipants,
 			eq(files.pieceCid, fileParticipants.filePieceCid),
+		)
+		.leftJoin(
+			fileSignatures,
+			and(
+				eq(fileSignatures.filePieceCid, files.pieceCid),
+				eq(fileSignatures.signer, userWallet),
+			),
 		)
 		.where(
 			and(

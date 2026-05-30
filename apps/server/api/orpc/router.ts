@@ -370,11 +370,38 @@ export const appRouter = {
 					}),
 				)
 				.output(out.files.piece.ack)
-				.handler(({ context, input }) =>
-					fileHandlers.pieceAck({
+				.handler(({ context, input }) => {
+					const h = context.hono.req;
+					const ua = h.header("user-agent") ?? null;
+					const fwd = h.header("x-forwarded-for");
+					const requestIp = fwd?.split(",")[0]?.trim() ?? null;
+					return fileHandlers.pieceAck({
 						userWallet: context.userWallet,
 						pieceCid: input.pieceCid,
 						body: input.body,
+						requestIp,
+						requestUserAgent: ua,
+					});
+				}),
+			recordView: authenticatedProcedure
+				.input(
+					z.object({
+						pieceCid: z.string().min(1),
+						body: z
+							.object({
+								source: z
+									.enum(["sign_page", "file_viewer", "inbox"])
+									.optional(),
+							})
+							.optional(),
+					}),
+				)
+				.output(out.files.piece.recordView)
+				.handler(({ context, input }) =>
+					fileHandlers.pieceRecordView({
+						userWallet: context.userWallet,
+						pieceCid: input.pieceCid,
+						body: input.body ?? {},
 					}),
 				),
 			signDraftGet: authenticatedProcedure

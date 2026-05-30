@@ -8,6 +8,14 @@ const rosterPersonSchema = z.object({
 	email: z.string().nullable(),
 });
 
+const participantAccessSchema = z.object({
+	acknowledged: z.boolean(),
+	acknowledgedAt: z.string().nullable(),
+	firstViewedAt: z.string().nullable(),
+	canDecrypt: z.boolean(),
+	canSign: z.boolean(),
+});
+
 export const rpcPieceDetailOutputSchema = z.object({
 	pieceCid: z.string(),
 	sender: z.string(),
@@ -15,7 +23,7 @@ export const rpcPieceDetailOutputSchema = z.object({
 	onchainTxHash: zHexString(),
 	createdAt: z.union([z.string(), z.date()]),
 	placementCommitment: zHexString(),
-	placementManifest: z.unknown(),
+	placementManifest: z.unknown().nullable(),
 	signers: z.array(rosterPersonSchema),
 	viewers: z.array(rosterPersonSchema),
 	signatures: z.array(
@@ -25,6 +33,7 @@ export const rpcPieceDetailOutputSchema = z.object({
 			onchainTxHash: zHexString(),
 		}),
 	),
+	participantAccess: participantAccessSchema,
 	kemCiphertext: zHexString().nullable(),
 	encryptedEncryptionKey: zHexString().nullable(),
 	organizationId: z.string().uuid().nullable().optional(),
@@ -35,6 +44,12 @@ export const rpcPieceDetailOutputSchema = z.object({
 export type RpcPieceDetailOutput = z.output<typeof rpcPieceDetailOutputSchema>;
 
 export const rpcPieceAckOutputSchema = z.object({});
+
+export const rpcPieceRecordViewOutputSchema = z.object({
+	firstViewedAt: z.string(),
+	lastViewedAt: z.string(),
+	viewCount: z.number().int().min(1),
+});
 
 export const rpcPieceSignDraftFieldIdsOutputSchema = z.object({
 	completedFieldIds: z.array(z.string()),

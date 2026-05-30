@@ -39,6 +39,7 @@ import {
 	rpcPieceComplianceBundleOutputSchema,
 	rpcPieceDetailOutputSchema,
 	rpcPieceDownloadUrlOutputSchema,
+	rpcPieceRecordViewOutputSchema,
 	rpcPieceSignDraftFieldIdsOutputSchema,
 	rpcPieceSignOutputSchema,
 } from "./files-piece-output";
@@ -114,6 +115,7 @@ export const rpcOut = {
 		piece: {
 			detail: rpcPieceDetailOutputSchema,
 			ack: rpcPieceAckOutputSchema,
+			recordView: rpcPieceRecordViewOutputSchema,
 			signDraftFieldIds: rpcPieceSignDraftFieldIdsOutputSchema,
 			downloadUrl: rpcPieceDownloadUrlOutputSchema,
 			complianceBundle: rpcPieceComplianceBundleOutputSchema,

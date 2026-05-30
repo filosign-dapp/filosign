@@ -27,6 +27,7 @@ export const rpcFilesListSentOutputSchema = z.object({
 const inboxEntrySchema = rpcFileRowSentSchema.extend({
 	encryptedEncryptionKey: zHexString(),
 	kemCiphertext: zHexString(),
+	signedByMe: z.boolean(),
 });
 
 export const rpcFilesListReceivedOutputSchema = z.object({

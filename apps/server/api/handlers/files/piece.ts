@@ -3,6 +3,7 @@ export {
 	pieceComplianceBundle,
 	pieceDetail,
 	pieceDownloadUrl,
+	pieceRecordView,
 	pieceSignDraftGet,
 	pieceSignDraftPut,
 } from "@/lib/domains/files/piece";

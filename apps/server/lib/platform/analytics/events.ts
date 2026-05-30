@@ -6,6 +6,7 @@ export const SERVER_ANALYTICS_EVENTS = {
 	coldInviteExpired: "cold_invite_expired",
 	sharingInviteClaimed: "sharing_invite_claimed",
 	pieceAcknowledged: "piece_acknowledged",
+	documentViewed: "document_viewed",
 	pieceSigned: "piece_signed",
 	envelopeFullySigned: "envelope_fully_signed",
 } as const;

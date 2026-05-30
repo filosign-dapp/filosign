@@ -7,7 +7,9 @@ export async function latestChainTimestamp(
 ): Promise<number> {
 	const chain = contracts.$client.chain;
 	if (!chain) {
-		return Math.floor(Date.now() / 1000);
+		throw new Error(
+			"Chain config missing from Filosign contracts client; cannot derive on-chain timestamp",
+		);
 	}
 	const publicClient = createPublicClient({
 		chain,

@@ -20,7 +20,7 @@ export default function AboutHeroIsland() {
 							</h1>
 							<p className="max-w-2xl font-manrope text-xl leading-relaxed text-muted-foreground text-pretty">
 								Encrypted agreements, records you can verify, and optional
-								payouts when everyone has signed — for teams whose deals should
+								payouts when everyone has signed, for teams whose deals should
 								not stop at a PDF.
 							</p>
 						</MarketingStagger>

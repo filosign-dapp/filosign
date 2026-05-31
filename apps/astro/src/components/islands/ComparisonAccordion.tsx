@@ -20,7 +20,7 @@ function ComparisonCell({ value }: { value: ComparisonCellValue }) {
 		);
 	}
 	if (value === null) {
-		return <span className="text-muted-foreground/30">—</span>;
+		return <span className="text-muted-foreground/30">–</span>;
 	}
 	return <span className="text-foreground font-medium">{value}</span>;
 }

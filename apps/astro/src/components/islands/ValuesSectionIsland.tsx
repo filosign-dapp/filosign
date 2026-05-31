@@ -21,7 +21,7 @@ const values: {
 	{
 		title: "Verify anywhere",
 		description:
-			"Signing should leave a record you can share and check — not a line item locked inside a vendor dashboard.",
+			"Signing should leave a record you can share and check, not a line item locked inside a vendor dashboard.",
 		icon: <ShieldCheckIcon className="size-6" aria-hidden />,
 	},
 	{

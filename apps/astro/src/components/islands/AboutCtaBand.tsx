@@ -1,21 +1,10 @@
-import { Pressable } from "@filosign/motion";
-import { ArrowRightIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import { aboutMedia } from "../../config/about-media";
-import { cn } from "../../lib/cn";
-import { marketingPrimaryMdClass } from "../../lib/marketing-button";
 import { marketingSectionShellClass } from "../../lib/marketing-layout";
-import {
-	MARKETING_PRESSABLE_HOVER,
-	MARKETING_PRESSABLE_TAP,
-} from "../../lib/marketing-motion";
+import MarketingCtaButtons from "./MarketingCtaButtons";
 import { MotionProvider } from "./MotionProvider";
 
-type AboutCtaBandProps = {
-	appUrl: string;
-};
-
-export default function AboutCtaBand({ appUrl }: AboutCtaBandProps) {
+export default function AboutCtaBand() {
 	return (
 		<MotionProvider>
 			<section className={marketingSectionShellClass}>
@@ -50,8 +39,8 @@ export default function AboutCtaBand({ appUrl }: AboutCtaBandProps) {
 									Ready to send your first agreement?
 								</h2>
 								<p className="font-manrope text-base leading-relaxed text-muted-foreground">
-									Start free — encrypted signing, exportable records, and
-									optional settlement when you need it.
+									Pick a plan or try the sandbox: encrypted signing, exportable
+									records, and optional settlement when you need it.
 								</p>
 								<a
 									href="/security"
@@ -62,27 +51,7 @@ export default function AboutCtaBand({ appUrl }: AboutCtaBandProps) {
 							</div>
 
 							<div className="self-start">
-								<Pressable
-									preset="snappy"
-									whileHover={MARKETING_PRESSABLE_HOVER}
-									whileTap={MARKETING_PRESSABLE_TAP}
-								>
-									<a
-										href={appUrl}
-										target="_blank"
-										rel="noopener noreferrer"
-										className={cn(
-											marketingPrimaryMdClass,
-											"flex items-center justify-center gap-2",
-										)}
-									>
-										Start free
-										<ArrowRightIcon
-											className="size-4 transition-transform duration-200 group-hover/button:translate-x-1"
-											aria-hidden
-										/>
-									</a>
-								</Pressable>
+								<MarketingCtaButtons size="md" />
 							</div>
 						</div>
 					</div>

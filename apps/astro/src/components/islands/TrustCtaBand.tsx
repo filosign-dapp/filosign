@@ -1,22 +1,12 @@
-import { Pressable } from "@filosign/motion";
-import { ArrowRightIcon, ShieldCheckIcon } from "@phosphor-icons/react";
+import { ShieldCheckIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import { landingMedia } from "../../config/landing-media";
-import { cn } from "../../lib/cn";
-import { marketingPrimaryMdClass } from "../../lib/marketing-button";
 import { marketingSectionShellClass } from "../../lib/marketing-layout";
-import {
-	MARKETING_PRESSABLE_HOVER,
-	MARKETING_PRESSABLE_TAP,
-} from "../../lib/marketing-motion";
+import MarketingCtaButtons from "./MarketingCtaButtons";
 import MotionAwareVideo from "./MotionAwareVideo";
 import { MotionProvider } from "./MotionProvider";
 
-type TrustCtaBandProps = {
-	appUrl: string;
-};
-
-export default function TrustCtaBand({ appUrl }: TrustCtaBandProps) {
+export default function TrustCtaBand() {
 	return (
 		<MotionProvider>
 			<section className={marketingSectionShellClass}>
@@ -64,33 +54,13 @@ export default function TrustCtaBand({ appUrl }: TrustCtaBandProps) {
 								</h2>
 								<p className="font-manrope text-base leading-relaxed text-muted-foreground text-pretty">
 									Client-side encryption, exportable proof packets, and
-									non-custodial settlement — documented for security and legal
+									non-custodial settlement, documented for security and legal
 									review.
 								</p>
 							</div>
 
 							<div className="self-start">
-								<Pressable
-									preset="snappy"
-									whileHover={MARKETING_PRESSABLE_HOVER}
-									whileTap={MARKETING_PRESSABLE_TAP}
-								>
-									<a
-										href={appUrl}
-										target="_blank"
-										rel="noopener noreferrer"
-										className={cn(
-											marketingPrimaryMdClass,
-											"flex items-center justify-center gap-2",
-										)}
-									>
-										Start free
-										<ArrowRightIcon
-											className="size-4 transition-transform duration-200 group-hover/button:translate-x-1"
-											aria-hidden
-										/>
-									</a>
-								</Pressable>
+								<MarketingCtaButtons size="md" />
 							</div>
 						</div>
 					</div>

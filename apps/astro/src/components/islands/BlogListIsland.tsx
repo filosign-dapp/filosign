@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from "react";
 import { cn } from "../../lib/cn";
+import { MARKETING_CTA } from "../../lib/marketing-cta";
 import { marketingSectionClass } from "../../lib/marketing-layout";
 
 interface BlogPost {
@@ -26,10 +27,9 @@ interface BlogPost {
 
 interface BlogListIslandProps {
 	posts: BlogPost[];
-	appUrl: string;
 }
 
-export default function BlogListIsland({ posts, appUrl }: BlogListIslandProps) {
+export default function BlogListIsland({ posts }: BlogListIslandProps) {
 	// Extract unique tags and filter out empty strings/nulls
 	const uniqueTags = Array.from(
 		new Set(posts.flatMap((p) => p.data.tags || [])),
@@ -276,12 +276,12 @@ export default function BlogListIsland({ posts, appUrl }: BlogListIslandProps) {
 								signing with programmable settlements.
 							</p>
 							<a
-								href={appUrl}
+								href={MARKETING_CTA.sandboxUrl}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm hover:bg-white/95 transition-all duration-200 gap-1.5 group/link"
 							>
-								<span>Start for free</span>
+								<span>{MARKETING_CTA.tryFilosignLabel}</span>
 								<svg
 									className="h-3.5 w-3.5 transform transition-transform duration-200 group-hover/link:translate-x-1"
 									fill="none"

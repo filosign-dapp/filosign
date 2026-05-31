@@ -14,7 +14,7 @@ export default function ChangelogHeroIsland() {
 					</h1>
 
 					<p className="text-lg text-muted-foreground max-w-xl mx-auto">
-						How Filosign grew—sign-in and encrypted uploads first, then proof,
+						How Filosign grew: sign-in and encrypted uploads first, then proof,
 						teams, payouts, and drafts on top.
 					</p>
 				</MarketingStagger>

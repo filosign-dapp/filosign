@@ -25,7 +25,7 @@ import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persiste
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
 import { BillingSection } from "./billing-section";
 import { MembersSection } from "./members-section";
-import { TemplatesSection } from "./templates-section";
+import { WorkspaceSection } from "./workspace-section";
 
 function CreateWorkspaceDialog(props: {
 	open: boolean;
@@ -42,35 +42,36 @@ function CreateWorkspaceDialog(props: {
 			const res = await createOrg.mutateAsync({ name: name.trim() });
 			if (res?.organization?.id) {
 				setActiveOrg(res.organization.id);
-				toast.success("Workspace created!");
+				toast.success("Workspace created");
 				props.onOpenChange(false);
 				setName("");
 			}
 		} catch (err) {
 			toast.error(
-				err instanceof Error ? err.message : "Failed to create workspace",
+				err instanceof Error ? err.message : "Could not create workspace",
 			);
 		}
 	};
 
 	return (
 		<Dialog open={props.open} onOpenChange={props.onOpenChange}>
-			<DialogContent>
+			<DialogContent className="overscroll-contain">
 				<DialogHeader>
-					<DialogTitle>Create new workspace</DialogTitle>
+					<DialogTitle>Create workspace</DialogTitle>
 					<DialogDescription>
-						A workspace is where you work, organize drafts, and invite members.
+						A workspace holds your team, billing, drafts, and shared templates.
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleSubmit} className="space-y-4 pt-2">
 					<div className="space-y-2">
-						<Label htmlFor="create-ws-name">Workspace Name</Label>
+						<Label htmlFor="create-ws-name">Workspace name</Label>
 						<Input
 							id="create-ws-name"
-							placeholder="Acme Corp"
+							name="workspaceName"
+							placeholder="Acme Corp…"
+							autoComplete="organization"
 							value={name}
 							onChange={(e) => setName(e.target.value)}
-							autoFocus
 						/>
 					</div>
 					<DialogFooter>
@@ -86,7 +87,7 @@ function CreateWorkspaceDialog(props: {
 							variant="primary"
 							disabled={createOrg.isPending || !name.trim()}
 						>
-							{createOrg.isPending ? "Creating..." : "Create Workspace"}
+							{createOrg.isPending ? "Creating…" : "Create workspace"}
 						</Button>
 					</DialogFooter>
 				</form>
@@ -107,36 +108,36 @@ function InviteTeammateDialog(props: {
 		if (!email.trim()) return;
 		try {
 			await inviteMember.mutateAsync({ email: email.trim() });
-			toast.success("Teammate invited successfully!");
+			toast.success("Invite sent");
 			setEmail("");
 			props.onOpenChange(false);
 		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to invite teammate",
-			);
+			toast.error(err instanceof Error ? err.message : "Could not send invite");
 		}
 	};
 
 	return (
 		<Dialog open={props.open} onOpenChange={props.onOpenChange}>
-			<DialogContent>
+			<DialogContent className="overscroll-contain">
 				<DialogHeader>
-					<DialogTitle>Invite teammate to workspace</DialogTitle>
+					<DialogTitle>Invite teammate</DialogTitle>
 					<DialogDescription>
-						Enter your teammate's email address. Once they register/login, they
-						will be automatically added to this workspace.
+						They join this workspace after they sign in with that email. Pending
+						invites count toward your seat limit.
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleSubmit} className="space-y-4 pt-2">
 					<div className="space-y-2">
-						<Label htmlFor="invite-email-ws">Email Address</Label>
+						<Label htmlFor="invite-email-ws">Email address</Label>
 						<Input
 							id="invite-email-ws"
+							name="inviteEmail"
 							type="email"
+							autoComplete="email"
+							spellCheck={false}
 							placeholder="colleague@company.com"
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
-							autoFocus
 						/>
 					</div>
 					<DialogFooter>
@@ -152,7 +153,7 @@ function InviteTeammateDialog(props: {
 							variant="primary"
 							disabled={inviteMember.isPending || !email.includes("@")}
 						>
-							{inviteMember.isPending ? "Inviting..." : "Invite"}
+							{inviteMember.isPending ? "Sending…" : "Send invite"}
 						</Button>
 					</DialogFooter>
 				</form>
@@ -176,11 +177,11 @@ function WorkspaceDetailsSection() {
 		if (!wsName.trim()) return;
 		try {
 			await updateOrg.mutateAsync({ name: wsName.trim() });
-			toast.success("Workspace updated successfully!");
+			toast.success("Workspace name saved");
 			void orgDetail.refetch();
 		} catch (err) {
 			toast.error(
-				err instanceof Error ? err.message : "Failed to update workspace",
+				err instanceof Error ? err.message : "Could not save workspace name",
 			);
 		}
 	};
@@ -191,39 +192,46 @@ function WorkspaceDetailsSection() {
 	if (!orgDetail.data?.organization) return null;
 
 	return (
-		<section className="space-y-4 rounded-lg border border-border p-6 bg-card/30">
-			<div className="flex items-center gap-2">
-				<GearIcon className="size-5 text-muted-foreground" />
-				<h2 className="text-sm font-semibold text-foreground">
-					Workspace Details
-				</h2>
-			</div>
-			<form onSubmit={handleUpdate} className="space-y-4">
-				<div className="space-y-2">
-					<Label htmlFor="ws-name-input">Workspace Name</Label>
-					<Input
-						id="ws-name-input"
-						placeholder="Acme Corp"
-						value={wsName}
-						disabled={!canManage}
-						onChange={(e) => setWsName(e.target.value)}
-					/>
+		<WorkspaceSection
+			icon={<GearIcon className="size-4" aria-hidden="true" />}
+			title="Details"
+			description="How this workspace is labeled for you and your teammates."
+		>
+			<form onSubmit={handleUpdate} className="space-y-2">
+				<div className="flex items-end gap-3 max-w-lg">
+					<div className="flex-1 space-y-2">
+						<Label htmlFor="ws-name-input">Workspace name</Label>
+						<Input
+							id="ws-name-input"
+							name="workspaceName"
+							placeholder="Acme Corp…"
+							autoComplete="organization"
+							value={wsName}
+							disabled={!canManage}
+							onChange={(e) => setWsName(e.target.value)}
+						/>
+					</div>
+					{canManage ? (
+						<Button
+							type="submit"
+							variant="primary"
+							disabled={
+								updateOrg.isPending ||
+								!wsName.trim() ||
+								wsName.trim() === orgDetail.data.organization.name
+							}
+						>
+							{updateOrg.isPending ? "Saving…" : "Save name"}
+						</Button>
+					) : null}
 				</div>
-				{canManage && (
-					<Button
-						type="submit"
-						variant="primary"
-						disabled={
-							updateOrg.isPending ||
-							!wsName.trim() ||
-							wsName.trim() === orgDetail.data.organization.name
-						}
-					>
-						{updateOrg.isPending ? "Saving..." : "Save changes"}
-					</Button>
-				)}
+				<p className="text-xs text-muted-foreground">
+					{canManage
+						? "Changing this will update the name for all members."
+						: "Only owners and admins can rename this workspace."}
+				</p>
 			</form>
-		</section>
+		</WorkspaceSection>
 	);
 }
 
@@ -233,64 +241,73 @@ export function WorkspaceSettingsPage() {
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 
 	return (
-		<div className="mx-auto max-w-4xl space-y-8 px-8 py-8">
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-6">
-				<div>
-					<h1 className="text-2xl font-normal tracking-tight text-foreground">
-						Workspace Settings
+		<div className="mx-auto max-w-3xl space-y-8 px-6 py-8 sm:px-8">
+			<header className="border-b border-border/80 pb-6">
+				<div className="flex items-center justify-between gap-4">
+					<h1 className="text-balance text-2xl font-medium tracking-tight text-foreground">
+						Workspace
 					</h1>
-					<p className="mt-1 text-sm text-muted-foreground">
-						Manage your workspace, templates, and teammates.
-					</p>
-				</div>
-				<div className="flex items-center gap-2.5 self-start sm:self-center">
-					{canInviteMembers && (
+					<div className="flex shrink-0 items-center gap-2">
+						{canInviteMembers ? (
+							<Button
+								type="button"
+								variant="primary"
+								size="sm"
+								className="gap-2 touch-manipulation"
+								onClick={() => setIsInviteOpen(true)}
+							>
+								<UserPlusIcon className="size-4" aria-hidden="true" />
+								Invite teammate
+							</Button>
+						) : null}
 						<Button
 							type="button"
-							variant="primary"
-							className="gap-2 text-xs h-9 px-3"
-							onClick={() => setIsInviteOpen(true)}
+							variant="outline"
+							size="sm"
+							className="gap-2 touch-manipulation"
+							onClick={() => setIsCreateOpen(true)}
 						>
-							<UserPlusIcon className="size-4" />
-							Invite Member
+							<PlusIcon className="size-4" aria-hidden="true" />
+							New workspace
 						</Button>
-					)}
-					<Button
-						type="button"
-						variant="outline"
-						className="gap-2 text-xs h-9 px-3"
-						onClick={() => setIsCreateOpen(true)}
-					>
-						<PlusIcon className="size-4" />
-						New Workspace
-					</Button>
+					</div>
 				</div>
-			</div>
+				<p className="mt-3 text-pretty text-sm text-muted-foreground">
+					Manage subscriptions, seat allocations, and teammate permissions for
+					your corporate environments.
+				</p>
+			</header>
 
 			{activeOrgId ? (
-				<div className="space-y-8">
+				<div className="space-y-6">
 					<WorkspaceDetailsSection />
 					<BillingSection />
-					<MembersSection />
-					<TemplatesSection />
+					<MembersSection onInviteClick={() => setIsInviteOpen(true)} />
 				</div>
 			) : (
-				<div className="flex flex-col items-center justify-center p-12 border border-dashed rounded-lg text-center space-y-4">
-					<BuildingsIcon className="size-12 text-muted-foreground opacity-55" />
-					<div className="space-y-1">
-						<h3 className="font-semibold text-foreground">
-							No active workspace
-						</h3>
-						<p className="text-sm text-muted-foreground">
-							Create or select a workspace to get started.
+				<div className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-dashed border-border/80 bg-muted/10 p-12 text-center">
+					<div className="flex size-14 items-center justify-center rounded-full border border-border/60 bg-background/80">
+						<BuildingsIcon
+							className="size-7 text-muted-foreground"
+							aria-hidden="true"
+						/>
+					</div>
+					<div className="max-w-sm space-y-2">
+						<h2 className="text-balance text-base font-medium text-foreground">
+							No workspace selected
+						</h2>
+						<p className="text-pretty text-sm text-muted-foreground">
+							Create a workspace or switch to one from the sidebar to manage
+							billing and teammates.
 						</p>
 					</div>
 					<Button
 						type="button"
 						variant="primary"
+						className="touch-manipulation"
 						onClick={() => setIsCreateOpen(true)}
 					>
-						Create Workspace
+						Create workspace
 					</Button>
 				</div>
 			)}

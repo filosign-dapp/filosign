@@ -16,6 +16,7 @@ import {
 	paymentValidatorAt,
 	simulateSettlementWrite,
 } from "./settlement-preflight";
+import { parseRuleIdFromReceipt, waitForTxReceipt } from "./tx-receipt";
 import type { FilosignWallet } from "./wallet";
 
 export type SettlementRuleDraftLeg = {
@@ -227,8 +228,6 @@ export async function registerSettlementRulesOnChain(args: {
 			],
 		});
 
-		const onChainRuleId = await validator.read.nextRuleId();
-
 		await simulateSettlementWrite({
 			contracts: args.contracts,
 			wallet: args.wallet,
@@ -244,6 +243,7 @@ export async function registerSettlementRulesOnChain(args: {
 			account: args.wallet.account,
 			chain: args.wallet.chain,
 		});
+		await waitForTxReceipt(args.contracts, approveHash);
 
 		await simulateSettlementWrite({
 			contracts: args.contracts,
@@ -270,9 +270,19 @@ export async function registerSettlementRulesOnChain(args: {
 			account: args.wallet.account,
 			chain: args.wallet.chain,
 		});
+		const registerReceipt = await waitForTxReceipt(
+			args.contracts,
+			registerHash,
+		);
+		const onChainRuleId = parseRuleIdFromReceipt({
+			receipt: registerReceipt,
+			emitter: validator.address,
+			abi: validatorAbi,
+			eventName: "PaymentRuleRegistered",
+		});
 
 		registered.push({
-			onChainRuleId: onChainRuleId.toString(10),
+			onChainRuleId,
 			legs: toRegistrationLegs(rule.legs),
 			tokenAddress: rule.tokenAddress,
 			cidIdentifier: args.cidIdentifier,
@@ -384,6 +394,63 @@ export async function cancelSettlementRuleOnChain(args: {
 	return { cancelRuleTxHash };
 }
 
+async function listUnpaidSettlementLegIndicesOnChain(args: {
+	validator: NonNullable<ReturnType<typeof paymentValidatorAt>>;
+	onChainRuleId: bigint;
+}): Promise<number[]> {
+	const legs = await args.validator.read.ruleLegs([args.onChainRuleId]);
+	const unpaid: number[] = [];
+	for (let i = 0; i < legs.length; i++) {
+		const paid = await args.validator.read.isLegPaid([
+			args.onChainRuleId,
+			BigInt(i),
+		]);
+		if (!paid) unpaid.push(i);
+	}
+	return unpaid;
+}
+
+export async function executeSettlementPayoutLegOnChain(args: {
+	wallet: FilosignWallet;
+	contracts: FilosignContracts;
+	onChainRuleId: string;
+	legIndex: number;
+	validatorAddress?: Address;
+}): Promise<Hex> {
+	const validator = paymentValidatorAt(args.contracts, args.validatorAddress);
+	if (!validator) {
+		throw new Error(
+			"FSPaymentValidator is not deployed on this chain. Run contracts deploy/migrate first.",
+		);
+	}
+
+	const ruleId = BigInt(args.onChainRuleId);
+	const legIdx = BigInt(args.legIndex);
+
+	await simulateSettlementWrite({
+		contracts: args.contracts,
+		wallet: args.wallet,
+		address: validator.address,
+		abi: validator.abi,
+		functionName: "executePayoutLeg",
+		args: [ruleId, legIdx],
+	});
+
+	const data = encodeFunctionData({
+		abi: validator.abi,
+		functionName: "executePayoutLeg",
+		args: [ruleId, legIdx],
+	});
+
+	return args.wallet.sendTransaction({
+		to: validator.address,
+		data,
+		account: args.wallet.account,
+		chain: args.wallet.chain,
+	});
+}
+
+/** Pays each unpaid leg in separate transactions; returns the last payout tx hash. */
 export async function executeSettlementPayoutOnChain(args: {
 	wallet: FilosignWallet;
 	contracts: FilosignContracts;
@@ -398,27 +465,22 @@ export async function executeSettlementPayoutOnChain(args: {
 	}
 
 	const ruleId = BigInt(args.onChainRuleId);
-	const data = encodeFunctionData({
-		abi: validator.abi,
-		functionName: "executePayout",
-		args: [ruleId],
+	const unpaid = await listUnpaidSettlementLegIndicesOnChain({
+		validator,
+		onChainRuleId: ruleId,
 	});
+	if (unpaid.length === 0) {
+		throw new Error("Payout packet has no unpaid legs on-chain.");
+	}
 
-	await simulateSettlementWrite({
-		contracts: args.contracts,
-		wallet: args.wallet,
-		address: validator.address,
-		abi: validator.abi,
-		functionName: "executePayout",
-		args: [ruleId],
-	});
-
-	return args.wallet.sendTransaction({
-		to: validator.address,
-		data,
-		account: args.wallet.account,
-		chain: args.wallet.chain,
-	});
+	let lastHash: Hex | undefined;
+	for (const legIndex of unpaid) {
+		lastHash = await executeSettlementPayoutLegOnChain({
+			...args,
+			legIndex,
+		});
+	}
+	return lastHash as Hex;
 }
 
 export async function revokeSettlementValidatorAllowance(args: {

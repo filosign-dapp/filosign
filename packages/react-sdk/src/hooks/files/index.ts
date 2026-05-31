@@ -28,6 +28,7 @@ export {
 export type { SettlementRuleRow } from "../../lib/settlement-types.ts";
 export * from "./useAckFile";
 export * from "./useAmendSigner";
+export * from "./useAttachSettlementForFile";
 export * from "./useCancelSettlementRule";
 export * from "./useClaimColdInvite";
 export * from "./useColdInviteDecrypt";

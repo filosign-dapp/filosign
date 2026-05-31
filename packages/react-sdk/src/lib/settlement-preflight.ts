@@ -29,6 +29,10 @@ const SETTLEMENT_REVERT_MESSAGES: Record<string, string> = {
 	ExceedsMaxLegs: "Too many payout legs for this settlement rule.",
 	ExceedsMaxCommitments:
 		"Too many signer commitments for this settlement rule.",
+	InvalidLegIndex: "Invalid payout leg index for this packet.",
+	LegAlreadyPaid: "This payout leg was already paid on-chain.",
+	PayerCannotBeRecipient:
+		"Payer wallet cannot be a payout recipient on the same leg.",
 };
 
 export function formatSettlementSimError(err: unknown): string {

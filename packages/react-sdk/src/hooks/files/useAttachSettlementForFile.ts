@@ -1,13 +1,13 @@
 import { computeCidIdentifier } from "@filosign/contracts";
-import { useFilosignContext } from "@filosign/react";
-import { invalidateEntitlements } from "@filosign/react/billing";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useFilosignContext } from "../../context/useFilosignContext";
+import { invalidateEntitlements } from "../../lib/invalidate-entitlements";
 import {
 	registerSettlementRulesOnChain,
 	type SettlementRuleDraft,
-} from "@filosign/react/files";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+} from "../../lib/settlement-rules";
 
-export function useAttachSettlementRules(pieceCid: string | undefined) {
+export function useAttachSettlementForFile(pieceCid: string | undefined) {
 	const {
 		wallet,
 		contracts,

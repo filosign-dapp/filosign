@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
 import type { EntitlementContext } from "@filosign/entitlements";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
@@ -6,6 +6,16 @@ import {
 	assertSettlementRuleEntitlements,
 	assertSettlementUpdateEntitlements,
 } from "@/lib/domains/settlements/utils/settlement-entitlements";
+
+const orgId = "00000000-0000-7000-8000-000000000001";
+
+mock.module("@/lib/domains/settlement-access", () => ({
+	assertOrganizationSettlementFeatureApproved: async () => {},
+}));
+
+afterAll(() => {
+	mock.restore();
+});
 
 function ctx(planId: "teams" | "teams_pro"): EntitlementContext {
 	return {
@@ -43,14 +53,21 @@ const baseRule = (
 });
 
 describe("settlement entitlements", () => {
-	test("allows basic single-leg all_signed on teams", () => {
-		expect(() =>
-			assertSettlementRuleEntitlements(ctx("teams"), baseRule()),
-		).not.toThrow();
+	test("rejects payout registration without workspace organizationId", async () => {
+		await expect(
+			assertSettlementRuleEntitlements(ctx("teams"), baseRule(), null),
+		).rejects.toMatchObject({
+			code: "FORBIDDEN",
+			message: expect.stringContaining("workspace envelope"),
+		});
 	});
 
-	test("rejects multi-leg rules without advanced entitlement", () => {
-		expect(() =>
+	test("allows basic single-leg all_signed on teams with workspace", async () => {
+		await assertSettlementRuleEntitlements(ctx("teams"), baseRule(), orgId);
+	});
+
+	test("rejects multi-leg rules without advanced entitlement", async () => {
+		await expect(
 			assertSettlementRuleEntitlements(
 				ctx("teams"),
 				baseRule({
@@ -63,28 +80,32 @@ describe("settlement entitlements", () => {
 						},
 					],
 				}),
+				orgId,
 			),
-		).toThrow(ORPCError);
+		).rejects.toBeInstanceOf(ORPCError);
 	});
 
-	test("allows advanced release types on teams_pro", () => {
-		expect(() =>
-			assertSettlementRuleEntitlements(
-				ctx("teams_pro"),
-				baseRule({
-					releaseType: "quorum_all",
-					releaseParams: { releaseType: "quorum_all", thresholdN: 2 },
-				}),
-			),
-		).not.toThrow();
-	});
-
-	test("update requires advanced entitlement", () => {
-		expect(() => assertSettlementUpdateEntitlements(ctx("teams"))).toThrow(
-			ORPCError,
+	test("allows advanced release types on teams_pro", async () => {
+		await assertSettlementRuleEntitlements(
+			ctx("teams_pro"),
+			baseRule({
+				releaseType: "quorum_all",
+				releaseParams: { releaseType: "quorum_all", thresholdN: 2 },
+			}),
+			orgId,
 		);
-		expect(() =>
-			assertSettlementUpdateEntitlements(ctx("teams_pro")),
-		).not.toThrow();
+	});
+
+	test("update requires workspace and advanced entitlement", async () => {
+		await expect(
+			assertSettlementUpdateEntitlements(ctx("teams"), null),
+		).rejects.toMatchObject({
+			code: "FORBIDDEN",
+			message: expect.stringContaining("workspace envelope"),
+		});
+		await expect(
+			assertSettlementUpdateEntitlements(ctx("teams"), orgId),
+		).rejects.toBeInstanceOf(ORPCError);
+		await assertSettlementUpdateEntitlements(ctx("teams_pro"), orgId);
 	});
 });

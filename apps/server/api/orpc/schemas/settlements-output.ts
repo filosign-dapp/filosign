@@ -2,7 +2,7 @@ import {
 	settlementRecipientSources,
 	settlementReleaseTypes,
 	settlementRuleStatuses,
-	zSettlementPayoutLegInput,
+	zSettlementPayoutLegStored,
 } from "@filosign/shared";
 import z from "zod";
 
@@ -30,14 +30,14 @@ export const rpcSettlementsTrySettleOutputSchema = z.object({
 	ok: z.literal(true),
 	onChainRuleId: z.string(),
 	payoutTxHash: z.string().nullable(),
-	status: z.literal("executed"),
+	status: z.enum(["executed", "partial"]),
 });
 
 export const rpcSettlementsListByFileOutputSchema = z.array(
 	z.object({
 		id: z.uuid(),
 		onChainRuleId: z.string(),
-		legs: z.array(zSettlementPayoutLegInput),
+		legs: z.array(zSettlementPayoutLegStored),
 		recipientWallet: z.string(),
 		recipientSource: z.enum(settlementRecipientSources),
 		amount: z.string(),

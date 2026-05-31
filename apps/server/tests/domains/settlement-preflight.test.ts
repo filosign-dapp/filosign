@@ -15,8 +15,23 @@ describe("payerCanFundSettlement", () => {
 	});
 });
 
+describe("wrapAttachmentPacketDekForWarm", () => {
+	test("normalizes recipient email in KEM info", () => {
+		const src = readFileSync(
+			join(
+				import.meta.dir,
+				"../../../../packages/react-sdk/src/lib/attachment-packets.ts",
+			),
+			"utf8",
+		);
+		expect(src).toContain(
+			"normalizePlacementRecipientEmail(args.recipient.email)",
+		);
+	});
+});
+
 describe("tryExecuteSettlementPayout", () => {
-	test("simulates executePayout before broadcasting write", () => {
+	test("loads settlement rules by validatorAddress and onChainRuleId", () => {
 		const src = readFileSync(
 			join(
 				import.meta.dir,
@@ -24,10 +39,26 @@ describe("tryExecuteSettlementPayout", () => {
 			),
 			"utf8",
 		);
-		expect(src).toContain("validator.simulate.executePayout");
-		expect(src).toContain("validator.write");
-		const simIdx = src.indexOf("validator.simulate.executePayout");
-		const writeIdx = src.indexOf("validator.write");
+		expect(src).toContain(
+			"selectSettlementRule(onChainRuleId, validatorAddress)",
+		);
+		expect(src).not.toMatch(
+			/eq\(fileSettlementRules\.onChainRuleId,\s*onChainRuleId\)[\s\S]*?\.limit\(1\)/,
+		);
+	});
+
+	test("simulates executePayoutLeg before broadcasting write", () => {
+		const src = readFileSync(
+			join(
+				import.meta.dir,
+				"../../lib/domains/settlements/utils/execute-payout.ts",
+			),
+			"utf8",
+		);
+		expect(src).toContain("validator.simulate.executePayoutLeg");
+		expect(src).toContain("writeValidator.executePayoutLeg");
+		const simIdx = src.indexOf("validator.simulate.executePayoutLeg");
+		const writeIdx = src.indexOf("writeValidator.executePayoutLeg");
 		expect(simIdx).toBeGreaterThan(-1);
 		expect(writeIdx).toBeGreaterThan(simIdx);
 	});

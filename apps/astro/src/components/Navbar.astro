@@ -1,5 +1,4 @@
 ---
-import { env } from "../env";
 import LandingNavbar from "./islands/LandingNavbar";
 
 interface Props {
@@ -9,4 +8,4 @@ interface Props {
 const { pace = "page" } = Astro.props;
 ---
 
-<LandingNavbar client:load appUrl={env.PUBLIC_CLIENT_URL} pace={pace} />
+<LandingNavbar client:load pace={pace} />

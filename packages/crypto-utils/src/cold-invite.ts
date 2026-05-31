@@ -6,6 +6,10 @@ import { randomBytes } from "./impl/node/utils";
 
 const DEK_WRAP_INFO = "filosign:cold-invite-dek-v2";
 
+export function attachmentPacketDekWrapInfo(packetId: string): string {
+	return `filosign:attachment-packet-dek:v1:${packetId}`;
+}
+
 /** Argon2id parameters for cold-invite DEK wrapping (browser `argon2-browser` mem unit: KiB). */
 export const COLD_INVITE_ARGON_PARAMS = {
 	memory: 64 * 1024,

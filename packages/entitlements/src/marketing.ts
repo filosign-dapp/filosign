@@ -15,6 +15,11 @@ const MARKETING_LABELS: Record<FeatureKey, string> = {
 	"features.routing.advanced": "Advanced routing & quorum",
 	"features.settlement.basic": "Document-linked USDC settlement",
 	"features.settlement.advanced": "Multi-recipient splits & rule updates",
+	"features.supplementary_attachments": "Supplementary attachment packets",
+	"features.supplementary_attachments.recipient_select":
+		"Per-packet recipient selection",
+	"features.supplementary_attachments.conditional_release":
+		"Signature-conditional attachment release",
 	"features.integrations.custom": "Custom integrations",
 	"features.quota_allocation": "Seat quota allocation",
 	"features.bulk_send": "Bulk send from CSV",

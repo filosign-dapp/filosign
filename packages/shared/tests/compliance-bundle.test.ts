@@ -101,6 +101,7 @@ describe("ComplianceBundle", () => {
 				acknowledgements: [],
 				documentViews: [],
 				coldInviteClaims: [],
+				payoutRecipientAcknowledgements: [],
 			},
 		};
 		const a = zComplianceBundle.parse(raw);

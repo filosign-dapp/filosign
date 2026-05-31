@@ -70,6 +70,74 @@ const disabledProFeatures = {
 	| "features.metadata.tags"
 >;
 
+const disabledSupplementaryFeatures = {
+	"features.supplementary_attachments": { kind: "boolean", enabled: false },
+	"features.supplementary_attachments.recipient_select": {
+		kind: "boolean",
+		enabled: false,
+	},
+	"features.supplementary_attachments.conditional_release": {
+		kind: "boolean",
+		enabled: false,
+	},
+} as const satisfies Pick<
+	PlanEntitlements,
+	| "features.supplementary_attachments"
+	| "features.supplementary_attachments.recipient_select"
+	| "features.supplementary_attachments.conditional_release"
+>;
+
+const soloSupplementaryFeatures = {
+	"features.supplementary_attachments": { kind: "boolean", enabled: true },
+	"features.supplementary_attachments.recipient_select": {
+		kind: "boolean",
+		enabled: false,
+	},
+	"features.supplementary_attachments.conditional_release": {
+		kind: "boolean",
+		enabled: false,
+	},
+} as const satisfies Pick<
+	PlanEntitlements,
+	| "features.supplementary_attachments"
+	| "features.supplementary_attachments.recipient_select"
+	| "features.supplementary_attachments.conditional_release"
+>;
+
+const teamsSupplementaryFeatures = {
+	"features.supplementary_attachments": { kind: "boolean", enabled: true },
+	"features.supplementary_attachments.recipient_select": {
+		kind: "boolean",
+		enabled: true,
+	},
+	"features.supplementary_attachments.conditional_release": {
+		kind: "boolean",
+		enabled: false,
+	},
+} as const satisfies Pick<
+	PlanEntitlements,
+	| "features.supplementary_attachments"
+	| "features.supplementary_attachments.recipient_select"
+	| "features.supplementary_attachments.conditional_release"
+>;
+
+const teamsProSupplementaryFeatures = {
+	"features.supplementary_attachments": { kind: "boolean", enabled: true },
+	"features.supplementary_attachments.recipient_select": {
+		kind: "boolean",
+		enabled: true,
+	},
+	"features.supplementary_attachments.conditional_release": {
+		kind: "boolean",
+		enabled: true,
+	},
+} as const satisfies Pick<
+	PlanEntitlements,
+	| "features.supplementary_attachments"
+	| "features.supplementary_attachments.recipient_select"
+	| "features.supplementary_attachments.conditional_release"
+>;
+
 const disabledProductFeatures = {
 	"features.shared_templates": { kind: "boolean", enabled: false },
 	"features.team_drafts": { kind: "boolean", enabled: false },
@@ -128,6 +196,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		},
 		"envelope.recipients.max": { kind: "max", limit: 1 },
 		...disabledProductFeatures,
+		...disabledSupplementaryFeatures,
 		...disabledArchivalFeatures,
 	},
 	individual: {
@@ -139,6 +208,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		},
 		"envelope.recipients.max": { kind: "max", limit: 3 },
 		...disabledProductFeatures,
+		...soloSupplementaryFeatures,
 		"features.draft_review_links": { kind: "boolean", enabled: true },
 		...paidArchivalFeatures,
 	},
@@ -154,6 +224,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		"features.routing.advanced": { kind: "boolean", enabled: false },
 		"features.settlement.advanced": { kind: "boolean", enabled: false },
 		...disabledProFeatures,
+		...teamsSupplementaryFeatures,
 		...paidArchivalFeatures,
 	},
 	teams_pro: {
@@ -167,6 +238,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		...teamCollaborationFeatures,
 		...teamsProFeatures,
 		...proOnlyFeatures,
+		...teamsProSupplementaryFeatures,
 		...paidArchivalFeatures,
 	},
 	enterprise: {
@@ -180,6 +252,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		...teamCollaborationFeatures,
 		...teamsProFeatures,
 		...proOnlyFeatures,
+		...teamsProSupplementaryFeatures,
 		...paidArchivalFeatures,
 	},
 };

@@ -140,10 +140,17 @@ export const zColdInviteClaimRow = z.object({
 	isSigner: z.boolean(),
 });
 
+export const zSettlementRecipientAckRow = z.object({
+	signerWallet: zEvmAddress(),
+	termsVersion: z.string(),
+	acknowledgedAtIso: z.string(),
+});
+
 export const zOffChainEvidence = z.object({
 	acknowledgements: z.array(zAckEvidenceRow),
 	documentViews: z.array(zDocumentViewRow),
 	coldInviteClaims: z.array(zColdInviteClaimRow),
+	payoutRecipientAcknowledgements: z.array(zSettlementRecipientAckRow),
 });
 
 export const zComplianceBundle = z.object({

@@ -7,10 +7,12 @@ import {
 import { CheckIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { cn } from "../../lib/cn";
+import { FilosignRpcProvider } from "../../lib/filosign-rpc";
 import {
 	marketingGhostLgClass,
 	marketingPrimaryMdClass,
 } from "../../lib/marketing-button";
+import { MARKETING_CTA } from "../../lib/marketing-cta";
 import { marketingSectionClass } from "../../lib/marketing-layout";
 import {
 	MARKETING_PRESSABLE_HOVER,
@@ -30,6 +32,7 @@ import {
 import ComparisonAccordion from "./ComparisonAccordion";
 import { MarketingPageBody, MarketingPageShell } from "./MarketingPageSequence";
 import { MotionProvider } from "./MotionProvider";
+import PricingCheckoutDialog from "./PricingCheckoutDialog";
 
 const PRICING_HERO_TOP_COUNT = 3;
 
@@ -55,7 +58,6 @@ export type EnterprisePricingBanner = {
 type BillingInterval = "monthly" | "yearly";
 
 interface PricingPlansIslandProps {
-	appUrl: string;
 	plans: PricingPlan[];
 	enterpriseBanner?: EnterprisePricingBanner;
 }
@@ -200,20 +202,15 @@ function PlanPriceBlock({
 function PricingPlanCard({
 	plan,
 	billingInterval,
-	appUrl,
 	index,
+	onCheckout,
 }: {
 	plan: PricingPlan;
 	billingInterval: BillingInterval;
-	appUrl: string;
 	index: number;
+	onCheckout: (plan: PricingPlan) => void;
 }) {
 	const isFree = plan.name.toLowerCase().includes("free");
-
-	let checkoutUrl = appUrl;
-	if (plan.planId && !isFree) {
-		checkoutUrl = `${appUrl}/dashboard?upgrade=${plan.planId}&interval=${billingInterval}`;
-	}
 
 	return (
 		<motion.div
@@ -250,14 +247,24 @@ function PricingPlanCard({
 					whileHover={MARKETING_PRESSABLE_HOVER}
 					whileTap={MARKETING_PRESSABLE_TAP}
 				>
-					<a
-						href={checkoutUrl}
-						target="_blank"
-						rel="noopener noreferrer"
-						className={cn(marketingPrimaryMdClass, "w-full")}
-					>
-						{plan.cta}
-					</a>
+					{isFree ? (
+						<a
+							href={MARKETING_CTA.sandboxUrl}
+							target="_blank"
+							rel="noopener noreferrer"
+							className={cn(marketingPrimaryMdClass, "w-full")}
+						>
+							{plan.cta}
+						</a>
+					) : (
+						<button
+							type="button"
+							className={cn(marketingPrimaryMdClass, "w-full")}
+							onClick={() => onCheckout(plan)}
+						>
+							{plan.cta}
+						</button>
+					)}
 				</Pressable>
 			</div>
 
@@ -289,7 +296,7 @@ function ComparisonCell({ value }: { value: ComparisonCellValue }) {
 		);
 	}
 	if (value === null) {
-		return <span className="text-muted-foreground/30">—</span>;
+		return <span className="text-muted-foreground/30">–</span>;
 	}
 	return <span className="text-foreground font-medium">{value}</span>;
 }
@@ -305,7 +312,7 @@ function ComparisonTable() {
 			</p>
 			<div className="overflow-x-auto pb-2">
 				<div className="min-w-215">
-					<div className="grid grid-cols-5 gap-4 mb-6 px-4">
+					<div className="grid grid-cols-4 gap-4 mb-6 px-4">
 						<div className="sticky left-0 z-10 bg-background" />
 						{COMPARISON_PLAN_IDS.map((planId) => (
 							<div
@@ -341,7 +348,7 @@ function ComparisonTable() {
 									whileInView={{ opacity: 1, y: 0 }}
 									viewport={{ once: true }}
 									transition={{ duration: 0.3, delay: index * 0.02 }}
-									className="grid grid-cols-5 gap-4 py-4 px-4 border-t border-border/40 hover:bg-muted/30 transition-colors"
+									className="grid grid-cols-4 gap-4 py-4 px-4 border-t border-border/40 hover:bg-muted/30 transition-colors"
 								>
 									<div className="sticky left-0 z-10 flex items-center bg-background pr-4 text-sm font-medium font-manrope text-muted-foreground">
 										{row.label}
@@ -365,12 +372,12 @@ function ComparisonTable() {
 }
 
 function PricingPlansContent({
-	appUrl,
 	plans,
 	enterpriseBanner,
 }: PricingPlansIslandProps) {
 	const [billingInterval, setBillingInterval] =
 		useState<BillingInterval>("yearly");
+	const [checkoutPlan, setCheckoutPlan] = useState<PricingPlan | null>(null);
 	const savePercentLabel = `${Math.round(YEARLY_DISCOUNT_RATE * 100)}%`;
 
 	return (
@@ -380,7 +387,7 @@ function PricingPlansContent({
 					pace="page"
 					heroTopChildCount={PRICING_HERO_TOP_COUNT}
 					heroBottomChildCount={1}
-					className={`${marketingSectionClass} grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8 lg:gap-12 *:first:col-span-full`}
+					className={`${marketingSectionClass} grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12 *:first:col-span-full`}
 				>
 					<BillingIntervalToggle
 						billingInterval={billingInterval}
@@ -392,8 +399,8 @@ function PricingPlansContent({
 							key={plan.name}
 							plan={plan}
 							billingInterval={billingInterval}
-							appUrl={appUrl}
 							index={index}
+							onCheckout={setCheckoutPlan}
 						/>
 					))}
 					<ComparisonTable />
@@ -426,14 +433,25 @@ function PricingPlansContent({
 					) : null}
 				</MarketingPageBody>
 			</section>
+			{checkoutPlan?.planId ? (
+				<PricingCheckoutDialog
+					open
+					onClose={() => setCheckoutPlan(null)}
+					planName={checkoutPlan.name}
+					planId={checkoutPlan.planId as "individual" | "teams" | "teams_pro"}
+					billingInterval={billingInterval}
+				/>
+			) : null}
 		</MarketingPageShell>
 	);
 }
 
 export default function PricingPlansIsland(props: PricingPlansIslandProps) {
 	return (
-		<MotionProvider>
-			<PricingPlansContent {...props} />
-		</MotionProvider>
+		<FilosignRpcProvider>
+			<MotionProvider>
+				<PricingPlansContent {...props} />
+			</MotionProvider>
+		</FilosignRpcProvider>
 	);
 }

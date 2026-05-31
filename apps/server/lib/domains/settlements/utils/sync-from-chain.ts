@@ -1,63 +1,109 @@
-import { eq } from "drizzle-orm";
-import type { Hex } from "viem";
+import type {
+	SettlementPayoutLegStored,
+	SettlementRuleStatus,
+} from "@filosign/shared";
+import type { Address, Hex } from "viem";
 import db from "@/lib/platform/db";
 import { fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { selectSettlementRule, settlementRuleWhere } from "./rule-lookup";
+import {
+	mergeSettlementLegsWithPaidFlags,
+	readSettlementLegPaidFlags,
+	settlementPaidLegCount,
+} from "./sync-legs-from-chain";
 
 const { fileSettlementRules } = db.schema;
 
-async function markSettlementRuleExecuted(
-	onChainRuleId: bigint,
-	payoutTxHash?: Hex,
-) {
-	await db
-		.update(fileSettlementRules)
-		.set({
-			status: "executed",
-			...(payoutTxHash ? { payoutTxHash } : {}),
-			executedAt: new Date(),
-			lastError: null,
-			updatedAt: new Date(),
-		})
-		.where(eq(fileSettlementRules.onChainRuleId, onChainRuleId));
+function deriveStatusFromPaidFlags(
+	paidCount: number,
+	legCount: number,
+	fullyExecutedOnChain: boolean,
+): SettlementRuleStatus | null {
+	if (legCount === 0) return null;
+	if (fullyExecutedOnChain || paidCount === legCount) return "executed";
+	if (paidCount > 0) return "partial";
+	return null;
 }
 
 export async function syncSettlementPayoutFromChain(
 	onChainRuleId: bigint,
+	validatorAddress: Address,
 	payoutTxHash?: Hex,
-	validatorAddress?: `0x${string}`,
-): Promise<{ synced: boolean; status?: "executed" | "cancelled" }> {
-	const [row] = await db
-		.select({ validatorAddress: fileSettlementRules.validatorAddress })
-		.from(fileSettlementRules)
-		.where(eq(fileSettlementRules.onChainRuleId, onChainRuleId))
-		.limit(1);
-	if (!row && !validatorAddress) return { synced: false };
+	legIndex?: number,
+): Promise<{
+	synced: boolean;
+	status?: "executed" | "partial" | "cancelled";
+}> {
+	const row = await selectSettlementRule(onChainRuleId, validatorAddress);
+	if (!row) return { synced: false };
 
-	const validator = fsPaymentValidatorAt(
-		validatorAddress ?? row?.validatorAddress ?? null,
-	);
-
+	const validator = fsPaymentValidatorAt(validatorAddress);
 	const rulesRes = await tryCatch(validator.read.rules([onChainRuleId]));
 	if (rulesRes.error) return { synced: false };
 
-	const executed = rulesRes.data[7];
+	const fullyExecuted = rulesRes.data[7];
 	const cancelled = rulesRes.data[8];
+	const legCount = row.legs.length;
 
-	if (cancelled) {
-		await db
-			.update(fileSettlementRules)
-			.set({
-				status: "cancelled",
-				lastError: null,
-				updatedAt: new Date(),
-			})
-			.where(eq(fileSettlementRules.onChainRuleId, onChainRuleId));
-		return { synced: true, status: "cancelled" };
+	const paidFlags = await readSettlementLegPaidFlags({
+		validator,
+		onChainRuleId,
+		legCount,
+	});
+	if (!paidFlags) return { synced: false };
+
+	const mergedLegs = mergeSettlementLegsWithPaidFlags(
+		row.legs as SettlementPayoutLegStored[],
+		paidFlags,
+	);
+	if (legIndex !== undefined && payoutTxHash && mergedLegs[legIndex]) {
+		mergedLegs[legIndex] = {
+			...mergedLegs[legIndex],
+			paid: true,
+			payoutTxHash,
+		};
 	}
 
-	if (!executed) return { synced: false };
+	const paidCount = settlementPaidLegCount(paidFlags);
+	const derived = deriveStatusFromPaidFlags(paidCount, legCount, fullyExecuted);
 
-	await markSettlementRuleExecuted(onChainRuleId, payoutTxHash);
-	return { synced: true, status: "executed" };
+	const status: SettlementRuleStatus = cancelled
+		? "cancelled"
+		: (derived ?? (fullyExecuted ? "executed" : row.status));
+
+	if (status === row.status && legIndex === undefined && !fullyExecuted) {
+		return { synced: false };
+	}
+
+	const isTerminal = status === "executed" || status === "cancelled";
+	await db
+		.update(fileSettlementRules)
+		.set({
+			status,
+			legs: mergedLegs,
+			...(payoutTxHash ? { payoutTxHash } : {}),
+			...(isTerminal
+				? { executedAt: new Date(), lastError: null }
+				: { lastError: null }),
+			updatedAt: new Date(),
+		})
+		.where(
+			settlementRuleWhere({
+				validatorAddress,
+				onChainRuleId,
+			}),
+		);
+
+	return {
+		synced: true,
+		status:
+			status === "executed"
+				? "executed"
+				: status === "partial"
+					? "partial"
+					: status === "cancelled"
+						? "cancelled"
+						: undefined,
+	};
 }

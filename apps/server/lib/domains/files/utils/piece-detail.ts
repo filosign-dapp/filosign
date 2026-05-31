@@ -15,6 +15,7 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 	const [fileRecord] = await db
 		.select({
 			pieceCid: files.pieceCid,
+			registryAddress: files.registryAddress,
 			sender: files.sender,
 			organizationId: files.organizationId,
 			orgKemCiphertext: files.orgKemCiphertext,
@@ -133,6 +134,7 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 
 	return {
 		pieceCid: fileRecord.pieceCid,
+		registryAddress: fileRecord.registryAddress,
 		sender: fileRecord.sender,
 		status: fileRecord.status,
 		onchainTxHash: fileRecord.onchainTxHash,

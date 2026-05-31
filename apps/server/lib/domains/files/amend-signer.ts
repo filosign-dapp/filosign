@@ -5,7 +5,7 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import db from "@/lib/platform/db";
-import { fsFileRegistryAt } from "@/lib/platform/evm";
+import { fsFileRegistryAt, relayAmendSigner } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const { files, fileSignerAmendments } = db.schema;
@@ -50,13 +50,7 @@ export async function filesAmendSigner(sender: Address, rawBody: unknown) {
 		signature,
 	] as const;
 
-	const txHash = await tryCatch(
-		(
-			registry.write as unknown as {
-				amendSigner: (args: readonly unknown[]) => Promise<`0x${string}`>;
-			}
-		).amendSigner(amendArgs),
-	);
+	const txHash = await tryCatch(relayAmendSigner(registry, amendArgs));
 	if (txHash.error) {
 		throw new ORPCError("BAD_REQUEST", {
 			message:

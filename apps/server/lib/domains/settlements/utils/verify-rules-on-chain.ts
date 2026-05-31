@@ -2,8 +2,10 @@ import { computeCidIdentifier } from "@filosign/contracts";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import { SETTLEMENT_RELEASE_TYPE_UINT } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
+import { eq } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
+import db from "@/lib/platform/db";
 import {
 	evmClient,
 	fsFileRegistryAt,
@@ -12,8 +14,10 @@ import {
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { assertSettlementUsdcToken } from "./assert-settlement-token";
 
+const { organizations } = db.schema;
+
 async function assertTxSucceeded(hash: Hex, label: string) {
-	const res = await tryCatch(evmClient.getTransactionReceipt({ hash }));
+	const res = await tryCatch(evmClient.waitForTransactionReceipt({ hash }));
 	if (res.error || !res.data || res.data.status !== "success") {
 		throw new ORPCError("BAD_REQUEST", {
 			message: `${label} transaction not found or failed on-chain`,
@@ -49,10 +53,11 @@ function normHex(a: string) {
 async function assertRuleMatchesOnChain(args: {
 	validator: ReturnType<typeof fsPaymentValidatorAt>;
 	sender: Address;
+	allowedPayers: ReadonlySet<string>;
 	expectedCid: Hex;
 	rule: SettlementRuleRegistrationInput;
 }) {
-	const { validator, sender, expectedCid, rule } = args;
+	const { validator, sender, allowedPayers, expectedCid, rule } = args;
 	const senderAddr = getAddress(sender);
 
 	assertSettlementUsdcToken(rule.tokenAddress);
@@ -88,9 +93,10 @@ async function assertRuleMatchesOnChain(args: {
 			message: `Settlement rule ${rule.onChainRuleId} is not active on-chain`,
 		});
 	}
-	if (getAddress(payer) !== senderAddr) {
+	if (!allowedPayers.has(getAddress(payer).toLowerCase())) {
 		throw new ORPCError("BAD_REQUEST", {
-			message: "On-chain payer does not match sender wallet",
+			message:
+				"On-chain payer must be the document sender wallet or the linked organization treasury",
 		});
 	}
 	if (getAddress(token) !== getAddress(rule.tokenAddress)) {
@@ -224,14 +230,39 @@ async function assertRuleMatchesOnChain(args: {
 }
 
 /** Ensures indexed settlement rules exist on-chain for this sender and document. */
+export async function resolveAllowedSettlementPayers(
+	sender: Address,
+	organizationId?: string | null,
+): Promise<ReadonlySet<string>> {
+	const allowed = new Set<string>([getAddress(sender).toLowerCase()]);
+	if (!organizationId) return allowed;
+
+	const [org] = await db
+		.select({ orgWalletAddress: organizations.orgWalletAddress })
+		.from(organizations)
+		.where(eq(organizations.id, organizationId))
+		.limit(1);
+
+	if (org?.orgWalletAddress) {
+		allowed.add(getAddress(org.orgWalletAddress).toLowerCase());
+	}
+	return allowed;
+}
+
 export async function assertSettlementRulesVerifiedOnChain(
 	sender: Address,
 	pieceCid: string,
 	rules: SettlementRuleRegistrationInput[],
 	validatorAddress?: `0x${string}`,
 	registryAddress?: `0x${string}` | null,
+	organizationId?: string | null,
 ) {
 	if (rules.length === 0) return;
+
+	const allowedPayers = await resolveAllowedSettlementPayers(
+		sender,
+		organizationId,
+	);
 
 	const validator = fsPaymentValidatorAt(validatorAddress ?? null);
 	if (!validator) {
@@ -249,6 +280,7 @@ export async function assertSettlementRulesVerifiedOnChain(
 		await assertRuleMatchesOnChain({
 			validator,
 			sender,
+			allowedPayers,
 			expectedCid,
 			rule,
 		});
@@ -264,12 +296,18 @@ export async function assertSettlementRuleUpdateOnChain(
 	rule: SettlementRuleRegistrationInput,
 	updateRuleTxHash: Hex,
 	validatorAddress: `0x${string}`,
+	organizationId?: string | null,
 ) {
 	const validator = fsPaymentValidatorAt(validatorAddress);
 	await assertTxSucceeded(updateRuleTxHash, "updateRule");
+	const allowedPayers = await resolveAllowedSettlementPayers(
+		sender,
+		organizationId,
+	);
 	await assertRuleMatchesOnChain({
 		validator,
 		sender,
+		allowedPayers,
 		expectedCid: computeCidIdentifier(pieceCid),
 		rule,
 	});

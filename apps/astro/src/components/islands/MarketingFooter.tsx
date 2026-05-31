@@ -36,8 +36,12 @@ function getFooterSections() {
 				{ label: "Subprocessors", href: "/subprocessors" },
 				{ label: "E-signature validity", href: "/legal/e-signature-validity" },
 				{
-					label: "Non-custodial settlement",
+					label: "Payout attachment",
 					href: "/legal/non-custodial-settlement",
+				},
+				{
+					label: "Payout attachment addendum",
+					href: "/legal/settlement-feature-addendum",
 				},
 			],
 		},

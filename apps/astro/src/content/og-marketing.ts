@@ -58,8 +58,14 @@ export const MARKETING_OG_PAGES = {
 			"How Filosign thinks about electronic-signature evidence and legal suitability.",
 	},
 	"legal-non-custodial-settlement": {
-		title: "Non-custodial Settlement - Filosign",
-		description: "How attached payouts work in Filosign.",
+		title: "Payout attachment - Filosign",
+		description:
+			"Optional USDC payout instructions on documents. Non-custodial: funds stay in your wallet until on-chain conditions are met.",
+	},
+	"legal-settlement-feature-addendum": {
+		title: "Payout attachment addendum - Filosign",
+		description:
+			"Workspace terms for optional programmatic payout attachment on Filosign.",
 	},
 	"blog-introduction": {
 		title: "Introducing Filosign - Filosign Blog",

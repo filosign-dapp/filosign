@@ -53,9 +53,8 @@ export default function TrustCtaBand() {
 									Encrypted workflows with evidence you can explain.
 								</h2>
 								<p className="font-manrope text-base leading-relaxed text-muted-foreground text-pretty">
-									Client-side encryption, exportable proof packets, and
-									non-custodial settlement, documented for security and legal
-									review.
+									Client-side encryption, exportable proof packets, and payout
+									attachment docs for security and legal review.
 								</p>
 							</div>
 

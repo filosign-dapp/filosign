@@ -2,6 +2,7 @@ import { ORPCError, os } from "@orpc/server";
 import type { Address } from "viem";
 
 import { readOrgIdHeader, resolveActiveOrg } from "@/lib/domains/orgs";
+import { assertRegistrationComplete } from "@/lib/domains/platform-access";
 import type { OrpcContext } from "./context";
 
 export const o = os.$context<OrpcContext>();
@@ -19,6 +20,7 @@ export const authenticatedProcedure = publicProcedure.use(
 		const walletNorm = wallet as Address;
 		const orgId = readOrgIdHeader(context.hono.req.header("x-org-id"));
 		const activeOrg = await resolveActiveOrg(walletNorm, orgId);
+		await assertRegistrationComplete(walletNorm);
 		return next({
 			context: {
 				...context,

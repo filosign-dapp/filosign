@@ -1,5 +1,6 @@
 import type { ChainKey } from "@filosign/contracts";
-import type { Deployment } from "@filosign/shared";
+import type { Deployment, SignupPolicy } from "@filosign/shared";
+import { signupPolicy } from "@filosign/shared";
 import type { Chain } from "viem";
 import config from "@/config";
 import env from "@/env";
@@ -9,6 +10,7 @@ export type PlatformRuntime = {
 	chain: Chain;
 	chainKey: ChainKey;
 	deployment: Deployment;
+	signupPolicy: SignupPolicy;
 };
 
 export async function loadPlatformRuntime(): Promise<PlatformRuntime> {
@@ -17,5 +19,6 @@ export async function loadPlatformRuntime(): Promise<PlatformRuntime> {
 		chain: config.runtimeChain,
 		chainKey: config.chainKey,
 		deployment: env.DEPLOYMENT,
+		signupPolicy: signupPolicy(env.DEPLOYMENT),
 	};
 }

@@ -1,16 +1,13 @@
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
-import { eq } from "drizzle-orm";
 import { getAddress } from "viem";
 import { z } from "zod";
+import { registerUserAccount } from "@/lib/domains/platform-access/utils/register-user";
 import { validateFilosignRegistrationSignature } from "@/lib/domains/users/validate-registration-signature";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
 import { trackServerEvent } from "@/lib/platform/analytics/track";
-import db from "@/lib/platform/db";
 import { verifyThirdwebAuthTokenWithWallet } from "@/lib/platform/utils/thirdweb";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
-
-const { users } = db.schema;
 
 const zRegisterBody = z.object({
 	saltPin: zHexString(),
@@ -23,6 +20,10 @@ const zRegisterBody = z.object({
 	signaturePublicKey: zHexString(),
 	walletAddress: zEvmAddress(),
 	idToken: z.string().min(1),
+	platformInviteToken: z.string().min(8).optional(),
+	setupToken: z.string().min(8).optional(),
+	coldInviteToken: z.string().min(8).optional(),
+	coldRecipientEmail: z.string().email().optional(),
 });
 
 export async function userRegister(body: unknown) {
@@ -43,6 +44,10 @@ export async function userRegister(body: unknown) {
 		signaturePublicKey,
 		walletAddress,
 		idToken,
+		platformInviteToken,
+		setupToken,
+		coldInviteToken,
+		coldRecipientEmail,
 	} = parsedBody.data;
 
 	const wallet = getAddress(walletAddress);
@@ -67,6 +72,12 @@ export async function userRegister(body: unknown) {
 		});
 	}
 
+	if (!authProviderId?.trim()) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "Auth provider id is required for registration.",
+		});
+	}
+
 	const valid = await validateFilosignRegistrationSignature({
 		walletAddress: wallet,
 		saltPin,
@@ -83,37 +94,26 @@ export async function userRegister(body: unknown) {
 		});
 	}
 
-	const [existing] = await db
-		.select({ walletAddress: users.walletAddress })
-		.from(users)
-		.where(eq(users.walletAddress, wallet));
-
-	if (existing) {
-		return {};
-	}
-
-	const insertRes = await tryCatch(
-		db.insert(users).values({
-			walletAddress: wallet,
-			email,
-			authProviderId,
-			encryptionPublicKey,
-			signaturePublicKey,
-			keygenDataJson: {
-				saltPin,
-				saltSeed,
-				saltChallenge,
-				commitmentKem,
-				commitmentSig,
-			},
-		}),
-	);
-
-	if (insertRes.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: `Failed to register user: ${insertRes.error.message}`,
-		});
-	}
+	await registerUserAccount({
+		wallet,
+		email,
+		authProviderId,
+		encryptionPublicKey,
+		signaturePublicKey,
+		keygenDataJson: {
+			saltPin,
+			saltSeed,
+			saltChallenge,
+			commitmentKem,
+			commitmentSig,
+		},
+		gate: {
+			platformInviteToken,
+			setupToken,
+			coldInviteToken,
+			coldRecipientEmail,
+		},
+	});
 
 	trackServerEvent({
 		distinctId: wallet,

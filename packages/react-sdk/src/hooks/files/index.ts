@@ -9,6 +9,11 @@ export {
 	canUseBasicSettlements,
 } from "../../lib/entitlements";
 export { buildValidatedRegisterRouting } from "../../lib/register-routing";
+export {
+	formatSettlementSimError,
+	paymentValidatorAt,
+	simulateSettlementWrite,
+} from "../../lib/settlement-preflight.ts";
 export type {
 	SettlementRuleDraft,
 	SettlementRuleDraftLeg,

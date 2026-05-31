@@ -12,6 +12,10 @@ import {
 	settlementRuleTotalAmount,
 } from "@filosign/shared";
 import { type Address, encodeFunctionData, type Hex } from "viem";
+import {
+	paymentValidatorAt,
+	simulateSettlementWrite,
+} from "./settlement-preflight";
 import type { FilosignWallet } from "./wallet";
 
 export type SettlementRuleDraftLeg = {
@@ -225,11 +229,39 @@ export async function registerSettlementRulesOnChain(args: {
 
 		const onChainRuleId = await validator.read.nextRuleId();
 
+		await simulateSettlementWrite({
+			contracts: args.contracts,
+			wallet: args.wallet,
+			address: rule.tokenAddress,
+			abi: approveAbi,
+			functionName: "approve",
+			args: [validator.address, totalAmount],
+		});
+
 		const approveHash = await args.wallet.sendTransaction({
 			to: rule.tokenAddress,
 			data: approveData,
 			account: args.wallet.account,
 			chain: args.wallet.chain,
+		});
+
+		await simulateSettlementWrite({
+			contracts: args.contracts,
+			wallet: args.wallet,
+			address: validator.address,
+			abi: validatorAbi,
+			functionName: "registerRule",
+			args: [
+				args.payer,
+				rule.tokenAddress,
+				args.cidIdentifier,
+				releaseTypeToUint8(rule.releaseType),
+				specificSignerCommitment,
+				thresholdN,
+				expiresAt,
+				signerCommitments,
+				contractLegs,
+			],
 		});
 
 		const registerHash = await args.wallet.sendTransaction({
@@ -263,8 +295,9 @@ export async function updateSettlementRuleOnChain(args: {
 	releaseParams: SettlementRuleDraft["releaseParams"];
 	legs: SettlementRuleDraftLeg[];
 	expiresAt?: bigint;
+	validatorAddress?: Address;
 }): Promise<Pick<SettlementRuleUpdateInput, "updateRuleTxHash">> {
-	const validator = args.contracts.FSPaymentValidator;
+	const validator = paymentValidatorAt(args.contracts, args.validatorAddress);
 	if (!validator) {
 		throw new Error(
 			"FSPaymentValidator is not deployed on this chain. Run contracts deploy/migrate first.",
@@ -276,19 +309,30 @@ export async function updateSettlementRuleOnChain(args: {
 	const expiresAt = args.expiresAt ?? 0n;
 	const { specificSignerCommitment, thresholdN, signerCommitments } =
 		releaseParamsToContractArgs(args.releaseType, args.releaseParams);
+	const contractLegs = toContractPayoutLegs(args.legs);
+	const updateArgs = [
+		BigInt(args.onChainRuleId),
+		releaseTypeToUint8(args.releaseType),
+		specificSignerCommitment,
+		thresholdN,
+		expiresAt,
+		signerCommitments,
+		contractLegs,
+	] as const;
 
 	const data = encodeFunctionData({
 		abi: validator.abi,
 		functionName: "updatePayoutRule",
-		args: [
-			BigInt(args.onChainRuleId),
-			releaseTypeToUint8(args.releaseType),
-			specificSignerCommitment,
-			thresholdN,
-			expiresAt,
-			signerCommitments,
-			toContractPayoutLegs(args.legs),
-		],
+		args: [...updateArgs],
+	});
+
+	await simulateSettlementWrite({
+		contracts: args.contracts,
+		wallet: args.wallet,
+		address: validator.address,
+		abi: validator.abi,
+		functionName: "updatePayoutRule",
+		args: updateArgs,
 	});
 
 	const updateRuleTxHash = await args.wallet.sendTransaction({
@@ -305,18 +349,29 @@ export async function cancelSettlementRuleOnChain(args: {
 	wallet: FilosignWallet;
 	contracts: FilosignContracts;
 	onChainRuleId: string;
+	validatorAddress?: Address;
 }): Promise<Pick<SettlementRuleCancelInput, "cancelRuleTxHash">> {
-	const validator = args.contracts.FSPaymentValidator;
+	const validator = paymentValidatorAt(args.contracts, args.validatorAddress);
 	if (!validator) {
 		throw new Error(
 			"FSPaymentValidator is not deployed on this chain. Run contracts deploy/migrate first.",
 		);
 	}
 
+	const ruleId = BigInt(args.onChainRuleId);
 	const data = encodeFunctionData({
 		abi: validator.abi,
 		functionName: "cancelPayoutRule",
-		args: [BigInt(args.onChainRuleId)],
+		args: [ruleId],
+	});
+
+	await simulateSettlementWrite({
+		contracts: args.contracts,
+		wallet: args.wallet,
+		address: validator.address,
+		abi: validator.abi,
+		functionName: "cancelPayoutRule",
+		args: [ruleId],
 	});
 
 	const cancelRuleTxHash = await args.wallet.sendTransaction({
@@ -333,18 +388,29 @@ export async function executeSettlementPayoutOnChain(args: {
 	wallet: FilosignWallet;
 	contracts: FilosignContracts;
 	onChainRuleId: string;
+	validatorAddress?: Address;
 }): Promise<Hex> {
-	const validator = args.contracts.FSPaymentValidator;
+	const validator = paymentValidatorAt(args.contracts, args.validatorAddress);
 	if (!validator) {
 		throw new Error(
 			"FSPaymentValidator is not deployed on this chain. Run contracts deploy/migrate first.",
 		);
 	}
 
+	const ruleId = BigInt(args.onChainRuleId);
 	const data = encodeFunctionData({
 		abi: validator.abi,
 		functionName: "executePayout",
-		args: [BigInt(args.onChainRuleId)],
+		args: [ruleId],
+	});
+
+	await simulateSettlementWrite({
+		contracts: args.contracts,
+		wallet: args.wallet,
+		address: validator.address,
+		abi: validator.abi,
+		functionName: "executePayout",
+		args: [ruleId],
 	});
 
 	return args.wallet.sendTransaction({
@@ -368,10 +434,21 @@ export async function revokeSettlementValidatorAllowance(args: {
 		);
 	}
 
+	const approveAbi = erc20ApproveAbi(args.chainKey);
+	const approveArgs = [validator.address, 0n] as const;
 	const data = encodeFunctionData({
-		abi: erc20ApproveAbi(args.chainKey),
+		abi: approveAbi,
 		functionName: "approve",
-		args: [validator.address, 0n],
+		args: [...approveArgs],
+	});
+
+	await simulateSettlementWrite({
+		contracts: args.contracts,
+		wallet: args.wallet,
+		address: args.tokenAddress,
+		abi: approveAbi,
+		functionName: "approve",
+		args: approveArgs,
 	});
 
 	return args.wallet.sendTransaction({

@@ -1,7 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Address } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
+import { paymentValidatorAt } from "../../lib/settlement-preflight";
 import { executeSettlementPayoutOnChain } from "../../lib/settlement-rules";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
+
+export type ManualSettlementPayoutInput = {
+	onChainRuleId: string;
+	validatorAddress?: Address;
+};
 
 /** Fallback: wallet `executePayout` then slim server confirm (sync from chain). */
 export function useManualSettlementPayout(pieceCid: string | undefined) {
@@ -10,14 +17,15 @@ export function useManualSettlementPayout(pieceCid: string | undefined) {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: async (onChainRuleId: string) => {
+		mutationFn: async (input: ManualSettlementPayoutInput) => {
 			if (!wallet?.account || !contracts) {
 				throw new Error("Connect your wallet to settle from your wallet.");
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 
-			const canExecute = await contracts.FSPaymentValidator?.read.canExecute([
-				BigInt(onChainRuleId),
+			const validator = paymentValidatorAt(contracts, input.validatorAddress);
+			const canExecute = await validator.read.canExecute([
+				BigInt(input.onChainRuleId),
 			]);
 			if (!canExecute) {
 				throw new Error(
@@ -28,11 +36,12 @@ export function useManualSettlementPayout(pieceCid: string | undefined) {
 			const payoutTxHash = await executeSettlementPayoutOnChain({
 				wallet,
 				contracts,
-				onChainRuleId,
+				onChainRuleId: input.onChainRuleId,
+				validatorAddress: input.validatorAddress,
 			});
 
 			return rpcQuery.settlements.confirmSettlement.call({
-				onChainRuleId,
+				onChainRuleId: input.onChainRuleId,
 				payoutTxHash,
 			});
 		},

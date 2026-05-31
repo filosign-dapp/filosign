@@ -1,7 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Address } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { cancelSettlementRuleOnChain } from "../../lib/settlement-rules";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
+
+export type CancelSettlementRuleInput = {
+	onChainRuleId: string;
+	validatorAddress?: Address;
+};
 
 export function useCancelSettlementRule(pieceCid: string | undefined) {
 	const { wallet, contracts } = useFilosignContext();
@@ -9,7 +15,7 @@ export function useCancelSettlementRule(pieceCid: string | undefined) {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: async (onChainRuleId: string) => {
+		mutationFn: async (input: CancelSettlementRuleInput) => {
 			if (!wallet?.account || !contracts) {
 				throw new Error("Connect your wallet to cancel a settlement rule.");
 			}
@@ -18,11 +24,12 @@ export function useCancelSettlementRule(pieceCid: string | undefined) {
 			const { cancelRuleTxHash } = await cancelSettlementRuleOnChain({
 				wallet,
 				contracts,
-				onChainRuleId,
+				onChainRuleId: input.onChainRuleId,
+				validatorAddress: input.validatorAddress,
 			});
 
 			return rpcQuery.settlements.cancelRule.call({
-				onChainRuleId,
+				onChainRuleId: input.onChainRuleId,
 				cancelRuleTxHash,
 			});
 		},

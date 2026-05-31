@@ -3,6 +3,7 @@ import type {
 	SettlementRuleUpdateInput,
 } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Address } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import {
 	type SettlementRuleDraftLeg,
@@ -18,6 +19,7 @@ export function useUpdateSettlementRule(pieceCid: string | undefined) {
 	return useMutation({
 		mutationFn: async (args: {
 			onChainRuleId: string;
+			validatorAddress?: Address;
 			releaseType: SettlementReleaseType;
 			releaseParams: SettlementRuleUpdateInput["releaseParams"];
 			legs: SettlementRuleDraftLeg[];
@@ -32,6 +34,7 @@ export function useUpdateSettlementRule(pieceCid: string | undefined) {
 				wallet,
 				contracts,
 				onChainRuleId: args.onChainRuleId,
+				validatorAddress: args.validatorAddress,
 				releaseType: args.releaseType,
 				releaseParams: args.releaseParams,
 				legs: args.legs,

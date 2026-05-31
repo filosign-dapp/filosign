@@ -74,7 +74,12 @@ console.log("runtime deployment:", {
 
 const http = {
 	cors: {
-		origin: [env.CLIENT_URL, "http://localhost:3001", "http://localhost:3002"],
+		origin: [
+			env.CLIENT_URL,
+			env.ASTRO_URL,
+			"http://localhost:3001",
+			"http://localhost:3002",
+		],
 		allowHeaders: [
 			"Content-Type",
 			"Authorization",

@@ -1,9 +1,5 @@
 import type { ChainKey } from "@filosign/contracts";
-import {
-	assertDeploymentChain,
-	billingEnabled,
-	type Deployment,
-} from "@filosign/shared";
+import { assertDeploymentChain, type Deployment } from "@filosign/shared";
 
 type ServerEnvSlice = {
 	DEPLOYMENT: Deployment;
@@ -18,12 +14,10 @@ export function validateDeploymentEnv(env: ServerEnvSlice): void {
 		chain: env.CHAIN,
 	});
 
-	if (billingEnabled(env.DEPLOYMENT)) {
-		if (!env.DODO_API_KEY?.trim()) {
-			throw new Error(`DEPLOYMENT=${env.DEPLOYMENT} requires DODO_API_KEY`);
-		}
-		if (!env.DODO_WEBHOOK_KEY?.trim()) {
-			throw new Error(`DEPLOYMENT=${env.DEPLOYMENT} requires DODO_WEBHOOK_KEY`);
-		}
+	if (!env.DODO_API_KEY?.trim()) {
+		throw new Error(`DEPLOYMENT=${env.DEPLOYMENT} requires DODO_API_KEY`);
+	}
+	if (!env.DODO_WEBHOOK_KEY?.trim()) {
+		throw new Error(`DEPLOYMENT=${env.DEPLOYMENT} requires DODO_WEBHOOK_KEY`);
 	}
 }

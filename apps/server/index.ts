@@ -8,6 +8,7 @@ import { initCache } from "@/lib/platform/cache/session-cache";
 import { startPlatformCron, stopPlatformCron } from "@/lib/platform/cron";
 import { csp } from "@/lib/platform/csp";
 import { requestLog } from "@/lib/platform/pino";
+import { handleCheckoutContinueRequest } from "./api/integrations/checkout-continue";
 import { apiRouter } from "./api/orpc/hono-mount";
 
 /** True after bootstrap + cache init; gates HTTP until ready. */
@@ -50,6 +51,10 @@ export const app = new Hono()
 			return c.json({ ok: false, status: "starting" }, 503);
 		}
 		return c.json({ ok: true });
+	})
+	.get("/checkout/continue", async (c) => {
+		const token = c.req.query("token");
+		return handleCheckoutContinueRequest({ token });
 	})
 	.route("/api", apiRouter);
 

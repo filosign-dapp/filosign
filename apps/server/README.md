@@ -60,19 +60,22 @@ Unit tests: `bun test tests/` in this package; see [TESTING.md](../../TESTING.md
 
 JSON API is **`/api/rpc`** — native outputs + **`ORPCError`** mapping. OpenAPI explorer: **`/api/api-reference`**. Avatar flow: **`storage.presignPut`** + browser **`fetch` PUT** to storage, then **`users.profile.update`** with **`avatarKey`**. **`runtime`** stays on **`rpc.runtime`**.
 
-Billing oRPC:
-- `billing.entitlements`
-- `billing.createCheckoutSession` (returns hosted `checkoutUrl`)
-- `billing.createPortalSession` (returns hosted portal URL for existing Dodo customer)
+Billing oRPC (two rails):
+- **Wallet (Solo):** `user_subscriptions` — `billing.getUserSummary`, `billing.createCheckoutSession` (`individual` only), `billing.createPortalSession`.
+- **Workspace (Teams / Teams Pro):** `organization_subscriptions` — `billing.getOrgSummary`, `billing.getWorkspaceBillingContext`, `billing.createOrgCheckoutSession`, `billing.changeOrgPlan`, seat preview/update, org portal.
+- **Upgrade UX:** `billing.getUpgradeOfferings` (feature gate + current plans → selectable checkout paths).
+- **Marketing:** `billing.previewMarketingCheckout` (public) then `billing.requestCheckoutLink`; preflight blocks duplicate Solo / paid workspace checkout for known emails.
 
 Billing security notes:
+- `billing.createCheckoutSession` rejects `teams` / `teams_pro` (use org checkout). `createOrgCheckoutSession` is org-scoped.
 - `billing.createCheckoutSession` validates `returnUrl` origin against `CLIENT_URL` plus optional `BILLING_RETURN_URL_ORIGINS`.
 - Webhook processing is idempotent by `webhook-id` with event status (`received`/`processed`/`failed`) in `billing_webhook_events`.
 
 ## Security notes
 
 - **`tx.processIndexerHash`** — **`authenticatedProcedure`** (thirdweb session). Reverted txs → **400**.
-- **`DEBUG=true`** — skips Resend email; verbose indexer logs.
+- **`DEBUG=true`** — verbose request/indexer logging (does not affect email).
+- **`RESEND_ENABLED=false`** — skip outbound Resend email (default `true`).
 
 ## Object storage (S3-compatible / R2)
 

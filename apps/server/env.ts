@@ -29,6 +29,10 @@ const parsedEnv = createEnv({
 		ASTRO_URL: z.url(),
 		RESEND_API_KEY: z.string().min(1),
 		RESEND_FROM_EMAIL: z.email(),
+		RESEND_ENABLED: z
+			.string()
+			.default("true")
+			.transform((v) => v === "true"),
 		CHAIN: z.enum(["local", "testnet", "mainnet"]),
 		PORT: z
 			.string()
@@ -48,6 +52,7 @@ const parsedEnv = createEnv({
 			.default("false")
 			.transform((v) => v === "true"),
 		ADMIN_WALLETS: z.string().optional(),
+		PLATFORM_ADMIN_EMAILS: z.string().optional(),
 		INVITE_TTL_DAYS: z.coerce.number().int().min(1).default(7),
 		DODO_API_KEY: z.string().min(1).optional(),
 		DODO_WEBHOOK_KEY: z.string().min(1).optional(),

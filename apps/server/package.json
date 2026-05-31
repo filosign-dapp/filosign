@@ -18,6 +18,9 @@
 		"db:push:staging": "infisical run --env=staging -- bun run drizzle-kit:push",
 		"db:push:sandbox": "infisical run --env=sandbox -- bun run drizzle-kit:push",
 		"db:push:production": "infisical run --env=prod -- bun run drizzle-kit:push",
+		"db:grant-plan:local": "bun run --env-file=.env.local scripts/grant-admin-plan.ts",
+		"db:grant-plan:staging": "infisical run --env=staging -- bun run scripts/grant-admin-plan.ts",
+		"db:grant-plan:sandbox": "infisical run --env=sandbox -- bun run scripts/grant-admin-plan.ts",
 		"compile": "mkdir -p assets && cp -f ../../packages/crypto-utils/assets/dilithium.wasm assets/ && bun build --compile --minify --sourcemap --bytecode ./index.ts --outfile out/server",
 		"check-types": "tsc --noEmit && tsc --noEmit -p tsconfig.tests.json",
 		"test": "bun test tests/"

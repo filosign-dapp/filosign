@@ -41,6 +41,9 @@
 		},
 		"./invalidate-queries": {
 			"default": "./src/lib/invalidate-queries.ts"
+		},
+		"./orpc": {
+			"default": "./src/orpc/index.ts"
 		}
 	},
 	"scripts": {

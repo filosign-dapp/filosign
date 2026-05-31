@@ -2,6 +2,8 @@ export * from "./useAcceptOrgInvite";
 export * from "./useActiveOrganization";
 export * from "./useCloneOrgTemplateToEnvelope";
 export * from "./useCreateOrganization";
+export * from "./useCreateOrgTemplate";
+export * from "./useDeleteOrgTemplate";
 export * from "./useInviteOrgMember";
 export * from "./useOrganizationGet";
 export * from "./useOrganizations";

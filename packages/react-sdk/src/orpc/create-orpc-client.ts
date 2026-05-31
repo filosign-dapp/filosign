@@ -84,3 +84,15 @@ export function createFilosignOrpcClient(
 	});
 	return createORPCClient<AppRouterClient>(link);
 }
+
+/** Browser marketing / public pages — no wallet session headers. */
+export function createPublicFilosignOrpcClient(
+	apiBaseUrl: string,
+): AppRouterClient {
+	const base = normalizeApiBaseUrl(apiBaseUrl);
+	const link = new RPCLink({
+		url: `${base}/api/rpc`,
+		fetch: (request, init) => globalThis.fetch(request, init),
+	});
+	return createORPCClient<AppRouterClient>(link);
+}

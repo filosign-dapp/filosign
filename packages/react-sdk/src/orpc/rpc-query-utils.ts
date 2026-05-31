@@ -45,5 +45,11 @@ export function createFilosignRpcQueryUtils(client: AppRouterClient) {
 		drafts: createTanstackQueryUtils(client.drafts, {
 			path: [...ROOT, "drafts"],
 		}),
+		platformAccess: createTanstackQueryUtils(client.platformAccess, {
+			path: [...ROOT, "platformAccess"],
+		}),
+		platformAdmin: createTanstackQueryUtils(client.platformAdmin, {
+			path: [...ROOT, "platformAdmin"],
+		}),
 	};
 }

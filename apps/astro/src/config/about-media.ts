@@ -1,4 +1,4 @@
-/** About page imagery — avoid paths used on the landing page (see landing-media.ts). */
+/** About page imagery - avoid paths used on the landing page (see landing-media.ts). */
 export const aboutMedia = {
 	marquee: [
 		"/images/stock_12.webp",

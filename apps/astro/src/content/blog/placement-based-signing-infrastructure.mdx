@@ -1,6 +1,6 @@
 ---
 title: "Inside Filosign's Signing Flow: Infrastructure Built for Legal Certainty"
-description: Placement manifests, Merkle proofs, compliance bundles, and on-chain attestations in FSFileRegistry—evidence you can verify without trusting our servers.
+description: Placement manifests, Merkle proofs, compliance bundles, and on-chain attestations in FSFileRegistry. Evidence you can verify without trusting our servers.
 readingTime: 8 min
 dateDisplay: May 11, 2026
 publishedISO: "2026-05-11T12:00:00.000Z"
@@ -20,10 +20,10 @@ Most e-signature platforms store proof as database rows and PDF certificates wit
 
 Our placement-based signing infrastructure combines **cryptographic placement manifests**, **Merkle inclusion proofs**, and **`FSFileRegistry` attestations on Base** to produce evidence that is:
 
-- **Legally grounded** — built around identity, intent, association, and timestamps frameworks like ESIGN and eIDAS expect
-- **Independently verifiable** — compliance bundle + public chain data, no API key required
-- **Tamper-evident** — any change to fields, assignments, or completions breaks the hash chain
-- **Privacy-preserving** — document plaintext is never written on-chain; the bundle does not expose encrypted bytes
+- **Legally grounded:** built around identity, intent, association, and timestamps frameworks like ESIGN and eIDAS expect
+- **Independently verifiable:** compliance bundle + public chain data, no API key required
+- **Tamper-evident:** any change to fields, assignments, or completions breaks the hash chain
+- **Privacy-preserving:** document plaintext is never written on-chain; the bundle does not expose encrypted bytes
 
 ## The problem with traditional e-signatures
 
@@ -34,11 +34,11 @@ Traditional platforms optimize for convenience, not portability of proof:
 3. **No field-level granularity:** You can prove *who* signed, but not *which fields* they completed
 4. **Vendor lock-in:** Exports often lose the verification context
 
-We needed a foundation where math and chain state—not our Postgres row—carry the proof.
+We needed a foundation where math and chain state, not our Postgres row, carry the proof.
 
 ## Core architecture: placement manifests + Merkle trees
 
-At the heart of the system is the **Placement Manifest** — a cryptographic commitment to exactly where and what each signer must sign.
+At the heart of the system is the **Placement Manifest**, a cryptographic commitment to exactly where and what each signer must sign.
 
 ### What is a placement manifest?
 
@@ -70,7 +70,7 @@ interface PlacementManifest {
 }
 ```
 
-The manifest is serialized to **canonical JSON** (sorted keys, no whitespace) and hashed to create the **placement commitment** — a `bytes32` value stored on-chain. Any change to field positions, assignments, or requirements changes the hash.
+The manifest is serialized to **canonical JSON** (sorted keys, no whitespace) and hashed to create the **placement commitment**, a `bytes32` value stored on-chain. Any change to field positions, assignments, or requirements changes the hash.
 
 ### The signer's Merkle root
 
@@ -87,14 +87,14 @@ This creates **field-level accountability**. A verifier can later ask: "Did sign
 leaf = keccak256(abi.encode(
   fieldId,
   placementCommitment,
-  cidIdentifier,   // keccak256(pieceCid) — not the raw CID on-chain
+  cidIdentifier,   // keccak256(pieceCid), not the raw CID on-chain
   signerAddress
 ))
 ```
 
 ## The compliance bundle: a complete audit record
 
-For legal proceedings or compliance audits, we generate a **Compliance Bundle** — a server-built JSON document containing everything needed to verify the signing ceremony:
+For legal proceedings or compliance audits, we generate a **Compliance Bundle**, a server-built JSON document containing everything needed to verify the signing ceremony:
 
 ```typescript
 interface ComplianceBundle {
@@ -191,7 +191,7 @@ interface ComplianceBundle {
 
 ### Bundle integrity
 
-The bundle is **canonicalized** (sorted keys recursively) and hashed with SHA-256. The server stores this hash in `compliance_export_logs` with export metadata. That gives you a timestamped record of what was exported, when, and by whom—separate from the on-chain attestations themselves.
+The bundle is **canonicalized** (sorted keys recursively) and hashed with SHA-256. The server stores this hash in `compliance_export_logs` with export metadata. That gives you a timestamped record of what was exported, when, and by whom, separate from the on-chain attestations themselves.
 
 ## On-chain registration flow
 
@@ -266,7 +266,7 @@ No Filosign API keys. No platform login. The server **builds** the bundle for co
 
 ## Conclusion
 
-We rebuilt the signing flow with a simple principle: **cryptography first, platform second**. Filosign's servers assemble bundles and relay transactions—but the legal weight sits in hashes, Merkle proofs, and **`FSFileRegistry`** state that anyone can re-check.
+We rebuilt the signing flow with a simple principle: **cryptography first, platform second**. Filosign's servers assemble bundles and relay transactions, but the legal weight sits in hashes, Merkle proofs, and **`FSFileRegistry`** state that anyone can re-check.
 
 Your documents stay encrypted. Your field-level completions stay provably yours. And anyone with the bundle and an RPC endpoint can verify that.
 

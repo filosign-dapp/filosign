@@ -1,4 +1,4 @@
-/** Shared legal copy for Astro policy pages — keep in sync across Terms, Privacy, and explainers. */
+/** Shared legal copy for Astro policy pages - keep in sync across Terms, Privacy, and explainers. */
 
 export const LEGAL_OPERATOR = {
 	legalName: "Kartikay Tiwari",
@@ -37,4 +37,4 @@ export const EXCLUDED_DOCUMENTS_INTRO_TERMS = `Do not rely on Filosign for docum
 					special statutory formalities unless your counsel confirms the
 					workflow is suitable. The following non-exhaustive list illustrates document types that may require formalities Filosign does not support or that may be unsuitable for your workflow:`;
 
-export const EXCLUDED_DOCUMENTS_INTRO_ESIGN = `Certain documents may require wet-ink, notarization, witnessing, qualified electronic signatures, or other formalities Filosign does not provide. The following non-exhaustive list illustrates examples — always confirm suitability with qualified counsel:`;
+export const EXCLUDED_DOCUMENTS_INTRO_ESIGN = `Certain documents may require wet-ink, notarization, witnessing, qualified electronic signatures, or other formalities Filosign does not provide. The following non-exhaustive list illustrates examples. Always confirm suitability with qualified counsel:`;

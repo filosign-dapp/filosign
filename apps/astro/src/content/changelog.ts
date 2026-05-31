@@ -17,7 +17,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 		type: "Feature",
 		title: "Save drafts before you send",
 		description: [
-			"Pause mid-envelope and pick up recipients and field placement later—nothing lost when you're not ready to send.",
+			"Pause mid-envelope and pick up recipients and field placement later. Nothing lost when you're not ready to send.",
 		],
 	},
 	{
@@ -26,7 +26,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 		type: "Feature",
 		title: "Attached payouts",
 		description: [
-			"Attach a payout to a document so payment releases when signing completes—funds move directly between payer and recipient, and Filosign never holds your money.",
+			"Attach a payout to a document so payment releases when signing completes. Funds move directly between payer and recipient, and Filosign never holds your money.",
 		],
 	},
 	{
@@ -44,7 +44,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 		type: "Feature",
 		title: "Introducing Filosign",
 		description: [
-			"Encrypted agreements with verifiable signing records—built so you control your files and your proof.",
+			"Encrypted agreements with verifiable signing records, built so you control your files and your proof.",
 		],
 	},
 	{
@@ -53,7 +53,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 		type: "Feature",
 		title: "Field-level signing proof you can export",
 		description: [
-			"See which fields each person signed and export a proof package for counsel, auditors, or counterparties—stronger audit trails when you need field-by-field evidence.",
+			"See which fields each person signed and export a proof package for counsel, auditors, or counterparties. Stronger audit trails when you need field-by-field evidence.",
 		],
 	},
 	{
@@ -62,7 +62,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 		type: "Enhancement",
 		title: "Proof packets and mobile signing",
 		description: [
-			"Download a proof packet PDF for compliance review and sign from your phone browser—no native app required.",
+			"Download a proof packet PDF for compliance review and sign from your phone browser. No native app required.",
 		],
 	},
 	{
@@ -89,7 +89,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 		type: "Enhancement",
 		title: "No gas fees for signing",
 		description: [
-			"Register, send, and sign without buying ETH first—onboarding feels like a normal web app.",
+			"Register, send, and sign without buying ETH first. Onboarding feels like a normal web app.",
 		],
 	},
 	{
@@ -125,7 +125,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 		type: "Feature",
 		title: "Send and sign your first document",
 		description: [
-			"Create an envelope, add recipients, and complete signing—the core flow everything else builds on.",
+			"Create an envelope, add recipients, and complete signing. The core flow everything else builds on.",
 		],
 	},
 	{
@@ -134,7 +134,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 		type: "Feature",
 		title: "Encrypted document upload",
 		description: [
-			"Upload PDFs encrypted end-to-end—only you and your recipients can read them.",
+			"Upload PDFs encrypted end-to-end. Only you and your recipients can read them.",
 		],
 	},
 	{
@@ -143,7 +143,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 		type: "Feature",
 		title: "Sign in with Google or your wallet",
 		description: [
-			"Get started with Google or connect a wallet—one sign-in, then straight into sending or signing.",
+			"Get started with Google or connect a wallet. One sign-in, then straight into sending or signing.",
 		],
 	},
 ];

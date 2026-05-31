@@ -18,7 +18,7 @@ _"You already logged in with Google. Why are you asking for six more digits?"_
 
 That complaint was fair. From the outside, Filosign looked like OAuth stacked on a second password. Under the hood it was never that simple.
 
-**OAuth answers identity.** Our post-quantum signing keys still need **material only the client should ever possess**, bound to the embedded wallet and anchored as commitments the server can verify. This post is for anyone reviewing our architecture: how we separated those concerns, what we rejected, and how returning users unlock with the **same cryptographic path we use at registration**—with PIN as a real fallback, not the default ritual.
+**OAuth answers identity.** Our post-quantum signing keys still need **material only the client should ever possess**, bound to the embedded wallet and anchored as commitments the server can verify. This post is for anyone reviewing our architecture: how we separated those concerns, what we rejected, and how returning users unlock with the **same cryptographic path we use at registration**, with PIN as a real fallback, not the default ritual.
 
 ## Two problems dressed as one
 
@@ -39,7 +39,7 @@ Roughly, three layers matter:
 
 | Piece | Role |
 | :---- | :--- |
-| **Registration snapshot (server / Postgres)** | Stores salts (`salt_seed`, `salt_challenge`) and **commitments** to Kyber and Dilithium public keys in `users.keygenDataJson`. Returned via the registration snapshot API after auth—not readable on-chain. |
+| **Registration snapshot (server / Postgres)** | Stores salts (`salt_seed`, `salt_challenge`) and **commitments** to Kyber and Dilithium public keys in `users.keygenDataJson`. Returned via the registration snapshot API after auth, not readable on-chain. |
 | **Registration EIP-712 (wallet signature)** | At signup, the wallet signs `RegisterKeygenData` with **`FSFileRegistry`** as the verifying contract. This binds commitments to the wallet without writing key material on-chain. |
 | **PIN envelope (IndexedDB)** | Ciphertext of the expanded seed, wrapped with Argon2id + AES-GCM using the PIN. Survives refresh; does not survive a forgotten PIN without recovery phrase. |
 | **Session seed (RAM)** | After unlock, the expanded seed lives in a process-local map so Dilithium and KEM operations can run in-session. |

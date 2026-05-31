@@ -53,7 +53,15 @@ type CoreDefinitionContracts = Pick<
 	"FSFileRegistry" | "FSPaymentValidator"
 >;
 
-export type FilosignContracts<T extends Wallet = Wallet> = {
+type AttachmentReleaseDefinition = ChainDefinitionsEntry extends {
+	FSAttachmentRelease: infer R;
+}
+	? R extends { abi: Abi; address: Address }
+		? R
+		: never
+	: never;
+
+type CoreFilosignContracts<T extends Wallet> = {
 	[K in keyof CoreDefinitionContracts]: GetContractReturnType<
 		CoreDefinitionContracts[K]["abi"],
 		FilosignKeyedContractClient,
@@ -61,9 +69,24 @@ export type FilosignContracts<T extends Wallet = Wallet> = {
 			? CoreDefinitionContracts[K]["address"]
 			: Address
 	>;
-} & {
-	$client: T;
 };
+
+type OptionalAttachmentReleaseContract<T extends Wallet> =
+	AttachmentReleaseDefinition extends never
+		? Record<string, never>
+		: {
+				FSAttachmentRelease?: GetContractReturnType<
+					AttachmentReleaseDefinition["abi"],
+					FilosignKeyedContractClient,
+					AttachmentReleaseDefinition["address"]
+				>;
+			};
+
+export type FilosignContracts<T extends Wallet = Wallet> =
+	CoreFilosignContracts<T> &
+		OptionalAttachmentReleaseContract<T> & {
+			$client: T;
+		};
 
 function getKeyedClient<T extends Client | WalletClient>(
 	client: T,
@@ -84,6 +107,12 @@ export function getContracts<T extends Wallet>(options: {
 	const contractDefinitions = getDefinitionsEntry(chainKey);
 	const bundledClient = getKeyedClient(client, chainKey);
 
+	const attachmentRelease = (
+		contractDefinitions as ChainDefinitionsEntry & {
+			FSAttachmentRelease?: { abi: Abi; address: Address };
+		}
+	).FSAttachmentRelease;
+
 	return {
 		FSFileRegistry: getContract({
 			client: bundledClient,
@@ -93,6 +122,14 @@ export function getContracts<T extends Wallet>(options: {
 			client: bundledClient,
 			...contractDefinitions.FSPaymentValidator,
 		}),
+		...(attachmentRelease
+			? {
+					FSAttachmentRelease: getContract({
+						client: bundledClient,
+						...attachmentRelease,
+					}),
+				}
+			: {}),
 		$client: client,
-	};
+	} as FilosignContracts<T>;
 }

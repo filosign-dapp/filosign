@@ -146,6 +146,20 @@ async function assertBytecodeLive(address: `0x${string}`) {
 	return publicClient;
 }
 
+async function deployAttachmentRelease(
+	deployer: WalletDeployed,
+	fileRegistryAddress: `0x${string}`,
+	chainId: number,
+) {
+	const attachmentRelease = await hre.viem.deployContract(
+		"FSAttachmentRelease",
+		[fileRegistryAddress, BigInt(chainId)],
+		{ client: { wallet: deployer } },
+	);
+	console.log("FSAttachmentRelease deployed at:", attachmentRelease.address);
+	return attachmentRelease;
+}
+
 async function deployPaymentValidator(
 	deployer: WalletDeployed,
 	fileRegistryAddress: `0x${string}`,
@@ -164,17 +178,26 @@ async function verifyOnBaseExplorerIfApplicable(args: {
 	networkName: string;
 	fileRegistry: Awaited<ReturnType<typeof deployFileRegistry>>;
 	paymentValidator: Awaited<ReturnType<typeof deployPaymentValidator>>;
+	attachmentRelease: Awaited<ReturnType<typeof deployAttachmentRelease>>;
 	serverAddress: `0x${string}`;
 	fileRegistryAddress: `0x${string}`;
 	chainId: number;
 }) {
-	const { networkName, fileRegistry, paymentValidator, serverAddress } = args;
+	const {
+		networkName,
+		fileRegistry,
+		paymentValidator,
+		attachmentRelease,
+		serverAddress,
+	} = args;
 	if (!BASE_BLOCK_EXPLORER_NETWORKS.has(networkName)) return;
 
 	try {
 		await $`bunx --bun hardhat verify --network ${networkName} ${fileRegistry.address} ${serverAddress} --force`;
 		await sleep(1000);
 		await $`bunx --bun hardhat verify --network ${networkName} ${paymentValidator.address} ${args.fileRegistryAddress} ${String(args.chainId)} --force`;
+		await sleep(1000);
+		await $`bunx --bun hardhat verify --network ${networkName} ${attachmentRelease.address} ${args.fileRegistryAddress} ${String(args.chainId)} --force`;
 	} catch (_) {}
 	console.log(`Contracts verified on ${networkName} block explorer`);
 }
@@ -205,6 +228,11 @@ async function main() {
 		fileRegistry.address,
 		chainId,
 	);
+	const attachmentRelease = await deployAttachmentRelease(
+		deployer,
+		fileRegistry.address,
+		chainId,
+	);
 
 	let mockUsd: LocalMockUsdBundle | undefined;
 	if (chainId === CHAIN_ID.local) {
@@ -221,6 +249,7 @@ async function main() {
 	const definitions = {
 		FSFileRegistry: abiFromContract(fileRegistry),
 		FSPaymentValidator: abiFromContract(paymentValidator),
+		FSAttachmentRelease: abiFromContract(attachmentRelease),
 		...(chainId === CHAIN_ID.local && mockUsd ? { MockUSDC: mockUsd } : {}),
 	} as const;
 
@@ -232,6 +261,7 @@ async function main() {
 		networkName: hre.network.name,
 		fileRegistry,
 		paymentValidator,
+		attachmentRelease,
 		serverAddress,
 		fileRegistryAddress: fileRegistry.address,
 		chainId,

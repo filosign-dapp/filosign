@@ -396,13 +396,6 @@ describe("FSPaymentValidator", () => {
 		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
 			account: walletAccount(ctx.sender),
 		});
-		await registerFileSignatureStep({
-			ctx,
-			pieceCid: piece,
-			senderAddr,
-			signerWallet: ctx.sender,
-			signerEmailCommitment: signerCommitment,
-		});
 
 		await ctx.paymentValidator.write.updatePayoutRule(
 			[
@@ -419,6 +412,14 @@ describe("FSPaymentValidator", () => {
 			],
 			{ account: walletAccount(ctx.sender) },
 		);
+
+		await registerFileSignatureStep({
+			ctx,
+			pieceCid: piece,
+			senderAddr,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: signerCommitment,
+		});
 
 		await ctx.paymentValidator.write.executePayout([ruleId], {
 			account: walletAccount(ctx.payout),
@@ -955,6 +956,205 @@ describe("FSPaymentValidator", () => {
 		);
 	});
 
+	it("executePayoutLeg pays legs independently until fully executed", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const recipientA = walletAccount(ctx.payout).address;
+		const recipientB = walletAccount(ctx.deployer).address;
+		const piece = "per-leg-payout";
+		const id = cidId(piece);
+		const leg0 = amount / 2n;
+		const leg1 = amount - leg0;
+
+		await registerFileOnly(ctx, piece, [signerCommitment]);
+		await ctx.mockUsdc.write.mint([senderAddr, amount]);
+		const ruleId = await registerPaymentRule(ctx, {
+			payer: senderAddr,
+			token: ctx.mockUsdc.address,
+			cidId: id,
+			releaseType: 0,
+			legs: [
+				{ recipient: recipientA, amount: leg0 },
+				{ recipient: recipientB, amount: leg1 },
+			],
+		});
+		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
+			account: walletAccount(ctx.sender),
+		});
+		await registerFileSignatureStep({
+			ctx,
+			pieceCid: piece,
+			senderAddr,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: signerCommitment,
+		});
+
+		expect(await ctx.paymentValidator.read.isLegPaid([ruleId, 0n])).to.be.false;
+		expect(await ctx.paymentValidator.read.isLegPaid([ruleId, 1n])).to.be.false;
+		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.true;
+
+		await ctx.paymentValidator.write.executePayoutLeg([ruleId, 0n], {
+			account: walletAccount(ctx.payout),
+		});
+
+		let rule = await ctx.paymentValidator.read.rules([ruleId]);
+		expect(rule[7]).to.equal(false);
+		expect(await ctx.paymentValidator.read.isLegPaid([ruleId, 0n])).to.be.true;
+		expect(await ctx.paymentValidator.read.isLegPaid([ruleId, 1n])).to.be.false;
+		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.true;
+		expect(await ctx.paymentValidator.read.unpaidLegCount([ruleId])).to.equal(
+			1n,
+		);
+
+		await ctx.paymentValidator.write.executePayoutLeg([ruleId, 1n], {
+			account: walletAccount(ctx.deployer),
+		});
+
+		rule = await ctx.paymentValidator.read.rules([ruleId]);
+		expect(rule[7]).to.equal(true);
+		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.false;
+	});
+
+	it("registerRule reverts when leg recipient equals payer", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const id = cidId("payer-is-recipient");
+		await registerFileOnly(ctx, "payer-is-recipient", [signerCommitment]);
+
+		await assert.rejects(
+			registerPaymentRule(ctx, {
+				payer: senderAddr,
+				token: ctx.mockUsdc.address,
+				cidId: id,
+				releaseType: 0,
+				legs: [{ recipient: senderAddr, amount }],
+			}),
+		);
+	});
+
+	it("registerRule reverts when leg recipient is the payment validator", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const id = cidId("validator-is-recipient");
+		await registerFileOnly(ctx, "validator-is-recipient", [signerCommitment]);
+
+		await assert.rejects(
+			registerPaymentRule(ctx, {
+				payer: senderAddr,
+				token: ctx.mockUsdc.address,
+				cidId: id,
+				releaseType: 0,
+				legs: [{ recipient: ctx.paymentValidator.address, amount }],
+			}),
+		);
+	});
+
+	it("registerRule reverts when leg recipient is the payout token contract", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const id = cidId("token-is-recipient");
+		await registerFileOnly(ctx, "token-is-recipient", [signerCommitment]);
+
+		await assert.rejects(
+			registerPaymentRule(ctx, {
+				payer: senderAddr,
+				token: ctx.mockUsdc.address,
+				cidId: id,
+				releaseType: 0,
+				legs: [{ recipient: ctx.mockUsdc.address, amount }],
+			}),
+		);
+	});
+
+	it("updatePayoutRule reverts after any leg was paid", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const recipientA = walletAccount(ctx.payout).address;
+		const recipientB = walletAccount(ctx.deployer).address;
+		const piece = "update-after-partial";
+		const id = cidId(piece);
+		const leg0 = amount / 2n;
+		const leg1 = amount - leg0;
+
+		await registerFileOnly(ctx, piece, [signerCommitment]);
+		await ctx.mockUsdc.write.mint([senderAddr, amount]);
+		const ruleId = await registerPaymentRule(ctx, {
+			payer: senderAddr,
+			token: ctx.mockUsdc.address,
+			cidId: id,
+			releaseType: 0,
+			legs: [
+				{ recipient: recipientA, amount: leg0 },
+				{ recipient: recipientB, amount: leg1 },
+			],
+		});
+		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
+			account: walletAccount(ctx.sender),
+		});
+		await registerFileSignatureStep({
+			ctx,
+			pieceCid: piece,
+			senderAddr,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: signerCommitment,
+		});
+		await ctx.paymentValidator.write.executePayoutLeg([ruleId, 0n], {
+			account: walletAccount(ctx.payout),
+		});
+
+		await assert.rejects(
+			ctx.paymentValidator.write.updatePayoutRule(
+				[
+					ruleId,
+					0,
+					zeroCommitment,
+					0,
+					0n,
+					[],
+					[{ recipient: recipientB, amount: leg1 }],
+				],
+				{ account: walletAccount(ctx.sender) },
+			),
+		);
+	});
+
+	it("executePayoutLeg reverts when leg already paid", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const recipientAddr = walletAccount(ctx.payout).address;
+		const piece = "double-leg-pay";
+		const id = cidId(piece);
+
+		await registerFileOnly(ctx, piece, [signerCommitment]);
+		await ctx.mockUsdc.write.mint([senderAddr, amount]);
+		const ruleId = await registerPaymentRule(ctx, {
+			payer: senderAddr,
+			token: ctx.mockUsdc.address,
+			cidId: id,
+			releaseType: 0,
+			legs: [{ recipient: recipientAddr, amount }],
+		});
+		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
+			account: walletAccount(ctx.sender),
+		});
+		await registerFileSignatureStep({
+			ctx,
+			pieceCid: piece,
+			senderAddr,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: signerCommitment,
+		});
+		await ctx.paymentValidator.write.executePayoutLeg([ruleId, 0n], {
+			account: walletAccount(ctx.payout),
+		});
+
+		await assert.rejects(
+			ctx.paymentValidator.write.executePayoutLeg([ruleId, 0n], {
+				account: walletAccount(ctx.payout),
+			}),
+		);
+	});
+
 	it("updatePayoutRule and cancelPayoutRule revert after execute", async () => {
 		const ctx = await deployFullSystem();
 		const senderAddr = walletAccount(ctx.sender).address;
@@ -1002,6 +1202,182 @@ describe("FSPaymentValidator", () => {
 		await assert.rejects(
 			ctx.paymentValidator.write.cancelPayoutRule([ruleId], {
 				account: walletAccount(ctx.sender),
+			}),
+		);
+	});
+
+	it("updatePayoutRule reverts after a required signer signs (SEC-03)", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const recipientAddr = walletAccount(ctx.payout).address;
+		const piece = "sec03-update-lock";
+		const id = cidId(piece);
+
+		await registerFileOnly(ctx, piece, [signerCommitment]);
+		await ctx.mockUsdc.write.mint([senderAddr, amount]);
+		const ruleId = await registerPaymentRule(ctx, {
+			payer: senderAddr,
+			token: ctx.mockUsdc.address,
+			cidId: id,
+			releaseType: 0,
+			legs: [{ recipient: recipientAddr, amount }],
+		});
+		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
+			account: walletAccount(ctx.sender),
+		});
+		await registerFileSignatureStep({
+			ctx,
+			pieceCid: piece,
+			senderAddr,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: signerCommitment,
+		});
+
+		await assert.rejects(
+			ctx.paymentValidator.write.updatePayoutRule(
+				[
+					ruleId,
+					0,
+					zeroCommitment,
+					0,
+					0n,
+					[],
+					[{ recipient: recipientAddr, amount }],
+				],
+				{ account: walletAccount(ctx.sender) },
+			),
+		);
+	});
+
+	it("cancelPayoutRule still allowed after required signer signs (SEC-13)", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const recipientAddr = walletAccount(ctx.payout).address;
+		const piece = "sec13-cancel-after-sign";
+		const id = cidId(piece);
+
+		await registerFileOnly(ctx, piece, [signerCommitment]);
+		await ctx.mockUsdc.write.mint([senderAddr, amount]);
+		const ruleId = await registerPaymentRule(ctx, {
+			payer: senderAddr,
+			token: ctx.mockUsdc.address,
+			cidId: id,
+			releaseType: 0,
+			legs: [{ recipient: recipientAddr, amount }],
+		});
+		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
+			account: walletAccount(ctx.sender),
+		});
+		await registerFileSignatureStep({
+			ctx,
+			pieceCid: piece,
+			senderAddr,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: signerCommitment,
+		});
+
+		await ctx.paymentValidator.write.cancelPayoutRule([ruleId], {
+			account: walletAccount(ctx.sender),
+		});
+		const ruleAfterCancel = await ctx.paymentValidator.read.rules([ruleId]);
+		expect(ruleAfterCancel[8]).to.equal(true);
+	});
+
+	it("updatePayoutRule allowed when only optional signers have signed", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const recipientAddr = walletAccount(ctx.payout).address;
+		const piece = "sec03-optional-only";
+		const id = cidId(piece);
+		const half = amount / 2n;
+
+		await registerFileOnly(ctx, piece, [signerCommitment], {
+			optionalCommitments: [secondSignerCommitment],
+		});
+		await ctx.mockUsdc.write.mint([senderAddr, amount]);
+		const ruleId = await registerPaymentRule(ctx, {
+			payer: senderAddr,
+			token: ctx.mockUsdc.address,
+			cidId: id,
+			releaseType: 0,
+			legs: [{ recipient: recipientAddr, amount }],
+		});
+		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
+			account: walletAccount(ctx.sender),
+		});
+		await registerFileSignatureStep({
+			ctx,
+			pieceCid: piece,
+			senderAddr,
+			signerWallet: ctx.coSigner,
+			signerEmailCommitment: secondSignerCommitment,
+		});
+
+		await ctx.paymentValidator.write.updatePayoutRule(
+			[
+				ruleId,
+				0,
+				zeroCommitment,
+				0,
+				0n,
+				[],
+				[
+					{ recipient: recipientAddr, amount: half },
+					{
+						recipient: walletAccount(ctx.coSigner).address,
+						amount: half,
+					},
+				],
+			],
+			{ account: walletAccount(ctx.sender) },
+		);
+	});
+
+	it("cancelPayoutRule allowed after partial leg paid (SEC-13)", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const recipientAddr = walletAccount(ctx.payout).address;
+		const altRecipient = walletAccount(ctx.coSigner).address;
+		const piece = "sec13-cancel-partial";
+		const id = cidId(piece);
+		const half = amount / 2n;
+
+		await registerFileOnly(ctx, piece, [signerCommitment]);
+		await ctx.mockUsdc.write.mint([senderAddr, amount]);
+		const ruleId = await registerPaymentRule(ctx, {
+			payer: senderAddr,
+			token: ctx.mockUsdc.address,
+			cidId: id,
+			releaseType: 0,
+			legs: [
+				{ recipient: recipientAddr, amount: half },
+				{ recipient: altRecipient, amount: half },
+			],
+		});
+		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
+			account: walletAccount(ctx.sender),
+		});
+		await registerFileSignatureStep({
+			ctx,
+			pieceCid: piece,
+			senderAddr,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: signerCommitment,
+		});
+		await ctx.paymentValidator.write.executePayoutLeg([ruleId, 0n], {
+			account: walletAccount(ctx.payout),
+		});
+
+		await ctx.paymentValidator.write.cancelPayoutRule([ruleId], {
+			account: walletAccount(ctx.sender),
+		});
+		const ruleAfterPartialCancel = await ctx.paymentValidator.read.rules([
+			ruleId,
+		]);
+		expect(ruleAfterPartialCancel[8]).to.equal(true);
+		await assert.rejects(
+			ctx.paymentValidator.write.executePayoutLeg([ruleId, 1n], {
+				account: walletAccount(ctx.payout),
 			}),
 		);
 	});

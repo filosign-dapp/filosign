@@ -564,12 +564,108 @@ describe("FSFileRegistry", () => {
 		);
 	});
 
-	it("registerFile reverts when signature is expired", async () => {
+	it("registerFile accepts signature within 24 hour validity window", async () => {
+		const ctx = await deployFullSystem();
+		const signer = `0x${"78".repeat(32)}` as Hex;
+		const pieceCid = "valid-24h-register";
+		const signedAt = (await latestBlockTimestamp(ctx.publicClient)) - 86_399n;
+		const nonce = await ctx.fileRegistry.read.nonce([
+			walletAccount(ctx.sender).address,
+		]);
+		const signature = await signRegisterFile({
+			wallet: ctx.sender,
+			fileRegistryAddress: ctx.fileRegistry.address,
+			chainId: ctx.chainId,
+			pieceCid,
+			requiredCommitments: [signer],
+			signersCommitment:
+				await ctx.fileRegistry.read.computeEmailSignerCommitment([[signer]]),
+			placementCommitment: defaultPlacement,
+			senderEmailCommitment: defaultSenderEmail,
+			senderPrivySubjectCommitment: defaultSenderPrivy,
+			timestamp: signedAt,
+			nonce,
+		});
+
+		await ctx.fileRegistry.write.registerFile(
+			[
+				{
+					pieceCid,
+					sender: walletAccount(ctx.sender).address,
+					requiredCommitments: [signer],
+					optionalCommitments: [],
+					viewerEmailCommitments: [],
+					senderEmailCommitment: defaultSenderEmail,
+					senderPrivySubjectCommitment: defaultSenderPrivy,
+					orgIdCommitment: zeroOrg,
+					routingMode: 0,
+					routingOrder: [],
+					quorumN: 0,
+					quorumSet: [],
+					timestamp: signedAt,
+					signature,
+					placementCommitment: defaultPlacement,
+				},
+			],
+			{ account: walletAccount(ctx.server) },
+		);
+	});
+
+	it("registerFile reverts when signature exceeds 24 hour validity window", async () => {
+		const ctx = await deployFullSystem();
+		const signer = `0x${"79".repeat(32)}` as Hex;
+		const pieceCid = "expired-24h-register";
+		const signedAt = (await latestBlockTimestamp(ctx.publicClient)) - 86_401n;
+		const nonce = await ctx.fileRegistry.read.nonce([
+			walletAccount(ctx.sender).address,
+		]);
+		const signature = await signRegisterFile({
+			wallet: ctx.sender,
+			fileRegistryAddress: ctx.fileRegistry.address,
+			chainId: ctx.chainId,
+			pieceCid,
+			requiredCommitments: [signer],
+			signersCommitment:
+				await ctx.fileRegistry.read.computeEmailSignerCommitment([[signer]]),
+			placementCommitment: defaultPlacement,
+			senderEmailCommitment: defaultSenderEmail,
+			senderPrivySubjectCommitment: defaultSenderPrivy,
+			timestamp: signedAt,
+			nonce,
+		});
+
+		await assert.rejects(
+			ctx.fileRegistry.write.registerFile(
+				[
+					{
+						pieceCid,
+						sender: walletAccount(ctx.sender).address,
+						requiredCommitments: [signer],
+						optionalCommitments: [],
+						viewerEmailCommitments: [],
+						senderEmailCommitment: defaultSenderEmail,
+						senderPrivySubjectCommitment: defaultSenderPrivy,
+						orgIdCommitment: zeroOrg,
+						routingMode: 0,
+						routingOrder: [],
+						quorumN: 0,
+						quorumSet: [],
+						timestamp: signedAt,
+						signature,
+						placementCommitment: defaultPlacement,
+					},
+				],
+				{ account: walletAccount(ctx.server) },
+			),
+		);
+	});
+
+	it("registerFile reverts when signature is expired (legacy 2m window superseded by 24h)", async () => {
 		const ctx = await deployFullSystem();
 		const signer = `0x${"77".repeat(32)}` as Hex;
 		const pieceCid = "expired-register";
 		const staleTimestamp =
-			(await latestBlockTimestamp(ctx.publicClient)) - 200n;
+			(await latestBlockTimestamp(ctx.publicClient)) - 86_401n;
 		const nonce = await ctx.fileRegistry.read.nonce([
 			walletAccount(ctx.sender).address,
 		]);

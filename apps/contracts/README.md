@@ -90,7 +90,7 @@ Sender-signed at send. Stored per file:
 - **`validateFileAckSignature`** — viewer/signer ack validation (off-chain consent; not used for payout release)
 - **ERC-1271** — Safe-compatible wallets via `FSSignatureValidation`
 
-Signature validity: timestamps must be within **`SIGNATURE_CLOCK_DRIFT_TOLERANCE` (5 minutes)** of `block.timestamp` (`SignatureFuture` if too far ahead) and **`SIGNATURE_VALIDITY_PERIOD` (2 minutes)** after the signed timestamp (`SignatureExpired` if too late). Effective acceptance window: roughly `[timestamp, timestamp + 2 minutes]`, with `timestamp` not more than 5 minutes ahead of chain time.
+Signature validity: timestamps must be within **`SIGNATURE_CLOCK_DRIFT_TOLERANCE` (5 minutes)** of `block.timestamp` (`SignatureFuture` if too far ahead) and **`SIGNATURE_VALIDITY_PERIOD` (24 hours)** after the signed timestamp (`SignatureExpired` if too late). Effective acceptance window: roughly `[timestamp, timestamp + 24 hours]`, with `timestamp` not more than 5 minutes ahead of chain time.
 
 ## FSPaymentValidator
 

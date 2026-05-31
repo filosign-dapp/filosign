@@ -4,6 +4,7 @@ import {
 	FEATURE_KEYS,
 	type FeatureKey,
 	getLimit,
+	getPlanName,
 } from "@filosign/entitlements";
 
 const METERED_KEYS = [
@@ -20,6 +21,7 @@ export type EntitlementLimitSnapshot = {
 
 export function buildEntitlementsSnapshot(ctx: EntitlementContext): {
 	planId: typeof ctx.planId;
+	planName: string;
 	limits: Record<(typeof METERED_KEYS)[number], EntitlementLimitSnapshot>;
 	features: Record<FeatureKey, { enabled: boolean }>;
 } {
@@ -49,6 +51,7 @@ export function buildEntitlementsSnapshot(ctx: EntitlementContext): {
 
 	return {
 		planId: ctx.planId,
+		planName: getPlanName(ctx.planId),
 		limits,
 		features,
 	};

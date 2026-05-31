@@ -124,6 +124,7 @@ export async function settlementsListByFile(
 				amount: legacyTopLevel.amount,
 				totalAmount: settlementRuleTotalAmount(r.legs).toString(),
 				tokenAddress: r.tokenAddress,
+				validatorAddress: r.validatorAddress,
 				releaseType: r.releaseType,
 				releaseParams: r.releaseParams,
 				expiresAt: r.expiresAt ?? null,

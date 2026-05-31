@@ -87,6 +87,28 @@ export async function tryExecuteSettlementPayout(
 		return { executed: false, skipped: "insufficient_funds" };
 	}
 
+	const simRes = await tryCatch(
+		validator.simulate.executePayout([onChainRuleId], {
+			account: evmClient.account,
+		}),
+	);
+	if (simRes.error) {
+		const lastError =
+			simRes.error instanceof Error
+				? simRes.error.message
+				: "execute_simulation_failed";
+		const status = mapExecuteErrorToStatus(lastError);
+		await db
+			.update(fileSettlementRules)
+			.set({
+				status,
+				lastError,
+				updatedAt: new Date(),
+			})
+			.where(eq(fileSettlementRules.onChainRuleId, onChainRuleId));
+		return { executed: false, skipped: status };
+	}
+
 	const txRes = await tryCatch(
 		(
 			validator.write as {

@@ -14,3 +14,21 @@ describe("payerCanFundSettlement", () => {
 		);
 	});
 });
+
+describe("tryExecuteSettlementPayout", () => {
+	test("simulates executePayout before broadcasting write", () => {
+		const src = readFileSync(
+			join(
+				import.meta.dir,
+				"../../lib/domains/settlements/utils/execute-payout.ts",
+			),
+			"utf8",
+		);
+		expect(src).toContain("validator.simulate.executePayout");
+		expect(src).toContain("validator.write");
+		const simIdx = src.indexOf("validator.simulate.executePayout");
+		const writeIdx = src.indexOf("validator.write");
+		expect(simIdx).toBeGreaterThan(-1);
+		expect(writeIdx).toBeGreaterThan(simIdx);
+	});
+});

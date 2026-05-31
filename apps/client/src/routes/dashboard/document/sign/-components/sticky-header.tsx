@@ -445,7 +445,8 @@ export function SignDocumentStickyHeader() {
 				open={signConfirmOpen}
 				onOpenChange={setSignConfirmOpen}
 				pending={signFile.isPending}
-				onConfirm={() => handleSign()}
+				requiresPayoutAck={settlementRules.length > 0}
+				onConfirm={(result) => void handleSign(result)}
 			/>
 			<ConfirmAlertDialog
 				open={rotateInviteOpen}

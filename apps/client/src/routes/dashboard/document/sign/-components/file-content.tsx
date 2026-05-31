@@ -1,7 +1,7 @@
 import {
 	FILE_ACK_INTENT_LABELS,
 	FILE_ACK_INTENT_VERSION_V1,
-	type PlacementField,
+	type PlacementManifest,
 } from "@filosign/shared";
 import { DownloadIcon, FileTextIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useState } from "react";
@@ -20,7 +20,7 @@ import { SignDocumentPdfPreview } from "./pdf-preview";
 
 type SignDocumentPdfPlacementOverlayProps = {
 	pageIndex: number;
-	myPlacementFields: PlacementField[];
+	myPlacementFields: Array<PlacementManifest["fields"][number]>;
 	alreadySigned: boolean;
 	isMyPlacementFieldDone: (fieldId: string) => boolean;
 	togglePlacementField: (fieldId: string) => void;

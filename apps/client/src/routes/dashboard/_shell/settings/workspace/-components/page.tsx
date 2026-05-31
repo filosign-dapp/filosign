@@ -25,6 +25,7 @@ import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persiste
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
 import { BillingSection } from "./billing-section";
 import { MembersSection } from "./members-section";
+import { PayoutFeatureAccessSection } from "./payout-feature-access-section";
 import { WorkspaceSection } from "./workspace-section";
 
 function CreateWorkspaceDialog(props: {
@@ -281,6 +282,7 @@ export function WorkspaceSettingsPage() {
 			{activeOrgId ? (
 				<div className="space-y-6">
 					<WorkspaceDetailsSection />
+					<PayoutFeatureAccessSection />
 					<BillingSection />
 					<MembersSection onInviteClick={() => setIsInviteOpen(true)} />
 				</div>

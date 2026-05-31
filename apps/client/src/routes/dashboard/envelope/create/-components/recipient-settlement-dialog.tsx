@@ -78,8 +78,9 @@ export function RecipientSettlementDialog({
 	const canAdvanced = canUseAdvancedSettlements(entitlements);
 
 	const [amountUsdc, setAmountUsdc] = useState("");
-	const [releaseType, setReleaseType] =
-		useState<SettlementReleaseType>("all_signed");
+	const [releaseType, setReleaseType] = useState<SettlementReleaseType>(
+		"all_required_signed",
+	);
 	const [specificSignerEmail, setSpecificSignerEmail] = useState("");
 	const [thresholdN, setThresholdN] = useState("2");
 
@@ -114,7 +115,7 @@ export function RecipientSettlementDialog({
 	useEffect(() => {
 		if (!open) return;
 		setAmountUsdc(existingDraft?.amountUsdc ?? "");
-		setReleaseType(existingDraft?.releaseType ?? "all_signed");
+		setReleaseType(existingDraft?.releaseType ?? "all_required_signed");
 		setSpecificSignerEmail(
 			existingDraft?.specificSignerEmail ?? signerOptions[0]?.email ?? "",
 		);

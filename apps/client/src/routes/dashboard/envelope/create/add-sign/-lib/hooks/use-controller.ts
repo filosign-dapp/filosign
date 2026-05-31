@@ -24,6 +24,7 @@ import {
 	useDraftDocumentPreview,
 	useServerDraftHydrate,
 } from "@/src/lib/domains/drafts";
+import { buildPlacementManifestV3ForEnvelope } from "@/src/lib/domains/files/build-placement-manifest";
 import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
 import { constrainFieldTopLeft } from "@/src/lib/domains/files/placement-viewport";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
@@ -47,7 +48,6 @@ import { signatureFieldBoxCssPx } from "@/src/routes/dashboard/envelope/create/a
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
 import { resolveSettlementDraftsForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/resolve-settlement-drafts";
 import {
-	buildPlacementManifestForDocument,
 	buildSignersAndViewersForDocument,
 	isColdRecipient,
 	loadDocumentFileBytes,
@@ -350,12 +350,6 @@ export function useAddSignController() {
 			return;
 		}
 
-		if (createForm.documents.length !== 1) {
-			setSendStatus("error");
-			setTimeout(() => setSendStatus("idle"), 3000);
-			return;
-		}
-
 		if (!createForm.recipients || createForm.recipients.length === 0) {
 			setSendStatus("error");
 			setTimeout(() => setSendStatus("idle"), 3000);
@@ -425,11 +419,25 @@ export function useAddSignController() {
 		setSendStatus("loading");
 
 		try {
-			const doc = createForm.documents[0];
-			if (!doc) {
-				throw new Error("No document to send");
-			}
-			const fileData = await loadDocumentFileBytes(createForm.draftId, doc);
+			const pageCountForDocument = (docId: string) => {
+				const pages = signatureFields
+					.filter((f) => f.documentId === docId)
+					.map((f) => f.page);
+				return Math.max(1, ...pages);
+			};
+
+			const docPayloads = await Promise.all(
+				createForm.documents.map(async (doc) => {
+					const bytes = await loadDocumentFileBytes(createForm.draftId, doc);
+					return {
+						id: doc.id,
+						name: doc.name,
+						mimeType: doc.type,
+						bytes,
+						pageCount: pageCountForDocument(doc.id),
+					};
+				}),
+			);
 
 			const { signers, viewers } = buildSignersAndViewersForDocument({
 				recipients: createForm.recipients,
@@ -452,16 +460,39 @@ export function useAddSignController() {
 				coldInvites: coldInvitePayload,
 			});
 
-			const placementManifest = buildPlacementManifestForDocument({
-				docId: doc.id,
+			const placementManifest = await buildPlacementManifestV3ForEnvelope({
+				documents: docPayloads,
 				signerEmailsInOrder: signerRecipients.map((s) =>
 					normalizePlacementRecipientEmail(s.email?.trim() ?? ""),
 				),
 				signatureFields,
-				docWidth,
-				docHeight: placementDocHeight,
-				fieldBox: fieldBoxCss,
+				docLayouts: new Map(
+					createForm.documents.map((doc) => [
+						doc.id,
+						{
+							docWidth,
+							docHeight: placementDocHeight,
+							fieldBox: fieldBoxCss,
+						},
+					]),
+				),
 			});
+
+			const warmRecipientsByEmail = (createForm.recipients ?? [])
+				.map((recipient) => {
+					const addr = recipientResolvedSignerAddress(recipient);
+					if (!addr) return null;
+					const profile = recipientProfilesMapWithRecipient.get(addr)?.profile;
+					if (!profile?.encryptionPublicKey || !recipient.email?.trim()) {
+						return null;
+					}
+					return {
+						email: recipient.email.trim(),
+						address: addr,
+						encryptionPublicKey: profile.encryptionPublicKey as Hex,
+					};
+				})
+				.filter((x): x is NonNullable<typeof x> => x !== null);
 
 			let resolvedSettlementDrafts: SettlementAttachmentDraft[];
 			try {
@@ -502,9 +533,15 @@ export function useAddSignController() {
 			const result = await sendFile.mutateAsync({
 				signers,
 				viewers,
-				bytes: fileData,
-				metadata: { name: doc.name },
+				documents: docPayloads.map(({ pageCount: _pageCount, ...doc }) => doc),
+				metadata: {
+					name:
+						docPayloads.length === 1
+							? (docPayloads[0]?.name ?? "Document")
+							: `${docPayloads[0]?.name ?? "Envelope"} (+${docPayloads.length - 1} more)`,
+				},
 				placementManifest,
+				warmRecipientsByEmail,
 				viewerEmails,
 				...(coldInvitePayload ? { coldInvites: coldInvitePayload } : {}),
 				...(settlementRules.length > 0 ? { settlementRules } : {}),

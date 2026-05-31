@@ -4,12 +4,12 @@ Single `main` branch; four **deployments** differentiated by `DEPLOYMENT` + Infi
 
 ## Tiers
 
-| `DEPLOYMENT` | Infisical | `CHAIN` | Audience | Entitlements | Dodo billing |
-|--------------|-----------|---------|----------|--------------|--------------|
-| `local` | `.env.local` | `local` | Developer laptop | Catalog enforced | Off |
-| `staging` | `staging` | `testnet` | Internal QA | Full enforce | Test mode |
-| `sandbox` | `sandbox` | `testnet` | Public demo | No-op (open) | Off |
-| `production` | `prod` | `mainnet` | Paying users | Full enforce | Live mode |
+| `DEPLOYMENT` | Infisical | `CHAIN` | Audience | Signup | Entitlements | Dodo billing |
+|--------------|-----------|---------|----------|--------|--------------|--------------|
+| `local` | `.env.local` | `local` | Developer laptop | **Invite or paid** (mirrors prod) | Catalog enforced | Test mode |
+| `staging` | `staging` | `testnet` | Internal QA | **Invite or paid** (mirrors prod) | Full enforce | Test mode |
+| `sandbox` | `sandbox` | `testnet` | Public demo | **Open** | No-op (open) | Test mode |
+| `production` | `prod` | `mainnet` | Paying users | **Invite or paid** | Full enforce | Live mode |
 
 Staging and sandbox share **testnet contract addresses** (`definitions/testnet.ts`). Isolation is Postgres, S3, Dragonfly, URLs, and policy.
 
@@ -29,14 +29,43 @@ Every deployed server needs:
 
 - `DEPLOYMENT` — one of `local` | `staging` | `sandbox` | `production`
 - `CHAIN` — must match tier (`staging`/`sandbox` → `testnet`, `production` → `mainnet`, `local` → `local`)
-- `DODO_API_KEY` / `DODO_WEBHOOK_KEY` — required for `staging` and `production`; optional for `local` and `sandbox`
+- `DODO_API_KEY` / `DODO_WEBHOOK_KEY` — required on every tier (test mode except `production`, which uses live mode via `dodoLive()`)
 
 Client build vars (see `apps/client/.env*.example`):
 
 - `VITE_DEPLOYMENT` — must match server tier for that stack
 - `VITE_CHAIN` — must match `DEPLOYMENT` (see `@filosign/shared` `DEPLOYMENT_CHAIN`)
 
-Runtime oRPC `runtime.deployment` exposes server tier to the client.
+Runtime oRPC `runtime.deployment` and `runtime.signupPolicy` expose server tier and signup gating to the client.
+
+### Signup gate vs entitlements (two layers)
+
+| Layer | What it controls | Production today |
+|-------|------------------|------------------|
+| **Signup** (`signupPolicy`, `assertRegistrationAllowed`) | Who may **create an account** (invite, paid checkout, or cold doc invite) | `invite_or_paid` — no organic free signup yet |
+| **Registration** (`assertRegistrationComplete` on authenticated RPC) | User finished onboarding (`users` row exists) | Same on gated tiers |
+| **Entitlements** (`assertEntitlement`, catalog `free` plan) | Feature limits **after** login | Enforced on prod/staging/local; skipped on sandbox demo |
+
+Expired partner trials (`expirePartnerTrials` → subscription `canceled`) **keep dashboard access**. `effectivePlanIdFromStatus` maps them to catalog **`free`** (3 docs/month, 1 recipient per envelope in `catalog/v1`). That is intentional: retention + export paths stay available while paid features drop off.
+
+The **`free` plan in the catalog** is the long-term self-serve tier. Production signup stays gated until GA; when opened, the same catalog limits apply without changing the post-trial downgrade path.
+
+
+Use a **separate Thirdweb project / client ID per deployment tier** so sandbox MAU does not consume production’s free tier:
+
+| Tier | `VITE_THIRDWEB_CLIENT_ID` | Signup UX |
+|------|---------------------------|-----------|
+| `sandbox` | Sandbox Thirdweb project | Open (Connect modal + Google/Apple) |
+| `local` | Local/dev project | Invite or paid (email OTP on `/`) |
+| `staging` | Staging project | Invite or paid (email OTP on `/`) |
+| `production` | Production project | Invite or paid (email OTP on `/`) |
+
+Set matching IDs in Infisical for each server/client stack. **Only sandbox** keeps the legacy Connect modal; local/staging/production use programmatic email OTP on `/` when a valid gate token is present.
+
+### Platform admin
+
+- `ADMIN_WALLETS` — comma-separated admin wallet addresses on the server (see [`metrics-handlers.ts`](../../apps/server/api/handlers/metrics-handlers.ts))
+- Admin UI: `/admin` (wallet must be in `ADMIN_WALLETS`)
 
 ## Local commands
 

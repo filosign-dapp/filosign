@@ -21,8 +21,10 @@ import { Route as DraftReviewIndexRouteImport } from "./routes/draft/review/inde
 import { Route as DashboardSignatureCreateIndexRouteImport } from "./routes/dashboard/signature/create/index"
 import { Route as DashboardEnvelopeCreateIndexRouteImport } from "./routes/dashboard/envelope/create/index"
 import { Route as DashboardDocumentSignIndexRouteImport } from "./routes/dashboard/document/sign/index"
+import { Route as DashboardShellTemplatesIndexRouteImport } from "./routes/dashboard/_shell/templates/index"
 import { Route as DashboardShellDraftsIndexRouteImport } from "./routes/dashboard/_shell/drafts/index"
 import { Route as DashboardShellConnectionsIndexRouteImport } from "./routes/dashboard/_shell/connections/index"
+import { Route as DashboardShellAdminIndexRouteImport } from "./routes/dashboard/_shell/admin/index"
 import { Route as DashboardEnvelopeCreateAddSignIndexRouteImport } from "./routes/dashboard/envelope/create/add-sign/index"
 import { Route as DashboardShellSettingsWorkspaceIndexRouteImport } from "./routes/dashboard/_shell/settings/workspace/index"
 import { Route as DashboardShellSettingsProfileIndexRouteImport } from "./routes/dashboard/_shell/settings/profile/index"
@@ -91,6 +93,12 @@ const DashboardDocumentSignIndexRoute =
     path: "/document/sign/",
     getParentRoute: () => DashboardRouteRoute,
   } as any)
+const DashboardShellTemplatesIndexRoute =
+  DashboardShellTemplatesIndexRouteImport.update({
+    id: "/templates/",
+    path: "/templates/",
+    getParentRoute: () => DashboardShellRouteRoute,
+  } as any)
 const DashboardShellDraftsIndexRoute =
   DashboardShellDraftsIndexRouteImport.update({
     id: "/drafts/",
@@ -101,6 +109,12 @@ const DashboardShellConnectionsIndexRoute =
   DashboardShellConnectionsIndexRouteImport.update({
     id: "/connections/",
     path: "/connections/",
+    getParentRoute: () => DashboardShellRouteRoute,
+  } as any)
+const DashboardShellAdminIndexRoute =
+  DashboardShellAdminIndexRouteImport.update({
+    id: "/admin/",
+    path: "/admin/",
     getParentRoute: () => DashboardShellRouteRoute,
   } as any)
 const DashboardEnvelopeCreateAddSignIndexRoute =
@@ -137,8 +151,10 @@ export interface FileRoutesByFullPath {
   "/draft/review/": typeof DraftReviewIndexRoute
   "/invite/$inviteId/": typeof InviteInviteIdIndexRoute
   "/onboarding/create-signature/": typeof OnboardingCreateSignatureIndexRoute
+  "/dashboard/admin/": typeof DashboardShellAdminIndexRoute
   "/dashboard/connections/": typeof DashboardShellConnectionsIndexRoute
   "/dashboard/drafts/": typeof DashboardShellDraftsIndexRoute
+  "/dashboard/templates/": typeof DashboardShellTemplatesIndexRoute
   "/dashboard/document/sign/": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create/": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create/": typeof DashboardSignatureCreateIndexRoute
@@ -154,8 +170,10 @@ export interface FileRoutesByTo {
   "/draft/review": typeof DraftReviewIndexRoute
   "/invite/$inviteId": typeof InviteInviteIdIndexRoute
   "/onboarding/create-signature": typeof OnboardingCreateSignatureIndexRoute
+  "/dashboard/admin": typeof DashboardShellAdminIndexRoute
   "/dashboard/connections": typeof DashboardShellConnectionsIndexRoute
   "/dashboard/drafts": typeof DashboardShellDraftsIndexRoute
+  "/dashboard/templates": typeof DashboardShellTemplatesIndexRoute
   "/dashboard/document/sign": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create": typeof DashboardSignatureCreateIndexRoute
@@ -175,8 +193,10 @@ export interface FileRoutesById {
   "/draft/review/": typeof DraftReviewIndexRoute
   "/invite/$inviteId/": typeof InviteInviteIdIndexRoute
   "/onboarding/create-signature/": typeof OnboardingCreateSignatureIndexRoute
+  "/dashboard/_shell/admin/": typeof DashboardShellAdminIndexRoute
   "/dashboard/_shell/connections/": typeof DashboardShellConnectionsIndexRoute
   "/dashboard/_shell/drafts/": typeof DashboardShellDraftsIndexRoute
+  "/dashboard/_shell/templates/": typeof DashboardShellTemplatesIndexRoute
   "/dashboard/document/sign/": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create/": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create/": typeof DashboardSignatureCreateIndexRoute
@@ -196,8 +216,10 @@ export interface FileRouteTypes {
     | "/draft/review/"
     | "/invite/$inviteId/"
     | "/onboarding/create-signature/"
+    | "/dashboard/admin/"
     | "/dashboard/connections/"
     | "/dashboard/drafts/"
+    | "/dashboard/templates/"
     | "/dashboard/document/sign/"
     | "/dashboard/envelope/create/"
     | "/dashboard/signature/create/"
@@ -213,8 +235,10 @@ export interface FileRouteTypes {
     | "/draft/review"
     | "/invite/$inviteId"
     | "/onboarding/create-signature"
+    | "/dashboard/admin"
     | "/dashboard/connections"
     | "/dashboard/drafts"
+    | "/dashboard/templates"
     | "/dashboard/document/sign"
     | "/dashboard/envelope/create"
     | "/dashboard/signature/create"
@@ -233,8 +257,10 @@ export interface FileRouteTypes {
     | "/draft/review/"
     | "/invite/$inviteId/"
     | "/onboarding/create-signature/"
+    | "/dashboard/_shell/admin/"
     | "/dashboard/_shell/connections/"
     | "/dashboard/_shell/drafts/"
+    | "/dashboard/_shell/templates/"
     | "/dashboard/document/sign/"
     | "/dashboard/envelope/create/"
     | "/dashboard/signature/create/"
@@ -338,6 +364,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardDocumentSignIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    "/dashboard/_shell/templates/": {
+      id: "/dashboard/_shell/templates/"
+      path: "/templates"
+      fullPath: "/dashboard/templates/"
+      preLoaderRoute: typeof DashboardShellTemplatesIndexRouteImport
+      parentRoute: typeof DashboardShellRouteRoute
+    }
     "/dashboard/_shell/drafts/": {
       id: "/dashboard/_shell/drafts/"
       path: "/drafts"
@@ -350,6 +383,13 @@ declare module "@tanstack/react-router" {
       path: "/connections"
       fullPath: "/dashboard/connections/"
       preLoaderRoute: typeof DashboardShellConnectionsIndexRouteImport
+      parentRoute: typeof DashboardShellRouteRoute
+    }
+    "/dashboard/_shell/admin/": {
+      id: "/dashboard/_shell/admin/"
+      path: "/admin"
+      fullPath: "/dashboard/admin/"
+      preLoaderRoute: typeof DashboardShellAdminIndexRouteImport
       parentRoute: typeof DashboardShellRouteRoute
     }
     "/dashboard/envelope/create/add-sign/": {
@@ -384,16 +424,20 @@ declare module "@tanstack/react-router" {
 }
 
 interface DashboardShellRouteRouteChildren {
+  DashboardShellAdminIndexRoute: typeof DashboardShellAdminIndexRoute
   DashboardShellConnectionsIndexRoute: typeof DashboardShellConnectionsIndexRoute
   DashboardShellDraftsIndexRoute: typeof DashboardShellDraftsIndexRoute
+  DashboardShellTemplatesIndexRoute: typeof DashboardShellTemplatesIndexRoute
   DashboardShellDocumentAllIndexRoute: typeof DashboardShellDocumentAllIndexRoute
   DashboardShellSettingsProfileIndexRoute: typeof DashboardShellSettingsProfileIndexRoute
   DashboardShellSettingsWorkspaceIndexRoute: typeof DashboardShellSettingsWorkspaceIndexRoute
 }
 
 const DashboardShellRouteRouteChildren: DashboardShellRouteRouteChildren = {
+  DashboardShellAdminIndexRoute: DashboardShellAdminIndexRoute,
   DashboardShellConnectionsIndexRoute: DashboardShellConnectionsIndexRoute,
   DashboardShellDraftsIndexRoute: DashboardShellDraftsIndexRoute,
+  DashboardShellTemplatesIndexRoute: DashboardShellTemplatesIndexRoute,
   DashboardShellDocumentAllIndexRoute: DashboardShellDocumentAllIndexRoute,
   DashboardShellSettingsProfileIndexRoute:
     DashboardShellSettingsProfileIndexRoute,

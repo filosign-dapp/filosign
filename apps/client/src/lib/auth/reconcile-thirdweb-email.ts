@@ -4,7 +4,7 @@ import { useAuthToken } from "thirdweb/react";
 
 /**
  * Reconcile DB primary email with thirdweb linked accounts.
- * Call after link/unlink — not on every app load (registration + setPrimaryEmail cover other paths).
+ * Call after link/unlink - not on every app load (registration + setPrimaryEmail cover other paths).
  */
 export function useReconcileThirdwebEmail() {
 	const authToken = useAuthToken();

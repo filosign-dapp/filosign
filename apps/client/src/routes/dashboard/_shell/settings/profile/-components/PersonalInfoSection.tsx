@@ -1,9 +1,4 @@
-import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "@/src/lib/components/ui/card";
+import { UserIcon } from "@phosphor-icons/react";
 import {
 	FormControl,
 	FormField,
@@ -13,6 +8,7 @@ import {
 } from "@/src/lib/components/ui/form";
 import { Input } from "@/src/lib/components/ui/input";
 import { useProfileSettingsContext } from "../-lib/context/context";
+import { ProfileSection } from "./profile-section";
 import { SaveButton } from "./SaveButton";
 
 const labelClass = "text-xs font-normal text-muted-foreground";
@@ -26,33 +22,12 @@ const editableInputClass =
 export function PersonalInfoSection() {
 	const { form, personalSection: sectionState } = useProfileSettingsContext();
 	return (
-		<Card className="border-border/50 shadow-none">
-			<CardHeader className="space-y-0 pb-3">
-				<CardTitle className="text-sm font-medium text-foreground/85">
-					Personal
-				</CardTitle>
-			</CardHeader>
-			<CardContent className="space-y-5 pt-0">
-				<FormField
-					control={form.control}
-					name="personal.walletAddress"
-					render={({ field }) => (
-						<FormItem className="space-y-1.5">
-							<FormLabel className={labelClass}>Wallet</FormLabel>
-							<FormControl>
-								<Input
-									placeholder="0x…"
-									readOnly
-									tabIndex={-1}
-									className={readOnlyInputClass}
-									{...field}
-								/>
-							</FormControl>
-							<FormMessage />
-						</FormItem>
-					)}
-				/>
-
+		<ProfileSection
+			icon={<UserIcon className="size-4" aria-hidden="true" />}
+			title="Personal"
+			description="Update your personal details and primary communication email."
+		>
+			<div className="space-y-5">
 				<FormField
 					control={form.control}
 					name="personal.email"
@@ -61,7 +36,7 @@ export function PersonalInfoSection() {
 							<FormLabel className={labelClass}>Primary email</FormLabel>
 							<FormControl>
 								<Input
-									placeholder="—"
+									placeholder="–"
 									type="email"
 									readOnly
 									tabIndex={-1}
@@ -132,7 +107,7 @@ export function PersonalInfoSection() {
 					isSaved={sectionState.state.isSaved}
 					error={sectionState.state.error}
 				/>
-			</CardContent>
-		</Card>
+			</div>
+		</ProfileSection>
 	);
 }

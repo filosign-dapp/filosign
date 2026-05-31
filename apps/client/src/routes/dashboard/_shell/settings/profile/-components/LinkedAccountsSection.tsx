@@ -1,6 +1,7 @@
 import { useSetPrimaryEmail, useUserProfile } from "@filosign/react/users";
 import {
 	EnvelopeSimpleIcon,
+	FingerprintIcon,
 	GoogleLogoIcon,
 	PlusIcon,
 	StarIcon,
@@ -17,17 +18,12 @@ import type { Profile } from "thirdweb/wallets";
 import { useReconcileThirdwebEmail } from "@/src/lib/auth/reconcile-thirdweb-email";
 import { Button } from "@/src/lib/components/ui/button";
 import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from "@/src/lib/components/ui/card";
-import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
+import { useTheme } from "@/src/lib/components/ui/theme-provider";
 import {
 	Tooltip,
 	TooltipContent,
@@ -38,6 +34,7 @@ import {
 	thirdwebClient,
 	thirdwebWalletModalOptions,
 } from "@/src/lib/web3/config";
+import { ProfileSection } from "./profile-section";
 
 type LinkedRow = {
 	key: string;
@@ -100,6 +97,7 @@ export function LinkedAccountsSection() {
 	const authToken = useAuthToken();
 	const { data: profiles } = useProfiles({ client: thirdwebClient });
 	const { mutate: linkProfile } = useLinkProfile();
+	const { resolvedTheme } = useTheme();
 	const walletDetailsModal = useWalletDetailsModal();
 	const { mutateAsync: unlinkProfile } = useUnlinkProfile();
 	const { data: profile } = useUserProfile();
@@ -138,11 +136,11 @@ export function LinkedAccountsSection() {
 
 	return (
 		<TooltipProvider delay={300}>
-			<Card className="border-border/50 shadow-none">
-				<CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-3">
-					<CardTitle className="text-sm font-medium text-foreground/85">
-						Linked accounts
-					</CardTitle>
+			<ProfileSection
+				icon={<FingerprintIcon className="size-4" aria-hidden="true" />}
+				title="Linked Accounts"
+				description="Manage your connected login identities and credentials."
+				headerAside={
 					<DropdownMenu>
 						<DropdownMenuTrigger
 							render={
@@ -161,7 +159,10 @@ export function LinkedAccountsSection() {
 							<DropdownMenuItem
 								className="gap-2 cursor-pointer text-muted-foreground focus:text-foreground"
 								onClick={() =>
-									walletDetailsModal.open(thirdwebWalletModalOptions)
+									walletDetailsModal.open({
+										...thirdwebWalletModalOptions,
+										theme: resolvedTheme,
+									})
 								}
 							>
 								<EnvelopeSimpleIcon className="size-4 opacity-70" />
@@ -188,85 +189,82 @@ export function LinkedAccountsSection() {
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
-				</CardHeader>
-				<CardContent className="pt-0">
-					{connections.length === 0 ? (
-						<p className="text-sm text-muted-foreground/80">None linked yet.</p>
-					) : (
-						<ul className="divide-y divide-border/50">
-							{connections.map((row) => {
-								const isPrimary =
-									row.email.toLowerCase() === primaryNormalized &&
-									primaryNormalized.length > 0;
-								return (
-									<li
-										key={row.key}
-										className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
-									>
-										<ProviderIcon kind={row.kind} />
-										<div className="min-w-0 flex-1 flex items-center gap-2">
-											<span className="truncate text-sm text-foreground/85">
-												{row.email}
-											</span>
-											{isPrimary ? (
-												<StarIcon
-													className="size-3.5 shrink-0 text-muted-foreground/60"
-													weight="fill"
-													aria-hidden
-												/>
-											) : null}
-										</div>
-										<div className="flex items-center gap-0.5 shrink-0">
-											<Tooltip>
-												<TooltipTrigger
-													render={
-														<Button
-															type="button"
-															variant="ghost"
-															size="icon-sm"
-															className={iconButton}
-															disabled={
-																isPrimary || setPrimary.isPending || !authToken
-															}
-															aria-label="Set as primary"
-															onClick={() => handleMakePrimary(row.email)}
-														/>
-													}
-												>
-													<StarIcon className="size-4" weight="regular" />
-												</TooltipTrigger>
-												<TooltipContent side="top">
-													Set as primary
-												</TooltipContent>
-											</Tooltip>
-											<Tooltip>
-												<TooltipTrigger
-													render={
-														<Button
-															type="button"
-															variant="ghost"
-															size="icon-sm"
-															className={iconButton}
-															disabled={!canUnlinkAny}
-															aria-label="Remove account"
-															onClick={() => handleUnlink(row)}
-														/>
-													}
-												>
-													<TrashIcon className="size-4" weight="regular" />
-												</TooltipTrigger>
-												<TooltipContent side="top">
-													{canUnlinkAny ? "Remove" : "Add another login first"}
-												</TooltipContent>
-											</Tooltip>
-										</div>
-									</li>
-								);
-							})}
-						</ul>
-					)}
-				</CardContent>
-			</Card>
+				}
+			>
+				{connections.length === 0 ? (
+					<p className="text-sm text-muted-foreground/80">None linked yet.</p>
+				) : (
+					<ul className="divide-y divide-border/50">
+						{connections.map((row) => {
+							const isPrimary =
+								row.email.toLowerCase() === primaryNormalized &&
+								primaryNormalized.length > 0;
+							return (
+								<li
+									key={row.key}
+									className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+								>
+									<ProviderIcon kind={row.kind} />
+									<div className="min-w-0 flex-1 flex items-center gap-2">
+										<span className="truncate text-sm text-foreground/85">
+											{row.email}
+										</span>
+										{isPrimary ? (
+											<StarIcon
+												className="size-3.5 shrink-0 text-muted-foreground/60"
+												weight="fill"
+												aria-hidden
+											/>
+										) : null}
+									</div>
+									<div className="flex items-center gap-0.5 shrink-0">
+										<Tooltip>
+											<TooltipTrigger
+												render={
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon-sm"
+														className={iconButton}
+														disabled={
+															isPrimary || setPrimary.isPending || !authToken
+														}
+														aria-label="Set as primary"
+														onClick={() => handleMakePrimary(row.email)}
+													/>
+												}
+											>
+												<StarIcon className="size-4" weight="regular" />
+											</TooltipTrigger>
+											<TooltipContent side="top">Set as primary</TooltipContent>
+										</Tooltip>
+										<Tooltip>
+											<TooltipTrigger
+												render={
+													<Button
+														type="button"
+														variant="ghost"
+														size="icon-sm"
+														className={iconButton}
+														disabled={!canUnlinkAny}
+														aria-label="Remove account"
+														onClick={() => handleUnlink(row)}
+													/>
+												}
+											>
+												<TrashIcon className="size-4" weight="regular" />
+											</TooltipTrigger>
+											<TooltipContent side="top">
+												{canUnlinkAny ? "Remove" : "Add another login first"}
+											</TooltipContent>
+										</Tooltip>
+									</div>
+								</li>
+							);
+						})}
+					</ul>
+				)}
+			</ProfileSection>
 		</TooltipProvider>
 	);
 }

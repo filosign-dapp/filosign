@@ -242,3 +242,30 @@ export async function orgsTemplatesCloneToEnvelope(
 		placementManifest: row.placementManifestJson as PlacementManifest | null,
 	};
 }
+
+export async function orgsTemplatesDelete(
+	wallet: Address,
+	activeOrg: ActiveOrgContext,
+	templateId: string,
+) {
+	assertOrgPermission(activeOrg, "templates:write");
+	const entitlementCtx = await resolveEntitlementContext(
+		getAddress(wallet),
+		activeOrg.organizationId,
+	);
+	assertEntitlement(entitlementCtx, "features.shared_templates");
+
+	const [deleted] = await db
+		.delete(organizationTemplates)
+		.where(
+			and(
+				eq(organizationTemplates.id, templateId),
+				eq(organizationTemplates.organizationId, activeOrg.organizationId),
+			),
+		)
+		.returning();
+
+	if (!deleted)
+		throw new ORPCError("NOT_FOUND", { message: "Template not found" });
+	return { template: deleted };
+}

@@ -6,7 +6,17 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
+import {
+	assertCanCreateAdditionalWorkspace,
+	countOwnedOrganizations,
+	migrateLegacyWalletBillingToPersonalOrg,
+	resolveIsPersonalForNewOrganization,
+} from "@/lib/domains/orgs/personal-workspace";
 import { slugifyOrgName } from "@/lib/domains/orgs/slug";
+import {
+	attachPendingOrgBillingOnCreateWithTx,
+	grantAdminOrgTeamsProIfEligibleWithTx,
+} from "@/lib/domains/platform-access";
 import db from "@/lib/platform/db";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { zOrgMemberRole } from "./schemas";
@@ -34,6 +44,9 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
 	const creator = getAddress(wallet);
+	const ownedBefore = await countOwnedOrganizations(creator);
+	await assertCanCreateAdditionalWorkspace(creator);
+	const isPersonal = resolveIsPersonalForNewOrganization(ownedBefore);
 	const slugBase = parsed.data.slug ?? slugifyOrgName(parsed.data.name);
 	const slug = `${slugBase}-${randomBytes(3).toString("hex")}`;
 
@@ -46,6 +59,7 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 					slug,
 					encryptionPublicKey: parsed.data.encryptionPublicKey,
 					createdByWallet: creator,
+					isPersonal,
 				})
 				.returning();
 
@@ -72,6 +86,22 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 				seatCount: 1,
 			});
 
+			await attachPendingOrgBillingOnCreateWithTx(tx, {
+				creatorWallet: creator,
+				organizationId: org.id,
+			});
+
+			const [creatorRow] = await tx
+				.select({ email: users.email })
+				.from(users)
+				.where(eq(users.walletAddress, creator))
+				.limit(1);
+
+			await grantAdminOrgTeamsProIfEligibleWithTx(tx, {
+				organizationId: org.id,
+				creatorEmail: creatorRow?.email ?? null,
+			});
+
 			return org;
 		}),
 	);
@@ -84,6 +114,8 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 		}
 		throw new ORPCError("INTERNAL_SERVER_ERROR", { message: msg });
 	}
+
+	await migrateLegacyWalletBillingToPersonalOrg(creator);
 
 	return { organization: result.data };
 }

@@ -4,7 +4,7 @@ import { SPRING_TOKENS, type SpringPreset } from "@filosign/motion";
 export const MARKETING_PRESSABLE_HOVER = { y: 0 } as const;
 export const MARKETING_PRESSABLE_TAP = { y: 0 } as const;
 
-/** Nav intro timing — landing (dramatic) vs inner pages (faster). */
+/** Nav intro timing - landing (dramatic) vs inner pages (faster). */
 export const NAV_INTRO_DELAYS = {
 	landing: {
 		nav: 0,
@@ -36,7 +36,7 @@ export const CONTENT_STAGGER = {
 	page: { staggerDelay: 0.07, preset: "smooth" as SpringPreset },
 } as const;
 
-/** Scroll hide/show for sticky nav — lighter than intro. */
+/** Scroll hide/show for sticky nav - lighter than intro. */
 export const NAV_SCROLL_SPRING = {
 	type: "spring" as const,
 	stiffness: 400,

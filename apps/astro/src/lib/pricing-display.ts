@@ -1,21 +1,24 @@
+import type { PlanPriceId } from "@filosign/entitlements";
+import { getPlanPrice, getPlanYearlyTotal } from "@filosign/entitlements";
+
 /** Yearly billing: pay 85% of list monthly rate (15% off). */
 export const YEARLY_DISCOUNT_RATE = 0.15;
 
-export function yearlyPerMonthPrice(monthlyListUsd: number): number {
-	if (monthlyListUsd === 20) return 15; // Solo: $20 monthly -> $15/mo yearly
-	if (monthlyListUsd === 35) return 29; // Teams: $35 monthly -> $29/mo yearly
-	if (monthlyListUsd === 59) return 49; // Teams Pro: $59 monthly -> $49/mo yearly
+function getPlanIdFromMonthlyPrice(monthlyListUsd: number): PlanPriceId {
+	if (monthlyListUsd === 20) return "individual";
+	if (monthlyListUsd === 35) return "teams";
+	if (monthlyListUsd === 59) return "teams_pro";
+	return "individual"; // fallback
+}
 
-	const factor = 1 - YEARLY_DISCOUNT_RATE;
-	return Math.round(monthlyListUsd * factor);
+export function yearlyPerMonthPrice(monthlyListUsd: number): number {
+	const planId = getPlanIdFromMonthlyPrice(monthlyListUsd);
+	return getPlanPrice(planId, "yearly");
 }
 
 export function yearlyTotalPrice(monthlyListUsd: number): number {
-	if (monthlyListUsd === 20) return 180; // Solo: $15 * 12 = $180
-	if (monthlyListUsd === 35) return 348; // Teams: $29 * 12 = $348
-	if (monthlyListUsd === 59) return 588; // Teams Pro: $49 * 12 = $588
-
-	return Math.round(monthlyListUsd * 12 * (1 - YEARLY_DISCOUNT_RATE));
+	const planId = getPlanIdFromMonthlyPrice(monthlyListUsd);
+	return getPlanYearlyTotal(planId);
 }
 
 /** Whole dollars when possible; otherwise two decimals. Always whole integers for displays. */

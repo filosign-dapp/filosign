@@ -4,7 +4,7 @@ export const siteName = "Filosign";
 
 export const siteTagline = "Private agreement workflows with attached payouts";
 
-export const defaultTitle = `${siteName} — ${siteTagline}`;
+export const defaultTitle = `${siteName} - ${siteTagline}`;
 
 export const defaultDescription =
 	"Send encrypted documents, collect verifiable signatures, and release attached payouts when signing conditions are met.";
@@ -31,12 +31,12 @@ export const logo = {
 	height: 512,
 } as const;
 
-/** Inner pages: `About — Filosign` */
+/** Inner pages: `About - Filosign` */
 export function titleWithBrand(pageTitle: string): string {
-	return `${pageTitle} — ${siteName}`;
+	return `${pageTitle} - ${siteName}`;
 }
 
-/** Blog posts: `{title} — Filosign Blog` */
+/** Blog posts: `{title} - Filosign Blog` */
 export function blogTitleWithBrand(postTitle: string): string {
-	return `${postTitle} — ${siteName} Blog`;
+	return `${postTitle} - ${siteName} Blog`;
 }

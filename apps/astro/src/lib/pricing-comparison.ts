@@ -5,7 +5,7 @@ import { catalogV1, featureMarketingLabel } from "@filosign/entitlements";
 export type ComparisonPlanId = "free" | "individual" | "teams" | "teams_pro";
 
 export const COMPARISON_PLAN_IDS = [
-	"free",
+	// "free", // Temporarily hidden on pricing page
 	"individual",
 	"teams",
 	"teams_pro",

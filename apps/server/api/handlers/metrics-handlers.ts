@@ -2,35 +2,17 @@ import { ORPCError } from "@orpc/server";
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress, isAddress } from "viem";
-import env from "@/env";
 import {
 	buildEntitlementsSnapshot,
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
+import { assertPlatformAdmin } from "@/lib/platform/admin";
 import db from "@/lib/platform/db";
 import { fileColdInvites, files } from "@/lib/platform/db/schema/file";
 
-function parseAdminWallets(): Set<string> {
-	const raw = env.ADMIN_WALLETS?.trim();
-	if (!raw) return new Set();
-	return new Set(
-		raw
-			.split(",")
-			.map((w) => w.trim().toLowerCase())
-			.filter(Boolean),
-	);
-}
-
-export function assertMetricsAdmin(wallet: Address): void {
-	const admins = parseAdminWallets();
-	if (admins.size === 0) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Metrics API is not configured",
-		});
-	}
-	if (!admins.has(getAddress(wallet).toLowerCase())) {
-		throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
-	}
+/** @deprecated Use {@link assertPlatformAdmin}. */
+export async function assertMetricsAdmin(wallet: Address): Promise<void> {
+	await assertPlatformAdmin(wallet);
 }
 
 export async function metricsInvitesSummary(args: {
@@ -39,7 +21,7 @@ export async function metricsInvitesSummary(args: {
 	from?: Date | undefined;
 	to?: Date | undefined;
 }) {
-	assertMetricsAdmin(args.adminWallet);
+	await assertMetricsAdmin(args.adminWallet);
 
 	const conditions = [];
 	if (args.senderWallet) {
@@ -91,7 +73,7 @@ export async function metricsSenderUsage(args: {
 	adminWallet: Address;
 	wallet: string;
 }) {
-	assertMetricsAdmin(args.adminWallet);
+	await assertMetricsAdmin(args.adminWallet);
 	if (!isAddress(args.wallet)) {
 		throw new ORPCError("BAD_REQUEST", { message: "Invalid wallet" });
 	}

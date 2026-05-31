@@ -11,8 +11,8 @@ import { getClientUrl } from "./public-url";
  * other `resend.emails.send` call sites in `apps/server` or packages.
  */
 function shouldSkipEmail(): boolean {
-	if (env.DEBUG) {
-		console.log("[DEBUG] Skipping email send (DEBUG mode is enabled)");
+	if (!env.RESEND_ENABLED) {
+		console.info("[email] Skipping email send (RESEND_ENABLED=false)");
 		return true;
 	}
 	return false;
@@ -134,6 +134,7 @@ export async function sendColdDocumentInviteEmail(
 	const signUrl = new URL("/", appUrl);
 	signUrl.searchParams.set("coldPieceCid", args.pieceCid);
 	signUrl.searchParams.set("coldInvite", args.inviteToken);
+	signUrl.searchParams.set("email", args.to.trim().toLowerCase());
 
 	await sendDocumentSharedEmail({
 		to: args.to,
@@ -161,5 +162,109 @@ export async function sendDocumentReceivedEmail(
 		variant: "warm",
 		ctaHref: documentUrl,
 		idempotencyPrefix: "doc-received",
+	});
+}
+
+export async function sendCheckoutContinueEmail(args: {
+	to: string;
+	continueUrl: string;
+	planLabel: string;
+}) {
+	if (shouldSkipEmail()) return;
+
+	const subject = `Complete your Filosign ${args.planLabel} purchase`;
+	const text = [
+		`Continue your Filosign ${args.planLabel} purchase:`,
+		args.continueUrl,
+		"",
+		"This link expires in 24 hours.",
+	].join("\n");
+
+	const html = [
+		`<p>Continue your Filosign ${escapeHtml(args.planLabel)} purchase:</p>`,
+		`<p><a href="${escapeHtml(args.continueUrl)}">Continue to checkout</a></p>`,
+		`<p style="color:#666;font-size:14px;">This link expires in 24 hours.</p>`,
+	].join("");
+
+	await deliverEmail({
+		to: args.to,
+		subject,
+		text,
+		html,
+		idempotencySegments: [
+			"checkout-continue",
+			args.to.trim().toLowerCase(),
+			args.continueUrl,
+		],
+	});
+}
+
+export async function sendPaidSetupEmail(args: {
+	to: string;
+	setupUrl: string;
+	planLabel: string;
+}) {
+	if (shouldSkipEmail()) return;
+
+	const subject = "Finish setting up Filosign";
+	const text = [
+		`Your ${args.planLabel} subscription is active.`,
+		"",
+		"Create your Filosign wallet to finish setup:",
+		args.setupUrl,
+		"",
+		"If you already completed setup, you can sign in at the same link.",
+	].join("\n");
+
+	const html = [
+		`<p>Your ${escapeHtml(args.planLabel)} subscription is active.</p>`,
+		`<p><a href="${escapeHtml(args.setupUrl)}">Finish Filosign setup</a></p>`,
+	].join("");
+
+	await deliverEmail({
+		to: args.to,
+		subject,
+		text,
+		html,
+		idempotencySegments: [
+			"paid-setup",
+			args.to.trim().toLowerCase(),
+			args.setupUrl,
+		],
+	});
+}
+
+export async function sendAccessRequestApprovedEmail(args: {
+	to: string;
+	inviteUrl: string;
+	planLabel: string;
+	trialDays: number;
+}) {
+	if (shouldSkipEmail()) return;
+
+	const subject = "Your Filosign access request was approved";
+	const text = [
+		"Your request for Filosign access was approved.",
+		"",
+		`Open the link below to start your ${args.trialDays}-day ${args.planLabel} trial:`,
+		args.inviteUrl,
+	].join("\n");
+
+	const html = [
+		"<p>Your request for Filosign access was approved.</p>",
+		`<p><a href="${escapeHtml(args.inviteUrl)}">Start your Filosign trial</a></p>`,
+		`<p style="color:#666;font-size:14px;">${escapeHtml(args.planLabel)} · ${args.trialDays}-day trial</p>`,
+	].join("");
+
+	await deliverEmail({
+		to: args.to,
+		subject,
+		text,
+		html,
+		idempotencySegments: [
+			"access-approved",
+			args.to.trim().toLowerCase(),
+			args.inviteUrl,
+		],
 	});
 }

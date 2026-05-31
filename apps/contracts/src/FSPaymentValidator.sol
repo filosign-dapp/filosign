@@ -51,6 +51,8 @@ contract FSPaymentValidator is ReentrancyGuard {
     mapping(uint256 ruleId => PayoutLeg[]) private _ruleLegs;
     mapping(uint256 ruleId => bytes32[]) private _ruleSignerCommitments;
     mapping(bytes32 cidId => uint256[]) private _ruleIdsByCid;
+    /// @dev Bit i set when leg i has been paid (supports up to 256 legs; product caps at 32).
+    mapping(uint256 ruleId => uint256) public legPaidBitmap;
 
     event PaymentRuleRegistered(
         uint256 indexed ruleId,
@@ -65,6 +67,14 @@ contract FSPaymentValidator is ReentrancyGuard {
     event PayoutExecuted(
         uint256 indexed ruleId,
         bytes32 indexed cidId,
+        address indexed recipient,
+        uint256 amount
+    );
+
+    event PayoutLegExecuted(
+        uint256 indexed ruleId,
+        bytes32 indexed cidId,
+        uint256 legIndex,
         address indexed recipient,
         uint256 amount
     );
@@ -147,6 +157,8 @@ contract FSPaymentValidator is ReentrancyGuard {
         if (rule.payer == address(0)) revert InvalidPayer();
         if (msg.sender != rule.payer) revert UnauthorizedRuleRegistration();
         if (rule.executed || rule.cancelled) revert RuleAlreadyExecuted();
+        if (legPaidBitmap[ruleId] != 0) revert RuleAlreadyExecuted();
+        _assertRequiredSigningNotStarted(rule.cidId);
 
         _validateLegs(rule.payer, rule.token, legs_);
         _validateReleaseConfig(
@@ -170,6 +182,7 @@ contract FSPaymentValidator is ReentrancyGuard {
 
         delete _ruleLegs[ruleId];
         delete _ruleSignerCommitments[ruleId];
+        legPaidBitmap[ruleId] = 0;
         _storeLegs(ruleId, legs_);
         if (_needsCommitmentList(releaseType_)) {
             _storeSignerCommitments(ruleId, signerCommitments_);
@@ -188,29 +201,22 @@ contract FSPaymentValidator is ReentrancyGuard {
         emit PaymentRuleCancelled(ruleId, rule.cidId);
     }
 
+    function executePayoutLeg(
+        uint256 ruleId,
+        uint256 legIndex
+    ) external nonReentrant {
+        _executePayoutLeg(ruleId, legIndex);
+    }
+
+    /// @dev Pays all unpaid legs in one transaction (atomic). Prefer `executePayoutLeg` for production.
     function executePayout(uint256 ruleId) external nonReentrant {
-        PaymentRule storage rule = rules[ruleId];
-        if (rule.executed || rule.cancelled) revert RuleNotExecutable();
-        if (!_releaseConditionsMet(ruleId, rule)) revert RuleNotExecutable();
-        if (rule.expiresAt != 0 && block.timestamp > rule.expiresAt)
-            revert RuleNotExecutable();
-
+        _assertRuleExecutable(ruleId);
         PayoutLeg[] storage legs = _ruleLegs[ruleId];
-
-        rule.executed = true;
-
-        address token = rule.token;
-        address payer = rule.payer;
         uint256 len = legs.length;
-
         for (uint256 i = 0; i < len; ) {
-            PayoutLeg storage leg = legs[i];
-            uint256 beforeBal = IERC20(token).balanceOf(leg.recipient);
-            IERC20(token).safeTransferFrom(payer, leg.recipient, leg.amount);
-            uint256 afterBal = IERC20(token).balanceOf(leg.recipient);
-            if (afterBal - beforeBal < leg.amount)
-                revert InsufficientTransferReceived();
-            emit PayoutExecuted(ruleId, rule.cidId, leg.recipient, leg.amount);
+            if (!_isLegPaid(ruleId, i)) {
+                _executePayoutLeg(ruleId, i);
+            }
             unchecked {
                 ++i;
             }
@@ -218,12 +224,32 @@ contract FSPaymentValidator is ReentrancyGuard {
     }
 
     function canExecute(uint256 ruleId) external view returns (bool) {
-        PaymentRule storage rule = rules[ruleId];
-        if (rule.executed || rule.cancelled || rule.payer == address(0))
-            return false;
-        if (rule.expiresAt != 0 && block.timestamp > rule.expiresAt)
-            return false;
-        return _releaseConditionsMet(ruleId, rule);
+        return _canExecuteRule(ruleId);
+    }
+
+    function isLegPaid(
+        uint256 ruleId,
+        uint256 legIndex
+    ) external view returns (bool) {
+        if (legIndex >= _ruleLegs[ruleId].length) return false;
+        return _isLegPaid(ruleId, legIndex);
+    }
+
+    function unpaidLegCount(
+        uint256 ruleId
+    ) external view returns (uint256 count) {
+        PayoutLeg[] storage legs = _ruleLegs[ruleId];
+        uint256 len = legs.length;
+        for (uint256 i = 0; i < len; ) {
+            if (!_isLegPaid(ruleId, i)) {
+                unchecked {
+                    ++count;
+                }
+            }
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     function ruleLegs(uint256 ruleId) external view returns (PayoutLeg[] memory) {
@@ -252,13 +278,96 @@ contract FSPaymentValidator is ReentrancyGuard {
         address payer_,
         address token_,
         PayoutLeg[] calldata legs_
-    ) private pure {
+    ) private view {
         if (payer_ == address(0) || token_ == address(0)) revert InvalidPayer();
         if (legs_.length == 0 || legs_.length > MAX_PAYOUT_LEGS)
             revert ExceedsMaxLegs();
+        address validator = address(this);
         for (uint256 i = 0; i < legs_.length; i++) {
             if (legs_[i].recipient == address(0)) revert InvalidPayer();
             if (legs_[i].amount == 0) revert InvalidAmount();
+            if (legs_[i].recipient == payer_) revert PayerCannotBeRecipient();
+            if (legs_[i].recipient == validator)
+                revert RecipientCannotBeValidator();
+            if (legs_[i].recipient == token_)
+                revert RecipientCannotBeToken();
+        }
+    }
+
+    function _assertRuleExecutable(uint256 ruleId) private view {
+        PaymentRule storage rule = rules[ruleId];
+        if (rule.executed || rule.cancelled || rule.payer == address(0))
+            revert RuleNotExecutable();
+        if (rule.expiresAt != 0 && block.timestamp > rule.expiresAt)
+            revert RuleNotExecutable();
+        if (!_releaseConditionsMet(ruleId, rule)) revert RuleNotExecutable();
+    }
+
+    function _canExecuteRule(uint256 ruleId) private view returns (bool) {
+        PaymentRule storage rule = rules[ruleId];
+        if (rule.executed || rule.cancelled || rule.payer == address(0))
+            return false;
+        if (rule.expiresAt != 0 && block.timestamp > rule.expiresAt)
+            return false;
+        if (!_releaseConditionsMet(ruleId, rule)) return false;
+        return _unpaidLegCount(ruleId) > 0;
+    }
+
+    function _unpaidLegCount(uint256 ruleId) private view returns (uint256 count) {
+        PayoutLeg[] storage legs = _ruleLegs[ruleId];
+        uint256 len = legs.length;
+        for (uint256 i = 0; i < len; ) {
+            if (!_isLegPaid(ruleId, i)) {
+                unchecked {
+                    ++count;
+                }
+            }
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    function _isLegPaid(
+        uint256 ruleId,
+        uint256 legIndex
+    ) private view returns (bool) {
+        return (legPaidBitmap[ruleId] & (uint256(1) << legIndex)) != 0;
+    }
+
+    function _setLegPaid(uint256 ruleId, uint256 legIndex) private {
+        legPaidBitmap[ruleId] |= uint256(1) << legIndex;
+    }
+
+    function _executePayoutLeg(uint256 ruleId, uint256 legIndex) private {
+        _assertRuleExecutable(ruleId);
+        PaymentRule storage rule = rules[ruleId];
+        PayoutLeg[] storage legs = _ruleLegs[ruleId];
+        if (legIndex >= legs.length) revert InvalidLegIndex();
+        if (_isLegPaid(ruleId, legIndex)) revert LegAlreadyPaid();
+
+        PayoutLeg storage leg = legs[legIndex];
+        address token = rule.token;
+        address payer = rule.payer;
+
+        uint256 beforeBal = IERC20(token).balanceOf(leg.recipient);
+        IERC20(token).safeTransferFrom(payer, leg.recipient, leg.amount);
+        uint256 afterBal = IERC20(token).balanceOf(leg.recipient);
+        if (afterBal - beforeBal < leg.amount)
+            revert InsufficientTransferReceived();
+
+        _setLegPaid(ruleId, legIndex);
+        emit PayoutLegExecuted(
+            ruleId,
+            rule.cidId,
+            legIndex,
+            leg.recipient,
+            leg.amount
+        );
+        emit PayoutExecuted(ruleId, rule.cidId, leg.recipient, leg.amount);
+
+        if (_unpaidLegCount(ruleId) == 0) {
+            rule.executed = true;
         }
     }
 
@@ -335,6 +444,12 @@ contract FSPaymentValidator is ReentrancyGuard {
             if (thresholdN_ == 0) revert InvalidReleaseConfig();
             return;
         }
+    }
+
+    function _assertRequiredSigningNotStarted(bytes32 cidId_) private view {
+        if (
+            fileRegistry.fileRegistrations(cidId_).requiredSignaturesCount > 0
+        ) revert RequiredSigningStarted();
     }
 
     function _validateQuorumRequiredThreshold(

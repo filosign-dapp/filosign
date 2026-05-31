@@ -9,7 +9,7 @@ import "./errors/EFSFileRegistry.sol";
 import "./libraries/FSSignatureValidation.sol";
 
 contract FSFileRegistry is EIP712, Ownable2Step {
-    uint256 internal constant SIGNATURE_VALIDITY_PERIOD = 2 minutes;
+    uint256 internal constant SIGNATURE_VALIDITY_PERIOD = 24 hours;
     uint256 internal constant SIGNATURE_CLOCK_DRIFT_TOLERANCE = 5 minutes;
 
     uint8 internal constant MAX_SIGNERS_PER_FILE = 128;

@@ -14,8 +14,10 @@ export function useOrgBillingSummary() {
 	});
 }
 
+export type OrgCheckoutPlanId = "individual" | "teams" | "teams_pro";
+
 export type CreateOrgCheckoutSessionInput = {
-	planId: "teams" | "teams_pro";
+	planId: OrgCheckoutPlanId;
 	interval?: "monthly" | "yearly";
 	seatCount: number;
 	returnUrl: string;

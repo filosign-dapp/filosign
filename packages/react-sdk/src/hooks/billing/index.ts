@@ -4,6 +4,10 @@ export {
 	useRefetchEntitlementsOnMount,
 } from "../../lib/invalidate-entitlements";
 export {
+	UPGRADE_PLAN_LIMIT_REASONS,
+	type UpgradePlanLimitReason,
+} from "./upgrade-plan-limit-reason";
+export {
 	type CreateCheckoutSessionInput,
 	useCreateCheckoutSession,
 } from "./useCreateCheckoutSession";
@@ -21,3 +25,10 @@ export {
 	usePreviewOrgSeatChange,
 	useUpdateOrgSeats,
 } from "./useOrgBilling";
+export {
+	useCreateUserCheckoutSession,
+	useCreateUserPortalSession,
+	useUpgradeOfferings,
+	useUserBillingSummary,
+	useWorkspaceBillingContext,
+} from "./useUserBilling";

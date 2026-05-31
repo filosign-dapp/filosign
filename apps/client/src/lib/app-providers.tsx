@@ -11,24 +11,29 @@ import {
 import { ErrorBoundary } from "@/src/lib/components/app/errors/error-boundary";
 import { HydrationLifecycleTracer } from "@/src/lib/components/app/hydration-lifecycle-tracer";
 import { ThemeProvider } from "@/src/lib/components/ui/theme-provider";
+import { clientAnalyticsConsentRequired } from "@/src/lib/deployment";
 import { FilosignProvider } from "@/src/lib/filosign/filosign-provider";
 import { QueryClientProvider } from "@/src/lib/filosign/query-client";
 import { Web3Provider } from "@/src/lib/web3/providers";
 import router from "@/src/router";
 
 export function AppProviders({ children }: { children?: ReactNode }) {
+	const consentRequired = clientAnalyticsConsentRequired();
 	const { analyticsAllowed, needsConsent, acceptAnalytics, declineAnalytics } =
 		useAnalyticsConsent();
+	const posthogEnabled = env.VITE_POSTHOG_ENABLED === true;
+	const analyticsEnabled =
+		posthogEnabled && (consentRequired ? analyticsAllowed : true);
 
 	return (
 		<StrictMode>
 			<ErrorBoundary>
-				<ThemeProvider defaultTheme="light" storageKey="theme">
+				<ThemeProvider defaultTheme="system" storageKey="theme">
 					<QueryClientProvider>
 						<FilosignAnalyticsProvider
 							apiKey={env.VITE_POSTHOG_KEY ?? ""}
 							apiHost={env.VITE_POSTHOG_HOST ?? "https://us.i.posthog.com"}
-							enabled={env.VITE_POSTHOG_ENABLED === true && analyticsAllowed}
+							enabled={analyticsEnabled}
 						>
 							<Web3Provider>
 								<FilosignProvider>
@@ -41,7 +46,7 @@ export function AppProviders({ children }: { children?: ReactNode }) {
 										<HydrationLifecycleTracer />
 										<AnalyticsConsentBanner
 											needsConsent={
-												env.VITE_POSTHOG_ENABLED === true && needsConsent
+												consentRequired && posthogEnabled && needsConsent
 											}
 											onAccept={acceptAnalytics}
 											onDecline={declineAnalytics}

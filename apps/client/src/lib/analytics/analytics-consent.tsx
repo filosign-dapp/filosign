@@ -51,10 +51,10 @@ export function AnalyticsConsentBanner({
 				</p>
 				<div className="flex shrink-0 gap-2">
 					<Button type="button" variant="outline" size="sm" onClick={onDecline}>
-						Decline
+						Reject Non-Essential
 					</Button>
 					<Button type="button" variant="primary" size="sm" onClick={onAccept}>
-						Allow analytics
+						Allow all cookies
 					</Button>
 				</div>
 			</div>

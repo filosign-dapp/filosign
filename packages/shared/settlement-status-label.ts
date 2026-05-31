@@ -8,7 +8,9 @@ export function settlementStatusLabel(status: SettlementRuleStatus): string {
 		case "pending":
 			return "Pending";
 		case "ready":
-			return "Ready to pay";
+			return "Ready to execute";
+		case "partial":
+			return "Partially paid";
 		case "executed":
 			return "Paid";
 		case "cancelled":
@@ -16,7 +18,7 @@ export function settlementStatusLabel(status: SettlementRuleStatus): string {
 		case "failed_insufficient":
 			return "Insufficient balance";
 		case "failed_relay":
-			return "Automatic payout failed";
+			return "Automatic transfer failed";
 		case "failed_conditions":
 			return "Conditions not met";
 	}
@@ -54,6 +56,12 @@ export function settlementHeaderSummary(
 ): "none" | "all_paid" | "pending" | "failed" {
 	if (rules.length === 0) return "none";
 	if (rules.some((r) => r.status.startsWith("failed_"))) return "failed";
-	if (rules.every((r) => r.status === "executed")) return "all_paid";
+	if (
+		rules.every((r) => r.status === "executed" || r.status === "cancelled") &&
+		rules.some((r) => r.status === "executed")
+	) {
+		return "all_paid";
+	}
+	if (rules.some((r) => r.status === "partial")) return "pending";
 	return "pending";
 }

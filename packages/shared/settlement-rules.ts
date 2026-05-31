@@ -54,6 +54,7 @@ export type SettlementRecipientSource =
 export const settlementRuleStatuses = [
 	"pending",
 	"ready",
+	"partial",
 	"executed",
 	"cancelled",
 	"failed_insufficient",
@@ -71,6 +72,16 @@ export const zSettlementPayoutLegInput = z.object({
 
 export type SettlementPayoutLegInput = z.infer<
 	typeof zSettlementPayoutLegInput
+>;
+
+/** Indexed leg row (DB / API); optional fields synced from chain after per-leg payout. */
+export const zSettlementPayoutLegStored = zSettlementPayoutLegInput.extend({
+	paid: z.boolean().optional(),
+	payoutTxHash: zHexString().optional(),
+});
+
+export type SettlementPayoutLegStored = z.infer<
+	typeof zSettlementPayoutLegStored
 >;
 
 export const zSettlementReleaseParams = z.discriminatedUnion("releaseType", [
@@ -154,8 +165,15 @@ export function settlementRuleLegacyTopLevel(
 	};
 }
 
-export const zSettlementRuleUpdateInput = z.object({
+/** On-chain settlement rule identity (unique per validator contract). */
+export const zSettlementRuleKey = z.object({
 	onChainRuleId: z.string().regex(/^\d+$/),
+	validatorAddress: zEvmAddress(),
+});
+
+export type SettlementRuleKey = z.infer<typeof zSettlementRuleKey>;
+
+export const zSettlementRuleUpdateInput = zSettlementRuleKey.extend({
 	updateRuleTxHash: zHexString(),
 	legs: z.array(zSettlementPayoutLegInput).min(1).max(32),
 	releaseType: z.enum(settlementReleaseTypes),
@@ -167,8 +185,7 @@ export type SettlementRuleUpdateInput = z.infer<
 	typeof zSettlementRuleUpdateInput
 >;
 
-export const zSettlementRuleCancelInput = z.object({
-	onChainRuleId: z.string().regex(/^\d+$/),
+export const zSettlementRuleCancelInput = zSettlementRuleKey.extend({
 	cancelRuleTxHash: zHexString(),
 });
 

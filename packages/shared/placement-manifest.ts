@@ -15,11 +15,10 @@ export function normalizePlacementRecipientEmail(email: string): string {
 	return email.trim().toLowerCase();
 }
 
-export const zPlacementField = z.object({
+export const zPlacementFieldBase = z.object({
 	id: z.string().min(1),
 	pageIndex: z.number().int().min(0),
 	rect: zRectNormalized,
-	/** Canonical recipient identity for this field (normalized lowercase). */
 	assignedRecipientEmail: z
 		.email()
 		.transform((e) => normalizePlacementRecipientEmail(e)),
@@ -35,21 +34,57 @@ export const zPlacementField = z.object({
 	]),
 });
 
-/** Send/sign/compliance — at least one placed field. */
-export const zPlacementManifest = z.object({
-	version: z.literal(2),
-	fields: z.array(zPlacementField).min(1),
+/** Legacy v2 field (single-doc envelopes). */
+export const zPlacementFieldV2 = zPlacementFieldBase;
+
+/** v3 field — pageIndex is per document. */
+export const zPlacementFieldV3 = zPlacementFieldBase.extend({
+	documentId: z.string().min(1),
 });
+
+export const zPlacementDocument = z.object({
+	id: z.string().min(1),
+	name: z.string().min(1),
+	sha256Plaintext: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+	pageCount: z.number().int().min(1),
+});
+
+/** Legacy single-doc manifest. */
+export const zPlacementManifestV2 = z.object({
+	version: z.literal(2),
+	fields: z.array(zPlacementFieldV2).min(1),
+});
+
+/** Multi-document manifest (committed at send). */
+export const zPlacementManifestV3 = z.object({
+	version: z.literal(3),
+	documents: z.array(zPlacementDocument).min(1),
+	fields: z.array(zPlacementFieldV3).min(1),
+});
+
+export const zPlacementManifest = z.discriminatedUnion("version", [
+	zPlacementManifestV2,
+	zPlacementManifestV3,
+]);
 
 /** Draft checkpoints — fields may be empty before add-sign placement. */
-export const zDraftPlacementManifest = z.object({
-	version: z.literal(2),
-	fields: z.array(zPlacementField),
-});
+export const zDraftPlacementManifest = z.discriminatedUnion("version", [
+	z.object({
+		version: z.literal(2),
+		fields: z.array(zPlacementFieldV2),
+	}),
+	z.object({
+		version: z.literal(3),
+		documents: z.array(zPlacementDocument),
+		fields: z.array(zPlacementFieldV3),
+	}),
+]);
 
 export type PlacementManifest = z.infer<typeof zPlacementManifest>;
+export type PlacementManifestV3 = z.infer<typeof zPlacementManifestV3>;
 export type DraftPlacementManifest = z.infer<typeof zDraftPlacementManifest>;
-export type PlacementField = z.infer<typeof zPlacementField>;
+export type PlacementField = z.infer<typeof zPlacementFieldV3>;
+export type PlacementDocument = z.infer<typeof zPlacementDocument>;
 
 function sortKeysDeep(value: unknown): unknown {
 	if (value === null || typeof value !== "object") {
@@ -81,7 +116,7 @@ export function computePlacementCommitment(manifest: PlacementManifest): Hex {
 export function fieldIdsForRecipientEmail(
 	manifest: PlacementManifest,
 	recipientEmail: string,
-): PlacementField[] {
+): Array<PlacementManifest["fields"][number]> {
 	const key = normalizePlacementRecipientEmail(recipientEmail);
 	return manifest.fields.filter((f) => f.assignedRecipientEmail === key);
 }
@@ -94,4 +129,10 @@ export function requiredFieldIdsForRecipientEmail(
 	return fieldIdsForRecipientEmail(manifest, recipientEmail)
 		.filter((f) => f.required)
 		.map((f) => f.id);
+}
+
+export function isPlacementManifestV3(
+	manifest: PlacementManifest,
+): manifest is PlacementManifestV3 {
+	return manifest.version === 3;
 }

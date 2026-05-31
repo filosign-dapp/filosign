@@ -17,7 +17,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 	<MarketingPageShell>
 			<LegalDocument
 				title="Terms of Service"
-				description="These terms describe how Filosign provides private document workflow software and attached payouts. They are not legal advice and should be reviewed with counsel before production launch."
+				description="Terms for Filosign document workflow software and optional payout attachment. Not legal advice - review with counsel before production launch."
 				lastUpdated="May 2026"
 			>
 				<h2>1. Acceptance</h2>
@@ -67,8 +67,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 				<p>
 					Filosign provides software for sending, viewing, signing, storing,
 					and exporting proof records for encrypted document workflows. Optional
-					features may let approved users attach payout rules that
-					execute through public smart contracts on supported networks.
+					features may let approved workspaces attach optional payout rules
+					that execute through public smart contracts on supported networks.
 				</p>
 				<p>
 					Filosign does not provide legal, tax, accounting, payroll,
@@ -151,58 +151,77 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 					{LEGAL_OPERATOR.supportEmail} to resolve product or access issues before
 					disputing a charge with your bank when possible. Filing a dispute or chargeback
 					without contacting us first could result in suspension of your account, paid
-					features, and settlement access while the dispute is reviewed. Repeated or
+					features, and payout attachment access while the dispute is reviewed. Repeated or
 					fraudulent disputes may lead to permanent termination. We will preserve reasonable
 					access to export your existing signed documents and proofs where operationally
 					and legally permitted.
 				</p>
 
-				<h2>9. Non-custodial settlements</h2>
+				<h2>9. Optional payout attachment</h2>
 				<p>
-					Filosign provides a software interface and transaction relay features that
-					facilitate non-custodial payouts. This feature is optional, requires a
-					paid plan, and is subject to manual approval or feature access. For v1,
-					supported settlement is USDC on Base.
+					Filosign may provide software and optional transaction relay so a sender can
+					attach <strong>optional USDC payout instructions</strong> to a document.
+					The feature is optional. It requires a paid plan, manual workspace approval,
+					and acceptance of the
+					<a href="/legal/settlement-feature-addendum" class="underline"
+						>Payout attachment addendum</a
+					>. Production use is USDC on Base. See
+					<a href="/legal/non-custodial-settlement" class="underline"
+						>Payout attachment</a
+					> for a plain-language overview.
 				</p>
 				<p>
-					<strong>Feature Access vs. Fund Custody:</strong> Filosign does not
-					hold, pool, custody, transmit, or control your funds or blockchain
-					assets. Your funds remain in your self-custodied wallet at all times;
-					we cannot access, freeze, block, or reverse them, and you can transact
-					directly with the blockchain independent of our services. However, your
-					access to Filosign’s software features (including our UI, API endpoints,
-					and transaction relay) is provided at our discretion. We reserve the
-					right to suspend or restrict access to these interface tools at any time
-					to address security, regulatory compliance, abuse, or operational risk.
+					<strong>Not a payment service.</strong> Filosign is not a bank, money
+					transmitter, escrow agent, or payment guarantor. Transfers, when they occur,
+					move between user wallets. Filosign is not a party to those transfers and does
+					not resolve payment disputes between senders and recipients.
 				</p>
 				<p>
-					Payouts use a pull-payment model where you register rules on-chain and
-					approve the settlement smart contract from your wallet:
+					<strong>Software access is not custody.</strong> We do not hold, pool, custody,
+					transmit, or control your funds. Your assets stay in your self-custodied wallet.
+					We cannot access, freeze, block, or reverse them. You can use the blockchain
+					without our app. We may still suspend or limit access to Filosign software
+					(UI, API, relay) for security, compliance, abuse, or operations.
+				</p>
+				<p>
+					Payout attachment uses a pull-payment model: you register rules on-chain and
+					approve the on-chain payout contract from your wallet:
 				</p>
 				<ul>
 					<li>You control token approvals and wallet transactions.</li>
 					<li>Filosign does not approve, custody, or reverse funds for you.</li>
-					<li>Filosign does not charge settlement-volume fees.</li>
+					<li>Filosign does not charge payout-volume fees.</li>
 					<li>
-						You may revoke funding by setting token approval to zero directly via
-						your wallet before a payout executes.
+						You may revoke funding by setting token approval to zero before a leg
+						executes.
+					</li>
+					<li>
+						You may cancel remaining unpaid legs before a rule is fully executed; amounts
+						already transferred on-chain cannot be reversed by Filosign.
+					</li>
+					<li>
+						Legs may execute independently. Signing a document does not ensure any
+						attached payout will complete.
+					</li>
+					<li>
+						After the first required signer signs on-chain, payers generally cannot
+						change payout terms through the validator.
 					</li>
 				</ul>
 				<p>
-					You are solely responsible for wallet security, recipient correctness,
-					token approvals, tax reporting, invoices, accounting, payout legality,
-					and any funds sent to or from your wallet. Blockchain transactions may
-					be public and irreversible.
+					You are responsible for wallet security, recipients, approvals, taxes,
+					invoices, accounting, legality, and funds you send or receive. Blockchain
+					transactions may be public and irreversible. Recipients have no payment
+					guarantee from Filosign.
 				</p>
 
-				<h2>10. Supported path vs direct contract use</h2>
+				<h2>10. Supported path vs. direct contract use</h2>
 				<p>
-					The supported path is creating settlement-linked workflows through the
-					Filosign app or API. On that path, Filosign may enforce product rules,
-					index status, and include related records in proof exports. Direct
-					contract interactions may still happen on-chain, but Filosign does not
-					guarantee product policy enforcement, indexing, or automation for those
-					transactions.
+					The supported path is payout-attached workflows through the Filosign app or
+					API. On that path, we may enforce product rules, index status, and include
+					records in proof exports. Direct contract use on-chain is still possible, but
+					Filosign does not guarantee policy enforcement, indexing, or automation for
+					those transactions.
 				</p>
 
 				<h2>11. Prohibited use</h2>
@@ -216,10 +235,10 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
 				<h2>12. Automation and availability</h2>
 				<p>
-					Filosign may relay supported settlement transactions when conditions
-					are met, but does not guarantee payout execution. Transactions may fail
-					due to insufficient balance, revoked approval, network issues, unmet
-					conditions, or smart contract/network risk.
+					Filosign may relay supported payout transactions when conditions are met, but
+					does not guarantee execution. Transfers may fail due to insufficient balance,
+					revoked approval, network issues, unmet conditions, or smart contract or network
+					risk.
 				</p>
 				<p>
 					The service is provided as available. Filosign does not currently
@@ -230,8 +249,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 				<p>
 					We may suspend, limit, or terminate access if we believe your use
 					creates legal, security, payment, sanctions, fraud, abuse, or
-					operational risk. We may also restrict settlement features separately
-					from document features.
+					operational risk. We may restrict payout attachment separately from document
+					features.
 				</p>
 
 				<h2>14. Intellectual property</h2>
@@ -346,8 +365,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 					<a href="/acceptable-use" class="underline">Acceptable Use Policy</a>,
 					<a href="/subprocessors" class="underline">Subprocessors</a>, and
 					<a href="/legal/non-custodial-settlement" class="underline"
-						>Non-custodial Settlement</a
-					> page.
+						>Payout attachment</a
+					>, and
+					<a href="/legal/settlement-feature-addendum" class="underline"
+						>Payout attachment addendum</a
+					>.
 				</p>
 			</LegalDocument>
 	</MarketingPageShell>

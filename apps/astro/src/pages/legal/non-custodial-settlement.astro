@@ -5,101 +5,99 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 
 <BaseLayout
-	title="Non-custodial Settlement - Filosign"
-	description="How attached payouts work in Filosign."
+	title="Payout attachment - Filosign"
+	description="How optional USDC payout attachments work on Filosign. Non-custodial: funds stay in your wallet until on-chain conditions are met."
 >
 	<MarketingPageShell>
-			<LegalDocument
-				title="Non-custodial Settlement"
-				description="Plain-English explanation of Filosign's attached payout model, user approvals, and wallet risk."
-				lastUpdated="May 2026"
-			>
-				<h2>Short version</h2>
-				<p>
-					Filosign does not custody funds. Each settlement rule is a
-					document-linked record on Base: it ties a USDC payout to the same
-					on-chain file registration as the agreement. You can attach a rule
-					before or after signatures; execution stays permissionless once release
-					conditions are met. The payer approves funds from their own wallet, and
-					the validator pulls to recipients when conditions are satisfied.
-				</p>
+		<LegalDocument
+			title="Payout attachment"
+			description="Optional sender-attached USDC instructions on a document workflow. Filosign records public events; it does not hold funds or guarantee payment."
+			lastUpdated="May 2026"
+		>
+			<h2>Summary</h2>
+			<p>
+				<strong>Payout attachment</strong> lets a sender link USDC transfer instructions to
+				the same on-chain file registration as an agreement. Funds stay in the sender&apos;s
+				wallet until a public validator contract pulls them to recipients when release
+				conditions are met. Filosign provides software, optional transaction relay, and
+				audit exports. We are not a bank, escrow, payment processor, or party to transfers
+				between users.
+			</p>
 
-				<h2>Supported network</h2>
-				<p>
-					For v1 production, attached payouts run on Base. Other tokens, chains,
-					fiat on-ramps, and off-ramps may rely on third-party providers and
-					are not part of Filosign custody.
-				</p>
+			<h2>If you are signing</h2>
+			<p>
+				Signing does <strong>not</strong> guarantee you will receive USDC. Payment depends
+				on the sender&apos;s balance, token approval, release rules, and whether the sender
+				cancels or revokes before remaining legs run. Payment disputes are between you and
+				the sender, not Filosign.
+			</p>
 
-				<h2>How it works</h2>
-				<ul>
-					<li>
-						The document is registered on-chain (file registry) when sent through
-						Filosign.
-					</li>
-					<li>
-						The payer creates a settlement rule linked to that file (same
-						<code>cidId</code>) in the Filosign app, before or after signing.
-					</li>
-					<li>The payer approves the settlement validator for the payout amount.</li>
-					<li>The document is signed through the workflow.</li>
-					<li>
-						When the rule conditions are met, the validator can transfer approved
-						funds from payer to recipient using the payer's approval.
-					</li>
-					<li>
-						The transaction may be submitted by the Filosign relay, a user
-						wallet, or another address paying gas.
-					</li>
-				</ul>
+			<h2>Network and token</h2>
+			<p>
+				Payout attachments use USDC on Base. Other tokens or chains are outside
+				Filosign&apos;s scope.
+			</p>
 
-				<h2>Feature access vs. fund custody</h2>
-				<p>
-					Filosign does not hold, pool, custody, transmit, or control your funds
-					or blockchain assets. Your funds remain in your self-custodied wallet
-					at all times. We cannot access, freeze, block, or reverse your funds,
-					and you can transact directly with the smart contracts independent of
-					Filosign.
-				</p>
-				<p>
-					However, your access to Filosign's software tools (such as our user
-					interface, API endpoints, and transaction relay) is provided at our
-					discretion. We reserve the right to suspend or restrict access to these
-					platform features at any time to address security, regulatory
-					compliance, abuse, or operational risks. If access to our interface is
-					restricted, your funds are unaffected, and you can still interact with
-					the smart contracts directly or revoke approvals using your wallet.
-				</p>
+			<h2>Typical flow</h2>
+			<ol>
+				<li>Filosign registers the document on-chain when you send it.</li>
+				<li>
+					An approved workspace attaches a payout rule from the sender wallet or linked
+					org treasury.
+				</li>
+				<li>The payer approves the validator for the total payout amount.</li>
+				<li>Signers complete the document.</li>
+				<li>
+					When conditions are met, payout legs may execute on-chain; Filosign may relay
+					transfers on the supported path.
+				</li>
+			</ol>
 
-				<h2>Direct contract use</h2>
-				<p>
-					Users may interact with contracts directly. Filosign does not guarantee
-					indexing, screening, automation, or product policy enforcement for
-					transactions created outside the supported app path.
-				</p>
+			<h2>What we record</h2>
+			<p>
+				We may index and export public events - rule registration, signatures, per-leg
+				execution, cancellation, and approval revocation. These records show what happened
+				on-chain. They are not a payment guarantee or dispute decision.
+			</p>
 
-				<h2>Execution</h2>
-				<p>
-					A settlement transaction may be submitted by Filosign's relay, a user
-					wallet, or another address when contract conditions are met. Paying gas
-					does not bypass signing requirements.
-				</p>
+			<h2>Access vs. custody</h2>
+			<p>
+				We do not hold or control your funds. Using payout attachment in the app requires
+				workspace approval and acceptance of the
+				<a href="/legal/settlement-feature-addendum" class="underline"
+					>Payout attachment addendum</a
+				>. We may suspend that software access without affecting wallet balances.
+			</p>
 
-				<h2>Revoking an approval</h2>
-				<p>
-					Before payout execution, the payer can revoke funding by setting the
-					token approval for the validator to zero from their wallet. Revocation
-					cannot reverse a payout that has already executed on-chain.
-				</p>
+			<h2>Payer controls</h2>
+			<ul>
+				<li>
+					<strong>Revoke approval</strong> - set validator allowance to zero before
+					further legs run (paid legs stay paid).
+				</li>
+				<li>
+					<strong>Cancel rule</strong> - stop remaining unpaid legs; completed transfers
+					cannot be reversed on-chain.
+				</li>
+				<li>
+					<strong>Update terms</strong> - blocked after the first required signer signs
+					on-chain (and after any leg is paid).
+				</li>
+			</ul>
 
-				<h2>User responsibility</h2>
-				<p>
-					You are responsible for wallet security, recipient correctness, token
-					approval amounts, balances, taxes, invoices, reporting, sanctions
-					compliance, and payout legality. Filosign cannot recover funds sent to
-					the wrong address, reverse public blockchain transactions, or make a
-					recipient return funds.
-				</p>
-			</LegalDocument>
+			<h2>Using contracts outside the app</h2>
+			<p>
+				Anyone may interact with public contracts directly. Filosign does not guarantee
+				indexing, policy checks, or UI for those paths. See
+				<a href="/terms" class="underline">Terms of Service</a>.
+			</p>
+
+			<h2>Your responsibilities</h2>
+			<p>
+				You are responsible for wallet security, recipient addresses, approvals, balances,
+				taxes, legality, and sanctions compliance. Filosign cannot reverse public
+				blockchain transfers.
+			</p>
+		</LegalDocument>
 	</MarketingPageShell>
 </BaseLayout>

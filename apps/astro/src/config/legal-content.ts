@@ -3,12 +3,13 @@
 export const LEGAL_OPERATOR = {
 	legalName: "Kartikay Tiwari",
 	tradingName: "Filosign",
-	location: "Mumbai, India",
+	location: "Jaunpur, India",
 	supportEmail: "support@filosign.xyz",
 	privacyEmail: "privacy@filosign.xyz",
 	securityEmail: "security@filosign.xyz",
 } as const;
 
+/** Privacy Policy operator disclosure only — do not use on other public pages. */
 export function operatorIdentitySentence(): string {
 	return `${LEGAL_OPERATOR.legalName}, an individual residing in ${LEGAL_OPERATOR.location}, doing business as ${LEGAL_OPERATOR.tradingName}`;
 }

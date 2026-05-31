@@ -176,35 +176,3 @@ Imported from `@filosign/motion` tokens to ensure fluid, premium transitions:
 Initialized globally in BaseLayout for simple scroll transitions:
 * **Duration:** 800ms
 * **Easing:** `ease-out-cubic`
-
----
-
-## 8. Compliance & Regulatory Settings
-
-Strict disclaimers and metadata bindings are used to protect the system.
-
-### EXCLUDED DOCUMENTS
-To prevent misuse, the terms explicitly state that Filosign is **not** suitable for:
-1. Wills, trusts, codicils, or estate/testamentary documents.
-2. Powers of attorney.
-3. Negotiable instruments, promissory notes, or bills of exchange.
-4. Divorce, adoption, family law, or court filings.
-5. Government notices, official filings, or court orders.
-6. Real estate deeds or transfers.
-7. Utility service cancellations or health/life insurance terminations.
-8. Eviction, foreclosure, or default notices.
-
-### Legal Registry & Operator
-* **Owner/Operator:** Kartikay Tiwari, an individual residing in Mumbai, India.
-* **Support Email:** `support@filosign.xyz`
-* **Privacy Email:** `privacy@filosign.xyz`
-* **Security Email:** `security@filosign.xyz`
-* **Subprocessor Vendors:**
-  * **Cloudflare:** Pages (hosting), R2 (object storage), CDN
-  * **Hetzner:** VPS server hosting
-  * **Supabase / Neon:** Database
-  * **Amazon SES / Resend:** Transactional email
-  * **thirdweb:** Wallet integration, authentication, blockchain RPC node provider
-  * **PostHog:** Privacy-compliant web analytics
-  * **Dodo Payments:** Billing and Merchant of Record gateway
-  * **Base Network:** Distributed ledger for smart contracts

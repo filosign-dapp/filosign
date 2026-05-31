@@ -10,6 +10,7 @@ import {
 	hashNormalizedSignerEmail,
 	LEAF_SCHEMA_VERSION_V1,
 	normalizePlacementRecipientEmail,
+	SETTLEMENT_FEATURE_TERMS_VERSION,
 	zPlacementManifest,
 } from "@filosign/shared";
 import type { InferClientOutputs } from "@orpc/client";
@@ -18,6 +19,7 @@ import type { Hex } from "viem";
 import { getAddress } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { latestChainTimestamp } from "../../lib/chain-time";
+import { fileRegistryAt } from "../../lib/file-registry-at";
 import { invalidateInboxQueries } from "../../lib/invalidate-queries";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import type { AppRouterClient } from "../../orpc/app-router-types";
@@ -38,10 +40,14 @@ export function useSignFile() {
 		mutationFn: async (args: {
 			pieceCid: string;
 			completedFieldIds: string[];
+			settlementRecipientAck?: {
+				termsVersion: string;
+				acceptedAt: number;
+			};
 		}) => {
 			let success = false;
 
-			const { pieceCid, completedFieldIds } = args;
+			const { pieceCid, completedFieldIds, settlementRecipientAck } = args;
 			const textEncoder = new TextEncoder();
 
 			const dilithium = wasm.dilithium;
@@ -59,9 +65,11 @@ export function useSignFile() {
 
 				const {
 					sender,
+					registryAddress,
 					placementCommitment,
 					placementManifest: manifestRaw,
 				} = fileResponse;
+				const registry = fileRegistryAt(contracts, registryAddress);
 
 				if (manifestRaw == null) {
 					throw new Error(
@@ -119,9 +127,7 @@ export function useSignFile() {
 
 				const cidIdentifier = computeCidIdentifier(pieceCid);
 
-				const nonce = await contracts.FSFileRegistry.read.nonce([
-					wallet.account.address,
-				]);
+				const nonce = await registry.read.nonce([wallet.account.address]);
 
 				const dl3SignatureMessage = jsonStringify({
 					pieceCid,
@@ -142,35 +148,56 @@ export function useSignFile() {
 				});
 
 				const dl3SignatureCommitment = computeCommitment([toHex(dl3Signature)]);
-				const signature = await eip712signature(contracts, "FSFileRegistry", {
-					types: {
-						SignFile: [
-							{ name: "cidIdentifier", type: "bytes32" },
-							{ name: "sender", type: "address" },
-							{ name: "signerWallet", type: "address" },
-							{ name: "signerEmailCommitment", type: "bytes32" },
-							{ name: "privySubjectCommitment", type: "bytes32" },
-							{ name: "dl3SignatureCommitment", type: "bytes20" },
-							{ name: "completionsRoot", type: "bytes32" },
-							{ name: "leafSchemaVersion", type: "uint8" },
-							{ name: "timestamp", type: "uint256" },
-							{ name: "nonce", type: "uint256" },
-						],
+				const signature = await eip712signature(
+					contracts,
+					"FSFileRegistry",
+					{
+						types: {
+							SignFile: [
+								{ name: "cidIdentifier", type: "bytes32" },
+								{ name: "sender", type: "address" },
+								{ name: "signerWallet", type: "address" },
+								{ name: "signerEmailCommitment", type: "bytes32" },
+								{ name: "privySubjectCommitment", type: "bytes32" },
+								{ name: "dl3SignatureCommitment", type: "bytes20" },
+								{ name: "completionsRoot", type: "bytes32" },
+								{ name: "leafSchemaVersion", type: "uint8" },
+								{ name: "timestamp", type: "uint256" },
+								{ name: "nonce", type: "uint256" },
+							],
+						},
+						primaryType: "SignFile",
+						message: {
+							cidIdentifier,
+							sender,
+							signerWallet: wallet.account.address,
+							signerEmailCommitment,
+							privySubjectCommitment,
+							dl3SignatureCommitment,
+							completionsRoot,
+							leafSchemaVersion: LEAF_SCHEMA_VERSION_V1,
+							timestamp: BigInt(timestamp),
+							nonce: BigInt(nonce),
+						},
 					},
-					primaryType: "SignFile",
-					message: {
-						cidIdentifier,
-						sender,
-						signerWallet: wallet.account.address,
-						signerEmailCommitment,
-						privySubjectCommitment,
-						dl3SignatureCommitment,
-						completionsRoot,
-						leafSchemaVersion: LEAF_SCHEMA_VERSION_V1,
-						timestamp: BigInt(timestamp),
-						nonce: BigInt(nonce),
-					},
+					{ verifyingContract: registry.address },
+				);
+				const settlementRules = await rpcQuery.settlements.listByFile.call({
+					pieceCid,
 				});
+				const needsPayoutAck = settlementRules.length > 0;
+				if (needsPayoutAck) {
+					if (
+						!settlementRecipientAck ||
+						settlementRecipientAck.termsVersion !==
+							SETTLEMENT_FEATURE_TERMS_VERSION
+					) {
+						throw new Error(
+							"Acknowledge the attached payout disclosure before signing",
+						);
+					}
+				}
+
 				await rpcQuery.files.piece.sign.call({
 					pieceCid,
 					body: {
@@ -178,6 +205,7 @@ export function useSignFile() {
 						timestamp,
 						dl3Signature: toHex(dl3Signature),
 						completedFieldIds,
+						...(needsPayoutAck ? { settlementRecipientAck } : {}),
 					},
 				});
 				success = true;
@@ -185,8 +213,15 @@ export function useSignFile() {
 
 			return success;
 		},
-		onSuccess: () => {
+		onSuccess: (_data, variables) => {
 			void invalidateInboxQueries(queryClient, rpcQuery);
+			if (variables.pieceCid) {
+				void queryClient.invalidateQueries({
+					queryKey: rpcQuery.files.piece.detail.key({
+						input: { pieceCid: variables.pieceCid },
+					}),
+				});
+			}
 		},
 	});
 }

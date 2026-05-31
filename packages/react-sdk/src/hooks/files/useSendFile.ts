@@ -9,22 +9,34 @@ import {
 	wrapColdInviteDek,
 } from "@filosign/crypto-utils";
 import {
+	type AttachmentPacketSendInput,
 	buildRegistrationEmailCommitments,
 	computePlacementCommitment,
-	encodeFileData,
+	encodeFileDataV2,
 	hashNormalizedSignerEmail,
 	hashOrgIdCommitment,
+	isPlacementManifestV3,
 	normalizePlacementRecipientEmail,
+	type PlacementManifest,
 	type RegisterRoutingInput,
 	ZERO_ORG_ID_COMMITMENT,
-	type zFileData,
 } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Address, Hex } from "viem";
 import z from "zod";
 import { useFilosignContext } from "../../context/useFilosignContext";
+import type { AttachmentPacketDraft } from "../../lib/attachment-packets";
+import {
+	encryptAttachmentPacket,
+	wrapAttachmentPacketDekForCold,
+	wrapAttachmentPacketDekForWarm,
+} from "../../lib/attachment-packets";
 import { latestChainTimestamp } from "../../lib/chain-time";
 import { invalidateEntitlements } from "../../lib/invalidate-entitlements";
+import {
+	type AttachmentRuleDraft,
+	registerAttachmentRulesOnChain,
+} from "../../lib/register-attachment-rules";
 import { buildValidatedRegisterRouting } from "../../lib/register-routing";
 import {
 	registerSettlementRulesOnChain,
@@ -34,15 +46,13 @@ import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import { calculatePieceCid } from "../../utils/piece.ts";
 import { useUserProfile } from "../users";
 
-type FileData = z.infer<ReturnType<typeof zFileData>>;
-
 export function useSendFile() {
 	const {
 		contracts,
 		wallet,
 		runtime: { chainKey },
 	} = useFilosignContext();
-	const { rpcQuery, isAuthed } = useFilosignRpc();
+	const { rpc, rpcQuery, isAuthed } = useFilosignRpc();
 	const { data: user } = useUserProfile();
 
 	const queryClient = useQueryClient();
@@ -54,9 +64,21 @@ export function useSendFile() {
 				encryptionPublicKey: Hex;
 			}[];
 			viewers: { address: Address; encryptionPublicKey: string }[];
-			bytes: Uint8Array;
-			metadata: FileData["metadata"];
-			placementManifest: FileData["placementManifest"];
+			documents: {
+				id: string;
+				name: string;
+				mimeType: string;
+				bytes: Uint8Array;
+			}[];
+			metadata: { name: string };
+			placementManifest: PlacementManifest;
+			attachmentPacketDrafts?: AttachmentPacketDraft[];
+			/** Resolved warm recipients for attachment packet KEM wraps (email → wallet + encryption PK). */
+			warmRecipientsByEmail?: {
+				email: string;
+				address: Address;
+				encryptionPublicKey: Hex;
+			}[];
 			coldInvites?: { email: string; isSigner: boolean }[];
 			/** Normalized viewer emails (non-signer recipients); must match server derivation. */
 			viewerEmails: string[];
@@ -71,9 +93,11 @@ export function useSendFile() {
 			const {
 				signers,
 				viewers,
-				bytes,
+				documents,
 				metadata,
 				placementManifest,
+				attachmentPacketDrafts = [],
+				warmRecipientsByEmail = [],
 				coldInvites,
 				viewerEmails,
 				organizationId,
@@ -106,8 +130,15 @@ export function useSendFile() {
 				);
 			}
 
-			const data = encodeFileData({
-				bytes: bytes,
+			if (documents.length === 0) {
+				throw new Error("At least one signable document is required");
+			}
+
+			if (!isPlacementManifestV3(placementManifest)) {
+				throw new Error("New sends require placement manifest version 3");
+			}
+			const data = await encodeFileDataV2({
+				documents,
 				sender: wallet.account.address,
 				timestamp,
 				metadata,
@@ -313,6 +344,89 @@ export function useSendFile() {
 					: [];
 
 			const coldInviteRows = coldInvitePairs.map((p) => p.row);
+			const coldPhrase = coldInvitePairs[0]?.phrase;
+			const warmByEmail = new Map(
+				warmRecipientsByEmail.map((r) => [
+					normalizePlacementRecipientEmail(r.email),
+					r,
+				]),
+			);
+			const coldEmailSet = new Set(
+				(coldInvites ?? []).map((c) =>
+					normalizePlacementRecipientEmail(c.email),
+				),
+			);
+			const attachmentPackets: AttachmentPacketSendInput[] = [];
+
+			for (const draft of attachmentPacketDrafts) {
+				const encryptedPacket = await encryptAttachmentPacket({
+					packet: draft,
+				});
+				const uploadStart = await rpc.attachments.uploadStart({
+					packetCid: encryptedPacket.packetCid,
+				});
+				const putRes = await fetch(uploadStart.uploadUrl, {
+					method: "PUT",
+					headers: { "Content-Type": "application/octet-stream" },
+					body: new Blob([Uint8Array.from(encryptedPacket.ciphertext)]),
+				});
+				if (!putRes.ok) {
+					throw new Error(`Attachment upload failed: ${putRes.statusText}`);
+				}
+
+				const warmWraps: NonNullable<AttachmentPacketSendInput["warmWraps"]> =
+					[];
+				const coldWraps: NonNullable<AttachmentPacketSendInput["coldWraps"]> =
+					[];
+
+				for (const email of draft.recipientEmails) {
+					const normalized = normalizePlacementRecipientEmail(email);
+					const warm = warmByEmail.get(normalized);
+					if (warm) {
+						const wrap = await wrapAttachmentPacketDekForWarm({
+							packetCid: encryptedPacket.packetCid,
+							packetId: draft.packetId,
+							packetDek: encryptedPacket.packetDek,
+							recipient: {
+								email: normalized,
+								encryptionPublicKey: warm.encryptionPublicKey,
+							},
+						});
+						warmWraps.push({
+							email: normalized,
+							kemCiphertext: wrap.kemCiphertext,
+							encryptedPacketDek: wrap.encryptedPacketDek,
+						});
+						continue;
+					}
+					if (coldEmailSet.has(normalized) && coldPhrase) {
+						coldWraps.push({
+							email: normalized,
+							wrappedPacketDek: await wrapAttachmentPacketDekForCold({
+								packetId: draft.packetId,
+								packetDek: encryptedPacket.packetDek,
+								phrase: coldPhrase,
+							}),
+						});
+					}
+				}
+
+				attachmentPackets.push({
+					packetId: draft.packetId,
+					label: draft.label,
+					releaseMode: draft.releaseMode,
+					releaseType: draft.releaseType,
+					releaseParams: draft.releaseParams,
+					recipientEmails: draft.recipientEmails.map((e) =>
+						normalizePlacementRecipientEmail(e),
+					),
+					packetCid: encryptedPacket.packetCid,
+					packetContentHash: encryptedPacket.packetContentHash,
+					warmWraps: warmWraps.length > 0 ? warmWraps : undefined,
+					coldWraps: coldWraps.length > 0 ? coldWraps : undefined,
+				});
+			}
+
 			const firstColdInvite = coldInvitePairs[0];
 			const coldInviteShareCode = firstColdInvite
 				? {
@@ -340,6 +454,7 @@ export function useSendFile() {
 					: {}),
 				...(coldInviteRows.length > 0 ? { coldInvites: coldInviteRows } : {}),
 				...(routing ? { routing } : {}),
+				...(attachmentPackets.length > 0 ? { attachmentPackets } : {}),
 			};
 
 			await rpcQuery.files.register.call({
@@ -348,6 +463,51 @@ export function useSendFile() {
 				mimeType: "application/pdf",
 				ciphertextByteLength: encryptedData.byteLength,
 			});
+
+			const conditionalDrafts = attachmentPacketDrafts.filter(
+				(d) => d.releaseMode === "conditional",
+			);
+			if (conditionalDrafts.length > 0) {
+				const registered = await registerAttachmentRulesOnChain({
+					wallet,
+					contracts,
+					pieceCid: pieceCid.toString(),
+					rules: conditionalDrafts.map((draft): AttachmentRuleDraft => {
+						const packet = attachmentPackets.find(
+							(p) => p.packetId === draft.packetId,
+						);
+						if (!packet?.packetContentHash) {
+							throw new Error(
+								`Missing packet hash for conditional packet ${draft.packetId}`,
+							);
+						}
+						const releaseType = draft.releaseType ?? "all_required_signed";
+						return {
+							packetId: draft.packetId,
+							packetContentHash: packet.packetContentHash as Hex,
+							releaseType,
+							releaseParams: (draft.releaseParams ?? {
+								releaseType,
+							}) as AttachmentRuleDraft["releaseParams"],
+							recipientEmails: draft.recipientEmails,
+						};
+					}),
+				});
+				for (const rec of registered) {
+					const packet = attachmentPackets.find(
+						(p) => p.packetId === rec.packetId,
+					);
+					if (!packet?.packetContentHash) continue;
+					await rpc.attachments.linkOnChainRule({
+						pieceCid: pieceCid.toString(),
+						packetId: rec.packetId,
+						onChainRuleId: rec.onChainRuleId,
+						releaseContractAddress: rec.releaseContractAddress,
+						registerRuleTxHash: rec.registerRuleTxHash,
+						packetContentHash: packet.packetContentHash,
+					});
+				}
+			}
 
 			const settlementRuleRecords =
 				settlementRules.length > 0

@@ -1,13 +1,10 @@
+import type { SettlementRuleKey } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Address } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { cancelSettlementRuleOnChain } from "../../lib/settlement-rules";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 
-export type CancelSettlementRuleInput = {
-	onChainRuleId: string;
-	validatorAddress?: Address;
-};
+export type CancelSettlementRuleInput = SettlementRuleKey;
 
 export function useCancelSettlementRule(pieceCid: string | undefined) {
 	const { wallet, contracts } = useFilosignContext();
@@ -30,6 +27,7 @@ export function useCancelSettlementRule(pieceCid: string | undefined) {
 
 			return rpcQuery.settlements.cancelRule.call({
 				onChainRuleId: input.onChainRuleId,
+				validatorAddress: input.validatorAddress,
 				cancelRuleTxHash,
 			});
 		},

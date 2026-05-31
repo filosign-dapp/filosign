@@ -41,7 +41,27 @@ export function useColdInviteDecrypt() {
 			});
 			const parsed = await decodeFileData(decrypted);
 
+			if (parsed.version === 2) {
+				const primary = parsed.documents[0];
+				return {
+					version: 2 as const,
+					fileBytes: primary?.bytes ?? new Uint8Array(),
+					documents: parsed.documents.map((d) => ({
+						id: d.id,
+						name: d.name,
+						mimeType: d.mimeType,
+						bytes: d.bytes,
+					})),
+					sender: parsed.sender,
+					timestamp: parsed.timestamp,
+					metadata: parsed.metadata,
+					placementManifest: parsed.placementManifest,
+					encryptionKey,
+				};
+			}
+
 			return {
+				version: 1 as const,
 				fileBytes: parsed.bytes,
 				sender: parsed.sender,
 				timestamp: parsed.timestamp,

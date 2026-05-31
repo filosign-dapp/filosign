@@ -1,3 +1,4 @@
+import type { SettlementRuleKey } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Address } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
@@ -5,12 +6,9 @@ import { paymentValidatorAt } from "../../lib/settlement-preflight";
 import { executeSettlementPayoutOnChain } from "../../lib/settlement-rules";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 
-export type ManualSettlementPayoutInput = {
-	onChainRuleId: string;
-	validatorAddress?: Address;
-};
+export type ManualSettlementPayoutInput = SettlementRuleKey;
 
-/** Fallback: wallet `executePayout` then slim server confirm (sync from chain). */
+/** Fallback: wallet `executePayoutLeg` per unpaid leg, then server confirm (sync from chain). */
 export function useManualSettlementPayout(pieceCid: string | undefined) {
 	const { wallet, contracts } = useFilosignContext();
 	const { rpcQuery, isAuthed } = useFilosignRpc();
@@ -42,6 +40,7 @@ export function useManualSettlementPayout(pieceCid: string | undefined) {
 
 			return rpcQuery.settlements.confirmSettlement.call({
 				onChainRuleId: input.onChainRuleId,
+				validatorAddress: input.validatorAddress,
 				payoutTxHash,
 			});
 		},

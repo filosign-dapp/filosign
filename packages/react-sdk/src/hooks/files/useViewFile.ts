@@ -29,8 +29,19 @@ export type ViewFileMetadata = {
 	mimeType?: string;
 };
 
+export type ViewFileDocument = {
+	id: string;
+	name: string;
+	mimeType: string;
+	bytes: Uint8Array;
+};
+
 export type ViewFileResult = {
+	version: 1 | 2;
+	/** Legacy single-document view (v1 packages and convenience). */
 	fileBytes: Uint8Array;
+	/** Multi-document signable package (v2). */
+	documents?: ViewFileDocument[];
 	sender: `0x${string}`;
 	timestamp: number;
 	metadata: ViewFileMetadata;
@@ -131,7 +142,26 @@ export function useViewFile() {
 
 			const parsedData = await decodeFileData(decryptedData);
 
+			if (parsedData.version === 2) {
+				const primary = parsedData.documents[0];
+				return {
+					version: 2 as const,
+					fileBytes: primary?.bytes ?? new Uint8Array(),
+					documents: parsedData.documents.map((d) => ({
+						id: d.id,
+						name: d.name,
+						mimeType: d.mimeType,
+						bytes: d.bytes,
+					})),
+					sender: parsedData.sender,
+					timestamp: parsedData.timestamp,
+					metadata: parsedData.metadata,
+					placementManifest: parsedData.placementManifest,
+				};
+			}
+
 			return {
+				version: 1 as const,
 				fileBytes: parsedData.bytes,
 				sender: parsedData.sender,
 				timestamp: parsedData.timestamp,

@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAddress } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { latestChainTimestamp } from "../../lib/chain-time";
+import { fileRegistryAt } from "../../lib/file-registry-at";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import { useUserProfile } from "../users/useUserProfile";
 
@@ -29,7 +30,8 @@ export function useAckFile() {
 				pieceCid,
 			});
 
-			const { sender, signers, viewers } = fileResponse;
+			const { sender, registryAddress, signers, viewers } = fileResponse;
+			const registry = fileRegistryAt(contracts, registryAddress);
 
 			const cidIdentifier = computeCidIdentifier(pieceCid);
 			const timestamp = await latestChainTimestamp(contracts);
@@ -72,27 +74,32 @@ export function useAckFile() {
 				);
 			}
 
-			const signature = await eip712signature(contracts, "FSFileRegistry", {
-				types: {
-					AckFile: [
-						{ name: "cidIdentifier", type: "bytes32" },
-						{ name: "sender", type: "address" },
-						{ name: "viewerWallet", type: "address" },
-						{ name: "viewerEmailCommitment", type: "bytes32" },
-						{ name: "privySubjectCommitment", type: "bytes32" },
-						{ name: "timestamp", type: "uint256" },
-					],
+			const signature = await eip712signature(
+				contracts,
+				"FSFileRegistry",
+				{
+					types: {
+						AckFile: [
+							{ name: "cidIdentifier", type: "bytes32" },
+							{ name: "sender", type: "address" },
+							{ name: "viewerWallet", type: "address" },
+							{ name: "viewerEmailCommitment", type: "bytes32" },
+							{ name: "privySubjectCommitment", type: "bytes32" },
+							{ name: "timestamp", type: "uint256" },
+						],
+					},
+					primaryType: "AckFile",
+					message: {
+						cidIdentifier,
+						sender,
+						viewerWallet: wallet.account.address,
+						viewerEmailCommitment,
+						privySubjectCommitment,
+						timestamp: BigInt(timestamp),
+					},
 				},
-				primaryType: "AckFile",
-				message: {
-					cidIdentifier,
-					sender,
-					viewerWallet: wallet.account.address,
-					viewerEmailCommitment,
-					privySubjectCommitment,
-					timestamp: BigInt(timestamp),
-				},
-			});
+				{ verifyingContract: registry.address },
+			);
 
 			await rpcQuery.files.piece.ack.call({
 				pieceCid,

@@ -43,13 +43,13 @@ export default function FeaturesBentoIsland() {
 		{
 			title: "Verify anywhere",
 			description:
-				"Take the signing record with you. Anyone can check that the agreement was signed — without logging into Filosign.",
+				"Take the signing record with you. Anyone can check that the agreement was signed, without logging into Filosign.",
 			body: <ProofOutsideMock />,
 		},
 		{
 			title: "Private by default",
 			description:
-				"Files are encrypted in your browser before upload. Only you and your signers can read them — we cannot.",
+				"Files are encrypted in your browser before upload. Only you and your signers can read them. We cannot.",
 			body: <PrivateByDefaultMock />,
 		},
 		{
@@ -118,7 +118,7 @@ export default function FeaturesBentoIsland() {
 								</h3>
 								<p className="text-muted-foreground text-base leading-relaxed font-manrope font-light">
 									Get a clear summary of who signed, when they signed, and which
-									fields were completed — ready to share with finance, legal, or
+									fields were completed, ready to share with finance, legal, or
 									a grant reviewer.
 								</p>
 							</div>

@@ -25,7 +25,7 @@ const steps = [
 	{
 		kicker: "03",
 		title: "Export proof",
-		body: "Generate an exportable proof packet — no stitching together emails and screenshots.",
+		body: "Generate an exportable proof packet. No stitching together emails and screenshots.",
 		mock: <ProofStepMock />,
 	},
 	{

@@ -1,28 +1,17 @@
-import { Pressable, SPRING_TOKENS } from "@filosign/motion";
-import { CaretRightIcon, CircleIcon } from "@phosphor-icons/react";
+import { SPRING_TOKENS } from "@filosign/motion";
+import { CircleIcon } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
 import { landingMedia } from "../../config/landing-media";
 import { cn } from "../../lib/cn";
-import {
-	marketingGhostLgClass,
-	marketingPrimaryLgClass,
-} from "../../lib/marketing-button";
 import { marketingHeroSectionClass } from "../../lib/marketing-layout";
-import {
-	MARKETING_PRESSABLE_HOVER,
-	MARKETING_PRESSABLE_TAP,
-} from "../../lib/marketing-motion";
+import MarketingCtaButtons from "./MarketingCtaButtons";
 import MotionAwareVideo from "./MotionAwareVideo";
 import { MotionProvider } from "./MotionProvider";
 
 const badgeClass =
 	"group/badge inline-flex h-fit max-w-full shrink-0 items-center justify-center gap-1 overflow-hidden rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium text-balance bg-primary text-primary-foreground";
 
-interface MarketingHeroProps {
-	appUrl: string;
-}
-
-export default function MarketingHero({ appUrl }: MarketingHeroProps) {
+export default function MarketingHero() {
 	const reducedMotion = useReducedMotion();
 	const introDelay = reducedMotion ? 0 : 0.8;
 	const itemDelay = reducedMotion ? 0 : 1.3;
@@ -95,45 +84,8 @@ export default function MarketingHero({ appUrl }: MarketingHeroProps) {
 							...SPRING_TOKENS.soft,
 							delay: itemDelay + 0.3,
 						}}
-						className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
 					>
-						<Pressable
-							preset="snappy"
-							whileHover={MARKETING_PRESSABLE_HOVER}
-							whileTap={MARKETING_PRESSABLE_TAP}
-						>
-							<a
-								href={appUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								className={cn(
-									marketingPrimaryLgClass,
-									"flex items-center justify-center gap-2 group",
-								)}
-							>
-								Start free
-								<CaretRightIcon
-									className="w-4 h-4 transition-transform duration-200 group-hover/button:translate-x-1"
-									aria-hidden
-								/>
-							</a>
-						</Pressable>
-
-						<Pressable
-							preset="snappy"
-							whileHover={MARKETING_PRESSABLE_HOVER}
-							whileTap={MARKETING_PRESSABLE_TAP}
-						>
-							<a
-								href="/pricing"
-								className={cn(
-									marketingGhostLgClass,
-									"flex items-center justify-center gap-2 group",
-								)}
-							>
-								See pricing
-							</a>
-						</Pressable>
+						<MarketingCtaButtons showPrimaryArrow />
 					</motion.div>
 				</motion.div>
 

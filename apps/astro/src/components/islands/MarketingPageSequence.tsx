@@ -32,7 +32,7 @@ type MarketingHeroTopProps = {
 	children: ReactNode;
 };
 
-/** Phase 2 — staggered hero copy after nav intro (snappy on inner pages). */
+/** Phase 2 - staggered hero copy after nav intro (snappy on inner pages). */
 export function MarketingHeroTop({
 	pace = "page",
 	className,
@@ -87,7 +87,7 @@ type MarketingHeroBottomProps = {
 	variant?: "rise" | "scale";
 };
 
-/** Phase 2b — hero media / visual block after copy stagger. */
+/** Phase 2b - hero media / visual block after copy stagger. */
 export function MarketingHeroBottom({
 	pace = "page",
 	topChildCount,
@@ -130,7 +130,7 @@ type MarketingPageBodyProps = {
 	maxVisible?: number;
 };
 
-/** Phase 3 — main content below hero (pricing cards, changelog list, etc.). */
+/** Phase 3 - main content below hero (pricing cards, changelog list, etc.). */
 export function MarketingPageBody({
 	pace = "page",
 	heroTopChildCount,
@@ -188,7 +188,7 @@ type MarketingHeroDecorProps = {
 	children: ReactNode;
 };
 
-/** Ambient decor — fades in with hero bottom timing. */
+/** Ambient decor - fades in with hero bottom timing. */
 export function MarketingHeroDecor({
 	pace = "page",
 	topChildCount,

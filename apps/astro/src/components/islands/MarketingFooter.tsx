@@ -1,12 +1,7 @@
-import { Pressable } from "@filosign/motion";
 import { TwitterLogoIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
-import { marketingPrimaryLgClass } from "../../lib/marketing-button";
 import { marketingSectionClass } from "../../lib/marketing-layout";
-import {
-	MARKETING_PRESSABLE_HOVER,
-	MARKETING_PRESSABLE_TAP,
-} from "../../lib/marketing-motion";
+import MarketingCtaButtons from "./MarketingCtaButtons";
 import MarketingLogo from "./MarketingLogo";
 
 function getFooterSections() {
@@ -49,16 +44,10 @@ function getFooterSections() {
 	];
 }
 
-const primaryCtaClass = marketingPrimaryLgClass;
-
 const footerLinkClass =
 	"text-sm font-medium hover:text-primary transition-colors duration-200 font-manrope flex items-center gap-2 group focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 rounded-sm";
 
-interface MarketingFooterProps {
-	appUrl: string;
-}
-
-export default function MarketingFooter({ appUrl }: MarketingFooterProps) {
+export default function MarketingFooter() {
 	const footerSections = getFooterSections();
 
 	return (
@@ -84,20 +73,7 @@ export default function MarketingFooter({ appUrl }: MarketingFooterProps) {
 							viewport={{ once: true }}
 							transition={{ delay: 0.1 }}
 						>
-							<Pressable
-								preset="snappy"
-								whileHover={MARKETING_PRESSABLE_HOVER}
-								whileTap={MARKETING_PRESSABLE_TAP}
-							>
-								<a
-									href={appUrl}
-									target="_blank"
-									rel="noopener noreferrer"
-									className={`${primaryCtaClass} flex w-full sm:w-auto items-center justify-center gap-2`}
-								>
-									Start free
-								</a>
-							</Pressable>
+							<MarketingCtaButtons layout="col" className="w-full sm:w-auto" />
 						</motion.div>
 					</div>
 

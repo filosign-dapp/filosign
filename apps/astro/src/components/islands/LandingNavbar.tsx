@@ -7,6 +7,7 @@ import {
 	marketingNavCtaClass,
 	marketingPrimaryMdClass,
 } from "../../lib/marketing-button";
+import { MARKETING_CTA } from "../../lib/marketing-cta";
 import { marketingNavStickyClass } from "../../lib/marketing-layout";
 import {
 	MARKETING_PRESSABLE_HOVER,
@@ -31,14 +32,10 @@ const navLinks = [
 ] as const;
 
 interface LandingNavbarProps {
-	appUrl: string;
 	pace?: MarketingPace;
 }
 
-export default function LandingNavbar({
-	appUrl,
-	pace = "page",
-}: LandingNavbarProps) {
+export default function LandingNavbar({ pace = "page" }: LandingNavbarProps) {
 	const intro = NAV_INTRO_DELAYS[pace];
 	const menuId = useId();
 	const drawerRef = useRef<HTMLDivElement>(null);
@@ -171,12 +168,10 @@ export default function LandingNavbar({
 							whileTap={MARKETING_PRESSABLE_TAP}
 						>
 							<a
-								href={appUrl}
-								target="_blank"
-								rel="noopener noreferrer"
+								href={MARKETING_CTA.getStartedHref}
 								className={marketingNavCtaClass}
 							>
-								Start free
+								{MARKETING_CTA.getStartedLabel}
 							</a>
 						</Pressable>
 					</div>
@@ -248,13 +243,11 @@ export default function LandingNavbar({
 									whileTap={MARKETING_PRESSABLE_TAP}
 								>
 									<a
-										href={appUrl}
-										target="_blank"
-										rel="noopener noreferrer"
+										href={MARKETING_CTA.getStartedHref}
 										className={cn(marketingPrimaryMdClass, "w-full min-h-11")}
 										onClick={() => setMenuOpen(false)}
 									>
-										Start free
+										{MARKETING_CTA.getStartedLabel}
 									</a>
 								</Pressable>
 							</div>

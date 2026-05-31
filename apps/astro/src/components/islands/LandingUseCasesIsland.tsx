@@ -35,7 +35,7 @@ export default function LandingUseCasesIsland() {
 						Start where signing and payment already meet.
 					</h2>
 					<p className="font-manrope text-base leading-relaxed text-muted-foreground md:text-lg">
-						From grants and contractor handovers to bounties — one encrypted
+						From grants and contractor handovers to bounties: one encrypted
 						workflow with optional on-chain settlement.
 					</p>
 				</div>

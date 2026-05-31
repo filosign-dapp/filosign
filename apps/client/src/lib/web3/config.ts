@@ -4,7 +4,7 @@ import type {
 	UseConnectModalOptions,
 	UseWalletDetailsModalOptions,
 } from "thirdweb/react";
-import { type InAppWalletCreationOptions, inAppWallet } from "thirdweb/wallets";
+import { inAppWallet } from "thirdweb/wallets";
 import type { Chain } from "viem";
 import { defaultChain } from "@/src/constants";
 import env from "@/src/env";
@@ -34,27 +34,31 @@ export const defaultThirdwebChain = thirdwebChainFromViem(defaultChain);
 
 const appOrigin = env.VITE_CLIENT_URL.replace(/\/$/, "");
 
-export const filosignInAppWalletOptions: NonNullable<InAppWalletCreationOptions> =
-	{
-		auth: {
-			options: ["email", "google", "apple"],
+function filosignInAppAuthOptions(): string[] {
+	if (env.VITE_DEPLOYMENT === "production") return ["email"];
+	return ["email", "google"];
+}
+
+export const filosignInAppWalletOptions: Record<string, unknown> = {
+	auth: {
+		options: filosignInAppAuthOptions(),
+	},
+	metadata: {
+		name: "Filosign",
+		icon: `${appOrigin}/logo_icon.webp`,
+		image: {
+			src: `${appOrigin}/logo.webp`,
+			alt: "Filosign",
+			width: 64,
+			height: 64,
 		},
-		metadata: {
-			name: "Filosign",
-			icon: `${appOrigin}/logo_icon.webp`,
-			image: {
-				src: `${appOrigin}/logo.webp`,
-				alt: "Filosign",
-				width: 64,
-				height: 64,
-			},
-		},
-		executionMode:
-			env.VITE_CHAIN === "local"
-				? { mode: "EOA" }
-				: { mode: "EIP7702", sponsorGas: true },
-		hidePrivateKeyExport: true,
-	};
+	},
+	executionMode:
+		env.VITE_CHAIN === "local"
+			? { mode: "EOA" }
+			: { mode: "EIP7702", sponsorGas: true },
+	hidePrivateKeyExport: true,
+};
 
 export const filosignInAppWallet = inAppWallet(filosignInAppWalletOptions);
 

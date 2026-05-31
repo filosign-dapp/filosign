@@ -18,12 +18,15 @@ import {
 } from "thirdweb/react";
 import type { Profile } from "thirdweb/wallets";
 import type { WalletClient } from "viem";
+import { useTheme } from "@/src/lib/components/ui/theme-provider";
+import { clientSignupPolicyIsGated } from "@/src/lib/deployment";
 import {
 	defaultThirdwebChain,
 	thirdwebClient,
 	thirdwebConnectModalOptions,
 	thirdwebWalletModalOptions,
 } from "@/src/lib/web3/config";
+import { clearStoredAccessGate } from "@/src/lib/web3/platform-access-session";
 
 function profileEmailsFromThirdwebProfiles(profiles: Profile[] | undefined): {
 	email: string;
@@ -60,6 +63,8 @@ export function useThirdweb() {
 	const ready = status !== "connecting";
 	const authenticated = status === "connected";
 	const isConnecting = status === "connecting";
+
+	const { resolvedTheme } = useTheme();
 
 	const account = useActiveAccount();
 	const activeWallet = useActiveWallet();
@@ -111,8 +116,16 @@ export function useThirdweb() {
 	}, [account?.address, email, googleEmail]);
 
 	const login = useCallback(async () => {
+		if (clientSignupPolicyIsGated()) {
+			throw new Error(
+				"Open the link from your email or use the sign-in page to continue.",
+			);
+		}
 		const hadAccount = Boolean(account?.address);
-		const wallet = await openConnectModal(thirdwebConnectModalOptions);
+		const wallet = await openConnectModal({
+			...thirdwebConnectModalOptions,
+			theme: resolvedTheme,
+		});
 		const address = wallet.getAccount()?.address;
 		if (!hadAccount && address) {
 			captureAppEvent(CLIENT_ANALYTICS_EVENTS.walletSignup, {});
@@ -123,16 +136,21 @@ export function useThirdweb() {
 		captureAppEvent,
 		identifyAnalyticsWallet,
 		openConnectModal,
+		resolvedTheme,
 	]);
 
 	const logout = useCallback(async () => {
 		if (!activeWallet) return;
+		clearStoredAccessGate();
 		await disconnect(activeWallet);
 	}, [activeWallet, disconnect]);
 
 	const openTopUp = useCallback(async () => {
-		detailsModal.open(thirdwebWalletModalOptions);
-	}, [detailsModal]);
+		detailsModal.open({
+			...thirdwebWalletModalOptions,
+			theme: resolvedTheme,
+		});
+	}, [detailsModal, resolvedTheme]);
 
 	return {
 		ready,

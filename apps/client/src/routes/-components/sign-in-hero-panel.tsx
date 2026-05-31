@@ -20,8 +20,8 @@ export function SignInHeroPanel() {
 				/>
 				<blockquote className="max-w-md space-y-3 text-pretty">
 					<p className="font-manrope text-xl font-medium leading-snug text-foreground md:text-2xl">
-						Envelopes and signatures your team can verify—without chasing status
-						in email threads.
+						Envelopes and signatures your team can verify, without chasing
+						status in email threads.
 					</p>
 					<footer className="text-sm text-muted-foreground">
 						One workspace for drafts, recipients, and the paper trail when it

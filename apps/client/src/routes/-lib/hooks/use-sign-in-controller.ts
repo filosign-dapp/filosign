@@ -9,6 +9,7 @@ import {
 import { useColdInviteRecipientWarning } from "@/src/lib/domains/invites/use-cold-invite-recipient-warning";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
+import { useSignInGate } from "@/src/routes/-lib/hooks/use-sign-in-gate";
 import { executeSwitchAccountLogout } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
 
 export type SignInView =
@@ -26,6 +27,7 @@ export function useSignInController() {
 	const navigate = useNavigate();
 	const [switchAccountPending, setSwitchAccountPending] = useState(false);
 	const coldSearch = useSearch({ from: "/" });
+	const signInGate = useSignInGate(coldSearch);
 
 	const coldReturn = useMemo(
 		() => hasColdReturn(coldSearch),
@@ -144,6 +146,7 @@ export function useSignInController() {
 		handleSwitchAccountFromSignIn,
 		goToOnboarding,
 		login,
+		signInGate,
 	};
 }
 

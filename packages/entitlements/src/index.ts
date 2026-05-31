@@ -34,6 +34,8 @@ export {
 	planIncludesFeature,
 	planMarketingLines,
 } from "./marketing";
+export type { PlanPriceId } from "./pricing";
+export { getPlanPrice, getPlanYearlyTotal, PLAN_PRICING } from "./pricing";
 export type {
 	BooleanEntitlementDef,
 	CheckOptions,
@@ -50,4 +52,4 @@ export type {
 	QuotaPeriod,
 	QuotaScope,
 } from "./types";
-export { ENTITLEMENT_REASONS, PLAN_IDS, zPlanId } from "./types";
+export { ENTITLEMENT_REASONS, getPlanName, PLAN_IDS, zPlanId } from "./types";

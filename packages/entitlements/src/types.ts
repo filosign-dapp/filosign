@@ -13,6 +13,23 @@ export type PlanId = (typeof PLAN_IDS)[number];
 
 export const zPlanId = z.enum(PLAN_IDS);
 
+export function getPlanName(planId: PlanId): string {
+	switch (planId) {
+		case "free":
+			return "Free";
+		case "individual":
+			return "Solo";
+		case "teams":
+			return "Teams";
+		case "teams_pro":
+			return "Teams Pro";
+		case "enterprise":
+			return "Enterprise";
+		default:
+			return planId;
+	}
+}
+
 export type EntitlementSubject =
 	| { type: "user"; wallet: string }
 	| { type: "org_member"; orgId: string; wallet: string };

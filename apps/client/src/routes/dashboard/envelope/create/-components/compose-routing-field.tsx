@@ -134,7 +134,7 @@ export function ComposeRoutingField() {
 										setCreateForm({ ...createForm, recipients });
 									}}
 								/>
-								<span>{email} — optional for quorum</span>
+								<span>{email}, optional for quorum</span>
 							</label>
 						);
 					})}

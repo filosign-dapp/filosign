@@ -15,7 +15,7 @@ export function recipientResolvedSignerAddress(
 	}
 }
 
-/** Email-only recipient (no resolved wallet) — cold invite + passphrase path. */
+/** Email-only recipient (no resolved wallet) - cold invite + passphrase path. */
 export function isColdRecipient(recipient: Recipient): boolean {
 	const email = recipient.email?.trim();
 	if (!email) return false;

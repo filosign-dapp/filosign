@@ -21,7 +21,7 @@ import {
 import { cn } from "@/src/lib/utils/utils";
 
 export type FieldPlacementSignerOption = {
-	/** Normalized email — select value. */
+	/** Normalized email - select value. */
 	email: string;
 	name: string;
 	/** When on-platform, used for display / optional linkage only. */

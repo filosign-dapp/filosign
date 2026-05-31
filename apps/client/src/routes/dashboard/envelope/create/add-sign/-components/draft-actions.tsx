@@ -1,8 +1,11 @@
+import { useFilosignContext } from "@filosign/react";
 import { useEntitlements } from "@filosign/react/billing";
+import { useCreateOrgTemplate } from "@filosign/react/orgs";
 import {
 	ArrowSquareOutIcon,
 	ChatCircleIcon,
 	CheckIcon,
+	FileTextIcon,
 	FloppyDiskIcon,
 	SpinnerGapIcon,
 } from "@phosphor-icons/react";
@@ -16,9 +19,11 @@ import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
+	DialogFooter,
 	DialogHeader,
 	DialogTitle,
 } from "@/src/lib/components/ui/dialog";
+import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { Textarea } from "@/src/lib/components/ui/textarea";
 import { useDraftCommentCount, useDraftSaveUi } from "@/src/lib/domains/drafts";
@@ -39,8 +44,13 @@ export function AddSignDraftActions() {
 	const { serverDraftId: urlServerDraftId } = addSignRouteApi.useSearch();
 	const createForm = useStorePersist((s) => s.createForm);
 	const { data: entitlements } = useEntitlements();
+	const { rpc } = useFilosignContext();
+	const createTemplate = useCreateOrgTemplate();
 	const [shareOpen, setShareOpen] = useState(false);
 	const [commentsOpen, setCommentsOpen] = useState(false);
+	const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+	const [templateName, setTemplateName] = useState("");
+	const [templateSaving, setTemplateSaving] = useState(false);
 	const [showCryptoRecoveryDialog, setShowCryptoRecoveryDialog] =
 		useState(false);
 	const promptPlanUpgrade = usePromptPlanUpgrade();
@@ -163,6 +173,27 @@ export function AddSignDraftActions() {
 					<ArrowSquareOutIcon className="size-4" />
 					<span>Share draft</span>
 				</Button>
+				{entitlements?.features["features.shared_templates"]?.enabled && (
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						disabled={!serverDraftId}
+						title={
+							serverDraftId
+								? "Save this draft as a reusable template"
+								: "Save draft first to save as template"
+						}
+						onClick={() => {
+							setTemplateName(createForm?.emailSubject || "");
+							setTemplateDialogOpen(true);
+						}}
+						className="gap-1.5"
+					>
+						<FileTextIcon className="size-4 text-secondary" weight="bold" />
+						<span>Save as Template</span>
+					</Button>
+				)}
 				{showComments ? (
 					<>
 						<Button
@@ -216,6 +247,92 @@ export function AddSignDraftActions() {
 					/>
 				</>
 			) : null}
+			<Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>Save as Template</DialogTitle>
+						<DialogDescription>
+							Create a reusable template for your workspace from this draft.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="space-y-4 pt-2">
+						<div className="space-y-2">
+							<Label htmlFor="designer-template-name">Template Name</Label>
+							<Input
+								id="designer-template-name"
+								placeholder="E.g. Standard NDA"
+								value={templateName}
+								onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+									setTemplateName(e.target.value)
+								}
+								maxLength={120}
+								autoFocus
+							/>
+						</div>
+					</div>
+					<DialogFooter>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => setTemplateDialogOpen(false)}
+							disabled={templateSaving}
+						>
+							Cancel
+						</Button>
+						<Button
+							type="button"
+							variant="primary"
+							onClick={async () => {
+								if (!templateName.trim()) {
+									toast.error("Please enter a template name");
+									return;
+								}
+								setTemplateSaving(true);
+								try {
+									const draftDetails = await rpc.drafts.get({
+										draftId: serverDraftId || "",
+									});
+									if (
+										!draftDetails.documents ||
+										draftDetails.documents.length === 0
+									) {
+										throw new Error("This draft has no PDF document uploaded.");
+									}
+									if (!draftDetails.headDekWrappedOmk) {
+										throw new Error(
+											"Please save the draft first to generate encryption keys.",
+										);
+									}
+									const primaryDoc = draftDetails.documents[0];
+									const placementManifest = draftDetails.headSnapshot
+										?.placementManifest ?? { fields: [] };
+
+									await createTemplate.mutateAsync({
+										name: templateName.trim(),
+										s3Key: primaryDoc.s3Key,
+										dekWrappedOmk: draftDetails.headDekWrappedOmk || "",
+										placementManifest,
+									});
+									toast.success("Saved as template!");
+									setTemplateDialogOpen(false);
+									setTemplateName("");
+								} catch (err) {
+									toast.error(
+										err instanceof Error
+											? err.message
+											: "Failed to save template",
+									);
+								} finally {
+									setTemplateSaving(false);
+								}
+							}}
+							disabled={templateSaving || !templateName.trim()}
+						>
+							{templateSaving ? "Saving..." : "Save Template"}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 			<Dialog
 				open={showCryptoRecoveryDialog}
 				onOpenChange={setShowCryptoRecoveryDialog}

@@ -6,12 +6,17 @@ import {
 import { useCryptoUnlocked } from "@filosign/react/auth";
 import { useEntitlements } from "@filosign/react/billing";
 import { useMarkDraftSent } from "@filosign/react/drafts";
-import { canUseAdvancedSettlements, useSendFile } from "@filosign/react/files";
+import {
+	canUseAdvancedSettlements,
+	formatSettlementSimError,
+	useSendFile,
+} from "@filosign/react/files";
 import { useActiveOrganization } from "@filosign/react/orgs";
 import { useProfilesByAddresses } from "@filosign/react/users";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { Address, Hex } from "viem";
 import {
 	draftSyncModeFromSearch,
@@ -536,6 +541,7 @@ export function useAddSignController() {
 							magicLink: buildColdInviteMagicLink(window.location.origin, {
 								pieceCid: result.pieceCid,
 								inviteToken: result.coldInviteShareCode.inviteToken,
+								email: result.coldInviteShareCode.emails[0],
 							}),
 						}
 					: null;
@@ -551,6 +557,7 @@ export function useAddSignController() {
 				setTimeout(() => setSendStatus("idle"), 3000);
 				return;
 			}
+			toast.error(formatSettlementSimError(error));
 			console.error("Failed to send documents:", error);
 			setTimeout(() => setSendStatus("idle"), 3000);
 		} finally {

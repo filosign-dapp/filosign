@@ -17,7 +17,7 @@ export type SettlementAttachmentDraft = {
 	/** Human USDC amount e.g. "10" or "10.50". */
 	amountUsdc: string;
 	releaseType: SettlementReleaseType;
-	/** When releaseType is specific_signer — normalized email. */
+	/** When releaseType is specific_signer - normalized email. */
 	specificSignerEmail?: string;
 	thresholdN?: number;
 };

@@ -34,7 +34,7 @@ export function PlacementCaptureLayer({
 			/>
 			<div className="absolute inset-0 border-2 border-dashed border-secondary/50 bg-secondary/20 pointer-events-none z-20">
 				<div className="absolute top-2 left-2 max-w-[min(100%,18rem)] rounded bg-secondary px-2 py-1 text-xs text-primary">
-					Click to place — choose signer and required/optional in the dialog
+					Click to place. Choose signer and required/optional in the dialog
 				</div>
 			</div>
 		</>

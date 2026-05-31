@@ -1169,6 +1169,11 @@ export const definitions = {
 				},
 				{
 					inputs: [],
+					name: "InvalidLegIndex",
+					type: "error",
+				},
+				{
+					inputs: [],
 					name: "InvalidPayer",
 					type: "error",
 				},
@@ -1179,7 +1184,32 @@ export const definitions = {
 				},
 				{
 					inputs: [],
+					name: "LegAlreadyPaid",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "PayerCannotBeRecipient",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "RecipientCannotBeToken",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "RecipientCannotBeValidator",
+					type: "error",
+				},
+				{
+					inputs: [],
 					name: "ReentrancyGuardReentrantCall",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "RequiredSigningStarted",
 					type: "error",
 				},
 				{
@@ -1320,6 +1350,43 @@ export const definitions = {
 					type: "event",
 				},
 				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+						{
+							indexed: true,
+							internalType: "bytes32",
+							name: "cidId",
+							type: "bytes32",
+						},
+						{
+							indexed: false,
+							internalType: "uint256",
+							name: "legIndex",
+							type: "uint256",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "recipient",
+							type: "address",
+						},
+						{
+							indexed: false,
+							internalType: "uint256",
+							name: "amount",
+							type: "uint256",
+						},
+					],
+					name: "PayoutLegExecuted",
+					type: "event",
+				},
+				{
 					inputs: [
 						{
 							internalType: "uint256",
@@ -1378,6 +1445,24 @@ export const definitions = {
 					type: "function",
 				},
 				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+						{
+							internalType: "uint256",
+							name: "legIndex",
+							type: "uint256",
+						},
+					],
+					name: "executePayoutLeg",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
 					inputs: [],
 					name: "fileRegistry",
 					outputs: [
@@ -1385,6 +1470,49 @@ export const definitions = {
 							internalType: "contract IFSFileRegistry",
 							name: "",
 							type: "address",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+						{
+							internalType: "uint256",
+							name: "legIndex",
+							type: "uint256",
+						},
+					],
+					name: "isLegPaid",
+					outputs: [
+						{
+							internalType: "bool",
+							name: "",
+							type: "bool",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					name: "legPaidBitmap",
+					outputs: [
+						{
+							internalType: "uint256",
+							name: "",
+							type: "uint256",
 						},
 					],
 					stateMutability: "view",
@@ -1609,6 +1737,25 @@ export const definitions = {
 							name: "ruleId",
 							type: "uint256",
 						},
+					],
+					name: "unpaidLegCount",
+					outputs: [
+						{
+							internalType: "uint256",
+							name: "count",
+							type: "uint256",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
 						{
 							internalType: "enum FSPaymentValidator.ReleaseType",
 							name: "releaseType_",
@@ -1659,8 +1806,412 @@ export const definitions = {
 				},
 			],
 		},
+		FSAttachmentRelease: {
+			address: "0xC469e7aE4aD962c30c7111dc580B4adbc7E914DD",
+			abi: [
+				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "fileRegistry_",
+							type: "address",
+						},
+						{
+							internalType: "uint256",
+							name: "deploymentChainId_",
+							type: "uint256",
+						},
+					],
+					stateMutability: "nonpayable",
+					type: "constructor",
+				},
+				{
+					inputs: [],
+					name: "ExceedsMaxCommitments",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "FileNotRegistered",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "InvalidPayer",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "InvalidReleaseConfig",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "ReentrancyGuardReentrantCall",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "RequiredSigningStarted",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "RuleAlreadyCancelled",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "RuleAlreadyExecuted",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "RuleNotExecutable",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "UnauthorizedRuleRegistration",
+					type: "error",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+						{
+							indexed: true,
+							internalType: "bytes32",
+							name: "cidId",
+							type: "bytes32",
+						},
+						{
+							indexed: false,
+							internalType: "bytes20",
+							name: "recipientsCommitment",
+							type: "bytes20",
+						},
+						{
+							indexed: false,
+							internalType: "bytes32",
+							name: "packetContentHash",
+							type: "bytes32",
+						},
+					],
+					name: "AttachmentReleased",
+					type: "event",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+						{
+							indexed: true,
+							internalType: "bytes32",
+							name: "cidId",
+							type: "bytes32",
+						},
+					],
+					name: "AttachmentRuleCancelled",
+					type: "event",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+						{
+							indexed: true,
+							internalType: "bytes32",
+							name: "cidId",
+							type: "bytes32",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "sender",
+							type: "address",
+						},
+						{
+							indexed: false,
+							internalType: "bytes20",
+							name: "recipientsCommitment",
+							type: "bytes20",
+						},
+						{
+							indexed: false,
+							internalType: "bytes32",
+							name: "packetContentHash",
+							type: "bytes32",
+						},
+						{
+							indexed: false,
+							internalType: "enum FSAttachmentRelease.ReleaseType",
+							name: "releaseType",
+							type: "uint8",
+						},
+					],
+					name: "AttachmentRuleRegistered",
+					type: "event",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					name: "canRelease",
+					outputs: [
+						{
+							internalType: "bool",
+							name: "",
+							type: "bool",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					name: "cancelAttachmentRule",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "deploymentChainId",
+					outputs: [
+						{
+							internalType: "uint256",
+							name: "",
+							type: "uint256",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					name: "executeAttachmentRelease",
+					outputs: [],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "fileRegistry",
+					outputs: [
+						{
+							internalType: "contract IFSFileRegistry",
+							name: "",
+							type: "address",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [],
+					name: "nextRuleId",
+					outputs: [
+						{
+							internalType: "uint256",
+							name: "",
+							type: "uint256",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "bytes32",
+							name: "cidId_",
+							type: "bytes32",
+						},
+						{
+							internalType: "bytes32",
+							name: "packetContentHash_",
+							type: "bytes32",
+						},
+						{
+							internalType: "enum FSAttachmentRelease.ReleaseType",
+							name: "releaseType_",
+							type: "uint8",
+						},
+						{
+							internalType: "bytes32",
+							name: "specificSignerCommitment_",
+							type: "bytes32",
+						},
+						{
+							internalType: "uint8",
+							name: "thresholdN_",
+							type: "uint8",
+						},
+						{
+							internalType: "uint64",
+							name: "expiresAt_",
+							type: "uint64",
+						},
+						{
+							internalType: "bytes32[]",
+							name: "signerCommitments_",
+							type: "bytes32[]",
+						},
+						{
+							internalType: "bytes32[]",
+							name: "recipientEmailCommitments_",
+							type: "bytes32[]",
+						},
+					],
+					name: "registerAttachmentRule",
+					outputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					stateMutability: "nonpayable",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "bytes32",
+							name: "cidId_",
+							type: "bytes32",
+						},
+					],
+					name: "ruleIdsForCid",
+					outputs: [
+						{
+							internalType: "uint256[]",
+							name: "",
+							type: "uint256[]",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					name: "rules",
+					outputs: [
+						{
+							internalType: "bytes32",
+							name: "cidId",
+							type: "bytes32",
+						},
+						{
+							internalType: "address",
+							name: "sender",
+							type: "address",
+						},
+						{
+							internalType: "bytes32",
+							name: "packetContentHash",
+							type: "bytes32",
+						},
+						{
+							internalType: "bytes20",
+							name: "recipientsCommitment",
+							type: "bytes20",
+						},
+						{
+							internalType: "enum FSAttachmentRelease.ReleaseType",
+							name: "releaseType",
+							type: "uint8",
+						},
+						{
+							internalType: "bytes32",
+							name: "specificSignerCommitment",
+							type: "bytes32",
+						},
+						{
+							internalType: "uint8",
+							name: "thresholdN",
+							type: "uint8",
+						},
+						{
+							internalType: "uint64",
+							name: "expiresAt",
+							type: "uint64",
+						},
+						{
+							internalType: "bool",
+							name: "released",
+							type: "bool",
+						},
+						{
+							internalType: "bool",
+							name: "cancelled",
+							type: "bool",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "uint256",
+							name: "ruleId",
+							type: "uint256",
+						},
+					],
+					name: "signerCommitments",
+					outputs: [
+						{
+							internalType: "bytes32[]",
+							name: "",
+							type: "bytes32[]",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+			],
+		},
 		MockUSDC: {
-			address: "0xb09da8a5B236fE0295A345035287e80bb0008290",
+			address: "0x5095d3313C76E8d29163e40a0223A5816a8037D8",
 			abi: [
 				{
 					inputs: [

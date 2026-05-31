@@ -1,11 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
 	assertDeploymentChain,
-	billingEnabled,
-	devEntitlementsBypass,
 	dodoLive,
 	requiredChainForDeployment,
 	sandboxEntitlementsOpen,
+	signupPolicyIsGated,
 } from "../deployment";
 
 describe("deployment policy", () => {
@@ -22,24 +21,19 @@ describe("deployment policy", () => {
 		).toThrow(/requires CHAIN=mainnet/);
 	});
 
-	test("billing and entitlements flags", () => {
-		expect(billingEnabled("sandbox")).toBe(false);
-		expect(billingEnabled("staging")).toBe(true);
-		expect(billingEnabled("production")).toBe(true);
+	test("dodo and entitlements flags", () => {
+		expect(dodoLive("local")).toBe(false);
 		expect(dodoLive("staging")).toBe(false);
+		expect(dodoLive("sandbox")).toBe(false);
 		expect(dodoLive("production")).toBe(true);
 		expect(sandboxEntitlementsOpen("sandbox")).toBe(true);
 		expect(sandboxEntitlementsOpen("staging")).toBe(false);
 	});
 
-	test("devEntitlementsBypass for owner email on non-production only", () => {
-		expect(devEntitlementsBypass("local", "kartik100100@gmail.com")).toBe(true);
-		expect(devEntitlementsBypass("staging", "Kartik100100@gmail.com")).toBe(
-			true,
-		);
-		expect(devEntitlementsBypass("production", "kartik100100@gmail.com")).toBe(
-			false,
-		);
-		expect(devEntitlementsBypass("local", "other@example.com")).toBe(false);
+	test("signupPolicyIsGated only on production", () => {
+		expect(signupPolicyIsGated("production")).toBe(true);
+		expect(signupPolicyIsGated("local")).toBe(false);
+		expect(signupPolicyIsGated("staging")).toBe(false);
+		expect(signupPolicyIsGated("sandbox")).toBe(false);
 	});
 });

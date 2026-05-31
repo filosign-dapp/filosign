@@ -32,10 +32,6 @@ export function assertDeploymentChain(args: {
 	}
 }
 
-export function billingEnabled(deployment: Deployment): boolean {
-	return deployment === "staging" || deployment === "production";
-}
-
 export function dodoLive(deployment: Deployment): boolean {
 	return deployment === "production";
 }
@@ -44,16 +40,17 @@ export function sandboxEntitlementsOpen(deployment: Deployment): boolean {
 	return deployment === "sandbox";
 }
 
-/** Non-production developer bypass — server resolves by wallet email. */
-export const DEV_ENTITLEMENTS_BYPASS_EMAIL = "kartik100100@gmail.com";
+export const SIGNUP_POLICIES = ["open", "invite_or_paid"] as const;
 
-export function devEntitlementsBypass(
-	deployment: Deployment,
-	email: string | null | undefined,
-): boolean {
-	if (deployment === "production") return false;
-	const normalized = email?.trim().toLowerCase();
-	return normalized === DEV_ENTITLEMENTS_BYPASS_EMAIL;
+export type SignupPolicy = (typeof SIGNUP_POLICIES)[number];
+
+/** Production requires invite or paid setup; other envs allow open signup for QA and demo. */
+export function signupPolicy(deployment: Deployment): SignupPolicy {
+	return deployment === "production" ? "invite_or_paid" : "open";
+}
+
+export function signupPolicyIsGated(deployment: Deployment): boolean {
+	return signupPolicy(deployment) === "invite_or_paid";
 }
 
 export function deploymentBannerMessage(deployment: Deployment): string | null {

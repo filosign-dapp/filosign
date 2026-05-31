@@ -11,6 +11,7 @@ import {
 	WarningIcon,
 } from "@phosphor-icons/react";
 import type { Address } from "viem";
+import { getAddress } from "viem";
 import { defaultChain, SUPPORTED_TOKENS } from "@/src/constants";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -31,7 +32,10 @@ type Props = {
 	trySettlePending: boolean;
 	manualSettlePending: boolean;
 	settlingRuleId: string | undefined;
-	onTrySettleRule: (onChainRuleId: string) => void;
+	onTrySettleRule: (input: {
+		onChainRuleId: string;
+		validatorAddress: Address;
+	}) => void;
 	onManualSettleRule: (input: {
 		onChainRuleId: string;
 		validatorAddress: Address;
@@ -57,6 +61,9 @@ function explorerTxUrl(hash: string) {
 function StatusIcon({ status }: { status: SettlementRuleStatus }) {
 	if (status === "executed") {
 		return <CheckIcon className="size-4 text-white" weight="bold" />;
+	}
+	if (status === "partial") {
+		return <CheckIcon className="size-4 text-chart-2" weight="bold" />;
 	}
 	if (status.startsWith("failed_")) {
 		return <WarningIcon className="size-4 text-amber-700" weight="fill" />;
@@ -102,26 +109,27 @@ export function SettlementStatusPanel({
 		<div className="pt-4 border-t border-border space-y-3">
 			<div className="space-y-1">
 				<h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-					Attached settlements ({rules.length})
+					Payout packets ({rules.length})
 				</h4>
 				{isSender ? (
 					<p className="text-xs text-muted-foreground">
-						USDC stays in your wallet until payout executes. Filosign can relay
-						the settlement transaction, but the contract pulls funds only from
-						your wallet approval. Revoke approval below to cancel unfunded
-						payouts.
+						USDC stays in your wallet until a leg executes. Filosign may relay
+						authorized transfers, but the contract pulls only from your
+						approval. Revoke approval below to block further legs.
 					</p>
 				) : (
 					<p className="text-xs text-muted-foreground">
-						When release conditions are met, settlement can execute on-chain.
-						Use Settle payment on this page, or settle from your wallet if
-						needed.
+						When release conditions are met, the sender&apos;s wallet may
+						transfer USDC on-chain. Use Execute attached payout to retry relay,
+						or Run payout leg from your wallet if needed. Signing does not
+						guarantee payment.
 					</p>
 				)}
 			</div>
 			<div className="space-y-2">
 				{rules.map((rule) => {
 					const paid = rule.status === "executed";
+					const partial = rule.status === "partial";
 					const cancelled = rule.status === "cancelled";
 					const failed = rule.status.startsWith("failed_");
 					const payoutUrl = rule.payoutTxHash
@@ -137,13 +145,15 @@ export function SettlementStatusPanel({
 						canSettleByRuleId.get(rule.onChainRuleId) === true &&
 						canActOnRule(rule, walletAddress, isSender);
 					const legCount = rule.legs?.length ?? 1;
+					const paidLegCount =
+						rule.legs?.filter((leg) => leg.paid === true).length ?? 0;
 
 					return (
 						<div
 							key={rule.id}
 							className={cn(
 								"flex items-start gap-3 p-3 rounded-lg border",
-								paid
+								paid || partial
 									? "bg-chart-2/10 border-chart-2/30"
 									: failed
 										? "bg-amber-500/10 border-amber-500/30"
@@ -157,9 +167,11 @@ export function SettlementStatusPanel({
 									"size-8 rounded-full flex items-center justify-center shrink-0",
 									paid
 										? "bg-chart-2"
-										: failed
-											? "bg-amber-100 dark:bg-amber-950"
-											: "bg-muted",
+										: partial
+											? "bg-chart-2/40"
+											: failed
+												? "bg-amber-100 dark:bg-amber-950"
+												: "bg-muted",
 								)}
 							>
 								<StatusIcon status={rule.status} />
@@ -170,13 +182,17 @@ export function SettlementStatusPanel({
 								</p>
 								<p className="text-xs text-muted-foreground">
 									{formatSettlementAmountLine(rule, decimals)}
-									{legCount > 1 ? ` · ${legCount} legs` : ""} ·{" "}
-									{settlementReleaseTypeLabel(rule.releaseType)}
+									{legCount > 1
+										? partial
+											? ` · ${paidLegCount}/${legCount} legs paid`
+											: ` · ${legCount} legs`
+										: ""}{" "}
+									· {settlementReleaseTypeLabel(rule.releaseType)}
 								</p>
 								<p
 									className={cn(
 										"text-xs",
-										paid
+										paid || partial
 											? "text-chart-2"
 											: failed
 												? "text-amber-800 dark:text-amber-200"
@@ -194,9 +210,14 @@ export function SettlementStatusPanel({
 											size="sm"
 											className="h-7 text-xs"
 											disabled={settlePending}
-											onClick={() => onTrySettleRule(rule.onChainRuleId)}
+											onClick={() =>
+												onTrySettleRule({
+													onChainRuleId: rule.onChainRuleId,
+													validatorAddress: getAddress(rule.validatorAddress),
+												})
+											}
 										>
-											{isTrying ? "Settling…" : "Settle payment"}
+											{isTrying ? "Executing…" : "Execute attached payout"}
 										</Button>
 										<Button
 											type="button"
@@ -207,13 +228,11 @@ export function SettlementStatusPanel({
 											onClick={() =>
 												onManualSettleRule({
 													onChainRuleId: rule.onChainRuleId,
-													validatorAddress: rule.validatorAddress as Address,
+													validatorAddress: getAddress(rule.validatorAddress),
 												})
 											}
 										>
-											{isSettling && !isTrying
-												? "Sending…"
-												: "Settle from wallet"}
+											{isSettling && !isTrying ? "Sending…" : "Run payout leg"}
 										</Button>
 									</div>
 								) : null}
@@ -223,18 +242,26 @@ export function SettlementStatusPanel({
 								!cancelled &&
 								onCancelRule &&
 								onUpdateRule ? (
-									<SettlementManageActions
-										rule={rule}
-										onCancel={() =>
-											onCancelRule({
-												onChainRuleId: rule.onChainRuleId,
-												validatorAddress: rule.validatorAddress as Address,
-											})
-										}
-										onUpdate={() => onUpdateRule(rule)}
-										cancelPending={cancelPending}
-										updatePending={updatePending}
-									/>
+									<div className="mt-2 space-y-2">
+										{partial ? (
+											<p className="text-[11px] text-muted-foreground text-pretty">
+												Cancelling stops only unpaid legs. Amounts already
+												transferred on-chain cannot be reversed.
+											</p>
+										) : null}
+										<SettlementManageActions
+											rule={rule}
+											onCancel={() =>
+												onCancelRule({
+													onChainRuleId: rule.onChainRuleId,
+													validatorAddress: getAddress(rule.validatorAddress),
+												})
+											}
+											onUpdate={() => onUpdateRule(rule)}
+											cancelPending={cancelPending}
+											updatePending={updatePending}
+										/>
+									</div>
 								) : null}
 							</div>
 							{payoutUrl ? (

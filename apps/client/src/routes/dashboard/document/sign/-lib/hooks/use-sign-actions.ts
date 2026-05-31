@@ -1,15 +1,14 @@
-import { useFilosignContext } from "@filosign/react";
 import {
 	useAckFile,
 	useRegenerateColdInvite,
 	useSignFile,
 } from "@filosign/react/files";
 import { buildRotatedInviteEnvelope } from "@filosign/react/utils";
-import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
-import { invalidateInboxQueries } from "@/src/lib/query/invalidate-inbox";
+import { safeAsync } from "@/src/lib/utils/safe";
 
 export function useSignActions(options: {
 	pieceCid: string | undefined;
@@ -25,8 +24,6 @@ export function useSignActions(options: {
 }) {
 	const { pieceCid, file, user, canSubmitPlacementSign, completedFieldIds } =
 		options;
-	const { rpcQuery } = useFilosignContext();
-	const queryClient = useQueryClient();
 
 	const acknowledgeFile = useAckFile();
 	const signFile = useSignFile();
@@ -42,49 +39,52 @@ export function useSignActions(options: {
 
 	const handleAcknowledge = useCallback(async () => {
 		if (!pieceCid) return;
-		try {
-			await acknowledgeFile.mutateAsync({ pieceCid });
-		} catch (error) {
-			console.error(error);
+		const [, err] = await safeAsync(() =>
+			acknowledgeFile.mutateAsync({ pieceCid }),
+		);
+		if (err) {
+			toast.error(err.message);
 		}
 	}, [pieceCid, acknowledgeFile]);
 
-	const handleSign = useCallback(async () => {
-		if (!pieceCid) return;
-		if (!canSubmitPlacementSign) {
-			return;
-		}
-		try {
-			await signFile.mutateAsync({ pieceCid, completedFieldIds });
-			await Promise.all([
-				queryClient.invalidateQueries({
-					queryKey: rpcQuery.files.piece.detail.key({
-						input: { pieceCid },
-					}),
+	const handleSign = useCallback(
+		async (opts?: {
+			settlementRecipientAck?: {
+				termsVersion: string;
+				acceptedAt: number;
+			};
+		}) => {
+			if (!pieceCid) return;
+			if (!canSubmitPlacementSign) {
+				return;
+			}
+			const [, err] = await safeAsync(() =>
+				signFile.mutateAsync({
+					pieceCid,
+					completedFieldIds,
+					...(opts?.settlementRecipientAck
+						? { settlementRecipientAck: opts.settlementRecipientAck }
+						: {}),
 				}),
-				invalidateInboxQueries(queryClient, rpcQuery),
-			]);
+			);
+			if (err) {
+				toast.error(err.message);
+				return;
+			}
 			setSignSuccessDialogOpen(true);
-		} catch (error) {
-			console.error(error);
-		}
-	}, [
-		pieceCid,
-		canSubmitPlacementSign,
-		completedFieldIds,
-		signFile,
-		queryClient,
-		rpcQuery.files.piece.detail,
-	]);
+		},
+		[pieceCid, canSubmitPlacementSign, completedFieldIds, signFile],
+	);
 
 	const executeRotateInvite = useCallback(async () => {
-		if (!pieceCid || !file || !user?.wallet?.address) return;
+		const walletAddress = user?.wallet?.address;
+		if (!pieceCid || !file || !walletAddress) return;
 
-		try {
+		const [, err] = await safeAsync(async () => {
 			const { phrase, inviteToken, wrappedEncryptionKey } =
 				await buildRotatedInviteEnvelope({
 					pieceCid,
-					walletAddress: user.wallet.address as `0x${string}`,
+					walletAddress: walletAddress as `0x${string}`,
 					kemCiphertext: file.kemCiphertext as `0x${string}`,
 					encryptedEncryptionKey: file.encryptedEncryptionKey as `0x${string}`,
 				});
@@ -106,8 +106,9 @@ export function useSignActions(options: {
 				magicLink,
 			});
 			setColdShareDialogOpen(true);
-		} catch (err) {
-			console.error(err);
+		});
+		if (err) {
+			toast.error(err.message);
 		}
 	}, [pieceCid, file, user, regenerateColdInvite]);
 

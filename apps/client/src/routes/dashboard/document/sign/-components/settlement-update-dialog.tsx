@@ -137,12 +137,4 @@ export function SettlementUpdateDialog({
 	);
 }
 
-export function legsToDraftAmounts(
-	legs: { recipientWallet: `0x${string}`; amountUsdc: string }[],
-) {
-	const decimals = SUPPORTED_TOKENS[0]?.decimals ?? 6;
-	return legs.map((leg) => ({
-		recipientWallet: leg.recipientWallet,
-		amount: parseUnits(leg.amountUsdc.trim(), decimals),
-	}));
-}
+export { legsToDraftAmounts } from "@/src/routes/dashboard/document/sign/-lib/utils/settlement-legs";

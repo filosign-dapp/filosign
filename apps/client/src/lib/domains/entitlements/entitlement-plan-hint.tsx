@@ -15,7 +15,7 @@ export function EntitlementPlanHint() {
 			{typeof docs.limit === "number" ? ` / ${docs.limit}` : ""}
 			{" · "}
 			Max recipients per send:{" "}
-			{typeof recipients.limit === "number" ? recipients.limit : "—"}
+			{typeof recipients.limit === "number" ? recipients.limit : "–"}
 		</p>
 	);
 }

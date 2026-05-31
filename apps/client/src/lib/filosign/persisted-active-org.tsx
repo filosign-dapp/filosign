@@ -1,5 +1,6 @@
 import { useFilosignContext } from "@filosign/react";
 import {
+	invalidateEntitlements,
 	invalidateInboxQueries,
 	invalidateOrgsQueries,
 	invalidateSharingQueries,
@@ -50,6 +51,7 @@ export function useSetPersistedActiveOrganizationId() {
 			invalidateOrgsQueries(queryClient, rpcQuery),
 			invalidateInboxQueries(queryClient, rpcQuery),
 			invalidateSharingQueries(queryClient, rpcQuery),
+			invalidateEntitlements(queryClient, rpcQuery),
 			queryClient.invalidateQueries({ queryKey: rpcQuery.files.key() }),
 			queryClient.invalidateQueries({ queryKey: rpcQuery.metrics.key() }),
 		]);

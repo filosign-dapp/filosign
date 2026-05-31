@@ -1,3 +1,4 @@
+import { useFilosignContext } from "@filosign/react";
 import {
 	useActiveOrganization,
 	useActiveOrgId,
@@ -11,14 +12,17 @@ import {
 	CaretUpDownIcon,
 	CheckIcon,
 	EnvelopeSimpleIcon,
+	FileTextIcon,
 	GearIcon,
 	HouseIcon,
 	PlusIcon,
 	SealIcon,
+	ShieldCheckIcon,
 	UserCircleIcon,
 	UserPlusIcon,
 	UsersThreeIcon,
 } from "@phosphor-icons/react";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -94,6 +98,13 @@ const groups: { label: string; items: NavItem[] }[] = [
 				icon: EnvelopeSimpleIcon,
 				match: (p) => matchPrefix(p, "/dashboard/drafts"),
 				tooltip: "Your drafts",
+			},
+			{
+				title: "Templates",
+				url: "/dashboard/templates/",
+				icon: FileTextIcon,
+				match: (p) => matchPrefix(p, "/dashboard/templates"),
+				tooltip: "Shared templates",
 			},
 		],
 	},
@@ -285,12 +296,19 @@ function InviteTeammateDialog(props: {
 }
 
 export function DashboardSidebar() {
+	const { rpcQuery } = useFilosignContext();
 	const navigate = useNavigate();
 	const startNewEnvelope = useStartNewEnvelope();
 	const pathname = useRouterState({
 		select: (s) => s.location.pathname,
 	});
 	const { state } = useSidebar();
+
+	const adminAccessQuery = useQuery({
+		...rpcQuery.platformAdmin.access.queryOptions(),
+		staleTime: 60_000,
+	});
+	const showAdminNav = adminAccessQuery.data?.isAdmin === true;
 
 	const { data: orgsData } = useOrganizations();
 	const activeOrgId = useActiveOrgId();
@@ -314,55 +332,70 @@ export function DashboardSidebar() {
 				</SidebarHeader>
 
 				<SidebarContent className="gap-0 px-1 py-3">
-					{groups.map((group) => (
-						<SidebarGroup key={group.label} className="p-0 pb-4">
-							<SidebarGroupLabel className="mb-1 px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-								{group.label}
-							</SidebarGroupLabel>
-							<SidebarGroupContent>
-								<SidebarMenu className="gap-0.5">
-									{group.items.map((item) => {
-										const Icon = item.icon;
-										const active = item.match(pathname);
-										return (
-											<SidebarMenuItem key={item.url}>
-												<SidebarMenuButton
-													isActive={active}
-													tooltip={item.tooltip}
-													className={cn(
-														"h-8 gap-2 rounded-md px-2 text-sidebar-foreground/90",
-														"hover:bg-sidebar-accent/80",
-														active &&
-															"bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-none",
-													)}
-													render={
-														item.resetComposer ? (
-															<button
-																type="button"
-																onClick={startNewEnvelope}
-															/>
-														) : (
-															<Link to={item.url} />
-														)
-													}
-												>
-													<Icon
-														className="size-4 opacity-80"
-														weight="regular"
-													/>
-													<span className="truncate">{item.title}</span>
-													<CaretRightIcon
-														className="ml-auto size-3 shrink-0 opacity-35 group-data-[collapsible=icon]:hidden"
-														weight="bold"
-													/>
-												</SidebarMenuButton>
-											</SidebarMenuItem>
-										);
-									})}
-								</SidebarMenu>
-							</SidebarGroupContent>
-						</SidebarGroup>
-					))}
+					{groups.map((group) => {
+						const items =
+							group.label === "Account" && showAdminNav
+								? [
+										...group.items,
+										{
+											title: "Admin",
+											url: "/dashboard/admin",
+											icon: ShieldCheckIcon,
+											match: (p: string) => matchPrefix(p, "/dashboard/admin"),
+											tooltip: "Platform admin",
+										},
+									]
+								: group.items;
+						return (
+							<SidebarGroup key={group.label} className="p-0 pb-4">
+								<SidebarGroupLabel className="mb-1 px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+									{group.label}
+								</SidebarGroupLabel>
+								<SidebarGroupContent>
+									<SidebarMenu className="gap-0.5">
+										{items.map((item) => {
+											const Icon = item.icon;
+											const active = item.match(pathname);
+											return (
+												<SidebarMenuItem key={item.url}>
+													<SidebarMenuButton
+														isActive={active}
+														tooltip={item.tooltip}
+														className={cn(
+															"h-8 gap-2 rounded-md px-2 text-sidebar-foreground/90",
+															"hover:bg-sidebar-accent/80",
+															active &&
+																"bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-none",
+														)}
+														render={
+															item.resetComposer ? (
+																<button
+																	type="button"
+																	onClick={startNewEnvelope}
+																/>
+															) : (
+																<Link to={item.url} />
+															)
+														}
+													>
+														<Icon
+															className="size-4 opacity-80"
+															weight="regular"
+														/>
+														<span className="truncate">{item.title}</span>
+														<CaretRightIcon
+															className="ml-auto size-3 shrink-0 opacity-35 group-data-[collapsible=icon]:hidden"
+															weight="bold"
+														/>
+													</SidebarMenuButton>
+												</SidebarMenuItem>
+											);
+										})}
+									</SidebarMenu>
+								</SidebarGroupContent>
+							</SidebarGroup>
+						);
+					})}
 				</SidebarContent>
 
 				<SidebarFooter className="border-t border-sidebar-border/70 p-2 group-data-[collapsible=icon]:py-2 flex flex-col gap-2">

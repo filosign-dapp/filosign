@@ -1,8 +1,14 @@
+import { getPlanName, PLAN_PRICING } from "@filosign/entitlements";
+import type { UpgradePlanLimitReason } from "@filosign/react/billing";
 import {
-	useCreateCheckoutSession,
-	useEntitlements,
+	useChangeOrgPlan,
+	useCreateOrgCheckoutSession,
+	useUpgradeOfferings,
 } from "@filosign/react/billing";
-import { ArrowSquareOutIcon } from "@phosphor-icons/react";
+import { ArrowSquareOutIcon, SparkleIcon } from "@phosphor-icons/react";
+import { useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import env from "@/src/env";
 import Logo from "@/src/lib/components/app/chrome/logo";
 import { Button } from "@/src/lib/components/ui/button";
@@ -14,14 +20,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/src/lib/components/ui/dialog";
-import { billingUiEnabled } from "@/src/lib/deployment";
+import { Input } from "@/src/lib/components/ui/input";
+import { Label } from "@/src/lib/components/ui/label";
+import { cn } from "@/src/lib/utils/index";
 
-export type UpgradePlanLimitReason =
-	| "documents.sent.monthly"
-	| "envelope.recipients.max"
-	| "features.settlement.basic"
-	| "features.settlement.advanced"
-	| "features.routing.advanced";
+export type { UpgradePlanLimitReason };
 
 const COPY: Record<
 	UpgradePlanLimitReason,
@@ -52,20 +55,18 @@ const COPY: Record<
 		description:
 			"Optional signers, sequential routing, and registry quorum need Teams Pro or Enterprise.",
 	},
+	"features.shared_templates": {
+		title: "Templates require Teams plan",
+		description:
+			"Create and reuse shared document templates with your team. Upgrade to Teams or Teams Pro to build templates.",
+	},
 };
 
 function pricingHref(): string {
-	const base = env.VITE_ASTRO_URL.replace(/\/$/, "");
-	return `${base}/pricing`;
+	return `${env.VITE_ASTRO_URL.replace(/\/$/, "")}/pricing`;
 }
 
-function getUpgradeTargetPlan(
-	planId: string,
-): "individual" | "teams" | "teams_pro" {
-	if (planId === "free") return "individual";
-	if (planId === "individual") return "teams";
-	return "teams_pro";
-}
+type CheckoutPlanId = "individual" | "teams" | "teams_pro";
 
 export type UpgradePlanDialogProps = {
 	open: boolean;
@@ -78,17 +79,99 @@ export function UpgradePlanDialog({
 	onOpenChange,
 	reason,
 }: UpgradePlanDialogProps) {
-	const { data } = useEntitlements();
-	const checkout = useCreateCheckoutSession();
+	const navigate = useNavigate();
+	const offeringsQuery = useUpgradeOfferings(open ? reason : null);
+	const orgCheckout = useCreateOrgCheckoutSession();
+	const changePlan = useChangeOrgPlan();
 	const copy = COPY[reason];
-	const planLabel = data?.planId ?? "free";
-	const targetPlan = getUpgradeTargetPlan(planLabel);
-	const checkoutEnabled = billingUiEnabled();
+
+	const offerings = offeringsQuery.data?.offerings ?? [];
+	const recommendedId =
+		offerings.find((o) => o.recommended && o.selectable)?.planId ??
+		offerings.find((o) => o.selectable)?.planId ??
+		null;
+
+	const [selectedPlan, setSelectedPlan] = useState<CheckoutPlanId | null>(null);
+	const [interval, setInterval] = useState<"monthly" | "yearly">("monthly");
+	const [seatCount, setSeatCount] = useState(2);
+
+	useEffect(() => {
+		if (recommendedId) setSelectedPlan(recommendedId);
+	}, [recommendedId]);
+
+	const selectedOffering = useMemo(
+		() => offerings.find((o) => o.planId === selectedPlan),
+		[offerings, selectedPlan],
+	);
+
+	const getPrice = (planId: CheckoutPlanId) =>
+		interval === "yearly"
+			? PLAN_PRICING[planId].yearly
+			: PLAN_PRICING[planId].monthly;
+
+	const handlePrimary = async () => {
+		if (!selectedOffering) return;
+
+		if (selectedOffering.cta === "workspace_billing") {
+			onOpenChange(false);
+			void navigate({ to: "/dashboard/settings/workspace" });
+			return;
+		}
+		if (
+			selectedOffering.cta === "change_plan" &&
+			selectedPlan &&
+			selectedPlan !== "individual"
+		) {
+			try {
+				await changePlan.mutateAsync(selectedPlan);
+				toast.success("Plan change submitted.");
+				onOpenChange(false);
+			} catch (err) {
+				toast.error(
+					err instanceof Error ? err.message : "Could not change plan",
+				);
+			}
+			return;
+		}
+
+		const returnUrl = `${window.location.origin}/dashboard`;
+		try {
+			if (selectedPlan) {
+				const result = await orgCheckout.mutateAsync({
+					planId: selectedPlan,
+					interval,
+					seatCount: selectedPlan === "individual" ? 1 : seatCount,
+					returnUrl,
+				});
+				window.location.href = result.checkoutUrl;
+			}
+		} catch (err) {
+			toast.error(
+				err instanceof Error ? err.message : "Could not start checkout",
+			);
+		}
+	};
+
+	const primaryLabel = (() => {
+		if (!selectedOffering?.selectable) return "View billing";
+		switch (selectedOffering.cta) {
+			case "workspace_billing":
+				return "Workspace billing";
+			case "change_plan":
+				return "Switch plan";
+			default:
+				return "Upgrade now";
+		}
+	})();
+
+	const planLabel = offeringsQuery.data?.effectivePlanId
+		? getPlanName(offeringsQuery.data.effectivePlanId)
+		: "Free";
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent
-				className="gap-0 overflow-hidden p-0 sm:max-w-md"
+				className="gap-0 overflow-hidden p-0 sm:max-w-lg"
 				showCloseButton
 			>
 				<div className="border-b border-border/60 bg-muted/20 px-6 py-5">
@@ -97,72 +180,162 @@ export function UpgradePlanDialog({
 							<Logo iconOnly animatedLogo={false} noHref />
 							<div className="min-w-0 space-y-1">
 								<p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-									{planLabel} plan
+									Current plan: {planLabel}
 								</p>
 								<DialogTitle className="text-lg leading-snug">
 									{copy.title}
 								</DialogTitle>
 							</div>
 						</div>
-						<DialogDescription className="text-sm leading-relaxed">
+						<DialogDescription className="text-sm leading-relaxed pt-1">
 							{copy.description}
 						</DialogDescription>
 					</DialogHeader>
 				</div>
 
-				{checkoutEnabled ? (
-					<div className="space-y-1 px-6 py-5">
-						<p className="text-sm font-medium text-foreground">
-							Upgrade to continue
+				<div className="px-6 py-5 space-y-4">
+					{offeringsQuery.isLoading ? (
+						<p className="text-sm text-muted-foreground text-center py-4">
+							Loading upgrade options…
 						</p>
-						<p className="text-xs leading-relaxed text-muted-foreground">
-							Checkout is handled by Dodo Payments. For billing mistakes, refund
-							requests, or renewal questions, contact support@filosign.xyz
-							before opening a bank dispute. Payment disputes may suspend paid
-							features and settlement access while preserving reasonable export
-							access where possible.
+					) : offeringsQuery.data?.noUpgradeMessage &&
+						offerings.length === 0 ? (
+						<p className="text-sm text-pretty text-muted-foreground">
+							{offeringsQuery.data.noUpgradeMessage}
 						</p>
-					</div>
-				) : null}
+					) : (
+						<>
+							<div className="flex justify-center p-1 border border-border/60 bg-muted/40 rounded-lg max-w-[240px] mx-auto">
+								{(["monthly", "yearly"] as const).map((value) => (
+									<button
+										key={value}
+										type="button"
+										onClick={() => setInterval(value)}
+										className={cn(
+											"flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition",
+											interval === value
+												? "bg-background text-foreground shadow-xs"
+												: "text-muted-foreground hover:text-foreground",
+										)}
+									>
+										{value === "yearly" ? "Yearly (-15%)" : "Monthly"}
+									</button>
+								))}
+							</div>
 
-				<DialogFooter className="border-t border-border/60 bg-muted/10 px-6 py-4 sm:justify-end">
-					<Button
-						type="button"
-						variant="outline"
-						className="border-border/60 shadow-none"
-						onClick={() => onOpenChange(false)}
-					>
-						Close
-					</Button>
-					{checkoutEnabled ? (
+							<div className="space-y-2">
+								{offerings.map((offering) => (
+									<button
+										key={offering.planId}
+										type="button"
+										disabled={!offering.selectable}
+										onClick={() =>
+											offering.selectable && setSelectedPlan(offering.planId)
+										}
+										className={cn(
+											"flex items-center justify-between p-3.5 rounded-xl border text-left transition w-full select-none",
+											!offering.selectable
+												? "opacity-50 cursor-not-allowed bg-muted/10 border-border/40"
+												: selectedPlan === offering.planId
+													? "border-primary bg-primary/5 ring-1 ring-primary"
+													: "border-border/60 hover:border-border hover:bg-muted/10",
+										)}
+									>
+										<div className="min-w-0 pr-2">
+											<div className="flex items-center gap-1.5">
+												<span className="font-semibold text-sm text-foreground">
+													{getPlanName(offering.planId)}
+												</span>
+												{offering.planId === "teams_pro" ? (
+													<SparkleIcon
+														className="size-3 text-warning"
+														weight="fill"
+														aria-hidden
+													/>
+												) : null}
+											</div>
+											<span className="text-xs text-muted-foreground block mt-0.5">
+												{offering.blockedReason ??
+													(offering.planId === "individual"
+														? "Billed on this workspace"
+														: "Billed per workspace seat")}
+											</span>
+										</div>
+										<span className="font-bold text-sm shrink-0 tabular-nums">
+											${getPrice(offering.planId)}/mo
+										</span>
+									</button>
+								))}
+							</div>
+
+							{selectedPlan && selectedPlan !== "individual" ? (
+								<div className="space-y-2 p-4 bg-muted/10 rounded-xl border border-border/40">
+									<Label
+										htmlFor="upgrade-seats"
+										className="text-sm font-medium"
+									>
+										Workspace seats
+									</Label>
+									<Input
+										id="upgrade-seats"
+										type="number"
+										min={1}
+										max={100}
+										value={seatCount}
+										onChange={(e) =>
+											setSeatCount(
+												Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+											)
+										}
+										className="w-20 h-9"
+									/>
+								</div>
+							) : null}
+						</>
+					)}
+				</div>
+
+				<DialogFooter className="border-t border-border/60 bg-muted/10 px-6 py-4 flex-col sm:flex-col gap-3">
+					<div className="flex w-full flex-wrap justify-end gap-2">
+						<a
+							href={pricingHref()}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="mr-auto self-center text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+						>
+							Compare all plans
+						</a>
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => onOpenChange(false)}
+						>
+							Close
+						</Button>
 						<Button
 							type="button"
 							variant="primary"
 							className="gap-1.5"
-							disabled={checkout.isPending}
-							onClick={async () => {
-								try {
-									const result = await checkout.mutateAsync({
-										planId: targetPlan,
-										interval: "monthly",
-										returnUrl: `${window.location.origin}/dashboard`,
-									});
-									window.location.href = result.checkoutUrl;
-									return;
-								} catch {
-									window.open(pricingHref(), "_blank", "noopener,noreferrer");
-									onOpenChange(false);
-								}
-							}}
+							disabled={
+								offeringsQuery.isLoading ||
+								(!selectedOffering?.selectable && offerings.length > 0) ||
+								orgCheckout.isPending ||
+								changePlan.isPending
+							}
+							onClick={() => void handlePrimary()}
 						>
-							{checkout.isPending ? "Preparing checkout…" : "Upgrade"}
-							<ArrowSquareOutIcon
-								className="size-4"
-								weight="bold"
-								aria-hidden
-							/>
+							{orgCheckout.isPending || changePlan.isPending
+								? "Working…"
+								: primaryLabel}
+							{selectedOffering?.cta === "checkout" ? (
+								<ArrowSquareOutIcon
+									className="size-4"
+									weight="bold"
+									aria-hidden
+								/>
+							) : null}
 						</Button>
-					) : null}
+					</div>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

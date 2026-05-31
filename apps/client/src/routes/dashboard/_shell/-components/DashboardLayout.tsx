@@ -5,7 +5,6 @@ import { DeploymentBanner } from "@/src/lib/components/app/deployment-banner";
 import { Loader } from "@/src/lib/components/ui/loader";
 import { SidebarInset, SidebarProvider } from "@/src/lib/components/ui/sidebar";
 import { TooltipProvider } from "@/src/lib/components/ui/tooltip";
-import { billingUiEnabled } from "@/src/lib/deployment";
 import DashboardNav from "./dashboard-nav";
 import { DashboardSidebar } from "./dashboard-sidebar";
 
@@ -20,7 +19,6 @@ export default function DashboardLayout({
 	const [hasTriggered, setHasTriggered] = useState(false);
 
 	useEffect(() => {
-		if (!billingUiEnabled()) return;
 		if (typeof window === "undefined" || !account || hasTriggered) return;
 
 		const params = new URLSearchParams(window.location.search);
@@ -57,7 +55,7 @@ export default function DashboardLayout({
 	return (
 		<TooltipProvider delay={200}>
 			<DeploymentBanner />
-			{isCheckingOut && billingUiEnabled() && (
+			{isCheckingOut && (
 				<div className="fixed inset-0 z-100 bg-background/80 backdrop-blur-xs flex items-center justify-center">
 					<Loader text="Preparing your secure checkout..." />
 				</div>

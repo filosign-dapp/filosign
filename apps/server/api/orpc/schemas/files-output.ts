@@ -34,6 +34,14 @@ export const rpcFilesListReceivedOutputSchema = z.object({
 	files: z.array(inboxEntrySchema),
 });
 
+export const rpcColdInviteEntitledPacketSchema = z.object({
+	packetId: z.string(),
+	label: z.string().nullable(),
+	packetCid: z.string(),
+	releaseMode: z.enum(["review", "conditional"]),
+	wrappedPacketDek: zHexString(),
+});
+
 export const rpcColdInviteByTokenOutputSchema = z.object({
 	pieceCid: z.string(),
 	recipientEmails: z.array(z.string()),
@@ -44,6 +52,7 @@ export const rpcColdInviteByTokenOutputSchema = z.object({
 	placementManifest: z.unknown(),
 	expiresAt: z.string().nullable(),
 	downloadUrl: z.string(),
+	entitledPackets: z.array(rpcColdInviteEntitledPacketSchema),
 });
 
 export const rpcColdInviteClaimOutputSchema = z.object({

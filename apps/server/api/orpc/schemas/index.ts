@@ -1,4 +1,9 @@
 import {
+	rpcAttachmentsLinkOnChainRuleOutputSchema,
+	rpcAttachmentsPacketAccessOutputSchema,
+	rpcAttachmentsUploadStartOutputSchema,
+} from "./attachments-output";
+import {
 	rpcBillingCheckoutSessionOutputSchema,
 	rpcBillingEntitlementsOutputSchema,
 	rpcBillingMarketingPreviewOutputSchema,
@@ -171,6 +176,11 @@ export const rpcOut = {
 		template: rpcOrgsTemplateOutputSchema,
 		templatesList: rpcOrgsTemplatesListOutputSchema,
 		templatesClone: rpcOrgsTemplatesCloneOutputSchema,
+	},
+	attachments: {
+		uploadStart: rpcAttachmentsUploadStartOutputSchema,
+		packetAccess: rpcAttachmentsPacketAccessOutputSchema,
+		linkOnChainRule: rpcAttachmentsLinkOnChainRuleOutputSchema,
 	},
 	settlements: {
 		listByFile: rpcSettlementsListByFileOutputSchema,

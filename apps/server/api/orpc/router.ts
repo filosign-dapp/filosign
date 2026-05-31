@@ -2,12 +2,17 @@ import {
 	DEPLOYMENTS,
 	SIGNUP_POLICIES,
 	zSettlementRuleCancelInput,
+	zSettlementRuleKey,
 	zSettlementRuleUpdateInput,
 } from "@filosign/shared";
 import { zHexString } from "@filosign/shared/zod";
 import type { RouterClient } from "@orpc/server";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
+import {
+	attachmentsLinkOnChainRuleHandler,
+	attachmentsPacketAccessHandler,
+} from "@/api/handlers/attachments";
 import {
 	billingChangeOrgPlan,
 	billingCreateCheckoutSession,
@@ -49,6 +54,13 @@ import {
 	platformAdminUsersSetPlan,
 	zGatePreviewOutput,
 } from "@/api/handlers/platform-access-handlers";
+import {
+	settlementAccessGetForOrg,
+	settlementAccessSubmitRequest,
+	settlementAdminApproveAccess,
+	settlementAdminListAccessRequests,
+	settlementAdminRejectAccess,
+} from "@/api/handlers/settlement-access-handlers";
 import {
 	settlementsCancelRule,
 	settlementsConfirmSettlement,
@@ -218,6 +230,39 @@ export const appRouter = {
 					),
 				),
 		},
+		settlementFeatureAccess: {
+			list: authenticatedProcedure
+				.output(
+					z.object({
+						requests: z.array(z.record(z.string(), z.unknown())),
+					}),
+				)
+				.handler(({ context }) =>
+					settlementAdminListAccessRequests(context.userWallet),
+				),
+			approve: authenticatedProcedure
+				.input(
+					z.object({
+						organizationId: z.string().uuid(),
+						reviewNote: z.string().max(2000).optional(),
+					}),
+				)
+				.output(z.record(z.string(), z.unknown()))
+				.handler(({ context, input }) =>
+					settlementAdminApproveAccess(context.userWallet, input),
+				),
+			reject: authenticatedProcedure
+				.input(
+					z.object({
+						organizationId: z.string().uuid(),
+						reviewNote: z.string().max(2000).optional(),
+					}),
+				)
+				.output(z.record(z.string(), z.unknown()))
+				.handler(({ context, input }) =>
+					settlementAdminRejectAccess(context.userWallet, input),
+				),
+		},
 	},
 	drafts: {
 		create: orgProcedure
@@ -369,6 +414,31 @@ export const appRouter = {
 				),
 		},
 	},
+	attachments: {
+		uploadStart: authenticatedProcedure
+			.input(z.object({ packetCid: z.string().min(8) }))
+			.output(out.attachments.uploadStart)
+			.handler(({ context, input }) =>
+				fileHandlers.filesAttachmentUploadStart(context.userWallet, input),
+			),
+		packetAccess: authenticatedProcedure
+			.input(
+				z.object({
+					pieceCid: z.string().min(8),
+					packetId: z.string().min(1),
+				}),
+			)
+			.output(out.attachments.packetAccess)
+			.handler(({ context, input }) =>
+				attachmentsPacketAccessHandler(context.userWallet, input),
+			),
+		linkOnChainRule: authenticatedProcedure
+			.input(z.unknown())
+			.output(out.attachments.linkOnChainRule)
+			.handler(({ context, input }) =>
+				attachmentsLinkOnChainRuleHandler(context.userWallet, input),
+			),
+	},
 	settlements: {
 		listByFile: authenticatedProcedure
 			.input(z.object({ pieceCid: z.string().min(1) }))
@@ -377,17 +447,17 @@ export const appRouter = {
 				settlementsListByFile(context.userWallet, input.pieceCid),
 			),
 		trySettle: authenticatedProcedure
-			.input(z.object({ onChainRuleId: z.string().regex(/^\d+$/) }))
+			.input(zSettlementRuleKey)
 			.output(out.settlements.trySettle)
 			.handler(({ context, input }) =>
 				settlementsTrySettle(context.userWallet, {
 					onChainRuleId: input.onChainRuleId,
+					validatorAddress: input.validatorAddress,
 				}),
 			),
 		confirmSettlement: authenticatedProcedure
 			.input(
-				z.object({
-					onChainRuleId: z.string().regex(/^\d+$/),
+				zSettlementRuleKey.extend({
 					payoutTxHash: zHexString,
 				}),
 			)
@@ -395,6 +465,7 @@ export const appRouter = {
 			.handler(({ context, input }) =>
 				settlementsConfirmSettlement(context.userWallet, {
 					onChainRuleId: input.onChainRuleId,
+					validatorAddress: input.validatorAddress,
 					payoutTxHash: input.payoutTxHash as `0x${string}`,
 				}),
 			),
@@ -651,13 +722,21 @@ export const appRouter = {
 					}),
 				)
 				.output(out.files.piece.sign)
-				.handler(({ context, input }) =>
-					fileHandlers.pieceSign({
+				.handler(({ context, input }) => {
+					const requestIp =
+						context.hono.req.header("x-forwarded-for") ||
+						context.hono.req.header("x-real-ip") ||
+						null;
+					const requestUserAgent =
+						context.hono.req.header("user-agent") || null;
+					return fileHandlers.pieceSign({
 						userWallet: context.userWallet,
 						pieceCid: input.pieceCid,
 						body: input.body,
-					}),
-				),
+						requestIp,
+						requestUserAgent,
+					});
+				}),
 		},
 	},
 	billing: {
@@ -889,6 +968,32 @@ export const appRouter = {
 					input,
 				);
 			}),
+		settlementFeatureAccess: {
+			get: authenticatedProcedure
+				.input(z.object({ organizationId: z.string().uuid() }))
+				.output(z.record(z.string(), z.unknown()))
+				.handler(({ context, input }) =>
+					settlementAccessGetForOrg(context.userWallet, input.organizationId),
+				),
+			submitRequest: authenticatedProcedure
+				.input(
+					z.object({
+						organizationId: z.string().uuid(),
+						acceptTerms: z.literal(true),
+						sanctionsSelfCert: z.literal(true),
+						useCase: z.string().min(10).max(2000),
+						termsVersion: z.string().min(1),
+					}),
+				)
+				.output(z.record(z.string(), z.unknown()))
+				.handler(({ context, input }) =>
+					settlementAccessSubmitRequest(
+						context.userWallet,
+						input.organizationId,
+						input,
+					),
+				),
+		},
 		members: {
 			setRole: authenticatedProcedure
 				.input(z.record(z.string(), unk))

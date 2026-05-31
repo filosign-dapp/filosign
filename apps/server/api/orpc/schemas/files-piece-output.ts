@@ -19,6 +19,7 @@ const participantAccessSchema = z.object({
 export const rpcPieceDetailOutputSchema = z.object({
 	pieceCid: z.string(),
 	sender: z.string(),
+	registryAddress: zHexString(),
 	status: z.literal("s3"),
 	onchainTxHash: zHexString(),
 	createdAt: z.union([z.string(), z.date()]),

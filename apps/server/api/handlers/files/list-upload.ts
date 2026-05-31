@@ -28,6 +28,23 @@ export async function filesUploadStart(
 	return { uploadUrl, key };
 }
 
+export async function filesAttachmentUploadStart(
+	_sender: Address,
+	input: { packetCid: string },
+) {
+	const packetCid = input.packetCid.trim();
+	if (!packetCid) {
+		throw new ORPCError("BAD_REQUEST", { message: "Invalid packetCid" });
+	}
+	const key = `uploads/attachments/${packetCid}`;
+	const uploadUrl = bucket.presign(key, {
+		method: "PUT",
+		expiresIn: 60,
+		type: "application/octet-stream",
+	});
+	return { uploadUrl, key };
+}
+
 export async function filesListSent(userWallet: Address) {
 	const sentFiles = await db
 		.select({

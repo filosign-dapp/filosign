@@ -3,6 +3,7 @@ import { zPlacementManifest } from "@filosign/shared";
 import { eq } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
+import { loadSettlementRecipientAcksForPiece } from "@/lib/domains/settlement-access/utils/recipient-ack";
 import type db from "@/lib/platform/db";
 import {
 	fileAcknowledgements,
@@ -85,6 +86,11 @@ export type ComplianceLoadContext = {
 		newCommitment: Hex;
 		amendTxHash: Hex;
 		createdAt: Date;
+	}[];
+	settlementRecipientAckRows: {
+		signerWallet: Address;
+		termsVersion: string;
+		acknowledgedAt: Date;
 	}[];
 };
 
@@ -334,6 +340,14 @@ export async function loadComplianceContext(args: {
 		createdAt: r.createdAt,
 	}));
 
+	const settlementRecipientAckRows = (
+		await loadSettlementRecipientAcksForPiece(pieceCid)
+	).map((r) => ({
+		signerWallet: getAddress(r.signerWallet),
+		termsVersion: r.termsVersion,
+		acknowledgedAt: r.acknowledgedAt,
+	}));
+
 	return {
 		pieceCid,
 		participantRows,
@@ -364,5 +378,6 @@ export async function loadComplianceContext(args: {
 		senderNorm,
 		settlementRows,
 		amendmentRows,
+		settlementRecipientAckRows,
 	};
 }

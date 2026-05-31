@@ -42,3 +42,44 @@ export function fsPaymentValidatorAt(address?: string | null) {
 		client: keyedClient,
 	});
 }
+
+type FileRegistryContract = ReturnType<typeof fsFileRegistryAt>;
+
+type FileRegistryRelayWrite = {
+	registerFileSignature: (args: readonly unknown[]) => Promise<`0x${string}`>;
+	amendSigner: (args: readonly unknown[]) => Promise<`0x${string}`>;
+};
+
+function fileRegistryRelayWrite(
+	registry: FileRegistryContract,
+): FileRegistryRelayWrite {
+	return registry.write as unknown as FileRegistryRelayWrite;
+}
+
+/** Relay server-signed registry writes when viem contract typings omit methods. */
+export async function relayRegisterFileSignature(
+	registry: FileRegistryContract,
+	args: readonly unknown[],
+): Promise<`0x${string}`> {
+	return fileRegistryRelayWrite(registry).registerFileSignature(args);
+}
+
+export async function relayAmendSigner(
+	registry: FileRegistryContract,
+	args: readonly unknown[],
+): Promise<`0x${string}`> {
+	return fileRegistryRelayWrite(registry).amendSigner(args);
+}
+
+export function fsAttachmentReleaseAt(address?: string | null) {
+	const base = fsContracts.FSAttachmentRelease;
+	if (!base) return null;
+	if (!address) return base;
+	const resolved = getAddress(address);
+	if (resolved.toLowerCase() === base.address.toLowerCase()) return base;
+	return getContract({
+		address: resolved,
+		abi: base.abi,
+		client: keyedClient,
+	});
+}

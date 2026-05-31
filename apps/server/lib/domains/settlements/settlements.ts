@@ -4,13 +4,14 @@ import {
 } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { and, eq, ne } from "drizzle-orm";
-import type { Hex } from "viem";
-import { isHex } from "viem";
+import type { Address, Hex } from "viem";
+import { getAddress, isHex } from "viem";
 import db from "@/lib/platform/db";
 import { fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { tryExecuteSettlementPayout } from "./utils/execute-payout";
+import { selectSettlementRule } from "./utils/rule-lookup";
 import { syncSettlementPayoutFromChain } from "./utils/sync-from-chain";
 
 const { fileSettlementRules, files, fileParticipants } = db.schema;
@@ -27,12 +28,12 @@ export {
 async function assertCanSettleSettlementRule(
 	userWallet: `0x${string}`,
 	onChainRuleId: bigint,
+	validatorAddress: Address,
 ) {
-	const [rule] = await db
-		.select()
-		.from(fileSettlementRules)
-		.where(eq(fileSettlementRules.onChainRuleId, onChainRuleId))
-		.limit(1);
+	const rule = await selectSettlementRule(
+		onChainRuleId,
+		getAddress(validatorAddress),
+	);
 
 	if (!rule) {
 		throw new ORPCError("NOT_FOUND", { message: "Settlement rule not found" });
@@ -142,10 +143,15 @@ export async function settlementsListByFile(
 
 export async function settlementsTrySettle(
 	userWallet: `0x${string}`,
-	input: { onChainRuleId: string },
+	input: { onChainRuleId: string; validatorAddress: Address },
 ) {
 	const ruleId = BigInt(input.onChainRuleId);
-	const rule = await assertCanSettleSettlementRule(userWallet, ruleId);
+	const validatorAddress = getAddress(input.validatorAddress);
+	const rule = await assertCanSettleSettlementRule(
+		userWallet,
+		ruleId,
+		validatorAddress,
+	);
 
 	if (rule.status === "executed") {
 		return {
@@ -161,7 +167,10 @@ export async function settlementsTrySettle(
 		});
 	}
 
-	const result = await tryExecuteSettlementPayout(ruleId);
+	const result = await tryExecuteSettlementPayout({
+		onChainRuleId: ruleId,
+		validatorAddress,
+	});
 
 	const [updated] = await db
 		.select({
@@ -170,7 +179,12 @@ export async function settlementsTrySettle(
 			lastError: fileSettlementRules.lastError,
 		})
 		.from(fileSettlementRules)
-		.where(eq(fileSettlementRules.onChainRuleId, ruleId))
+		.where(
+			and(
+				eq(fileSettlementRules.validatorAddress, validatorAddress),
+				eq(fileSettlementRules.onChainRuleId, ruleId),
+			),
+		)
 		.limit(1);
 
 	if (result.executed) {
@@ -179,6 +193,15 @@ export async function settlementsTrySettle(
 			onChainRuleId: input.onChainRuleId,
 			payoutTxHash: result.txHash ?? updated?.payoutTxHash ?? null,
 			status: "executed" as const,
+		};
+	}
+
+	if (result.partial || updated?.status === "partial") {
+		return {
+			ok: true as const,
+			onChainRuleId: input.onChainRuleId,
+			payoutTxHash: result.txHash ?? updated?.payoutTxHash ?? null,
+			status: "partial" as const,
 		};
 	}
 
@@ -192,14 +215,23 @@ export async function settlementsTrySettle(
 
 export async function settlementsConfirmSettlement(
 	userWallet: `0x${string}`,
-	input: { onChainRuleId: string; payoutTxHash: Hex },
+	input: {
+		onChainRuleId: string;
+		validatorAddress: Address;
+		payoutTxHash: Hex;
+	},
 ) {
 	const ruleId = BigInt(input.onChainRuleId);
+	const validatorAddress = getAddress(input.validatorAddress);
 	if (!isHex(input.payoutTxHash)) {
 		throw new ORPCError("BAD_REQUEST", { message: "Invalid transaction hash" });
 	}
 
-	const rule = await assertCanSettleSettlementRule(userWallet, ruleId);
+	const rule = await assertCanSettleSettlementRule(
+		userWallet,
+		ruleId,
+		validatorAddress,
+	);
 
 	if (rule.status === "executed") {
 		return {
@@ -211,12 +243,13 @@ export async function settlementsConfirmSettlement(
 
 	const syncRes = await syncSettlementPayoutFromChain(
 		ruleId,
+		validatorAddress,
 		input.payoutTxHash,
-		rule.validatorAddress,
 	);
 	if (!syncRes.synced) {
 		throw new ORPCError("BAD_REQUEST", {
-			message: "Payout was not executed on-chain",
+			message:
+				"No payout legs were executed on-chain yet. Confirm after a successful executePayoutLeg transaction.",
 		});
 	}
 
@@ -248,7 +281,6 @@ export async function runSyncSettlementRulesJob(): Promise<{
 	for (const row of rows) {
 		const result = await syncSettlementPayoutFromChain(
 			row.onChainRuleId,
-			undefined,
 			row.validatorAddress,
 		);
 		if (result.synced) {

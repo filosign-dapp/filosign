@@ -159,8 +159,9 @@ export async function settlementsRegisterForFile(
 		getAddress(sender),
 		organizationId ?? file.organizationId ?? null,
 	);
+	const orgId = organizationId ?? file.organizationId ?? null;
 	for (const rule of rules) {
-		assertSettlementRuleEntitlements(entitlementCtx, rule);
+		await assertSettlementRuleEntitlements(entitlementCtx, rule, orgId);
 	}
 	assertSettlementRulesUsdcToken(rules);
 
@@ -182,6 +183,7 @@ export async function settlementsRegisterForFile(
 		rules,
 		validatorAddress,
 		file.registryAddress,
+		orgId,
 	);
 
 	await insertSettlementRulesForFile(

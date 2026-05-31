@@ -40,6 +40,7 @@ export async function assembleComplianceBundle(
 		senderNorm,
 		settlementRows,
 		amendmentRows,
+		settlementRecipientAckRows,
 	} = ctx;
 
 	const signerParticipants = participantRows.filter((p) => p.role === "signer");
@@ -315,6 +316,13 @@ export async function assembleComplianceBundle(
 			isSigner: row.isSigner,
 		}));
 
+	const payoutRecipientAcknowledgements: ComplianceBundle["offChainEvidence"]["payoutRecipientAcknowledgements"] =
+		settlementRecipientAckRows.map((row) => ({
+			signerWallet: getAddress(row.signerWallet),
+			termsVersion: row.termsVersion,
+			acknowledgedAtIso: row.acknowledgedAt.toISOString(),
+		}));
+
 	const settlements: ComplianceBundle["settlements"] = settlementRows.map(
 		(pay) => ({
 			onChainRuleId: pay.onChainRuleId.toString(),
@@ -351,6 +359,11 @@ export async function assembleComplianceBundle(
 		transactions,
 		signers,
 		settlements,
-		offChainEvidence: { acknowledgements, documentViews, coldInviteClaims },
+		offChainEvidence: {
+			acknowledgements,
+			documentViews,
+			coldInviteClaims,
+			payoutRecipientAcknowledgements,
+		},
 	};
 }

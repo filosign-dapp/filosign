@@ -14,6 +14,7 @@ import db from "@/lib/platform/db";
 import { evmClient, fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { assertSettlementRecipientsAllowlisted } from "./settlements-register";
+import { selectSettlementRule } from "./utils/rule-lookup";
 import {
 	markSettlementRuleCancelled,
 	markSettlementRuleUpdated,
@@ -24,14 +25,17 @@ import {
 } from "./utils/settlement-entitlements";
 import { assertSettlementRuleUpdateOnChain } from "./utils/verify-rules-on-chain";
 
-const { fileSettlementRules, files, fileParticipants } = db.schema;
+const { files, fileParticipants } = db.schema;
 
-async function loadPayerRule(sender: Address, onChainRuleId: bigint) {
-	const [rule] = await db
-		.select()
-		.from(fileSettlementRules)
-		.where(eq(fileSettlementRules.onChainRuleId, onChainRuleId))
-		.limit(1);
+async function loadPayerRule(
+	sender: Address,
+	onChainRuleId: bigint,
+	validatorAddress: Address,
+) {
+	const rule = await selectSettlementRule(
+		onChainRuleId,
+		getAddress(validatorAddress),
+	);
 	if (!rule) {
 		throw new ORPCError("NOT_FOUND", { message: "Settlement rule not found" });
 	}
@@ -55,7 +59,7 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 	}
 	const input = parsed.data;
 	const ruleId = BigInt(input.onChainRuleId);
-	const rule = await loadPayerRule(sender, ruleId);
+	const rule = await loadPayerRule(sender, ruleId, input.validatorAddress);
 
 	if (input.legs.length > MAX_SETTLEMENT_LEGS_PRODUCT) {
 		throw new ORPCError("FORBIDDEN", {
@@ -72,7 +76,10 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 		getAddress(sender),
 		file?.organizationId ?? null,
 	);
-	assertSettlementUpdateEntitlements(entitlementCtx);
+	await assertSettlementUpdateEntitlements(
+		entitlementCtx,
+		file?.organizationId ?? null,
+	);
 
 	const registrationRule: SettlementRuleRegistrationInput = {
 		onChainRuleId: input.onChainRuleId,
@@ -85,7 +92,11 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 		registerRuleTxHash: rule.registerRuleTxHash as `0x${string}`,
 		approveTxHash: rule.approveTxHash as `0x${string}`,
 	};
-	assertSettlementRuleEntitlements(entitlementCtx, registrationRule);
+	await assertSettlementRuleEntitlements(
+		entitlementCtx,
+		registrationRule,
+		file?.organizationId ?? null,
+	);
 
 	const participantRows = await db
 		.select({ wallet: fileParticipants.wallet })
@@ -103,6 +114,7 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 		registrationRule,
 		input.updateRuleTxHash,
 		getAddress(rule.validatorAddress),
+		file?.organizationId ?? null,
 	);
 
 	if (settlementRuleTotalAmount(input.legs) <= 0n) {
@@ -111,6 +123,7 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 
 	await markSettlementRuleUpdated({
 		onChainRuleId: ruleId,
+		validatorAddress: getAddress(rule.validatorAddress),
 		updateRuleTxHash: input.updateRuleTxHash,
 		legs: input.legs,
 		releaseType: input.releaseType,
@@ -128,10 +141,10 @@ export async function settlementsCancelRule(sender: Address, rawBody: unknown) {
 	}
 	const input = parsed.data;
 	const ruleId = BigInt(input.onChainRuleId);
-	const rule = await loadPayerRule(sender, ruleId);
+	const rule = await loadPayerRule(sender, ruleId, input.validatorAddress);
 
 	const receiptRes = await tryCatch(
-		evmClient.getTransactionReceipt({ hash: input.cancelRuleTxHash }),
+		evmClient.waitForTransactionReceipt({ hash: input.cancelRuleTxHash }),
 	);
 	if (receiptRes.error || receiptRes.data?.status !== "success") {
 		throw new ORPCError("BAD_REQUEST", {
@@ -147,6 +160,10 @@ export async function settlementsCancelRule(sender: Address, rawBody: unknown) {
 		});
 	}
 
-	await markSettlementRuleCancelled(ruleId, input.cancelRuleTxHash);
+	await markSettlementRuleCancelled({
+		onChainRuleId: ruleId,
+		validatorAddress: getAddress(rule.validatorAddress),
+		cancelRuleTxHash: input.cancelRuleTxHash,
+	});
 	return { ok: true as const, onChainRuleId: input.onChainRuleId };
 }

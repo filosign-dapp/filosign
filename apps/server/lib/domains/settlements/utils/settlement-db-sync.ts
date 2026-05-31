@@ -1,26 +1,35 @@
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
-import { eq } from "drizzle-orm";
+import { ORPCError } from "@orpc/server";
+import type { Address } from "viem";
 import db from "@/lib/platform/db";
+import { settlementRuleWhere } from "./rule-lookup";
 
 const { fileSettlementRules } = db.schema;
 
-export async function markSettlementRuleCancelled(
-	onChainRuleId: bigint,
-	cancelRuleTxHash: `0x${string}`,
-) {
+export async function markSettlementRuleCancelled(args: {
+	onChainRuleId: bigint;
+	validatorAddress: Address;
+	cancelRuleTxHash: `0x${string}`;
+}) {
 	await db
 		.update(fileSettlementRules)
 		.set({
 			status: "cancelled",
-			cancelRuleTxHash,
+			cancelRuleTxHash: args.cancelRuleTxHash,
 			lastError: null,
 			updatedAt: new Date(),
 		})
-		.where(eq(fileSettlementRules.onChainRuleId, onChainRuleId));
+		.where(
+			settlementRuleWhere({
+				validatorAddress: args.validatorAddress,
+				onChainRuleId: args.onChainRuleId,
+			}),
+		);
 }
 
 export async function markSettlementRuleUpdated(args: {
 	onChainRuleId: bigint;
+	validatorAddress: Address;
 	updateRuleTxHash: `0x${string}`;
 	legs: SettlementRuleRegistrationInput["legs"];
 	releaseType: SettlementRuleRegistrationInput["releaseType"];
@@ -28,7 +37,9 @@ export async function markSettlementRuleUpdated(args: {
 	expiresAt?: string;
 }) {
 	if (!args.legs[0]) {
-		throw new Error("Settlement rule requires at least one payout leg");
+		throw new ORPCError("BAD_REQUEST", {
+			message: "Settlement rule requires at least one payout leg",
+		});
 	}
 	await db
 		.update(fileSettlementRules)
@@ -41,5 +52,10 @@ export async function markSettlementRuleUpdated(args: {
 			lastError: null,
 			updatedAt: new Date(),
 		})
-		.where(eq(fileSettlementRules.onChainRuleId, args.onChainRuleId));
+		.where(
+			settlementRuleWhere({
+				validatorAddress: args.validatorAddress,
+				onChainRuleId: args.onChainRuleId,
+			}),
+		);
 }

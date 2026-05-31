@@ -4,11 +4,27 @@ import { isAdvancedSettlementReleaseType } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { MAX_SETTLEMENT_LEGS_PRODUCT } from "@/constants";
 import { assertEntitlement } from "@/lib/domains/entitlements";
+import { assertOrganizationSettlementFeatureApproved } from "@/lib/domains/settlement-access";
 
-export function assertSettlementRuleEntitlements(
+function requireSettlementOrganizationId(
+	organizationId: string | null,
+): string {
+	if (!organizationId) {
+		throw new ORPCError("FORBIDDEN", {
+			message:
+				"Payout attachment requires a workspace envelope. Send from a team workspace, not a personal send.",
+		});
+	}
+	return organizationId;
+}
+
+export async function assertSettlementRuleEntitlements(
 	ctx: EntitlementContext,
 	rule: SettlementRuleRegistrationInput,
+	organizationId: string | null,
 ) {
+	const orgId = requireSettlementOrganizationId(organizationId);
+	await assertOrganizationSettlementFeatureApproved(orgId);
 	assertEntitlement(ctx, "features.settlement.basic");
 
 	if (rule.legs.length > 1) {
@@ -24,6 +40,11 @@ export function assertSettlementRuleEntitlements(
 	}
 }
 
-export function assertSettlementUpdateEntitlements(ctx: EntitlementContext) {
+export async function assertSettlementUpdateEntitlements(
+	ctx: EntitlementContext,
+	organizationId: string | null,
+) {
+	const orgId = requireSettlementOrganizationId(organizationId);
+	await assertOrganizationSettlementFeatureApproved(orgId);
 	assertEntitlement(ctx, "features.settlement.advanced");
 }

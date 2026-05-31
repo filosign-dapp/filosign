@@ -3,7 +3,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-	/* Surfaces — light, airy greys (aligned with apps/client) */
+	/* Surfaces - light, airy greys (aligned with apps/client) */
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.141 0.005 285.823);
 

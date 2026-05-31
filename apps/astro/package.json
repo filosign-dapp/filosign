@@ -1,6 +1,6 @@
 {
 	"name": "@filosign/astro",
-	"description": "Filosign marketing site — SEO, blog, and product pages.",
+	"description": "Filosign marketing site - SEO, blog, and product pages.",
 	"homepage": "https://filosign.xyz",
 	"type": "module",
 	"version": "0.0.1",
@@ -18,6 +18,7 @@
 	"dependencies": {
 		"@filosign/entitlements": "workspace:*",
 		"@filosign/motion": "workspace:*",
+		"@filosign/react": "workspace:*",
 		"@astrojs/mdx": "5.0.4",
 		"@astrojs/react": "^5.0.4",
 		"@astrojs/sitemap": "3.7.2",
@@ -39,6 +40,7 @@
 		"remark-gfm": "4.0.0",
 		"tailwind-merge": "catalog:",
 		"tailwindcss": "catalog:",
+		"viem": "catalog:",
 		"zod": "catalog:"
 	},
 	"devDependencies": {

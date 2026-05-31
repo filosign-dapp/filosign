@@ -1,7 +1,7 @@
 {
 	"name": "Filosign",
 	"short_name": "Filosign",
-	"description": "Trustless standard for permanent agreements — encrypted document signing on the blockchain.",
+	"description": "Trustless standard for permanent agreements - encrypted document signing on the blockchain.",
 	"start_url": "/",
 	"display": "standalone",
 	"background_color": "#ffffff",

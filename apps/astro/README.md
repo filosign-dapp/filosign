@@ -23,6 +23,7 @@ Copy `.env.example` to `.env` and set:
 # Local dev (server :3000, client :3001, astro :3002)
 PUBLIC_ASTRO_URL=http://localhost:3002
 PUBLIC_CLIENT_URL=http://localhost:3001
+PUBLIC_SANDBOX_CLIENT_URL=http://localhost:3001
 PUBLIC_SERVER_URL=http://localhost:3000
 ```
 
@@ -31,8 +32,9 @@ PUBLIC_SERVER_URL=http://localhost:3000
 | Variable | Default (local) | Description |
 |----------|-----------------|-------------|
 | `PUBLIC_ASTRO_URL` | `http://localhost:3002` | Marketing origin — canonical URLs, OG images, sitemap, email static assets |
-| `PUBLIC_CLIENT_URL` | `http://localhost:3001` | React app URL for nav CTAs and links off the marketing site |
-| `PUBLIC_SERVER_URL` | `http://localhost:3000` | API base URL (health checks, API calls from islands if you add them) |
+| `PUBLIC_CLIENT_URL` | `http://localhost:3001` | Legacy / misc links (optional) |
+| `PUBLIC_SANDBOX_CLIENT_URL` | `https://sandbox.filosign.xyz` | “Try Filosign” CTA — open sandbox client (testnet demo) |
+| `PUBLIC_SERVER_URL` | `http://localhost:3000` | Filosign API base for oRPC (`@filosign/react/orpc` → `/api/rpc`) |
 
 Canonical URLs default from `PUBLIC_ASTRO_URL` + current path in `BaseLayout` unless you pass `canonicalUrl`.
 
@@ -59,7 +61,12 @@ All marketing pages migrated from the React app:
 
 ## CTAs / App Integration
 
-All "Connect", "Get Started", "Try Filosign" buttons redirect to `PUBLIC_CLIENT_URL`. Update your `.env` to point to your React app deployment.
+Shared CTAs live in `src/lib/marketing-cta.ts` and `MarketingCtaButtons`:
+
+- **Get started** → `/pricing` (choose a plan or checkout)
+- **Try Filosign** → `PUBLIC_SANDBOX_CLIENT_URL` (opens sandbox client in a new tab)
+
+Set `PUBLIC_SANDBOX_CLIENT_URL` in `.env` for each deployment (e.g. `https://sandbox.filosign.xyz` in production, `http://localhost:3001` locally).
 
 ## Marketing mocks
 
@@ -78,6 +85,25 @@ import { SendStepMock, ProofOutsideMock } from "../marketing-mocks";
 ```
 
 `MockPanel` variants (`tokens.ts`): `compact` (168px timeline), `default` (192px bento tiles), `auto` (wide cards). Use design tokens only — no hardcoded hex.
+
+## API (oRPC)
+
+Islands call the Filosign server through the typed oRPC client (same wire protocol as `apps/client`):
+
+```tsx
+import { FilosignRpcProvider, useFilosignRpc } from "../lib/filosign-rpc";
+
+// Wrap hydrated islands that need the API
+<FilosignRpcProvider>
+  <MyIsland />
+</FilosignRpcProvider>
+
+// Inside the island
+const rpc = useFilosignRpc();
+await rpc.billing.requestCheckoutLink({ email, planId, interval });
+```
+
+Client factory: `@filosign/react/orpc` (`createPublicFilosignOrpcClient`). Server CORS must include `PUBLIC_ASTRO_URL` (see `apps/server/config.ts`).
 
 ## Tailwind
 

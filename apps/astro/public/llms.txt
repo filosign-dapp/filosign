@@ -1,4 +1,4 @@
-# Filosign — marketing site summary for AI assistants
+# Filosign - marketing site summary for AI assistants
 
 Filosign is a web product for trust-minimized document signing: end-to-end encrypted files, wallet-based identity, on-chain signature proofs, and decentralized storage (Filecoin / FVM). Public beta; details on-site.
 

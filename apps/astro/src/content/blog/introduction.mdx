@@ -15,7 +15,7 @@ featured: true
 tags: ["Guides", "Product"]
 ---
 
-Six months ago, we started building Filosign—a document signing product where you control your files and your proof, not a vendor.
+Six months ago, we started building Filosign, a document signing product where you control your files and your proof, not a vendor.
 
 _"But e-sign is a commodity. Why do we need another app?"_
 
@@ -24,17 +24,17 @@ Because most e-signature tools tie your agreements to one company. They hold you
 Two problems kept coming up:
 
 - Only senders and recipients should be able to read the files.
-- Proof of who signed what should survive Filosign's database—and be checkable without trusting us.
+- Proof of who signed what should survive Filosign's database and be checkable without trusting us.
 
 Filosign addresses both with client-side encryption and on-chain attestations on **Base**:
 
 - **End-to-end encryption:** Documents are encrypted in your browser. Only wallets you share with can decrypt them.
-- **Verifiable signing records:** When someone signs, an attestation is relayed to **`FSFileRegistry`** on Base. Anyone with the compliance bundle and a public RPC node can verify it—no Filosign login required.
+- **Verifiable signing records:** When someone signs, an attestation is relayed to **`FSFileRegistry`** on Base. Anyone with the compliance bundle and a public RPC node can verify it. No Filosign login required.
 
 ### What you can do today
 
 - **Wallet-native identity:** Sign with your own wallet, or sign up with Google or X and we provision an embedded wallet for you.
-- **Controlled permissions:** Senders add you as a contact and wait for your approval before sending—no signing spam.
+- **Controlled permissions:** Senders add you as a contact and wait for your approval before sending. No signing spam.
 - **End-to-end encryption:** We only ever store ciphertext. Plaintext never touches our servers.
 - **Durable encrypted storage:** Files live on private object storage and are archived to **Filecoin** via FilCDN so encrypted payloads stay available even if our hot storage fails.
 - **On-chain proof:** Registration and signature events are written to **`FSFileRegistry`**. Tamper-evident, publicly auditable, independent of our database.
@@ -47,17 +47,17 @@ _Here is what a Filosign proof packet looks like:_
 
 _It records who sent the document, who signed, when they signed, and the on-chain transaction hash._
 
-On legality: Filosign is designed around cryptographic identity, intent, and timestamps—the core building blocks frameworks like the ESIGN Act and eIDAS expect. We provide the evidence; you provide the intent.
+On legality: Filosign is designed around cryptographic identity, intent, and timestamps, the core building blocks frameworks like the ESIGN Act and eIDAS expect. We provide the evidence; you provide the intent.
 
 ## Programmable settlement
 
 The same architecture unlocks something traditional platforms cannot offer cleanly: **attached payouts**.
 
-Senders attach rules via **`FSPaymentValidator`**. The payer approves funds from their wallet. When signing conditions are met, **`executePayout`** moves funds directly—Filosign never holds the money. Our server can relay the transaction for convenience; anyone can call it permissionlessly on-chain.
+Senders attach rules via **`FSPaymentValidator`**. The payer approves funds from their wallet. When signing conditions are met, **`executePayout`** moves funds directly. Filosign never holds the money. Our server can relay the transaction for convenience; anyone can call it permissionlessly on-chain.
 
 Examples:
 
-- **Cross-border payouts:** A contractor signs a handover doc and receives payment in the same flow—no invoice chase or wire delay.
+- **Cross-border payouts:** A contractor signs a handover doc and receives payment in the same flow. No invoice chase or wire delay.
 - **Milestone grants:** A funder releases payment when a signed milestone is recorded on-chain.
 
 After six months of quiet building, we are opening a **public beta** on **Base Sepolia**. Connect a social account or wallet, send a file, attach a test payout if you like, sign something, and tell us what breaks.

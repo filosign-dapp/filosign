@@ -16,14 +16,14 @@ tags: ["Company", "Security"]
 
 When you sign with a traditional e-signature platform, you trust two parties: the counterparty and the vendor. The vendor stores your documents, hosts your audit trail, and controls whether you can export verifiable proof years later.
 
-That is **platform risk**—and it shows up in ways legal teams actually worry about:
+That is **platform risk**, and it shows up in ways legal teams actually worry about:
 
 - **Data exposure:** Centralized document stores are high-value breach targets.
 - **Vendor lock-in:** Leaving often means losing verification context, not just UI.
 - **Fragile proof:** If the vendor's database disappears, your "signed" status may become hard to defend.
 - **Privacy by policy, not math:** The platform can technically read everything you upload.
 
-We built Filosign to shrink that trust surface: **your documents stay encrypted, your signing keys stay client-side, and your proof is anchored on-chain**—while day-to-day UX still feels like a modern web app.
+We built Filosign to shrink that trust surface: **your documents stay encrypted, your signing keys stay client-side, and your proof is anchored on-chain**, while day-to-day UX still feels like a modern web app.
 
 ## What Filosign does differently
 
@@ -36,9 +36,9 @@ Filosign is not "blockchain e-sign" as a gimmick. It is a deliberate split betwe
 | **Privacy** | Vendor can read uploads | End-to-end encryption in the browser |
 | **Cryptography** | Platform-managed keys | Wallet-bound client keys (Kyber + Dilithium) |
 | **Authentication** | Email + password | Wallet identity; social login provisions an embedded wallet |
-| **Payments** | Separate invoicing / escrow products | Attached **`FSPaymentValidator`** payout rules—non-custodial |
+| **Payments** | Separate invoicing / escrow products | Attached **`FSPaymentValidator`** payout rules, non-custodial |
 
-You get familiar flows—upload, place fields, collect signatures—backed by evidence that does not require Filosign to stay online forever.
+You get familiar flows (upload, place fields, collect signatures) backed by evidence that does not require Filosign to stay online forever.
 
 ## On-chain vs off-chain (on purpose)
 
@@ -58,7 +58,7 @@ The chain stores **commitments and attestations**, not your PDF. That is how you
 2. **Encrypt and send** a document; recipients decrypt only with keys shared to their wallet.
 3. **Collect signatures** on placed fields; each completion is validated and relayed to **`FSFileRegistry`**.
 4. **Export proof** as a compliance bundle or proof packet PDF whenever you need an audit trail.
-5. **Attach payouts** so signing conditions can trigger a direct transfer—no custodial escrow.
+5. **Attach payouts** so signing conditions can trigger a direct transfer. No custodial escrow.
 
 We cover gas for relayed writes during beta so users are not forced to manage ETH just to sign a document.
 
@@ -69,11 +69,11 @@ Because settlement runs through **`FSPaymentValidator`**, agreements can connect
 - A **freelancer** signs a final delivery doc and receives payment in the same ceremony.
 - A **grantor** attaches a rule that pays when a milestone signature is recorded on-chain.
 
-The payer registers the rule and approves funds from their wallet. When conditions are met, payout execution is **permissionless**—our server relays it for convenience, but the chain enforces the rule.
+The payer registers the rule and approves funds from their wallet. When conditions are met, payout execution is **permissionless**. Our server relays it for convenience, but the chain enforces the rule.
 
 ## Why this matters
 
-Digital agreements should not expire when a SaaS vendor changes pricing, gets acquired, or shuts down. Filosign treats cryptography and chain attestations as the source of truth, with our product as a convenience layer on top—not the other way around.
+Digital agreements should not expire when a SaaS vendor changes pricing, gets acquired, or shuts down. Filosign treats cryptography and chain attestations as the source of truth, with our product as a convenience layer on top, not the other way around.
 
 Your documents stay yours. Your signatures stay provably yours. And anyone can verify that, with math and a public RPC node.
 

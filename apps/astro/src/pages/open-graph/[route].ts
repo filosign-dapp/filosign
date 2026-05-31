@@ -2,7 +2,7 @@ import type { OGImageOptions } from "astro-og-canvas";
 import { OGImageRoute } from "astro-og-canvas";
 import { MARKETING_OG_PAGES } from "../../content/og-marketing";
 
-/** Variable Inter — Latin (paths relative to `apps/astro/` project root). */
+/** Variable Inter - Latin (paths relative to `apps/astro/` project root). */
 const interLatinWght =
 	"./node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2";
 

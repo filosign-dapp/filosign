@@ -3,7 +3,6 @@ import { getCollection } from "astro:content";
 import BlogHeroIsland from "../../components/islands/BlogHeroIsland";
 import BlogListIsland from "../../components/islands/BlogListIsland";
 import MarketingPageShell from "../../components/MarketingPageShell.astro";
-import { env } from "../../env";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 const posts = await getCollection("blog", ({ data }) => !data.draft);
@@ -16,7 +15,7 @@ const featured = sorted.find((p) => p.data.featured) ?? sorted[0];
 ---
 
 <BaseLayout
-	title="Blog — News and updates from Filosign"
+	title="Blog - News and updates from Filosign"
 	description="Engineering and product notes from Filosign: E2EE signing, placement manifests, wallet unlock, and decentralized agreement infrastructure."
 >
 	<MarketingPageShell>
@@ -32,6 +31,6 @@ const featured = sorted.find((p) => p.data.featured) ?? sorted[0];
 			)
 		}
 
-		<BlogListIsland client:load posts={sorted} appUrl={env.PUBLIC_CLIENT_URL} />
+		<BlogListIsland client:load posts={sorted} />
 	</MarketingPageShell>
 </BaseLayout>

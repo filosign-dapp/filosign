@@ -114,7 +114,7 @@ function drawGlossaryEntryLine(
 		lineHeightAt(bold, size, mult),
 		lineHeightAt(body, size, mult),
 	);
-	const sep = " — ";
+	const sep = ": ";
 	const fg = PDF_BRAND.foreground;
 
 	const termLines = wrapLines(entry.term, maxW, bold, size);
@@ -135,7 +135,7 @@ function drawGlossaryEntryLine(
 			});
 			ctx.y -= lh;
 		}
-		const wrapped = wrapLines(` — ${entry.detail}`, maxW, body, size);
+		const wrapped = wrapLines(`: ${entry.detail}`, maxW, body, size);
 		for (const wln of wrapped) {
 			ensureSpace(ctx, lh + 10);
 			ctx.page.drawText(wln, {
@@ -169,7 +169,7 @@ function drawGlossaryEntryLine(
 			color: fg,
 		});
 		ctx.y -= lh;
-		const wrapped = wrapLines(` — ${entry.detail}`, maxW, body, size);
+		const wrapped = wrapLines(`: ${entry.detail}`, maxW, body, size);
 		for (const wln of wrapped) {
 			ensureSpace(ctx, lh + 10);
 			ctx.page.drawText(wln, {
@@ -584,7 +584,7 @@ export async function drawComplianceReport(
 		font: titleFont,
 		color: PDF_BRAND.foreground,
 	});
-	// Tight leading to subtitle (not full body line-height — keeps meta line close to title)
+	// Tight leading to subtitle (not full body line-height - keeps meta line close to title)
 	ctx.y -= titleFont.heightAtSize(titleSize) * 0.92 + 2;
 
 	const subParts = [

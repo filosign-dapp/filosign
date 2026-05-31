@@ -25,13 +25,13 @@ export type ComplianceCopyLine = {
 	glossaryEntry?: ComplianceGlossaryEntry;
 };
 
-/** Glossary / field-map row: bold `term`, then ` — ` and wrapped `detail` (PDF). */
+/** Glossary / field-map row: bold `term`, then `: ` and wrapped `detail` (PDF). */
 export function appendixGlossaryLine(
 	term: string,
 	detail: string,
 ): ComplianceCopyLine {
 	return {
-		text: `${term} — ${detail}`,
+		text: `${term}: ${detail}`,
 		glossaryEntry: { term, detail },
 		textStyle: "body",
 	};
@@ -52,19 +52,19 @@ export function buildAboutThisRecordLines(
 		{ text: "" },
 		{ text: "How to use this record", textStyle: "listHeading" },
 		{
-			text: "1. Bundle hash — Treat the bundle hash (in the key identifiers table) as the fingerprint of the canonical JSON snapshot. Any change to the JSON changes the hash.",
+			text: "1. Bundle hash: Treat the bundle hash (in the key identifiers table) as the fingerprint of the canonical JSON snapshot. Any change to the JSON changes the hash.",
 			textStyle: "body",
 		},
 		{
-			text: "2. Transactions — Use the transaction index to locate each transaction hash on a block explorer for this chain. Compare block numbers, timestamps, and contract addresses to your own records.",
+			text: "2. Transactions: Use the transaction index to locate each transaction hash on a block explorer for this chain. Compare block numbers, timestamps, and contract addresses to your own records.",
 			textStyle: "body",
 		},
 		{
-			text: "3. Registration snapshot — When present, the on-chain registration snapshot was read from FSFileRegistry at export time. You may reconcile those fields against the registration transaction and the same registry view on an archive node or explorer.",
+			text: "3. Registration snapshot: When present, the on-chain registration snapshot was read from FSFileRegistry at export time. You may reconcile those fields against the registration transaction and the same registry view on an archive node or explorer.",
 			textStyle: "body",
 		},
 		{
-			text: "4. Placements and Merkle data — Field placements and the placement manifest JSON underpin the placement commitment. The Merkle section lists per-signer completion roots and inclusion proofs so an independent party can recompute leaf hashes (see @filosign/shared) and verify roots.",
+			text: "4. Placements and Merkle data: Field placements and the placement manifest JSON underpin the placement commitment. The Merkle section lists per-signer completion roots and inclusion proofs so an independent party can recompute leaf hashes (see @filosign/shared) and verify roots.",
 			textStyle: "body",
 		},
 		{ text: "" },
@@ -77,7 +77,7 @@ export function buildAboutThisRecordLines(
 export function buildTimestampExplainerLines(): ComplianceCopyLine[] {
 	return [
 		{
-			text: "Timestamps in this record — Registration time on-chain follows the signed registration message. The block timestamp on a signature transaction reflects when that transaction was included. “Signed at” in the signer matrix matches the EIP-712 message time stored when the signature was submitted; it may differ slightly from block time.",
+			text: "Timestamps in this record: Registration time on-chain follows the signed registration message. The block timestamp on a signature transaction reflects when that transaction was included. “Signed at” in the signer matrix matches the EIP-712 message time stored when the signature was submitted; it may differ slightly from block time.",
 			textStyle: "emphasis",
 		},
 	];
@@ -91,13 +91,13 @@ const TX_KIND_GLOSSARY: Record<ChainTxKind, string> = {
 	signer_amended:
 		"Sender replaced a signer email commitment before signing (`amendSigner` on FSFileRegistry).",
 	payout_executed:
-		"FSPaymentValidator `executePayout` — USDC transferFrom sender to recipient when release conditions were met.",
+		"FSPaymentValidator `executePayout`: USDC transferFrom sender to recipient when release conditions were met.",
 };
 
 export function buildAppendixLines(): ComplianceCopyLine[] {
 	const lines: ComplianceCopyLine[] = [
 		{
-			text: "Appendix A — Glossary (terms and verification)",
+			text: "Appendix A - Glossary (terms and verification)",
 			textStyle: "subheading",
 		},
 		{ text: "" },
@@ -189,7 +189,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 	lines.push(
 		{ text: "" },
 		{
-			text: "Appendix B — JSON field map (bundle version 4)",
+			text: "Appendix B - JSON field map (bundle version 4)",
 			textStyle: "subheading",
 		},
 		{ text: "" },

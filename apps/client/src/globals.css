@@ -6,7 +6,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-	/* Surfaces — light, airy greys (sidebar matches main chrome) */
+	/* Surfaces - light, airy greys (sidebar matches main chrome) */
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.141 0.005 285.823);
 
@@ -34,7 +34,7 @@
 	--destructive: hsl(0, 84%, 58%);
 	--destructive-foreground: hsl(0, 0%, 100%);
 
-	/* Warnings — high-chroma amber; pair with dark foreground on fills */
+	/* Warnings - high-chroma amber; pair with dark foreground on fills */
 	--warning: oklch(0.8426 0.1688 83.88);
 	--warning-foreground: oklch(0.26 0.07 82);
 
@@ -58,7 +58,7 @@
 
 	--radius: 0.5rem;
 
-	/* Sidebar — same base as page + header (bg-background); borders match global border */
+	/* Sidebar - same base as page + header (bg-background); borders match global border */
 	--sidebar: var(--background);
 	--sidebar-foreground: hsl(210 7% 22%);
 	--sidebar-primary: hsl(210 8% 12%);
@@ -101,6 +101,9 @@
 	--sidebar-accent-foreground: oklch(0.985 0 0);
 	--sidebar-border: oklch(1 0 0 / 10%);
 	--sidebar-ring: oklch(0.556 0 0);
+
+	--warning: oklch(0.91 0.12 83.88);
+	--warning-foreground: oklch(0.26 0.07 82);
 }
 
 @theme inline {

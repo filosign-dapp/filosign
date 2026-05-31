@@ -471,7 +471,7 @@ export function buildCompliancePdfSummaryFromBundle(
 			const legSummary = p.legs
 				.map(
 					(leg) =>
-						`${leg.recipientWallet} — ${formatUnits(BigInt(leg.amount), decimals)} USDC`,
+						`${leg.recipientWallet}: ${formatUnits(BigInt(leg.amount), decimals)} USDC`,
 				)
 				.join("; ");
 			settlementLines.push({

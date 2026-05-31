@@ -17,7 +17,7 @@ const defaultFallbackClass =
 
 /**
  * Standard Suspense shell for lazy chunks (PDF.js, heavy dialogs).
- * Prefer route `pendingComponent` for loader-driven navigation — not query Suspense.
+ * Prefer route `pendingComponent` for loader-driven navigation - not query Suspense.
  */
 export function LazyBoundary({
 	children,

@@ -8,7 +8,7 @@ Source of truth for launch assumptions. This is not legal advice.
 - Dodo Payments is planned as merchant of record/payment processor for subscriptions.
 - Production settlement target: USDC on Base.
 - Sandbox/test environment target: Base Sepolia.
-- Settlement access is manually approved with a feature flag.
+- Payout attachment access is manually approved per workspace (`organization_settlement_feature_access`) after Settlement Feature Addendum acceptance at request time.
 - Filosign charges SaaS subscription fees only, not settlement-volume fees.
 - Filosign does not custody, hold, pool, convert, or transmit user funds.
 - Documents are encrypted client-side before upload; Filosign should not see plaintext contents.
@@ -29,7 +29,9 @@ Source of truth for launch assumptions. This is not legal advice.
 - Route aliases: support@, security@, privacy@, contact@, sales@ to the founder inbox.
 - Confirm document retention windows by plan and post-cancellation export grace period.
 - Decide whether to publish an unaudited-contract notice publicly or only in contextual settlement/security pages.
-- Get counsel review for ToS, Privacy, Acceptable Use, e-signature language, refunds, sanctions, and non-custodial settlement posture.
+- Get counsel review for ToS, Privacy, Acceptable Use, e-signature language, refunds, sanctions, payout attachment posture, and [Settlement Feature Addendum](/legal/settlement-feature-addendum).
+- Publish payout attachment legal pages: Terms §9, [non-custodial payout](/legal/non-custodial-settlement), [addendum](/legal/settlement-feature-addendum).
+- Ops runbook: [payout-feature-approval-checklist.md](settlements/payout-feature-approval-checklist.md).
 
 ## Operational defaults
 

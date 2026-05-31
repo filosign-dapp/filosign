@@ -320,6 +320,22 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 		["settlements[ ].executedAtIso", "UTC time payout completed when known."],
 		["settlements[ ].lastError", "Last relay or chain error when failed."],
 		[
+			"offChainEvidence.payoutRecipientAcknowledgements",
+			"Signer payout disclosures logged when a payout was attached.",
+		],
+		[
+			"offChainEvidence.payoutRecipientAcknowledgements[ ].signerWallet",
+			"Wallet that accepted the disclosure.",
+		],
+		[
+			"offChainEvidence.payoutRecipientAcknowledgements[ ].termsVersion",
+			"Disclosure text version accepted at sign.",
+		],
+		[
+			"offChainEvidence.payoutRecipientAcknowledgements[ ].acknowledgedAtIso",
+			"UTC time of recipient disclosure.",
+		],
+		[
 			"offChainEvidence.acknowledgements",
 			"Typed acknowledgements without txs.",
 		],

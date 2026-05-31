@@ -456,6 +456,33 @@ export function buildCompliancePdfSummaryFromBundle(
 		}
 	}
 
+	const payoutAckLines: CompliancePdfLine[] = [];
+	if (bundle.offChainEvidence.payoutRecipientAcknowledgements.length > 0) {
+		payoutAckLines.push(
+			{
+				text: "Signer disclosures logged when an optional USDC payout was attached. Filosign does not guarantee payment.",
+				textStyle: "lead",
+			},
+			{ text: "" },
+		);
+		for (
+			let i = 0;
+			i < bundle.offChainEvidence.payoutRecipientAcknowledgements.length;
+			i++
+		) {
+			const ack = bundle.offChainEvidence.payoutRecipientAcknowledgements[i];
+			payoutAckLines.push({
+				text: `${i + 1}. ${ack.signerWallet} · version ${ack.termsVersion} · ${ack.acknowledgedAtIso}`,
+			});
+			if (
+				i <
+				bundle.offChainEvidence.payoutRecipientAcknowledgements.length - 1
+			) {
+				payoutAckLines.push({ text: "" });
+			}
+		}
+	}
+
 	const settlementLines: CompliancePdfLine[] = [];
 	if (bundle.settlements.length > 0) {
 		const decimals = SUPPORTED_TOKENS[0]?.decimals ?? 6;
@@ -531,7 +558,15 @@ export function buildCompliancePdfSummaryFromBundle(
 			{ title: "On-chain transactions (index)", lines: txIndexLines },
 			{ title: "Signer matrix", lines: signerMatrix },
 			...(settlementLines.length > 0
-				? [{ title: "Attached settlements", lines: settlementLines }]
+				? [{ title: "Attached payout records", lines: settlementLines }]
+				: []),
+			...(payoutAckLines.length > 0
+				? [
+						{
+							title: "Payout recipient disclosures",
+							lines: payoutAckLines,
+						},
+					]
 				: []),
 			{ title: "Document content metadata", lines: docMetaLines },
 			{ title: "Field placements", lines: placementRef },

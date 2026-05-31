@@ -1,5 +1,6 @@
 import type { ChainKey, FilosignContracts } from "@filosign/contracts";
 import type { signatures } from "@filosign/crypto-utils";
+import type { SignupPolicy } from "@filosign/shared";
 import { createContext } from "react";
 import type { FilosignWallet } from "../lib/wallet";
 import type { AppRouterClient } from "../orpc/app-router-types";
@@ -34,6 +35,7 @@ export type Runtime = {
 	chain: unknown;
 	chainKey: ChainKey;
 	deployment: "local" | "staging" | "sandbox" | "production";
+	signupPolicy: SignupPolicy;
 };
 
 export const FilosignContext = createContext<FilosignContextValue>({

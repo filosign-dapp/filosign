@@ -18,10 +18,18 @@ import { useIsRegistered } from "./useIsRegistered";
 
 export const LOGIN_RECOVERY_PHRASE_REQUIRED = "RECOVERY_PHRASE_REQUIRED";
 
+export interface RegistrationAccessGate {
+	platformInviteToken?: string;
+	setupToken?: string;
+	coldInviteToken?: string;
+	coldRecipientEmail?: string;
+}
+
 export interface LoginParams {
 	idToken?: string;
 	/** Only unlock in-memory seed for an already registered user. */
 	unlockOnly?: boolean;
+	accessGate?: RegistrationAccessGate;
 }
 
 export function useLogin() {
@@ -107,6 +115,18 @@ export function useLogin() {
 					signaturePublicKey: toHex(keygenData.sigKeypair.publicKey),
 					walletAddress: wallet.account.address,
 					idToken,
+					...(params.accessGate?.platformInviteToken
+						? { platformInviteToken: params.accessGate.platformInviteToken }
+						: {}),
+					...(params.accessGate?.setupToken
+						? { setupToken: params.accessGate.setupToken }
+						: {}),
+					...(params.accessGate?.coldInviteToken
+						? { coldInviteToken: params.accessGate.coldInviteToken }
+						: {}),
+					...(params.accessGate?.coldRecipientEmail
+						? { coldRecipientEmail: params.accessGate.coldRecipientEmail }
+						: {}),
 				});
 
 				setSessionSeed(wallet.account.address, keygenData.seed);

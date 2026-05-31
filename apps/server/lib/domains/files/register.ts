@@ -1,45 +1,40 @@
 import {
-	buildRegisterRoutingCalldata,
-	buildRegistrationEmailCommitments,
 	computePlacementCommitment,
 	hashAuthSubjectCommitment,
 	hashNormalizedSignerEmail,
 	hashOrgIdCommitment,
 	normalizePlacementRecipientEmail,
 	usesAdvancedRegisterRouting,
-	validateRegisterRoutingCalldata,
+	zAttachmentPacketSendInput,
 	zPlacementManifest,
 	zRegisterRoutingInput,
 } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { MAX_FILE_SIZE } from "@/constants";
+import { insertAttachmentPacketsForFile } from "@/lib/domains/attachments/insert-packets";
 import {
 	assertEntitlement,
 	recipientSlotCounts,
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
-import { inviteExpiresAt } from "@/lib/domains/invites";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
-import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
-import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
-import {
-	sendColdDocumentInviteEmail,
-	sendDocumentReceivedEmail,
-} from "@/lib/platform/email/invites";
 import { fsContracts } from "@/lib/platform/evm";
 import { bucket } from "@/lib/platform/s3/client";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { normalizedViewerEmailsForRegister } from "./file-invites";
+import { notifyParticipantsAfterRegister } from "./utils/register-notify";
+import { persistRegisteredFileInDb } from "./utils/register-persist";
+import { resolveRegisterRoutingCalldata } from "./utils/register-routing";
 
 const { FSFileRegistry } = fsContracts;
 
-const { files, fileParticipants, fileColdInvites, users } = db.schema;
+const { files, users } = db.schema;
 
 export const zFileRegisterBody = z.object({
 	pieceCid: z.string({ error: "pieceCid invalid" }),
@@ -78,6 +73,7 @@ export const zFileRegisterBody = z.object({
 	mimeType: z.string().min(1).max(255),
 	ciphertextByteLength: z.number().int().positive(),
 	routing: zRegisterRoutingInput.optional(),
+	attachmentPackets: z.array(zAttachmentPacketSendInput).max(3).optional(),
 });
 
 export async function filesRegister(
@@ -107,6 +103,7 @@ export async function filesRegister(
 		mimeType,
 		ciphertextByteLength,
 		routing,
+		attachmentPackets = [],
 	} = parsedBody.data;
 
 	assertOrgPermission(activeOrg, "documents:send");
@@ -137,39 +134,18 @@ export async function filesRegister(
 		coldInvites,
 	});
 	const {
-		requiredCommitments: requiredCommitmentsSorted,
 		viewerEmailCommitmentsSorted,
-	} = buildRegistrationEmailCommitments({
-		placementManifest,
-		viewerEmails,
-	});
-	const routingCalldata = buildRegisterRoutingCalldata({
-		placementManifest,
-		routing,
-	});
-	const routingError = validateRegisterRoutingCalldata(routingCalldata);
-	if (routingError) {
-		throw new ORPCError("BAD_REQUEST", { message: routingError });
-	}
-	const {
-		requiredCommitments: routingRequiredCommitments,
-		optionalCommitments: optionalCommitmentsSorted,
+		routingRequiredCommitments,
+		optionalCommitmentsSorted,
 		routingMode,
 		routingOrder,
 		quorumN,
 		quorumSet,
-	} = routingCalldata;
-	if (
-		requiredCommitmentsSorted.some(
-			(c, i) =>
-				c.toLowerCase() !== routingRequiredCommitments[i]?.toLowerCase(),
-		) ||
-		requiredCommitmentsSorted.length !== routingRequiredCommitments.length
-	) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Routing required signers do not match manifest roster",
-		});
-	}
+	} = resolveRegisterRoutingCalldata({
+		placementManifest,
+		routing,
+		viewerEmails,
+	});
 
 	const [senderUser] = await db
 		.select({
@@ -278,156 +254,49 @@ export async function filesRegister(
 		},
 	]);
 
-	await db.transaction(async (tx) => {
-		await tx
-			.insert(files)
-			.values({
-				pieceCid,
-				status: "s3",
-				sender,
-				createdByWallet: getAddress(sender),
-				organizationId: organizationId,
-				orgKemCiphertext: orgKemCiphertext,
-				orgEncryptedEncryptionKey: orgEncryptedEncryptionKey,
-				onchainTxHash: txHash,
-				registryAddress: getAddress(FSFileRegistry.address),
-				placementCommitment,
-				placementManifestJson: placementManifest,
-				warmParticipantCount: slotCounts.warmParticipantCount,
-				coldInviteCount: slotCounts.coldInviteCount,
-				signerSlotCount: slotCounts.signerSlotCount,
-				recipientSlotCount: slotCounts.recipientSlotCount,
-				displayName,
-				mimeType,
-				ciphertextByteLength,
-				createdAt: new Date(timestamp * 1000),
-			})
-			.returning();
-		await tx.insert(fileParticipants).values([
-			{
-				filePieceCid: pieceCid,
-				wallet: getAddress(sender),
-				role: "sender",
-				kemCiphertext: senderKemCiphertext,
-				encryptedEncryptionKey: senderEncryptedEncryptionKey,
-			},
-			...participants.map((p) => ({
-				filePieceCid: pieceCid,
-				wallet: getAddress(p.address),
-				role: p.isSigner ? ("signer" as const) : ("viewer" as const),
-				kemCiphertext: p.kemCiphertext,
-				encryptedEncryptionKey: p.encryptedEncryptionKey,
-			})),
-		]);
+	await persistRegisteredFileInDb({
+		pieceCid,
+		sender,
+		organizationId,
+		orgKemCiphertext,
+		orgEncryptedEncryptionKey,
+		onchainTxHash: txHash,
+		registryAddress: getAddress(FSFileRegistry.address),
+		placementCommitment,
+		placementManifest,
+		warmParticipantCount: slotCounts.warmParticipantCount,
+		coldInviteCount: slotCounts.coldInviteCount,
+		signerSlotCount: slotCounts.signerSlotCount,
+		recipientSlotCount: slotCounts.recipientSlotCount,
+		displayName,
+		mimeType,
+		ciphertextByteLength,
+		timestamp,
+		participants,
+		senderKemCiphertext,
+		senderEncryptedEncryptionKey,
+		coldInvites,
+	});
 
-		if (coldInvites.length > 0) {
-			await tx.insert(fileColdInvites).values(
-				coldInvites.map((c) => ({
-					filePieceCid: pieceCid,
-					email: c.email.trim().toLowerCase(),
-					inviteToken: c.inviteToken,
-					wrappedEncryptionKey: c.wrappedEncryptionKey,
-					isSigner: c.isSigner,
-					status: "pending" as const,
-					expiresAt: inviteExpiresAt(),
-				})),
-			);
-		}
+	await insertAttachmentPacketsForFile({
+		pieceCid,
+		sender,
+		organizationId,
+		packets: attachmentPackets,
+		coldInviteToken: coldInvites[0]?.inviteToken,
 	});
 
 	const participantWallets = [
 		...new Set(participants.map((p) => getAddress(p.address))),
 	];
-	const participantProfiles = participantWallets.length
-		? await db
-				.select({
-					walletAddress: users.walletAddress,
-					email: users.email,
-				})
-				.from(users)
-				.where(inArray(users.walletAddress, participantWallets))
-		: [];
-	const [senderProfile] = await db
-		.select({
-			email: users.email,
-			firstName: users.firstName,
-			lastName: users.lastName,
-			username: users.username,
-		})
-		.from(users)
-		.where(eq(users.walletAddress, sender));
-	const senderName =
-		[senderProfile?.firstName, senderProfile?.lastName]
-			.filter(Boolean)
-			.join(" ") ||
-		senderProfile?.username ||
-		senderProfile?.email ||
-		undefined;
 
-	const emailResults = await Promise.all(
-		participantProfiles
-			.filter((profile) => profile.email)
-			.map((profile) =>
-				tryCatch(
-					sendDocumentReceivedEmail({
-						to: profile.email as string,
-						senderWallet: sender as Address,
-						pieceCid,
-						senderName,
-					}),
-				),
-			),
-	);
-	const emailFailures = emailResults.filter((result) => result.error);
-	if (emailFailures.length > 0) {
-		console.error("Failed to send document notification emails", {
-			pieceCid,
-			failedCount: emailFailures.length,
-			errors: emailFailures.map((result) => result.error?.message),
-		});
-	}
-
-	const coldEmailResults = await Promise.all(
-		coldInvites.map((c) =>
-			tryCatch(
-				sendColdDocumentInviteEmail({
-					to: c.email.trim().toLowerCase(),
-					pieceCid,
-					inviteToken: c.inviteToken,
-					senderWallet: sender as Address,
-					senderName,
-				}),
-			),
-		),
-	);
-	const coldEmailFailures = coldEmailResults.filter((r) => r.error);
-	if (coldEmailFailures.length > 0) {
-		console.error("Failed to send cold invite emails", {
-			pieceCid,
-			failedCount: coldEmailFailures.length,
-			errors: coldEmailFailures.map((r) => r.error?.message),
-		});
-	}
-
-	trackServerEvent({
-		distinctId: getAddress(sender),
-		event: SERVER_ANALYTICS_EVENTS.fileRegistered,
+	await notifyParticipantsAfterRegister({
+		sender,
 		pieceCid,
-		properties: {
-			signer_count: slotCounts.signerSlotCount,
-			cold_invite_count: slotCounts.coldInviteCount,
-			warm_participant_count: slotCounts.warmParticipantCount,
-			recipient_slot_count: slotCounts.recipientSlotCount,
-		},
+		participantWallets,
+		coldInvites,
+		slotCounts,
 	});
-	if (slotCounts.coldInviteCount > 0) {
-		trackServerEvent({
-			distinctId: getAddress(sender),
-			event: SERVER_ANALYTICS_EVENTS.coldInviteCreated,
-			pieceCid,
-			properties: { cold_invite_count: slotCounts.coldInviteCount },
-		});
-	}
 
 	return {};
 }

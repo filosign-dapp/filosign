@@ -19,11 +19,19 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { requireCanSign } from "@/lib/domains/files/utils/participant-access";
+import {
+	assertSettlementRecipientAckProvided,
+	recordSettlementRecipientAck,
+} from "@/lib/domains/settlement-access/utils/recipient-ack";
 import { tryExecuteSettlementRulesForPiece } from "@/lib/domains/settlements";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
 import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
-import { evmClient, fsFileRegistryAt } from "@/lib/platform/evm";
+import {
+	evmClient,
+	fsFileRegistryAt,
+	relayRegisterFileSignature,
+} from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
 import { isEnvelopeFullySigned } from "./envelope-completion";
@@ -36,6 +44,8 @@ export async function pieceSign(args: {
 	userWallet: Address;
 	pieceCid: string;
 	body: unknown;
+	requestIp?: string | null;
+	requestUserAgent?: string | null;
 }) {
 	const userWallet = args.userWallet;
 	const pieceCid = args.pieceCid;
@@ -48,6 +58,12 @@ export async function pieceSign(args: {
 			timestamp: z.number({ error: "timestamp must be a number" }),
 			dl3Signature: zHexString(),
 			completedFieldIds: z.array(z.string()),
+			settlementRecipientAck: z
+				.object({
+					termsVersion: z.string().min(1),
+					acceptedAt: z.number().int().positive(),
+				})
+				.optional(),
 		})
 		.safeParse(args.body);
 	if (parsedBody.error) {
@@ -57,6 +73,12 @@ export async function pieceSign(args: {
 	}
 	const { signature, timestamp, dl3Signature, completedFieldIds } =
 		parsedBody.data;
+
+	await assertSettlementRecipientAckProvided({
+		pieceCid,
+		signerWallet: userWallet,
+		body: parsedBody.data,
+	});
 
 	const [fileRecord] = await db
 		.select({
@@ -226,13 +248,10 @@ export async function pieceSign(args: {
 		throw new ORPCError("BAD_REQUEST", { message: "Invalid signature" });
 	}
 
-	const txHash = await (
-		registry.write as unknown as {
-			registerFileSignature: (
-				args: readonly unknown[],
-			) => Promise<`0x${string}`>;
-		}
-	).registerFileSignature(registerSignatureArgs);
+	const txHash = await relayRegisterFileSignature(
+		registry,
+		registerSignatureArgs,
+	);
 
 	await db.insert(fileSignatures).values({
 		filePieceCid: pieceCid,
@@ -245,6 +264,18 @@ export async function pieceSign(args: {
 		leafSchemaVersion: LEAF_SCHEMA_VERSION_V1,
 		createdAt: new Date(timestamp * 1000),
 	});
+
+	const recipientAck = parsedBody.data.settlementRecipientAck;
+	if (recipientAck) {
+		await recordSettlementRecipientAck({
+			pieceCid,
+			signerWallet: signerAddr,
+			termsVersion: recipientAck.termsVersion,
+			acceptedAt: new Date(recipientAck.acceptedAt * 1000),
+			requestIp: args.requestIp,
+			requestUserAgent: args.requestUserAgent,
+		});
+	}
 
 	await db
 		.delete(fileSignerDrafts)

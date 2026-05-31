@@ -1,3 +1,4 @@
+export * from "./cold-invite";
 export * from "./cold-invite-lifecycle";
 export * from "./envelope-completion";
 export * from "./file-invites";

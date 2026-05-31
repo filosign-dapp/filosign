@@ -3,19 +3,16 @@ import AboutCtaBand from "../components/islands/AboutCtaBand";
 import AboutHeroIsland from "../components/islands/AboutHeroIsland";
 import ValuesSectionIsland from "../components/islands/ValuesSectionIsland";
 import MarketingPageShell from "../components/MarketingPageShell.astro";
-import { env } from "../env";
 import BaseLayout from "../layouts/BaseLayout.astro";
-
-const appUrl = env.PUBLIC_CLIENT_URL;
 ---
 
 <BaseLayout
-	title="About Filosign — Signing you can trust after the ink dries"
+	title="About Filosign - Signing you can trust after the ink dries"
 	description="Why Filosign exists: private agreements, records you can verify anywhere, and attached payouts."
 >
 	<MarketingPageShell>
 		<AboutHeroIsland client:load />
 		<ValuesSectionIsland client:visible />
-		<AboutCtaBand client:visible appUrl={appUrl} />
+		<AboutCtaBand client:visible />
 	</MarketingPageShell>
 </BaseLayout>

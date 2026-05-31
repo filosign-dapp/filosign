@@ -2,35 +2,32 @@
 import PricingHeroIsland from "../components/islands/PricingHeroIsland";
 import PricingPlansIsland from "../components/islands/PricingPlansIsland";
 import MarketingPageShell from "../components/MarketingPageShell.astro";
-import { env } from "../env";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
-const appUrl = env.PUBLIC_CLIENT_URL;
-
 const plans = [
-	{
-		name: "Free",
-		description:
-			"Test private signing workflows with encryption and proof exports—no card required.",
-		price: { monthly: 0 },
-		features: [
-			"3 documents per month",
-			"1 signer per envelope",
-			"Encrypted in the browser before anything is uploaded",
-			"Wallet-backed signing records",
-			"Standard fields and a basic audit trail",
-			"Manual reminder emails",
-		],
-		cta: "Start free",
-		highlight: false,
-	},
+	// Temporarily hidden - free tier not offered on marketing until GA open signup.
+	// {
+	// 	name: "Free",
+	// 	description:
+	// 		"Test private signing workflows with encryption and proof exports. No card required.",
+	// 	price: { monthly: 0 },
+	// 	features: [
+	// 		"3 documents per month",
+	// 		"1 signer per envelope",
+	// 		"Encrypted in the browser before anything is uploaded",
+	// 		"Wallet-backed signing records",
+	// 		"Standard fields and a basic audit trail",
+	// 		"Manual reminder emails",
+	// 	],
+	// 	cta: "Start free",
+	// 	highlight: false,
+	// },
 	{
 		name: "Solo",
 		description:
 			"For freelancers, counsel, and operators who need private signing and clean proof records.",
 		price: { monthly: 20 },
 		features: [
-			"Everything in Free, plus:",
 			"10 documents per month",
 			"Up to 3 signers per document",
 			"Long-term verifiable storage options",
@@ -84,23 +81,22 @@ const plans = [
 
 const enterpriseBanner = {
 	headline: "Are you an enterprise?",
-	body: "Custom limits, security reviews, support terms, and procurement-friendly contracts—contact us directly and we'll scope a plan with your team.",
+	body: "Custom limits, security reviews, support terms, and procurement-friendly contracts. Contact us directly and we'll scope a plan with your team.",
 	cta: "Contact us",
 	href: "mailto:sales@filosign.xyz?subject=Filosign%20Enterprise",
 };
 ---
 
 <BaseLayout
-	title="Pricing — Encrypted signing with proof you can verify"
+	title="Pricing - Encrypted signing with proof you can verify"
 	description="Filosign pricing: Free, Solo, Teams, and Teams Pro. Encrypted signing, proof exports, and attached payouts. Enterprise plans by request."
 >
 	<MarketingPageShell>
-		<PricingHeroIsland client:load appUrl={appUrl} />
+		<PricingHeroIsland client:load />
 
 		<PricingPlansIsland
 			client:load
 			plans={plans}
-			appUrl={appUrl}
 			enterpriseBanner={enterpriseBanner}
 		/>
 	</MarketingPageShell>

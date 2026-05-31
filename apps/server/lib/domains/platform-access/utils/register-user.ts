@@ -12,7 +12,7 @@ import {
 	previewColdRecipientGate,
 	type RegistrationAccessGate,
 	redeemPlatformInviteOnRegisterWithTx,
-} from "@/lib/domains/platform-access/platform-access";
+} from "@/lib/domains/platform-access";
 import { allowsPlatformAdminAccess } from "@/lib/platform/admin";
 import db from "@/lib/platform/db";
 import { userSubscriptions } from "@/lib/platform/db/schema/billing";

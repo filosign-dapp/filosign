@@ -1,0 +1,209 @@
+import {
+	type DocumentViewSource,
+	documentViewSources,
+	FILE_ACK_INTENT_VERSION_V1,
+	hashAuthSubjectCommitment,
+	hashNormalizedSignerEmail,
+	normalizePlacementRecipientEmail,
+	zPlacementManifest,
+} from "@filosign/shared";
+import { zHexString } from "@filosign/shared/zod";
+import { ORPCError } from "@orpc/server";
+import { and, eq } from "drizzle-orm";
+import type { Address } from "viem";
+import { getAddress } from "viem";
+import z from "zod";
+import { primaryEmailForWallet } from "@/lib/domains/files/file-invites";
+import {
+	getValidAck,
+	requireAckForParticipantAccess,
+} from "@/lib/domains/files/utils/participant-access";
+import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs";
+import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
+import { trackServerEvent } from "@/lib/platform/analytics/track";
+import db from "@/lib/platform/db";
+import { fsFileRegistryAt } from "@/lib/platform/evm";
+import { bucket } from "@/lib/platform/s3/client";
+import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
+
+export { pieceComplianceBundle } from "./utils/piece-compliance";
+export { pieceDetail } from "./utils/piece-detail";
+
+const {
+	files,
+	fileAcknowledgements,
+	fileDocumentViews,
+	fileParticipants,
+	fileSignerDrafts,
+	users,
+} = db.schema;
+export async function pieceSignDraftGet(userWallet: Address, pieceCid: string) {
+	const [fileRecord] = await db
+		.select({
+			placementManifestJson: files.placementManifestJson,
+		})
+		.from(files)
+		.where(eq(files.pieceCid, pieceCid));
+
+	const [participantRecord] = await db
+		.select({ wallet: fileParticipants.wallet })
+		.from(fileParticipants)
+		.where(
+			and(
+				eq(fileParticipants.filePieceCid, pieceCid),
+				eq(fileParticipants.role, "signer"),
+				eq(fileParticipants.wallet, userWallet),
+			),
+		);
+
+	if (!fileRecord) {
+		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+	}
+	if (!participantRecord) {
+		throw new ORPCError("FORBIDDEN", {
+			message: "You are not required to sign this file",
+		});
+	}
+
+	await requireAckForParticipantAccess(userWallet, pieceCid);
+
+	const manifestParsed = zPlacementManifest.safeParse(
+		fileRecord.placementManifestJson,
+	);
+	if (!manifestParsed.success) {
+		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+			message: "File placement manifest missing or invalid",
+		});
+	}
+
+	const signerEmail = await primaryEmailForWallet(participantRecord.wallet);
+	if (!signerEmail) {
+		throw new ORPCError("BAD_REQUEST", {
+			message:
+				"Add a primary email to your Filosign profile to use placement drafts",
+		});
+	}
+	const allowedIds = new Set(
+		manifestParsed.data.fields
+			.filter((f) => f.assignedRecipientEmail === signerEmail)
+			.map((f) => f.id),
+	);
+
+	const [draft] = await db
+		.select({ completedFieldIds: fileSignerDrafts.completedFieldIds })
+		.from(fileSignerDrafts)
+		.where(
+			and(
+				eq(fileSignerDrafts.filePieceCid, pieceCid),
+				eq(fileSignerDrafts.wallet, participantRecord.wallet),
+			),
+		);
+
+	const stored = draft?.completedFieldIds ?? [];
+	const completedFieldIds = stored.filter((id) => allowedIds.has(id));
+
+	return { completedFieldIds };
+}
+
+const zSignDraftPutBody = z.object({
+	completedFieldIds: z.array(z.string()),
+});
+
+export async function pieceSignDraftPut(args: {
+	userWallet: Address;
+	pieceCid: string;
+	body: unknown;
+}) {
+	const parsedBody = zSignDraftPutBody.safeParse(args.body);
+	if (parsedBody.error) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: zodSafeParseMessage(parsedBody.error),
+		});
+	}
+	const { completedFieldIds: bodyIds } = parsedBody.data;
+	const pieceCid = args.pieceCid;
+	const userWallet = args.userWallet;
+
+	await requireAckForParticipantAccess(userWallet, pieceCid);
+
+	const [fileRecord] = await db
+		.select({
+			placementManifestJson: files.placementManifestJson,
+		})
+		.from(files)
+		.where(eq(files.pieceCid, pieceCid));
+
+	const [participantRecord] = await db
+		.select({ wallet: fileParticipants.wallet })
+		.from(fileParticipants)
+		.where(
+			and(
+				eq(fileParticipants.filePieceCid, pieceCid),
+				eq(fileParticipants.role, "signer"),
+				eq(fileParticipants.wallet, userWallet),
+			),
+		);
+
+	if (!fileRecord) {
+		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+	}
+	if (!participantRecord) {
+		throw new ORPCError("FORBIDDEN", {
+			message: "You are not required to sign this file",
+		});
+	}
+
+	const manifestParsed = zPlacementManifest.safeParse(
+		fileRecord.placementManifestJson,
+	);
+	if (!manifestParsed.success) {
+		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+			message: "File placement manifest missing or invalid",
+		});
+	}
+
+	const signerEmail = await primaryEmailForWallet(participantRecord.wallet);
+	if (!signerEmail) {
+		throw new ORPCError("BAD_REQUEST", {
+			message:
+				"Add a primary email to your Filosign profile to use placement drafts",
+		});
+	}
+	const allowedIds = new Set(
+		manifestParsed.data.fields
+			.filter((f) => f.assignedRecipientEmail === signerEmail)
+			.map((f) => f.id),
+	);
+
+	for (const id of bodyIds) {
+		if (!allowedIds.has(id)) {
+			throw new ORPCError("BAD_REQUEST", {
+				message: "completedFieldIds must match manifest fields for signer",
+			});
+		}
+	}
+
+	const completedFieldIds = [...new Set(bodyIds)];
+	const now = new Date();
+
+	await db
+		.insert(fileSignerDrafts)
+		.values({
+			filePieceCid: pieceCid,
+			wallet: participantRecord.wallet,
+			completedFieldIds,
+			createdAt: now,
+			updatedAt: now,
+		})
+		.onConflictDoUpdate({
+			target: [fileSignerDrafts.filePieceCid, fileSignerDrafts.wallet],
+			set: {
+				completedFieldIds,
+				updatedAt: now,
+			},
+		});
+
+	return { completedFieldIds };
+}
+
+/** --- s3 --- */

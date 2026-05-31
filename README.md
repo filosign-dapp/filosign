@@ -131,6 +131,7 @@ Server configuration is defined in `apps/server/env.ts`. The main required value
 - `ASTRO_URL` — marketing site origin; email static assets (`/logo.webp`, `/icons/*`).
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
+- `RESEND_ENABLED` — `true` (default) sends via Resend; set `false` to no-op outbound email
 - `PG_URI`
 - `DB_NAME`
 - `FC_SERVER_PRIVATE_KEY` / `FC_SERVER_ADDRESS` (on-chain relayer + Synapse; must match contracts deploy)

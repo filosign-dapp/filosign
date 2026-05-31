@@ -25,10 +25,12 @@ Utilities (@filosign/contracts):
   bun run contracts -- test              compile + Hardhat tests
   bun run contracts -- node              Hardhat local node
 
-Migrate (deploy contracts, then sync DB schema):
-  bun run contracts -- --migrate --local      (deploys + purges & pushes local DB)
+Migrate (deploy contracts, optionally sync DB schema):
+  bun run contracts -- --migrate --local      (deploy to local Hardhat only)
   bun run contracts -- --migrate --testnet    (deploys + pushes staging DB schema)
   bun run contracts -- --migrate --mainnet    (deploys + pushes production DB schema)
+
+Local DB: bun run db -- push local  (schema sync)  ·  bun run db -- purge local  (wipe + push)
 
 Profiles: local (.env.local), testnet (.env.staging chain deploy), mainnet (.env.production) in apps/contracts
 `.trim();
@@ -84,9 +86,7 @@ async function runMigrate(profile: Profile) {
 		packageRunCmd(rootDir, PACKAGE, deployScript(profile)),
 	];
 
-	if (profile === "local") {
-		steps.push(dbCmd("purge", "local"));
-	} else if (profile === "testnet") {
+	if (profile === "testnet") {
 		steps.push(dbCmd("push", "staging"));
 	} else if (profile === "mainnet") {
 		steps.push(dbCmd("push", "production"));

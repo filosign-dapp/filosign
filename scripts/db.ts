@@ -30,24 +30,47 @@ Filosign database orchestrator (@filosign/server)
   bun run db -- purge local       clear schema + push (.env.local)
   bun run db -- purge staging     clear schema + push (Infisical staging)
   bun run db -- purge sandbox     clear schema + push (Infisical sandbox)
+  bun run db -- grant-plan local   Teams Pro for PLATFORM_ADMIN_EMAILS (.env.local)
+  bun run db -- grant-plan staging Infisical staging
+  bun run db -- grant-plan sandbox Infisical sandbox
 `.trim();
 
-type Action = "push" | "purge";
+type Action = "push" | "purge" | "grant-plan";
 type Profile = "local" | "staging" | "sandbox" | "production";
 
-function scriptFor(action: Action, profile: Profile): string {
+function scriptFor(action: "push" | "purge", profile: Profile): string {
 	return `db:${action}:${profile}`;
 }
 
+function grantPlanScript(profile: Exclude<Profile, "production">): string {
+	return `db:grant-plan:${profile}`;
+}
+
 runMain(async () => {
+	const server = "@filosign/server";
 	const argv = scriptArgv();
 	exitOnHelpOrEmpty(HELP, argv);
 
 	const action = argv[0] as Action;
 	const profile = argv[1] as Profile;
 
-	if (action !== "push" && action !== "purge") {
+	if (action !== "push" && action !== "purge" && action !== "grant-plan") {
 		die(`Unknown action: ${action}`);
+	}
+	if (action === "grant-plan") {
+		if (profile === "production") {
+			die(
+				"grant-plan is not wired for production; use staging or run grant-admin-plan manually",
+			);
+		}
+		if (profile !== "local" && profile !== "staging" && profile !== "sandbox") {
+			die(`Unknown profile: ${profile}`);
+		}
+		await runInheritExit(
+			rootDir,
+			packageRunCmd(rootDir, server, grantPlanScript(profile)),
+		);
+		return;
 	}
 	if (
 		profile !== "local" &&
@@ -60,8 +83,6 @@ runMain(async () => {
 	if (action === "purge" && profile === "production") {
 		die('Purge is not allowed for the "production" profile');
 	}
-
-	const server = "@filosign/server";
 
 	if (action === "purge") {
 		await runSequentialExit(rootDir, [

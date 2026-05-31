@@ -71,14 +71,13 @@ export async function ensureHardhatNode(rootDir: string): Promise<void> {
 	die("Hardhat node did not become ready on :8545");
 }
 
-/** Full local reset: node, compile, deploy, db purge+push. */
+/** Full local bootstrap: node, compile, deploy (no DB purge). */
 export async function runLocalBootstrap(rootDir: string): Promise<void> {
 	await ensureHardhatNode(rootDir);
 
 	const steps: string[][] = [
 		["bun", "run", "contracts", "--", "compile"],
 		["bun", "run", "contracts", "--", "--migrate", "--local"],
-		["bun", "run", "db", "--", "purge", "local"],
 	];
 
 	for (const cmd of steps) {

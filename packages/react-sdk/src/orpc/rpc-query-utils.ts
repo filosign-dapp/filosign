@@ -42,6 +42,9 @@ export function createFilosignRpcQueryUtils(client: AppRouterClient) {
 		settlements: createTanstackQueryUtils(client.settlements, {
 			path: [...ROOT, "settlements"],
 		}),
+		attachments: createTanstackQueryUtils(client.attachments, {
+			path: [...ROOT, "attachments"],
+		}),
 		drafts: createTanstackQueryUtils(client.drafts, {
 			path: [...ROOT, "drafts"],
 		}),

@@ -1,3 +1,4 @@
+import type { SettlementRuleKey } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 
@@ -6,9 +7,12 @@ export function useTrySettleSettlement(pieceCid: string | undefined) {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: async (onChainRuleId: string) => {
+		mutationFn: async (input: SettlementRuleKey) => {
 			if (!isAuthed) throw new Error("Not authenticated");
-			return rpcQuery.settlements.trySettle.call({ onChainRuleId });
+			return rpcQuery.settlements.trySettle.call({
+				onChainRuleId: input.onChainRuleId,
+				validatorAddress: input.validatorAddress,
+			});
 		},
 		onSuccess: () => {
 			void queryClient.invalidateQueries({

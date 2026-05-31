@@ -11,4 +11,6 @@ export * from "./usePublishOrgMemberKeyWrap";
 export * from "./useRemoveOrgMember";
 export * from "./useRevokeOrgConnection";
 export * from "./useSetOrgMemberRole";
+export * from "./useSettlementFeatureAccessGet";
+export * from "./useSubmitSettlementFeatureAccessRequest";
 export * from "./useUpdateOrganization";

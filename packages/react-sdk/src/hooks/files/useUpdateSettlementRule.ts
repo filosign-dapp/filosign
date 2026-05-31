@@ -19,7 +19,7 @@ export function useUpdateSettlementRule(pieceCid: string | undefined) {
 	return useMutation({
 		mutationFn: async (args: {
 			onChainRuleId: string;
-			validatorAddress?: Address;
+			validatorAddress: Address;
 			releaseType: SettlementReleaseType;
 			releaseParams: SettlementRuleUpdateInput["releaseParams"];
 			legs: SettlementRuleDraftLeg[];
@@ -43,6 +43,7 @@ export function useUpdateSettlementRule(pieceCid: string | undefined) {
 
 			return rpcQuery.settlements.updateRule.call({
 				onChainRuleId: args.onChainRuleId,
+				validatorAddress: args.validatorAddress,
 				updateRuleTxHash,
 				legs: args.legs.map((leg) => ({
 					recipientWallet: leg.recipientWallet,

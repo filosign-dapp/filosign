@@ -30,6 +30,7 @@ if (!runtimeChain) {
 const RUNTIME_CONTRACT_NAMES = [
 	"FSFileRegistry",
 	"FSPaymentValidator",
+	"FSAttachmentRelease",
 	"MockUSDC",
 ] as const;
 

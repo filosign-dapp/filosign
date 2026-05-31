@@ -1,5 +1,5 @@
 import type {
-	SettlementPayoutLegInput,
+	SettlementPayoutLegStored,
 	SettlementReleaseType,
 } from "@filosign/shared";
 import {
@@ -26,7 +26,7 @@ export const fileSettlementRules = t.pgTable(
 		cidIdentifier: tBytes32().notNull(),
 		payerWallet: tEvmAddress().notNull(),
 		tokenAddress: tEvmAddress().notNull(),
-		legs: t.jsonb().$type<SettlementPayoutLegInput[]>().notNull(),
+		legs: t.jsonb().$type<SettlementPayoutLegStored[]>().notNull(),
 		expiresAt: t.numeric({ precision: 78, scale: 0 }),
 		releaseType: t.text({ enum: settlementReleaseTypes }).notNull(),
 		releaseParams: t.jsonb().$type<Record<string, unknown>>().notNull(),
@@ -45,7 +45,9 @@ export const fileSettlementRules = t.pgTable(
 		...timestamps,
 	},
 	(table) => [
-		t.uniqueIndex("uq_file_settlement_rules_on_chain").on(table.onChainRuleId),
+		t
+			.uniqueIndex("uq_file_settlement_rules_validator_rule")
+			.on(table.validatorAddress, table.onChainRuleId),
 		t.index("idx_file_settlement_rules_piece").on(table.pieceCid),
 		t.index("idx_file_settlement_rules_status").on(table.status),
 		t.index("idx_file_settlement_rules_validator").on(table.validatorAddress),

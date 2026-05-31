@@ -1,5 +1,6 @@
 import {
 	DEPLOYMENTS,
+	SIGNUP_POLICIES,
 	zSettlementRuleCancelInput,
 	zSettlementRuleUpdateInput,
 } from "@filosign/shared";
@@ -15,8 +16,14 @@ import {
 	billingCreatePortalSession,
 	billingEntitlements,
 	billingGetOrgSummary,
+	billingGetUpgradeOfferings,
+	billingGetUserSummary,
+	billingGetWorkspaceBillingContext,
+	billingPreviewMarketingCheckout,
 	billingPreviewOrgPlanChange,
 	billingPreviewOrgSeatChange,
+	billingRequestCheckoutLink,
+	billingResendSetupLink,
 	billingUpdateOrgSeats,
 } from "@/api/handlers/billing-handlers";
 import * as draftHandlers from "@/api/handlers/drafts";
@@ -26,6 +33,22 @@ import {
 	metricsSenderUsage,
 } from "@/api/handlers/metrics-handlers";
 import * as orgsHandlers from "@/api/handlers/orgs";
+import {
+	platformAccessPreviewGate,
+	platformAccessSubmitAccessRequest,
+	platformAdminAccess,
+	platformAdminAccessRequestsApprove,
+	platformAdminAccessRequestsList,
+	platformAdminAccessRequestsReject,
+	platformAdminInvitesCreate,
+	platformAdminInvitesList,
+	platformAdminInvitesRebook,
+	platformAdminInvitesRevoke,
+	platformAdminUsersList,
+	platformAdminUsersSetFeatureOverrides,
+	platformAdminUsersSetPlan,
+	zGatePreviewOutput,
+} from "@/api/handlers/platform-access-handlers";
 import {
 	settlementsCancelRule,
 	settlementsConfirmSettlement,
@@ -42,6 +65,10 @@ import {
 } from "@/api/handlers/storage-handlers";
 import { txProcessIndexerHash } from "@/api/handlers/tx";
 import * as userHandlers from "@/api/handlers/users";
+import {
+	CHECKOUT_PLAN_IDS,
+	UPGRADE_LIMIT_REASONS,
+} from "@/lib/domains/billing";
 import { loadPlatformRuntime } from "@/lib/domains/runtime";
 import { zIndexerTxBody } from "@/lib/platform/validation/tx-registration";
 import {
@@ -56,6 +83,7 @@ const platformRuntimeSchema = z.object({
 	chain: z.unknown(),
 	chainKey: z.enum(["local", "testnet", "mainnet"]),
 	deployment: z.enum(DEPLOYMENTS),
+	signupPolicy: z.enum(SIGNUP_POLICIES),
 });
 
 const unk = z.unknown();
@@ -71,8 +99,126 @@ export const appRouter = {
 			chain: r.chain,
 			chainKey: r.chainKey,
 			deployment: r.deployment,
+			signupPolicy: r.signupPolicy,
 		};
 	}),
+	platformAccess: {
+		previewGate: publicProcedure
+			.input(
+				z.object({
+					platformInvite: z.string().optional(),
+					setup: z.string().optional(),
+					coldInvite: z.string().optional(),
+					coldPieceCid: z.string().optional(),
+					email: z.string().optional(),
+				}),
+			)
+			.output(zGatePreviewOutput)
+			.handler(({ input }) => platformAccessPreviewGate(input)),
+		submitAccessRequest: publicProcedure
+			.input(
+				z.object({
+					email: z.string().email(),
+					name: z.string().max(120).optional(),
+					company: z.string().max(120).optional(),
+					message: z.string().max(2000).optional(),
+				}),
+			)
+			.output(z.object({ ok: z.literal(true) }))
+			.handler(({ input }) => platformAccessSubmitAccessRequest(input)),
+	},
+	platformAdmin: {
+		access: authenticatedProcedure
+			.output(z.object({ isAdmin: z.boolean() }))
+			.handler(({ context }) => platformAdminAccess(context.userWallet)),
+		invites: {
+			list: authenticatedProcedure
+				.output(
+					z.object({
+						invites: z.array(z.record(z.string(), z.unknown())),
+					}),
+				)
+				.handler(({ context }) => platformAdminInvitesList(context.userWallet)),
+			create: authenticatedProcedure
+				.input(z.record(z.string(), unk))
+				.output(z.record(z.string(), unk))
+				.handler(({ context, input }) =>
+					platformAdminInvitesCreate(context.userWallet, input),
+				),
+			revoke: authenticatedProcedure
+				.input(z.object({ inviteId: z.string().uuid() }))
+				.output(z.object({ ok: z.literal(true) }))
+				.handler(({ context, input }) =>
+					platformAdminInvitesRevoke(context.userWallet, input.inviteId),
+				),
+			rebook: authenticatedProcedure
+				.input(z.object({ inviteId: z.string().uuid() }))
+				.output(z.record(z.string(), unk))
+				.handler(({ context, input }) =>
+					platformAdminInvitesRebook(context.userWallet, input.inviteId),
+				),
+		},
+		users: {
+			list: authenticatedProcedure
+				.output(
+					z.object({
+						users: z.array(z.record(z.string(), z.unknown())),
+					}),
+				)
+				.handler(({ context }) => platformAdminUsersList(context.userWallet)),
+			setFeatureOverrides: authenticatedProcedure
+				.input(z.record(z.string(), unk))
+				.output(z.object({ ok: z.literal(true) }))
+				.handler(({ context, input }) =>
+					platformAdminUsersSetFeatureOverrides(context.userWallet, input),
+				),
+			setPlan: authenticatedProcedure
+				.input(z.record(z.string(), unk))
+				.output(z.object({ ok: z.literal(true) }))
+				.handler(({ context, input }) =>
+					platformAdminUsersSetPlan(context.userWallet, input),
+				),
+		},
+		accessRequests: {
+			list: authenticatedProcedure
+				.output(
+					z.object({
+						requests: z.array(z.record(z.string(), z.unknown())),
+					}),
+				)
+				.handler(({ context }) =>
+					platformAdminAccessRequestsList(context.userWallet),
+				),
+			approve: authenticatedProcedure
+				.input(
+					z.object({
+						requestId: z.string().uuid(),
+						planId: z
+							.enum(["free", "individual", "teams", "teams_pro", "enterprise"])
+							.optional(),
+						trialDays: z.number().int().min(1).max(365).optional(),
+					}),
+				)
+				.output(
+					z.object({
+						inviteToken: z.string(),
+						inviteUrl: z.string(),
+					}),
+				)
+				.handler(({ context, input }) =>
+					platformAdminAccessRequestsApprove(context.userWallet, input),
+				),
+			reject: authenticatedProcedure
+				.input(z.object({ requestId: z.string().uuid() }))
+				.output(z.object({ ok: z.literal(true) }))
+				.handler(({ context, input }) =>
+					platformAdminAccessRequestsReject(
+						context.userWallet,
+						input.requestId,
+					),
+				),
+		},
+	},
 	drafts: {
 		create: orgProcedure
 			.input(z.record(z.string(), unk))
@@ -517,7 +663,9 @@ export const appRouter = {
 	billing: {
 		entitlements: authenticatedProcedure
 			.output(out.billing.entitlements)
-			.handler(({ context }) => billingEntitlements(context.userWallet)),
+			.handler(({ context }) =>
+				billingEntitlements(context.userWallet, context.activeOrg),
+			),
 		createCheckoutSession: authenticatedProcedure
 			.input(
 				z.object({
@@ -541,10 +689,42 @@ export const appRouter = {
 		getOrgSummary: authenticatedProcedure
 			.output(out.billing.getOrgSummary)
 			.handler(({ context }) => billingGetOrgSummary(context.activeOrg)),
+		getUserSummary: authenticatedProcedure
+			.output(out.billing.getUserSummary)
+			.handler(({ context }) => billingGetUserSummary(context.userWallet)),
+		getWorkspaceBillingContext: authenticatedProcedure
+			.output(out.billing.getWorkspaceBillingContext)
+			.handler(({ context }) =>
+				billingGetWorkspaceBillingContext(
+					context.userWallet,
+					context.activeOrg,
+				),
+			),
+		getUpgradeOfferings: authenticatedProcedure
+			.input(z.object({ reason: z.enum(UPGRADE_LIMIT_REASONS) }))
+			.output(out.billing.getUpgradeOfferings)
+			.handler(({ context, input }) =>
+				billingGetUpgradeOfferings(
+					context.userWallet,
+					context.activeOrg,
+					input.reason,
+				),
+			),
+		previewMarketingCheckout: publicProcedure
+			.input(
+				z.object({
+					email: z.string().email(),
+					planId: z.enum(["individual", "teams", "teams_pro"]),
+					interval: z.enum(["monthly", "yearly"]).default("monthly"),
+					seatCount: z.number().int().min(1).optional(),
+				}),
+			)
+			.output(out.billing.previewMarketingCheckout)
+			.handler(({ input }) => billingPreviewMarketingCheckout(input)),
 		createOrgCheckoutSession: authenticatedProcedure
 			.input(
 				z.object({
-					planId: z.enum(["teams", "teams_pro"]),
+					planId: z.enum(["individual", "teams", "teams_pro"]),
 					interval: z.enum(["monthly", "yearly"]).default("monthly"),
 					seatCount: z.number().int().min(1),
 					returnUrl: z.url(),
@@ -602,6 +782,21 @@ export const appRouter = {
 					planId: input.planId,
 				}),
 			),
+		requestCheckoutLink: publicProcedure
+			.input(
+				z.object({
+					email: z.string().email(),
+					planId: z.enum(CHECKOUT_PLAN_IDS),
+					interval: z.enum(["monthly", "yearly"]).default("monthly"),
+					seatCount: z.number().int().min(1).optional(),
+				}),
+			)
+			.output(z.object({ ok: z.literal(true) }))
+			.handler(({ input }) => billingRequestCheckoutLink(input)),
+		resendSetupLink: publicProcedure
+			.input(z.object({ email: z.string().email() }))
+			.output(z.object({ ok: z.literal(true) }))
+			.handler(({ input }) => billingResendSetupLink(input)),
 	},
 	metrics: {
 		invitesSummary: authenticatedProcedure
@@ -897,6 +1092,21 @@ export const appRouter = {
 						});
 					}
 					return orgsHandlers.orgsTemplatesCloneToEnvelope(
+						context.userWallet,
+						context.activeOrg,
+						input.templateId,
+					);
+				}),
+			delete: authenticatedProcedure
+				.input(z.object({ templateId: z.string().uuid() }))
+				.output(out.orgs.template)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsTemplatesDelete(
 						context.userWallet,
 						context.activeOrg,
 						input.templateId,

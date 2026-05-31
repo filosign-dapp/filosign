@@ -1,16 +1,27 @@
+import { ORPCError } from "@orpc/server";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import { z } from "zod";
 import {
+	assertMarketingCheckoutAllowed,
 	type BillingInterval,
+	CHECKOUT_PLAN_IDS,
 	changeOrgPlan,
 	createBillingCheckoutSession,
 	createBillingPortalSession,
 	createOrgBillingCheckoutSession,
 	createOrgBillingPortalSession,
 	getOrgBillingSummary,
+	getUpgradeOfferingsForWallet,
+	getUserBillingSummary,
+	getWorkspaceBillingContext,
 	type OrgCheckoutPlanId,
+	previewMarketingCheckout,
 	previewOrgPlanChange,
 	previewOrgSeatChange,
+	requestCheckoutLink,
+	resendPaidSetupLink,
+	type UPGRADE_LIMIT_REASONS,
 	updateOrgSeats,
 } from "@/lib/domains/billing";
 import {
@@ -19,8 +30,14 @@ import {
 } from "@/lib/domains/entitlements";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
 
-export async function billingEntitlements(wallet: Address) {
-	const ctx = await resolveEntitlementContext(getAddress(wallet));
+export async function billingEntitlements(
+	wallet: Address,
+	activeOrg: ActiveOrgContext | null,
+) {
+	const ctx = await resolveEntitlementContext(
+		getAddress(wallet),
+		activeOrg?.organizationId ?? null,
+	);
 	return buildEntitlementsSnapshot(ctx);
 }
 
@@ -35,6 +52,50 @@ export async function billingCreateCheckoutSession(args: {
 
 export async function billingCreatePortalSession(wallet: Address) {
 	return createBillingPortalSession({ wallet });
+}
+
+export async function billingGetUserSummary(wallet: Address) {
+	return getUserBillingSummary(getAddress(wallet));
+}
+
+export async function billingGetWorkspaceBillingContext(
+	wallet: Address,
+	activeOrg: ActiveOrgContext | null,
+) {
+	const org = requireOrgBilling(activeOrg);
+	return getWorkspaceBillingContext({
+		wallet: getAddress(wallet),
+		organizationId: org.organizationId,
+	});
+}
+
+export async function billingGetUpgradeOfferings(
+	wallet: Address,
+	activeOrg: ActiveOrgContext | null,
+	reason: (typeof UPGRADE_LIMIT_REASONS)[number],
+) {
+	return getUpgradeOfferingsForWallet({
+		wallet: getAddress(wallet),
+		organizationId: activeOrg?.organizationId ?? null,
+		reason,
+	});
+}
+
+export async function billingPreviewMarketingCheckout(body: unknown) {
+	const parsed = z
+		.object({
+			email: z.string().email(),
+			planId: z.enum(CHECKOUT_PLAN_IDS),
+			interval: z.enum(["monthly", "yearly"]).default("monthly"),
+			seatCount: z.number().int().min(1).optional(),
+		})
+		.safeParse(body);
+
+	if (parsed.error) {
+		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+	}
+
+	return previewMarketingCheckout(parsed.data);
 }
 
 function requireOrgBilling(
@@ -117,4 +178,34 @@ export async function billingChangeOrgPlan(args: {
 		organizationId: org.organizationId,
 		planId: args.planId,
 	});
+}
+
+export async function billingRequestCheckoutLink(body: unknown) {
+	const parsed = z
+		.object({
+			email: z.string().email(),
+			planId: z.enum(CHECKOUT_PLAN_IDS),
+			interval: z.enum(["monthly", "yearly"]).default("monthly"),
+			seatCount: z.number().int().min(1).optional(),
+		})
+		.safeParse(body);
+
+	if (parsed.error) {
+		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+	}
+
+	await assertMarketingCheckoutAllowed({
+		email: parsed.data.email,
+		planId: parsed.data.planId,
+	});
+
+	return requestCheckoutLink(parsed.data);
+}
+
+export async function billingResendSetupLink(body: unknown) {
+	const parsed = z.object({ email: z.string().email() }).safeParse(body);
+	if (parsed.error) {
+		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+	}
+	return resendPaidSetupLink(parsed.data);
 }

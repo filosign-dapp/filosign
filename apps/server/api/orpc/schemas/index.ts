@@ -1,11 +1,15 @@
 import {
 	rpcBillingCheckoutSessionOutputSchema,
 	rpcBillingEntitlementsOutputSchema,
+	rpcBillingMarketingPreviewOutputSchema,
 	rpcBillingOrgPlanChangeOutputSchema,
 	rpcBillingOrgSeatPreviewOutputSchema,
 	rpcBillingOrgSeatsOutputSchema,
 	rpcBillingOrgSummaryOutputSchema,
 	rpcBillingPortalSessionOutputSchema,
+	rpcBillingUpgradeOfferingsOutputSchema,
+	rpcBillingUserSummaryOutputSchema,
+	rpcBillingWorkspaceContextOutputSchema,
 } from "./billing-output";
 import {
 	rpcDraftsArchiveOutputSchema,
@@ -140,6 +144,10 @@ export const rpcOut = {
 		updateOrgSeats: rpcBillingOrgSeatsOutputSchema,
 		previewOrgPlanChange: rpcBillingOrgSeatPreviewOutputSchema,
 		changeOrgPlan: rpcBillingOrgPlanChangeOutputSchema,
+		getUserSummary: rpcBillingUserSummaryOutputSchema,
+		getWorkspaceBillingContext: rpcBillingWorkspaceContextOutputSchema,
+		getUpgradeOfferings: rpcBillingUpgradeOfferingsOutputSchema,
+		previewMarketingCheckout: rpcBillingMarketingPreviewOutputSchema,
 	},
 	metrics: {
 		invitesSummary: rpcMetricsInvitesSummaryOutputSchema,

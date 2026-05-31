@@ -10,6 +10,7 @@ import {
 	ClockIcon,
 	WarningIcon,
 } from "@phosphor-icons/react";
+import type { Address } from "viem";
 import { defaultChain, SUPPORTED_TOKENS } from "@/src/constants";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -31,11 +32,17 @@ type Props = {
 	manualSettlePending: boolean;
 	settlingRuleId: string | undefined;
 	onTrySettleRule: (onChainRuleId: string) => void;
-	onManualSettleRule: (onChainRuleId: string) => void;
+	onManualSettleRule: (input: {
+		onChainRuleId: string;
+		validatorAddress: Address;
+	}) => void;
 	revokePending: boolean;
 	onRevokeAllowance: () => void;
 	canManageSettlements?: boolean;
-	onCancelRule?: (onChainRuleId: string) => void;
+	onCancelRule?: (input: {
+		onChainRuleId: string;
+		validatorAddress: Address;
+	}) => void;
 	onUpdateRule?: (rule: SettlementRuleRow) => void;
 	cancelPending?: boolean;
 	updatePending?: boolean;
@@ -177,7 +184,7 @@ export function SettlementStatusPanel({
 									)}
 								>
 									{settlementStatusLabel(rule.status)}
-									{rule.lastError && failed ? ` — ${rule.lastError}` : null}
+									{rule.lastError && failed ? `: ${rule.lastError}` : null}
 								</p>
 								{canSettle ? (
 									<div className="flex flex-wrap gap-2 mt-2">
@@ -197,7 +204,12 @@ export function SettlementStatusPanel({
 											size="sm"
 											className="h-7 text-xs"
 											disabled={settlePending}
-											onClick={() => onManualSettleRule(rule.onChainRuleId)}
+											onClick={() =>
+												onManualSettleRule({
+													onChainRuleId: rule.onChainRuleId,
+													validatorAddress: rule.validatorAddress as Address,
+												})
+											}
 										>
 											{isSettling && !isTrying
 												? "Sending…"
@@ -213,7 +225,12 @@ export function SettlementStatusPanel({
 								onUpdateRule ? (
 									<SettlementManageActions
 										rule={rule}
-										onCancel={() => onCancelRule(rule.onChainRuleId)}
+										onCancel={() =>
+											onCancelRule({
+												onChainRuleId: rule.onChainRuleId,
+												validatorAddress: rule.validatorAddress as Address,
+											})
+										}
 										onUpdate={() => onUpdateRule(rule)}
 										cancelPending={cancelPending}
 										updatePending={updatePending}

@@ -2,6 +2,7 @@ import { useEntitlements } from "@filosign/react/billing";
 import {
 	canUseAdvancedSettlements,
 	canUseBasicSettlements,
+	formatSettlementSimError,
 	type SettlementRuleRow,
 	useAmendSigner,
 	useCancelSettlementRule,
@@ -16,7 +17,8 @@ import type {
 	SettlementRuleUpdateInput,
 } from "@filosign/shared";
 import { useCallback, useMemo, useState } from "react";
-import { getAddress } from "viem";
+import { toast } from "sonner";
+import { type Address, getAddress } from "viem";
 import { useCompliancePdfExports } from "@/src/lib/domains/files/compliance-pdf";
 import { legsToDraftAmounts } from "@/src/routes/dashboard/document/sign/-components/settlement-update-dialog";
 import { useAttachSettlementRules } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-attach-settlement";
@@ -99,18 +101,18 @@ export function useSignDocument() {
 			try {
 				await trySettleSettlement.mutateAsync(onChainRuleId);
 			} catch (err) {
-				console.error(err);
+				toast.error(formatSettlementSimError(err));
 			}
 		},
 		[trySettleSettlement],
 	);
 
 	const onManualSettleRule = useCallback(
-		async (onChainRuleId: string) => {
+		async (input: { onChainRuleId: string; validatorAddress: Address }) => {
 			try {
-				await manualSettlementPayout.mutateAsync(onChainRuleId);
+				await manualSettlementPayout.mutateAsync(input);
 			} catch (err) {
-				console.error(err);
+				toast.error(formatSettlementSimError(err));
 			}
 		},
 		[manualSettlementPayout],
@@ -123,16 +125,16 @@ export function useSignDocument() {
 		try {
 			await revokeSettlementAllowance.mutateAsync(getAddress(token));
 		} catch (err) {
-			console.error(err);
+			toast.error(formatSettlementSimError(err));
 		}
 	}, [revokeSettlementAllowance, settlementsQuery.data]);
 
 	const onCancelRule = useCallback(
-		async (onChainRuleId: string) => {
+		async (input: { onChainRuleId: string; validatorAddress: Address }) => {
 			try {
-				await cancelSettlementRule.mutateAsync(onChainRuleId);
+				await cancelSettlementRule.mutateAsync(input);
 			} catch (err) {
-				console.error(err);
+				toast.error(formatSettlementSimError(err));
 			}
 		},
 		[cancelSettlementRule],
@@ -151,18 +153,23 @@ export function useSignDocument() {
 		}) => {
 			if (!updateRuleTarget) return;
 			const draftLegs = legsToDraftAmounts(args.legs);
-			await updateSettlementRule.mutateAsync({
-				onChainRuleId: updateRuleTarget.onChainRuleId,
-				releaseType: args.releaseType,
-				releaseParams: args.releaseParams,
-				legs: draftLegs.map((leg, index) => ({
-					recipientWallet: leg.recipientWallet,
-					recipientSource:
-						updateRuleTarget.legs[index]?.recipientSource ??
-						updateRuleTarget.recipientSource,
-					amount: leg.amount,
-				})),
-			});
+			try {
+				await updateSettlementRule.mutateAsync({
+					onChainRuleId: updateRuleTarget.onChainRuleId,
+					validatorAddress: getAddress(updateRuleTarget.validatorAddress),
+					releaseType: args.releaseType,
+					releaseParams: args.releaseParams,
+					legs: draftLegs.map((leg, index) => ({
+						recipientWallet: leg.recipientWallet,
+						recipientSource:
+							updateRuleTarget.legs[index]?.recipientSource ??
+							updateRuleTarget.recipientSource,
+						amount: leg.amount,
+					})),
+				});
+			} catch (err) {
+				toast.error(formatSettlementSimError(err));
+			}
 		},
 		[updateRuleTarget, updateSettlementRule],
 	);
@@ -188,7 +195,7 @@ export function useSignDocument() {
 			try {
 				await attachSettlementRules.mutateAsync({ rules });
 			} catch (err) {
-				console.error(err);
+				toast.error(formatSettlementSimError(err));
 			}
 		},
 		[attachSettlementRules],
@@ -280,7 +287,7 @@ export function useSignDocument() {
 			settlingRuleId: trySettleSettlement.isPending
 				? trySettleSettlement.variables
 				: manualSettlementPayout.isPending
-					? manualSettlementPayout.variables
+					? manualSettlementPayout.variables?.onChainRuleId
 					: undefined,
 			onTrySettleRule,
 			onManualSettleRule,

@@ -245,7 +245,7 @@ export function SignDocumentFileContent() {
 				{myPlacementFields.some((f) => f.pageIndex !== 0) && (
 					<div className="w-full max-w-150 rounded-lg border border-border bg-background/80 p-3">
 						<p className="mb-2 text-xs font-medium text-muted-foreground">
-							Fields on other pages — tap to mark complete
+							Fields on other pages. Tap to mark complete
 						</p>
 						<div className="flex flex-wrap gap-2">
 							{myPlacementFields

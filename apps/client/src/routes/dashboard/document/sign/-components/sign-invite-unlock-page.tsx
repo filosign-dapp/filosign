@@ -10,7 +10,7 @@ import { SignDocumentShell } from "./shell";
 import { SignDocumentShellHeader } from "./shell-header";
 
 /**
- * Cold-invite unlock flow only — avoids mounting the full sign document controller.
+ * Cold-invite unlock flow only - avoids mounting the full sign document controller.
  */
 export function SignInviteUnlockRoutePage() {
 	const navigate = useNavigate();

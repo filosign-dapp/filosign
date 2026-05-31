@@ -98,6 +98,7 @@ export function useSignActions(options: {
 			const magicLink = buildColdInviteMagicLink(window.location.origin, {
 				pieceCid,
 				inviteToken: result.inviteToken,
+				email: result.recipientEmails[0],
 			});
 			setColdShare({
 				emails: result.recipientEmails,

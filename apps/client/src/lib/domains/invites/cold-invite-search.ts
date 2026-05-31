@@ -4,7 +4,10 @@ import { z } from "zod";
 export const coldInviteEntrySearchSchema = z.object({
 	coldPieceCid: z.string().optional().default(""),
 	coldInvite: z.string().optional().default(""),
-	/** Set to `"1"` when user chose "Continue anyway" after invite mismatch—skip document redirect. */
+	email: z.string().optional().default(""),
+	platformInvite: z.string().optional().default(""),
+	setup: z.string().optional().default(""),
+	/** Set to `"1"` when user chose "Continue anyway" after invite mismatch-skip document redirect. */
 	skipColdSign: z.string().optional().default(""),
 	upgrade: z.string().optional(),
 	interval: z.string().optional(),
@@ -48,11 +51,14 @@ export function toSignDocumentSearch(
 
 export function buildColdInviteMagicLink(
 	origin: string,
-	args: { pieceCid: string; inviteToken: string },
+	args: { pieceCid: string; inviteToken: string; email?: string },
 ): string {
 	const u = new URL("/", origin);
 	u.searchParams.set("coldPieceCid", args.pieceCid);
 	u.searchParams.set("coldInvite", args.inviteToken);
+	if (args.email?.trim()) {
+		u.searchParams.set("email", args.email.trim().toLowerCase());
+	}
 	return u.toString();
 }
 

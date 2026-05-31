@@ -11,6 +11,7 @@ import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn } from "@/src/lib/utils";
 import { logger } from "@/src/lib/utils/logger";
 import { safeAsync } from "@/src/lib/utils/safe";
+import { clearStoredAccessGate } from "@/src/lib/web3/platform-access-session";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
 export type ExecuteSwitchAccountLogoutArgs = {
@@ -30,6 +31,7 @@ export async function executeSwitchAccountLogout(
 ): Promise<void> {
 	const preservedColdSearch = extractColdInviteSearchFromLocation();
 	args.clearOnboardingForm();
+	clearStoredAccessGate();
 	if (args.wallet) {
 		const [, err] = await safeAsync(() => args.logoutFilosign.mutateAsync());
 		if (err) {

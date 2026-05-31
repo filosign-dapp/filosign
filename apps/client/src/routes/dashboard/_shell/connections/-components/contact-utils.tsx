@@ -5,7 +5,7 @@ import { cn } from "@/src/lib/utils/index";
 import { copyToClipboard } from "@/src/lib/utils/utils";
 
 export function shortWallet(address: string | undefined | null) {
-	if (!address || address.length < 12) return address ?? "—";
+	if (!address || address.length < 12) return address ?? "–";
 	return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 

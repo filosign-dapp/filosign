@@ -1,4 +1,4 @@
-/** PDF bytes from last server hydrate — avoids IDB read before first paint. */
+/** PDF bytes from last server hydrate - avoids IDB read before first paint. */
 const hydratedPdfBytesByLocalDraftId = new Map<
 	string,
 	Record<string, Uint8Array>

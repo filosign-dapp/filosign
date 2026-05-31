@@ -1,6 +1,10 @@
 import { useLogin } from "@filosign/react/auth";
 import { useCallback, useState } from "react";
 import { useAuthToken } from "thirdweb/react";
+import {
+	clearStoredAccessGate,
+	readStoredAccessGate,
+} from "@/src/lib/web3/platform-access-session";
 
 export function useOnboardingKeyRegistration() {
 	const authToken = useAuthToken();
@@ -12,7 +16,10 @@ export function useOnboardingKeyRegistration() {
 			return { ok: false as const };
 		}
 		try {
-			const result = await login.mutateAsync({ idToken: authToken });
+			const result = await login.mutateAsync({
+				idToken: authToken,
+				accessGate: readStoredAccessGate() ?? undefined,
+			});
 			if (
 				result &&
 				typeof result === "object" &&
@@ -20,9 +27,11 @@ export function useOnboardingKeyRegistration() {
 				typeof result.recoveryPhrase === "string"
 			) {
 				setRecoveryPhrase(result.recoveryPhrase);
+				clearStoredAccessGate();
 				return { ok: true as const, hadPhrase: true };
 			}
 			setRecoveryPhrase(null);
+			clearStoredAccessGate();
 			return { ok: true as const, hadPhrase: false };
 		} catch {
 			return { ok: false as const };

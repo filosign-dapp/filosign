@@ -1,6 +1,12 @@
+import type { PlanId } from "@filosign/entitlements";
 import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import { getAddress } from "viem";
+import { checkoutPlanLabel } from "@/lib/domains/billing/checkout-intents";
+import {
+	type PlatformAccessTx,
+	upsertPaidAccessPendingFromWebhook,
+} from "@/lib/domains/platform-access";
 import db from "@/lib/platform/db";
 import {
 	type BillingWebhookEventStatus,
@@ -9,10 +15,16 @@ import {
 	userSubscriptions,
 } from "@/lib/platform/db/schema/billing";
 import { organizationSubscriptions } from "@/lib/platform/db/schema/organization";
+import {
+	checkoutIntents,
+	platformAccessPending,
+} from "@/lib/platform/db/schema/platform-access";
+import { sendPaidSetupEmail } from "@/lib/platform/email/invites";
+import { getClientUrl } from "@/lib/platform/email/public-url";
 import { logger } from "@/lib/platform/pino";
 import { createDodoClient } from "./dodo-client";
 import {
-	isOrgBillingPlanId,
+	isWorkspaceBillingPlanId,
 	resolveIntervalFromProductId,
 	resolvePlanIdFromProductId,
 } from "./policy";
@@ -39,6 +51,7 @@ type DodoWebhookEvent = {
 		customer_id?: string;
 		customer?: {
 			customer_id?: string;
+			email?: string;
 		};
 		metadata?: Record<string, unknown>;
 		next_billing_date?: string;
@@ -85,6 +98,243 @@ function extractOrgIdFromMetadata(
 ): string | null {
 	const orgId = metadata?.filosign_org_id;
 	return typeof orgId === "string" && orgId.length > 0 ? orgId : null;
+}
+
+function extractSetupTokenFromMetadata(
+	metadata: Record<string, unknown> | undefined,
+): string | null {
+	const token = metadata?.filosign_setup_token;
+	return typeof token === "string" && token.length >= 8 ? token : null;
+}
+
+function extractCheckoutIntentIdFromMetadata(
+	metadata: Record<string, unknown> | undefined,
+): string | null {
+	const id = metadata?.filosign_checkout_intent_id;
+	return typeof id === "string" && id.length > 0 ? id : null;
+}
+
+function extractPlanIdFromMetadata(
+	metadata: Record<string, unknown> | undefined,
+): PlanId | null {
+	const planId = metadata?.filosign_plan_id;
+	if (
+		planId === "individual" ||
+		planId === "teams" ||
+		planId === "teams_pro" ||
+		planId === "enterprise" ||
+		planId === "free"
+	) {
+		return planId;
+	}
+	return null;
+}
+
+function extractSeatCountFromMetadata(
+	metadata: Record<string, unknown> | undefined,
+): number | null {
+	const raw = metadata?.filosign_seat_count;
+	if (typeof raw === "number" && Number.isInteger(raw) && raw >= 1) {
+		return raw;
+	}
+	if (typeof raw === "string") {
+		const parsed = Number.parseInt(raw, 10);
+		if (Number.isInteger(parsed) && parsed >= 1) return parsed;
+	}
+	return null;
+}
+
+function extractIntervalFromMetadata(
+	metadata: Record<string, unknown> | undefined,
+): "monthly" | "yearly" | null {
+	const interval = metadata?.filosign_interval;
+	return interval === "monthly" || interval === "yearly" ? interval : null;
+}
+
+export function resolveCheckoutFirstSeatCount(args: {
+	metadata?: Record<string, unknown>;
+	payloadQuantity?: number;
+	intentSeatCount?: number;
+}): number {
+	const fromMetadata = extractSeatCountFromMetadata(args.metadata);
+	if (fromMetadata) return fromMetadata;
+	if (
+		typeof args.payloadQuantity === "number" &&
+		Number.isInteger(args.payloadQuantity) &&
+		args.payloadQuantity >= 1
+	) {
+		return args.payloadQuantity;
+	}
+	if (
+		typeof args.intentSeatCount === "number" &&
+		Number.isInteger(args.intentSeatCount) &&
+		args.intentSeatCount >= 1
+	) {
+		return args.intentSeatCount;
+	}
+	return 1;
+}
+
+export function resolveCheckoutFirstBillingInterval(args: {
+	metadata?: Record<string, unknown>;
+	productId?: string;
+	intentInterval?: "monthly" | "yearly" | null;
+}): "monthly" | "yearly" | null {
+	return (
+		extractIntervalFromMetadata(args.metadata) ??
+		args.intentInterval ??
+		resolveIntervalFromProductId(args.productId)
+	);
+}
+
+async function isCheckoutFirstWithoutOrg(
+	tx: PlatformAccessTx,
+	args: {
+		metadataSetupToken: string | null;
+		dodoSubscriptionId: string | null;
+		organizationId: string | null;
+	},
+): Promise<boolean> {
+	if (args.organizationId) return false;
+	if (args.metadataSetupToken) return true;
+	if (!args.dodoSubscriptionId) return false;
+
+	const [pending] = await tx
+		.select({ id: platformAccessPending.id })
+		.from(platformAccessPending)
+		.where(
+			and(
+				eq(platformAccessPending.dodoSubscriptionId, args.dodoSubscriptionId),
+				eq(platformAccessPending.status, "pending_wallet"),
+			),
+		)
+		.limit(1);
+
+	return Boolean(pending);
+}
+
+async function prepareCheckoutFirstPaidAccessInTx(
+	tx: PlatformAccessTx,
+	args: {
+		eventType: string;
+		setupToken: string | null;
+		checkoutIntentId: string | null;
+		dodoSubscriptionId: string | null;
+		dodoCustomerId: string | null;
+		metadataPlanId: PlanId | null;
+		mappedPlan: PlanId | null;
+		customerEmail: string | null;
+		metadata?: Record<string, unknown>;
+		productId?: string;
+		payloadQuantity?: number;
+	},
+): Promise<{ to: string; setupUrl: string; planLabel: string } | null> {
+	if (args.eventType !== "subscription.active") return null;
+
+	const planId = args.metadataPlanId ?? args.mappedPlan;
+	if (!planId || planId === "free" || planId === "enterprise") {
+		logger.error(
+			{ setupToken: args.setupToken, planId },
+			"checkout-first webhook missing plan id",
+		);
+		return null;
+	}
+
+	let intentSeatCount: number | undefined;
+	let intentInterval: "monthly" | "yearly" | null | undefined;
+	let email = args.customerEmail?.trim().toLowerCase() ?? null;
+	if (args.checkoutIntentId) {
+		const [intent] = await tx
+			.select({
+				email: checkoutIntents.email,
+				seatCount: checkoutIntents.seatCount,
+				billingInterval: checkoutIntents.billingInterval,
+				setupToken: checkoutIntents.setupToken,
+			})
+			.from(checkoutIntents)
+			.where(eq(checkoutIntents.id, args.checkoutIntentId))
+			.limit(1);
+		if (intent) {
+			email = email ?? intent.email?.trim().toLowerCase() ?? null;
+			intentSeatCount = intent.seatCount;
+			intentInterval = intent.billingInterval as "monthly" | "yearly";
+		}
+	}
+
+	if (!email) {
+		logger.error(
+			{ setupToken: args.setupToken, checkoutIntentId: args.checkoutIntentId },
+			"checkout-first webhook missing customer email",
+		);
+		return null;
+	}
+
+	if (!args.dodoSubscriptionId) {
+		logger.error(
+			{ setupToken: args.setupToken },
+			"checkout-first webhook missing subscription id",
+		);
+		return null;
+	}
+
+	let setupToken = args.setupToken?.trim() ?? "";
+	if (!setupToken) {
+		const [pending] = await tx
+			.select({ setupToken: platformAccessPending.setupToken })
+			.from(platformAccessPending)
+			.where(
+				eq(platformAccessPending.dodoSubscriptionId, args.dodoSubscriptionId),
+			)
+			.limit(1);
+		setupToken = pending?.setupToken ?? "";
+	}
+	if (!setupToken) {
+		logger.error(
+			{ dodoSubscriptionId: args.dodoSubscriptionId },
+			"checkout-first webhook missing setup token",
+		);
+		return null;
+	}
+
+	const seatCount = resolveCheckoutFirstSeatCount({
+		metadata: args.metadata,
+		payloadQuantity: args.payloadQuantity,
+		intentSeatCount,
+	});
+	const billingInterval = resolveCheckoutFirstBillingInterval({
+		metadata: args.metadata,
+		productId: args.productId,
+		intentInterval,
+	});
+
+	const { created } = await upsertPaidAccessPendingFromWebhook(tx, {
+		setupToken,
+		email,
+		planId,
+		dodoSubscriptionId: args.dodoSubscriptionId,
+		dodoCustomerId: args.dodoCustomerId,
+		seatCount,
+		billingInterval,
+		checkoutIntentId: args.checkoutIntentId,
+	});
+
+	const setupUrl = `${getClientUrl()}/?setup=${encodeURIComponent(setupToken)}`;
+
+	logger.info(
+		{
+			email,
+			planId,
+			dodoSubscriptionId: args.dodoSubscriptionId,
+			created,
+		},
+		"checkout-first pending access upserted",
+	);
+
+	return {
+		to: email,
+		setupUrl,
+		planLabel: checkoutPlanLabel(planId),
+	};
 }
 
 async function resolveSubscriptionQuantity(args: {
@@ -196,7 +446,7 @@ async function syncOrgSubscription(
 	tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
 	args: {
 		organizationId: string;
-		planId: "free" | "teams" | "teams_pro";
+		planId: "free" | "individual" | "teams" | "teams_pro";
 		seatCount: number;
 		status: SubscriptionStatus;
 		billingInterval: "monthly" | "yearly" | null;
@@ -287,6 +537,14 @@ export async function handleDodoWebhook(args: {
 		payloadData.customer?.customer_id ?? payloadData.customer_id ?? null;
 	const metadataWallet = extractWalletFromMetadata(payloadData.metadata);
 	const metadataOrgId = extractOrgIdFromMetadata(payloadData.metadata);
+	const metadataSetupToken = extractSetupTokenFromMetadata(
+		payloadData.metadata,
+	);
+	const metadataCheckoutIntentId = extractCheckoutIntentIdFromMetadata(
+		payloadData.metadata,
+	);
+	const metadataPlanId = extractPlanIdFromMetadata(payloadData.metadata);
+	const customerEmail = payloadData.customer?.email ?? null;
 	const mappedPlan = resolvePlanIdFromProductId(payloadData.product_id);
 	const billingInterval = resolveIntervalFromProductId(payloadData.product_id);
 	const cancelAtNextBillingDate = Boolean(
@@ -331,6 +589,10 @@ export async function handleDodoWebhook(args: {
 	}
 
 	try {
+		const checkoutFirstEmail: {
+			payload: { to: string; setupUrl: string; planLabel: string } | null;
+		} = { payload: null };
+
 		await db.transaction(async (tx) => {
 			let organizationId = metadataOrgId;
 			let existingOrgSub:
@@ -379,7 +641,8 @@ export async function handleDodoWebhook(args: {
 			const orgCandidate =
 				organizationId &&
 				(mappedPlan == null ||
-					isOrgBillingPlanId(mappedPlan) ||
+					isWorkspaceBillingPlanId(mappedPlan) ||
+					existingOrgSub?.planId === "individual" ||
 					existingOrgSub?.planId === "teams" ||
 					existingOrgSub?.planId === "teams_pro" ||
 					webhookAllowsMissingProductId(eventType));
@@ -425,7 +688,11 @@ export async function handleDodoWebhook(args: {
 
 				await syncOrgSubscription(tx, {
 					organizationId,
-					planId: orgSync.planId as "free" | "teams" | "teams_pro",
+					planId: orgSync.planId as
+						| "free"
+						| "individual"
+						| "teams"
+						| "teams_pro",
 					seatCount: orgSync.seatCount ?? 1,
 					status,
 					billingInterval: orgSync.planId === "free" ? null : billingInterval,
@@ -463,9 +730,41 @@ export async function handleDodoWebhook(args: {
 				existingPlanId: existingUserPlan,
 			});
 
-			if (mappedPlan && isOrgBillingPlanId(mappedPlan) && !organizationId) {
+			const checkoutFirstWithoutOrg = await isCheckoutFirstWithoutOrg(tx, {
+				metadataSetupToken,
+				dodoSubscriptionId,
+				organizationId,
+			});
+
+			if (checkoutFirstWithoutOrg) {
+				if (eventType === "subscription.active") {
+					checkoutFirstEmail.payload = await prepareCheckoutFirstPaidAccessInTx(
+						tx,
+						{
+							eventType,
+							setupToken: metadataSetupToken,
+							checkoutIntentId: metadataCheckoutIntentId,
+							dodoSubscriptionId,
+							dodoCustomerId,
+							metadataPlanId,
+							mappedPlan,
+							customerEmail,
+							metadata: payloadData.metadata,
+							productId: payloadData.product_id,
+							payloadQuantity: payloadData.quantity,
+						},
+					);
+				}
+				return;
+			}
+
+			if (
+				mappedPlan &&
+				isWorkspaceBillingPlanId(mappedPlan) &&
+				!organizationId
+			) {
 				throw new Error(
-					"Unable to route org plan webhook without organization",
+					"Unable to route workspace plan webhook without organization",
 				);
 			}
 
@@ -486,6 +785,7 @@ export async function handleDodoWebhook(args: {
 			if (!walletAddress && metadataWallet) {
 				walletAddress = metadataWallet;
 			}
+
 			if (!walletAddress) {
 				throw new Error("Unable to resolve wallet for webhook");
 			}
@@ -505,6 +805,15 @@ export async function handleDodoWebhook(args: {
 				dodoSubscriptionId,
 			});
 		});
+
+		if (checkoutFirstEmail.payload) {
+			await sendPaidSetupEmail({
+				to: checkoutFirstEmail.payload.to,
+				setupUrl: checkoutFirstEmail.payload.setupUrl,
+				planLabel: checkoutFirstEmail.payload.planLabel,
+			});
+		}
+
 		await markEventStatus(args.webhookId, "processed");
 		return { ok: true };
 	} catch (error) {

@@ -1,17 +1,8 @@
-import { billingEnabled, dodoLive } from "@filosign/shared";
+import { dodoLive } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
-import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
-import { getAddress } from "viem";
 import env from "@/env";
-import db from "@/lib/platform/db";
-import {
-	type SubscriptionPlanId,
-	userSubscriptions,
-} from "@/lib/platform/db/schema/billing";
-import { users } from "@/lib/platform/db/schema/user";
-import { createDodoClient, requireDodoApiKey } from "./dodo-client";
-import { isAllowedReturnUrlOrigin } from "./policy";
+import type { SubscriptionPlanId } from "@/lib/platform/db/schema/billing";
 
 export type BillingInterval = "monthly" | "yearly";
 
@@ -47,15 +38,6 @@ const DODO_LIVE_PLAN_PRODUCT_IDS_YEARLY: Record<CheckoutPlanId, string> = {
 	teams_pro: "pdt_0Nfmg1rLmulqhqBBM2KHW",
 };
 
-function createBillingDodoClient() {
-	requireDodoApiKey();
-	return createDodoClient({ includeWebhookKey: false });
-}
-
-function defaultWalletPortalReturnUrl() {
-	return `${env.CLIENT_URL.replace(/\/$/, "")}/dashboard/settings/profile`;
-}
-
 export function resolveProductId(
 	planId: CheckoutPlanId,
 	interval: BillingInterval,
@@ -73,213 +55,38 @@ export function resolveProductId(
 		return dodoLive(env.DEPLOYMENT)
 			? DODO_LIVE_PLAN_PRODUCT_IDS_YEARLY[planId]
 			: DODO_TEST_PLAN_PRODUCT_IDS_YEARLY[planId];
-	} else {
-		if (planId === "individual" && env.DODO_PRODUCT_ID_INDIVIDUAL_MONTHLY) {
-			return env.DODO_PRODUCT_ID_INDIVIDUAL_MONTHLY;
-		}
-		if (planId === "teams" && env.DODO_PRODUCT_ID_TEAMS_MONTHLY) {
-			return env.DODO_PRODUCT_ID_TEAMS_MONTHLY;
-		}
-		if (planId === "teams_pro" && env.DODO_PRODUCT_ID_TEAMS_PRO_MONTHLY) {
-			return env.DODO_PRODUCT_ID_TEAMS_PRO_MONTHLY;
-		}
-		return dodoLive(env.DEPLOYMENT)
-			? DODO_LIVE_PLAN_PRODUCT_IDS[planId]
-			: DODO_TEST_PLAN_PRODUCT_IDS[planId];
 	}
+	if (planId === "individual" && env.DODO_PRODUCT_ID_INDIVIDUAL_MONTHLY) {
+		return env.DODO_PRODUCT_ID_INDIVIDUAL_MONTHLY;
+	}
+	if (planId === "teams" && env.DODO_PRODUCT_ID_TEAMS_MONTHLY) {
+		return env.DODO_PRODUCT_ID_TEAMS_MONTHLY;
+	}
+	if (planId === "teams_pro" && env.DODO_PRODUCT_ID_TEAMS_PRO_MONTHLY) {
+		return env.DODO_PRODUCT_ID_TEAMS_PRO_MONTHLY;
+	}
+	return dodoLive(env.DEPLOYMENT)
+		? DODO_LIVE_PLAN_PRODUCT_IDS[planId]
+		: DODO_TEST_PLAN_PRODUCT_IDS[planId];
 }
 
-function assertAllowedReturnUrl(url: string) {
-	if (
-		!isAllowedReturnUrlOrigin({
-			returnUrl: url,
-			clientUrl: env.CLIENT_URL,
-			allowedOrigins: env.BILLING_RETURN_URL_ORIGINS,
-		})
-	) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "returnUrl origin is not allowed",
-		});
-	}
-}
-
-function buildCustomerName(firstName: string | null, lastName: string | null) {
-	const full = [firstName?.trim(), lastName?.trim()].filter(Boolean).join(" ");
-	if (full) return full;
-	return "Filosign user";
-}
-
-async function getOrCreateDodoCustomer(wallet: Address): Promise<string> {
-	const walletNorm = getAddress(wallet);
-	const [existing] = await db
-		.select({ dodoCustomerId: userSubscriptions.dodoCustomerId })
-		.from(userSubscriptions)
-		.where(eq(userSubscriptions.walletAddress, walletNorm))
-		.limit(1);
-
-	if (existing?.dodoCustomerId) return existing.dodoCustomerId;
-
-	const [user] = await db
-		.select({
-			email: users.email,
-			firstName: users.firstName,
-			lastName: users.lastName,
-		})
-		.from(users)
-		.where(eq(users.walletAddress, walletNorm))
-		.limit(1);
-
-	if (!user?.email) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "User email is required for checkout",
-		});
-	}
-
-	const client = createBillingDodoClient();
-	let customerId: string;
-	try {
-		const customer = (await client.customers.create({
-			email: user.email,
-			name: buildCustomerName(user.firstName, user.lastName),
-			metadata: {
-				filosign_wallet: walletNorm,
-			},
-		})) as { customer_id: string };
-		customerId = customer.customer_id;
-	} catch (error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: "Failed to create Dodo customer",
-			cause: error,
-		});
-	}
-
-	await db
-		.insert(userSubscriptions)
-		.values({
-			walletAddress: walletNorm,
-			dodoCustomerId: customerId,
-			provider: "dodo",
-			planId: "free",
-		})
-		.onConflictDoUpdate({
-			target: userSubscriptions.walletAddress,
-			set: {
-				dodoCustomerId: customerId,
-				provider: "dodo",
-				updatedAt: new Date(),
-			},
-		});
-
-	return customerId;
-}
-
-export async function createBillingCheckoutSession(args: {
+export async function createBillingCheckoutSession(_args: {
 	wallet: Address;
 	planId: CheckoutPlanId;
 	interval: BillingInterval;
 	returnUrl: string;
 }): Promise<{ checkoutUrl: string; sessionId: string }> {
-	if (!billingEnabled(env.DEPLOYMENT)) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Billing is not available in this environment",
-		});
-	}
-
-	if (args.planId === "teams" || args.planId === "teams_pro") {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"Teams plans are billed per workspace. Open Workspace Settings → Billing.",
-		});
-	}
-
-	assertAllowedReturnUrl(args.returnUrl);
-
-	const walletNorm = getAddress(args.wallet);
-	const productId = resolveProductId(args.planId, args.interval);
-	const customerId = await getOrCreateDodoCustomer(walletNorm);
-	const client = createBillingDodoClient();
-
-	let checkout: {
-		session_id: string;
-		url?: string | null;
-		checkout_url?: string | null;
-	};
-	try {
-		checkout = (await client.checkoutSessions.create({
-			product_cart: [{ product_id: productId, quantity: 1 }],
-			customer: { customer_id: customerId },
-			return_url: args.returnUrl,
-			metadata: {
-				filosign_wallet: walletNorm,
-				filosign_plan_id: args.planId,
-				filosign_interval: args.interval,
-			},
-		})) as {
-			session_id: string;
-			url?: string | null;
-			checkout_url?: string | null;
-		};
-	} catch (error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: "Failed to create Dodo checkout session",
-			cause: error,
-		});
-	}
-
-	const checkoutUrl = checkout.url ?? checkout.checkout_url;
-	if (!checkoutUrl) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: "Dodo checkout URL was not returned",
-		});
-	}
-
-	return {
-		checkoutUrl,
-		sessionId: checkout.session_id,
-	};
+	throw new ORPCError("BAD_REQUEST", {
+		message:
+			"Subscriptions are billed per workspace. Open Workspace Settings → Billing.",
+	});
 }
 
-export async function createBillingPortalSession(args: {
+export async function createBillingPortalSession(_args: {
 	wallet: Address;
 }): Promise<{ url: string }> {
-	if (!billingEnabled(env.DEPLOYMENT)) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Billing is not available in this environment",
-		});
-	}
-
-	const walletNorm = getAddress(args.wallet);
-	const [sub] = await db
-		.select({ dodoCustomerId: userSubscriptions.dodoCustomerId })
-		.from(userSubscriptions)
-		.where(
-			and(
-				eq(userSubscriptions.walletAddress, walletNorm),
-				eq(userSubscriptions.provider, "dodo"),
-			),
-		)
-		.limit(1);
-
-	if (!sub?.dodoCustomerId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "No Dodo customer found for this wallet",
-		});
-	}
-
-	const client = createBillingDodoClient();
-	try {
-		const portal = (await client.customers.customerPortal.create(
-			sub.dodoCustomerId,
-			{ return_url: defaultWalletPortalReturnUrl() },
-		)) as {
-			link: string;
-			url?: string;
-		};
-		return { url: portal.url ?? portal.link };
-	} catch (error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: "Failed to create Dodo portal session",
-			cause: error,
-		});
-	}
+	throw new ORPCError("BAD_REQUEST", {
+		message:
+			"Manage billing from Workspace Settings. Personal and team plans are billed per workspace.",
+	});
 }

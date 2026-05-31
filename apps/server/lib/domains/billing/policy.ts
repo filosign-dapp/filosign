@@ -56,6 +56,15 @@ export function isOrgBillingPlanId(
 	return planId === "teams" || planId === "teams_pro";
 }
 
+/** Paid plans billed on organization_subscriptions (unified workspace billing). */
+export function isWorkspaceBillingPlanId(
+	planId: string,
+): planId is "individual" | "teams" | "teams_pro" {
+	return (
+		planId === "individual" || planId === "teams" || planId === "teams_pro"
+	);
+}
+
 /** Immediate entitlement revocation — term ended or hard cancel (not at period end). */
 export function shouldDowngradeToFree(eventType: string) {
 	return eventType === "subscription.expired";

@@ -3,8 +3,8 @@ import type { SubscriptionStatus } from "@/lib/platform/db/schema/billing";
 import {
 	allowsMissingProductId,
 	isImmediateCancellation,
-	isOrgBillingPlanId,
 	isScheduledCancellation,
+	isWorkspaceBillingPlanId,
 	shouldDowngradeToFree,
 } from "./policy";
 
@@ -113,27 +113,32 @@ export function resolveWebhookOrgSync(args: {
 		})
 	) {
 		const planId =
-			args.mappedPlan && isOrgBillingPlanId(args.mappedPlan)
+			args.mappedPlan && isWorkspaceBillingPlanId(args.mappedPlan)
 				? args.mappedPlan
 				: args.existingPlanId &&
-						isOrgBillingPlanId(args.existingPlanId as string)
-					? (args.existingPlanId as "teams" | "teams_pro")
+						isWorkspaceBillingPlanId(args.existingPlanId as string)
+					? args.existingPlanId
 					: "free";
 		return {
 			planId,
-			seatCount: args.existingSeatCount ?? args.quantity ?? 1,
+			seatCount:
+				planId === "individual"
+					? 1
+					: (args.existingSeatCount ?? args.quantity ?? 1),
 			requireQuantity: false,
 		};
 	}
 
-	if (!args.mappedPlan || !isOrgBillingPlanId(args.mappedPlan)) {
+	if (!args.mappedPlan || !isWorkspaceBillingPlanId(args.mappedPlan)) {
 		throw new Error("Unable to resolve org plan for webhook");
 	}
 
+	const seatCount = args.mappedPlan === "individual" ? 1 : args.quantity;
+
 	return {
 		planId: args.mappedPlan,
-		seatCount: args.quantity,
-		requireQuantity: true,
+		seatCount,
+		requireQuantity: args.mappedPlan !== "individual",
 	};
 }
 

@@ -1,10 +1,11 @@
-import { billingEnabled } from "@filosign/shared";
+import { getPlanName, type PlanId } from "@filosign/entitlements";
 import { ORPCError } from "@orpc/server";
 import { and, eq, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import env from "@/env";
 import { pendingOrgInviteFilter } from "@/lib/domains/invites";
+import { assertSeatCountForPlan } from "@/lib/domains/orgs/personal-workspace";
 import db from "@/lib/platform/db";
 import {
 	type OrgBillingInterval,
@@ -15,9 +16,9 @@ import {
 import { users } from "@/lib/platform/db/schema/user";
 import { type BillingInterval, resolveProductId } from "./billing";
 import { createDodoClient, requireDodoApiKey } from "./dodo-client";
-import { isAllowedReturnUrlOrigin } from "./policy";
+import { isAllowedReturnUrlOrigin, isWorkspaceBillingPlanId } from "./policy";
 
-export type OrgCheckoutPlanId = "teams" | "teams_pro";
+export type OrgCheckoutPlanId = "individual" | "teams" | "teams_pro";
 
 function createBillingDodoClient() {
 	requireDodoApiKey();
@@ -164,9 +165,9 @@ async function requireActiveOrgSubscription(organizationId: string) {
 			message: "Workspace has no active Dodo subscription",
 		});
 	}
-	if (sub.planId !== "teams" && sub.planId !== "teams_pro") {
+	if (!isWorkspaceBillingPlanId(sub.planId)) {
 		throw new ORPCError("BAD_REQUEST", {
-			message: "Workspace subscription is not a paid team plan",
+			message: "Workspace subscription is not a paid plan",
 		});
 	}
 	if (!sub.billingInterval) {
@@ -209,6 +210,7 @@ async function changeOrgPlanInternal(args: {
 	subscriptionId: string;
 	productId: string;
 	quantity: number;
+	onPaymentFailure?: "prevent_change" | "apply_change";
 }) {
 	const client = createBillingDodoClient();
 	try {
@@ -216,7 +218,7 @@ async function changeOrgPlanInternal(args: {
 			product_id: args.productId,
 			quantity: args.quantity,
 			proration_billing_mode: "prorated_immediately",
-			on_payment_failure: "prevent_change",
+			on_payment_failure: args.onPaymentFailure ?? "prevent_change",
 		});
 	} catch (error) {
 		throw new ORPCError("INTERNAL_SERVER_ERROR", {
@@ -224,6 +226,54 @@ async function changeOrgPlanInternal(args: {
 			cause: error,
 		});
 	}
+}
+
+async function fetchDodoSubscriptionQuantity(
+	subscriptionId: string,
+): Promise<number> {
+	const client = createBillingDodoClient();
+	try {
+		const sub = (await client.subscriptions.retrieve(subscriptionId)) as {
+			quantity?: number;
+		};
+		if (
+			typeof sub.quantity === "number" &&
+			Number.isInteger(sub.quantity) &&
+			sub.quantity >= 1
+		) {
+			return sub.quantity;
+		}
+	} catch (error) {
+		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+			message: "Failed to fetch subscription from Dodo",
+			cause: error,
+		});
+	}
+	throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		message: "Dodo subscription quantity is missing or invalid",
+	});
+}
+
+async function fetchDodoSubscriptionQuantityWithRetry(args: {
+	subscriptionId: string;
+	expectedQuantity: number;
+}) {
+	const delaysMs = [0, 400, 800];
+	for (const delayMs of delaysMs) {
+		if (delayMs > 0) {
+			await new Promise((resolve) => setTimeout(resolve, delayMs));
+		}
+		const quantity = await fetchDodoSubscriptionQuantity(args.subscriptionId);
+		if (quantity === args.expectedQuantity) return quantity;
+	}
+	return fetchDodoSubscriptionQuantity(args.subscriptionId);
+}
+
+async function syncOrgSeatCountInDb(organizationId: string, seatCount: number) {
+	await db
+		.update(organizationSubscriptions)
+		.set({ seatCount, updatedAt: new Date() })
+		.where(eq(organizationSubscriptions.organizationId, organizationId));
 }
 
 function formatPlanChangePreview(
@@ -235,13 +285,17 @@ function formatPlanChangePreview(
 		currentPlanId: OrgCheckoutPlanId;
 	},
 ) {
+	const immediateChargeCents = preview.immediate_charge.summary.total_amount;
+	const deltaSeatCount = args.seatCount - args.currentSeatCount;
 	return {
 		planId: args.targetPlanId,
 		currentPlanId: args.currentPlanId,
 		seatCount: args.seatCount,
 		currentSeatCount: args.currentSeatCount,
+		deltaSeatCount,
+		isCredit: immediateChargeCents <= 0,
 		effectiveAt: preview.immediate_charge.effective_at,
-		immediateChargeCents: preview.immediate_charge.summary.total_amount,
+		immediateChargeCents,
 		currency: preview.immediate_charge.summary.currency,
 	};
 }
@@ -254,13 +308,8 @@ export async function createOrgBillingCheckoutSession(args: {
 	seatCount: number;
 	returnUrl: string;
 }): Promise<{ checkoutUrl: string; sessionId: string }> {
-	if (!billingEnabled(env.DEPLOYMENT)) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Billing is not available in this environment",
-		});
-	}
-
 	assertAllowedReturnUrl(args.returnUrl);
+	assertSeatCountForPlan(args.planId, args.seatCount);
 	const usedSeats = await countOrgUsedSeats(args.organizationId);
 	assertMinSeatCount(args.seatCount, usedSeats);
 
@@ -268,7 +317,7 @@ export async function createOrgBillingCheckoutSession(args: {
 	if (
 		existing?.dodoSubscriptionId &&
 		existing.status === "active" &&
-		(existing.planId === "teams" || existing.planId === "teams_pro")
+		isWorkspaceBillingPlanId(existing.planId)
 	) {
 		throw new ORPCError("BAD_REQUEST", {
 			message:
@@ -290,8 +339,9 @@ export async function createOrgBillingCheckoutSession(args: {
 		checkout_url?: string | null;
 	};
 	try {
+		const quantity = args.planId === "individual" ? 1 : args.seatCount;
 		checkout = (await client.checkoutSessions.create({
-			product_cart: [{ product_id: productId, quantity: args.seatCount }],
+			product_cart: [{ product_id: productId, quantity }],
 			customer: { customer_id: customerId },
 			return_url: args.returnUrl,
 			metadata: {
@@ -328,9 +378,11 @@ export async function createOrgBillingCheckoutSession(args: {
 export async function getOrgBillingSummary(organizationId: string) {
 	const sub = await loadOrgSubscription(organizationId);
 	const usedSeats = await countOrgUsedSeats(organizationId);
+	const planId = (sub?.planId ?? "free") as PlanId;
 
 	return {
-		planId: sub?.planId ?? "free",
+		planId,
+		planName: getPlanName(planId),
 		seatCount: sub?.seatCount ?? 1,
 		usedSeats,
 		status: sub?.status ?? "active",
@@ -352,6 +404,15 @@ export async function previewOrgSeatChange(args: {
 	const usedSeats = await countOrgUsedSeats(args.organizationId);
 	assertMinSeatCount(args.seatCount, usedSeats);
 
+	const dodoQuantity = await fetchDodoSubscriptionQuantity(
+		sub.dodoSubscriptionId as string,
+	);
+	if (args.seatCount === dodoQuantity) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: `Workspace is already on ${dodoQuantity} seats`,
+		});
+	}
+
 	const productId = resolveOrgProductId(
 		sub.planId as OrgCheckoutPlanId,
 		sub.billingInterval as BillingInterval,
@@ -365,7 +426,7 @@ export async function previewOrgSeatChange(args: {
 
 	return formatPlanChangePreview(preview, {
 		seatCount: args.seatCount,
-		currentSeatCount: sub.seatCount,
+		currentSeatCount: dodoQuantity,
 		targetPlanId: sub.planId as OrgCheckoutPlanId,
 		currentPlanId: sub.planId as OrgCheckoutPlanId,
 	});
@@ -379,22 +440,53 @@ export async function updateOrgSeats(args: {
 	const usedSeats = await countOrgUsedSeats(args.organizationId);
 	assertMinSeatCount(args.seatCount, usedSeats);
 
-	if (args.seatCount === sub.seatCount) {
-		return { seatCount: sub.seatCount };
+	const dodoQuantity = await fetchDodoSubscriptionQuantity(
+		sub.dodoSubscriptionId as string,
+	);
+
+	if (args.seatCount === dodoQuantity) {
+		if (sub.seatCount !== dodoQuantity) {
+			await syncOrgSeatCountInDb(args.organizationId, dodoQuantity);
+		}
+		return { seatCount: dodoQuantity, changed: false, pendingPayment: false };
 	}
 
 	const productId = resolveOrgProductId(
 		sub.planId as OrgCheckoutPlanId,
 		sub.billingInterval as BillingInterval,
 	);
+	const isIncrease = args.seatCount > dodoQuantity;
 
 	await changeOrgPlanInternal({
 		subscriptionId: sub.dodoSubscriptionId as string,
 		productId,
 		quantity: args.seatCount,
+		onPaymentFailure: isIncrease ? "prevent_change" : "apply_change",
 	});
 
-	return { seatCount: args.seatCount };
+	const updatedQuantity = await fetchDodoSubscriptionQuantityWithRetry({
+		subscriptionId: sub.dodoSubscriptionId as string,
+		expectedQuantity: args.seatCount,
+	});
+
+	if (updatedQuantity === args.seatCount) {
+		await syncOrgSeatCountInDb(args.organizationId, updatedQuantity);
+		return {
+			seatCount: updatedQuantity,
+			changed: true,
+			pendingPayment: false,
+		};
+	}
+
+	if (sub.seatCount !== updatedQuantity) {
+		await syncOrgSeatCountInDb(args.organizationId, updatedQuantity);
+	}
+
+	return {
+		seatCount: updatedQuantity,
+		changed: false,
+		pendingPayment: isIncrease,
+	};
 }
 
 export async function previewOrgPlanChange(args: {
@@ -408,6 +500,10 @@ export async function previewOrgPlanChange(args: {
 		});
 	}
 
+	const dodoQuantity = await fetchDodoSubscriptionQuantity(
+		sub.dodoSubscriptionId as string,
+	);
+
 	const productId = resolveOrgProductId(
 		args.planId,
 		sub.billingInterval as BillingInterval,
@@ -415,12 +511,12 @@ export async function previewOrgPlanChange(args: {
 	const preview = await previewOrgPlanChangeInternal({
 		subscriptionId: sub.dodoSubscriptionId as string,
 		productId,
-		quantity: sub.seatCount,
+		quantity: dodoQuantity,
 	});
 
 	return formatPlanChangePreview(preview, {
-		seatCount: sub.seatCount,
-		currentSeatCount: sub.seatCount,
+		seatCount: dodoQuantity,
+		currentSeatCount: dodoQuantity,
 		targetPlanId: args.planId,
 		currentPlanId: sub.planId as OrgCheckoutPlanId,
 	});
@@ -432,8 +528,12 @@ export async function changeOrgPlan(args: {
 }) {
 	const sub = await requireActiveOrgSubscription(args.organizationId);
 	if (sub.planId === args.planId) {
-		return { planId: sub.planId, seatCount: sub.seatCount };
+		return { planId: sub.planId, seatCount: sub.seatCount, changed: false };
 	}
+
+	const dodoQuantity = await fetchDodoSubscriptionQuantity(
+		sub.dodoSubscriptionId as string,
+	);
 
 	const productId = resolveOrgProductId(
 		args.planId,
@@ -443,19 +543,24 @@ export async function changeOrgPlan(args: {
 	await changeOrgPlanInternal({
 		subscriptionId: sub.dodoSubscriptionId as string,
 		productId,
-		quantity: sub.seatCount,
+		quantity: dodoQuantity,
 	});
 
-	return { planId: args.planId, seatCount: sub.seatCount };
+	const nextSeatCount = args.planId === "individual" ? 1 : dodoQuantity;
+
+	await db
+		.update(organizationSubscriptions)
+		.set({
+			planId: args.planId,
+			seatCount: nextSeatCount,
+			updatedAt: new Date(),
+		})
+		.where(eq(organizationSubscriptions.organizationId, args.organizationId));
+
+	return { planId: args.planId, seatCount: nextSeatCount, changed: true };
 }
 
 export async function createOrgBillingPortalSession(organizationId: string) {
-	if (!billingEnabled(env.DEPLOYMENT)) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Billing is not available in this environment",
-		});
-	}
-
 	const sub = await loadOrgSubscription(organizationId);
 	if (!sub?.dodoCustomerId) {
 		throw new ORPCError("BAD_REQUEST", {

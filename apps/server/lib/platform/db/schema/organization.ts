@@ -48,10 +48,15 @@ export const organizations = t.pgTable(
 			.default("acting_member"),
 		orgWalletAddress: tEvmAddress(),
 		orgWalletLinkedAt: t.timestamp({ withTimezone: true }),
+		/** Auto-created primary workspace; Free/Solo billing lives on this org only. */
+		isPersonal: t.boolean().notNull().default(false),
 		...timestamps,
 	},
 	(table) => [
 		t.index("idx_organizations_created_by").on(table.createdByWallet),
+		t
+			.index("idx_organizations_personal_owner")
+			.on(table.createdByWallet, table.isPersonal),
 	],
 );
 

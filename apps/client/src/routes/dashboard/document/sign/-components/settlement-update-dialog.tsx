@@ -5,7 +5,6 @@ import type {
 } from "@filosign/shared";
 import { settlementReleaseTypeLabel } from "@filosign/shared";
 import { useEffect, useState } from "react";
-import { parseUnits } from "viem";
 import { SUPPORTED_TOKENS } from "@/src/constants";
 import { Button } from "@/src/lib/components/ui/button";
 import {

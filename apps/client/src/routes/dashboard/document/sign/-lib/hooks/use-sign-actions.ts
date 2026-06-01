@@ -5,7 +5,6 @@ import {
 } from "@filosign/react/files";
 import { buildRotatedInviteEnvelope } from "@filosign/react/utils";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
 import { safeAsync } from "@/src/lib/utils/safe";
@@ -42,9 +41,7 @@ export function useSignActions(options: {
 		const [, err] = await safeAsync(() =>
 			acknowledgeFile.mutateAsync({ pieceCid }),
 		);
-		if (err) {
-			toast.error(err.message);
-		}
+		if (err) return;
 	}, [pieceCid, acknowledgeFile]);
 
 	const handleSign = useCallback(
@@ -67,10 +64,7 @@ export function useSignActions(options: {
 						: {}),
 				}),
 			);
-			if (err) {
-				toast.error(err.message);
-				return;
-			}
+			if (err) return;
 			setSignSuccessDialogOpen(true);
 		},
 		[pieceCid, canSubmitPlacementSign, completedFieldIds, signFile],
@@ -107,9 +101,7 @@ export function useSignActions(options: {
 			});
 			setColdShareDialogOpen(true);
 		});
-		if (err) {
-			toast.error(err.message);
-		}
+		if (err) return;
 	}, [pieceCid, file, user, regenerateColdInvite]);
 
 	return {

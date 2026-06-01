@@ -58,7 +58,6 @@ export function ConditionalAttachmentsPanel({ packets, onCancelled }: Props) {
 										}),
 									);
 									if (err) {
-										toast.error(err.message);
 										return;
 									}
 									toast.success("Unlock rule removed");

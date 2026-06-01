@@ -1,8 +1,8 @@
 import {
 	buildEnvelopeProgressLines,
+	type EnvelopeProgressLike,
 	envelopeProgressPercent,
 	envelopeProgressTotals,
-	type EnvelopeProgressLike,
 } from "@/src/routes/dashboard/document/sign/-lib/utils/envelope-progress-display";
 
 type Props = {

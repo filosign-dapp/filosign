@@ -6,6 +6,7 @@ import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { Label } from "@/src/lib/components/ui/label";
 import { Textarea } from "@/src/lib/components/ui/textarea";
 import { useDraftCommentsContext } from "@/src/lib/domains/drafts";
+import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn, truncateAddress } from "@/src/lib/utils/utils";
 
@@ -135,21 +136,20 @@ export function DraftCommentsComposer(props: {
 					const trimmed = body.trim();
 					if (!trimmed) return;
 					void append
-						.mutateAsync({
-							draftId,
-							body: trimmed,
-							organizationId: activeOrgId,
-						})
+						.mutateAsync(
+							{
+								draftId,
+								body: trimmed,
+								organizationId: activeOrgId,
+							},
+							suppressGlobalErrorToast(),
+						)
 						.then(() => {
 							setBody("");
 							props.onPosted?.();
 							toast.success("Comment added");
 						})
-						.catch((err) =>
-							toast.error(
-								err instanceof Error ? err.message : "Failed to comment",
-							),
-						);
+						.catch((err) => showAppErrorToast(err));
 				}}
 			>
 				{append.isPending ? "Posting…" : "Post Comment"}

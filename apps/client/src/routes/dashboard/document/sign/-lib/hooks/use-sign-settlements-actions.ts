@@ -2,7 +2,6 @@ import { useEntitlements } from "@filosign/react/billing";
 import {
 	canUseAdvancedSettlements,
 	canUseBasicSettlements,
-	formatSettlementSimError,
 	type SettlementRuleRow,
 	useAmendSigner,
 	useAttachSettlementForFile,
@@ -74,9 +73,7 @@ export function useSignSettlementsActions(
 						"Part of this payout went through. Tap Pay now again for the rest.",
 					);
 				}
-			} catch (err) {
-				toast.error(formatSettlementSimError(err));
-			}
+			} catch {}
 		},
 		[trySettleSettlement],
 	);
@@ -85,9 +82,7 @@ export function useSignSettlementsActions(
 		async (input: { onChainRuleId: string; validatorAddress: Address }) => {
 			try {
 				await manualSettlementPayout.mutateAsync(input);
-			} catch (err) {
-				toast.error(formatSettlementSimError(err));
-			}
+			} catch {}
 		},
 		[manualSettlementPayout],
 	);
@@ -98,18 +93,14 @@ export function useSignSettlementsActions(
 		if (!token) return;
 		try {
 			await revokeSettlementAllowance.mutateAsync(getAddress(token));
-		} catch (err) {
-			toast.error(formatSettlementSimError(err));
-		}
+		} catch {}
 	}, [revokeSettlementAllowance, settlementsQuery.data]);
 
 	const onCancelRule = useCallback(
 		async (input: { onChainRuleId: string; validatorAddress: Address }) => {
 			try {
 				await cancelSettlementRule.mutateAsync(input);
-			} catch (err) {
-				toast.error(formatSettlementSimError(err));
-			}
+			} catch {}
 		},
 		[cancelSettlementRule],
 	);
@@ -141,9 +132,7 @@ export function useSignSettlementsActions(
 						amount: leg.amount,
 					})),
 				});
-			} catch (err) {
-				toast.error(formatSettlementSimError(err));
-			}
+			} catch {}
 		},
 		[updateRuleTarget, updateSettlementRule],
 	);
@@ -155,11 +144,7 @@ export function useSignSettlementsActions(
 		}) => {
 			try {
 				await amendSigner.mutateAsync(args);
-			} catch (err) {
-				toast.error(
-					err instanceof Error ? err.message : "Could not change signer",
-				);
-			}
+			} catch {}
 		},
 		[amendSigner],
 	);
@@ -170,9 +155,7 @@ export function useSignSettlementsActions(
 		) => {
 			try {
 				await attachSettlementRules.mutateAsync({ rules });
-			} catch (err) {
-				toast.error(formatSettlementSimError(err));
-			}
+			} catch {}
 		},
 		[attachSettlementRules],
 	);

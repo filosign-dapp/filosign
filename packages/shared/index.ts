@@ -1,3 +1,4 @@
+export * from "./analytics-scrub";
 export * from "./attachment-packets";
 export * from "./auth-subject";
 export * from "./completions-merkle";

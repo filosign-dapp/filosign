@@ -1,3 +1,4 @@
+import { scrubPostHogBeforeSend } from "@filosign/shared";
 import { PostHogProvider } from "@posthog/react";
 import type { ReactNode } from "react";
 import {
@@ -11,6 +12,8 @@ export type FilosignAnalyticsProviderProps = {
 	apiKey: string;
 	apiHost: string;
 	enabled: boolean;
+	/** When true (and `enabled`), allows session replay for error correlation. */
+	sessionReplay?: boolean;
 };
 
 function PostHogAnalyticsBridge({ children }: { children: ReactNode }) {
@@ -28,6 +31,7 @@ export function FilosignAnalyticsProvider({
 	apiKey,
 	apiHost,
 	enabled,
+	sessionReplay = false,
 }: FilosignAnalyticsProviderProps) {
 	const noop = useNoopAnalytics();
 
@@ -45,10 +49,12 @@ export function FilosignAnalyticsProvider({
 			options={{
 				api_host: apiHost,
 				autocapture: false,
+				capture_exceptions: true,
 				capture_pageview: false,
 				capture_pageleave: false,
-				disable_session_recording: true,
+				disable_session_recording: !sessionReplay,
 				persistence: "localStorage",
+				before_send: (event) => scrubPostHogBeforeSend(event),
 			}}
 		>
 			<PostHogAnalyticsBridge>{children}</PostHogAnalyticsBridge>

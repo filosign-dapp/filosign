@@ -1,11 +1,14 @@
+import { scrubAnalyticsProperties } from "@filosign/shared";
 import { usePostHog } from "@posthog/react";
 import {
 	createContext,
 	type ReactNode,
 	useCallback,
 	useContext,
+	useEffect,
 	useMemo,
 } from "react";
+import { registerClientExceptionCapture } from "./client-exception";
 import { PIECE_CID_PROPERTY, POSTHOG_ENVELOPE_GROUP } from "./envelope";
 import type { CLIENT_ANALYTICS_EVENTS } from "./events";
 
@@ -16,17 +19,25 @@ type CaptureFn = (
 
 type IdentifyFn = (wallet: string | undefined) => void;
 
+type CaptureExceptionFn = (
+	error: unknown,
+	properties?: Record<string, unknown>,
+) => void;
+
 export type AnalyticsContextValue = {
 	capture: CaptureFn;
 	identify: IdentifyFn;
+	captureException: CaptureExceptionFn;
 };
 
 const noopCapture: CaptureFn = () => {};
 const noopIdentify: IdentifyFn = () => {};
+const noopCaptureException: CaptureExceptionFn = () => {};
 
 const AnalyticsContext = createContext<AnalyticsContextValue>({
 	capture: noopCapture,
 	identify: noopIdentify,
+	captureException: noopCaptureException,
 });
 
 export function AnalyticsContextProvider({
@@ -52,6 +63,7 @@ export function useNoopAnalytics(): AnalyticsContextValue {
 		() => ({
 			capture: noopCapture,
 			identify: noopIdentify,
+			captureException: noopCaptureException,
 		}),
 		[],
 	);
@@ -80,7 +92,25 @@ export function usePostHogAnalyticsBridge(): AnalyticsContextValue {
 		[posthog],
 	);
 
-	return useMemo(() => ({ capture, identify }), [capture, identify]);
+	const captureException = useCallback<CaptureExceptionFn>(
+		(error, properties) => {
+			const scrubbed = properties
+				? scrubAnalyticsProperties(properties)
+				: undefined;
+			posthog.captureException(error, scrubbed);
+		},
+		[posthog],
+	);
+
+	useEffect(() => {
+		registerClientExceptionCapture(captureException);
+		return () => registerClientExceptionCapture(null);
+	}, [captureException]);
+
+	return useMemo(
+		() => ({ capture, identify, captureException }),
+		[capture, identify, captureException],
+	);
 }
 
 export function useCaptureAppEvent(): CaptureFn {
@@ -89,4 +119,8 @@ export function useCaptureAppEvent(): CaptureFn {
 
 export function useIdentifyAnalyticsWallet(): IdentifyFn {
 	return useAnalyticsContext().identify;
+}
+
+export function useCaptureClientException(): CaptureExceptionFn {
+	return useAnalyticsContext().captureException;
 }

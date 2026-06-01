@@ -21,7 +21,7 @@ Backend: **`apps/server`**. **`/api`** mounts [`api/integrations/`](apps/server/
 
 ## Files (register + amend)
 
-- **`files.register`** — relay `registerFile` on `FSFileRegistry`; optional **`routing`** (parallel/sequential, optional signers, quorum) gated by **`features.routing.advanced`**. Does **not** index settlement rules.
+- **`files.register`** — relay `registerEnvelope` on `FSEnvelopeRegistry`; optional **`routing`** (parallel/sequential, optional signers, quorum) gated by **`features.routing.advanced`**. Does **not** index settlement rules.
 - **`files.amendSigner`** — sender-only; relay `amendSigner` before old commitment signs; audit row in `file_signer_amendments`.
 
 ## Settlements

@@ -32,6 +32,7 @@ import type {
 	SignatureField,
 	StoredDocument,
 } from "@/src/lib/domains/files/envelope-form-types";
+import { normalizeSignatureFieldsList } from "@/src/lib/domains/files/field-box";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 
 const LOG_PREFIX = "[draft-save]";
@@ -90,7 +91,9 @@ export async function applyServerDraftToCreateForm(args: {
 		envelopeForm,
 		args.prevCreateForm ?? null,
 	);
-	createForm.signatureFields = args.decrypted.snapshot.signatureFields;
+	createForm.signatureFields = normalizeSignatureFieldsList(
+		args.decrypted.snapshot.signatureFields as SignatureField[],
+	);
 	createForm.serverDraftId = args.draftId;
 	createForm.serverDraftRevision = args.revision;
 	createForm.lastSavedSnapshotDigest = digestDraftSnapshot(

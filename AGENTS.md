@@ -47,8 +47,8 @@ Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).
 - **Settlements:** Server never custodies USDC. Client `registerRule` + `approve` on-chain; server indexes via **`settlements.registerForFile`**. Sign page **Settle payment** → `settlements.trySettle` (server relay); fallback **Settle from wallet** → `settlements.confirmSettlement`. **Teams Pro:** `updateRule` / `cancelRule` + post-send attach. **`files.amendSigner`** for pre-sign roster changes. Daily cron syncs off-platform `executed` state. See [`lib/domains/settlements/`](apps/server/lib/domains/settlements/) and [`project/settlements/architecture-and-non-custody.md`](project/settlements/architecture-and-non-custody.md).
 - **Logic:** UI `apps/client` | hooks/SDK `packages/react-sdk` | API/DB/relay `apps/server`.
 - **Imports:** Client uses minimal `@filosign/contracts` ([constants](apps/client/src/constants.ts)); prefer SDK/runtime for new code.
-- **Definitions:** Never hand-edit `apps/contracts/definitions/`. Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy).
-- **Contracts v1 (immutable):** `FSFileRegistry` + `FSPaymentValidator` only; KMS = `FSFileRegistry.server`; identity/E2EE off-chain. See `[apps/contracts/ARCHITECTURE.md](apps/contracts/ARCHITECTURE.md)` and `[project/contracts-future-scope.md](project/contracts-future-scope.md)`.
+- **Definitions:** Never hand-edit `apps/contracts/definitions/`. Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy). Redeploy / rebrand ops: [`project/contracts/envelope-registry-migration.md`](project/contracts/envelope-registry-migration.md).
+- **Contracts v1 (immutable):** `FSEnvelopeRegistry` + `FSPaymentValidator` only; KMS = `FSEnvelopeRegistry.server`; identity/E2EE off-chain. See `[apps/contracts/ARCHITECTURE.md](apps/contracts/ARCHITECTURE.md)` and `[project/contracts-future-scope.md](project/contracts-future-scope.md)`.
 
 ## API & oRPC
 

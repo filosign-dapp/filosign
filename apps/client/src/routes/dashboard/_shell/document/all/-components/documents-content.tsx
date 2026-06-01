@@ -45,7 +45,7 @@ export function DocumentsContent() {
 			className="flex flex-col flex-1 min-h-0"
 		>
 			<div className="flex flex-col border-b border-border bg-background/50 backdrop-blur-sm">
-				<div className="px-8 py-2">
+				<div className="px-6">
 					<TabsList variant="line" className="h-10">
 						<TabsTrigger value="all">All</TabsTrigger>
 						<TabsTrigger value="sent">Sent</TabsTrigger>

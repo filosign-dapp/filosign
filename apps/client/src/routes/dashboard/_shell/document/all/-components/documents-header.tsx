@@ -11,7 +11,7 @@ export function DocumentsHeader() {
 
 	return (
 		<MotionReveal
-			className="flex items-center justify-between px-8 py-4"
+			className="flex items-center justify-between px-8 pt-4 pb-2"
 			preset="smooth"
 			delay={0.2}
 			onlyOnce

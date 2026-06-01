@@ -41,14 +41,14 @@ export function PayoutFeatureAccessSection() {
 		<WorkspaceSection
 			icon={<CurrencyCircleDollarIcon className="size-4" aria-hidden="true" />}
 			title="Payout attachment access"
-			description="Optional USDC payout instructions on documents. Requires manual approval and the Settlement Feature Addendum - not payment processing or escrow."
+			description="Optional USDC payout instructions on documents."
 		>
 			{accessQuery.isPending ? (
 				<p className="text-sm text-muted-foreground">Loading access status…</p>
 			) : status === "approved" && termsCurrent ? (
-				<p className="text-sm text-emerald-700 dark:text-emerald-300">
-					Approved for this workspace. You can attach payout rules from your
-					linked sender wallet (or org treasury when linked).
+				<p className="text-sm text-muted-foreground">
+					Active for this workspace. You can attach payout rules on envelopes
+					now.
 				</p>
 			) : status === "approved" && !termsCurrent ? (
 				<WorkspaceSyncNotice

@@ -255,7 +255,7 @@ export function useSendFile() {
 				throw new Error(`Upload failed: ${uploadResponse.statusText}`);
 			}
 
-			const nonce = await contracts.FSFileRegistry.read.nonce([
+			const nonce = await contracts.FSEnvelopeRegistry.read.nonce([
 				wallet.account.address,
 			]);
 
@@ -278,9 +278,9 @@ export function useSendFile() {
 				? hashOrgIdCommitment(organizationId)
 				: ZERO_ORG_ID_COMMITMENT;
 
-			const signature = await eip712signature(contracts, "FSFileRegistry", {
+			const signature = await eip712signature(contracts, "FSEnvelopeRegistry", {
 				types: {
-					RegisterFile: [
+					RegisterEnvelope: [
 						{ name: "cidIdentifier", type: "bytes32" },
 						{ name: "sender", type: "address" },
 						{ name: "signersCommitment", type: "bytes20" },
@@ -299,7 +299,7 @@ export function useSendFile() {
 						{ name: "nonce", type: "uint256" },
 					],
 				},
-				primaryType: "RegisterFile",
+				primaryType: "RegisterEnvelope",
 				message: {
 					cidIdentifier: cidIdentifier,
 					sender: wallet.account.address,

@@ -9,7 +9,6 @@ import {
 	completionsMerkleRootV1,
 	hashNormalizedSignerEmail,
 	LEAF_SCHEMA_VERSION_V1,
-	normalizePlacementRecipientEmail,
 	SETTLEMENT_FEATURE_TERMS_VERSION,
 	zPlacementManifest,
 } from "@filosign/shared";
@@ -19,8 +18,9 @@ import type { Hex } from "viem";
 import { getAddress } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { latestChainTimestamp } from "../../lib/chain-time";
-import { fileRegistryAt } from "../../lib/file-registry-at";
+import { envelopeRegistryAt } from "../../lib/envelope-registry-at";
 import { invalidateInboxQueries } from "../../lib/invalidate-queries";
+import { resolveSignerEmailForSigning } from "../../lib/resolve-signer-email-for-signing";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import type { AppRouterClient } from "../../orpc/app-router-types";
 import { useCryptoSeed } from "../auth";
@@ -69,7 +69,7 @@ export function useSignFile() {
 					placementCommitment,
 					placementManifest: manifestRaw,
 				} = fileResponse;
-				const registry = fileRegistryAt(contracts, registryAddress);
+				const registry = envelopeRegistryAt(contracts, registryAddress);
 
 				if (manifestRaw == null) {
 					throw new Error(
@@ -79,16 +79,24 @@ export function useSignFile() {
 				const manifest = zPlacementManifest.parse(manifestRaw);
 				const signerAddr = getAddress(wallet.account.address);
 
-				const selfSigner = fileResponse.signers.find(
-					(s) => getAddress(s.wallet) === signerAddr,
-				);
-				const rawEmail = selfSigner?.email?.trim() ?? "";
-				if (!rawEmail) {
+				const manifestAssignedEmails = [
+					...new Set(manifest.fields.map((f) => f.assignedRecipientEmail)),
+				];
+				const signerEmail = resolveSignerEmailForSigning({
+					signerWallet: signerAddr,
+					senderWallet: getAddress(sender),
+					fileSigners: fileResponse.signers.map((s) => ({
+						wallet: getAddress(s.wallet),
+						email: s.email,
+					})),
+					profileEmail: userProfile?.email,
+					manifestAssignedEmails,
+				});
+				if (!signerEmail) {
 					throw new Error(
 						"Your Filosign profile must include an email to sign placed fields for this document",
 					);
 				}
-				const signerEmail = normalizePlacementRecipientEmail(rawEmail);
 				const signerEmailCommitment = hashNormalizedSignerEmail(signerEmail);
 
 				const privySubjectCommitment = userProfile?.privySubjectCommitment;
@@ -150,10 +158,10 @@ export function useSignFile() {
 				const dl3SignatureCommitment = computeCommitment([toHex(dl3Signature)]);
 				const signature = await eip712signature(
 					contracts,
-					"FSFileRegistry",
+					"FSEnvelopeRegistry",
 					{
 						types: {
-							SignFile: [
+							SignEnvelope: [
 								{ name: "cidIdentifier", type: "bytes32" },
 								{ name: "sender", type: "address" },
 								{ name: "signerWallet", type: "address" },
@@ -166,7 +174,7 @@ export function useSignFile() {
 								{ name: "nonce", type: "uint256" },
 							],
 						},
-						primaryType: "SignFile",
+						primaryType: "SignEnvelope",
 						message: {
 							cidIdentifier,
 							sender,

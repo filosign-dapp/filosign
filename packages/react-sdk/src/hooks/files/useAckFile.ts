@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAddress } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { latestChainTimestamp } from "../../lib/chain-time";
-import { fileRegistryAt } from "../../lib/file-registry-at";
+import { envelopeRegistryAt } from "../../lib/envelope-registry-at";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import { useUserProfile } from "../users/useUserProfile";
 
@@ -31,7 +31,7 @@ export function useAckFile() {
 			});
 
 			const { sender, registryAddress, signers, viewers } = fileResponse;
-			const registry = fileRegistryAt(contracts, registryAddress);
+			const registry = envelopeRegistryAt(contracts, registryAddress);
 
 			const cidIdentifier = computeCidIdentifier(pieceCid);
 			const timestamp = await latestChainTimestamp(contracts);
@@ -76,10 +76,10 @@ export function useAckFile() {
 
 			const signature = await eip712signature(
 				contracts,
-				"FSFileRegistry",
+				"FSEnvelopeRegistry",
 				{
 					types: {
-						AckFile: [
+						AckEnvelope: [
 							{ name: "cidIdentifier", type: "bytes32" },
 							{ name: "sender", type: "address" },
 							{ name: "viewerWallet", type: "address" },
@@ -88,7 +88,7 @@ export function useAckFile() {
 							{ name: "timestamp", type: "uint256" },
 						],
 					},
-					primaryType: "AckFile",
+					primaryType: "AckEnvelope",
 					message: {
 						cidIdentifier,
 						sender,

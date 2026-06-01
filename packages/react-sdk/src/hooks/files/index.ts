@@ -3,10 +3,14 @@ export type {
 	SettlementRuleCancelInput,
 	SettlementRuleUpdateInput,
 } from "@filosign/shared";
+export type { AttachmentPacketDraft } from "../../lib/attachment-packets";
 export {
+	canSelectSupplementaryRecipients,
 	canUseAdvancedRouting,
 	canUseAdvancedSettlements,
 	canUseBasicSettlements,
+	canUseConditionalAttachmentRelease,
+	canUseSupplementaryAttachments,
 } from "../../lib/entitlements";
 export { buildValidatedRegisterRouting } from "../../lib/register-routing";
 export {
@@ -29,6 +33,7 @@ export type { SettlementRuleRow } from "../../lib/settlement-types.ts";
 export * from "./useAckFile";
 export * from "./useAmendSigner";
 export * from "./useAttachSettlementForFile";
+export * from "./useCancelAttachmentRule";
 export * from "./useCancelSettlementRule";
 export * from "./useClaimColdInvite";
 export * from "./useColdInviteDecrypt";

@@ -3,6 +3,7 @@ import { FilosignAnalyticsProvider } from "@filosign/react/analytics";
 import { IconContext } from "@phosphor-icons/react";
 import { RouterProvider } from "@tanstack/react-router";
 import { type ReactNode, StrictMode } from "react";
+import { Toaster } from "sonner";
 import env from "@/src/env";
 import {
 	AnalyticsConsentBanner,
@@ -29,6 +30,7 @@ export function AppProviders({ children }: { children?: ReactNode }) {
 		<StrictMode>
 			<ErrorBoundary>
 				<ThemeProvider defaultTheme="system" storageKey="theme">
+					<Toaster position="bottom-right" theme="system" />
 					<QueryClientProvider>
 						<FilosignAnalyticsProvider
 							apiKey={env.VITE_POSTHOG_KEY ?? ""}

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-// Auto-generated from src/FSFileRegistry.sol — DO NOT EDIT (regenerate with the script only)
+// Auto-generated from src/FSEnvelopeRegistry.sol — DO NOT EDIT (regenerate with the script only)
 
-interface IFSFileRegistry {
+interface IFSEnvelopeRegistry {
     enum RoutingMode { Parallel, Sequential }
 
-    struct FileRegistration {
+    struct EnvelopeRegistration {
         bytes32 cidIdentifier;
         address sender;
         bytes20 signersCommitment;
@@ -33,7 +33,7 @@ interface IFSFileRegistry {
         uint256 timestamp;
     }
 
-    struct FileRegistrationView {
+    struct EnvelopeRegistrationView {
         bytes32 cidIdentifier;
         address sender;
         bytes20 signersCommitment;
@@ -52,8 +52,8 @@ interface IFSFileRegistry {
         uint256 timestamp;
     }
 
-    event FileRegistered();
-    event FileSigned();
+    event EnvelopeRegistered();
+    event EnvelopeSigned();
     event SignerAmended();
     event ServerUpdated();
     function nonce(address key) external view returns (uint256);
@@ -61,8 +61,8 @@ interface IFSFileRegistry {
     function setServer(address newServer_) external;
     function computeEmailSignerCommitment(bytes32[] calldata commitments_) external pure returns (bytes20);
     function hashCommitments(bytes32[] calldata commitments_) external pure returns (bytes32);
-    function fileRegistrations(bytes32 cidId) external view returns (FileRegistrationView memory);
-    struct RegisterFileSigInput {
+    function envelopeRegistrations(bytes32 cidId) external view returns (EnvelopeRegistrationView memory);
+    struct RegisterEnvelopeSigInput {
         bytes32 cidId;
         address sender;
         bytes20 signersCommitment;
@@ -80,7 +80,7 @@ interface IFSFileRegistry {
         uint256 timestamp;
     }
 
-    struct RegisterFileWriteInput {
+    struct RegisterEnvelopeWriteInput {
         bytes32 cidId;
         address sender;
         bytes20 signersCommitment;
@@ -93,7 +93,7 @@ interface IFSFileRegistry {
         uint256 timestamp;
     }
 
-    struct RegisterFileInput {
+    struct RegisterEnvelopeInput {
         string pieceCid;
         address sender;
         bytes32[] requiredCommitments;
@@ -111,17 +111,17 @@ interface IFSFileRegistry {
         bytes32 placementCommitment;
     }
 
-    function registerFile(RegisterFileInput calldata input) external;
+    function registerEnvelope(RegisterEnvelopeInput calldata input) external;
     function amendSigner(string calldata pieceCid_, bytes32 oldCommitment_, bytes32 newCommitment_, uint256 timestamp_, bytes calldata signature_) external;
-    function registerFileSignature(string calldata pieceCid_, address sender_, address signerWallet_, bytes32 signerEmailCommitment_, bytes32 privySubjectCommitment_, bytes20 dl3SignatureCommitment_, uint256 timestamp_, bytes calldata signature_, bytes32 completionsRoot_, uint8 leafSchemaVersion_) external;
+    function registerEnvelopeSignature(string calldata pieceCid_, address sender_, address signerWallet_, bytes32 signerEmailCommitment_, bytes32 privySubjectCommitment_, bytes20 dl3SignatureCommitment_, uint256 timestamp_, bytes calldata signature_, bytes32 completionsRoot_, uint8 leafSchemaVersion_) external;
     function isSigner(bytes32 cidId, bytes32 signerEmailCommitment_) external view returns (bool);
     function hasSigned(bytes32 cidId, bytes32 signerEmailCommitment_) external view returns (bool);
     function allRequiredSigned(bytes32 cidId) external view returns (bool);
     function allSigned(bytes32 cidId) external view returns (bool);
     function quorumMet(bytes32 cidId) external view returns (bool);
     function rosterSignedCount(bytes32 cidId) external view returns (uint8);
-    function validateFileRegistrationSignature(RegisterFileInput calldata input) external view returns (bool);
-    function validateFileSigningSignature(string calldata pieceCid_, address sender_, address signerWallet_, bytes32 signerEmailCommitment_, bytes32 privySubjectCommitment_, bytes20 dl3SignatureCommitment_, uint256 timestamp_, bytes calldata signature_, bytes32 completionsRoot_, uint8 leafSchemaVersion_) external view returns (bool);
-    function validateFileAckSignature(string calldata pieceCid_, address sender_, address viewerWallet_, bytes32 viewerEmailCommitment_, bytes32 privySubjectCommitment_, uint256 timestamp_, bytes calldata signature_) external view returns (bool);
+    function validateEnvelopeRegistrationSignature(RegisterEnvelopeInput calldata input) external view returns (bool);
+    function validateEnvelopeSigningSignature(string calldata pieceCid_, address sender_, address signerWallet_, bytes32 signerEmailCommitment_, bytes32 privySubjectCommitment_, bytes20 dl3SignatureCommitment_, uint256 timestamp_, bytes calldata signature_, bytes32 completionsRoot_, uint8 leafSchemaVersion_) external view returns (bool);
+    function validateEnvelopeAckSignature(string calldata pieceCid_, address sender_, address viewerWallet_, bytes32 viewerEmailCommitment_, bytes32 privySubjectCommitment_, uint256 timestamp_, bytes calldata signature_) external view returns (bool);
     function cidIdentifier(string calldata pieceCid_) external pure returns (bytes32);
 }

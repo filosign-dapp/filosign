@@ -6,6 +6,8 @@ export type Recipient = {
 	role: "signer" | "viewer";
 	/** When false on a signer, they are optional for registry quorum (Teams Pro). */
 	signerRequired?: boolean;
+	/** Set when added via compose "I also need to sign" toggle (removed when toggle off). */
+	isAutoAddedSelf?: boolean;
 };
 
 export type UploadedFile = {
@@ -16,6 +18,7 @@ export type UploadedFile = {
 	type: string;
 };
 
+import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
 import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
 
 export type EnvelopeForm = {
@@ -60,6 +63,8 @@ export type SignatureField = {
 		| "checkbox";
 	x: number;
 	y: number;
+	width: number;
+	height: number;
 	page: number;
 	documentId: string;
 	assignedSignerWallet: string;
@@ -90,4 +95,6 @@ export type CreateForm = {
 	registerRouting?: RegisterRoutingInput;
 	/** Teams Pro: merge recipient payouts into one multi-leg rule. */
 	combineSettlementLegs?: boolean;
+	/** Teams+: encrypted supplementary file packets sent with the envelope. */
+	attachmentPacketDrafts?: AttachmentPacketComposeDraft[];
 };

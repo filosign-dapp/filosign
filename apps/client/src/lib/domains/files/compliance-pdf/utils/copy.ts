@@ -60,7 +60,7 @@ export function buildAboutThisRecordLines(
 			textStyle: "body",
 		},
 		{
-			text: "3. Registration snapshot: When present, the on-chain registration snapshot was read from FSFileRegistry at export time. You may reconcile those fields against the registration transaction and the same registry view on an archive node or explorer.",
+			text: "3. Registration snapshot: When present, the on-chain registration snapshot was read from FSEnvelopeRegistry at export time. You may reconcile those fields against the registration transaction and the same registry view on an archive node or explorer.",
 			textStyle: "body",
 		},
 		{
@@ -85,11 +85,11 @@ export function buildTimestampExplainerLines(): ComplianceCopyLine[] {
 
 const TX_KIND_GLOSSARY: Record<ChainTxKind, string> = {
 	file_registered:
-		"Initial registration of the file’s commitments (placements, signers, viewers, sender bindings) on FSFileRegistry.",
+		"Initial registration of the file’s commitments (placements, signers, viewers, sender bindings) on FSEnvelopeRegistry.",
 	file_signed:
-		"A signer’s signature recorded on-chain for this file (registry `registerFileSignature`).",
+		"A signer’s signature recorded on-chain for this file (registry `registerEnvelopeSignature`).",
 	signer_amended:
-		"Sender replaced a signer email commitment before signing (`amendSigner` on FSFileRegistry).",
+		"Sender replaced a signer email commitment before signing (`amendSigner` on FSEnvelopeRegistry).",
 	payout_executed:
 		"FSPaymentValidator `executePayout`: USDC transferFrom sender to recipient when release conditions were met.",
 };
@@ -128,7 +128,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 		),
 		appendixGlossaryLine(
 			"Registration transaction",
-			"Submitted by the sender to anchor the file on FSFileRegistry. Verify: open the tx on an explorer; check logs and state for the piece CID and commitments.",
+			"Submitted by the sender to anchor the file on FSEnvelopeRegistry. Verify: open the tx on an explorer; check logs and state for the piece CID and commitments.",
 		),
 		appendixGlossaryLine(
 			"Signers commitment / viewers commitment",
@@ -152,7 +152,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 		),
 		appendixGlossaryLine(
 			"signersCount / signaturesCount",
-			"Counts from `fileRegistrations` for required signers vs recorded signatures. Verify: compare to explorer contract state at the same block height when possible.",
+			"Counts from `envelopeRegistrations` for required signers vs recorded signatures. Verify: compare to explorer contract state at the same block height when possible.",
 		),
 		appendixGlossaryLine(
 			"registration timestamp (uint256)",
@@ -235,7 +235,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 		],
 		[
 			"onchainRegistration",
-			"Nullable ABI-shaped snapshot from FSFileRegistry at export.",
+			"Nullable ABI-shaped snapshot from FSEnvelopeRegistry at export.",
 		],
 		["onchainRegistration.cidIdentifier", "Registry key for the piece CID."],
 		["onchainRegistration.sender", "On-chain sender address for the cid."],

@@ -4,6 +4,25 @@ import { Document, Page } from "react-pdf";
 import { configurePdfWorker } from "@/src/lib/domains/files/pdf/configure-pdf-worker";
 import { cn } from "@/src/lib/utils";
 
+type PdfLayoutCacheEntry = {
+	numPages: number | null;
+	pageLayoutHeight: number | null;
+};
+
+const pdfLayoutCache = new Map<string, PdfLayoutCacheEntry>();
+
+function getPdfLayoutCache(key: string): PdfLayoutCacheEntry | undefined {
+	return pdfLayoutCache.get(key);
+}
+
+function setPdfLayoutCache(key: string, patch: Partial<PdfLayoutCacheEntry>) {
+	const prev = pdfLayoutCache.get(key) ?? {
+		numPages: null,
+		pageLayoutHeight: null,
+	};
+	pdfLayoutCache.set(key, { ...prev, ...patch });
+}
+
 function normalizeFile(file: string | ArrayBuffer | Uint8Array) {
 	if (typeof file === "string") {
 		return file;
@@ -61,20 +80,26 @@ export function PdfJsPreview({
 	const identity = useMemo(() => fileIdentity(file), [file]);
 	const fileSource = useMemo(() => normalizeFile(file), [docKey, identity]);
 
-	const [numPages, setNumPages] = useState<number | null>(null);
+	const cached = getPdfLayoutCache(docKey);
+	const [numPages, setNumPages] = useState<number | null>(
+		cached?.numPages ?? null,
+	);
 	const [loadError, setLoadError] = useState<string | null>(null);
 	const activeDocKeyRef = useRef(docKey);
 	const onNumPagesLoadedRef = useRef(onNumPagesLoaded);
 	onNumPagesLoadedRef.current = onNumPagesLoaded;
 	const onPageLayoutLoadedRef = useRef(onPageLayoutLoaded);
 	onPageLayoutLoadedRef.current = onPageLayoutLoaded;
-	const [pageLayoutHeight, setPageLayoutHeight] = useState<number | null>(null);
+	const [pageLayoutHeight, setPageLayoutHeight] = useState<number | null>(
+		cached?.pageLayoutHeight ?? null,
+	);
 
 	useEffect(() => {
 		activeDocKeyRef.current = docKey;
-		setNumPages(null);
+		const entry = getPdfLayoutCache(docKey);
+		setNumPages(entry?.numPages ?? null);
+		setPageLayoutHeight(entry?.pageLayoutHeight ?? null);
 		setLoadError(null);
-		setPageLayoutHeight(null);
 	}, [docKey, fileSource]);
 
 	const safePageNumber =
@@ -101,6 +126,7 @@ export function PdfJsPreview({
 							const scale = width / base.width;
 							const height = Math.ceil(base.height * scale);
 							setPageLayoutHeight(height);
+							setPdfLayoutCache(docKey, { pageLayoutHeight: height });
 							onPageLayoutLoadedRef.current?.({ width, height });
 						}}
 						onRenderError={(err) =>
@@ -143,11 +169,12 @@ export function PdfJsPreview({
 						if (activeDocKeyRef.current !== docKey) return;
 						setLoadError(null);
 						setNumPages(pdf.numPages);
+						setPdfLayoutCache(docKey, { numPages: pdf.numPages });
 						onNumPagesLoadedRef.current?.(pdf.numPages);
 					}}
 					loading={
 						<div className="flex min-h-30 w-full items-center justify-center p-4 text-sm text-muted-foreground">
-							Loading PDF…
+							Loading document…
 						</div>
 					}
 				>

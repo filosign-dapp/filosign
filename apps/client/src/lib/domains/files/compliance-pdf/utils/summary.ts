@@ -131,12 +131,12 @@ export function buildCompliancePdfSummaryFromBundle(
 		const o = bundle.onchainRegistration;
 		onchainLines.push(
 			{
-				text: "These fields were read from FSFileRegistry.fileRegistrations for this content id at export time. Compare them to an archive node, indexer, or explorer contract view from the same block height when you need a strict chain match.",
+				text: "These fields were read from FSEnvelopeRegistry.envelopeRegistrations for this content id at export time. Compare them to an archive node, indexer, or explorer contract view from the same block height when you need a strict chain match.",
 				textStyle: "lead",
 			},
 			{ text: "" },
 			{
-				text: "Snapshot of FSFileRegistry.fileRegistrations(cid) at export time:",
+				text: "Snapshot of FSEnvelopeRegistry.envelopeRegistrations(cid) at export time:",
 				textStyle: "listHeading",
 			},
 			{ text: "" },

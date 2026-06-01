@@ -30,7 +30,7 @@ jobs:
         run: bun install
 
       - name: sanity
-        run: bun run sanity
+        run: bun run sanity -- --ci
         env:
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
           TURBO_TEAM: ${{ vars.TURBO_TEAM }}

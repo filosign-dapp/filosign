@@ -3,18 +3,37 @@ import {
 	createWalletClient,
 	getAddress,
 	getContract,
-	http,
+	type http,
 	publicActions,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import config from "@/config";
 import env from "@/env";
+import {
+	createServerChainRpcTransport,
+	serverChainRpcTransportArgs,
+} from "@/lib/platform/chain-rpc";
 
 const serverAccount = privateKeyToAccount(env.FC_SERVER_PRIVATE_KEY);
 
+const chainRpcArgs = serverChainRpcTransportArgs();
+const { transport: chainRpcTransport, summary: chainRpcSummary } =
+	createServerChainRpcTransport(chainRpcArgs);
+
+console.log("chain rpc:", {
+	httpUrl: chainRpcSummary.httpUrl,
+	dedicatedPrimary: chainRpcSummary.dedicatedPrimary,
+	publicFallback: chainRpcSummary.fallbackEnabled
+		? chainRpcSummary.publicFallbackUrl
+		: undefined,
+});
+
+/** Cast keeps viem contract typings; runtime transport may be `fallback` in production. */
+const evmTransport = chainRpcTransport as ReturnType<typeof http>;
+
 export const evmClient = createWalletClient({
 	chain: config.runtimeChain,
-	transport: http(config.runtimeChain.rpcUrls.default.http[0]),
+	transport: evmTransport,
 	account: serverAccount,
 }).extend(publicActions);
 

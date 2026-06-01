@@ -1,14 +1,14 @@
-import { createHash } from "node:crypto";
 import { renderDocumentShared } from "@filosign/emails";
-import { Resend } from "resend";
 import type { Address } from "viem";
 import env from "@/env";
+import { deliverOutboundEmail } from "@/lib/platform/email/deliver";
+import { buildEmailIdempotencyKey } from "@/lib/platform/email/idempotency";
 import { escapeHtml } from "./html";
 import { getClientUrl } from "./public-url";
 
 /**
- * All outbound product email is sent through this file (Resend). There are no
- * other `resend.emails.send` call sites in `apps/server` or packages.
+ * All outbound product email is sent through this file (`deliverOutboundEmail`).
+ * Transport: Resend primary, optional SES fallback — see `deliver.ts`.
  */
 function shouldSkipEmail(): boolean {
 	if (!env.RESEND_ENABLED) {
@@ -35,15 +35,6 @@ type SendColdDocumentInviteEmailArgs = SendDocumentEmailBaseArgs & {
 
 type SendDocumentReceivedEmailArgs = SendDocumentEmailBaseArgs;
 
-const resend = new Resend(env.RESEND_API_KEY);
-
-function idempotencyKey(parts: string[]): string {
-	return createHash("sha256")
-		.update(parts.join("\0"))
-		.digest("hex")
-		.slice(0, 240);
-}
-
 async function deliverEmail(args: {
 	to: string;
 	subject: string;
@@ -51,27 +42,15 @@ async function deliverEmail(args: {
 	html: string;
 	idempotencySegments: string[];
 }) {
-	const { data, error } = await resend.emails.send(
-		{
-			from: env.RESEND_FROM_EMAIL,
-			to: args.to,
-			subject: args.subject,
-			text: args.text,
-			html: args.html,
-			replyTo: env.RESEND_FROM_EMAIL,
-		},
-		{
-			headers: {
-				"Idempotency-Key": idempotencyKey(args.idempotencySegments),
-			},
-		},
-	);
-	if (error) {
-		throw new Error(error.message);
-	}
-	if (data?.id) {
-		console.info("[email] resend sent", { id: data.id, to: args.to });
-	}
+	await deliverOutboundEmail({
+		from: env.RESEND_FROM_EMAIL,
+		to: args.to,
+		subject: args.subject,
+		text: args.text,
+		html: args.html,
+		replyTo: env.RESEND_FROM_EMAIL,
+		idempotencyKey: buildEmailIdempotencyKey(args.idempotencySegments),
+	});
 }
 
 export async function sendDocumentSharedEmail(args: {

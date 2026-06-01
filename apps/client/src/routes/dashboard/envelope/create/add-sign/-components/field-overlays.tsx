@@ -1,143 +1,353 @@
-import { XIcon } from "@phosphor-icons/react";
-import { memo } from "react";
-import { constrainFieldTopLeft } from "@/src/lib/domains/files/placement-viewport";
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import {
+	AsteriskIcon,
+	CircleIcon,
+	CopyIcon,
+	DotsSixVerticalIcon,
+	StackIcon,
+	TrashIcon,
+} from "@phosphor-icons/react";
+import { memo, useCallback, useRef } from "react";
+import {
+	clampFieldWidth,
+	defaultPlacementFieldRect,
+	signerAccentColor,
+} from "@/src/lib/domains/files/field-box";
 import { cn } from "@/src/lib/utils/utils";
 import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 import {
-	fieldSignerAriaSnippet,
 	SignatureFieldTypeIcon,
 	signatureFieldTypeLabel,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-display";
+import {
+	dragTransformInPageSpace,
+	fieldDraggableId,
+	finalizePlacementRectAfterResize,
+	PLACEMENT_FIELD_OVERLAY_CLASS,
+	pageScale,
+	placementRectFromField,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
+import { usePlacementCanvas } from "./placement-canvas-context";
+
+type DraggableFieldOverlayProps = {
+	field: SignatureField;
+	selectedFieldIds: Set<string>;
+	otherFieldsOnPage: SignatureField[];
+	documentWidth: number;
+	documentHeight: number;
+	margin: number;
+	isMobile: boolean;
+	isPlacingField: boolean;
+	pdfNumPages: number | null;
+	onFieldClick: (fieldId: string, event: React.MouseEvent) => void;
+	onFieldRemove: (fieldId: string) => void;
+	onFieldUpdate: (fieldId: string, updates: Partial<SignatureField>) => void;
+	onFieldDuplicate: (fieldId: string) => void;
+	onRepeatOnAllPages: (fieldId: string) => void;
+	onResizeStart: () => void;
+	onResizeEnd: () => void;
+};
+
+function DraggableFieldOverlay({
+	field,
+	selectedFieldIds,
+	otherFieldsOnPage,
+	documentWidth,
+	documentHeight,
+	margin,
+	isMobile,
+	isPlacingField,
+	pdfNumPages,
+	onFieldClick,
+	onFieldRemove,
+	onFieldUpdate,
+	onFieldDuplicate,
+	onRepeatOnAllPages,
+	onResizeStart,
+	onResizeEnd,
+}: DraggableFieldOverlayProps) {
+	const { pageRef } = usePlacementCanvas();
+	const resizeStartRef = useRef<{ width: number; startX: number } | null>(null);
+	const isSelected = selectedFieldIds.has(field.id);
+	const isPrimarySelected =
+		isSelected && selectedFieldIds.size === 1 && selectedFieldIds.has(field.id);
+
+	const { attributes, listeners, setNodeRef, transform, isDragging } =
+		useDraggable({
+			id: fieldDraggableId(field.id),
+			disabled: isPlacingField,
+		});
+
+	const viewport = {
+		docWidth: documentWidth,
+		docHeight: documentHeight,
+		margin,
+	};
+
+	const rect = placementRectFromField(
+		{
+			x: field.x,
+			y: field.y,
+			width: field.width,
+			height: field.height,
+		},
+		viewport,
+	);
+
+	const accent = signerAccentColor(field.assignedSignerEmail);
+	const defaults = defaultPlacementFieldRect(field.type, isMobile);
+
+	const otherRects = otherFieldsOnPage
+		.filter((f) => f.id !== field.id)
+		.map((f) =>
+			placementRectFromField(
+				{ x: f.x, y: f.y, width: f.width, height: f.height },
+				viewport,
+			),
+		);
+
+	const handleResizePointerDown = useCallback(
+		(e: React.PointerEvent) => {
+			if (isPlacingField) return;
+			e.stopPropagation();
+			e.preventDefault();
+			onResizeStart();
+			resizeStartRef.current = { width: field.width, startX: e.clientX };
+
+			const onMove = (ev: PointerEvent) => {
+				const start = resizeStartRef.current;
+				if (!start) return;
+				const pageEl = pageRef.current;
+				const scale =
+					pageEl && pageEl.offsetWidth > 0
+						? pageEl.getBoundingClientRect().width / pageEl.offsetWidth
+						: 1;
+				const deltaX = (ev.clientX - start.startX) / scale;
+				const newWidth = clampFieldWidth(
+					field.type,
+					start.width + deltaX,
+					isMobile,
+				);
+				const next = finalizePlacementRectAfterResize({
+					initial: placementRectFromField(
+						{
+							x: field.x,
+							y: field.y,
+							width: field.width,
+							height: field.height,
+						},
+						viewport,
+					),
+					newWidth,
+					aspectRatio: defaults.aspectRatio,
+					viewport,
+					otherFieldsOnPage: otherRects,
+				});
+				onFieldUpdate(field.id, {
+					x: next.x,
+					y: next.y,
+					width: next.width,
+					height: next.height,
+				});
+			};
+
+			const onUp = () => {
+				resizeStartRef.current = null;
+				onResizeEnd();
+				window.removeEventListener("pointermove", onMove);
+				window.removeEventListener("pointerup", onUp);
+			};
+
+			window.addEventListener("pointermove", onMove);
+			window.addEventListener("pointerup", onUp);
+		},
+		[
+			field,
+			isMobile,
+			isPlacingField,
+			onFieldUpdate,
+			onResizeEnd,
+			onResizeStart,
+			pageRef,
+			viewport,
+			defaults.aspectRatio,
+			otherRects,
+		],
+	);
+
+	const dragStyle = transform
+		? {
+				transform: CSS.Translate.toString(
+					dragTransformInPageSpace(transform, pageScale(pageRef.current)),
+				),
+			}
+		: undefined;
+
+	const showRepeat =
+		isPrimarySelected && pdfNumPages != null && pdfNumPages > 1;
+
+	return (
+		<div
+			ref={setNodeRef}
+			className={cn(
+				PLACEMENT_FIELD_OVERLAY_CLASS,
+				"absolute box-border select-none group z-30 touch-none",
+				isPlacingField ? "cursor-default" : "cursor-move",
+				isDragging && "opacity-40",
+			)}
+			style={{
+				left: rect.x,
+				top: rect.y,
+				width: rect.width,
+				height: rect.height,
+				borderLeftWidth: 3,
+				borderLeftColor: accent,
+				...dragStyle,
+			}}
+			onClick={(e) => onFieldClick(field.id, e)}
+			{...(!isPlacingField ? listeners : undefined)}
+			{...(!isPlacingField ? attributes : undefined)}
+		>
+			<div
+				className={cn(
+					"flex h-full w-full items-center gap-1.5 rounded-sm border border-white/20 bg-black px-1.5 text-white shadow-md",
+					isSelected && "ring-2 ring-white/60",
+				)}
+			>
+				{!isPlacingField ? (
+					<DotsSixVerticalIcon
+						className="size-3 shrink-0 opacity-60"
+						weight="bold"
+					/>
+				) : null}
+				<span className="shrink-0 text-white">
+					<SignatureFieldTypeIcon type={field.type} isMobile={isMobile} />
+				</span>
+				<span className="min-w-0 flex-1 truncate text-[10px] sm:text-xs">
+					{field.assignedSignerEmail}
+				</span>
+				{field.required ? (
+					<AsteriskIcon
+						className="size-3 shrink-0 text-amber-400"
+						weight="bold"
+					/>
+				) : (
+					<CircleIcon className="size-3 shrink-0 opacity-50" weight="regular" />
+				)}
+				{isPrimarySelected ? (
+					<div className="flex shrink-0 items-center gap-0.5">
+						{showRepeat ? (
+							<button
+								type="button"
+								className="rounded p-0.5 hover:bg-white/20"
+								onClick={(e) => {
+									e.stopPropagation();
+									onRepeatOnAllPages(field.id);
+								}}
+								aria-label="Repeat on all pages"
+								title="Repeat on all pages"
+							>
+								<StackIcon className="size-3" />
+							</button>
+						) : null}
+						<button
+							type="button"
+							className="rounded p-0.5 hover:bg-white/20"
+							onClick={(e) => {
+								e.stopPropagation();
+								onFieldDuplicate(field.id);
+							}}
+							aria-label="Duplicate field"
+						>
+							<CopyIcon className="size-3" />
+						</button>
+						<button
+							type="button"
+							className="rounded p-0.5 hover:bg-white/20"
+							onClick={(e) => {
+								e.stopPropagation();
+								onFieldRemove(field.id);
+							}}
+							aria-label="Remove field"
+						>
+							<TrashIcon className="size-3" />
+						</button>
+					</div>
+				) : null}
+			</div>
+			{isPrimarySelected && !isPlacingField ? (
+				<button
+					type="button"
+					className="absolute -bottom-1 -right-1 size-3 cursor-se-resize rounded-sm border border-white/40 bg-black touch-none"
+					aria-label="Resize field"
+					onPointerDown={handleResizePointerDown}
+				/>
+			) : null}
+		</div>
+	);
+}
 
 type SignatureFieldOverlaysProps = {
 	signatureFields: SignatureField[];
-	selectedField: string | null;
+	selectedFieldIds: Set<string>;
 	documentWidth: number;
 	documentHeight: number;
-	fieldWidth: number;
-	fieldHeight: number;
 	margin: number;
 	isMobile: boolean;
+	isPlacingField: boolean;
+	pdfNumPages: number | null;
 	onFieldClick: (fieldId: string, event: React.MouseEvent) => void;
-	onFieldMouseDown: (fieldId: string, event: React.MouseEvent) => void;
 	onFieldRemove: (fieldId: string) => void;
+	onFieldUpdate: (fieldId: string, updates: Partial<SignatureField>) => void;
+	onFieldDuplicate: (fieldId: string) => void;
+	onRepeatOnAllPages: (fieldId: string) => void;
+	onResizeStart: () => void;
+	onResizeEnd: () => void;
 };
 
 export const SignatureFieldOverlays = memo(function SignatureFieldOverlays({
 	signatureFields,
-	selectedField,
+	selectedFieldIds,
 	documentWidth,
 	documentHeight,
-	fieldWidth,
-	fieldHeight,
 	margin,
 	isMobile,
+	isPlacingField,
+	pdfNumPages,
 	onFieldClick,
-	onFieldMouseDown,
 	onFieldRemove,
+	onFieldUpdate,
+	onFieldDuplicate,
+	onRepeatOnAllPages,
+	onResizeStart,
+	onResizeEnd,
 }: SignatureFieldOverlaysProps) {
 	return (
 		<>
-			{signatureFields.map((field) => {
-				const { x: constrainedX, y: constrainedY } = constrainFieldTopLeft({
-					x: field.x,
-					y: field.y,
-					docWidth: documentWidth,
-					docHeight: documentHeight,
-					fieldWidth,
-					fieldHeight,
-					margin,
-				});
-
-				return (
-					<div
-						key={field.id}
-						className={cn(
-							"absolute flex min-w-0 flex-col gap-1 rounded-md border-2 border-dashed bg-primary/10 p-1.5 hover:bg-primary/10 cursor-move select-none group z-30",
-							isMobile ? "max-w-40" : "max-w-48",
-							selectedField === field.id
-								? "border-primary bg-primary/10 shadow-lg "
-								: "border-primary/50 hover:border-primary/70 hover:bg-primary/80",
-						)}
-						style={{
-							left: constrainedX,
-							top: constrainedY,
-						}}
-						onClick={(e) => onFieldClick(field.id, e)}
-						onMouseDown={(e) => onFieldMouseDown(field.id, e)}
-						onKeyDown={(e) => {
-							if (e.key === "Enter" || e.key === " ") {
-								onFieldClick(field.id, e as unknown as React.MouseEvent);
-							}
-						}}
-						role="button"
-						tabIndex={0}
-						aria-label={`${signatureFieldTypeLabel(field.type)} field for ${fieldSignerAriaSnippet(field)}, press Enter to select`}
-					>
-						<div
-							className={cn(
-								"flex items-center gap-1.5",
-								isMobile ? "gap-1" : "gap-2",
-							)}
-						>
-							<span className="shrink-0 text-primary">
-								<SignatureFieldTypeIcon type={field.type} isMobile={isMobile} />
-							</span>
-							<span
-								className={cn(
-									"min-w-0 flex-1 truncate font-medium text-primary",
-									isMobile ? "text-[10px]" : "text-xs",
-								)}
-							>
-								{signatureFieldTypeLabel(field.type)}
-							</span>
-							<button
-								type="button"
-								className={cn("shrink-0 p-0", isMobile ? "w-3 h-3" : "w-4 h-4")}
-								onClick={(e) => {
-									e.stopPropagation();
-									onFieldRemove(field.id);
-								}}
-							>
-								<XIcon className={cn(isMobile ? "w-2.5 h-2.5" : "w-3 h-3")} />
-							</button>
-						</div>
-						<div className="flex items-start justify-between gap-1 border-t border-primary/20 pt-1">
-							<div className="min-w-0 flex-1 flex flex-col gap-0.5 text-left">
-								<span
-									className={cn(
-										"truncate font-medium text-foreground",
-										isMobile ? "text-[10px]" : "text-xs",
-									)}
-								>
-									{field.assignedSignerName.trim() || "Signer"}
-								</span>
-								{field.assignedSignerEmail.trim() ? (
-									<span
-										className={cn(
-											"truncate text-muted-foreground",
-											isMobile ? "text-[9px]" : "text-[10px]",
-										)}
-									>
-										{field.assignedSignerEmail.trim()}
-									</span>
-								) : null}
-							</div>
-							<span
-								className={cn(
-									"shrink-0 rounded px-1 font-semibold uppercase tracking-tight",
-									field.required
-										? "bg-amber-500/25 text-amber-950"
-										: "bg-muted text-muted-foreground",
-									isMobile ? "text-[8px]" : "text-[9px]",
-								)}
-							>
-								{field.required ? "Req" : "Opt"}
-							</span>
-						</div>
-					</div>
-				);
-			})}
+			{signatureFields.map((field) => (
+				<DraggableFieldOverlay
+					key={field.id}
+					field={field}
+					selectedFieldIds={selectedFieldIds}
+					otherFieldsOnPage={signatureFields}
+					documentWidth={documentWidth}
+					documentHeight={documentHeight}
+					margin={margin}
+					isMobile={isMobile}
+					isPlacingField={isPlacingField}
+					pdfNumPages={pdfNumPages}
+					onFieldClick={onFieldClick}
+					onFieldRemove={onFieldRemove}
+					onFieldUpdate={onFieldUpdate}
+					onFieldDuplicate={onFieldDuplicate}
+					onRepeatOnAllPages={onRepeatOnAllPages}
+					onResizeStart={onResizeStart}
+					onResizeEnd={onResizeEnd}
+				/>
+			))}
 		</>
 	);
 });
+
+export { signatureFieldTypeLabel };

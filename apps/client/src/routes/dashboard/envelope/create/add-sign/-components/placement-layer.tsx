@@ -14,14 +14,14 @@ export function PlacementCaptureLayer({
 }: PlacementCaptureLayerProps) {
 	if (!isPlacingField) {
 		return (
-			<div className="absolute inset-0 w-full h-full pointer-events-auto cursor-default bg-transparent" />
+			<div className="pointer-events-auto absolute inset-0 h-full w-full cursor-default bg-transparent" />
 		);
 	}
 
 	return (
 		<>
 			<div
-				className="absolute inset-0 w-full h-full pointer-events-auto cursor-crosshair bg-blue-500/5 z-20"
+				className="pointer-events-auto absolute inset-0 z-20 h-full w-full cursor-crosshair bg-blue-500/5"
 				onClick={onDocumentClick}
 				onKeyDown={(e) => {
 					if (e.key === "Enter" || e.key === " ") {
@@ -30,11 +30,11 @@ export function PlacementCaptureLayer({
 				}}
 				role="button"
 				tabIndex={0}
-				aria-label={`Click to place ${pendingFieldType} field. Use Enter or Space to place at center.`}
+				aria-label={`Click to place ${pendingFieldType} field`}
 			/>
-			<div className="absolute inset-0 border-2 border-dashed border-secondary/50 bg-secondary/20 pointer-events-none z-20">
-				<div className="absolute top-2 left-2 max-w-[min(100%,18rem)] rounded bg-secondary px-2 py-1 text-xs text-primary">
-					Click to place. Choose signer and required/optional in the dialog
+			<div className="pointer-events-none absolute inset-0 z-20 border-2 border-dashed border-secondary/50 bg-secondary/20">
+				<div className="absolute left-2 top-2 max-w-[min(100%,18rem)] rounded bg-secondary px-2 py-1 text-xs text-primary">
+					Click the page to place {pendingFieldType}
 				</div>
 			</div>
 		</>

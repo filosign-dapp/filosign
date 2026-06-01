@@ -24,7 +24,7 @@ import {
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Address, Hex } from "viem";
+import { type Address, BaseError, type Hex } from "viem";
 import {
 	draftSyncModeFromSearch,
 	pruneSignatureFields,
@@ -45,6 +45,7 @@ import {
 } from "@/src/lib/domains/files/validate-attachment-packets";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
+import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import {
 	useStorePersist,
 	useStorePersistHydrated,
@@ -848,32 +849,37 @@ export function useAddSignController() {
 						)
 					: [];
 
-			const result = await sendFile.mutateAsync({
-				signers,
-				viewers,
-				documents: docPayloads.map(({ pageCount: _pageCount, ...doc }) => doc),
-				metadata: {
-					name:
-						docPayloads.length === 1
-							? (docPayloads[0]?.name ?? "Document")
-							: `${docPayloads[0]?.name ?? "Envelope"} (+${docPayloads.length - 1} more)`,
+			const result = await sendFile.mutateAsync(
+				{
+					signers,
+					viewers,
+					documents: docPayloads.map(
+						({ pageCount: _pageCount, ...doc }) => doc,
+					),
+					metadata: {
+						name:
+							docPayloads.length === 1
+								? (docPayloads[0]?.name ?? "Document")
+								: `${docPayloads[0]?.name ?? "Envelope"} (+${docPayloads.length - 1} more)`,
+					},
+					placementManifest,
+					warmRecipientsByEmail,
+					viewerEmails,
+					...(coldInvitePayload ? { coldInvites: coldInvitePayload } : {}),
+					...(settlementRules.length > 0 ? { settlementRules } : {}),
+					...(routing ? { routing } : {}),
+					...(attachmentPacketDrafts.length > 0
+						? { attachmentPacketDrafts }
+						: {}),
+					...(activeOrg
+						? {
+								organizationId: activeOrg.id,
+								orgEncryptionPublicKey: activeOrg.encryptionPublicKey as Hex,
+							}
+						: {}),
 				},
-				placementManifest,
-				warmRecipientsByEmail,
-				viewerEmails,
-				...(coldInvitePayload ? { coldInvites: coldInvitePayload } : {}),
-				...(settlementRules.length > 0 ? { settlementRules } : {}),
-				...(routing ? { routing } : {}),
-				...(attachmentPacketDrafts.length > 0
-					? { attachmentPacketDrafts }
-					: {}),
-				...(activeOrg
-					? {
-							organizationId: activeOrg.id,
-							orgEncryptionPublicKey: activeOrg.encryptionPublicKey as Hex,
-						}
-					: {}),
-			});
+				suppressGlobalErrorToast(),
+			);
 
 			const selfOnRoster = resolveSelfSignerOnRoster(
 				createForm.recipients ?? [],
@@ -887,10 +893,13 @@ export function useAddSignController() {
 			if (selfFieldIds.length > 0 && result.pieceCid) {
 				setSendStatus("signing");
 				try {
-					await signFile.mutateAsync({
-						pieceCid: result.pieceCid,
-						completedFieldIds: selfFieldIds,
-					});
+					await signFile.mutateAsync(
+						{
+							pieceCid: result.pieceCid,
+							completedFieldIds: selfFieldIds,
+						},
+						suppressGlobalErrorToast(),
+					);
 				} catch (signErr) {
 					console.error("Self-sign at send failed:", signErr);
 					toast.error(
@@ -939,7 +948,11 @@ export function useAddSignController() {
 				setTimeout(() => setSendStatus("idle"), 3000);
 				return;
 			}
-			toast.error(formatSettlementSimError(error));
+			if (error instanceof BaseError) {
+				toast.error(formatSettlementSimError(error));
+			} else {
+				showAppErrorToast(error);
+			}
 			console.error("Failed to send documents:", error);
 			setTimeout(() => setSendStatus("idle"), 3000);
 		} finally {

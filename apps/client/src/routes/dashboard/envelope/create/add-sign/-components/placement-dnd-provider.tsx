@@ -7,7 +7,6 @@ import {
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import type { ReactNode } from "react";
 import { useCallback, useMemo, useRef } from "react";
 import { defaultPlacementFieldRect } from "@/src/lib/domains/files/field-box";

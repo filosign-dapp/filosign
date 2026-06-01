@@ -12,6 +12,7 @@ import {
 } from "@/src/lib/components/ui/dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { localMutationErrorOptions } from "@/src/lib/errors";
 export function ShareDraftDialog(props: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
@@ -71,6 +72,7 @@ export function ShareDraftDialog(props: {
 									emails,
 								},
 								{
+									...localMutationErrorOptions(),
 									onSuccess: (result) => {
 										const cold = result.shares
 											.filter((s) => s.phrase)
@@ -80,11 +82,6 @@ export function ShareDraftDialog(props: {
 											}));
 										setPhrases(cold);
 										toast.success("Review invites sent");
-									},
-									onError: (err) => {
-										toast.error(
-											err instanceof Error ? err.message : "Share failed",
-										);
 									},
 								},
 							);

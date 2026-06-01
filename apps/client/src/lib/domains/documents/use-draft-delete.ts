@@ -40,11 +40,7 @@ export function useDraftDelete() {
 			}
 			toast.success("Draft deleted");
 			setDeleteDraftId(null);
-		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to delete draft",
-			);
-		}
+		} catch {}
 	}, [archive, clearCreateForm, deleteDraftId, navigate]);
 
 	return {

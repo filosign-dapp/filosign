@@ -22,6 +22,7 @@ import {
 } from "@/src/lib/components/ui/dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { cn } from "@/src/lib/utils/index";
 
 export type { UpgradePlanLimitReason };
@@ -138,13 +139,11 @@ export function UpgradePlanDialog({
 			selectedPlan !== "individual"
 		) {
 			try {
-				await changePlan.mutateAsync(selectedPlan);
+				await changePlan.mutateAsync(selectedPlan, suppressGlobalErrorToast());
 				toast.success("Plan change submitted.");
 				onOpenChange(false);
 			} catch (err) {
-				toast.error(
-					err instanceof Error ? err.message : "Could not change plan",
-				);
+				showAppErrorToast(err);
 			}
 			return;
 		}
@@ -152,18 +151,19 @@ export function UpgradePlanDialog({
 		const returnUrl = `${window.location.origin}/dashboard`;
 		try {
 			if (selectedPlan) {
-				const result = await orgCheckout.mutateAsync({
-					planId: selectedPlan,
-					interval,
-					seatCount: selectedPlan === "individual" ? 1 : seatCount,
-					returnUrl,
-				});
+				const result = await orgCheckout.mutateAsync(
+					{
+						planId: selectedPlan,
+						interval,
+						seatCount: selectedPlan === "individual" ? 1 : seatCount,
+						returnUrl,
+					},
+					suppressGlobalErrorToast(),
+				);
 				window.location.href = result.checkoutUrl;
 			}
 		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Could not start checkout",
-			);
+			showAppErrorToast(err);
 		}
 	};
 

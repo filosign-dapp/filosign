@@ -20,7 +20,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -36,6 +35,7 @@ import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { buildCreateForm, uploadedFromDataUrl } from "@/src/lib/domains/drafts";
 import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
+import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 
 export const Route = createFileRoute("/dashboard/_shell/templates/")({
@@ -132,12 +132,13 @@ function TemplatesIndexPage() {
 	const handleDeleteTemplate = async () => {
 		if (!deleteTargetId) return;
 		try {
-			await deleteTemplate.mutateAsync({ templateId: deleteTargetId });
+			await deleteTemplate.mutateAsync(
+				{ templateId: deleteTargetId },
+				suppressGlobalErrorToast(),
+			);
 			toast.success("Template deleted successfully");
 		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to delete template",
-			);
+			showAppErrorToast(err);
 		} finally {
 			setDeleteTargetId(null);
 		}
@@ -169,21 +170,22 @@ function TemplatesIndexPage() {
 			const placementManifest = draftDetails.headSnapshot
 				?.placementManifest ?? { fields: [] };
 
-			await createTemplate.mutateAsync({
-				name: newTemplateName.trim(),
-				s3Key: primaryDoc.s3Key,
-				dekWrappedOmk: draftDetails.headDekWrappedOmk,
-				placementManifest,
-			});
+			await createTemplate.mutateAsync(
+				{
+					name: newTemplateName.trim(),
+					s3Key: primaryDoc.s3Key,
+					dekWrappedOmk: draftDetails.headDekWrappedOmk,
+					placementManifest,
+				},
+				suppressGlobalErrorToast(),
+			);
 
 			toast.success("Template created successfully!");
 			setCreateOpen(false);
 			setSelectedDraftId("");
 			setNewTemplateName("");
 		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to create template",
-			);
+			showAppErrorToast(err);
 		} finally {
 			setIsCreatingTemplate(false);
 		}

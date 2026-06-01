@@ -1,4 +1,4 @@
-import type { PlacementManifest } from "@filosign/shared";
+import type { PlacementManifest, RegisterRoutingInput } from "@filosign/shared";
 import { sql } from "drizzle-orm";
 import * as t from "drizzle-orm/pg-core";
 import {
@@ -46,6 +46,8 @@ export const files = t.pgTable(
 
 		placementCommitment: tBytes32().notNull(),
 		placementManifestJson: t.jsonb().$type<PlacementManifest>().notNull(),
+		/** Snapshot of register routing for sign UX (sequential order, quorum). */
+		registerRoutingJson: t.jsonb().$type<RegisterRoutingInput>(),
 
 		warmParticipantCount: t.integer().notNull().default(0),
 		coldInviteCount: t.integer().notNull().default(0),

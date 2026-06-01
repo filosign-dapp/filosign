@@ -18,7 +18,7 @@ Full matrix: [`project/launch/environments.md`](../../project/launch/environment
 
 Every server env must set **`DEPLOYMENT`** and matching **`CHAIN`** (`staging`/`sandbox` → `testnet`, `production` → `mainnet`).
 
-Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`, `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY` (see [`apps/contracts/env.ts`](../contracts/env.ts)).
+Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`, `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY` (see [`apps/contracts/env.ts`](../contracts/env.ts)). On-chain addresses for the app come from [`definitions/`](../../apps/contracts/definitions/) via `CHAIN` — after redeploy, run migrate and align `FC_SERVER_ADDRESS` with `FSEnvelopeRegistry.server()` ([migration note](../../project/contracts/envelope-registry-migration.md)).
 
 ---
 

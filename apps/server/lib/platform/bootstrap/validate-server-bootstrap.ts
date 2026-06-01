@@ -27,17 +27,17 @@ export function validateRelayerWallet(): void {
 	}
 }
 
-/** KMS relayer must match FSFileRegistry.server() on-chain. */
+/** KMS relayer must match FSEnvelopeRegistry.server() on-chain. */
 export async function validateRegistryServer(): Promise<void> {
 	const { fsContracts } = await import("@/lib/platform/evm");
 	const onChainServer = getAddress(
-		await fsContracts.FSFileRegistry.read.server(),
+		await fsContracts.FSEnvelopeRegistry.read.server(),
 	);
 	const configured = getAddress(env.FC_SERVER_ADDRESS);
 	if (onChainServer !== configured) {
 		failBootstrap(
 			"registry_server_mismatch",
-			`FSFileRegistry.server() ${onChainServer} does not match FC_SERVER_ADDRESS ${configured}`,
+			`FSEnvelopeRegistry.server() ${onChainServer} does not match FC_SERVER_ADDRESS ${configured}`,
 		);
 	}
 }

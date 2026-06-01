@@ -25,11 +25,11 @@ export const fsContracts = getContracts({
 
 const keyedClient = { public: evmClient, wallet: evmClient } as const;
 
-export function fsFileRegistryAt(address?: string | null) {
-	if (!address) return fsContracts.FSFileRegistry;
+export function fsEnvelopeRegistryAt(address?: string | null) {
+	if (!address) return fsContracts.FSEnvelopeRegistry;
 	return getContract({
 		address: getAddress(address),
-		abi: fsContracts.FSFileRegistry.abi,
+		abi: fsContracts.FSEnvelopeRegistry.abi,
 		client: keyedClient,
 	});
 }
@@ -43,32 +43,34 @@ export function fsPaymentValidatorAt(address?: string | null) {
 	});
 }
 
-type FileRegistryContract = ReturnType<typeof fsFileRegistryAt>;
+type EnvelopeRegistryContract = ReturnType<typeof fsEnvelopeRegistryAt>;
 
-type FileRegistryRelayWrite = {
-	registerFileSignature: (args: readonly unknown[]) => Promise<`0x${string}`>;
+type EnvelopeRegistryRelayWrite = {
+	registerEnvelopeSignature: (
+		args: readonly unknown[],
+	) => Promise<`0x${string}`>;
 	amendSigner: (args: readonly unknown[]) => Promise<`0x${string}`>;
 };
 
-function fileRegistryRelayWrite(
-	registry: FileRegistryContract,
-): FileRegistryRelayWrite {
-	return registry.write as unknown as FileRegistryRelayWrite;
+function envelopeRegistryRelayWrite(
+	registry: EnvelopeRegistryContract,
+): EnvelopeRegistryRelayWrite {
+	return registry.write as unknown as EnvelopeRegistryRelayWrite;
 }
 
 /** Relay server-signed registry writes when viem contract typings omit methods. */
-export async function relayRegisterFileSignature(
-	registry: FileRegistryContract,
+export async function relayRegisterEnvelopeSignature(
+	registry: EnvelopeRegistryContract,
 	args: readonly unknown[],
 ): Promise<`0x${string}`> {
-	return fileRegistryRelayWrite(registry).registerFileSignature(args);
+	return envelopeRegistryRelayWrite(registry).registerEnvelopeSignature(args);
 }
 
 export async function relayAmendSigner(
-	registry: FileRegistryContract,
+	registry: EnvelopeRegistryContract,
 	args: readonly unknown[],
 ): Promise<`0x${string}`> {
-	return fileRegistryRelayWrite(registry).amendSigner(args);
+	return envelopeRegistryRelayWrite(registry).amendSigner(args);
 }
 
 export function fsAttachmentReleaseAt(address?: string | null) {

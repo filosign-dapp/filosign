@@ -30,6 +30,7 @@
 		"@filosign/crypto-utils": "workspace:*",
 		"@filosign/emails": "workspace:*",
 		"@filosign/entitlements": "workspace:*",
+		"@filosign/errors": "workspace:*",
 		"@filosign/logger": "workspace:*",
 		"@filosign/shared": "workspace:*",
 		"@filoz/synapse-sdk": "^0.40.3",

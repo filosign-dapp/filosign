@@ -24,6 +24,7 @@
 		"@filosign/contracts": "workspace:*",
 		"@filosign/crypto-utils": "workspace:*",
 		"@filosign/entitlements": "workspace:*",
+		"@filosign/errors": "workspace:*",
 		"@filosign/motion": "workspace:*",
 		"@filosign/react": "workspace:*",
 		"@filosign/shared": "workspace:*",

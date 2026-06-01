@@ -12,6 +12,7 @@ export const PACKAGE_SCOPES = {
 	contracts: "@filosign/contracts",
 	emails: "@filosign/emails",
 	entitlements: "@filosign/entitlements",
+	errors: "@filosign/errors",
 } as const;
 
 export type PackageScopeName = keyof typeof PACKAGE_SCOPES;

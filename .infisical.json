@@ -3,7 +3,6 @@
 	"defaultEnvironment": "staging",
 	"gitBranchToEnvironmentMapping": {
 		"main": "prod",
-		"master": "prod",
 		"staging": "staging",
 		"sandbox": "sandbox"
 	}

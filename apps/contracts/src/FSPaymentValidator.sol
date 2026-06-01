@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "./errors/EFSPaymentValidator.sol";
-import "./interfaces/IFSFileRegistry.sol";
+import "./interfaces/IFSEnvelopeRegistry.sol";
 
 contract FSPaymentValidator is ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -43,7 +43,7 @@ contract FSPaymentValidator is ReentrancyGuard {
         bool cancelled;
     }
 
-    IFSFileRegistry public immutable fileRegistry;
+    IFSEnvelopeRegistry public immutable envelopeRegistry;
     uint256 public immutable deploymentChainId;
 
     uint256 public nextRuleId;
@@ -79,11 +79,11 @@ contract FSPaymentValidator is ReentrancyGuard {
         uint256 amount
     );
 
-    constructor(address fileRegistry_, uint256 deploymentChainId_) {
-        if (fileRegistry_ == address(0)) {
+    constructor(address envelopeRegistry_, uint256 deploymentChainId_) {
+        if (envelopeRegistry_ == address(0)) {
             revert InvalidReleaseConfig();
         }
-        fileRegistry = IFSFileRegistry(fileRegistry_);
+        envelopeRegistry = IFSEnvelopeRegistry(envelopeRegistry_);
         deploymentChainId = deploymentChainId_;
         if (block.chainid != deploymentChainId_) {
             revert InvalidReleaseConfig();
@@ -269,7 +269,7 @@ contract FSPaymentValidator is ReentrancyGuard {
     }
 
     function _assertFileRegistered(bytes32 cidId_) private view {
-        if (fileRegistry.fileRegistrations(cidId_).timestamp == 0) {
+        if (envelopeRegistry.envelopeRegistrations(cidId_).timestamp == 0) {
             revert FileNotRegistered();
         }
     }
@@ -448,7 +448,7 @@ contract FSPaymentValidator is ReentrancyGuard {
 
     function _assertRequiredSigningNotStarted(bytes32 cidId_) private view {
         if (
-            fileRegistry.fileRegistrations(cidId_).requiredSignaturesCount > 0
+            envelopeRegistry.envelopeRegistrations(cidId_).requiredSignaturesCount > 0
         ) revert RequiredSigningStarted();
     }
 
@@ -456,8 +456,8 @@ contract FSPaymentValidator is ReentrancyGuard {
         bytes32 cidId_,
         uint8 thresholdN_
     ) private view {
-        IFSFileRegistry.FileRegistrationView memory reg = fileRegistry
-            .fileRegistrations(cidId_);
+        IFSEnvelopeRegistry.EnvelopeRegistrationView memory reg = envelopeRegistry
+            .envelopeRegistrations(cidId_);
         if (reg.quorumN > 0) {
             if (thresholdN_ != reg.quorumN) revert InvalidReleaseConfig();
             return;
@@ -471,8 +471,8 @@ contract FSPaymentValidator is ReentrancyGuard {
         bytes32 cidId_,
         uint8 thresholdN_
     ) private view {
-        IFSFileRegistry.FileRegistrationView memory reg = fileRegistry
-            .fileRegistrations(cidId_);
+        IFSEnvelopeRegistry.EnvelopeRegistrationView memory reg = envelopeRegistry
+            .envelopeRegistrations(cidId_);
         if (thresholdN_ == 0 || thresholdN_ > reg.signersCount) {
             revert InvalidReleaseConfig();
         }
@@ -486,37 +486,37 @@ contract FSPaymentValidator is ReentrancyGuard {
         ReleaseType rt = rule.releaseType;
 
         if (rt == ReleaseType.AllSigned || rt == ReleaseType.AllRequiredSigned) {
-            return fileRegistry.allRequiredSigned(cidId);
+            return envelopeRegistry.allRequiredSigned(cidId);
         }
         if (rt == ReleaseType.AllSignedComplete) {
-            return fileRegistry.allSigned(cidId);
+            return envelopeRegistry.allSigned(cidId);
         }
         if (rt == ReleaseType.SpecificSigner) {
-            return fileRegistry.hasSigned(cidId, rule.specificSignerCommitment);
+            return envelopeRegistry.hasSigned(cidId, rule.specificSignerCommitment);
         }
         if (rt == ReleaseType.QuorumRequired) {
-            IFSFileRegistry.FileRegistrationView memory reg = fileRegistry
-                .fileRegistrations(cidId);
+            IFSEnvelopeRegistry.EnvelopeRegistrationView memory reg = envelopeRegistry
+                .envelopeRegistrations(cidId);
             if (reg.quorumN > 0) {
-                return fileRegistry.quorumMet(cidId);
+                return envelopeRegistry.quorumMet(cidId);
             }
             return reg.requiredSignaturesCount >= rule.thresholdN;
         }
         if (rt == ReleaseType.QuorumAll) {
-            return fileRegistry.rosterSignedCount(cidId) >= rule.thresholdN;
+            return envelopeRegistry.rosterSignedCount(cidId) >= rule.thresholdN;
         }
 
         bytes32[] storage commitments = _ruleSignerCommitments[ruleId];
         if (rt == ReleaseType.AllOfSet) {
             for (uint256 i = 0; i < commitments.length; i++) {
-                if (!fileRegistry.hasSigned(cidId, commitments[i])) return false;
+                if (!envelopeRegistry.hasSigned(cidId, commitments[i])) return false;
             }
             return commitments.length > 0;
         }
 
         uint8 signed;
         for (uint256 i = 0; i < commitments.length; i++) {
-            if (fileRegistry.hasSigned(cidId, commitments[i])) {
+            if (envelopeRegistry.hasSigned(cidId, commitments[i])) {
                 signed++;
                 if (signed >= rule.thresholdN) return true;
             }

@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 // Auto-generated from src/FSAttachmentRelease.sol — DO NOT EDIT (regenerate with the script only)
 
-import "./IFSFileRegistry.sol";
+import "./IFSEnvelopeRegistry.sol";
 
 interface IFSAttachmentRelease {
     enum ReleaseType { AllSigned, SpecificSigner, AtLeastN, AllRequiredSigned, AllSignedComplete, QuorumRequired, QuorumSet, QuorumAll, AllOfSet }
@@ -21,7 +21,7 @@ interface IFSAttachmentRelease {
         bool cancelled;
     }
 
-    function fileRegistry() external view returns (address);
+    function envelopeRegistry() external view returns (address);
     function deploymentChainId() external view returns (uint256);
     function nextRuleId() external view returns (uint256);
     function rules(uint256 key) external view returns (AttachmentRule memory);

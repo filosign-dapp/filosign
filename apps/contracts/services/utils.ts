@@ -53,7 +53,7 @@ export async function filosignRegistrationSignature(
 		name: FILOSIGN_REGISTRATION_DOMAIN_NAME,
 		version: "1",
 		chainId: contracts.$client.chain.id,
-		verifyingContract: contracts.FSFileRegistry.address,
+		verifyingContract: contracts.FSEnvelopeRegistry.address,
 	};
 
 	return contracts.$client.signTypedData({
@@ -64,13 +64,13 @@ export async function filosignRegistrationSignature(
 
 export async function eip712signature(
 	contracts: FilosignContracts,
-	contractName: keyof Pick<FilosignContracts, "FSFileRegistry">,
+	contractName: keyof Pick<FilosignContracts, "FSEnvelopeRegistry">,
 	args: Omit<SignTypedDataParameters, "domain" | "privateKey">,
 	options?: { verifyingContract?: `0x${string}` },
 ) {
 	const domain = {
 		name: contractName,
-		version: contractName === "FSFileRegistry" ? "2" : "1",
+		version: contractName === "FSEnvelopeRegistry" ? "2" : "1",
 		chainId: contracts.$client.chain.id,
 		verifyingContract:
 			options?.verifyingContract ?? contracts[contractName].address,

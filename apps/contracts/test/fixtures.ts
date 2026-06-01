@@ -3,15 +3,15 @@ import type { Address, Hex, PublicClient, WalletClient } from "viem";
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
 import {
 	mergeSortedCommitments,
-	signRegisterFile,
-	signRegisterFileSignature,
+	signRegisterEnvelope,
+	signRegisterEnvelopeSignature,
 	signRegisterKeygen,
 } from "./helpers/signatures.js";
 import { walletAccount } from "./helpers/walletAccount.js";
 
 export type FullSystemFixture = {
-	fileRegistry: Awaited<
-		ReturnType<typeof hre.viem.getContractAt<"FSFileRegistry">>
+	envelopeRegistry: Awaited<
+		ReturnType<typeof hre.viem.getContractAt<"FSEnvelopeRegistry">>
 	>;
 	mockUsdc: Awaited<
 		ReturnType<typeof hre.viem.deployContract<"MockUSDCToken">>
@@ -60,8 +60,8 @@ async function deployCore(args: {
 	const publicClient = await hre.viem.getPublicClient();
 	const chainId = await publicClient.getChainId();
 
-	const fileRegistry = await hre.viem.deployContract(
-		"FSFileRegistry",
+	const envelopeRegistry = await hre.viem.deployContract(
+		"FSEnvelopeRegistry",
 		[walletAccount(server).address],
 		{ client: { wallet: deployer } },
 	);
@@ -72,21 +72,21 @@ async function deployCore(args: {
 
 	const paymentValidator = await hre.viem.deployContract(
 		"FSPaymentValidator",
-		[fileRegistry.address, BigInt(chainId)],
+		[envelopeRegistry.address, BigInt(chainId)],
 		{ client: { wallet: deployer } },
 	);
 
 	if (registerSenderKeygen) {
 		const keySig = await signRegisterKeygen(
 			sender,
-			fileRegistry.address,
+			envelopeRegistry.address,
 			chainId,
 		);
 		void keySig;
 	}
 
 	return {
-		fileRegistry,
+		envelopeRegistry,
 		mockUsdc,
 		paymentValidator,
 		deployer,
@@ -130,7 +130,7 @@ export async function deployFullSystemWithoutSenderKeygen(): Promise<FullSystemF
 	return deployFullSystem();
 }
 
-export type RegisterFileOptions = {
+export type RegisterEnvelopeOptions = {
 	pieceCid: string;
 	requiredCommitments: Hex[];
 	optionalCommitments?: Hex[];
@@ -147,9 +147,9 @@ export type RegisterFileOptions = {
 	orgIdCommitment?: Hex;
 };
 
-export async function buildRegisterFileInput(
+export async function buildRegisterEnvelopeInput(
 	ctx: FullSystemFixture,
-	options: RegisterFileOptions,
+	options: RegisterEnvelopeOptions,
 ) {
 	const senderWallet =
 		typeof options.sender === "string" || options.sender === undefined
@@ -166,17 +166,17 @@ export async function buildRegisterFileInput(
 	const quorumN = options.quorumN ?? 0;
 	const quorumSet = options.quorumSet ?? [];
 	const timestamp = await latestBlockTimestamp(ctx.publicClient);
-	const nonce = await ctx.fileRegistry.read.nonce([senderAddress]);
+	const nonce = await ctx.envelopeRegistry.read.nonce([senderAddress]);
 	const merged = mergeSortedCommitments(
 		options.requiredCommitments,
 		optionalCommitments,
 	);
 	const signersCommitment =
-		await ctx.fileRegistry.read.computeEmailSignerCommitment([merged]);
+		await ctx.envelopeRegistry.read.computeEmailSignerCommitment([merged]);
 	const viewersCommitment =
 		viewerEmailCommitments.length === 0
 			? ("0x0000000000000000000000000000000000000000" as Hex)
-			: await ctx.fileRegistry.read.computeEmailSignerCommitment([
+			: await ctx.envelopeRegistry.read.computeEmailSignerCommitment([
 					viewerEmailCommitments,
 				]);
 
@@ -185,12 +185,12 @@ export async function buildRegisterFileInput(
 		(typeof options.sender === "string"
 			? (() => {
 					throw new Error(
-						"registerFile with contract sender requires an explicit signature",
+						"registerEnvelope with contract sender requires an explicit signature",
 					);
 				})()
-			: await signRegisterFile({
+			: await signRegisterEnvelope({
 					wallet: senderWallet,
-					fileRegistryAddress: ctx.fileRegistry.address,
+					envelopeRegistryAddress: ctx.envelopeRegistry.address,
 					chainId: ctx.chainId,
 					pieceCid: options.pieceCid,
 					requiredCommitments: options.requiredCommitments,
@@ -212,7 +212,7 @@ export async function buildRegisterFileInput(
 				}));
 
 	if (!signature) {
-		throw new Error("registerFile requires a signature");
+		throw new Error("registerEnvelope requires a signature");
 	}
 
 	return {
@@ -235,18 +235,21 @@ export async function buildRegisterFileInput(
 	};
 }
 
-export async function registerFileOnly(
+export async function registerEnvelopeOnly(
 	ctx: FullSystemFixture,
 	pieceCid: string,
 	signerCommitments: Hex[],
-	options: Omit<RegisterFileOptions, "pieceCid" | "requiredCommitments"> = {},
+	options: Omit<
+		RegisterEnvelopeOptions,
+		"pieceCid" | "requiredCommitments"
+	> = {},
 ): Promise<void> {
-	const input = await buildRegisterFileInput(ctx, {
+	const input = await buildRegisterEnvelopeInput(ctx, {
 		pieceCid,
 		requiredCommitments: signerCommitments,
 		...options,
 	});
-	await ctx.fileRegistry.write.registerFile([input], {
+	await ctx.envelopeRegistry.write.registerEnvelope([input], {
 		account: walletAccount(ctx.server),
 	});
 }
@@ -258,7 +261,7 @@ const signDefaults = {
 	leafVersion: 1,
 };
 
-export async function registerFileSignatureStep(args: {
+export async function registerEnvelopeSignatureStep(args: {
 	ctx: FullSystemFixture;
 	pieceCid: string;
 	senderAddr: `0x${string}`;
@@ -268,12 +271,12 @@ export async function registerFileSignatureStep(args: {
 	const { ctx, pieceCid, senderAddr, signerWallet, signerEmailCommitment } =
 		args;
 	const signTs = await latestBlockTimestamp(ctx.publicClient);
-	const signNonce = await ctx.fileRegistry.read.nonce([
+	const signNonce = await ctx.envelopeRegistry.read.nonce([
 		walletAccount(signerWallet).address,
 	]);
-	const signSig = await signRegisterFileSignature({
+	const signSig = await signRegisterEnvelopeSignature({
 		wallet: signerWallet,
-		fileRegistryAddress: ctx.fileRegistry.address,
+		envelopeRegistryAddress: ctx.envelopeRegistry.address,
 		chainId: ctx.chainId,
 		pieceCid,
 		sender: senderAddr,
@@ -285,7 +288,7 @@ export async function registerFileSignatureStep(args: {
 		timestamp: signTs,
 		nonce: signNonce,
 	});
-	await ctx.fileRegistry.write.registerFileSignature(
+	await ctx.envelopeRegistry.write.registerEnvelopeSignature(
 		[
 			pieceCid,
 			senderAddr,

@@ -50,7 +50,7 @@ type FilosignKeyedContractClient = {
 
 type CoreDefinitionContracts = Pick<
 	ChainDefinitionsEntry,
-	"FSFileRegistry" | "FSPaymentValidator"
+	"FSEnvelopeRegistry" | "FSPaymentValidator"
 >;
 
 type AttachmentReleaseDefinition = ChainDefinitionsEntry extends {
@@ -114,9 +114,9 @@ export function getContracts<T extends Wallet>(options: {
 	).FSAttachmentRelease;
 
 	return {
-		FSFileRegistry: getContract({
+		FSEnvelopeRegistry: getContract({
 			client: bundledClient,
-			...contractDefinitions.FSFileRegistry,
+			...contractDefinitions.FSEnvelopeRegistry,
 		}),
 		FSPaymentValidator: getContract({
 			client: bundledClient,

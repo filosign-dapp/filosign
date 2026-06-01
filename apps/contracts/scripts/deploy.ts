@@ -81,24 +81,24 @@ function abiFromContract(c: { address: string; abi: unknown }) {
 	return { address: getAddress(c.address), abi: c.abi };
 }
 
-async function deployFileRegistry(
+async function deployEnvelopeRegistry(
 	deployer: WalletDeployed,
 	serverAddress: `0x${string}`,
 	ownerAddress: `0x${string}` | null,
 ) {
-	const fileRegistry = await hre.viem.deployContract(
-		"FSFileRegistry",
+	const envelopeRegistry = await hre.viem.deployContract(
+		"FSEnvelopeRegistry",
 		[serverAddress],
 		{ client: { wallet: deployer } },
 	);
-	console.log("FSFileRegistry deployed at:", fileRegistry.address, {
+	console.log("FSEnvelopeRegistry deployed at:", envelopeRegistry.address, {
 		server: serverAddress,
 		deployer: deployer.account.address,
 	});
 
 	if (ownerAddress) {
 		try {
-			const txHash = await fileRegistry.write.transferOwnership(
+			const txHash = await envelopeRegistry.write.transferOwnership(
 				[ownerAddress],
 				{
 					account: deployer.account,
@@ -110,29 +110,29 @@ async function deployFileRegistry(
 				hash: txHash,
 			});
 			if (receipt.status !== "success") {
-				console.error("FSFileRegistry ownership transfer failed:", {
+				console.error("FSEnvelopeRegistry ownership transfer failed:", {
 					pendingOwner: ownerAddress,
 					txHash,
 					status: receipt.status,
 					note: "Continuing deployment without stopping.",
 				});
 			} else {
-				const pendingOwner = await fileRegistry.read.pendingOwner();
-				console.log("FSFileRegistry ownership transfer started:", {
+				const pendingOwner = await envelopeRegistry.read.pendingOwner();
+				console.log("FSEnvelopeRegistry ownership transfer started:", {
 					pendingOwner,
 					txHash,
 					note: "Pending owner must call acceptOwnership() from target wallet.",
 				});
 			}
 		} catch (error) {
-			console.error("FSFileRegistry ownership transfer failed:", {
+			console.error("FSEnvelopeRegistry ownership transfer failed:", {
 				pendingOwner: ownerAddress,
 				error: error instanceof Error ? error.message : String(error),
 				note: "Continuing deployment without stopping.",
 			});
 		}
 	}
-	return fileRegistry;
+	return envelopeRegistry;
 }
 
 async function assertBytecodeLive(address: `0x${string}`) {
@@ -148,12 +148,12 @@ async function assertBytecodeLive(address: `0x${string}`) {
 
 async function deployAttachmentRelease(
 	deployer: WalletDeployed,
-	fileRegistryAddress: `0x${string}`,
+	envelopeRegistryAddress: `0x${string}`,
 	chainId: number,
 ) {
 	const attachmentRelease = await hre.viem.deployContract(
 		"FSAttachmentRelease",
-		[fileRegistryAddress, BigInt(chainId)],
+		[envelopeRegistryAddress, BigInt(chainId)],
 		{ client: { wallet: deployer } },
 	);
 	console.log("FSAttachmentRelease deployed at:", attachmentRelease.address);
@@ -162,12 +162,12 @@ async function deployAttachmentRelease(
 
 async function deployPaymentValidator(
 	deployer: WalletDeployed,
-	fileRegistryAddress: `0x${string}`,
+	envelopeRegistryAddress: `0x${string}`,
 	chainId: number,
 ) {
 	const validator = await hre.viem.deployContract(
 		"FSPaymentValidator",
-		[fileRegistryAddress, BigInt(chainId)],
+		[envelopeRegistryAddress, BigInt(chainId)],
 		{ client: { wallet: deployer } },
 	);
 	console.log("FSPaymentValidator deployed at:", validator.address);
@@ -176,16 +176,16 @@ async function deployPaymentValidator(
 
 async function verifyOnBaseExplorerIfApplicable(args: {
 	networkName: string;
-	fileRegistry: Awaited<ReturnType<typeof deployFileRegistry>>;
+	envelopeRegistry: Awaited<ReturnType<typeof deployEnvelopeRegistry>>;
 	paymentValidator: Awaited<ReturnType<typeof deployPaymentValidator>>;
 	attachmentRelease: Awaited<ReturnType<typeof deployAttachmentRelease>>;
 	serverAddress: `0x${string}`;
-	fileRegistryAddress: `0x${string}`;
+	envelopeRegistryAddress: `0x${string}`;
 	chainId: number;
 }) {
 	const {
 		networkName,
-		fileRegistry,
+		envelopeRegistry,
 		paymentValidator,
 		attachmentRelease,
 		serverAddress,
@@ -193,11 +193,11 @@ async function verifyOnBaseExplorerIfApplicable(args: {
 	if (!BASE_BLOCK_EXPLORER_NETWORKS.has(networkName)) return;
 
 	try {
-		await $`bunx --bun hardhat verify --network ${networkName} ${fileRegistry.address} ${serverAddress} --force`;
+		await $`bunx --bun hardhat verify --network ${networkName} ${envelopeRegistry.address} ${serverAddress} --force`;
 		await sleep(1000);
-		await $`bunx --bun hardhat verify --network ${networkName} ${paymentValidator.address} ${args.fileRegistryAddress} ${String(args.chainId)} --force`;
+		await $`bunx --bun hardhat verify --network ${networkName} ${paymentValidator.address} ${args.envelopeRegistryAddress} ${String(args.chainId)} --force`;
 		await sleep(1000);
-		await $`bunx --bun hardhat verify --network ${networkName} ${attachmentRelease.address} ${args.fileRegistryAddress} ${String(args.chainId)} --force`;
+		await $`bunx --bun hardhat verify --network ${networkName} ${attachmentRelease.address} ${args.envelopeRegistryAddress} ${String(args.chainId)} --force`;
 	} catch (_) {}
 	console.log(`Contracts verified on ${networkName} block explorer`);
 }
@@ -217,20 +217,20 @@ async function main() {
 		owner: ownerAddress ?? deployer.account.address,
 	});
 
-	const fileRegistry = await deployFileRegistry(
+	const envelopeRegistry = await deployEnvelopeRegistry(
 		deployer,
 		serverAddress,
 		ownerAddress,
 	);
-	const publicClient = await assertBytecodeLive(fileRegistry.address);
+	const publicClient = await assertBytecodeLive(envelopeRegistry.address);
 	const paymentValidator = await deployPaymentValidator(
 		deployer,
-		fileRegistry.address,
+		envelopeRegistry.address,
 		chainId,
 	);
 	const attachmentRelease = await deployAttachmentRelease(
 		deployer,
-		fileRegistry.address,
+		envelopeRegistry.address,
 		chainId,
 	);
 
@@ -247,7 +247,7 @@ async function main() {
 	}
 
 	const definitions = {
-		FSFileRegistry: abiFromContract(fileRegistry),
+		FSEnvelopeRegistry: abiFromContract(envelopeRegistry),
 		FSPaymentValidator: abiFromContract(paymentValidator),
 		FSAttachmentRelease: abiFromContract(attachmentRelease),
 		...(chainId === CHAIN_ID.local && mockUsd ? { MockUSDC: mockUsd } : {}),
@@ -259,11 +259,11 @@ async function main() {
 
 	await verifyOnBaseExplorerIfApplicable({
 		networkName: hre.network.name,
-		fileRegistry,
+		envelopeRegistry,
 		paymentValidator,
 		attachmentRelease,
 		serverAddress,
-		fileRegistryAddress: fileRegistry.address,
+		envelopeRegistryAddress: envelopeRegistry.address,
 		chainId,
 	});
 }

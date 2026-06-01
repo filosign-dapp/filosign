@@ -57,3 +57,69 @@ export function validateAttachmentPacketsForSend(args: {
 	}
 	return issues;
 }
+
+export function validateAttachmentPacketDraftsForSend(args: {
+	supplementaryAttachments: boolean;
+	recipientSelect: boolean;
+	conditionalRelease: boolean;
+	drafts: {
+		releaseMode: "review" | "conditional";
+		recipientEmails: string[];
+	}[];
+	rosterEmails: string[];
+}): AttachmentPacketValidationIssue[] {
+	return validateAttachmentPacketsForSend({
+		supplementaryAttachments: args.supplementaryAttachments,
+		recipientSelect: args.recipientSelect,
+		conditionalRelease: args.conditionalRelease,
+		rosterEmails: args.rosterEmails,
+		packets: args.drafts.map((draft, index) => ({
+			packetId: `draft-${index}`,
+			releaseMode: draft.releaseMode,
+			recipientEmails: draft.recipientEmails,
+			packetCid: "0".repeat(64),
+		})),
+	});
+}
+
+export function validateAttachmentPacketComposeDrafts(args: {
+	drafts: {
+		files: { name: string; bytes: Uint8Array }[];
+		recipientEmails: string[];
+	}[];
+}): AttachmentPacketValidationIssue[] {
+	const issues: AttachmentPacketValidationIssue[] = [];
+	for (const [index, draft] of args.drafts.entries()) {
+		if (draft.files.length === 0) {
+			issues.push({
+				code: "EMPTY_PACKET",
+				message: `Supplementary packet ${index + 1} has no files`,
+			});
+		}
+		if (
+			draft.files.length > SUPPLEMENTARY_ATTACHMENT_LIMITS.maxFilesPerPacket
+		) {
+			issues.push({
+				code: "FILE_LIMIT",
+				message: `Supplementary packet ${index + 1} exceeds ${SUPPLEMENTARY_ATTACHMENT_LIMITS.maxFilesPerPacket} files`,
+			});
+		}
+		for (const file of draft.files) {
+			if (
+				file.bytes.byteLength > SUPPLEMENTARY_ATTACHMENT_LIMITS.maxBytesPerFile
+			) {
+				issues.push({
+					code: "FILE_TOO_LARGE",
+					message: `${file.name} exceeds the ${Math.round(SUPPLEMENTARY_ATTACHMENT_LIMITS.maxBytesPerFile / (1024 * 1024))}MB limit`,
+				});
+			}
+		}
+		if (draft.recipientEmails.length === 0) {
+			issues.push({
+				code: "NO_RECIPIENTS",
+				message: `Supplementary packet ${index + 1} needs at least one recipient`,
+			});
+		}
+	}
+	return issues;
+}

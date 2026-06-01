@@ -9,16 +9,36 @@ import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
 import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
 import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
 
-function signerCommitmentsFromRecipients(recipients: Recipient[]): Hex[] {
-	return recipients
-		.filter((r) => r.role === "signer")
-		.map((r) => r.email?.trim())
-		.filter((email): email is string =>
-			Boolean(email && isValidRecipientEmail(email)),
-		)
+function signerCommitmentsFromEmails(emails: string[]): Hex[] {
+	return emails
+		.filter((email) => isValidRecipientEmail(email))
 		.map((email) =>
 			hashNormalizedSignerEmail(normalizePlacementRecipientEmail(email)),
 		);
+}
+
+function signerCommitmentsFromRecipients(recipients: Recipient[]): Hex[] {
+	return signerCommitmentsFromEmails(
+		recipients
+			.filter((r) => r.role === "signer")
+			.map((r) => r.email?.trim())
+			.filter((email): email is string => Boolean(email)),
+	);
+}
+
+export function buildReleaseParamsFromSignerEmails(
+	draft: SettlementAttachmentDraft,
+	signerEmails: string[],
+): SettlementRuleDraft["releaseParams"] {
+	return buildReleaseParamsFromDraft(
+		draft,
+		signerEmails.map((email) => ({
+			clientRowId: email,
+			name: email,
+			role: "signer" as const,
+			email,
+		})),
+	);
 }
 
 export function buildReleaseParamsFromDraft(

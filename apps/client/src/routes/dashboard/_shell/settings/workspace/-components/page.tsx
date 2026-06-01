@@ -21,6 +21,7 @@ import {
 } from "@/src/lib/components/ui/dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
 import { BillingSection } from "./billing-section";
@@ -40,7 +41,10 @@ function CreateWorkspaceDialog(props: {
 		e.preventDefault();
 		if (!name.trim()) return;
 		try {
-			const res = await createOrg.mutateAsync({ name: name.trim() });
+			const res = await createOrg.mutateAsync(
+				{ name: name.trim() },
+				suppressGlobalErrorToast(),
+			);
 			if (res?.organization?.id) {
 				setActiveOrg(res.organization.id);
 				toast.success("Workspace created");
@@ -48,9 +52,7 @@ function CreateWorkspaceDialog(props: {
 				setName("");
 			}
 		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Could not create workspace",
-			);
+			showAppErrorToast(err);
 		}
 	};
 
@@ -108,12 +110,15 @@ function InviteTeammateDialog(props: {
 		e.preventDefault();
 		if (!email.trim()) return;
 		try {
-			await inviteMember.mutateAsync({ email: email.trim() });
+			await inviteMember.mutateAsync(
+				{ email: email.trim() },
+				suppressGlobalErrorToast(),
+			);
 			toast.success("Invite sent");
 			setEmail("");
 			props.onOpenChange(false);
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Could not send invite");
+			showAppErrorToast(err);
 		}
 	};
 
@@ -177,13 +182,14 @@ function WorkspaceDetailsSection() {
 		e.preventDefault();
 		if (!wsName.trim()) return;
 		try {
-			await updateOrg.mutateAsync({ name: wsName.trim() });
+			await updateOrg.mutateAsync(
+				{ name: wsName.trim() },
+				suppressGlobalErrorToast(),
+			);
 			toast.success("Workspace name saved");
 			void orgDetail.refetch();
 		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Could not save workspace name",
-			);
+			showAppErrorToast(err);
 		}
 	};
 

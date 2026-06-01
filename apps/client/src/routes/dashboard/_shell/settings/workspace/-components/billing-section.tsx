@@ -258,11 +258,7 @@ export function BillingSection() {
 				returnUrl,
 			});
 			window.location.href = result.checkoutUrl;
-		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Could not start checkout",
-			);
-		}
+		} catch {}
 	};
 
 	const openSeatPreview = async (next: number) => {
@@ -272,11 +268,7 @@ export function BillingSection() {
 		try {
 			await seatPreview.mutateAsync(target);
 			setSeatPreviewOpen(true);
-		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Could not preview seat change",
-			);
-		}
+		} catch {}
 	};
 
 	const confirmSeatChange = async () => {
@@ -299,11 +291,7 @@ export function BillingSection() {
 			toast.success(
 				"Seat change submitted. Your dashboard should update within 1–2 minutes.",
 			);
-		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Could not update seats",
-			);
-		}
+		} catch {}
 	};
 
 	const allowed = billingContext.data?.allowedActions;
@@ -317,11 +305,7 @@ export function BillingSection() {
 		try {
 			await planPreview.mutateAsync(targetPlanId);
 			setPlanPreviewOpen(true);
-		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Could not preview plan change",
-			);
-		}
+		} catch {}
 	};
 
 	const confirmPlanChange = async () => {
@@ -333,20 +317,14 @@ export function BillingSection() {
 			toast.success(
 				"Plan change submitted. Your dashboard should update within 1–2 minutes.",
 			);
-		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Could not change plan");
-		}
+		} catch {}
 	};
 
 	const openPortal = async () => {
 		try {
 			const result = await portal.mutateAsync();
 			window.open(result.url, "_blank", "noopener,noreferrer");
-		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Could not open billing portal",
-			);
-		}
+		} catch {}
 	};
 
 	return (

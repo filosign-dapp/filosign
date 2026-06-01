@@ -3,7 +3,6 @@ import type {
 	Abi,
 	Address,
 	Hash,
-	Hex,
 	Log,
 	PublicClient,
 	TransactionReceipt,

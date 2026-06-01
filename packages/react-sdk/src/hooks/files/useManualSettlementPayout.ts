@@ -1,6 +1,5 @@
 import type { SettlementRuleKey } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Address } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { paymentValidatorAt } from "../../lib/settlement-preflight";
 import { executeSettlementPayoutOnChain } from "../../lib/settlement-rules";

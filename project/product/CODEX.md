@@ -806,7 +806,7 @@ Most important answers: 1-8, 13-21, 23-31, 38-44. Those determine whether the dr
 >
 > <details><summary>Explored 1 file, 1 search</summary>
 >
-> - Read `./apps/contracts/src/FSFileRegistry.sol`
+> - Read `./apps/contracts/src/FSEnvelopeRegistry.sol`
 > - Searched for `cidIdentifier|privySubjectCommitment|signerEmailCommitment|emailCommitment|registerFile|sign|ack|hash` in `client`
 >
 > </details>

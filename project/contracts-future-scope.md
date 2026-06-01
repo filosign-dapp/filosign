@@ -5,7 +5,7 @@
 ## Principles
 
 1. **v1 addresses are frozen forever** for envelopes registered on mainnet v1.
-2. **New chains** — deploy `FSFileRegistry` + `FSPaymentValidator`; new row in `definitions/{chainKey}.ts`.
+2. **New chains** — deploy `FSEnvelopeRegistry` + `FSPaymentValidator`; new row in `definitions/{chainKey}.ts`.
 3. **New settlement logic** — deploy new `FSPaymentValidator` (or v2) at a new address; v1 validator untouched; new envelopes only.
 4. **New attestations / QES / NFT proof** — sidecar contract + server indexer; v1 sign record unchanged.
 5. **Marketing** — do not imply a mutable “core”; Team Pro “multichain / custom escrow” = per-chain bundle or new validator, not upgrades to v1 registries.
@@ -27,7 +27,7 @@ Server, DB, client, and auth only: fields/placement manifest, **reminders/expira
 
 ## New registry address only if (rare)
 
-- New EIP-712 / signature model for **new** envelopes → `FSFileRegistryV2` + frozen v1 for existing docs.
+- New EIP-712 / signature model for **new** envelopes → `FSEnvelopeRegistryV2` + frozen v1 for existing docs.
 - On-chain ack storage or delegation graph if a **specific deal** requires it.
 
 ## Explicitly not planned

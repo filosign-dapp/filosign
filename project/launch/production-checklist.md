@@ -25,7 +25,7 @@ slither . --exclude-dependencies            # triage per apps/contracts/README.m
 | Variable | Purpose |
 |----------|---------|
 | `FC_DEPLOYER_PRIVATE_KEY` | Deployer hot wallet |
-| `FC_SERVER_ADDRESS` | KMS relayer (`FSFileRegistry.server`) |
+| `FC_SERVER_ADDRESS` | KMS relayer (`FSEnvelopeRegistry.server`) |
 | `FC_OWNER_ADDRESS` | Optional cold owner (2-step handoff) |
 
 **Deploy:**
@@ -38,9 +38,9 @@ This runs tests then deploys; regenerates `apps/contracts/definitions/mainnet.ts
 
 **Verify on Base scan:**
 
-- [ ] `FSFileRegistry.owner()` — cold owner if handoff started
+- [ ] `FSEnvelopeRegistry.owner()` — cold owner if handoff started
 - [ ] Pending owner → cold wallet calls `acceptOwnership()`
-- [ ] `FSFileRegistry.server()` === `FC_SERVER_ADDRESS` in Infisical prod
+- [ ] `FSEnvelopeRegistry.server()` === `FC_SERVER_ADDRESS` in Infisical prod
 - [ ] `FSPaymentValidator` constructor args: correct registry address + `chainId` (8453)
 
 **Post-deploy:** commit updated `definitions/mainnet.ts` if addresses changed.
@@ -74,7 +74,7 @@ Product IDs are hardcoded in [`billing.ts`](../../apps/server/lib/domains/billin
 
 **Relay funding:**
 
-- [ ] Fund `FC_SERVER_ADDRESS` with ETH on Base for `registerFile`, `registerFileSignature`, `amendSigner`, and settlement relay gas
+- [ ] Fund `FC_SERVER_ADDRESS` with ETH on Base for `registerEnvelope`, `registerEnvelopeSignature`, `amendSigner`, and settlement relay gas
 - [ ] Hourly cron alerts via Telegram when balance &lt; 0.02 ETH (`server.relayer_gas_low`) on staging/production
 
 **Deploy stacks:**
@@ -82,7 +82,7 @@ Product IDs are hardcoded in [`billing.ts`](../../apps/server/lib/domains/billin
 - [ ] Server: Infisical `prod` machine identity
 - [ ] Client (Cloudflare Pages): `VITE_DEPLOYMENT=production`, `VITE_CHAIN=mainnet`, `VITE_SERVER_URL=https://api.filosign.xyz`
 
-**Startup validation (automatic):** `index.ts` awaits bootstrap before Bun serves traffic — relayer key ↔ `FC_SERVER_ADDRESS` ↔ `FSFileRegistry.server()` on-chain, then Dragonfly `PING`. `/health` returns 503 until ready.
+**Startup validation (automatic):** `index.ts` awaits bootstrap before Bun serves traffic — relayer key ↔ `FC_SERVER_ADDRESS` ↔ `FSEnvelopeRegistry.server()` on-chain, then Dragonfly `PING`. `/health` returns 503 until ready.
 
 ---
 
@@ -96,7 +96,7 @@ Run on prod stack with a test wallet before GA:
 | 2 | Solo checkout (live Dodo) → webhook → entitlements | |
 | 3 | Create org → Teams checkout (`quantity = seats`) → webhook seat sync | |
 | 4 | Send envelope with routing (parallel/sequential + optional signer) | |
-| 5 | Sign → `registerFileSignature` visible on Base scan | |
+| 5 | Sign → `registerEnvelopeSignature` visible on Base scan | |
 | 6 | Settlement: payer `registerRule` + USDC `approve` → auto or manual settle | |
 | 7 | Compliance PDF export (bundle v7, correct registry/validator addresses) | |
 | 8 | Cancel-at-period-end: plan stays until `subscription.expired` | |

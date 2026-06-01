@@ -46,6 +46,15 @@ Ranked **high → low**. Keep bullets actionable; link detail docs in `project/e
 
 ---
 
+## P1b — On-chain v1 gaps (shipped in app — ops remain)
+
+Reference: [`contracts-future-scope.md`](contracts-future-scope.md) · [`contracts/envelope-registry-migration.md`](contracts/envelope-registry-migration.md)
+
+- **Redeploy hygiene:** `migrate:testnet` + align definitions; local `db purge` if `registryAddress` points at old registry; `db push` for `files.register_routing_json`.
+- **Settlement update `expiresAt`:** create/attach expose expiry; rule update dialog still amount-only (optional follow-up).
+
+---
+
 ## P2 — Business & jurisdiction (before scaling revenue)
 
 - **Entity:** sole proprietor vs incorporated (India / US / both); cap table, founder agreements if co-founders.

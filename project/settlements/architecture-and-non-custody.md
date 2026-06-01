@@ -6,10 +6,10 @@ Public terms: [Terms of Service](/terms) and [Privacy Policy](/privacy) on the m
 
 ## What happens on-chain
 
-1. **Sender** registers the file on `FSFileRegistry` (via server relay).
+1. **Sender** registers the file on `FSEnvelopeRegistry` (via server relay).
 2. **Sender** calls `registerRule` as the payer (`msg.sender == payer`) with one or more **payout legs** (recipient + amount per leg) — **one on-chain rule id per payout packet**.
 3. **Sender** `approve`s the validator for the **sum of leg amounts** per packet.
-4. When **release conditions** are satisfied (`FSFileRegistry` signatures), **anyone** may call `executePayoutLeg(ruleId, legIndex)` (Filosign server relay, sender, recipient, or any address paying its own gas).
+4. When **release conditions** are satisfied (`FSEnvelopeRegistry` signatures), **anyone** may call `executePayoutLeg(ruleId, legIndex)` (Filosign server relay, sender, recipient, or any address paying its own gas).
 5. The validator `transferFrom`s USDC **from the payer wallet to that leg’s recipient** — one leg per transaction. Paid legs are tracked on-chain (`legPaidBitmap`); the packet is **fully executed** when every leg is paid.
 
 The validator **never holds payout USDC** (no escrow, no claim vault). Only ERC-20 **allowance** from payer to validator.

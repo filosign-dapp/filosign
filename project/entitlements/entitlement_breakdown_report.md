@@ -76,7 +76,7 @@ This document outlines entitlements per tier: **Existing Features** (in catalog 
     *   **Shared Template Libraries (Team Key-Sharing):** Team members need to share encrypted templates.
         *   *Why E2EE Templates:* Storing templates in plaintext compromises our "Zero-Knowledge" claim (since templates contain 90% of proprietary contract text, IP terms, and pricing). It also keeps codebase rendering pipelines unified.
         *   *E2EE Architecture:* Templates are encrypted with a symmetric *Team Key*. This Team Key is encrypted for each member using their public key, allowing them to decrypt the templates on login.
-    *   **Sequential signing / routing** — **shipped on-chain (Teams Pro):** parallel/sequential, optional signers, quorum via `FSFileRegistry` + client routing UI.
+    *   **Sequential signing / routing** — **shipped on-chain (Teams Pro):** parallel/sequential, optional signers, quorum via `FSEnvelopeRegistry` + client routing UI.
     *   **Basic Webhook Integrations:** Outgoing webhooks to push basic status changes to external URLs (e.g., notifying a Discord/Slack channel on signature).
     *   **Encrypted Shared Contacts & Team Address Book:** A central workspace directory where members can save frequently used signer details and pre-fetched public encryption keys to streamline signing workflows.
     *   **Automated Reminder Rules & Expiration Scheduler:** Senders can configure automated expiration limits and custom reminder schedules (e.g., daily/weekly follow-ups) for envelopes.

@@ -12,6 +12,9 @@ export const UPGRADE_LIMIT_REASONS = [
 	"features.settlement.advanced",
 	"features.routing.advanced",
 	"features.shared_templates",
+	"features.supplementary_attachments",
+	"features.supplementary_attachments.recipient_select",
+	"features.supplementary_attachments.conditional_release",
 ] as const;
 
 export type UpgradeLimitReason = (typeof UPGRADE_LIMIT_REASONS)[number];
@@ -65,6 +68,9 @@ const MIN_PLAN_FOR_REASON: Record<
 	"features.settlement.advanced": "teams_pro",
 	"features.routing.advanced": "teams_pro",
 	"features.shared_templates": "teams",
+	"features.supplementary_attachments": "teams",
+	"features.supplementary_attachments.recipient_select": "teams_pro",
+	"features.supplementary_attachments.conditional_release": "teams_pro",
 };
 
 const CHECKOUT_PLANS: CheckoutPlanId[] = ["individual", "teams", "teams_pro"];

@@ -2,6 +2,7 @@ import { registerExpireCheckoutIntentsCron } from "./expire-checkout-intents";
 import { registerExpireInvitesCron } from "./expire-invites";
 import { registerExpirePartnerTrialsCron } from "./expire-partner-trials";
 import { registerMonitorRelayerGasCron } from "./monitor-relayer-gas";
+import { registerSyncAttachmentReleasesCron } from "./sync-attachment-releases";
 import { registerSyncSettlementRulesCron } from "./sync-settlement-rules";
 
 export {
@@ -22,6 +23,10 @@ export {
 	runMonitorRelayerGasJob,
 } from "./monitor-relayer-gas";
 export {
+	runSyncAttachmentReleasesCronTick,
+	SYNC_ATTACHMENT_RELEASES_CRON,
+} from "./sync-attachment-releases";
+export {
 	runSyncSettlementRulesJob,
 	SYNC_SETTLEMENT_RULES_CRON,
 } from "./sync-settlement-rules";
@@ -37,6 +42,7 @@ export function startPlatformCron(): void {
 	activeJobs.push(registerExpireCheckoutIntentsCron());
 	activeJobs.push(registerExpirePartnerTrialsCron());
 	activeJobs.push(registerSyncSettlementRulesCron());
+	activeJobs.push(registerSyncAttachmentReleasesCron());
 	activeJobs.push(registerMonitorRelayerGasCron());
 }
 

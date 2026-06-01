@@ -41,24 +41,39 @@ const COPY: Record<
 			"You've reached the maximum recipients per envelope on your current plan. Upgrade to add more recipients.",
 	},
 	"features.settlement.basic": {
-		title: "Settlement not included on your plan",
+		title: "USDC payouts need a Teams plan",
 		description:
-			"Attach USDC payouts to documents on Teams or higher. Upgrade to link settlement rules to your envelopes.",
+			"Attach payouts to envelopes on Teams or higher. Upgrade to pay signers or partners when signing finishes.",
 	},
 	"features.settlement.advanced": {
-		title: "Advanced settlement requires Teams Pro",
+		title: "Advanced payouts need Teams Pro",
 		description:
-			"Multi-recipient splits, quorum releases, and rule updates need Teams Pro or Enterprise.",
+			"Split payments across people, set minimum signatures before pay, and edit payouts after send with Teams Pro or Enterprise.",
 	},
 	"features.routing.advanced": {
-		title: "Advanced routing requires Teams Pro",
+		title: "Advanced signing order needs Teams Pro",
 		description:
-			"Optional signers, sequential routing, and registry quorum need Teams Pro or Enterprise.",
+			"Set turn order, optional signers, and minimum signatures with Teams Pro or Enterprise.",
 	},
 	"features.shared_templates": {
 		title: "Templates require Teams plan",
 		description:
 			"Create and reuse shared document templates with your team. Upgrade to Teams or Teams Pro to build templates.",
+	},
+	"features.supplementary_attachments": {
+		title: "Supplementary files need Teams+",
+		description:
+			"Send encrypted extra files with your envelope on Teams or higher.",
+	},
+	"features.supplementary_attachments.recipient_select": {
+		title: "Choose who gets supplementary files",
+		description:
+			"Pick which recipients receive each supplementary packet with Teams Pro or Enterprise.",
+	},
+	"features.supplementary_attachments.conditional_release": {
+		title: "Conditional file unlock needs Teams Pro",
+		description:
+			"Release supplementary files only when signing conditions are met with Teams Pro or Enterprise.",
 	},
 };
 

@@ -122,6 +122,19 @@ export function pruneSignatureFields(
 	);
 }
 
+/** Preserves fields updated only via direct `setCreateForm` (not TanStack Form). */
+export function withComposeOnlyFieldsFromPrev(
+	next: CreateForm,
+	prev: CreateForm | null,
+): CreateForm {
+	return {
+		...next,
+		registerRouting: prev?.registerRouting,
+		combineSettlementLegs: prev?.combineSettlementLegs,
+		attachmentPacketDrafts: prev?.attachmentPacketDrafts,
+	};
+}
+
 export async function saveDraftDocuments(
 	draftId: string,
 	documents: UploadedFile[],
@@ -259,19 +272,22 @@ export async function buildCreateForm(
 		? []
 		: pruneSignatureFields(prev?.signatureFields ?? [], value.recipients);
 
-	return {
-		draftId,
-		serverDraftId: prev?.serverDraftId,
-		serverDraftRevision: prev?.serverDraftRevision,
-		lastSavedSnapshotDigest: prev?.lastSavedSnapshotDigest,
-		recipientFingerprint: recipientFingerprintValue,
-		recipients: value.recipients,
-		emailMessage: value.emailMessage,
-		emailSubject: value.emailSubject ?? "",
-		documents,
-		settlementDrafts: value.settlementDrafts ?? [],
-		signatureFields,
-	};
+	return withComposeOnlyFieldsFromPrev(
+		{
+			draftId,
+			serverDraftId: prev?.serverDraftId,
+			serverDraftRevision: prev?.serverDraftRevision,
+			lastSavedSnapshotDigest: prev?.lastSavedSnapshotDigest,
+			recipientFingerprint: recipientFingerprintValue,
+			recipients: value.recipients,
+			emailMessage: value.emailMessage,
+			emailSubject: value.emailSubject ?? "",
+			documents,
+			settlementDrafts: value.settlementDrafts ?? [],
+			signatureFields,
+		},
+		prev,
+	);
 }
 
 export async function createFormToEnvelopeForm(

@@ -4,7 +4,7 @@ import {
 	sha256PlaintextHex,
 } from "@filosign/shared";
 import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
-import { placementManifestRect } from "@/src/lib/domains/files/placement-viewport";
+import { placementManifestRectFromField } from "@/src/lib/domains/files/placement-viewport";
 
 export function buildPlacementManifestForDocument(args: {
 	docId: string;
@@ -61,16 +61,19 @@ export function buildPlacementManifestForDocument(args: {
 			);
 		}
 
+		const fieldW = Math.max(field.width ?? fw, 1);
+		const fieldH = Math.max(field.height ?? fh, 1);
+
 		manifestFields.push({
 			id: field.id,
 			pageIndex: Math.max(0, field.page - 1),
-			rect: placementManifestRect({
+			rect: placementManifestRectFromField({
 				x: field.x,
 				y: field.y,
+				width: fieldW,
+				height: fieldH,
 				docWidth,
 				docHeight,
-				fieldWidth: fw,
-				fieldHeight: fh,
 			}),
 			assignedRecipientEmail: assigned,
 			required: field.required,

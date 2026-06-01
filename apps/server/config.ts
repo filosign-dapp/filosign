@@ -64,12 +64,21 @@ const contracts = Object.fromEntries(
 	}),
 );
 
+const productionRpcPrimary =
+	env.DEPLOYMENT === "production" && env.CHAIN_RPC_URL?.trim()
+		? env.CHAIN_RPC_URL.trim()
+		: undefined;
+
 console.log("runtime deployment:", {
 	deployment: env.DEPLOYMENT,
 	id: runtimeChain.id,
 	chainKey,
 	runtimeChain: runtimeChain.name,
-	rpc: runtimeChain.rpcUrls.default.http[0],
+	rpc: productionRpcPrimary ?? runtimeChain.rpcUrls.default.http[0],
+	rpcDedicatedPrimary: Boolean(productionRpcPrimary),
+	rpcPublicFallback: productionRpcPrimary
+		? runtimeChain.rpcUrls.default.http[0]
+		: undefined,
 	contracts,
 });
 

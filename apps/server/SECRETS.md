@@ -16,7 +16,31 @@ Server secrets for deployed tiers live in [Infisical Cloud](https://app.infisica
 
 Full matrix: [`project/launch/environments.md`](../../project/launch/environments.md).
 
-Every server env must set **`DEPLOYMENT`** and matching **`CHAIN`** (`staging`/`sandbox` → `testnet`, `production` → `mainnet`).
+Every server env must set **`DEPLOYMENT`** and an allowed **`CHAIN`** (`staging`/`sandbox` → `testnet`; `production` → `mainnet` or `testnet`).
+
+### Chain JSON-RPC (`CHAIN_RPC_URL`)
+
+| `DEPLOYMENT` | `CHAIN_RPC_URL` |
+|--------------|-----------------|
+| `local`, `staging`, `sandbox` | **Do not set** — ignored; viem public testnet/Hardhat URLs only |
+| `production` | **Optional** in Infisical `prod` — primary JSON-RPC for the configured `CHAIN` (thirdweb, Alchemy, QuickNode, etc.) |
+
+When set on production, the server uses `fallback([primary, public default])` where the public URL is `mainnet.base.org` or `sepolia.base.org` per `CHAIN`. When unset, only the public URL is used.
+
+**Client (optional):** `VITE_CHAIN_RPC_URL` in production Pages env only — same production-only rule; not required for launch (server relayer is the critical path).
+
+### Email delivery (Resend + SES fallback)
+
+| Variable | Role |
+|----------|------|
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_ENABLED` | **Primary** sender (keep using free tier when healthy) |
+| `SES_ENABLED`, `SES_REGION`, `SES_FROM_EMAIL` | **Fallback** only when all are set — any deployment (Infisical prod recommended) |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Optional if the host uses an IAM role for SES |
+| `SES_CONFIGURATION_SET` | Optional tracking |
+
+Flow: every send tries Resend first. On retryable Resend errors (429, 5xx, timeouts), the server attempts SES once if configured. Validation errors (4xx) do not trigger SES.
+
+Verify the same From domain in [Resend](https://resend.com) and [Amazon SES](https://console.aws.amazon.com/ses/) (DKIM/SPF). Leave `SES_ENABLED=false` on local unless you are testing fallback.
 
 Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`, `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY` (see [`apps/contracts/env.ts`](../contracts/env.ts)). On-chain addresses for the app come from [`definitions/`](../../apps/contracts/definitions/) via `CHAIN` — after redeploy, run migrate and align `FC_SERVER_ADDRESS` with `FSEnvelopeRegistry.server()` ([migration note](../../project/contracts/envelope-registry-migration.md)).
 

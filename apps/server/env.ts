@@ -33,7 +33,18 @@ const parsedEnv = createEnv({
 			.string()
 			.default("true")
 			.transform((v) => v === "true"),
+		SES_ENABLED: z
+			.string()
+			.default("false")
+			.transform((v) => v === "true"),
+		SES_REGION: z.string().min(1).optional(),
+		SES_FROM_EMAIL: z.email().optional(),
+		SES_CONFIGURATION_SET: z.string().min(1).optional(),
+		AWS_ACCESS_KEY_ID: z.string().min(1).optional(),
+		AWS_SECRET_ACCESS_KEY: z.string().min(1).optional(),
 		CHAIN: z.enum(["local", "testnet", "mainnet"]),
+		/** Production mainnet primary JSON-RPC; public Base URL is automatic fallback. Ignored on other deployments. */
+		CHAIN_RPC_URL: z.url().optional(),
 		PORT: z
 			.string()
 			.transform((v) => parseInt(v, 10))

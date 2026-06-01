@@ -24,6 +24,18 @@ Secrets layout: [`SECRETS.md`](SECRETS.md). Local server uses **`--env-file`**; 
 | `lib/platform/polyfills/` | `bigint-json` for JSON serialization |
 | `constants.ts` | Shared limits (e.g. `MAX_FILE_SIZE`) |
 
+## Chain JSON-RPC
+
+Relayer, cron, and indexer traffic use [`lib/platform/chain-rpc.ts`](lib/platform/chain-rpc.ts) + [`@filosign/shared` `chain-rpc`](../../packages/shared/chain-rpc.ts).
+
+| `DEPLOYMENT` | Behavior |
+|--------------|----------|
+| `local` | Hardhat `127.0.0.1:8545` |
+| `staging`, `sandbox` | Public Base Sepolia (`sepolia.base.org`) — `CHAIN_RPC_URL` ignored |
+| `production` | Optional `CHAIN_RPC_URL` → primary + fallback to public URL for `CHAIN` (`mainnet` or `testnet`); unset → public only |
+
+Startup logs `rpc`, `rpcDedicatedPrimary`, and `rpcPublicFallback` when fallback is enabled. Repeated primary RPC failures emit `server.rpc_degraded` (Telegram + PostHog mirror) with 5-minute dedupe.
+
 ## Session
 
 - **`DRAGONFLY_URL`** (required) — `docker compose up -d` → `redis://127.0.0.1:6379`
@@ -97,7 +109,8 @@ Billing security notes:
 
 - **`tx.processIndexerHash`** — **`authenticatedProcedure`** (thirdweb session). Reverted txs → **400**.
 - **`DEBUG=true`** — verbose request/indexer logging (does not affect email).
-- **`RESEND_ENABLED=false`** — skip outbound Resend email (default `true`).
+- **`RESEND_ENABLED=false`** — skip all outbound product email (default `true`).
+- **Email delivery** — Resend primary via [`lib/platform/email/deliver.ts`](lib/platform/email/deliver.ts); optional SES fallback when `SES_ENABLED` + `SES_REGION` + `SES_FROM_EMAIL` are set (retryable Resend failures only). See [`SECRETS.md`](SECRETS.md).
 
 ## Object storage (S3-compatible / R2)
 

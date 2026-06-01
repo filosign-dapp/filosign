@@ -25,6 +25,8 @@ export function AppProviders({ children }: { children?: ReactNode }) {
 	const posthogEnabled = env.VITE_POSTHOG_ENABLED === true;
 	const analyticsEnabled =
 		posthogEnabled && (consentRequired ? analyticsAllowed : true);
+	const sessionReplay =
+		analyticsEnabled && env.VITE_POSTHOG_SESSION_REPLAY === true;
 
 	return (
 		<StrictMode>
@@ -36,6 +38,7 @@ export function AppProviders({ children }: { children?: ReactNode }) {
 							apiKey={env.VITE_POSTHOG_KEY ?? ""}
 							apiHost={env.VITE_POSTHOG_HOST ?? "https://us.i.posthog.com"}
 							enabled={analyticsEnabled}
+							sessionReplay={sessionReplay}
 						>
 							<Web3Provider>
 								<FilosignProvider>

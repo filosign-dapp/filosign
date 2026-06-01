@@ -16,4 +16,15 @@ declare module "@tanstack/react-query" {
 			suppressErrorToast?: boolean;
 		};
 	}
+
+	interface MutateOptions<
+		TData = unknown,
+		TError = unknown,
+		TVariables = unknown,
+		TContext = unknown,
+	> {
+		meta?: {
+			suppressErrorToast?: boolean;
+		};
+	}
 }

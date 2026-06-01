@@ -17,6 +17,10 @@ const parsedEnv = createEnv({
 			.enum(["true", "false", "1", "0"])
 			.optional()
 			.transform((v) => v === "true" || v === "1"),
+		VITE_POSTHOG_SESSION_REPLAY: z
+			.enum(["true", "false", "1", "0"])
+			.optional()
+			.transform((v) => v === "true" || v === "1"),
 	},
 	runtimeEnv: import.meta.env,
 	emptyStringAsUndefined: true,

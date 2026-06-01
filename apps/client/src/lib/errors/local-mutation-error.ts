@@ -13,7 +13,7 @@ export function localMutationErrorOptions<T extends Record<string, unknown>>(
 				(onError as (e: unknown, ...a: unknown[]) => void)(err, ...args);
 			}
 		},
-	}) as T & { meta: { suppressErrorToast: true } };
+	}) as unknown as T & { meta: { suppressErrorToast: true } };
 }
 
 export function formatInlineAppError(error: unknown): string {

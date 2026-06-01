@@ -1,5 +1,7 @@
+import { captureClientException } from "@filosign/react/analytics";
+
 /**
- * Central client error reporting (console today; extend for PostHog/Sentry).
+ * Central client error reporting (console + PostHog when analytics consent allows).
  */
 export function reportClientError(
 	error: Error,
@@ -10,4 +12,10 @@ export function reportClientError(
 	if (info?.componentStack) {
 		console.error(`${source}Component stack:`, info.componentStack);
 	}
+	captureClientException(error, {
+		...(info?.source ? { source: info.source } : {}),
+		...(info?.componentStack
+			? { component_stack: info.componentStack.slice(0, 500) }
+			: {}),
+	});
 }

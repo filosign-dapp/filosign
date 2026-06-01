@@ -161,6 +161,21 @@ Layouts do not fetch; hooks run in route `index.tsx` or `-lib/hooks/`.
 
 ---
 
+## Operator observability (PostHog)
+
+| Layer | Tool |
+|-------|------|
+| User toasts | `@filosign/errors` (below) |
+| Crashes / React errors | PostHog Issues |
+| Infra ops | Server Telegram alerts (not client) |
+
+- **Consent:** same gate as product analytics (`VITE_POSTHOG_ENABLED` + analytics consent banner when required). No PostHog when disabled.
+- **Reporting:** [`report-client-error.ts`](src/lib/utils/report-client-error.ts) → `captureClientException` from `@filosign/react/analytics` (error boundaries, router fallback).
+- **Session replay:** optional `VITE_POSTHOG_SESSION_REPLAY=true` with analytics enabled (off by default).
+- **Scrubbing:** PostHog `before_send` redacts emails, long hex, and sensitive property keys.
+
+---
+
 ## User-facing errors (`@filosign/errors`)
 
 - **Present / toast:** `presentAppError` and `showAppErrorToast` from [`src/lib/errors`](src/lib/errors/index.ts) — not `presentError` from the package (app injects `VITE_ASTRO_URL` + dev details).

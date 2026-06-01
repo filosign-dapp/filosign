@@ -67,7 +67,7 @@ export function SettlementUpdateDialog({
 		const nextLegs = legs.map((leg, index) => {
 			const trimmed = amounts[index]?.trim() ?? "";
 			if (!trimmed || Number(trimmed) <= 0) {
-				throw new Error("Enter a valid amount for each payout leg");
+				throw new Error("Enter a valid amount for each recipient");
 			}
 			return {
 				recipientWallet: leg.recipientWallet as `0x${string}`,
@@ -87,10 +87,10 @@ export function SettlementUpdateDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent showCloseButton className="sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>Edit settlement rule</DialogTitle>
+					<DialogTitle>Change payout amounts</DialogTitle>
 					<DialogDescription>
-						Update payout amounts on-chain. Release conditions stay{" "}
-						{settlementReleaseTypeLabel(rule.releaseType).toLowerCase()}.
+						Update how much USDC goes to each recipient. Payout still happens
+						when: {settlementReleaseTypeLabel(rule.releaseType).toLowerCase()}.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-3 py-1">
@@ -129,7 +129,7 @@ export function SettlementUpdateDialog({
 						disabled={pending}
 						onClick={() => void handleSave().catch(console.error)}
 					>
-						{pending ? "Updating…" : "Update on-chain"}
+						{pending ? "Saving…" : "Save amounts"}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

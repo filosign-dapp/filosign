@@ -1,7 +1,12 @@
+import { useEntitlements } from "@filosign/react/billing";
 import type { SettlementRuleDraft } from "@filosign/react/files";
+import {
+	canUseAdvancedSettlements,
+	canUseBasicSettlements,
+} from "@filosign/react/files";
 import type { SettlementReleaseType } from "@filosign/shared";
-import { settlementReleaseTypeLabel } from "@filosign/shared";
-import { useMemo, useState } from "react";
+import { normalizePlacementRecipientEmail } from "@filosign/shared";
+import { useEffect, useMemo, useState } from "react";
 import { parseUnits } from "viem";
 import { SUPPORTED_TOKENS } from "@/src/constants";
 import { Button } from "@/src/lib/components/ui/button";
@@ -22,12 +27,20 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/src/lib/components/ui/select";
-import { buildReleaseParamsFromDraft } from "@/src/lib/domains/settlements/build-release-params";
+import { buildReleaseParamsFromSignerEmails } from "@/src/lib/domains/settlements/build-release-params";
+import {
+	expiresAtFromDatetimeLocal,
+	SettlementExpiresAtField,
+} from "@/src/lib/domains/settlements/settlement-expires-at-field";
+import { SettlementReleaseFields } from "@/src/lib/domains/settlements/settlement-release-fields";
+import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
 import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
+import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
 
 type PayeeOption = {
 	wallet: `0x${string}`;
 	label: string;
+	email?: string | null;
 	recipientSource: SettlementAttachmentDraft["recipientSource"];
 };
 
@@ -35,6 +48,7 @@ type Props = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	payees: PayeeOption[];
+	signerEmails: string[];
 	onConfirm: (rules: SettlementRuleDraft[]) => Promise<void>;
 	pending?: boolean;
 };
@@ -43,17 +57,47 @@ export function AttachSettlementDialog({
 	open,
 	onOpenChange,
 	payees,
+	signerEmails,
 	onConfirm,
 	pending,
 }: Props) {
+	const { data: entitlements } = useEntitlements();
+	const promptPlanUpgrade = usePromptPlanUpgrade();
+	const canBasic = canUseBasicSettlements(entitlements);
+	const canAdvanced = canUseAdvancedSettlements(entitlements);
+
 	const [payeeWallet, setPayeeWallet] = useState("");
 	const [amountUsdc, setAmountUsdc] = useState("");
-	const [releaseType, setReleaseType] =
-		useState<SettlementReleaseType>("all_signed");
+	const [releaseType, setReleaseType] = useState<SettlementReleaseType>(
+		"all_required_signed",
+	);
+	const [specificSignerEmail, setSpecificSignerEmail] = useState("");
+	const [thresholdN, setThresholdN] = useState("2");
+	const [expiresAtLocal, setExpiresAtLocal] = useState("");
+
+	const signerOptions = useMemo(
+		() =>
+			signerEmails
+				.filter((e) => isValidRecipientEmail(e))
+				.map((email) => ({
+					email: normalizePlacementRecipientEmail(email),
+					label: email,
+				})),
+		[signerEmails],
+	);
+
+	useEffect(() => {
+		if (!open) return;
+		setSpecificSignerEmail(signerOptions[0]?.email ?? "");
+	}, [open, signerOptions]);
 
 	const options = useMemo(() => payees, [payees]);
 
 	const handleAttach = async () => {
+		if (!canBasic) {
+			promptPlanUpgrade("features.settlement.basic");
+			return;
+		}
 		const payee = options.find((p) => p.wallet === payeeWallet);
 		const trimmed = amountUsdc.trim();
 		if (!payee || !trimmed || Number(trimmed) <= 0) return;
@@ -62,18 +106,22 @@ export function AttachSettlementDialog({
 		const draft: SettlementAttachmentDraft = {
 			id: crypto.randomUUID(),
 			recipientClientRowId: payee.wallet,
-			recipientEmail: payee.label,
+			recipientEmail: payee.email ?? payee.label,
 			recipientSource: payee.recipientSource,
 			recipientLabel: payee.label,
 			recipientWallet: payee.wallet,
 			amountUsdc: trimmed,
 			releaseType,
+			specificSignerEmail:
+				releaseType === "specific_signer" ? specificSignerEmail : undefined,
+			thresholdN: Number(thresholdN) || undefined,
 		};
 
 		const rule: SettlementRuleDraft = {
 			tokenAddress: token.address,
 			releaseType,
-			releaseParams: buildReleaseParamsFromDraft(draft, []),
+			releaseParams: buildReleaseParamsFromSignerEmails(draft, signerEmails),
+			expiresAt: expiresAtFromDatetimeLocal(expiresAtLocal),
 			legs: [
 				{
 					recipientWallet: payee.wallet,
@@ -89,12 +137,15 @@ export function AttachSettlementDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent showCloseButton className="sm:max-w-md">
+			<DialogContent
+				showCloseButton
+				className="sm:max-w-md max-h-[90vh] overflow-y-auto"
+			>
 				<DialogHeader>
-					<DialogTitle>Attach payout</DialogTitle>
+					<DialogTitle>Add a payout</DialogTitle>
 					<DialogDescription>
-						Register a new on-chain settlement rule for this document after
-						send.
+						Send USDC to someone on this document once the conditions you pick
+						are met. Funds stay in your wallet until then—we never hold them.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4 py-1">
@@ -125,25 +176,25 @@ export function AttachSettlementDialog({
 							onChange={(e) => setAmountUsdc(e.target.value)}
 						/>
 					</div>
-					<div className="grid gap-2">
-						<Label>Release when</Label>
-						<Select
-							value={releaseType}
-							onValueChange={(v) => setReleaseType(v as SettlementReleaseType)}
-						>
-							<SelectTrigger>
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="all_signed">
-									{settlementReleaseTypeLabel("all_signed")}
-								</SelectItem>
-								<SelectItem value="all_required_signed">
-									{settlementReleaseTypeLabel("all_required_signed")}
-								</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
+					<SettlementReleaseFields
+						releaseSelectId="attach-settlement-release"
+						releaseType={releaseType}
+						onReleaseTypeChange={setReleaseType}
+						canAdvanced={canAdvanced}
+						onRequireAdvanced={() =>
+							promptPlanUpgrade("features.settlement.advanced")
+						}
+						specificSignerEmail={specificSignerEmail}
+						onSpecificSignerEmailChange={setSpecificSignerEmail}
+						signerOptions={signerOptions}
+						thresholdN={thresholdN}
+						onThresholdNChange={setThresholdN}
+					/>
+					<SettlementExpiresAtField
+						id="attach-settlement-expires"
+						value={expiresAtLocal}
+						onChange={setExpiresAtLocal}
+					/>
 				</div>
 				<DialogFooter>
 					<Button
@@ -159,7 +210,7 @@ export function AttachSettlementDialog({
 						disabled={!payeeWallet || pending}
 						onClick={() => void handleAttach().catch(console.error)}
 					>
-						{pending ? "Attaching…" : "Attach on-chain"}
+						{pending ? "Adding…" : "Add payout"}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

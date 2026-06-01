@@ -18,7 +18,7 @@ export function SettlementHeaderBadge({ rules }: Props) {
 				className="gap-1.5 border-border bg-secondary/90 text-secondary-foreground shadow-none"
 			>
 				<CheckCircleIcon className="size-3.5 text-chart-2" weight="fill" />
-				Settlements complete
+				All payouts sent
 			</Badge>
 		);
 	}
@@ -27,7 +27,7 @@ export function SettlementHeaderBadge({ rules }: Props) {
 		return (
 			<Badge variant="destructive" className="gap-1.5 shadow-none">
 				<WarningIcon className="size-3.5" weight="fill" />
-				Settlement issue
+				Payout problem
 			</Badge>
 		);
 	}
@@ -38,7 +38,7 @@ export function SettlementHeaderBadge({ rules }: Props) {
 			className="gap-1.5 border-border bg-secondary/90 text-secondary-foreground shadow-none"
 		>
 			<ClockIcon className="size-3.5 text-muted-foreground" />
-			Settlement pending
+			Payout waiting
 		</Badge>
 	);
 }

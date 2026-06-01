@@ -109,20 +109,19 @@ export function SettlementStatusPanel({
 		<div className="pt-4 border-t border-border space-y-3">
 			<div className="space-y-1">
 				<h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-					Payout packets ({rules.length})
+					Attached payouts ({rules.length})
 				</h4>
 				{isSender ? (
 					<p className="text-xs text-muted-foreground">
-						USDC stays in your wallet until a leg executes. Filosign may relay
-						authorized transfers, but the contract pulls only from your
-						approval. Revoke approval below to block further legs.
+						USDC stays in your wallet until each payout runs. We can send it for
+						you once conditions are met, using only what you&apos;ve approved.
+						Revoke approval below to stop any unpaid payouts.
 					</p>
 				) : (
 					<p className="text-xs text-muted-foreground">
-						When release conditions are met, the sender&apos;s wallet may
-						transfer USDC on-chain. Use Execute attached payout to retry relay,
-						or Run payout leg from your wallet if needed. Signing does not
-						guarantee payment.
+						When conditions are met, the sender&apos;s wallet can send USDC. Use
+						Pay now to retry, or Pay from my wallet if you&apos;re the
+						recipient. Signing this document does not guarantee payment.
 					</p>
 				)}
 			</div>
@@ -184,8 +183,8 @@ export function SettlementStatusPanel({
 									{formatSettlementAmountLine(rule, decimals)}
 									{legCount > 1
 										? partial
-											? ` · ${paidLegCount}/${legCount} legs paid`
-											: ` · ${legCount} legs`
+											? ` · ${paidLegCount}/${legCount} recipients paid`
+											: ` · ${legCount} recipients`
 										: ""}{" "}
 									· {settlementReleaseTypeLabel(rule.releaseType)}
 								</p>
@@ -217,7 +216,7 @@ export function SettlementStatusPanel({
 												})
 											}
 										>
-											{isTrying ? "Executing…" : "Execute attached payout"}
+											{isTrying ? "Sending…" : "Pay now"}
 										</Button>
 										<Button
 											type="button"
@@ -232,7 +231,9 @@ export function SettlementStatusPanel({
 												})
 											}
 										>
-											{isSettling && !isTrying ? "Sending…" : "Run payout leg"}
+											{isSettling && !isTrying
+												? "Sending…"
+												: "Pay from my wallet"}
 										</Button>
 									</div>
 								) : null}
@@ -245,8 +246,8 @@ export function SettlementStatusPanel({
 									<div className="mt-2 space-y-2">
 										{partial ? (
 											<p className="text-[11px] text-muted-foreground text-pretty">
-												Cancelling stops only unpaid legs. Amounts already
-												transferred on-chain cannot be reversed.
+												Cancelling stops only unpaid amounts. Money already sent
+												cannot be taken back.
 											</p>
 										) : null}
 										<SettlementManageActions

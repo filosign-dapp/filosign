@@ -25,7 +25,7 @@ export function SettlementManageActions({
 				disabled={updatePending || cancelPending}
 				onClick={onUpdate}
 			>
-				{updatePending ? "Updating…" : "Edit rule"}
+				{updatePending ? "Saving…" : "Change amounts"}
 			</Button>
 			<Button
 				type="button"
@@ -35,7 +35,7 @@ export function SettlementManageActions({
 				disabled={cancelPending || updatePending}
 				onClick={onCancel}
 			>
-				{cancelPending ? "Cancelling…" : "Cancel rule"}
+				{cancelPending ? "Removing…" : "Remove payout"}
 			</Button>
 		</div>
 	);

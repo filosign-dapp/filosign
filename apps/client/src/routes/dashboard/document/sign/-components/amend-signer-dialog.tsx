@@ -78,10 +78,10 @@ export function AmendSignerDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent showCloseButton className="sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>Amend signer</DialogTitle>
+					<DialogTitle>Change a signer</DialogTitle>
 					<DialogDescription>
-						Replace a signer email commitment on-chain before they sign. This
-						does not resend the envelope.
+						Swap one signer for someone else before they sign. We won&apos;t
+						resend the envelope—you may want to tell them yourself.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4 py-1">
@@ -128,7 +128,7 @@ export function AmendSignerDialog({
 						disabled={!selected || !newEmailValid || pending}
 						onClick={() => void handleConfirm().catch(console.error)}
 					>
-						{pending ? "Amending…" : "Amend on-chain"}
+						{pending ? "Saving…" : "Save change"}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

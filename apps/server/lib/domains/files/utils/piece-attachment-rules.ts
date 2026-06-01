@@ -3,7 +3,7 @@ import db from "@/lib/platform/db";
 import { fsAttachmentReleaseAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
-const { envelopeAttachmentPackets, attachmentReleaseRules } = db.schema;
+const { envelopeAttachmentPackets } = db.schema;
 
 export async function listConditionalAttachmentPacketsForSender(
 	pieceCid: string,

@@ -1,27 +1,20 @@
-import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
 	envelopeAnalyticsContext,
 	PIECE_CID_PROPERTY,
 	POSTHOG_ENVELOPE_GROUP,
 } from "@/lib/platform/analytics/envelope";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
-
-const captured: Record<string, unknown>[] = [];
-
-mock.module("posthog-node", () => ({
-	PostHog: class {
-		capture(payload: Record<string, unknown>) {
-			captured.push(payload);
-		}
-		async shutdown() {}
-	},
-}));
+import {
+	clearPosthogCaptures,
+	posthogCaptures,
+} from "../support/posthog-capture";
 
 const priorEnabled = process.env.POSTHOG_ENABLED;
 const priorKey = process.env.POSTHOG_API_KEY;
 
 beforeEach(async () => {
-	captured.length = 0;
+	clearPosthogCaptures();
 	process.env.POSTHOG_ENABLED = "true";
 	process.env.POSTHOG_API_KEY = "phc_test";
 	const { resetPostHogClientForTests } = await import(
@@ -74,9 +67,9 @@ describe("captureEvent with PostHog enabled", () => {
 			properties: { piece_cid: pieceCid },
 			groups: { envelope: pieceCid },
 		});
-		expect(captured).toHaveLength(1);
-		expect(captured[0]?.groups).toEqual({ envelope: pieceCid });
-		expect(captured[0]?.distinctId).toBe("0xabc");
+		expect(posthogCaptures).toHaveLength(1);
+		expect(posthogCaptures[0]?.groups).toEqual({ envelope: pieceCid });
+		expect(posthogCaptures[0]?.distinctId).toBe("0xabc");
 	});
 });
 
@@ -123,12 +116,12 @@ describe("trackServerEvent", () => {
 			pieceCid,
 			properties: { is_signer: true },
 		});
-		expect(captured).toHaveLength(1);
-		expect(captured[0]?.properties).toMatchObject({
+		expect(posthogCaptures).toHaveLength(1);
+		expect(posthogCaptures[0]?.properties).toMatchObject({
 			piece_cid: pieceCid,
 			is_signer: true,
 			service: "filosign-server",
 		});
-		expect(captured[0]?.groups).toEqual({ envelope: pieceCid });
+		expect(posthogCaptures[0]?.groups).toEqual({ envelope: pieceCid });
 	});
 });

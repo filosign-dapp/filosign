@@ -4,7 +4,17 @@
  */
 import { mock } from "bun:test";
 import { testEnvStub } from "./support/env-stub";
+import { posthogCaptures } from "./support/posthog-capture";
 
 mock.module("@/env", () => ({
 	default: testEnvStub,
+}));
+
+mock.module("posthog-node", () => ({
+	PostHog: class {
+		capture(payload: Record<string, unknown>) {
+			posthogCaptures.push(payload);
+		}
+		async shutdown() {}
+	},
 }));

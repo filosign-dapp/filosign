@@ -108,10 +108,15 @@ describe("register routing helpers", () => {
 		expect(registration.requiredCommitments).toEqual(
 			calldata.requiredCommitments,
 		);
-		expect(requiredSignerCommitsForRegister({ placementManifest: manifest, routing })).toEqual(
-			calldata.requiredCommitments,
-		);
-		expect(validateRegisterRoutingForSend({ placementManifest: manifest, routing })).toBeNull();
+		expect(
+			requiredSignerCommitsForRegister({
+				placementManifest: manifest,
+				routing,
+			}),
+		).toEqual(calldata.requiredCommitments);
+		expect(
+			validateRegisterRoutingForSend({ placementManifest: manifest, routing }),
+		).toBeNull();
 	});
 
 	it("two required signers pass routing validation without optional routing", () => {

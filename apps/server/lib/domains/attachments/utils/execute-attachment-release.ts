@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import db from "@/lib/platform/db";
-import { evmClient, fsAttachmentReleaseAt } from "@/lib/platform/evm";
+import { fsAttachmentReleaseAt } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 

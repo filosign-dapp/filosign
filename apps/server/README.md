@@ -47,6 +47,8 @@ Critical platform failures emit via [`lib/platform/analytics/platform-alerts.ts`
 
 Unit tests: `bun test tests/` in this package; see [TESTING.md](../../TESTING.md) and `tests/platform/` for platform alerts.
 
+Domain modules that read `db.schema` should do so at **call time** (inside functions), not at module import, so `mock.module("@/lib/platform/db")` in tests is not pinned to a stale schema snapshot.
+
 ## Ops
 
 - **Dokploy / Docker** — image uses [`scripts/infisical-entrypoint.sh`](scripts/infisical-entrypoint.sh); set bootstrap vars per [`SECRETS.md`](SECRETS.md). Do not paste app secrets into Dokploy env UI.

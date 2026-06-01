@@ -161,6 +161,19 @@ Layouts do not fetch; hooks run in route `index.tsx` or `-lib/hooks/`.
 
 ---
 
+## User-facing errors (`@filosign/errors`)
+
+- **Present / toast:** `presentAppError` and `showAppErrorToast` from [`src/lib/errors`](src/lib/errors/index.ts) — not `presentError` from the package (app injects `VITE_ASTRO_URL` + dev details).
+- **Global mutation errors:** [`query-client.tsx`](src/lib/filosign/query-client.tsx) shows a catalog toast unless `meta.suppressErrorToast` is set.
+- **Local mutation handling:** use `localMutationErrorOptions()` when spreading into `mutate()` (suppresses global toast + catalog toast on failure). For `mutateAsync`, pass `suppressGlobalErrorToast()` as the second argument and call `showAppErrorToast(err)` in `catch`.
+- **Inline forms:** `formatInlineAppError(err)` for `setError` banners (admin, etc.).
+- **Send envelope:** ORPC/catalog failures use `showAppErrorToast`; on-chain settlement simulation failures still use `formatSettlementSimError` (partial self-sign success keeps its custom toast).
+- **Validation:** oRPC/Zod field errors are not global-toasted; keep form-level UX.
+
+Catalog + help articles: [`packages/errors/README.md`](../../packages/errors/README.md).
+
+---
+
 ## TanStack Query
 
 Two key systems—use the right one.

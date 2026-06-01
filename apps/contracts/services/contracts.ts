@@ -61,7 +61,7 @@ type AttachmentReleaseDefinition = ChainDefinitionsEntry extends {
 		: never
 	: never;
 
-type CoreFilosignContracts<T extends Wallet> = {
+type CoreFilosignContracts<_T extends Wallet> = {
 	[K in keyof CoreDefinitionContracts]: GetContractReturnType<
 		CoreDefinitionContracts[K]["abi"],
 		FilosignKeyedContractClient,
@@ -71,7 +71,7 @@ type CoreFilosignContracts<T extends Wallet> = {
 	>;
 };
 
-type OptionalAttachmentReleaseContract<T extends Wallet> =
+type OptionalAttachmentReleaseContract<_T extends Wallet> =
 	AttachmentReleaseDefinition extends never
 		? Record<string, never>
 		: {

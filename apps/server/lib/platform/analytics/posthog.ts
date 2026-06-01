@@ -1,4 +1,5 @@
 import { createPostHogRuntime } from "@filosign/logger";
+import { scrubAnalyticsProperties } from "@filosign/shared";
 
 /** Read PostHog config from process.env to keep tests isolated from full env loader. */
 function readPostHogConfig() {
@@ -12,13 +13,13 @@ function readAnalyticsChain(): string {
 	return process.env.CHAIN?.trim() || "local";
 }
 
-function readAnalyticsDeployment(): string {
+export function readAnalyticsDeployment(): string {
 	return process.env.DEPLOYMENT?.trim() || "local";
 }
 
 let runtime: ReturnType<typeof createPostHogRuntime> | null = null;
 
-function getRuntime() {
+export function getPostHogRuntime() {
 	if (runtime) return runtime;
 	const config = readPostHogConfig();
 	runtime = createPostHogRuntime({
@@ -38,17 +39,36 @@ function baseEventProperties(): Record<string, string> {
 	};
 }
 
+const SERVICE_DISTINCT_ID = "service:filosign-server";
+
 export function captureEvent(args: {
 	distinctId: string;
 	event: string;
 	properties?: Record<string, unknown>;
 	groups?: Record<string, string>;
 }): void {
-	getRuntime().captureEvent({
+	getPostHogRuntime().captureEvent({
 		...args,
 		properties: {
 			...baseEventProperties(),
 			...args.properties,
+		},
+	});
+}
+
+export function captureServerException(
+	error: unknown,
+	properties?: Record<string, unknown>,
+): void {
+	const scrubbed = properties
+		? scrubAnalyticsProperties(properties)
+		: undefined;
+	getPostHogRuntime().captureException({
+		error,
+		distinctId: SERVICE_DISTINCT_ID,
+		properties: {
+			...baseEventProperties(),
+			...scrubbed,
 		},
 	});
 }

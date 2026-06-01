@@ -4,7 +4,9 @@ import {
 	createTelegramTransport,
 	type TelegramTransportOptions,
 } from "@filosign/logger";
+import { scrubAnalyticsProperties } from "@filosign/shared";
 import env from "@/env";
+import { captureEvent } from "@/lib/platform/analytics/posthog";
 import type { PlatformAlertEvent } from "./events";
 
 export { emitCriticalPlatformEventFromProcessEnv } from "./platform-alerts-env";
@@ -38,10 +40,25 @@ function getRuntime() {
 	return runtime;
 }
 
+function mirrorPlatformAlertToPostHog(event: PlatformAlertEvent): void {
+	if (!env.POSTHOG_ENABLED) return;
+	captureEvent({
+		distinctId: "service:filosign-server",
+		event: "platform_alert",
+		properties: scrubAnalyticsProperties({
+			alert_name: event.name,
+			severity: event.severity,
+			message: event.message,
+			...(event.context ?? {}),
+		}),
+	});
+}
+
 /** Critical platform alerts (Telegram), gated by `TG_ANALYTICS`. */
 export function emitCriticalPlatformEvent(
 	event: PlatformAlertEvent,
 ): Promise<void> {
+	mirrorPlatformAlertToPostHog(event);
 	return getRuntime().emit({
 		...event,
 		timestamp: Date.now(),

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+	allowedChainsForDeployment,
 	assertDeploymentChain,
 	dodoLive,
 	requiredChainForDeployment,
@@ -15,10 +16,23 @@ describe("deployment policy", () => {
 		expect(requiredChainForDeployment("production")).toBe("mainnet");
 	});
 
-	test("assertDeploymentChain rejects mismatch", () => {
+	test("assertDeploymentChain allows production on mainnet or testnet", () => {
 		expect(() =>
 			assertDeploymentChain({ deployment: "production", chain: "testnet" }),
-		).toThrow(/requires CHAIN=mainnet/);
+		).not.toThrow();
+		expect(() =>
+			assertDeploymentChain({ deployment: "production", chain: "mainnet" }),
+		).not.toThrow();
+		expect(allowedChainsForDeployment("production")).toEqual([
+			"mainnet",
+			"testnet",
+		]);
+	});
+
+	test("assertDeploymentChain rejects disallowed chain", () => {
+		expect(() =>
+			assertDeploymentChain({ deployment: "staging", chain: "mainnet" }),
+		).toThrow(/requires CHAIN in \(testnet\)/);
 	});
 
 	test("dodo and entitlements flags", () => {

@@ -9,12 +9,30 @@ export const DEPLOYMENTS = [
 
 export type Deployment = (typeof DEPLOYMENTS)[number];
 
+/** Chains permitted for each deployment (`production` may use mainnet or testnet). */
+export const DEPLOYMENT_ALLOWED_CHAINS: Record<
+	Deployment,
+	readonly [ChainKey, ...ChainKey[]]
+> = {
+	local: ["local"],
+	staging: ["testnet"],
+	sandbox: ["testnet"],
+	production: ["mainnet", "testnet"],
+};
+
+/** Default / conventional chain per deployment (not the only allowed value for `production`). */
 export const DEPLOYMENT_CHAIN: Record<Deployment, ChainKey> = {
 	local: "local",
 	staging: "testnet",
 	sandbox: "testnet",
 	production: "mainnet",
 };
+
+export function allowedChainsForDeployment(
+	deployment: Deployment,
+): readonly ChainKey[] {
+	return DEPLOYMENT_ALLOWED_CHAINS[deployment];
+}
 
 export function requiredChainForDeployment(deployment: Deployment): ChainKey {
 	return DEPLOYMENT_CHAIN[deployment];
@@ -24,10 +42,10 @@ export function assertDeploymentChain(args: {
 	deployment: Deployment;
 	chain: ChainKey;
 }): void {
-	const required = requiredChainForDeployment(args.deployment);
-	if (args.chain !== required) {
+	const allowed = allowedChainsForDeployment(args.deployment);
+	if (!allowed.includes(args.chain)) {
 		throw new Error(
-			`DEPLOYMENT=${args.deployment} requires CHAIN=${required}, got CHAIN=${args.chain}`,
+			`DEPLOYMENT=${args.deployment} requires CHAIN in (${allowed.join("|")}), got CHAIN=${args.chain}`,
 		);
 	}
 }

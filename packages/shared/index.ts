@@ -1,6 +1,7 @@
 export * from "./analytics-scrub";
 export * from "./attachment-packets";
 export * from "./auth-subject";
+export * from "./chain-rpc";
 export * from "./completions-merkle";
 export * from "./compliance-bundle";
 export * from "./deployment";

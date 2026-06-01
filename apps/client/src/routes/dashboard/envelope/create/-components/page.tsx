@@ -6,7 +6,6 @@ import { Button } from "@/src/lib/components/ui/button";
 import { UserDropdown } from "@/src/routes/dashboard/_shell/-components/user-dropdown";
 import { useCreateEnvelope } from "@/src/routes/dashboard/envelope/create/-lib/context/create-envelope-context";
 import { ClearEnvelopeFormButton } from "./clear-envelope-form-button";
-import { DraftsPanel } from "./drafts-panel";
 import { EnvelopeFormBody } from "./envelope-form-body";
 
 export function CreateEnvelopePage() {
@@ -17,7 +16,7 @@ export function CreateEnvelopePage() {
 			<FullBleedPageHeader>
 				<div className="flex gap-4 items-center">
 					<Logo className="px-0" textClassName="text-foreground" iconOnly />
-					<h3>Create New Document</h3>
+					<h3>New envelope</h3>
 				</div>
 				<UserDropdown />
 			</FullBleedPageHeader>
@@ -30,7 +29,6 @@ export function CreateEnvelopePage() {
 				}}
 			>
 				<EnvelopeFormBody />
-				<DraftsPanel />
 
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
@@ -61,7 +59,7 @@ export function CreateEnvelopePage() {
 							className="gap-2 group transition-all duration-200"
 							disabled={isAdvancing}
 						>
-							{isAdvancing ? "Submitting..." : "Next Step"}
+							{isAdvancing ? "Continuing…" : "Continue"}
 						</Button>
 					</div>
 				</motion.div>

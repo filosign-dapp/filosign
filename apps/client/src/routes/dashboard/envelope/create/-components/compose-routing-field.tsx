@@ -6,19 +6,36 @@ import {
 } from "@filosign/react/files";
 import type { RegisterRoutingInput } from "@filosign/shared";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
+import { AnimatePresence, motion } from "motion/react";
+import { useMemo } from "react";
 import { Checkbox } from "@/src/lib/components/ui/checkbox";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/src/lib/components/ui/select";
+import { Switch } from "@/src/lib/components/ui/switch";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
 import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
+
+function signerEmailOptions(
+	recipients: {
+		role: string;
+		email: string;
+		name?: string | null;
+	}[],
+) {
+	const seen = new Set<string>();
+	const out: { email: string; label: string }[] = [];
+	for (const r of recipients) {
+		if (r.role !== "signer") continue;
+		const raw = r.email.trim();
+		if (!isValidRecipientEmail(raw)) continue;
+		const email = normalizePlacementRecipientEmail(raw);
+		if (seen.has(email)) continue;
+		seen.add(email);
+		out.push({ email, label: r.name?.trim() || raw });
+	}
+	return out;
+}
 
 export function ComposeRoutingField() {
 	const createForm = useStorePersist((s) => s.createForm);
@@ -27,10 +44,17 @@ export function ComposeRoutingField() {
 	const promptPlanUpgrade = usePromptPlanUpgrade();
 	const advancedRouting = canUseAdvancedRouting(entitlements);
 
+	const signerOptions = useMemo(
+		() => signerEmailOptions(createForm?.recipients ?? []),
+		[createForm?.recipients],
+	);
+
 	if (!createForm) return null;
 
 	const routing = createForm.registerRouting ?? {};
-	const signers = createForm.recipients.filter((r) => r.role === "signer");
+	const quorumEnabled = (routing.quorumN ?? 0) > 0;
+	const signerCount = signerOptions.length;
+	const maxQuorum = Math.min(255, signerCount);
 
 	const patchRouting = (patch: Partial<RegisterRoutingInput>) => {
 		setCreateForm({
@@ -45,101 +69,82 @@ export function ComposeRoutingField() {
 		return false;
 	};
 
+	const setQuorumEnabled = (enabled: boolean) => {
+		if (enabled && !requireAdvanced()) return;
+
+		if (!enabled) {
+			patchRouting({ quorumN: 0, quorumSetEmails: [] });
+			return;
+		}
+
+		if (signerCount === 0) return;
+		const defaultN = signerCount === 1 ? 1 : Math.min(2, signerCount);
+		patchRouting({
+			quorumN:
+				routing.quorumN && routing.quorumN > 0 ? routing.quorumN : defaultN,
+			quorumSetEmails: signerOptions.map((s) => s.email),
+		});
+	};
+
 	return (
-		<section className="space-y-4 rounded-xl border border-border/60 bg-muted/5 p-5">
-			<div className="space-y-1">
-				<h2 className="text-sm font-semibold">Signing order</h2>
-				<p className="text-xs text-muted-foreground">
-					Parallel signing is default. Teams Pro can require sequential order,
-					optional signers, or quorum.
-				</p>
-			</div>
-
-			<div className="grid gap-2 sm:max-w-xs">
-				<Label htmlFor="routing-mode">Routing mode</Label>
-				<Select
-					value={String(routing.routingMode ?? 0)}
-					onValueChange={(value) => {
-						if (value === "1" && !requireAdvanced()) return;
-						patchRouting({ routingMode: value === "1" ? 1 : 0 });
-					}}
-				>
-					<SelectTrigger id="routing-mode">
-						<SelectValue />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="0">Parallel (default)</SelectItem>
-						<SelectItem value="1">Sequential</SelectItem>
-					</SelectContent>
-				</Select>
-			</div>
-
-			{routing.routingMode === 1 ? (
-				<div className="grid gap-2">
-					<Label htmlFor="routing-order">Signing order (emails)</Label>
-					<Input
-						id="routing-order"
-						placeholder="alice@example.com, bob@example.com"
-						value={(routing.routingOrderEmails ?? []).join(", ")}
-						onChange={(e) => {
-							if (!requireAdvanced()) return;
-							const emails = e.target.value
-								.split(",")
-								.map((part) => part.trim())
-								.filter(Boolean)
-								.map((email) => normalizePlacementRecipientEmail(email));
-							patchRouting({ routingOrderEmails: emails });
-						}}
-					/>
+		<section className="space-y-3 rounded-xl border border-border/60 bg-muted/5 p-5">
+			<div className="flex items-center justify-between gap-4">
+				<div className="min-w-0">
+					<Label htmlFor="quorum-enabled" className="text-sm font-medium">
+						Minimum signatures
+					</Label>
+					<p className="text-xs text-muted-foreground">
+						All signers must sign unless you set a minimum below.
+					</p>
 				</div>
-			) : null}
-
-			<div className="grid gap-2 sm:max-w-xs">
-				<Label htmlFor="quorum-n">Registry quorum N (0 = disabled)</Label>
-				<Input
-					id="quorum-n"
-					type="number"
-					min={0}
-					max={255}
-					value={routing.quorumN ?? 0}
-					onChange={(e) => {
-						if (!requireAdvanced()) return;
-						patchRouting({ quorumN: Number(e.target.value) || 0 });
-					}}
+				<Switch
+					id="quorum-enabled"
+					checked={quorumEnabled}
+					onCheckedChange={setQuorumEnabled}
 				/>
 			</div>
 
-			{signers.length > 0 ? (
-				<div className="space-y-2">
-					<Label>Optional signers (Teams Pro)</Label>
-					{createForm.recipients.map((signer, index) => {
-						if (signer.role !== "signer") return null;
-						const email = signer.email.trim();
-						if (!isValidRecipientEmail(email)) return null;
-						const checked = signer.signerRequired === false;
-						return (
-							<label
-								key={signer.clientRowId ?? `${email}-${index}`}
-								htmlFor={`optional-signer-${index}`}
-								className="flex items-center gap-2 text-sm"
-							>
-								<Checkbox
-									id={`optional-signer-${index}`}
-									checked={checked}
-									onCheckedChange={(next) => {
-										if (!requireAdvanced()) return;
-										const recipients = createForm.recipients.map((r, i) =>
-											i === index ? { ...r, signerRequired: next !== true } : r,
-										);
-										setCreateForm({ ...createForm, recipients });
-									}}
-								/>
-								<span>{email}, optional for quorum</span>
-							</label>
-						);
-					})}
-				</div>
-			) : null}
+			<AnimatePresence initial={false}>
+				{quorumEnabled ? (
+					<motion.div
+						key="quorum-input"
+						initial={{ opacity: 0, y: 12 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0, y: -6 }}
+						transition={{
+							type: "spring",
+							stiffness: 230,
+							damping: 26,
+						}}
+						className="grid gap-1.5 sm:max-w-xs"
+					>
+						<Label htmlFor="quorum-n">Signatures needed</Label>
+						<Input
+							id="quorum-n"
+							type="number"
+							min={1}
+							max={maxQuorum}
+							value={routing.quorumN ?? 1}
+							disabled={signerCount === 0}
+							onChange={(e) => {
+								if (!requireAdvanced()) return;
+								const raw = Number(e.target.value);
+								if (!Number.isFinite(raw) || raw < 1) return;
+								const capped = Math.min(maxQuorum, Math.floor(raw));
+								patchRouting({
+									quorumN: capped,
+									quorumSetEmails: signerOptions.map((s) => s.email),
+								});
+							}}
+						/>
+						<p className="text-xs text-muted-foreground">
+							{signerCount === 0
+								? "Add signers first."
+								: `${routing.quorumN ?? 1} of ${signerCount} signers.`}
+						</p>
+					</motion.div>
+				) : null}
+			</AnimatePresence>
 		</section>
 	);
 }
@@ -157,10 +162,10 @@ export function ComposeSettlementOptionsField() {
 
 	return (
 		<section className="space-y-3 rounded-xl border border-border/60 bg-muted/5 p-5">
-			<div className="space-y-1">
-				<h2 className="text-sm font-semibold">Payout layout</h2>
+			<div>
+				<h2 className="text-sm font-semibold">Multiple payouts</h2>
 				<p className="text-xs text-muted-foreground">
-					Combine attached payouts into one atomic multi-leg rule (Teams Pro).
+					Combine several USDC payouts into one rule.
 				</p>
 			</div>
 			<label
@@ -185,7 +190,7 @@ export function ComposeSettlementOptionsField() {
 						});
 					}}
 				/>
-				<span>Single rule with {draftCount} payout legs</span>
+				<span>One rule for {draftCount} recipients</span>
 			</label>
 		</section>
 	);

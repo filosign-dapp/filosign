@@ -252,7 +252,7 @@ export default function DocumentsSection() {
 								}}
 							>
 								<p className="text-muted-foreground">
-									{isDragOver ? "Drop your files here" : "Drop your files here"}
+									Drop PDFs here, or click Upload
 								</p>
 								<Button
 									type="button"
@@ -308,7 +308,7 @@ export default function DocumentsSection() {
 							{/* Header with view mode toggle */}
 							<div className="flex items-center justify-between">
 								<h5 className="text-sm font-medium text-muted-foreground">
-									Uploaded Files ({documents.length})
+									Files ({documents.length})
 								</h5>
 								<ListGridViewToggle
 									value={viewMode}

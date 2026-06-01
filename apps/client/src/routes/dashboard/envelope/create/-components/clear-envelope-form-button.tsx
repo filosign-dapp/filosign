@@ -26,8 +26,8 @@ export function ClearEnvelopeFormButton() {
 			<ConfirmAlertDialog
 				open={open}
 				onOpenChange={setOpen}
-				title="Clear envelope draft?"
-				description="This removes uploaded documents, recipients, and your message from this draft. You cannot undo this action."
+				title="Clear this envelope?"
+				description="Removes documents, recipients, and settings. This can't be undone."
 				confirmLabel="Clear form"
 				destructive
 				onConfirm={clearForm}

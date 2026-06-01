@@ -382,7 +382,7 @@ function PricingPlansContent({
 
 	return (
 		<MarketingPageShell>
-			<section id="pricing" className="bg-background py-20">
+			<section id="pricing" className="bg-background py-12 md:py-20">
 				<MarketingPageBody
 					pace="page"
 					heroTopChildCount={PRICING_HERO_TOP_COUNT}
@@ -409,7 +409,7 @@ function PricingPlansContent({
 					</div>
 					{enterpriseBanner ? (
 						<div className="col-span-full flex flex-col gap-6 rounded-3xl border border-border/60 bg-muted/25 p-8 md:flex-row md:items-center md:justify-between md:gap-10">
-							<div className="max-w-2xl space-y-2">
+							<div className="max-w-3xl space-y-2">
 								<p className="text-lg font-medium font-manrope text-foreground">
 									{enterpriseBanner.headline}
 								</p>

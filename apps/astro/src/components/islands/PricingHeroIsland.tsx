@@ -1,15 +1,22 @@
 import { ArrowDownIcon } from "@phosphor-icons/react";
 import { cn } from "../../lib/cn";
-import { marketingGhostLgClass } from "../../lib/marketing-button";
-import { marketingSectionClass } from "../../lib/marketing-layout";
-import MarketingCtaButtons from "./MarketingCtaButtons";
+import { marketingPrimaryLgClass } from "../../lib/marketing-button";
+import {
+	marketingSectionClass,
+	marketingSectionYClass,
+} from "../../lib/marketing-layout";
 import { MarketingStagger } from "./MarketingStagger";
 import { MotionProvider } from "./MotionProvider";
 
 export default function PricingHeroIsland() {
 	return (
 		<MotionProvider>
-			<section className="relative overflow-hidden bg-background pt-4 sm:pt-20">
+			<section
+				className={cn(
+					"relative overflow-hidden bg-background",
+					marketingSectionYClass,
+				)}
+			>
 				<div className={`${marketingSectionClass} relative z-10 space-y-16`}>
 					<MarketingStagger
 						pace="page"
@@ -29,11 +36,10 @@ export default function PricingHeroIsland() {
 						</div>
 
 						<div className="flex flex-col w-full sm:w-auto gap-4 shrink-0">
-							<MarketingCtaButtons primaryHref="#pricing" />
 							<a
 								href="#pricing"
 								className={cn(
-									marketingGhostLgClass,
+									marketingPrimaryLgClass,
 									"gap-2 inline-flex items-center justify-center",
 								)}
 							>

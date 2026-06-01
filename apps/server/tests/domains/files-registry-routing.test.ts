@@ -23,21 +23,21 @@ describe("files.piece.detail registry routing", () => {
 });
 
 describe("sign and ack EIP-712 verifyingContract", () => {
-	test("useSignFile signs against fileRegistryAt(registryAddress)", () => {
+	test("useSignFile signs against envelopeRegistryAt(registryAddress)", () => {
 		const src = readFileSync(
 			join(repoRoot, "packages/react-sdk/src/hooks/files/useSignFile.ts"),
 			"utf8",
 		);
-		expect(src).toContain("fileRegistryAt(contracts, registryAddress)");
+		expect(src).toContain("envelopeRegistryAt(contracts, registryAddress)");
 		expect(src).toContain("verifyingContract: registry.address");
 	});
 
-	test("useAckFile signs against fileRegistryAt(registryAddress)", () => {
+	test("useAckFile signs against envelopeRegistryAt(registryAddress)", () => {
 		const src = readFileSync(
 			join(repoRoot, "packages/react-sdk/src/hooks/files/useAckFile.ts"),
 			"utf8",
 		);
-		expect(src).toContain("fileRegistryAt(contracts, registryAddress)");
+		expect(src).toContain("envelopeRegistryAt(contracts, registryAddress)");
 		expect(src).toContain("verifyingContract: registry.address");
 	});
 

@@ -186,21 +186,21 @@ describe("validateServerBootstrap", () => {
 		}));
 		mock.module("@/lib/platform/evm", () => ({
 			fsContracts: {
-				FSFileRegistry: {
+				FSEnvelopeRegistry: {
 					read: {
 						server: async () => otherAddress,
 					},
 				},
 			},
 			evmClient: { getBalance: async () => 0n },
-			fsFileRegistryAt: () => ({}),
+			fsEnvelopeRegistryAt: () => ({}),
 			fsPaymentValidatorAt: () => ({}),
 		}));
 		const { validateServerBootstrap } = await import(
 			"@/lib/platform/bootstrap/validate-server-bootstrap"
 		);
 		await expect(validateServerBootstrap()).rejects.toThrow(
-			/FSFileRegistry\.server\(\)/,
+			/FSEnvelopeRegistry\.server\(\)/,
 		);
 		await flushPlatformAlerts();
 		expect(capturedTelegramEvents).toHaveLength(1);
@@ -222,14 +222,14 @@ describe("validateServerBootstrap", () => {
 		}));
 		mock.module("@/lib/platform/evm", () => ({
 			fsContracts: {
-				FSFileRegistry: {
+				FSEnvelopeRegistry: {
 					read: {
 						server: async () => relayerAddress,
 					},
 				},
 			},
 			evmClient: { getBalance: async () => 0n },
-			fsFileRegistryAt: () => ({}),
+			fsEnvelopeRegistryAt: () => ({}),
 			fsPaymentValidatorAt: () => ({}),
 		}));
 		const { validateServerBootstrap } = await import(
@@ -274,13 +274,13 @@ describe("monitor relayer gas", () => {
 				getBalance: async () => 1n,
 			},
 			fsContracts: {
-				FSFileRegistry: {
+				FSEnvelopeRegistry: {
 					read: {
 						server: async () => relayerAddress,
 					},
 				},
 			},
-			fsFileRegistryAt: () => ({}),
+			fsEnvelopeRegistryAt: () => ({}),
 			fsPaymentValidatorAt: () => ({}),
 		}));
 		const { runMonitorRelayerGasJob } = await import(

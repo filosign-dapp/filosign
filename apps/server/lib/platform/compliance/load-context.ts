@@ -16,7 +16,7 @@ import {
 } from "@/lib/platform/db/schema/file";
 import { fileSettlementRules } from "@/lib/platform/db/schema/settlements";
 import { users } from "@/lib/platform/db/schema/user";
-import { fsFileRegistryAt } from "@/lib/platform/evm";
+import { fsEnvelopeRegistryAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import type { ParticipantRow } from "./types";
 
@@ -222,13 +222,13 @@ export async function loadComplianceContext(args: {
 
 	const exportedAtIso = new Date().toISOString();
 	const senderNorm = getAddress(fileRecord.sender);
-	const registry = fsFileRegistryAt(fileRecord.registryAddress);
+	const registry = fsEnvelopeRegistryAt(fileRecord.registryAddress);
 
 	let onchainRegistration: ComplianceLoadContext["onchainRegistration"] = null;
 	const cidRes = await tryCatch(registry.read.cidIdentifier([pieceCid]));
 	if (cidRes.data) {
 		const cidId = cidRes.data as Hex;
-		const regRes = await tryCatch(registry.read.fileRegistrations([cidId]));
+		const regRes = await tryCatch(registry.read.envelopeRegistrations([cidId]));
 		const reg = regRes.data as
 			| {
 					sender: Address;

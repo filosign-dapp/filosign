@@ -53,7 +53,7 @@ export async function validateFilosignRegistrationSignature(args: {
 			name: FILOSIGN_REGISTRATION_DOMAIN_NAME,
 			version: "1",
 			chainId: BigInt(config.runtimeChain.id),
-			verifyingContract: fsContracts.FSFileRegistry.address,
+			verifyingContract: fsContracts.FSEnvelopeRegistry.address,
 		},
 		types: REGISTER_KEYGEN_TYPES,
 		primaryType: "RegisterKeygenData",

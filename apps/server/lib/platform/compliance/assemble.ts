@@ -186,7 +186,7 @@ export async function assembleComplianceBundle(
 		txHash: fileRecord.onchainTxHash,
 		contractAddress: regAddr,
 		summary:
-			"registerFile — file placement and sender commitments recorded on-chain",
+			"registerEnvelope — file placement and sender commitments recorded on-chain",
 		relatedAddresses: [senderNorm],
 	});
 
@@ -196,7 +196,7 @@ export async function assembleComplianceBundle(
 			kind: "file_signed",
 			txHash: s.onchainTxHash,
 			contractAddress: regAddr,
-			summary: `registerFileSignature — signer ${w}`,
+			summary: `registerEnvelopeSignature — signer ${w}`,
 			relatedAddresses: [senderNorm, w],
 		});
 	}

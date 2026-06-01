@@ -87,7 +87,7 @@ This document outlines entitlements per tier: **Existing Features** (in catalog 
 *Designed for advanced Web3 teams requiring custom settlement rules and complex workspaces.*
 
 *   **Existing Features:**
-    *   30 documents per user/mo (pooled across team members).
+    *   25 documents per user/mo (pooled across team members).
     *   Custom smart-contract payout rules (multi-sig releases, multi-chain payouts).
     *   Workspace team permissions.
 *   **Suggested Features to Build:**

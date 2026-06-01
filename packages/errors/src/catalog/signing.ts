@@ -72,9 +72,7 @@ export const signingErrors = {
 	"SIGNING.ALREADY_SIGNED": {
 		title: "You already signed",
 		description: "Your signature is already on this document.",
-		steps: [
-			"Download the completed copy from your dashboard if you need one.",
-		],
+		steps: ["Download the completed copy from your dashboard if you need one."],
 		supportSlug: "signing-already-signed",
 		audience: "user",
 		severity: "warning",

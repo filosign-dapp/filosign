@@ -7,6 +7,11 @@ export type PostHogRuntime = {
 		properties?: Record<string, unknown>;
 		groups?: Record<string, string>;
 	}): void;
+	captureException(args: {
+		error: unknown;
+		distinctId?: string;
+		properties?: Record<string, unknown>;
+	}): void;
 	shutdown(): Promise<void>;
 	resetForTests(): void;
 };
@@ -47,6 +52,17 @@ export function createPostHogRuntime(args: {
 				...(eventArgs.groups && Object.keys(eventArgs.groups).length > 0
 					? { groups: eventArgs.groups }
 					: {}),
+			});
+		},
+		captureException(exceptionArgs) {
+			const ph = getClient();
+			if (!ph) return;
+			const distinctId =
+				exceptionArgs.distinctId?.toLowerCase() ?? `service:${args.service}`;
+			ph.captureException(exceptionArgs.error, distinctId, {
+				chain: args.chain,
+				service: args.service,
+				...exceptionArgs.properties,
 			});
 		},
 		async shutdown() {

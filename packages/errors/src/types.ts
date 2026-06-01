@@ -12,7 +12,7 @@ export type OrpcErrorCode =
 	| "CONFLICT"
 	| "INTERNAL_SERVER_ERROR";
 
-export type ErrorDefinition = {
+export interface ErrorDefinition {
 	title: string;
 	description: string;
 	steps: readonly string[];
@@ -23,9 +23,9 @@ export type ErrorDefinition = {
 	showSupportLink?: boolean;
 	dedupeKey?: string;
 	paramsSchema?: z.ZodTypeAny;
-};
+}
 
-export type PresentedError = {
+export interface PresentedError {
 	code: string;
 	title: string;
 	description: string;
@@ -35,7 +35,7 @@ export type PresentedError = {
 	dedupeKey: string;
 	/** Raw message appended in dev-only toast UI */
 	devDetail?: string;
-};
+}
 
 export type PresentErrorOptions = {
 	helpBaseUrl?: string;

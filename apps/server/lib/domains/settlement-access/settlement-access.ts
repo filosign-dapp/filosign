@@ -5,15 +5,32 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { assertOrgPermission, resolveActiveOrg } from "@/lib/domains/orgs";
+import { isPlatformAdminForWallet } from "@/lib/platform/admin";
 import db from "@/lib/platform/db";
 
 const { organizationSettlementFeatureAccess, organizations } = db.schema;
 
 export { SETTLEMENT_FEATURE_TERMS_VERSION };
 
+export function settlementFeatureAccessApprovedForPlatformAdmin() {
+	return {
+		status: "approved" as const,
+		termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+		currentTermsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+		termsCurrent: true,
+	};
+}
+
 export async function getOrganizationSettlementFeatureAccess(
 	organizationId: string,
+	options?: { callerWallet?: Address },
 ) {
+	if (
+		options?.callerWallet &&
+		(await isPlatformAdminForWallet(options.callerWallet))
+	) {
+		return settlementFeatureAccessApprovedForPlatformAdmin();
+	}
 	const [row] = await db
 		.select({
 			status: organizationSettlementFeatureAccess.status,
@@ -140,7 +157,15 @@ export async function submitOrganizationSettlementFeatureRequest(args: {
 
 export async function assertOrganizationSettlementFeatureApproved(
 	organizationId: string,
+	options?: { callerWallet?: Address },
 ) {
+	if (
+		options?.callerWallet &&
+		(await isPlatformAdminForWallet(options.callerWallet))
+	) {
+		return;
+	}
+
 	const access = await getOrganizationSettlementFeatureAccess(organizationId);
 	if (access.status !== "approved") {
 		throw new ORPCError("FORBIDDEN", {

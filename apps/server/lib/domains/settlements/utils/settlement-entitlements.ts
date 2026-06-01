@@ -2,6 +2,7 @@ import type { EntitlementContext } from "@filosign/entitlements";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import { isAdvancedSettlementReleaseType } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
+import type { Address } from "viem";
 import { MAX_SETTLEMENT_LEGS_PRODUCT } from "@/constants";
 import { assertEntitlement } from "@/lib/domains/entitlements";
 import { assertOrganizationSettlementFeatureApproved } from "@/lib/domains/settlement-access";
@@ -22,9 +23,10 @@ export async function assertSettlementRuleEntitlements(
 	ctx: EntitlementContext,
 	rule: SettlementRuleRegistrationInput,
 	organizationId: string | null,
+	callerWallet?: Address,
 ) {
 	const orgId = requireSettlementOrganizationId(organizationId);
-	await assertOrganizationSettlementFeatureApproved(orgId);
+	await assertOrganizationSettlementFeatureApproved(orgId, { callerWallet });
 	assertEntitlement(ctx, "features.settlement.basic");
 
 	if (rule.legs.length > 1) {
@@ -43,8 +45,9 @@ export async function assertSettlementRuleEntitlements(
 export async function assertSettlementUpdateEntitlements(
 	ctx: EntitlementContext,
 	organizationId: string | null,
+	callerWallet?: Address,
 ) {
 	const orgId = requireSettlementOrganizationId(organizationId);
-	await assertOrganizationSettlementFeatureApproved(orgId);
+	await assertOrganizationSettlementFeatureApproved(orgId, { callerWallet });
 	assertEntitlement(ctx, "features.settlement.advanced");
 }

@@ -14,7 +14,9 @@ export async function settlementAccessGetForOrg(
 	wallet: Address,
 	organizationId: string,
 ) {
-	return getOrganizationSettlementFeatureAccess(organizationId);
+	return getOrganizationSettlementFeatureAccess(organizationId, {
+		callerWallet: wallet,
+	});
 }
 
 export async function settlementAccessSubmitRequest(

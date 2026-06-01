@@ -8,7 +8,7 @@ import { getAddress } from "viem";
 import db from "@/lib/platform/db";
 import {
 	evmClient,
-	fsFileRegistryAt,
+	fsEnvelopeRegistryAt,
 	fsPaymentValidatorAt,
 } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
@@ -25,11 +25,11 @@ async function assertTxSucceeded(hash: Hex, label: string) {
 	}
 }
 
-async function assertFileRegisteredOnChain(
+async function assertEnvelopeRegisteredOnChain(
 	pieceCid: string,
 	registryAddress?: `0x${string}` | null,
 ) {
-	const registry = fsFileRegistryAt(registryAddress ?? null);
+	const registry = fsEnvelopeRegistryAt(registryAddress ?? null);
 	const cidRes = await tryCatch(registry.read.cidIdentifier([pieceCid]));
 	if (cidRes.error || !cidRes.data) {
 		throw new ORPCError("BAD_REQUEST", {
@@ -37,7 +37,7 @@ async function assertFileRegisteredOnChain(
 		});
 	}
 	const regRes = await tryCatch(
-		registry.read.fileRegistrations([cidRes.data as Hex]),
+		registry.read.envelopeRegistrations([cidRes.data as Hex]),
 	);
 	if (regRes.error || !regRes.data || regRes.data.timestamp === 0n) {
 		throw new ORPCError("BAD_REQUEST", {
@@ -272,7 +272,7 @@ export async function assertSettlementRulesVerifiedOnChain(
 		});
 	}
 
-	await assertFileRegisteredOnChain(pieceCid, registryAddress);
+	await assertEnvelopeRegisteredOnChain(pieceCid, registryAddress);
 
 	const expectedCid = computeCidIdentifier(pieceCid);
 

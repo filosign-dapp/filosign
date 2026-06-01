@@ -79,6 +79,7 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 	await assertSettlementUpdateEntitlements(
 		entitlementCtx,
 		file?.organizationId ?? null,
+		getAddress(sender),
 	);
 
 	const registrationRule: SettlementRuleRegistrationInput = {
@@ -96,6 +97,7 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 		entitlementCtx,
 		registrationRule,
 		file?.organizationId ?? null,
+		getAddress(sender),
 	);
 
 	const participantRows = await db

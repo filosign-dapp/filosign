@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Button } from "@/src/lib/components/ui/button";
+import { presentAppError } from "@/src/lib/errors/present-app-error";
 import { reportClientError } from "@/src/lib/utils/report-client-error";
 
 interface ErrorBoundaryProps {
@@ -43,6 +44,10 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 				return this.props.fallback;
 			}
 
+			const presented = this.state.error
+				? presentAppError(this.state.error)
+				: null;
+
 			return (
 				<div className="relative overflow-hidden rounded-lg border border-destructive/20 bg-destructive/5 p-4 shadow-sm animate-in fade-in duration-300">
 					{/* Animated gradient line */}
@@ -69,10 +74,12 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 						</div>
 						<div>
 							<h2 className="text-sm font-medium text-destructive">
-								Something went wrong
+								{presented?.title ?? "Something went wrong"}
 							</h2>
 							<p className="mt-1 text-xs text-destructive/80">
-								{this.state.error?.message || "An unexpected error occurred"}
+								{presented?.description ??
+									this.state.error?.message ??
+									"An unexpected error occurred"}
 							</p>
 							<Button
 								className="mt-3"

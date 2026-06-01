@@ -1,5 +1,6 @@
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { useNavigate } from "@tanstack/react-router";
+import { presentAppError } from "@/src/lib/errors/present-app-error";
 import { reportClientError } from "@/src/lib/utils/report-client-error";
 import { PageCrashed } from "./page-crashed";
 
@@ -14,10 +15,14 @@ export function RouteErrorFallback({ error, reset }: ErrorComponentProps) {
 	return (
 		<div className="flex flex-1 flex-col gap-4 h-screen">
 			<PageCrashed
-				title="Something went wrong"
+				title={
+					error instanceof Error
+						? presentAppError(error).title
+						: "Something went wrong"
+				}
 				description={
 					error instanceof Error
-						? error.message
+						? presentAppError(error).description
 						: "There was an error loading this page."
 				}
 				showRetryButton

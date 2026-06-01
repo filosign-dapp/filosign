@@ -188,6 +188,8 @@ function DraggableFieldOverlay({
 		isPrimarySelected && pdfNumPages != null && pdfNumPages > 1;
 
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: field placement overlay click is handled on canvas container
+		// biome-ignore lint/a11y/useKeyWithClickEvents: canvas keyboard support is out of scope for field placement
 		<div
 			ref={setNodeRef}
 			className={cn(

@@ -167,6 +167,8 @@ function DocumentViewer() {
 						isPlacingField ? "cursor-crosshair" : "cursor-default",
 					)}
 				>
+					{/* biome-ignore lint/a11y/noStaticElementInteractions: canvas clicks handle placement coordinate capture */}
+					{/* biome-ignore lint/a11y/useKeyWithClickEvents: page click captures point placement; keyboard navigation is not fully supported for canvas coordinates */}
 					<div
 						ref={setPageEl}
 						className="relative bg-white"

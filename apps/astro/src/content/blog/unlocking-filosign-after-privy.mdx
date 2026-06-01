@@ -40,7 +40,7 @@ Roughly, three layers matter:
 | Piece | Role |
 | :---- | :--- |
 | **Registration snapshot (server / Postgres)** | Stores salts (`salt_seed`, `salt_challenge`) and **commitments** to Kyber and Dilithium public keys in `users.keygenDataJson`. Returned via the registration snapshot API after auth, not readable on-chain. |
-| **Registration EIP-712 (wallet signature)** | At signup, the wallet signs `RegisterKeygenData` with **`FSFileRegistry`** as the verifying contract. This binds commitments to the wallet without writing key material on-chain. |
+| **Registration EIP-712 (wallet signature)** | At signup, the wallet signs `RegisterKeygenData` with **`FSEnvelopeRegistry`** as the verifying contract. This binds commitments to the wallet without writing key material on-chain. |
 | **PIN envelope (IndexedDB)** | Ciphertext of the expanded seed, wrapped with Argon2id + AES-GCM using the PIN. Survives refresh; does not survive a forgotten PIN without recovery phrase. |
 | **Session seed (RAM)** | After unlock, the expanded seed lives in a process-local map so Dilithium and KEM operations can run in-session. |
 

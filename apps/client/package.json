@@ -18,6 +18,9 @@
 	},
 	"dependencies": {
 		"@base-ui/react": "1.4.1",
+		"@dnd-kit/core": "6.3.1",
+		"@dnd-kit/sortable": "10.0.0",
+		"@dnd-kit/utilities": "3.2.2",
 		"@filosign/contracts": "workspace:*",
 		"@filosign/crypto-utils": "workspace:*",
 		"@filosign/entitlements": "workspace:*",
@@ -47,6 +50,8 @@
 		"react-easy-crop": "^5.4.2",
 		"react-hook-form": "^7.54.2",
 		"react-pdf": "10.1.0",
+		"react-resizable-panels": "4.11.2",
+		"react-zoom-pan-pinch": "4.0.3",
 		"shadcn": "4.7.0",
 		"sonner": "2.0.7",
 		"tailwind-merge": "catalog:",

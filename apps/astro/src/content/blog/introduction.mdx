@@ -29,7 +29,7 @@ Two problems kept coming up:
 Filosign addresses both with client-side encryption and on-chain attestations on **Base**:
 
 - **End-to-end encryption:** Documents are encrypted in your browser. Only wallets you share with can decrypt them.
-- **Verifiable signing records:** When someone signs, an attestation is relayed to **`FSFileRegistry`** on Base. Anyone with the compliance bundle and a public RPC node can verify it. No Filosign login required.
+- **Verifiable signing records:** When someone signs, an attestation is relayed to **`FSEnvelopeRegistry`** on Base. Anyone with the compliance bundle and a public RPC node can verify it. No Filosign login required.
 
 ### What you can do today
 
@@ -37,7 +37,7 @@ Filosign addresses both with client-side encryption and on-chain attestations on
 - **Controlled permissions:** Senders add you as a contact and wait for your approval before sending. No signing spam.
 - **End-to-end encryption:** We only ever store ciphertext. Plaintext never touches our servers.
 - **Durable encrypted storage:** Files live on private object storage and are archived to **Filecoin** via FilCDN so encrypted payloads stay available even if our hot storage fails.
-- **On-chain proof:** Registration and signature events are written to **`FSFileRegistry`**. Tamper-evident, publicly auditable, independent of our database.
+- **On-chain proof:** Registration and signature events are written to **`FSEnvelopeRegistry`**. Tamper-evident, publicly auditable, independent of our database.
 - **No gas for you:** We relay on-chain writes so you can use the product without holding ETH for fees.
 - **Proof packet:** Export a PDF report with ceremony details and transaction hashes for legal or compliance review.
 

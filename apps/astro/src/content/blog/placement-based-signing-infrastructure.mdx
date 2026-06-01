@@ -1,6 +1,6 @@
 ---
 title: "Inside Filosign's Signing Flow: Infrastructure Built for Legal Certainty"
-description: Placement manifests, Merkle proofs, compliance bundles, and on-chain attestations in FSFileRegistry. Evidence you can verify without trusting our servers.
+description: Placement manifests, Merkle proofs, compliance bundles, and on-chain attestations in FSEnvelopeRegistry. Evidence you can verify without trusting our servers.
 readingTime: 8 min
 dateDisplay: May 11, 2026
 publishedISO: "2026-05-11T12:00:00.000Z"
@@ -18,7 +18,7 @@ When we rebuilt Filosign's signing flow, we had one non-negotiable requirement: 
 
 Most e-signature platforms store proof as database rows and PDF certificates with a vendor logo. If that database disappears, your audit trail may disappear with it.
 
-Our placement-based signing infrastructure combines **cryptographic placement manifests**, **Merkle inclusion proofs**, and **`FSFileRegistry` attestations on Base** to produce evidence that is:
+Our placement-based signing infrastructure combines **cryptographic placement manifests**, **Merkle inclusion proofs**, and **`FSEnvelopeRegistry` attestations on Base** to produce evidence that is:
 
 - **Legally grounded:** built around identity, intent, association, and timestamps frameworks like ESIGN and eIDAS expect
 - **Independently verifiable:** compliance bundle + public chain data, no API key required
@@ -235,7 +235,7 @@ Given the Compliance Bundle and public blockchain data, a verifier can:
 
 1. **Verify the manifest:** Recompute `placementCommitment` from manifest JSON; compare to on-chain value
 2. **Verify field completion:** For any field ID, use the Merkle proof to verify inclusion in `completionsRoot`
-3. **Verify the attestation:** Confirm `completionsRoot` was registered for the claimed signer in **`FSFileRegistry`**
+3. **Verify the attestation:** Confirm `completionsRoot` was registered for the claimed signer in **`FSEnvelopeRegistry`**
 4. **Verify timestamp:** Cross-reference the on-chain transaction block time
 
 All of this requires:
@@ -266,7 +266,7 @@ No Filosign API keys. No platform login. The server **builds** the bundle for co
 
 ## Conclusion
 
-We rebuilt the signing flow with a simple principle: **cryptography first, platform second**. Filosign's servers assemble bundles and relay transactions, but the legal weight sits in hashes, Merkle proofs, and **`FSFileRegistry`** state that anyone can re-check.
+We rebuilt the signing flow with a simple principle: **cryptography first, platform second**. Filosign's servers assemble bundles and relay transactions, but the legal weight sits in hashes, Merkle proofs, and **`FSEnvelopeRegistry`** state that anyone can re-check.
 
 Your documents stay encrypted. Your field-level completions stay provably yours. And anyone with the bundle and an RPC endpoint can verify that.
 

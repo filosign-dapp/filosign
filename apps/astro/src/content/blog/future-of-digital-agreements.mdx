@@ -32,7 +32,7 @@ Filosign is not "blockchain e-sign" as a gimmick. It is a deliberate split betwe
 | | Traditional e-sign | Filosign |
 | :-- | :-- | :-- |
 | **Document storage** | Vendor-controlled cloud | Encrypted on private storage; archived to Filecoin |
-| **Proof of signing** | Vendor database + PDF certificate | **`FSFileRegistry`** on Base + exportable compliance bundle |
+| **Proof of signing** | Vendor database + PDF certificate | **`FSEnvelopeRegistry`** on Base + exportable compliance bundle |
 | **Privacy** | Vendor can read uploads | End-to-end encryption in the browser |
 | **Cryptography** | Platform-managed keys | Wallet-bound client keys (Kyber + Dilithium) |
 | **Authentication** | Email + password | Wallet identity; social login provisions an embedded wallet |
@@ -42,7 +42,7 @@ You get familiar flows (upload, place fields, collect signatures) backed by evid
 
 ## On-chain vs off-chain (on purpose)
 
-Our v1 contracts are intentionally small: **`FSFileRegistry`** and **`FSPaymentValidator`**, deployed on **Base**. No upgrade proxies. Identity, key material, and sharing approvals live **off-chain** in Postgres and your browser.
+Our v1 contracts are intentionally small: **`FSEnvelopeRegistry`** and **`FSPaymentValidator`**, deployed on **Base**. No upgrade proxies. Identity, key material, and sharing approvals live **off-chain** in Postgres and your browser.
 
 | Lives on-chain | Lives off-chain |
 | :-- | :-- |
@@ -56,7 +56,7 @@ The chain stores **commitments and attestations**, not your PDF. That is how you
 
 1. **Sign in** with a wallet or social account (we create an embedded wallet when needed).
 2. **Encrypt and send** a document; recipients decrypt only with keys shared to their wallet.
-3. **Collect signatures** on placed fields; each completion is validated and relayed to **`FSFileRegistry`**.
+3. **Collect signatures** on placed fields; each completion is validated and relayed to **`FSEnvelopeRegistry`**.
 4. **Export proof** as a compliance bundle or proof packet PDF whenever you need an audit trail.
 5. **Attach payouts** so signing conditions can trigger a direct transfer. No custodial escrow.
 

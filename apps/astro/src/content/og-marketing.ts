@@ -70,7 +70,7 @@ export const MARKETING_OG_PAGES = {
 	"blog-introduction": {
 		title: "Introducing Filosign - Filosign Blog",
 		description:
-			"Private agreement workflows with E2EE documents, FSFileRegistry proof on Base, proof packets, and attached payouts.",
+			"Private agreement workflows with E2EE documents, FSEnvelopeRegistry proof on Base, proof packets, and attached payouts.",
 	},
 	"blog-future-of-digital-agreements": {
 		title:
@@ -88,7 +88,7 @@ export const MARKETING_OG_PAGES = {
 		title:
 			"Inside Filosign's Signing Flow: Infrastructure Built for Legal Certainty - Filosign Blog",
 		description:
-			"Placement manifests, Merkle proofs, compliance bundles, and FSFileRegistry attestations for independently verifiable signing evidence.",
+			"Placement manifests, Merkle proofs, compliance bundles, and FSEnvelopeRegistry attestations for independently verifiable signing evidence.",
 	},
 	"blog-milestone-payments-non-custodial-settlement": {
 		title:

@@ -79,7 +79,9 @@ export function AddSignDraftActions() {
 	const badgeLabel = formatCommentBadgeCount(commentCount);
 
 	const planId = entitlements?.planId;
-	const showComments = planId && planId !== "free" && planId !== "individual";
+	const showComments = Boolean(
+		entitlements?.features["features.draft_comments"]?.enabled,
+	);
 
 	useEffect(() => {
 		if (needsDraftCrypto && cryptoRequired.needsRecovery) {

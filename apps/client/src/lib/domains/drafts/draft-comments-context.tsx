@@ -9,8 +9,9 @@ import { useStorePersist } from "@/src/lib/filosign/use-store";
 /** Encrypted comment count for badges - avoids decrypting every comment. */
 export function useDraftCommentCount(draftId: string | undefined) {
 	const { data: entitlements } = useEntitlements();
-	const planId = entitlements?.planId;
-	const showComments = planId && planId !== "free" && planId !== "individual";
+	const showComments = Boolean(
+		entitlements?.features["features.draft_comments"]?.enabled,
+	);
 
 	const list = useDraftCommentsList(draftId, {
 		enabled: Boolean(showComments),

@@ -54,8 +54,8 @@ export function MembersSection(props: { onInviteClick?: () => void }) {
 	return (
 		<WorkspaceSection
 			icon={<UsersIcon className="size-4" aria-hidden="true" />}
-			title={`Members [ ${members.length} total ]`}
-			description="Everyone with access to this workspace. Pending invites count toward your paid seat limit."
+			title={`Team Members`}
+			description="Everyone with access to this workspace. Pending invites count toward your paid seat limit until they are rejected or revoked."
 			headerAside={
 				canInviteMembers && props.onInviteClick ? (
 					<Button

@@ -20,4 +20,6 @@ export type SettlementAttachmentDraft = {
 	/** When releaseType is specific_signer - normalized email. */
 	specificSignerEmail?: string;
 	thresholdN?: number;
+	/** Unix seconds for on-chain expiresAt; unset = no expiry. */
+	expiresAtUnix?: number;
 };

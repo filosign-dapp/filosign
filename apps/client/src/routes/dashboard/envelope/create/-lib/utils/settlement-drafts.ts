@@ -69,5 +69,6 @@ export function buildDraftFromRecipient(
 		specificSignerEmail: patch.specificSignerEmail,
 		thresholdN: patch.thresholdN,
 		recipientWallet: patch.recipientWallet,
+		expiresAtUnix: patch.expiresAtUnix,
 	};
 }

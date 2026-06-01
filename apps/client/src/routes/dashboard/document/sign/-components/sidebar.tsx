@@ -9,7 +9,9 @@ import { defaultChain } from "@/src/constants";
 import { Button } from "@/src/lib/components/ui/button";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
 import { cn } from "@/src/lib/utils";
+import { ConditionalAttachmentsPanel } from "@/src/routes/dashboard/document/sign/-components/conditional-attachments-panel";
 import { SettlementStatusPanel } from "@/src/routes/dashboard/document/sign/-components/settlement-status-panel";
+import { SignEnvelopeProgressBanner } from "@/src/routes/dashboard/document/sign/-components/sign-envelope-progress";
 import {
 	useSignFile,
 	useSignIdentity,
@@ -53,6 +55,9 @@ export function SignDocumentSidebar() {
 	const signers = file?.signers ?? [];
 	const signatures = file?.signatures;
 	const viewers = file?.viewers;
+	const envelopeProgress = file?.envelopeProgress;
+	const canSignByRouting = file?.participantAccess?.canSignByRouting;
+
 	return (
 		<aside className="hidden lg:block w-72 border-l border-border bg-background overflow-y-auto">
 			<div className="p-4 space-y-4">
@@ -61,28 +66,10 @@ export function SignDocumentSidebar() {
 					Signature Status
 				</h3>
 
-				<div className="flex items-center justify-between text-sm">
-					<span className="text-muted-foreground">Progress</span>
-					{file ? (
-						<span className="font-medium">
-							{signatures?.length || 0} of {signers.length} signed
-						</span>
-					) : (
-						<Skeleton className="h-4 w-14" />
-					)}
-				</div>
-				<div className="h-2 bg-muted rounded-full overflow-hidden">
-					{file ? (
-						<div
-							className="h-full bg-chart-2 transition-all duration-500"
-							style={{
-								width: `${signers.length ? ((signatures?.length || 0) / signers.length) * 100 : 0}%`,
-							}}
-						/>
-					) : (
-						<Skeleton className="h-full w-full" />
-					)}
-				</div>
+				<SignEnvelopeProgressBanner
+					progress={envelopeProgress}
+					canSignByRouting={canSignByRouting}
+				/>
 
 				{(canSign || alreadySigned) && myPlacementFields.length > 0 && (
 					<div className="space-y-2 rounded-lg border border-border bg-muted/25 p-3">
@@ -240,7 +227,7 @@ export function SignDocumentSidebar() {
 								className="h-8 text-xs"
 								onClick={() => setAttachDialogOpen(true)}
 							>
-								Attach payout
+								Add payout
 							</Button>
 						) : null}
 						{canManageSettlements ? (
@@ -251,10 +238,16 @@ export function SignDocumentSidebar() {
 								className="h-8 text-xs"
 								onClick={() => setAmendDialogOpen(true)}
 							>
-								Amend signer
+								Change signer
 							</Button>
 						) : null}
 					</div>
+				) : null}
+
+				{isSender ? (
+					<ConditionalAttachmentsPanel
+						packets={file?.conditionalAttachmentPackets}
+					/>
 				) : null}
 
 				<SettlementStatusPanel

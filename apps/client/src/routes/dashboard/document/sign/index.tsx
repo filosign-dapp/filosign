@@ -2,6 +2,7 @@ import { FileTextIcon } from "@phosphor-icons/react";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { z } from "zod";
 import { RoutePendingFallback } from "@/src/lib/components/app/suspense";
+import { EntitlementUpgradeProvider } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
 import { SignDocumentPage } from "./-components/page";
 import { SignInviteUnlockRoutePage } from "./-components/sign-invite-unlock-page";
 import { SignPieceFileProvider } from "./-lib/context/sign-piece-file-context";
@@ -48,6 +49,10 @@ export const Route = createFileRoute("/dashboard/document/sign/")({
 		pieceCid: z.string().optional().default(""),
 		invite: z.string().optional().default(""),
 	}),
-	component: SignDocumentRoutePage,
+	component: () => (
+		<EntitlementUpgradeProvider>
+			<SignDocumentRoutePage />
+		</EntitlementUpgradeProvider>
+	),
 	pendingComponent: RoutePendingFallback,
 });

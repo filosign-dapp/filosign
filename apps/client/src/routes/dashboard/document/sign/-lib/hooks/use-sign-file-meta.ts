@@ -1,4 +1,9 @@
 import { useFileInfo } from "@filosign/react/files";
+import { useUserProfile } from "@filosign/react/users";
+import {
+	normalizePlacementRecipientEmail,
+	zPlacementManifest,
+} from "@filosign/shared";
 import { useMemo } from "react";
 import { defaultChain } from "@/src/constants";
 import { useOptionalSignPieceFile } from "@/src/routes/dashboard/document/sign/-lib/context/sign-piece-file-context";
@@ -28,6 +33,8 @@ export function useSignSigningMeta(
 	file: ReturnType<typeof useSignFileMeta>["file"],
 	signerAddress: `0x${string}` | undefined,
 ) {
+	const { data: userProfile } = useUserProfile();
+
 	const mySignature = useMemo(() => {
 		if (!signerAddress || !file?.signatures?.length) return undefined;
 		return file.signatures.find(
@@ -53,7 +60,27 @@ export function useSignSigningMeta(
 			signerAddress.toLowerCase() === file.sender.toLowerCase(),
 	);
 
-	const canSign = Boolean(signerAddress && file && !alreadySigned && !isSender);
+	const senderHasAssignedFields = useMemo(() => {
+		if (!isSender || file?.placementManifest == null) return false;
+		const parsed = zPlacementManifest.safeParse(file.placementManifest);
+		if (!parsed.success) return false;
+		const profileEmail = userProfile?.email?.trim();
+		if (!profileEmail) return false;
+		const normalized = normalizePlacementRecipientEmail(profileEmail);
+		return parsed.data.fields.some(
+			(field) => field.assignedRecipientEmail === normalized,
+		);
+	}, [isSender, file?.placementManifest, userProfile?.email]);
+
+	const serverCanSign = file?.participantAccess?.canSign;
+	const canSign = Boolean(
+		signerAddress &&
+			file &&
+			!alreadySigned &&
+			(serverCanSign !== undefined
+				? serverCanSign
+				: !isSender || senderHasAssignedFields),
+	);
 
 	return {
 		mySignature,

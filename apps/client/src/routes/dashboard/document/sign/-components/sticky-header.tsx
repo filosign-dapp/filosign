@@ -33,6 +33,7 @@ import {
 	useSignSigning,
 	useSignViewer,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
+import { canEnableSignSubmit } from "@/src/routes/dashboard/document/sign/-lib/utils/sign-submit-eligibility";
 
 export function SignDocumentStickyHeader() {
 	const { navigate } = useSignNavigation();
@@ -54,8 +55,13 @@ export function SignDocumentStickyHeader() {
 	} = useSignViewer();
 	const { canSubmitPlacementSign } = useSignPlacement();
 	const docReady = Boolean(fileData) && !docCanvasBusy;
-	const hasViewed = Boolean(file?.participantAccess?.firstViewedAt);
-	const canSubmitSign = canSubmitPlacementSign && docReady && hasViewed;
+	const canSubmitSign = canEnableSignSubmit({
+		canSubmitPlacementSign,
+		docReady,
+		firstViewedAt: file?.participantAccess?.firstViewedAt,
+		isSender,
+		serverCanSign: file?.participantAccess?.canSign,
+	});
 	const {
 		pdfExportBusy,
 		handleDownload,

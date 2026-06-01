@@ -95,6 +95,11 @@ function SignSettlementDialogs() {
 				open={settlements.attachDialogOpen}
 				onOpenChange={settlements.setAttachDialogOpen}
 				payees={settlements.attachPayeeOptions}
+				signerEmails={
+					file?.signers
+						?.map((s) => s.email)
+						.filter((e): e is string => Boolean(e)) ?? []
+				}
 				onConfirm={settlements.onConfirmAttachSettlement}
 				pending={settlements.attachPending}
 			/>

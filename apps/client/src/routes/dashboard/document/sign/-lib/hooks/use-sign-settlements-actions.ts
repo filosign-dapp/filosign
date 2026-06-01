@@ -71,7 +71,7 @@ export function useSignSettlementsActions(
 				const result = await trySettleSettlement.mutateAsync(input);
 				if (result.status === "partial") {
 					toast.message(
-						"Some payout legs were paid. Retry to complete remaining legs.",
+						"Part of this payout went through. Tap Pay now again for the rest.",
 					);
 				}
 			} catch (err) {
@@ -157,7 +157,7 @@ export function useSignSettlementsActions(
 				await amendSigner.mutateAsync(args);
 			} catch (err) {
 				toast.error(
-					err instanceof Error ? err.message : "Could not amend signer",
+					err instanceof Error ? err.message : "Could not change signer",
 				);
 			}
 		},
@@ -182,6 +182,7 @@ export function useSignSettlementsActions(
 		const options: {
 			wallet: `0x${string}`;
 			label: string;
+			email?: string | null;
 			recipientSource: SettlementRecipientSource;
 		}[] = [];
 		for (const signer of file.signers ?? []) {
@@ -189,6 +190,7 @@ export function useSignSettlementsActions(
 			options.push({
 				wallet,
 				label: signer.name || signer.email || wallet,
+				email: signer.email,
 				recipientSource: "signer",
 			});
 		}

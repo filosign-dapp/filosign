@@ -1,0 +1,20 @@
+---
+code: SIGNING.VIEW_BEFORE_SIGN
+title: Open the document first
+description: Wait for the document to load on the sign page before you tap Sign.
+---
+
+## Why you see this
+
+The server has no view timestamp for you yet, or signing was attempted before the view was recorded. Views are created when the document **loads** after you accept the file (see `recordView` on the sign page), not from scrolling each PDF page.
+
+## What to do
+
+1. Tap **Accept file** if the sign page still shows the acceptance screen.
+2. Wait until the PDF renders (unlock crypto keys if asked).
+3. Complete any required fields on the PDF (tap fields marked **Req** until they show **Done**).
+4. Tap **Sign**, then confirm in the signing dialog.
+
+## Still stuck?
+
+If the PDF never loads, check wallet unlock or recovery phrase errors on the page. Contact support with your invite link if loading fails repeatedly.

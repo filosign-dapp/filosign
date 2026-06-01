@@ -1,42 +1,19 @@
-import {
-	type DocumentViewSource,
-	documentViewSources,
-	FILE_ACK_INTENT_VERSION_V1,
-	hashAuthSubjectCommitment,
-	hashNormalizedSignerEmail,
-	normalizePlacementRecipientEmail,
-	zPlacementManifest,
-} from "@filosign/shared";
-import { zHexString } from "@filosign/shared/zod";
+import { type DocumentViewSource, documentViewSources } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
-import { primaryEmailForWallet } from "@/lib/domains/files/file-invites";
-import {
-	getValidAck,
-	requireAckForParticipantAccess,
-} from "@/lib/domains/files/utils/participant-access";
-import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs";
+import { requireAckForParticipantAccess } from "@/lib/domains/files/utils/participant-access";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
 import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
-import { fsEnvelopeRegistryAt } from "@/lib/platform/evm";
-import { bucket } from "@/lib/platform/s3/client";
 import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
 
 export { pieceComplianceBundle } from "./utils/piece-compliance";
 export { pieceDetail } from "./utils/piece-detail";
 
-const {
-	files,
-	fileAcknowledgements,
-	fileDocumentViews,
-	fileParticipants,
-	fileSignerDrafts,
-	users,
-} = db.schema;
+const { fileDocumentViews, fileParticipants } = db.schema;
 
 const zRecordViewBody = z.object({
 	source: z.enum(documentViewSources).optional(),

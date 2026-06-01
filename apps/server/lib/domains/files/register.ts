@@ -34,7 +34,7 @@ import { resolveRegisterRoutingCalldata } from "./utils/register-routing";
 
 const { FSEnvelopeRegistry } = fsContracts;
 
-const { files, users } = db.schema;
+const { users } = db.schema;
 
 export const zFileRegisterBody = z.object({
 	pieceCid: z.string({ error: "pieceCid invalid" }),

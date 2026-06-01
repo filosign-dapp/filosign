@@ -83,9 +83,7 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 	const rosterPerson = (p: (typeof participants)[number]) => ({
 		wallet: getAddress(p.wallet),
 		name:
-			[p.firstName, p.lastName].filter(Boolean).join(" ") ||
-			p.username ||
-			null,
+			[p.firstName, p.lastName].filter(Boolean).join(" ") || p.username || null,
 		email: p.email || null,
 	});
 

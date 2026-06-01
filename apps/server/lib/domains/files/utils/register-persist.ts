@@ -1,4 +1,4 @@
-import type { PlacementManifest } from "@filosign/shared";
+import type { PlacementManifest, RegisterRoutingInput } from "@filosign/shared";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import { inviteExpiresAt } from "@/lib/domains/invites";
@@ -16,6 +16,7 @@ export async function persistRegisteredFileInDb(args: {
 	registryAddress: Address;
 	placementCommitment: `0x${string}`;
 	placementManifest: PlacementManifest;
+	registerRouting?: RegisterRoutingInput;
 	warmParticipantCount: number;
 	coldInviteCount: number;
 	signerSlotCount: number;
@@ -54,6 +55,7 @@ export async function persistRegisteredFileInDb(args: {
 				registryAddress: args.registryAddress,
 				placementCommitment: args.placementCommitment,
 				placementManifestJson: args.placementManifest,
+				registerRoutingJson: args.registerRouting ?? null,
 				warmParticipantCount: args.warmParticipantCount,
 				coldInviteCount: args.coldInviteCount,
 				signerSlotCount: args.signerSlotCount,

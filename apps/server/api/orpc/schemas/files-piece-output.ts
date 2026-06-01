@@ -14,6 +14,20 @@ const participantAccessSchema = z.object({
 	firstViewedAt: z.string().nullable(),
 	canDecrypt: z.boolean(),
 	canSign: z.boolean(),
+	canSignByRouting: z.boolean().optional(),
+});
+
+const envelopeProgressSchema = z.object({
+	routingMode: z.number().int(),
+	requiredSignersCount: z.number().int(),
+	requiredSignaturesCount: z.number().int(),
+	optionalSignersCount: z.number().int(),
+	optionalSignaturesCount: z.number().int(),
+	quorumN: z.number().int(),
+	allRequiredSigned: z.boolean(),
+	allSigned: z.boolean(),
+	quorumMet: z.boolean(),
+	nextSignerEmail: z.string().nullable(),
 });
 
 export const rpcPieceDetailOutputSchema = z.object({
@@ -35,6 +49,19 @@ export const rpcPieceDetailOutputSchema = z.object({
 		}),
 	),
 	participantAccess: participantAccessSchema,
+	envelopeProgress: envelopeProgressSchema.nullable().optional(),
+	conditionalAttachmentPackets: z
+		.array(
+			z.object({
+				packetId: z.string(),
+				label: z.string().nullable(),
+				onChainRuleId: z.string(),
+				releaseContractAddress: zHexString(),
+				released: z.boolean(),
+				cancelled: z.boolean(),
+			}),
+		)
+		.optional(),
 	kemCiphertext: zHexString().nullable(),
 	encryptedEncryptionKey: zHexString().nullable(),
 	organizationId: z.string().uuid().nullable().optional(),

@@ -27,4 +27,13 @@ describe("participant-access", () => {
 		const sign = new Date("2026-01-01T00:03:00.000Z");
 		expect(() => assertSignOrdering(ack, view, sign)).toThrow();
 	});
+
+	test("assertSignOrdering rejects sign before view (stale chain timestamp case)", () => {
+		const ack = new Date("2026-01-01T00:00:00.000Z");
+		const view = new Date("2026-01-01T00:01:00.000Z");
+		const staleChainSignAt = new Date("2026-01-01T00:00:30.000Z");
+		expect(() => assertSignOrdering(ack, view, staleChainSignAt)).toThrow(
+			/Document must be viewed before signing/,
+		);
+	});
 });

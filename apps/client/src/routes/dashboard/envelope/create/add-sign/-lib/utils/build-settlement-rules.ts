@@ -33,6 +33,7 @@ function draftToRule(
 		tokenAddress: token.address,
 		releaseType,
 		releaseParams: buildReleaseParamsFromDraft(draft, recipients),
+		expiresAt: draft.expiresAtUnix ? BigInt(draft.expiresAtUnix) : undefined,
 		legs: [draftToLeg(draft)],
 	};
 }
@@ -80,6 +81,9 @@ export function buildSettlementRulesForSend(args: {
 				tokenAddress: token.address,
 				releaseType: first.releaseType,
 				releaseParams: buildReleaseParamsFromDraft(first, args.recipients),
+				expiresAt: first.expiresAtUnix
+					? BigInt(first.expiresAtUnix)
+					: undefined,
 				legs: resolved.map(draftToLeg),
 			},
 		];
@@ -91,9 +95,7 @@ export function buildSettlementRulesForSend(args: {
 			(isAdvancedSettlementReleaseType(draft.releaseType) ||
 				resolved.length > 1)
 		) {
-			throw new Error(
-				"Advanced settlement rules require a Teams Pro plan or higher.",
-			);
+			throw new Error("These payout options need Teams Pro or Enterprise.");
 		}
 		return draftToRule(draft, args.recipients);
 	});

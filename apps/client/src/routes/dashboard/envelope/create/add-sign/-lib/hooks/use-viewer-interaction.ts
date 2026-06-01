@@ -1,58 +1,46 @@
 import type * as React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { constrainFieldTopLeft } from "@/src/lib/domains/files/placement-viewport";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { defaultPlacementFieldRect } from "@/src/lib/domains/files/field-box";
+import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-canvas-context";
 import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
 import type {
 	Document,
 	SignatureField,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 import { isPdfDocument } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/document-kind";
-import { signatureFieldBoxCssPx } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-box";
+import {
+	clampFieldAtPoint,
+	clientPointToPageCoords,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
 
 type UseDocumentViewerInteractionArgs = {
 	document: Document | null;
-	zoom: number;
 	documentPage: number;
 	isPlacingField: boolean;
-	signatureFields: SignatureField[];
-	onFieldPlacementRequest: (coords: {
-		x: number;
-		y: number;
-		page: number;
-	}) => void;
+	pendingFieldType: SignatureField["type"] | null;
+	onPlaceAtCoords: (coords: { x: number; y: number; page: number }) => void;
 	onPdfPageChange?: (page: number) => void;
-	onFieldSelect: (fieldId: string) => void;
-	onFieldUpdate: (fieldId: string, updates: Partial<SignatureField>) => void;
+	onFieldSelect: (fieldId: string, options?: { additive?: boolean }) => void;
+	onCanvasDeselect: () => void;
 	placementDocHeight?: number;
 	onPdfPageLayoutLoaded?: (layout: { width: number; height: number }) => void;
 };
 
 export function useDocumentViewerInteraction({
 	document,
-	zoom,
 	documentPage,
 	isPlacingField,
-	signatureFields,
-	onFieldPlacementRequest,
+	pendingFieldType,
+	onPlaceAtCoords,
 	onPdfPageChange,
 	onFieldSelect,
-	onFieldUpdate,
+	onCanvasDeselect,
 	placementDocHeight,
 	onPdfPageLayoutLoaded,
 }: UseDocumentViewerInteractionArgs) {
-	const [isDragging, setIsDragging] = useState(false);
-	const [dragPreview, setDragPreview] = useState<{
-		fieldId: string;
-		x: number;
-		y: number;
-	} | null>(null);
-	const dragPreviewRef = useRef<{
-		fieldId: string;
-		x: number;
-		y: number;
-	} | null>(null);
 	const [pdfPageNumber, setPdfPageNumber] = useState(1);
 	const [pdfNumPages, setPdfNumPages] = useState<number | null>(null);
+	const { setPageEl, pageRef } = usePlacementCanvas();
 
 	const {
 		width: documentWidth,
@@ -60,19 +48,7 @@ export function useDocumentViewerInteraction({
 		margin,
 		isMobile,
 	} = useDocumentDimensions();
-	const { width: fieldWidth, height: fieldHeight } =
-		signatureFieldBoxCssPx(isMobile);
 	const effectiveDocHeight = placementDocHeight ?? documentHeight;
-
-	const documentRef = useRef<HTMLDivElement>(null);
-	const dragDataRef = useRef({
-		startX: 0,
-		startY: 0,
-		fieldX: 0,
-		fieldY: 0,
-		fieldId: "",
-	});
-	const lastUpdateRef = useRef(0);
 
 	const isPdf = Boolean(
 		document &&
@@ -93,154 +69,53 @@ export function useDocumentViewerInteraction({
 
 	const handleDocumentClick = useCallback(
 		(event: React.MouseEvent) => {
-			if (!isPlacingField) return;
+			if (!isPlacingField || !pendingFieldType) {
+				onCanvasDeselect();
+				return;
+			}
 
-			const documentRect = documentRef.current?.getBoundingClientRect();
-			if (!documentRect) return;
+			const defaults = defaultPlacementFieldRect(pendingFieldType, isMobile);
+			const raw = clientPointToPageCoords(
+				event.clientX,
+				event.clientY,
+				pageRef.current,
+				defaults,
+				{ anchor: "top-left" },
+			);
+			if (!raw) return;
 
-			const x = (event.clientX - documentRect.left) / (zoom / 100);
-			const y = (event.clientY - documentRect.top) / (zoom / 100);
-
-			const { x: boundedX, y: boundedY } = constrainFieldTopLeft({
-				x,
-				y,
+			const viewport = {
 				docWidth: documentWidth,
 				docHeight: effectiveDocHeight,
-				fieldWidth,
-				fieldHeight,
 				margin,
-			});
-
+			};
+			const { x, y } = clampFieldAtPoint(raw.x, raw.y, defaults, viewport);
 			const page = isPdf ? pdfPageNumber : documentPage;
-			onFieldPlacementRequest({ x: boundedX, y: boundedY, page });
+			onPlaceAtCoords({ x, y, page });
 		},
 		[
 			isPlacingField,
-			onFieldPlacementRequest,
-			zoom,
+			pendingFieldType,
+			onPlaceAtCoords,
+			onCanvasDeselect,
 			documentWidth,
 			effectiveDocHeight,
-			fieldWidth,
-			fieldHeight,
 			margin,
+			isMobile,
 			isPdf,
 			pdfPageNumber,
 			documentPage,
+			pageRef,
 		],
 	);
 
 	const handleFieldClick = useCallback(
 		(fieldId: string, event: React.MouseEvent) => {
 			event.stopPropagation();
-			onFieldSelect(fieldId);
+			onFieldSelect(fieldId, { additive: event.shiftKey });
 		},
 		[onFieldSelect],
 	);
-
-	const handleFieldMouseDown = useCallback(
-		(fieldId: string, event: React.MouseEvent) => {
-			event.stopPropagation();
-
-			const field = signatureFields.find((f) => f.id === fieldId);
-			if (!field) return;
-
-			dragDataRef.current = {
-				startX: event.clientX,
-				startY: event.clientY,
-				fieldX: field.x,
-				fieldY: field.y,
-				fieldId,
-			};
-
-			setIsDragging(true);
-			onFieldSelect(fieldId);
-		},
-		[signatureFields, onFieldSelect],
-	);
-
-	const handleMouseMove = useCallback(
-		(event: MouseEvent) => {
-			if (!isDragging) return;
-
-			const now = performance.now();
-			if (now - lastUpdateRef.current < 16) return;
-			lastUpdateRef.current = now;
-
-			const documentRect = documentRef.current?.getBoundingClientRect();
-			if (!documentRect) return;
-
-			const dragData = dragDataRef.current;
-			const deltaX = (event.clientX - dragData.startX) / (zoom / 100);
-			const deltaY = (event.clientY - dragData.startY) / (zoom / 100);
-
-			const { x: newX, y: newY } = constrainFieldTopLeft({
-				x: dragData.fieldX + deltaX,
-				y: dragData.fieldY + deltaY,
-				docWidth: documentWidth,
-				docHeight: effectiveDocHeight,
-				fieldWidth,
-				fieldHeight,
-				margin,
-			});
-
-			const next = {
-				fieldId: dragData.fieldId,
-				x: newX,
-				y: newY,
-			};
-			dragPreviewRef.current = next;
-			setDragPreview(next);
-		},
-		[
-			isDragging,
-			zoom,
-			documentWidth,
-			effectiveDocHeight,
-			fieldWidth,
-			fieldHeight,
-			margin,
-		],
-	);
-
-	const handleMouseUp = useCallback(() => {
-		const preview = dragPreviewRef.current;
-		if (preview) {
-			onFieldUpdate(preview.fieldId, { x: preview.x, y: preview.y });
-		}
-		setIsDragging(false);
-		setDragPreview(null);
-		dragPreviewRef.current = null;
-		dragDataRef.current = {
-			startX: 0,
-			startY: 0,
-			fieldX: 0,
-			fieldY: 0,
-			fieldId: "",
-		};
-	}, [onFieldUpdate]);
-
-	const displaySignatureFields = useMemo(() => {
-		if (!dragPreview) return signatureFields;
-		return signatureFields.map((field) =>
-			field.id === dragPreview.fieldId
-				? { ...field, x: dragPreview.x, y: dragPreview.y }
-				: field,
-		);
-	}, [signatureFields, dragPreview]);
-
-	useEffect(() => {
-		if (!isDragging) return;
-
-		const handleGlobalMouseMove = (event: MouseEvent) => handleMouseMove(event);
-		const handleGlobalMouseUp = () => handleMouseUp();
-
-		window.addEventListener("mousemove", handleGlobalMouseMove);
-		window.addEventListener("mouseup", handleGlobalMouseUp);
-		return () => {
-			window.removeEventListener("mousemove", handleGlobalMouseMove);
-			window.removeEventListener("mouseup", handleGlobalMouseUp);
-		};
-	}, [isDragging, handleMouseMove, handleMouseUp]);
 
 	const goToPreviousPdfPage = useCallback(() => {
 		setPdfPageNumber((p) => {
@@ -258,30 +133,38 @@ export function useDocumentViewerInteraction({
 		});
 	}, [onPdfPageChange, pdfNumPages]);
 
+	const setPdfPage = useCallback(
+		(page: number) => {
+			const n =
+				pdfNumPages == null
+					? Math.max(1, page)
+					: Math.min(Math.max(1, page), pdfNumPages);
+			setPdfPageNumber(n);
+			onPdfPageChange?.(n);
+		},
+		[onPdfPageChange, pdfNumPages],
+	);
+
 	const handlePdfNumPagesLoaded = useCallback((n: number) => {
 		setPdfNumPages(n);
 		setPdfPageNumber((prev) => Math.min(prev, n));
 	}, []);
 
 	return {
-		displaySignatureFields,
-		documentRef,
+		setPageEl,
 		documentWidth,
 		documentHeight: effectiveDocHeight,
 		onPdfPageLayoutLoaded,
 		margin,
 		isMobile,
-		fieldWidth,
-		fieldHeight,
 		isPdfDocument: isPdf,
-		isPlacingField,
 		pdfPageNumber,
 		pdfNumPages,
 		goToPreviousPdfPage,
 		goToNextPdfPage,
+		setPdfPage,
 		handlePdfNumPagesLoaded,
 		handleDocumentClick,
 		handleFieldClick,
-		handleFieldMouseDown,
 	};
 }

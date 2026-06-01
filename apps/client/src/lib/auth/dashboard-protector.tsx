@@ -14,6 +14,7 @@ import {
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { Loader } from "@/src/lib/components/ui/loader";
+import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { hydrationMark } from "@/src/lib/utils/hydration-lifecycle";
 import { useSessionGateDerived, useSessionGateFlags } from "./use-session-gate";
@@ -36,15 +37,16 @@ function WorkspaceSetupGate() {
 				? `${userProfile.firstName}'s Workspace`
 				: "My Workspace");
 		try {
-			const res = await createOrg.mutateAsync({ name: orgName });
+			const res = await createOrg.mutateAsync(
+				{ name: orgName },
+				suppressGlobalErrorToast(),
+			);
 			if (res?.organization?.id) {
 				setActiveOrg(res.organization.id);
 				toast.success("Workspace created successfully!");
 			}
 		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to create workspace",
-			);
+			showAppErrorToast(err);
 		}
 	};
 

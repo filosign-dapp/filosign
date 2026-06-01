@@ -180,11 +180,7 @@ function CreateWorkspaceDialog(props: {
 				props.onOpenChange(false);
 				setName("");
 			}
-		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to create workspace",
-			);
-		}
+		} catch {}
 	};
 
 	return (
@@ -244,11 +240,7 @@ function InviteTeammateDialog(props: {
 			toast.success("Teammate invited successfully!");
 			setEmail("");
 			props.onOpenChange(false);
-		} catch (err) {
-			toast.error(
-				err instanceof Error ? err.message : "Failed to invite teammate",
-			);
-		}
+		} catch {}
 	};
 
 	return (

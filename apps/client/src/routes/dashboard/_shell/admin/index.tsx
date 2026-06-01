@@ -17,6 +17,7 @@ import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 import { Input } from "@/src/lib/components/ui/input";
+import { formatInlineAppError } from "@/src/lib/errors";
 import { cn } from "@/src/lib/utils/index";
 
 export const Route = createFileRoute("/dashboard/_shell/admin/")({
@@ -105,6 +106,7 @@ function AdminPage() {
 	});
 
 	const createInvite = useMutation({
+		meta: { suppressErrorToast: true },
 		mutationFn: () =>
 			rpc.platformAdmin.invites.create({
 				kind: "partner_trial",
@@ -124,7 +126,7 @@ function AdminPage() {
 			setEmailLock("");
 		},
 		onError: (err) => {
-			setError(err instanceof Error ? err.message : "Failed to create invite");
+			setError(formatInlineAppError(err));
 		},
 	});
 
@@ -163,6 +165,7 @@ function AdminPage() {
 	});
 
 	const approveSettlementAccess = useMutation({
+		meta: { suppressErrorToast: true },
 		mutationFn: (organizationId: string) =>
 			rpc.platformAdmin.settlementFeatureAccess.approve({
 				organizationId,
@@ -176,13 +179,12 @@ function AdminPage() {
 			setNote("");
 		},
 		onError: (err) => {
-			setError(
-				err instanceof Error ? err.message : "Failed to approve payout access",
-			);
+			setError(formatInlineAppError(err));
 		},
 	});
 
 	const rejectSettlementAccess = useMutation({
+		meta: { suppressErrorToast: true },
 		mutationFn: (organizationId: string) =>
 			rpc.platformAdmin.settlementFeatureAccess.reject({
 				organizationId,
@@ -196,9 +198,7 @@ function AdminPage() {
 			setNote("");
 		},
 		onError: (err) => {
-			setError(
-				err instanceof Error ? err.message : "Failed to reject payout access",
-			);
+			setError(formatInlineAppError(err));
 		},
 	});
 

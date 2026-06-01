@@ -6,9 +6,9 @@ import { useAuthedApi } from "@filosign/react/auth";
 import { useCreateOrganization } from "@filosign/react/orgs";
 import { useUpdateUserProfile } from "@filosign/react/users";
 import { useNavigate } from "@tanstack/react-router";
-import { toast } from "sonner";
 import type { ColdInviteEntrySearch } from "@/src/lib/domains/invites/cold-invite-search";
 import { signDocumentSearchFromColdEntry } from "@/src/lib/domains/invites/cold-invite-search";
+import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { logger } from "@/src/lib/utils/logger";
@@ -40,7 +40,10 @@ export function useOnboardingComplete() {
 
 			try {
 				const orgName = `${firstName}'s Workspace`;
-				const created = await createOrg.mutateAsync({ name: orgName });
+				const created = await createOrg.mutateAsync(
+					{ name: orgName },
+					suppressGlobalErrorToast(),
+				);
 				if (created?.organization?.id) {
 					setActiveOrg(created.organization.id);
 				} else {
@@ -48,11 +51,7 @@ export function useOnboardingComplete() {
 				}
 			} catch (error) {
 				logger.error("Failed to automate default workspace creation:", error);
-				toast.error(
-					error instanceof Error
-						? `Workspace setup failed: ${error.message}`
-						: "Workspace setup failed. Please try again.",
-				);
+				showAppErrorToast(error);
 				return;
 			}
 

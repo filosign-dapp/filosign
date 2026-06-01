@@ -8,6 +8,8 @@ const parsedEnv = createEnv({
 		VITE_DEPLOYMENT: z.enum(DEPLOYMENTS),
 		VITE_CHAIN: z.enum(["local", "testnet", "mainnet"]),
 		VITE_THIRDWEB_CLIENT_ID: z.string().min(1),
+		/** Production mainnet primary JSON-RPC for reads; ignored on other deployments. */
+		VITE_CHAIN_RPC_URL: z.url().optional(),
 		VITE_SERVER_URL: z.url(),
 		VITE_ASTRO_URL: z.url(),
 		VITE_CLIENT_URL: z.url(),

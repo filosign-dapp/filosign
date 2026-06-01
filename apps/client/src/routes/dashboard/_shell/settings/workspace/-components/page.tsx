@@ -1,3 +1,4 @@
+import { useEntitlements } from "@filosign/react/billing";
 import {
 	useCreateOrganization,
 	useInviteOrgMember,
@@ -21,6 +22,7 @@ import {
 } from "@/src/lib/components/ui/dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
@@ -244,8 +246,22 @@ function WorkspaceDetailsSection() {
 
 export function WorkspaceSettingsPage() {
 	const { activeOrgId, canInviteMembers } = useWorkspaceSettings();
+	const { data: entitlements } = useEntitlements();
 	const [isInviteOpen, setIsInviteOpen] = useState(false);
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
+	const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+	const hasCollaboration = Boolean(
+		entitlements?.features["features.shared_templates"]?.enabled,
+	);
+
+	const handleInviteClick = () => {
+		if (hasCollaboration) {
+			setIsInviteOpen(true);
+		} else {
+			setUpgradeOpen(true);
+		}
+	};
 
 	return (
 		<div className="mx-auto max-w-3xl space-y-8 px-6 py-8 sm:px-8">
@@ -261,7 +277,7 @@ export function WorkspaceSettingsPage() {
 								variant="primary"
 								size="sm"
 								className="gap-2 touch-manipulation"
-								onClick={() => setIsInviteOpen(true)}
+								onClick={handleInviteClick}
 							>
 								<UserPlusIcon className="size-4" aria-hidden="true" />
 								Invite teammate
@@ -288,9 +304,9 @@ export function WorkspaceSettingsPage() {
 			{activeOrgId ? (
 				<div className="space-y-6">
 					<WorkspaceDetailsSection />
-					<PayoutFeatureAccessSection />
 					<BillingSection />
-					<MembersSection onInviteClick={() => setIsInviteOpen(true)} />
+					<MembersSection onInviteClick={handleInviteClick} />
+					<PayoutFeatureAccessSection />
 				</div>
 			) : (
 				<div className="flex flex-col items-center justify-center space-y-4 rounded-xl border border-dashed border-border/80 bg-muted/10 p-12 text-center">
@@ -327,6 +343,11 @@ export function WorkspaceSettingsPage() {
 			<CreateWorkspaceDialog
 				open={isCreateOpen}
 				onOpenChange={setIsCreateOpen}
+			/>
+			<UpgradePlanDialog
+				open={upgradeOpen}
+				onOpenChange={setUpgradeOpen}
+				reason="features.shared_templates"
 			/>
 		</div>
 	);

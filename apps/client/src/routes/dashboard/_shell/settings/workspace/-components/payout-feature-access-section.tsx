@@ -1,4 +1,4 @@
-import { SETTLEMENT_FEATURE_TERMS_VERSION } from "@filosign/shared";
+import { useEntitlements } from "@filosign/react/billing";
 import { CurrencyCircleDollarIcon } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
 import { Checkbox } from "@/src/lib/components/ui/checkbox";
@@ -8,10 +8,15 @@ import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/wor
 import { usePayoutFeatureAccess } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/hooks/use-payout-feature-access";
 import { WorkspaceSection, WorkspaceSyncNotice } from "./workspace-section";
 
-const ADDENDUM_PATH = "/legal/settlement-feature-addendum";
+const ADDENDUM_PATH = `${import.meta.env.VITE_ASTRO_URL.replace(/\/$/, "")}/legal/settlement-feature-addendum`;
 
 export function PayoutFeatureAccessSection() {
+	const { data: entitlements } = useEntitlements();
 	const { activeOrgId, activeMembership } = useWorkspaceSettings();
+
+	const isTeamsProOrEnterprise =
+		entitlements?.planId === "teams_pro" ||
+		entitlements?.planId === "enterprise";
 
 	const canManage =
 		activeMembership?.role === "owner" || activeMembership?.role === "admin";
@@ -35,7 +40,7 @@ export function PayoutFeatureAccessSection() {
 		canManage,
 	});
 
-	if (!activeOrgId) return null;
+	if (!activeOrgId || !isTeamsProOrEnterprise) return null;
 
 	return (
 		<WorkspaceSection
@@ -143,8 +148,7 @@ function RequestForm(props: {
 					>
 						Settlement Feature Addendum
 					</a>{" "}
-					(version {SETTLEMENT_FEATURE_TERMS_VERSION}) on behalf of this
-					workspace.
+					on behalf of this workspace.
 				</Label>
 			</div>
 			<div className="flex items-start gap-2">
@@ -167,7 +171,7 @@ function RequestForm(props: {
 				disabled={!props.canSubmit || props.pending}
 				onClick={props.onSubmit}
 			>
-				{props.pending ? "Submitting…" : "Request payout attachment access"}
+				{props.pending ? "Submitting…" : "Request access"}
 			</Button>
 		</div>
 	);

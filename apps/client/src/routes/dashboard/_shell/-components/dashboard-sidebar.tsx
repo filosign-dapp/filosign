@@ -1,4 +1,5 @@
 import { useFilosignContext } from "@filosign/react";
+import { useEntitlements } from "@filosign/react/billing";
 import {
 	useActiveOrganization,
 	useActiveOrgId,
@@ -62,6 +63,10 @@ import {
 	useSidebar,
 } from "@/src/lib/components/ui/sidebar";
 import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
+import {
+	UpgradePlanDialog,
+	type UpgradePlanLimitReason,
+} from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { cn } from "@/src/lib/utils/index";
 
@@ -306,9 +311,18 @@ export function DashboardSidebar() {
 	const activeOrgId = useActiveOrgId();
 	const activeOrg = useActiveOrganization();
 	const setActiveOrg = useSetPersistedActiveOrganizationId();
+	const { data: entitlements } = useEntitlements();
 
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [isInviteOpen, setIsInviteOpen] = useState(false);
+	const [upgradeOpen, setUpgradeOpen] = useState(false);
+	const [upgradeReason, setUpgradeReason] = useState<UpgradePlanLimitReason>(
+		"features.shared_templates",
+	);
+
+	const hasCollaboration = Boolean(
+		entitlements?.features["features.shared_templates"]?.enabled,
+	);
 
 	const orgs = orgsData?.organizations ?? [];
 
@@ -459,7 +473,14 @@ export function DashboardSidebar() {
 							<DropdownMenuSeparator />
 							<DropdownMenuGroup>
 								<DropdownMenuItem
-									onClick={() => setIsInviteOpen(true)}
+									onClick={() => {
+										if (hasCollaboration) {
+											setIsInviteOpen(true);
+										} else {
+											setUpgradeReason("features.shared_templates");
+											setUpgradeOpen(true);
+										}
+									}}
 									className="gap-2 cursor-pointer"
 								>
 									<UserPlusIcon className="size-4" />
@@ -498,6 +519,11 @@ export function DashboardSidebar() {
 			<InviteTeammateDialog
 				open={isInviteOpen}
 				onOpenChange={setIsInviteOpen}
+			/>
+			<UpgradePlanDialog
+				open={upgradeOpen}
+				onOpenChange={setUpgradeOpen}
+				reason={upgradeReason}
 			/>
 		</>
 	);

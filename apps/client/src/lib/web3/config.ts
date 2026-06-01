@@ -1,3 +1,8 @@
+import type { ChainKey } from "@filosign/contracts";
+import {
+	resolveChainRpcHttpUrl,
+	warnIfChainRpcUrlIgnored,
+} from "@filosign/shared";
 import { createThirdwebClient } from "thirdweb";
 import { defineChain } from "thirdweb/chains";
 import type {
@@ -9,15 +14,29 @@ import type { Chain } from "viem";
 import { defaultChain } from "@/src/constants";
 import env from "@/src/env";
 
+function viteChainKey(): ChainKey {
+	if (env.VITE_CHAIN === "local") return "local";
+	if (env.VITE_CHAIN === "testnet") return "testnet";
+	return "mainnet";
+}
+
+warnIfChainRpcUrlIgnored({
+	deployment: env.VITE_DEPLOYMENT,
+	chainRpcUrl: env.VITE_CHAIN_RPC_URL,
+	envVarName: "VITE_CHAIN_RPC_URL",
+	log: (message) => console.warn(message),
+});
+
 export const thirdwebClient = createThirdwebClient({
 	clientId: env.VITE_THIRDWEB_CLIENT_ID,
 });
 
 function thirdwebChainFromViem(chain: Chain) {
-	const rpc = chain.rpcUrls.default.http[0];
-	if (!rpc) {
-		throw new Error(`Chain ${chain.id} has no default RPC URL`);
-	}
+	const rpc = resolveChainRpcHttpUrl({
+		deployment: env.VITE_DEPLOYMENT,
+		chainKey: viteChainKey(),
+		primaryUrl: env.VITE_CHAIN_RPC_URL,
+	});
 	const explorer = chain.blockExplorers?.default;
 	return defineChain({
 		id: chain.id,

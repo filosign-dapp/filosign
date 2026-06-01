@@ -2,7 +2,6 @@ import type {
 	SettlementPayoutLegStored,
 	SettlementRuleStatus,
 } from "@filosign/shared";
-import { settlementRuleTotalAmount } from "@filosign/shared";
 import { and, eq, inArray } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";

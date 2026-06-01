@@ -8,7 +8,10 @@ import { assertOrgPermission, resolveActiveOrg } from "@/lib/domains/orgs";
 import { isPlatformAdminForWallet } from "@/lib/platform/admin";
 import db from "@/lib/platform/db";
 
-const { organizationSettlementFeatureAccess, organizations } = db.schema;
+function settlementAccessSchema() {
+	const { organizationSettlementFeatureAccess, organizations } = db.schema;
+	return { organizationSettlementFeatureAccess, organizations };
+}
 
 export { SETTLEMENT_FEATURE_TERMS_VERSION };
 
@@ -31,6 +34,7 @@ export async function getOrganizationSettlementFeatureAccess(
 	) {
 		return settlementFeatureAccessApprovedForPlatformAdmin();
 	}
+	const { organizationSettlementFeatureAccess } = settlementAccessSchema();
 	const [row] = await db
 		.select({
 			status: organizationSettlementFeatureAccess.status,
@@ -100,6 +104,7 @@ export async function submitOrganizationSettlementFeatureRequest(args: {
 		});
 	}
 
+	const { organizationSettlementFeatureAccess } = settlementAccessSchema();
 	const now = new Date();
 	const [existing] = await db
 		.select({ status: organizationSettlementFeatureAccess.status })
@@ -182,6 +187,8 @@ export async function assertOrganizationSettlementFeatureApproved(
 }
 
 export async function listSettlementFeatureAccessForAdmin() {
+	const { organizationSettlementFeatureAccess, organizations } =
+		settlementAccessSchema();
 	const rows = await db
 		.select({
 			organizationId: organizationSettlementFeatureAccess.organizationId,
@@ -215,6 +222,7 @@ export async function approveOrganizationSettlementFeatureAccess(args: {
 	organizationId: string;
 	reviewNote?: string;
 }) {
+	const { organizationSettlementFeatureAccess } = settlementAccessSchema();
 	const now = new Date();
 	const updated = await db
 		.update(organizationSettlementFeatureAccess)
@@ -249,6 +257,7 @@ export async function rejectOrganizationSettlementFeatureAccess(args: {
 	organizationId: string;
 	reviewNote?: string;
 }) {
+	const { organizationSettlementFeatureAccess } = settlementAccessSchema();
 	const now = new Date();
 	const updated = await db
 		.update(organizationSettlementFeatureAccess)

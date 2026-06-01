@@ -58,7 +58,7 @@ async function assertRuleMatchesOnChain(args: {
 	rule: SettlementRuleRegistrationInput;
 }) {
 	const { validator, sender, allowedPayers, expectedCid, rule } = args;
-	const senderAddr = getAddress(sender);
+	const _senderAddr = getAddress(sender);
 
 	assertSettlementUsdcToken(rule.tokenAddress);
 

@@ -49,7 +49,7 @@ describe("settlement feature access admin", () => {
 	test("approve returns NOT_FOUND when no request row updated", async () => {
 		updateReturning = [];
 		const { approveOrganizationSettlementFeatureAccess } = await import(
-			"@/lib/domains/settlement-access"
+			"@/lib/domains/settlement-access/settlement-access"
 		);
 
 		await expect(
@@ -65,7 +65,7 @@ describe("settlement feature access admin", () => {
 	test("reject returns NOT_FOUND when no request row updated", async () => {
 		updateReturning = [];
 		const { rejectOrganizationSettlementFeatureAccess } = await import(
-			"@/lib/domains/settlement-access"
+			"@/lib/domains/settlement-access/settlement-access"
 		);
 
 		await expect(

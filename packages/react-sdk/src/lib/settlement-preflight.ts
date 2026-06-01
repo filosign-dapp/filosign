@@ -14,25 +14,23 @@ import type { FilosignWallet } from "./wallet";
 
 const SETTLEMENT_REVERT_MESSAGES: Record<string, string> = {
 	RuleNotExecutable:
-		"Payout is not ready yet. Wait for signing conditions or check that the rule has not expired.",
-	RuleAlreadyExecuted: "This payout has already been executed.",
-	RuleAlreadyCancelled: "This payout rule was cancelled.",
+		"This payout isn't ready yet. Wait until signing conditions are met, or check the cutoff date.",
+	RuleAlreadyExecuted: "This payout has already been sent.",
+	RuleAlreadyCancelled: "This payout was removed.",
 	InsufficientTransferReceived:
-		"USDC transfer failed. Check sender balance and validator allowance.",
+		"USDC didn't transfer. Check the sender's balance and wallet approval.",
 	UnauthorizedRuleRegistration:
-		"Only the payer can modify this settlement rule.",
-	InvalidPayer: "Invalid payer address for this settlement rule.",
-	InvalidAmount: "Invalid payout amount for this settlement rule.",
-	InvalidReleaseConfig:
-		"Invalid release configuration for this settlement rule.",
-	FileNotRegistered: "The linked file is not registered on-chain.",
-	ExceedsMaxLegs: "Too many payout legs for this settlement rule.",
-	ExceedsMaxCommitments:
-		"Too many signer commitments for this settlement rule.",
-	InvalidLegIndex: "Invalid payout leg index for this packet.",
-	LegAlreadyPaid: "This payout leg was already paid on-chain.",
+		"Only the person paying can change this payout.",
+	InvalidPayer: "The payer wallet for this payout isn't valid.",
+	InvalidAmount: "The payout amount isn't valid.",
+	InvalidReleaseConfig: "The pay-out-when settings aren't valid.",
+	FileNotRegistered: "This document isn't registered yet.",
+	ExceedsMaxLegs: "Too many recipients on this payout.",
+	ExceedsMaxCommitments: "Too many signers linked to this payout.",
+	InvalidLegIndex: "That recipient slot isn't valid for this payout.",
+	LegAlreadyPaid: "This recipient was already paid.",
 	PayerCannotBeRecipient:
-		"Payer wallet cannot be a payout recipient on the same leg.",
+		"The payer can't also be a recipient on the same payout.",
 };
 
 export function formatSettlementSimError(err: unknown): string {
@@ -53,7 +51,7 @@ export function formatSettlementSimError(err: unknown): string {
 			? err.message
 			: typeof err === "string"
 				? err
-				: "Settlement transaction would fail on-chain.";
+				: "This payout couldn't go through. Try again or check your wallet.";
 
 	for (const [name, friendly] of Object.entries(SETTLEMENT_REVERT_MESSAGES)) {
 		if (message.includes(name)) return friendly;
@@ -73,10 +71,13 @@ export function formatSettlementSimError(err: unknown): string {
 		return "Payout release conditions are not met yet.";
 	}
 	if (lower.includes("unauthorized")) {
-		return "You are not authorized to perform this settlement action.";
+		return "You're not allowed to do that with this payout.";
 	}
 
-	return message || "Settlement transaction would fail on-chain.";
+	return (
+		message ||
+		"This payout couldn't go through. Try again or check your wallet."
+	);
 }
 
 function publicClientFor(contracts: FilosignContracts) {

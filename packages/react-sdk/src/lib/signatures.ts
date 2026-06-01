@@ -11,12 +11,12 @@ export async function signAmendSigner(args: {
 	newCommitment: Hex;
 	timestamp: number;
 }): Promise<Hex> {
-	const nonce = await args.contracts.FSFileRegistry.read.nonce([
+	const nonce = await args.contracts.FSEnvelopeRegistry.read.nonce([
 		args.wallet.account.address,
 	]);
 	const cidIdentifier = computeCidIdentifier(args.pieceCid);
 
-	return eip712signature(args.contracts, "FSFileRegistry", {
+	return eip712signature(args.contracts, "FSEnvelopeRegistry", {
 		types: {
 			AmendSigner: [
 				{ name: "cidIdentifier", type: "bytes32" },

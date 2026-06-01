@@ -9,7 +9,7 @@ describe("formatSettlementSimError", () => {
 			functionName: "executePayout",
 			message: "RuleNotExecutable()",
 		});
-		expect(formatSettlementSimError(revert)).toContain("not ready yet");
+		expect(formatSettlementSimError(revert)).toContain("isn't ready yet");
 	});
 
 	test("maps insufficient balance keywords", () => {

@@ -1,32 +1,12 @@
-import { randomBytes } from "node:crypto";
 import type { PlanId } from "@filosign/entitlements";
-import { signupPolicyIsGated } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
-import { and, eq, gt, isNotNull, isNull, lt, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import env from "@/env";
-import { isOrgBillingPlanId } from "@/lib/domains/billing/policy";
-import {
-	allowsPlatformAdminAccess,
-	shouldAutoGrantTeamsProForAdminEmail,
-} from "@/lib/platform/admin";
 import db from "@/lib/platform/db";
-import { userSubscriptions } from "@/lib/platform/db/schema/billing";
-import {
-	organizationMembers,
-	organizationSubscriptions,
-} from "@/lib/platform/db/schema/organization";
-import {
-	accessRequests,
-	checkoutIntents,
-	platformAccessPending,
-	platformInviteRedemptions,
-	platformInvites,
-} from "@/lib/platform/db/schema/platform-access";
-import { users } from "@/lib/platform/db/schema/user";
+import { accessRequests } from "@/lib/platform/db/schema/platform-access";
 import { sendAccessRequestApprovedEmail } from "@/lib/platform/email/invites";
-import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { createPlatformInvite } from "./platform-access-invites";
 import { normalizeEmail, planLabel } from "./utils/shared";
 

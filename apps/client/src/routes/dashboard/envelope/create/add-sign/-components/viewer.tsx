@@ -1,105 +1,190 @@
-import { memo } from "react";
+import { useDroppable } from "@dnd-kit/core";
+import { memo, useCallback, useEffect } from "react";
+import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { cn } from "@/src/lib/utils/utils";
-import { useAddSignViewer } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
+import { PlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-canvas";
+import { PLACEMENT_CANVAS_DROPPABLE_ID } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-dnd-provider";
+import {
+	useAddSignShell,
+	useAddSignViewer,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 import { useDocumentViewerInteraction } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-viewer-interaction";
+import { focusPagePointInCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
 import { SignatureFieldOverlays } from "./field-overlays";
 import { DocumentPageContent } from "./page-content";
+import { usePlacementCanvas } from "./placement-canvas-context";
 import { DocumentViewerToolbar } from "./viewer-toolbar";
 
 function DocumentViewer() {
+	const { docRendering, setDocRendering } = useAddSignShell();
 	const {
 		currentDocument,
 		currentPage,
 		currentPageFields,
-		zoom,
-		setZoom,
+		signatureFields,
 		setCurrentPage,
-		selectedField,
+		selectedFieldIds,
 		isPlacingField,
 		pendingFieldType,
-		handleFieldPlacementRequest,
+		handlePlaceAtCoords,
 		handleFieldSelect,
+		handleCanvasDeselect,
 		handleFieldRemove,
 		handleFieldUpdate,
+		handleFieldDuplicate,
+		handleRepeatFieldOnAllPages,
 		handleBack,
-		setPdfLayoutHeight,
+		handleEditForm,
+		recordPdfPageLayout,
+		setPdfNumPages,
+		pdfNumPages,
 		placementDocHeight,
 		documentLoadingMessage,
+		isInteractingField,
+		setIsInteractingField,
+		fieldFocusRequestId,
+		clearFieldFocusRequest,
+		undo,
+		redo,
+		canUndo,
+		canRedo,
 	} = useAddSignViewer();
+
+	const { panPinchRef, wrapperRef } = usePlacementCanvas();
 
 	const interaction = useDocumentViewerInteraction({
 		document: currentDocument ?? null,
-		zoom,
 		documentPage: currentPage,
 		isPlacingField,
-		signatureFields: currentPageFields,
-		onFieldPlacementRequest: handleFieldPlacementRequest,
+		pendingFieldType,
+		onPlaceAtCoords: handlePlaceAtCoords,
 		onPdfPageChange: setCurrentPage,
 		onFieldSelect: handleFieldSelect,
-		onFieldUpdate: handleFieldUpdate,
+		onCanvasDeselect: handleCanvasDeselect,
 		placementDocHeight,
-		onPdfPageLayoutLoaded: (layout) => setPdfLayoutHeight(layout.height),
+		onPdfPageLayoutLoaded: (layout) => {
+			recordPdfPageLayout(currentPage, layout.height);
+			setDocRendering(false);
+		},
 	});
+
+	useEffect(() => {
+		if (!fieldFocusRequestId) return;
+		const field = signatureFields.find((f) => f.id === fieldFocusRequestId);
+		if (!field) {
+			clearFieldFocusRequest();
+			return;
+		}
+		if (field.page !== currentPage) return;
+
+		const centerX = field.x + field.width / 2;
+		const centerY = field.y + field.height / 2;
+		requestAnimationFrame(() => {
+			focusPagePointInCanvas({
+				panPinchRef: panPinchRef.current,
+				wrapperEl: wrapperRef.current,
+				pageX: centerX,
+				pageY: centerY,
+			});
+			clearFieldFocusRequest();
+		});
+	}, [
+		fieldFocusRequestId,
+		signatureFields,
+		currentPage,
+		panPinchRef,
+		wrapperRef,
+		clearFieldFocusRequest,
+	]);
+
+	const {
+		setPageEl,
+		documentWidth,
+		documentHeight,
+		margin,
+		isMobile,
+		isPdfDocument,
+		pdfPageNumber,
+		goToPreviousPdfPage,
+		goToNextPdfPage,
+		setPdfPage,
+		handlePdfNumPagesLoaded,
+		handleDocumentClick,
+		handleFieldClick,
+		onPdfPageLayoutLoaded,
+	} = interaction;
+
+	const onPdfNumPagesLoaded = useCallback(
+		(n: number) => {
+			handlePdfNumPagesLoaded(n);
+			setPdfNumPages(n);
+		},
+		[handlePdfNumPagesLoaded, setPdfNumPages],
+	);
+
+	const { setNodeRef: setCanvasRef } = useDroppable({
+		id: PLACEMENT_CANVAS_DROPPABLE_ID,
+	});
+
+	const onResizeStart = useCallback(() => {
+		setIsInteractingField(true);
+	}, [setIsInteractingField]);
+
+	const onResizeEnd = useCallback(() => {
+		setIsInteractingField(false);
+	}, [setIsInteractingField]);
 
 	if (!currentDocument) {
 		return null;
 	}
 
-	const {
-		documentRef,
-		documentWidth,
-		documentHeight,
-		margin,
-		isMobile,
-		fieldWidth,
-		fieldHeight,
-		isPdfDocument,
-		pdfPageNumber,
-		pdfNumPages,
-		goToPreviousPdfPage,
-		goToNextPdfPage,
-		handlePdfNumPagesLoaded,
-		handleDocumentClick,
-		handleFieldClick,
-		handleFieldMouseDown,
-		onPdfPageLayoutLoaded,
-		displaySignatureFields,
-	} = interaction;
-
 	return (
-		<div className="flex flex-col flex-1">
+		<div className="flex flex-col flex-1 min-h-0">
 			<DocumentViewerToolbar
 				isPdfDocument={isPdfDocument}
 				pdfPageNumber={pdfPageNumber}
 				pdfNumPages={pdfNumPages}
 				onPreviousPage={goToPreviousPdfPage}
 				onNextPage={goToNextPdfPage}
-				zoom={zoom}
-				onZoomChange={setZoom}
+				onPageJump={setPdfPage}
 				onBack={handleBack}
+				onEditForm={handleEditForm}
+				onUndo={undo}
+				onRedo={redo}
+				canUndo={canUndo}
+				canRedo={canRedo}
 			/>
 
-			<div
-				className={cn(
-					"overflow-auto bg-muted/10 flex items-start justify-center px-8 py-8 flex-1",
-					isPlacingField ? "cursor-crosshair" : "cursor-default",
-				)}
+			<PlacementCanvas
+				isPlacingField={isPlacingField}
+				isInteractingField={isInteractingField}
+				className="min-h-0"
 			>
 				<div
-					ref={documentRef}
-					className="w-fit bg-white border shadow-lg border-border"
-					style={{
-						transform: `scale(${zoom / 100})`,
-						transformOrigin: "top left",
-					}}
+					ref={setCanvasRef}
+					className={cn(
+						"relative w-fit border border-border bg-white shadow-lg",
+						isPlacingField ? "cursor-crosshair" : "cursor-default",
+					)}
 				>
 					<div
-						className="bg-white relative"
+						ref={setPageEl}
+						className="relative bg-white"
 						style={{
 							width: documentWidth,
 							height: documentHeight,
 						}}
+						onClick={handleDocumentClick}
 					>
+						{docRendering ? (
+							<div className="absolute inset-0 z-40 flex flex-col items-center justify-center gap-2 bg-background/80">
+								<InlineLoader size="lg" />
+								<span className="text-xs text-muted-foreground">
+									Loading document…
+								</span>
+							</div>
+						) : null}
+
 						<DocumentPageContent
 							document={currentDocument}
 							documentWidth={documentWidth}
@@ -108,27 +193,31 @@ function DocumentViewer() {
 							isPlacingField={isPlacingField}
 							pendingFieldType={pendingFieldType}
 							onDocumentClick={handleDocumentClick}
-							onPdfNumPagesLoaded={handlePdfNumPagesLoaded}
+							onPdfNumPagesLoaded={onPdfNumPagesLoaded}
 							onPdfPageLayoutLoaded={onPdfPageLayoutLoaded}
 							loadingMessage={documentLoadingMessage}
 						/>
 
 						<SignatureFieldOverlays
-							signatureFields={displaySignatureFields}
-							selectedField={selectedField}
+							signatureFields={currentPageFields}
+							selectedFieldIds={selectedFieldIds}
 							documentWidth={documentWidth}
 							documentHeight={documentHeight}
-							fieldWidth={fieldWidth}
-							fieldHeight={fieldHeight}
 							margin={margin}
 							isMobile={isMobile}
+							isPlacingField={isPlacingField}
+							pdfNumPages={pdfNumPages}
 							onFieldClick={handleFieldClick}
-							onFieldMouseDown={handleFieldMouseDown}
 							onFieldRemove={handleFieldRemove}
+							onFieldUpdate={handleFieldUpdate}
+							onFieldDuplicate={handleFieldDuplicate}
+							onRepeatOnAllPages={handleRepeatFieldOnAllPages}
+							onResizeStart={onResizeStart}
+							onResizeEnd={onResizeEnd}
 						/>
 					</div>
 				</div>
-			</div>
+			</PlacementCanvas>
 		</div>
 	);
 }

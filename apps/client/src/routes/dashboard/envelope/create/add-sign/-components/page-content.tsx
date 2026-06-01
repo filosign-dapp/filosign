@@ -49,7 +49,7 @@ export function DocumentPageContent({
 		if (!pdfFile) {
 			return (
 				<div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground px-6 text-center">
-					{loadingMessage ?? "Loading PDF…"}
+					{loadingMessage ?? "Loading document…"}
 				</div>
 			);
 		}

@@ -7,13 +7,20 @@ import { useCryptoUnlocked } from "@filosign/react/auth";
 import { useEntitlements } from "@filosign/react/billing";
 import { useMarkDraftSent } from "@filosign/react/drafts";
 import {
+	canSelectSupplementaryRecipients,
 	canUseAdvancedSettlements,
+	canUseConditionalAttachmentRelease,
+	canUseSupplementaryAttachments,
 	formatSettlementSimError,
 	useSendFile,
+	useSignFile,
 } from "@filosign/react/files";
 import { useActiveOrganization } from "@filosign/react/orgs";
-import { useProfilesByAddresses } from "@filosign/react/users";
-import { normalizePlacementRecipientEmail } from "@filosign/shared";
+import { useProfilesByAddresses, useUserProfile } from "@filosign/react/users";
+import {
+	normalizePlacementRecipientEmail,
+	validateRegisterRoutingForSend,
+} from "@filosign/shared";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -24,28 +31,45 @@ import {
 	useDraftDocumentPreview,
 	useServerDraftHydrate,
 } from "@/src/lib/domains/drafts";
+import { toAttachmentPacketDraftsForSend } from "@/src/lib/domains/files/attachment-packet-compose";
 import { buildPlacementManifestV3ForEnvelope } from "@/src/lib/domains/files/build-placement-manifest";
+import { buildRegisterRoutingFromForm } from "@/src/lib/domains/files/build-register-routing-from-form";
 import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
-import { constrainFieldTopLeft } from "@/src/lib/domains/files/placement-viewport";
+import {
+	normalizeSignatureFieldsList,
+	signatureFieldBoxCssPx,
+} from "@/src/lib/domains/files/field-box";
+import {
+	validateAttachmentPacketComposeDrafts,
+	validateAttachmentPacketDraftsForSend,
+} from "@/src/lib/domains/files/validate-attachment-packets";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
-import { buildRegisterRoutingFromForm } from "@/src/lib/domains/settlements/build-routing-input";
 import {
 	useStorePersist,
 	useStorePersistHydrated,
 } from "@/src/lib/filosign/use-store";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
-import type {
-	FieldPlacementConfirmPayload,
-	FieldPlacementSignerOption,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-dialog";
+import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
+import {
+	buildActiveAssignees,
+	resolveActiveAssignee,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-components/active-assignee-strip";
 import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
-import { useSignatureFields } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-fields";
+import { useAddSignFields } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-fields";
+import { usePlacementHistory } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-history";
+import { usePlacementMode } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-mode";
 import type { Document } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 import { buildSettlementRulesForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/build-settlement-rules";
-import { signatureFieldBoxCssPx } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-box";
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
+import {
+	fieldsWithUnknownSignerEmails,
+	resolveSelfSignerOnRoster,
+	selfAssignedFieldIds,
+	signerEmailsForPlacementManifest,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
+import { SELF_ASSIGNEE_ID } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
 import { resolveSettlementDraftsForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/resolve-settlement-drafts";
 import {
 	buildSignersAndViewersForDocument,
@@ -84,6 +108,7 @@ export function useAddSignController() {
 	});
 	const captureAppEvent = useCaptureAppEvent();
 	const sendFile = useSendFile();
+	const signFile = useSignFile();
 	const markDraftSent = useMarkDraftSent();
 	const { data: entitlements } = useEntitlements();
 	const { rpcQuery } = useFilosignContext();
@@ -129,16 +154,26 @@ export function useAddSignController() {
 	const {
 		width: docWidth,
 		height: docHeight,
+		margin,
 		isMobile,
 	} = useDocumentDimensions();
 	const fieldBoxCss = signatureFieldBoxCssPx(isMobile);
 	const [pdfLayoutHeight, setPdfLayoutHeight] = useState<number | null>(null);
+	const [pdfNumPages, setPdfNumPages] = useState<number | null>(null);
+	const pageHeightsRef = useRef<Map<number, number>>(new Map());
+	const [fieldFocusRequestId, setFieldFocusRequestId] = useState<string | null>(
+		null,
+	);
 	const placementDocHeight = pdfLayoutHeight ?? docHeight;
 	const [currentDocumentId, setCurrentDocumentId] = useState("");
 	const [currentPage, setCurrentPage] = useState(1);
-	const [zoom, setZoom] = useState(100);
+	const [activeAssigneeId, setActiveAssigneeId] =
+		useState<string>(SELF_ASSIGNEE_ID);
+	const [isInteractingField, setIsInteractingField] = useState(false);
+	const [docRendering, setDocRendering] = useState(false);
+	const { data: selfProfile } = useUserProfile();
 	const [sendStatus, setSendStatus] = useState<
-		"idle" | "loading" | "success" | "error"
+		"idle" | "loading" | "signing" | "success" | "error"
 	>("idle");
 	const [postSendDialogOpen, setPostSendDialogOpen] = useState(false);
 	const [postSendShare, setPostSendShare] = useState<ColdSharePackage | null>(
@@ -148,6 +183,7 @@ export function useAddSignController() {
 
 	const suppressEmptyDraftRedirect =
 		sendStatus === "loading" ||
+		sendStatus === "signing" ||
 		sendStatus === "success" ||
 		postSendDialogOpen ||
 		serverDraftLoadState === "loading" ||
@@ -174,49 +210,331 @@ export function useAddSignController() {
 		[setCreateForm],
 	);
 
+	const { commitFields, undo, redo, canUndo, canRedo } = usePlacementHistory(
+		signatureFields,
+		handleSignatureFieldsChange,
+	);
+
 	const {
+		placeField: placeFieldRaw,
+		handleFieldUpdate: handleFieldUpdateRaw,
+		handleFieldRemove: handleFieldRemoveRaw,
+		handleBulkFieldUpdate,
+		handleBulkFieldRemove,
+		handleFieldDuplicate,
+		repeatFieldOnAllPages,
+		applyFieldPatches,
+	} = useAddSignFields(commitFields, signatureFields);
+
+	const {
+		selectedFieldIds,
 		selectedField,
 		isPlacingField,
 		pendingFieldType,
 		setSelectedField,
+		setSelectedFieldIds,
+		selectField,
+		clearFieldSelection,
 		handleAddField,
-		handleFieldPlaced: placeField,
-		handleFieldRemove,
-		handleFieldUpdate,
 		cancelPlacement,
-	} = useSignatureFields(signatureFields, handleSignatureFieldsChange);
+		finishPlacement,
+	} = usePlacementMode();
 
-	const placementCommittedRef = useRef(false);
-	const [placementDialogOpen, setPlacementDialogOpen] = useState(false);
-	const [placementCoords, setPlacementCoords] = useState<{
-		x: number;
-		y: number;
-		page: number;
-	} | null>(null);
+	const assignees = useMemo(
+		() => buildActiveAssignees(createForm?.recipients ?? [], selfProfile),
+		[createForm?.recipients, selfProfile],
+	);
 
-	const signerOptionsForPlacement =
-		useMemo((): FieldPlacementSignerOption[] => {
-			if (!createForm?.recipients?.length) return [];
-			return createForm.recipients
-				.filter((r) => r.role === "signer")
-				.map((r) => {
-					const raw = r.email?.trim();
-					if (!raw) return null;
-					const email = normalizePlacementRecipientEmail(raw);
-					const addr = recipientResolvedSignerAddress(r);
-					const name = r.name?.trim() || "Signer";
-					const label = addr
-						? `${name} · ${email}`
-						: `${name} · ${email} (invite)`;
-					return {
-						email,
-						name,
-						walletAddress: addr ?? undefined,
-						label,
-					};
-				})
-				.filter((x): x is NonNullable<typeof x> => x !== null);
-		}, [createForm?.recipients]);
+	useEffect(() => {
+		if (assignees.length === 0) return;
+		const current = assignees.find((a) => a.id === activeAssigneeId);
+		if (current?.placementEnabled) return;
+		const firstEnabled = assignees.find((a) => a.placementEnabled);
+		if (firstEnabled) {
+			setActiveAssigneeId(firstEnabled.id);
+		}
+	}, [assignees, activeAssigneeId]);
+
+	useEffect(() => {
+		if (!createForm?.signatureFields?.length || !selfProfile) return;
+		const selfOnRoster = resolveSelfSignerOnRoster(
+			createForm.recipients ?? [],
+			selfProfile,
+		);
+		if (!selfOnRoster) return;
+
+		const profileEmail = selfProfile.email?.trim()
+			? normalizePlacementRecipientEmail(selfProfile.email)
+			: null;
+		if (!profileEmail || profileEmail === selfOnRoster.email) return;
+
+		const rosterWallet =
+			recipientResolvedSignerAddress(selfOnRoster.recipient) ?? "";
+		let remapped = false;
+		const nextFields = createForm.signatureFields.map((field) => {
+			if (
+				normalizePlacementRecipientEmail(field.assignedSignerEmail) !==
+				profileEmail
+			) {
+				return field;
+			}
+			remapped = true;
+			return {
+				...field,
+				assignedSignerEmail: selfOnRoster.email,
+				assignedSignerName: "Me",
+				assignedSignerWallet: rosterWallet || field.assignedSignerWallet,
+				required: selfOnRoster.recipient.signerRequired !== false,
+			};
+		});
+		if (remapped) {
+			setCreateForm({ ...createForm, signatureFields: nextFields });
+		}
+	}, [createForm, selfProfile, setCreateForm]);
+
+	useEffect(() => {
+		if (!createForm?.signatureFields?.length) return;
+		const normalized = normalizeSignatureFieldsList(
+			createForm.signatureFields,
+			isMobile,
+		);
+		const changed = normalized.some(
+			(f, i) =>
+				f.width !== createForm.signatureFields[i]?.width ||
+				f.height !== createForm.signatureFields[i]?.height,
+		);
+		if (changed) {
+			setCreateForm({ ...createForm, signatureFields: normalized });
+		}
+	}, [createForm, isMobile, setCreateForm]);
+
+	const placeField = useCallback(
+		(args: {
+			type: SignatureField["type"];
+			x: number;
+			y: number;
+			page?: number;
+		}) => {
+			const assignee = resolveActiveAssignee(assignees, activeAssigneeId);
+			if (!assignee || !currentDocumentId) return null;
+			if (!assignee.placementEnabled) {
+				toast.error(
+					'Turn on "I also need to sign" on the form page to place fields for yourself.',
+				);
+				return null;
+			}
+			const id = placeFieldRaw({
+				type: args.type,
+				x: args.x,
+				y: args.y,
+				documentId: currentDocumentId,
+				page: args.page ?? currentPage,
+				assignee,
+				isMobile,
+			});
+			if (id && isPlacingField && pendingFieldType === args.type) {
+				finishPlacement(id);
+			}
+			return id;
+		},
+		[
+			assignees,
+			activeAssigneeId,
+			currentDocumentId,
+			currentPage,
+			isMobile,
+			isPlacingField,
+			pendingFieldType,
+			placeFieldRaw,
+			finishPlacement,
+		],
+	);
+
+	const handleFieldUpdate = useCallback(
+		(fieldId: string, updates: Partial<SignatureField>) => {
+			handleFieldUpdateRaw(fieldId, updates);
+		},
+		[handleFieldUpdateRaw],
+	);
+
+	const handleFieldRemove = useCallback(
+		(fieldId: string) => {
+			handleFieldRemoveRaw(fieldId);
+			setSelectedFieldIds((prev) => {
+				if (!prev.has(fieldId)) return prev;
+				const next = new Set(prev);
+				next.delete(fieldId);
+				return next;
+			});
+		},
+		[handleFieldRemoveRaw],
+	);
+
+	const handleRemoveSelectedFields = useCallback(() => {
+		if (selectedFieldIds.size === 0) return;
+		handleBulkFieldRemove(selectedFieldIds);
+		clearFieldSelection();
+	}, [selectedFieldIds, handleBulkFieldRemove, clearFieldSelection]);
+
+	const handleSetActiveAssigneeId = useCallback(
+		(id: string) => {
+			setActiveAssigneeId(id);
+			if (selectedFieldIds.size === 0) return;
+			const assignee = resolveActiveAssignee(assignees, id);
+			if (!assignee) return;
+			handleBulkFieldUpdate(selectedFieldIds, {
+				assignedSignerWallet: assignee.walletAddress,
+				assignedSignerName: assignee.name,
+				assignedSignerEmail: assignee.email,
+				required: assignee.required,
+			});
+		},
+		[assignees, selectedFieldIds, handleBulkFieldUpdate],
+	);
+
+	const handlePlaceAtCoords = useCallback(
+		(coords: { x: number; y: number; page: number }) => {
+			if (!pendingFieldType || !currentDocumentId) return;
+			if (assignees.length === 0) {
+				cancelPlacement();
+				return;
+			}
+			setCurrentPage(coords.page);
+			const assignee = resolveActiveAssignee(assignees, activeAssigneeId);
+			if (!assignee) return;
+			placeField({
+				type: pendingFieldType,
+				x: coords.x,
+				y: coords.y,
+				page: coords.page,
+			});
+		},
+		[
+			pendingFieldType,
+			currentDocumentId,
+			assignees,
+			activeAssigneeId,
+			placeField,
+			cancelPlacement,
+		],
+	);
+
+	const placementFieldTypeLabel = useMemo(() => {
+		if (!pendingFieldType) return "Field";
+		return (
+			signatureFieldPalette.find((c) => c.type === pendingFieldType)?.label ??
+			pendingFieldType
+		);
+	}, [pendingFieldType]);
+
+	const handleFieldSelect = useCallback(
+		(fieldId: string, options?: { additive?: boolean }) => {
+			cancelPlacement();
+			selectField(fieldId, options?.additive ?? false);
+		},
+		[cancelPlacement, selectField],
+	);
+
+	const focusFieldOnCanvas = useCallback(
+		(fieldId: string) => {
+			const field = signatureFields.find((f) => f.id === fieldId);
+			if (!field) return;
+			if (field.documentId !== currentDocumentId) {
+				setCurrentDocumentId(field.documentId);
+			}
+			if (field.page !== currentPage) {
+				setCurrentPage(field.page);
+			}
+			handleFieldSelect(fieldId);
+			setFieldFocusRequestId(fieldId);
+		},
+		[signatureFields, currentDocumentId, currentPage, handleFieldSelect],
+	);
+
+	const clearFieldFocusRequest = useCallback(() => {
+		setFieldFocusRequestId(null);
+	}, []);
+
+	const handleRepeatFieldOnAllPages = useCallback(
+		(fieldId: string) => {
+			const numPages = pdfNumPages ?? 1;
+			if (numPages <= 1) return;
+			if (numPages > 10) {
+				const ok = window.confirm(
+					`Copy this field to ${numPages - 1} other pages?`,
+				);
+				if (!ok) return;
+			}
+			repeatFieldOnAllPages({
+				fieldId,
+				numPages,
+				sourceViewport: {
+					docWidth: docWidth,
+					docHeight: placementDocHeight,
+					margin,
+				},
+				pageHeightFor: (page) =>
+					pageHeightsRef.current.get(page) ?? placementDocHeight,
+			});
+		},
+		[pdfNumPages, repeatFieldOnAllPages, docWidth, placementDocHeight, margin],
+	);
+
+	const recordPdfPageLayout = useCallback((page: number, height: number) => {
+		pageHeightsRef.current.set(page, height);
+		setPdfLayoutHeight(height);
+	}, []);
+
+	const handleCanvasDeselect = useCallback(() => {
+		clearFieldSelection();
+	}, [clearFieldSelection]);
+
+	const handleEditForm = useCallback(() => {
+		navigate({ to: "/dashboard/envelope/create" });
+	}, [navigate]);
+
+	const handleBack = useCallback(() => {
+		navigate({ to: "/dashboard/envelope/create" });
+	}, [navigate]);
+
+	useEffect(() => {
+		const onKeyDown = (e: KeyboardEvent) => {
+			const mod = e.metaKey || e.ctrlKey;
+			if (mod && e.key === "z" && !e.shiftKey) {
+				e.preventDefault();
+				undo();
+				return;
+			}
+			if (mod && (e.key === "Z" || (e.key === "z" && e.shiftKey))) {
+				e.preventDefault();
+				redo();
+				return;
+			}
+			if (mod && e.key === "d" && selectedField) {
+				e.preventDefault();
+				handleFieldDuplicate(selectedField);
+				return;
+			}
+			if (
+				(e.key === "Backspace" || e.key === "Delete") &&
+				selectedFieldIds.size > 0 &&
+				!(e.target instanceof HTMLInputElement) &&
+				!(e.target instanceof HTMLTextAreaElement)
+			) {
+				e.preventDefault();
+				handleRemoveSelectedFields();
+			}
+		};
+		window.addEventListener("keydown", onKeyDown);
+		return () => window.removeEventListener("keydown", onKeyDown);
+	}, [
+		undo,
+		redo,
+		selectedField,
+		selectedFieldIds,
+		handleFieldDuplicate,
+		handleRemoveSelectedFields,
+	]);
 
 	const documents: Document[] = useMemo(
 		() =>
@@ -249,95 +567,14 @@ export function useAddSignController() {
 
 	useEffect(() => {
 		setPdfLayoutHeight(null);
+		setPdfNumPages(null);
+		pageHeightsRef.current = new Map();
+		setDocRendering(true);
 	}, [currentDocumentId]);
 
 	const currentDocument: Document | undefined = documents.find(
 		(doc) => doc.id === currentDocumentId,
 	);
-
-	const handleFieldPlacementRequest = useCallback(
-		(coords: { x: number; y: number; page: number }) => {
-			if (!pendingFieldType || !currentDocumentId) return;
-			if (signerOptionsForPlacement.length === 0) {
-				cancelPlacement();
-				return;
-			}
-			setPlacementCoords(coords);
-			setPlacementDialogOpen(true);
-		},
-		[
-			pendingFieldType,
-			currentDocumentId,
-			signerOptionsForPlacement.length,
-			cancelPlacement,
-		],
-	);
-
-	const handlePlacementDialogOpenChange = useCallback(
-		(open: boolean) => {
-			setPlacementDialogOpen(open);
-			if (!open) {
-				setPlacementCoords(null);
-				if (!placementCommittedRef.current) {
-					cancelPlacement();
-				}
-				placementCommittedRef.current = false;
-			}
-		},
-		[cancelPlacement],
-	);
-
-	const handlePlacementConfirm = useCallback(
-		(payload: FieldPlacementConfirmPayload) => {
-			if (!placementCoords || !pendingFieldType || !currentDocumentId) return;
-			placementCommittedRef.current = true;
-			const fieldConfig = signatureFieldPalette.find(
-				(config) => config.type === pendingFieldType,
-			);
-			if (!fieldConfig) return;
-			const { x, y } = constrainFieldTopLeft({
-				x: placementCoords.x,
-				y: placementCoords.y,
-				docWidth,
-				docHeight: placementDocHeight,
-				fieldWidth: fieldBoxCss.width,
-				fieldHeight: fieldBoxCss.height,
-			});
-			placeField(x, y, placementCoords.page, currentDocumentId, {
-				label: fieldConfig.label,
-				assignedSignerWallet: payload.assignedSignerWallet,
-				assignedSignerName: payload.assignedSignerName,
-				assignedSignerEmail: payload.assignedSignerEmail,
-				required: payload.required,
-			});
-		},
-		[
-			placementCoords,
-			pendingFieldType,
-			currentDocumentId,
-			placeField,
-			docWidth,
-			placementDocHeight,
-			fieldBoxCss,
-		],
-	);
-
-	const placementFieldTypeLabel = useMemo(() => {
-		if (!pendingFieldType) return "Field";
-		return (
-			signatureFieldPalette.find((c) => c.type === pendingFieldType)?.label ??
-			pendingFieldType
-		);
-	}, [pendingFieldType]);
-
-	const handleFieldSelect = useCallback(
-		(fieldId: string) => setSelectedField(fieldId),
-		[setSelectedField],
-	);
-
-	const handleBack = useCallback(() => {
-		navigate({ to: "/dashboard/envelope/create" });
-	}, [navigate]);
 
 	const handleSend = useCallback(async () => {
 		if (isSendingRef.current) {
@@ -375,7 +612,33 @@ export function useAddSignController() {
 		}
 
 		const coldRecipients = createForm.recipients.filter(isColdRecipient);
+		const requiredSignerRecipients = signerRecipients.filter(
+			(s) => s.signerRequired !== false,
+		);
+		if (requiredSignerRecipients.length === 0) {
+			setSendStatus("error");
+			setTimeout(() => setSendStatus("idle"), 3000);
+			return;
+		}
+
+		const orphanFields = fieldsWithUnknownSignerEmails({
+			signatureFields: createForm.signatureFields ?? [],
+			signerRecipients,
+		});
+		if (orphanFields.length > 0) {
+			const orphanEmail = normalizePlacementRecipientEmail(
+				orphanFields[0]?.assignedSignerEmail ?? "",
+			);
+			toast.error(
+				`Fields assigned to ${orphanEmail} are not on this envelope's signer list. Add yourself as a signer on the form page, or reassign those fields.`,
+			);
+			setSendStatus("error");
+			setTimeout(() => setSendStatus("idle"), 3000);
+			return;
+		}
+
 		for (const signer of signerRecipients) {
+			if (signer.signerRequired === false) continue;
 			const signerEmail = normalizePlacementRecipientEmail(
 				signer.email?.trim() ?? "",
 			);
@@ -385,6 +648,9 @@ export function useAddSignController() {
 					signerEmail,
 			);
 			if (signerFields.length === 0) {
+				toast.error(
+					`Add at least one field for required signer ${signerEmail}.`,
+				);
 				setSendStatus("error");
 				setTimeout(() => setSendStatus("idle"), 3000);
 				return;
@@ -409,6 +675,37 @@ export function useAddSignController() {
 			setSendStatus("error");
 			setTimeout(() => setSendStatus("idle"), 3000);
 			return;
+		}
+
+		const attachmentComposeDrafts = createForm.attachmentPacketDrafts ?? [];
+		if (attachmentComposeDrafts.length > 0) {
+			const rosterEmails = createForm.recipients
+				.map((r) => r.email?.trim())
+				.filter((email): email is string =>
+					Boolean(email && isValidRecipientEmail(email)),
+				)
+				.map((email) => normalizePlacementRecipientEmail(email));
+			const attachmentIssues = [
+				...validateAttachmentPacketDraftsForSend({
+					supplementaryAttachments:
+						canUseSupplementaryAttachments(entitlements),
+					recipientSelect: canSelectSupplementaryRecipients(entitlements),
+					conditionalRelease: canUseConditionalAttachmentRelease(entitlements),
+					drafts: attachmentComposeDrafts,
+					rosterEmails,
+				}),
+				...validateAttachmentPacketComposeDrafts({
+					drafts: attachmentComposeDrafts,
+				}),
+			];
+			if (attachmentIssues.length > 0) {
+				toast.error(
+					attachmentIssues[0]?.message ?? "Invalid supplementary files",
+				);
+				setSendStatus("error");
+				setTimeout(() => setSendStatus("idle"), 3000);
+				return;
+			}
 		}
 
 		captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopeSendClicked, {
@@ -462,9 +759,10 @@ export function useAddSignController() {
 
 			const placementManifest = await buildPlacementManifestV3ForEnvelope({
 				documents: docPayloads,
-				signerEmailsInOrder: signerRecipients.map((s) =>
-					normalizePlacementRecipientEmail(s.email?.trim() ?? ""),
-				),
+				signerEmailsInOrder: signerEmailsForPlacementManifest({
+					signerRecipients,
+					signatureFields,
+				}),
 				signatureFields,
 				docLayouts: new Map(
 					createForm.documents.map((doc) => [
@@ -530,6 +828,26 @@ export function useAddSignController() {
 				routing: createForm.registerRouting,
 			});
 
+			const routingValidationError = validateRegisterRoutingForSend({
+				placementManifest,
+				...(routing ? { routing } : {}),
+			});
+			if (routingValidationError) {
+				toast.error(routingValidationError);
+				setSendStatus("error");
+				isSendingRef.current = false;
+				setTimeout(() => setSendStatus("idle"), 3000);
+				return;
+			}
+
+			const attachmentPacketDrafts =
+				attachmentComposeDrafts.length > 0
+					? toAttachmentPacketDraftsForSend(
+							attachmentComposeDrafts,
+							createForm.recipients,
+						)
+					: [];
+
 			const result = await sendFile.mutateAsync({
 				signers,
 				viewers,
@@ -546,6 +864,9 @@ export function useAddSignController() {
 				...(coldInvitePayload ? { coldInvites: coldInvitePayload } : {}),
 				...(settlementRules.length > 0 ? { settlementRules } : {}),
 				...(routing ? { routing } : {}),
+				...(attachmentPacketDrafts.length > 0
+					? { attachmentPacketDrafts }
+					: {}),
 				...(activeOrg
 					? {
 							organizationId: activeOrg.id,
@@ -553,6 +874,30 @@ export function useAddSignController() {
 						}
 					: {}),
 			});
+
+			const selfOnRoster = resolveSelfSignerOnRoster(
+				createForm.recipients ?? [],
+				selfProfile,
+			);
+			const selfFieldIds =
+				result.success && result.pieceCid && selfOnRoster
+					? selfAssignedFieldIds(signatureFields, selfOnRoster.email)
+					: [];
+
+			if (selfFieldIds.length > 0 && result.pieceCid) {
+				setSendStatus("signing");
+				try {
+					await signFile.mutateAsync({
+						pieceCid: result.pieceCid,
+						completedFieldIds: selfFieldIds,
+					});
+				} catch (signErr) {
+					console.error("Self-sign at send failed:", signErr);
+					toast.error(
+						"Document sent, but signing your fields failed. Open the document from your dashboard to finish signing.",
+					);
+				}
+			}
 
 			setSendStatus("success");
 
@@ -612,8 +957,11 @@ export function useAddSignController() {
 		recipientProfilesLoading,
 		recipientProfilesMapWithRecipient,
 		sendFile,
+		signFile,
+		selfProfile,
 		signatureFields,
-		rpcQuery,
+		entitlements,
+		markDraftSent,
 	]);
 
 	const currentPageFields = useMemo(
@@ -629,9 +977,9 @@ export function useAddSignController() {
 		(documentId: string) => {
 			setCurrentDocumentId(documentId);
 			setCurrentPage(1);
-			setSelectedField(null);
+			clearFieldSelection();
 		},
-		[setSelectedField],
+		[clearFieldSelection],
 	);
 
 	const handlePostSendDone = useCallback(() => {
@@ -649,33 +997,57 @@ export function useAddSignController() {
 		currentDocumentId,
 		currentPage,
 		currentPageFields,
-		zoom,
-		setZoom,
+		signatureFields,
 		setCurrentPage,
 		sendStatus,
 		postSendDialogOpen,
 		postSendShare,
 		suppressEmptyDraftRedirect,
 		selectedField,
+		selectedFieldIds,
 		isPlacingField,
 		pendingFieldType,
-		placementDialogOpen,
 		placementFieldTypeLabel,
-		signerOptionsForPlacement,
+		activeAssigneeId,
+		setActiveAssigneeId: handleSetActiveAssigneeId,
+		assignees,
+		isInteractingField,
+		setIsInteractingField,
+		docRendering,
+		setDocRendering,
+		documentWidth: docWidth,
+		documentHeight: placementDocHeight,
+		margin,
+		pdfNumPages,
+		setPdfNumPages,
+		recordPdfPageLayout,
+		fieldFocusRequestId,
+		clearFieldFocusRequest,
+		focusFieldOnCanvas,
+		handleRepeatFieldOnAllPages,
+		handleBulkFieldUpdate,
+		applyFieldPatches,
 		handleAddField,
-		handleFieldPlacementRequest,
+		placeField,
+		handlePlaceAtCoords,
 		handleFieldSelect,
+		handleCanvasDeselect,
 		handleFieldRemove,
 		handleFieldUpdate,
-		handlePlacementDialogOpenChange,
-		handlePlacementConfirm,
+		handleFieldDuplicate,
 		handleBack,
+		handleEditForm,
 		handleSend,
 		handleDocumentSelect,
 		handlePostSendDone,
 		setPdfLayoutHeight,
 		placementDocHeight,
 		documentLoadingMessage,
+		undo,
+		redo,
+		canUndo,
+		canRedo,
+		setSelectedField,
 	};
 }
 

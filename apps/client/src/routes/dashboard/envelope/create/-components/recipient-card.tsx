@@ -1,7 +1,12 @@
+import type { DraggableAttributes } from "@dnd-kit/core";
+import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
+import { useEntitlements } from "@filosign/react/billing";
+import { canUseAdvancedRouting } from "@filosign/react/files";
 import { settlementReleaseTypeLabel } from "@filosign/shared";
 import {
 	CheckCircleIcon,
 	CurrencyDollarIcon,
+	DotsSixVerticalIcon,
 	TrashIcon,
 	UserIcon,
 } from "@phosphor-icons/react";
@@ -13,6 +18,7 @@ import {
 } from "@/src/lib/components/ui/avatar";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
+import { Checkbox } from "@/src/lib/components/ui/checkbox";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import {
@@ -28,10 +34,30 @@ import {
 	RECIPIENT_FIELD_LABEL_CLASS,
 	RECIPIENT_ROLE_LABELS,
 } from "@/src/routes/dashboard/envelope/create/-lib/constants/recipient-card";
+import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
 import { useRecipientCard } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-recipient-card";
 import { formatAttachedUsdcAmount } from "@/src/routes/dashboard/envelope/create/-lib/utils/filosign-profile";
 
-export function RecipientCard({ index }: { index: number }) {
+type RecipientCardDragHandleProps = {
+	turnIndex?: number;
+	dragHandleRef?: (element: HTMLElement | null) => void;
+	dragHandleListeners?: SyntheticListenerMap;
+	dragHandleAttributes?: DraggableAttributes;
+	isDragging?: boolean;
+};
+
+type RecipientCardProps = {
+	index: number;
+} & RecipientCardDragHandleProps;
+
+export function RecipientCard({
+	index,
+	turnIndex,
+	dragHandleRef,
+	dragHandleListeners,
+	dragHandleAttributes,
+	isDragging,
+}: RecipientCardProps) {
 	const {
 		recipient,
 		allRecipients,
@@ -46,8 +72,14 @@ export function RecipientCard({ index }: { index: number }) {
 		saveSettlementDraft,
 		removeSettlementDraft,
 	} = useRecipientCard(index);
+	const { data: entitlements } = useEntitlements();
+	const promptPlanUpgrade = usePromptPlanUpgrade();
+	const advancedRouting = canUseAdvancedRouting(entitlements);
 
 	if (!recipient) return null;
+
+	const isRequiredSigner =
+		recipient.role !== "signer" || recipient.signerRequired !== false;
 
 	const showAvatarUserIcon = !recipient.name.trim() && !recipient.email.trim();
 	const avatarInitials = initialsFromName(
@@ -62,9 +94,30 @@ export function RecipientCard({ index }: { index: number }) {
 				initial={{ opacity: 0, y: 8 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.2 }}
+				style={isDragging ? { opacity: 0.65 } : undefined}
 			>
-				<div className="flex items-start gap-3 p-4">
-					<Avatar className="size-9 shrink-0 border border-border/50">
+				<div className="flex items-stretch gap-3 p-4">
+					{turnIndex != null && dragHandleRef ? (
+						<button
+							type="button"
+							ref={dragHandleRef}
+							className="flex w-7 shrink-0 cursor-grab touch-none flex-col items-center py-0.5 text-muted-foreground active:cursor-grabbing"
+							aria-label={`Drag to reorder turn ${turnIndex}`}
+							{...dragHandleAttributes}
+							{...dragHandleListeners}
+						>
+							<DotsSixVerticalIcon className="size-5 shrink-0" weight="bold" />
+							<div className="my-1 w-px flex-1 bg-border/70" aria-hidden />
+							<Badge
+								variant="secondary"
+								className="size-5 shrink-0 justify-center px-0 text-[10px] font-semibold tabular-nums"
+							>
+								{turnIndex}
+							</Badge>
+						</button>
+					) : null}
+
+					<Avatar className="size-9 shrink-0 self-start border border-border/50">
 						<AvatarFallback className="bg-muted/30 text-xs font-medium text-muted-foreground">
 							{showAvatarUserIcon ? (
 								<UserIcon className="size-4" />
@@ -144,11 +197,15 @@ export function RecipientCard({ index }: { index: number }) {
 								</Label>
 								<Select
 									value={recipient.role}
-									onValueChange={(role) =>
+									onValueChange={(role) => {
+										const nextRole = role as "signer" | "viewer";
 										updateRecipient(index, {
-											role: role as "signer" | "viewer",
-										})
-									}
+											role: nextRole,
+											...(nextRole === "viewer"
+												? { signerRequired: undefined }
+												: {}),
+										});
+									}}
 								>
 									<SelectTrigger
 										id={`recipient-role-${index}`}
@@ -179,7 +236,7 @@ export function RecipientCard({ index }: { index: number }) {
 										onClick={() => setSettlementDialogOpen(true)}
 									>
 										<CurrencyDollarIcon className="size-4" weight="regular" />
-										{attachedDraft ? "Edit funds" : "Attach funds"}
+										{attachedDraft ? "Edit payout" : "Add payout"}
 									</Button>
 								) : null}
 								<Button
@@ -194,6 +251,31 @@ export function RecipientCard({ index }: { index: number }) {
 								</Button>
 							</div>
 						</div>
+
+						{recipient.role === "signer" ? (
+							<label
+								htmlFor={`recipient-required-${index}`}
+								className="flex items-start gap-2 text-sm"
+							>
+								<Checkbox
+									id={`recipient-required-${index}`}
+									className="mt-0.5"
+									checked={isRequiredSigner}
+									onCheckedChange={(next) => {
+										if (next !== true && !advancedRouting) {
+											promptPlanUpgrade("features.routing.advanced");
+											return;
+										}
+										updateRecipient(index, {
+											signerRequired: next === true,
+										});
+									}}
+								/>
+								<span className="text-muted-foreground leading-snug">
+									Required
+								</span>
+							</label>
+						) : null}
 					</div>
 				</div>
 			</motion.div>

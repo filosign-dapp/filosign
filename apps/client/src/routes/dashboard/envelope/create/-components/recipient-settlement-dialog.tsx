@@ -4,11 +4,7 @@ import {
 	canUseBasicSettlements,
 } from "@filosign/react/files";
 import type { SettlementReleaseType } from "@filosign/shared";
-import {
-	isAdvancedSettlementReleaseType,
-	normalizePlacementRecipientEmail,
-	settlementReleaseTypeLabel,
-} from "@filosign/shared";
+import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { useEffect, useMemo, useState } from "react";
 import { SUPPORTED_TOKENS } from "@/src/constants";
 import { Button } from "@/src/lib/components/ui/button";
@@ -23,12 +19,10 @@ import {
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@/src/lib/components/ui/select";
+	expiresAtFromDatetimeLocal,
+	SettlementExpiresAtField,
+} from "@/src/lib/domains/settlements/settlement-expires-at-field";
+import { SettlementReleaseFields } from "@/src/lib/domains/settlements/settlement-release-fields";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
@@ -37,21 +31,6 @@ import {
 	buildDraftFromRecipient,
 	recipientSettlementLabel,
 } from "@/src/routes/dashboard/envelope/create/-lib/utils/settlement-drafts";
-
-const BASIC_RELEASE_TYPES: SettlementReleaseType[] = [
-	"all_signed",
-	"specific_signer",
-];
-
-const ADVANCED_RELEASE_TYPES: SettlementReleaseType[] = [
-	"all_required_signed",
-	"all_signed_complete",
-	"at_least_n",
-	"quorum_required",
-	"quorum_set",
-	"quorum_all",
-	"all_of_set",
-];
 
 type Props = {
 	open: boolean;
@@ -83,20 +62,7 @@ export function RecipientSettlementDialog({
 	);
 	const [specificSignerEmail, setSpecificSignerEmail] = useState("");
 	const [thresholdN, setThresholdN] = useState("2");
-
-	const releaseOptions = useMemo(() => {
-		const basic = BASIC_RELEASE_TYPES.map((value) => ({
-			value,
-			label: settlementReleaseTypeLabel(value),
-			advanced: false,
-		}));
-		const advanced = ADVANCED_RELEASE_TYPES.map((value) => ({
-			value,
-			label: settlementReleaseTypeLabel(value),
-			advanced: true,
-		}));
-		return [...basic, ...advanced];
-	}, []);
+	const [expiresAtLocal, setExpiresAtLocal] = useState("");
 
 	const signerOptions = useMemo(() => {
 		return allRecipients
@@ -120,24 +86,11 @@ export function RecipientSettlementDialog({
 			existingDraft?.specificSignerEmail ?? signerOptions[0]?.email ?? "",
 		);
 		setThresholdN(String(existingDraft?.thresholdN ?? 2));
+		setExpiresAtLocal("");
 	}, [open, existingDraft, signerOptions]);
 
 	const payeeLabel = recipientSettlementLabel(recipient);
 	const emailValid = isValidRecipientEmail(recipient.email ?? "");
-
-	const needsThreshold =
-		releaseType === "at_least_n" ||
-		releaseType === "quorum_required" ||
-		releaseType === "quorum_set" ||
-		releaseType === "quorum_all";
-
-	const handleReleaseChange = (value: SettlementReleaseType) => {
-		if (isAdvancedSettlementReleaseType(value) && !canAdvanced) {
-			promptPlanUpgrade("features.settlement.advanced");
-			return;
-		}
-		setReleaseType(value);
-	};
 
 	const handleSave = () => {
 		if (!canBasic) {
@@ -154,7 +107,16 @@ export function RecipientSettlementDialog({
 			releaseType,
 			specificSignerEmail:
 				releaseType === "specific_signer" ? specificSignerEmail : undefined,
-			thresholdN: needsThreshold ? Number(thresholdN) || 1 : undefined,
+			thresholdN:
+				releaseType === "at_least_n" ||
+				releaseType === "quorum_required" ||
+				releaseType === "quorum_set" ||
+				releaseType === "quorum_all"
+					? Number(thresholdN) || 1
+					: undefined,
+			expiresAtUnix: expiresAtFromDatetimeLocal(expiresAtLocal)
+				? Number(expiresAtFromDatetimeLocal(expiresAtLocal))
+				: undefined,
 		});
 		if (!draft) return;
 
@@ -171,11 +133,11 @@ export function RecipientSettlementDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent showCloseButton className="sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>Attach funds</DialogTitle>
+					<DialogTitle>Add a payout</DialogTitle>
 					<DialogDescription>
-						Optional USDC payout to <strong>{payeeLabel}</strong> when release
-						conditions are met. Funds stay in your wallet until payout executes;
-						Filosign never takes custody.
+						Optional USDC payout for <strong>{payeeLabel}</strong> when the
+						conditions you pick are met—separate from envelope signing options.
+						Money stays in your wallet until then; we never hold it.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -196,75 +158,29 @@ export function RecipientSettlementDialog({
 							/>
 						</div>
 
-						<div className="grid gap-2">
-							<Label htmlFor="recipient-settlement-release">Release when</Label>
-							<Select
-								value={releaseType}
-								onValueChange={(v) =>
-									handleReleaseChange(v as SettlementReleaseType)
-								}
-							>
-								<SelectTrigger id="recipient-settlement-release">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									{releaseOptions.map((option) => (
-										<SelectItem key={option.value} value={option.value}>
-											{option.label}
-											{option.advanced ? " (Teams Pro)" : ""}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-
-						{releaseType === "specific_signer" ? (
-							<div className="grid gap-2">
-								<Label htmlFor="recipient-settlement-signer">Signer</Label>
-								{signerOptions.length === 0 ? (
-									<p className="text-xs text-muted-foreground">
-										Add at least one signer with a valid email.
-									</p>
-								) : (
-									<Select
-										value={specificSignerEmail}
-										onValueChange={(v) => {
-											if (v != null) setSpecificSignerEmail(v);
-										}}
-									>
-										<SelectTrigger id="recipient-settlement-signer">
-											<SelectValue placeholder="Select signer" />
-										</SelectTrigger>
-										<SelectContent>
-											{signerOptions.map((s) => (
-												<SelectItem key={s.email} value={s.email}>
-													{s.label}
-												</SelectItem>
-											))}
-										</SelectContent>
-									</Select>
-								)}
-							</div>
-						) : null}
-
-						{needsThreshold ? (
-							<div className="grid gap-2">
-								<Label htmlFor="recipient-settlement-threshold">
-									Threshold N
-								</Label>
-								<Input
-									id="recipient-settlement-threshold"
-									type="number"
-									min={1}
-									value={thresholdN}
-									onChange={(e) => setThresholdN(e.target.value)}
-								/>
-							</div>
-						) : null}
+						<SettlementReleaseFields
+							releaseSelectId="recipient-settlement-release"
+							releaseType={releaseType}
+							onReleaseTypeChange={setReleaseType}
+							canAdvanced={canAdvanced}
+							onRequireAdvanced={() =>
+								promptPlanUpgrade("features.settlement.advanced")
+							}
+							specificSignerEmail={specificSignerEmail}
+							onSpecificSignerEmailChange={setSpecificSignerEmail}
+							signerOptions={signerOptions}
+							thresholdN={thresholdN}
+							onThresholdNChange={setThresholdN}
+						/>
+						<SettlementExpiresAtField
+							id="recipient-settlement-expires"
+							value={expiresAtLocal}
+							onChange={setExpiresAtLocal}
+						/>
 
 						<p className="text-xs text-muted-foreground">
-							Token: {SUPPORTED_TOKENS[0].symbol} on this network. You will
-							approve this payout from your wallet when sending.
+							{SUPPORTED_TOKENS[0].symbol} on this network. You&apos;ll approve
+							the payout from your wallet when you send the envelope.
 						</p>
 					</div>
 				)}
@@ -277,7 +193,7 @@ export function RecipientSettlementDialog({
 							className="text-destructive sm:mr-auto"
 							onClick={handleRemove}
 						>
-							Remove settlement
+							Remove payout
 						</Button>
 					) : (
 						<span className="hidden sm:block sm:mr-auto" />

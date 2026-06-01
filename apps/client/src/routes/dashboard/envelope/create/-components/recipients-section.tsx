@@ -7,6 +7,8 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/src/lib/components/ui/collapsible";
+import { Label } from "@/src/lib/components/ui/label";
+import { Switch } from "@/src/lib/components/ui/switch";
 import { cn } from "@/src/lib/utils/utils";
 import {
 	RecipientsProvider,
@@ -15,7 +17,17 @@ import {
 import { RecipientList } from "./recipient-list";
 
 function RecipientsSectionContent() {
-	const { recipients, error, showError, addRecipient } = useRecipientsContext();
+	const {
+		recipients,
+		error,
+		showError,
+		addRecipient,
+		turnOrderEnabled,
+		setTurnOrderEnabled,
+		selfSignEnabled,
+		setSelfSignEnabled,
+		selfSignProfileEmail,
+	} = useRecipientsContext();
 	const [isRecipientsOpen, setIsRecipientsOpen] = useState(true);
 
 	return (
@@ -58,19 +70,38 @@ function RecipientsSectionContent() {
 				<CollapsibleContent className="mt-6">
 					<div className="space-y-5">
 						<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-							<div className="min-w-0 space-y-1">
-								<p className="text-sm leading-relaxed text-muted-foreground">
-									Add recipients by email.
-								</p>
-								{recipients && recipients.length > 0 ? (
-									<p className="text-xs text-muted-foreground/80">
-										{recipients.length} recipient
-										{recipients.length !== 1 ? "s" : ""} added
-									</p>
-								) : null}
+							<div className="flex items-center gap-2 rounded-lg bg-background/50 px-3 py-1.5">
+								<Switch
+									id="self-sign-enabled-recipients"
+									checked={selfSignEnabled}
+									onCheckedChange={setSelfSignEnabled}
+									disabled={!selfSignProfileEmail}
+								/>
+								<Label
+									htmlFor="self-sign-enabled-recipients"
+									className="cursor-pointer text-sm font-medium"
+								>
+									I also need to sign
+								</Label>
 							</div>
 
-							<div className="flex shrink-0 flex-wrap items-center gap-2">
+							<div className="flex shrink-0 flex-wrap items-center gap-3 sm:justify-end">
+								{recipients.length > 0 ? (
+									<div className="flex items-center gap-2 rounded-lg bg-background/50 px-3 py-1.5">
+										<Switch
+											id="turn-order-enabled-recipients"
+											checked={turnOrderEnabled}
+											onCheckedChange={setTurnOrderEnabled}
+										/>
+										<Label
+											htmlFor="turn-order-enabled-recipients"
+											className="cursor-pointer text-sm font-medium"
+										>
+											Ordered Signing
+										</Label>
+									</div>
+								) : null}
+
 								<Button
 									type="button"
 									variant="default"
@@ -125,9 +156,9 @@ function RecipientsSectionContent() {
 											delay: 0.3,
 										}}
 									>
-										<p className="text-muted-foreground">No recipients added</p>
-										<p className="text-muted-foreground text-sm">
-											Click Add recipient above, then enter their email.
+										<p className="text-muted-foreground">No recipients yet</p>
+										<p className="text-sm text-muted-foreground">
+											Add someone who needs to sign or view.
 										</p>
 									</motion.div>
 								</div>

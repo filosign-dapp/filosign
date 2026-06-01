@@ -1,11 +1,23 @@
 import { motion } from "motion/react";
 import { useRecipientsContext } from "@/src/routes/dashboard/envelope/create/-lib/context/recipients-context";
 import { RecipientCard } from "./recipient-card";
+import { SortableRecipientList } from "./sortable-recipient-list";
 
 export function RecipientList() {
-	const { recipients } = useRecipientsContext();
+	const { recipients, turnOrderEnabled, routingOrderEmails, reorderSigners } =
+		useRecipientsContext();
 
 	if (!recipients?.length) return null;
+
+	if (turnOrderEnabled) {
+		return (
+			<SortableRecipientList
+				recipients={recipients}
+				routingOrderEmails={routingOrderEmails}
+				onReorder={reorderSigners}
+			/>
+		);
+	}
 
 	return (
 		<motion.div

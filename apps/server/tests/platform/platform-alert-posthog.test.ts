@@ -104,8 +104,10 @@ describe("emitCriticalPlatformEvent PostHog mirror", () => {
 	});
 
 	test("does not mirror when PostHog disabled", async () => {
-		const { mirrorPlatformAlertToPostHog, resetPlatformAlertPostHogDedupeForTests } =
-			await import("@/lib/platform/analytics/platform-alert-posthog");
+		const {
+			mirrorPlatformAlertToPostHog,
+			resetPlatformAlertPostHogDedupeForTests,
+		} = await import("@/lib/platform/analytics/platform-alert-posthog");
 		resetPlatformAlertPostHogDedupeForTests();
 		mirrorPlatformAlertToPostHog(
 			{

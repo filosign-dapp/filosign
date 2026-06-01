@@ -8,13 +8,13 @@ import env from "@/env";
 import { mirrorPlatformAlertToPostHog } from "@/lib/platform/analytics/platform-alert-posthog";
 import type { PlatformAlertEvent } from "./events";
 
-export { emitCriticalPlatformEventFromProcessEnv } from "./platform-alerts-env";
 export {
 	mirrorPlatformAlertToPostHog,
 	mirrorPlatformAlertToPostHogFromProcessEnv,
 	platformAlertPostHogProperties,
 	resetPlatformAlertPostHogDedupeForTests,
 } from "./platform-alert-posthog";
+export { emitCriticalPlatformEventFromProcessEnv } from "./platform-alerts-env";
 
 export function createPlatformAlertsRuntime(config: TelegramTransportOptions) {
 	const dedupe = createInMemoryDedupe({

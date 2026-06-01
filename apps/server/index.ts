@@ -1,4 +1,8 @@
 import "@/lib/platform/polyfills/bigint-json";
+import { warnIfSesMisconfigured } from "@/lib/platform/email/ses-config";
+
+warnIfSesMisconfigured();
+
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import config from "@/config";

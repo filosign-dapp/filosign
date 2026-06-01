@@ -26,6 +26,7 @@
 		"test": "bun test tests/"
 	},
 	"dependencies": {
+		"@aws-sdk/client-sesv2": "^3.888.0",
 		"@filosign/contracts": "workspace:*",
 		"@filosign/crypto-utils": "workspace:*",
 		"@filosign/emails": "workspace:*",

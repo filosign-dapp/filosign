@@ -20,6 +20,7 @@ export const PLATFORM_ALERT_EVENTS = {
 	serverBootstrapFailed: "server.bootstrap_failed",
 	serverDbInfraError: "server.db_infra_error",
 	serverRelayerGasLow: "server.relayer_gas_low",
+	serverRpcDegraded: "server.rpc_degraded",
 	settlementsRelayPayoutFailed: "settlements.relay_payout_failed",
 } as const;
 
@@ -74,6 +75,15 @@ export type PlatformAlertEvent =
 				thresholdWei: string;
 				deployment: string;
 				chain: string;
+			};
+	  })
+	| (BaseAlertEvent & {
+			name: typeof PLATFORM_ALERT_EVENTS.serverRpcDegraded;
+			context: {
+				rpcUrl: string;
+				fallbackEnabled: boolean;
+				chainKey: string;
+				error: string;
 			};
 	  })
 	| (BaseAlertEvent & {

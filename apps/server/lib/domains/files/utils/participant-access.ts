@@ -1,5 +1,5 @@
+import { throwAppError } from "@filosign/errors/server";
 import { isValidAckSignature } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -67,9 +67,7 @@ export async function requireAckForParticipantAccess(
 ): Promise<ValidAckRow> {
 	const ack = await getValidAck(wallet, pieceCid);
 	if (!ack) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Acknowledge the document before accessing it",
-		});
+		throwAppError("SIGNING.ACK_REQUIRED");
 	}
 	return ack;
 }
@@ -96,9 +94,7 @@ export async function requireCanSign(args: {
 			),
 		);
 	if (!participant) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "You are not required to sign this file",
-		});
+		throwAppError("SIGNING.NOT_REQUIRED");
 	}
 
 	const [existingSig] = await db
@@ -111,15 +107,13 @@ export async function requireCanSign(args: {
 			),
 		);
 	if (existingSig) {
-		throw new ORPCError("CONFLICT", { message: "Already signed" });
+		throwAppError("SIGNING.ALREADY_SIGNED");
 	}
 
 	const ack = await requireAckForParticipantAccess(walletNorm, args.pieceCid);
 	const view = await getDocumentView(walletNorm, args.pieceCid);
 	if (!view) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Open and view the document before signing",
-		});
+		throwAppError("SIGNING.VIEW_BEFORE_SIGN");
 	}
 
 	assertSignOrdering(ack.acknowledgedAt, view.firstViewedAt, signAt);
@@ -133,13 +127,9 @@ export function assertSignOrdering(
 	signAt: Date,
 ): void {
 	if (viewAt.getTime() < ackAt.getTime()) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Document must be viewed after acknowledgement",
-		});
+		throwAppError("SIGNING.VIEW_AFTER_ACK");
 	}
 	if (signAt.getTime() < viewAt.getTime()) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Document must be viewed before signing",
-		});
+		throwAppError("SIGNING.VIEW_BEFORE_SIGN");
 	}
 }

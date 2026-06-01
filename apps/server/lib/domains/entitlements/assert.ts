@@ -4,9 +4,16 @@ import {
 	type EntitlementContext,
 	type FeatureKey,
 } from "@filosign/entitlements";
+import type { AppErrorCode } from "@filosign/errors";
+import { throwAppError } from "@filosign/errors/server";
 import { sandboxEntitlementsOpen } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import env from "@/env";
+
+const ENTITLEMENT_REASON_TO_CODE: Record<string, AppErrorCode> = {
+	FEATURE_DISABLED: "ENTITLEMENT.FEATURE_DISABLED",
+	QUOTA_EXCEEDED: "ENTITLEMENT.QUOTA_EXCEEDED",
+	LIMIT_EXCEEDED: "ENTITLEMENT.LIMIT_EXCEEDED",
+};
 
 export function assertEntitlement(
 	ctx: EntitlementContext,
@@ -18,14 +25,19 @@ export function assertEntitlement(
 	const decision = check(ctx, key, options);
 	if (decision.allowed) return;
 
-	throw new ORPCError("FORBIDDEN", {
-		message: decision.reason ?? "FEATURE_DISABLED",
-		data: {
-			code: decision.reason ?? "FEATURE_DISABLED",
-			feature: key,
-			limit: decision.limit,
-			used: decision.used,
-			remaining: decision.remaining,
-		},
-	});
+	const reason = decision.reason ?? "FEATURE_DISABLED";
+	const appCode =
+		ENTITLEMENT_REASON_TO_CODE[reason] ?? "ENTITLEMENT.FEATURE_DISABLED";
+
+	if (
+		appCode === "ENTITLEMENT.QUOTA_EXCEEDED" &&
+		typeof decision.used === "number" &&
+		typeof decision.limit === "number"
+	) {
+		throwAppError("ENTITLEMENT.QUOTA_EXCEEDED", {
+			params: { used: decision.used, limit: decision.limit },
+		});
+	}
+
+	throwAppError(appCode);
 }

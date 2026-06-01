@@ -4,6 +4,7 @@ import {
 	signatures,
 	toBytes,
 } from "@filosign/crypto-utils/node";
+import { throwAppError } from "@filosign/errors/server";
 import {
 	completionsMerkleRootV1,
 	hashAuthSubjectCommitment,
@@ -115,18 +116,13 @@ export async function pieceSign(args: {
 	if (isSender) {
 		const senderEmail = await primaryEmailForWallet(userWalletNorm);
 		if (!senderEmail) {
-			throw new ORPCError("BAD_REQUEST", {
-				message:
-					"Add a primary email to your Filosign profile to sign placement fields",
-			});
+			throwAppError("SIGNING.EMAIL_REQUIRED");
 		}
 		const assignedForSender = manifestParsed.data.fields.filter(
 			(f) => f.assignedRecipientEmail === senderEmail,
 		);
 		if (assignedForSender.length === 0) {
-			throw new ORPCError("FORBIDDEN", {
-				message: "You are not required to sign this file",
-			});
+			throwAppError("SIGNING.NOT_REQUIRED");
 		}
 
 		const [senderUser] = await db
@@ -135,9 +131,7 @@ export async function pieceSign(args: {
 			.where(eq(users.walletAddress, userWalletNorm));
 
 		if (!senderUser?.authProviderId) {
-			throw new ORPCError("FORBIDDEN", {
-				message: "You are not required to sign this file",
-			});
+			throwAppError("SIGNING.NOT_REQUIRED");
 		}
 
 		const [existingSig] = await db
@@ -150,7 +144,7 @@ export async function pieceSign(args: {
 				),
 			);
 		if (existingSig) {
-			throw new ORPCError("CONFLICT", { message: "Already signed" });
+			throwAppError("SIGNING.ALREADY_SIGNED");
 		}
 
 		signerWallet = userWalletNorm;
@@ -173,9 +167,7 @@ export async function pieceSign(args: {
 			);
 
 		if (!participantRecord) {
-			throw new ORPCError("FORBIDDEN", {
-				message: "You are not required to sign this file",
-			});
+			throwAppError("SIGNING.NOT_REQUIRED");
 		}
 
 		// Ordering vs ack/view uses server time; chain `timestamp` can lag wall clock
@@ -190,10 +182,7 @@ export async function pieceSign(args: {
 		authProviderId = participantRecord.authProviderId;
 		const email = await primaryEmailForWallet(participantRecord.wallet);
 		if (!email) {
-			throw new ORPCError("BAD_REQUEST", {
-				message:
-					"Add a primary email to your Filosign profile to sign placement fields",
-			});
+			throwAppError("SIGNING.EMAIL_REQUIRED");
 		}
 		signerEmail = email;
 	}
@@ -220,9 +209,7 @@ export async function pieceSign(args: {
 	}
 	for (const req of requiredIds) {
 		if (!completedSet.has(req)) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "All required fields must be marked complete before signing",
-			});
+			throwAppError("SIGNING.PLACEMENT_INCOMPLETE");
 		}
 	}
 

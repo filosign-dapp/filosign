@@ -143,7 +143,7 @@ Non-RPC only: `useAuthedApi`, `useIsLoggedIn`, `useIsRegistered`, `useStoredKeyg
 
 ### Send + register routing
 
-`useSendFile` accepts optional `routing?: RegisterRoutingInput` (from `@filosign/shared`). The SDK builds validated routing calldata, signs EIP-712 v2 `RegisterFile` with routing hashes, and passes `routing` to `files.register`. Timestamps use latest chain block time.
+`useSendFile` accepts optional `routing?: RegisterRoutingInput` (from `@filosign/shared`). The SDK builds validated routing calldata, signs EIP-712 v2 `RegisterEnvelope` with routing hashes, and passes `routing` to `files.register`. Timestamps use latest chain block time.
 
 Helpers: `buildValidatedRegisterRouting`, `canUseAdvancedRouting` (entitlement pre-check for UI).
 

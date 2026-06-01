@@ -6,6 +6,9 @@ export const UPGRADE_PLAN_LIMIT_REASONS = [
 	"features.settlement.advanced",
 	"features.routing.advanced",
 	"features.shared_templates",
+	"features.supplementary_attachments",
+	"features.supplementary_attachments.recipient_select",
+	"features.supplementary_attachments.conditional_release",
 ] as const;
 
 export type UpgradePlanLimitReason =

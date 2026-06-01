@@ -32,7 +32,7 @@ import { notifyParticipantsAfterRegister } from "./utils/register-notify";
 import { persistRegisteredFileInDb } from "./utils/register-persist";
 import { resolveRegisterRoutingCalldata } from "./utils/register-routing";
 
-const { FSFileRegistry } = fsContracts;
+const { FSEnvelopeRegistry } = fsContracts;
 
 const { files, users } = db.schema;
 
@@ -173,7 +173,7 @@ export async function filesRegister(
 	);
 
 	const valid = await tryCatch(
-		FSFileRegistry.read.validateFileRegistrationSignature([
+		FSEnvelopeRegistry.read.validateEnvelopeRegistrationSignature([
 			{
 				pieceCid,
 				sender,
@@ -234,7 +234,7 @@ export async function filesRegister(
 		assertEntitlement(entitlementCtx, "features.routing.advanced");
 	}
 
-	const txHash = await FSFileRegistry.write.registerFile([
+	const txHash = await FSEnvelopeRegistry.write.registerEnvelope([
 		{
 			pieceCid,
 			sender,
@@ -261,9 +261,10 @@ export async function filesRegister(
 		orgKemCiphertext,
 		orgEncryptedEncryptionKey,
 		onchainTxHash: txHash,
-		registryAddress: getAddress(FSFileRegistry.address),
+		registryAddress: getAddress(FSEnvelopeRegistry.address),
 		placementCommitment,
 		placementManifest,
+		registerRouting: routing,
 		warmParticipantCount: slotCounts.warmParticipantCount,
 		coldInviteCount: slotCounts.coldInviteCount,
 		signerSlotCount: slotCounts.signerSlotCount,

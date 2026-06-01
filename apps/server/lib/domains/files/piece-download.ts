@@ -22,7 +22,7 @@ import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
 import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
-import { fsFileRegistryAt } from "@/lib/platform/evm";
+import { fsEnvelopeRegistryAt } from "@/lib/platform/evm";
 import { bucket } from "@/lib/platform/s3/client";
 import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
 

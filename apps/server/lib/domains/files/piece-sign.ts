@@ -18,6 +18,7 @@ import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
+import { tryExecuteAttachmentReleasesForPiece } from "@/lib/domains/attachments";
 import { requireCanSign } from "@/lib/domains/files/utils/participant-access";
 import {
 	assertSettlementRecipientAckProvided,
@@ -29,8 +30,8 @@ import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
 import {
 	evmClient,
-	fsFileRegistryAt,
-	relayRegisterFileSignature,
+	fsEnvelopeRegistryAt,
+	relayRegisterEnvelopeSignature,
 } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
@@ -91,37 +92,12 @@ export async function pieceSign(args: {
 		.from(files)
 		.where(eq(files.pieceCid, pieceCid));
 
-	const [participantRecord] = await db
-		.select({
-			wallet: fileParticipants.wallet,
-			authProviderId: users.authProviderId,
-		})
-		.from(fileParticipants)
-		.innerJoin(users, eq(fileParticipants.wallet, users.walletAddress))
-		.where(
-			and(
-				eq(fileParticipants.filePieceCid, pieceCid),
-				eq(fileParticipants.role, "signer"),
-				eq(fileParticipants.wallet, userWallet),
-			),
-		);
-
 	if (!fileRecord) {
 		throw new ORPCError("NOT_FOUND", { message: "File not found" });
 	}
 
-	if (!participantRecord) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "You are not required to sign this file",
-		});
-	}
-
-	const signAt = new Date(timestamp * 1000);
-	await requireCanSign({
-		wallet: userWallet,
-		pieceCid,
-		signAt,
-	});
+	const userWalletNorm = getAddress(userWallet);
+	const isSender = getAddress(fileRecord.sender) === userWalletNorm;
 
 	const manifestParsed = zPlacementManifest.safeParse(
 		fileRecord.placementManifestJson,
@@ -132,14 +108,96 @@ export async function pieceSign(args: {
 		});
 	}
 
-	const signerAddr = getAddress(participantRecord.wallet);
-	const signerEmail = await primaryEmailForWallet(participantRecord.wallet);
-	if (!signerEmail) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"Add a primary email to your Filosign profile to sign placement fields",
+	let signerWallet: Address;
+	let authProviderId: string;
+	let signerEmail: string;
+
+	if (isSender) {
+		const senderEmail = await primaryEmailForWallet(userWalletNorm);
+		if (!senderEmail) {
+			throw new ORPCError("BAD_REQUEST", {
+				message:
+					"Add a primary email to your Filosign profile to sign placement fields",
+			});
+		}
+		const assignedForSender = manifestParsed.data.fields.filter(
+			(f) => f.assignedRecipientEmail === senderEmail,
+		);
+		if (assignedForSender.length === 0) {
+			throw new ORPCError("FORBIDDEN", {
+				message: "You are not required to sign this file",
+			});
+		}
+
+		const [senderUser] = await db
+			.select({ authProviderId: users.authProviderId })
+			.from(users)
+			.where(eq(users.walletAddress, userWalletNorm));
+
+		if (!senderUser?.authProviderId) {
+			throw new ORPCError("FORBIDDEN", {
+				message: "You are not required to sign this file",
+			});
+		}
+
+		const [existingSig] = await db
+			.select({ signer: fileSignatures.signer })
+			.from(fileSignatures)
+			.where(
+				and(
+					eq(fileSignatures.filePieceCid, pieceCid),
+					eq(fileSignatures.signer, userWalletNorm),
+				),
+			);
+		if (existingSig) {
+			throw new ORPCError("CONFLICT", { message: "Already signed" });
+		}
+
+		signerWallet = userWalletNorm;
+		authProviderId = senderUser.authProviderId;
+		signerEmail = senderEmail;
+	} else {
+		const [participantRecord] = await db
+			.select({
+				wallet: fileParticipants.wallet,
+				authProviderId: users.authProviderId,
+			})
+			.from(fileParticipants)
+			.innerJoin(users, eq(fileParticipants.wallet, users.walletAddress))
+			.where(
+				and(
+					eq(fileParticipants.filePieceCid, pieceCid),
+					eq(fileParticipants.role, "signer"),
+					eq(fileParticipants.wallet, userWalletNorm),
+				),
+			);
+
+		if (!participantRecord) {
+			throw new ORPCError("FORBIDDEN", {
+				message: "You are not required to sign this file",
+			});
+		}
+
+		// Ordering vs ack/view uses server time; chain `timestamp` can lag wall clock
+		// (common on local chains) and must not be compared to DB view timestamps.
+		await requireCanSign({
+			wallet: userWallet,
+			pieceCid,
+			signAt: new Date(),
 		});
+
+		signerWallet = getAddress(participantRecord.wallet);
+		authProviderId = participantRecord.authProviderId;
+		const email = await primaryEmailForWallet(participantRecord.wallet);
+		if (!email) {
+			throw new ORPCError("BAD_REQUEST", {
+				message:
+					"Add a primary email to your Filosign profile to sign placement fields",
+			});
+		}
+		signerEmail = email;
 	}
+
 	const assignedForSigner = manifestParsed.data.fields.filter(
 		(f) => f.assignedRecipientEmail === signerEmail,
 	);
@@ -184,7 +242,7 @@ export async function pieceSign(args: {
 			fieldIds: completedFieldIdsStored,
 			placementCommitment: fileRecord.placementCommitment,
 			pieceCid,
-			signer: signerAddr,
+			signer: signerWallet,
 		});
 	} catch {
 		throw new ORPCError("BAD_REQUEST", {
@@ -197,12 +255,12 @@ export async function pieceSign(args: {
 			signaturePublicKey: users.signaturePublicKey,
 		})
 		.from(users)
-		.where(eq(users.walletAddress, participantRecord.wallet));
+		.where(eq(users.walletAddress, signerWallet));
 
 	const dl3SignatureMessage = jsonStringify({
 		pieceCid,
 		sender: fileRecord.sender,
-		signer: participantRecord.wallet,
+		signer: signerWallet,
 		timestamp,
 		completionsRoot,
 		leafSchemaVersion: LEAF_SCHEMA_VERSION_V1,
@@ -222,14 +280,12 @@ export async function pieceSign(args: {
 
 	const signerEmailCommitment = hashNormalizedSignerEmail(signerEmail);
 
-	const privySubjectCommitment = hashAuthSubjectCommitment(
-		participantRecord.authProviderId,
-	);
+	const privySubjectCommitment = hashAuthSubjectCommitment(authProviderId);
 
 	const registerSignatureArgs = [
 		pieceCid,
 		fileRecord.sender,
-		participantRecord.wallet,
+		signerWallet,
 		signerEmailCommitment,
 		privySubjectCommitment,
 		dl3SignatureCommitment,
@@ -238,24 +294,24 @@ export async function pieceSign(args: {
 		completionsRoot,
 		LEAF_SCHEMA_VERSION_V1,
 	] as const;
-	const registry = fsFileRegistryAt(fileRecord.registryAddress);
+	const registry = fsEnvelopeRegistryAt(fileRecord.registryAddress);
 
 	try {
-		await registry.simulate.registerFileSignature(registerSignatureArgs, {
+		await registry.simulate.registerEnvelopeSignature(registerSignatureArgs, {
 			account: evmClient.account,
 		});
 	} catch (_err) {
 		throw new ORPCError("BAD_REQUEST", { message: "Invalid signature" });
 	}
 
-	const txHash = await relayRegisterFileSignature(
+	const txHash = await relayRegisterEnvelopeSignature(
 		registry,
 		registerSignatureArgs,
 	);
 
 	await db.insert(fileSignatures).values({
 		filePieceCid: pieceCid,
-		signer: signerAddr,
+		signer: signerWallet,
 		evmSignature: signature,
 		dl3Signature: dl3Signature,
 		onchainTxHash: txHash,
@@ -269,7 +325,7 @@ export async function pieceSign(args: {
 	if (recipientAck) {
 		await recordSettlementRecipientAck({
 			pieceCid,
-			signerWallet: signerAddr,
+			signerWallet: signerWallet,
 			termsVersion: recipientAck.termsVersion,
 			acceptedAt: new Date(recipientAck.acceptedAt * 1000),
 			requestIp: args.requestIp,
@@ -282,12 +338,12 @@ export async function pieceSign(args: {
 		.where(
 			and(
 				eq(fileSignerDrafts.filePieceCid, pieceCid),
-				eq(fileSignerDrafts.wallet, participantRecord.wallet),
+				eq(fileSignerDrafts.wallet, signerWallet),
 			),
 		);
 
 	trackServerEvent({
-		distinctId: signerAddr,
+		distinctId: signerWallet,
 		event: SERVER_ANALYTICS_EVENTS.pieceSigned,
 		pieceCid,
 		properties: {
@@ -307,6 +363,13 @@ export async function pieceSign(args: {
 		logger.warn(
 			{ err, pieceCid },
 			"post-sign settlement execute failed; use Settle payment or daily sync",
+		);
+	});
+
+	void tryExecuteAttachmentReleasesForPiece(pieceCid).catch((err) => {
+		logger.warn(
+			{ err, pieceCid },
+			"post-sign attachment release failed; daily sync will retry",
 		);
 	});
 

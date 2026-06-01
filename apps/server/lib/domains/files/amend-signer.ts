@@ -5,7 +5,7 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import db from "@/lib/platform/db";
-import { fsFileRegistryAt, relayAmendSigner } from "@/lib/platform/evm";
+import { fsEnvelopeRegistryAt, relayAmendSigner } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const { files, fileSignerAmendments } = db.schema;
@@ -41,7 +41,7 @@ export async function filesAmendSigner(sender: Address, rawBody: unknown) {
 		});
 	}
 
-	const registry = fsFileRegistryAt(file.registryAddress);
+	const registry = fsEnvelopeRegistryAt(file.registryAddress);
 	const amendArgs = [
 		pieceCid,
 		oldCommitment,

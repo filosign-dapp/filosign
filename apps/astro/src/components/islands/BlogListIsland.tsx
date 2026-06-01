@@ -62,7 +62,7 @@ export default function BlogListIsland({ posts }: BlogListIslandProps) {
 	});
 
 	return (
-		<section className="bg-background pb-20 pt-8">
+		<section className="bg-background py-12 md:py-20">
 			<div className={marketingSectionClass}>
 				<div className="grid grid-cols-1 lg:grid-cols-[1fr_22rem] gap-12 lg:gap-16 items-start">
 					{/* Left Column: Posts List */}

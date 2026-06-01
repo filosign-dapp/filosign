@@ -1,5 +1,8 @@
 import { motion } from "motion/react";
-import { blogPostShellClass } from "../../lib/marketing-layout";
+import {
+	blogPostShellClass,
+	marketingSectionYClass,
+} from "../../lib/marketing-layout";
 
 export interface BlogPostHeroProps {
 	title: string;
@@ -17,7 +20,7 @@ export default function BlogPostIsland({
 	heroVideo,
 }: BlogPostHeroProps) {
 	return (
-		<div className="pt-4 sm:pt-16 md:pt-32 pb-6 md:pb-12">
+		<div className={`${marketingSectionYClass} pb-6 md:pb-12`}>
 			<div className={blogPostShellClass}>
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}

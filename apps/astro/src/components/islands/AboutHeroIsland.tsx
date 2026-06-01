@@ -8,9 +8,9 @@ import { MotionProvider } from "./MotionProvider";
 export default function AboutHeroIsland() {
 	return (
 		<MotionProvider>
-			<section className="relative overflow-hidden pb-24 pt-4 sm:pt-20">
+			<section className="relative overflow-hidden py-12 md:py-20">
 				<div className={`${marketingSectionClass} mb-16`}>
-					<div className="max-w-4xl">
+					<div className="max-w-3xl">
 						<MarketingStagger
 							pace="page"
 							className="flex flex-col items-start text-left"
@@ -18,7 +18,7 @@ export default function AboutHeroIsland() {
 							<h1 className="mb-6 font-manrope text-4xl font-medium tracking-tight text-foreground text-balance md:text-5xl lg:text-6xl">
 								We build signing workflows you can trust after the ink dries.
 							</h1>
-							<p className="max-w-2xl font-manrope text-xl leading-relaxed text-muted-foreground text-pretty">
+							<p className="max-w-3xl font-manrope text-xl leading-relaxed text-muted-foreground text-pretty">
 								Encrypted agreements, records you can verify, and optional
 								payouts when everyone has signed, for teams whose deals should
 								not stop at a PDF.

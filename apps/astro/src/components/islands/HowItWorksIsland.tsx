@@ -48,7 +48,7 @@ export default function HowItWorksIsland() {
 				id="how-it-works"
 				className={`${marketingSectionShellClass} scroll-mt-28`}
 			>
-				<div className="mb-12 max-w-2xl space-y-4">
+				<div className="mb-10 md:mb-14 max-w-3xl space-y-4">
 					<p className="font-manrope text-sm font-medium text-primary">
 						How it works
 					</p>

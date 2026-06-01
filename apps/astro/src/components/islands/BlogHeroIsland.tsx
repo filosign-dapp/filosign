@@ -27,7 +27,7 @@ export default function BlogHeroIsland({
 }: BlogHeroIslandProps) {
 	return (
 		<MotionProvider>
-			<section className="bg-background pb-20 pt-4 sm:pt-20">
+			<section className="bg-background py-12 md:py-20">
 				<div className={marketingSectionClass}>
 					<div className="grid lg:grid-cols-2 gap-12 lg:gap-24 items-center">
 						<MarketingStagger

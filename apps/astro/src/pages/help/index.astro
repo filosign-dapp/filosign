@@ -3,12 +3,12 @@ import { getCollection } from "astro:content";
 import MarketingNarrowPage from "../../components/MarketingNarrowPage.astro";
 import MarketingPageShell from "../../components/MarketingPageShell.astro";
 import { titleWithBrand } from "../../config/site";
+import BaseLayout from "../../layouts/BaseLayout.astro";
 import { renderHelpStepHtml } from "../../lib/help-step-html";
 import {
 	marketingNarrowPageHeaderClass,
 	marketingNarrowPageStackClass,
 } from "../../lib/marketing-layout";
-import BaseLayout from "../../layouts/BaseLayout.astro";
 
 /** Steps-only body for accordion panels (from `## What to do` in each MDX file). */
 function parseHelpSteps(body: string): string[] {

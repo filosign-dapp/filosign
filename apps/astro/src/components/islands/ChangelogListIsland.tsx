@@ -1,10 +1,10 @@
 import type { ChangelogEntry } from "../../content/changelog";
+import { cn } from "../../lib/cn";
 import {
 	marketingNarrowInnerClass,
 	marketingNarrowPageStackClass,
 	marketingSectionYClass,
 } from "../../lib/marketing-layout";
-import { cn } from "../../lib/cn";
 import { MarketingInViewStagger } from "./MarketingStagger";
 import { MotionProvider } from "./MotionProvider";
 
@@ -33,9 +33,7 @@ export default function ChangelogListIsland({
 }: ChangelogListIslandProps) {
 	return (
 		<MotionProvider>
-			<section
-				className={cn("bg-background px-4", marketingSectionYClass)}
-			>
+			<section className={cn("bg-background px-4", marketingSectionYClass)}>
 				<MarketingInViewStagger
 					pace="page"
 					maxVisible={24}

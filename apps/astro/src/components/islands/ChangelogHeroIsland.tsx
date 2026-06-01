@@ -1,8 +1,8 @@
+import { cn } from "../../lib/cn";
 import {
 	marketingNarrowInnerClass,
 	marketingSectionYClass,
 } from "../../lib/marketing-layout";
-import { cn } from "../../lib/cn";
 import { MarketingStagger } from "./MarketingStagger";
 import { MotionProvider } from "./MotionProvider";
 

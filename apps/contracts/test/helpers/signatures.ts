@@ -23,7 +23,7 @@ export function hashCommitments(commitments: readonly Hex[]): Hex {
 
 export async function signRegisterKeygen(
 	wallet: WalletClient,
-	fileRegistryAddress: Address,
+	envelopeRegistryAddress: Address,
 	chainId: number,
 ): Promise<Hex> {
 	const account = wallet.account as Account;
@@ -33,7 +33,7 @@ export async function signRegisterKeygen(
 			name: "FilosignRegistration",
 			version: "1",
 			chainId,
-			verifyingContract: fileRegistryAddress,
+			verifyingContract: envelopeRegistryAddress,
 		},
 		types: {
 			RegisterKeygenData: [
@@ -57,9 +57,9 @@ export async function signRegisterKeygen(
 	});
 }
 
-export async function signRegisterFile(args: {
+export async function signRegisterEnvelope(args: {
 	wallet: WalletClient;
-	fileRegistryAddress: Address;
+	envelopeRegistryAddress: Address;
 	chainId: number;
 	pieceCid: string;
 	requiredCommitments: Hex[];
@@ -92,13 +92,13 @@ export async function signRegisterFile(args: {
 	return args.wallet.signTypedData({
 		account,
 		domain: {
-			name: "FSFileRegistry",
+			name: "FSEnvelopeRegistry",
 			version: "2",
 			chainId: args.chainId,
-			verifyingContract: args.fileRegistryAddress,
+			verifyingContract: args.envelopeRegistryAddress,
 		},
 		types: {
-			RegisterFile: [
+			RegisterEnvelope: [
 				{ name: "cidIdentifier", type: "bytes32" },
 				{ name: "sender", type: "address" },
 				{ name: "signersCommitment", type: "bytes20" },
@@ -117,7 +117,7 @@ export async function signRegisterFile(args: {
 				{ name: "nonce", type: "uint256" },
 			],
 		},
-		primaryType: "RegisterFile",
+		primaryType: "RegisterEnvelope",
 		message: {
 			cidIdentifier: cidId,
 			sender: account.address,
@@ -141,7 +141,7 @@ export async function signRegisterFile(args: {
 
 export async function signAmendSigner(args: {
 	wallet: WalletClient;
-	fileRegistryAddress: Address;
+	envelopeRegistryAddress: Address;
 	chainId: number;
 	pieceCid: string;
 	oldCommitment: Hex;
@@ -155,10 +155,10 @@ export async function signAmendSigner(args: {
 	return args.wallet.signTypedData({
 		account,
 		domain: {
-			name: "FSFileRegistry",
+			name: "FSEnvelopeRegistry",
 			version: "2",
 			chainId: args.chainId,
-			verifyingContract: args.fileRegistryAddress,
+			verifyingContract: args.envelopeRegistryAddress,
 		},
 		types: {
 			AmendSigner: [
@@ -182,9 +182,9 @@ export async function signAmendSigner(args: {
 	});
 }
 
-export async function signRegisterFileSignature(args: {
+export async function signRegisterEnvelopeSignature(args: {
 	wallet: WalletClient;
-	fileRegistryAddress: Address;
+	envelopeRegistryAddress: Address;
 	chainId: number;
 	pieceCid: string;
 	sender: Address;
@@ -202,13 +202,13 @@ export async function signRegisterFileSignature(args: {
 	return args.wallet.signTypedData({
 		account,
 		domain: {
-			name: "FSFileRegistry",
+			name: "FSEnvelopeRegistry",
 			version: "2",
 			chainId: args.chainId,
-			verifyingContract: args.fileRegistryAddress,
+			verifyingContract: args.envelopeRegistryAddress,
 		},
 		types: {
-			SignFile: [
+			SignEnvelope: [
 				{ name: "cidIdentifier", type: "bytes32" },
 				{ name: "sender", type: "address" },
 				{ name: "signerWallet", type: "address" },
@@ -221,7 +221,7 @@ export async function signRegisterFileSignature(args: {
 				{ name: "nonce", type: "uint256" },
 			],
 		},
-		primaryType: "SignFile",
+		primaryType: "SignEnvelope",
 		message: {
 			cidIdentifier: cidId,
 			sender: args.sender,

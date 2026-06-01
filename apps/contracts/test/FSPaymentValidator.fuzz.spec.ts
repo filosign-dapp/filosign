@@ -4,8 +4,8 @@ import type { Hex } from "viem";
 import { keccak256, parseUnits, toBytes } from "viem";
 import {
 	deployFullSystem,
-	registerFileOnly,
-	registerFileSignatureStep,
+	registerEnvelopeOnly,
+	registerEnvelopeSignatureStep,
 	registerPaymentRule,
 } from "./fixtures.js";
 import { walletAccount } from "./helpers/walletAccount.js";
@@ -34,7 +34,7 @@ describe("FSPaymentValidator fuzz scenarios", () => {
 			const id = cidId(piece);
 			const total = legAmount * 2n;
 
-			await registerFileOnly(ctx, piece, [signerCommitment]);
+			await registerEnvelopeOnly(ctx, piece, [signerCommitment]);
 			await ctx.mockUsdc.write.mint([senderAddr, total]);
 			const ruleId = await registerPaymentRule(ctx, {
 				payer: senderAddr,
@@ -49,7 +49,7 @@ describe("FSPaymentValidator fuzz scenarios", () => {
 			await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, total], {
 				account: walletAccount(ctx.sender),
 			});
-			await registerFileSignatureStep({
+			await registerEnvelopeSignatureStep({
 				ctx,
 				pieceCid: piece,
 				senderAddr,
@@ -85,7 +85,7 @@ describe("FSPaymentValidator fuzz scenarios", () => {
 		const c2 = `0x${"cc".repeat(32)}` as Hex;
 		const c3 = `0x${"dd".repeat(32)}` as Hex;
 
-		await registerFileOnly(ctx, piece, [c1, c2, c3]);
+		await registerEnvelopeOnly(ctx, piece, [c1, c2, c3]);
 		await ctx.mockUsdc.write.mint([senderAddr, amount]);
 		const ruleId = await registerPaymentRule(ctx, {
 			payer: senderAddr,
@@ -100,7 +100,7 @@ describe("FSPaymentValidator fuzz scenarios", () => {
 			account: walletAccount(ctx.sender),
 		});
 
-		await registerFileSignatureStep({
+		await registerEnvelopeSignatureStep({
 			ctx,
 			pieceCid: piece,
 			senderAddr,
@@ -109,7 +109,7 @@ describe("FSPaymentValidator fuzz scenarios", () => {
 		});
 		assert.equal(await ctx.paymentValidator.read.canExecute([ruleId]), false);
 
-		await registerFileSignatureStep({
+		await registerEnvelopeSignatureStep({
 			ctx,
 			pieceCid: piece,
 			senderAddr,

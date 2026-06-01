@@ -1,17 +1,17 @@
 import type { ReactNode } from "react";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
+import { PlacementCanvasProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-canvas-context";
+import { PlacementDndProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-dnd-provider";
 import {
 	AddSignProvider,
 	useAddSignChrome,
-	useAddSignPlacement,
 	useAddSignShell,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 import type { AddSignController } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-controller";
 import FieldsSidebar from "./fields-sidebar";
 import Header from "./header";
 import MobileToolbar from "./mobile-toolbar";
-import { FieldPlacementDialog } from "./placement-dialog";
 import { DocumentThumbnailsSidebar } from "./thumbnails";
 import DocumentViewer from "./viewer";
 
@@ -27,7 +27,11 @@ function AddSignRoot({
 
 function AddSignPageShell({ children }: { children: ReactNode }) {
 	return (
-		<div className="min-h-screen bg-background flex flex-col">{children}</div>
+		<div className="flex min-h-screen flex-col bg-background">
+			<PlacementCanvasProvider>
+				<PlacementDndProvider>{children}</PlacementDndProvider>
+			</PlacementCanvasProvider>
+		</div>
 	);
 }
 
@@ -36,12 +40,12 @@ function AddSignHeaderRow() {
 }
 
 function AddSignWorkspace({ children }: { children: ReactNode }) {
-	return <div className="flex flex-1">{children}</div>;
+	return <div className="flex min-h-0 flex-1">{children}</div>;
 }
 
 function AddSignFieldsSidebarSlot() {
 	return (
-		<aside className="hidden lg:block w-64 border-r border-border bg-muted/5">
+		<aside className="hidden h-full min-h-0 w-64 shrink-0 flex-col border-r border-border bg-muted/5 lg:flex">
 			<FieldsSidebar />
 		</aside>
 	);
@@ -57,7 +61,7 @@ function AddSignViewerSlot() {
 	const showViewer =
 		persistHydrated && (draftReady || suppressEmptyDraftRedirect);
 	return (
-		<main className="flex-1 flex flex-col bg-background">
+		<main className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
 			{!showViewer ? (
 				<div className="flex flex-1 items-center justify-center">
 					<InlineLoader size="lg" />
@@ -90,23 +94,13 @@ function AddSignMobileToolbarSlot() {
 }
 
 function AddSignDialogs() {
-	const placement = useAddSignPlacement();
 	const chrome = useAddSignChrome();
 	return (
-		<>
-			<FieldPlacementDialog
-				open={placement.placementDialogOpen}
-				onOpenChange={placement.handlePlacementDialogOpenChange}
-				fieldTypeLabel={placement.placementFieldTypeLabel}
-				signers={placement.signerOptionsForPlacement}
-				onConfirm={placement.handlePlacementConfirm}
-			/>
-			<ColdShareDialog
-				open={chrome.postSendDialogOpen}
-				share={chrome.postSendShare}
-				onDone={chrome.handlePostSendDone}
-			/>
-		</>
+		<ColdShareDialog
+			open={chrome.postSendDialogOpen}
+			share={chrome.postSendShare}
+			onDone={chrome.handlePostSendDone}
+		/>
 	);
 }
 

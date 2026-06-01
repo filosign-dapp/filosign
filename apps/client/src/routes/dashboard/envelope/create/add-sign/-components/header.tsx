@@ -12,12 +12,21 @@ import { useAddSignChrome } from "@/src/routes/dashboard/envelope/create/add-sig
 
 export default function Header() {
 	const { sendStatus, handleSend } = useAddSignChrome();
-	const isLoading = sendStatus === "loading";
+	const isLoading = sendStatus === "loading" || sendStatus === "signing";
+	const isSigning = sendStatus === "signing";
 	const isSuccess = sendStatus === "success";
 	const isError = sendStatus === "error";
 
 	const getButtonContent = () => {
-		if (isLoading) {
+		if (isSigning) {
+			return (
+				<>
+					<SpinnerGapIcon className="size-4 animate-spin" />
+					<p className="hidden sm:block">Signing your fields...</p>
+				</>
+			);
+		}
+		if (sendStatus === "loading") {
 			return (
 				<>
 					<SpinnerGapIcon className="size-4 animate-spin" />
@@ -50,11 +59,11 @@ export default function Header() {
 	};
 
 	return (
-		<header className="sticky top-0 z-50 glass bg-background/95 border-b border-border">
-			<div className="flex items-center justify-between h-16 px-6">
+		<header className="glass sticky top-0 z-50 border-b border-border bg-background/95">
+			<div className="flex h-16 items-center justify-between px-6">
 				<div className="flex items-center gap-4">
 					<Logo className="px-0" textClassName="text-foreground" iconOnly />
-					<h3>Add Signature</h3>
+					<h3>Place fields</h3>
 				</div>
 
 				<div className="flex items-center gap-3">

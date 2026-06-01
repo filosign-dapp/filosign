@@ -1,6 +1,6 @@
 # `@filosign/contracts`
 
-Solidity contracts for Filosign: document registration and signing (`FSFileRegistry`) and pull-based settlement (`FSPaymentValidator`). Hardhat mocks (`MockUSDCToken`, `MockFeeOnTransferToken`, `MockERC1271Signer`) support local testing only.
+Solidity contracts for Filosign: document registration and signing (`FSEnvelopeRegistry`) and pull-based settlement (`FSPaymentValidator`). Hardhat mocks (`MockUSDCToken`, `MockFeeOnTransferToken`, `MockERC1271Signer`) support local testing only.
 
 Wallet identity, keygen, and sharing approvals are **server-side** — not on-chain.
 
@@ -10,7 +10,7 @@ Wallet identity, keygen, and sharing approvals are **server-side** — not on-ch
 | -------- | -------- |
 | [Architecture](#architecture) | Everyone |
 | [Capacity limits](#capacity-limits) | Engineers and product |
-| [FSFileRegistry](#fsfileregistry) | Engineers |
+| [FSEnvelopeRegistry](#fsenveloperegistry) | Engineers |
 | [FSPaymentValidator](#fspaymentvalidator) | Product and backends |
 | [Payment flow](#payment-flow) | Product and backends |
 | [Trust model](#trust-model) | Security |
@@ -20,15 +20,15 @@ Wallet identity, keygen, and sharing approvals are **server-side** — not on-ch
 
 ## Architecture
 
-**Immutable v1:** deploy `FSFileRegistry(server)` then `FSPaymentValidator(fileRegistry, chainId)`. No proxies. EIP-712 domain version **"2"** on the registry.
+**Immutable v1:** deploy `FSEnvelopeRegistry(server)` then `FSPaymentValidator(envelopeRegistry, chainId)`. No proxies. EIP-712 domain version **"2"** on the registry.
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) and [`project/contracts-future-scope.md`](../../project/contracts-future-scope.md).
 
 ```mermaid
 flowchart TB
   subgraph deploy [Deployment]
-    FR[FSFileRegistry server]
-    PV[FSPaymentValidator fileRegistry chainId]
+    FR[FSEnvelopeRegistry server]
+    PV[FSPaymentValidator envelopeRegistry chainId]
     FR --> PV
   end
   subgraph runtime [Runtime]
@@ -36,8 +36,8 @@ flowchart TB
     Relay[Filosign server relay KMS]
     Signers[Signers]
     Anyone[Any address]
-    Relay -->|onlyServer registerFile registerFileSignature| FR
-    Sender -->|registerFile via relay| FR
+    Relay -->|onlyServer registerEnvelope registerEnvelopeSignature| FR
+    Sender -->|registerEnvelope via relay| FR
     Signers -->|signatures via relay| FR
     Sender -->|registerRule approve token| PV
     Anyone -->|executePayout when canExecute| PV
@@ -45,7 +45,7 @@ flowchart TB
   end
 ```
 
-- **Document state** (required/optional signers, routing, quorum, signatures, amendments) lives in `FSFileRegistry`.
+- **Document state** (required/optional signers, routing, quorum, signatures, amendments) lives in `FSEnvelopeRegistry`.
 - **Payments** are not custodied by Filosign. The payer approves `FSPaymentValidator` for a rule total; when release conditions hold, `executePayout` performs `transferFrom(payer, recipient)` per leg (callable by anyone).
 - **Product target:** USDC on Base. The validator accepts any ERC20 at `registerRule` today; the app wires USDC only. An on-chain token allowlist is deferred (see future scope).
 
@@ -60,11 +60,11 @@ Bytecode constants — not product tier limits. Entitlements + server enforce st
 | `MAX_RULE_COMMITMENTS` | **128** | Payer commitment lists on rules (`AtLeastN`, `QuorumSet`, `AllOfSet`, …) |
 | `MAX_PAYOUT_LEGS` | **32** | `PayoutLeg[]` per rule |
 
-## FSFileRegistry
+## FSEnvelopeRegistry
 
 Permanent on-chain send + sign trail. Writes are **`onlyServer`** (KMS relayer); owner can rotate `server` via `Ownable2Step`.
 
-### RegisterFile (EIP-712 v2)
+### RegisterEnvelope (EIP-712 v2)
 
 Sender-signed at send. Stored per file:
 
@@ -85,9 +85,9 @@ Sender-signed at send. Stored per file:
 
 ### Other registry APIs
 
-- **`registerFileSignature`** — sequential order enforced when configured; increments required/optional counters
+- **`registerEnvelopeSignature`** — sequential order enforced when configured; increments required/optional counters
 - **`amendSigner`** — sender EIP-712; replace commitment before sign; patches routing/quorum/roster
-- **`validateFileAckSignature`** — viewer/signer ack validation (off-chain consent; not used for payout release)
+- **`validateEnvelopeAckSignature`** — viewer/signer ack validation (off-chain consent; not used for payout release)
 - **ERC-1271** — Safe-compatible wallets via `FSSignatureValidation`
 
 Signature validity: timestamps must be within **`SIGNATURE_CLOCK_DRIFT_TOLERANCE` (5 minutes)** of `block.timestamp` (`SignatureFuture` if too far ahead) and **`SIGNATURE_VALIDITY_PERIOD` (24 hours)** after the signed timestamp (`SignatureExpired` if too late). Effective acceptance window: roughly `[timestamp, timestamp + 24 hours]`, with `timestamp` not more than 5 minutes ahead of chain time.
@@ -143,7 +143,7 @@ Revoking **`approve(validator, 0)`** off-chain also blocks execution even if the
 
 ## Payment flow
 
-1. **Register file (client → server relay):** `registerFile` on `FSFileRegistry` with routing/quorum calldata per tier.
+1. **Register file (client → server relay):** `registerEnvelope` on `FSEnvelopeRegistry` with routing/quorum calldata per tier.
 2. **Attach settlement (client):** Payer `approve(validator, totalAmount)` then `registerRule(...)` on `FSPaymentValidator` (legs, release type, optional `expiresAt`). Server indexes via `settlements.registerForFile` after on-chain verification.
 3. **Sign:** Recipients sign; registry emits `FileSigned` per signature.
 4. **Execute (server / user):** When `canExecute(ruleId)`, anyone calls `executePayout` (Filosign relay or wallet in app).
@@ -167,7 +167,7 @@ See [`apps/server/README.md`](../server/README.md) and [`project/settlements/arc
 ## Trust model
 
 - **Server (`onlyServer` on registry):** Relays authenticated users’ register/sign txs; cannot move tokens without the payer’s on-chain `approve`.
-- **Owner (governance):** Rotates `FSFileRegistry.server` and ownership (2-step). Does not grant access to user settlement funds.
+- **Owner (governance):** Rotates `FSEnvelopeRegistry.server` and ownership (2-step). Does not grant access to user settlement funds.
 - **Relayers:** Any address may call `executePayout` once `canExecute` is true.
 - **Payer:** Must call `registerRule` / `updatePayoutRule` / `cancelPayoutRule` as `msg.sender == payer`; chooses token, recipients, and release params.
 - **Recipients (product):** Filosign UI restricts envelope participants or org payout wallets; chain allows arbitrary leg recipients by payer choice.
@@ -215,8 +215,10 @@ Triage real high/medium findings: reentrancy (mitigated by `nonReentrant` + CEI)
 
 | Path | Role |
 | ---- | ---- |
-| `src/FSFileRegistry.sol` | Registry v2 |
+| `src/FSEnvelopeRegistry.sol` | Registry v2 |
 | `src/FSPaymentValidator.sol` | Settlement validator |
+| `src/libraries/FSCommitmentLib.sol` | CID hash, commitment merge/sort, `computeEmailSignerCommitment` |
+| `src/libraries/FSEnvelopeRoutingLib.sol` | Register-time routing/quorum validation |
 | `src/libraries/FSSignatureValidation.sol` | ECDSA + ERC-1271 |
 | `src/errors/*.sol` | Custom errors |
 | `src/Mock*.sol` | Hardhat test doubles only |

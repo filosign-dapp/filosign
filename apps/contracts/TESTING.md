@@ -28,7 +28,7 @@ Hardhat + viem + TypeScript. Test what loses money or breaks trust:
 | Path | Role |
 | ---- | ---- |
 | `test/*.spec.ts` | Behavior: reverts, balances, integration |
-| `test/fixtures.ts` | Direct `FSFileRegistry` + `FSPaymentValidator` deploy; `deployer` ≠ `server` (KMS); `coSigner` for multi-signer payout tests |
+| `test/fixtures.ts` | Direct `FSEnvelopeRegistry` + `FSPaymentValidator` deploy; `deployer` ≠ `server` (KMS); `coSigner` for multi-signer payout tests |
 | `test/helpers/signatures.ts` | EIP-712 signing aligned with Solidity |
 | `test/helpers/walletAccount.ts` | viem account helpers |
 | `test/helpers/chainTime.ts` | `latestBlockTimestamp`, `advanceBlockTime` (expiry tests) |

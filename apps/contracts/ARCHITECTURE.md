@@ -6,9 +6,9 @@ Frozen **immutable bytecode** for mainnet: two production contracts. No UUPS pro
 
 | Actor | Key | Role |
 | ----- | --- | ---- |
-| **Ledger** | `FC_DEPLOYER_PRIVATE_KEY` | Deploys `FSFileRegistry` and `FSPaymentValidator` |
-| **Owner (cold wallet recommended)** | deployer by default, optional `FC_OWNER_ADDRESS` handoff | Can rotate `FSFileRegistry.server` and ownership (2-step) |
-| **KMS / relayer** | `FC_SERVER_ADDRESS` → `FSFileRegistry.server` | `onlyServer` relay for `registerFile` / `registerFileSignature` |
+| **Ledger** | `FC_DEPLOYER_PRIVATE_KEY` | Deploys `FSEnvelopeRegistry` and `FSPaymentValidator` |
+| **Owner (cold wallet recommended)** | deployer by default, optional `FC_OWNER_ADDRESS` handoff | Can rotate `FSEnvelopeRegistry.server` and ownership (2-step) |
+| **KMS / relayer** | `FC_SERVER_ADDRESS` → `FSEnvelopeRegistry.server` | `onlyServer` relay for `registerEnvelope` / `registerEnvelopeSignature` |
 
 `server` is owner-rotatable via `setServer`. Ownership uses OpenZeppelin `Ownable2Step` (`transferOwnership` + `acceptOwnership`).
 
@@ -17,8 +17,8 @@ Frozen **immutable bytecode** for mainnet: two production contracts. No UUPS pro
 ```mermaid
 flowchart TB
   subgraph deploy [Deploy order]
-    FR[FSFileRegistry server]
-    PV[FSPaymentValidator fileRegistry chainId]
+    FR[FSEnvelopeRegistry server]
+    PV[FSPaymentValidator envelopeRegistry chainId]
     FR --> PV
   end
   subgraph runtime [Runtime]
@@ -26,8 +26,8 @@ flowchart TB
     Relay[KMS server relay]
     Signers[Signers]
     Anyone[Anyone]
-    Sender -->|registerFile| FR
-    Signers -->|registerFileSignature| FR
+    Sender -->|registerEnvelope| FR
+    Signers -->|registerEnvelopeSignature| FR
     Relay -->|onlyServer writes| FR
     Sender -->|registerRule approve USDC| PV
     Anyone -->|executePayout when canExecute| PV
@@ -39,12 +39,12 @@ flowchart TB
   end
 ```
 
-1. **`FSFileRegistry(server)`** — permanent auditable send + sign trail (EIP-712 **v2**, required/optional signers, parallel/sequential routing, quorum, `amendSigner`).
-2. **`FSPaymentValidator(fileRegistry, chainId)`** — permissionless pull settlement on sign; multi-leg rules, release types, payer CRUD, `expiresAt`; no custody.
+1. **`FSEnvelopeRegistry(server)`** — permanent auditable send + sign trail (EIP-712 **v2**, required/optional signers, parallel/sequential routing, quorum, `amendSigner`).
+2. **`FSPaymentValidator(envelopeRegistry, chainId)`** — permissionless pull settlement on sign; multi-leg rules, release types, payer CRUD, `expiresAt`; no custody.
 
 ## Trust boundaries
 
-- **Permanent sign record:** `FSFileRegistry` address at mainnet deploy is canonical for envelopes registered there.
+- **Permanent sign record:** `FSEnvelopeRegistry` address at mainnet deploy is canonical for envelopes registered there.
 - **E2EE / identity:** wallet registration, KEM material, and sender–recipient sharing are server-side; decrypt uses DB wraps + derived keys, not chain reads.
 - **No Filosign custody:** validator only `transferFrom(payer, recipient)`; contract must not hold USDC.
 - **Permissionless payout:** any address may call `executePayout` when `canExecute` is true (server relay is UX).
@@ -69,6 +69,8 @@ See [`project/contracts-future-scope.md`](../../project/contracts-future-scope.m
 bun run --cwd apps/contracts migrate:testnet   # test + deploy Base Sepolia
 bun run --cwd apps/contracts migrate:mainnet   # test + deploy Base
 ```
+
+**Breaking rebrand / redeploy:** See [`project/contracts/envelope-registry-migration.md`](../../project/contracts/envelope-registry-migration.md) (EIP-712 v2, definitions addresses, legacy `registryAddress` rows).
 
 Local deploy: `server` = `FC_SERVER_ADDRESS` (else Hardhat #1); deploy funds that address with 100 ETH.
 

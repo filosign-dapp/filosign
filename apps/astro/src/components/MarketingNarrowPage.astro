@@ -1,0 +1,13 @@
+---
+import { marketingNarrowPageClass } from "../lib/marketing-layout";
+
+interface Props {
+	class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<div class:list={[marketingNarrowPageClass, className]}>
+	<slot />
+</div>

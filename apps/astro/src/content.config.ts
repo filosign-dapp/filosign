@@ -27,4 +27,16 @@ const blog = defineCollection({
 	}),
 });
 
-export const collections = { blog };
+const helpErrors = defineCollection({
+	loader: glob({
+		base: "./src/content/help-errors",
+		pattern: "**/*.{md,mdx}",
+	}),
+	schema: z.object({
+		code: z.string(),
+		title: z.string(),
+		description: z.string(),
+	}),
+});
+
+export const collections = { blog, helpErrors };

@@ -1,6 +1,8 @@
 import { ORPCError } from "@orpc/server";
 import { Hono } from "hono";
 import { handleDodoWebhook } from "@/lib/domains/billing";
+import { captureServerException } from "@/lib/platform/analytics/posthog";
+import { shouldCaptureServerException } from "@/lib/platform/analytics/should-capture-exception";
 
 /** Non-oRPC `/api/integrations/*` routes (webhooks, partner callbacks). */
 export const integrationsRouter = new Hono().post(
@@ -44,6 +46,13 @@ export const integrationsRouter = new Hono().post(
 				});
 			}
 
+			if (shouldCaptureServerException(error)) {
+				captureServerException(error, {
+					path: c.req.path,
+					method: c.req.method,
+					source: "integrations.dodo.webhook",
+				});
+			}
 			c.status(500);
 			return c.json({
 				ok: false,

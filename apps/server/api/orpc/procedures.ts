@@ -3,9 +3,23 @@ import type { Address } from "viem";
 
 import { readOrgIdHeader, resolveActiveOrg } from "@/lib/domains/orgs";
 import { assertRegistrationComplete } from "@/lib/domains/platform-access";
+import { captureServerException } from "@/lib/platform/analytics/posthog";
+import { shouldCaptureServerException } from "@/lib/platform/analytics/should-capture-exception";
 import type { OrpcContext } from "./context";
 
-export const o = os.$context<OrpcContext>();
+export const o = os.$context<OrpcContext>().use(async ({ context, next }) => {
+	try {
+		return await next();
+	} catch (error) {
+		if (shouldCaptureServerException(error)) {
+			captureServerException(error, {
+				procedure: context.hono.req.path,
+				method: context.hono.req.method,
+			});
+		}
+		throw error;
+	}
+});
 
 export const publicProcedure = o;
 

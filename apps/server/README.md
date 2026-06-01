@@ -30,13 +30,33 @@ Secrets layout: [`SECRETS.md`](SECRETS.md). Local server uses **`--env-file`**; 
 - Client: thirdweb `useAuthToken()` → `Authorization: Bearer` + `X-Wallet-Address` on `/api/rpc`
 - **`tx.processIndexerHash`:** `{ hash, body? }` — **`body: {}`** ok for registry relay txs (`zIndexerTxBody`).
 
+## Observability (three layers)
+
+| Layer | Tool | What it covers |
+|-------|------|----------------|
+| User toasts + help | `@filosign/errors` | Expected API errors (`appCode`), validation |
+| **Exceptions / crashes** | **PostHog Issues** | Unexpected throws (see below) |
+| **Ops signals** | **Telegram** | Cron/DB/relay/bootstrap alerts |
+
+Do not conflate them: a `BAD_REQUEST` with `appCode` is for the user, not PostHog Issues.
+
 ## Analytics (PostHog)
 
 Server-side product events via [`lib/platform/analytics/posthog.ts`](lib/platform/analytics/posthog.ts) (`posthog-node`). Set `POSTHOG_ENABLED`, `POSTHOG_API_KEY` in `.env.local`. Full event catalog and funnel guidance: [`project/posthog-integration.md`](../../project/posthog-integration.md).
 
+### Error tracking (server)
+
+- **`captureServerException`** — unexpected errors only (`shouldCaptureServerException` in [`should-capture-exception.ts`](lib/platform/analytics/should-capture-exception.ts)).
+- **Primary capture:** oRPC base middleware on [`api/orpc/procedures.ts`](api/orpc/procedures.ts) (`/api/rpc`).
+- **Secondary:** Hono `app.onError` (non-oRPC routes) and integrations webhook `catch`.
+- Properties are scrubbed via [`@filosign/shared` `analytics-scrub`](../../packages/shared/analytics-scrub.ts) (no emails, keys, ciphertext).
+- Skips: `ORPCError` with `data.appCode`, and expected codes (`UNAUTHORIZED`, `BAD_REQUEST`, …).
+
 ## Platform alerts (Telegram)
 
 Critical platform failures emit via [`lib/platform/analytics/platform-alerts.ts`](lib/platform/analytics/platform-alerts.ts) using [`@filosign/logger`](../../packages/logger) (Telegram transport). Requires `TG_ANALYTICS_BOT_TOKEN` and `TG_ANALYTICS_BOT_GROUP_ID`; delivery is gated by `TG_ANALYTICS=true`.
+
+When `POSTHOG_ENABLED=true`, the same alert is also mirrored as a sanitized `platform_alert` event (Telegram remains the on-call channel).
 
 **Manual staging verification** (not run in CI):
 

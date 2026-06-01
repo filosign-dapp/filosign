@@ -2,12 +2,16 @@ import "@/lib/platform/polyfills/bigint-json";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import config from "@/config";
-import { shutdownPostHog } from "@/lib/platform/analytics/posthog";
+import {
+	captureServerException,
+	shutdownPostHog,
+} from "@/lib/platform/analytics/posthog";
+import { shouldCaptureServerException } from "@/lib/platform/analytics/should-capture-exception";
 import { validateServerBootstrap } from "@/lib/platform/bootstrap/validate-server-bootstrap";
 import { initCache } from "@/lib/platform/cache/session-cache";
 import { startPlatformCron, stopPlatformCron } from "@/lib/platform/cron";
 import { csp } from "@/lib/platform/csp";
-import { requestLog } from "@/lib/platform/pino";
+import { logger, requestLog } from "@/lib/platform/pino";
 import { handleCheckoutContinueRequest } from "./api/integrations/checkout-continue";
 import { apiRouter } from "./api/orpc/hono-mount";
 
@@ -56,7 +60,17 @@ export const app = new Hono()
 		const token = c.req.query("token");
 		return handleCheckoutContinueRequest({ token });
 	})
-	.route("/api", apiRouter);
+	.route("/api", apiRouter)
+	.onError((err, c) => {
+		if (shouldCaptureServerException(err)) {
+			captureServerException(err, {
+				path: c.req.path,
+				method: c.req.method,
+			});
+		}
+		logger.error({ err }, "Unhandled HTTP error");
+		return c.json({ ok: false, error: "Internal Server Error" }, 500);
+	});
 
 let shuttingDown = false;
 

@@ -46,7 +46,7 @@ const parsedEnv = createEnv({
 			.default("false")
 			.transform((v) => v === "true"),
 		POSTHOG_API_KEY: z.string().min(1).optional(),
-		POSTHOG_HOST: z.url().default("https://us.i.posthog.com"),
+		POSTHOG_HOST: z.url(),
 		POSTHOG_ENABLED: z
 			.string()
 			.default("false")

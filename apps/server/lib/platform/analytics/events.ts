@@ -23,6 +23,9 @@ export const PLATFORM_ALERT_EVENTS = {
 	settlementsRelayPayoutFailed: "settlements.relay_payout_failed",
 } as const;
 
+/** PostHog event name for mirrored Telegram platform alerts (ops signals). */
+export const PLATFORM_ALERT_POSTHOG_EVENT = "platform_alert" as const;
+
 export type PlatformAlertEventName =
 	(typeof PLATFORM_ALERT_EVENTS)[keyof typeof PLATFORM_ALERT_EVENTS];
 

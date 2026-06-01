@@ -36,7 +36,7 @@ export function AppProviders({ children }: { children?: ReactNode }) {
 					<QueryClientProvider>
 						<FilosignAnalyticsProvider
 							apiKey={env.VITE_POSTHOG_KEY ?? ""}
-							apiHost={env.VITE_POSTHOG_HOST ?? "https://us.i.posthog.com"}
+							apiHost={env.VITE_POSTHOG_HOST}
 							enabled={analyticsEnabled}
 							sessionReplay={sessionReplay}
 						>

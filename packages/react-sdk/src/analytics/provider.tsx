@@ -1,6 +1,6 @@
-import { scrubPostHogBeforeSend } from "@filosign/shared";
 import { PostHogProvider } from "@posthog/react";
 import type { ReactNode } from "react";
+import { analyticsBeforeSend } from "./before-send";
 import {
 	AnalyticsContextProvider,
 	useNoopAnalytics,
@@ -49,12 +49,13 @@ export function FilosignAnalyticsProvider({
 			options={{
 				api_host: apiHost,
 				autocapture: false,
+				// Error tracking: separate from click autocapture (PostHog `capture_exceptions`).
 				capture_exceptions: true,
 				capture_pageview: false,
 				capture_pageleave: false,
 				disable_session_recording: !sessionReplay,
 				persistence: "localStorage",
-				before_send: (event) => scrubPostHogBeforeSend(event),
+				before_send: analyticsBeforeSend,
 			}}
 		>
 			<PostHogAnalyticsBridge>{children}</PostHogAnalyticsBridge>

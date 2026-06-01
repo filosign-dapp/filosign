@@ -13,9 +13,6 @@ mockLoggerTelegramCapture();
 mock.module("@/env", () => ({
 	default: { ...testEnvStub, TG_ANALYTICS: true },
 }));
-mock.module("@/lib/platform/pino", () => ({
-	logger: { info: () => {}, error: () => {}, warn: () => {} },
-}));
 mock.module("@/lib/domains/settlements", () => ({
 	runSyncSettlementRulesJob: async () => {
 		throw new Error("db unavailable");

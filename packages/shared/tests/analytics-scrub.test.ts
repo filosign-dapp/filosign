@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	scrubAnalyticsProperties,
 	scrubAnalyticsString,
+	scrubCaptureEvent,
 } from "../analytics-scrub";
 
 describe("scrubAnalyticsString", () => {
@@ -29,5 +30,15 @@ describe("scrubAnalyticsProperties", () => {
 			passphrase: "[redacted]",
 			source: "ErrorBoundary",
 		});
+	});
+
+	test("scrubCaptureEvent preserves event shell", () => {
+		const input = {
+			uuid: "id-1",
+			event: "$exception",
+			properties: { source: "user@example.com" },
+		};
+		const out = scrubCaptureEvent(input);
+		expect(out?.properties?.source).toBe("[email redacted]");
 	});
 });

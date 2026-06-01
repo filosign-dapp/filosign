@@ -1,11 +1,21 @@
 import { createPostHogRuntime } from "@filosign/logger";
-import { scrubAnalyticsProperties } from "@filosign/shared";
+import {
+	type AnalyticsProperties,
+	scrubAnalyticsProperties,
+} from "@filosign/shared";
+import {
+	type ServerExceptionProperties,
+	toPostHogExceptionProperties,
+} from "@/lib/platform/analytics/exception-properties";
 
 /** Read PostHog config from process.env to keep tests isolated from full env loader. */
 function readPostHogConfig() {
 	const enabled = process.env.POSTHOG_ENABLED === "true";
 	const apiKey = process.env.POSTHOG_API_KEY;
-	const host = process.env.POSTHOG_HOST?.trim() || "https://us.i.posthog.com";
+	const host = process.env.POSTHOG_HOST?.trim();
+	if (!host) {
+		throw new Error("POSTHOG_HOST is required");
+	}
 	return { enabled, apiKey, host };
 }
 
@@ -58,10 +68,12 @@ export function captureEvent(args: {
 
 export function captureServerException(
 	error: unknown,
-	properties?: Record<string, unknown>,
+	properties?: ServerExceptionProperties,
 ): void {
 	const scrubbed = properties
-		? scrubAnalyticsProperties(properties)
+		? toPostHogExceptionProperties(
+				scrubAnalyticsProperties(properties satisfies AnalyticsProperties),
+			)
 		: undefined;
 	getPostHogRuntime().captureException({
 		error,

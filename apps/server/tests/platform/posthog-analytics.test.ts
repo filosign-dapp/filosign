@@ -12,11 +12,13 @@ import {
 
 const priorEnabled = process.env.POSTHOG_ENABLED;
 const priorKey = process.env.POSTHOG_API_KEY;
+const priorHost = process.env.POSTHOG_HOST;
 
 beforeEach(async () => {
 	clearPosthogCaptures();
 	process.env.POSTHOG_ENABLED = "true";
 	process.env.POSTHOG_API_KEY = "phc_test";
+	process.env.POSTHOG_HOST = "https://posthog.example.com";
 	const { resetPostHogClientForTests } = await import(
 		"@/lib/platform/analytics/posthog"
 	);
@@ -37,6 +39,11 @@ afterEach(async () => {
 		delete process.env.POSTHOG_API_KEY;
 	} else {
 		process.env.POSTHOG_API_KEY = priorKey;
+	}
+	if (priorHost === undefined) {
+		delete process.env.POSTHOG_HOST;
+	} else {
+		process.env.POSTHOG_HOST = priorHost;
 	}
 });
 
@@ -104,6 +111,7 @@ describe("trackServerEvent", () => {
 	test("merges pieceCid into properties and groups when enabled", async () => {
 		process.env.POSTHOG_ENABLED = "true";
 		process.env.POSTHOG_API_KEY = "phc_test";
+		process.env.POSTHOG_HOST = "https://posthog.example.com";
 		const { resetPostHogClientForTests } = await import(
 			"@/lib/platform/analytics/posthog"
 		);

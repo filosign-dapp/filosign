@@ -36,6 +36,7 @@ describe("createPostHogRuntime", () => {
 		const runtime = createPostHogRuntime({
 			enabled: false,
 			apiKey: "phc_test",
+			host: "https://posthog.example.com",
 			chain: "local",
 			service: "filosign-server",
 		});
@@ -50,6 +51,7 @@ describe("createPostHogRuntime", () => {
 		const runtime = createPostHogRuntime({
 			enabled: true,
 			apiKey: "phc_test",
+			host: "https://posthog.example.com",
 			chain: "testnet",
 			service: "filosign-server",
 		});
@@ -76,6 +78,7 @@ describe("createPostHogRuntime", () => {
 		const runtime = createPostHogRuntime({
 			enabled: true,
 			apiKey: "phc_test",
+			host: "https://posthog.example.com",
 			chain: "local",
 			service: "filosign-server",
 		});
@@ -102,6 +105,7 @@ describe("createPostHogRuntime", () => {
 		const runtime = createPostHogRuntime({
 			enabled: false,
 			apiKey: "phc_test",
+			host: "https://posthog.example.com",
 			chain: "local",
 			service: "filosign-server",
 		});
@@ -116,6 +120,7 @@ describe("createPostHogRuntime", () => {
 		const runtime = createPostHogRuntime({
 			enabled: true,
 			apiKey: "phc_test",
+			host: "https://posthog.example.com",
 			chain: "local",
 			service: "filosign-server",
 		});

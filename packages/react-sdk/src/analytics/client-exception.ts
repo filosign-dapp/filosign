@@ -1,6 +1,8 @@
+import type { AnalyticsExceptionProperties } from "./types";
+
 type ClientExceptionCapture = (
 	error: unknown,
-	properties?: Record<string, unknown>,
+	properties?: AnalyticsExceptionProperties,
 ) => void;
 
 let capture: ClientExceptionCapture | null = null;
@@ -15,7 +17,7 @@ export function registerClientExceptionCapture(
 /** Non-React entry (e.g. `reportClientError`) — no-ops when analytics disabled. */
 export function captureClientException(
 	error: unknown,
-	properties?: Record<string, unknown>,
+	properties?: AnalyticsExceptionProperties,
 ): void {
 	capture?.(error, properties);
 }

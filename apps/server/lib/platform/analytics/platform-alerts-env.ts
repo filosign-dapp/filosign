@@ -4,6 +4,7 @@ import {
 	createTelegramTransport,
 	type TelegramTransportOptions,
 } from "@filosign/logger";
+import { mirrorPlatformAlertToPostHogFromProcessEnv } from "@/lib/platform/analytics/platform-alert-posthog";
 import type { PlatformAlertEvent } from "./events";
 
 function readTelegramConfigFromProcessEnv(): TelegramTransportOptions {
@@ -28,6 +29,7 @@ export function emitCriticalPlatformEventFromProcessEnv(
 		transports: [createTelegramTransport(readTelegramConfigFromProcessEnv())],
 		shouldSend: (event) => dedupe.shouldSend(event),
 	});
+	mirrorPlatformAlertToPostHogFromProcessEnv(event);
 	return runtime.emit({
 		...event,
 		timestamp: Date.now(),

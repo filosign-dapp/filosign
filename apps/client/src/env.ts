@@ -12,7 +12,7 @@ const parsedEnv = createEnv({
 		VITE_ASTRO_URL: z.url(),
 		VITE_CLIENT_URL: z.url(),
 		VITE_POSTHOG_KEY: z.string().min(1).optional(),
-		VITE_POSTHOG_HOST: z.url().optional(),
+		VITE_POSTHOG_HOST: z.url(),
 		VITE_POSTHOG_ENABLED: z
 			.enum(["true", "false", "1", "0"])
 			.optional()

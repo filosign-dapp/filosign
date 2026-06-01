@@ -12,8 +12,8 @@ Use one PostHog project for both apps (same API key).
 
 | App | Env file | Variables |
 | --- | --- | --- |
-| Server | `apps/server/.env.local` | `POSTHOG_ENABLED=true`, `POSTHOG_API_KEY`, optional `POSTHOG_HOST` (default `https://us.i.posthog.com`) |
-| Client | `apps/client/.env.local` | `VITE_POSTHOG_ENABLED=true`, `VITE_POSTHOG_KEY`, optional `VITE_POSTHOG_HOST` |
+| Server | `apps/server/.env.local` | `POSTHOG_HOST` (required), `POSTHOG_ENABLED`, `POSTHOG_API_KEY` |
+| Client | `apps/client/.env.local` | `VITE_POSTHOG_HOST` (required), `VITE_POSTHOG_ENABLED`, `VITE_POSTHOG_KEY` |
 
 Server events include `properties.chain` (`local` / `testnet` / `mainnet`). Filter on that in PostHog to separate dev from production.
 
@@ -166,6 +166,28 @@ Until Group analytics is on your plan, use `piece_cid` property filters above �
 3. For envelope-scoped server events, pass `pieceCid` so `piece_cid` and group `envelope` are set automatically.
 4. Update this file’s table.
 5. Optionally define the event in PostHog **Data management** for clearer funnel pickers.
+
+---
+
+## Platform alerts (Telegram mirror)
+
+Critical ops signals (`server.http_500`, `server.cron_job_failed`, `server.db_infra_error`, etc.) are emitted via `emitCriticalPlatformEvent` → **Telegram** (`TG_ANALYTICS`).
+
+When `POSTHOG_ENABLED=true` (and `POSTHOG_HOST` / `POSTHOG_API_KEY` are set), the same alert is mirrored to PostHog as event **`platform_alert`** with properties:
+
+| Property | Description |
+| --- | --- |
+| `alert_name` | Same as Telegram event name (e.g. `server.db_infra_error`) |
+| `severity` | `error` or `critical` |
+| `message` | Human-readable summary |
+| *(context)* | Flattened, scrubbed fields from the alert `context` (method, path, job, error, …) |
+| `chain` / `deployment` | Added by server analytics (same as product events) |
+
+Implementation: [`platform-alert-posthog.ts`](apps/server/lib/platform/analytics/platform-alert-posthog.ts). Uses the **same 5-minute dedupe** key as Telegram so both channels stay quiet under repeated failures.
+
+**PostHog insights:** filter `event = platform_alert`, break down by `alert_name`, alert on spikes (e.g. `server.db_infra_error`). Telegram remains the primary on-call channel.
+
+Bootstrap / pre-env failures use `emitCriticalPlatformEventFromProcessEnv` — PostHog mirror runs only when `POSTHOG_*` is present in `process.env`.
 
 ---
 

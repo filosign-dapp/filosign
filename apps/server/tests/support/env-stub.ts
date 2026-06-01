@@ -30,6 +30,7 @@ export const testEnvStub = {
 	THIRDWEB_SECRET_KEY: "test-secret",
 	DEBUG: false,
 	POSTHOG_ENABLED: false,
+	POSTHOG_HOST: "https://posthog.example.com",
 	DODO_API_KEY: "dodo-test",
 	DODO_WEBHOOK_KEY: "dodo-webhook-test",
 };

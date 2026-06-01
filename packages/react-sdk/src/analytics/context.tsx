@@ -11,6 +11,7 @@ import {
 import { registerClientExceptionCapture } from "./client-exception";
 import { PIECE_CID_PROPERTY, POSTHOG_ENVELOPE_GROUP } from "./envelope";
 import type { CLIENT_ANALYTICS_EVENTS } from "./events";
+import type { AnalyticsExceptionProperties } from "./types";
 
 type CaptureFn = (
 	event: (typeof CLIENT_ANALYTICS_EVENTS)[keyof typeof CLIENT_ANALYTICS_EVENTS],
@@ -21,7 +22,7 @@ type IdentifyFn = (wallet: string | undefined) => void;
 
 type CaptureExceptionFn = (
 	error: unknown,
-	properties?: Record<string, unknown>,
+	properties?: AnalyticsExceptionProperties,
 ) => void;
 
 export type AnalyticsContextValue = {

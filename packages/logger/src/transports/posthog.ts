@@ -1,5 +1,11 @@
 import { PostHog } from "posthog-node";
 
+/** PostHog Node `captureException` additional properties (scrubbed at call sites). */
+export type PostHogExceptionProperties = Record<
+	string,
+	string | number | boolean | null | undefined
+>;
+
 export type PostHogRuntime = {
 	captureEvent(args: {
 		distinctId: string;
@@ -10,7 +16,7 @@ export type PostHogRuntime = {
 	captureException(args: {
 		error: unknown;
 		distinctId?: string;
-		properties?: Record<string, unknown>;
+		properties?: PostHogExceptionProperties;
 	}): void;
 	shutdown(): Promise<void>;
 	resetForTests(): void;
@@ -19,7 +25,7 @@ export type PostHogRuntime = {
 export function createPostHogRuntime(args: {
 	enabled: boolean;
 	apiKey?: string;
-	host?: string;
+	host: string;
 	chain: string;
 	service: string;
 }): PostHogRuntime {
@@ -31,7 +37,9 @@ export function createPostHogRuntime(args: {
 		}
 		if (!client) {
 			client = new PostHog(args.apiKey, {
-				host: args.host ?? "https://us.i.posthog.com",
+				host: args.host,
+				// Supplement oRPC middleware for process-level uncaught errors.
+				enableExceptionAutocapture: true,
 			});
 		}
 		return client;

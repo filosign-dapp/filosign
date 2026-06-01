@@ -42,7 +42,7 @@ Do not conflate them: a `BAD_REQUEST` with `appCode` is for the user, not PostHo
 
 ## Analytics (PostHog)
 
-Server-side product events via [`lib/platform/analytics/posthog.ts`](lib/platform/analytics/posthog.ts) (`posthog-node`). Set `POSTHOG_ENABLED`, `POSTHOG_API_KEY` in `.env.local`. Full event catalog and funnel guidance: [`project/posthog-integration.md`](../../project/posthog-integration.md).
+Server-side product events via [`lib/platform/analytics/posthog.ts`](lib/platform/analytics/posthog.ts) (`posthog-node`). Set `POSTHOG_HOST`, `POSTHOG_ENABLED`, and `POSTHOG_API_KEY` in `.env.local`. Full event catalog and funnel guidance: [`project/posthog-integration.md`](../../project/posthog-integration.md).
 
 ### Error tracking (server)
 
@@ -56,7 +56,7 @@ Server-side product events via [`lib/platform/analytics/posthog.ts`](lib/platfor
 
 Critical platform failures emit via [`lib/platform/analytics/platform-alerts.ts`](lib/platform/analytics/platform-alerts.ts) using [`@filosign/logger`](../../packages/logger) (Telegram transport). Requires `TG_ANALYTICS_BOT_TOKEN` and `TG_ANALYTICS_BOT_GROUP_ID`; delivery is gated by `TG_ANALYTICS=true`.
 
-When `POSTHOG_ENABLED=true`, the same alert is also mirrored as a sanitized `platform_alert` event (Telegram remains the on-call channel).
+When `POSTHOG_ENABLED=true` (with `POSTHOG_HOST` and `POSTHOG_API_KEY`), the same alert is mirrored as a sanitized `platform_alert` PostHog event with the same 5-minute dedupe as Telegram. See [`platform-alert-posthog.ts`](lib/platform/analytics/platform-alert-posthog.ts) and [`project/posthog-integration.md`](../../project/posthog-integration.md).
 
 **Manual staging verification** (not run in CI):
 

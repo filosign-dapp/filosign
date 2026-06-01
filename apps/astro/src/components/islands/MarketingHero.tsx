@@ -61,7 +61,7 @@ export default function MarketingHero() {
 						}}
 						className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-tight text-balance max-w-full"
 					>
-						Private agreement workflows that can settle themselves
+						Agreement workflows that can settle themselves
 					</motion.h1>
 
 					<motion.p
@@ -73,8 +73,8 @@ export default function MarketingHero() {
 						}}
 						className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed -mt-2 font-manrope font-light text-pretty"
 					>
-						Send encrypted documents, collect verifiable signatures, and attach
-						payouts on signing conditions.
+						Private documents, permanent e-signatures, and pre-authorized
+						payouts based on signing conditions, all in one place.
 					</motion.p>
 
 					<motion.div

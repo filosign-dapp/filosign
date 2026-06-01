@@ -9,8 +9,8 @@ function getFooterSections() {
 		{
 			title: "Product",
 			links: [
-				{ label: "Pricing", href: "/pricing" },
 				{ label: "What's new", href: "/changelog" },
+				{ label: "Pricing", href: "/pricing" },
 			],
 		},
 		{
@@ -23,6 +23,7 @@ function getFooterSections() {
 		{
 			title: "Support",
 			links: [
+				{ label: "Help", href: "/help" },
 				{ label: "Security overview", href: "/security" },
 				{ label: "Contact Support", href: "mailto:support@filosign.xyz" },
 			],
@@ -33,15 +34,10 @@ function getFooterSections() {
 				{ label: "Terms of Service", href: "/terms" },
 				{ label: "Privacy Policy", href: "/privacy" },
 				{ label: "Acceptable Use", href: "/acceptable-use" },
-				{ label: "Subprocessors", href: "/subprocessors" },
-				{ label: "E-signature validity", href: "/legal/e-signature-validity" },
+				{ label: "Onchain e-signatures", href: "/legal/e-signature-validity" },
 				{
-					label: "Payout attachment",
+					label: "Non-custodial Payouts",
 					href: "/legal/non-custodial-settlement",
-				},
-				{
-					label: "Payout attachment addendum",
-					href: "/legal/settlement-feature-addendum",
 				},
 			],
 		},

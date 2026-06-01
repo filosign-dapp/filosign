@@ -27,7 +27,7 @@ export default function LandingUseCasesIsland() {
 	return (
 		<MotionProvider>
 			<section className={marketingSectionShellClass}>
-				<div className="mb-10 max-w-2xl space-y-4">
+				<div className="mb-10 md:mb-14 max-w-3xl space-y-4">
 					<p className="font-manrope text-sm font-medium text-primary">
 						Built for high-stakes workflows
 					</p>

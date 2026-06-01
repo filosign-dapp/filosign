@@ -76,7 +76,7 @@ export default function FeaturesBentoIsland() {
 					whileInView={{ opacity: 1, y: 0 }}
 					viewport={{ once: true }}
 					transition={{ delay: 0.1 }}
-					className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto font-manrope font-light"
+					className="text-muted-foreground text-lg md:text-xl max-w-3xl mx-auto font-manrope font-light"
 				>
 					Encrypted documents, a record you can share and verify, and optional
 					Attached payouts when everyone has signed.

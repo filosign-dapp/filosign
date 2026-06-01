@@ -32,8 +32,8 @@ Defined in [global.css](file:///Users/styles/Styles/Code/filosign/apps/astro/src
 
 * **Max Width:** `--container-marketing` / `max-w-marketing` = `90rem` (~1440px)
 * **Gutter Padding (`px-page`):** `px-4` (mobile) $\rightarrow$ `sm:px-6` $\rightarrow$ `md:px-8` $\rightarrow$ `lg:px-10` (desktop)
-* **Section Margins (`py-page`):** `py-16 md:py-20` for standard rhythm
-* **Hero Margins:** `py-12 md:py-16`
+* **Section / page vertical rhythm:** `py-12 md:py-20` (`marketingSectionYClass`)
+* **Narrow content width (navbar-aligned):** `max-w-3xl` (`marketingNarrowWidthClass`)
 * **Nav Sticky Offset:** `pt-[max(1rem,env(safe-area-inset-top))] sm:pt-6 md:pt-10`
 * **Card Border Radius:** `var(--radius)` = `0.5rem`
   * `radius-sm`: `0.3rem` (calc 0.6)

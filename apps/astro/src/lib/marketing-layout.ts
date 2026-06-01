@@ -11,8 +11,8 @@ export const marketingSectionClass = [
 	marketingPxClass,
 ].join(" ");
 
-/** Default vertical rhythm for marketing sections. */
-export const marketingSectionYClass = "py-16 md:py-20";
+/** Default vertical rhythm for marketing sections (matches help page). */
+export const marketingSectionYClass = "py-12 md:py-20";
 
 /** Full section: width cap + gutters + vertical padding. */
 export const marketingSectionShellClass = [
@@ -20,11 +20,33 @@ export const marketingSectionShellClass = [
 	marketingSectionYClass,
 ].join(" ");
 
-/** Homepage / page hero shell - same width as sections, lighter vertical padding. */
+/** Homepage / page hero shell - same width and vertical rhythm as content pages. */
 export const marketingHeroSectionClass = [
 	marketingSectionClass,
-	"py-12 md:py-16",
+	marketingSectionYClass,
 ].join(" ");
+
+/** Content column width — matches floating navbar inner max. */
+export const marketingNarrowWidthClass = "max-w-3xl";
+
+/** Centered narrow column (navbar-aligned). */
+export const marketingNarrowInnerClass = [
+	"mx-auto w-full",
+	marketingNarrowWidthClass,
+].join(" ");
+
+/** Narrow document page shell (help, legal, policy). */
+export const marketingNarrowPageClass = [
+	marketingNarrowInnerClass,
+	"px-4",
+	marketingSectionYClass,
+].join(" ");
+
+/** Page title block spacing below hero/nav gap. */
+export const marketingNarrowPageHeaderClass = "mb-10 md:mb-14";
+
+/** Major blocks on narrow pages (e.g. help categories). */
+export const marketingNarrowPageStackClass = "flex flex-col gap-10";
 
 /** Sticky nav offset - scales down on small screens. */
 export const marketingNavStickyClass =

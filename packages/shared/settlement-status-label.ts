@@ -6,21 +6,21 @@ import type {
 export function settlementStatusLabel(status: SettlementRuleStatus): string {
 	switch (status) {
 		case "pending":
-			return "Pending";
+			return "Waiting for signatures";
 		case "ready":
-			return "Ready to execute";
+			return "Ready to pay out";
 		case "partial":
-			return "Partially paid";
+			return "Partly paid";
 		case "executed":
 			return "Paid";
 		case "cancelled":
 			return "Cancelled";
 		case "failed_insufficient":
-			return "Insufficient balance";
+			return "Not enough USDC or approval";
 		case "failed_relay":
-			return "Automatic transfer failed";
+			return "We couldn't send the transfer";
 		case "failed_conditions":
-			return "Conditions not met";
+			return "Conditions not met yet";
 	}
 }
 
@@ -29,23 +29,23 @@ export function settlementReleaseTypeLabel(
 ): string {
 	switch (releaseType) {
 		case "all_signed":
-			return "When all sign";
+			return "Everyone has signed";
 		case "specific_signer":
-			return "When specific signer signs";
+			return "A specific person signs";
 		case "at_least_n":
-			return "When N signers sign";
+			return "Enough people sign";
 		case "all_required_signed":
-			return "When all required sign";
+			return "Everyone required has signed";
 		case "all_signed_complete":
-			return "When all signers complete";
+			return "Everyone (including optional) has signed";
 		case "quorum_required":
-			return "When registry quorum met";
+			return "Envelope minimum signatures are met";
 		case "quorum_set":
-			return "When quorum set met";
+			return "Enough people from your chosen group sign";
 		case "quorum_all":
-			return "When roster quorum met";
+			return "Enough people from the full roster sign";
 		case "all_of_set":
-			return "When all listed sign";
+			return "Everyone on your list signs";
 		default:
 			return releaseType;
 	}

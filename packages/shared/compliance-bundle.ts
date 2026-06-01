@@ -32,7 +32,7 @@ export const zSignerComplianceRow = z.object({
 	draftCompletedFieldIds: z.array(z.string()),
 	/** Same as EIP-712 / DB message time when signed. */
 	messageTimestampIso: z.string().nullable(),
-	/** Block time from `FileSigned` tx receipt when fetched. */
+	/** Block time from `EnvelopeSigned` tx receipt when fetched. */
 	blockTimestampFromTx: z.number().int().nonnegative().nullable(),
 	acknowledgedAtIso: z.string().nullable(),
 	firstViewedAtIso: z.string().nullable(),
@@ -167,7 +167,7 @@ export const zComplianceBundle = z.object({
 		createdAtIso: z.string(),
 	}),
 	parties: z.array(zPartyRow),
-	/** Present when `fileRegistrations` could be read; otherwise null. */
+	/** Present when `envelopeRegistrations` could be read; otherwise null. */
 	onchainRegistration: zOnchainRegistrationSnapshot.nullable(),
 	transactions: z.array(zChainTxRef),
 	signers: z.array(zSignerComplianceRow),

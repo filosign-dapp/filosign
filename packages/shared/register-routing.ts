@@ -3,6 +3,7 @@ import z from "zod";
 import type { PlacementManifest } from "./placement-manifest";
 import {
 	commitsForEmails,
+	emailCommitRoot,
 	sortedCommitsForEmails,
 	sortedSignerCommitsForManifest,
 } from "./signer-email-commitment";
@@ -44,17 +45,93 @@ export function usesAdvancedRegisterRouting(
 	return false;
 }
 
+/** Merge two sorted commitment arrays (required + optional roster). */
+export function mergeSortedCommitments(
+	required: readonly Hex[],
+	optional: readonly Hex[],
+): Hex[] {
+	const merged: Hex[] = [];
+	let i = 0;
+	let j = 0;
+	while (i < required.length && j < optional.length) {
+		const req = required[i];
+		const opt = optional[j];
+		if (req === undefined || opt === undefined) break;
+		if (req < opt) {
+			merged.push(req);
+			i++;
+		} else {
+			merged.push(opt);
+			j++;
+		}
+	}
+	while (i < required.length) {
+		const req = required[i];
+		if (req === undefined) break;
+		merged.push(req);
+		i++;
+	}
+	while (j < optional.length) {
+		const opt = optional[j];
+		if (opt === undefined) break;
+		merged.push(opt);
+		j++;
+	}
+	return merged;
+}
+
 function normalizeEmails(emails: string[]): string[] {
 	const seen = new Set<string>();
 	const out: string[] = [];
 	for (const email of emails) {
 		const n = email.trim().toLowerCase();
-		if (!seen.has(n)) {
-			seen.add(n);
-			out.push(n);
-		}
+		if (!n || seen.has(n)) continue;
+		seen.add(n);
+		out.push(n);
 	}
 	return out;
+}
+
+/** Required signer commitments for register (manifest roster minus optional routing). */
+export function requiredSignerCommitsForRegister(args: {
+	placementManifest: PlacementManifest;
+	routing?: RegisterRoutingInput;
+}): Hex[] {
+	return buildRegisterRoutingCalldata(args).requiredCommitments;
+}
+
+/** Validate routing calldata for send/register; returns user-facing error or null. */
+export function validateRegisterRoutingForSend(args: {
+	placementManifest: PlacementManifest;
+	routing?: RegisterRoutingInput;
+}): string | null {
+	const calldata = buildRegisterRoutingCalldata(args);
+	return validateRegisterRoutingCalldata(calldata);
+}
+
+/** Registration email commitments aligned with routing (required + optional roster). */
+export function buildRegistrationEmailCommitmentsForRouting(args: {
+	placementManifest: PlacementManifest;
+	viewerEmails: string[];
+	routing?: RegisterRoutingInput;
+}) {
+	const calldata = buildRegisterRoutingCalldata({
+		placementManifest: args.placementManifest,
+		routing: args.routing,
+	});
+	const roster = mergeSortedCommitments(
+		calldata.requiredCommitments,
+		calldata.optionalCommitments,
+	);
+	const viewerEmailCommitmentsSorted = sortedCommitsForEmails(
+		args.viewerEmails,
+	);
+	return {
+		requiredCommitments: calldata.requiredCommitments,
+		viewerEmailCommitmentsSorted,
+		signersCommitment: emailCommitRoot(roster),
+		viewersCommitment: emailCommitRoot(viewerEmailCommitmentsSorted),
+	};
 }
 
 /** Build registry routing calldata; defaults to parallel all-required when routing omitted. */
@@ -76,9 +153,12 @@ export function buildRegisterRoutingCalldata(args: {
 		? commitsForEmails(normalizeEmails(args.routing.routingOrderEmails))
 		: [];
 	const quorumN = args.routing?.quorumN ?? 0;
-	const quorumSet = args.routing?.quorumSetEmails?.length
+	let quorumSet = args.routing?.quorumSetEmails?.length
 		? sortedCommitsForEmails(normalizeEmails(args.routing.quorumSetEmails))
 		: [];
+	if (quorumN > 0 && quorumSet.length === 0) {
+		quorumSet = roster;
+	}
 
 	return {
 		requiredCommitments,

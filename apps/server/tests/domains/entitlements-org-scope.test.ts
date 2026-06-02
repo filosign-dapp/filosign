@@ -52,7 +52,7 @@ describe("resolveEntitlementContext org scope", () => {
 		];
 
 		const { resolveEntitlementContext } = await import(
-			"@/lib/domains/entitlements/resolve-context"
+			"@/lib/domains/entitlements"
 		);
 
 		const ctx = await resolveEntitlementContext(wallet, orgId);

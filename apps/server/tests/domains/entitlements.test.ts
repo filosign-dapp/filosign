@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { effectivePlanIdFromStatus } from "@/lib/domains/entitlements/effective-plan";
+import { effectivePlanIdFromStatus } from "@/lib/domains/entitlements";
 
 describe("effectivePlanIdFromStatus", () => {
 	const now = new Date("2026-06-01T12:00:00.000Z");
@@ -63,9 +63,7 @@ describe("effectivePlanIdFromStatus", () => {
 
 describe("recipientSlotCounts", () => {
 	test("sums warm participants and cold invites", async () => {
-		const { recipientSlotCounts } = await import(
-			"@/lib/domains/entitlements/recipient-slots"
-		);
+		const { recipientSlotCounts } = await import("@/lib/domains/entitlements");
 		const counts = recipientSlotCounts({
 			participants: [{ isSigner: true }, { isSigner: false }],
 			coldInvites: [{ isSigner: true }],

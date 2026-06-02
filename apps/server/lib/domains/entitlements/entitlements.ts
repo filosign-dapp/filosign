@@ -1,11 +1,21 @@
-import type {
-	EntitlementContext,
-	FeatureKey,
-	PlanId,
+import {
+	type CheckOptions,
+	check,
+	DEFAULT_PLAN_ID,
+	type EntitlementContext,
+	FEATURE_KEYS,
+	type FeatureKey,
+	getLimit,
+	getPlanName,
+	type PlanId,
 } from "@filosign/entitlements";
+import type { AppErrorCode } from "@filosign/errors";
+import { throwAppError } from "@filosign/errors/server";
+import { sandboxEntitlementsOpen } from "@filosign/shared";
 import { and, eq, gte, lt, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import env from "@/env";
 import {
 	CACHE_TTL,
 	cacheAside,
@@ -17,9 +27,175 @@ import db from "@/lib/platform/db";
 import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import { files } from "@/lib/platform/db/schema/file";
 import { organizationSubscriptions } from "@/lib/platform/db/schema/organization";
-import { calendarMonthPeriod } from "./calendar-month";
-import { effectivePlanIdFromStatus } from "./effective-plan";
 
+// ==========================================
+// 1. calendarMonthPeriod
+// ==========================================
+/** UTC calendar month window for quota metering. */
+export function calendarMonthPeriod(now = new Date()): {
+	periodStart: Date;
+	periodEnd: Date;
+} {
+	const periodStart = new Date(
+		Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0),
+	);
+	const periodEnd = new Date(
+		Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0),
+	);
+	return { periodStart, periodEnd };
+}
+
+// ==========================================
+// 2. effectivePlanIdFromStatus
+// ==========================================
+export type SubscriptionAccessInput = {
+	planId: PlanId;
+	status: string;
+	cancelAtPeriodEnd?: boolean;
+	periodEnd?: Date | null;
+};
+
+export function effectivePlanIdFromStatus(
+	sub: SubscriptionAccessInput | undefined,
+	now = new Date(),
+): PlanId {
+	if (!sub) return DEFAULT_PLAN_ID;
+
+	if (sub.status === "active" || sub.status === "trialing") {
+		return sub.planId;
+	}
+
+	if (
+		sub.cancelAtPeriodEnd &&
+		sub.periodEnd &&
+		sub.periodEnd.getTime() > now.getTime()
+	) {
+		return sub.planId;
+	}
+
+	// Payment retry window — keep plan while Dodo marks subscription on_hold.
+	if (sub.status === "past_due") {
+		return sub.planId;
+	}
+
+	return DEFAULT_PLAN_ID;
+}
+
+// ==========================================
+// 3. recipientSlotCounts
+// ==========================================
+/** Billable recipient slots for envelope.recipients.max (excludes sender). */
+export function recipientSlotCounts(args: {
+	participants: { isSigner?: boolean | undefined }[];
+	coldInvites: { isSigner: boolean }[];
+}) {
+	const warmParticipantCount = args.participants.length;
+	const coldInviteCount = args.coldInvites.length;
+	const recipientSlotCount = warmParticipantCount + coldInviteCount;
+	const signerSlotCount =
+		args.participants.filter((p) => p.isSigner).length +
+		args.coldInvites.filter((c) => c.isSigner).length;
+
+	return {
+		warmParticipantCount,
+		coldInviteCount,
+		recipientSlotCount,
+		signerSlotCount,
+	};
+}
+
+// ==========================================
+// 4. assertEntitlement
+// ==========================================
+const ENTITLEMENT_REASON_TO_CODE: Record<string, AppErrorCode> = {
+	FEATURE_DISABLED: "ENTITLEMENT.FEATURE_DISABLED",
+	QUOTA_EXCEEDED: "ENTITLEMENT.QUOTA_EXCEEDED",
+	LIMIT_EXCEEDED: "ENTITLEMENT.LIMIT_EXCEEDED",
+};
+
+export function assertEntitlement(
+	ctx: EntitlementContext,
+	key: FeatureKey,
+	options?: CheckOptions,
+): void {
+	if (sandboxEntitlementsOpen(env.DEPLOYMENT)) return;
+
+	const decision = check(ctx, key, options);
+	if (decision.allowed) return;
+
+	const reason = decision.reason ?? "FEATURE_DISABLED";
+	const appCode =
+		ENTITLEMENT_REASON_TO_CODE[reason] ?? "ENTITLEMENT.FEATURE_DISABLED";
+
+	if (
+		appCode === "ENTITLEMENT.QUOTA_EXCEEDED" &&
+		typeof decision.used === "number" &&
+		typeof decision.limit === "number"
+	) {
+		throwAppError("ENTITLEMENT.QUOTA_EXCEEDED", {
+			params: { used: decision.used, limit: decision.limit },
+		});
+	}
+
+	throwAppError(appCode);
+}
+
+// ==========================================
+// 5. snapshot
+// ==========================================
+const METERED_KEYS = [
+	"documents.sent.monthly",
+	"envelope.recipients.max",
+] as const satisfies FeatureKey[];
+
+export type EntitlementLimitSnapshot = {
+	limit: number | boolean | null;
+	used?: number;
+	remaining?: number | null;
+	allowed: boolean;
+};
+
+export function buildEntitlementsSnapshot(ctx: EntitlementContext): {
+	planId: typeof ctx.planId;
+	planName: string;
+	limits: Record<(typeof METERED_KEYS)[number], EntitlementLimitSnapshot>;
+	features: Record<FeatureKey, { enabled: boolean }>;
+} {
+	const limits = {} as Record<
+		(typeof METERED_KEYS)[number],
+		EntitlementLimitSnapshot
+	>;
+
+	for (const key of METERED_KEYS) {
+		const decision = check(ctx, key);
+		limits[key] = {
+			limit: decision.limit ?? getLimit(ctx, key),
+			used: decision.used,
+			remaining: decision.remaining,
+			allowed: decision.allowed,
+		};
+	}
+
+	const features = {} as Record<FeatureKey, { enabled: boolean }>;
+	for (const key of FEATURE_KEYS) {
+		if (key === "documents.sent.monthly" || key === "envelope.recipients.max") {
+			continue;
+		}
+		const decision = check(ctx, key);
+		features[key] = { enabled: decision.allowed };
+	}
+
+	return {
+		planId: ctx.planId,
+		planName: getPlanName(ctx.planId),
+		limits,
+		features,
+	};
+}
+
+// ==========================================
+// 6. resolve-context
+// ==========================================
 type StoredEntitlementContext = Omit<EntitlementContext, "periodStart"> & {
 	periodStart: string;
 };

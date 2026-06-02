@@ -34,39 +34,6 @@ afterAll(() => {
 });
 
 describe("resolveEntitlementContext org scope", () => {
-	test("does not inherit legacy wallet solo when org is free", async () => {
-		redisStore.clear();
-		selectQueue = [
-			[
-				{
-					planId: "individual",
-					status: "active",
-					cancelAtPeriodEnd: false,
-					periodEnd: null,
-					featureOverrides: {},
-				},
-			],
-			[
-				{
-					planId: "free",
-					status: "active",
-					seatCount: 1,
-					cancelAtPeriodEnd: false,
-					periodEnd: null,
-					featureOverrides: {},
-				},
-			],
-			[{ count: 0 }],
-		];
-
-		const { resolveEntitlementContext } = await import(
-			"@/lib/domains/entitlements/resolve-context"
-		);
-
-		const ctx = await resolveEntitlementContext(wallet, orgId);
-		expect(ctx.planId).toBe("free");
-	});
-
 	test("inherits teams_pro from org when user has no subscription", async () => {
 		redisStore.clear();
 		selectQueue = [

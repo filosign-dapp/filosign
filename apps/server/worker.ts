@@ -28,7 +28,6 @@ async function shutdown(): Promise<void> {
 	if (shuttingDown) return;
 	shuttingDown = true;
 	await shutdownPlatformRuntime({ crons: true, heartbeat: true });
-	// Sprint 5: await bullmqWorker.close() and drain in-flight jobs
 }
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {

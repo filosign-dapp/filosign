@@ -1,13 +1,71 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { getAddress } from "viem";
+import type { JobOutboxRow } from "@/lib/platform/jobs";
 
 const sender = getAddress("0x1111111111111111111111111111111111111111");
 
+const deliverMock = mock(async () => {});
+const markProcessedMock = mock(async () => {});
+const markFailedMock = mock(async () => {});
+
+const listStaleMock = mock(
+	async (_args: {
+		olderThan: Date;
+		limit: number;
+	}): Promise<JobOutboxRow[]> => [],
+);
+const activeJobMock = mock(async () => false);
+const enqueueClaimedMock = mock(async () => 0);
+
+// Mock the email invites module
+mock.module("@/lib/platform/email/invites", () => ({
+	sendDocumentReceivedEmail: deliverMock,
+	sendColdDocumentInviteEmail: deliverMock,
+}));
+
+// Mock the outbox db updates
+mock.module("@/lib/platform/jobs/utils/outbox", () => {
+	const { parseOutboxPayload } = require("@/lib/platform/jobs/utils/outbox");
+	return {
+		parseOutboxPayload,
+		markOutboxProcessed: markProcessedMock,
+		markOutboxFailed: markFailedMock,
+		listStaleUnprocessedOutbox: listStaleMock,
+		enqueueClaimedOutboxRows: enqueueClaimedMock,
+	};
+});
+
+// Mock the queues module
+mock.module("@/lib/platform/jobs/queues", () => ({
+	isEmailJobActive: activeJobMock,
+}));
+
+// Mock the database for email outbox fetch
+let outboxRow: {
+	id: string;
+	kind: "doc_received";
+	payload: Record<string, unknown>;
+	processedAt: Date | null;
+} | null = null;
+
+mock.module("@/lib/platform/db", () => ({
+	default: {
+		select: () => ({
+			from: () => ({
+				where: () => ({
+					limit: async () => (outboxRow ? [outboxRow] : []),
+				}),
+			}),
+		}),
+		schema: {
+			jobOutbox: {},
+		},
+	},
+}));
+
 describe("outbox payload", () => {
 	test("parses doc_received payload", async () => {
-		const { parseOutboxPayload } = await import(
-			"@/lib/platform/jobs/outbox-payload"
-		);
+		const { parseOutboxPayload } = await import("@/lib/platform/jobs");
 		const parsed = parseOutboxPayload("doc_received", {
 			to: "a@b.com",
 			senderWallet: sender,
@@ -20,43 +78,6 @@ describe("outbox payload", () => {
 });
 
 describe("processEmailOutboxJob", () => {
-	const deliverMock = mock(async () => {});
-	const markProcessedMock = mock(async () => {});
-	const markFailedMock = mock(async () => {});
-
-	let outboxRow: {
-		id: string;
-		kind: "doc_received";
-		payload: Record<string, unknown>;
-		processedAt: Date | null;
-	} | null;
-
-	mock.module("@/lib/platform/jobs/process-email-from-outbox", () => ({
-		processEmailFromOutbox: deliverMock,
-	}));
-
-	mock.module("@/lib/platform/jobs/outbox-store", () => ({
-		markOutboxProcessed: markProcessedMock,
-		markOutboxFailed: markFailedMock,
-		listStaleUnprocessedOutbox: async () => [],
-		claimOutboxBatch: async () => [],
-		insertJobOutboxRows: async () => [],
-		loadUnprocessedOutboxByIds: async () => [],
-		pruneProcessedOutboxOlderThan: async () => 0,
-	}));
-
-	mock.module("@/lib/platform/db", () => ({
-		default: {
-			select: () => ({
-				from: () => ({
-					where: () => ({
-						limit: async () => (outboxRow ? [outboxRow] : []),
-					}),
-				}),
-			}),
-		},
-	}));
-
 	beforeEach(() => {
 		deliverMock.mockClear();
 		markProcessedMock.mockClear();
@@ -74,9 +95,7 @@ describe("processEmailOutboxJob", () => {
 	});
 
 	test("delivers then marks processed", async () => {
-		const { processEmailOutboxJob } = await import(
-			"@/lib/platform/jobs/process-email-outbox-job"
-		);
+		const { processEmailOutboxJob } = await import("@/lib/platform/jobs");
 		await processEmailOutboxJob({
 			outboxId: "outbox-1",
 			kind: "doc_received",
@@ -89,9 +108,7 @@ describe("processEmailOutboxJob", () => {
 	test("skips delivery when already processed", async () => {
 		if (!outboxRow) throw new Error("outbox fixture not initialized");
 		outboxRow.processedAt = new Date();
-		const { processEmailOutboxJob } = await import(
-			"@/lib/platform/jobs/process-email-outbox-job"
-		);
+		const { processEmailOutboxJob } = await import("@/lib/platform/jobs");
 		await processEmailOutboxJob({
 			outboxId: "outbox-1",
 			kind: "doc_received",
@@ -104,9 +121,9 @@ describe("processEmailOutboxJob", () => {
 
 describe("outbox sweeper", () => {
 	test("does not enqueue when BullMQ job is active", async () => {
-		const staleRow = {
+		const staleRow: JobOutboxRow = {
 			id: "o1",
-			kind: "doc_received" as const,
+			kind: "doc_received",
 			idempotencyKey: "key-1",
 			payload: {},
 			createdAt: new Date(0),
@@ -114,22 +131,15 @@ describe("outbox sweeper", () => {
 			lastError: null,
 		};
 
-		mock.module("@/lib/platform/jobs/outbox-store", () => ({
-			listStaleUnprocessedOutbox: async () => [staleRow],
-		}));
-		mock.module("@/lib/platform/jobs/email-queue", () => ({
-			isEmailJobActive: async () => true,
-		}));
-		const enqueueMock = mock(async () => 0);
-		mock.module("@/lib/platform/jobs/outbox-enqueue", () => ({
-			enqueueClaimedOutboxRows: enqueueMock,
-		}));
+		listStaleMock.mockImplementation(async () => [staleRow]);
+		activeJobMock.mockImplementation(async () => true);
+		enqueueClaimedMock.mockClear();
 
 		const { runOutboxSweeperJob } = await import(
 			"@/lib/platform/cron/outbox-sweeper"
 		);
 		const enqueued = await runOutboxSweeperJob();
 		expect(enqueued).toBe(0);
-		expect(enqueueMock).not.toHaveBeenCalled();
+		expect(enqueueClaimedMock).not.toHaveBeenCalled();
 	});
 });

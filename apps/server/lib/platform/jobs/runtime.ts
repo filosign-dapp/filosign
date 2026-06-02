@@ -1,22 +1,40 @@
 import { runsHttpServer, runsWorkerTasks } from "@/lib/platform/server-role";
-import { closeJobConnections } from "./connection";
-import { closeEmailQueue, getEmailQueue } from "./email-queue";
-import { closeEmailWorker, startEmailWorker } from "./email-worker";
-import { startOutboxDrainer, stopOutboxDrainer } from "./outbox-drainer";
+import {
+	closeJobsQueues,
+	getBillingWebhookQueue,
+	getEmailQueue,
+	getIndexerQueue,
+	getPayoutQueue,
+} from "./queues";
+import { closeJobConnections } from "./utils/connection";
+import { startOutboxDrainer, stopOutboxDrainer } from "./utils/outbox";
+import {
+	closeAllWorkers,
+	startBillingWebhookWorker,
+	startEmailWorker,
+	startIndexerWorker,
+	startPayoutWorker,
+} from "./workers";
 
 export type JobsRuntimeOptions = {
-	/** BullMQ email consumer + 15s outbox drainer */
+	/** BullMQ consumers + 15s outbox drainer */
 	worker: boolean;
-	/** Warm queue client for post-commit enqueue (API fast path) */
+	/** Warm queue clients for post-commit enqueue (API fast path) */
 	producer: boolean;
 };
 
 export function startJobsRuntime(options: JobsRuntimeOptions): void {
 	if (options.producer) {
 		getEmailQueue();
+		getPayoutQueue();
+		getIndexerQueue();
+		getBillingWebhookQueue();
 	}
 	if (options.worker) {
 		startEmailWorker();
+		startPayoutWorker();
+		startIndexerWorker();
+		startBillingWebhookWorker();
 		startOutboxDrainer();
 	}
 }
@@ -26,10 +44,11 @@ export async function shutdownJobsRuntime(
 ): Promise<void> {
 	if (options.worker) {
 		stopOutboxDrainer();
-		await closeEmailWorker();
+		await closeAllWorkers();
 	}
+	// Worker opens email queue via outbox drainer; API warms all queues as producer.
 	if (options.producer || options.worker) {
-		await closeEmailQueue();
+		await closeJobsQueues();
 	}
 	if (options.producer || options.worker) {
 		await closeJobConnections();

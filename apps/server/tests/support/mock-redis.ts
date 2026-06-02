@@ -26,6 +26,22 @@ export function createMockRedis() {
 					for (const key of args) store.delete(key);
 					return args.length;
 				}
+				if (cmd === "EVAL" && args[0] !== undefined && args[2] !== undefined) {
+					const script = args[0];
+					const key = args[2];
+					const token = args[3];
+					if (script.includes('redis.call("del"') && store.get(key) === token) {
+						store.delete(key);
+						return 1;
+					}
+					if (
+						script.includes('redis.call("expire"') &&
+						store.get(key) === token
+					) {
+						return 1;
+					}
+					return 0;
+				}
 				return null;
 			},
 		},

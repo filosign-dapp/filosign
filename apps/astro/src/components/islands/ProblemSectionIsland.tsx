@@ -13,22 +13,24 @@ export default function ProblemSectionIsland() {
 							Why Filosign?
 						</p>
 						<h2 className="text-3xl tracking-tight text-balance md:text-5xl">
-							Agreements, approvals, and payments are split across tools.
+							The signature is rarely the end of the workflow.
 						</h2>
 						<p className="font-manrope text-base leading-relaxed text-muted-foreground md:text-lg">
-							A grant, contractor form, or milestone payout rarely ends when
-							someone signs. Teams still chase forms, approvals, transfers, and
-							audit evidence. Filosign brings the workflow into one place.
+							A grant, contractor handoff, bounty, or sensitive approval does
+							not stop when someone signs. Teams still chase payment details,
+							send files manually, take screenshots for proof, and rebuild the
+							audit trail later. Filosign keeps the agreement, proof, payout,
+							and file handoff in one private workflow.
 						</p>
 						<div className="space-y-4 pt-2">
 							<div className="rounded-xl bg-muted/60 p-4 font-manrope text-sm">
-								<span className="text-muted-foreground">Before:</span> document
-								in one tool, approval in chat, payout in a wallet, evidence in a
-								folder.
+								<span className="text-muted-foreground">Before:</span> one tool
+								for signing, chat for approval, spreadsheets for tracking,
+								wallets for payout, folders for evidence.
 							</div>
 							<div className="rounded-xl bg-primary p-4 font-manrope text-sm text-primary-foreground">
-								After: encrypted agreement, verifiable signature record, proof
-								packet, and attached payouts.
+								After: one encrypted agreement workflow with signatures, proof
+								packets, optional USDC payouts, and gated file release.
 							</div>
 						</div>
 					</div>

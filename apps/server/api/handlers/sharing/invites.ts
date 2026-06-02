@@ -6,8 +6,10 @@ import {
 	inviteExpiresAt,
 	pendingUserInviteFilter,
 } from "@/lib/domains/invites";
-import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
-import { trackServerEvent } from "@/lib/platform/analytics/track";
+import {
+	SERVER_ANALYTICS_EVENTS,
+	trackServerEvent,
+} from "@/lib/platform/analytics";
 import db from "@/lib/platform/db";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 

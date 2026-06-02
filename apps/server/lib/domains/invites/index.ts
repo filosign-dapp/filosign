@@ -1,10 +1,10 @@
 export {
 	type ExpireInvitesResult,
 	expireAllPendingInvites,
-} from "./expire-pending";
-export {
+	inviteExpiresAt,
+	inviteTtlDays,
+	inviteTtlMs,
 	pendingFileColdInviteFilter,
 	pendingOrgInviteFilter,
 	pendingUserInviteFilter,
-} from "./pending";
-export { inviteExpiresAt, inviteTtlDays, inviteTtlMs } from "./ttl";
+} from "./invites";

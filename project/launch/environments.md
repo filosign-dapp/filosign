@@ -80,8 +80,8 @@ bun run dev -- --sandbox
 bun run dev -- --local
 
 bun run db -- push staging
-bun run db -- push sandbox
-bun run db -- purge sandbox
+bun run db -- migrate sandbox    # after db:generate + commit drizzle/
+bun run db -- purge sandbox      # wipe + migrate
 
 bun run contracts -- --migrate --testnet   # chain deploy + staging DB push
 ```

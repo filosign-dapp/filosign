@@ -1,0 +1,29 @@
+# Sprint 1 — app stack. Requires filosign_net from compose.data.yml.
+
+services:
+  api:
+    image: ${FILOSIGN_IMAGE:-filosign/server:local}
+    container_name: filosign-api
+    restart: unless-stopped
+    environment:
+      SERVER_ROLE: api
+    ports:
+      - "${API_PORT:-3000}:3000"
+    networks:
+      - filosign_net
+
+  worker:
+    image: ${FILOSIGN_IMAGE:-filosign/server:local}
+    container_name: filosign-worker
+    restart: unless-stopped
+    deploy:
+      replicas: 1
+    environment:
+      SERVER_ROLE: worker
+    networks:
+      - filosign_net
+
+networks:
+  filosign_net:
+    external: true
+    name: filosign_net

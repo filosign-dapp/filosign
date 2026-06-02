@@ -4,7 +4,7 @@ Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-pack
 
 ## IMPORTANT
 
-Pre-production (solo dev, no users): skip backward-compat and migration shims. Fix root causes; replace legacy code, unused dependencies, comments, and modules—don’t layer around them. Writing minimal code to implement a plan is ideal, followed by a refactor sweep to rebalance and reorganise codebase, aiming for code maintainablity and readability. a balance between number of files vs LOC = sweet spot. 
+Pre-production (solo dev, no users): skip backward-compat and migration shims. Fix root causes; replace legacy code, unused dependencies, comments, and modules—don’t layer around them. Writing minimal code to implement a plan is ideal, followed by a refactor sweep to rebalance and reorganise codebase, aiming for code maintainablity and readability. a balance between number of files vs LOC = sweet spot.
 
 ## Read for context
 
@@ -50,7 +50,7 @@ Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).
 ## Boundaries
 
 - **HTTP (client):** `useFilosignContext().rpc` + `@filosign/react` hooks only. No `fetch`/axios to JSON API except: blob/doc bytes ([send-envelope.ts](apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope.ts)), static assets ([compliance-pdf/utils/images.ts](apps/client/src/lib/domains/files/compliance-pdf/utils/images.ts)), **PUT to `storage.presignPut` URLs** (no API body proxy).
-- **Settlements:** Server never custodies USDC. Client `registerRule` + `approve` on-chain; server indexes via `**settlements.registerForFile`**. Sign page **Settle payment** → `settlements.trySettle` (server relay); fallback **Settle from wallet** → `settlements.confirmSettlement`. **Teams Pro:** `updateRule` / `cancelRule` + post-send attach. `**files.amendSigner`** for pre-sign roster changes. Daily cron syncs off-platform `executed` state. See `[lib/domains/settlements/](apps/server/lib/domains/settlements/)` and `[project/settlements/architecture-and-non-custody.md](project/settlements/architecture-and-non-custody.md)`.
+- **Settlements:** Server never custodies USDC. Client `registerRule` + `approve` on-chain; server indexes via `**settlements.registerForFile`**. Sign page Settle payment → `settlements.trySettle` (server relay); fallback Settle from wallet → `settlements.confirmSettlement`. Teams Pro: `updateRule` / `cancelRule` + post-send attach. `**files.amendSigner`** for pre-sign roster changes. Daily cron syncs off-platform `executed` state. See `[lib/domains/settlements/](apps/server/lib/domains/settlements/)` and `[project/settlements/architecture-and-non-custody.md](project/settlements/architecture-and-non-custody.md)`.
 - **Logic:** UI `apps/client` | hooks/SDK `packages/react-sdk` | API/DB/relay `apps/server`.
 - **Imports:** Client uses minimal `@filosign/contracts` ([constants](apps/client/src/constants.ts)); prefer SDK/runtime for new code.
 - **Definitions:** Never hand-edit `apps/contracts/definitions/`. Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy). Redeploy / rebrand ops: `[project/contracts/envelope-registry-migration.md](project/contracts/envelope-registry-migration.md)`.
@@ -110,9 +110,17 @@ Always use Zod v4 schemas: Fetch migration guide from [https://zod.dev/v4/change
 
 **Avoid:** One file per tiny helper; repo-root `utils/` dumps; duplicating exports from both `index` and implementation files.
 
-**Reference:** `[lib/domains/settlements/](apps/server/lib/domains/settlements/)` — `settlements.ts` + `settlements-register.ts` + `utils/{execute-payout,sync-from-chain,verify-rules-on-chain,preflight}.ts`.
+**Reference:** `[lib/domains/settlements/](apps/server/lib/domains/settlements/)` — `settlements.ts` + `register.ts` + `crud.ts` + `utils/{execute-payout,sync-from-chain,verify-rules-on-chain,preflight,db-sync,entitlements}.ts`.
 
-**Also refactored:** `[lib/domains/files/](apps/server/lib/domains/files/)` — `piece.ts`, `piece-sign.ts`, `register.ts`, `utils/piece-{detail,compliance}.ts` (handlers re-export only). `[lib/domains/sharing/](apps/server/lib/domains/sharing/)` — `sharing.ts` + `utils/record-share-approval.ts`. Client `[compliance-pdf/](apps/client/src/lib/domains/files/compliance-pdf/)` — `compliance-pdf.ts` + `utils/{draw,summary,build,...}.ts`.
+**Also refactored:** `[lib/domains/files/](apps/server/lib/domains/files/)` — `piece.ts`, `sign.ts`, `register.ts`, `detail.ts`, `draft.ts`, `invites.ts`, `utils/{piece-helpers,register-helpers}.ts`.
 
 When refactoring an over-split domain: merge related modules into one `utils/` file per concern, keep handlers thin, preserve `index.ts` exports.
 
+### File Naming & Directory Hierarchy Conventions
+
+> [!IMPORTANT]
+> **NO REDUNDANT PREFIXES:** Do not prefix files with their parent directory or package name. Leverage the directory hierarchy to keep filenames short and clean.
+> - **Wrong:** `<parent>/<parent>-<submodule>.ts` (e.g., `billing/billing-plans.ts`, `hooks/users/useSyncThirdwebEmail.ts`)
+> - **Right:** `<parent>/<submodule>.ts` or `<parent>/utils/<submodule>.ts` (e.g., `billing/utils/plans.ts`, `hooks/users/useSyncEmail.ts`)
+> 
+> **GROUPING & NESTING:** Group related sub-modules logically. Use subfolders (e.g. `utils/`) rather than flat, cluttered naming conventions. Keep the root of any package or domain directory clean, exposing only primary facades/indices and entry points.

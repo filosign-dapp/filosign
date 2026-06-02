@@ -21,8 +21,8 @@ Secrets layout: [`SECRETS.md`](SECRETS.md). Local server uses **`--env-file`**; 
 | `api/orpc/` | oRPC **`/api/rpc`** + OpenAPI **`/api/api-reference`** (see `hono-mount.ts`, `router.ts`) |
 | `api/handlers/` | oRPC procedure implementations (**`ORPCError`**, reuse `tryCatch`) |
 | `api/orpc/hono-mount.ts` | **`apiRouter`** — integrations, then optional thirdweb Bearer + oRPC on `/api` |
-| `lib/platform/cache/` | Dragonfly cache-aside (`cache-aside.ts`, `cache-keys.ts`, `invalidate.ts`) + session / verify rate limit |
-| `lib/platform/server-role.ts` | `SERVER_ROLE` gates (`api` / `worker` / `all`) |
+| `lib/platform/cache/` | Dragonfly cache-aside (`aside.ts`, `keys.ts`, `invalidate.ts`, `session.ts`) |
+| `lib/platform/role.ts` | `SERVER_ROLE` gates (`api` / `worker` / `all`) |
 | `worker.ts` | Background entry: crons, heartbeat, no HTTP (`./worker`) |
 | `lib/platform/cron/` | `Bun.cron` jobs + per-tick `lock:cron:{job}:{bucket}` locks |
 | `lib/platform/worker/heartbeat.ts` | `fs:worker:heartbeat` for worker container health |
@@ -61,11 +61,11 @@ Do not conflate them: a `BAD_REQUEST` with `appCode` is for the user, not PostHo
 
 ## Analytics (PostHog)
 
-Server-side product events via [`lib/platform/analytics/posthog.ts`](lib/platform/analytics/posthog.ts) (`posthog-node`). Set `POSTHOG_HOST`, `POSTHOG_ENABLED`, and `POSTHOG_API_KEY` in `.env.local`. Full event catalog and funnel guidance: [`project/posthog-integration.md`](../../project/posthog-integration.md).
+Server-side product events via [`lib/platform/analytics/analytics.ts`](lib/platform/analytics/analytics.ts) (`posthog-node`). Set `POSTHOG_HOST`, `POSTHOG_ENABLED`, and `POSTHOG_API_KEY` in `.env.local`. Full event catalog and funnel guidance: [`project/posthog-integration.md`](../../project/posthog-integration.md).
 
 ### Error tracking (server)
 
-- **`captureServerException`** — unexpected errors only (`shouldCaptureServerException` in [`should-capture-exception.ts`](lib/platform/analytics/should-capture-exception.ts)).
+- **`captureServerException`** — unexpected errors only (`shouldCaptureServerException` in [`analytics.ts`](lib/platform/analytics/analytics.ts)).
 - **Primary capture:** oRPC base middleware on [`api/orpc/procedures.ts`](api/orpc/procedures.ts) (`/api/rpc`).
 - **Secondary:** Hono `app.onError` (non-oRPC routes) and integrations webhook `catch`.
 - Properties are scrubbed via [`@filosign/shared` `analytics-scrub`](../../packages/shared/analytics-scrub.ts) (no emails, keys, ciphertext).
@@ -73,9 +73,9 @@ Server-side product events via [`lib/platform/analytics/posthog.ts`](lib/platfor
 
 ## Platform alerts (Telegram)
 
-Critical platform failures emit via [`lib/platform/analytics/platform-alerts.ts`](lib/platform/analytics/platform-alerts.ts) using [`@filosign/logger`](../../packages/logger) (Telegram transport). Requires `TG_ANALYTICS_BOT_TOKEN` and `TG_ANALYTICS_BOT_GROUP_ID`; delivery is gated by `TG_ANALYTICS=true`.
+Critical platform failures emit via [`lib/platform/analytics/alerts.ts`](lib/platform/analytics/alerts.ts) using [`@filosign/logger`](../../packages/logger) (Telegram transport). Requires `TG_ANALYTICS_BOT_TOKEN` and `TG_ANALYTICS_BOT_GROUP_ID`; delivery is gated by `TG_ANALYTICS=true`.
 
-When `POSTHOG_ENABLED=true` (with `POSTHOG_HOST` and `POSTHOG_API_KEY`), the same alert is mirrored as a sanitized `platform_alert` PostHog event with the same 5-minute dedupe as Telegram. See [`platform-alert-posthog.ts`](lib/platform/analytics/platform-alert-posthog.ts) and [`project/posthog-integration.md`](../../project/posthog-integration.md).
+When `POSTHOG_ENABLED=true` (with `POSTHOG_HOST` and `POSTHOG_API_KEY`), the same alert is mirrored as a sanitized `platform_alert` PostHog event with the same 5-minute dedupe as Telegram. See [`alerts.ts`](lib/platform/analytics/alerts.ts) (`mirrorPlatformAlertToPostHog`) and [`project/posthog-integration.md`](../../project/posthog-integration.md).
 
 **Manual staging verification** (not run in CI): see [`project/ops/production-smoke-tests.md`](../../project/ops/production-smoke-tests.md) scenarios 7–8.
 
@@ -119,7 +119,7 @@ Billing security notes:
 - **`tx.processIndexerHash`** — **`authenticatedProcedure`** (thirdweb session). Enqueues indexer job; does not wait for receipt on the API thread.
 - **`DEBUG=true`** — verbose request/indexer logging (does not affect email).
 - **`RESEND_ENABLED=false`** — skip all outbound product email (default `true`).
-- **Email delivery** — Resend primary via [`lib/platform/email/deliver.ts`](lib/platform/email/deliver.ts); optional SES fallback when `SES_ENABLED` + `SES_REGION` + `SES_FROM_EMAIL` are set (retryable Resend failures only). See [`SECRETS.md`](SECRETS.md).
+- **Email delivery** — Resend primary via [`lib/platform/email/email.ts`](lib/platform/email/email.ts); optional SES fallback when `SES_ENABLED` + `SES_REGION` + `SES_FROM_EMAIL` are set (retryable Resend failures only). See [`SECRETS.md`](SECRETS.md).
 
 ## Object storage (S3-compatible / R2)
 

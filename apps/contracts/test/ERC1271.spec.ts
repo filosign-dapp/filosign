@@ -12,7 +12,7 @@ import {
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
 import { walletAccount } from "./helpers/walletAccount.js";
 
-const defaultViewerPrivy = `0x${"99".repeat(32)}` as Hex;
+const defaultViewerAuth = `0x${"99".repeat(32)}` as Hex;
 const dummy1271Sig = "0x1234" as Hex;
 
 describe("ERC-1271 signature paths (Safe-compatible)", () => {
@@ -78,7 +78,7 @@ describe("ERC-1271 signature paths (Safe-compatible)", () => {
 					walletAccount(ctx.sender).address,
 					contractSigner,
 					signerCommitment,
-					defaultViewerPrivy,
+					defaultViewerAuth,
 					`0x${"88".repeat(20)}`,
 					ts,
 					dummy1271Sig,
@@ -110,7 +110,7 @@ describe("ERC-1271 signature paths (Safe-compatible)", () => {
 						walletAccount(ctx.sender).address,
 						contractSigner,
 						signerCommitment,
-						defaultViewerPrivy,
+						defaultViewerAuth,
 						`0x${"88".repeat(20)}`,
 						ts,
 						dummy1271Sig,
@@ -160,7 +160,7 @@ describe("ERC-1271 signature paths (Safe-compatible)", () => {
 					walletAccount(ctx.sender).address,
 					contractViewer,
 					viewerCommitment,
-					defaultViewerPrivy,
+					defaultViewerAuth,
 					ackTs,
 					dummy1271Sig,
 				]);
@@ -189,7 +189,7 @@ describe("ERC-1271 signature paths (Safe-compatible)", () => {
 					walletAccount(ctx.sender).address,
 					contractViewer,
 					viewerCommitment,
-					defaultViewerPrivy,
+					defaultViewerAuth,
 					ackTs,
 					dummy1271Sig,
 				]);

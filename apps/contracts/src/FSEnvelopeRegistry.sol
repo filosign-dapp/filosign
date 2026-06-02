@@ -29,7 +29,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes20 viewersCommitment;
         bytes32 placementCommitment;
         bytes32 senderEmailCommitment;
-        bytes32 senderPrivySubjectCommitment;
+        bytes32 senderAuthSubjectCommitment;
         mapping(bytes32 => bool) signerEmailRegistered;
         mapping(bytes32 => bool) viewerEmailRegistered;
         mapping(bytes32 => bool) isRequiredSigner;
@@ -56,7 +56,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes20 viewersCommitment;
         bytes32 placementCommitment;
         bytes32 senderEmailCommitment;
-        bytes32 senderPrivySubjectCommitment;
+        bytes32 senderAuthSubjectCommitment;
         uint8 requiredSignersCount;
         uint8 requiredSignaturesCount;
         uint8 optionalSignersCount;
@@ -117,7 +117,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
 
     bytes32 private constant REGISTER_ENVELOPE_TYPEHASH =
         keccak256(
-            "RegisterEnvelope(bytes32 cidIdentifier,address sender,bytes20 signersCommitment,bytes20 viewersCommitment,bytes32 placementCommitment,bytes32 senderEmailCommitment,bytes32 senderPrivySubjectCommitment,bytes32 orgIdCommitment,bytes32 requiredCommitmentsHash,bytes32 optionalCommitmentsHash,uint8 routingMode,bytes32 routingOrderHash,uint8 quorumN,bytes32 quorumSetHash,uint256 timestamp,uint256 nonce)"
+            "RegisterEnvelope(bytes32 cidIdentifier,address sender,bytes20 signersCommitment,bytes20 viewersCommitment,bytes32 placementCommitment,bytes32 senderEmailCommitment,bytes32 senderAuthSubjectCommitment,bytes32 orgIdCommitment,bytes32 requiredCommitmentsHash,bytes32 optionalCommitmentsHash,uint8 routingMode,bytes32 routingOrderHash,uint8 quorumN,bytes32 quorumSetHash,uint256 timestamp,uint256 nonce)"
         );
     bytes32 private constant AMEND_SIGNER_TYPEHASH =
         keccak256(
@@ -125,11 +125,11 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         );
     bytes32 private constant ACK_ENVELOPE_TYPEHASH =
         keccak256(
-            "AckEnvelope(bytes32 cidIdentifier,address sender,address viewerWallet,bytes32 viewerEmailCommitment,bytes32 privySubjectCommitment,uint256 timestamp)"
+            "AckEnvelope(bytes32 cidIdentifier,address sender,address viewerWallet,bytes32 viewerEmailCommitment,bytes32 authSubjectCommitment,uint256 timestamp)"
         );
     bytes32 private constant SIGN_ENVELOPE_TYPEHASH =
         keccak256(
-            "SignEnvelope(bytes32 cidIdentifier,address sender,address signerWallet,bytes32 signerEmailCommitment,bytes32 privySubjectCommitment,bytes20 dl3SignatureCommitment,bytes32 completionsRoot,uint8 leafSchemaVersion,uint256 timestamp,uint256 nonce)"
+            "SignEnvelope(bytes32 cidIdentifier,address sender,address signerWallet,bytes32 signerEmailCommitment,bytes32 authSubjectCommitment,bytes20 dl3SignatureCommitment,bytes32 completionsRoot,uint8 leafSchemaVersion,uint256 timestamp,uint256 nonce)"
         );
 
     /// Sorted unique commitments (ascending); `ripemd160(packed)`; empty list => zero `bytes20`.
@@ -155,7 +155,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
                 viewersCommitment: file.viewersCommitment,
                 placementCommitment: file.placementCommitment,
                 senderEmailCommitment: file.senderEmailCommitment,
-                senderPrivySubjectCommitment: file.senderPrivySubjectCommitment,
+                senderAuthSubjectCommitment: file.senderAuthSubjectCommitment,
                 requiredSignersCount: file.requiredSignersCount,
                 requiredSignaturesCount: file.requiredSignaturesCount,
                 optionalSignersCount: file.optionalSignersCount,
@@ -175,7 +175,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes20 viewersCommitment;
         bytes32 placementCommitment;
         bytes32 senderEmailCommitment;
-        bytes32 senderPrivySubjectCommitment;
+        bytes32 senderAuthSubjectCommitment;
         bytes32 orgIdCommitment;
         bytes32 requiredHash;
         bytes32 optionalHash;
@@ -193,7 +193,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes20 viewersCommitment;
         bytes32 placementCommitment;
         bytes32 senderEmailCommitment;
-        bytes32 senderPrivySubjectCommitment;
+        bytes32 senderAuthSubjectCommitment;
         uint8 routingMode;
         uint8 quorumN;
         uint256 timestamp;
@@ -206,7 +206,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes32[] optionalCommitments;
         bytes32[] viewerEmailCommitments;
         bytes32 senderEmailCommitment;
-        bytes32 senderPrivySubjectCommitment;
+        bytes32 senderAuthSubjectCommitment;
         bytes32 orgIdCommitment;
         uint8 routingMode;
         bytes32[] routingOrder;
@@ -249,7 +249,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
             ),
             placementCommitment: input.placementCommitment,
             senderEmailCommitment: input.senderEmailCommitment,
-            senderPrivySubjectCommitment: input.senderPrivySubjectCommitment,
+            senderAuthSubjectCommitment: input.senderAuthSubjectCommitment,
             orgIdCommitment: input.orgIdCommitment,
             requiredHash: hashCommitments(input.requiredCommitments),
             optionalHash: hashCommitments(input.optionalCommitments),
@@ -270,7 +270,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
             viewersCommitment: sigInput.viewersCommitment,
             placementCommitment: input.placementCommitment,
             senderEmailCommitment: input.senderEmailCommitment,
-            senderPrivySubjectCommitment: input.senderPrivySubjectCommitment,
+            senderAuthSubjectCommitment: input.senderAuthSubjectCommitment,
             routingMode: input.routingMode,
             quorumN: input.quorumN,
             timestamp: input.timestamp
@@ -305,7 +305,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         file.viewersCommitment = input.viewersCommitment;
         file.placementCommitment = input.placementCommitment;
         file.senderEmailCommitment = input.senderEmailCommitment;
-        file.senderPrivySubjectCommitment = input.senderPrivySubjectCommitment;
+        file.senderAuthSubjectCommitment = input.senderAuthSubjectCommitment;
         file.requiredSignersCount = uint8(requiredCommitments_.length);
         file.optionalSignersCount = uint8(optionalCommitments_.length);
         file.signersCount = uint8(roster.length);
@@ -347,7 +347,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         _assertSignatureTimestamp(input.timestamp);
         if (
             input.senderEmailCommitment == bytes32(0) ||
-            input.senderPrivySubjectCommitment == bytes32(0)
+            input.senderAuthSubjectCommitment == bytes32(0)
         ) revert InvalidSignature();
 
         bytes32 structHash = keccak256(
@@ -359,7 +359,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
                 input.viewersCommitment,
                 input.placementCommitment,
                 input.senderEmailCommitment,
-                input.senderPrivySubjectCommitment,
+                input.senderAuthSubjectCommitment,
                 input.orgIdCommitment,
                 input.requiredHash,
                 input.optionalHash,
@@ -459,7 +459,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         address sender_,
         address signerWallet_,
         bytes32 signerEmailCommitment_,
-        bytes32 privySubjectCommitment_,
+        bytes32 authSubjectCommitment_,
         bytes20 dl3SignatureCommitment_,
         uint256 timestamp_,
         bytes calldata signature_,
@@ -479,7 +479,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
                 sender_,
                 signerWallet_,
                 signerEmailCommitment_,
-                privySubjectCommitment_,
+                authSubjectCommitment_,
                 dl3SignatureCommitment_,
                 timestamp_,
                 signature_,
@@ -593,7 +593,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
             ),
             placementCommitment: input.placementCommitment,
             senderEmailCommitment: input.senderEmailCommitment,
-            senderPrivySubjectCommitment: input.senderPrivySubjectCommitment,
+            senderAuthSubjectCommitment: input.senderAuthSubjectCommitment,
             orgIdCommitment: input.orgIdCommitment,
             requiredHash: hashCommitments(input.requiredCommitments),
             optionalHash: hashCommitments(input.optionalCommitments),
@@ -611,7 +611,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         address sender_,
         address signerWallet_,
         bytes32 signerEmailCommitment_,
-        bytes32 privySubjectCommitment_,
+        bytes32 authSubjectCommitment_,
         bytes20 dl3SignatureCommitment_,
         uint256 timestamp_,
         bytes calldata signature_,
@@ -635,7 +635,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
                 sender_,
                 signerWallet_,
                 signerEmailCommitment_,
-                privySubjectCommitment_,
+                authSubjectCommitment_,
                 dl3SignatureCommitment_,
                 completionsRoot_,
                 leafSchemaVersion_,
@@ -652,7 +652,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         address sender_,
         address viewerWallet_,
         bytes32 viewerEmailCommitment_,
-        bytes32 privySubjectCommitment_,
+        bytes32 authSubjectCommitment_,
         uint256 timestamp_,
         bytes calldata signature_
     ) public view returns (bool) {
@@ -674,7 +674,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
                 sender_,
                 viewerWallet_,
                 viewerEmailCommitment_,
-                privySubjectCommitment_,
+                authSubjectCommitment_,
                 timestamp_
             )
         );

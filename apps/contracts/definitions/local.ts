@@ -511,7 +511,7 @@ export const definitions = {
 								},
 								{
 									internalType: "bytes32",
-									name: "senderPrivySubjectCommitment",
+									name: "senderAuthSubjectCommitment",
 									type: "bytes32",
 								},
 								{
@@ -736,7 +736,7 @@ export const definitions = {
 								},
 								{
 									internalType: "bytes32",
-									name: "senderPrivySubjectCommitment",
+									name: "senderAuthSubjectCommitment",
 									type: "bytes32",
 								},
 								{
@@ -814,7 +814,7 @@ export const definitions = {
 						},
 						{
 							internalType: "bytes32",
-							name: "privySubjectCommitment_",
+							name: "authSubjectCommitment_",
 							type: "bytes32",
 						},
 						{
@@ -937,7 +937,7 @@ export const definitions = {
 						},
 						{
 							internalType: "bytes32",
-							name: "privySubjectCommitment_",
+							name: "authSubjectCommitment_",
 							type: "bytes32",
 						},
 						{
@@ -998,7 +998,7 @@ export const definitions = {
 								},
 								{
 									internalType: "bytes32",
-									name: "senderPrivySubjectCommitment",
+									name: "senderAuthSubjectCommitment",
 									type: "bytes32",
 								},
 								{
@@ -1082,7 +1082,7 @@ export const definitions = {
 						},
 						{
 							internalType: "bytes32",
-							name: "privySubjectCommitment_",
+							name: "authSubjectCommitment_",
 							type: "bytes32",
 						},
 						{

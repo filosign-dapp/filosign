@@ -13,7 +13,7 @@ interface IFSEnvelopeRegistry {
         bytes20 viewersCommitment;
         bytes32 placementCommitment;
         bytes32 senderEmailCommitment;
-        bytes32 senderPrivySubjectCommitment;
+        bytes32 senderAuthSubjectCommitment;
         mapping(bytes32 => bool) signerEmailRegistered;
         mapping(bytes32 => bool) viewerEmailRegistered;
         mapping(bytes32 => bool) isRequiredSigner;
@@ -40,7 +40,7 @@ interface IFSEnvelopeRegistry {
         bytes20 viewersCommitment;
         bytes32 placementCommitment;
         bytes32 senderEmailCommitment;
-        bytes32 senderPrivySubjectCommitment;
+        bytes32 senderAuthSubjectCommitment;
         uint8 requiredSignersCount;
         uint8 requiredSignaturesCount;
         uint8 optionalSignersCount;
@@ -69,7 +69,7 @@ interface IFSEnvelopeRegistry {
         bytes20 viewersCommitment;
         bytes32 placementCommitment;
         bytes32 senderEmailCommitment;
-        bytes32 senderPrivySubjectCommitment;
+        bytes32 senderAuthSubjectCommitment;
         bytes32 orgIdCommitment;
         bytes32 requiredHash;
         bytes32 optionalHash;
@@ -87,7 +87,7 @@ interface IFSEnvelopeRegistry {
         bytes20 viewersCommitment;
         bytes32 placementCommitment;
         bytes32 senderEmailCommitment;
-        bytes32 senderPrivySubjectCommitment;
+        bytes32 senderAuthSubjectCommitment;
         uint8 routingMode;
         uint8 quorumN;
         uint256 timestamp;
@@ -100,7 +100,7 @@ interface IFSEnvelopeRegistry {
         bytes32[] optionalCommitments;
         bytes32[] viewerEmailCommitments;
         bytes32 senderEmailCommitment;
-        bytes32 senderPrivySubjectCommitment;
+        bytes32 senderAuthSubjectCommitment;
         bytes32 orgIdCommitment;
         uint8 routingMode;
         bytes32[] routingOrder;
@@ -113,7 +113,7 @@ interface IFSEnvelopeRegistry {
 
     function registerEnvelope(RegisterEnvelopeInput calldata input) external;
     function amendSigner(string calldata pieceCid_, bytes32 oldCommitment_, bytes32 newCommitment_, uint256 timestamp_, bytes calldata signature_) external;
-    function registerEnvelopeSignature(string calldata pieceCid_, address sender_, address signerWallet_, bytes32 signerEmailCommitment_, bytes32 privySubjectCommitment_, bytes20 dl3SignatureCommitment_, uint256 timestamp_, bytes calldata signature_, bytes32 completionsRoot_, uint8 leafSchemaVersion_) external;
+    function registerEnvelopeSignature(string calldata pieceCid_, address sender_, address signerWallet_, bytes32 signerEmailCommitment_, bytes32 authSubjectCommitment_, bytes20 dl3SignatureCommitment_, uint256 timestamp_, bytes calldata signature_, bytes32 completionsRoot_, uint8 leafSchemaVersion_) external;
     function isSigner(bytes32 cidId, bytes32 signerEmailCommitment_) external view returns (bool);
     function hasSigned(bytes32 cidId, bytes32 signerEmailCommitment_) external view returns (bool);
     function allRequiredSigned(bytes32 cidId) external view returns (bool);
@@ -121,7 +121,7 @@ interface IFSEnvelopeRegistry {
     function quorumMet(bytes32 cidId) external view returns (bool);
     function rosterSignedCount(bytes32 cidId) external view returns (uint8);
     function validateEnvelopeRegistrationSignature(RegisterEnvelopeInput calldata input) external view returns (bool);
-    function validateEnvelopeSigningSignature(string calldata pieceCid_, address sender_, address signerWallet_, bytes32 signerEmailCommitment_, bytes32 privySubjectCommitment_, bytes20 dl3SignatureCommitment_, uint256 timestamp_, bytes calldata signature_, bytes32 completionsRoot_, uint8 leafSchemaVersion_) external view returns (bool);
-    function validateEnvelopeAckSignature(string calldata pieceCid_, address sender_, address viewerWallet_, bytes32 viewerEmailCommitment_, bytes32 privySubjectCommitment_, uint256 timestamp_, bytes calldata signature_) external view returns (bool);
+    function validateEnvelopeSigningSignature(string calldata pieceCid_, address sender_, address signerWallet_, bytes32 signerEmailCommitment_, bytes32 authSubjectCommitment_, bytes20 dl3SignatureCommitment_, uint256 timestamp_, bytes calldata signature_, bytes32 completionsRoot_, uint8 leafSchemaVersion_) external view returns (bool);
+    function validateEnvelopeAckSignature(string calldata pieceCid_, address sender_, address viewerWallet_, bytes32 viewerEmailCommitment_, bytes32 authSubjectCommitment_, uint256 timestamp_, bytes calldata signature_) external view returns (bool);
     function cidIdentifier(string calldata pieceCid_) external pure returns (bytes32);
 }

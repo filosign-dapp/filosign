@@ -6,8 +6,8 @@ import { keccak256, parseAbiItem, toBytes } from "viem";
 import {
 	buildRegisterEnvelopeInput,
 	defaultPlacement,
+	defaultSenderAuth,
 	defaultSenderEmail,
-	defaultSenderPrivy,
 	deployFullSystem,
 	registerEnvelopeOnly,
 	registerEnvelopeSignatureStep,
@@ -156,7 +156,7 @@ describe("FSEnvelopeRegistry", () => {
 			pieceCid,
 			sender: walletAccount(ctx.sender).address,
 			signerEmailCommitment: notOnFile,
-			privySubjectCommitment: defaultSenderPrivy,
+			authSubjectCommitment: defaultSenderAuth,
 			dl3SignatureCommitment: `0x${"88".repeat(20)}` as Hex,
 			completionsRoot: defaultPlacement,
 			leafSchemaVersion: 1,
@@ -170,7 +170,7 @@ describe("FSEnvelopeRegistry", () => {
 					walletAccount(ctx.sender).address,
 					walletAccount(ctx.payout).address,
 					notOnFile,
-					defaultSenderPrivy,
+					defaultSenderAuth,
 					`0x${"88".repeat(20)}`,
 					ts,
 					signSig,
@@ -470,7 +470,7 @@ describe("FSEnvelopeRegistry", () => {
 						optionalCommitments: [],
 						viewerEmailCommitments: [],
 						senderEmailCommitment: defaultSenderEmail,
-						senderPrivySubjectCommitment: defaultSenderPrivy,
+						senderAuthSubjectCommitment: defaultSenderAuth,
 						orgIdCommitment: zeroOrg,
 						routingMode: 0,
 						routingOrder: [],
@@ -594,7 +594,7 @@ describe("FSEnvelopeRegistry", () => {
 				]),
 			placementCommitment: defaultPlacement,
 			senderEmailCommitment: defaultSenderEmail,
-			senderPrivySubjectCommitment: defaultSenderPrivy,
+			senderAuthSubjectCommitment: defaultSenderAuth,
 			timestamp: signedAt,
 			nonce,
 		});
@@ -608,7 +608,7 @@ describe("FSEnvelopeRegistry", () => {
 					optionalCommitments: [],
 					viewerEmailCommitments: [],
 					senderEmailCommitment: defaultSenderEmail,
-					senderPrivySubjectCommitment: defaultSenderPrivy,
+					senderAuthSubjectCommitment: defaultSenderAuth,
 					orgIdCommitment: zeroOrg,
 					routingMode: 0,
 					routingOrder: [],
@@ -643,7 +643,7 @@ describe("FSEnvelopeRegistry", () => {
 				]),
 			placementCommitment: defaultPlacement,
 			senderEmailCommitment: defaultSenderEmail,
-			senderPrivySubjectCommitment: defaultSenderPrivy,
+			senderAuthSubjectCommitment: defaultSenderAuth,
 			timestamp: signedAt,
 			nonce,
 		});
@@ -658,7 +658,7 @@ describe("FSEnvelopeRegistry", () => {
 						optionalCommitments: [],
 						viewerEmailCommitments: [],
 						senderEmailCommitment: defaultSenderEmail,
-						senderPrivySubjectCommitment: defaultSenderPrivy,
+						senderAuthSubjectCommitment: defaultSenderAuth,
 						orgIdCommitment: zeroOrg,
 						routingMode: 0,
 						routingOrder: [],
@@ -695,7 +695,7 @@ describe("FSEnvelopeRegistry", () => {
 				]),
 			placementCommitment: defaultPlacement,
 			senderEmailCommitment: defaultSenderEmail,
-			senderPrivySubjectCommitment: defaultSenderPrivy,
+			senderAuthSubjectCommitment: defaultSenderAuth,
 			timestamp: staleTimestamp,
 			nonce,
 		});
@@ -710,7 +710,7 @@ describe("FSEnvelopeRegistry", () => {
 						optionalCommitments: [],
 						viewerEmailCommitments: [],
 						senderEmailCommitment: defaultSenderEmail,
-						senderPrivySubjectCommitment: defaultSenderPrivy,
+						senderAuthSubjectCommitment: defaultSenderAuth,
 						orgIdCommitment: zeroOrg,
 						routingMode: 0,
 						routingOrder: [],
@@ -747,7 +747,7 @@ describe("FSEnvelopeRegistry", () => {
 				]),
 			placementCommitment: defaultPlacement,
 			senderEmailCommitment: defaultSenderEmail,
-			senderPrivySubjectCommitment: defaultSenderPrivy,
+			senderAuthSubjectCommitment: defaultSenderAuth,
 			timestamp: futureTimestamp,
 			nonce,
 		});
@@ -762,7 +762,7 @@ describe("FSEnvelopeRegistry", () => {
 						optionalCommitments: [],
 						viewerEmailCommitments: [],
 						senderEmailCommitment: defaultSenderEmail,
-						senderPrivySubjectCommitment: defaultSenderPrivy,
+						senderAuthSubjectCommitment: defaultSenderAuth,
 						orgIdCommitment: zeroOrg,
 						routingMode: 0,
 						routingOrder: [],
@@ -782,7 +782,7 @@ describe("FSEnvelopeRegistry", () => {
 		const ctx = await deployFullSystem();
 		const signer = `0x${"75".repeat(32)}` as Hex;
 		const viewerCommitment = `0x${"98".repeat(32)}` as Hex;
-		const viewerPrivy = `0x${"99".repeat(32)}` as Hex;
+		const viewerAuth = `0x${"99".repeat(32)}` as Hex;
 		const pieceCid = "future-ack";
 		await registerEnvelopeOnly(ctx, pieceCid, [signer], {
 			viewerEmailCommitments: [viewerCommitment],
@@ -797,7 +797,7 @@ describe("FSEnvelopeRegistry", () => {
 				walletAccount(ctx.sender).address,
 				walletAccount(ctx.payout).address,
 				viewerCommitment,
-				viewerPrivy,
+				viewerAuth,
 				futureTimestamp,
 				"0x",
 			]),

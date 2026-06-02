@@ -71,6 +71,32 @@ BULLMQ_PREFIX={filosign}
 
 Full secret list: [`project/ops/dokploy-deploy.md`](../project/ops/dokploy-deploy.md).
 
+## API vs worker env parity (must match)
+
+Both `api` and `worker` services run the same image with different `SERVER_ROLE`. These values **must be identical** across replicas (mis-match causes split-brain queues, wrong chain, or stale billing).
+
+| Variable | Why both need it |
+|----------|------------------|
+| `DRAGONFLY_URL` | Session cache, BullMQ, relayer lock, cron locks |
+| `BULLMQ_PREFIX` | Queue key namespace (default `{filosign}`) |
+| `PG_URI` / `DB_NAME` | Same Postgres |
+| `DEPLOYMENT` / chain env | Same contracts + RPC (`getRuntime`, relay) |
+| `FC_SERVER_*` / relayer KMS | Worker runs payout + settlement relay |
+| `DODO_*` | Worker processes billing-webhook queue |
+| `TG_ANALYTICS`, `TG_ANALYTICS_BOT_*` | Worker emits BullMQ + cron alerts |
+| `POSTHOG_*` | Optional alert mirror on worker |
+| `AWS_*` / SES | Worker sends outbox email |
+| R2 / storage env | Compliance export cron, uploads |
+
+**Differs by role only:**
+
+| Variable | `api` | `worker` |
+|----------|-------|----------|
+| `SERVER_ROLE` | `api` | `worker` |
+| HTTP port / `curl` healthcheck | yes | no (heartbeat + `./worker-healthcheck`) |
+
+**Pre-prod:** Run [`project/ops/production-smoke-tests.md`](../project/ops/production-smoke-tests.md) on staging after deploy.
+
 ## App image build (api + worker)
 
 Both services share one image built from [`deploy/Dockerfile`](Dockerfile) (`bun run build -- --server` → `out/server`, `out/worker`, `out/worker-healthcheck`). Compose sets `SERVER_ROLE=api` or `worker`; worker has `deploy.replicas: 1` and no public port.

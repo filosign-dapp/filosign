@@ -8,7 +8,7 @@
 
 | Goal | Command |
 | --- | --- |
-| Local dev (compose + bootstrap + server + client + astro) | `bun run dev` or `bun run dev -- --local` |
+| Local dev (compose + bootstrap + server + client + astro) | `bun run dev` or `bun run dev -- --local` (bootstrap: `db purge local`, contracts compile + deploy) |
 | Dragonfly only | `bun run dev -- --deps` |
 | Bootstrap + API only | `bun run dev -- --serloc` |
 | Client + marketing + email preview | `bun run dev -- --web` |

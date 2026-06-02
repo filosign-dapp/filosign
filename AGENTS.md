@@ -2,38 +2,42 @@
 
 Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-package conventions:** README/AGENTS in table below. **Rules:** [.cursor/rules/](.cursor/rules/) (narrow rule wins on conflict).
 
-## Read first
+## IMPORTANT
+
+Pre-production (solo dev, no users): skip backward-compat and migration shims. Fix root causes; replace legacy code, unused dependencies, comments, and modules—don’t layer around them. Writing minimal code to implement a plan is ideal, followed by a refactor sweep to rebalance and reorganise codebase, aiming for code maintainablity and readability. a balance between number of files vs LOC = sweet spot. 
+
+## Read for context
 
 
-| Path                    | Docs                                                                      | Role                                                         |
-| ----------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `apps/client`           | [README](apps/client/README.md)                                           | Thin Vite UI → `@filosign/react`                             |
-| `apps/server`           | [README](apps/server/README.md)                                           | Hono, Drizzle, `/api/rpc`, `rpc.runtime`                     |
-| `apps/contracts`        | [README](apps/contracts/README.md) · [TESTING](apps/contracts/TESTING.md) | Solidity, `definitions/`, EIP-712; tests in `test/`          |
+| Path                    | Docs                                                                      | Role                                                           |
+| ----------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `apps/client`           | [README](apps/client/README.md)                                           | Thin Vite UI → `@filosign/react`                               |
+| `apps/server`           | [README](apps/server/README.md)                                           | Hono, Drizzle, `/api/rpc`, `rpc.runtime`                       |
+| `apps/contracts`        | [README](apps/contracts/README.md) · [TESTING](apps/contracts/TESTING.md) | Solidity, `definitions/`, EIP-712; tests in `test/`            |
 | `apps/astro`            | [README](apps/astro/README.md)                                            | Marketing — landing mocks in `src/components/marketing-mocks/` |
-| `packages/react-sdk`    | [README](packages/react-sdk/README.md)                                    | `FilosignProvider`, typed `rpc`, `rpcQuery`, hooks           |
-| `packages/shared`       | [AGENTS.md](packages/shared/AGENTS.md)                                    | Types, Zod, manifests (browser+server)                       |
-| `packages/entitlements` | —                                                                         | Plan catalog + pure evaluator (no DB; server wires later)    |
-| `packages/errors`       | [README](packages/errors/README.md)                                       | User-facing error catalog, `throwAppError`, `presentError`   |
-| `packages/crypto-utils` | [README](packages/crypto-utils/README.md)                                 | KEM, WASM-adjacent crypto                                    |
-| `packages/motion`       | [README](packages/motion/README.md)                                       | Shared spring physics presets, tweens, and UI layout motion  |
-| `packages/test`         | [README](packages/test/README.md)                                         | Dev harness                                                  |
-| Scripts / CI            | [SCRIPTS.md](SCRIPTS.md)                                                  | `dev`, `check`, `sanity`, `test`, `build`, `db`, `contracts` |
-| Testing                 | [TESTING.md](TESTING.md)                                                  | `tests/` layout, `tests/support/`, grouping rules            |
-| Unsure                  | [README.md](README.md)                                                    | Product + repo map                                           |
+| `packages/react-sdk`    | [README](packages/react-sdk/README.md)                                    | `FilosignProvider`, typed `rpc`, `rpcQuery`, hooks             |
+| `packages/shared`       | [AGENTS.md](packages/shared/AGENTS.md)                                    | Types, Zod, manifests (browser+server)                         |
+| `packages/entitlements` | —                                                                         | Plan catalog + pure evaluator (no DB; server wires later)      |
+| `packages/errors`       | [README](packages/errors/README.md)                                       | User-facing error catalog, `throwAppError`, `presentError`     |
+| `packages/crypto-utils` | [README](packages/crypto-utils/README.md)                                 | KEM, WASM-adjacent crypto                                      |
+| `packages/motion`       | [README](packages/motion/README.md)                                       | Shared spring physics presets, tweens, and UI layout motion    |
+| `packages/test`         | [README](packages/test/README.md)                                         | Dev harness                                                    |
+| Scripts / CI            | [SCRIPTS.md](SCRIPTS.md)                                                  | `dev`, `check`, `sanity`, `test`, `build`, `db`, `contracts`   |
+| Testing                 | [TESTING.md](TESTING.md)                                                  | `tests/` layout, `tests/support/`, grouping rules              |
+| Unsure                  | [README.md](README.md)                                                    | Product + repo map                                             |
 
 
 Multi-package work: read every relevant row, then [Vertical slice](#vertical-slice).
 
 
-| Rule                                                             | When                                           |
-| ---------------------------------------------------------------- | ---------------------------------------------- |
-| [contracts-testing.mdc](.cursor/rules/contracts-testing.mdc)     | `apps/contracts/test/` or `src/*.sol`          |
-| [preamble.mdc](.cursor/rules/preamble.mdc)                       | Discipline, verify before done                 |
-| [apps/web/patterns.mdc](.cursor/rules/apps/web/patterns.mdc)     | `safe`/`tryCatch`, `respond`, Hono `Variables` |
-| [app.mdc](.cursor/rules/app.mdc)                                 | Never edit `definitions/` (generated)          |
-| [apps/web/api-routes.mdc](.cursor/rules/apps/web/api-routes.mdc) | oRPC routes + client consumption               |
-| [TESTING.md](TESTING.md)                                         | `tests/` vs `lib/`, mocks in `tests/support/`  |
+| Rule                                                                                 | When                                                     |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| [contracts-testing.mdc](.cursor/rules/contracts-testing.mdc)                         | `apps/contracts/test/` or `src/*.sol`                    |
+| [preamble.mdc](.cursor/rules/preamble.mdc)                                           | Discipline, verify before done                           |
+| [apps/web/patterns.mdc](.cursor/rules/apps/web/patterns.mdc)                         | `safe`/`tryCatch`, `respond`, Hono `Variables`           |
+| [app.mdc](.cursor/rules/app.mdc)                                                     | Never edit `definitions/` (generated)                    |
+| [apps/web/api-routes.mdc](.cursor/rules/apps/web/api-routes.mdc)                     | oRPC routes + client consumption                         |
+| [TESTING.md](TESTING.md)                                                             | `tests/` vs `lib/`, mocks in `tests/support/`            |
 | [sprint-implementation-rulebook.md](.cursor/plans/sprint-implementation-rulebook.md) | Server infra Sprints 0–6 — layout, TDD, replace-not-shim |
 
 
@@ -46,10 +50,10 @@ Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).
 ## Boundaries
 
 - **HTTP (client):** `useFilosignContext().rpc` + `@filosign/react` hooks only. No `fetch`/axios to JSON API except: blob/doc bytes ([send-envelope.ts](apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope.ts)), static assets ([compliance-pdf/utils/images.ts](apps/client/src/lib/domains/files/compliance-pdf/utils/images.ts)), **PUT to `storage.presignPut` URLs** (no API body proxy).
-- **Settlements:** Server never custodies USDC. Client `registerRule` + `approve` on-chain; server indexes via **`settlements.registerForFile`**. Sign page **Settle payment** → `settlements.trySettle` (server relay); fallback **Settle from wallet** → `settlements.confirmSettlement`. **Teams Pro:** `updateRule` / `cancelRule` + post-send attach. **`files.amendSigner`** for pre-sign roster changes. Daily cron syncs off-platform `executed` state. See [`lib/domains/settlements/`](apps/server/lib/domains/settlements/) and [`project/settlements/architecture-and-non-custody.md`](project/settlements/architecture-and-non-custody.md).
+- **Settlements:** Server never custodies USDC. Client `registerRule` + `approve` on-chain; server indexes via `**settlements.registerForFile`**. Sign page **Settle payment** → `settlements.trySettle` (server relay); fallback **Settle from wallet** → `settlements.confirmSettlement`. **Teams Pro:** `updateRule` / `cancelRule` + post-send attach. `**files.amendSigner`** for pre-sign roster changes. Daily cron syncs off-platform `executed` state. See `[lib/domains/settlements/](apps/server/lib/domains/settlements/)` and `[project/settlements/architecture-and-non-custody.md](project/settlements/architecture-and-non-custody.md)`.
 - **Logic:** UI `apps/client` | hooks/SDK `packages/react-sdk` | API/DB/relay `apps/server`.
 - **Imports:** Client uses minimal `@filosign/contracts` ([constants](apps/client/src/constants.ts)); prefer SDK/runtime for new code.
-- **Definitions:** Never hand-edit `apps/contracts/definitions/`. Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy). Redeploy / rebrand ops: [`project/contracts/envelope-registry-migration.md`](project/contracts/envelope-registry-migration.md).
+- **Definitions:** Never hand-edit `apps/contracts/definitions/`. Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy). Redeploy / rebrand ops: `[project/contracts/envelope-registry-migration.md](project/contracts/envelope-registry-migration.md)`.
 - **Contracts v1 (immutable):** `FSEnvelopeRegistry` + `FSPaymentValidator` only; KMS = `FSEnvelopeRegistry.server`; identity/E2EE off-chain. See `[apps/contracts/ARCHITECTURE.md](apps/contracts/ARCHITECTURE.md)` and `[project/contracts-future-scope.md](project/contracts-future-scope.md)`.
 
 ## API & oRPC
@@ -87,7 +91,7 @@ Use when relevant (`~/.agents/skills/`): **ETHSKILLS** / `~/.cursor/skills/ethsk
 
 Always use Zod v4 schemas: Fetch migration guide from [https://zod.dev/v4/changelog](https://zod.dev/v4/changelog)
 
-## Domain module layout
+## Refactoring Guide
 
 **Goal:** Middle ground between one giant file and dozens of one-function files — a **feature folder** with a thin public surface and scoped internals (same idea as `[apps/client/src/lib/web3/](apps/client/src/lib/web3/)`).
 
@@ -112,6 +116,3 @@ Always use Zod v4 schemas: Fetch migration guide from [https://zod.dev/v4/change
 
 When refactoring an over-split domain: merge related modules into one `utils/` file per concern, keep handlers thin, preserve `index.ts` exports.
 
-## Development stance
-
-Pre-production (solo dev, no users): skip backward-compat and migration shims. Fix root causes; replace legacy code, unused dependencies, comments, and modules—don’t layer around them.

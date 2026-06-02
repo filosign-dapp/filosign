@@ -1,5 +1,8 @@
 import { describe, expect, it } from "bun:test";
-import { withComposeOnlyFieldsFromPrev } from "@/src/lib/domains/drafts/envelope-local-draft";
+import {
+	stripCreateFormForPersist,
+	withComposeOnlyFieldsFromPrev,
+} from "@/src/lib/domains/drafts/envelope-local-draft";
 import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
 import type { CreateForm } from "@/src/lib/domains/files/envelope-form-types";
 
@@ -66,5 +69,20 @@ describe("withComposeOnlyFieldsFromPrev", () => {
 		expect(next.registerRouting).toBeUndefined();
 		expect(next.combineSettlementLegs).toBeUndefined();
 		expect(next.attachmentPacketDrafts).toBeUndefined();
+	});
+});
+
+describe("stripCreateFormForPersist", () => {
+	it("omits supplementary file bytes from persisted createForm", () => {
+		const form: CreateForm = {
+			...baseForm,
+			attachmentPacketDrafts: [attachmentPacketDraft],
+		};
+		const stripped = stripCreateFormForPersist(form);
+		const file = stripped?.attachmentPacketDrafts?.[0]?.files[0] as
+			| { id: string; size?: number }
+			| undefined;
+		expect(file).toBeDefined();
+		expect(file?.size).toBe(3);
 	});
 });

@@ -1,4 +1,5 @@
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
+import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
 import type {
 	CreateForm,
 	EnvelopeForm,
@@ -43,6 +44,159 @@ type BlobRow = {
 
 function docKey(draftId: string, docId: string) {
 	return `${draftId}:${docId}`;
+}
+
+function attachmentPrefix(draftId: string) {
+	return `${draftId}:att:`;
+}
+
+function attachmentFileKey(draftId: string, packetId: string, fileId: string) {
+	return `${attachmentPrefix(draftId)}${packetId}:${fileId}`;
+}
+
+export function attachmentFileHasBytes(
+	file: AttachmentPacketComposeDraft["files"][number],
+): boolean {
+	return file.bytes instanceof Uint8Array && file.bytes.byteLength > 0;
+}
+
+export function attachmentPacketDraftsNeedHydration(
+	drafts: AttachmentPacketComposeDraft[] | undefined,
+): boolean {
+	return (
+		drafts?.some((packet) =>
+			packet.files.some((file) => !attachmentFileHasBytes(file)),
+		) ?? false
+	);
+}
+
+export function attachmentFileByteLength(file: {
+	bytes?: Uint8Array;
+	size?: number;
+}): number {
+	if (file.bytes instanceof Uint8Array) {
+		return file.bytes.byteLength;
+	}
+	if (typeof file.size === "number") {
+		return file.size;
+	}
+	return 0;
+}
+
+/** Omit PDF bytes before Zustand → localStorage (blobs live in IndexedDB). */
+export function stripCreateFormForPersist(
+	form: CreateForm | null,
+): CreateForm | null {
+	if (!form?.attachmentPacketDrafts?.length) return form;
+	return {
+		...form,
+		attachmentPacketDrafts: form.attachmentPacketDrafts.map((packet) => ({
+			...packet,
+			files: packet.files.map((file) => ({
+				id: file.id,
+				name: file.name,
+				mimeType: file.mimeType,
+				size:
+					file.bytes instanceof Uint8Array
+						? file.bytes.byteLength
+						: "size" in file && typeof file.size === "number"
+							? file.size
+							: 0,
+			})),
+		})),
+	} as unknown as CreateForm;
+}
+
+export async function saveAttachmentPacketDrafts(
+	draftId: string,
+	drafts: AttachmentPacketComposeDraft[],
+): Promise<void> {
+	const db = await openDb();
+	const tx = db.transaction(STORE, "readwrite");
+	const store = tx.objectStore(STORE);
+	const keep = new Set<string>();
+	for (const packet of drafts) {
+		for (const file of packet.files) {
+			if (!attachmentFileHasBytes(file)) continue;
+			const key = attachmentFileKey(draftId, packet.packetId, file.id);
+			keep.add(key);
+			store.put({
+				key,
+				blob: new Blob([Uint8Array.from(file.bytes)], { type: file.mimeType }),
+				name: file.name,
+				size: file.bytes.byteLength,
+				type: file.mimeType,
+			} satisfies BlobRow);
+		}
+	}
+
+	const attPrefix = attachmentPrefix(draftId);
+	await new Promise<void>((resolve, reject) => {
+		const cursorReq = store.openCursor();
+		cursorReq.onsuccess = () => {
+			const cursor = cursorReq.result;
+			if (!cursor) {
+				resolve();
+				return;
+			}
+			const key = cursor.key as string;
+			if (key.startsWith(attPrefix) && !keep.has(key)) {
+				cursor.delete();
+			}
+			cursor.continue();
+		};
+		cursorReq.onerror = () => reject(cursorReq.error);
+	});
+
+	await txDone(tx);
+	db.close();
+}
+
+export async function hydrateAttachmentPacketDrafts(
+	draftId: string,
+	drafts: AttachmentPacketComposeDraft[],
+): Promise<AttachmentPacketComposeDraft[]> {
+	if (drafts.length === 0) return drafts;
+
+	const db = await openDb();
+	const tx = db.transaction(STORE, "readonly");
+	const store = tx.objectStore(STORE);
+
+	const hydrated = await Promise.all(
+		drafts.map(async (packet) => ({
+			...packet,
+			files: await Promise.all(
+				packet.files.map(async (file) => {
+					if (attachmentFileHasBytes(file)) return file;
+					const row = await new Promise<BlobRow | undefined>(
+						(resolve, reject) => {
+							const req = store.get(
+								attachmentFileKey(draftId, packet.packetId, file.id),
+							);
+							req.onsuccess = () => resolve(req.result as BlobRow | undefined);
+							req.onerror = () => reject(req.error);
+						},
+					);
+					if (!row) {
+						throw new Error(
+							`Supplementary file not found in draft storage: ${file.name}`,
+						);
+					}
+					const buffer = await row.blob.arrayBuffer();
+					return {
+						id: file.id,
+						name: file.name,
+						mimeType: file.mimeType,
+						bytes: new Uint8Array(buffer),
+					};
+				}),
+			),
+		})),
+	);
+
+	await txDone(tx);
+	db.close();
+	return hydrated;
 }
 
 function openDb(): Promise<IDBDatabase> {

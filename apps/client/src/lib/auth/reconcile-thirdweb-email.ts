@@ -1,4 +1,4 @@
-import { useSyncPrivyEmail } from "@filosign/react/users";
+import { useSyncThirdwebEmail } from "@filosign/react/users";
 import { useCallback } from "react";
 import { useAuthToken } from "thirdweb/react";
 
@@ -8,7 +8,7 @@ import { useAuthToken } from "thirdweb/react";
  */
 export function useReconcileThirdwebEmail() {
 	const authToken = useAuthToken();
-	const syncThirdwebEmail = useSyncPrivyEmail();
+	const syncThirdwebEmail = useSyncThirdwebEmail();
 
 	return useCallback(async () => {
 		if (!authToken) return;

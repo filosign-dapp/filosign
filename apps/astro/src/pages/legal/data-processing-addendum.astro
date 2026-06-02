@@ -1,0 +1,52 @@
+---
+import LegalDocument from "../../components/LegalDocument.astro";
+import MarketingPageShell from "../../components/MarketingPageShell.astro";
+import { LEGAL_OPERATOR } from "../../config/legal-content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+	title="Data Processing Addendum - Filosign"
+	description="Filosign data processing terms for customer envelope workflows."
+>
+	<MarketingPageShell>
+		<LegalDocument
+			title="Data Processing Addendum (DPA)"
+			description="This DPA describes processor terms for customer envelope workflows where Filosign processes personal data on customer instructions."
+			lastUpdated="June 2026"
+		>
+			<h2>1. Scope</h2>
+			<p>
+				This DPA applies when Filosign processes customer-controlled envelope, recipient, and signing workflow data as a processor.
+			</p>
+
+			<h2>2. Roles</h2>
+			<p>
+				Customer is controller and Filosign is processor for covered workflow data, except where applicable law requires independent controller treatment for specific processing.
+			</p>
+
+			<h2>3. Processing Terms</h2>
+			<ul>
+				<li>Process only on documented customer instructions.</li>
+				<li>Apply confidentiality and least-privilege access controls.</li>
+				<li>Maintain appropriate technical and organizational security measures.</li>
+				<li>Assist with data-subject requests where legally required.</li>
+				<li>Notify customer controllers of relevant security incidents without undue delay.</li>
+				<li>Support deletion/return handling subject to legal-retention exceptions.</li>
+			</ul>
+
+			<h2>4. Subprocessors And Transfers</h2>
+			<p>
+				Current subprocessors are listed on <a href="/subprocessors" class="underline">/subprocessors</a>. International transfer safeguards are applied where required.
+			</p>
+
+			<h2>5. Contact</h2>
+			<p>
+				For DPA requests, contact
+				<a href={`mailto:${LEGAL_OPERATOR.privacyEmail}`} class="underline"
+					>{LEGAL_OPERATOR.privacyEmail}</a
+				>.
+			</p>
+		</LegalDocument>
+	</MarketingPageShell>
+</BaseLayout>

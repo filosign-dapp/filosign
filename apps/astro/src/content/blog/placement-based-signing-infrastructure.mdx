@@ -116,7 +116,7 @@ interface ComplianceBundle {
     email: string;
     displayName: string | null;
     emailCommitment: `0x${string}`;
-    privySubjectCommitment: `0x${string}` | null;
+    authSubjectCommitment: `0x${string}` | null;
   }>;
   onchainRegistration: {
     cidIdentifier: `0x${string}`;
@@ -125,7 +125,7 @@ interface ComplianceBundle {
     viewersCommitment: `0x${string}`;
     placementCommitment: `0x${string}`;
     senderEmailCommitment: `0x${string}`;
-    senderPrivySubjectCommitment: `0x${string}`;
+    senderAuthSubjectCommitment: `0x${string}`;
     signersCount: number;
     signaturesCount: number;
     timestamp: string;
@@ -182,7 +182,7 @@ interface ComplianceBundle {
       wallet: `0x${string}`;
       createdAtIso: string;
       emailCommitment: `0x${string}`;
-      privySubjectCommitment: `0x${string}` | null;
+      authSubjectCommitment: `0x${string}` | null;
       ackSha256: `0x${string}` | null;
     }>;
   };
@@ -216,7 +216,7 @@ When a signer finalizes, the following happens:
      address sender_,
      address signerWallet_,
      bytes32 signerEmailCommitment_,
-     bytes32 privySubjectCommitment_,
+     bytes32 authSubjectCommitment_,
      bytes20 dl3SignatureCommitment_,
      uint256 timestamp_,
      bytes calldata signature_,

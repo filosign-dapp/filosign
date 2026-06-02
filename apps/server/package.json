@@ -20,7 +20,6 @@
 		"drizzle-kit:check": "bunx --bun drizzle-kit check",
 		"db:push:local": "bun run --env-file=.env.local drizzle-kit:push",
 		"db:push:staging": "infisical run --env=staging -- bun run drizzle-kit:push",
-		"db:push:sandbox": "infisical run --env=sandbox -- bun run drizzle-kit:push",
 		"db:migrate:local": "bun run --env-file=.env.local drizzle-kit:migrate",
 		"db:migrate:staging": "infisical run --env=staging -- bun run drizzle-kit:migrate",
 		"db:migrate:sandbox": "infisical run --env=sandbox -- bun run drizzle-kit:migrate",

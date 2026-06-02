@@ -77,9 +77,9 @@ Entrypoint: [`scripts/infisical-entrypoint.sh`](scripts/infisical-entrypoint.sh)
 # Server (apps/server, after infisical login)
 bun run dev:staging
 bun run dev:sandbox
-bun run db:push:staging
-bun run db:push:sandbox
-bun run db:purge:sandbox
+bun run db -- push staging
+bun run db -- migrate sandbox
+bun run db -- purge sandbox
 
 # Contracts (apps/contracts — no Infisical)
 bun run deploy:testnet

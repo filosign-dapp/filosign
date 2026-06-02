@@ -2,8 +2,10 @@
  * Emit Telegram/PostHog alert when pgBackRest wrapper exits non-zero.
  * Invoked from deploy/scripts/pgbackrest-backup.sh (host cron; uses process.env only).
  */
-import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
-import { emitCriticalPlatformEventFromProcessEnv } from "@/lib/platform/analytics/platform-alerts-env";
+import {
+	emitCriticalPlatformEventFromProcessEnv,
+	PLATFORM_ALERT_EVENTS,
+} from "@/lib/platform/analytics";
 
 const stanza = process.argv[2] ?? process.env.PGBACKREST_STANZA ?? "filosign";
 const cmd = process.argv[3] ?? "unknown";

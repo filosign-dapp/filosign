@@ -2,8 +2,10 @@ import { DEPLOYMENTS } from "@filosign/shared";
 import { zEvmAddress, zEvmPrivateKey } from "@filosign/shared/zod";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
-import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
-import { emitCriticalPlatformEventFromProcessEnv } from "@/lib/platform/analytics/platform-alerts-env";
+import {
+	emitCriticalPlatformEventFromProcessEnv,
+	PLATFORM_ALERT_EVENTS,
+} from "@/lib/platform/analytics";
 import { validateDeploymentEnv } from "@/lib/platform/validate-deployment-env";
 
 const parsedEnv = createEnv({

@@ -2,8 +2,10 @@ import { type ChainKey, getDefinitionsEntry } from "@filosign/contracts";
 import type { Chain } from "viem/chains";
 import { base, baseSepolia, hardhat } from "viem/chains";
 import env from "@/env";
-import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
-import { emitCriticalPlatformEvent } from "@/lib/platform/analytics/platform-alerts";
+import {
+	emitCriticalPlatformEvent,
+	PLATFORM_ALERT_EVENTS,
+} from "@/lib/platform/analytics";
 
 const CHAIN_MAP = {
 	local: hardhat,

@@ -1,8 +1,10 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import env from "@/env";
-import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
-import { emitCriticalPlatformEvent } from "@/lib/platform/analytics/platform-alerts";
+import {
+	emitCriticalPlatformEvent,
+	PLATFORM_ALERT_EVENTS,
+} from "@/lib/platform/analytics";
 import { logger } from "@/lib/platform/pino";
 import schema from "./schema";
 

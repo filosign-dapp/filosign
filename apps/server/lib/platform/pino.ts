@@ -1,8 +1,10 @@
 import { createPinoLogger } from "@filosign/logger";
 import type { MiddlewareHandler } from "hono";
 import env from "@/env";
-import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
-import { emitCriticalPlatformEvent } from "@/lib/platform/analytics/platform-alerts";
+import {
+	emitCriticalPlatformEvent,
+	PLATFORM_ALERT_EVENTS,
+} from "@/lib/platform/analytics";
 
 export const logger = createPinoLogger({
 	debug: env.DEBUG,

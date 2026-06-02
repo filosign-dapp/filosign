@@ -36,10 +36,9 @@ async function emitRpcDegradedAlert(
 	const message =
 		error instanceof Error ? error.message : "JSON-RPC transport error";
 
-	const [{ PLATFORM_ALERT_EVENTS }, { emitCriticalPlatformEvent }, { logger }] =
+	const [{ PLATFORM_ALERT_EVENTS, emitCriticalPlatformEvent }, { logger }] =
 		await Promise.all([
-			import("@/lib/platform/analytics/events"),
-			import("@/lib/platform/analytics/platform-alerts"),
+			import("@/lib/platform/analytics"),
 			import("@/lib/platform/pino"),
 		]);
 

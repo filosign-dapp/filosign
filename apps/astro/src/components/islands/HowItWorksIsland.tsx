@@ -12,26 +12,26 @@ import { MotionProvider } from "./MotionProvider";
 const steps = [
 	{
 		kicker: "01",
-		title: "Send the document",
-		body: "Upload an agreement, add recipients, and route it through an encrypted signing workflow.",
+		title: "Send the agreement",
+		body: "Upload a document, add recipients, place fields, and choose who can view or sign.",
 		mock: <SendStepMock />,
 	},
 	{
 		kicker: "02",
-		title: "Collect signatures",
-		body: "Signers complete assigned fields while Filosign records who signed and what was completed.",
+		title: "Add what happens after signing",
+		body: "Attach optional USDC payout rules or encrypted file packets that unlock only when conditions are met.",
 		mock: <SignStepMock />,
 	},
 	{
 		kicker: "03",
-		title: "Export proof",
-		body: "Generate an exportable proof packet. No stitching together emails and screenshots.",
+		title: "Collect signatures",
+		body: "Recipients sign in a familiar flow while Filosign records who signed, what changed, and when it happened.",
 		mock: <ProofStepMock />,
 	},
 	{
 		kicker: "04",
-		title: "Settle when needed",
-		body: "Attach payout rules that execute after signing conditions are met.",
+		title: "Export proof or release action",
+		body: "Download a proof packet, release gated files, or settle an approved payout once the signing conditions are complete.",
 		mock: <SettleStepMock />,
 	},
 ] as const satisfies ReadonlyArray<{
@@ -53,12 +53,12 @@ export default function HowItWorksIsland() {
 						How it works
 					</p>
 					<h2 className="text-3xl tracking-tight md:text-5xl">
-						The signed document becomes the workflow record.
+						A familiar signing flow, with execution built in.
 					</h2>
 					<p className="font-manrope text-base leading-relaxed text-muted-foreground md:text-lg">
-						Filosign keeps the signing experience familiar while adding
-						encryption, proof, and optional settlement where the workflow needs
-						it.
+						Filosign keeps signing simple for normal users. The extra power sits
+						behind the workflow: privacy, proof, payout rules, and conditional
+						file access.
 					</p>
 				</div>
 

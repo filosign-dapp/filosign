@@ -17,6 +17,10 @@ type MarketingCtaButtonsProps = {
 	layout?: "row" | "col";
 	className?: string;
 	primaryHref?: string;
+	primaryLabel?: string;
+	secondaryHref?: string;
+	secondaryLabel?: string;
+	secondaryExternal?: boolean;
 	showSecondary?: boolean;
 	showPrimaryArrow?: boolean;
 	onLinkClick?: () => void;
@@ -27,6 +31,10 @@ export default function MarketingCtaButtons({
 	layout = "row",
 	className,
 	primaryHref = MARKETING_CTA.getStartedHref,
+	primaryLabel = MARKETING_CTA.getStartedLabel,
+	secondaryHref = MARKETING_CTA.sandboxUrl,
+	secondaryLabel = MARKETING_CTA.tryFilosignLabel,
+	secondaryExternal = true,
 	showSecondary = true,
 	showPrimaryArrow = false,
 	onLinkClick,
@@ -57,7 +65,7 @@ export default function MarketingCtaButtons({
 						layout === "col" && "w-full min-h-11",
 					)}
 				>
-					{MARKETING_CTA.getStartedLabel}
+					{primaryLabel}
 					{showPrimaryArrow ? (
 						<CaretRightIcon
 							className="size-4 transition-transform duration-200 group-hover/button:translate-x-1"
@@ -74,9 +82,9 @@ export default function MarketingCtaButtons({
 					whileTap={MARKETING_PRESSABLE_TAP}
 				>
 					<a
-						href={MARKETING_CTA.sandboxUrl}
-						target="_blank"
-						rel="noopener noreferrer"
+						href={secondaryHref}
+						target={secondaryExternal ? "_blank" : undefined}
+						rel={secondaryExternal ? "noopener noreferrer" : undefined}
 						onClick={onLinkClick}
 						className={cn(
 							secondaryClass,
@@ -84,7 +92,7 @@ export default function MarketingCtaButtons({
 							layout === "col" && "w-full min-h-11",
 						)}
 					>
-						{MARKETING_CTA.tryFilosignLabel}
+						{secondaryLabel}
 					</a>
 				</Pressable>
 			) : null}

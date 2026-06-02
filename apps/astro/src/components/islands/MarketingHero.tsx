@@ -48,7 +48,7 @@ export default function MarketingHero() {
 								weight="fill"
 								aria-hidden
 							/>{" "}
-							Public beta
+							Private launch
 						</span>
 					</motion.div>
 
@@ -61,7 +61,7 @@ export default function MarketingHero() {
 						}}
 						className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl leading-tight text-balance max-w-full"
 					>
-						Agreement workflows that can settle themselves
+						Agreements that unlock the next step
 					</motion.h1>
 
 					<motion.p
@@ -73,8 +73,9 @@ export default function MarketingHero() {
 						}}
 						className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed -mt-2 font-manrope font-light text-pretty"
 					>
-						Private documents, permanent e-signatures, and pre-authorized
-						payouts based on signing conditions, all in one place.
+						Send private documents, collect signatures, and release payouts or
+						files only when the right conditions are met. Filosign gives
+						sensitive workflows one place to sign, prove, and execute.
 					</motion.p>
 
 					<motion.div
@@ -85,7 +86,12 @@ export default function MarketingHero() {
 							delay: itemDelay + 0.3,
 						}}
 					>
-						<MarketingCtaButtons showPrimaryArrow />
+						<MarketingCtaButtons
+							showPrimaryArrow
+							secondaryHref="#how-it-works"
+							secondaryLabel="See how it works"
+							secondaryExternal={false}
+						/>
 					</motion.div>
 				</motion.div>
 

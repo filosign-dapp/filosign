@@ -6,20 +6,33 @@ import { MotionProvider } from "./MotionProvider";
 const useCases = [
 	{
 		title: "Grant milestone approvals",
-		outcome: "Release funds when deliverables are signed and verified.",
+		outcome:
+			"Collect the milestone form, verify the signer, and attach a payout packet that can release when the right people sign.",
 		image: landingMedia.useCases.grants,
 	},
 	{
 		title: "Contractor forms and handovers",
 		outcome:
-			"Close out work with proof you can export, not just email threads.",
+			"Finish agreements, tax forms, delivery approvals, and final handoffs without chasing separate files and payment follow-up.",
 		image: landingMedia.useCases.contractors,
 	},
 	{
 		title: "Bounty and hackathon payouts",
 		outcome:
-			"Collect signatures first, then settle attached payouts when conditions are met.",
+			"Collect winner paperwork first, then settle approved payouts with a clean record for finance and community review.",
 		image: landingMedia.useCases.bounties,
+	},
+	{
+		title: "Agency and dev studio delivery",
+		outcome:
+			"Attach source code, design assets, or final files to the envelope and unlock them only after sign-off conditions are met.",
+		image: landingMedia.useCases.contractors,
+	},
+	{
+		title: "Sensitive founder workflows",
+		outcome:
+			"Share investor, hiring, vendor, and IP documents without giving the platform plaintext access to the files.",
+		image: landingMedia.useCases.grants,
 	},
 ] as const;
 
@@ -29,18 +42,19 @@ export default function LandingUseCasesIsland() {
 			<section className={marketingSectionShellClass}>
 				<div className="mb-10 md:mb-14 max-w-3xl space-y-4">
 					<p className="font-manrope text-sm font-medium text-primary">
-						Built for high-stakes workflows
+						Built for workflows with consequences
 					</p>
 					<h2 className="text-3xl tracking-tight md:text-5xl">
-						Start where signing and payment already meet.
+						Use Filosign when a signed agreement should trigger action.
 					</h2>
 					<p className="font-manrope text-base leading-relaxed text-muted-foreground md:text-lg">
-						From grants and contractor handovers to bounties: one encrypted
-						workflow with optional on-chain settlement.
+						Start with the teams that already feel the pain: grants,
+						contributors, contractors, agencies, and operators handling
+						sensitive work across borders.
 					</p>
 				</div>
 
-				<div className="grid gap-4 md:grid-cols-3">
+				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
 					{useCases.map((item, i) => (
 						<motion.article
 							key={item.title}

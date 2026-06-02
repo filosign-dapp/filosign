@@ -41,21 +41,21 @@ function BentoCard({
 export default function FeaturesBentoIsland() {
 	const cards = [
 		{
-			title: "Verify anywhere",
+			title: "Private documents",
 			description:
-				"Take the signing record with you. Anyone can check that the agreement was signed, without logging into Filosign.",
-			body: <ProofOutsideMock />,
-		},
-		{
-			title: "Private by default",
-			description:
-				"Files are encrypted in your browser before upload. Only you and your signers can read them. We cannot.",
+				"Files are encrypted in your browser before upload. Filosign does not receive the plaintext document in normal operation.",
 			body: <PrivateByDefaultMock />,
 		},
 		{
-			title: "You approve who can send",
+			title: "Proof you can export",
 			description:
-				"Senders need your permission before they can route documents to you. Fewer surprise requests in your inbox.",
+				"Download a clear record of who signed, when they signed, which fields were completed, and the verification data behind it.",
+			body: <ProofOutsideMock />,
+		},
+		{
+			title: "Recipient control",
+			description:
+				"Recipients can approve who is allowed to send them documents, reducing spam and unwanted signing requests.",
 			body: <RecipientControlMock />,
 		},
 	];
@@ -69,7 +69,7 @@ export default function FeaturesBentoIsland() {
 					viewport={{ once: true }}
 					className="text-3xl md:text-5xl tracking-tight"
 				>
-					Sign privately. Prove it later.
+					Private by design. Useful after the signature.
 				</motion.h2>
 				<motion.p
 					initial={{ opacity: 0, y: 20 }}
@@ -78,8 +78,8 @@ export default function FeaturesBentoIsland() {
 					transition={{ delay: 0.1 }}
 					className="text-muted-foreground text-lg md:text-xl max-w-3xl mx-auto font-manrope font-light"
 				>
-					Encrypted documents, a record you can share and verify, and optional
-					Attached payouts when everyone has signed.
+					Most signing tools stop at the signed PDF. Filosign is built for the
+					messy work around it: privacy, proof, payout, and handoff.
 				</motion.p>
 			</div>
 
@@ -114,12 +114,13 @@ export default function FeaturesBentoIsland() {
 									</span>
 								</div>
 								<h3 className="text-2xl md:text-3xl font-manrope font-light">
-									Export a record anyone can read
+									Payouts and files tied to signing conditions
 								</h3>
 								<p className="text-muted-foreground text-base leading-relaxed font-manrope font-light">
-									Get a clear summary of who signed, when they signed, and which
-									fields were completed, ready to share with finance, legal, or
-									a grant reviewer.
+									Attach USDC payout packets or supplementary files to an
+									agreement so approved payments and gated handoffs move only
+									when the required signatures are complete. Filosign does not
+									hold payout funds.
 								</p>
 							</div>
 

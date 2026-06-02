@@ -16,8 +16,6 @@ export const users = t.pgTable("users", {
 	encryptionPublicKey: t.text().notNull(),
 	signaturePublicKey: t.text().notNull(),
 
-	/**non core here */
-	lastActiveAt: t.timestamp({ withTimezone: true }),
 	authProviderId: t.text().unique().notNull(),
 	email: t.text().unique().notNull(),
 	mobile: t.text(),

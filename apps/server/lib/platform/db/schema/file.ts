@@ -179,8 +179,6 @@ export const fileDocumentViews = t.pgTable(
 			.notNull()
 			.references(() => users.walletAddress),
 		firstViewedAt: t.timestamp({ withTimezone: true }).notNull(),
-		lastViewedAt: t.timestamp({ withTimezone: true }).notNull(),
-		viewCount: t.integer().notNull().default(1),
 		source: t.text({ enum: documentViewSources }).notNull(),
 		...timestamps,
 	},
@@ -286,7 +284,7 @@ export const complianceExportLogs = t.pgTable(
 		requestedBy: tEvmAddress().notNull(),
 		bundleVersion: t.smallint().notNull(),
 		bundleHash: t.text().notNull(),
-		bundleJson: t.jsonb().notNull(),
+		storageKey: t.text("storage_key").notNull(),
 		executionStatus: t
 			.text({ enum: ["fully_executed", "partially_executed"] })
 			.notNull(),

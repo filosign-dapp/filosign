@@ -88,7 +88,7 @@ export function parseColdInviteFromLocationSearch(
 
 /**
  * True if the current user is allowed for this cold invite: sender wallet matches, or
- * Privy primary / Google email matches a recipient row, or Filosign profile email matches.
+ * Linked Auth / Google email matches a recipient row, or Filosign profile email matches.
  */
 export function coldInviteRecipientMatchesIdentity(args: {
 	recipientEmails: readonly string[];
@@ -123,7 +123,7 @@ export function coldInviteRecipientMatchesIdentity(args: {
  * Reads cold-invite params from the current URL (`coldPieceCid` + `coldInvite`), or maps
  * `/dashboard/document/sign` query `pieceCid` + `invite` into the same shape.
  *
- * Call synchronously before async work (e.g. Privy logout) that may redirect and clear
+ * Call synchronously before async work (e.g. Auth logout) that may redirect and clear
  * `window.location.search`.
  */
 export function extractColdInviteSearchFromLocation():

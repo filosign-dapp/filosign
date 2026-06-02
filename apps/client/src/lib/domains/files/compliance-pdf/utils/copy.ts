@@ -135,7 +135,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 			"Commitments to the ordered sets of signers and viewers. Verify: recompute from the party list and compare to on-chain registration fields when the snapshot is present.",
 		),
 		appendixGlossaryLine(
-			"Sender email commitment / sender Privy subject commitment",
+			"Sender email commitment / sender Auth subject commitment",
 			"Hides the sender’s email and login subject while binding them to the registration. Verify: compare to the sender row under Parties.",
 		),
 		appendixGlossaryLine(
@@ -143,7 +143,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 			"Hides a participant email while allowing Filosign to bind the same email across events. Verify: recomputed only with the preimage (Filosign internal); auditors typically check consistency across rows and txs.",
 		),
 		appendixGlossaryLine(
-			"privySubjectCommitment",
+			"authSubjectCommitment",
 			"Hides the authentication subject identifier (not shown in raw form in the bundle). Verify: consistency across party rows and acknowledgements where present.",
 		),
 		appendixGlossaryLine(
@@ -230,7 +230,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 		["parties[ ].displayName", "Human-readable name when available."],
 		["parties[ ].emailCommitment", "Commitment to normalized email."],
 		[
-			"parties[ ].privySubjectCommitment",
+			"parties[ ].authSubjectCommitment",
 			"Commitment to auth subject when set.",
 		],
 		[
@@ -253,7 +253,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 		],
 		["onchainRegistration.senderEmailCommitment", "Sender email commitment."],
 		[
-			"onchainRegistration.senderPrivySubjectCommitment",
+			"onchainRegistration.senderAuthSubjectCommitment",
 			"Sender auth-subject commitment.",
 		],
 		[
@@ -352,7 +352,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 			"Email commitment inside the ack.",
 		],
 		[
-			"offChainEvidence.acknowledgements[ ].privySubjectCommitment",
+			"offChainEvidence.acknowledgements[ ].authSubjectCommitment",
 			"Subject commitment when present.",
 		],
 		[

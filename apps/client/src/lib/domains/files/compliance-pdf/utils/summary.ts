@@ -118,9 +118,9 @@ export function buildCompliancePdfSummaryFromBundle(
 		partiesLines.push({
 			text: `   emailCommitment: ${p.emailCommitment}`,
 		});
-		if (p.privySubjectCommitment) {
+		if (p.authSubjectCommitment) {
 			partiesLines.push({
-				text: `   privySubjectCommitment: ${p.privySubjectCommitment}`,
+				text: `   authSubjectCommitment: ${p.authSubjectCommitment}`,
 			});
 		}
 		if (i < bundle.parties.length - 1) partiesLines.push({ text: "" });
@@ -147,7 +147,7 @@ export function buildCompliancePdfSummaryFromBundle(
 			{ text: `viewersCommitment: ${o.viewersCommitment}` },
 			{ text: `senderEmailCommitment: ${o.senderEmailCommitment}` },
 			{
-				text: `senderPrivySubjectCommitment: ${o.senderPrivySubjectCommitment}`,
+				text: `senderAuthSubjectCommitment: ${o.senderAuthSubjectCommitment}`,
 			},
 			{
 				text: `signersCount: ${o.signersCount} / signaturesCount: ${o.signaturesCount}`,
@@ -442,9 +442,9 @@ export function buildCompliancePdfSummaryFromBundle(
 			});
 			ackLines.push({ text: `   intentVersion: ${a.intentVersion}` });
 			ackLines.push({ text: `   emailCommitment: ${a.emailCommitment}` });
-			if (a.privySubjectCommitment) {
+			if (a.authSubjectCommitment) {
 				ackLines.push({
-					text: `   privySubjectCommitment: ${a.privySubjectCommitment}`,
+					text: `   authSubjectCommitment: ${a.authSubjectCommitment}`,
 				});
 			}
 			if (a.ackSha256) {

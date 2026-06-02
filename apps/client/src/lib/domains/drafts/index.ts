@@ -11,6 +11,9 @@ export {
 	useServerDraftHydrate,
 } from "./drafts-server";
 export {
+	attachmentFileByteLength,
+	attachmentFileHasBytes,
+	attachmentPacketDraftsNeedHydration,
 	buildCreateForm,
 	clearDraftDocuments,
 	createFormToEnvelopeForm,
@@ -18,18 +21,22 @@ export {
 	EMPTY_ENVELOPE_FORM,
 	hasDraftContent,
 	hasEnvelopeFormContent,
+	hydrateAttachmentPacketDrafts,
 	loadDocumentBytes,
 	loadDraftDocuments,
 	normalizeCreateForm,
 	pruneSignatureFields,
 	recipientFingerprint,
+	saveAttachmentPacketDrafts,
 	saveDraftDocuments,
+	stripCreateFormForPersist,
 	uploadedFromDataUrl,
 } from "./envelope-local-draft";
 export {
 	placementManifestFromCreateForm,
 	useDraftSaveUi,
 } from "./use-draft-save-ui";
+export { useHydrateAttachmentPacketDrafts } from "./use-hydrate-attachment-packet-drafts";
 export { useOpenDraft } from "./use-open-draft";
 export {
 	resetEnvelopeComposer,

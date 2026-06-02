@@ -2,6 +2,7 @@ import {
 	type AttachmentPacketSendInput,
 	SUPPLEMENTARY_ATTACHMENT_LIMITS,
 } from "@filosign/shared";
+import { attachmentFileByteLength } from "@/src/lib/domains/drafts/envelope-local-draft";
 
 export type AttachmentPacketValidationIssue = {
 	code: string;
@@ -84,7 +85,7 @@ export function validateAttachmentPacketDraftsForSend(args: {
 
 export function validateAttachmentPacketComposeDrafts(args: {
 	drafts: {
-		files: { name: string; bytes: Uint8Array }[];
+		files: { name: string; bytes?: Uint8Array; size?: number }[];
 		recipientEmails: string[];
 	}[];
 }): AttachmentPacketValidationIssue[] {
@@ -105,9 +106,15 @@ export function validateAttachmentPacketComposeDrafts(args: {
 			});
 		}
 		for (const file of draft.files) {
-			if (
-				file.bytes.byteLength > SUPPLEMENTARY_ATTACHMENT_LIMITS.maxBytesPerFile
-			) {
+			const byteLength = attachmentFileByteLength(file);
+			if (byteLength === 0) {
+				issues.push({
+					code: "FILE_BYTES_MISSING",
+					message: `${file.name} is still loading — wait a moment and try again`,
+				});
+				continue;
+			}
+			if (byteLength > SUPPLEMENTARY_ATTACHMENT_LIMITS.maxBytesPerFile) {
 				issues.push({
 					code: "FILE_TOO_LARGE",
 					message: `${file.name} exceeds the ${Math.round(SUPPLEMENTARY_ATTACHMENT_LIMITS.maxBytesPerFile / (1024 * 1024))}MB limit`,

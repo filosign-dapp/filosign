@@ -5,6 +5,7 @@ import {
 	clearDraftDocuments,
 	recipientFingerprint,
 	shouldPersistCreateFormToDisk,
+	stripCreateFormForPersist,
 } from "@/src/lib/domains/drafts";
 import type { CreateForm } from "@/src/lib/domains/files/envelope-form-types";
 import { createClientId } from "@/src/lib/utils/id";
@@ -122,7 +123,9 @@ export const useStorePersist = create<StorePersist>()(
 			},
 			partialize: (state) => ({
 				activeOrgId: state.activeOrgId,
-				createForm: shouldPersistCreateFormToDisk() ? state.createForm : null,
+				createForm: shouldPersistCreateFormToDisk()
+					? stripCreateFormForPersist(state.createForm)
+					: null,
 			}),
 		},
 	),

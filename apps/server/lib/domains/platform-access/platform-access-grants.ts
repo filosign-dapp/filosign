@@ -3,6 +3,10 @@ import { and, eq, isNotNull, lt, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import { shouldAutoGrantTeamsProForAdminEmail } from "@/lib/platform/admin";
+import {
+	invalidateOrgEntitlements,
+	invalidateUserEntitlements,
+} from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import {
@@ -49,6 +53,7 @@ export async function setUserPlanManualWithTx(
 		});
 }
 
+/** Callers must `invalidateOrgEntitlements(organizationId)` after the surrounding transaction commits. */
 export async function setOrgPlanManualWithTx(
 	tx: PlatformAccessTx,
 	args: {
@@ -158,6 +163,7 @@ export async function grantDevPlansForAdminEmail(email: string): Promise<{
 				updatedAt: new Date(),
 			})
 			.where(eq(organizationSubscriptions.organizationId, row.organizationId));
+		await invalidateOrgEntitlements(row.organizationId);
 		orgGrants += 1;
 	}
 
@@ -192,6 +198,10 @@ export async function expirePartnerTrialsJob(): Promise<{ expired: number }> {
 				lt(userSubscriptions.periodEnd, now),
 			),
 		);
+
+	await Promise.all(
+		rows.map((row) => invalidateUserEntitlements(row.walletAddress)),
+	);
 
 	return { expired: rows.length };
 }

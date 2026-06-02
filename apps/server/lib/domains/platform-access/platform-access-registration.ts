@@ -13,7 +13,6 @@ import {
 	platformInviteRedemptions,
 	platformInvites,
 } from "@/lib/platform/db/schema/platform-access";
-import { users } from "@/lib/platform/db/schema/user";
 import { isUserRegistered } from "./user-exists";
 import {
 	inviteIsActive,

@@ -3,6 +3,7 @@ import { ORPCError } from "@orpc/server";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import { invalidateUserEntitlements } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import {
@@ -185,6 +186,7 @@ export async function setUserFeatureOverrides(args: {
 			message: "Failed to update overrides",
 		});
 	}
+	await invalidateUserEntitlements(wallet);
 }
 
 export async function setUserPlanManual(args: {
@@ -214,4 +216,5 @@ export async function setUserPlanManual(args: {
 				updatedAt: new Date(),
 			},
 		});
+	await invalidateUserEntitlements(wallet);
 }

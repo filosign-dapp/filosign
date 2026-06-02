@@ -7,6 +7,7 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import db from "@/lib/platform/db";
 import { evmClient, fsPaymentValidatorAt } from "@/lib/platform/evm";
+import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import {
@@ -118,113 +119,115 @@ export async function tryExecuteSettlementPayout(args: {
 		return { executed: false, skipped: "insufficient_funds" };
 	}
 
-	const writeValidator = validator.write as ExecutePayoutLegWrite;
-	let lastTxHash: `0x${string}` | undefined;
-	let anyLegPaid = false;
-	let lastFailureStatus: SettlementRuleStatus | undefined;
-	let lastFailureMessage: string | undefined;
+	return withRelayerLock(async () => {
+		const writeValidator = validator.write as ExecutePayoutLegWrite;
+		let lastTxHash: `0x${string}` | undefined;
+		let anyLegPaid = false;
+		let lastFailureStatus: SettlementRuleStatus | undefined;
+		let lastFailureMessage: string | undefined;
 
-	for (const legIndex of unpaidIndices) {
-		const legIdx = BigInt(legIndex);
-		const simRes = await tryCatch(
-			validator.simulate.executePayoutLeg([onChainRuleId, legIdx], {
-				account: evmClient.account,
-			}),
-		);
-		if (simRes.error) {
-			const lastError =
-				simRes.error instanceof Error
-					? simRes.error.message
-					: "execute_leg_simulation_failed";
-			lastFailureStatus = mapExecuteErrorToStatus(lastError);
-			lastFailureMessage = lastError;
-			continue;
+		for (const legIndex of unpaidIndices) {
+			const legIdx = BigInt(legIndex);
+			const simRes = await tryCatch(
+				validator.simulate.executePayoutLeg([onChainRuleId, legIdx], {
+					account: evmClient.account,
+				}),
+			);
+			if (simRes.error) {
+				const lastError =
+					simRes.error instanceof Error
+						? simRes.error.message
+						: "execute_leg_simulation_failed";
+				lastFailureStatus = mapExecuteErrorToStatus(lastError);
+				lastFailureMessage = lastError;
+				continue;
+			}
+
+			const txRes = await tryCatch(
+				writeValidator.executePayoutLeg([onChainRuleId, legIdx]),
+			);
+			if (txRes.error) {
+				const lastError =
+					txRes.error instanceof Error
+						? txRes.error.message
+						: "execute_leg_failed";
+				lastFailureStatus = mapExecuteErrorToStatus(lastError);
+				lastFailureMessage = lastError;
+				continue;
+			}
+
+			const txHash = txRes.data;
+			const receiptRes = await tryCatch(
+				evmClient.waitForTransactionReceipt({ hash: txHash }),
+			);
+			if (receiptRes.error || receiptRes.data.status !== "success") {
+				const lastError = receiptRes.error
+					? receiptRes.error instanceof Error
+						? receiptRes.error.message
+						: "receipt_wait_failed"
+					: "payout_leg_tx_reverted";
+				lastFailureStatus = "failed_relay";
+				lastFailureMessage = lastError;
+				continue;
+			}
+
+			anyLegPaid = true;
+			lastTxHash = txHash;
+			await syncSettlementPayoutFromChain(
+				onChainRuleId,
+				validatorAddress,
+				txHash,
+				legIndex,
+			);
+
+			const refreshed = await selectSettlementRule(
+				onChainRuleId,
+				validatorAddress,
+			);
+			if (refreshed?.status === "executed") {
+				return { executed: true, txHash };
+			}
 		}
 
-		const txRes = await tryCatch(
-			writeValidator.executePayoutLeg([onChainRuleId, legIdx]),
-		);
-		if (txRes.error) {
-			const lastError =
-				txRes.error instanceof Error
-					? txRes.error.message
-					: "execute_leg_failed";
-			lastFailureStatus = mapExecuteErrorToStatus(lastError);
-			lastFailureMessage = lastError;
-			continue;
+		if (anyLegPaid) {
+			const refreshed = await selectSettlementRule(
+				onChainRuleId,
+				validatorAddress,
+			);
+			if (refreshed?.status === "executed") {
+				return { executed: true, txHash: lastTxHash };
+			}
+			await db
+				.update(fileSettlementRules)
+				.set({
+					status: "partial",
+					lastError: lastFailureMessage ?? null,
+					updatedAt: new Date(),
+				})
+				.where(ruleWhere);
+			return { executed: false, partial: true, txHash: lastTxHash };
 		}
 
-		const txHash = txRes.data;
-		const receiptRes = await tryCatch(
-			evmClient.waitForTransactionReceipt({ hash: txHash }),
-		);
-		if (receiptRes.error || receiptRes.data.status !== "success") {
-			const lastError = receiptRes.error
-				? receiptRes.error instanceof Error
-					? receiptRes.error.message
-					: "receipt_wait_failed"
-				: "payout_leg_tx_reverted";
-			lastFailureStatus = "failed_relay";
-			lastFailureMessage = lastError;
-			continue;
-		}
-
-		anyLegPaid = true;
-		lastTxHash = txHash;
-		await syncSettlementPayoutFromChain(
-			onChainRuleId,
-			validatorAddress,
-			txHash,
-			legIndex,
-		);
-
-		const refreshed = await selectSettlementRule(
-			onChainRuleId,
-			validatorAddress,
-		);
-		if (refreshed?.status === "executed") {
-			return { executed: true, txHash };
-		}
-	}
-
-	if (anyLegPaid) {
-		const refreshed = await selectSettlementRule(
-			onChainRuleId,
-			validatorAddress,
-		);
-		if (refreshed?.status === "executed") {
-			return { executed: true, txHash: lastTxHash };
-		}
+		const status = lastFailureStatus ?? "failed_relay";
+		const lastError = lastFailureMessage ?? "execute_failed";
 		await db
 			.update(fileSettlementRules)
 			.set({
-				status: "partial",
-				lastError: lastFailureMessage ?? null,
+				status,
+				lastError,
 				updatedAt: new Date(),
 			})
 			.where(ruleWhere);
-		return { executed: false, partial: true, txHash: lastTxHash };
-	}
-
-	const status = lastFailureStatus ?? "failed_relay";
-	const lastError = lastFailureMessage ?? "execute_failed";
-	await db
-		.update(fileSettlementRules)
-		.set({
-			status,
-			lastError,
-			updatedAt: new Date(),
-		})
-		.where(ruleWhere);
-	if (status === "failed_relay") {
-		alertSettlementRelayPayoutFailed({
-			onChainRuleId,
-			pieceCid: row.pieceCid,
-			status,
-			error: lastError,
-		});
-	}
-	return { executed: false, skipped: status };
+		if (status === "failed_relay") {
+			alertSettlementRelayPayoutFailed({
+				onChainRuleId,
+				pieceCid: row.pieceCid,
+				status,
+				error: lastError,
+			});
+		}
+		return { executed: false, skipped: status };
+	});
 }
 
 export async function tryExecuteSettlementRulesForPiece(pieceCid: string) {

@@ -5,7 +5,7 @@ import { jobOutbox as jobOutboxTable } from "@/lib/platform/db/schema/job-outbox
 import {
 	sendColdDocumentInviteEmail,
 	sendDocumentReceivedEmail,
-} from "@/lib/platform/email/invites";
+} from "@/lib/platform/email";
 import { logger } from "@/lib/platform/pino";
 import type { EmailQueueJobData } from "../queues";
 import {

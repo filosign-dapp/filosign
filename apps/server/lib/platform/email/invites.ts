@@ -1,14 +1,12 @@
 import { renderDocumentShared } from "@filosign/emails";
 import type { Address } from "viem";
 import env from "@/env";
-import { deliverOutboundEmail } from "@/lib/platform/email/deliver";
-import { buildEmailIdempotencyKey } from "@/lib/platform/email/idempotency";
-import { escapeHtml } from "./html";
-import { getClientUrl } from "./public-url";
+import { deliverOutboundEmail } from "./email";
+import { buildEmailIdempotencyKey, escapeHtml, getClientUrl } from "./utils";
 
 /**
  * All outbound product email is sent through this file (`deliverOutboundEmail`).
- * Transport: Resend primary, optional SES fallback — see `deliver.ts`.
+ * Transport: Resend primary, optional SES fallback — see `email.ts`.
  */
 function shouldSkipEmail(): boolean {
 	if (!env.RESEND_ENABLED) {
@@ -245,5 +243,30 @@ export async function sendAccessRequestApprovedEmail(args: {
 			args.to.trim().toLowerCase(),
 			args.inviteUrl,
 		],
+	});
+}
+
+export async function sendDraftReviewInviteEmail(args: {
+	to: string;
+	senderWallet: Address;
+	senderName?: string | null;
+	draftId: string;
+	draftTitle: string;
+	inviteToken: string;
+	accessKind: "warm" | "cold";
+}) {
+	const appUrl = getClientUrl();
+	const reviewUrl = new URL("/draft/review", appUrl);
+	reviewUrl.searchParams.set("token", args.inviteToken);
+
+	await sendDocumentSharedEmail({
+		to: args.to,
+		senderWallet: args.senderWallet,
+		pieceCid: args.draftId,
+		senderName: args.senderName,
+		variant: args.accessKind === "cold" ? "cold" : "warm",
+		ctaHref: reviewUrl.toString(),
+		idempotencyPrefix: "draft-review-invite",
+		idempotencyExtra: [args.inviteToken, args.accessKind],
 	});
 }

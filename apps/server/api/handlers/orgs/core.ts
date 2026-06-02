@@ -8,16 +8,14 @@ import z from "zod";
 import { writeAuditEvent } from "@/lib/domains/audit";
 import {
 	type ActiveOrgContext,
+	assertCanCreateAdditionalWorkspace,
 	assertOrgPermission,
+	countOwnedOrganizations,
 	listOrgTemplatesCached,
 	listUserOrgsCached,
-} from "@/lib/domains/orgs";
-import {
-	assertCanCreateAdditionalWorkspace,
-	countOwnedOrganizations,
 	resolveIsPersonalForNewOrganization,
-} from "@/lib/domains/orgs/personal-workspace";
-import { slugifyOrgName } from "@/lib/domains/orgs/slug";
+	slugifyOrgName,
+} from "@/lib/domains/orgs";
 import {
 	attachPendingOrgBillingOnCreateWithTx,
 	grantAdminOrgTeamsProIfEligibleWithTx,

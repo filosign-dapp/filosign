@@ -3,8 +3,8 @@ import { ORPCError } from "@orpc/server";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
-import { isWorkspaceBillingPlanId } from "@/lib/domains/billing/policy";
-import { effectivePlanIdFromStatus } from "@/lib/domains/entitlements/effective-plan";
+import { isWorkspaceBillingPlanId } from "@/lib/domains/billing/utils/policy";
+import { effectivePlanIdFromStatus } from "@/lib/domains/entitlements";
 import db from "@/lib/platform/db";
 import {
 	organizationMembers,

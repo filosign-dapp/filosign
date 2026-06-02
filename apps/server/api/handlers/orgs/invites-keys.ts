@@ -7,8 +7,11 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { inviteExpiresAt, pendingOrgInviteFilter } from "@/lib/domains/invites";
-import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
-import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs/file-access";
+import {
+	type ActiveOrgContext,
+	assertOrgPermission,
+	getOrgMemberWithDocumentRead,
+} from "@/lib/domains/orgs";
 import { invalidateOnMembershipChange } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import type { OrgMemberRole } from "@/lib/platform/db/schema/organization";

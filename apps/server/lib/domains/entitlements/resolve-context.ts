@@ -6,6 +6,13 @@ import type {
 import { and, eq, gte, lt, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import {
+	CACHE_TTL,
+	cacheAside,
+	cacheKeys,
+	defaultDeserialize,
+	defaultSerialize,
+} from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import { files } from "@/lib/platform/db/schema/file";
@@ -13,7 +20,42 @@ import { organizationSubscriptions } from "@/lib/platform/db/schema/organization
 import { calendarMonthPeriod } from "./calendar-month";
 import { effectivePlanIdFromStatus } from "./effective-plan";
 
-export async function resolveEntitlementContext(
+type StoredEntitlementContext = Omit<EntitlementContext, "periodStart"> & {
+	periodStart: string;
+};
+
+function serializeEntitlementContext(ctx: EntitlementContext): string {
+	const stored: StoredEntitlementContext = {
+		...ctx,
+		periodStart: ctx.periodStart.toISOString(),
+	};
+	return defaultSerialize(stored);
+}
+
+function deserializeEntitlementContext(raw: string): EntitlementContext {
+	const stored = defaultDeserialize<StoredEntitlementContext>(raw);
+	return {
+		...stored,
+		periodStart: new Date(stored.periodStart),
+	};
+}
+
+function withOrgMemberWallet(
+	ctx: EntitlementContext,
+	walletNorm: Address,
+	organizationId: string,
+): EntitlementContext {
+	return {
+		...ctx,
+		subject: {
+			type: "org_member",
+			orgId: organizationId,
+			wallet: walletNorm,
+		},
+	};
+}
+
+export async function fetchEntitlementContext(
 	wallet: Address,
 	organizationId?: string | null,
 ): Promise<EntitlementContext> {
@@ -132,4 +174,31 @@ export async function resolveEntitlementContext(
 		overrides,
 		seatCount,
 	};
+}
+
+export async function resolveEntitlementContext(
+	wallet: Address,
+	organizationId?: string | null,
+): Promise<EntitlementContext> {
+	const walletNorm = getAddress(wallet);
+	const orgId = organizationId?.trim() || null;
+
+	if (orgId) {
+		const ctx = await cacheAside({
+			key: cacheKeys.orgEntitlements(orgId),
+			ttlSec: CACHE_TTL.orgEntitlements,
+			fetch: () => fetchEntitlementContext(wallet, orgId),
+			serialize: serializeEntitlementContext,
+			deserialize: deserializeEntitlementContext,
+		});
+		return withOrgMemberWallet(ctx, walletNorm, orgId);
+	}
+
+	return cacheAside({
+		key: cacheKeys.userEntitlements(walletNorm),
+		ttlSec: CACHE_TTL.userEntitlements,
+		fetch: () => fetchEntitlementContext(wallet, null),
+		serialize: serializeEntitlementContext,
+		deserialize: deserializeEntitlementContext,
+	});
 }

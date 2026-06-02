@@ -2,6 +2,13 @@ import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import {
+	CACHE_TTL,
+	cacheAside,
+	cacheKeys,
+	defaultDeserialize,
+	defaultSerialize,
+} from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import type { OrgMemberRole } from "@/lib/platform/db/schema/organization";
 import { type OrgPermission, orgRoleHasPermission } from "./permissions";
@@ -15,7 +22,7 @@ export type ActiveOrgContext = {
 	signingMode: "acting_member" | "org_safe";
 };
 
-export async function resolveActiveOrg(
+async function fetchActiveOrg(
 	wallet: Address,
 	organizationIdHeader: string | undefined,
 ): Promise<ActiveOrgContext | null> {
@@ -54,6 +61,24 @@ export async function resolveActiveOrg(
 		encryptionPublicKey: row.encryptionPublicKey,
 		signingMode: row.signingMode as "acting_member" | "org_safe",
 	};
+}
+
+export async function resolveActiveOrg(
+	wallet: Address,
+	organizationIdHeader: string | undefined,
+): Promise<ActiveOrgContext | null> {
+	if (!organizationIdHeader?.trim()) return null;
+
+	const walletNorm = getAddress(wallet);
+	const orgId = organizationIdHeader.trim();
+
+	return cacheAside({
+		key: cacheKeys.orgMember(orgId, walletNorm),
+		ttlSec: CACHE_TTL.orgMember,
+		fetch: () => fetchActiveOrg(wallet, organizationIdHeader),
+		serialize: defaultSerialize,
+		deserialize: defaultDeserialize,
+	});
 }
 
 export function assertOrgPermission(

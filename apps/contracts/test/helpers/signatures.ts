@@ -68,7 +68,7 @@ export async function signRegisterEnvelope(args: {
 	viewersCommitment?: Hex;
 	placementCommitment: Hex;
 	senderEmailCommitment: Hex;
-	senderPrivySubjectCommitment: Hex;
+	senderAuthSubjectCommitment: Hex;
 	orgIdCommitment?: Hex;
 	routingMode?: number;
 	routingOrder?: Hex[];
@@ -105,7 +105,7 @@ export async function signRegisterEnvelope(args: {
 				{ name: "viewersCommitment", type: "bytes20" },
 				{ name: "placementCommitment", type: "bytes32" },
 				{ name: "senderEmailCommitment", type: "bytes32" },
-				{ name: "senderPrivySubjectCommitment", type: "bytes32" },
+				{ name: "senderAuthSubjectCommitment", type: "bytes32" },
 				{ name: "orgIdCommitment", type: "bytes32" },
 				{ name: "requiredCommitmentsHash", type: "bytes32" },
 				{ name: "optionalCommitmentsHash", type: "bytes32" },
@@ -125,7 +125,7 @@ export async function signRegisterEnvelope(args: {
 			viewersCommitment,
 			placementCommitment: args.placementCommitment,
 			senderEmailCommitment: args.senderEmailCommitment,
-			senderPrivySubjectCommitment: args.senderPrivySubjectCommitment,
+			senderAuthSubjectCommitment: args.senderAuthSubjectCommitment,
 			orgIdCommitment,
 			requiredCommitmentsHash: hashCommitments(args.requiredCommitments),
 			optionalCommitmentsHash: hashCommitments(optionalCommitments),
@@ -189,7 +189,7 @@ export async function signRegisterEnvelopeSignature(args: {
 	pieceCid: string;
 	sender: Address;
 	signerEmailCommitment: Hex;
-	privySubjectCommitment: Hex;
+	authSubjectCommitment: Hex;
 	dl3SignatureCommitment: Hex;
 	completionsRoot: Hex;
 	leafSchemaVersion: number;
@@ -213,7 +213,7 @@ export async function signRegisterEnvelopeSignature(args: {
 				{ name: "sender", type: "address" },
 				{ name: "signerWallet", type: "address" },
 				{ name: "signerEmailCommitment", type: "bytes32" },
-				{ name: "privySubjectCommitment", type: "bytes32" },
+				{ name: "authSubjectCommitment", type: "bytes32" },
 				{ name: "dl3SignatureCommitment", type: "bytes20" },
 				{ name: "completionsRoot", type: "bytes32" },
 				{ name: "leafSchemaVersion", type: "uint8" },
@@ -227,7 +227,7 @@ export async function signRegisterEnvelopeSignature(args: {
 			sender: args.sender,
 			signerWallet: account.address,
 			signerEmailCommitment: args.signerEmailCommitment,
-			privySubjectCommitment: args.privySubjectCommitment,
+			authSubjectCommitment: args.authSubjectCommitment,
 			dl3SignatureCommitment: args.dl3SignatureCommitment,
 			completionsRoot: args.completionsRoot,
 			leafSchemaVersion: args.leafSchemaVersion,

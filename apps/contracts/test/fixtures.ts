@@ -30,7 +30,7 @@ export type FullSystemFixture = {
 
 export const defaultPlacement = `0x${"ab".repeat(32)}` as Hex;
 export const defaultSenderEmail = `0x${"cd".repeat(32)}` as Hex;
-export const defaultSenderPrivy = `0x${"ef".repeat(32)}` as Hex;
+export const defaultSenderAuth = `0x${"ef".repeat(32)}` as Hex;
 export const zeroOrg =
 	"0x0000000000000000000000000000000000000000000000000000000000000000" as Hex;
 
@@ -143,7 +143,7 @@ export type RegisterEnvelopeOptions = {
 	signature?: Hex;
 	placementCommitment?: Hex;
 	senderEmailCommitment?: Hex;
-	senderPrivySubjectCommitment?: Hex;
+	senderAuthSubjectCommitment?: Hex;
 	orgIdCommitment?: Hex;
 };
 
@@ -200,8 +200,8 @@ export async function buildRegisterEnvelopeInput(
 					placementCommitment: options.placementCommitment ?? defaultPlacement,
 					senderEmailCommitment:
 						options.senderEmailCommitment ?? defaultSenderEmail,
-					senderPrivySubjectCommitment:
-						options.senderPrivySubjectCommitment ?? defaultSenderPrivy,
+					senderAuthSubjectCommitment:
+						options.senderAuthSubjectCommitment ?? defaultSenderAuth,
 					orgIdCommitment: options.orgIdCommitment ?? zeroOrg,
 					routingMode,
 					routingOrder,
@@ -222,8 +222,8 @@ export async function buildRegisterEnvelopeInput(
 		optionalCommitments,
 		viewerEmailCommitments,
 		senderEmailCommitment: options.senderEmailCommitment ?? defaultSenderEmail,
-		senderPrivySubjectCommitment:
-			options.senderPrivySubjectCommitment ?? defaultSenderPrivy,
+		senderAuthSubjectCommitment:
+			options.senderAuthSubjectCommitment ?? defaultSenderAuth,
 		orgIdCommitment: options.orgIdCommitment ?? zeroOrg,
 		routingMode,
 		routingOrder,
@@ -255,7 +255,7 @@ export async function registerEnvelopeOnly(
 }
 
 const signDefaults = {
-	privy: `0x${"99".repeat(32)}` as Hex,
+	auth: `0x${"99".repeat(32)}` as Hex,
 	dl3: `0x${"88".repeat(20)}` as Hex,
 	root: `0x${"77".repeat(32)}` as Hex,
 	leafVersion: 1,
@@ -281,7 +281,7 @@ export async function registerEnvelopeSignatureStep(args: {
 		pieceCid,
 		sender: senderAddr,
 		signerEmailCommitment,
-		privySubjectCommitment: signDefaults.privy,
+		authSubjectCommitment: signDefaults.auth,
 		dl3SignatureCommitment: signDefaults.dl3,
 		completionsRoot: signDefaults.root,
 		leafSchemaVersion: signDefaults.leafVersion,
@@ -294,7 +294,7 @@ export async function registerEnvelopeSignatureStep(args: {
 			senderAddr,
 			walletAccount(signerWallet).address,
 			signerEmailCommitment,
-			signDefaults.privy,
+			signDefaults.auth,
 			signDefaults.dl3,
 			signTs,
 			signSig,

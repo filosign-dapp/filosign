@@ -15,8 +15,11 @@ export {
 } from "./checkout-intents";
 export { createDodoClient, requireDodoApiKey } from "./dodo-client";
 export {
+	ackDodoWebhook,
 	type DodoWebhookEnvelope,
 	handleDodoWebhook,
+	processDodoWebhookJob,
+	resolveOrgIdForWebhookAck,
 	verifyDodoWebhookSignature,
 } from "./dodo-webhooks";
 export {

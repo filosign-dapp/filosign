@@ -25,7 +25,6 @@ import {
 	assertSettlementRecipientAckProvided,
 	recordSettlementRecipientAck,
 } from "@/lib/domains/settlement-access/utils/recipient-ack";
-import { tryExecuteSettlementRulesForPiece } from "@/lib/domains/settlements";
 import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
 import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
@@ -267,14 +266,14 @@ export async function pieceSign(args: {
 
 	const signerEmailCommitment = hashNormalizedSignerEmail(signerEmail);
 
-	const privySubjectCommitment = hashAuthSubjectCommitment(authProviderId);
+	const authSubjectCommitment = hashAuthSubjectCommitment(authProviderId);
 
 	const registerSignatureArgs = [
 		pieceCid,
 		fileRecord.sender,
 		signerWallet,
 		signerEmailCommitment,
-		privySubjectCommitment,
+		authSubjectCommitment,
 		dl3SignatureCommitment,
 		BigInt(timestamp),
 		signature,
@@ -346,10 +345,11 @@ export async function pieceSign(args: {
 		});
 	}
 
-	void tryExecuteSettlementRulesForPiece(pieceCid).catch((err) => {
+	const { enqueuePayoutForPiece } = await import("@/lib/platform/jobs");
+	void enqueuePayoutForPiece(pieceCid).catch((err) => {
 		logger.warn(
 			{ err, pieceCid },
-			"post-sign settlement execute failed; use Settle payment or daily sync",
+			"post-sign settlement enqueue failed; use Settle payment or daily sync",
 		);
 	});
 

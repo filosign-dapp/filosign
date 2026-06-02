@@ -213,13 +213,7 @@ async function draftsSaveInner(
 	});
 
 	const incomingSnapshotDigest = digestDraftSnapshot(parsed.snapshot);
-	const headSnapshotParsed = draft.headSnapshot
-		? zDraftSnapshot.safeParse(draft.headSnapshot)
-		: null;
-	const headSnapshotDigest =
-		headSnapshotParsed?.success === true
-			? digestDraftSnapshot(headSnapshotParsed.data)
-			: null;
+	const headSnapshotDigest = draft.headSnapshotDigest ?? null;
 	const snapshotUnchanged =
 		headSnapshotDigest != null && incomingSnapshotDigest === headSnapshotDigest;
 
@@ -274,7 +268,8 @@ async function draftsSaveInner(
 				title: parsed.title?.trim() ?? draft.title,
 				revision: nextRevision,
 				headSnapshotS3Key: computedSnapshotKey,
-				headSnapshot: parsed.snapshot,
+				headSnapshot: null,
+				headSnapshotDigest: incomingSnapshotDigest,
 				headDekWrappedOmk,
 				headOmkKemCiphertext,
 				updatedAt: now,
@@ -349,6 +344,9 @@ export async function draftsGet(
 	assertOrgPermission(activeOrg, "drafts:read");
 	const draft = await loadDraftOrThrow(draftId);
 	await assertCanReadDraft({ wallet, draft, activeOrg });
+	if (draft.status === "archived") {
+		throw new ORPCError("NOT_FOUND", { message: "Draft not found" });
+	}
 
 	if (!draft.headSnapshotS3Key) {
 		throw new ORPCError("BAD_REQUEST", {
@@ -380,10 +378,6 @@ export async function draftsGet(
 		}),
 	}));
 
-	const headSnapshotParsed = draft.headSnapshot
-		? zDraftSnapshot.safeParse(draft.headSnapshot)
-		: null;
-
 	return {
 		draft: {
 			id: draft.id,
@@ -398,7 +392,6 @@ export async function draftsGet(
 		},
 		headDekWrappedOmk: draft.headDekWrappedOmk,
 		headOmkKemCiphertext: draft.headOmkKemCiphertext,
-		headSnapshot: headSnapshotParsed?.success ? headSnapshotParsed.data : null,
 		snapshot: {
 			s3Key: draft.headSnapshotS3Key,
 			downloadUrl: snapshotDownloadUrl,
@@ -441,13 +434,7 @@ export async function draftsPrepareSave(
 		organizationId: draft.organizationId,
 	});
 
-	const headSnapshotParsed = draft.headSnapshot
-		? zDraftSnapshot.safeParse(draft.headSnapshot)
-		: null;
-	const headSnapshotDigest =
-		headSnapshotParsed?.success === true
-			? digestDraftSnapshot(headSnapshotParsed.data)
-			: null;
+	const headSnapshotDigest = draft.headSnapshotDigest ?? null;
 	const snapshotExistsOnS3 = await draftSnapshotExistsOnS3({
 		draftId: draft.id,
 		organizationId: draft.organizationId,

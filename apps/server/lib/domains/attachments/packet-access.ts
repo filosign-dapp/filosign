@@ -121,7 +121,7 @@ export async function attachmentsPacketAccess(args: {
 	}
 
 	if (packet.releaseMode === "conditional") {
-		if (!packet.onChainRuleId || !packet.releaseContractAddress) {
+		if (packet.onChainRuleId == null || !packet.releaseContractAddress) {
 			throw new ORPCError("BAD_REQUEST", {
 				message: "Conditional packet missing on-chain rule",
 			});

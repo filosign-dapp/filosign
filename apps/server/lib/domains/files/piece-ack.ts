@@ -90,7 +90,7 @@ export async function pieceAck(args: {
 	}
 	const viewerAckEmail = normalizePlacementRecipientEmail(viewerAckEmailRaw);
 	const viewerEmailCommitment = hashNormalizedSignerEmail(viewerAckEmail);
-	const privySubjectCommitment = hashAuthSubjectCommitment(
+	const authSubjectCommitment = hashAuthSubjectCommitment(
 		participantRecord.authProviderId,
 	);
 
@@ -101,7 +101,7 @@ export async function pieceAck(args: {
 		fileRecord.sender,
 		participantRecord.wallet,
 		viewerEmailCommitment,
-		privySubjectCommitment,
+		authSubjectCommitment,
 		BigInt(timestamp),
 		signature,
 	]);

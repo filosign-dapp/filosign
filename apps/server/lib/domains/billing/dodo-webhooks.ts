@@ -11,6 +11,7 @@ import {
 import {
 	createEntitlementCacheInvalidation,
 	flushEntitlementCacheInvalidation,
+	invalidateOrgEntitlements,
 } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import {
@@ -26,6 +27,10 @@ import {
 } from "@/lib/platform/db/schema/platform-access";
 import { sendPaidSetupEmail } from "@/lib/platform/email/invites";
 import { getClientUrl } from "@/lib/platform/email/public-url";
+import {
+	enqueueBillingWebhook,
+	isBillingWebhookProcessed,
+} from "@/lib/platform/jobs";
 import { logger } from "@/lib/platform/pino";
 import { createDodoClient } from "./dodo-client";
 import {
@@ -504,25 +509,54 @@ export function verifyDodoWebhookSignature(args: {
 	}
 }
 
-export async function handleDodoWebhook(args: {
+export async function resolveOrgIdForWebhookAck(args: {
+	metadataOrgId: string | null;
+	dodoSubscriptionId: string | null;
+}): Promise<string | null> {
+	if (args.metadataOrgId) return args.metadataOrgId;
+	if (!args.dodoSubscriptionId) return null;
+	const [subByDodo] = await db
+		.select({ organizationId: organizationSubscriptions.organizationId })
+		.from(organizationSubscriptions)
+		.where(
+			eq(organizationSubscriptions.dodoSubscriptionId, args.dodoSubscriptionId),
+		)
+		.limit(1);
+	return subByDodo?.organizationId ?? null;
+}
+
+function unwrapDodoWebhookEvent(args: {
 	rawBody: string;
 	webhookId: string;
 	webhookTimestamp: string;
 	webhookSignature: string;
-}) {
+}): DodoWebhookEvent {
 	const headers: WebhookHeaders = {
 		"webhook-id": args.webhookId,
 		"webhook-signature": args.webhookSignature,
 		"webhook-timestamp": args.webhookTimestamp,
 	};
-
 	const client = createDodoClient();
+	const event = client.webhooks.unwrap(args.rawBody, {
+		headers,
+	}) as DodoWebhookEvent;
+	assertTimestampWithinTolerance(args.webhookTimestamp);
+	return event;
+}
+
+/**
+ * Verify signature, persist `received`, invalidate entitlements, enqueue worker.
+ * Returns before heavy subscription sync (Sprint 5).
+ */
+export async function ackDodoWebhook(args: {
+	rawBody: string;
+	webhookId: string;
+	webhookTimestamp: string;
+	webhookSignature: string;
+}): Promise<{ ok: true; ignored?: boolean; deduped?: boolean }> {
 	let event: DodoWebhookEvent;
 	try {
-		event = client.webhooks.unwrap(args.rawBody, {
-			headers,
-		}) as DodoWebhookEvent;
-		assertTimestampWithinTolerance(args.webhookTimestamp);
+		event = unwrapDodoWebhookEvent(args);
 	} catch (error) {
 		throw new ORPCError("UNAUTHORIZED", {
 			message: "Invalid Dodo webhook signature",
@@ -536,6 +570,89 @@ export async function handleDodoWebhook(args: {
 	}
 
 	const deliveryTimestamp = parseWebhookTimestamp(args.webhookTimestamp);
+	const payloadData = event.data ?? {};
+	const dodoSubscriptionId = payloadData.subscription_id ?? null;
+	const metadataOrgId = extractOrgIdFromMetadata(payloadData.metadata);
+	const mappedPlan = resolvePlanIdFromProductId(payloadData.product_id);
+
+	if (!mappedPlan && !webhookAllowsMissingProductId(eventType)) {
+		logger.error(
+			{
+				eventType,
+				productId: payloadData.product_id,
+				webhookId: args.webhookId,
+			},
+			"unknown dodo product id",
+		);
+		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+			message: "Unknown Dodo product id",
+		});
+	}
+
+	if (await isBillingWebhookProcessed(args.webhookId)) {
+		return { ok: true, deduped: true };
+	}
+
+	const existing = await db
+		.select({ status: billingWebhookEvents.status })
+		.from(billingWebhookEvents)
+		.where(eq(billingWebhookEvents.providerEventId, args.webhookId))
+		.limit(1);
+
+	if (existing[0]?.status === "processed") {
+		return { ok: true, deduped: true };
+	}
+
+	if (!existing[0]) {
+		await db.insert(billingWebhookEvents).values({
+			provider: "dodo",
+			providerEventId: args.webhookId,
+			eventType,
+			status: "received",
+			deliveryTimestamp,
+			payloadJson: event,
+		});
+	}
+
+	const orgId = await resolveOrgIdForWebhookAck({
+		metadataOrgId,
+		dodoSubscriptionId,
+	});
+	if (orgId) {
+		await invalidateOrgEntitlements(orgId);
+	}
+
+	await enqueueBillingWebhook(args.webhookId);
+	return { ok: true };
+}
+
+/** BullMQ worker: full subscription sync + second entitlement invalidation. */
+export async function processDodoWebhookJob(webhookId: string): Promise<void> {
+	if (await isBillingWebhookProcessed(webhookId)) {
+		return;
+	}
+
+	const [stored] = await db
+		.select({
+			status: billingWebhookEvents.status,
+			eventType: billingWebhookEvents.eventType,
+			deliveryTimestamp: billingWebhookEvents.deliveryTimestamp,
+			payloadJson: billingWebhookEvents.payloadJson,
+		})
+		.from(billingWebhookEvents)
+		.where(eq(billingWebhookEvents.providerEventId, webhookId))
+		.limit(1);
+
+	if (!stored) {
+		throw new Error(`billing webhook row missing for ${webhookId}`);
+	}
+	if (stored.status === "processed") {
+		return;
+	}
+
+	const event = stored.payloadJson as DodoWebhookEvent;
+	const eventType = stored.eventType || extractEventType(event);
+	const deliveryTimestamp = stored.deliveryTimestamp;
 	const payloadData = event.data ?? {};
 	const dodoSubscriptionId = payloadData.subscription_id ?? null;
 	const dodoCustomerId =
@@ -556,41 +673,24 @@ export async function handleDodoWebhook(args: {
 		payloadData.cancel_at_next_billing_date,
 	);
 
-	if (!mappedPlan && !webhookAllowsMissingProductId(eventType)) {
-		logger.error(
-			{
-				eventType,
-				productId: payloadData.product_id,
-				webhookId: args.webhookId,
-			},
-			"unknown dodo product id",
-		);
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: "Unknown Dodo product id",
-		});
-	}
-
-	const existing = await db
-		.select({
-			status: billingWebhookEvents.status,
-		})
-		.from(billingWebhookEvents)
-		.where(eq(billingWebhookEvents.providerEventId, args.webhookId))
-		.limit(1);
-
-	if (existing[0]?.status === "processed") {
-		return { ok: true, deduped: true };
-	}
-
-	if (!existing[0]) {
-		await db.insert(billingWebhookEvents).values({
-			provider: "dodo",
-			providerEventId: args.webhookId,
-			eventType,
-			status: "received",
-			deliveryTimestamp,
-			payloadJson: event,
-		});
+	const ackOrgId = await resolveOrgIdForWebhookAck({
+		metadataOrgId,
+		dodoSubscriptionId,
+	});
+	if (ackOrgId && deliveryTimestamp) {
+		const [subRow] = await db
+			.select({ updatedAt: organizationSubscriptions.updatedAt })
+			.from(organizationSubscriptions)
+			.where(eq(organizationSubscriptions.organizationId, ackOrgId))
+			.limit(1);
+		if (subRow?.updatedAt && deliveryTimestamp < subRow.updatedAt) {
+			await markEventStatus(webhookId, "processed");
+			logger.info(
+				{ webhookId, ackOrgId },
+				"skipped stale dodo webhook (subscription newer)",
+			);
+			return;
+		}
 	}
 
 	try {
@@ -816,6 +916,10 @@ export async function handleDodoWebhook(args: {
 
 		await flushEntitlementCacheInvalidation(entitlementInvalidation);
 
+		if (ackOrgId) {
+			await invalidateOrgEntitlements(ackOrgId);
+		}
+
 		if (checkoutFirstEmail.payload) {
 			await sendPaidSetupEmail({
 				to: checkoutFirstEmail.payload.to,
@@ -824,20 +928,27 @@ export async function handleDodoWebhook(args: {
 			});
 		}
 
-		await markEventStatus(args.webhookId, "processed");
-		return { ok: true };
+		await markEventStatus(webhookId, "processed");
 	} catch (error) {
 		const message =
 			error instanceof Error
 				? error.message
 				: "Unknown webhook processing error";
-		await markEventStatus(args.webhookId, "failed", message);
+		await markEventStatus(webhookId, "failed", message);
 		logger.error(
-			{ webhookId: args.webhookId, eventType, error: message },
+			{ webhookId, eventType, error: message },
 			"failed to process dodo webhook",
 		);
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: "Failed to process webhook event",
-		});
+		throw error;
 	}
+}
+
+/** @deprecated Use ackDodoWebhook on API; processing runs in billing-webhook worker. */
+export async function handleDodoWebhook(args: {
+	rawBody: string;
+	webhookId: string;
+	webhookTimestamp: string;
+	webhookSignature: string;
+}) {
+	return ackDodoWebhook(args);
 }

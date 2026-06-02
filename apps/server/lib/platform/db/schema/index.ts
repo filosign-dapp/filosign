@@ -1,16 +1,19 @@
 import * as attachmentPackets from "./attachment-packets";
+import * as audit from "./audit";
 import * as billing from "./billing";
 import * as drafts from "./drafts";
 import * as file from "./file";
 import * as jobOutbox from "./job-outbox";
 import * as organization from "./organization";
 import * as platformAccess from "./platform-access";
+import * as privacy from "./privacy";
 import * as settlementAccess from "./settlement-access";
 import * as settlements from "./settlements";
 import * as user from "./user";
 
 const schema = {
 	...user,
+	...audit,
 	...file,
 	...attachmentPackets,
 	...settlementAccess,
@@ -19,16 +22,19 @@ const schema = {
 	...organization,
 	...drafts,
 	...platformAccess,
+	...privacy,
 	...jobOutbox,
 };
 
 export * from "./attachment-packets";
+export * from "./audit";
 export * from "./billing";
 export * from "./drafts";
 export * from "./file";
 export * from "./job-outbox";
 export * from "./organization";
 export * from "./platform-access";
+export * from "./privacy";
 export * from "./settlement-access";
 export * from "./settlements";
 export * from "./user";

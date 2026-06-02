@@ -26,8 +26,13 @@ export const envelopeDrafts = t.pgTable(
 		status: t.text({ enum: draftStatuses }).notNull().default("active"),
 		revision: t.integer().notNull().default(0),
 		headSnapshotS3Key: t.text(),
-		/** Plaintext form state (source of truth for the app). Encrypted S3 snapshot is dual-written for review links. */
+		/**
+		 * Legacy plaintext snapshot payload.
+		 * New writes should keep this null and rely on encrypted S3 snapshot + digest metadata.
+		 */
 		headSnapshot: t.jsonb().$type<DraftSnapshot>(),
+		/** Digest of the encrypted S3 snapshot payload for optimistic save/skip-upload checks. */
+		headSnapshotDigest: t.text(),
 		headDekWrappedOmk: tHex(),
 		headOmkKemCiphertext: tHex(),
 		sentPieceCid: t.text(),

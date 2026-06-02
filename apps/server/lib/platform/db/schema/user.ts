@@ -86,7 +86,9 @@ export const userHistory = t.pgTable("user_history", {
 
 export const userSignatures = t.pgTable("user_signatures", {
 	id: t.uuid().primaryKey().$defaultFn(randomUuidV7),
-	walletAddress: tEvmAddress().notNull(),
+	walletAddress: tEvmAddress()
+		.notNull()
+		.references(() => users.walletAddress, { onDelete: "restrict" }),
 	data: t.text().notNull(),
 
 	...timestamps,

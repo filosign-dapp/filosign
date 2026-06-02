@@ -33,7 +33,7 @@ export const files = t.pgTable(
 		organizationId: t
 			.uuid()
 			.notNull()
-			.references(() => organizations.id, { onDelete: "cascade" }),
+			.references(() => organizations.id, { onDelete: "restrict" }),
 		orgKemCiphertext: tHex().notNull(),
 		orgEncryptedEncryptionKey: tHex().notNull(),
 

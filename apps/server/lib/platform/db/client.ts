@@ -6,8 +6,20 @@ import { emitCriticalPlatformEvent } from "@/lib/platform/analytics/platform-ale
 import { logger } from "@/lib/platform/pino";
 import schema from "./schema";
 
+function resolvePoolMax(): number {
+	switch (env.SERVER_ROLE) {
+		case "api":
+			return 15;
+		case "worker":
+			return 8;
+		default:
+			return 15;
+	}
+}
+
 const pool = new Pool({
 	connectionString: env.PG_URI.replace(":dbname", env.DB_NAME),
+	max: resolvePoolMax(),
 });
 
 export function handlePoolError(err: unknown): void {

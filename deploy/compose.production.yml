@@ -1,6 +1,12 @@
-# Sprint 1 — data stack (Postgres + pgBackRest + Dragonfly). Start before compose.app.yml.
+# Optional all-in-one VPS — first Hetzner deploy shortcut (single Compose project).
+# Prefer two-stack model (compose.data.yml + compose.app.yml) for Dokploy when scaling app separately.
 # pgbackrest.conf: copy from pgbackrest/pgbackrest.conf.example (not committed).
-# Dokploy project name: filosign-data
+
+x-filosign-image: &filosign-image
+  build:
+    context: ..
+    dockerfile: Dockerfile
+  image: ${FILOSIGN_IMAGE:-filosign/server:local}
 
 services:
   postgres:
@@ -52,15 +58,12 @@ services:
     restart: unless-stopped
     networks:
       - filosign_net
-    # Do NOT publish 6379 to the host public interface on VPS.
-    # App containers use hostname `dragonfly` on filosign_net.
     expose:
       - "6379"
     command:
       - --cluster_mode=emulated
       - --lock_on_hashtags
       - --dir=/data
-      # Set maxmemory from VPS sizing (example: 2gb container → --maxmemory=1536mb); verify no eviction policy in ops doc
       - --maxmemory=1536mb
     volumes:
       - dragonfly_data:/data
@@ -71,9 +74,47 @@ services:
       retries: 5
       start_period: 10s
 
+  api:
+    <<: *filosign-image
+    container_name: filosign-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dragonfly:
+        condition: service_healthy
+    environment:
+      SERVER_ROLE: api
+      DRAGONFLY_URL: redis://dragonfly:6379
+      PG_URI: postgresql://${POSTGRES_USER:-filosign}:${POSTGRES_PASSWORD}@postgres:5432/:dbname
+      DB_NAME: ${POSTGRES_DB:-filosign}
+    ports:
+      - "${API_PORT:-3000}:3000"
+    networks:
+      - filosign_net
+
+  worker:
+    <<: *filosign-image
+    container_name: filosign-worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      dragonfly:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+    environment:
+      SERVER_ROLE: worker
+      DRAGONFLY_URL: redis://dragonfly:6379
+      PG_URI: postgresql://${POSTGRES_USER:-filosign}:${POSTGRES_PASSWORD}@postgres:5432/:dbname
+      DB_NAME: ${POSTGRES_DB:-filosign}
+    networks:
+      - filosign_net
+
 networks:
   filosign_net:
-    name: filosign-data_filosign_net
+    name: filosign_net
 
 volumes:
   postgres_data:

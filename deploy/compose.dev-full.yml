@@ -1,4 +1,5 @@
-# Local Postgres + pgBackRest (R2). Proof backups before VPS deploy.
+# Local Postgres + pgBackRest (R2) + Dragonfly (BullMQ-shaped flags).
+# Proof backups before VPS deploy; test queue flags before VPS.
 # Usage: see deploy/README.md
 
 services:
@@ -41,6 +42,28 @@ services:
     networks:
       - filosign_dev
 
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly
+    container_name: filosign-dragonfly-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command:
+      - --cluster_mode=emulated
+      - --lock_on_hashtags
+      - --dir=/data
+      - --maxmemory=512mb
+    volumes:
+      - dragonfly_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6379", "PING"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - filosign_dev
+
 networks:
   filosign_dev:
     name: filosign_dev
@@ -48,3 +71,4 @@ networks:
 volumes:
   postgres_data:
   pgbackrest_spool:
+  dragonfly_data:

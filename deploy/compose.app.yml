@@ -1,29 +1,47 @@
-# Sprint 1 — app stack. Requires filosign_net from compose.data.yml.
+# Sprint 1 — app stack. Requires filosign-data_filosign_net from compose.data.yml.
+# Dokploy project name: filosign-app
+
+x-filosign-image: &filosign-image
+  build:
+    context: ..
+    dockerfile: Dockerfile
+  image: ${FILOSIGN_IMAGE:-filosign/server:local}
 
 services:
   api:
-    image: ${FILOSIGN_IMAGE:-filosign/server:local}
+    <<: *filosign-image
     container_name: filosign-api
     restart: unless-stopped
     environment:
       SERVER_ROLE: api
+      DRAGONFLY_URL: redis://dragonfly:6379
+      PG_URI: postgresql://${POSTGRES_USER:-filosign}:${POSTGRES_PASSWORD}@postgres:5432/:dbname
+      DB_NAME: ${POSTGRES_DB:-filosign}
+      # Remaining secrets (Infisical / Dokploy env): DEPLOYMENT, CHAIN, FC_SERVER_*,
+      # S3_*, THIRDWEB_*, RESEND_*, DODO_*, etc. — see project/ops/dokploy-deploy.md
     ports:
       - "${API_PORT:-3000}:3000"
     networks:
       - filosign_net
 
   worker:
-    image: ${FILOSIGN_IMAGE:-filosign/server:local}
+    <<: *filosign-image
     container_name: filosign-worker
     restart: unless-stopped
     deploy:
       replicas: 1
+    # Dokploy: set max replicas / scale = 1 explicitly — UI scale overrides compose.
     environment:
       SERVER_ROLE: worker
+      DRAGONFLY_URL: redis://dragonfly:6379
+      PG_URI: postgresql://${POSTGRES_USER:-filosign}:${POSTGRES_PASSWORD}@postgres:5432/:dbname
+      DB_NAME: ${POSTGRES_DB:-filosign}
+      # Worker-only relayer secrets (same Infisical bundle as api for now):
+      # FC_SERVER_PRIVATE_KEY, FC_SERVER_ADDRESS
     networks:
       - filosign_net
 
 networks:
   filosign_net:
     external: true
-    name: filosign_net
+    name: filosign-data_filosign_net

@@ -6,16 +6,19 @@ warnIfSesMisconfigured();
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import config from "@/config";
-import {
-	captureServerException,
-	shutdownPostHog,
-} from "@/lib/platform/analytics/posthog";
+import { captureServerException } from "@/lib/platform/analytics/posthog";
 import { shouldCaptureServerException } from "@/lib/platform/analytics/should-capture-exception";
-import { validateServerBootstrap } from "@/lib/platform/bootstrap/validate-server-bootstrap";
-import { initCache } from "@/lib/platform/cache/session-cache";
-import { startPlatformCron, stopPlatformCron } from "@/lib/platform/cron";
+import {
+	bootstrapPlatformRuntime,
+	shutdownPlatformRuntime,
+} from "@/lib/platform/bootstrap/platform-runtime";
 import { csp } from "@/lib/platform/csp";
 import { logger, requestLog } from "@/lib/platform/pino";
+import {
+	getServerRole,
+	runsHttpServer,
+	runsWorkerTasks,
+} from "@/lib/platform/server-role";
 import { handleCheckoutContinueRequest } from "./api/integrations/checkout-continue";
 import { apiRouter } from "./api/orpc/hono-mount";
 
@@ -28,12 +31,27 @@ const bootstrapFailedResponse = () =>
 		headers: { "Content-Type": "application/json" },
 	});
 
+const wrongRoleResponse = () =>
+	new Response(
+		JSON.stringify({
+			ok: false,
+			status: "wrong_server_role",
+			role: getServerRole(),
+		}),
+		{
+			status: 503,
+			headers: { "Content-Type": "application/json" },
+		},
+	);
+
 const bootstrapPromise = (async () => {
+	if (!runsHttpServer()) return;
 	try {
-		await validateServerBootstrap();
-		await initCache();
+		await bootstrapPlatformRuntime({
+			crons: runsWorkerTasks(),
+			heartbeat: false,
+		});
 		bootstrapReady = true;
-		startPlatformCron();
 	} catch (err) {
 		console.error("Server bootstrap failed:", err);
 		process.exit(1);
@@ -42,6 +60,9 @@ const bootstrapPromise = (async () => {
 
 export const app = new Hono()
 	.use(async (_c, next) => {
+		if (!runsHttpServer()) {
+			return wrongRoleResponse();
+		}
 		if (!bootstrapReady) {
 			await bootstrapPromise;
 		}
@@ -55,6 +76,9 @@ export const app = new Hono()
 	.use(csp)
 	.get("/", (c) => c.text("OK"))
 	.get("/health", (c) => {
+		if (!runsHttpServer()) {
+			return c.json({ ok: false, status: "wrong_server_role" }, 503);
+		}
 		if (!bootstrapReady) {
 			return c.json({ ok: false, status: "starting" }, 503);
 		}
@@ -81,8 +105,10 @@ let shuttingDown = false;
 async function shutdown(): Promise<void> {
 	if (shuttingDown) return;
 	shuttingDown = true;
-	stopPlatformCron();
-	await shutdownPostHog();
+	await shutdownPlatformRuntime({
+		crons: runsWorkerTasks(),
+		heartbeat: false,
+	});
 }
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
@@ -97,6 +123,9 @@ async function gatedFetch(
 	request: Request,
 	server: Parameters<NonNullable<(typeof app)["fetch"]>>[1],
 ): Promise<Response> {
+	if (!runsHttpServer()) {
+		return wrongRoleResponse();
+	}
 	if (!bootstrapReady) {
 		await bootstrapPromise;
 	}

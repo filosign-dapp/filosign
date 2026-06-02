@@ -33,7 +33,7 @@
 | Nuke deps | `bun run purge` then `bun install` |
 | Email package tests | `bun run test -- --emails` |
 
-**`check`** = Biome `--write` + types. **`sanity`** = `check --ci --types` + turbo unit tests + Hardhat (`contracts -- test`). **`test`** = all packages with tests (includes contracts). CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (`bun run sanity`, Node 22). Pre-push (husky): `bun check --lint` then `bun sanity`.
+**`check`** = Biome `--write` + types. **`sanity`** = `check --ci --types` + turbo unit tests + Hardhat (`contracts -- test`). **`test`** = all packages with tests (includes contracts). CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (`bun run sanity`, Node 25 — matches `engines.node` in root `package.json`). Pre-push (husky): `bun check --lint` then `bun sanity`.
 
 ## Entrypoints
 

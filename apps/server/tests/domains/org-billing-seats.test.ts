@@ -30,16 +30,24 @@ const previewChangePlanMock = mock(async () => ({
 const dbUpdates: unknown[] = [];
 let selectQueue: unknown[][] = [];
 
-mock.module("@/lib/domains/billing/dodo-client", () => ({
-	requireDodoApiKey: () => "test-key",
-	createDodoClient: () => ({
-		subscriptions: {
-			retrieve: retrieveMock,
-			changePlan: changePlanMock,
-			previewChangePlan: previewChangePlanMock,
+mock.module("@/lib/domains/billing/utils/policy", () => {
+	return {
+		requireDodoApiKey: () => "test-key",
+		createDodoClient: () => ({
+			subscriptions: {
+				retrieve: retrieveMock,
+				changePlan: changePlanMock,
+				previewChangePlan: previewChangePlanMock,
+			},
+		}),
+		isWorkspaceBillingPlanId: (planId: string) => {
+			return (
+				planId === "individual" || planId === "teams" || planId === "teams_pro"
+			);
 		},
-	}),
-}));
+		isAllowedReturnUrlOrigin: () => true,
+	};
+});
 
 mock.module("@/lib/platform/db", () => ({
 	default: {
@@ -90,7 +98,7 @@ describe("org seat changes", () => {
 	test("preview rejects target equal to live Dodo quantity", async () => {
 		queueOrgBillingSelects();
 		const { previewOrgSeatChange } = await import(
-			"@/lib/domains/billing/org-billing"
+			"@/lib/domains/billing/utils/org"
 		);
 
 		await expect(
@@ -109,9 +117,7 @@ describe("org seat changes", () => {
 			retrieveCall++;
 			return { quantity: retrieveCall === 1 ? 2 : 3 };
 		});
-		const { updateOrgSeats } = await import(
-			"@/lib/domains/billing/org-billing"
-		);
+		const { updateOrgSeats } = await import("@/lib/domains/billing/utils/org");
 
 		const result = await updateOrgSeats({
 			organizationId: orgId,
@@ -132,9 +138,7 @@ describe("org seat changes", () => {
 
 	test("updateOrgSeats no-ops when target matches Dodo and syncs stale DB", async () => {
 		queueOrgBillingSelects();
-		const { updateOrgSeats } = await import(
-			"@/lib/domains/billing/org-billing"
-		);
+		const { updateOrgSeats } = await import("@/lib/domains/billing/utils/org");
 
 		const result = await updateOrgSeats({
 			organizationId: orgId,
@@ -156,9 +160,7 @@ describe("org seat changes", () => {
 	test("updateOrgSeats reports pending payment when Dodo quantity unchanged after increase", async () => {
 		queueOrgBillingSelects();
 		retrieveMock.mockImplementation(async () => ({ quantity: 2 }));
-		const { updateOrgSeats } = await import(
-			"@/lib/domains/billing/org-billing"
-		);
+		const { updateOrgSeats } = await import("@/lib/domains/billing/utils/org");
 
 		const result = await updateOrgSeats({
 			organizationId: orgId,
@@ -191,7 +193,7 @@ describe("preview seat change response", () => {
 		}));
 
 		const { previewOrgSeatChange } = await import(
-			"@/lib/domains/billing/org-billing"
+			"@/lib/domains/billing/utils/org"
 		);
 
 		const preview = await previewOrgSeatChange({

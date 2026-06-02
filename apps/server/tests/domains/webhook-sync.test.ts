@@ -3,12 +3,12 @@ import {
 	isImmediateCancellation,
 	isScheduledCancellation,
 	shouldDowngradeToFree,
-} from "@/lib/domains/billing/policy";
+} from "@/lib/domains/billing/utils/policy";
 import {
 	mapDodoSubscriptionStatus,
 	resolveWebhookOrgSync,
 	resolveWebhookUserPlanId,
-} from "@/lib/domains/billing/webhook-sync";
+} from "@/lib/domains/billing/utils/webhooks/sync";
 
 describe("shouldDowngradeToFree", () => {
 	test("only expires immediately revokes", () => {

@@ -5,8 +5,8 @@ import {
 	resolveIntervalFromProductId,
 	resolvePlanIdFromProductId,
 	shouldDowngradeToFree,
-} from "@/lib/domains/billing/policy";
-import { assertTimestampWithinTolerance } from "@/lib/domains/billing/webhook-security";
+} from "@/lib/domains/billing/utils/policy";
+import { assertTimestampWithinTolerance } from "@/lib/domains/billing/utils/webhooks";
 
 describe("isAllowedReturnUrlOrigin", () => {
 	test("allows client origin", () => {

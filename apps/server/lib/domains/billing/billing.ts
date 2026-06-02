@@ -1,8 +1,24 @@
+import { getPlanName, type PlanId } from "@filosign/entitlements";
 import { dodoLive } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
+import { eq } from "drizzle-orm";
 import type { Address } from "viem";
+import { getAddress } from "viem";
 import env from "@/env";
-import type { SubscriptionPlanId } from "@/lib/platform/db/schema/billing";
+import { resolveEntitlementContext } from "@/lib/domains/entitlements";
+import db from "@/lib/platform/db";
+import {
+	type SubscriptionPlanId,
+	type SubscriptionStatus,
+	userSubscriptions,
+} from "@/lib/platform/db/schema/billing";
+import { subscriptionAccessFromRow } from "./utils/marketing";
+import { getOrgBillingSummary } from "./utils/org";
+import {
+	buildUpgradeOfferings,
+	buildWorkspaceAllowedActions,
+	type UpgradeLimitReason,
+} from "./utils/plans";
 
 export type BillingInterval = "monthly" | "yearly";
 
@@ -88,5 +104,91 @@ export async function createBillingPortalSession(_args: {
 	throw new ORPCError("BAD_REQUEST", {
 		message:
 			"Manage billing from Workspace Settings. Personal and team plans are billed per workspace.",
+	});
+}
+
+export async function getUserBillingSummary(wallet: Address) {
+	const walletNorm = getAddress(wallet);
+	const [sub] = await db
+		.select()
+		.from(userSubscriptions)
+		.where(eq(userSubscriptions.walletAddress, walletNorm))
+		.limit(1);
+
+	const rawPlanId = (sub?.planId ?? "free") as PlanId;
+	const planId = subscriptionAccessFromRow({
+		planId: rawPlanId,
+		status: (sub?.status ?? "active") as SubscriptionStatus,
+		cancelAtPeriodEnd: sub?.cancelAtPeriodEnd ?? false,
+		periodEnd: sub?.periodEnd ?? null,
+	});
+
+	return {
+		planId,
+		planName: getPlanName(planId),
+		status: sub?.status ?? "active",
+		provider: sub?.provider ?? "manual",
+		billingInterval: null as "monthly" | "yearly" | null,
+		periodStart: sub?.periodStart?.toISOString() ?? null,
+		periodEnd: sub?.periodEnd?.toISOString() ?? null,
+		cancelAtPeriodEnd: sub?.cancelAtPeriodEnd ?? false,
+		hasDodoSubscription: Boolean(sub?.dodoSubscriptionId),
+	};
+}
+
+export async function getWorkspaceBillingContext(args: {
+	wallet: Address;
+	organizationId: string;
+}) {
+	const walletNorm = getAddress(args.wallet);
+	const [user, org] = await Promise.all([
+		getUserBillingSummary(walletNorm),
+		getOrgBillingSummary(args.organizationId),
+	]);
+
+	const effectivePlanId = (
+		await resolveEntitlementContext(walletNorm, args.organizationId)
+	).planId as PlanId;
+
+	const allowedActions = buildWorkspaceAllowedActions({
+		userPlanId: user.planId,
+		orgPlanId: org.planId,
+		usedSeats: org.usedSeats,
+		hasOrgDodo: org.hasDodoSubscription,
+		orgProvider: org.provider,
+	});
+
+	return {
+		user,
+		org,
+		effectivePlanId,
+		allowedActions,
+	};
+}
+
+export async function getUpgradeOfferingsForWallet(args: {
+	wallet: Address;
+	organizationId: string | null;
+	reason: UpgradeLimitReason;
+}) {
+	const walletNorm = getAddress(args.wallet);
+	const orgId = args.organizationId;
+
+	const user = await getUserBillingSummary(walletNorm);
+	const org = orgId
+		? await getOrgBillingSummary(orgId)
+		: {
+				planId: "free" as PlanId,
+				hasDodoSubscription: false,
+			};
+
+	const orgPlanId = (org.planId ?? "free") as PlanId;
+
+	return buildUpgradeOfferings({
+		reason: args.reason,
+		userPlanId: user.planId,
+		orgPlanId,
+		hasUserDodo: user.hasDodoSubscription,
+		hasOrgDodo: "hasDodoSubscription" in org ? org.hasDodoSubscription : false,
 	});
 }

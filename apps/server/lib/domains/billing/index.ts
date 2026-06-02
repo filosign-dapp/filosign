@@ -2,8 +2,12 @@ export {
 	type BillingInterval,
 	createBillingCheckoutSession,
 	createBillingPortalSession,
+	getUpgradeOfferingsForWallet,
+	getUserBillingSummary,
+	getWorkspaceBillingContext,
 	resolveProductId,
 } from "./billing";
+
 export {
 	CHECKOUT_PLAN_IDS,
 	type CheckoutIntentPlanId,
@@ -13,40 +17,42 @@ export {
 	requestCheckoutLink,
 	resendPaidSetupLink,
 } from "./checkout-intents";
-export { createDodoClient, requireDodoApiKey } from "./dodo-client";
-export {
-	ackDodoWebhook,
-	type DodoWebhookEnvelope,
-	handleDodoWebhook,
-	processDodoWebhookJob,
-	resolveOrgIdForWebhookAck,
-	verifyDodoWebhookSignature,
-} from "./dodo-webhooks";
 export {
 	assertMarketingCheckoutAllowed,
+	type CheckoutPlanId,
+	isActivePaidPlan,
+	type MarketingCheckoutPreview,
+	type MarketingSubscriberState,
 	previewMarketingCheckout,
-} from "./marketing-checkout";
+	subscriptionAccessFromRow,
+} from "./utils/marketing";
 export {
-	changeOrgPlan,
 	createOrgBillingCheckoutSession,
 	createOrgBillingPortalSession,
 	getOrgBillingSummary,
 	type OrgCheckoutPlanId,
+} from "./utils/org";
+export {
+	changeOrgPlan,
 	previewOrgPlanChange,
 	previewOrgSeatChange,
 	updateOrgSeats,
-} from "./org-billing";
+} from "./utils/org-actions";
 export {
 	buildUpgradeOfferings,
 	buildWorkspaceAllowedActions,
-	type CheckoutPlanId,
 	type OfferingCta,
 	type PlanOffering,
 	UPGRADE_LIMIT_REASONS,
 	type UpgradeLimitReason,
-} from "./plan-transitions";
-export { getUserBillingSummary } from "./user-billing";
+} from "./utils/plans";
+export { createDodoClient, requireDodoApiKey } from "./utils/policy";
 export {
-	getUpgradeOfferingsForWallet,
-	getWorkspaceBillingContext,
-} from "./workspace-billing-context";
+	ackDodoWebhook,
+	type DodoWebhookEnvelope,
+	handleDodoWebhook,
+	parseOptionalDate,
+	resolveOrgIdForWebhookAck,
+	verifyDodoWebhookSignature,
+} from "./utils/webhooks";
+export { processDodoWebhookJob } from "./utils/webhooks/worker";

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { CHECKOUT_PLAN_IDS } from "@/lib/domains/billing/checkout-intents";
-import { isOrgBillingPlanId } from "@/lib/domains/billing/policy";
+import { isOrgBillingPlanId } from "@/lib/domains/billing/utils/policy";
 import {
 	generatePlatformInviteToken,
 	generateSetupToken,

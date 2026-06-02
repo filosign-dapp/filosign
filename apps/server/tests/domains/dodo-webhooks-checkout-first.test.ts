@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import { isOrgBillingPlanId } from "@/lib/domains/billing/utils/policy";
 import {
 	resolveCheckoutFirstBillingInterval,
 	resolveCheckoutFirstSeatCount,
-} from "@/lib/domains/billing/dodo-webhooks";
-import { isOrgBillingPlanId } from "@/lib/domains/billing/policy";
+} from "@/lib/domains/billing/utils/webhooks";
 import { attachPendingOrgBillingOnCreateWithTx } from "@/lib/domains/platform-access";
 
 describe("checkout-first webhook helpers", () => {
@@ -63,7 +63,7 @@ describe("org billing attach contract", () => {
 
 describe("checkout-first routing contract", () => {
 	test("handleDodoWebhook exports checkout-first seat helpers", async () => {
-		const mod = await import("@/lib/domains/billing/dodo-webhooks");
+		const mod = await import("@/lib/domains/billing/utils/webhooks");
 		expect(typeof mod.handleDodoWebhook).toBe("function");
 		expect(typeof mod.resolveCheckoutFirstSeatCount).toBe("function");
 		expect(typeof mod.resolveCheckoutFirstBillingInterval).toBe("function");

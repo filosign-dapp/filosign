@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	buildUpgradeOfferings,
 	resolveMarketingCheckoutPreview,
-} from "@/lib/domains/billing/plan-transitions";
+} from "@/lib/domains/billing/utils/plans";
 
 describe("buildUpgradeOfferings", () => {
 	test("solo workspace blocked from team feature sees teams and teams_pro only", () => {

@@ -7,9 +7,9 @@ import {
 } from "@/lib/domains/billing/billing";
 import {
 	createDodoClient,
+	isOrgBillingPlanId,
 	requireDodoApiKey,
-} from "@/lib/domains/billing/dodo-client";
-import { isOrgBillingPlanId } from "@/lib/domains/billing/policy";
+} from "@/lib/domains/billing/utils/policy";
 import {
 	generatePlatformInviteToken,
 	generateSetupToken,
@@ -17,14 +17,12 @@ import {
 import db from "@/lib/platform/db";
 import { checkoutIntents } from "@/lib/platform/db/schema/platform-access";
 import {
-	sendCheckoutContinueEmail,
-	sendPaidSetupEmail,
-} from "@/lib/platform/email/invites";
-import {
 	getAstroUrl,
 	getClientUrl,
 	getServerUrl,
-} from "@/lib/platform/email/public-url";
+	sendCheckoutContinueEmail,
+	sendPaidSetupEmail,
+} from "@/lib/platform/email";
 
 const CHECKOUT_INTENT_TTL_MS = 24 * 60 * 60 * 1000;
 

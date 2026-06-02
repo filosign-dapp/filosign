@@ -306,8 +306,7 @@ export function AddSignDraftActions() {
 										);
 									}
 									const primaryDoc = draftDetails.documents[0];
-									const placementManifest = draftDetails.headSnapshot
-										?.placementManifest ?? { fields: [] };
+									const placementManifest = { fields: [] };
 
 									await createTemplate.mutateAsync({
 										name: templateName.trim(),

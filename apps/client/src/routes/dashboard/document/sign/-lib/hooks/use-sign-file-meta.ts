@@ -16,7 +16,10 @@ export function useSignFileMeta(pieceCid: string | undefined) {
 		data: file,
 		isPending: filePending,
 		error: fileError,
-	} = useFileInfo({ pieceCid: useShared ? undefined : pieceCid });
+	} = useFileInfo({
+		pieceCid: useShared ? undefined : pieceCid,
+		refetchWhileSupplementaryPacketsLocked: true,
+	});
 
 	if (useShared && shared) {
 		return {

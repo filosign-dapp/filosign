@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { type Address, BaseError, type Hex } from "viem";
 import {
 	draftSyncModeFromSearch,
+	hydrateAttachmentPacketDrafts,
 	pruneSignatureFields,
 	useDraftDocumentPreview,
 	useServerDraftHydrate,
@@ -678,7 +679,28 @@ export function useAddSignController() {
 			return;
 		}
 
-		const attachmentComposeDrafts = createForm.attachmentPacketDrafts ?? [];
+		let attachmentComposeDrafts = createForm.attachmentPacketDrafts ?? [];
+		if (attachmentComposeDrafts.length > 0) {
+			try {
+				attachmentComposeDrafts = await hydrateAttachmentPacketDrafts(
+					createForm.draftId,
+					attachmentComposeDrafts,
+				);
+				setCreateForm({
+					...createForm,
+					attachmentPacketDrafts: attachmentComposeDrafts,
+				});
+			} catch (error) {
+				toast.error(
+					error instanceof Error
+						? error.message
+						: "Could not load supplementary files for send",
+				);
+				setSendStatus("error");
+				setTimeout(() => setSendStatus("idle"), 3000);
+				return;
+			}
+		}
 		if (attachmentComposeDrafts.length > 0) {
 			const rosterEmails = createForm.recipients
 				.map((r) => r.email?.trim())

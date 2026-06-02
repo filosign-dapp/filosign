@@ -15,6 +15,8 @@ import {
 	EMPTY_ENVELOPE_FORM,
 	hasDraftContent,
 	hasEnvelopeFormContent,
+	hydrateAttachmentPacketDrafts,
+	saveAttachmentPacketDrafts,
 } from "@/src/lib/domains/drafts";
 import {
 	useStorePersist,
@@ -70,10 +72,24 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 					return;
 				}
 
-				const draft = await buildCreateForm(
-					value,
-					useStorePersist.getState().createForm,
-				);
+				const prev = useStorePersist.getState().createForm;
+				const prevWithAttachments = prev?.attachmentPacketDrafts?.length
+					? {
+							...prev,
+							attachmentPacketDrafts: await hydrateAttachmentPacketDrafts(
+								prev.draftId,
+								prev.attachmentPacketDrafts,
+							),
+						}
+					: prev;
+
+				const draft = await buildCreateForm(value, prevWithAttachments);
+				if (draft.attachmentPacketDrafts?.length) {
+					await saveAttachmentPacketDrafts(
+						draft.draftId,
+						draft.attachmentPacketDrafts,
+					);
+				}
 				setCreateForm(draft);
 
 				captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopeComposeSubmitted, {

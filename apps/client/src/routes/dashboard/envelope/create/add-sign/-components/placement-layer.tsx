@@ -1,10 +1,12 @@
-import type * as React from "react";
-import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+import type {
+	ClickCoordinates,
+	SignatureField,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 
 type PlacementCaptureLayerProps = {
 	isPlacingField: boolean;
 	pendingFieldType: SignatureField["type"] | null;
-	onDocumentClick: (event: React.MouseEvent) => void;
+	onDocumentClick: (event: ClickCoordinates) => void;
 };
 
 export function PlacementCaptureLayer({
@@ -25,7 +27,13 @@ export function PlacementCaptureLayer({
 				onClick={onDocumentClick}
 				onKeyDown={(e) => {
 					if (e.key === "Enter" || e.key === " ") {
-						onDocumentClick(e as unknown as React.MouseEvent);
+						e.preventDefault();
+						const rect = e.currentTarget.getBoundingClientRect();
+						const mockMouseEvent = {
+							clientX: rect.left + rect.width / 2,
+							clientY: rect.top + rect.height / 2,
+						};
+						onDocumentClick(mockMouseEvent);
 					}
 				}}
 				role="button"

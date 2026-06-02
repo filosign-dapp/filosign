@@ -1,8 +1,8 @@
-import type * as React from "react";
 import { Image } from "@/src/lib/components/app/media/image";
 import { PdfJsPreview } from "@/src/lib/domains/files/pdf/pdf-js-preview";
 import { PlacementCaptureLayer } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-layer";
 import type {
+	ClickCoordinates,
 	Document,
 	SignatureField,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
@@ -15,7 +15,7 @@ type DocumentPageContentProps = {
 	pdfPageNumber: number;
 	isPlacingField: boolean;
 	pendingFieldType: SignatureField["type"] | null;
-	onDocumentClick: (event: React.MouseEvent) => void;
+	onDocumentClick: (event: ClickCoordinates) => void;
 	onPdfNumPagesLoaded: (n: number) => void;
 	onPdfPageLayoutLoaded?: (layout: { width: number; height: number }) => void;
 	loadingMessage?: string | null;

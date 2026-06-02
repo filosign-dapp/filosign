@@ -1,6 +1,6 @@
 export { useProfilesByAddresses } from "./useProfilesByAddresses";
 export { useSetPrimaryEmail } from "./useSetPrimaryEmail";
-export { useSyncPrivyEmail } from "./useSyncPrivyEmail";
+export { useSyncThirdwebEmail } from "./useSyncThirdwebEmail";
 export { useUpdateUserProfile } from "./useUpdateUserProfile";
 export {
 	fetchUserProfile,

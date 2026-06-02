@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useInvalidateUserProfile } from "../../lib/invalidate-user-profile";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 
-export function useSyncPrivyEmail() {
+export function useSyncThirdwebEmail() {
 	const { rpcQuery, isAuthed } = useFilosignRpc();
 	const invalidateUser = useInvalidateUserProfile();
 

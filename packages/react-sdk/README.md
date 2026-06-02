@@ -40,7 +40,7 @@ Deeper context: [`AGENTS.md`](../../AGENTS.md), [api-routes.mdc](../../.cursor/r
 | `@filosign/react/auth` | Login, logout, `useAuthedApi`, registration, recovery |
 | `@filosign/react/files` | Documents, cold invite, sign/ack/view/send, register routing (`useSendFile` + `routing`), amend signer (`useAmendSigner`), settlements (`useSettlementsListByFile`, `useTrySettleSettlement`, `useManualSettlementPayout`, `useUpdateSettlementRule`, `useCancelSettlementRule`) |
 | `@filosign/react/sharing` | Connections, approvals, requests |
-| `@filosign/react/users` | Profile, Privy email, lookup |
+| `@filosign/react/users` | Profile, Thirdweb email, lookup |
 | `@filosign/react/runtime` | `useRuntimeChain` |
 | `@filosign/react/utils` | Piece CID, cold-invite envelope, crypto helpers |
 

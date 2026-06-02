@@ -80,7 +80,7 @@ export function useOnboardingComplete() {
 			await navigate({
 				to: "/dashboard/document/sign",
 				search: coldSign,
-			} as never);
+			});
 			return;
 		}
 

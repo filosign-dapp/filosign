@@ -5,6 +5,7 @@ import { and, desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
+import { writeAuditEvent } from "@/lib/domains/audit";
 import {
 	assertEntitlement,
 	resolveEntitlementContext,
@@ -263,6 +264,28 @@ export async function orgsTemplatesDelete(
 
 	if (!deleted)
 		throw new ORPCError("NOT_FOUND", { message: "Template not found" });
+	const s3DeleteRes = await bucket.delete(deleted.s3Key).then(
+		() => ({ error: null as Error | null }),
+		(error: unknown) => ({ error: error as Error }),
+	);
+	if (s3DeleteRes.error) {
+		console.warn("orgsTemplatesDelete: failed deleting template object", {
+			templateId,
+			organizationId: activeOrg.organizationId,
+			s3Key: deleted.s3Key,
+			error: s3DeleteRes.error,
+		});
+	}
+	await writeAuditEvent({
+		actorWallet: getAddress(wallet),
+		organizationId: activeOrg.organizationId,
+		action: "template.deleted",
+		resourceType: "organization_template",
+		resourceId: templateId,
+		metadata: {
+			s3Key: deleted.s3Key,
+		},
+	});
 	await invalidateOrgTemplates(activeOrg.organizationId);
 	return { template: deleted };
 }

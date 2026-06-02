@@ -8,3 +8,8 @@ export type Document = {
 	pdfBytes?: Uint8Array;
 	pages: number;
 };
+
+export type ClickCoordinates = {
+	clientX: number;
+	clientY: number;
+};

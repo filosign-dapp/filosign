@@ -5,6 +5,7 @@ import { and, eq, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
+import { writeAuditEvent } from "@/lib/domains/audit";
 import {
 	type ActiveOrgContext,
 	assertOrgPermission,
@@ -14,7 +15,6 @@ import {
 import {
 	assertCanCreateAdditionalWorkspace,
 	countOwnedOrganizations,
-	migrateLegacyWalletBillingToPersonalOrg,
 	resolveIsPersonalForNewOrganization,
 } from "@/lib/domains/orgs/personal-workspace";
 import { slugifyOrgName } from "@/lib/domains/orgs/slug";
@@ -124,7 +124,6 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 		throw new ORPCError("INTERNAL_SERVER_ERROR", { message: msg });
 	}
 
-	await migrateLegacyWalletBillingToPersonalOrg(creator);
 	await invalidateUserOrgs(creator);
 	await invalidateOrgEntitlements(result.data.id);
 
@@ -396,6 +395,16 @@ export async function orgsMembersRemove(
 		.returning();
 	if (!member)
 		throw new ORPCError("NOT_FOUND", { message: "Member not found" });
+	await writeAuditEvent({
+		actorWallet,
+		organizationId: activeOrg.organizationId,
+		action: "member.removed",
+		resourceType: "organization_member",
+		resourceId: targetWallet,
+		metadata: {
+			role: target.role,
+		},
+	});
 	await invalidateOnMembershipChange(activeOrg.organizationId, targetWallet);
 	return { member };
 }

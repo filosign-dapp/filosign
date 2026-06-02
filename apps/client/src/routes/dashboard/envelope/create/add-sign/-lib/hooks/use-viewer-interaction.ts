@@ -4,6 +4,7 @@ import { defaultPlacementFieldRect } from "@/src/lib/domains/files/field-box";
 import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-canvas-context";
 import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
 import type {
+	ClickCoordinates,
 	Document,
 	SignatureField,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
@@ -68,7 +69,7 @@ export function useDocumentViewerInteraction({
 	}, [document?.id, document?.pdfBytes, document?.url, onPdfPageChange]);
 
 	const handleDocumentClick = useCallback(
-		(event: React.MouseEvent) => {
+		(event: ClickCoordinates) => {
 			if (!isPlacingField || !pendingFieldType) {
 				onCanvasDeselect();
 				return;

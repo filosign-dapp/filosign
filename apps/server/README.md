@@ -47,7 +47,7 @@ Startup logs `rpc`, `rpcDedicatedPrimary`, and `rpcPublicFallback` when fallback
 
 - **`DRAGONFLY_URL`** (required) — `docker compose -f deploy/compose.dev.yml up -d` → `redis://127.0.0.1:6379`
 - Client: thirdweb `useAuthToken()` → `Authorization: Bearer` + `X-Wallet-Address` on `/api/rpc`
-- **`tx.processIndexerHash`:** `{ hash, body? }` — **`body: {}`** ok for registry relay txs (`zIndexerTxBody`).
+- **`tx.processIndexerHash`:** `{ hash, body? }` — returns `{ queued: true, txHash }`; receipt wait runs on BullMQ **`transaction-indexing`** worker (`body: {}` ok for registry relay txs).
 
 ## Observability (three layers)
 
@@ -77,12 +77,12 @@ Critical platform failures emit via [`lib/platform/analytics/platform-alerts.ts`
 
 When `POSTHOG_ENABLED=true` (with `POSTHOG_HOST` and `POSTHOG_API_KEY`), the same alert is mirrored as a sanitized `platform_alert` PostHog event with the same 5-minute dedupe as Telegram. See [`platform-alert-posthog.ts`](lib/platform/analytics/platform-alert-posthog.ts) and [`project/posthog-integration.md`](../../project/posthog-integration.md).
 
-**Manual staging verification** (not run in CI):
+**Manual staging verification** (not run in CI): see [`project/ops/production-smoke-tests.md`](../../project/ops/production-smoke-tests.md) scenarios 7–8.
 
 1. Set `TG_ANALYTICS=true` plus valid bot token and group id in Infisical **staging**.
-2. Trigger a known 5xx (or wait for a real failure) — expect one Telegram message.
-3. Repeat the same failure within 5 minutes — expect dedupe (no spam).
-4. Set `TG_ANALYTICS=false` and restart — expect no new messages.
+2. pgBackRest wrapper failure → `server.pgbackrest_failed` ([`deploy/scripts/pgbackrest-backup.sh`](../../deploy/scripts/pgbackrest-backup.sh)).
+3. BullMQ job after retries exhausted → `server.bullmq_job_failed` ([`lib/platform/jobs/utils/queue-config.ts`](lib/platform/jobs/utils/queue-config.ts)).
+4. Repeat the same alert within 5 minutes — expect dedupe (no spam).
 
 Unit tests: `bun test tests/` in this package; see [TESTING.md](../../TESTING.md) and `tests/platform/` for platform alerts.
 
@@ -92,8 +92,9 @@ Domain modules that read `db.schema` should do so at **call time** (inside funct
 
 - **Dokploy / Docker** — image uses [`scripts/infisical-entrypoint.sh`](scripts/infisical-entrypoint.sh); set bootstrap vars per [`SECRETS.md`](SECRETS.md). Do not paste app secrets into Dokploy env UI.
 - **`GET /health`** (root app, not under `/api`) — `{ ok: true }` for probes.
-- **Dodo billing webhook** — `POST /api/integrations/dodo/webhook` (Standard Webhooks signature headers: `webhook-id`, `webhook-timestamp`, `webhook-signature`). Stored idempotently in `billing_webhook_events`, then upserts `user_subscriptions`.
+- **Dodo billing webhook** — `POST /api/integrations/dodo/webhook` (Standard Webhooks headers). API **acks fast**: `received` row, `invalidateOrgEntitlements`, enqueue **`billing-webhook`** queue; worker runs full sync. See [`project/ops/job-idempotency.md`](../../project/ops/job-idempotency.md).
 - **`bun run db -- purge local|staging|sandbox`** (repo root) — drops `public` schema; local/staging then **push**, sandbox then **migrate** (`production` purge blocked).
+- **Data lifecycle policy** — see [`project/ops/data-lifecycle.md`](../../project/ops/data-lifecycle.md) and PR checklist [`project/ops/data-lifecycle-pr-checklist.md`](../../project/ops/data-lifecycle-pr-checklist.md).
 - **Schema:** [`drizzle/`](drizzle/) versioned SQL. **Local/staging:** `push` (no generate). **Sandbox/production:** `db:generate` → commit → `migrate` only. Drift check: `bun run db:schema:check`. See [SCRIPTS.md](../../SCRIPTS.md).
 - **Invite expiry** — `INVITE_TTL_DAYS` in env (default `7`). All invite types set `expiresAt` at creation via [`inviteExpiresAt()`](lib/domains/invites/ttl.ts): `file_cold_invites`, `user_invites`, `organization_invites`. Hourly `Bun.cron` in [`lib/platform/cron/`](lib/platform/cron/) marks overdue `pending` rows `expired`; handlers use `pending*InviteFilter()` immediately after expiry. PostHog: `cold_invite_expired` for document invites.
 - **Settlements** — `file_settlement_rules` stores on-chain payout rules (`legs` jsonb, status, tx hashes). Indexing path: client `registerRule` + `approve` on-chain, then **`settlements.registerForFile`** (not `files.register`). After each signature the server attempts `executePayout` for executable rules. Sign page **Settle payment** → `settlements.trySettle` (server relay + chain sync). **Settle from wallet** → `settlements.confirmSettlement` (hash + `rules()` sync, no receipt RPC). **Teams Pro:** `settlements.updateRule` / `settlements.cancelRule` after on-chain `updatePayoutRule` / `cancelPayoutRule`. Daily `sync-settlement-rules` cron backfills `executed` from chain. oRPC: `settlements.listByFile`, `settlements.registerForFile`, `settlements.trySettle`, `settlements.confirmSettlement`, `settlements.updateRule`, `settlements.cancelRule`. **`files.amendSigner`** — sender-only on-chain signer commitment swap. Compliance bundles are **version 7** (`onchainRegistration`, multi-leg `settlements[]`, `signer_amended` tx kind). See [`project/settlements/architecture-and-non-custody.md`](../../project/settlements/architecture-and-non-custody.md).
@@ -111,11 +112,11 @@ Billing oRPC (two rails):
 Billing security notes:
 - `billing.createCheckoutSession` rejects `teams` / `teams_pro` (use org checkout). `createOrgCheckoutSession` is org-scoped.
 - `billing.createCheckoutSession` validates `returnUrl` origin against `CLIENT_URL` plus optional `BILLING_RETURN_URL_ORIGINS`.
-- Webhook processing is idempotent by `webhook-id` with event status (`received`/`processed`/`failed`) in `billing_webhook_events`.
+- Webhook processing is idempotent by `webhook-id` with event status (`received`/`processed`/`failed`) in `billing_webhook_events`. API invalidates org entitlements **before** HTTP 200 when `filosign_org_id` (or subscription lookup) resolves.
 
 ## Security notes
 
-- **`tx.processIndexerHash`** — **`authenticatedProcedure`** (thirdweb session). Reverted txs → **400**.
+- **`tx.processIndexerHash`** — **`authenticatedProcedure`** (thirdweb session). Enqueues indexer job; does not wait for receipt on the API thread.
 - **`DEBUG=true`** — verbose request/indexer logging (does not affect email).
 - **`RESEND_ENABLED=false`** — skip all outbound product email (default `true`).
 - **Email delivery** — Resend primary via [`lib/platform/email/deliver.ts`](lib/platform/email/deliver.ts); optional SES fallback when `SES_ENABLED` + `SES_REGION` + `SES_FROM_EMAIL` are set (retryable Resend failures only). See [`SECRETS.md`](SECRETS.md).

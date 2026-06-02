@@ -6,8 +6,8 @@ import { getAddress } from "viem";
 import env from "@/env";
 import db from "@/lib/platform/db";
 import { accessRequests } from "@/lib/platform/db/schema/platform-access";
-import { sendAccessRequestApprovedEmail } from "@/lib/platform/email/invites";
-import { createPlatformInvite } from "./platform-access-invites";
+import { sendAccessRequestApprovedEmail } from "@/lib/platform/email";
+import { createPlatformInvite } from "./invites";
 import { normalizeEmail, planLabel } from "./utils/shared";
 
 export async function submitAccessRequest(args: {

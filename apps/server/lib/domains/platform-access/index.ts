@@ -1,40 +1,60 @@
 export {
-	approveAccessRequest,
-	assertPlatformAccess,
 	assertRegistrationAllowed,
-	assertRegistrationComplete,
-	attachPendingOrgBillingOnCreateWithTx,
 	canStartEmailAuth,
-	createPlatformInvite,
-	expirePartnerTrialsJob,
-	generatePlatformInviteToken,
-	generateSetupToken,
-	grantAdminOrgTeamsProIfEligibleWithTx,
-	grantAdminUserTeamsProIfEligibleWithTx,
-	grantDevPlansForAdminEmail,
-	linkPaidSetupOnRegister,
-	linkPaidSetupOnRegisterWithTx,
-	listAccessRequestsForAdmin,
-	listPlatformInvites,
-	listPlatformUsersForAdmin,
-	type PlatformAccessTx,
-	type PlatformGatePreview,
 	previewAdminBootstrap,
 	previewColdRecipientGate,
 	previewPaidSetup,
 	previewPlatformInvite,
 	previewReturningUserLogin,
 	type RegistrationAccessGate,
-	rebookPlatformInvite,
-	redeemPlatformInviteOnRegister,
-	redeemPlatformInviteOnRegisterWithTx,
-	rejectAccessRequest,
-	revokePlatformInvite,
+} from "./gates";
+
+export {
+	expirePartnerTrialsJob,
+	grantAdminOrgTeamsProIfEligibleWithTx,
+	grantAdminUserTeamsProIfEligibleWithTx,
+	grantDevPlansForAdminEmail,
 	setOrgPlanManualWithTx,
+	setUserPlanManualWithTx,
+	upsertPaidAccessPendingFromWebhook,
+} from "./grants";
+
+export {
+	createPlatformInvite,
+	listPlatformInvites,
+	listPlatformUsersForAdmin,
+	rebookPlatformInvite,
+	revokePlatformInvite,
 	setUserFeatureOverrides,
 	setUserPlanManual,
-	setUserPlanManualWithTx,
+} from "./invites";
+
+export {
+	assertPlatformAccess,
+	assertRegistrationComplete,
+	attachPendingOrgBillingOnCreateWithTx,
+	isUserRegistered,
+	linkPaidSetupOnRegister,
+	linkPaidSetupOnRegisterWithTx,
+	redeemPlatformInviteOnRegister,
+	redeemPlatformInviteOnRegisterWithTx,
+} from "./registration";
+
+export {
+	approveAccessRequest,
+	listAccessRequestsForAdmin,
+	rejectAccessRequest,
 	submitAccessRequest,
-	upsertPaidAccessPendingFromWebhook,
-} from "./platform-access";
+} from "./requests";
+
 export { registerUserAccount } from "./utils/register-user";
+
+export {
+	generatePlatformInviteToken,
+	generateSetupToken,
+	inviteIsActive,
+	normalizeEmail,
+	type PlatformAccessTx,
+	type PlatformGatePreview,
+	planLabel,
+} from "./utils/shared";

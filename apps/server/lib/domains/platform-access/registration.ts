@@ -4,7 +4,14 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import env from "@/env";
-import { isOrgBillingPlanId } from "@/lib/domains/billing/policy";
+import { isOrgBillingPlanId } from "@/lib/domains/billing/utils/policy";
+import {
+	CACHE_TTL,
+	cacheAside,
+	cacheKeys,
+	defaultDeserialize,
+	defaultSerialize,
+} from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import { organizationSubscriptions } from "@/lib/platform/db/schema/organization";
@@ -13,12 +20,32 @@ import {
 	platformInviteRedemptions,
 	platformInvites,
 } from "@/lib/platform/db/schema/platform-access";
-import { isUserRegistered } from "./user-exists";
+import { users } from "@/lib/platform/db/schema/user";
 import {
 	inviteIsActive,
 	normalizeEmail,
 	type PlatformAccessTx,
 } from "./utils/shared";
+
+async function fetchUserExists(wallet: Address): Promise<boolean> {
+	const walletNorm = getAddress(wallet);
+	const [row] = await db
+		.select({ walletAddress: users.walletAddress })
+		.from(users)
+		.where(eq(users.walletAddress, walletNorm))
+		.limit(1);
+	return Boolean(row);
+}
+
+export async function isUserRegistered(wallet: Address): Promise<boolean> {
+	return cacheAside({
+		key: cacheKeys.userExists(getAddress(wallet)),
+		ttlSec: CACHE_TTL.userExists,
+		fetch: () => fetchUserExists(wallet),
+		serialize: defaultSerialize,
+		deserialize: defaultDeserialize,
+	});
+}
 
 export async function redeemPlatformInviteOnRegisterWithTx(
 	tx: PlatformAccessTx,

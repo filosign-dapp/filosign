@@ -18,7 +18,7 @@ import {
 	platformAccessPending,
 } from "@/lib/platform/db/schema/platform-access";
 import { users } from "@/lib/platform/db/schema/user";
-import { setUserPlanManual } from "./platform-access-invites";
+import { setUserPlanManual } from "./invites";
 import { normalizeEmail, type PlatformAccessTx } from "./utils/shared";
 
 export async function setUserPlanManualWithTx(

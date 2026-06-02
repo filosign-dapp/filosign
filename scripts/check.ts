@@ -40,6 +40,7 @@ Scoped types (optional package name; only applies with --types):
   bun run check -- server         lint + types for @filosign/server
 
 Biome always runs on the whole repo (root biome.json).
+Types also run \`tsc -p scripts/tsconfig.json\` (repo orchestrators under \`scripts/\`) plus Turbo \`check-types\` per workspace package.
 `.trim();
 
 function parseSteps(argv: string[]): { steps: Set<Step>; scopeArgv: string[] } {
@@ -79,6 +80,7 @@ function buildCommands(steps: Set<Step>, typesFilter: string): string[][] {
 		cmds.push(["bunx", "biome", "check", "."]);
 	}
 	if (steps.has("types")) {
+		cmds.push(["bunx", "tsc", "--noEmit", "-p", "scripts/tsconfig.json"]);
 		cmds.push([
 			"bunx",
 			"turbo",

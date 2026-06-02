@@ -24,8 +24,11 @@
 | All tests | `bun run test` |
 | Hardhat only | `bun run test -- --contracts` or `bun run contracts -- test` |
 | Release builds | `bun run build` (+ flags) |
-| DB schema push only | `bun run db -- push local\|staging\|sandbox\|production` |
-| Wipe DB + re-push schema | `bun run db -- purge local\|staging\|sandbox` |
+| DB schema push (local / staging) | `bun run db -- push local\|staging` |
+| DB schema migrate (sandbox / prod + optional local/staging) | `bun run db -- migrate …` |
+| Wipe DB | `bun run db -- purge local\|staging\|sandbox` (local/staging → push; sandbox → migrate) |
+| Generate migration SQL | `bun run --cwd apps/server db:generate` |
+| Schema ↔ migrations drift check | `bun run --cwd apps/server db:schema:check` (also in `bun run sanity -- --ci`) |
 | Contracts ops | `bun run contracts -- …` |
 | Nuke deps | `bun run purge` then `bun install` |
 | Email package tests | `bun run test -- --emails` |
@@ -86,9 +89,17 @@ Flags: `--client`, `--astro`, `--server`, `--harness` (`--test`), `--contracts`,
 
 ## `db`
 
-`push` + `local|staging|sandbox|production` — drizzle push only (includes `file_settlement_rules` and other server schema).
+| Action | Profiles | Tool |
+|--------|----------|------|
+| `push` | `local`, `staging` | `drizzle-kit push` — fast dev sync (no generate) |
+| `migrate` | all profiles | `drizzle-kit migrate` — **required** for sandbox + production |
+| `purge` | `local`, `staging`, `sandbox` | wipe schema; then **push** (local/staging) or **migrate** (sandbox) |
 
-`purge` + `local|staging|sandbox` — clear schema (`db:purge:*`), then **push** automatically (`production` purge blocked).
+**Sandbox / production:** never `push` (orchestrator blocks). After schema is stable on local/staging: `bun run --cwd apps/server db:generate` → commit `apps/server/drizzle/` → `bun run db -- migrate sandbox` → backup → `migrate production`.
+
+**Local / staging:** edit schema → `push` (or `purge` → push). Generate/migrate only when promoting toward sandbox.
+
+Backups: [`project/ops/postgres-pgbackrest-dokploy.md`](project/ops/postgres-pgbackrest-dokploy.md) · local drill: [`deploy/README.md`](deploy/README.md).
 
 ## `contracts`
 
@@ -99,7 +110,7 @@ Local deploy uses `deploy:local` (`--network localhost` + `.env.local`).
 | Mode | DB |
 | --- | --- |
 | deploy | — |
-| migrate | local/testnet: `db purge` (includes push) after deploy |
+| migrate | local/testnet: `db purge` (includes migrate) after deploy |
 
 Env: `local` / `testnet` / `mainnet` → `apps/contracts/.env.local` / `.env.staging` / `.env.production`. Never hand-edit `definitions/` (deploy only). Test before testnet/mainnet deploy/migrate.
 

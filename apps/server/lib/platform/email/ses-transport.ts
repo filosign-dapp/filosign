@@ -23,7 +23,7 @@ function getSesClient(): SESv2Client {
 	if (!sesClient) {
 		const credentials = sesCredentials();
 		sesClient = new SESv2Client({
-			region: env.SES_REGION!,
+			region: env.SES_REGION,
 			...(credentials ? { credentials } : {}),
 		});
 	}
@@ -36,7 +36,10 @@ export function resetSesClientForTests(): void {
 }
 
 export async function sendViaSes(msg: OutboundEmail): Promise<{ id: string }> {
-	const from = env.SES_FROM_EMAIL!.trim();
+	const from = env.SES_FROM_EMAIL?.trim();
+	if (!from) {
+		throw new Error("SES_FROM_EMAIL is not set");
+	}
 	const input: SendEmailCommandInput = {
 		FromEmailAddress: from,
 		Destination: { ToAddresses: [msg.to] },

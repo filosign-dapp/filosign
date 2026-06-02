@@ -6,6 +6,7 @@ import { getAddress } from "viem";
 import env from "@/env";
 import { pendingOrgInviteFilter } from "@/lib/domains/invites";
 import { assertSeatCountForPlan } from "@/lib/domains/orgs/personal-workspace";
+import { invalidateOrgEntitlements } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import {
 	type OrgBillingInterval,
@@ -274,6 +275,7 @@ async function syncOrgSeatCountInDb(organizationId: string, seatCount: number) {
 		.update(organizationSubscriptions)
 		.set({ seatCount, updatedAt: new Date() })
 		.where(eq(organizationSubscriptions.organizationId, organizationId));
+	await invalidateOrgEntitlements(organizationId);
 }
 
 function formatPlanChangePreview(
@@ -556,6 +558,8 @@ export async function changeOrgPlan(args: {
 			updatedAt: new Date(),
 		})
 		.where(eq(organizationSubscriptions.organizationId, args.organizationId));
+
+	await invalidateOrgEntitlements(args.organizationId);
 
 	return { planId: args.planId, seatCount: nextSeatCount, changed: true };
 }

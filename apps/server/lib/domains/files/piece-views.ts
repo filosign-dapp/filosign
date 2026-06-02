@@ -5,8 +5,6 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { requireAckForParticipantAccess } from "@/lib/domains/files/utils/participant-access";
-import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
-import { trackServerEvent } from "@/lib/platform/analytics/track";
 import db from "@/lib/platform/db";
 import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
 
@@ -50,56 +48,10 @@ export async function pieceRecordView(args: {
 
 	await requireAckForParticipantAccess(walletNorm, args.pieceCid);
 
-	const now = new Date();
 	const [existing] = await db
-		.select({ viewCount: fileDocumentViews.viewCount })
-		.from(fileDocumentViews)
-		.where(
-			and(
-				eq(fileDocumentViews.filePieceCid, args.pieceCid),
-				eq(fileDocumentViews.wallet, walletNorm),
-			),
-		);
-
-	if (existing) {
-		await db
-			.update(fileDocumentViews)
-			.set({
-				lastViewedAt: now,
-				viewCount: existing.viewCount + 1,
-				source,
-				updatedAt: now,
-			})
-			.where(
-				and(
-					eq(fileDocumentViews.filePieceCid, args.pieceCid),
-					eq(fileDocumentViews.wallet, walletNorm),
-				),
-			);
-	} else {
-		await db.insert(fileDocumentViews).values({
-			filePieceCid: args.pieceCid,
-			wallet: walletNorm,
-			firstViewedAt: now,
-			lastViewedAt: now,
-			viewCount: 1,
-			source,
-			createdAt: now,
-			updatedAt: now,
-		});
-		trackServerEvent({
-			distinctId: walletNorm,
-			event: SERVER_ANALYTICS_EVENTS.documentViewed,
-			pieceCid: args.pieceCid,
-			properties: { source },
-		});
-	}
-
-	const view = await db
 		.select({
 			firstViewedAt: fileDocumentViews.firstViewedAt,
-			lastViewedAt: fileDocumentViews.lastViewedAt,
-			viewCount: fileDocumentViews.viewCount,
+			source: fileDocumentViews.source,
 		})
 		.from(fileDocumentViews)
 		.where(
@@ -109,18 +61,25 @@ export async function pieceRecordView(args: {
 			),
 		);
 
-	const row = view[0];
-	if (!row) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: "Failed to record document view",
-		});
+	if (existing) {
+		return {
+			firstViewedAt: existing.firstViewedAt.toISOString(),
+			source: existing.source,
+		};
 	}
 
+	const now = new Date();
+	await db.insert(fileDocumentViews).values({
+		filePieceCid: args.pieceCid,
+		wallet: walletNorm,
+		firstViewedAt: now,
+		source,
+		createdAt: now,
+		updatedAt: now,
+	});
+
 	return {
-		firstViewedAt: row.firstViewedAt.toISOString(),
-		lastViewedAt: row.lastViewedAt.toISOString(),
-		viewCount: row.viewCount,
+		firstViewedAt: now.toISOString(),
+		source,
 	};
 }
-
-/** --- draft --- */

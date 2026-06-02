@@ -9,6 +9,8 @@ import { validateDeploymentEnv } from "@/lib/platform/validate-deployment-env";
 const parsedEnv = createEnv({
 	server: {
 		DEPLOYMENT: z.enum(DEPLOYMENTS),
+		/** `api` = HTTP only; `worker` = crons + heartbeat; `all` = local dev monolith. */
+		SERVER_ROLE: z.enum(["api", "worker", "all"]).default("all"),
 		NODE_ENV: z.enum(["development", "production"]).default("production"),
 		TG_ANALYTICS: z
 			.string()
@@ -50,6 +52,8 @@ const parsedEnv = createEnv({
 			.transform((v) => parseInt(v, 10))
 			.optional(),
 		DRAGONFLY_URL: z.string().min(1),
+		/** BullMQ queue prefix (Redis hashtag), e.g. `{filosign}`. */
+		BULLMQ_PREFIX: z.string().min(1).default("{filosign}"),
 		THIRDWEB_CLIENT_ID: z.string().min(1),
 		THIRDWEB_SECRET_KEY: z.string().min(1),
 		DEBUG: z

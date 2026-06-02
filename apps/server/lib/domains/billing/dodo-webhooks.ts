@@ -1,12 +1,17 @@
 import type { PlanId } from "@filosign/entitlements";
 import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
+import type { Address } from "viem";
 import { getAddress } from "viem";
 import { checkoutPlanLabel } from "@/lib/domains/billing/checkout-intents";
 import {
 	type PlatformAccessTx,
 	upsertPaidAccessPendingFromWebhook,
 } from "@/lib/domains/platform-access";
+import {
+	createEntitlementCacheInvalidation,
+	flushEntitlementCacheInvalidation,
+} from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import {
 	type BillingWebhookEventStatus,
@@ -592,6 +597,7 @@ export async function handleDodoWebhook(args: {
 		const checkoutFirstEmail: {
 			payload: { to: string; setupUrl: string; planLabel: string } | null;
 		} = { payload: null };
+		const entitlementInvalidation = createEntitlementCacheInvalidation();
 
 		await db.transaction(async (tx) => {
 			let organizationId = metadataOrgId;
@@ -700,6 +706,7 @@ export async function handleDodoWebhook(args: {
 					dodoCustomerId,
 					dodoSubscriptionId,
 				});
+				entitlementInvalidation.orgIds.add(organizationId);
 				return;
 			}
 
@@ -804,7 +811,10 @@ export async function handleDodoWebhook(args: {
 				dodoCustomerId,
 				dodoSubscriptionId,
 			});
+			entitlementInvalidation.wallets.add(walletAddress as Address);
 		});
+
+		await flushEntitlementCacheInvalidation(entitlementInvalidation);
 
 		if (checkoutFirstEmail.payload) {
 			await sendPaidSetupEmail({

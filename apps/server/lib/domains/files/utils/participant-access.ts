@@ -47,8 +47,6 @@ export async function getDocumentView(wallet: Address, pieceCid: string) {
 	const [row] = await db
 		.select({
 			firstViewedAt: fileDocumentViews.firstViewedAt,
-			lastViewedAt: fileDocumentViews.lastViewedAt,
-			viewCount: fileDocumentViews.viewCount,
 			source: fileDocumentViews.source,
 		})
 		.from(fileDocumentViews)

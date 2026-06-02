@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import db from "@/lib/platform/db";
 import { fsAttachmentReleaseAt } from "@/lib/platform/evm";
+import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
@@ -35,7 +36,7 @@ export async function tryExecuteAttachmentRelease(args: {
 
 	const write = release.write as unknown as AttachmentReleaseWrite;
 	const txRes = await tryCatch(
-		write.executeAttachmentRelease([args.onChainRuleId]),
+		withRelayerLock(() => write.executeAttachmentRelease([args.onChainRuleId])),
 	);
 	if (txRes.error) {
 		logger.warn(

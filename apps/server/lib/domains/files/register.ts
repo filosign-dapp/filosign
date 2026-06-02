@@ -23,13 +23,21 @@ import {
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
+import { invalidateEntitlementsForFileSend } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { fsContracts } from "@/lib/platform/evm";
+import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
+import { enqueueOutboxByIds } from "@/lib/platform/jobs/outbox-enqueue";
+import { insertJobOutboxRows } from "@/lib/platform/jobs/outbox-store";
 import { bucket } from "@/lib/platform/s3/client";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { normalizedViewerEmailsForRegister } from "./file-invites";
-import { notifyParticipantsAfterRegister } from "./utils/register-notify";
-import { persistRegisteredFileInDb } from "./utils/register-persist";
+import { trackRegisterAnalytics } from "./utils/register-notify";
+import { buildRegisterEmailOutboxRows } from "./utils/register-outbox";
+import {
+	type PersistRegisteredFileArgs,
+	persistRegisteredFileInTx,
+} from "./utils/register-persist";
 import { resolveRegisterRoutingCalldata } from "./utils/register-routing";
 
 const { FSEnvelopeRegistry } = fsContracts;
@@ -234,27 +242,29 @@ export async function filesRegister(
 		assertEntitlement(entitlementCtx, "features.routing.advanced");
 	}
 
-	const txHash = await FSEnvelopeRegistry.write.registerEnvelope([
-		{
-			pieceCid,
-			sender,
-			requiredCommitments: routingRequiredCommitments,
-			optionalCommitments: optionalCommitmentsSorted,
-			viewerEmailCommitments: viewerEmailCommitmentsSorted,
-			senderEmailCommitment,
-			senderPrivySubjectCommitment,
-			orgIdCommitment,
-			routingMode,
-			routingOrder,
-			quorumN,
-			quorumSet,
-			timestamp: BigInt(timestamp),
-			signature,
-			placementCommitment,
-		},
-	]);
+	const txHash = await withRelayerLock(() =>
+		FSEnvelopeRegistry.write.registerEnvelope([
+			{
+				pieceCid,
+				sender,
+				requiredCommitments: routingRequiredCommitments,
+				optionalCommitments: optionalCommitmentsSorted,
+				viewerEmailCommitments: viewerEmailCommitmentsSorted,
+				senderEmailCommitment,
+				senderPrivySubjectCommitment,
+				orgIdCommitment,
+				routingMode,
+				routingOrder,
+				quorumN,
+				quorumSet,
+				timestamp: BigInt(timestamp),
+				signature,
+				placementCommitment,
+			},
+		]),
+	);
 
-	await persistRegisteredFileInDb({
+	const persistArgs: PersistRegisteredFileArgs = {
 		pieceCid,
 		sender,
 		organizationId,
@@ -277,7 +287,26 @@ export async function filesRegister(
 		senderKemCiphertext,
 		senderEncryptedEncryptionKey,
 		coldInvites,
+	};
+
+	const participantWallets = [
+		...new Set(participants.map((p) => getAddress(p.address))),
+	];
+
+	const outboxRows = await db.transaction(async (tx) => {
+		await persistRegisteredFileInTx(tx, persistArgs);
+		const inserts = await buildRegisterEmailOutboxRows(tx, {
+			sender,
+			pieceCid,
+			participantWallets,
+			coldInvites,
+		});
+		return insertJobOutboxRows(tx, inserts);
 	});
+
+	await invalidateEntitlementsForFileSend({ sender, organizationId });
+
+	await enqueueOutboxByIds(outboxRows.map((row) => row.id));
 
 	await insertAttachmentPacketsForFile({
 		pieceCid,
@@ -287,17 +316,7 @@ export async function filesRegister(
 		coldInviteToken: coldInvites[0]?.inviteToken,
 	});
 
-	const participantWallets = [
-		...new Set(participants.map((p) => getAddress(p.address))),
-	];
-
-	await notifyParticipantsAfterRegister({
-		sender,
-		pieceCid,
-		participantWallets,
-		coldInvites,
-		slotCounts,
-	});
+	trackRegisterAnalytics({ sender, pieceCid, slotCounts });
 
 	return {};
 }

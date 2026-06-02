@@ -48,6 +48,25 @@ export function invalidateEntitlements(
 	});
 }
 
+/** Entitlements + org/user billing summaries (checkout return / dashboard mount). */
+export function invalidateBillingAndEntitlements(
+	queryClient: QueryClient,
+	rpcQuery: FilosignRpcQueryUtils,
+) {
+	return Promise.all([
+		invalidateEntitlements(queryClient, rpcQuery),
+		queryClient.invalidateQueries({
+			queryKey: rpcQuery.billing.getOrgSummary.key(),
+		}),
+		queryClient.invalidateQueries({
+			queryKey: rpcQuery.billing.getWorkspaceBillingContext.key(),
+		}),
+		queryClient.invalidateQueries({
+			queryKey: rpcQuery.billing.getUserSummary.key(),
+		}),
+	]);
+}
+
 /** Inbox lists used by notifications (received files). */
 export function invalidateInboxQueries(
 	queryClient: QueryClient,

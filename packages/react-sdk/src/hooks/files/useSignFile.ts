@@ -99,10 +99,10 @@ export function useSignFile() {
 				}
 				const signerEmailCommitment = hashNormalizedSignerEmail(signerEmail);
 
-				const privySubjectCommitment = userProfile?.privySubjectCommitment;
-				if (!privySubjectCommitment) {
+				const authSubjectCommitment = userProfile?.authSubjectCommitment;
+				if (!authSubjectCommitment) {
 					throw new Error(
-						"Profile missing Privy subject commitment; try re-login.",
+						"Profile missing Auth subject commitment; try re-login.",
 					);
 				}
 
@@ -166,7 +166,7 @@ export function useSignFile() {
 								{ name: "sender", type: "address" },
 								{ name: "signerWallet", type: "address" },
 								{ name: "signerEmailCommitment", type: "bytes32" },
-								{ name: "privySubjectCommitment", type: "bytes32" },
+								{ name: "authSubjectCommitment", type: "bytes32" },
 								{ name: "dl3SignatureCommitment", type: "bytes20" },
 								{ name: "completionsRoot", type: "bytes32" },
 								{ name: "leafSchemaVersion", type: "uint8" },
@@ -180,7 +180,7 @@ export function useSignFile() {
 							sender,
 							signerWallet: wallet.account.address,
 							signerEmailCommitment,
-							privySubjectCommitment,
+							authSubjectCommitment,
 							dl3SignatureCommitment,
 							completionsRoot,
 							leafSchemaVersion: LEAF_SCHEMA_VERSION_V1,

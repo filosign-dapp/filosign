@@ -1,18 +1,16 @@
 import { describe, expect, it } from "bun:test";
-import type { PlacementManifest } from "../placement-manifest";
 import {
 	buildRegisterRoutingCalldata,
 	buildRegistrationEmailCommitmentsForRouting,
+	commitsForEmails,
+	hashNormalizedSignerEmail,
+	type PlacementManifest,
 	requiredSignerCommitsForRegister,
+	sortedCommitsForEmails,
 	usesAdvancedRegisterRouting,
 	validateRegisterRoutingCalldata,
 	validateRegisterRoutingForSend,
-} from "../register-routing";
-import {
-	commitsForEmails,
-	hashNormalizedSignerEmail,
-	sortedCommitsForEmails,
-} from "../signer-email-commitment";
+} from "..";
 
 const manifest: PlacementManifest = {
 	version: 2,

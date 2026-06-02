@@ -6,7 +6,7 @@ import {
 	requiredChainForDeployment,
 	sandboxEntitlementsOpen,
 	signupPolicyIsGated,
-} from "../deployment";
+} from "..";
 
 describe("deployment policy", () => {
 	test("requiredChainForDeployment", () => {

@@ -3,7 +3,7 @@ import {
 	canonicalPlacementManifestJson,
 	computePlacementCommitment,
 	zPlacementManifest,
-} from "../placement-manifest";
+} from "..";
 
 const minimalManifest = zPlacementManifest.parse({
 	version: 2,

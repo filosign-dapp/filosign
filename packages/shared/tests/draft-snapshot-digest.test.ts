@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import type { DraftSnapshot } from "../draft-snapshot";
 import {
 	canonicalDraftSnapshotJson,
+	type DraftSnapshot,
 	digestDraftSnapshot,
-} from "../draft-snapshot-digest";
+} from "..";
 
 const minimalSnapshot = (): DraftSnapshot => ({
 	recipients: [

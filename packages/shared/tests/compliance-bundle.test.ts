@@ -1,10 +1,10 @@
 import { describe, expect, it } from "bun:test";
+import type { PlacementManifest } from "..";
 import {
 	COMPLIANCE_CHAIN_TX_KINDS,
 	canonicalComplianceBundleJson,
 	zComplianceBundle,
-} from "../compliance-bundle";
-import type { PlacementManifest } from "../placement-manifest";
+} from "..";
 
 const minimalManifest: PlacementManifest = {
 	version: 2,
@@ -45,7 +45,7 @@ describe("ComplianceBundle", () => {
 					displayName: "A",
 					emailCommitment:
 						"0x0000000000000000000000000000000000000000000000000000000000000003",
-					privySubjectCommitment:
+					authSubjectCommitment:
 						"0x0000000000000000000000000000000000000000000000000000000000000004",
 				},
 			],

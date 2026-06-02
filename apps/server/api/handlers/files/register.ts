@@ -1,1 +1,1 @@
-export { filesRegister, zFileRegisterBody } from "@/lib/domains/files/register";
+export { filesRegister, zFileRegisterBody } from "@/lib/domains/files";

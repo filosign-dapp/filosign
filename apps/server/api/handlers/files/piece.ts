@@ -4,7 +4,7 @@ export {
 	pieceDetail,
 	pieceDownloadUrl,
 	pieceRecordView,
+	pieceSign,
 	pieceSignDraftGet,
 	pieceSignDraftPut,
-} from "@/lib/domains/files/piece";
-export { pieceSign } from "@/lib/domains/files/piece-sign";
+} from "@/lib/domains/files";

@@ -3,8 +3,10 @@ import type { Address } from "viem";
 
 import { readOrgIdHeader, resolveActiveOrg } from "@/lib/domains/orgs";
 import { assertRegistrationComplete } from "@/lib/domains/platform-access";
-import { captureServerException } from "@/lib/platform/analytics/posthog";
-import { shouldCaptureServerException } from "@/lib/platform/analytics/should-capture-exception";
+import {
+	captureServerException,
+	shouldCaptureServerException,
+} from "@/lib/platform/analytics";
 import type { OrpcContext } from "./context";
 
 export const o = os.$context<OrpcContext>().use(async ({ context, next }) => {

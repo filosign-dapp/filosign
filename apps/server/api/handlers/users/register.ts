@@ -4,8 +4,10 @@ import { getAddress } from "viem";
 import { z } from "zod";
 import { registerUserAccount } from "@/lib/domains/platform-access/utils/register-user";
 import { validateFilosignRegistrationSignature } from "@/lib/domains/users/validate-registration-signature";
-import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
-import { trackServerEvent } from "@/lib/platform/analytics/track";
+import {
+	SERVER_ANALYTICS_EVENTS,
+	trackServerEvent,
+} from "@/lib/platform/analytics";
 import { verifyThirdwebAuthTokenWithWallet } from "@/lib/platform/utils/thirdweb";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 

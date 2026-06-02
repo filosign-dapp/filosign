@@ -61,7 +61,7 @@ export async function assembleComplianceBundle(
 		}
 		const email = normalizePlacementRecipientEmail(emailRaw);
 		const emailCommitment = hashNormalizedSignerEmail(email);
-		const privySubjectCommitment = p.authProviderId?.trim()
+		const authSubjectCommitment = p.authProviderId?.trim()
 			? hashAuthSubjectCommitment(p.authProviderId.trim())
 			: null;
 		return {
@@ -70,7 +70,7 @@ export async function assembleComplianceBundle(
 			email,
 			displayName: displayNameFromUser(p),
 			emailCommitment,
-			privySubjectCommitment,
+			authSubjectCommitment,
 		};
 	});
 
@@ -285,7 +285,7 @@ export async function assembleComplianceBundle(
 		if (!emailRaw) continue;
 		const email = normalizePlacementRecipientEmail(emailRaw);
 		const emailCommitment = hashNormalizedSignerEmail(email);
-		const privySubjectCommitment = row.authProviderId?.trim()
+		const authSubjectCommitment = row.authProviderId?.trim()
 			? hashAuthSubjectCommitment(row.authProviderId.trim())
 			: null;
 		const ackHex = row.ack as Hex;
@@ -296,7 +296,7 @@ export async function assembleComplianceBundle(
 			acknowledgedAtIso: row.acknowledgedAt.toISOString(),
 			intentVersion: row.intentVersion,
 			emailCommitment,
-			privySubjectCommitment,
+			authSubjectCommitment,
 			ackSha256,
 		});
 	}

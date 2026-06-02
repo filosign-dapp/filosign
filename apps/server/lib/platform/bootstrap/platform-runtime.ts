@@ -5,7 +5,7 @@ import {
 	resolveJobsRuntimeOptions,
 	shutdownJobsRuntime,
 	startJobsRuntime,
-} from "@/lib/platform/jobs/runtime";
+} from "@/lib/platform/jobs";
 import {
 	startWorkerHeartbeat,
 	stopWorkerHeartbeat,

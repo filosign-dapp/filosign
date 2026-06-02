@@ -232,7 +232,7 @@ export async function loadComplianceContext(args: {
 					viewersCommitment: Hex;
 					placementCommitment: Hex;
 					senderEmailCommitment: Hex;
-					senderPrivySubjectCommitment: Hex;
+					senderAuthSubjectCommitment: Hex;
 					requiredSignersCount: number | bigint;
 					requiredSignaturesCount: number | bigint;
 					optionalSignersCount: number | bigint;
@@ -270,7 +270,7 @@ export async function loadComplianceContext(args: {
 				viewersCommitment: reg.viewersCommitment as Hex,
 				placementCommitment: reg.placementCommitment as Hex,
 				senderEmailCommitment: reg.senderEmailCommitment as Hex,
-				senderPrivySubjectCommitment: reg.senderPrivySubjectCommitment as Hex,
+				senderAuthSubjectCommitment: reg.senderAuthSubjectCommitment as Hex,
 				requiredSignersCount: Number(reg.requiredSignersCount),
 				requiredSignaturesCount: Number(reg.requiredSignaturesCount),
 				optionalSignersCount: Number(reg.optionalSignersCount),

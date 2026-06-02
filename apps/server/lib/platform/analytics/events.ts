@@ -22,6 +22,8 @@ export const PLATFORM_ALERT_EVENTS = {
 	serverRelayerGasLow: "server.relayer_gas_low",
 	serverRpcDegraded: "server.rpc_degraded",
 	settlementsRelayPayoutFailed: "settlements.relay_payout_failed",
+	serverPgbackrestFailed: "server.pgbackrest_failed",
+	serverBullmqJobFailed: "server.bullmq_job_failed",
 } as const;
 
 /** PostHog event name for mirrored Telegram platform alerts (ops signals). */
@@ -94,5 +96,22 @@ export type PlatformAlertEvent =
 				status: string;
 				error: string;
 				txHash?: string;
+			};
+	  })
+	| (BaseAlertEvent & {
+			name: typeof PLATFORM_ALERT_EVENTS.serverPgbackrestFailed;
+			context: {
+				stanza: string;
+				container: string;
+				cmd: string;
+			};
+	  })
+	| (BaseAlertEvent & {
+			name: typeof PLATFORM_ALERT_EVENTS.serverBullmqJobFailed;
+			context: {
+				queueName: string;
+				jobId: string;
+				error: string;
+				outboxId?: string;
 			};
 	  });

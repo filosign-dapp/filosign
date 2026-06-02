@@ -1,4 +1,7 @@
-import { useCreateCheckoutSession } from "@filosign/react/billing";
+import {
+	useCreateCheckoutSession,
+	useRefetchBillingOnDashboardMount,
+} from "@filosign/react/billing";
 import { useEffect, useState } from "react";
 import { useActiveAccount } from "thirdweb/react";
 import { DeploymentBanner } from "@/src/lib/components/app/deployment-banner";
@@ -14,6 +17,7 @@ export default function DashboardLayout({
 	children: React.ReactNode;
 }) {
 	const account = useActiveAccount();
+	useRefetchBillingOnDashboardMount();
 	const { mutateAsync: createCheckoutSession, isPending: isCheckingOut } =
 		useCreateCheckoutSession();
 	const [hasTriggered, setHasTriggered] = useState(false);

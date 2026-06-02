@@ -17,12 +17,12 @@ export const safeMap = <T, R>(
 	if (!items) return fallback;
 
 	return items
-		.map((item, index) => {
+		.map((item, index): R | undefined => {
 			try {
 				return mapFn(item, index);
 			} catch (error) {
 				handleError(error);
-				return undefined as unknown as R;
+				return undefined;
 			}
 		})
 		.filter((item): item is R => item !== undefined);

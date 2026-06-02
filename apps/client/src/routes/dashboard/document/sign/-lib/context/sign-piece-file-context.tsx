@@ -25,6 +25,7 @@ export function SignPieceFileProvider({
 		error: fileError,
 	} = useFileInfo({
 		pieceCid,
+		refetchWhileSupplementaryPacketsLocked: true,
 	});
 
 	const value = useMemo(

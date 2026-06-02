@@ -167,8 +167,7 @@ function TemplatesIndexPage() {
 			}
 
 			const primaryDoc = draftDetails.documents[0];
-			const placementManifest = draftDetails.headSnapshot
-				?.placementManifest ?? { fields: [] };
+			const placementManifest = { fields: [] };
 
 			await createTemplate.mutateAsync(
 				{
@@ -322,7 +321,7 @@ function TemplatesIndexPage() {
 								return (
 									<div
 										key={t.id}
-										className="group flex flex-col justify-between gap-4 rounded-xl border border-border/60 bg-linear-to-b from-card to-muted/15 p-4 shadow-xs transition hover:border-border/100 hover:shadow-md"
+										className="group flex flex-col justify-between gap-4 rounded-xl border border-border/60 bg-linear-to-b from-card to-muted/15 p-4 shadow-xs transition hover:border-border hover:shadow-md"
 									>
 										<div className="flex items-start gap-3">
 											<div className="size-9 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary shrink-0">

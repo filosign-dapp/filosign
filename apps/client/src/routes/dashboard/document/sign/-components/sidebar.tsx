@@ -12,6 +12,7 @@ import { cn } from "@/src/lib/utils";
 import { ConditionalAttachmentsPanel } from "@/src/routes/dashboard/document/sign/-components/conditional-attachments-panel";
 import { SettlementStatusPanel } from "@/src/routes/dashboard/document/sign/-components/settlement-status-panel";
 import { SignEnvelopeProgressBanner } from "@/src/routes/dashboard/document/sign/-components/sign-envelope-progress";
+import { SupplementaryPacketsSignPanel } from "@/src/routes/dashboard/document/sign/-components/supplementary-packets-sign-panel";
 import {
 	useSignFile,
 	useSignIdentity,
@@ -249,6 +250,8 @@ export function SignDocumentSidebar() {
 						packets={file?.conditionalAttachmentPackets}
 					/>
 				) : null}
+
+				<SupplementaryPacketsSignPanel />
 
 				<SettlementStatusPanel
 					rules={settlementRules}

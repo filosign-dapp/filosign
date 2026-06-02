@@ -153,7 +153,7 @@ export function useSignInviteUnlock(args: {
 					coldInvite: inviteToken,
 				},
 				replace: true,
-			} as never);
+			});
 		}
 	}, [
 		active,
@@ -244,7 +244,7 @@ export function useSignInviteUnlock(args: {
 	const ensureLoggedInForUnlock = useCallback(async () => {
 		if (!authenticated) {
 			await login();
-			throw new Error("PRIVY_LOGIN_STARTED");
+			throw new Error("AUTH_LOGIN_STARTED");
 		}
 		if (isRegistered.data === false) {
 			throw new Error("REDIRECTING_TO_ONBOARDING");
@@ -334,9 +334,9 @@ export function useSignInviteUnlock(args: {
 				to: "/dashboard/document/sign",
 				search: { pieceCid, invite: "" },
 				replace: true,
-			} as never);
+			});
 		} catch (e) {
-			if (e instanceof Error && e.message === "PRIVY_LOGIN_STARTED") return;
+			if (e instanceof Error && e.message === "AUTH_LOGIN_STARTED") return;
 			if (e instanceof Error && e.message === "REDIRECTING_TO_ONBOARDING")
 				return;
 			const msg =

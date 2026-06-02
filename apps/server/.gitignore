@@ -2,4 +2,3 @@
 **/*.sqlite
 **/.env
 **/.env.*
-drizzle/

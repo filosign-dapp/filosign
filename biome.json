@@ -58,6 +58,12 @@
 			"assist": { "enabled": false }
 		},
 		{
+			"includes": ["apps/server/drizzle/**"],
+			"formatter": { "enabled": false },
+			"linter": { "enabled": false },
+			"assist": { "enabled": false }
+		},
+		{
 			"includes": ["apps/astro/**/*.astro"],
 			"linter": {
 				"rules": {

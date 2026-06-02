@@ -1,3 +1,7 @@
+# Local deploy secrets (R2 pgBackRest)
+deploy/.env
+deploy/pgbackrest/pgbackrest.conf
+
 # Logs
 logs
 *.log

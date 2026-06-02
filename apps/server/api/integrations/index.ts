@@ -1,6 +1,6 @@
 import { ORPCError } from "@orpc/server";
 import { Hono } from "hono";
-import { handleDodoWebhook } from "@/lib/domains/billing";
+import { ackDodoWebhook } from "@/lib/domains/billing";
 import { captureServerException } from "@/lib/platform/analytics/posthog";
 import { shouldCaptureServerException } from "@/lib/platform/analytics/should-capture-exception";
 
@@ -23,7 +23,7 @@ export const integrationsRouter = new Hono().post(
 
 			const rawBody = await c.req.raw.text();
 
-			const result = await handleDodoWebhook({
+			const result = await ackDodoWebhook({
 				rawBody,
 				webhookId,
 				webhookTimestamp,

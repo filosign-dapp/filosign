@@ -62,6 +62,19 @@ export const rpcPieceDetailOutputSchema = z.object({
 			}),
 		)
 		.optional(),
+	mySupplementaryPackets: z
+		.array(
+			z.object({
+				packetId: z.string(),
+				label: z.string().nullable(),
+				releaseMode: z.enum(["review", "conditional"]),
+				unlocked: z.boolean(),
+				cancelled: z.boolean(),
+				unlockConditionLabel: z.string(),
+				canDecrypt: z.boolean(),
+			}),
+		)
+		.optional(),
 	kemCiphertext: zHexString().nullable(),
 	encryptedEncryptionKey: zHexString().nullable(),
 	organizationId: z.string().uuid().nullable().optional(),

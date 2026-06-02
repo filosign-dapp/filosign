@@ -1228,6 +1228,67 @@ export const appRouter = {
 			.input(z.object({ walletAddress: z.string() }))
 			.output(out.users.registrationSnapshot)
 			.handler(({ input }) => userHandlers.userRegistrationSnapshot(input)),
+		eraseAccount: authenticatedProcedure
+			.output(out.users.eraseAccount)
+			.handler(({ context }) =>
+				userHandlers.userEraseAccount(context.userWallet),
+			),
+		privacyState: authenticatedProcedure
+			.output(out.users.privacyState)
+			.handler(({ context }) =>
+				userHandlers.userPrivacyState(context.userWallet),
+			),
+		privacyRequestCreate: authenticatedProcedure
+			.input(
+				z.object({
+					type: z.enum(["export", "erasure"]),
+					note: z.string().max(2000).optional(),
+				}),
+			)
+			.output(out.users.privacyRequestCreate)
+			.handler(({ context, input }) =>
+				userHandlers.userPrivacyRequestCreate(context.userWallet, input),
+			),
+		privacyRequestList: authenticatedProcedure
+			.output(out.users.privacyRequestList)
+			.handler(({ context }) =>
+				userHandlers.userPrivacyRequestList(context.userWallet),
+			),
+		privacyRequestTransition: authenticatedProcedure
+			.input(
+				z.object({
+					requestId: z.string().uuid(),
+					status: z.enum([
+						"submitted",
+						"in_review",
+						"on_hold",
+						"completed",
+						"rejected",
+					]),
+					closureNote: z.string().max(2000).optional(),
+					legalHoldReason: z.string().max(2000).optional(),
+				}),
+			)
+			.output(out.users.privacyRequestTransition)
+			.handler(({ context, input }) =>
+				userHandlers.userPrivacyRequestTransition(context.userWallet, input),
+			),
+		setAnalyticsConsent: authenticatedProcedure
+			.input(
+				z.object({
+					choice: z.enum(["granted", "denied", "withdrawn"]),
+					policyVersion: z.string().min(1).max(64),
+				}),
+			)
+			.output(out.users.setAnalyticsConsent)
+			.handler(({ context, input }) =>
+				userHandlers.userSetAnalyticsConsent(context.userWallet, input),
+			),
+		exportAccountData: authenticatedProcedure
+			.output(out.users.exportAccountData)
+			.handler(({ context }) =>
+				userHandlers.userExportAccountData(context.userWallet),
+			),
 		profile: {
 			me: authenticatedProcedure
 				.output(out.users.profileMe)
@@ -1257,9 +1318,9 @@ export const appRouter = {
 				),
 			syncThirdwebEmail: authenticatedProcedure
 				.input(z.record(z.string(), unk))
-				.output(out.users.profileSyncPrivyEmail)
+				.output(out.users.profileSyncThirdwebEmail)
 				.handler(({ context, input }) =>
-					userHandlers.userProfileSyncPrivyEmail(context.userWallet, input),
+					userHandlers.userProfileSyncThirdwebEmail(context.userWallet, input),
 				),
 			setPrimaryEmail: authenticatedProcedure
 				.input(z.record(z.string(), unk))

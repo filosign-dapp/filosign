@@ -3,7 +3,7 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import db from "@/lib/platform/db";
 import { buildEmailIdempotencyKey } from "@/lib/platform/email/idempotency";
-import type { JobOutboxInsert } from "@/lib/platform/jobs/outbox-store";
+import type { JobOutboxInsert } from "@/lib/platform/jobs";
 
 const { users } = db.schema;
 

@@ -1,3 +1,4 @@
+export * from "./delete-guard";
 export * from "./file-access";
 export {
 	fetchUserOrgs,

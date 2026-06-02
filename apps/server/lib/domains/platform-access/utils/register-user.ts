@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import env from "@/env";
-import { migrateLegacyWalletBillingToPersonalOrg } from "@/lib/domains/orgs/personal-workspace";
+
 import {
 	assertRegistrationAllowed,
 	grantAdminUserTeamsProIfEligibleWithTx,
@@ -175,7 +175,6 @@ export async function registerUserAccount(
 			email: emailNorm,
 			gate: input.gate,
 		});
-		await migrateLegacyWalletBillingToPersonalOrg(wallet);
 		return;
 	}
 
@@ -219,6 +218,5 @@ export async function registerUserAccount(
 		});
 	});
 
-	await migrateLegacyWalletBillingToPersonalOrg(wallet);
 	await invalidateUserExists(wallet);
 }

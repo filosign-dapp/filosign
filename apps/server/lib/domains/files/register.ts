@@ -27,8 +27,7 @@ import { invalidateEntitlementsForFileSend } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { fsContracts } from "@/lib/platform/evm";
 import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
-import { enqueueOutboxByIds } from "@/lib/platform/jobs/outbox-enqueue";
-import { insertJobOutboxRows } from "@/lib/platform/jobs/outbox-store";
+import { enqueueOutboxByIds, insertJobOutboxRows } from "@/lib/platform/jobs";
 import { bucket } from "@/lib/platform/s3/client";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { normalizedViewerEmailsForRegister } from "./file-invites";
@@ -176,7 +175,7 @@ export async function filesRegister(
 	const senderEmailCommitment = hashNormalizedSignerEmail(
 		normalizePlacementRecipientEmail(senderEmailRaw),
 	);
-	const senderPrivySubjectCommitment = hashAuthSubjectCommitment(
+	const senderAuthSubjectCommitment = hashAuthSubjectCommitment(
 		senderUser.authProviderId,
 	);
 
@@ -189,7 +188,7 @@ export async function filesRegister(
 				optionalCommitments: optionalCommitmentsSorted,
 				viewerEmailCommitments: viewerEmailCommitmentsSorted,
 				senderEmailCommitment,
-				senderPrivySubjectCommitment,
+				senderAuthSubjectCommitment,
 				orgIdCommitment,
 				routingMode,
 				routingOrder,
@@ -251,7 +250,7 @@ export async function filesRegister(
 				optionalCommitments: optionalCommitmentsSorted,
 				viewerEmailCommitments: viewerEmailCommitmentsSorted,
 				senderEmailCommitment,
-				senderPrivySubjectCommitment,
+				senderAuthSubjectCommitment,
 				orgIdCommitment,
 				routingMode,
 				routingOrder,

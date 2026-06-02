@@ -6,7 +6,6 @@ import { getAddress } from "viem";
 import { isWorkspaceBillingPlanId } from "@/lib/domains/billing/policy";
 import { effectivePlanIdFromStatus } from "@/lib/domains/entitlements/effective-plan";
 import db from "@/lib/platform/db";
-import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import {
 	organizationMembers,
 	organizationSubscriptions,
@@ -116,95 +115,6 @@ export async function assertCanCreateAdditionalWorkspace(
 			"Additional workspaces require Teams or Teams Pro. Upgrade your workspace, then create another.",
 		data: { code: "WORKSPACE_LIMIT" },
 	});
-}
-
-/** Move legacy wallet-level Solo onto the personal workspace org subscription. */
-export async function migrateLegacyWalletBillingToPersonalOrg(
-	wallet: Address,
-): Promise<void> {
-	const walletNorm = getAddress(wallet);
-	const personalOrgId = await getPersonalOrganizationId(walletNorm);
-	if (!personalOrgId) return;
-
-	const [walletSub] = await db
-		.select()
-		.from(userSubscriptions)
-		.where(eq(userSubscriptions.walletAddress, walletNorm))
-		.limit(1);
-
-	if (!walletSub || walletSub.planId !== "individual") return;
-
-	const walletActive =
-		effectivePlanIdFromStatus({
-			planId: walletSub.planId as PlanId,
-			status: walletSub.status,
-			cancelAtPeriodEnd: walletSub.cancelAtPeriodEnd,
-			periodEnd: walletSub.periodEnd,
-		}) === "individual";
-
-	if (!walletActive) return;
-
-	const [orgSub] = await db
-		.select()
-		.from(organizationSubscriptions)
-		.where(eq(organizationSubscriptions.organizationId, personalOrgId))
-		.limit(1);
-
-	const orgEffective = orgSub
-		? effectivePlanIdFromStatus({
-				planId: orgSub.planId as PlanId,
-				status: orgSub.status,
-				cancelAtPeriodEnd: orgSub.cancelAtPeriodEnd,
-				periodEnd: orgSub.periodEnd,
-			})
-		: "free";
-
-	if (
-		orgEffective === "teams" ||
-		orgEffective === "teams_pro" ||
-		orgEffective === "individual"
-	) {
-		await db
-			.update(userSubscriptions)
-			.set({
-				planId: "free",
-				status: "active",
-				provider: "manual",
-				dodoSubscriptionId: null,
-				dodoCustomerId: null,
-				updatedAt: new Date(),
-			})
-			.where(eq(userSubscriptions.walletAddress, walletNorm));
-		return;
-	}
-
-	await db
-		.update(organizationSubscriptions)
-		.set({
-			planId: "individual",
-			seatCount: 1,
-			status: walletSub.status,
-			provider: walletSub.provider,
-			periodStart: walletSub.periodStart,
-			periodEnd: walletSub.periodEnd,
-			cancelAtPeriodEnd: walletSub.cancelAtPeriodEnd,
-			dodoCustomerId: walletSub.dodoCustomerId,
-			dodoSubscriptionId: walletSub.dodoSubscriptionId,
-			updatedAt: new Date(),
-		})
-		.where(eq(organizationSubscriptions.organizationId, personalOrgId));
-
-	await db
-		.update(userSubscriptions)
-		.set({
-			planId: "free",
-			status: "active",
-			provider: "manual",
-			dodoSubscriptionId: null,
-			dodoCustomerId: null,
-			updatedAt: new Date(),
-		})
-		.where(eq(userSubscriptions.walletAddress, walletNorm));
 }
 
 export function resolveIsPersonalForNewOrganization(

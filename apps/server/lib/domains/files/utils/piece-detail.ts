@@ -3,6 +3,7 @@ import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import { listSupplementaryPacketsForParticipant } from "@/lib/domains/attachments";
 import { primaryEmailForWallet } from "@/lib/domains/files/file-invites";
 import { readEnvelopeRegistryProgress } from "@/lib/domains/files/utils/envelope-registry-progress";
 import {
@@ -198,6 +199,19 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		? await listConditionalAttachmentPacketsForSender(pieceCid)
 		: undefined;
 
+	const signerEmails = signers
+		.map((s) => s.email)
+		.filter((email): email is string => Boolean(email));
+
+	const mySupplementaryPackets =
+		participantUser && !isSender
+			? await listSupplementaryPacketsForParticipant({
+					userWallet: userWalletNorm,
+					pieceCid,
+					signerEmails,
+				})
+			: [];
+
 	return {
 		pieceCid: fileRecord.pieceCid,
 		registryAddress: fileRecord.registryAddress,
@@ -238,6 +252,7 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 				}
 			: null,
 		...(conditionalAttachmentPackets ? { conditionalAttachmentPackets } : {}),
+		...(mySupplementaryPackets.length > 0 ? { mySupplementaryPackets } : {}),
 
 		kemCiphertext:
 			canDecryptParticipant && participantUser

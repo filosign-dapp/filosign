@@ -7,7 +7,7 @@ import {
 	resolveChainRpcHttpUrl,
 	summarizeChainRpcConfig,
 	warnIfChainRpcUrlIgnored,
-} from "../chain-rpc";
+} from "..";
 
 describe("chain-rpc", () => {
 	test("effectiveChainRpcPrimaryUrl is production only", () => {

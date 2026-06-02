@@ -3,7 +3,7 @@ import {
 	scrubAnalyticsProperties,
 	scrubAnalyticsString,
 	scrubCaptureEvent,
-} from "../analytics-scrub";
+} from "..";
 
 describe("scrubAnalyticsString", () => {
 	test("redacts emails", () => {
@@ -17,6 +17,12 @@ describe("scrubAnalyticsString", () => {
 			),
 		).toBe("[hex redacted]");
 	});
+
+	test("redacts embedded emails in longer strings", () => {
+		expect(
+			scrubAnalyticsString("sender=user@example.com action=invite_created"),
+		).toBe("sender=[email redacted] action=invite_created");
+	});
 });
 
 describe("scrubAnalyticsProperties", () => {
@@ -29,6 +35,20 @@ describe("scrubAnalyticsProperties", () => {
 		).toEqual({
 			passphrase: "[redacted]",
 			source: "ErrorBoundary",
+		});
+	});
+
+	test("redacts keys containing sensitive substrings", () => {
+		expect(
+			scrubAnalyticsProperties({
+				sessionToken: "abc",
+				auth_header: "bearer xyz",
+				normalKey: "ok",
+			}),
+		).toEqual({
+			sessionToken: "[redacted]",
+			auth_header: "[redacted]",
+			normalKey: "ok",
 		});
 	});
 

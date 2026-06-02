@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { hashAuthSubjectCommitment } from "../auth-subject";
+import { hashAuthSubjectCommitment } from "..";
 
 describe("hashAuthSubjectCommitment", () => {
 	test("stable for same id", () => {

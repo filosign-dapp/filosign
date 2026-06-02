@@ -1,13 +1,13 @@
 import "@/lib/platform/polyfills/bigint-json";
-import { warnIfSesMisconfigured } from "@/lib/platform/email/ses-config";
+import { warnIfSesMisconfigured } from "@/lib/platform/email";
 
 warnIfSesMisconfigured();
 
 import {
 	bootstrapPlatformRuntime,
 	shutdownPlatformRuntime,
-} from "@/lib/platform/bootstrap/platform-runtime";
-import { assertWorkerRole } from "@/lib/platform/server-role";
+} from "@/lib/platform/bootstrap/runtime";
+import { assertWorkerRole } from "@/lib/platform/role";
 
 assertWorkerRole();
 

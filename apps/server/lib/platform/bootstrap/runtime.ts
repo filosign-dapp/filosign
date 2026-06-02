@@ -1,5 +1,5 @@
-import { shutdownPostHog } from "@/lib/platform/analytics/posthog";
-import { initCache } from "@/lib/platform/cache/session-cache";
+import { shutdownPostHog } from "@/lib/platform/analytics";
+import { initCache } from "@/lib/platform/cache/session";
 import { startPlatformCron, stopPlatformCron } from "@/lib/platform/cron";
 import {
 	resolveJobsRuntimeOptions,
@@ -10,8 +10,8 @@ import {
 	startWorkerHeartbeat,
 	stopWorkerHeartbeat,
 } from "@/lib/platform/worker/heartbeat";
-import { validateServerBootstrap } from "./validate-server-bootstrap";
-import { validateServerRoleForDeployment } from "./validate-server-role";
+import { validateServerBootstrap } from "./validate-bootstrap";
+import { validateServerRoleForDeployment } from "./validate-role";
 
 export type PlatformRuntimeOptions = {
 	crons: boolean;

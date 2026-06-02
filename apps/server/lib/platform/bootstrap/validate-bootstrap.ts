@@ -1,8 +1,10 @@
 import { getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import env from "@/env";
-import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
-import { emitCriticalPlatformEvent } from "@/lib/platform/analytics/platform-alerts";
+import {
+	emitCriticalPlatformEvent,
+	PLATFORM_ALERT_EVENTS,
+} from "@/lib/platform/analytics";
 
 function failBootstrap(stage: string, error: string): never {
 	void emitCriticalPlatformEvent({

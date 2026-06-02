@@ -1,24 +1,26 @@
 import "@/lib/platform/polyfills/bigint-json";
-import { warnIfSesMisconfigured } from "@/lib/platform/email/ses-config";
+import { warnIfSesMisconfigured } from "@/lib/platform/email";
 
 warnIfSesMisconfigured();
 
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import config from "@/config";
-import { captureServerException } from "@/lib/platform/analytics/posthog";
-import { shouldCaptureServerException } from "@/lib/platform/analytics/should-capture-exception";
+import {
+	captureServerException,
+	shouldCaptureServerException,
+} from "@/lib/platform/analytics";
 import {
 	bootstrapPlatformRuntime,
 	shutdownPlatformRuntime,
-} from "@/lib/platform/bootstrap/platform-runtime";
+} from "@/lib/platform/bootstrap/runtime";
 import { csp } from "@/lib/platform/csp";
 import { logger, requestLog } from "@/lib/platform/pino";
 import {
 	getServerRole,
 	runsHttpServer,
 	runsWorkerTasks,
-} from "@/lib/platform/server-role";
+} from "@/lib/platform/role";
 import { handleCheckoutContinueRequest } from "./api/integrations/checkout-continue";
 import { apiRouter } from "./api/orpc/hono-mount";
 

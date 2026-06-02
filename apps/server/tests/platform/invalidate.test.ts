@@ -1,10 +1,10 @@
 import { afterAll, describe, expect, mock, test } from "bun:test";
 import { getAddress } from "viem";
-import { cacheKeys } from "@/lib/platform/cache/cache-keys";
 import {
 	flushEntitlementCacheInvalidation,
 	invalidateEntitlementsForFileSend,
 } from "@/lib/platform/cache/invalidate";
+import { cacheKeys } from "@/lib/platform/cache/keys";
 import { createMockRedis, mockSessionCacheRedis } from "../support/mock-redis";
 
 const { client, store } = createMockRedis();

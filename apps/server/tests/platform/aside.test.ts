@@ -11,7 +11,7 @@ afterAll(() => {
 describe("cache-aside", () => {
 	test("defaultSerialize handles BigInt values", async () => {
 		const { defaultSerialize, defaultDeserialize } = await import(
-			"@/lib/platform/cache/cache-aside"
+			"@/lib/platform/cache/aside"
 		);
 		const raw = defaultSerialize({ n: 42n });
 		expect(raw).toBe('{"n":"42"}');
@@ -20,7 +20,7 @@ describe("cache-aside", () => {
 
 	test("returns cached value without calling fetch again", async () => {
 		store.clear();
-		const { cacheAside } = await import("@/lib/platform/cache/cache-aside");
+		const { cacheAside } = await import("@/lib/platform/cache/aside");
 		let fetches = 0;
 		const value = await cacheAside({
 			key: "fs:test:hit",
@@ -48,7 +48,7 @@ describe("cache-aside", () => {
 	test("refetches when cached JSON is corrupt", async () => {
 		store.clear();
 		store.set("fs:test:corrupt", "not-json{{{");
-		const { cacheAside } = await import("@/lib/platform/cache/cache-aside");
+		const { cacheAside } = await import("@/lib/platform/cache/aside");
 		let fetches = 0;
 		const value = await cacheAside({
 			key: "fs:test:corrupt",
@@ -64,7 +64,7 @@ describe("cache-aside", () => {
 
 	test("single-flight: concurrent misses share one fetch", async () => {
 		store.clear();
-		const { cacheAside } = await import("@/lib/platform/cache/cache-aside");
+		const { cacheAside } = await import("@/lib/platform/cache/aside");
 		let fetches = 0;
 		const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 		const results = await Promise.all([

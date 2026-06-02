@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from "bun:test";
-import type { ServerRole } from "@/lib/platform/server-role";
+import type { ServerRole } from "@/lib/platform/role";
 import { testEnvStub } from "@/tests/support/env-stub";
 
 const envState = { ...testEnvStub, SERVER_ROLE: "all" as ServerRole };
@@ -10,7 +10,7 @@ mock.module("@/env", () => ({
 }));
 
 const { assertWorkerRole, getServerRole, runsHttpServer, runsWorkerTasks } =
-	await import("@/lib/platform/server-role");
+	await import("@/lib/platform/role");
 
 describe("server role gates", () => {
 	test("default stub is all-in-one", () => {

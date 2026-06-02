@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import env from "@/env";
 import { isRetryableResendFailure } from "@/lib/platform/email/resend-errors";
 import { sendViaResend } from "@/lib/platform/email/resend-transport";
@@ -17,6 +18,13 @@ function outboundFromResendDefaults(msg: OutboundEmail): OutboundEmail {
 	};
 }
 
+function recipientFingerprint(to: string | string[]): string[] {
+	const list = Array.isArray(to) ? to : [to];
+	return list.map((entry) =>
+		createHash("sha256").update(entry.trim().toLowerCase()).digest("hex"),
+	);
+}
+
 /**
  * Primary: Resend. Fallback: SES when configured and Resend failed retryably.
  * All product email should call this (via invites.ts), not transports directly.
@@ -31,7 +39,7 @@ export async function deliverOutboundEmail(
 		console.info("[email] sent", {
 			provider: "resend",
 			id: resendRes.data.id,
-			to: outbound.to,
+			recipientHashes: recipientFingerprint(outbound.to),
 		});
 		return { provider: "resend", id: resendRes.data.id };
 	}
@@ -42,7 +50,7 @@ export async function deliverOutboundEmail(
 	}
 
 	console.warn("[email] Resend failed; attempting SES fallback", {
-		to: outbound.to,
+		recipientHashes: recipientFingerprint(outbound.to),
 		error:
 			resendError instanceof Error ? resendError.message : String(resendError),
 	});
@@ -63,7 +71,7 @@ export async function deliverOutboundEmail(
 	console.info("[email] sent", {
 		provider: "ses",
 		id: sesRes.data.id,
-		to: outbound.to,
+		recipientHashes: recipientFingerprint(outbound.to),
 		fallback: true,
 	});
 	return { provider: "ses", id: sesRes.data.id };

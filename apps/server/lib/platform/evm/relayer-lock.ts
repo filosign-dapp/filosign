@@ -4,11 +4,31 @@ import env from "@/env";
 import { getRedis } from "@/lib/platform/cache/session-cache";
 import { logger } from "@/lib/platform/pino";
 
-/** Must exceed slow-block buffer; extended under congestion in Sprint 6 if needed. */
-export const RELAYER_LOCK_TTL_SEC = 300;
+/** Base TTL per acquire; extended via heartbeat while work runs (up to max hold). */
+export const RELAYER_LOCK_TTL_SEC = 30;
+
+export const RELAYER_LOCK_MAX_HOLD_MS = 5 * 60 * 1000;
+
+const RELAYER_LOCK_HEARTBEAT_MS = 15_000;
 
 const MAX_ACQUIRE_ATTEMPTS = 120;
 const ACQUIRE_BASE_DELAY_MS = 50;
+
+const RELEASE_LOCK_SCRIPT = `
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("del", KEYS[1])
+else
+  return 0
+end
+`;
+
+const EXTEND_LOCK_SCRIPT = `
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("expire", KEYS[1], ARGV[2])
+else
+  return 0
+end
+`;
 
 export function relayerLockKey(): string {
 	return `fs:lock:relayer:${getAddress(env.FC_SERVER_ADDRESS).toLowerCase()}`;
@@ -41,12 +61,24 @@ async function acquireRelayerLock(token: string): Promise<boolean> {
 async function releaseRelayerLock(token: string): Promise<void> {
 	const key = relayerLockKey();
 	try {
-		const current = await getRedis().get(key);
-		if (current === token) {
-			await getRedis().del(key);
-		}
+		await getRedis().send("EVAL", [RELEASE_LOCK_SCRIPT, "1", key, token]);
 	} catch (err) {
 		logger.warn({ err, key }, "relayer lock release failed");
+	}
+}
+
+async function extendRelayerLock(token: string): Promise<void> {
+	const key = relayerLockKey();
+	try {
+		await getRedis().send("EVAL", [
+			EXTEND_LOCK_SCRIPT,
+			"1",
+			key,
+			token,
+			String(RELAYER_LOCK_TTL_SEC),
+		]);
+	} catch (err) {
+		logger.warn({ err, key }, "relayer lock extend failed");
 	}
 }
 
@@ -59,9 +91,15 @@ export async function withRelayerLock<T>(run: () => Promise<T>): Promise<T> {
 	if (!acquired) {
 		throw new Error("relayer lock unavailable after retries");
 	}
+	const startedAt = Date.now();
+	const heartbeat = setInterval(() => {
+		if (Date.now() - startedAt > RELAYER_LOCK_MAX_HOLD_MS) return;
+		void extendRelayerLock(token);
+	}, RELAYER_LOCK_HEARTBEAT_MS);
 	try {
 		return await run();
 	} finally {
+		clearInterval(heartbeat);
 		await releaseRelayerLock(token);
 	}
 }

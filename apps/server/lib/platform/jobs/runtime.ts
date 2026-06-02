@@ -1,4 +1,4 @@
-import { runsHttpServer, runsWorkerTasks } from "@/lib/platform/server-role";
+import { runsHttpServer, runsWorkerTasks } from "@/lib/platform/role";
 import {
 	closeJobsQueues,
 	getBillingWebhookQueue,

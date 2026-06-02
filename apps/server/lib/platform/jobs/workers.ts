@@ -1,5 +1,5 @@
 import { Worker } from "bullmq";
-import { processDodoWebhookJob } from "@/lib/domains/billing/dodo-webhooks";
+import { processDodoWebhookJob } from "@/lib/domains/billing";
 import { tryExecuteSettlementRulesForPiece } from "@/lib/domains/settlements/utils/execute-payout";
 import { processTransaction } from "@/lib/platform/indexer/process";
 import type {

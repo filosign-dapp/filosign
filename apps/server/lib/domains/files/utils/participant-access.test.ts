@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-	assertSignOrdering,
-	isValidAckSignature,
-} from "@/lib/domains/files/utils/participant-access";
+import { assertSignOrdering, isValidAckSignature } from "./piece-helpers";
 
 describe("participant-access", () => {
 	test("isValidAckSignature accepts EIP-712-length hex", () => {

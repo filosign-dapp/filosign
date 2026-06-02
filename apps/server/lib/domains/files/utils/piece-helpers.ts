@@ -1,0 +1,310 @@
+import { computeCidIdentifier } from "@filosign/contracts";
+import { throwAppError } from "@filosign/errors/server";
+import {
+	hashNormalizedSignerEmail,
+	isValidAckSignature,
+	type RegisterRoutingInput,
+} from "@filosign/shared";
+import { and, eq } from "drizzle-orm";
+import type { Address } from "viem";
+import { getAddress } from "viem";
+import db from "@/lib/platform/db";
+import {
+	fsAttachmentReleaseAt,
+	fsEnvelopeRegistryAt,
+} from "@/lib/platform/evm";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
+
+const {
+	fileAcknowledgements,
+	fileDocumentViews,
+	fileParticipants,
+	fileSignatures,
+	envelopeAttachmentPackets,
+} = db.schema;
+
+export type ValidAckRow = {
+	ack: string;
+	acknowledgedAt: Date;
+	intentVersion: string;
+};
+
+export type EnvelopeRegistryProgress = {
+	routingMode: number;
+	requiredSignersCount: number;
+	requiredSignaturesCount: number;
+	optionalSignersCount: number;
+	optionalSignaturesCount: number;
+	quorumN: number;
+	allRequiredSigned: boolean;
+	allSigned: boolean;
+	quorumMet: boolean;
+	/** Sequential: email of next signer who has not signed yet, if known. */
+	nextSignerEmail: string | null;
+	/** False when sequential order blocks the given signer email. */
+	canSignByRouting: boolean;
+};
+
+export { isValidAckSignature };
+
+export async function getValidAck(
+	wallet: Address,
+	pieceCid: string,
+): Promise<ValidAckRow | null> {
+	const walletNorm = getAddress(wallet);
+	const [row] = await db
+		.select({
+			ack: fileAcknowledgements.ack,
+			acknowledgedAt: fileAcknowledgements.acknowledgedAt,
+			intentVersion: fileAcknowledgements.intentVersion,
+		})
+		.from(fileAcknowledgements)
+		.where(
+			and(
+				eq(fileAcknowledgements.filePieceCid, pieceCid),
+				eq(fileAcknowledgements.wallet, walletNorm),
+			),
+		);
+	if (!row || !isValidAckSignature(row.ack)) return null;
+	return row;
+}
+
+export async function getDocumentView(wallet: Address, pieceCid: string) {
+	const walletNorm = getAddress(wallet);
+	const [row] = await db
+		.select({
+			firstViewedAt: fileDocumentViews.firstViewedAt,
+			source: fileDocumentViews.source,
+		})
+		.from(fileDocumentViews)
+		.where(
+			and(
+				eq(fileDocumentViews.filePieceCid, pieceCid),
+				eq(fileDocumentViews.wallet, walletNorm),
+			),
+		);
+	return row ?? null;
+}
+
+export async function requireAckForParticipantAccess(
+	wallet: Address,
+	pieceCid: string,
+): Promise<ValidAckRow> {
+	const ack = await getValidAck(wallet, pieceCid);
+	if (!ack) {
+		throwAppError("SIGNING.ACK_REQUIRED");
+	}
+	return ack;
+}
+
+export function assertSignOrdering(
+	ackAt: Date,
+	viewAt: Date,
+	signAt: Date,
+): void {
+	if (viewAt.getTime() < ackAt.getTime()) {
+		throwAppError("SIGNING.VIEW_AFTER_ACK");
+	}
+	if (signAt.getTime() < viewAt.getTime()) {
+		throwAppError("SIGNING.VIEW_BEFORE_SIGN");
+	}
+}
+
+export async function requireCanSign(args: {
+	wallet: Address;
+	pieceCid: string;
+	signAt?: Date;
+}): Promise<{
+	ack: ValidAckRow;
+	view: NonNullable<Awaited<ReturnType<typeof getDocumentView>>>;
+}> {
+	const walletNorm = getAddress(args.wallet);
+	const signAt = args.signAt ?? new Date();
+
+	const [participant] = await db
+		.select({ role: fileParticipants.role })
+		.from(fileParticipants)
+		.where(
+			and(
+				eq(fileParticipants.filePieceCid, args.pieceCid),
+				eq(fileParticipants.wallet, walletNorm),
+				eq(fileParticipants.role, "signer"),
+			),
+		);
+	if (!participant) {
+		throwAppError("SIGNING.NOT_REQUIRED");
+	}
+
+	const [existingSig] = await db
+		.select({ signer: fileSignatures.signer })
+		.from(fileSignatures)
+		.where(
+			and(
+				eq(fileSignatures.filePieceCid, args.pieceCid),
+				eq(fileSignatures.signer, walletNorm),
+			),
+		);
+	if (existingSig) {
+		throwAppError("SIGNING.ALREADY_SIGNED");
+	}
+
+	const ack = await requireAckForParticipantAccess(walletNorm, args.pieceCid);
+	const view = await getDocumentView(walletNorm, args.pieceCid);
+	if (!view) {
+		throwAppError("SIGNING.VIEW_BEFORE_SIGN");
+	}
+
+	assertSignOrdering(ack.acknowledgedAt, view.firstViewedAt, signAt);
+
+	return { ack, view };
+}
+
+export async function listConditionalAttachmentPacketsForSender(
+	pieceCid: string,
+) {
+	const rows = await db
+		.select({
+			packetId: envelopeAttachmentPackets.packetId,
+			label: envelopeAttachmentPackets.label,
+			onChainRuleId: envelopeAttachmentPackets.onChainRuleId,
+			releaseContractAddress: envelopeAttachmentPackets.releaseContractAddress,
+		})
+		.from(envelopeAttachmentPackets)
+		.where(
+			and(
+				eq(envelopeAttachmentPackets.filePieceCid, pieceCid),
+				eq(envelopeAttachmentPackets.releaseMode, "conditional"),
+			),
+		);
+
+	const out: Array<{
+		packetId: string;
+		label: string | null;
+		onChainRuleId: string;
+		releaseContractAddress: `0x${string}`;
+		released: boolean;
+		cancelled: boolean;
+	}> = [];
+
+	for (const row of rows) {
+		if (row.onChainRuleId == null || !row.releaseContractAddress) continue;
+		const release = fsAttachmentReleaseAt(row.releaseContractAddress);
+		if (!release) continue;
+		const ruleRes = await tryCatch(release.read.rules([row.onChainRuleId]));
+		const released = !ruleRes.error && ruleRes.data[8];
+		const cancelled = !ruleRes.error && ruleRes.data[9];
+		out.push({
+			packetId: row.packetId,
+			label: row.label,
+			onChainRuleId: row.onChainRuleId.toString(),
+			releaseContractAddress: row.releaseContractAddress,
+			released,
+			cancelled,
+		});
+	}
+
+	return out;
+}
+
+export async function readEnvelopeRegistryProgress(args: {
+	pieceCid: string;
+	registryAddress: `0x${string}`;
+	registerRouting?: RegisterRoutingInput | null;
+	signerEmail?: string | null;
+}): Promise<EnvelopeRegistryProgress | null> {
+	const registry = fsEnvelopeRegistryAt(args.registryAddress);
+	const cidId = computeCidIdentifier(args.pieceCid);
+
+	const regRes = await tryCatch(registry.read.envelopeRegistrations([cidId]));
+	if (regRes.error || Number(regRes.data.timestamp) === 0) {
+		return null;
+	}
+	const reg = regRes.data;
+
+	const [allRequiredRes, allSignedRes, quorumRes] = await Promise.all([
+		tryCatch(registry.read.allRequiredSigned([cidId])),
+		tryCatch(registry.read.allSigned([cidId])),
+		tryCatch(registry.read.quorumMet([cidId])),
+	]);
+
+	const routingMode = Number(reg.routingMode);
+	const progress: EnvelopeRegistryProgress = {
+		routingMode,
+		requiredSignersCount: Number(reg.requiredSignersCount),
+		requiredSignaturesCount: Number(reg.requiredSignaturesCount),
+		optionalSignersCount: Number(reg.optionalSignersCount),
+		optionalSignaturesCount: Number(reg.optionalSignaturesCount),
+		quorumN: Number(reg.quorumN),
+		allRequiredSigned: allRequiredRes.data ?? false,
+		allSigned: allSignedRes.data ?? false,
+		quorumMet: quorumRes.data ?? false,
+		nextSignerEmail: null,
+		canSignByRouting: true,
+	};
+
+	const routing = args.registerRouting;
+	if (routing?.routingMode === 1 && routing.routingOrderEmails?.length) {
+		for (const email of routing.routingOrderEmails) {
+			const commitment = hashNormalizedSignerEmail(email);
+			const signedRes = await tryCatch(
+				registry.read.hasSigned([cidId, commitment]),
+			);
+			if (!signedRes.error && !signedRes.data) {
+				progress.nextSignerEmail = email;
+				break;
+			}
+		}
+	}
+
+	if (
+		args.signerEmail &&
+		routing?.routingMode === 1 &&
+		routing.routingOrderEmails?.length
+	) {
+		const normalized = args.signerEmail.trim().toLowerCase();
+		const order = routing.routingOrderEmails.map((e) => e.trim().toLowerCase());
+		const idx = order.indexOf(normalized);
+		if (idx > 0) {
+			for (let j = 0; j < idx; j++) {
+				const prior = order[j];
+				if (!prior) continue;
+				const commitment = hashNormalizedSignerEmail(prior);
+				const signedRes = await tryCatch(
+					registry.read.hasSigned([cidId, commitment]),
+				);
+				if (signedRes.error || !signedRes.data) {
+					progress.canSignByRouting = false;
+					break;
+				}
+			}
+		}
+	}
+
+	return progress;
+}
+
+/** True when every signer role participant has a file_signatures row. */
+export async function isEnvelopeFullySigned(
+	pieceCid: string,
+): Promise<boolean> {
+	const signers = await db
+		.select({ wallet: fileParticipants.wallet })
+		.from(fileParticipants)
+		.where(
+			and(
+				eq(fileParticipants.filePieceCid, pieceCid),
+				eq(fileParticipants.role, "signer"),
+			),
+		);
+
+	if (signers.length === 0) return false;
+
+	const signatures = await db
+		.select({ signer: fileSignatures.signer })
+		.from(fileSignatures)
+		.where(eq(fileSignatures.filePieceCid, pieceCid));
+
+	const signedWallets = new Set(signatures.map((s) => s.signer.toLowerCase()));
+
+	return signers.every((s) => signedWallets.has(s.wallet.toLowerCase()));
+}

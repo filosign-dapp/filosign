@@ -9,6 +9,12 @@ import { PaperclipIcon, PencilSimpleIcon } from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
+import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import {
+	hydrateAttachmentPacketDrafts,
+	saveAttachmentPacketDrafts,
+	useHydrateAttachmentPacketDrafts,
+} from "@/src/lib/domains/drafts";
 import {
 	type AttachmentPacketComposeDraft,
 	attachmentPacketSummaryLabel,
@@ -28,9 +34,17 @@ export function SupplementaryPacketsReview() {
 	const navigate = useNavigate();
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editingId, setEditingId] = useState<string | null>(null);
+	const [editingDraft, setEditingDraft] = useState<
+		AttachmentPacketComposeDraft | undefined
+	>();
 
 	const drafts = createForm?.attachmentPacketDrafts ?? [];
-	const editingDraft = useMemo(
+	const { hydrating, hydrateError } = useHydrateAttachmentPacketDrafts(
+		createForm?.draftId,
+		drafts,
+	);
+
+	const editingDraftFromStore = useMemo(
 		() => drafts.find((d) => d.packetId === editingId),
 		[drafts, editingId],
 	);
@@ -50,7 +64,7 @@ export function SupplementaryPacketsReview() {
 	}, [createForm?.recipients]);
 
 	const validationIssues = useMemo(() => {
-		if (drafts.length === 0) return [];
+		if (drafts.length === 0 || hydrating) return [];
 		return [
 			...validateAttachmentPacketDraftsForSend({
 				supplementaryAttachments: canUseSupplementaryAttachments(entitlements),
@@ -61,14 +75,26 @@ export function SupplementaryPacketsReview() {
 			}),
 			...validateAttachmentPacketComposeDrafts({ drafts }),
 		];
-	}, [drafts, entitlements, rosterEmails]);
+	}, [drafts, entitlements, rosterEmails, hydrating]);
 
 	if (!createForm || drafts.length === 0) return null;
 
-	const handleSave = (draft: AttachmentPacketComposeDraft) => {
+	const openEdit = async (packetId: string) => {
+		const draft = drafts.find((d) => d.packetId === packetId);
+		if (!draft) return;
+		const [hydrated] = await hydrateAttachmentPacketDrafts(createForm.draftId, [
+			draft,
+		]);
+		setEditingDraft(hydrated);
+		setEditingId(packetId);
+		setDialogOpen(true);
+	};
+
+	const handleSave = async (draft: AttachmentPacketComposeDraft) => {
 		const next = editingId
 			? drafts.map((d) => (d.packetId === editingId ? draft : d))
 			: [...drafts, draft];
+		await saveAttachmentPacketDrafts(createForm.draftId, next);
 		setCreateForm({
 			...createForm,
 			attachmentPacketDrafts: next,
@@ -97,6 +123,17 @@ export function SupplementaryPacketsReview() {
 				</Button>
 			</div>
 
+			{hydrating ? (
+				<p className="flex items-center gap-2 text-xs text-muted-foreground">
+					<InlineLoader className="size-3.5" />
+					Loading supplementary files…
+				</p>
+			) : null}
+
+			{hydrateError ? (
+				<p className="text-xs text-destructive">{hydrateError}</p>
+			) : null}
+
 			<ul className="space-y-2">
 				{drafts.map((draft) => (
 					<li
@@ -123,10 +160,8 @@ export function SupplementaryPacketsReview() {
 							type="button"
 							variant="ghost"
 							size="icon-sm"
-							onClick={() => {
-								setEditingId(draft.packetId);
-								setDialogOpen(true);
-							}}
+							disabled={hydrating}
+							onClick={() => void openEdit(draft.packetId)}
 						>
 							<PencilSimpleIcon className="size-3.5" weight="regular" />
 						</Button>
@@ -148,8 +183,8 @@ export function SupplementaryPacketsReview() {
 					open={dialogOpen}
 					onOpenChange={setDialogOpen}
 					recipients={createForm.recipients}
-					existingDraft={editingDraft}
-					onSave={handleSave}
+					existingDraft={editingDraft ?? editingDraftFromStore}
+					onSave={(draft) => void handleSave(draft)}
 				/>
 			) : null}
 		</section>

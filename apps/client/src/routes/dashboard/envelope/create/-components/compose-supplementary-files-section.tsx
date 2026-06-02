@@ -7,8 +7,12 @@ import {
 	PlusIcon,
 	TrashIcon,
 } from "@phosphor-icons/react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
+import {
+	hydrateAttachmentPacketDrafts,
+	saveAttachmentPacketDrafts,
+} from "@/src/lib/domains/drafts";
 import {
 	type AttachmentPacketComposeDraft,
 	attachmentPacketSummaryLabel,
@@ -26,12 +30,11 @@ export function ComposeSupplementaryFilesSection() {
 
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editingId, setEditingId] = useState<string | null>(null);
+	const [editingDraft, setEditingDraft] = useState<
+		AttachmentPacketComposeDraft | undefined
+	>();
 
 	const drafts = createForm?.attachmentPacketDrafts ?? [];
-	const editingDraft = useMemo(
-		() => drafts.find((d) => d.packetId === editingId),
-		[drafts, editingId],
-	);
 
 	if (!createForm) return null;
 
@@ -45,19 +48,27 @@ export function ComposeSupplementaryFilesSection() {
 		) {
 			return;
 		}
+		setEditingDraft(undefined);
 		setEditingId(null);
 		setDialogOpen(true);
 	};
 
-	const openEdit = (packetId: string) => {
+	const openEdit = async (packetId: string) => {
+		const draft = drafts.find((d) => d.packetId === packetId);
+		if (!draft) return;
+		const [hydrated] = await hydrateAttachmentPacketDrafts(createForm.draftId, [
+			draft,
+		]);
+		setEditingDraft(hydrated);
 		setEditingId(packetId);
 		setDialogOpen(true);
 	};
 
-	const handleSave = (draft: AttachmentPacketComposeDraft) => {
+	const handleSave = async (draft: AttachmentPacketComposeDraft) => {
 		const next = editingId
 			? drafts.map((d) => (d.packetId === editingId ? draft : d))
 			: [...drafts, draft];
+		await saveAttachmentPacketDrafts(createForm.draftId, next);
 		setCreateForm({
 			...createForm,
 			attachmentPacketDrafts: next,
@@ -65,10 +76,12 @@ export function ComposeSupplementaryFilesSection() {
 		setEditingId(null);
 	};
 
-	const handleRemove = (packetId: string) => {
+	const handleRemove = async (packetId: string) => {
+		const next = drafts.filter((d) => d.packetId !== packetId);
+		await saveAttachmentPacketDrafts(createForm.draftId, next);
 		setCreateForm({
 			...createForm,
-			attachmentPacketDrafts: drafts.filter((d) => d.packetId !== packetId),
+			attachmentPacketDrafts: next,
 		});
 	};
 
@@ -128,7 +141,7 @@ export function ComposeSupplementaryFilesSection() {
 									type="button"
 									variant="ghost"
 									size="icon-sm"
-									onClick={() => openEdit(draft.packetId)}
+									onClick={() => void openEdit(draft.packetId)}
 									aria-label="Edit file packet"
 								>
 									<PencilSimpleIcon className="size-4" weight="regular" />
@@ -137,7 +150,7 @@ export function ComposeSupplementaryFilesSection() {
 									type="button"
 									variant="ghost"
 									size="icon-sm"
-									onClick={() => handleRemove(draft.packetId)}
+									onClick={() => void handleRemove(draft.packetId)}
 									aria-label="Remove file packet"
 								>
 									<TrashIcon className="size-4" weight="regular" />
@@ -161,7 +174,7 @@ export function ComposeSupplementaryFilesSection() {
 					onOpenChange={setDialogOpen}
 					recipients={createForm.recipients}
 					existingDraft={editingDraft}
-					onSave={handleSave}
+					onSave={(draft) => void handleSave(draft)}
 				/>
 			) : null}
 		</section>

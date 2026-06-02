@@ -78,6 +78,7 @@ services:
     <<: *filosign-image
     container_name: filosign-api
     restart: unless-stopped
+    command: ["./server"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -90,6 +91,18 @@ services:
       DB_NAME: ${POSTGRES_DB:-filosign}
     ports:
       - "${API_PORT:-3000}:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:3000/health",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
     networks:
       - filosign_net
 
@@ -97,6 +110,13 @@ services:
     <<: *filosign-image
     container_name: filosign-worker
     restart: unless-stopped
+    command: ["./worker"]
+    healthcheck:
+      test: ["CMD", "./worker-healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     depends_on:
       postgres:
         condition: service_healthy

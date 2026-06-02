@@ -73,7 +73,9 @@ Full secret list: [`project/ops/dokploy-deploy.md`](../project/ops/dokploy-deplo
 
 ## App image build (api + worker)
 
-Both services share one image built from [`deploy/Dockerfile`](Dockerfile) (`bun run build -- --server` inside the image; build context is repo root). Compose sets `SERVER_ROLE=api` or `worker`; worker has `deploy.replicas: 1` and no public port.
+Both services share one image built from [`deploy/Dockerfile`](Dockerfile) (`bun run build -- --server` → `out/server`, `out/worker`, `out/worker-healthcheck`). Compose sets `SERVER_ROLE=api` or `worker`; worker has `deploy.replicas: 1` and no public port.
+
+**Healthchecks** use exec-form `CMD` and **do not** run through the Infisical `ENTRYPOINT` (Docker behavior). API: `curl /health`. Worker: `./worker-healthcheck` (only needs `DRAGONFLY_URL` from compose — not the full `@/env` bundle).
 
 ```yaml
 x-filosign-image: &filosign-image

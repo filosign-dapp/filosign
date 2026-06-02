@@ -12,6 +12,7 @@ services:
     <<: *filosign-image
     container_name: filosign-api
     restart: unless-stopped
+    command: ["./server"]
     environment:
       SERVER_ROLE: api
       DRAGONFLY_URL: redis://dragonfly:6379
@@ -21,6 +22,18 @@ services:
       # S3_*, THIRDWEB_*, RESEND_*, DODO_*, etc. — see project/ops/dokploy-deploy.md
     ports:
       - "${API_PORT:-3000}:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-fsS",
+          "http://127.0.0.1:3000/health",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
     networks:
       - filosign_net
 
@@ -28,9 +41,16 @@ services:
     <<: *filosign-image
     container_name: filosign-worker
     restart: unless-stopped
+    command: ["./worker"]
     deploy:
       replicas: 1
     # Dokploy: set max replicas / scale = 1 explicitly — UI scale overrides compose.
+    healthcheck:
+      test: ["CMD", "./worker-healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
     environment:
       SERVER_ROLE: worker
       DRAGONFLY_URL: redis://dragonfly:6379

@@ -50,7 +50,7 @@ This runs tests then deploys; regenerates `apps/contracts/definitions/mainnet.ts
 ## 3. Production server + database
 
 ```bash
-bun run db -- push production
+bun run db -- migrate production
 ```
 
 Schema includes `organization_subscriptions` (Dodo IDs, `seatCount`, `billingInterval`, `cancelAtPeriodEnd`).

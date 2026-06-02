@@ -133,6 +133,9 @@ function buildCommands(
 
 	if (steps.has("check")) {
 		cmds.push(checkCmd(ci));
+		if (ci) {
+			cmds.push(["bun", "run", "--cwd", "apps/server", "db:schema:check"]);
+		}
 	}
 
 	const test = testCmd(steps, passthrough);

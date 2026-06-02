@@ -16,6 +16,8 @@ const rootDir = repoRoot(import.meta.url);
 const PACKAGE = "@filosign/contracts";
 
 type Profile = "local" | "testnet" | "mainnet";
+/** @filosign/server DB orchestrator profiles (see scripts/db.ts) */
+type DbProfile = "local" | "staging" | "sandbox" | "production";
 
 const HELP = `
 Filosign contracts orchestrator
@@ -25,12 +27,12 @@ Utilities (@filosign/contracts):
   bun run contracts -- test              compile + Hardhat tests
   bun run contracts -- node              Hardhat local node
 
-Migrate (deploy contracts, optionally sync DB schema):
+Migrate (deploy contracts; testnet optionally syncs staging DB via push):
   bun run contracts -- --migrate --local      (deploy to local Hardhat only)
-  bun run contracts -- --migrate --testnet    (deploys + pushes staging DB schema)
-  bun run contracts -- --migrate --mainnet    (deploys + pushes production DB schema)
+  bun run contracts -- --migrate --testnet    (deploys + db push staging)
+  bun run contracts -- --migrate --mainnet    (deploy only — run db migrate production separately)
 
-Local DB: bun run db -- push local  (schema sync)  ·  bun run db -- purge local  (wipe + push)
+Local DB: bun run db -- push local  ·  bun run db -- migrate production  ·  bun run db -- purge local
 
 Profiles: local (.env.local), testnet (.env.staging chain deploy), mainnet (.env.production) in apps/contracts
 `.trim();
@@ -54,8 +56,8 @@ function deployScript(profile: Profile): string {
 	}
 }
 
-function dbCmd(action: "push" | "purge", profile: Profile): string[] {
-	return ["bun", "run", "db", "--", action, profile];
+function dbCmd(action: "push" | "purge", dbProfile: DbProfile): string[] {
+	return ["bun", "run", "db", "--", action, dbProfile];
 }
 
 function parseArgv(argv: string[]) {
@@ -88,8 +90,6 @@ async function runMigrate(profile: Profile) {
 
 	if (profile === "testnet") {
 		steps.push(dbCmd("push", "staging"));
-	} else if (profile === "mainnet") {
-		steps.push(dbCmd("push", "production"));
 	}
 
 	await runSequentialExit(rootDir, steps);

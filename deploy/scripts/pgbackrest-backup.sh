@@ -21,7 +21,13 @@ esac
 
 if ! docker exec "$CONTAINER" pgbackrest --stanza="$STANZA" "${CMD[@]}"; then
   echo "pgbackrest failed: stanza=$STANZA cmd=${CMD[*]}" >&2
-  # TODO(Sprint 6): emit platform alert (Telegram) on failure
+  REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+  if command -v bun >/dev/null 2>&1; then
+    bun run "$REPO_ROOT/apps/server/scripts/pgbackrest-failure-alert.ts" \
+      "$STANZA" "$TYPE" "$CONTAINER" || true
+  else
+    echo "warn: bun not found; skipped platform alert (set TG_ANALYTICS on cron host)" >&2
+  fi
   exit 1
 fi
 

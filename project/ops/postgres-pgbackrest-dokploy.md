@@ -87,7 +87,7 @@ docker exec <pgbackrest-container> pgbackrest --stanza=filosign backup --type=fu
 | Diff | Daily 03:30 | `pgbackrest --stanza=filosign backup --type=diff` |
 | Check | Daily 04:00 | `pgbackrest --stanza=filosign check` |
 
-Use [`deploy/scripts/pgbackrest-backup.sh`](../../deploy/scripts/pgbackrest-backup.sh) wrapper to alert on non-zero exit (wire to Telegram in Sprint 6).
+Use [`deploy/scripts/pgbackrest-backup.sh`](../../deploy/scripts/pgbackrest-backup.sh) — on non-zero exit it runs [`apps/server/scripts/pgbackrest-failure-alert.ts`](../../apps/server/scripts/pgbackrest-failure-alert.ts) (`server.pgbackrest_failed` → Telegram when `TG_ANALYTICS=true`). Verify in [production smoke test #7](production-smoke-tests.md).
 
 ## PITR restore drill (staging first)
 

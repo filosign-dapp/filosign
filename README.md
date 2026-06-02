@@ -135,7 +135,7 @@ Server configuration is defined in `apps/server/env.ts`. The main required value
 - `PG_URI`
 - `DB_NAME`
 - `FC_SERVER_PRIVATE_KEY` / `FC_SERVER_ADDRESS` (on-chain relayer + Synapse; must match contracts deploy)
-- `DRAGONFLY_URL` — `redis://127.0.0.1:6379` with root `docker compose up -d`
+- `DRAGONFLY_URL` — `redis://127.0.0.1:6379` with `docker compose -f deploy/compose.dev.yml up -d`
 - `THIRDWEB_CLIENT_ID` — same value as client `VITE_THIRDWEB_CLIENT_ID`
 - `THIRDWEB_SECRET_KEY` — project secret key (server only)
 - `DODO_API_KEY` / `DODO_WEBHOOK_KEY` — required for `staging` and `production`; optional for `local` and `sandbox`

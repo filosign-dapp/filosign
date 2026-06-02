@@ -38,7 +38,7 @@ Startup logs `rpc`, `rpcDedicatedPrimary`, and `rpcPublicFallback` when fallback
 
 ## Session
 
-- **`DRAGONFLY_URL`** (required) — `docker compose up -d` → `redis://127.0.0.1:6379`
+- **`DRAGONFLY_URL`** (required) — `docker compose -f deploy/compose.dev.yml up -d` → `redis://127.0.0.1:6379`
 - Client: thirdweb `useAuthToken()` → `Authorization: Bearer` + `X-Wallet-Address` on `/api/rpc`
 - **`tx.processIndexerHash`:** `{ hash, body? }` — **`body: {}`** ok for registry relay txs (`zIndexerTxBody`).
 

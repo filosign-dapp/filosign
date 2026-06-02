@@ -29,7 +29,7 @@ e.g. bun run dev -- --client --local
 
 Ports:  server :3000   client :3001   astro :3002   emails :30010
 
-Deps:  default runs \`docker compose up -d\` (Dragonfly :6379).  --no-deps to skip.
+Deps:  default runs \`docker compose -f deploy/compose.dev.yml up -d\` (Dragonfly :6379).  --no-deps to skip.
        --deps alone = compose only (foreground).  --deps with apps = same as default.
 
 Local bootstrap (default \`dev\` with server): deploy contracts to local Hardhat (no DB wipe).
@@ -82,10 +82,12 @@ function isDepsOnly(flags: Set<string>): boolean {
 	return activePresets(flags).length === 0;
 }
 
+const DEV_COMPOSE = "deploy/compose.dev.yml";
+
 async function composeUp(rootDir: string, detached: boolean): Promise<void> {
 	const cmd = detached
-		? ["docker", "compose", "up", "-d"]
-		: ["docker", "compose", "up"];
+		? ["docker", "compose", "-f", DEV_COMPOSE, "up", "-d"]
+		: ["docker", "compose", "-f", DEV_COMPOSE, "up"];
 	const code = await Bun.spawn({
 		cmd,
 		cwd: rootDir,

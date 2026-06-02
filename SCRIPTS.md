@@ -53,7 +53,7 @@
 
 ## `dev`
 
-`dev` / `--local` → `docker compose up -d` + bootstrap + server + client + astro · `--deps` → compose only (foreground) · `--no-deps` → skip compose · `--serloc` → bootstrap + server · `--web` → client + astro + emails (:30010) · `--emails` → emails only (:30010) · `--staging` / `--sandbox` → client + server (no bootstrap) · `--client --local` → Vite only · `--server --local` → bootstrap + API · `--astro` → marketing site only.
+`dev` / `--local` → `docker compose -f deploy/compose.dev.yml up -d` + bootstrap + server + client + astro · `--deps` → compose only (foreground) · `--no-deps` → skip compose · `--serloc` → bootstrap + server · `--web` → client + astro + emails (:30010) · `--emails` → emails only (:30010) · `--staging` / `--sandbox` → client + server (no bootstrap) · `--client --local` → Vite only · `--server --local` → bootstrap + API · `--astro` → marketing site only.
 
 Harness: `bun run --cwd packages/test dev` (`VITE_CHAIN`, not env files).
 

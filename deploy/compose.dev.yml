@@ -1,0 +1,9 @@
+# Daily dev — Dragonfly on localhost:6379 (session cache; minimal flags).
+# BullMQ-shaped flags + Postgres backup drill: deploy/compose.dev-full.yml — see deploy/README.md.
+
+services:
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly
+    container_name: filosign-dragonfly-dev
+    ports:
+      - "6379:6379"

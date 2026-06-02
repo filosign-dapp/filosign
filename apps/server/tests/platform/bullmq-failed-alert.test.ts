@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { EventEmitter } from "node:events";
 import type { Job, Worker } from "bullmq";
-import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
+import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics";
 import {
 	capturedTelegramEvents,
 	clearCapturedTelegramEvents,
 	flushPlatformAlerts,
 	mockLoggerTelegramCapture,
-} from "../support/platform-alerts";
+} from "../support/alerts";
 
 mockLoggerTelegramCapture();
 
@@ -24,7 +24,7 @@ describe("attachWorkerFailedHandler", () => {
 	beforeEach(async () => {
 		clearCapturedTelegramEvents();
 		const { resetPlatformAlertsRuntimeForTests } = await import(
-			"@/lib/platform/analytics/platform-alerts"
+			"@/lib/platform/analytics"
 		);
 		resetPlatformAlertsRuntimeForTests();
 	});

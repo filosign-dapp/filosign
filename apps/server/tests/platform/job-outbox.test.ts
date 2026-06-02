@@ -18,7 +18,7 @@ const activeJobMock = mock(async () => false);
 const enqueueClaimedMock = mock(async () => 0);
 
 // Mock the email invites module
-mock.module("@/lib/platform/email/invites", () => ({
+mock.module("@/lib/platform/email", () => ({
 	sendDocumentReceivedEmail: deliverMock,
 	sendColdDocumentInviteEmail: deliverMock,
 }));
@@ -135,9 +135,7 @@ describe("outbox sweeper", () => {
 		activeJobMock.mockImplementation(async () => true);
 		enqueueClaimedMock.mockClear();
 
-		const { runOutboxSweeperJob } = await import(
-			"@/lib/platform/cron/outbox-sweeper"
-		);
+		const { runOutboxSweeperJob } = await import("@/lib/platform/cron");
 		const enqueued = await runOutboxSweeperJob();
 		expect(enqueued).toBe(0);
 		expect(enqueueClaimedMock).not.toHaveBeenCalled();

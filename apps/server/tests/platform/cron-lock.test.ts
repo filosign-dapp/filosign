@@ -1,11 +1,12 @@
 import { afterAll, describe, expect, mock, test } from "bun:test";
 import {
 	cronBucketForSchedule,
+	cronLockKey,
 	formatDayBucket,
 	formatHourBucket,
 	resolveScheduledFireMs,
-} from "@/lib/platform/cron/cron-bucket";
-import { cronLockKey, withCronLock } from "@/lib/platform/cron/with-cron-lock";
+	withCronLock,
+} from "@/lib/platform/cron";
 import { createMockRedis, mockSessionCacheRedis } from "../support/mock-redis";
 
 const { client, store } = createMockRedis();

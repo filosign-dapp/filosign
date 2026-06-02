@@ -5,14 +5,14 @@ import {
 } from "@filosign/shared";
 import type { Transport } from "viem";
 import { base } from "viem/chains";
-import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
-import { testEnvStub } from "../support/env-stub";
+import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics";
 import {
 	capturedTelegramEvents,
 	clearCapturedTelegramEvents,
 	flushPlatformAlerts,
 	mockLoggerTelegramCapture,
-} from "../support/platform-alerts";
+} from "../support/alerts";
+import { testEnvStub } from "../support/env-stub";
 
 mockLoggerTelegramCapture();
 mock.module("@/env", () => ({
@@ -61,7 +61,7 @@ describe("wrapChainRpcTransportObservability", () => {
 	beforeEach(async () => {
 		clearCapturedTelegramEvents();
 		const { resetPlatformAlertsRuntimeForTests } = await import(
-			"@/lib/platform/analytics/platform-alerts"
+			"@/lib/platform/analytics"
 		);
 		resetPlatformAlertsRuntimeForTests();
 		const { resetChainRpcAlertDedupeForTests } = await import(

@@ -64,16 +64,14 @@ describe("GDPR retention jobs", () => {
 
 	test("redacts access request pii rows", async () => {
 		const { runRedactAccessRequestPiiJob } = await import(
-			"@/lib/platform/cron/redact-access-request-pii"
+			"@/lib/platform/cron"
 		);
 		const res = await runRedactAccessRequestPiiJob();
 		expect(res.redacted).toBe(2);
 	});
 
 	test("purges sent draft blobs and documents", async () => {
-		const { runPurgeSentDraftBlobsJob } = await import(
-			"@/lib/platform/cron/purge-sent-draft-blobs"
-		);
+		const { runPurgeSentDraftBlobsJob } = await import("@/lib/platform/cron");
 		const res = await runPurgeSentDraftBlobsJob();
 		expect(res.processedDrafts).toBe(0);
 		expect(res.deletedObjects).toBe(0);

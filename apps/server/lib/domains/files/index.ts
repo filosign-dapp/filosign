@@ -1,10 +1,17 @@
-export * from "./cold-invite";
-export * from "./cold-invite-lifecycle";
-export * from "./envelope-completion";
-export * from "./file-invites";
-export * from "./piece";
-export * from "./piece-sign";
-export * from "./register";
-export * from "./storage-keys";
-export * from "./utils/piece-compliance";
-export * from "./utils/piece-detail";
+export { pieceComplianceBundle, pieceDetail } from "./detail";
+export { pieceSignDraftGet, pieceSignDraftPut } from "./draft";
+export {
+	filesColdInviteByToken,
+	filesColdInviteClaim,
+	filesColdInviteRegenerate,
+	primaryEmailForWallet,
+} from "./invites";
+export {
+	pieceAck,
+	pieceDownloadUrl,
+	pieceRecordView,
+	userAvatarWebpKey,
+} from "./piece";
+export { filesRegister, zFileRegisterBody } from "./register";
+export { filesAmendSigner, pieceSign, zAmendSignerBody } from "./sign";
+export { isEnvelopeFullySigned } from "./utils/piece-helpers";

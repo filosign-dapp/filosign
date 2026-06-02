@@ -3,15 +3,17 @@ import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import z from "zod";
-import { primaryEmailForWallet } from "@/lib/domains/files/file-invites";
-import { requireAckForParticipantAccess } from "@/lib/domains/files/utils/participant-access";
 import db from "@/lib/platform/db";
 import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
-
-export { pieceComplianceBundle } from "./utils/piece-compliance";
-export { pieceDetail } from "./utils/piece-detail";
+import { primaryEmailForWallet } from "./invites";
+import { requireAckForParticipantAccess } from "./utils/piece-helpers";
 
 const { files, fileParticipants, fileSignerDrafts } = db.schema;
+
+const zSignDraftPutBody = z.object({
+	completedFieldIds: z.array(z.string()),
+});
+
 export async function pieceSignDraftGet(userWallet: Address, pieceCid: string) {
 	const [fileRecord] = await db
 		.select({
@@ -79,10 +81,6 @@ export async function pieceSignDraftGet(userWallet: Address, pieceCid: string) {
 
 	return { completedFieldIds };
 }
-
-const zSignDraftPutBody = z.object({
-	completedFieldIds: z.array(z.string()),
-});
 
 export async function pieceSignDraftPut(args: {
 	userWallet: Address;
@@ -180,5 +178,3 @@ export async function pieceSignDraftPut(args: {
 
 	return { completedFieldIds };
 }
-
-/** --- s3 --- */

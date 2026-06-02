@@ -7,7 +7,7 @@ const repoRoot = join(import.meta.dir, "../../../..");
 describe("files.piece.detail registry routing", () => {
 	test("selects registryAddress from the files row", () => {
 		const src = readFileSync(
-			join(repoRoot, "apps/server/lib/domains/files/utils/piece-detail.ts"),
+			join(repoRoot, "apps/server/lib/domains/files/piece.ts"),
 			"utf8",
 		);
 		expect(src).toContain("registryAddress: files.registryAddress");

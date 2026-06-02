@@ -20,26 +20,35 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { tryExecuteAttachmentReleasesForPiece } from "@/lib/domains/attachments";
-import { requireCanSign } from "@/lib/domains/files/utils/participant-access";
 import {
 	assertSettlementRecipientAckProvided,
 	recordSettlementRecipientAck,
 } from "@/lib/domains/settlement-access/utils/recipient-ack";
-import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
-import { trackServerEvent } from "@/lib/platform/analytics/track";
+import {
+	SERVER_ANALYTICS_EVENTS,
+	trackServerEvent,
+} from "@/lib/platform/analytics";
 import db from "@/lib/platform/db";
 import {
 	evmClient,
 	fsEnvelopeRegistryAt,
+	relayAmendSigner,
 	relayRegisterEnvelopeSignature,
 } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
-import { isEnvelopeFullySigned } from "./envelope-completion";
-import { primaryEmailForWallet } from "./file-invites";
+import { primaryEmailForWallet } from "./invites";
+import { isEnvelopeFullySigned, requireCanSign } from "./utils/piece-helpers";
 
-const { files, fileParticipants, fileSignatures, fileSignerDrafts, users } =
-	db.schema;
+const {
+	files,
+	fileParticipants,
+	fileSignatures,
+	fileSignerDrafts,
+	fileSignerAmendments,
+	users,
+} = db.schema;
 
 export async function pieceSign(args: {
 	userWallet: Address;
@@ -361,4 +370,64 @@ export async function pieceSign(args: {
 	});
 
 	return { txHash, signature };
+}
+
+export const zAmendSignerBody = z.object({
+	pieceCid: z.string().min(1),
+	oldCommitment: zHexString(),
+	newCommitment: zHexString(),
+	timestamp: z.number().int().positive(),
+	signature: zHexString(),
+});
+
+export async function filesAmendSigner(sender: Address, rawBody: unknown) {
+	const parsed = zAmendSignerBody.safeParse(rawBody);
+	if (!parsed.success) {
+		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+	}
+
+	const { pieceCid, oldCommitment, newCommitment, timestamp, signature } =
+		parsed.data;
+
+	const [file] = await db
+		.select({ sender: files.sender, registryAddress: files.registryAddress })
+		.from(files)
+		.where(eq(files.pieceCid, pieceCid))
+		.limit(1);
+	if (!file) {
+		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+	}
+	if (getAddress(file.sender) !== getAddress(sender)) {
+		throw new ORPCError("FORBIDDEN", {
+			message: "Only the sender can amend signers",
+		});
+	}
+
+	const registry = fsEnvelopeRegistryAt(file.registryAddress);
+	const amendArgs = [
+		pieceCid,
+		oldCommitment,
+		newCommitment,
+		BigInt(timestamp),
+		signature,
+	] as const;
+
+	const txHash = await tryCatch(relayAmendSigner(registry, amendArgs));
+	if (txHash.error) {
+		throw new ORPCError("BAD_REQUEST", {
+			message:
+				txHash.error instanceof Error
+					? txHash.error.message
+					: "amendSigner relay failed",
+		});
+	}
+
+	await db.insert(fileSignerAmendments).values({
+		filePieceCid: pieceCid,
+		oldCommitment,
+		newCommitment,
+		amendTxHash: txHash.data as `0x${string}`,
+	});
+
+	return { txHash: txHash.data };
 }

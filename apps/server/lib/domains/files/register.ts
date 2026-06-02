@@ -16,7 +16,7 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { MAX_FILE_SIZE } from "@/constants";
-import { insertAttachmentPacketsForFile } from "@/lib/domains/attachments/insert-packets";
+import { insertAttachmentPacketsForFile } from "@/lib/domains/attachments";
 import {
 	assertEntitlement,
 	recipientSlotCounts,
@@ -30,14 +30,14 @@ import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 import { enqueueOutboxByIds, insertJobOutboxRows } from "@/lib/platform/jobs";
 import { bucket } from "@/lib/platform/s3/client";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
-import { normalizedViewerEmailsForRegister } from "./file-invites";
-import { trackRegisterAnalytics } from "./utils/register-notify";
-import { buildRegisterEmailOutboxRows } from "./utils/register-outbox";
+import { normalizedViewerEmailsForRegister } from "./invites";
 import {
+	buildRegisterEmailOutboxRows,
 	type PersistRegisteredFileArgs,
 	persistRegisteredFileInTx,
-} from "./utils/register-persist";
-import { resolveRegisterRoutingCalldata } from "./utils/register-routing";
+	resolveRegisterRoutingCalldata,
+	trackRegisterAnalytics,
+} from "./utils/register-helpers";
 
 const { FSEnvelopeRegistry } = fsContracts;
 

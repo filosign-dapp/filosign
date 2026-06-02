@@ -85,12 +85,13 @@ Merge data + app env into one Dokploy project. Same variable names; all services
 
 ## Worker scale lock (required)
 
-**Worker MUST stay at 1 replica** until relayer distributed locking ships (Sprint 5).
+**Worker MUST stay at 1 replica** on a solo VPS.
 
 Why:
 
 - Multiple worker containers share one relayer private key.
-- BullMQ `concurrency: 1` is **per process** — two containers = two concurrent relayer txs → nonce collisions.
+- BullMQ `concurrency: 1` is **per process** — two containers = two concurrent relayer txs.
+- Production hardening adds Redis `fs:lock:relayer:{address}` (300s TTL) around all `FC_SERVER` writes, but **one worker replica** is still recommended to avoid duplicate cron ticks and duplicated job side effects.
 
 Compose sets `deploy.replicas: 1`, but **Dokploy UI scale overrides compose**. In Dokploy:
 
@@ -98,8 +99,6 @@ Compose sets `deploy.replicas: 1`, but **Dokploy UI scale overrides compose**. I
 2. Set **replicas / scale = 1** explicitly.
 3. Disable manual scale-to-2 on worker.
 4. Do not enable auto-scaling on worker.
-
-Sprint 5 adds `lock:relayer:{address}` in code; keep compose at 1 replica on a solo VPS regardless.
 
 ## Dokploy checklist
 

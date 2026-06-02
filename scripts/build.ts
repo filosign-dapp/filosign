@@ -66,7 +66,7 @@ Targets (combine any):
   bun run build -- --react        SDK publish build (not wired yet)
   bun run build -- --client       Vite production build
   bun run build -- --astro        Astro static build
-  bun run build -- --server       Bun compile → apps/server/out/server
+  bun run build -- --server       Bun compile → out/server, out/worker, out/worker-healthcheck
   bun run build -- --harness      packages/test vite build
   bun run build -- --contracts    Hardhat compile
 

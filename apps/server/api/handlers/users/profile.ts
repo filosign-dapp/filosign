@@ -9,7 +9,7 @@ import { z } from "zod";
 import { writeAuditEvent } from "@/lib/domains/audit";
 import { userAvatarWebpKey } from "@/lib/domains/files";
 import { materializePendingInvitesForEmail } from "@/lib/domains/sharing";
-import { getRedis } from "@/lib/platform/cache/session-cache";
+import { getRedis } from "@/lib/platform/cache/session";
 import db from "@/lib/platform/db";
 import { bucket } from "@/lib/platform/s3/client";
 import {

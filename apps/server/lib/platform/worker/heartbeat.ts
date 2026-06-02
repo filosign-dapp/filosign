@@ -1,4 +1,4 @@
-import { getRedis } from "@/lib/platform/cache/session-cache";
+import { getRedis } from "@/lib/platform/cache/session";
 
 export const WORKER_HEARTBEAT_KEY = "fs:worker:heartbeat";
 export const WORKER_HEARTBEAT_TTL_SEC = 60;

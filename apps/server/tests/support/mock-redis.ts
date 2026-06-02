@@ -1,6 +1,6 @@
 import { mock } from "bun:test";
 
-/** In-memory Redis stub for cache-aside unit tests. */
+/** In-memory Redis stub for cache aside unit tests. */
 export function createMockRedis() {
 	const store = new Map<string, string>();
 
@@ -48,11 +48,11 @@ export function createMockRedis() {
 	};
 }
 
-/** Override Dragonfly `getRedis` while keeping session-cache exports. */
+/** Override Dragonfly `getRedis` while keeping session cache exports. */
 export function mockSessionCacheRedis(
 	client: ReturnType<typeof createMockRedis>["client"],
 ) {
-	mock.module("@/lib/platform/cache/session-cache", () => ({
+	mock.module("@/lib/platform/cache/session", () => ({
 		getRedis: () => client,
 		initCache: async () => {},
 		flushDevCache: async () => {},

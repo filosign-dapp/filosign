@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 import { getAddress } from "viem";
-import { cacheDel } from "@/lib/platform/cache/cache-aside";
-import { cacheKeys } from "@/lib/platform/cache/cache-keys";
+import { cacheDel } from "@/lib/platform/cache/aside";
+import { cacheKeys } from "@/lib/platform/cache/keys";
 
 /** Drop org entitlement snapshot after billing or send-count changes. */
 export async function invalidateOrgEntitlements(orgId: string): Promise<void> {

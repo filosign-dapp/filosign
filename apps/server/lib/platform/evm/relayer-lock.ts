@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { getAddress } from "viem";
 import env from "@/env";
-import { getRedis } from "@/lib/platform/cache/session-cache";
+import { getRedis } from "@/lib/platform/cache/session";
 import { logger } from "@/lib/platform/pino";
 
 /** Base TTL per acquire; extended via heartbeat while work runs (up to max hold). */

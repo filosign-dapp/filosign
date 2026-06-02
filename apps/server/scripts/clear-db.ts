@@ -1,6 +1,6 @@
 import { Client } from "pg";
 import env from "@/env";
-import { flushDevCache, initCache } from "@/lib/platform/cache/session-cache";
+import { flushDevCache, initCache } from "@/lib/platform/cache/session";
 
 const ALLOWED_LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 

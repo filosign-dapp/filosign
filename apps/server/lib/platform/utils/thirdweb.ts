@@ -6,7 +6,7 @@ import {
 	type CachedSession,
 	getCachedSession,
 	setCachedSession,
-} from "@/lib/platform/cache/session-cache";
+} from "@/lib/platform/cache/session";
 
 const EMBEDDED_WALLET_ACCOUNTS_URL =
 	"https://embedded-wallet.thirdweb.com/api/2024-05-05/accounts";

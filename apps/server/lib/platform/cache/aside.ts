@@ -1,5 +1,5 @@
 import "@/lib/platform/polyfills/bigint-json";
-import { getRedis } from "@/lib/platform/cache/session-cache";
+import { getRedis } from "@/lib/platform/cache/session";
 
 const inflight = new Map<string, Promise<unknown>>();
 

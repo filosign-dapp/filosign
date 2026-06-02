@@ -5,8 +5,7 @@ export {
 	cacheDelMany,
 	defaultDeserialize,
 	defaultSerialize,
-} from "./cache-aside";
-export { CACHE_TTL, cacheKeys } from "./cache-keys";
+} from "./aside";
 export {
 	createEntitlementCacheInvalidation,
 	type EntitlementCacheInvalidation,
@@ -20,6 +19,7 @@ export {
 	invalidateUserExists,
 	invalidateUserOrgs,
 } from "./invalidate";
+export { CACHE_TTL, cacheKeys } from "./keys";
 export {
 	assertVerifyRateLimit,
 	type CachedSession,
@@ -28,4 +28,4 @@ export {
 	getRedis,
 	initCache,
 	setCachedSession,
-} from "./session-cache";
+} from "./session";

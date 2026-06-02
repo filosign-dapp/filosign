@@ -3,11 +3,14 @@ import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
 import { emitCriticalPlatformEvent } from "@/lib/platform/analytics/platform-alerts";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import {
+	CRON_LOCK_TTL,
+	type CronHandle,
+	registerLockedCron,
+} from "./register-locked-cron";
 
 /** Daily — execute attachment releases when sign conditions are met. */
 export const SYNC_ATTACHMENT_RELEASES_CRON = "15 0 * * *";
-
-type CronHandle = { stop(): void };
 
 export async function runSyncAttachmentReleasesCronTick(): Promise<void> {
 	const res = await tryCatch(runSyncAttachmentReleasesJob());
@@ -31,7 +34,11 @@ export async function runSyncAttachmentReleasesCronTick(): Promise<void> {
 }
 
 export function registerSyncAttachmentReleasesCron(): CronHandle {
-	return Bun.cron(SYNC_ATTACHMENT_RELEASES_CRON, () =>
-		runSyncAttachmentReleasesCronTick(),
-	) as CronHandle;
+	return registerLockedCron({
+		jobName: "sync-attachment-releases",
+		schedule: SYNC_ATTACHMENT_RELEASES_CRON,
+		bucketGranularity: "day",
+		lockTtlSec: CRON_LOCK_TTL.daily,
+		tick: runSyncAttachmentReleasesCronTick,
+	});
 }

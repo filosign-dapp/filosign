@@ -5,6 +5,11 @@ import db from "@/lib/platform/db";
 import { checkoutIntents } from "@/lib/platform/db/schema/platform-access";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import {
+	CRON_LOCK_TTL,
+	type CronHandle,
+	registerLockedCron,
+} from "./register-locked-cron";
 
 /** Every hour at :15 UTC — expire abandoned marketing checkout intents. */
 export const EXPIRE_CHECKOUT_INTENTS_CRON = "15 * * * *";
@@ -26,8 +31,6 @@ export async function runExpireCheckoutIntentsJob(): Promise<{
 
 	return { expired: rows.length };
 }
-
-type CronHandle = { stop(): void };
 
 export async function runExpireCheckoutIntentsCronTick(): Promise<void> {
 	const res = await tryCatch(runExpireCheckoutIntentsJob());
@@ -51,7 +54,11 @@ export async function runExpireCheckoutIntentsCronTick(): Promise<void> {
 }
 
 export function registerExpireCheckoutIntentsCron(): CronHandle {
-	return Bun.cron(EXPIRE_CHECKOUT_INTENTS_CRON, () =>
-		runExpireCheckoutIntentsCronTick(),
-	) as CronHandle;
+	return registerLockedCron({
+		jobName: "expire-checkout-intents",
+		schedule: EXPIRE_CHECKOUT_INTENTS_CRON,
+		bucketGranularity: "hour",
+		lockTtlSec: CRON_LOCK_TTL.hourly,
+		tick: runExpireCheckoutIntentsCronTick,
+	});
 }

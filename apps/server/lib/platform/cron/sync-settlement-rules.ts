@@ -3,13 +3,16 @@ import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
 import { emitCriticalPlatformEvent } from "@/lib/platform/analytics/platform-alerts";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import {
+	CRON_LOCK_TTL,
+	type CronHandle,
+	registerLockedCron,
+} from "./register-locked-cron";
 
 /** Daily — sync on-chain `executed` into DB for off-platform or missed payouts. */
 export const SYNC_SETTLEMENT_RULES_CRON = "0 0 * * *";
 
 export { runSyncSettlementRulesJob } from "@/lib/domains/settlements";
-
-type CronHandle = { stop(): void };
 
 export async function runSyncSettlementRulesCronTick(): Promise<void> {
 	const res = await tryCatch(runSyncSettlementRulesJob());
@@ -33,7 +36,11 @@ export async function runSyncSettlementRulesCronTick(): Promise<void> {
 }
 
 export function registerSyncSettlementRulesCron(): CronHandle {
-	return Bun.cron(SYNC_SETTLEMENT_RULES_CRON, () =>
-		runSyncSettlementRulesCronTick(),
-	) as CronHandle;
+	return registerLockedCron({
+		jobName: "sync-settlement-rules",
+		schedule: SYNC_SETTLEMENT_RULES_CRON,
+		bucketGranularity: "day",
+		lockTtlSec: CRON_LOCK_TTL.daily,
+		tick: runSyncSettlementRulesCronTick,
+	});
 }

@@ -7,6 +7,11 @@ import { emitCriticalPlatformEvent } from "@/lib/platform/analytics/platform-ale
 import { trackServerEvent } from "@/lib/platform/analytics/track";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import {
+	CRON_LOCK_TTL,
+	type CronHandle,
+	registerLockedCron,
+} from "./register-locked-cron";
 
 /** Every hour at :00 UTC — expire document, user, and org invites past `expiresAt`. */
 export const EXPIRE_INVITES_CRON = "0 * * * *";
@@ -34,8 +39,6 @@ export async function runExpireInvitesJob(): Promise<{
 	};
 }
 
-type CronHandle = { stop(): void };
-
 export async function runExpireInvitesCronTick(): Promise<void> {
 	const res = await tryCatch(runExpireInvitesJob());
 	if (res.error) {
@@ -60,7 +63,11 @@ export async function runExpireInvitesCronTick(): Promise<void> {
 }
 
 export function registerExpireInvitesCron(): CronHandle {
-	return Bun.cron(EXPIRE_INVITES_CRON, () =>
-		runExpireInvitesCronTick(),
-	) as CronHandle;
+	return registerLockedCron({
+		jobName: "expire-invites",
+		schedule: EXPIRE_INVITES_CRON,
+		bucketGranularity: "hour",
+		lockTtlSec: CRON_LOCK_TTL.hourly,
+		tick: runExpireInvitesCronTick,
+	});
 }

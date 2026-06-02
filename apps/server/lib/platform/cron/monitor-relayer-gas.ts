@@ -5,6 +5,11 @@ import { emitCriticalPlatformEvent } from "@/lib/platform/analytics/platform-ale
 import { evmClient } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import {
+	CRON_LOCK_TTL,
+	type CronHandle,
+	registerLockedCron,
+} from "./register-locked-cron";
 
 /** Every hour at :30 UTC — alert when KMS relayer ETH is low on paid deployments. */
 export const MONITOR_RELAYER_GAS_CRON = "30 * * * *";
@@ -70,8 +75,6 @@ export async function runMonitorRelayerGasJob(): Promise<{
 	return { checked: true, balanceWei, thresholdWei, alerted: true };
 }
 
-type CronHandle = { stop(): void };
-
 export async function runMonitorRelayerGasCronTick(): Promise<void> {
 	const res = await tryCatch(runMonitorRelayerGasJob());
 	if (res.error) {
@@ -90,7 +93,11 @@ export async function runMonitorRelayerGasCronTick(): Promise<void> {
 }
 
 export function registerMonitorRelayerGasCron(): CronHandle {
-	return Bun.cron(MONITOR_RELAYER_GAS_CRON, () =>
-		runMonitorRelayerGasCronTick(),
-	) as CronHandle;
+	return registerLockedCron({
+		jobName: "monitor-relayer-gas",
+		schedule: MONITOR_RELAYER_GAS_CRON,
+		bucketGranularity: "hour",
+		lockTtlSec: CRON_LOCK_TTL.hourly,
+		tick: runMonitorRelayerGasCronTick,
+	});
 }

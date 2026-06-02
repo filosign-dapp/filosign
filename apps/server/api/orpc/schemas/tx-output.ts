@@ -1,3 +1,7 @@
-import { rpcEmptyOutputSchema } from "./rpc-wire";
+import z from "zod";
 
-export const rpcTxProcessIndexerHashOutputSchema = rpcEmptyOutputSchema;
+/** Indexer work is queued; receipt confirmation runs on the worker (HTTP 200 + queued contract). */
+export const rpcTxProcessIndexerHashOutputSchema = z.object({
+	queued: z.literal(true),
+	txHash: z.string(),
+});

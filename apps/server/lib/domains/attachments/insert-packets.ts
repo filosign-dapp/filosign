@@ -77,9 +77,10 @@ export async function insertAttachmentPacketsForFile(args: {
 							? (packet.releaseType ?? null)
 							: null,
 					releaseParams: packet.releaseParams ?? null,
-					onChainRuleId: packet.onChainRuleId
-						? BigInt(packet.onChainRuleId)
-						: null,
+					onChainRuleId:
+						packet.onChainRuleId != null && packet.onChainRuleId !== ""
+							? BigInt(packet.onChainRuleId)
+							: null,
 					releaseContractAddress: packet.releaseContractAddress
 						? getAddress(packet.releaseContractAddress)
 						: null,
@@ -144,7 +145,8 @@ export async function insertAttachmentPacketsForFile(args: {
 
 			if (
 				packet.releaseMode === "conditional" &&
-				packet.onChainRuleId &&
+				packet.onChainRuleId != null &&
+				packet.onChainRuleId !== "" &&
 				packet.releaseContractAddress &&
 				packet.packetContentHash
 			) {

@@ -1,9 +1,12 @@
+import { computeCidIdentifier } from "@filosign/contracts";
 import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
-import type { Address } from "viem";
+import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import db from "@/lib/platform/db";
+import { fsAttachmentReleaseAt } from "@/lib/platform/evm";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { attachmentReleaseRuleWhere } from "./utils/rule-lookup";
 
 const { files, envelopeAttachmentPackets, attachmentReleaseRules } = db.schema;
@@ -75,12 +78,41 @@ export async function linkAttachmentPacketOnChainRule(
 			.limit(1);
 
 		if (existingRule && existingRule.packetRowId !== packet.id) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "On-chain attachment rule already linked to another packet",
-			});
-		}
+			const release = fsAttachmentReleaseAt(releaseContractAddress);
+			if (!release) {
+				throw new ORPCError("INTERNAL_SERVER_ERROR", {
+					message: "Attachment release contract unavailable",
+				});
+			}
+			const ruleRes = await tryCatch(release.read.rules([onChainRuleId]));
+			if (ruleRes.error) {
+				throw new ORPCError("BAD_REQUEST", {
+					message: "Could not verify on-chain attachment rule",
+				});
+			}
+			const onChainCidId = ruleRes.data[0] as Hex;
+			const expectedCidId = computeCidIdentifier(input.pieceCid);
+			if (onChainCidId !== expectedCidId) {
+				throw new ORPCError("BAD_REQUEST", {
+					message: "On-chain attachment rule already linked to another packet",
+				});
+			}
 
-		if (existingRule) {
+			// Local chain reset reuses rule ids; Postgres may still point at a prior envelope.
+			await tx
+				.delete(attachmentReleaseRules)
+				.where(
+					eq(attachmentReleaseRules.packetRowId, existingRule.packetRowId),
+				);
+			await tx
+				.update(envelopeAttachmentPackets)
+				.set({
+					onChainRuleId: null,
+					releaseContractAddress: null,
+					registerRuleTxHash: null,
+				})
+				.where(eq(envelopeAttachmentPackets.id, existingRule.packetRowId));
+		} else if (existingRule) {
 			await tx
 				.update(attachmentReleaseRules)
 				.set({

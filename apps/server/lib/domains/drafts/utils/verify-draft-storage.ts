@@ -1,6 +1,6 @@
 import { draftDocumentKey, draftSnapshotKey } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
-import { logDraftSave } from "./draft-save-log";
+import { logDraftSave } from "../save";
 
 export type DraftStorageProbe = {
 	exists(key: string): Promise<boolean>;

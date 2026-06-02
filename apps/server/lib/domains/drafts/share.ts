@@ -11,11 +11,16 @@ import {
 import { inviteExpiresAt } from "@/lib/domains/invites";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
 import db from "@/lib/platform/db";
-import { sendDraftReviewInviteEmail } from "@/lib/platform/email/draft-invites";
+import { sendDraftReviewInviteEmail } from "@/lib/platform/email";
 import { bucket } from "@/lib/platform/s3/client";
-import { assertDraftCreator, loadDraftOrThrow } from "./access";
+import {
+	assertCanReadDraft,
+	assertDraftCreator,
+	loadDraftOrThrow,
+} from "./lifecycle";
 
-const { envelopeDraftDocuments, draftExternalShares, users } = db.schema;
+const { envelopeDraftDocuments, draftExternalShares, draftComments, users } =
+	db.schema;
 
 function pendingDraftShareFilter() {
 	return and(
@@ -56,6 +61,13 @@ const zShareExternalBody = z.object({
 
 const zRevokeShareBody = z.object({
 	shareId: z.uuid(),
+});
+
+const zCommentAppendBody = z.object({
+	draftId: z.uuid(),
+	commentId: z.uuid(),
+	ciphertext: zHexString(),
+	inviteToken: z.string().min(8).optional(),
 });
 
 export async function draftsShareExternal(
@@ -395,4 +407,79 @@ export async function draftsReviewForWallet(
 			}),
 		})),
 	};
+}
+
+export async function draftsCommentsList(
+	wallet: Address,
+	activeOrg: ActiveOrgContext,
+	draftId: string,
+) {
+	const draft = await loadDraftOrThrow(draftId);
+	if (draft.organizationId !== activeOrg.organizationId) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "X-Org-Id must match this org draft",
+		});
+	}
+	await assertCanReadDraft({ wallet, draft, activeOrg });
+
+	const entitlementCtx = await resolveEntitlementContext(
+		getAddress(wallet),
+		draft.organizationId,
+	);
+	assertEntitlement(entitlementCtx, "features.draft_comments");
+
+	const comments = await db
+		.select({
+			id: draftComments.id,
+			authorWallet: draftComments.authorWallet,
+			inviteToken: draftComments.inviteToken,
+			ciphertext: draftComments.ciphertext,
+			createdAt: draftComments.createdAt,
+		})
+		.from(draftComments)
+		.where(eq(draftComments.draftId, draft.id))
+		.orderBy(draftComments.createdAt);
+
+	return { comments };
+}
+
+export async function draftsCommentsAppend(
+	wallet: Address,
+	activeOrg: ActiveOrgContext,
+	body: unknown,
+) {
+	const parsed = zCommentAppendBody.safeParse(body);
+	if (!parsed.success) {
+		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+	}
+
+	const draft = await loadDraftOrThrow(parsed.data.draftId);
+	if (draft.organizationId !== activeOrg.organizationId) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "X-Org-Id must match this org draft",
+		});
+	}
+	await assertCanReadDraft({ wallet, draft, activeOrg });
+
+	const entitlementCtx = await resolveEntitlementContext(
+		getAddress(wallet),
+		draft.organizationId,
+	);
+	assertEntitlement(entitlementCtx, "features.draft_comments");
+
+	const [row] = await db
+		.insert(draftComments)
+		.values({
+			id: parsed.data.commentId,
+			draftId: draft.id,
+			authorWallet: getAddress(wallet),
+			inviteToken: parsed.data.inviteToken ?? null,
+			ciphertext: parsed.data.ciphertext,
+		})
+		.returning({
+			id: draftComments.id,
+			createdAt: draftComments.createdAt,
+		});
+
+	return { comment: row };
 }

@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { cn } from "../../lib/cn";
 import { MARKETING_CTA } from "../../lib/marketing-cta";
 import { marketingSectionClass } from "../../lib/marketing-layout";
@@ -43,7 +43,7 @@ export default function BlogListIsland({ posts }: BlogListIslandProps) {
 	const [subscribed, setSubscribed] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
 
-	const handleSubscribe = (e: FormEvent) => {
+	const handleSubscribe = (e: SubmitEvent) => {
 		e.preventDefault();
 		if (!email.trim()) return;
 		setSubmitting(true);

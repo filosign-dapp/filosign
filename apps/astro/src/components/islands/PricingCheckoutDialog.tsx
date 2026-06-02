@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type SubmitEvent, useState } from "react";
 import { cn } from "../../lib/cn";
 import { useFilosignRpc } from "../../lib/filosign-rpc";
 import {
@@ -41,7 +41,7 @@ export default function PricingCheckoutDialog({
 
 	if (!open) return null;
 
-	const handleSubmit = async (event: React.FormEvent) => {
+	const handleSubmit = async (event: SubmitEvent) => {
 		event.preventDefault();
 		setStatus("loading");
 		setError(null);

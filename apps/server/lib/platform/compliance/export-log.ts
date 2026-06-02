@@ -1,8 +1,18 @@
-import type { ComplianceBundle } from "@filosign/shared";
+import {
+	type ComplianceBundle,
+	canonicalComplianceBundleJson,
+} from "@filosign/shared";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import { sha256HexUtf8 } from "@/lib/platform/compliance/hash";
 import type db from "@/lib/platform/db";
+import { randomUuidV7 } from "@/lib/platform/db/random-uuid-v7";
 import { complianceExportLogs } from "@/lib/platform/db/schema/file";
+import { bucket } from "@/lib/platform/s3/client";
+
+export function complianceExportStorageKey(exportId: string): string {
+	return `compliance-exports/${exportId}.json`;
+}
 
 export async function insertComplianceExportLog(args: {
 	db: typeof db;
@@ -26,15 +36,27 @@ export async function insertComplianceExportLog(args: {
 	} = args;
 
 	const signaturesSnapshotCount = bundle.signers.filter((s) => s.signed).length;
+	const exportId = randomUuidV7();
+	const canonical = canonicalComplianceBundleJson(bundle);
+	const computedHash = sha256HexUtf8(canonical);
+	if (computedHash !== bundleHash) {
+		throw new Error("compliance bundle hash mismatch");
+	}
+
+	const storageKey = complianceExportStorageKey(exportId);
+	await bucket.write(storageKey, new TextEncoder().encode(canonical), {
+		type: "application/json",
+	});
 
 	const [row] = await database
 		.insert(complianceExportLogs)
 		.values({
+			id: exportId,
 			filePieceCid: pieceCid,
 			requestedBy: getAddress(requestedBy),
 			bundleVersion: bundle.version,
 			bundleHash,
-			bundleJson: bundle,
+			storageKey,
 			executionStatus: bundle.executionStatus,
 			signaturesSnapshotCount,
 			documentSha256: documentSha256 ?? null,
@@ -43,9 +65,8 @@ export async function insertComplianceExportLog(args: {
 		})
 		.returning({ id: complianceExportLogs.id });
 
-	const exportId = row?.id;
-	if (!exportId) {
+	if (!row?.id) {
 		throw new Error("Failed to persist compliance export log");
 	}
-	return { exportId };
+	return { exportId: row.id };
 }

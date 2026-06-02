@@ -13,6 +13,7 @@ import {
 	createServerChainRpcTransport,
 	serverChainRpcTransportArgs,
 } from "@/lib/platform/chain-rpc";
+import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 
 const serverAccount = privateKeyToAccount(env.FC_SERVER_PRIVATE_KEY);
 
@@ -82,14 +83,18 @@ export async function relayRegisterEnvelopeSignature(
 	registry: EnvelopeRegistryContract,
 	args: readonly unknown[],
 ): Promise<`0x${string}`> {
-	return envelopeRegistryRelayWrite(registry).registerEnvelopeSignature(args);
+	return withRelayerLock(() =>
+		envelopeRegistryRelayWrite(registry).registerEnvelopeSignature(args),
+	);
 }
 
 export async function relayAmendSigner(
 	registry: EnvelopeRegistryContract,
 	args: readonly unknown[],
 ): Promise<`0x${string}`> {
-	return envelopeRegistryRelayWrite(registry).amendSigner(args);
+	return withRelayerLock(() =>
+		envelopeRegistryRelayWrite(registry).amendSigner(args),
+	);
 }
 
 export function fsAttachmentReleaseAt(address?: string | null) {

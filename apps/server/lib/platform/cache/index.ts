@@ -8,10 +8,15 @@ export {
 } from "./cache-aside";
 export { CACHE_TTL, cacheKeys } from "./cache-keys";
 export {
+	createEntitlementCacheInvalidation,
+	type EntitlementCacheInvalidation,
+	flushEntitlementCacheInvalidation,
+	invalidateEntitlementsForFileSend,
 	invalidateOnMembershipChange,
 	invalidateOrgEntitlements,
 	invalidateOrgMember,
 	invalidateOrgTemplates,
+	invalidateUserEntitlements,
 	invalidateUserExists,
 	invalidateUserOrgs,
 } from "./invalidate";

@@ -232,13 +232,15 @@ export async function assembleComplianceBundle(
 	const uniqueHashes = [
 		...new Set(txDrafts.map((t) => t.txHash.toLowerCase())),
 	].map((h) => h as Hex);
-	const receiptCache = new Map<
-		string,
-		Awaited<ReturnType<typeof receiptMeta>>
-	>();
-	for (const h of uniqueHashes) {
-		receiptCache.set(h.toLowerCase(), await receiptMeta(h));
-	}
+	const receiptEntries = await Promise.all(
+		uniqueHashes.map(async (h) => {
+			const meta = await receiptMeta(h);
+			return [h.toLowerCase(), meta] as const;
+		}),
+	);
+	const receiptCache = new Map<string, Awaited<ReturnType<typeof receiptMeta>>>(
+		receiptEntries,
+	);
 
 	const transactions: ComplianceBundle["transactions"] = txDrafts.map((d) => {
 		const meta = receiptCache.get(d.txHash.toLowerCase()) ?? {
@@ -303,8 +305,6 @@ export async function assembleComplianceBundle(
 		viewRowsRaw.map((row) => ({
 			wallet: getAddress(row.wallet),
 			firstViewedAtIso: row.firstViewedAt.toISOString(),
-			lastViewedAtIso: row.lastViewedAt.toISOString(),
-			viewCount: row.viewCount,
 			source: row.source,
 		}));
 

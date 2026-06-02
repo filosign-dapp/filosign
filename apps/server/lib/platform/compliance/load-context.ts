@@ -54,8 +54,6 @@ export type ComplianceLoadContext = {
 	viewRowsRaw: {
 		wallet: Address;
 		firstViewedAt: Date;
-		lastViewedAt: Date;
-		viewCount: number;
 		source: "sign_page" | "file_viewer" | "inbox";
 	}[];
 	coldInviteClaimRows: {
@@ -163,8 +161,6 @@ export async function loadComplianceContext(args: {
 		.select({
 			wallet: fileDocumentViews.wallet,
 			firstViewedAt: fileDocumentViews.firstViewedAt,
-			lastViewedAt: fileDocumentViews.lastViewedAt,
-			viewCount: fileDocumentViews.viewCount,
 			source: fileDocumentViews.source,
 		})
 		.from(fileDocumentViews)
@@ -367,8 +363,6 @@ export async function loadComplianceContext(args: {
 		viewRowsRaw: viewRowsRaw.map((r) => ({
 			wallet: getAddress(r.wallet),
 			firstViewedAt: r.firstViewedAt,
-			lastViewedAt: r.lastViewedAt,
-			viewCount: r.viewCount,
 			source: r.source,
 		})),
 		coldInviteClaimRows,

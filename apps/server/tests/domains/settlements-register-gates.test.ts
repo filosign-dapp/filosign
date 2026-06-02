@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { LOCAL_MOCK_USDC_ADDRESS } from "@filosign/contracts";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import { getAddress } from "viem";
-import { assertSettlementRecipientsAllowlisted } from "@/lib/domains/settlements/settlements-register";
+import { assertSettlementRecipientsAllowlisted } from "@/lib/domains/settlements/register";
 import { assertSettlementRulesUsdcToken } from "@/lib/domains/settlements/utils/assert-settlement-token";
 
 const usdcToken = LOCAL_MOCK_USDC_ADDRESS

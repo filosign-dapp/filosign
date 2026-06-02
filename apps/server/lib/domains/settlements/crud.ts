@@ -13,16 +13,16 @@ import { resolveEntitlementContext } from "@/lib/domains/entitlements";
 import db from "@/lib/platform/db";
 import { evmClient, fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
-import { assertSettlementRecipientsAllowlisted } from "./settlements-register";
-import { selectSettlementRule } from "./utils/rule-lookup";
+import { assertSettlementRecipientsAllowlisted } from "./register";
 import {
 	markSettlementRuleCancelled,
 	markSettlementRuleUpdated,
-} from "./utils/settlement-db-sync";
+} from "./utils/db-sync";
 import {
 	assertSettlementRuleEntitlements,
 	assertSettlementUpdateEntitlements,
-} from "./utils/settlement-entitlements";
+} from "./utils/entitlements";
+import { selectSettlementRule } from "./utils/rule-lookup";
 import { assertSettlementRuleUpdateOnChain } from "./utils/verify-rules-on-chain";
 
 const { files, fileParticipants } = db.schema;

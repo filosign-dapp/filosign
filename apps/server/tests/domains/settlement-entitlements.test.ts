@@ -5,7 +5,7 @@ import { ORPCError } from "@orpc/server";
 import {
 	assertSettlementRuleEntitlements,
 	assertSettlementUpdateEntitlements,
-} from "@/lib/domains/settlements/utils/settlement-entitlements";
+} from "@/lib/domains/settlements/utils/entitlements";
 
 const orgId = "00000000-0000-7000-8000-000000000001";
 

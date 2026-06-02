@@ -1,4 +1,11 @@
 export {
+	assertSettlementRecipientsAllowlisted,
+	assertSettlementRulesVerifiedOnChain,
+	insertSettlementRulesForFile,
+	settlementsRegisterForFile,
+	zSettlementRulesRegisterBatch,
+} from "./register";
+export {
 	runSyncSettlementRulesJob,
 	settlementsCancelRule,
 	settlementsConfirmSettlement,
@@ -8,10 +15,3 @@ export {
 	tryExecuteSettlementPayout,
 	tryExecuteSettlementRulesForPiece,
 } from "./settlements";
-export {
-	assertSettlementRecipientsAllowlisted,
-	assertSettlementRulesVerifiedOnChain,
-	insertSettlementRulesForFile,
-	settlementsRegisterForFile,
-	zSettlementRulesRegisterBatch,
-} from "./settlements-register";

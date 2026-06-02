@@ -1,6 +1,8 @@
 import type { SettlementRuleStatus } from "@filosign/shared";
-import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
-import { emitCriticalPlatformEvent } from "@/lib/platform/analytics/platform-alerts";
+import {
+	emitCriticalPlatformEvent,
+	PLATFORM_ALERT_EVENTS,
+} from "@/lib/platform/analytics";
 
 export function mapExecuteErrorToStatus(message: string): SettlementRuleStatus {
 	const lower = message.toLowerCase();

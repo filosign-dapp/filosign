@@ -8,7 +8,7 @@ import { resolveEntitlementContext } from "@/lib/domains/entitlements";
 import db from "@/lib/platform/db";
 import { fsContracts } from "@/lib/platform/evm";
 import { assertSettlementRulesUsdcToken } from "./utils/assert-settlement-token";
-import { assertSettlementRuleEntitlements } from "./utils/settlement-entitlements";
+import { assertSettlementRuleEntitlements } from "./utils/entitlements";
 import { assertSettlementRulesVerifiedOnChain } from "./utils/verify-rules-on-chain";
 
 const { fileSettlementRules, files, fileParticipants, organizations } =

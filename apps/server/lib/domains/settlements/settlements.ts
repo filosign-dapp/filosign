@@ -19,7 +19,7 @@ const { fileSettlementRules, files, fileParticipants } = db.schema;
 export {
 	settlementsCancelRule,
 	settlementsUpdateRule,
-} from "./settlements-crud";
+} from "./crud";
 export {
 	tryExecuteSettlementPayout,
 	tryExecuteSettlementRulesForPiece,

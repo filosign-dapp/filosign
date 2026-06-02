@@ -1,9 +1,6 @@
-import { eq } from "drizzle-orm";
 import type { Context, Next } from "hono";
 import { type Address, getAddress } from "viem";
 import env from "@/env";
-import db from "@/lib/platform/db";
-import { users } from "@/lib/platform/db/schema";
 import { verifyThirdwebSession } from "@/lib/platform/utils/thirdweb";
 import tryCatchSync, { tryCatch } from "@/lib/platform/utils/tryCatch";
 
@@ -49,22 +46,6 @@ export async function optionalThirdwebSessionForOrpc(c: Context, next: Next) {
 			console.error("[orpc-auth] thirdweb session failed:", verified.error);
 		}
 		return next();
-	}
-
-	const touchRes = await tryCatch(
-		db
-			.update(users)
-			.set({ lastActiveAt: new Date() })
-			.where(eq(users.walletAddress, creds.wallet)),
-	);
-	if (touchRes.error) {
-		console.error("[orpc-auth] lastActiveAt touch failed:", {
-			walletHint: `${creds.wallet.slice(0, 6)}…${creds.wallet.slice(-4)}`,
-			error:
-				touchRes.error instanceof Error
-					? touchRes.error.message
-					: String(touchRes.error),
-		});
 	}
 
 	c.set("userWallet", creds.wallet);

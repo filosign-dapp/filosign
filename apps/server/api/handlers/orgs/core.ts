@@ -5,9 +5,12 @@ import { and, eq, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
-import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
-import { listUserOrgsCached } from "@/lib/domains/orgs/list-mine";
-import { listOrgTemplatesCached } from "@/lib/domains/orgs/org-templates-cache";
+import {
+	type ActiveOrgContext,
+	assertOrgPermission,
+	listOrgTemplatesCached,
+	listUserOrgsCached,
+} from "@/lib/domains/orgs";
 import {
 	assertCanCreateAdditionalWorkspace,
 	countOwnedOrganizations,
@@ -21,6 +24,7 @@ import {
 } from "@/lib/domains/platform-access";
 import {
 	invalidateOnMembershipChange,
+	invalidateOrgEntitlements,
 	invalidateUserOrgs,
 } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
@@ -122,6 +126,7 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 
 	await migrateLegacyWalletBillingToPersonalOrg(creator);
 	await invalidateUserOrgs(creator);
+	await invalidateOrgEntitlements(result.data.id);
 
 	return { organization: result.data };
 }
@@ -215,6 +220,18 @@ export async function orgsUpdate(
 	if (!organization) {
 		throw new ORPCError("NOT_FOUND", { message: "Organization not found" });
 	}
+
+	const members = await db
+		.select({ walletAddress: organizationMembers.walletAddress })
+		.from(organizationMembers)
+		.where(
+			and(
+				eq(organizationMembers.organizationId, activeOrg.organizationId),
+				eq(organizationMembers.status, "active"),
+			),
+		);
+	await Promise.all(members.map((m) => invalidateUserOrgs(m.walletAddress)));
+
 	return { organization };
 }
 

@@ -9,8 +9,11 @@ import {
 	assertEntitlement,
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
-import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
-import { listOrgTemplatesCached } from "@/lib/domains/orgs/org-templates-cache";
+import {
+	type ActiveOrgContext,
+	assertOrgPermission,
+	listOrgTemplatesCached,
+} from "@/lib/domains/orgs";
 import { invalidateOrgTemplates } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { bucket } from "@/lib/platform/s3/client";

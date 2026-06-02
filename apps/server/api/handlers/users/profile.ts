@@ -198,7 +198,6 @@ export async function userProfileLookup(_wallet: Address, q: string) {
 	const returns = {
 		walletAddress: users.walletAddress,
 		encryptionPublicKey: users.encryptionPublicKey,
-		lastActiveAt: users.lastActiveAt,
 		createdAt: users.createdAt,
 		firstName: users.firstName,
 		lastName: users.lastName,
@@ -240,7 +239,6 @@ export async function userProfileLookup(_wallet: Address, q: string) {
 	const result = {
 		walletAddress: userData.walletAddress,
 		encryptionPublicKey: userData.encryptionPublicKey,
-		lastActiveAt: userData.lastActiveAt,
 		createdAt: userData.createdAt,
 		firstName: userData.firstName,
 		lastName: userData.lastName,

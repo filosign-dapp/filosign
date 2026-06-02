@@ -1,6 +1,8 @@
 export {
+	invalidateBillingAndEntitlements,
 	invalidateEntitlements,
 	useInvalidateEntitlements,
+	useRefetchBillingOnDashboardMount,
 	useRefetchEntitlementsOnMount,
 } from "../../lib/invalidate-entitlements";
 export {

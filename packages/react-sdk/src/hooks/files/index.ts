@@ -39,6 +39,17 @@ export * from "./useClaimColdInvite";
 export * from "./useColdInviteDecrypt";
 export * from "./useColdInvitePayload";
 export * from "./useComplianceBundle";
+export type {
+	DownloadableSupplementaryFile,
+	DownloadSupplementaryPacketArgs,
+	DownloadSupplementaryPacketResult,
+} from "./useDownloadSupplementaryPacket";
+export * from "./useDownloadSupplementaryPacket";
+export type {
+	FileInfo,
+	MySupplementaryPacketRow,
+	UseFileInfoOptions,
+} from "./useFileInfo";
 export * from "./useFileInfo";
 export * from "./useManualSettlementPayout";
 export * from "./useOrgFiles";

@@ -123,8 +123,8 @@ export function useSendFile() {
 			const senderEmailCommitment = hashNormalizedSignerEmail(
 				normalizePlacementRecipientEmail(rawSenderEmail),
 			);
-			const senderPrivySubjectCommitment = user.privySubjectCommitment;
-			if (!senderPrivySubjectCommitment?.trim()) {
+			const senderAuthSubjectCommitment = user.authSubjectCommitment;
+			if (!senderAuthSubjectCommitment?.trim()) {
 				throw new Error(
 					"Profile missing identity commitment; try signing out and back in.",
 				);
@@ -287,7 +287,7 @@ export function useSendFile() {
 						{ name: "viewersCommitment", type: "bytes20" },
 						{ name: "placementCommitment", type: "bytes32" },
 						{ name: "senderEmailCommitment", type: "bytes32" },
-						{ name: "senderPrivySubjectCommitment", type: "bytes32" },
+						{ name: "senderAuthSubjectCommitment", type: "bytes32" },
 						{ name: "orgIdCommitment", type: "bytes32" },
 						{ name: "requiredCommitmentsHash", type: "bytes32" },
 						{ name: "optionalCommitmentsHash", type: "bytes32" },
@@ -307,7 +307,7 @@ export function useSendFile() {
 					viewersCommitment,
 					placementCommitment,
 					senderEmailCommitment,
-					senderPrivySubjectCommitment,
+					senderAuthSubjectCommitment,
 					orgIdCommitment,
 					requiredCommitmentsHash,
 					optionalCommitmentsHash,

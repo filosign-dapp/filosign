@@ -126,9 +126,7 @@ export function useSaveDraft() {
 					}
 					setCachedDraftDek(input.draftId, walletAddress, dek);
 					reuseHeadDek = true;
-					debugDraftSave("client.save.dek_load.ok", {
-						headSnapshotFromDb: !!existing.headSnapshot,
-					});
+					debugDraftSave("client.save.dek_load.ok");
 				} else {
 					dek = generateDraftDek();
 					debugDraftSave("client.save.dek_new");
@@ -297,7 +295,6 @@ export function useSaveDraft() {
 				}
 				const head = prev as {
 					draft: { revision: number; title?: string; updatedAt?: Date };
-					headSnapshot?: DraftSnapshot;
 				};
 				return {
 					...head,
@@ -307,7 +304,6 @@ export function useSaveDraft() {
 						title: variables.title?.trim() ?? head.draft.title,
 						updatedAt: new Date(),
 					},
-					headSnapshot: variables.snapshot,
 				};
 			});
 

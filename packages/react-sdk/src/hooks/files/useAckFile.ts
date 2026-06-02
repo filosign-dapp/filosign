@@ -67,10 +67,10 @@ export function useAckFile() {
 				normalizePlacementRecipientEmail(rawEmail),
 			);
 
-			const privySubjectCommitment = userProfile?.privySubjectCommitment;
-			if (!privySubjectCommitment) {
+			const authSubjectCommitment = userProfile?.authSubjectCommitment;
+			if (!authSubjectCommitment) {
 				throw new Error(
-					"Profile missing Privy subject commitment; try re-login.",
+					"Profile missing Auth subject commitment; try re-login.",
 				);
 			}
 
@@ -84,7 +84,7 @@ export function useAckFile() {
 							{ name: "sender", type: "address" },
 							{ name: "viewerWallet", type: "address" },
 							{ name: "viewerEmailCommitment", type: "bytes32" },
-							{ name: "privySubjectCommitment", type: "bytes32" },
+							{ name: "authSubjectCommitment", type: "bytes32" },
 							{ name: "timestamp", type: "uint256" },
 						],
 					},
@@ -94,7 +94,7 @@ export function useAckFile() {
 						sender,
 						viewerWallet: wallet.account.address,
 						viewerEmailCommitment,
-						privySubjectCommitment,
+						authSubjectCommitment,
 						timestamp: BigInt(timestamp),
 					},
 				},

@@ -34,7 +34,7 @@ Multi-package work: read every relevant row, then [Vertical slice](#vertical-sli
 | [app.mdc](.cursor/rules/app.mdc)                                 | Never edit `definitions/` (generated)          |
 | [apps/web/api-routes.mdc](.cursor/rules/apps/web/api-routes.mdc) | oRPC routes + client consumption               |
 | [TESTING.md](TESTING.md)                                         | `tests/` vs `lib/`, mocks in `tests/support/`  |
-| [sprint-implementation-rulebook.md](.cursor/plans/sprint-implementation-rulebook.md) | Server infra Sprints 0–6 — layout, TDD, replace-not-shim ([promote to `.cursor/rules/sprint-implementation.mdc`](.cursor/rules/sprint-implementation.mdc) in agent mode) |
+| [sprint-implementation-rulebook.md](.cursor/plans/sprint-implementation-rulebook.md) | Server infra Sprints 0–6 — layout, TDD, replace-not-shim |
 
 
 Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).

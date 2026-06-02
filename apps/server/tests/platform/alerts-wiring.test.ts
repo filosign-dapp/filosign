@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { privateKeyToAccount } from "viem/accounts";
-import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
-import { testEnvStub } from "../support/env-stub";
+import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics";
 import {
 	capturedTelegramEvents,
 	clearCapturedTelegramEvents,
 	flushPlatformAlerts,
 	mockLoggerTelegramCapture,
-} from "../support/platform-alerts";
+} from "../support/alerts";
+import { testEnvStub } from "../support/env-stub";
 
 mockLoggerTelegramCapture();
 mock.module("@/env", () => ({
@@ -34,7 +34,7 @@ const otherAddress = privateKeyToAccount(
 async function resetAlertsRuntime(): Promise<void> {
 	clearCapturedTelegramEvents();
 	const { resetPlatformAlertsRuntimeForTests } = await import(
-		"@/lib/platform/analytics/platform-alerts"
+		"@/lib/platform/analytics"
 	);
 	resetPlatformAlertsRuntimeForTests();
 }
@@ -81,7 +81,7 @@ describe("cron platform alerts", () => {
 
 	test("sync-settlement-rules tick emits server.cron_job_failed on error", async () => {
 		const { runSyncSettlementRulesCronTick } = await import(
-			"@/lib/platform/cron/sync-settlement-rules"
+			"@/lib/platform/cron"
 		);
 		await runSyncSettlementRulesCronTick();
 		await flushPlatformAlerts();
@@ -96,9 +96,7 @@ describe("cron platform alerts", () => {
 	});
 
 	test("expire-invites tick emits server.cron_job_failed on error", async () => {
-		const { runExpireInvitesCronTick } = await import(
-			"@/lib/platform/cron/expire-invites"
-		);
+		const { runExpireInvitesCronTick } = await import("@/lib/platform/cron");
 		await runExpireInvitesCronTick();
 		await flushPlatformAlerts();
 		expect(capturedTelegramEvents).toHaveLength(1);
@@ -122,7 +120,7 @@ describe("handlePoolError", () => {
 			},
 		}));
 		const { resetPlatformAlertsRuntimeForTests } = await import(
-			"@/lib/platform/analytics/platform-alerts"
+			"@/lib/platform/analytics"
 		);
 		resetPlatformAlertsRuntimeForTests();
 	});
@@ -157,7 +155,7 @@ describe("validateServerBootstrap", () => {
 			},
 		}));
 		const { validateServerBootstrap } = await import(
-			"@/lib/platform/bootstrap/validate-server-bootstrap"
+			"@/lib/platform/bootstrap/validate-bootstrap"
 		);
 		await expect(validateServerBootstrap()).rejects.toThrow(/does not match/);
 		await flushPlatformAlerts();
@@ -194,7 +192,7 @@ describe("validateServerBootstrap", () => {
 			fsPaymentValidatorAt: () => ({}),
 		}));
 		const { validateServerBootstrap } = await import(
-			"@/lib/platform/bootstrap/validate-server-bootstrap"
+			"@/lib/platform/bootstrap/validate-bootstrap"
 		);
 		await expect(validateServerBootstrap()).rejects.toThrow(
 			/FSEnvelopeRegistry\.server\(\)/,
@@ -230,7 +228,7 @@ describe("validateServerBootstrap", () => {
 			fsPaymentValidatorAt: () => ({}),
 		}));
 		const { validateServerBootstrap } = await import(
-			"@/lib/platform/bootstrap/validate-server-bootstrap"
+			"@/lib/platform/bootstrap/validate-bootstrap"
 		);
 		await expect(validateServerBootstrap()).resolves.toBeUndefined();
 	});
@@ -247,9 +245,7 @@ describe("monitor relayer gas", () => {
 				CHAIN: "local",
 			},
 		}));
-		const { runMonitorRelayerGasJob } = await import(
-			"@/lib/platform/cron/monitor-relayer-gas"
-		);
+		const { runMonitorRelayerGasJob } = await import("@/lib/platform/cron");
 		const result = await runMonitorRelayerGasJob();
 		expect(result.checked).toBe(false);
 		expect(result.alerted).toBe(false);
@@ -280,9 +276,7 @@ describe("monitor relayer gas", () => {
 			fsEnvelopeRegistryAt: () => ({}),
 			fsPaymentValidatorAt: () => ({}),
 		}));
-		const { runMonitorRelayerGasJob } = await import(
-			"@/lib/platform/cron/monitor-relayer-gas"
-		);
+		const { runMonitorRelayerGasJob } = await import("@/lib/platform/cron");
 		const result = await runMonitorRelayerGasJob();
 		expect(result.checked).toBe(true);
 		expect(result.alerted).toBe(true);

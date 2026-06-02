@@ -3,8 +3,8 @@ import {
 	envelopeAnalyticsContext,
 	PIECE_CID_PROPERTY,
 	POSTHOG_ENVELOPE_GROUP,
-} from "@/lib/platform/analytics/envelope";
-import { SERVER_ANALYTICS_EVENTS } from "@/lib/platform/analytics/events";
+	SERVER_ANALYTICS_EVENTS,
+} from "@/lib/platform/analytics";
 import {
 	clearPosthogCaptures,
 	posthogCaptures,
@@ -20,14 +20,14 @@ beforeEach(async () => {
 	process.env.POSTHOG_API_KEY = "phc_test";
 	process.env.POSTHOG_HOST = "https://posthog.example.com";
 	const { resetPostHogClientForTests } = await import(
-		"@/lib/platform/analytics/posthog"
+		"@/lib/platform/analytics"
 	);
 	resetPostHogClientForTests();
 });
 
 afterEach(async () => {
 	const { resetPostHogClientForTests } = await import(
-		"@/lib/platform/analytics/posthog"
+		"@/lib/platform/analytics"
 	);
 	resetPostHogClientForTests();
 	if (priorEnabled === undefined) {
@@ -65,7 +65,7 @@ describe("envelopeAnalyticsContext", () => {
 
 describe("captureEvent with PostHog enabled", () => {
 	test("forwards envelope group on capture", async () => {
-		const { captureEvent } = await import("@/lib/platform/analytics/posthog");
+		const { captureEvent } = await import("@/lib/platform/analytics");
 		const pieceCid =
 			"bafkzcibey2damdvpptrsdqvstcplmzrlquc5r2fm5azoknjeoifwbottyhyyywnjgm";
 		captureEvent({
@@ -85,10 +85,10 @@ describe("trackServerEvent", () => {
 		process.env.POSTHOG_ENABLED = "false";
 		delete process.env.POSTHOG_API_KEY;
 		const { resetPostHogClientForTests } = await import(
-			"@/lib/platform/analytics/posthog"
+			"@/lib/platform/analytics"
 		);
 		resetPostHogClientForTests();
-		const { trackServerEvent } = await import("@/lib/platform/analytics/track");
+		const { trackServerEvent } = await import("@/lib/platform/analytics");
 		expect(() =>
 			trackServerEvent({
 				distinctId: "0x0000000000000000000000000000000000000001",
@@ -98,7 +98,7 @@ describe("trackServerEvent", () => {
 	});
 
 	test("does not throw when PostHog is disabled with pieceCid", async () => {
-		const { trackServerEvent } = await import("@/lib/platform/analytics/track");
+		const { trackServerEvent } = await import("@/lib/platform/analytics");
 		expect(() =>
 			trackServerEvent({
 				distinctId: "0x0000000000000000000000000000000000000001",
@@ -113,10 +113,10 @@ describe("trackServerEvent", () => {
 		process.env.POSTHOG_API_KEY = "phc_test";
 		process.env.POSTHOG_HOST = "https://posthog.example.com";
 		const { resetPostHogClientForTests } = await import(
-			"@/lib/platform/analytics/posthog"
+			"@/lib/platform/analytics"
 		);
 		resetPostHogClientForTests();
-		const { trackServerEvent } = await import("@/lib/platform/analytics/track");
+		const { trackServerEvent } = await import("@/lib/platform/analytics");
 		const pieceCid = "bafkreitestcid";
 		trackServerEvent({
 			distinctId: "0x0000000000000000000000000000000000000001",

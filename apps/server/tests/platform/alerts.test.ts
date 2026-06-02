@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
+import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics";
 import {
 	capturedTelegramEvents,
 	clearCapturedTelegramEvents,
 	mockLoggerTelegramCapture,
-} from "../support/platform-alerts";
+} from "../support/alerts";
 
 mockLoggerTelegramCapture();
 
@@ -31,7 +31,7 @@ describe("emitCriticalPlatformEventFromProcessEnv", () => {
 
 	test("uses process.env gate without loading @/env", async () => {
 		const { emitCriticalPlatformEventFromProcessEnv } = await import(
-			"@/lib/platform/analytics/platform-alerts-env"
+			"@/lib/platform/analytics"
 		);
 		await emitCriticalPlatformEventFromProcessEnv({
 			name: PLATFORM_ALERT_EVENTS.serverBootstrapFailed,
@@ -48,7 +48,7 @@ describe("emitCriticalPlatformEventFromProcessEnv", () => {
 	test("does not emit when TG_ANALYTICS is false", async () => {
 		process.env.TG_ANALYTICS = "false";
 		const { emitCriticalPlatformEventFromProcessEnv } = await import(
-			"@/lib/platform/analytics/platform-alerts-env"
+			"@/lib/platform/analytics"
 		);
 		await emitCriticalPlatformEventFromProcessEnv({
 			name: PLATFORM_ALERT_EVENTS.serverBootstrapFailed,
@@ -67,7 +67,7 @@ describe("createPlatformAlertsRuntime", () => {
 
 	test("does not emit when Telegram alerts are disabled", async () => {
 		const { createPlatformAlertsRuntime } = await import(
-			"@/lib/platform/analytics/platform-alerts"
+			"@/lib/platform/analytics"
 		);
 		const runtime = createPlatformAlertsRuntime({
 			enabled: false,
@@ -85,7 +85,7 @@ describe("createPlatformAlertsRuntime", () => {
 
 	test("emits when enabled and dedupes identical events", async () => {
 		const { createPlatformAlertsRuntime } = await import(
-			"@/lib/platform/analytics/platform-alerts"
+			"@/lib/platform/analytics"
 		);
 		const runtime = createPlatformAlertsRuntime({
 			enabled: true,

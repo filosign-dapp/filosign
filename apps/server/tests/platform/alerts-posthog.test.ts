@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
 	PLATFORM_ALERT_EVENTS,
 	PLATFORM_ALERT_POSTHOG_EVENT,
-} from "@/lib/platform/analytics/events";
+} from "@/lib/platform/analytics";
 import {
 	clearPosthogCaptures,
 	posthogCaptures,
@@ -18,18 +18,18 @@ beforeEach(async () => {
 	process.env.POSTHOG_API_KEY = "phc_test";
 	process.env.POSTHOG_HOST = "https://posthog.example.com";
 	const { resetPostHogClientForTests } = await import(
-		"@/lib/platform/analytics/posthog"
+		"@/lib/platform/analytics"
 	);
 	resetPostHogClientForTests();
 	const { resetPlatformAlertPostHogDedupeForTests } = await import(
-		"@/lib/platform/analytics/platform-alert-posthog"
+		"@/lib/platform/analytics"
 	);
 	resetPlatformAlertPostHogDedupeForTests();
 });
 
 afterEach(async () => {
 	const { resetPostHogClientForTests } = await import(
-		"@/lib/platform/analytics/posthog"
+		"@/lib/platform/analytics"
 	);
 	resetPostHogClientForTests();
 	if (priorEnabled === undefined) delete process.env.POSTHOG_ENABLED;
@@ -43,7 +43,7 @@ afterEach(async () => {
 describe("platformAlertPostHogProperties", () => {
 	test("flattens and scrubs alert context", async () => {
 		const { platformAlertPostHogProperties } = await import(
-			"@/lib/platform/analytics/platform-alert-posthog"
+			"@/lib/platform/analytics"
 		);
 		const props = platformAlertPostHogProperties({
 			name: PLATFORM_ALERT_EVENTS.serverDbInfraError,
@@ -67,7 +67,7 @@ describe("platformAlertPostHogProperties", () => {
 describe("emitCriticalPlatformEvent PostHog mirror", () => {
 	test("mirrors platform_alert when PostHog enabled", async () => {
 		const { emitCriticalPlatformEvent, resetPlatformAlertsRuntimeForTests } =
-			await import("@/lib/platform/analytics/platform-alerts");
+			await import("@/lib/platform/analytics");
 		resetPlatformAlertsRuntimeForTests();
 		await emitCriticalPlatformEvent({
 			name: PLATFORM_ALERT_EVENTS.serverHttp500,
@@ -90,7 +90,7 @@ describe("emitCriticalPlatformEvent PostHog mirror", () => {
 
 	test("dedupes identical alerts within window", async () => {
 		const { emitCriticalPlatformEvent, resetPlatformAlertsRuntimeForTests } =
-			await import("@/lib/platform/analytics/platform-alerts");
+			await import("@/lib/platform/analytics");
 		resetPlatformAlertsRuntimeForTests();
 		const event = {
 			name: PLATFORM_ALERT_EVENTS.serverCronJobFailed,
@@ -107,7 +107,7 @@ describe("emitCriticalPlatformEvent PostHog mirror", () => {
 		const {
 			mirrorPlatformAlertToPostHog,
 			resetPlatformAlertPostHogDedupeForTests,
-		} = await import("@/lib/platform/analytics/platform-alert-posthog");
+		} = await import("@/lib/platform/analytics");
 		resetPlatformAlertPostHogDedupeForTests();
 		mirrorPlatformAlertToPostHog(
 			{
@@ -125,7 +125,7 @@ describe("emitCriticalPlatformEvent PostHog mirror", () => {
 describe("emitCriticalPlatformEventFromProcessEnv PostHog mirror", () => {
 	test("mirrors when PostHog env is set in process.env", async () => {
 		const { emitCriticalPlatformEventFromProcessEnv } = await import(
-			"@/lib/platform/analytics/platform-alerts-env"
+			"@/lib/platform/analytics"
 		);
 		process.env.TG_ANALYTICS = "false";
 		await emitCriticalPlatformEventFromProcessEnv({

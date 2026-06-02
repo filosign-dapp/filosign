@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { ORPCError } from "@orpc/server";
-import { shouldCaptureServerException } from "@/lib/platform/analytics/should-capture-exception";
+import { shouldCaptureServerException } from "@/lib/platform/analytics";
 
 describe("shouldCaptureServerException", () => {
 	test("captures plain Error", () => {

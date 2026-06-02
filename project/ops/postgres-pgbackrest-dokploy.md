@@ -4,7 +4,7 @@ Off-VPS backups for the Filosign Postgres instance. **Supavisor/PgBouncer** is u
 
 ## Prerequisites
 
-- Postgres 15+ with writable `PGDATA` volume
+- Postgres **18** (compose: `postgres:18-alpine`) with writable volume at `/var/lib/postgresql` (`PGDATA` = `/var/lib/postgresql/18/docker`)
 - Cloudflare R2 bucket (S3-compatible), **not** on the same disk as `PGDATA`
 - Infisical `prod` / staging secrets (never commit keys)
 
@@ -63,10 +63,10 @@ repo1-cipher-type=aes-256-cbc
 repo1-cipher-pass=<from-infisical>
 
 [filosign]
-pg1-path=/var/lib/postgresql/data
+pg1-path=/var/lib/postgresql/18/docker
 pg1-host=postgres
 pg1-port=5432
-pg1-user=postgres
+pg1-user=filosign
 ```
 
 **R2 requires `repo1-s3-uri-style=path`** — virtual-hosted style (`bucket.endpoint`) fails.

@@ -3,7 +3,7 @@
 
 services:
   dragonfly:
-    image: docker.dragonflydb.io/dragonflydb/dragonfly
+    image: ${DRAGONFLY_IMAGE:-docker.dragonflydb.io/dragonflydb/dragonfly:v1.37.2}
     container_name: filosign-dragonfly-dev
     ports:
       - "6379:6379"

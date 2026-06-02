@@ -130,6 +130,7 @@ Dragonfly outage does **not** corrupt Postgres. Worst case: slower API (cache mi
 
 | ✓ | Item |
 |---|------|
+| | Image `docker.dragonflydb.io/dragonflydb/dragonfly:v1.37.2` (pin in `deploy/.env.example`) |
 | | Volume `dragonfly_data:/data` |
 | | `--cluster_mode=emulated` + `--lock_on_hashtags` |
 | | **No** `--default_lua_flags=allow-undeclared-keys` |

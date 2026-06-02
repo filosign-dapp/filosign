@@ -15,7 +15,8 @@ repo1-cipher-type=aes-256-cbc
 repo1-cipher-pass=change-me-long-random-passphrase
 
 [filosign]
-pg1-path=/var/lib/postgresql/data
+# PG 18 official image: PGDATA is /var/lib/postgresql/18/docker (volume mount at /var/lib/postgresql)
+pg1-path=/var/lib/postgresql/18/docker
 pg1-host=postgres
 pg1-port=5432
 pg1-user=filosign

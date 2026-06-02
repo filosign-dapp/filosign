@@ -12,6 +12,24 @@
 
 Dokploy wiring: [`project/ops/dokploy-deploy.md`](../project/ops/dokploy-deploy.md).
 
+## Pinned infra images (Jun 2026)
+
+| Service | Default image | Notes |
+|---------|---------------|--------|
+| Postgres | `postgres:18-alpine` | Volume mount **`/var/lib/postgresql`** (PG 18 layout; not `/data`) |
+| pgBackRest | `percona/percona-pgbackrest:2.58.0-1` | [pgBackRest 2.58.0](https://pgbackrest.org/release.html) |
+| Dragonfly | `docker.dragonflydb.io/dragonflydb/dragonfly:v1.37.2` | BullMQ flags in `compose.data.yml` |
+
+Override via [`deploy/.env.example`](.env.example) → copy to `deploy/.env` or set in Dokploy.
+
+**Fresh deploy / no data:** remove old PG 16 volumes before first `up` on 18:
+
+```bash
+docker compose -f deploy/compose.dev-full.yml down -v   # or your stack file
+```
+
+**Existing `pgbackrest.conf`:** set `pg1-path=/var/lib/postgresql/18/docker` (see [`pgbackrest.conf.example`](pgbackrest/pgbackrest.conf.example)).
+
 ## Start order (production two-stack)
 
 1. **Data first** — creates shared network `filosign-data_filosign_net`:
@@ -55,13 +73,13 @@ Full secret list: [`project/ops/dokploy-deploy.md`](../project/ops/dokploy-deplo
 
 ## App image build (api + worker)
 
-Both services share one image built from the repo root [`Dockerfile`](../Dockerfile) (`bun run build -- --server` inside the image). Compose sets `SERVER_ROLE=api` or `worker`; worker has `deploy.replicas: 1` and no public port.
+Both services share one image built from [`deploy/Dockerfile`](Dockerfile) (`bun run build -- --server` inside the image; build context is repo root). Compose sets `SERVER_ROLE=api` or `worker`; worker has `deploy.replicas: 1` and no public port.
 
 ```yaml
 x-filosign-image: &filosign-image
   build:
     context: ..
-    dockerfile: Dockerfile
+    dockerfile: deploy/Dockerfile
   image: ${FILOSIGN_IMAGE:-filosign/server:local}
 ```
 

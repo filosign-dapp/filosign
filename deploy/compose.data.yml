@@ -1,10 +1,11 @@
-# Sprint 1 — data stack (Postgres + pgBackRest + Dragonfly). Start before compose.app.yml.
+# Sprint 1 — data stack (Postgres 18 + pgBackRest + Dragonfly). Start before compose.app.yml.
 # pgbackrest.conf: copy from pgbackrest/pgbackrest.conf.example (not committed).
+# Image pins: deploy/.env.example (optional overrides)
 # Dokploy project name: filosign-data
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: ${POSTGRES_IMAGE:-postgres:18-alpine}
     container_name: filosign-postgres
     restart: unless-stopped
     environment:
@@ -12,7 +13,8 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-filosign}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # PG 18+: mount parent dir (PGDATA = /var/lib/postgresql/18/docker)
+      - postgres_data:/var/lib/postgresql
       - ./postgres/postgresql.production.conf:/etc/postgresql/postgresql.conf:ro
     command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
     expose:
@@ -31,7 +33,7 @@ services:
       - filosign_net
 
   pgbackrest:
-    image: pgbackrest/pgbackrest:latest
+    image: ${PGBACKREST_IMAGE:-percona/percona-pgbackrest:2.58.0-1}
     container_name: filosign-pgbackrest
     restart: unless-stopped
     depends_on:
@@ -41,13 +43,13 @@ services:
       PGBACKREST_STANZA: filosign
     volumes:
       - ./pgbackrest/pgbackrest.conf:/etc/pgbackrest/pgbackrest.conf:ro
-      - postgres_data:/var/lib/postgresql/data:ro
+      - postgres_data:/var/lib/postgresql:ro
       - pgbackrest_spool:/var/lib/pgbackrest
     networks:
       - filosign_net
 
   dragonfly:
-    image: docker.dragonflydb.io/dragonflydb/dragonfly
+    image: ${DRAGONFLY_IMAGE:-docker.dragonflydb.io/dragonflydb/dragonfly:v1.37.2}
     container_name: filosign-dragonfly
     restart: unless-stopped
     networks:

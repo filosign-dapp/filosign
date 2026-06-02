@@ -1,10 +1,10 @@
-# Local Postgres + pgBackRest (R2) + Dragonfly (BullMQ-shaped flags).
+# Local Postgres 18 + pgBackRest (R2) + Dragonfly (BullMQ-shaped flags).
 # Proof backups before VPS deploy; test queue flags before VPS.
 # Usage: see deploy/README.md
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: ${POSTGRES_IMAGE:-postgres:18-alpine}
     container_name: filosign-postgres-dev
     restart: unless-stopped
     environment:
@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: filosign
       POSTGRES_DB: filosign
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
       - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
     command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
     ports:
@@ -26,7 +26,7 @@ services:
       - filosign_dev
 
   pgbackrest:
-    image: pgbackrest/pgbackrest:latest
+    image: ${PGBACKREST_IMAGE:-percona/percona-pgbackrest:2.58.0-1}
     container_name: filosign-pgbackrest-dev
     restart: unless-stopped
     depends_on:
@@ -37,13 +37,13 @@ services:
     volumes:
       - ./pgbackrest/pgbackrest.conf:/etc/pgbackrest/pgbackrest.conf:ro
       # Create from pgbackrest/pgbackrest.conf.example before first up
-      - postgres_data:/var/lib/postgresql/data:ro
+      - postgres_data:/var/lib/postgresql:ro
       - pgbackrest_spool:/var/lib/pgbackrest
     networks:
       - filosign_dev
 
   dragonfly:
-    image: docker.dragonflydb.io/dragonflydb/dragonfly
+    image: ${DRAGONFLY_IMAGE:-docker.dragonflydb.io/dragonflydb/dragonfly:v1.37.2}
     container_name: filosign-dragonfly-dev
     restart: unless-stopped
     ports:

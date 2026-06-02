@@ -8,8 +8,17 @@ export function createMockRedis() {
 		store,
 		client: {
 			get: async (key: string) => store.get(key) ?? null,
+			del: async (...keys: string[]) => {
+				let removed = 0;
+				for (const key of keys) {
+					if (store.delete(key)) removed += 1;
+				}
+				return removed;
+			},
 			send: async (cmd: string, args: string[]) => {
 				if (cmd === "SET" && args[0] !== undefined && args[1] !== undefined) {
+					const nx = args.includes("NX");
+					if (nx && store.has(args[0])) return null;
 					store.set(args[0], args[1]);
 					return "OK";
 				}

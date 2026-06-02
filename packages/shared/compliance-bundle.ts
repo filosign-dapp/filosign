@@ -128,8 +128,6 @@ export const zAckEvidenceRow = z.object({
 export const zDocumentViewRow = z.object({
 	wallet: zEvmAddress(),
 	firstViewedAtIso: z.string(),
-	lastViewedAtIso: z.string(),
-	viewCount: z.number().int().min(1),
 	source: z.enum(["sign_page", "file_viewer", "inbox"]),
 });
 

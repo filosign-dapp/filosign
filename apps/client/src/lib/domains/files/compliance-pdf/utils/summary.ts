@@ -538,7 +538,7 @@ export function buildCompliancePdfSummaryFromBundle(
 		for (let i = 0; i < bundle.offChainEvidence.documentViews.length; i++) {
 			const v = bundle.offChainEvidence.documentViews[i];
 			viewLines.push({
-				text: `${i + 1}. Wallet ${v.wallet} first opened ${v.firstViewedAtIso} (${v.source}, ${v.viewCount} view(s))`,
+				text: `${i + 1}. Wallet ${v.wallet} first opened ${v.firstViewedAtIso} (${v.source})`,
 			});
 			if (i < bundle.offChainEvidence.documentViews.length - 1) {
 				viewLines.push({ text: "" });

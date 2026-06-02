@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterAll, beforeEach, describe, expect, mock, test } from "bun:test";
 import {
 	publicRpcUrlForChain,
 	summarizeChainRpcConfig,
@@ -6,6 +6,7 @@ import {
 import type { Transport } from "viem";
 import { base } from "viem/chains";
 import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics/events";
+import { testEnvStub } from "../support/env-stub";
 import {
 	capturedTelegramEvents,
 	clearCapturedTelegramEvents,
@@ -16,11 +17,14 @@ import {
 mockLoggerTelegramCapture();
 mock.module("@/env", () => ({
 	default: {
+		...testEnvStub,
 		TG_ANALYTICS: true,
-		TG_ANALYTICS_BOT_TOKEN: "test-bot-token",
-		TG_ANALYTICS_BOT_GROUP_ID: "test-group-id",
 	},
 }));
+
+afterAll(() => {
+	mock.restore();
+});
 
 describe("createServerChainRpcTransport", () => {
 	test("production with primary uses fallback transport", async () => {

@@ -7,7 +7,7 @@ const serverRoot = join(import.meta.dir, "../..");
 describe("attachment release execution", () => {
 	test("post-sign hook calls tryExecuteAttachmentReleasesForPiece", () => {
 		const src = readFileSync(
-			join(serverRoot, "lib/domains/files/piece-sign.ts"),
+			join(serverRoot, "lib/domains/files/sign.ts"),
 			"utf8",
 		);
 		expect(src).toContain("tryExecuteAttachmentReleasesForPiece");

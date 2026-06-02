@@ -39,7 +39,6 @@ export const rpcUserProfilePrevalidateOutputSchema = z.union([
 export const rpcUserProfileLookupOutputSchema = z.object({
 	walletAddress: z.string(),
 	encryptionPublicKey: z.string(),
-	lastActiveAt: zDateWire.nullable(),
 	createdAt: zDateWire,
 	firstName: z.string().nullable(),
 	lastName: z.string().nullable(),

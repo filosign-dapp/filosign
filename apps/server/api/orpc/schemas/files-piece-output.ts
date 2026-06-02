@@ -75,8 +75,7 @@ export const rpcPieceAckOutputSchema = z.object({});
 
 export const rpcPieceRecordViewOutputSchema = z.object({
 	firstViewedAt: z.string(),
-	lastViewedAt: z.string(),
-	viewCount: z.number().int().min(1),
+	source: z.enum(["sign_page", "file_viewer", "inbox"]),
 });
 
 export const rpcPieceSignDraftFieldIdsOutputSchema = z.object({

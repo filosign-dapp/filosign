@@ -4,9 +4,12 @@ Hono API, Drizzle/Postgres, thirdweb auth verification, S3, and chain/indexer he
 
 ## Run
 
-- Local: `bun run dev:local` (`.env.local` via `--env-file`)
+- Local: `bun run dev:local` (`.env.local` via `--env-file`; `SERVER_ROLE=all` runs HTTP + crons)
+- Worker only (local): `bun run dev:worker:local` (`SERVER_ROLE=worker` in env)
 - Staging: `bun run dev:staging` (Infisical `staging`; `infisical login` first)
 - Sandbox: `bun run dev:sandbox` (Infisical `sandbox`)
+
+Deploy splits **api** (`./server`, HTTP) and **worker** (`./worker`, `Bun.cron` + `fs:worker:heartbeat`) — see [`deploy/compose.app.yml`](../../deploy/compose.app.yml).
 
 Secrets layout: [`SECRETS.md`](SECRETS.md). Local server uses **`--env-file`**; staging/prod server uses **`infisical run`** (contracts keep `apps/contracts/.env.*`).
 
@@ -18,7 +21,11 @@ Secrets layout: [`SECRETS.md`](SECRETS.md). Local server uses **`--env-file`**; 
 | `api/orpc/` | oRPC **`/api/rpc`** + OpenAPI **`/api/api-reference`** (see `hono-mount.ts`, `router.ts`) |
 | `api/handlers/` | oRPC procedure implementations (**`ORPCError`**, reuse `tryCatch`) |
 | `api/orpc/hono-mount.ts` | **`apiRouter`** — integrations, then optional thirdweb Bearer + oRPC on `/api` |
-| `lib/platform/cache/session-cache.ts` | Dragonfly: thirdweb session cache + verify rate limit |
+| `lib/platform/cache/` | Dragonfly cache-aside (`cache-aside.ts`, `cache-keys.ts`, `invalidate.ts`) + session / verify rate limit |
+| `lib/platform/server-role.ts` | `SERVER_ROLE` gates (`api` / `worker` / `all`) |
+| `worker.ts` | Background entry: crons, heartbeat, no HTTP (`./worker`) |
+| `lib/platform/cron/` | `Bun.cron` jobs + per-tick `lock:cron:{job}:{bucket}` locks |
+| `lib/platform/worker/heartbeat.ts` | `fs:worker:heartbeat` for worker container health |
 | `lib/domains/` | Business logic by bounded context (orgs, files, settlements, sharing, users, entitlements, invites, runtime) — shared by handlers, indexer, cron |
 | `lib/platform/` | Shared infra: `db/`, `indexer/`, `cron/`, `evm`, `s3/`, `analytics/`, `compliance/`, `validation/`, `utils/` |
 | `lib/platform/polyfills/` | `bigint-json` for JSON serialization |

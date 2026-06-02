@@ -9,6 +9,7 @@ import z from "zod";
 import { inviteExpiresAt, pendingOrgInviteFilter } from "@/lib/domains/invites";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
 import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs/file-access";
+import { invalidateOnMembershipChange } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import type { OrgMemberRole } from "@/lib/platform/db/schema/organization";
 import { zOrgMemberRole } from "./schemas";
@@ -351,5 +352,6 @@ export async function orgsInvitesAccept(wallet: Address, body: unknown) {
 			.where(eq(organizationInvites.id, invite.id));
 	});
 
+	await invalidateOnMembershipChange(invite.organizationId, invitee);
 	return { organizationId: invite.organizationId };
 }

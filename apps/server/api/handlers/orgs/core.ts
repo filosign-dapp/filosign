@@ -1,11 +1,13 @@
 import { randomBytes } from "node:crypto";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
+import { listUserOrgsCached } from "@/lib/domains/orgs/list-mine";
+import { listOrgTemplatesCached } from "@/lib/domains/orgs/org-templates-cache";
 import {
 	assertCanCreateAdditionalWorkspace,
 	countOwnedOrganizations,
@@ -17,6 +19,10 @@ import {
 	attachPendingOrgBillingOnCreateWithTx,
 	grantAdminOrgTeamsProIfEligibleWithTx,
 } from "@/lib/domains/platform-access";
+import {
+	invalidateOnMembershipChange,
+	invalidateUserOrgs,
+} from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { zOrgMemberRole } from "./schemas";
@@ -25,7 +31,6 @@ const {
 	organizations,
 	organizationMembers,
 	organizationMemberKeys,
-	organizationTemplates,
 	organizationSubscriptions,
 	users,
 } = db.schema;
@@ -116,35 +121,13 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 	}
 
 	await migrateLegacyWalletBillingToPersonalOrg(creator);
+	await invalidateUserOrgs(creator);
 
 	return { organization: result.data };
 }
 
 export async function orgsListMine(wallet: Address) {
-	const walletNorm = getAddress(wallet);
-	const rows = await db
-		.select({
-			id: organizations.id,
-			name: organizations.name,
-			slug: organizations.slug,
-			encryptionPublicKey: organizations.encryptionPublicKey,
-			role: organizationMembers.role,
-			status: organizationMembers.status,
-		})
-		.from(organizationMembers)
-		.innerJoin(
-			organizations,
-			eq(organizations.id, organizationMembers.organizationId),
-		)
-		.where(
-			and(
-				eq(organizationMembers.walletAddress, walletNorm),
-				eq(organizationMembers.status, "active"),
-			),
-		)
-		.orderBy(desc(organizations.createdAt));
-
-	return { organizations: rows };
+	return listUserOrgsCached(wallet);
 }
 
 export async function orgsGet(
@@ -192,16 +175,7 @@ export async function orgsGet(
 		)
 		.where(eq(organizationMembers.organizationId, orgId));
 
-	const templates = await db
-		.select({
-			id: organizationTemplates.id,
-			name: organizationTemplates.name,
-			createdAt: organizationTemplates.createdAt,
-			createdByWallet: organizationTemplates.createdByWallet,
-		})
-		.from(organizationTemplates)
-		.where(eq(organizationTemplates.organizationId, orgId))
-		.orderBy(desc(organizationTemplates.createdAt));
+	const templates = await listOrgTemplatesCached(orgId);
 
 	return { organization: org, members, templates };
 }
@@ -328,6 +302,7 @@ export async function orgsMembersSetRole(
 		.returning();
 	if (!member)
 		throw new ORPCError("NOT_FOUND", { message: "Member not found" });
+	await invalidateOnMembershipChange(activeOrg.organizationId, targetWallet);
 	return { member };
 }
 
@@ -404,5 +379,6 @@ export async function orgsMembersRemove(
 		.returning();
 	if (!member)
 		throw new ORPCError("NOT_FOUND", { message: "Member not found" });
+	await invalidateOnMembershipChange(activeOrg.organizationId, targetWallet);
 	return { member };
 }

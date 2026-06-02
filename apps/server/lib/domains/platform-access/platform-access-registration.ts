@@ -14,6 +14,7 @@ import {
 	platformInvites,
 } from "@/lib/platform/db/schema/platform-access";
 import { users } from "@/lib/platform/db/schema/user";
+import { isUserRegistered } from "./user-exists";
 import {
 	inviteIsActive,
 	normalizeEmail,
@@ -229,13 +230,7 @@ export async function assertRegistrationComplete(
 	if (!signupPolicyIsGated(env.DEPLOYMENT)) return;
 
 	const walletNorm = getAddress(wallet);
-	const [userRow] = await db
-		.select({ walletAddress: users.walletAddress })
-		.from(users)
-		.where(eq(users.walletAddress, walletNorm))
-		.limit(1);
-
-	if (!userRow) {
+	if (!(await isUserRegistered(walletNorm))) {
 		throw new ORPCError("FORBIDDEN", {
 			message: "Complete account setup to continue",
 			data: { code: "INVITE_REQUIRED" },

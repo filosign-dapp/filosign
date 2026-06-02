@@ -33,7 +33,7 @@ describe("participant-access", () => {
 		const view = new Date("2026-01-01T00:01:00.000Z");
 		const staleChainSignAt = new Date("2026-01-01T00:00:30.000Z");
 		expect(() => assertSignOrdering(ack, view, staleChainSignAt)).toThrow(
-			/Document must be viewed before signing/,
+			/Open the document first/,
 		);
 	});
 });

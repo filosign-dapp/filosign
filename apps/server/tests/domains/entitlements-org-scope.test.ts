@@ -1,10 +1,14 @@
 import { afterAll, describe, expect, mock, test } from "bun:test";
 import { dbQueryResult } from "../support/db-query-result";
+import { createMockRedis, mockSessionCacheRedis } from "../support/mock-redis";
 
 const orgId = "00000000-0000-7000-8000-000000000002";
 const wallet = "0x0000000000000000000000000000000000000001";
 
 let selectQueue: unknown[][] = [];
+
+const { client: mockRedis, store: redisStore } = createMockRedis();
+mockSessionCacheRedis(mockRedis);
 
 mock.module("@/lib/platform/db", () => ({
 	default: {
@@ -31,6 +35,7 @@ afterAll(() => {
 
 describe("resolveEntitlementContext org scope", () => {
 	test("does not inherit legacy wallet solo when org is free", async () => {
+		redisStore.clear();
 		selectQueue = [
 			[
 				{
@@ -63,6 +68,7 @@ describe("resolveEntitlementContext org scope", () => {
 	});
 
 	test("inherits teams_pro from org when user has no subscription", async () => {
+		redisStore.clear();
 		selectQueue = [
 			[],
 			[

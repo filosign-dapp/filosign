@@ -10,6 +10,8 @@ import {
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
+import { listOrgTemplatesCached } from "@/lib/domains/orgs/org-templates-cache";
+import { invalidateOrgTemplates } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { bucket } from "@/lib/platform/s3/client";
 
@@ -144,6 +146,7 @@ export async function orgsTemplatesCreate(
 		})
 		.returning();
 
+	await invalidateOrgTemplates(activeOrg.organizationId);
 	return { template: row };
 }
 
@@ -157,18 +160,8 @@ export async function orgsTemplatesList(
 		activeOrg.organizationId,
 	);
 	assertEntitlement(entitlementCtx, "features.shared_templates");
-	const rows = await db
-		.select({
-			id: organizationTemplates.id,
-			name: organizationTemplates.name,
-			createdAt: organizationTemplates.createdAt,
-			createdByWallet: organizationTemplates.createdByWallet,
-		})
-		.from(organizationTemplates)
-		.where(eq(organizationTemplates.organizationId, activeOrg.organizationId))
-		.orderBy(desc(organizationTemplates.createdAt));
-
-	return { templates: rows };
+	const templates = await listOrgTemplatesCached(activeOrg.organizationId);
+	return { templates };
 }
 
 export async function orgsTemplatesGet(
@@ -267,5 +260,6 @@ export async function orgsTemplatesDelete(
 
 	if (!deleted)
 		throw new ORPCError("NOT_FOUND", { message: "Template not found" });
+	await invalidateOrgTemplates(activeOrg.organizationId);
 	return { template: deleted };
 }

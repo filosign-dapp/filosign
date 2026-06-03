@@ -1,5 +1,5 @@
 import { zComplianceBundle } from "@filosign/shared";
-import { zHexString } from "@filosign/shared/zod";
+import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { z } from "zod";
 
 const rosterPersonSchema = z.object({
@@ -21,12 +21,10 @@ const envelopeProgressSchema = z.object({
 	routingMode: z.number().int(),
 	requiredSignersCount: z.number().int(),
 	requiredSignaturesCount: z.number().int(),
-	optionalSignersCount: z.number().int(),
-	optionalSignaturesCount: z.number().int(),
 	quorumN: z.number().int(),
-	allRequiredSigned: z.boolean(),
-	allSigned: z.boolean(),
-	quorumMet: z.boolean(),
+	completedAt: z.number().int().nullable().optional(),
+	revokedBeforeCompletedAt: z.number().int().nullable().optional(),
+	revokedBy: zEvmAddress().nullable().optional(),
 	nextSignerEmail: z.string().nullable(),
 });
 

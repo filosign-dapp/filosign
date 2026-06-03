@@ -12,6 +12,7 @@ export {
 	pieceRecordView,
 	userAvatarWebpKey,
 } from "./piece";
+export { filesRecallEnvelope, zRecallEnvelopeBody } from "./recall";
 export { filesRegister, zFileRegisterBody } from "./register";
 export { filesAmendSigner, pieceSign, zAmendSignerBody } from "./sign";
-export { isEnvelopeFullySigned } from "./utils/piece-helpers";
+export { isEnvelopeRoutingCompleteOnChain } from "./utils/piece-helpers";

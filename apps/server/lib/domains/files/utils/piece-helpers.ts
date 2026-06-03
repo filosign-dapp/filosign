@@ -21,6 +21,7 @@ const {
 	fileParticipants,
 	fileSignatures,
 	envelopeAttachmentPackets,
+	files,
 } = db.schema;
 
 export type ValidAckRow = {
@@ -33,12 +34,12 @@ export type EnvelopeRegistryProgress = {
 	routingMode: number;
 	requiredSignersCount: number;
 	requiredSignaturesCount: number;
-	optionalSignersCount: number;
-	optionalSignaturesCount: number;
 	quorumN: number;
-	allRequiredSigned: boolean;
-	allSigned: boolean;
-	quorumMet: boolean;
+	/** Unix seconds from chain; null while incomplete. */
+	completedAt: number | null;
+	/** Unix seconds from chain attested void; null while active. */
+	revokedBeforeCompletedAt: number | null;
+	revokedBy: Address | null;
 	/** Sequential: email of next signer who has not signed yet, if known. */
 	nextSignerEmail: string | null;
 	/** False when sequential order blocks the given signer email. */
@@ -206,6 +207,14 @@ export async function listConditionalAttachmentPacketsForSender(
 	return out;
 }
 
+function chainTimestampToUnix(
+	value: number | bigint | undefined | null,
+): number | null {
+	if (value == null) return null;
+	const n = Number(value);
+	return n > 0 ? n : null;
+}
+
 export async function readEnvelopeRegistryProgress(args: {
 	pieceCid: string;
 	registryAddress: `0x${string}`;
@@ -219,27 +228,40 @@ export async function readEnvelopeRegistryProgress(args: {
 	if (regRes.error || Number(regRes.data.timestamp) === 0) {
 		return null;
 	}
-	const reg = regRes.data;
-
-	const [allRequiredRes, allSignedRes, quorumRes] = await Promise.all([
-		tryCatch(registry.read.allRequiredSigned([cidId])),
-		tryCatch(registry.read.allSigned([cidId])),
-		tryCatch(registry.read.quorumMet([cidId])),
-	]);
+	const reg = regRes.data as {
+		routingMode: number;
+		requiredSignersCount: number;
+		requiredSignaturesCount: number;
+		quorumN: number;
+		completedAt?: number | bigint;
+		revokedBeforeCompletedAt?: number | bigint;
+		revokedBy?: Address;
+	};
 
 	const routingMode = Number(reg.routingMode);
+	const revokedBeforeCompletedAt = chainTimestampToUnix(
+		reg.revokedBeforeCompletedAt,
+	);
+	const completedAt = chainTimestampToUnix(reg.completedAt);
+	const isRevoked = revokedBeforeCompletedAt != null;
+	const isComplete = completedAt != null;
+
 	const progress: EnvelopeRegistryProgress = {
 		routingMode,
 		requiredSignersCount: Number(reg.requiredSignersCount),
 		requiredSignaturesCount: Number(reg.requiredSignaturesCount),
-		optionalSignersCount: Number(reg.optionalSignersCount),
-		optionalSignaturesCount: Number(reg.optionalSignaturesCount),
 		quorumN: Number(reg.quorumN),
-		allRequiredSigned: allRequiredRes.data ?? false,
-		allSigned: allSignedRes.data ?? false,
-		quorumMet: quorumRes.data ?? false,
+		completedAt: isComplete ? (completedAt ?? 1) : null,
+		revokedBeforeCompletedAt: isRevoked
+			? (revokedBeforeCompletedAt ?? 1)
+			: null,
+		revokedBy:
+			reg.revokedBy &&
+			reg.revokedBy !== "0x0000000000000000000000000000000000000000"
+				? getAddress(reg.revokedBy)
+				: null,
 		nextSignerEmail: null,
-		canSignByRouting: true,
+		canSignByRouting: !isRevoked && !isComplete,
 	};
 
 	const routing = args.registerRouting;
@@ -283,28 +305,37 @@ export async function readEnvelopeRegistryProgress(args: {
 	return progress;
 }
 
-/** True when every signer role participant has a file_signatures row. */
-export async function isEnvelopeFullySigned(
+/** Envelope complete on-chain when `completedAt` is set. */
+export async function isEnvelopeRoutingCompleteOnChain(
 	pieceCid: string,
+	file?: {
+		registryAddress: `0x${string}`;
+		registerRoutingJson?: RegisterRoutingInput | null;
+	},
 ): Promise<boolean> {
-	const signers = await db
-		.select({ wallet: fileParticipants.wallet })
-		.from(fileParticipants)
-		.where(
-			and(
-				eq(fileParticipants.filePieceCid, pieceCid),
-				eq(fileParticipants.role, "signer"),
-			),
-		);
+	const registryAddress =
+		file?.registryAddress ??
+		(
+			await db
+				.select({ registryAddress: files.registryAddress })
+				.from(files)
+				.where(eq(files.pieceCid, pieceCid))
+				.limit(1)
+		)[0]?.registryAddress;
 
-	if (signers.length === 0) return false;
+	if (!registryAddress) return false;
 
-	const signatures = await db
-		.select({ signer: fileSignatures.signer })
-		.from(fileSignatures)
-		.where(eq(fileSignatures.filePieceCid, pieceCid));
+	const progress = await readEnvelopeRegistryProgress({
+		pieceCid,
+		registryAddress: getAddress(registryAddress),
+		registerRouting: file?.registerRoutingJson ?? undefined,
+	});
 
-	const signedWallets = new Set(signatures.map((s) => s.signer.toLowerCase()));
+	return progress?.completedAt != null;
+}
 
-	return signers.every((s) => signedWallets.has(s.wallet.toLowerCase()));
+export function envelopeRoutingCompleteFromProgress(
+	progress: EnvelopeRegistryProgress,
+): boolean {
+	return progress.completedAt != null;
 }

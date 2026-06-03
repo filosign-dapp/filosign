@@ -1,4 +1,4 @@
-import { zHexString } from "@filosign/shared/zod";
+import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { z } from "zod";
 import { rpcEmptyOutputSchema } from "./rpc-wire";
 
@@ -70,4 +70,10 @@ export const rpcFilesRegisterOutputSchema = rpcEmptyOutputSchema;
 
 export const rpcFilesAmendSignerOutputSchema = z.object({
 	txHash: zHexString(),
+});
+
+export const rpcFilesRecallEnvelopeOutputSchema = z.object({
+	txHash: zHexString(),
+	revokedBeforeCompletedAt: z.string(),
+	revokedBy: zEvmAddress(),
 });

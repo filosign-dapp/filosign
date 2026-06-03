@@ -38,6 +38,7 @@ import {
 	registerAttachmentRulesOnChain,
 } from "../../lib/register-attachment-rules";
 import { buildValidatedRegisterRouting } from "../../lib/register-routing";
+import { withRegistryWalletActionLock } from "../../lib/registry-wallet-action-lock";
 import {
 	registerSettlementRulesOnChain,
 	type SettlementRuleDraft,
@@ -255,10 +256,6 @@ export function useSendFile() {
 				throw new Error(`Upload failed: ${uploadResponse.statusText}`);
 			}
 
-			const nonce = await contracts.FSEnvelopeRegistry.read.nonce([
-				wallet.account.address,
-			]);
-
 			const cidIdentifier = computeCidIdentifier(pieceCid.toString());
 
 			const { viewersCommitment } = buildRegistrationEmailCommitments({
@@ -277,48 +274,49 @@ export function useSendFile() {
 			const orgIdCommitment = organizationId
 				? hashOrgIdCommitment(organizationId)
 				: ZERO_ORG_ID_COMMITMENT;
-
-			const signature = await eip712signature(contracts, "FSEnvelopeRegistry", {
-				types: {
-					RegisterEnvelope: [
-						{ name: "cidIdentifier", type: "bytes32" },
-						{ name: "sender", type: "address" },
-						{ name: "signersCommitment", type: "bytes20" },
-						{ name: "viewersCommitment", type: "bytes20" },
-						{ name: "placementCommitment", type: "bytes32" },
-						{ name: "senderEmailCommitment", type: "bytes32" },
-						{ name: "senderAuthSubjectCommitment", type: "bytes32" },
-						{ name: "orgIdCommitment", type: "bytes32" },
-						{ name: "requiredCommitmentsHash", type: "bytes32" },
-						{ name: "optionalCommitmentsHash", type: "bytes32" },
-						{ name: "routingMode", type: "uint8" },
-						{ name: "routingOrderHash", type: "bytes32" },
-						{ name: "quorumN", type: "uint8" },
-						{ name: "quorumSetHash", type: "bytes32" },
-						{ name: "timestamp", type: "uint256" },
-						{ name: "nonce", type: "uint256" },
-					],
-				},
-				primaryType: "RegisterEnvelope",
-				message: {
-					cidIdentifier: cidIdentifier,
-					sender: wallet.account.address,
-					signersCommitment,
-					viewersCommitment,
-					placementCommitment,
-					senderEmailCommitment,
-					senderAuthSubjectCommitment,
-					orgIdCommitment,
-					requiredCommitmentsHash,
-					optionalCommitmentsHash,
-					routingMode: routingCalldata.routingMode,
-					routingOrderHash,
-					quorumN: routingCalldata.quorumN,
-					quorumSetHash,
-					timestamp: BigInt(timestamp),
-					nonce: BigInt(nonce),
-				},
-			});
+			const signature = await withRegistryWalletActionLock(
+				wallet.account.address,
+				() =>
+					eip712signature(contracts, "FSEnvelopeRegistry", {
+						types: {
+							RegisterEnvelope: [
+								{ name: "cidIdentifier", type: "bytes32" },
+								{ name: "sender", type: "address" },
+								{ name: "signersCommitment", type: "bytes20" },
+								{ name: "viewersCommitment", type: "bytes20" },
+								{ name: "placementCommitment", type: "bytes32" },
+								{ name: "senderEmailCommitment", type: "bytes32" },
+								{ name: "senderAuthSubjectCommitment", type: "bytes32" },
+								{ name: "orgIdCommitment", type: "bytes32" },
+								{ name: "requiredCommitmentsHash", type: "bytes32" },
+								{ name: "optionalCommitmentsHash", type: "bytes32" },
+								{ name: "routingMode", type: "uint8" },
+								{ name: "routingOrderHash", type: "bytes32" },
+								{ name: "quorumN", type: "uint8" },
+								{ name: "quorumSetHash", type: "bytes32" },
+								{ name: "timestamp", type: "uint256" },
+							],
+						},
+						primaryType: "RegisterEnvelope",
+						message: {
+							cidIdentifier: cidIdentifier,
+							sender: wallet.account.address,
+							signersCommitment,
+							viewersCommitment,
+							placementCommitment,
+							senderEmailCommitment,
+							senderAuthSubjectCommitment,
+							orgIdCommitment,
+							requiredCommitmentsHash,
+							optionalCommitmentsHash,
+							routingMode: routingCalldata.routingMode,
+							routingOrderHash,
+							quorumN: routingCalldata.quorumN,
+							quorumSetHash,
+							timestamp: BigInt(timestamp),
+						},
+					}),
+			);
 
 			const coldInvitePairs =
 				coldInvites?.length && pieceCid

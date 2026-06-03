@@ -1,40 +1,44 @@
+import { hashOrgIdCommitment, ZERO_ORG_ID_COMMITMENT } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Hex } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { latestChainTimestamp } from "../../lib/chain-time";
-import { signAmendSigner } from "../../lib/signatures";
+import { signRecallEnvelope } from "../../lib/signatures";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 
-export function useAmendSigner(pieceCid: string | undefined) {
+export function useRecallEnvelope(pieceCid: string | undefined) {
 	const { wallet, contracts } = useFilosignContext();
 	const { rpcQuery, isAuthed } = useFilosignRpc();
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: async (args: { oldCommitment: Hex; newCommitment: Hex }) => {
+		mutationFn: async (args: {
+			organizationId?: string | null;
+			recaller?: `0x${string}`;
+		}) => {
 			if (!pieceCid) throw new Error("pieceCid is required");
 			if (!wallet?.account || !contracts) {
-				throw new Error("Connect your wallet to amend a signer.");
+				throw new Error("Connect your wallet to recall this envelope.");
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 
+			const recaller = args.recaller ?? wallet.account.address;
+			const orgIdCommitment = args.organizationId
+				? hashOrgIdCommitment(args.organizationId)
+				: ZERO_ORG_ID_COMMITMENT;
+
 			const timestamp = await latestChainTimestamp(contracts);
-			const recaller = wallet.account.address;
-			const signature = await signAmendSigner({
+			const signature = await signRecallEnvelope({
 				wallet,
 				contracts,
 				pieceCid,
-				oldCommitment: args.oldCommitment,
-				newCommitment: args.newCommitment,
+				orgIdCommitment,
 				timestamp,
 				recaller,
 			});
 
-			return rpcQuery.files.amendSigner.call({
+			return rpcQuery.files.recallEnvelope.call({
 				pieceCid,
 				recaller,
-				oldCommitment: args.oldCommitment,
-				newCommitment: args.newCommitment,
 				timestamp,
 				signature,
 			});

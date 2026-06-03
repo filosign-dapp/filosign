@@ -53,6 +53,7 @@ export type {
 export * from "./useFileInfo";
 export * from "./useManualSettlementPayout";
 export * from "./useOrgFiles";
+export * from "./useRecallEnvelope";
 export * from "./useReceivedFiles";
 export * from "./useRecordDocumentView";
 export * from "./useRegenerateColdInvite";

@@ -20,6 +20,7 @@ import { useFilosignContext } from "../../context/useFilosignContext";
 import { latestChainTimestamp } from "../../lib/chain-time";
 import { envelopeRegistryAt } from "../../lib/envelope-registry-at";
 import { invalidateInboxQueries } from "../../lib/invalidate-queries";
+import { withRegistryWalletActionLock } from "../../lib/registry-wallet-action-lock";
 import { resolveSignerEmailForSigning } from "../../lib/resolve-signer-email-for-signing";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import type { AppRouterClient } from "../../orpc/app-router-types";
@@ -135,8 +136,6 @@ export function useSignFile() {
 
 				const cidIdentifier = computeCidIdentifier(pieceCid);
 
-				const nonce = await registry.read.nonce([wallet.account.address]);
-
 				const dl3SignatureMessage = jsonStringify({
 					pieceCid,
 					sender,
@@ -156,39 +155,41 @@ export function useSignFile() {
 				});
 
 				const dl3SignatureCommitment = computeCommitment([toHex(dl3Signature)]);
-				const signature = await eip712signature(
-					contracts,
-					"FSEnvelopeRegistry",
-					{
-						types: {
-							SignEnvelope: [
-								{ name: "cidIdentifier", type: "bytes32" },
-								{ name: "sender", type: "address" },
-								{ name: "signerWallet", type: "address" },
-								{ name: "signerEmailCommitment", type: "bytes32" },
-								{ name: "authSubjectCommitment", type: "bytes32" },
-								{ name: "dl3SignatureCommitment", type: "bytes20" },
-								{ name: "completionsRoot", type: "bytes32" },
-								{ name: "leafSchemaVersion", type: "uint8" },
-								{ name: "timestamp", type: "uint256" },
-								{ name: "nonce", type: "uint256" },
-							],
-						},
-						primaryType: "SignEnvelope",
-						message: {
-							cidIdentifier,
-							sender,
-							signerWallet: wallet.account.address,
-							signerEmailCommitment,
-							authSubjectCommitment,
-							dl3SignatureCommitment,
-							completionsRoot,
-							leafSchemaVersion: LEAF_SCHEMA_VERSION_V1,
-							timestamp: BigInt(timestamp),
-							nonce: BigInt(nonce),
-						},
-					},
-					{ verifyingContract: registry.address },
+				const signature = await withRegistryWalletActionLock(
+					wallet.account.address,
+					() =>
+						eip712signature(
+							contracts,
+							"FSEnvelopeRegistry",
+							{
+								types: {
+									SignEnvelope: [
+										{ name: "cidIdentifier", type: "bytes32" },
+										{ name: "sender", type: "address" },
+										{ name: "signerWallet", type: "address" },
+										{ name: "signerEmailCommitment", type: "bytes32" },
+										{ name: "authSubjectCommitment", type: "bytes32" },
+										{ name: "dl3SignatureCommitment", type: "bytes20" },
+										{ name: "completionsRoot", type: "bytes32" },
+										{ name: "leafSchemaVersion", type: "uint8" },
+										{ name: "timestamp", type: "uint256" },
+									],
+								},
+								primaryType: "SignEnvelope",
+								message: {
+									cidIdentifier,
+									sender,
+									signerWallet: wallet.account.address,
+									signerEmailCommitment,
+									authSubjectCommitment,
+									dl3SignatureCommitment,
+									completionsRoot,
+									leafSchemaVersion: LEAF_SCHEMA_VERSION_V1,
+									timestamp: BigInt(timestamp),
+								},
+							},
+							{ verifyingContract: registry.address },
+						),
 				);
 				const settlementRules = await rpcQuery.settlements.listByFile.call({
 					pieceCid,

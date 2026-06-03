@@ -35,4 +35,7 @@ export const testEnvStub = {
 	POSTHOG_HOST: "https://posthog.example.com",
 	DODO_API_KEY: "dodo-test",
 	DODO_WEBHOOK_KEY: "dodo-webhook-test",
+	ARCHIVAL_EXPORT_GRACE_DAYS: 30,
+	R2_HOT_DAYS: 30,
+	WORKSPACE_CHURN_GRACE_DAYS: 90,
 };

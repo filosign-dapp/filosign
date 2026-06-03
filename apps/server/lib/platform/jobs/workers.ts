@@ -1,10 +1,12 @@
 import { Worker } from "bullmq";
 import { processDodoWebhookJob } from "@/lib/domains/billing";
+import { runFocTransitionForPiece } from "@/lib/domains/foc";
 import { tryExecuteSettlementRulesForPiece } from "@/lib/domains/settlements/utils/execute-payout";
 import { processTransaction } from "@/lib/platform/indexer/process";
 import type {
 	BillingWebhookQueueJobData,
 	EmailQueueJobData,
+	FocTransitionQueueJobData,
 	IndexerQueueJobData,
 	PayoutQueueJobData,
 } from "./queues";
@@ -14,6 +16,7 @@ import {
 	attachWorkerFailedHandler,
 	BILLING_WEBHOOK_QUEUE_NAME,
 	EMAIL_QUEUE_NAME,
+	FOC_TRANSITION_QUEUE_NAME,
 	getBullmqPrefix,
 	INDEXER_QUEUE_NAME,
 	PAYOUT_QUEUE_NAME,
@@ -27,12 +30,14 @@ const EMAIL_RATE_DURATION_MS = 1000;
 const PAYOUT_CONCURRENCY = 1;
 const INDEXER_CONCURRENCY = 5;
 const BILLING_WEBHOOK_CONCURRENCY = 3;
+const FOC_TRANSITION_CONCURRENCY = 2;
 
 // Singleton worker references
 let emailWorker: Worker<EmailQueueJobData> | null = null;
 let payoutWorker: Worker<PayoutQueueJobData> | null = null;
 let indexerWorker: Worker<IndexerQueueJobData> | null = null;
 let billingWebhookWorker: Worker<BillingWebhookQueueJobData> | null = null;
+let focTransitionWorker: Worker<FocTransitionQueueJobData> | null = null;
 
 function commonWorkerOptions() {
 	return {
@@ -119,11 +124,34 @@ export function startBillingWebhookWorker(): Worker<BillingWebhookQueueJobData> 
 	return billingWebhookWorker;
 }
 
+export function startFocTransitionWorker(): Worker<FocTransitionQueueJobData> {
+	if (focTransitionWorker) return focTransitionWorker;
+
+	focTransitionWorker = new Worker<FocTransitionQueueJobData>(
+		FOC_TRANSITION_QUEUE_NAME,
+		async (job) => {
+			await runFocTransitionForPiece(job.data.pieceCid);
+		},
+		{
+			...commonWorkerOptions(),
+			concurrency: FOC_TRANSITION_CONCURRENCY,
+		},
+	);
+
+	attachWorkerFailedHandler(focTransitionWorker, FOC_TRANSITION_QUEUE_NAME, {
+		alertContext: (job) =>
+			job?.data?.pieceCid ? { pieceCid: job.data.pieceCid } : {},
+	});
+
+	return focTransitionWorker;
+}
+
 export function startAllWorkers(): void {
 	startEmailWorker();
 	startPayoutWorker();
 	startIndexerWorker();
 	startBillingWebhookWorker();
+	startFocTransitionWorker();
 }
 
 export async function closeEmailWorker(): Promise<void> {
@@ -154,11 +182,19 @@ export async function closeBillingWebhookWorker(): Promise<void> {
 	}
 }
 
+export async function closeFocTransitionWorker(): Promise<void> {
+	if (focTransitionWorker) {
+		await focTransitionWorker.close();
+		focTransitionWorker = null;
+	}
+}
+
 export async function closeAllWorkers(): Promise<void> {
 	await Promise.all([
 		closeEmailWorker(),
 		closePayoutWorker(),
 		closeIndexerWorker(),
 		closeBillingWebhookWorker(),
+		closeFocTransitionWorker(),
 	]);
 }

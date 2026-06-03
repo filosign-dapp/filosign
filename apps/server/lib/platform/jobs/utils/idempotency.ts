@@ -22,6 +22,10 @@ export function billingWebhookJobId(webhookId: string): string {
 	return `billing${JOB_ID_SEP}${webhookId}`;
 }
 
+export function focTransitionJobId(pieceCid: string): string {
+	return `foc${JOB_ID_SEP}${pieceCid}`;
+}
+
 /** Returns true when the webhook row is already terminal (safe no-op for workers). */
 export async function isBillingWebhookProcessed(
 	providerEventId: string,

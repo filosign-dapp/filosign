@@ -14,6 +14,7 @@ export const EMAIL_QUEUE_NAME = "email";
 export const PAYOUT_QUEUE_NAME = "payout-execution";
 export const INDEXER_QUEUE_NAME = "transaction-indexing";
 export const BILLING_WEBHOOK_QUEUE_NAME = "billing-webhook";
+export const FOC_TRANSITION_QUEUE_NAME = "foc-transition";
 
 /** Shared BullMQ job options (Sprint 4+). */
 export const DEFAULT_QUEUE_JOB_OPTIONS = {

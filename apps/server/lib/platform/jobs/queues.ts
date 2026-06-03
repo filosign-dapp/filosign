@@ -3,6 +3,7 @@ import { getQueueConnection } from "./utils/connection";
 import {
 	billingWebhookJobId,
 	emailJobId,
+	focTransitionJobId,
 	indexerJobId,
 	payoutJobId,
 } from "./utils/idempotency";
@@ -11,6 +12,7 @@ import {
 	BILLING_WEBHOOK_QUEUE_NAME,
 	DEFAULT_QUEUE_JOB_OPTIONS,
 	EMAIL_QUEUE_NAME,
+	FOC_TRANSITION_QUEUE_NAME,
 	getBullmqPrefix,
 	INDEXER_QUEUE_NAME,
 	PAYOUT_QUEUE_NAME,
@@ -31,10 +33,13 @@ export type IndexerQueueJobData = {
 
 export type BillingWebhookQueueJobData = { webhookId: string };
 
+export type FocTransitionQueueJobData = { pieceCid: string };
+
 let emailQueue: Queue<EmailQueueJobData> | null = null;
 let payoutQueue: Queue<PayoutQueueJobData> | null = null;
 let indexerQueue: Queue<IndexerQueueJobData> | null = null;
 let billingWebhookQueue: Queue<BillingWebhookQueueJobData> | null = null;
+let focTransitionQueue: Queue<FocTransitionQueueJobData> | null = null;
 
 function queueOptions() {
 	return {
@@ -79,6 +84,24 @@ export function getBillingWebhookQueue(): Queue<BillingWebhookQueueJobData> {
 		);
 	}
 	return billingWebhookQueue;
+}
+
+export function getFocTransitionQueue(): Queue<FocTransitionQueueJobData> {
+	if (!focTransitionQueue) {
+		focTransitionQueue = new Queue<FocTransitionQueueJobData>(
+			FOC_TRANSITION_QUEUE_NAME,
+			queueOptions(),
+		);
+	}
+	return focTransitionQueue;
+}
+
+export async function enqueueFocTransition(pieceCid: string): Promise<void> {
+	await getFocTransitionQueue().add(
+		"transition",
+		{ pieceCid },
+		{ jobId: focTransitionJobId(pieceCid) },
+	);
 }
 
 export async function addEmailOutboxToQueue(
@@ -151,6 +174,10 @@ export async function closeJobsQueues(): Promise<void> {
 	if (billingWebhookQueue) {
 		closes.push(billingWebhookQueue.close());
 		billingWebhookQueue = null;
+	}
+	if (focTransitionQueue) {
+		closes.push(focTransitionQueue.close());
+		focTransitionQueue = null;
 	}
 	await Promise.all(closes);
 }

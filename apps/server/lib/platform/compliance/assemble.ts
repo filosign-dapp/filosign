@@ -211,6 +211,20 @@ export async function assembleComplianceBundle(
 		});
 	}
 
+	if (fileRecord.revokeOnchainTxHash) {
+		txDrafts.push({
+			kind: "envelope_revoked_before_complete",
+			txHash: fileRecord.revokeOnchainTxHash,
+			contractAddress: regAddr,
+			summary:
+				"recallEnvelope — envelope voided on-chain before completion (partial signatures may remain)",
+			relatedAddresses: [
+				senderNorm,
+				...(fileRecord.revokedBy ? [getAddress(fileRecord.revokedBy)] : []),
+			],
+		});
+	}
+
 	for (const pay of settlementRows) {
 		if (!pay.payoutTxHash) continue;
 		const payValidatorAddr = getAddress(pay.validatorAddress);

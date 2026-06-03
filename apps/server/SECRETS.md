@@ -44,6 +44,16 @@ Verify the same From domain in [Resend](https://resend.com) and [Amazon SES](htt
 
 Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`, `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY` (see [`apps/contracts/env.ts`](../contracts/env.ts)). On-chain addresses for the app come from [`definitions/`](../../apps/contracts/definitions/) via `CHAIN` — after redeploy, run migrate and align `FC_SERVER_ADDRESS` with `FSEnvelopeRegistry.server()` ([migration note](../../project/contracts/envelope-registry-migration.md)).
 
+### Filecoin / FOC (Synapse)
+
+`FC_SERVER_PRIVATE_KEY` and `FC_SERVER_ADDRESS` power [`@filoz/synapse-sdk`](https://docs.filecoin.cloud/) — **platform backup** for all **paid workspaces** (not only archival SKU). Fund with **USDFC** (Filecoin Pay) and **FIL** (gas). See [`docs/foc-storage-lifecycle.md`](docs/foc-storage-lifecycle.md).
+
+| Env | Role |
+|-----|------|
+| `WORKSPACE_CHURN_GRACE_DAYS` | After workspace sub ends, retain blobs (default **90**) |
+| `ARCHIVAL_EXPORT_GRACE_DAYS` | After **archival** sub lapses, export window (default **30**) |
+| `DODO_PRODUCT_ID_ARCHIVAL_*` | Separate Filecoin retention product |
+
 ---
 
 ## 1. Infisical dashboard (server)

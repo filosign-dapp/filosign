@@ -13,6 +13,7 @@ import {
 	createServerChainRpcTransport,
 	serverChainRpcTransportArgs,
 } from "@/lib/platform/chain-rpc";
+import { withRegistryWalletLock } from "@/lib/platform/evm/registry-wallet-lock";
 import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 
 const serverAccount = privateKeyToAccount(env.FC_SERVER_PRIVATE_KEY);
@@ -70,6 +71,7 @@ type EnvelopeRegistryRelayWrite = {
 		args: readonly unknown[],
 	) => Promise<`0x${string}`>;
 	amendSigner: (args: readonly unknown[]) => Promise<`0x${string}`>;
+	recallEnvelope: (args: readonly unknown[]) => Promise<`0x${string}`>;
 };
 
 function envelopeRegistryRelayWrite(
@@ -83,8 +85,11 @@ export async function relayRegisterEnvelopeSignature(
 	registry: EnvelopeRegistryContract,
 	args: readonly unknown[],
 ): Promise<`0x${string}`> {
+	const signerWallet = getAddress(args[2] as `0x${string}`);
 	return withRelayerLock(() =>
-		envelopeRegistryRelayWrite(registry).registerEnvelopeSignature(args),
+		withRegistryWalletLock(signerWallet, () =>
+			envelopeRegistryRelayWrite(registry).registerEnvelopeSignature(args),
+		),
 	);
 }
 
@@ -92,8 +97,23 @@ export async function relayAmendSigner(
 	registry: EnvelopeRegistryContract,
 	args: readonly unknown[],
 ): Promise<`0x${string}`> {
+	const recaller = getAddress(args[1] as `0x${string}`);
 	return withRelayerLock(() =>
-		envelopeRegistryRelayWrite(registry).amendSigner(args),
+		withRegistryWalletLock(recaller, () =>
+			envelopeRegistryRelayWrite(registry).amendSigner(args),
+		),
+	);
+}
+
+export async function relayRecallEnvelope(
+	registry: EnvelopeRegistryContract,
+	args: readonly unknown[],
+): Promise<`0x${string}`> {
+	const recaller = getAddress(args[1] as `0x${string}`);
+	return withRelayerLock(() =>
+		withRegistryWalletLock(recaller, () =>
+			envelopeRegistryRelayWrite(registry).recallEnvelope(args),
+		),
 	);
 }
 

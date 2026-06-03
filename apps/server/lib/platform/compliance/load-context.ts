@@ -30,6 +30,10 @@ export type ComplianceLoadContext = {
 		createdAt: Date;
 		placementCommitment: Hex;
 		placementManifestJson: unknown;
+		revokedBeforeCompletedAt: Date | null;
+		revokedBy: Address | null;
+		completedAt: Date | null;
+		revokeOnchainTxHash: Hex | null;
 	};
 	manifest: PlacementManifest;
 	sigRows: {
@@ -107,6 +111,10 @@ export async function loadComplianceContext(args: {
 			createdAt: files.createdAt,
 			placementCommitment: files.placementCommitment,
 			placementManifestJson: files.placementManifestJson,
+			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
+			revokedBy: files.revokedBy,
+			completedAt: files.completedAt,
+			revokeOnchainTxHash: files.revokeOnchainTxHash,
 		})
 		.from(files)
 		.where(eq(files.pieceCid, pieceCid));
@@ -233,23 +241,19 @@ export async function loadComplianceContext(args: {
 					placementCommitment: Hex;
 					senderEmailCommitment: Hex;
 					senderAuthSubjectCommitment: Hex;
+					orgIdCommitment: Hex;
 					requiredSignersCount: number | bigint;
 					requiredSignaturesCount: number | bigint;
-					optionalSignersCount: number | bigint;
-					optionalSignaturesCount: number | bigint;
-					signersCount: number | bigint;
 					signaturesCount: number | bigint;
 					quorumN: number | bigint;
 					routingMode: number | bigint;
+					completedAt: number | bigint;
+					revokedBeforeCompletedAt: number | bigint;
+					revokedBy: Address;
 					timestamp: bigint;
 			  }
 			| undefined;
 		if (reg && reg.timestamp > 0n) {
-			const [allRequiredSigned, allSigned, quorumMet] = await Promise.all([
-				tryCatch(registry.read.allRequiredSigned([cidId])),
-				tryCatch(registry.read.allSigned([cidId])),
-				tryCatch(registry.read.quorumMet([cidId])),
-			]);
 			let rosterSignedCount = Number(reg.signaturesCount);
 			const rosterRes = await tryCatch(
 				(
@@ -263,6 +267,15 @@ export async function loadComplianceContext(args: {
 			if (!rosterRes.error && rosterRes.data != null) {
 				rosterSignedCount = Number(rosterRes.data);
 			}
+			const completedAtChain =
+				reg.completedAt != null && Number(reg.completedAt) > 0
+					? String(reg.completedAt)
+					: null;
+			const revokedBeforeCompletedAtChain =
+				reg.revokedBeforeCompletedAt != null &&
+				Number(reg.revokedBeforeCompletedAt) > 0
+					? String(reg.revokedBeforeCompletedAt)
+					: null;
 			onchainRegistration = {
 				cidIdentifier: cidId,
 				sender: getAddress(reg.sender),
@@ -273,17 +286,20 @@ export async function loadComplianceContext(args: {
 				senderAuthSubjectCommitment: reg.senderAuthSubjectCommitment as Hex,
 				requiredSignersCount: Number(reg.requiredSignersCount),
 				requiredSignaturesCount: Number(reg.requiredSignaturesCount),
-				optionalSignersCount: Number(reg.optionalSignersCount),
-				optionalSignaturesCount: Number(reg.optionalSignaturesCount),
-				signersCount: Number(reg.signersCount),
 				signaturesCount: Number(reg.signaturesCount),
 				quorumN: Number(reg.quorumN),
 				routingMode: Number(reg.routingMode),
-				allRequiredSigned: allRequiredSigned.data ?? false,
-				allSigned: allSigned.data ?? false,
-				quorumMet: quorumMet.data ?? false,
+				completedAt: completedAtChain,
+				revokedBeforeCompletedAt: revokedBeforeCompletedAtChain,
+				revokedBy:
+					reg.revokedBy &&
+					getAddress(reg.revokedBy) !==
+						"0x0000000000000000000000000000000000000000"
+						? getAddress(reg.revokedBy)
+						: null,
 				rosterSignedCount,
 				timestamp: reg.timestamp.toString(),
+				orgIdCommitment: reg.orgIdCommitment as Hex,
 			};
 		}
 	}
@@ -354,6 +370,11 @@ export async function loadComplianceContext(args: {
 			createdAt: fileRecord.createdAt,
 			placementCommitment: fileRecord.placementCommitment as Hex,
 			placementManifestJson: fileRecord.placementManifestJson,
+			revokedBeforeCompletedAt: fileRecord.revokedBeforeCompletedAt,
+			revokedBy: fileRecord.revokedBy ? getAddress(fileRecord.revokedBy) : null,
+			completedAt: fileRecord.completedAt,
+			revokeOnchainTxHash:
+				(fileRecord.revokeOnchainTxHash as Hex | null) ?? null,
 		},
 		manifest,
 		sigRows: sigRowsNormalized,

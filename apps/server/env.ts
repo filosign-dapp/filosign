@@ -84,6 +84,14 @@ const parsedEnv = createEnv({
 		DODO_PRODUCT_ID_TEAMS_YEARLY: z.string().min(1).optional(),
 		DODO_PRODUCT_ID_TEAMS_PRO_MONTHLY: z.string().min(1).optional(),
 		DODO_PRODUCT_ID_TEAMS_PRO_YEARLY: z.string().min(1).optional(),
+		DODO_PRODUCT_ID_ARCHIVAL_YEAR: z.string().min(1).optional(),
+		DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_3Y: z.string().min(1).optional(),
+		DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_5Y: z.string().min(1).optional(),
+		ARCHIVAL_EXPORT_GRACE_DAYS: z.coerce.number().int().min(1).default(30),
+		/** Days on R2 after envelope completion before FOC transition (upload + R2 delete). */
+		R2_HOT_DAYS: z.coerce.number().int().min(1).default(30),
+		/** Days to retain data after workspace subscription ends (FOC + hot storage policy). */
+		WORKSPACE_CHURN_GRACE_DAYS: z.coerce.number().int().min(1).default(90),
 	},
 	runtimeEnv: Bun.env,
 	emptyStringAsUndefined: true,

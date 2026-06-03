@@ -26,8 +26,11 @@ import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-d
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
+import { ArchivalSection } from "./archival-section";
 import { BillingSection } from "./billing-section";
 import { MembersSection } from "./members-section";
+import { OrgGovernanceSection } from "./org-governance-section";
+import { OrgWalletSection } from "./org-wallet-section";
 import { PayoutFeatureAccessSection } from "./payout-feature-access-section";
 import { WorkspaceSection } from "./workspace-section";
 
@@ -304,7 +307,10 @@ export function WorkspaceSettingsPage() {
 			{activeOrgId ? (
 				<div className="space-y-6">
 					<WorkspaceDetailsSection />
+					<OrgGovernanceSection />
+					<OrgWalletSection />
 					<BillingSection />
+					<ArchivalSection />
 					<MembersSection onInviteClick={handleInviteClick} />
 					<PayoutFeatureAccessSection />
 				</div>

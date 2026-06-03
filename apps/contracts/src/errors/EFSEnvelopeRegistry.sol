@@ -25,3 +25,7 @@ error DuplicateCommitment();
 error InvalidRoutingConfig();
 error InvalidQuorumConfig();
 error SequentialOrderViolation();
+error EnvelopeRecalled();
+error EnvelopeAlreadyComplete();
+error OptionalSignersNotSupported();
+error UnauthorizedRecaller();

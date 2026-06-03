@@ -17,6 +17,7 @@ import { latestBlockTimestamp } from "./helpers/chainTime.js";
 import {
 	mergeSortedCommitments,
 	signAmendSigner,
+	signRecallEnvelope,
 	signRegisterEnvelope,
 	signRegisterEnvelopeSignature,
 } from "./helpers/signatures.js";
@@ -198,7 +199,7 @@ describe("FSEnvelopeRegistry", () => {
 		await assert.rejects(registerEnvelopeSignatureStep(step));
 	});
 
-	it("two signers: allSigned when both required sign", async () => {
+	it("two signers: completedAt set when both required sign", async () => {
 		const ctx = await deployFullSystem();
 		const ca = `0x${"01".repeat(32)}` as Hex;
 		const cb = `0x${"02".repeat(32)}` as Hex;
@@ -226,43 +227,23 @@ describe("FSEnvelopeRegistry", () => {
 		});
 
 		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
-		expect(await ctx.envelopeRegistry.read.allRequiredSigned([cidId])).to.equal(
-			true,
-		);
-		expect(await ctx.envelopeRegistry.read.allSigned([cidId])).to.equal(true);
+		expect(
+			await ctx.envelopeRegistry.read.isEnvelopeComplete([cidId]),
+		).to.equal(true);
+		const reg = await ctx.envelopeRegistry.read.envelopeRegistrations([cidId]);
+		expect(Number(reg.completedAt)).to.be.greaterThan(0);
 	});
 
-	it("optional signers: allRequiredSigned before optional signs", async () => {
+	it("registerEnvelope reverts when optional commitments non-empty", async () => {
 		const ctx = await deployFullSystem();
 		const required = `0x${"11".repeat(32)}` as Hex;
 		const optional = `0x${"22".repeat(32)}` as Hex;
-		const pieceCid = "optional-signer";
-		await registerEnvelopeOnly(ctx, pieceCid, [required], {
-			optionalCommitments: [optional],
-		});
-
-		await registerEnvelopeSignatureStep({
-			ctx,
-			pieceCid,
-			senderAddr: walletAccount(ctx.sender).address,
-			signerWallet: ctx.sender,
-			signerEmailCommitment: required,
-		});
-
-		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
-		expect(await ctx.envelopeRegistry.read.allRequiredSigned([cidId])).to.equal(
-			true,
+		const pieceCid = "optional-signer-rejected";
+		await assert.rejects(
+			registerEnvelopeOnly(ctx, pieceCid, [required], {
+				optionalCommitments: [optional],
+			}),
 		);
-		expect(await ctx.envelopeRegistry.read.allSigned([cidId])).to.equal(false);
-
-		await registerEnvelopeSignatureStep({
-			ctx,
-			pieceCid,
-			senderAddr: walletAccount(ctx.sender).address,
-			signerWallet: ctx.payout,
-			signerEmailCommitment: optional,
-		});
-		expect(await ctx.envelopeRegistry.read.allSigned([cidId])).to.equal(true);
 	});
 
 	it("sequential routing enforces signing order", async () => {
@@ -301,7 +282,7 @@ describe("FSEnvelopeRegistry", () => {
 		});
 	});
 
-	it("quorumMet returns true when quorum N-of-M satisfied", async () => {
+	it("completedAt set when quorum N-of-M satisfied", async () => {
 		const ctx = await deployFullSystem();
 		const a = `0x${"41".repeat(32)}` as Hex;
 		const b = `0x${"42".repeat(32)}` as Hex;
@@ -313,7 +294,9 @@ describe("FSEnvelopeRegistry", () => {
 		});
 
 		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
-		expect(await ctx.envelopeRegistry.read.quorumMet([cidId])).to.equal(false);
+		expect(
+			await ctx.envelopeRegistry.read.isEnvelopeComplete([cidId]),
+		).to.equal(false);
 
 		await registerEnvelopeSignatureStep({
 			ctx,
@@ -322,7 +305,9 @@ describe("FSEnvelopeRegistry", () => {
 			signerWallet: ctx.sender,
 			signerEmailCommitment: a,
 		});
-		expect(await ctx.envelopeRegistry.read.quorumMet([cidId])).to.equal(false);
+		expect(
+			await ctx.envelopeRegistry.read.isEnvelopeComplete([cidId]),
+		).to.equal(false);
 
 		await registerEnvelopeSignatureStep({
 			ctx,
@@ -331,7 +316,9 @@ describe("FSEnvelopeRegistry", () => {
 			signerWallet: ctx.payout,
 			signerEmailCommitment: b,
 		});
-		expect(await ctx.envelopeRegistry.read.quorumMet([cidId])).to.equal(true);
+		expect(
+			await ctx.envelopeRegistry.read.isEnvelopeComplete([cidId]),
+		).to.equal(true);
 	});
 
 	it("amendSigner replaces commitment before sign", async () => {
@@ -356,8 +343,9 @@ describe("FSEnvelopeRegistry", () => {
 			nonce,
 		});
 
+		const senderAddr = walletAccount(ctx.sender).address;
 		await ctx.envelopeRegistry.write.amendSigner(
-			[pieceCid, oldC, newC, ts, amendSig],
+			[pieceCid, senderAddr, oldC, newC, ts, amendSig],
 			{ account: walletAccount(ctx.server) },
 		);
 
@@ -399,8 +387,9 @@ describe("FSEnvelopeRegistry", () => {
 			nonce,
 		});
 
+		const senderAddr = walletAccount(ctx.sender).address;
 		await ctx.envelopeRegistry.write.amendSigner(
-			[pieceCid, oldB, newB, ts, amendSig],
+			[pieceCid, senderAddr, oldB, newB, ts, amendSig],
 			{ account: walletAccount(ctx.server) },
 		);
 
@@ -443,9 +432,10 @@ describe("FSEnvelopeRegistry", () => {
 			nonce,
 		});
 
+		const senderAddr = walletAccount(ctx.sender).address;
 		await assert.rejects(
 			ctx.envelopeRegistry.write.amendSigner(
-				[pieceCid, oldC, newC, ts, amendSig],
+				[pieceCid, senderAddr, oldC, newC, ts, amendSig],
 				{
 					account: walletAccount(ctx.server),
 				},
@@ -472,6 +462,7 @@ describe("FSEnvelopeRegistry", () => {
 						senderEmailCommitment: defaultSenderEmail,
 						senderAuthSubjectCommitment: defaultSenderAuth,
 						orgIdCommitment: zeroOrg,
+						orgWallet: "0x0000000000000000000000000000000000000000",
 						routingMode: 0,
 						routingOrder: [],
 						quorumN: 0,
@@ -562,14 +553,14 @@ describe("FSEnvelopeRegistry", () => {
 		);
 	});
 
-	it("registerEnvelope reverts when required and optional overlap", async () => {
+	it("registerEnvelope reverts when optional commitments provided", async () => {
 		const ctx = await deployFullSystem();
-		const shared = `0x${"75".repeat(32)}` as Hex;
+		const required = `0x${"75".repeat(32)}` as Hex;
 		const optional = `0x${"76".repeat(32)}` as Hex;
 
 		await assert.rejects(
-			registerEnvelopeOnly(ctx, "overlap-signers", [shared], {
-				optionalCommitments: [shared, optional],
+			registerEnvelopeOnly(ctx, "optional-not-supported", [required], {
+				optionalCommitments: [optional],
 			}),
 		);
 	});
@@ -610,6 +601,7 @@ describe("FSEnvelopeRegistry", () => {
 					senderEmailCommitment: defaultSenderEmail,
 					senderAuthSubjectCommitment: defaultSenderAuth,
 					orgIdCommitment: zeroOrg,
+					orgWallet: "0x0000000000000000000000000000000000000000",
 					routingMode: 0,
 					routingOrder: [],
 					quorumN: 0,
@@ -660,6 +652,7 @@ describe("FSEnvelopeRegistry", () => {
 						senderEmailCommitment: defaultSenderEmail,
 						senderAuthSubjectCommitment: defaultSenderAuth,
 						orgIdCommitment: zeroOrg,
+						orgWallet: "0x0000000000000000000000000000000000000000",
 						routingMode: 0,
 						routingOrder: [],
 						quorumN: 0,
@@ -712,6 +705,7 @@ describe("FSEnvelopeRegistry", () => {
 						senderEmailCommitment: defaultSenderEmail,
 						senderAuthSubjectCommitment: defaultSenderAuth,
 						orgIdCommitment: zeroOrg,
+						orgWallet: "0x0000000000000000000000000000000000000000",
 						routingMode: 0,
 						routingOrder: [],
 						quorumN: 0,
@@ -764,6 +758,7 @@ describe("FSEnvelopeRegistry", () => {
 						senderEmailCommitment: defaultSenderEmail,
 						senderAuthSubjectCommitment: defaultSenderAuth,
 						orgIdCommitment: zeroOrg,
+						orgWallet: "0x0000000000000000000000000000000000000000",
 						routingMode: 0,
 						routingOrder: [],
 						quorumN: 0,
@@ -827,9 +822,150 @@ describe("FSEnvelopeRegistry", () => {
 		await registerEnvelopeOnly(ctx, pieceCid, [oldC]);
 
 		const ts = await latestBlockTimestamp(ctx.publicClient);
+		const senderAddr = walletAccount(ctx.sender).address;
 		await assert.rejects(
 			ctx.envelopeRegistry.write.amendSigner(
-				[pieceCid, oldC, newC, ts, `0x${"00".repeat(65)}` as Hex],
+				[pieceCid, senderAddr, oldC, newC, ts, `0x${"00".repeat(65)}` as Hex],
+				{ account: walletAccount(ctx.server) },
+			),
+		);
+	});
+
+	it("recallEnvelope by sender voids envelope before required sign", async () => {
+		const ctx = await deployFullSystem();
+		const c = `0x${"81".repeat(32)}` as Hex;
+		const pieceCid = "recall-sender";
+		await registerEnvelopeOnly(ctx, pieceCid, [c]);
+		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
+		const senderAddr = walletAccount(ctx.sender).address;
+		const ts = await latestBlockTimestamp(ctx.publicClient);
+		const nonce = await ctx.envelopeRegistry.read.nonce([senderAddr]);
+		const recallSig = await signRecallEnvelope({
+			wallet: ctx.sender,
+			envelopeRegistryAddress: ctx.envelopeRegistry.address,
+			chainId: ctx.chainId,
+			pieceCid,
+			orgIdCommitment: zeroOrg,
+			timestamp: ts,
+			nonce,
+		});
+		await ctx.envelopeRegistry.write.recallEnvelope(
+			[pieceCid, senderAddr, ts, recallSig],
+			{ account: walletAccount(ctx.server) },
+		);
+		expect(
+			await ctx.envelopeRegistry.read.isRevokedBeforeComplete([cidId]),
+		).to.equal(true);
+		const reg = await ctx.envelopeRegistry.read.envelopeRegistrations([cidId]);
+		expect(Number(reg.revokedBeforeCompletedAt)).to.equal(Number(ts));
+		await assert.rejects(
+			registerEnvelopeSignatureStep({
+				ctx,
+				pieceCid,
+				senderAddr,
+				signerWallet: ctx.sender,
+				signerEmailCommitment: c,
+			}),
+		);
+	});
+
+	it("recallEnvelope by orgWallet when bound at register", async () => {
+		const ctx = await deployFullSystem();
+		const c = `0x${"82".repeat(32)}` as Hex;
+		const pieceCid = "recall-org-wallet";
+		const orgWallet = walletAccount(ctx.payout).address;
+		await registerEnvelopeOnly(ctx, pieceCid, [c], { orgWallet });
+		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
+		const ts = await latestBlockTimestamp(ctx.publicClient);
+		const nonce = await ctx.envelopeRegistry.read.nonce([orgWallet]);
+		const recallSig = await signRecallEnvelope({
+			wallet: ctx.payout,
+			envelopeRegistryAddress: ctx.envelopeRegistry.address,
+			chainId: ctx.chainId,
+			pieceCid,
+			orgIdCommitment: zeroOrg,
+			timestamp: ts,
+			nonce,
+			recaller: orgWallet,
+		});
+		await ctx.envelopeRegistry.write.recallEnvelope(
+			[pieceCid, orgWallet, ts, recallSig],
+			{ account: walletAccount(ctx.server) },
+		);
+		expect(
+			await ctx.envelopeRegistry.read.isRevokedBeforeComplete([cidId]),
+		).to.equal(true);
+	});
+
+	it("recallEnvelope succeeds after partial required signature", async () => {
+		const ctx = await deployFullSystem();
+		const ca = `0x${"83".repeat(32)}` as Hex;
+		const cb = `0x${"84".repeat(32)}` as Hex;
+		const pieceCid = "recall-after-partial";
+		await registerEnvelopeOnly(ctx, pieceCid, [ca, cb]);
+		await registerEnvelopeSignatureStep({
+			ctx,
+			pieceCid,
+			senderAddr: walletAccount(ctx.sender).address,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: ca,
+		});
+		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
+		expect(
+			await ctx.envelopeRegistry.read.isEnvelopeComplete([cidId]),
+		).to.equal(false);
+		const senderAddr = walletAccount(ctx.sender).address;
+		const ts = await latestBlockTimestamp(ctx.publicClient);
+		const nonce = await ctx.envelopeRegistry.read.nonce([senderAddr]);
+		const recallSig = await signRecallEnvelope({
+			wallet: ctx.sender,
+			envelopeRegistryAddress: ctx.envelopeRegistry.address,
+			chainId: ctx.chainId,
+			pieceCid,
+			orgIdCommitment: zeroOrg,
+			timestamp: ts,
+			nonce,
+		});
+		await ctx.envelopeRegistry.write.recallEnvelope(
+			[pieceCid, senderAddr, ts, recallSig],
+			{ account: walletAccount(ctx.server) },
+		);
+		expect(
+			await ctx.envelopeRegistry.read.isRevokedBeforeComplete([cidId]),
+		).to.equal(true);
+	});
+
+	it("recallEnvelope reverts after envelope complete", async () => {
+		const ctx = await deployFullSystem();
+		const c = `0x${"85".repeat(32)}` as Hex;
+		const pieceCid = "recall-after-complete";
+		await registerEnvelopeOnly(ctx, pieceCid, [c]);
+		await registerEnvelopeSignatureStep({
+			ctx,
+			pieceCid,
+			senderAddr: walletAccount(ctx.sender).address,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: c,
+		});
+		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
+		expect(
+			await ctx.envelopeRegistry.read.isEnvelopeComplete([cidId]),
+		).to.equal(true);
+		const senderAddr = walletAccount(ctx.sender).address;
+		const ts = await latestBlockTimestamp(ctx.publicClient);
+		const nonce = await ctx.envelopeRegistry.read.nonce([senderAddr]);
+		const recallSig = await signRecallEnvelope({
+			wallet: ctx.sender,
+			envelopeRegistryAddress: ctx.envelopeRegistry.address,
+			chainId: ctx.chainId,
+			pieceCid,
+			orgIdCommitment: zeroOrg,
+			timestamp: ts,
+			nonce,
+		});
+		await assert.rejects(
+			ctx.envelopeRegistry.write.recallEnvelope(
+				[pieceCid, senderAddr, ts, recallSig],
 				{ account: walletAccount(ctx.server) },
 			),
 		);
@@ -837,12 +973,10 @@ describe("FSEnvelopeRegistry", () => {
 
 	it("rosterSignedCount tracks signed roster members", async () => {
 		const ctx = await deployFullSystem();
-		const required = `0x${"7b".repeat(32)}` as Hex;
-		const optional = `0x${"7c".repeat(32)}` as Hex;
+		const a = `0x${"7b".repeat(32)}` as Hex;
+		const b = `0x${"7c".repeat(32)}` as Hex;
 		const pieceCid = "roster-count";
-		await registerEnvelopeOnly(ctx, pieceCid, [required], {
-			optionalCommitments: [optional],
-		});
+		await registerEnvelopeOnly(ctx, pieceCid, [a, b]);
 		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
 		expect(await ctx.envelopeRegistry.read.rosterSignedCount([cidId])).to.equal(
 			0,
@@ -853,7 +987,7 @@ describe("FSEnvelopeRegistry", () => {
 			pieceCid,
 			senderAddr: walletAccount(ctx.sender).address,
 			signerWallet: ctx.sender,
-			signerEmailCommitment: required,
+			signerEmailCommitment: a,
 		});
 		expect(await ctx.envelopeRegistry.read.rosterSignedCount([cidId])).to.equal(
 			1,

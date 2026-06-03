@@ -89,7 +89,9 @@ describe("ERC-1271 signature paths (Safe-compatible)", () => {
 			);
 
 			const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
-			expect(await ctx.envelopeRegistry.read.allSigned([cidId])).to.equal(true);
+			expect(
+				await ctx.envelopeRegistry.read.isEnvelopeComplete([cidId]),
+			).to.equal(true);
 		});
 
 		it("registerEnvelopeSignature reverts when ERC-1271 signerWallet returns invalid magic", async () => {

@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "./errors/EFSPaymentValidator.sol";
+import { EnvelopeRecalled } from "./errors/EFSEnvelopeRegistry.sol";
 import "./interfaces/IFSEnvelopeRegistry.sol";
 
 /// @notice Signature-conditional supplementary packet release (Teams Pro). Review-only packets stay off-chain.
@@ -87,6 +88,8 @@ contract FSAttachmentRelease is ReentrancyGuard {
         IFSEnvelopeRegistry.EnvelopeRegistrationView memory reg = envelopeRegistry
             .envelopeRegistrations(cidId_);
         if (reg.timestamp == 0) revert FileNotRegistered();
+        if (envelopeRegistry.isRevokedBeforeComplete(cidId_))
+            revert EnvelopeRecalled();
         if (msg.sender != reg.sender) revert UnauthorizedRuleRegistration();
         if (packetContentHash_ == bytes32(0)) revert InvalidReleaseConfig();
         if (
@@ -160,6 +163,8 @@ contract FSAttachmentRelease is ReentrancyGuard {
     ) external nonReentrant {
         AttachmentRule storage rule = rules[ruleId];
         if (rule.released || rule.cancelled) revert RuleNotExecutable();
+        if (envelopeRegistry.isRevokedBeforeComplete(rule.cidId))
+            revert EnvelopeRecalled();
         if (!_releaseConditionsMet(ruleId, rule)) revert RuleNotExecutable();
         if (rule.expiresAt != 0 && block.timestamp > rule.expiresAt) {
             revert RuleNotExecutable();
@@ -181,6 +186,7 @@ contract FSAttachmentRelease is ReentrancyGuard {
         if (rule.expiresAt != 0 && block.timestamp > rule.expiresAt) {
             return false;
         }
+        if (envelopeRegistry.isRevokedBeforeComplete(rule.cidId)) return false;
         return _releaseConditionsMet(ruleId, rule);
     }
 
@@ -319,11 +325,12 @@ contract FSAttachmentRelease is ReentrancyGuard {
         bytes32 cidId = rule.cidId;
         ReleaseType rt = rule.releaseType;
 
-        if (rt == ReleaseType.AllSigned || rt == ReleaseType.AllRequiredSigned) {
-            return envelopeRegistry.allRequiredSigned(cidId);
-        }
-        if (rt == ReleaseType.AllSignedComplete) {
-            return envelopeRegistry.allSigned(cidId);
+        if (
+            rt == ReleaseType.AllSigned ||
+            rt == ReleaseType.AllRequiredSigned ||
+            rt == ReleaseType.AllSignedComplete
+        ) {
+            return envelopeRegistry.isEnvelopeComplete(cidId);
         }
         if (rt == ReleaseType.SpecificSigner) {
             return envelopeRegistry.hasSigned(cidId, rule.specificSignerCommitment);
@@ -332,7 +339,7 @@ contract FSAttachmentRelease is ReentrancyGuard {
             IFSEnvelopeRegistry.EnvelopeRegistrationView memory reg = envelopeRegistry
                 .envelopeRegistrations(cidId);
             if (reg.quorumN > 0) {
-                return envelopeRegistry.quorumMet(cidId);
+                return envelopeRegistry.isEnvelopeComplete(cidId);
             }
             return reg.requiredSignaturesCount >= rule.thresholdN;
         }

@@ -1,7 +1,7 @@
 export const definitions = {
 	"0x14a34": {
 		FSEnvelopeRegistry: {
-			address: "0x2F8b5913aA908F1Dd797a9F1e7ff0A02c8fc6139",
+			address: "0x6E80EbDe942cfe46142C7B797E9b466f42cB3f29",
 			abi: [
 				{
 					inputs: [
@@ -27,6 +27,16 @@ export const definitions = {
 				{
 					inputs: [],
 					name: "DuplicateCommitment",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "EnvelopeAlreadyComplete",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "EnvelopeRecalled",
 					type: "error",
 				},
 				{
@@ -85,6 +95,11 @@ export const definitions = {
 					type: "error",
 				},
 				{
+					inputs: [],
+					name: "OptionalSignersNotSupported",
+					type: "error",
+				},
+				{
 					inputs: [
 						{
 							internalType: "address",
@@ -139,6 +154,11 @@ export const definitions = {
 				},
 				{
 					inputs: [],
+					name: "UnauthorizedRecaller",
+					type: "error",
+				},
+				{
+					inputs: [],
 					name: "UnsortedSigners",
 					type: "error",
 				},
@@ -168,6 +188,25 @@ export const definitions = {
 							type: "bytes32",
 						},
 						{
+							indexed: false,
+							internalType: "uint48",
+							name: "completedAt",
+							type: "uint48",
+						},
+					],
+					name: "EnvelopeCompleted",
+					type: "event",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "bytes32",
+							name: "cidIdentifier",
+							type: "bytes32",
+						},
+						{
 							indexed: true,
 							internalType: "address",
 							name: "sender",
@@ -181,6 +220,31 @@ export const definitions = {
 						},
 					],
 					name: "EnvelopeRegistered",
+					type: "event",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "bytes32",
+							name: "cidIdentifier",
+							type: "bytes32",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "revokedBy",
+							type: "address",
+						},
+						{
+							indexed: false,
+							internalType: "uint48",
+							name: "revokedAt",
+							type: "uint48",
+						},
+					],
+					name: "EnvelopeRevokedBeforeComplete",
 					type: "event",
 				},
 				{
@@ -318,47 +382,14 @@ export const definitions = {
 				{
 					inputs: [
 						{
-							internalType: "bytes32",
-							name: "cidId",
-							type: "bytes32",
-						},
-					],
-					name: "allRequiredSigned",
-					outputs: [
-						{
-							internalType: "bool",
-							name: "",
-							type: "bool",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [
-						{
-							internalType: "bytes32",
-							name: "cidId",
-							type: "bytes32",
-						},
-					],
-					name: "allSigned",
-					outputs: [
-						{
-							internalType: "bool",
-							name: "",
-							type: "bool",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [
-						{
 							internalType: "string",
 							name: "pieceCid_",
 							type: "string",
+						},
+						{
+							internalType: "address",
+							name: "recaller_",
+							type: "address",
 						},
 						{
 							internalType: "bytes32",
@@ -559,6 +590,31 @@ export const definitions = {
 									name: "timestamp",
 									type: "uint256",
 								},
+								{
+									internalType: "bytes32",
+									name: "orgIdCommitment",
+									type: "bytes32",
+								},
+								{
+									internalType: "address",
+									name: "orgWallet",
+									type: "address",
+								},
+								{
+									internalType: "uint48",
+									name: "completedAt",
+									type: "uint48",
+								},
+								{
+									internalType: "uint48",
+									name: "revokedBeforeCompletedAt",
+									type: "uint48",
+								},
+								{
+									internalType: "address",
+									name: "revokedBy",
+									type: "address",
+								},
 							],
 							internalType:
 								"struct FSEnvelopeRegistry.EnvelopeRegistrationView",
@@ -610,6 +666,44 @@ export const definitions = {
 						},
 					],
 					stateMutability: "pure",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "bytes32",
+							name: "cidId",
+							type: "bytes32",
+						},
+					],
+					name: "isEnvelopeComplete",
+					outputs: [
+						{
+							internalType: "bool",
+							name: "",
+							type: "bool",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "bytes32",
+							name: "cidId",
+							type: "bytes32",
+						},
+					],
+					name: "isRevokedBeforeComplete",
+					outputs: [
+						{
+							internalType: "bool",
+							name: "",
+							type: "bool",
+						},
+					],
+					stateMutability: "view",
 					type: "function",
 				},
 				{
@@ -684,20 +778,29 @@ export const definitions = {
 				{
 					inputs: [
 						{
-							internalType: "bytes32",
-							name: "cidId",
-							type: "bytes32",
+							internalType: "string",
+							name: "pieceCid_",
+							type: "string",
 						},
-					],
-					name: "quorumMet",
-					outputs: [
 						{
-							internalType: "bool",
-							name: "",
-							type: "bool",
+							internalType: "address",
+							name: "recaller_",
+							type: "address",
+						},
+						{
+							internalType: "uint256",
+							name: "timestamp_",
+							type: "uint256",
+						},
+						{
+							internalType: "bytes",
+							name: "signature_",
+							type: "bytes",
 						},
 					],
-					stateMutability: "view",
+					name: "recallEnvelope",
+					outputs: [],
+					stateMutability: "nonpayable",
 					type: "function",
 				},
 				{
@@ -743,6 +846,11 @@ export const definitions = {
 									internalType: "bytes32",
 									name: "orgIdCommitment",
 									type: "bytes32",
+								},
+								{
+									internalType: "address",
+									name: "orgWallet",
+									type: "address",
 								},
 								{
 									internalType: "uint8",
@@ -1007,6 +1115,11 @@ export const definitions = {
 									type: "bytes32",
 								},
 								{
+									internalType: "address",
+									name: "orgWallet",
+									type: "address",
+								},
+								{
 									internalType: "uint8",
 									name: "routingMode",
 									type: "uint8",
@@ -1125,7 +1238,7 @@ export const definitions = {
 			],
 		},
 		FSPaymentValidator: {
-			address: "0x95266eC602342638fAE0Ae209723d136cF8568ed",
+			address: "0xfDbEC43Ef090C8a319FFA0B26bDf6A576fcF0456",
 			abi: [
 				{
 					inputs: [
@@ -1142,6 +1255,11 @@ export const definitions = {
 					],
 					stateMutability: "nonpayable",
 					type: "constructor",
+				},
+				{
+					inputs: [],
+					name: "EnvelopeRecalled",
+					type: "error",
 				},
 				{
 					inputs: [],
@@ -1808,7 +1926,7 @@ export const definitions = {
 			],
 		},
 		FSAttachmentRelease: {
-			address: "0xc7E68eC88713539cE24D88642DC6F372497271A2",
+			address: "0x59223B5D699cB6543676abE2fA0538c804886Ab9",
 			abi: [
 				{
 					inputs: [
@@ -1825,6 +1943,11 @@ export const definitions = {
 					],
 					stateMutability: "nonpayable",
 					type: "constructor",
+				},
+				{
+					inputs: [],
+					name: "EnvelopeRecalled",
+					type: "error",
 				},
 				{
 					inputs: [],

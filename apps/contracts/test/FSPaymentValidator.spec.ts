@@ -516,17 +516,14 @@ describe("FSPaymentValidator", () => {
 		expect(await ctx.mockUsdc.read.balanceOf([recipientAddr])).to.equal(amount);
 	});
 
-	it("AllSignedComplete: pays only when optional signers also sign", async () => {
+	it("AllSignedComplete: pays when envelope complete (completedAt)", async () => {
 		const ctx = await deployFullSystem();
 		const senderAddr = walletAccount(ctx.sender).address;
 		const recipientAddr = walletAccount(ctx.payout).address;
-		const optional = `0x${"cc".repeat(32)}` as Hex;
 		const piece = "all-signed-complete";
 		const id = cidId(piece);
 
-		await registerEnvelopeOnly(ctx, piece, [signerCommitment], {
-			optionalCommitments: [optional],
-		});
+		await registerEnvelopeOnly(ctx, piece, [signerCommitment]);
 		await ctx.mockUsdc.write.mint([senderAddr, amount]);
 		const ruleId = await registerPaymentRule(ctx, {
 			payer: senderAddr,
@@ -539,21 +536,14 @@ describe("FSPaymentValidator", () => {
 			account: walletAccount(ctx.sender),
 		});
 
-		await registerEnvelopeSignatureStep({
-			ctx,
-			pieceCid: piece,
-			senderAddr,
-			signerWallet: ctx.sender,
-			signerEmailCommitment: signerCommitment,
-		});
 		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.false;
 
 		await registerEnvelopeSignatureStep({
 			ctx,
 			pieceCid: piece,
 			senderAddr,
-			signerWallet: ctx.payout,
-			signerEmailCommitment: optional,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: signerCommitment,
 		});
 		await ctx.paymentValidator.write.executePayout([ruleId], {
 			account: walletAccount(ctx.payout),
@@ -699,14 +689,11 @@ describe("FSPaymentValidator", () => {
 		const piece = "quorum-all";
 		const id = cidId(piece);
 
-		await registerEnvelopeOnly(
-			ctx,
-			piece,
-			[signerCommitment, secondSignerCommitment],
-			{
-				optionalCommitments: [optional],
-			},
-		);
+		await registerEnvelopeOnly(ctx, piece, [
+			signerCommitment,
+			secondSignerCommitment,
+			optional,
+		]);
 		await ctx.mockUsdc.write.mint([senderAddr, amount]);
 		const ruleId = await registerPaymentRule(ctx, {
 			payer: senderAddr,
@@ -1285,17 +1272,18 @@ describe("FSPaymentValidator", () => {
 		expect(ruleAfterCancel[8]).to.equal(true);
 	});
 
-	it("updatePayoutRule allowed when only optional signers have signed", async () => {
+	it("updatePayoutRule allowed before any required signature", async () => {
 		const ctx = await deployFullSystem();
 		const senderAddr = walletAccount(ctx.sender).address;
 		const recipientAddr = walletAccount(ctx.payout).address;
-		const piece = "sec03-optional-only";
+		const piece = "sec03-before-sign";
 		const id = cidId(piece);
 		const half = amount / 2n;
 
-		await registerEnvelopeOnly(ctx, piece, [signerCommitment], {
-			optionalCommitments: [secondSignerCommitment],
-		});
+		await registerEnvelopeOnly(ctx, piece, [
+			signerCommitment,
+			secondSignerCommitment,
+		]);
 		await ctx.mockUsdc.write.mint([senderAddr, amount]);
 		const ruleId = await registerPaymentRule(ctx, {
 			payer: senderAddr,
@@ -1306,13 +1294,6 @@ describe("FSPaymentValidator", () => {
 		});
 		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
 			account: walletAccount(ctx.sender),
-		});
-		await registerEnvelopeSignatureStep({
-			ctx,
-			pieceCid: piece,
-			senderAddr,
-			signerWallet: ctx.coSigner,
-			signerEmailCommitment: secondSignerCommitment,
 		});
 
 		await ctx.paymentValidator.write.updatePayoutRule(

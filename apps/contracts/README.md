@@ -77,9 +77,9 @@ Sender-signed at send. Stored per file:
 
 | View | Meaning |
 | ---- | ------- |
-| `allRequiredSigned(cid)` | Every required signer has signed |
-| `allSigned(cid)` | All required **and** all optional signers have signed |
-| `quorumMet(cid)` | ≥ `quorumN` signed from `quorumSet` |
+| `isEnvelopeComplete(cid)` | `completedAt != 0` — sole envelope completion source of truth |
+| `isRevokedBeforeComplete(cid)` | `revokedBeforeCompletedAt != 0` — void tombstone |
+| `rosterSignedCount(cid)` | Signers who have posted signature bytes (rule-level releases) |
 | `rosterSignedCount(cid)` | Signed count across full roster |
 | `hasSigned(cid, commitment)` | Single signer signed |
 
@@ -112,12 +112,10 @@ struct PayoutLeg { address recipient; uint256 amount; }
 
 | Enum | On-chain condition |
 | ---- | ------------------ |
-| `AllSigned` | Legacy alias → `allRequiredSigned` |
-| `AllRequiredSigned` | `allRequiredSigned(cid)` |
-| `AllSignedComplete` | `allSigned(cid)` (required + optional) |
+| `AllSigned` / `AllRequiredSigned` / `AllSignedComplete` | `isEnvelopeComplete(cid)` |
 | `SpecificSigner` | `hasSigned(cid, commitment)` |
 | `AtLeastN` | ≥ N distinct signers from payer-supplied commitment list |
-| `QuorumRequired` | Registry quorum (`quorumMet`) when file has `quorumN`; else ≥ `thresholdN` required signers signed |
+| `QuorumRequired` | `isEnvelopeComplete(cid)` when file has `quorumN`; else ≥ `thresholdN` required signers signed |
 | `QuorumSet` | ≥ N signed from payer-supplied commitment list |
 | `QuorumAll` | ≥ N signed from **full roster** (`rosterSignedCount`) |
 | `AllOfSet` | Every commitment in payer list signed |

@@ -31,6 +31,16 @@ export const definitions = {
 				},
 				{
 					inputs: [],
+					name: "EnvelopeAlreadyComplete",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "EnvelopeRecalled",
+					type: "error",
+				},
+				{
+					inputs: [],
 					name: "ExceedsMaxSigners",
 					type: "error",
 				},
@@ -82,6 +92,11 @@ export const definitions = {
 				{
 					inputs: [],
 					name: "OnlyServer",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "OptionalSignersNotSupported",
 					type: "error",
 				},
 				{
@@ -139,6 +154,11 @@ export const definitions = {
 				},
 				{
 					inputs: [],
+					name: "UnauthorizedRecaller",
+					type: "error",
+				},
+				{
+					inputs: [],
 					name: "UnsortedSigners",
 					type: "error",
 				},
@@ -168,6 +188,25 @@ export const definitions = {
 							type: "bytes32",
 						},
 						{
+							indexed: false,
+							internalType: "uint48",
+							name: "completedAt",
+							type: "uint48",
+						},
+					],
+					name: "EnvelopeCompleted",
+					type: "event",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "bytes32",
+							name: "cidIdentifier",
+							type: "bytes32",
+						},
+						{
 							indexed: true,
 							internalType: "address",
 							name: "sender",
@@ -181,6 +220,31 @@ export const definitions = {
 						},
 					],
 					name: "EnvelopeRegistered",
+					type: "event",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "bytes32",
+							name: "cidIdentifier",
+							type: "bytes32",
+						},
+						{
+							indexed: true,
+							internalType: "address",
+							name: "revokedBy",
+							type: "address",
+						},
+						{
+							indexed: false,
+							internalType: "uint48",
+							name: "revokedAt",
+							type: "uint48",
+						},
+					],
+					name: "EnvelopeRevokedBeforeComplete",
 					type: "event",
 				},
 				{
@@ -318,47 +382,14 @@ export const definitions = {
 				{
 					inputs: [
 						{
-							internalType: "bytes32",
-							name: "cidId",
-							type: "bytes32",
-						},
-					],
-					name: "allRequiredSigned",
-					outputs: [
-						{
-							internalType: "bool",
-							name: "",
-							type: "bool",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [
-						{
-							internalType: "bytes32",
-							name: "cidId",
-							type: "bytes32",
-						},
-					],
-					name: "allSigned",
-					outputs: [
-						{
-							internalType: "bool",
-							name: "",
-							type: "bool",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [
-						{
 							internalType: "string",
 							name: "pieceCid_",
 							type: "string",
+						},
+						{
+							internalType: "address",
+							name: "recaller_",
+							type: "address",
 						},
 						{
 							internalType: "bytes32",
@@ -559,6 +590,31 @@ export const definitions = {
 									name: "timestamp",
 									type: "uint256",
 								},
+								{
+									internalType: "bytes32",
+									name: "orgIdCommitment",
+									type: "bytes32",
+								},
+								{
+									internalType: "address",
+									name: "orgWallet",
+									type: "address",
+								},
+								{
+									internalType: "uint48",
+									name: "completedAt",
+									type: "uint48",
+								},
+								{
+									internalType: "uint48",
+									name: "revokedBeforeCompletedAt",
+									type: "uint48",
+								},
+								{
+									internalType: "address",
+									name: "revokedBy",
+									type: "address",
+								},
 							],
 							internalType:
 								"struct FSEnvelopeRegistry.EnvelopeRegistrationView",
@@ -610,6 +666,44 @@ export const definitions = {
 						},
 					],
 					stateMutability: "pure",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "bytes32",
+							name: "cidId",
+							type: "bytes32",
+						},
+					],
+					name: "isEnvelopeComplete",
+					outputs: [
+						{
+							internalType: "bool",
+							name: "",
+							type: "bool",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "bytes32",
+							name: "cidId",
+							type: "bytes32",
+						},
+					],
+					name: "isRevokedBeforeComplete",
+					outputs: [
+						{
+							internalType: "bool",
+							name: "",
+							type: "bool",
+						},
+					],
+					stateMutability: "view",
 					type: "function",
 				},
 				{
@@ -684,20 +778,29 @@ export const definitions = {
 				{
 					inputs: [
 						{
-							internalType: "bytes32",
-							name: "cidId",
-							type: "bytes32",
+							internalType: "string",
+							name: "pieceCid_",
+							type: "string",
 						},
-					],
-					name: "quorumMet",
-					outputs: [
 						{
-							internalType: "bool",
-							name: "",
-							type: "bool",
+							internalType: "address",
+							name: "recaller_",
+							type: "address",
+						},
+						{
+							internalType: "uint256",
+							name: "timestamp_",
+							type: "uint256",
+						},
+						{
+							internalType: "bytes",
+							name: "signature_",
+							type: "bytes",
 						},
 					],
-					stateMutability: "view",
+					name: "recallEnvelope",
+					outputs: [],
+					stateMutability: "nonpayable",
 					type: "function",
 				},
 				{
@@ -743,6 +846,11 @@ export const definitions = {
 									internalType: "bytes32",
 									name: "orgIdCommitment",
 									type: "bytes32",
+								},
+								{
+									internalType: "address",
+									name: "orgWallet",
+									type: "address",
 								},
 								{
 									internalType: "uint8",
@@ -1007,6 +1115,11 @@ export const definitions = {
 									type: "bytes32",
 								},
 								{
+									internalType: "address",
+									name: "orgWallet",
+									type: "address",
+								},
+								{
 									internalType: "uint8",
 									name: "routingMode",
 									type: "uint8",
@@ -1142,6 +1255,11 @@ export const definitions = {
 					],
 					stateMutability: "nonpayable",
 					type: "constructor",
+				},
+				{
+					inputs: [],
+					name: "EnvelopeRecalled",
+					type: "error",
 				},
 				{
 					inputs: [],
@@ -1825,6 +1943,11 @@ export const definitions = {
 					],
 					stateMutability: "nonpayable",
 					type: "constructor",
+				},
+				{
+					inputs: [],
+					name: "EnvelopeRecalled",
+					type: "error",
 				},
 				{
 					inputs: [],

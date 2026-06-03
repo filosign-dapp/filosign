@@ -17,6 +17,8 @@ library FSEnvelopeRoutingLib {
         uint8 quorumN_,
         bytes32[] calldata quorumSet_
     ) internal pure {
+        if (optionalCommitments_.length > 0) revert OptionalSignersNotSupported();
+        if (requiredCommitments_.length == 0) revert InvalidRoutingConfig();
         if (requiredCommitments_.length > FSCommitmentLib.MAX_SIGNERS_PER_ENVELOPE)
             revert ExceedsMaxSigners();
         if (optionalCommitments_.length > FSCommitmentLib.MAX_SIGNERS_PER_ENVELOPE)

@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "./errors/EFSPaymentValidator.sol";
+import { EnvelopeRecalled } from "./errors/EFSEnvelopeRegistry.sol";
 import "./interfaces/IFSEnvelopeRegistry.sol";
 
 contract FSPaymentValidator is ReentrancyGuard {
@@ -159,6 +160,7 @@ contract FSPaymentValidator is ReentrancyGuard {
         if (rule.executed || rule.cancelled) revert RuleAlreadyExecuted();
         if (legPaidBitmap[ruleId] != 0) revert RuleAlreadyExecuted();
         _assertRequiredSigningNotStarted(rule.cidId);
+        _assertNotRevoked(rule.cidId);
 
         _validateLegs(rule.payer, rule.token, legs_);
         _validateReleaseConfig(
@@ -272,6 +274,13 @@ contract FSPaymentValidator is ReentrancyGuard {
         if (envelopeRegistry.envelopeRegistrations(cidId_).timestamp == 0) {
             revert FileNotRegistered();
         }
+        if (envelopeRegistry.isRevokedBeforeComplete(cidId_))
+            revert EnvelopeRecalled();
+    }
+
+    function _assertNotRevoked(bytes32 cidId_) private view {
+        if (envelopeRegistry.isRevokedBeforeComplete(cidId_))
+            revert EnvelopeRecalled();
     }
 
     function _validateLegs(
@@ -300,6 +309,8 @@ contract FSPaymentValidator is ReentrancyGuard {
             revert RuleNotExecutable();
         if (rule.expiresAt != 0 && block.timestamp > rule.expiresAt)
             revert RuleNotExecutable();
+        if (envelopeRegistry.isRevokedBeforeComplete(rule.cidId))
+            revert EnvelopeRecalled();
         if (!_releaseConditionsMet(ruleId, rule)) revert RuleNotExecutable();
     }
 
@@ -309,6 +320,7 @@ contract FSPaymentValidator is ReentrancyGuard {
             return false;
         if (rule.expiresAt != 0 && block.timestamp > rule.expiresAt)
             return false;
+        if (envelopeRegistry.isRevokedBeforeComplete(rule.cidId)) return false;
         if (!_releaseConditionsMet(ruleId, rule)) return false;
         return _unpaidLegCount(ruleId) > 0;
     }
@@ -485,11 +497,12 @@ contract FSPaymentValidator is ReentrancyGuard {
         bytes32 cidId = rule.cidId;
         ReleaseType rt = rule.releaseType;
 
-        if (rt == ReleaseType.AllSigned || rt == ReleaseType.AllRequiredSigned) {
-            return envelopeRegistry.allRequiredSigned(cidId);
-        }
-        if (rt == ReleaseType.AllSignedComplete) {
-            return envelopeRegistry.allSigned(cidId);
+        if (
+            rt == ReleaseType.AllSigned ||
+            rt == ReleaseType.AllRequiredSigned ||
+            rt == ReleaseType.AllSignedComplete
+        ) {
+            return envelopeRegistry.isEnvelopeComplete(cidId);
         }
         if (rt == ReleaseType.SpecificSigner) {
             return envelopeRegistry.hasSigned(cidId, rule.specificSignerCommitment);
@@ -498,7 +511,7 @@ contract FSPaymentValidator is ReentrancyGuard {
             IFSEnvelopeRegistry.EnvelopeRegistrationView memory reg = envelopeRegistry
                 .envelopeRegistrations(cidId);
             if (reg.quorumN > 0) {
-                return envelopeRegistry.quorumMet(cidId);
+                return envelopeRegistry.isEnvelopeComplete(cidId);
             }
             return reg.requiredSignaturesCount >= rule.thresholdN;
         }

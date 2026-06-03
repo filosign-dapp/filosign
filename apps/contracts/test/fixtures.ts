@@ -145,6 +145,7 @@ export type RegisterEnvelopeOptions = {
 	senderEmailCommitment?: Hex;
 	senderAuthSubjectCommitment?: Hex;
 	orgIdCommitment?: Hex;
+	orgWallet?: Address;
 };
 
 export async function buildRegisterEnvelopeInput(
@@ -203,6 +204,9 @@ export async function buildRegisterEnvelopeInput(
 					senderAuthSubjectCommitment:
 						options.senderAuthSubjectCommitment ?? defaultSenderAuth,
 					orgIdCommitment: options.orgIdCommitment ?? zeroOrg,
+					orgWallet:
+						options.orgWallet ??
+						("0x0000000000000000000000000000000000000000" as Address),
 					routingMode,
 					routingOrder,
 					quorumN,
@@ -225,6 +229,9 @@ export async function buildRegisterEnvelopeInput(
 		senderAuthSubjectCommitment:
 			options.senderAuthSubjectCommitment ?? defaultSenderAuth,
 		orgIdCommitment: options.orgIdCommitment ?? zeroOrg,
+		orgWallet:
+			options.orgWallet ??
+			("0x0000000000000000000000000000000000000000" as Address),
 		routingMode,
 		routingOrder,
 		quorumN,

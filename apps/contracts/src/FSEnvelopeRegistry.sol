@@ -14,8 +14,8 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
     uint256 internal constant SIGNATURE_VALIDITY_PERIOD = 24 hours;
     uint256 internal constant SIGNATURE_CLOCK_DRIFT_TOLERANCE = 5 minutes;
 
-    uint8 internal constant MAX_SIGNERS_PER_ENVELOPE = 128;
-    uint8 internal constant MAX_VIEWERS_PER_ENVELOPE = 128;
+    uint8 internal constant MAX_SIGNERS_PER_ENVELOPE = 99;
+    uint8 internal constant MAX_VIEWERS_PER_ENVELOPE = 99;
 
     enum RoutingMode {
         Parallel,
@@ -47,6 +47,11 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes32[] quorumSet;
         bytes32[] signerRoster;
         uint256 timestamp;
+        bytes32 orgIdCommitment;
+        address orgWallet;
+        uint48 completedAt;
+        uint48 revokedBeforeCompletedAt;
+        address revokedBy;
     }
 
     struct EnvelopeRegistrationView {
@@ -66,6 +71,11 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         uint8 quorumN;
         uint8 routingMode;
         uint256 timestamp;
+        bytes32 orgIdCommitment;
+        address orgWallet;
+        uint48 completedAt;
+        uint48 revokedBeforeCompletedAt;
+        address revokedBy;
     }
 
     event EnvelopeRegistered(
@@ -90,6 +100,15 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         address indexed newServer,
         address indexed changedBy
     );
+    event EnvelopeRevokedBeforeComplete(
+        bytes32 indexed cidIdentifier,
+        address indexed revokedBy,
+        uint48 revokedAt
+    );
+    event EnvelopeCompleted(
+        bytes32 indexed cidIdentifier,
+        uint48 completedAt
+    );
 
     mapping(address => uint256) public nonce;
     mapping(bytes32 => EnvelopeRegistration) private _envelopeRegistrations;
@@ -101,7 +120,9 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         _;
     }
 
-    constructor(address server_) EIP712("FSEnvelopeRegistry", "2") Ownable(msg.sender) {
+    constructor(
+        address server_
+    ) EIP712("FSEnvelopeRegistry", "2") Ownable(msg.sender) {
         if (server_ == address(0)) revert ZeroAddress();
         server = server_;
     }
@@ -117,11 +138,15 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
 
     bytes32 private constant REGISTER_ENVELOPE_TYPEHASH =
         keccak256(
-            "RegisterEnvelope(bytes32 cidIdentifier,address sender,bytes20 signersCommitment,bytes20 viewersCommitment,bytes32 placementCommitment,bytes32 senderEmailCommitment,bytes32 senderAuthSubjectCommitment,bytes32 orgIdCommitment,bytes32 requiredCommitmentsHash,bytes32 optionalCommitmentsHash,uint8 routingMode,bytes32 routingOrderHash,uint8 quorumN,bytes32 quorumSetHash,uint256 timestamp,uint256 nonce)"
+            "RegisterEnvelope(bytes32 cidIdentifier,address sender,bytes20 signersCommitment,bytes20 viewersCommitment,bytes32 placementCommitment,bytes32 senderEmailCommitment,bytes32 senderAuthSubjectCommitment,bytes32 orgIdCommitment,address orgWallet,bytes32 requiredCommitmentsHash,bytes32 optionalCommitmentsHash,uint8 routingMode,bytes32 routingOrderHash,uint8 quorumN,bytes32 quorumSetHash,uint256 timestamp,uint256 nonce)"
         );
     bytes32 private constant AMEND_SIGNER_TYPEHASH =
         keccak256(
-            "AmendSigner(bytes32 cidIdentifier,address sender,bytes32 oldCommitment,bytes32 newCommitment,uint256 timestamp,uint256 nonce)"
+            "AmendSigner(bytes32 cidIdentifier,address recaller,bytes32 oldCommitment,bytes32 newCommitment,uint256 timestamp,uint256 nonce)"
+        );
+    bytes32 private constant RECALL_ENVELOPE_TYPEHASH =
+        keccak256(
+            "RecallEnvelope(bytes32 cidIdentifier,address recaller,bytes32 orgIdCommitment,uint256 timestamp,uint256 nonce)"
         );
     bytes32 private constant ACK_ENVELOPE_TYPEHASH =
         keccak256(
@@ -139,7 +164,9 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         return FSCommitmentLib.computeEmailSignerCommitment(commitments_);
     }
 
-    function hashCommitments(bytes32[] calldata commitments_) public pure returns (bytes32) {
+    function hashCommitments(
+        bytes32[] calldata commitments_
+    ) public pure returns (bytes32) {
         return FSCommitmentLib.hashCommitments(commitments_);
     }
 
@@ -164,8 +191,21 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
                 signaturesCount: file.signaturesCount,
                 quorumN: file.quorumN,
                 routingMode: uint8(file.routingMode),
-                timestamp: file.timestamp
+                timestamp: file.timestamp,
+                orgIdCommitment: file.orgIdCommitment,
+                orgWallet: file.orgWallet,
+                completedAt: file.completedAt,
+                revokedBeforeCompletedAt: file.revokedBeforeCompletedAt,
+                revokedBy: file.revokedBy
             });
+    }
+
+    function isRevokedBeforeComplete(bytes32 cidId) external view returns (bool) {
+        return _envelopeRegistrations[cidId].revokedBeforeCompletedAt != 0;
+    }
+
+    function isEnvelopeComplete(bytes32 cidId) external view returns (bool) {
+        return _envelopeRegistrations[cidId].completedAt != 0;
     }
 
     struct RegisterEnvelopeSigInput {
@@ -177,6 +217,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes32 senderEmailCommitment;
         bytes32 senderAuthSubjectCommitment;
         bytes32 orgIdCommitment;
+        address orgWallet;
         bytes32 requiredHash;
         bytes32 optionalHash;
         uint8 routingMode;
@@ -208,6 +249,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes32 senderEmailCommitment;
         bytes32 senderAuthSubjectCommitment;
         bytes32 orgIdCommitment;
+        address orgWallet;
         uint8 routingMode;
         bytes32[] routingOrder;
         uint8 quorumN;
@@ -217,7 +259,9 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes32 placementCommitment;
     }
 
-    function registerEnvelope(RegisterEnvelopeInput calldata input) external onlyServer {
+    function registerEnvelope(
+        RegisterEnvelopeInput calldata input
+    ) external onlyServer {
         FSEnvelopeRoutingLib.validateRegisterRouting(
             input.requiredCommitments,
             input.optionalCommitments,
@@ -240,10 +284,8 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         RegisterEnvelopeSigInput memory sigInput = RegisterEnvelopeSigInput({
             cidId: cidId,
             sender: input.sender,
-            signersCommitment: FSCommitmentLib.computeEmailSignerCommitmentMemory(
-                roster,
-                roster.length
-            ),
+            signersCommitment: FSCommitmentLib
+                .computeEmailSignerCommitmentMemory(roster, roster.length),
             viewersCommitment: FSCommitmentLib.computeEmailSignerCommitment(
                 input.viewerEmailCommitments
             ),
@@ -251,6 +293,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
             senderEmailCommitment: input.senderEmailCommitment,
             senderAuthSubjectCommitment: input.senderAuthSubjectCommitment,
             orgIdCommitment: input.orgIdCommitment,
+            orgWallet: input.orgWallet,
             requiredHash: hashCommitments(input.requiredCommitments),
             optionalHash: hashCommitments(input.optionalCommitments),
             routingMode: input.routingMode,
@@ -263,21 +306,24 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         if (!_verifyRegisterEnvelopeSignature(sigInput, input.signature))
             revert InvalidSignature();
 
-        RegisterEnvelopeWriteInput memory writeInput = RegisterEnvelopeWriteInput({
-            cidId: cidId,
-            sender: input.sender,
-            signersCommitment: sigInput.signersCommitment,
-            viewersCommitment: sigInput.viewersCommitment,
-            placementCommitment: input.placementCommitment,
-            senderEmailCommitment: input.senderEmailCommitment,
-            senderAuthSubjectCommitment: input.senderAuthSubjectCommitment,
-            routingMode: input.routingMode,
-            quorumN: input.quorumN,
-            timestamp: input.timestamp
-        });
+        RegisterEnvelopeWriteInput
+            memory writeInput = RegisterEnvelopeWriteInput({
+                cidId: cidId,
+                sender: input.sender,
+                signersCommitment: sigInput.signersCommitment,
+                viewersCommitment: sigInput.viewersCommitment,
+                placementCommitment: input.placementCommitment,
+                senderEmailCommitment: input.senderEmailCommitment,
+                senderAuthSubjectCommitment: input.senderAuthSubjectCommitment,
+                routingMode: input.routingMode,
+                quorumN: input.quorumN,
+                timestamp: input.timestamp
+            });
 
         _writeEnvelopeRegistration(
             writeInput,
+            input.orgIdCommitment,
+            input.orgWallet,
             input.requiredCommitments,
             input.optionalCommitments,
             input.viewerEmailCommitments,
@@ -289,6 +335,8 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
 
     function _writeEnvelopeRegistration(
         RegisterEnvelopeWriteInput memory input,
+        bytes32 orgIdCommitment_,
+        address orgWallet_,
         bytes32[] calldata requiredCommitments_,
         bytes32[] calldata optionalCommitments_,
         bytes32[] calldata viewerEmailCommitments_,
@@ -312,6 +360,11 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         file.quorumN = input.quorumN;
         file.routingMode = RoutingMode(input.routingMode);
         file.timestamp = input.timestamp;
+        file.orgIdCommitment = orgIdCommitment_;
+        file.orgWallet = orgWallet_;
+        file.completedAt = 0;
+        file.revokedBeforeCompletedAt = 0;
+        file.revokedBy = address(0);
 
         for (uint256 i = 0; i < requiredCommitments_.length; i++) {
             bytes32 c = requiredCommitments_[i];
@@ -337,7 +390,11 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         }
 
         nonce[input.sender]++;
-        emit EnvelopeRegistered(input.cidId, input.sender, uint48(input.timestamp));
+        emit EnvelopeRegistered(
+            input.cidId,
+            input.sender,
+            uint48(input.timestamp)
+        );
     }
 
     function _verifyRegisterEnvelopeSignature(
@@ -361,6 +418,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
                 input.senderEmailCommitment,
                 input.senderAuthSubjectCommitment,
                 input.orgIdCommitment,
+                input.orgWallet,
                 input.requiredHash,
                 input.optionalHash,
                 input.routingMode,
@@ -371,15 +429,17 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
                 nonce[input.sender]
             )
         );
-        return FSSignatureValidation.isValid(
-            input.sender,
-            _hashTypedDataV4(structHash),
-            signature_
-        );
+        return
+            FSSignatureValidation.isValid(
+                input.sender,
+                _hashTypedDataV4(structHash),
+                signature_
+            );
     }
 
     function amendSigner(
         string calldata pieceCid_,
+        address recaller_,
         bytes32 oldCommitment_,
         bytes32 newCommitment_,
         uint256 timestamp_,
@@ -391,25 +451,29 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes32 cidId = FSCommitmentLib.cidIdentifier(pieceCid_);
         EnvelopeRegistration storage file = _envelopeRegistrations[cidId];
         if (file.timestamp == 0) revert FileNotRegistered();
+        _assertNotRevoked(file);
+        _assertNotComplete(file);
         if (file.signatures[oldCommitment_].length != 0) revert AlreadySigned();
         if (!file.signerEmailRegistered[oldCommitment_]) revert InvalidSigner();
-        if (file.signerEmailRegistered[newCommitment_]) revert DuplicateCommitment();
+        if (file.signerEmailRegistered[newCommitment_])
+            revert DuplicateCommitment();
 
+        _assertRecallerAuthorized(file, recaller_);
         _assertSignatureTimestamp(timestamp_);
 
         bytes32 structHash = keccak256(
             abi.encode(
                 AMEND_SIGNER_TYPEHASH,
                 cidId,
-                file.sender,
+                recaller_,
                 oldCommitment_,
                 newCommitment_,
                 timestamp_,
-                nonce[file.sender]
+                nonce[recaller_]
             )
         );
         bytes32 digest = _hashTypedDataV4(structHash);
-        if (!FSSignatureValidation.isValid(file.sender, digest, signature_))
+        if (!FSSignatureValidation.isValid(recaller_, digest, signature_))
             revert InvalidSignature();
 
         bool wasRequired = file.isRequiredSigner[oldCommitment_];
@@ -442,16 +506,53 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
 
         bytes32[] memory roster = _rebuildRoster(file);
         FSCommitmentLib.sortCommitments(roster);
-        file.signersCommitment = FSCommitmentLib.computeEmailSignerCommitmentMemory(
-            roster,
-            roster.length
-        );
+        file.signersCommitment = FSCommitmentLib
+            .computeEmailSignerCommitmentMemory(roster, roster.length);
         for (uint256 i = 0; i < roster.length; i++) {
             file.signerRoster[i] = roster[i];
         }
 
-        nonce[file.sender]++;
-        emit SignerAmended(cidId, file.sender, oldCommitment_, newCommitment_);
+        nonce[recaller_]++;
+        emit SignerAmended(cidId, recaller_, oldCommitment_, newCommitment_);
+    }
+
+    function recallEnvelope(
+        string calldata pieceCid_,
+        address recaller_,
+        uint256 timestamp_,
+        bytes calldata signature_
+    ) external onlyServer {
+        bytes32 cidId = FSCommitmentLib.cidIdentifier(pieceCid_);
+        EnvelopeRegistration storage file = _envelopeRegistrations[cidId];
+        if (file.timestamp == 0) revert FileNotRegistered();
+        _assertNotRevoked(file);
+        _assertNotComplete(file);
+
+        _assertRecallerAuthorized(file, recaller_);
+        _assertSignatureTimestamp(timestamp_);
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                RECALL_ENVELOPE_TYPEHASH,
+                cidId,
+                recaller_,
+                file.orgIdCommitment,
+                timestamp_,
+                nonce[recaller_]
+            )
+        );
+        bytes32 digest = _hashTypedDataV4(structHash);
+        if (!FSSignatureValidation.isValid(recaller_, digest, signature_))
+            revert InvalidSignature();
+
+        file.revokedBeforeCompletedAt = uint48(timestamp_);
+        file.revokedBy = recaller_;
+        nonce[recaller_]++;
+        emit EnvelopeRevokedBeforeComplete(
+            cidId,
+            recaller_,
+            file.revokedBeforeCompletedAt
+        );
     }
 
     function registerEnvelopeSignature(
@@ -470,6 +571,8 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         EnvelopeRegistration storage file = _envelopeRegistrations[cidId];
 
         if (file.timestamp == 0) revert FileNotRegistered();
+        _assertNotRevoked(file);
+        _assertNotComplete(file);
         if (file.signatures[signerEmailCommitment_].length != 0)
             revert AlreadySigned();
 
@@ -506,7 +609,14 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         }
 
         nonce[signerWallet_]++;
-        emit EnvelopeSigned(cidId, sender_, signerWallet_, uint48(block.timestamp));
+        emit EnvelopeSigned(
+            cidId,
+            sender_,
+            signerWallet_,
+            uint48(block.timestamp)
+        );
+
+        _markCompleteIfNeeded(file, cidId);
     }
 
     function isSigner(
@@ -529,39 +639,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
                 .length != 0;
     }
 
-    function allRequiredSigned(bytes32 cidId) external view returns (bool) {
-        EnvelopeRegistration storage file = _envelopeRegistrations[cidId];
-        if (file.timestamp == 0) return false;
-        return
-            file.requiredSignaturesCount == file.requiredSignersCount &&
-            file.requiredSignersCount > 0;
-    }
-
-    function allSigned(bytes32 cidId) external view returns (bool) {
-        EnvelopeRegistration storage file = _envelopeRegistrations[cidId];
-        if (file.timestamp == 0) return false;
-        if (
-            file.requiredSignaturesCount != file.requiredSignersCount ||
-            file.requiredSignersCount == 0
-        ) return false;
-        if (file.optionalSignersCount == 0) return true;
-        return file.optionalSignaturesCount == file.optionalSignersCount;
-    }
-
-    function quorumMet(bytes32 cidId) external view returns (bool) {
-        EnvelopeRegistration storage file = _envelopeRegistrations[cidId];
-        if (file.timestamp == 0 || file.quorumN == 0) return false;
-        uint8 signed;
-        for (uint256 i = 0; i < file.quorumSet.length; i++) {
-            if (file.signatures[file.quorumSet[i]].length != 0) {
-                signed++;
-                if (signed >= file.quorumN) return true;
-            }
-        }
-        return false;
-    }
-
-    /// @dev Signed count across the full required + optional roster.
+    /// @dev Signed count across the full signer roster.
     function rosterSignedCount(bytes32 cidId) external view returns (uint8) {
         EnvelopeRegistration storage file = _envelopeRegistrations[cidId];
         if (file.timestamp == 0) return 0;
@@ -584,10 +662,8 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         RegisterEnvelopeSigInput memory sigInput = RegisterEnvelopeSigInput({
             cidId: FSCommitmentLib.cidIdentifier(input.pieceCid),
             sender: input.sender,
-            signersCommitment: FSCommitmentLib.computeEmailSignerCommitmentMemory(
-                roster,
-                roster.length
-            ),
+            signersCommitment: FSCommitmentLib
+                .computeEmailSignerCommitmentMemory(roster, roster.length),
             viewersCommitment: FSCommitmentLib.computeEmailSignerCommitment(
                 input.viewerEmailCommitments
             ),
@@ -595,6 +671,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
             senderEmailCommitment: input.senderEmailCommitment,
             senderAuthSubjectCommitment: input.senderAuthSubjectCommitment,
             orgIdCommitment: input.orgIdCommitment,
+            orgWallet: input.orgWallet,
             requiredHash: hashCommitments(input.requiredCommitments),
             optionalHash: hashCommitments(input.optionalCommitments),
             routingMode: input.routingMode,
@@ -626,6 +703,8 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         if (!file.signerEmailRegistered[signerEmailCommitment_])
             revert InvalidSigner();
         if (file.sender != sender_) revert InvalidSender();
+        _assertNotRevoked(file);
+        _assertNotComplete(file);
 
         bytes32 cidId = FSCommitmentLib.cidIdentifier(pieceCid_);
         bytes32 structHash = keccak256(
@@ -665,6 +744,8 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
             !file.signerEmailRegistered[viewerEmailCommitment_]
         ) revert InvalidSigner();
         if (file.sender != sender_) revert InvalidSender();
+        _assertNotRevoked(file);
+        _assertNotComplete(file);
 
         bytes32 cidId = FSCommitmentLib.cidIdentifier(pieceCid_);
         bytes32 structHash = keccak256(
@@ -686,6 +767,55 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         string calldata pieceCid_
     ) public pure returns (bytes32) {
         return FSCommitmentLib.cidIdentifier(pieceCid_);
+    }
+
+    function _assertRecallerAuthorized(
+        EnvelopeRegistration storage file,
+        address recaller_
+    ) private view {
+        if (recaller_ == file.sender) return;
+        if (file.orgWallet != address(0) && recaller_ == file.orgWallet) return;
+        revert UnauthorizedRecaller();
+    }
+
+    function _assertNotRevoked(
+        EnvelopeRegistration storage file
+    ) private view {
+        if (file.revokedBeforeCompletedAt != 0) revert EnvelopeRecalled();
+    }
+
+    function _assertNotComplete(
+        EnvelopeRegistration storage file
+    ) private view {
+        if (file.completedAt != 0) revert EnvelopeAlreadyComplete();
+    }
+
+    function _routingComplete(
+        EnvelopeRegistration storage file
+    ) private view returns (bool) {
+        if (file.quorumN > 0) {
+            uint8 signed;
+            for (uint256 i = 0; i < file.quorumSet.length; i++) {
+                if (file.signatures[file.quorumSet[i]].length != 0) {
+                    signed++;
+                    if (signed >= file.quorumN) return true;
+                }
+            }
+            return false;
+        }
+        return
+            file.requiredSignaturesCount == file.requiredSignersCount &&
+            file.requiredSignersCount > 0;
+    }
+
+    function _markCompleteIfNeeded(
+        EnvelopeRegistration storage file,
+        bytes32 cidId
+    ) private {
+        if (file.completedAt != 0) return;
+        if (!_routingComplete(file)) return;
+        file.completedAt = uint48(block.timestamp);
+        emit EnvelopeCompleted(cidId, file.completedAt);
     }
 
     function _assertSignatureTimestamp(uint256 timestamp_) private view {

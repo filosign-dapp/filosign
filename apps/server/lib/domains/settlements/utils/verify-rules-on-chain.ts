@@ -52,13 +52,10 @@ function normHex(a: string) {
 
 async function assertRuleMatchesOnChain(args: {
 	validator: ReturnType<typeof fsPaymentValidatorAt>;
-	sender: Address;
-	allowedPayers: ReadonlySet<string>;
 	expectedCid: Hex;
 	rule: SettlementRuleRegistrationInput;
 }) {
-	const { validator, sender, allowedPayers, expectedCid, rule } = args;
-	const _senderAddr = getAddress(sender);
+	const { validator, expectedCid, rule } = args;
 
 	assertSettlementUsdcToken(rule.tokenAddress);
 
@@ -77,7 +74,7 @@ async function assertRuleMatchesOnChain(args: {
 	}
 
 	const [
-		payer,
+		_payer,
 		token,
 		cidId,
 		releaseType,
@@ -91,12 +88,6 @@ async function assertRuleMatchesOnChain(args: {
 	if (executed || cancelled) {
 		throw new ORPCError("BAD_REQUEST", {
 			message: `Settlement rule ${rule.onChainRuleId} is not active on-chain`,
-		});
-	}
-	if (!allowedPayers.has(getAddress(payer).toLowerCase())) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"On-chain payer must be the document sender wallet or the linked organization treasury",
 		});
 	}
 	if (getAddress(token) !== getAddress(rule.tokenAddress)) {
@@ -250,19 +241,13 @@ export async function resolveAllowedSettlementPayers(
 }
 
 export async function assertSettlementRulesVerifiedOnChain(
-	sender: Address,
+	_sender: Address,
 	pieceCid: string,
 	rules: SettlementRuleRegistrationInput[],
 	validatorAddress?: `0x${string}`,
 	registryAddress?: `0x${string}` | null,
-	organizationId?: string | null,
 ) {
 	if (rules.length === 0) return;
-
-	const allowedPayers = await resolveAllowedSettlementPayers(
-		sender,
-		organizationId,
-	);
 
 	const validator = fsPaymentValidatorAt(validatorAddress ?? null);
 	if (!validator) {
@@ -279,8 +264,6 @@ export async function assertSettlementRulesVerifiedOnChain(
 	for (const rule of rules) {
 		await assertRuleMatchesOnChain({
 			validator,
-			sender,
-			allowedPayers,
 			expectedCid,
 			rule,
 		});
@@ -291,23 +274,16 @@ export async function assertSettlementRulesVerifiedOnChain(
 
 /** Verifies on-chain rule fields after a client `updatePayoutRule` tx. */
 export async function assertSettlementRuleUpdateOnChain(
-	sender: Address,
+	_sender: Address,
 	pieceCid: string,
 	rule: SettlementRuleRegistrationInput,
 	updateRuleTxHash: Hex,
 	validatorAddress: `0x${string}`,
-	organizationId?: string | null,
 ) {
 	const validator = fsPaymentValidatorAt(validatorAddress);
 	await assertTxSucceeded(updateRuleTxHash, "updateRule");
-	const allowedPayers = await resolveAllowedSettlementPayers(
-		sender,
-		organizationId,
-	);
 	await assertRuleMatchesOnChain({
 		validator,
-		sender,
-		allowedPayers,
 		expectedCid: computeCidIdentifier(pieceCid),
 		rule,
 	});

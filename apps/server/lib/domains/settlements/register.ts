@@ -188,7 +188,6 @@ export async function settlementsRegisterForFile(
 		rules,
 		validatorAddress,
 		file.registryAddress,
-		orgId,
 	);
 
 	await insertSettlementRulesForFile(

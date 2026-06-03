@@ -116,7 +116,6 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 		registrationRule,
 		input.updateRuleTxHash,
 		getAddress(rule.validatorAddress),
-		file?.organizationId ?? null,
 	);
 
 	if (settlementRuleTotalAmount(input.legs) <= 0n) {

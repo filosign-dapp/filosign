@@ -86,7 +86,7 @@ async function loadOrgSubscription(organizationId: string) {
 	return sub ?? null;
 }
 
-async function getOrCreateOrgDodoCustomer(args: {
+export async function getOrCreateOrgDodoCustomer(args: {
 	organizationId: string;
 	adminWallet: Address;
 }): Promise<string> {

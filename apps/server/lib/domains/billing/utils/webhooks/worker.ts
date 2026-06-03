@@ -22,6 +22,7 @@ import {
 	resolveIntervalFromProductId,
 	resolvePlanIdFromProductId,
 } from "../policy";
+import { tryProcessArchivalDodoWebhook } from "./archival";
 import {
 	isCheckoutFirstWithoutOrg,
 	prepareCheckoutFirstPaidAccessInTx,
@@ -209,6 +210,19 @@ export async function processDodoWebhookJob(webhookId: string): Promise<void> {
 	}
 
 	try {
+		const archivalHandled = await tryProcessArchivalDodoWebhook({
+			eventType,
+			productId: payloadData.product_id,
+			metadata: payloadData.metadata,
+			dodoSubscriptionId,
+			dodoCustomerId,
+		});
+		if (archivalHandled) {
+			await markEventStatus(webhookId, "processed");
+			logger.info({ webhookId, eventType }, "processed archival dodo webhook");
+			return;
+		}
+
 		const checkoutFirstEmail: {
 			payload: { to: string; setupUrl: string; planLabel: string } | null;
 		} = { payload: null };

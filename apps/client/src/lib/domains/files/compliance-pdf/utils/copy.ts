@@ -90,6 +90,8 @@ const TX_KIND_GLOSSARY: Record<ChainTxKind, string> = {
 		"A signer’s signature recorded on-chain for this file (registry `registerEnvelopeSignature`).",
 	signer_amended:
 		"Sender replaced a signer email commitment before signing (`amendSigner` on FSEnvelopeRegistry).",
+	envelope_revoked_before_complete:
+		"Sender or workspace controller voided the envelope on-chain before completion (`recallEnvelope` on FSEnvelopeRegistry). Partial signatures may remain in the audit trail.",
 	payout_executed:
 		"FSPaymentValidator `executePayout`: USDC transferFrom sender to recipient when release conditions were met.",
 };
@@ -151,7 +153,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 			"Registry’s internal bytes32 key derived from the piece CID for lookups. Verify: compare to `cidIdentifier` RPC output for the same piece CID.",
 		),
 		appendixGlossaryLine(
-			"signersCount / signaturesCount",
+			"requiredSignersCount / requiredSignaturesCount / signaturesCount",
 			"Counts from `envelopeRegistrations` for required signers vs recorded signatures. Verify: compare to explorer contract state at the same block height when possible.",
 		),
 		appendixGlossaryLine(
@@ -257,7 +259,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 			"Sender auth-subject commitment.",
 		],
 		[
-			"onchainRegistration.signersCount",
+			"onchainRegistration.requiredSignersCount",
 			"Required signer count from registry.",
 		],
 		[

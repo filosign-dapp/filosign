@@ -123,7 +123,7 @@ export function buildPricingComparisonRows(): ComparisonRow[] {
 			teams: true,
 			teams_pro: true,
 		}),
-		staticRow("marketing.extended_archival", "Extended archival options", {
+		staticRow("marketing.extended_archival", "Filecoin archival (org add-on)", {
 			free: null,
 			individual: true,
 			teams: true,

@@ -150,7 +150,7 @@ export function buildCompliancePdfSummaryFromBundle(
 				text: `senderAuthSubjectCommitment: ${o.senderAuthSubjectCommitment}`,
 			},
 			{
-				text: `signersCount: ${o.signersCount} / signaturesCount: ${o.signaturesCount}`,
+				text: `requiredSignersCount: ${o.requiredSignersCount} / requiredSignaturesCount: ${o.requiredSignaturesCount} / signaturesCount: ${o.signaturesCount}`,
 			},
 			{ text: `registration timestamp (uint256): ${o.timestamp}` },
 		);

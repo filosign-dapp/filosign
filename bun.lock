@@ -163,7 +163,7 @@
         "@filosign/errors": "workspace:*",
         "@filosign/logger": "workspace:*",
         "@filosign/shared": "workspace:*",
-        "@filoz/synapse-sdk": "^0.40.3",
+        "@filoz/synapse-sdk": "^0.41.0",
         "@orpc/experimental-pino": "catalog:",
         "@orpc/openapi": "catalog:",
         "@orpc/server": "catalog:",
@@ -802,9 +802,9 @@
 
     "@filosign/shared": ["@filosign/shared@workspace:packages/shared"],
 
-    "@filoz/synapse-core": ["@filoz/synapse-core@0.4.1", "", { "dependencies": { "@web3-storage/data-segment": "^5.3.0", "dnum": "^2.15.0", "iso-web": "^2.2.0", "multiformats": "^13.4.1", "ox": "^0.14.0", "p-locate": "^7.0.0", "p-queue": "^9.1.2", "p-some": "^7.0.0", "zod": "^4.3.5" }, "peerDependencies": { "viem": "2.x" } }, "sha512-Psj2YpIxNh+nxJN0wQdYMBTQRRhq1gR/C9kosI39Kx6y+lV8ppw02c6mPeHEaa47AG3KfUqQyMb3xqurOlwraQ=="],
+    "@filoz/synapse-core": ["@filoz/synapse-core@0.5.2", "", { "dependencies": { "@web3-storage/data-segment": "^5.3.0", "dnum": "^2.15.0", "iso-web": "^2.2.1", "multiformats": "^13.4.1", "ox": "^0.14.16", "p-locate": "^7.0.0", "p-queue": "^9.1.2", "p-some": "^7.0.0", "zod": "^4.3.5" }, "peerDependencies": { "viem": "2.x" } }, "sha512-euxg/UhABStkXYJBft259V9KKNdzV/08NwfwIJnlhQnTJDu5suNXqZlP5QEDTdpMVtaCCfqEXJuPGqGZy6Nz6w=="],
 
-    "@filoz/synapse-sdk": ["@filoz/synapse-sdk@0.40.4", "", { "dependencies": { "@filoz/synapse-core": "^0.4.1", "multiformats": "^13.4.1" }, "peerDependencies": { "viem": "2.x" } }, "sha512-MRofQ3EixagTglo3nqWPvTyw15LtlPIFryCWN+1swgZk7JTSuFIqVunBphF5R5yFiMC0bbGohBCqrI4CIw+eCQ=="],
+    "@filoz/synapse-sdk": ["@filoz/synapse-sdk@0.41.0", "", { "dependencies": { "@filoz/synapse-core": "^0.5.1", "multiformats": "^13.4.1" }, "peerDependencies": { "viem": "2.x" } }, "sha512-hbxV71Zjk1AExgghdP+LoYY1UqdnUMVB6Te1aJ5Af/e1lVDIOXIAHYm1WzSLCp6pU/a/+hLpGyl1CCu1IUPwYQ=="],
 
     "@floating-ui/core": ["@floating-ui/core@1.7.5", "", { "dependencies": { "@floating-ui/utils": "^0.2.11" } }, "sha512-1Ih4WTWyw0+lKyFMcBHGbb5U5FtuHJuujoyyr5zTaWS5EYMeT6Jb2AuDeftsCsEuchO+mM2ij5+q9crhydzLhQ=="],
 

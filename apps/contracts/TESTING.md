@@ -61,6 +61,12 @@ Triage reentrancy, unchecked returns, and unprotected state-changing findings. N
 
 Full rationale and other informational findings: [README — Static analysis (Slither)](./README.md#static-analysis-slither).
 
+### Org controller governance
+
+Hardhat covers `setOrgControllers` edge cases (`ZeroOrgIdCommitment`, `DuplicateOrgController`, `ExceedsMaxOrgControllers`, empty clear, `getOrgControllers`), recall/amend by controller, and `FSAttachmentRelease` register/cancel ACL. Index **`OrgControllersSet`** as a full replace per `orgIdCommitment` (see [ARCHITECTURE.md](./ARCHITECTURE.md)).
+
+**Slither (governance pass):** after `bun compile`, run with deploy env set (see `.env.example`). No new high/medium on `setOrgControllers` / `getOrgControllers` / attachment ACL beyond existing informational patterns (`arbitrary-send-erc20` on validator only, cyclomatic complexity, uninitialized locals). Triage notes: [README — Org controller governance](./README.md#org-controller-governance-slither-triage).
+
 ## Before merge
 
 - `bun run --cwd apps/contracts test` and `check-types` green

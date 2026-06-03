@@ -39,8 +39,9 @@ flowchart TB
   end
 ```
 
-1. **`FSEnvelopeRegistry(server)`** — permanent auditable send + sign trail (EIP-712 **v2**, required/optional signers, parallel/sequential routing, quorum, `amendSigner`).
+1. **`FSEnvelopeRegistry(server)`** — permanent auditable send + sign trail (EIP-712 **v4** `RegisterEnvelope`, required signers, parallel/sequential routing, quorum, `amendSigner`, org controller governance).
 2. **`FSPaymentValidator(envelopeRegistry, chainId)`** — permissionless pull settlement on sign; multi-leg rules, release types, payer CRUD, `expiresAt`; no custody.
+3. **`FSAttachmentRelease(envelopeRegistry, chainId)`** (Teams Pro) — supplementary packet release rules; sender or org controller may register/cancel.
 
 ## Trust boundaries
 
@@ -49,6 +50,22 @@ flowchart TB
 - **No Filosign custody:** validator only `transferFrom(payer, recipient)`; contract must not hold USDC.
 - **Permissionless payout:** any address may call `executePayout` when `canExecute` is true (server relay is UX).
 - **Payer-only rules:** `registerRule` requires `msg.sender == payer`.
+
+## Organization governance (on-chain)
+
+Team workspaces use a **mapping-only** controller ACL on the registry (not per-envelope lists, not `orgWallet` on registration).
+
+| Concept | On-chain | Off-chain (Postgres) |
+| ------- | -------- | --------------------- |
+| **Controllers** | `setOrgControllers(orgIdCommitment, wallets[])` → `isOrgController` | Active **owner + admin** wallets; synced by server on org create / role change / member remove / invite accept |
+| **Treasury** | Not stored on registry | `organizations.orgWalletAddress` — settlement payer/recipient only |
+| **Org id** | `orgIdCommitment` on each envelope at register | UUID → `hashOrgIdCommitment` |
+
+**Who may void / amend / attachment-govern:** document **sender**, or any wallet in the on-chain controller set for that envelope’s `orgIdCommitment`. Recall EIP-712 includes `orgIdCommitment` read from storage at relay time.
+
+**Indexer / ops rule:** treat each **`OrgControllersSet`** event as the **full replacement** controller set for that `orgIdCommitment` (not a delta). Alternatively call **`getOrgControllers(orgIdCommitment)`**. Personal sends use zero `orgIdCommitment`; controller ACL does not apply.
+
+**Definitions:** `bun compile` then `bun run scripts/export-definitions-from-artifacts.ts [local|testnet|mainnet]` — refreshes ABI from artifacts (keeps deployed addresses for non-local chains). Deploy via `migrate:*` writes definitions automatically.
 
 ## Security practices (pre-mainnet)
 
@@ -70,7 +87,7 @@ bun run --cwd apps/contracts migrate:testnet   # test + deploy Base Sepolia
 bun run --cwd apps/contracts migrate:mainnet   # test + deploy Base
 ```
 
-**Breaking rebrand / redeploy:** See [`project/contracts/envelope-registry-migration.md`](../../project/contracts/envelope-registry-migration.md) (EIP-712 v2, definitions addresses, legacy `registryAddress` rows).
+**Redeploy:** See [`project/contracts/envelope-registry-migration.md`](../../project/contracts/envelope-registry-migration.md) for address rotation and definitions alignment.
 
 Local deploy: `server` = `FC_SERVER_ADDRESS` (else Hardhat #1); deploy funds that address with 100 ETH.
 

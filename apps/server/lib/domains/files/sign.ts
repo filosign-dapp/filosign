@@ -12,14 +12,17 @@ import {
 	LEAF_SCHEMA_VERSION_V1,
 	requiredFieldIdsForRecipientEmail,
 	zPlacementManifest,
+	zRegisterRoutingInput,
 } from "@filosign/shared";
-import { zHexString } from "@filosign/shared/zod";
+import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { tryExecuteAttachmentReleasesForPiece } from "@/lib/domains/attachments";
+import { assertRecallerMayRelay } from "@/lib/domains/files/recall-auth";
+import type { ActiveOrgContext } from "@/lib/domains/orgs";
 import {
 	assertSettlementRecipientAckProvided,
 	recordSettlementRecipientAck,
@@ -39,7 +42,14 @@ import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
 import { primaryEmailForWallet } from "./invites";
-import { isEnvelopeFullySigned, requireCanSign } from "./utils/piece-helpers";
+import {
+	isEnvelopeRoutingCompleteOnChain,
+	requireCanSign,
+} from "./utils/piece-helpers";
+import {
+	patchRoutingCalldataForAmend,
+	resolveSignRoutingCalldata,
+} from "./utils/routing-calldata";
 
 const {
 	files,
@@ -94,7 +104,11 @@ export async function pieceSign(args: {
 		.select({
 			pieceCid: files.pieceCid,
 			sender: files.sender,
+			organizationId: files.organizationId,
 			registryAddress: files.registryAddress,
+			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
+			completedAt: files.completedAt,
+			registerRoutingJson: files.registerRoutingJson,
 			placementCommitment: files.placementCommitment,
 			placementManifestJson: files.placementManifestJson,
 		})
@@ -103,6 +117,12 @@ export async function pieceSign(args: {
 
 	if (!fileRecord) {
 		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+	}
+	if (fileRecord.revokedBeforeCompletedAt) {
+		throw new ORPCError("FORBIDDEN", { message: "Envelope voided" });
+	}
+	if (fileRecord.completedAt) {
+		throw new ORPCError("FORBIDDEN", { message: "Envelope complete" });
 	}
 
 	const userWalletNorm = getAddress(userWallet);
@@ -277,6 +297,16 @@ export async function pieceSign(args: {
 
 	const authSubjectCommitment = hashAuthSubjectCommitment(authProviderId);
 
+	const registerRoutingParsed = zRegisterRoutingInput.safeParse(
+		fileRecord.registerRoutingJson ?? {},
+	);
+	const routingCalldata = resolveSignRoutingCalldata({
+		placementManifest: manifestParsed.data,
+		registerRouting: registerRoutingParsed.success
+			? registerRoutingParsed.data
+			: undefined,
+	});
+
 	const registerSignatureArgs = [
 		pieceCid,
 		fileRecord.sender,
@@ -288,15 +318,18 @@ export async function pieceSign(args: {
 		signature,
 		completionsRoot,
 		LEAF_SCHEMA_VERSION_V1,
+		routingCalldata.routingOrder,
+		routingCalldata.quorumSet,
 	] as const;
 	const registry = fsEnvelopeRegistryAt(fileRecord.registryAddress);
 
-	try {
-		await registry.simulate.registerEnvelopeSignature(registerSignatureArgs, {
+	const simulateRes = await tryCatch(
+		registry.simulate.registerEnvelopeSignature(registerSignatureArgs, {
 			account: evmClient.account,
-		});
-	} catch (_err) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid signature" });
+		}),
+	);
+	if (simulateRes.error) {
+		throwAppError("SIGNING.SIGNATURE_INVALID");
 	}
 
 	const txHash = await relayRegisterEnvelopeSignature(
@@ -346,12 +379,37 @@ export async function pieceSign(args: {
 		},
 	});
 
-	if (await isEnvelopeFullySigned(pieceCid)) {
+	const routingComplete = await isEnvelopeRoutingCompleteOnChain(pieceCid, {
+		registryAddress: getAddress(fileRecord.registryAddress),
+		registerRoutingJson: fileRecord.registerRoutingJson,
+	});
+	if (routingComplete) {
+		await db
+			.update(files)
+			.set({ completedAt: new Date(), updatedAt: new Date() })
+			.where(eq(files.pieceCid, pieceCid));
+
 		trackServerEvent({
 			distinctId: getAddress(fileRecord.sender),
 			event: SERVER_ANALYTICS_EVENTS.envelopeFullySigned,
 			pieceCid,
 		});
+
+		if (fileRecord.organizationId) {
+			const { createFocStubForCompletedEnvelope, orgQualifiesForFocBackup } =
+				await import("@/lib/domains/foc");
+			if (await orgQualifiesForFocBackup(fileRecord.organizationId)) {
+				void createFocStubForCompletedEnvelope(
+					pieceCid,
+					fileRecord.organizationId,
+				).catch((err) => {
+					logger.warn(
+						{ err, pieceCid, organizationId: fileRecord.organizationId },
+						"completed envelope: FOC transition stub failed",
+					);
+				});
+			}
+		}
 	}
 
 	const { enqueuePayoutForPiece } = await import("@/lib/platform/jobs");
@@ -374,42 +432,101 @@ export async function pieceSign(args: {
 
 export const zAmendSignerBody = z.object({
 	pieceCid: z.string().min(1),
+	recaller: zEvmAddress(),
 	oldCommitment: zHexString(),
 	newCommitment: zHexString(),
 	timestamp: z.number().int().positive(),
 	signature: zHexString(),
 });
 
-export async function filesAmendSigner(sender: Address, rawBody: unknown) {
+export async function filesAmendSigner(
+	wallet: Address,
+	rawBody: unknown,
+	activeOrg: ActiveOrgContext | null = null,
+) {
 	const parsed = zAmendSignerBody.safeParse(rawBody);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
 
-	const { pieceCid, oldCommitment, newCommitment, timestamp, signature } =
-		parsed.data;
+	const {
+		pieceCid,
+		recaller,
+		oldCommitment,
+		newCommitment,
+		timestamp,
+		signature,
+	} = parsed.data;
 
 	const [file] = await db
-		.select({ sender: files.sender, registryAddress: files.registryAddress })
+		.select({
+			sender: files.sender,
+			organizationId: files.organizationId,
+			registryAddress: files.registryAddress,
+			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
+			completedAt: files.completedAt,
+			placementManifestJson: files.placementManifestJson,
+			registerRoutingJson: files.registerRoutingJson,
+		})
 		.from(files)
 		.where(eq(files.pieceCid, pieceCid))
 		.limit(1);
 	if (!file) {
 		throw new ORPCError("NOT_FOUND", { message: "File not found" });
 	}
-	if (getAddress(file.sender) !== getAddress(sender)) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Only the sender can amend signers",
+	if (file.revokedBeforeCompletedAt) {
+		throw new ORPCError("BAD_REQUEST", { message: "Envelope voided" });
+	}
+	if (file.completedAt) {
+		throw new ORPCError("BAD_REQUEST", { message: "Envelope complete" });
+	}
+
+	const manifestParsed = zPlacementManifest.safeParse(
+		file.placementManifestJson,
+	);
+	if (!manifestParsed.success) {
+		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+			message: "File placement manifest missing or invalid",
 		});
 	}
+	const registerRoutingParsed = zRegisterRoutingInput.safeParse(
+		file.registerRoutingJson ?? {},
+	);
+	const baseRouting = resolveSignRoutingCalldata({
+		placementManifest: manifestParsed.data,
+		registerRouting: registerRoutingParsed.success
+			? registerRoutingParsed.data
+			: undefined,
+	});
+	const routingCalldata = patchRoutingCalldataForAmend({
+		...baseRouting,
+		oldCommitment,
+		newCommitment,
+	});
+
+	await assertRecallerMayRelay({
+		wallet,
+		file: {
+			sender: file.sender,
+			organizationId: file.organizationId,
+		},
+		recaller,
+		activeOrg,
+		registryAddress: file.registryAddress,
+	});
 
 	const registry = fsEnvelopeRegistryAt(file.registryAddress);
 	const amendArgs = [
 		pieceCid,
+		recaller,
 		oldCommitment,
 		newCommitment,
 		BigInt(timestamp),
 		signature,
+		baseRouting.routingOrder,
+		routingCalldata.routingOrder,
+		baseRouting.quorumSet,
+		routingCalldata.quorumSet,
 	] as const;
 
 	const txHash = await tryCatch(relayAmendSigner(registry, amendArgs));

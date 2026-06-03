@@ -70,12 +70,20 @@ export async function pieceAck(args: {
 			pieceCid: files.pieceCid,
 			sender: files.sender,
 			registryAddress: files.registryAddress,
+			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
+			completedAt: files.completedAt,
 		})
 		.from(files)
 		.where(eq(files.pieceCid, args.pieceCid));
 
 	if (!fileRecord) {
 		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+	}
+	if (fileRecord.revokedBeforeCompletedAt) {
+		throw new ORPCError("FORBIDDEN", { message: "Envelope voided" });
+	}
+	if (fileRecord.completedAt) {
+		throw new ORPCError("FORBIDDEN", { message: "Envelope complete" });
 	}
 
 	const [participantRecord] = await db
@@ -134,17 +142,31 @@ export async function pieceAck(args: {
 	const acknowledgedAt = new Date(timestamp * 1000);
 	const now = new Date();
 
-	await db.insert(fileAcknowledgements).values({
-		filePieceCid: fileRecord.pieceCid,
-		wallet: walletNorm,
-		ack: signature,
-		acknowledgedAt,
-		intentVersion,
-		requestIp: args.requestIp ?? null,
-		requestUserAgent: args.requestUserAgent ?? null,
-		createdAt: acknowledgedAt,
-		updatedAt: now,
-	});
+	const inserted = await db
+		.insert(fileAcknowledgements)
+		.values({
+			filePieceCid: fileRecord.pieceCid,
+			wallet: walletNorm,
+			ack: signature,
+			acknowledgedAt,
+			intentVersion,
+			requestIp: args.requestIp ?? null,
+			requestUserAgent: args.requestUserAgent ?? null,
+			createdAt: acknowledgedAt,
+			updatedAt: now,
+		})
+		.onConflictDoNothing({
+			target: [fileAcknowledgements.filePieceCid, fileAcknowledgements.wallet],
+		})
+		.returning({ filePieceCid: fileAcknowledgements.filePieceCid });
+
+	if (inserted.length === 0) {
+		const existing = await getValidAck(args.userWallet, args.pieceCid);
+		if (existing && existing.ack.toLowerCase() === signature.toLowerCase()) {
+			return {};
+		}
+		throw new ORPCError("CONFLICT", { message: "File already acked" });
+	}
 
 	trackServerEvent({
 		distinctId: walletNorm,

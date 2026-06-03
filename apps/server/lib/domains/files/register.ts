@@ -1,3 +1,4 @@
+import { throwAppError } from "@filosign/errors/server";
 import {
 	computePlacementCommitment,
 	hashAuthSubjectCommitment,
@@ -26,6 +27,7 @@ import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
 import { invalidateEntitlementsForFileSend } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { fsContracts } from "@/lib/platform/evm";
+import { withRegistryWalletLock } from "@/lib/platform/evm/registry-wallet-lock";
 import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 import { enqueueOutboxByIds, insertJobOutboxRows } from "@/lib/platform/jobs";
 import { bucket } from "@/lib/platform/s3/client";
@@ -207,7 +209,7 @@ export async function filesRegister(
 		});
 	}
 	if (!valid.data) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid signature" });
+		throwAppError("SIGNING.SIGNATURE_INVALID");
 	}
 
 	const fileExists = await bucket.exists(`uploads/${pieceCid}`);
@@ -242,25 +244,27 @@ export async function filesRegister(
 	}
 
 	const txHash = await withRelayerLock(() =>
-		FSEnvelopeRegistry.write.registerEnvelope([
-			{
-				pieceCid,
-				sender,
-				requiredCommitments: routingRequiredCommitments,
-				optionalCommitments: optionalCommitmentsSorted,
-				viewerEmailCommitments: viewerEmailCommitmentsSorted,
-				senderEmailCommitment,
-				senderAuthSubjectCommitment,
-				orgIdCommitment,
-				routingMode,
-				routingOrder,
-				quorumN,
-				quorumSet,
-				timestamp: BigInt(timestamp),
-				signature,
-				placementCommitment,
-			},
-		]),
+		withRegistryWalletLock(sender, () =>
+			FSEnvelopeRegistry.write.registerEnvelope([
+				{
+					pieceCid,
+					sender,
+					requiredCommitments: routingRequiredCommitments,
+					optionalCommitments: optionalCommitmentsSorted,
+					viewerEmailCommitments: viewerEmailCommitmentsSorted,
+					senderEmailCommitment,
+					senderAuthSubjectCommitment,
+					orgIdCommitment,
+					routingMode,
+					routingOrder,
+					quorumN,
+					quorumSet,
+					timestamp: BigInt(timestamp),
+					signature,
+					placementCommitment,
+				},
+			]),
+		),
 	);
 
 	const persistArgs: PersistRegisteredFileArgs = {

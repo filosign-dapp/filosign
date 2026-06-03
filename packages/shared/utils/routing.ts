@@ -37,7 +37,6 @@ export function usesAdvancedRegisterRouting(
 	routing: RegisterRoutingInput | undefined,
 ): boolean {
 	if (!routing) return false;
-	if (routing.optionalSignerEmails?.length) return true;
 	if (routing.routingMode === 1) return true;
 	if (routing.routingOrderEmails?.length) return true;
 	if ((routing.quorumN ?? 0) > 0) return true;
@@ -140,13 +139,8 @@ export function buildRegisterRoutingCalldata(args: {
 	routing?: RegisterRoutingInput;
 }): RegisterRoutingCalldata {
 	const roster = sortedSignerCommitsForManifest(args.placementManifest);
-	const optionalEmails = normalizeEmails(
-		args.routing?.optionalSignerEmails ?? [],
-	);
-	const optionalCommitments =
-		optionalEmails.length > 0 ? sortedCommitsForEmails(optionalEmails) : [];
-	const optionalSet = new Set(optionalCommitments);
-	const requiredCommitments = roster.filter((c) => !optionalSet.has(c));
+	const requiredCommitments = roster;
+	const optionalCommitments: Hex[] = [];
 
 	const routingMode = args.routing?.routingMode ?? 0;
 	const routingOrder = args.routing?.routingOrderEmails?.length

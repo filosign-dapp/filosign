@@ -104,6 +104,19 @@ export const signingErrors = {
 		severity: "error",
 		defaultOrpcCode: "BAD_REQUEST",
 	},
+	"SIGNING.SIGNATURE_INVALID": {
+		title: "Signature no longer valid",
+		description:
+			"Your signing request could not be verified on-chain. Sign again to continue.",
+		steps: [
+			"Return to the document and tap Sign again.",
+			"If this keeps happening, refresh the page and retry.",
+		],
+		supportSlug: "signing-signature-invalid",
+		audience: "user",
+		severity: "error",
+		defaultOrpcCode: "BAD_REQUEST",
+	},
 	"SIGNING.ROUTING_ORDER": {
 		title: "Not your turn to sign yet",
 		description:

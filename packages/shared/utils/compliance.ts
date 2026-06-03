@@ -56,23 +56,22 @@ export const zOnchainRegistrationSnapshot = z.object({
 	senderAuthSubjectCommitment: zHexString(),
 	requiredSignersCount: z.number().int().min(0).max(255),
 	requiredSignaturesCount: z.number().int().min(0).max(255),
-	optionalSignersCount: z.number().int().min(0).max(255),
-	optionalSignaturesCount: z.number().int().min(0).max(255),
-	signersCount: z.number().int().min(0).max(255),
 	signaturesCount: z.number().int().min(0).max(255),
 	quorumN: z.number().int().min(0).max(255),
 	routingMode: z.number().int().min(0).max(255),
-	allRequiredSigned: z.boolean(),
-	allSigned: z.boolean(),
-	quorumMet: z.boolean(),
+	completedAt: z.string().nullable().optional(),
+	revokedBeforeCompletedAt: z.string().nullable().optional(),
+	revokedBy: zEvmAddress().nullable().optional(),
 	rosterSignedCount: z.number().int().min(0).max(255),
 	timestamp: z.string(),
+	orgIdCommitment: zHexString().nullable().optional(),
 });
 
 export const zChainTxKind = z.enum([
 	"file_registered",
 	"file_signed",
 	"signer_amended",
+	"envelope_revoked_before_complete",
 	"payout_executed",
 ]);
 

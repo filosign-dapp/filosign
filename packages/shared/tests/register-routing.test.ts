@@ -1,11 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import {
 	buildRegisterRoutingCalldata,
-	buildRegistrationEmailCommitmentsForRouting,
 	commitsForEmails,
 	hashNormalizedSignerEmail,
 	type PlacementManifest,
-	requiredSignerCommitsForRegister,
 	sortedCommitsForEmails,
 	usesAdvancedRegisterRouting,
 	validateRegisterRoutingCalldata,
@@ -46,18 +44,13 @@ describe("register routing helpers", () => {
 		expect(usesAdvancedRegisterRouting(undefined)).toBe(false);
 	});
 
-	it("marks optional signers as advanced routing", () => {
-		expect(
-			usesAdvancedRegisterRouting({
-				optionalSignerEmails: ["b@example.com"],
-			}),
-		).toBe(true);
+	it("ignores legacy optionalSignerEmails — all manifest signers are required", () => {
 		const calldata = buildRegisterRoutingCalldata({
 			placementManifest: manifest,
 			routing: { optionalSignerEmails: ["b@example.com"] },
 		});
-		expect(calldata.requiredCommitments).toHaveLength(1);
-		expect(calldata.optionalCommitments).toHaveLength(1);
+		expect(calldata.requiredCommitments).toHaveLength(2);
+		expect(calldata.optionalCommitments).toHaveLength(0);
 	});
 
 	it("defaults quorum set to full roster when quorumN is set", () => {
@@ -88,33 +81,6 @@ describe("register routing helpers", () => {
 		expect(calldata.routingOrder).not.toEqual(
 			sortedCommitsForEmails(routingOrderEmails),
 		);
-	});
-
-	it("optional signer with manifest fields aligns registration and routing required", () => {
-		const routing = { optionalSignerEmails: ["b@example.com"] };
-		const calldata = buildRegisterRoutingCalldata({
-			placementManifest: manifest,
-			routing,
-		});
-		const registration = buildRegistrationEmailCommitmentsForRouting({
-			placementManifest: manifest,
-			viewerEmails: [],
-			routing,
-		});
-		expect(calldata.requiredCommitments).toHaveLength(1);
-		expect(calldata.optionalCommitments).toHaveLength(1);
-		expect(registration.requiredCommitments).toEqual(
-			calldata.requiredCommitments,
-		);
-		expect(
-			requiredSignerCommitsForRegister({
-				placementManifest: manifest,
-				routing,
-			}),
-		).toEqual(calldata.requiredCommitments);
-		expect(
-			validateRegisterRoutingForSend({ placementManifest: manifest, routing }),
-		).toBeNull();
 	});
 
 	it("two required signers pass routing validation without optional routing", () => {

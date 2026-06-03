@@ -30,6 +30,17 @@ export const definitions = {
 					type: "error",
 				},
 				{
+					inputs: [
+						{
+							internalType: "address",
+							name: "wallet",
+							type: "address",
+						},
+					],
+					name: "DuplicateOrgController",
+					type: "error",
+				},
+				{
 					inputs: [],
 					name: "EnvelopeAlreadyComplete",
 					type: "error",
@@ -37,6 +48,11 @@ export const definitions = {
 				{
 					inputs: [],
 					name: "EnvelopeRecalled",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "ExceedsMaxOrgControllers",
 					type: "error",
 				},
 				{
@@ -169,6 +185,11 @@ export const definitions = {
 				},
 				{
 					inputs: [],
+					name: "ZeroOrgIdCommitment",
+					type: "error",
+				},
+				{
+					inputs: [],
 					name: "ZeroSigner",
 					type: "error",
 				},
@@ -276,6 +297,25 @@ export const definitions = {
 						},
 					],
 					name: "EnvelopeSigned",
+					type: "event",
+				},
+				{
+					anonymous: false,
+					inputs: [
+						{
+							indexed: true,
+							internalType: "bytes32",
+							name: "orgIdCommitment",
+							type: "bytes32",
+						},
+						{
+							indexed: false,
+							internalType: "address[]",
+							name: "wallets",
+							type: "address[]",
+						},
+					],
+					name: "OrgControllersSet",
 					type: "event",
 				},
 				{
@@ -410,6 +450,26 @@ export const definitions = {
 							internalType: "bytes",
 							name: "signature_",
 							type: "bytes",
+						},
+						{
+							internalType: "bytes32[]",
+							name: "routingOrderBefore_",
+							type: "bytes32[]",
+						},
+						{
+							internalType: "bytes32[]",
+							name: "routingOrderAfter_",
+							type: "bytes32[]",
+						},
+						{
+							internalType: "bytes32[]",
+							name: "quorumSetBefore_",
+							type: "bytes32[]",
+						},
+						{
+							internalType: "bytes32[]",
+							name: "quorumSetAfter_",
+							type: "bytes32[]",
 						},
 					],
 					name: "amendSigner",
@@ -557,21 +617,6 @@ export const definitions = {
 								},
 								{
 									internalType: "uint8",
-									name: "optionalSignersCount",
-									type: "uint8",
-								},
-								{
-									internalType: "uint8",
-									name: "optionalSignaturesCount",
-									type: "uint8",
-								},
-								{
-									internalType: "uint8",
-									name: "signersCount",
-									type: "uint8",
-								},
-								{
-									internalType: "uint8",
 									name: "signaturesCount",
 									type: "uint8",
 								},
@@ -586,6 +631,16 @@ export const definitions = {
 									type: "uint8",
 								},
 								{
+									internalType: "bytes32",
+									name: "routingOrderHash",
+									type: "bytes32",
+								},
+								{
+									internalType: "bytes32",
+									name: "quorumSetHash",
+									type: "bytes32",
+								},
+								{
 									internalType: "uint256",
 									name: "timestamp",
 									type: "uint256",
@@ -594,11 +649,6 @@ export const definitions = {
 									internalType: "bytes32",
 									name: "orgIdCommitment",
 									type: "bytes32",
-								},
-								{
-									internalType: "address",
-									name: "orgWallet",
-									type: "address",
 								},
 								{
 									internalType: "uint48",
@@ -620,6 +670,25 @@ export const definitions = {
 								"struct FSEnvelopeRegistry.EnvelopeRegistrationView",
 							name: "",
 							type: "tuple",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "bytes32",
+							name: "orgIdCommitment_",
+							type: "bytes32",
+						},
+					],
+					name: "getOrgControllers",
+					outputs: [
+						{
+							internalType: "address[]",
+							name: "",
+							type: "address[]",
 						},
 					],
 					stateMutability: "view",
@@ -691,6 +760,30 @@ export const definitions = {
 					inputs: [
 						{
 							internalType: "bytes32",
+							name: "orgIdCommitment_",
+							type: "bytes32",
+						},
+						{
+							internalType: "address",
+							name: "wallet_",
+							type: "address",
+						},
+					],
+					name: "isOrgController",
+					outputs: [
+						{
+							internalType: "bool",
+							name: "",
+							type: "bool",
+						},
+					],
+					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "bytes32",
 							name: "cidId",
 							type: "bytes32",
 						},
@@ -725,25 +818,6 @@ export const definitions = {
 							internalType: "bool",
 							name: "",
 							type: "bool",
-						},
-					],
-					stateMutability: "view",
-					type: "function",
-				},
-				{
-					inputs: [
-						{
-							internalType: "address",
-							name: "",
-							type: "address",
-						},
-					],
-					name: "nonce",
-					outputs: [
-						{
-							internalType: "uint256",
-							name: "",
-							type: "uint256",
 						},
 					],
 					stateMutability: "view",
@@ -848,11 +922,6 @@ export const definitions = {
 									type: "bytes32",
 								},
 								{
-									internalType: "address",
-									name: "orgWallet",
-									type: "address",
-								},
-								{
 									internalType: "uint8",
 									name: "routingMode",
 									type: "uint8",
@@ -950,6 +1019,16 @@ export const definitions = {
 							name: "leafSchemaVersion_",
 							type: "uint8",
 						},
+						{
+							internalType: "bytes32[]",
+							name: "routingOrder_",
+							type: "bytes32[]",
+						},
+						{
+							internalType: "bytes32[]",
+							name: "quorumSet_",
+							type: "bytes32[]",
+						},
 					],
 					name: "registerEnvelopeSignature",
 					outputs: [],
@@ -993,6 +1072,24 @@ export const definitions = {
 						},
 					],
 					stateMutability: "view",
+					type: "function",
+				},
+				{
+					inputs: [
+						{
+							internalType: "bytes32",
+							name: "orgIdCommitment_",
+							type: "bytes32",
+						},
+						{
+							internalType: "address[]",
+							name: "wallets_",
+							type: "address[]",
+						},
+					],
+					name: "setOrgControllers",
+					outputs: [],
+					stateMutability: "nonpayable",
 					type: "function",
 				},
 				{
@@ -1113,11 +1210,6 @@ export const definitions = {
 									internalType: "bytes32",
 									name: "orgIdCommitment",
 									type: "bytes32",
-								},
-								{
-									internalType: "address",
-									name: "orgWallet",
-									type: "address",
 								},
 								{
 									internalType: "uint8",
@@ -1992,6 +2084,11 @@ export const definitions = {
 				{
 					inputs: [],
 					name: "RuleNotExecutable",
+					type: "error",
+				},
+				{
+					inputs: [],
+					name: "UnauthorizedRuleCancellation",
 					type: "error",
 				},
 				{

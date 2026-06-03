@@ -29,3 +29,6 @@ error EnvelopeRecalled();
 error EnvelopeAlreadyComplete();
 error OptionalSignersNotSupported();
 error UnauthorizedRecaller();
+error ExceedsMaxOrgControllers();
+error ZeroOrgIdCommitment();
+error DuplicateOrgController(address wallet);

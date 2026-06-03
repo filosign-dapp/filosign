@@ -362,13 +362,17 @@ contract FSPaymentValidator is ReentrancyGuard {
         address token = rule.token;
         address payer = rule.payer;
 
+        _setLegPaid(ruleId, legIndex);
+        if (_unpaidLegCount(ruleId) == 0) {
+            rule.executed = true;
+        }
+
         uint256 beforeBal = IERC20(token).balanceOf(leg.recipient);
         IERC20(token).safeTransferFrom(payer, leg.recipient, leg.amount);
         uint256 afterBal = IERC20(token).balanceOf(leg.recipient);
         if (afterBal - beforeBal < leg.amount)
             revert InsufficientTransferReceived();
 
-        _setLegPaid(ruleId, legIndex);
         emit PayoutLegExecuted(
             ruleId,
             rule.cidId,
@@ -377,10 +381,6 @@ contract FSPaymentValidator is ReentrancyGuard {
             leg.amount
         );
         emit PayoutExecuted(ruleId, rule.cidId, leg.recipient, leg.amount);
-
-        if (_unpaidLegCount(ruleId) == 0) {
-            rule.executed = true;
-        }
     }
 
     function _validateExpiresAt(uint64 expiresAt_) private view {
@@ -485,7 +485,7 @@ contract FSPaymentValidator is ReentrancyGuard {
     ) private view {
         IFSEnvelopeRegistry.EnvelopeRegistrationView memory reg = envelopeRegistry
             .envelopeRegistrations(cidId_);
-        if (thresholdN_ == 0 || thresholdN_ > reg.signersCount) {
+        if (thresholdN_ == 0 || thresholdN_ > reg.requiredSignersCount) {
             revert InvalidReleaseConfig();
         }
     }

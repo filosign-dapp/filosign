@@ -8,6 +8,7 @@ error InvalidPayer();
 error InvalidAmount();
 error InvalidReleaseConfig();
 error UnauthorizedRuleRegistration();
+error UnauthorizedRuleCancellation();
 error FileNotRegistered();
 error InsufficientTransferReceived();
 error ExceedsMaxLegs();

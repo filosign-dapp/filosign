@@ -90,7 +90,13 @@ contract FSAttachmentRelease is ReentrancyGuard {
         if (reg.timestamp == 0) revert FileNotRegistered();
         if (envelopeRegistry.isRevokedBeforeComplete(cidId_))
             revert EnvelopeRecalled();
-        if (msg.sender != reg.sender) revert UnauthorizedRuleRegistration();
+        if (
+            msg.sender != reg.sender &&
+            !envelopeRegistry.isOrgController(
+                reg.orgIdCommitment,
+                msg.sender
+            )
+        ) revert UnauthorizedRuleRegistration();
         if (packetContentHash_ == bytes32(0)) revert InvalidReleaseConfig();
         if (
             recipientEmailCommitments_.length == 0 ||
@@ -150,7 +156,12 @@ contract FSAttachmentRelease is ReentrancyGuard {
     function cancelAttachmentRule(uint256 ruleId) external nonReentrant {
         AttachmentRule storage rule = rules[ruleId];
         if (rule.sender == address(0)) revert InvalidPayer();
-        if (msg.sender != rule.sender) revert UnauthorizedRuleRegistration();
+        IFSEnvelopeRegistry.EnvelopeRegistrationView memory reg = envelopeRegistry
+            .envelopeRegistrations(rule.cidId);
+        if (
+            msg.sender != rule.sender &&
+            !envelopeRegistry.isOrgController(reg.orgIdCommitment, msg.sender)
+        ) revert UnauthorizedRuleCancellation();
         if (rule.released) revert RuleAlreadyExecuted();
         if (rule.cancelled) revert RuleAlreadyCancelled();
         _assertRequiredSigningNotStarted(rule.cidId);
@@ -313,7 +324,7 @@ contract FSAttachmentRelease is ReentrancyGuard {
     ) private view {
         IFSEnvelopeRegistry.EnvelopeRegistrationView memory reg = envelopeRegistry
             .envelopeRegistrations(cidId_);
-        if (thresholdN_ == 0 || thresholdN_ > reg.signersCount) {
+        if (thresholdN_ == 0 || thresholdN_ > reg.requiredSignersCount) {
             revert InvalidReleaseConfig();
         }
     }

@@ -57,6 +57,12 @@ export const files = t.pgTable(
 		displayName: t.text(),
 		mimeType: t.text(),
 		ciphertextByteLength: t.integer(),
+		/** Attested void time from chain (EIP-712 timestamp on recallEnvelope). */
+		revokedBeforeCompletedAt: t.timestamp({ withTimezone: true }),
+		revokedBy: tEvmAddress(),
+		/** Set when envelope routing completes on-chain (completedAt). */
+		completedAt: t.timestamp({ withTimezone: true }),
+		revokeOnchainTxHash: tBytes32(),
 
 		...timestamps,
 	},
@@ -242,37 +248,6 @@ export const fileSignatures = t.pgTable(
 );
 
 /** Platform log: each compliance bundle generation for audit / future attestation. */
-export const archivalTiers = ["1y", "5y", "10y"] as const;
-export type ArchivalTier = (typeof archivalTiers)[number];
-
-export const archivalStatuses = ["pending", "archived", "failed"] as const;
-export type ArchivalStatus = (typeof archivalStatuses)[number];
-
-/** Paid Filecoin archival copy (R2 remains hot storage). */
-export const fileArchival = t.pgTable(
-	"file_archival",
-	{
-		pieceCid: t
-			.text()
-			.primaryKey()
-			.references(() => files.pieceCid, { onDelete: "cascade" }),
-		purchasedByWallet: tEvmAddress()
-			.notNull()
-			.references(() => users.walletAddress),
-		tier: t.text({ enum: archivalTiers }).notNull(),
-		status: t.text({ enum: archivalStatuses }).notNull().default("pending"),
-		purchasedAt: t.timestamp({ withTimezone: true }).notNull().defaultNow(),
-		expiresAt: t.timestamp({ withTimezone: true }).notNull(),
-		archivedAt: t.timestamp({ withTimezone: true }),
-		failureReason: t.text(),
-		...timestamps,
-	},
-	(table) => [
-		t.index("idx_file_archival_status").on(table.status),
-		t.index("idx_file_archival_expires").on(table.expiresAt),
-	],
-);
-
 export const complianceExportLogs = t.pgTable(
 	"compliance_export_logs",
 	{

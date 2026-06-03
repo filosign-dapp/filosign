@@ -1,8 +1,10 @@
+import { registerPurgeLapsedArchivalCron } from "./tasks/archival";
 import {
 	registerExpireCheckoutIntentsCron,
 	registerExpireInvitesCron,
 	registerExpirePartnerTrialsCron,
 } from "./tasks/expiry";
+import { registerFocTransitionCron } from "./tasks/foc";
 import {
 	registerOutboxPruneCron,
 	registerOutboxSweeperCron,
@@ -25,6 +27,10 @@ import {
 import type { CronHandle } from "./utils";
 
 export {
+	PURGE_LAPSED_ARCHIVAL_CRON,
+	runPurgeLapsedArchivalJob,
+} from "./tasks/archival";
+export {
 	EXPIRE_CHECKOUT_INTENTS_CRON,
 	EXPIRE_INVITES_CRON,
 	EXPIRE_PARTNER_TRIALS_CRON,
@@ -42,7 +48,6 @@ export {
 	runOutboxPruneJob,
 	runOutboxSweeperJob,
 } from "./tasks/outbox";
-
 export {
 	ORPHAN_UPLOAD_MIN_AGE_MS,
 	ORPHAN_UPLOAD_SWEEPER_CRON,
@@ -61,7 +66,6 @@ export {
 	runPurgeSentDraftBlobsJobTick as runPurgeSentDraftBlobsCronTick,
 	SENT_DRAFT_BLOB_RETENTION_DAYS,
 } from "./tasks/purge";
-
 export {
 	ACCESS_REQUEST_PII_RETENTION_DAYS,
 	COMPLIANCE_METADATA_RETENTION_DAYS,
@@ -119,6 +123,8 @@ export function startPlatformCron(): void {
 	activeJobs.push(registerPurgeSentDraftBlobsCron());
 	activeJobs.push(registerRedactAccessRequestPiiCron());
 	activeJobs.push(registerRedactComplianceMetadataCron());
+	activeJobs.push(registerPurgeLapsedArchivalCron());
+	activeJobs.push(registerFocTransitionCron());
 }
 
 export function stopPlatformCron(): void {

@@ -193,6 +193,48 @@ export const organizationTemplates = t.pgTable(
 	(table) => [t.index("idx_org_templates_org").on(table.organizationId)],
 );
 
+export const archivalProductIds = [
+	"archival_year",
+	"archival_bundle_3y",
+	"archival_bundle_5y",
+] as const;
+export type ArchivalProductId = (typeof archivalProductIds)[number];
+
+export const organizationArchivalStatuses = [
+	"none",
+	"active",
+	"lapsed",
+] as const;
+export type OrganizationArchivalStatus =
+	(typeof organizationArchivalStatuses)[number];
+
+export const organizationArchival = t.pgTable(
+	"organization_archival",
+	{
+		organizationId: t
+			.uuid()
+			.primaryKey()
+			.references(() => organizations.id, { onDelete: "cascade" }),
+		productId: t.text({ enum: archivalProductIds }).notNull(),
+		status: t
+			.text({ enum: organizationArchivalStatuses })
+			.notNull()
+			.default("none"),
+		retentionUntil: t.timestamp({ withTimezone: true }),
+		exportGraceUntil: t.timestamp({ withTimezone: true }),
+		dodoSubscriptionId: t.text().unique(),
+		dodoCustomerId: t.text(),
+		purchasedAt: t.timestamp({ withTimezone: true }).notNull().defaultNow(),
+		...timestamps,
+	},
+	(table) => [
+		t.index("idx_organization_archival_status").on(table.status),
+		t
+			.index("idx_organization_archival_export_grace")
+			.on(table.exportGraceUntil),
+	],
+);
+
 export const organizationSubscriptions = t.pgTable(
 	"organization_subscriptions",
 	{

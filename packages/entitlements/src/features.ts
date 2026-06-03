@@ -21,9 +21,7 @@ export const FEATURE_KEYS = [
 	"features.branding.custom",
 	"features.webhooks",
 	"features.metadata.tags",
-	"archival.1y",
-	"archival.5y",
-	"archival.10y",
+	"features.archival.purchase",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
@@ -54,9 +52,7 @@ export const BOOLEAN_FEATURE_KEYS = [
 	"features.branding.custom",
 	"features.webhooks",
 	"features.metadata.tags",
-	"archival.1y",
-	"archival.5y",
-	"archival.10y",
+	"features.archival.purchase",
 ] as const;
 export type BooleanFeatureKey = (typeof BOOLEAN_FEATURE_KEYS)[number];
 

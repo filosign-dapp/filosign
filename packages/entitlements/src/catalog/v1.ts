@@ -167,23 +167,13 @@ const disabledProductFeatures = {
 	| "features.metadata.tags"
 >;
 
-const paidArchivalFeatures = {
-	"archival.1y": { kind: "boolean", enabled: true },
-	"archival.5y": { kind: "boolean", enabled: true },
-	"archival.10y": { kind: "boolean", enabled: true },
-} as const satisfies Pick<
-	PlanEntitlements,
-	"archival.1y" | "archival.5y" | "archival.10y"
->;
+const paidArchivalPurchase = {
+	"features.archival.purchase": { kind: "boolean", enabled: true },
+} as const satisfies Pick<PlanEntitlements, "features.archival.purchase">;
 
-const disabledArchivalFeatures = {
-	"archival.1y": { kind: "boolean", enabled: false },
-	"archival.5y": { kind: "boolean", enabled: false },
-	"archival.10y": { kind: "boolean", enabled: false },
-} as const satisfies Pick<
-	PlanEntitlements,
-	"archival.1y" | "archival.5y" | "archival.10y"
->;
+const disabledArchivalPurchase = {
+	"features.archival.purchase": { kind: "boolean", enabled: false },
+} as const satisfies Pick<PlanEntitlements, "features.archival.purchase">;
 
 /** Versioned plan catalog — change via PR + tests; bump version when breaking. */
 export const catalogV1: Record<PlanId, PlanEntitlements> = {
@@ -197,7 +187,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		"envelope.recipients.max": { kind: "max", limit: 1 },
 		...disabledProductFeatures,
 		...disabledSupplementaryFeatures,
-		...disabledArchivalFeatures,
+		...disabledArchivalPurchase,
 	},
 	individual: {
 		"documents.sent.monthly": {
@@ -210,7 +200,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		...disabledProductFeatures,
 		...soloSupplementaryFeatures,
 		"features.draft_review_links": { kind: "boolean", enabled: true },
-		...paidArchivalFeatures,
+		...paidArchivalPurchase,
 	},
 	teams: {
 		"documents.sent.monthly": {
@@ -225,7 +215,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		"features.settlement.advanced": { kind: "boolean", enabled: false },
 		...disabledProFeatures,
 		...teamsSupplementaryFeatures,
-		...paidArchivalFeatures,
+		...paidArchivalPurchase,
 	},
 	teams_pro: {
 		"documents.sent.monthly": {
@@ -239,7 +229,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		...teamsProFeatures,
 		...proOnlyFeatures,
 		...teamsProSupplementaryFeatures,
-		...paidArchivalFeatures,
+		...paidArchivalPurchase,
 	},
 	enterprise: {
 		"documents.sent.monthly": {
@@ -253,11 +243,11 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		...teamsProFeatures,
 		...proOnlyFeatures,
 		...teamsProSupplementaryFeatures,
-		...paidArchivalFeatures,
+		...paidArchivalPurchase,
 	},
 };
 
-export const CATALOG_VERSION = 1 as const;
+export const CATALOG_VERSION = 2 as const;
 
 export function catalogEntitlement(
 	planId: PlanId,

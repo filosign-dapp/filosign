@@ -27,9 +27,7 @@ const MARKETING_LABELS: Record<FeatureKey, string> = {
 	"features.branding.custom": "Custom branding on sign pages",
 	"features.webhooks": "Webhook notifications",
 	"features.metadata.tags": "Envelope metadata tags",
-	"archival.1y": "Extended archival options",
-	"archival.5y": "Extended archival options",
-	"archival.10y": "Extended archival options",
+	"features.archival.purchase": "Filecoin archival for all org documents",
 };
 
 /** Customer-facing label for pricing / comparison tables. */
@@ -66,9 +64,6 @@ export function planMarketingLines(planId: PlanId): PlanMarketingLine[] {
 		}
 
 		if (def.kind === "boolean" && def.enabled) {
-			if (featureKey === "archival.5y" || featureKey === "archival.10y") {
-				continue;
-			}
 			if (seenLabels.has(label)) continue;
 			seenLabels.add(label);
 			lines.push({ featureKey, label });

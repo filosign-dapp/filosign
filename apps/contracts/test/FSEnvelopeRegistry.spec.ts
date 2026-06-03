@@ -11,6 +11,8 @@ import {
 	deployFullSystem,
 	registerEnvelopeOnly,
 	registerEnvelopeSignatureStep,
+	setOrgControllersForTest,
+	testOrgIdCommitment,
 	zeroOrg,
 } from "./fixtures.js";
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
@@ -147,9 +149,6 @@ describe("FSEnvelopeRegistry", () => {
 		await registerEnvelopeOnly(ctx, pieceCid, [onFile]);
 
 		const ts = await latestBlockTimestamp(ctx.publicClient);
-		const n = await ctx.envelopeRegistry.read.nonce([
-			walletAccount(ctx.payout).address,
-		]);
 		const signSig = await signRegisterEnvelopeSignature({
 			wallet: ctx.payout,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
@@ -162,7 +161,6 @@ describe("FSEnvelopeRegistry", () => {
 			completionsRoot: defaultPlacement,
 			leafSchemaVersion: 1,
 			timestamp: ts,
-			nonce: n,
 		});
 		await assert.rejects(
 			ctx.envelopeRegistry.write.registerEnvelopeSignature(
@@ -177,6 +175,8 @@ describe("FSEnvelopeRegistry", () => {
 					signSig,
 					defaultPlacement,
 					1,
+					[],
+					[],
 				],
 				{ account: walletAccount(ctx.server) },
 			),
@@ -256,6 +256,10 @@ describe("FSEnvelopeRegistry", () => {
 			routingOrder: [first, second],
 		});
 
+		const seqRouting = {
+			routingOrder: [first, second],
+			quorumSet: [] as Hex[],
+		};
 		await assert.rejects(
 			registerEnvelopeSignatureStep({
 				ctx,
@@ -263,6 +267,7 @@ describe("FSEnvelopeRegistry", () => {
 				senderAddr: walletAccount(ctx.sender).address,
 				signerWallet: ctx.coSigner,
 				signerEmailCommitment: second,
+				...seqRouting,
 			}),
 		);
 
@@ -272,6 +277,7 @@ describe("FSEnvelopeRegistry", () => {
 			senderAddr: walletAccount(ctx.sender).address,
 			signerWallet: ctx.sender,
 			signerEmailCommitment: first,
+			...seqRouting,
 		});
 		await registerEnvelopeSignatureStep({
 			ctx,
@@ -279,6 +285,7 @@ describe("FSEnvelopeRegistry", () => {
 			senderAddr: walletAccount(ctx.sender).address,
 			signerWallet: ctx.coSigner,
 			signerEmailCommitment: second,
+			...seqRouting,
 		});
 	});
 
@@ -298,12 +305,14 @@ describe("FSEnvelopeRegistry", () => {
 			await ctx.envelopeRegistry.read.isEnvelopeComplete([cidId]),
 		).to.equal(false);
 
+		const quorumRouting = { routingOrder: [] as Hex[], quorumSet: [a, b, c] };
 		await registerEnvelopeSignatureStep({
 			ctx,
 			pieceCid,
 			senderAddr: walletAccount(ctx.sender).address,
 			signerWallet: ctx.sender,
 			signerEmailCommitment: a,
+			...quorumRouting,
 		});
 		expect(
 			await ctx.envelopeRegistry.read.isEnvelopeComplete([cidId]),
@@ -315,6 +324,7 @@ describe("FSEnvelopeRegistry", () => {
 			senderAddr: walletAccount(ctx.sender).address,
 			signerWallet: ctx.payout,
 			signerEmailCommitment: b,
+			...quorumRouting,
 		});
 		expect(
 			await ctx.envelopeRegistry.read.isEnvelopeComplete([cidId]),
@@ -329,9 +339,6 @@ describe("FSEnvelopeRegistry", () => {
 		await registerEnvelopeOnly(ctx, pieceCid, [oldC]);
 
 		const ts = await latestBlockTimestamp(ctx.publicClient);
-		const nonce = await ctx.envelopeRegistry.read.nonce([
-			walletAccount(ctx.sender).address,
-		]);
 		const amendSig = await signAmendSigner({
 			wallet: ctx.sender,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
@@ -340,12 +347,11 @@ describe("FSEnvelopeRegistry", () => {
 			oldCommitment: oldC,
 			newCommitment: newC,
 			timestamp: ts,
-			nonce,
 		});
 
 		const senderAddr = walletAccount(ctx.sender).address;
 		await ctx.envelopeRegistry.write.amendSigner(
-			[pieceCid, senderAddr, oldC, newC, ts, amendSig],
+			[pieceCid, senderAddr, oldC, newC, ts, amendSig, [], [], [], []],
 			{ account: walletAccount(ctx.server) },
 		);
 
@@ -373,9 +379,6 @@ describe("FSEnvelopeRegistry", () => {
 		await registerEnvelopeOnly(ctx, pieceCid, [oldA, oldB, oldC]);
 
 		const ts = await latestBlockTimestamp(ctx.publicClient);
-		const nonce = await ctx.envelopeRegistry.read.nonce([
-			walletAccount(ctx.sender).address,
-		]);
 		const amendSig = await signAmendSigner({
 			wallet: ctx.sender,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
@@ -384,12 +387,11 @@ describe("FSEnvelopeRegistry", () => {
 			oldCommitment: oldB,
 			newCommitment: newB,
 			timestamp: ts,
-			nonce,
 		});
 
 		const senderAddr = walletAccount(ctx.sender).address;
 		await ctx.envelopeRegistry.write.amendSigner(
-			[pieceCid, senderAddr, oldB, newB, ts, amendSig],
+			[pieceCid, senderAddr, oldB, newB, ts, amendSig, [], [], [], []],
 			{ account: walletAccount(ctx.server) },
 		);
 
@@ -418,9 +420,6 @@ describe("FSEnvelopeRegistry", () => {
 		});
 
 		const ts = await latestBlockTimestamp(ctx.publicClient);
-		const nonce = await ctx.envelopeRegistry.read.nonce([
-			walletAccount(ctx.sender).address,
-		]);
 		const amendSig = await signAmendSigner({
 			wallet: ctx.sender,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
@@ -429,13 +428,12 @@ describe("FSEnvelopeRegistry", () => {
 			oldCommitment: oldC,
 			newCommitment: newC,
 			timestamp: ts,
-			nonce,
 		});
 
 		const senderAddr = walletAccount(ctx.sender).address;
 		await assert.rejects(
 			ctx.envelopeRegistry.write.amendSigner(
-				[pieceCid, senderAddr, oldC, newC, ts, amendSig],
+				[pieceCid, senderAddr, oldC, newC, ts, amendSig, [], [], [], []],
 				{
 					account: walletAccount(ctx.server),
 				},
@@ -462,7 +460,6 @@ describe("FSEnvelopeRegistry", () => {
 						senderEmailCommitment: defaultSenderEmail,
 						senderAuthSubjectCommitment: defaultSenderAuth,
 						orgIdCommitment: zeroOrg,
-						orgWallet: "0x0000000000000000000000000000000000000000",
 						routingMode: 0,
 						routingOrder: [],
 						quorumN: 0,
@@ -570,9 +567,6 @@ describe("FSEnvelopeRegistry", () => {
 		const signer = `0x${"78".repeat(32)}` as Hex;
 		const pieceCid = "valid-24h-register";
 		const signedAt = (await latestBlockTimestamp(ctx.publicClient)) - 86_399n;
-		const nonce = await ctx.envelopeRegistry.read.nonce([
-			walletAccount(ctx.sender).address,
-		]);
 		const signature = await signRegisterEnvelope({
 			wallet: ctx.sender,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
@@ -587,7 +581,6 @@ describe("FSEnvelopeRegistry", () => {
 			senderEmailCommitment: defaultSenderEmail,
 			senderAuthSubjectCommitment: defaultSenderAuth,
 			timestamp: signedAt,
-			nonce,
 		});
 
 		await ctx.envelopeRegistry.write.registerEnvelope(
@@ -601,7 +594,6 @@ describe("FSEnvelopeRegistry", () => {
 					senderEmailCommitment: defaultSenderEmail,
 					senderAuthSubjectCommitment: defaultSenderAuth,
 					orgIdCommitment: zeroOrg,
-					orgWallet: "0x0000000000000000000000000000000000000000",
 					routingMode: 0,
 					routingOrder: [],
 					quorumN: 0,
@@ -620,9 +612,6 @@ describe("FSEnvelopeRegistry", () => {
 		const signer = `0x${"79".repeat(32)}` as Hex;
 		const pieceCid = "expired-24h-register";
 		const signedAt = (await latestBlockTimestamp(ctx.publicClient)) - 86_401n;
-		const nonce = await ctx.envelopeRegistry.read.nonce([
-			walletAccount(ctx.sender).address,
-		]);
 		const signature = await signRegisterEnvelope({
 			wallet: ctx.sender,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
@@ -637,7 +626,6 @@ describe("FSEnvelopeRegistry", () => {
 			senderEmailCommitment: defaultSenderEmail,
 			senderAuthSubjectCommitment: defaultSenderAuth,
 			timestamp: signedAt,
-			nonce,
 		});
 
 		await assert.rejects(
@@ -652,7 +640,6 @@ describe("FSEnvelopeRegistry", () => {
 						senderEmailCommitment: defaultSenderEmail,
 						senderAuthSubjectCommitment: defaultSenderAuth,
 						orgIdCommitment: zeroOrg,
-						orgWallet: "0x0000000000000000000000000000000000000000",
 						routingMode: 0,
 						routingOrder: [],
 						quorumN: 0,
@@ -667,15 +654,12 @@ describe("FSEnvelopeRegistry", () => {
 		);
 	});
 
-	it("registerEnvelope reverts when signature is expired (legacy 2m window superseded by 24h)", async () => {
+	it("registerEnvelope reverts when signature is expired beyond 24h window", async () => {
 		const ctx = await deployFullSystem();
 		const signer = `0x${"77".repeat(32)}` as Hex;
 		const pieceCid = "expired-register";
 		const staleTimestamp =
 			(await latestBlockTimestamp(ctx.publicClient)) - 86_401n;
-		const nonce = await ctx.envelopeRegistry.read.nonce([
-			walletAccount(ctx.sender).address,
-		]);
 		const signature = await signRegisterEnvelope({
 			wallet: ctx.sender,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
@@ -690,7 +674,6 @@ describe("FSEnvelopeRegistry", () => {
 			senderEmailCommitment: defaultSenderEmail,
 			senderAuthSubjectCommitment: defaultSenderAuth,
 			timestamp: staleTimestamp,
-			nonce,
 		});
 
 		await assert.rejects(
@@ -705,7 +688,6 @@ describe("FSEnvelopeRegistry", () => {
 						senderEmailCommitment: defaultSenderEmail,
 						senderAuthSubjectCommitment: defaultSenderAuth,
 						orgIdCommitment: zeroOrg,
-						orgWallet: "0x0000000000000000000000000000000000000000",
 						routingMode: 0,
 						routingOrder: [],
 						quorumN: 0,
@@ -726,9 +708,6 @@ describe("FSEnvelopeRegistry", () => {
 		const pieceCid = "future-register";
 		const futureTimestamp =
 			(await latestBlockTimestamp(ctx.publicClient)) + 360n;
-		const nonce = await ctx.envelopeRegistry.read.nonce([
-			walletAccount(ctx.sender).address,
-		]);
 		const signature = await signRegisterEnvelope({
 			wallet: ctx.sender,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
@@ -743,7 +722,6 @@ describe("FSEnvelopeRegistry", () => {
 			senderEmailCommitment: defaultSenderEmail,
 			senderAuthSubjectCommitment: defaultSenderAuth,
 			timestamp: futureTimestamp,
-			nonce,
 		});
 
 		await assert.rejects(
@@ -758,7 +736,6 @@ describe("FSEnvelopeRegistry", () => {
 						senderEmailCommitment: defaultSenderEmail,
 						senderAuthSubjectCommitment: defaultSenderAuth,
 						orgIdCommitment: zeroOrg,
-						orgWallet: "0x0000000000000000000000000000000000000000",
 						routingMode: 0,
 						routingOrder: [],
 						quorumN: 0,
@@ -825,7 +802,62 @@ describe("FSEnvelopeRegistry", () => {
 		const senderAddr = walletAccount(ctx.sender).address;
 		await assert.rejects(
 			ctx.envelopeRegistry.write.amendSigner(
-				[pieceCid, senderAddr, oldC, newC, ts, `0x${"00".repeat(65)}` as Hex],
+				[
+					pieceCid,
+					senderAddr,
+					oldC,
+					newC,
+					ts,
+					`0x${"00".repeat(65)}` as Hex,
+					[],
+					[],
+					[],
+					[],
+				],
+				{ account: walletAccount(ctx.server) },
+			),
+		);
+	});
+
+	it("amendSigner reverts when quorum calldata does not match stored config", async () => {
+		const ctx = await deployFullSystem();
+		const a = `0x${"71".repeat(32)}` as Hex;
+		const b = `0x${"72".repeat(32)}` as Hex;
+		const newB = `0x${"73".repeat(32)}` as Hex;
+		const pieceCid = "amend-bad-quorum-calldata";
+		const quorumSet = [a, b];
+		await registerEnvelopeOnly(ctx, pieceCid, [a, b], {
+			quorumN: 2,
+			quorumSet,
+		});
+
+		const ts = await latestBlockTimestamp(ctx.publicClient);
+		const amendSig = await signAmendSigner({
+			wallet: ctx.sender,
+			envelopeRegistryAddress: ctx.envelopeRegistry.address,
+			chainId: ctx.chainId,
+			pieceCid,
+			oldCommitment: b,
+			newCommitment: newB,
+			timestamp: ts,
+		});
+		const senderAddr = walletAccount(ctx.sender).address;
+		const patchedQuorum = [a, newB];
+
+		await assert.rejects(
+			ctx.envelopeRegistry.write.amendSigner(
+				[
+					pieceCid,
+					senderAddr,
+					b,
+					newB,
+					ts,
+					amendSig,
+					[],
+					[],
+					[],
+					patchedQuorum,
+				],
 				{ account: walletAccount(ctx.server) },
 			),
 		);
@@ -839,7 +871,6 @@ describe("FSEnvelopeRegistry", () => {
 		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
 		const senderAddr = walletAccount(ctx.sender).address;
 		const ts = await latestBlockTimestamp(ctx.publicClient);
-		const nonce = await ctx.envelopeRegistry.read.nonce([senderAddr]);
 		const recallSig = await signRecallEnvelope({
 			wallet: ctx.sender,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
@@ -847,7 +878,6 @@ describe("FSEnvelopeRegistry", () => {
 			pieceCid,
 			orgIdCommitment: zeroOrg,
 			timestamp: ts,
-			nonce,
 		});
 		await ctx.envelopeRegistry.write.recallEnvelope(
 			[pieceCid, senderAddr, ts, recallSig],
@@ -869,32 +899,62 @@ describe("FSEnvelopeRegistry", () => {
 		);
 	});
 
-	it("recallEnvelope by orgWallet when bound at register", async () => {
+	it("recallEnvelope by org controller when synced on registry", async () => {
 		const ctx = await deployFullSystem();
 		const c = `0x${"82".repeat(32)}` as Hex;
-		const pieceCid = "recall-org-wallet";
-		const orgWallet = walletAccount(ctx.payout).address;
-		await registerEnvelopeOnly(ctx, pieceCid, [c], { orgWallet });
+		const pieceCid = "recall-org-controller";
+		const controller = walletAccount(ctx.payout).address;
+		await setOrgControllersForTest(ctx, testOrgIdCommitment, [controller]);
+		await registerEnvelopeOnly(ctx, pieceCid, [c], {
+			orgIdCommitment: testOrgIdCommitment,
+		});
 		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
 		const ts = await latestBlockTimestamp(ctx.publicClient);
-		const nonce = await ctx.envelopeRegistry.read.nonce([orgWallet]);
 		const recallSig = await signRecallEnvelope({
 			wallet: ctx.payout,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
 			chainId: ctx.chainId,
 			pieceCid,
-			orgIdCommitment: zeroOrg,
+			orgIdCommitment: testOrgIdCommitment,
 			timestamp: ts,
-			nonce,
-			recaller: orgWallet,
+			recaller: controller,
 		});
 		await ctx.envelopeRegistry.write.recallEnvelope(
-			[pieceCid, orgWallet, ts, recallSig],
+			[pieceCid, controller, ts, recallSig],
 			{ account: walletAccount(ctx.server) },
 		);
 		expect(
 			await ctx.envelopeRegistry.read.isRevokedBeforeComplete([cidId]),
 		).to.equal(true);
+	});
+
+	it("recallEnvelope reverts for wallet not in org controller set", async () => {
+		const ctx = await deployFullSystem();
+		const c = `0x${"85".repeat(32)}` as Hex;
+		const pieceCid = "recall-non-controller";
+		await setOrgControllersForTest(ctx, testOrgIdCommitment, [
+			walletAccount(ctx.payout).address,
+		]);
+		await registerEnvelopeOnly(ctx, pieceCid, [c], {
+			orgIdCommitment: testOrgIdCommitment,
+		});
+		const intruder = walletAccount(ctx.coSigner).address;
+		const ts = await latestBlockTimestamp(ctx.publicClient);
+		const recallSig = await signRecallEnvelope({
+			wallet: ctx.coSigner,
+			envelopeRegistryAddress: ctx.envelopeRegistry.address,
+			chainId: ctx.chainId,
+			pieceCid,
+			orgIdCommitment: testOrgIdCommitment,
+			timestamp: ts,
+			recaller: intruder,
+		});
+		await assert.rejects(
+			ctx.envelopeRegistry.write.recallEnvelope(
+				[pieceCid, intruder, ts, recallSig],
+				{ account: walletAccount(ctx.server) },
+			),
+		);
 	});
 
 	it("recallEnvelope succeeds after partial required signature", async () => {
@@ -916,7 +976,6 @@ describe("FSEnvelopeRegistry", () => {
 		).to.equal(false);
 		const senderAddr = walletAccount(ctx.sender).address;
 		const ts = await latestBlockTimestamp(ctx.publicClient);
-		const nonce = await ctx.envelopeRegistry.read.nonce([senderAddr]);
 		const recallSig = await signRecallEnvelope({
 			wallet: ctx.sender,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
@@ -924,7 +983,6 @@ describe("FSEnvelopeRegistry", () => {
 			pieceCid,
 			orgIdCommitment: zeroOrg,
 			timestamp: ts,
-			nonce,
 		});
 		await ctx.envelopeRegistry.write.recallEnvelope(
 			[pieceCid, senderAddr, ts, recallSig],
@@ -953,7 +1011,6 @@ describe("FSEnvelopeRegistry", () => {
 		).to.equal(true);
 		const senderAddr = walletAccount(ctx.sender).address;
 		const ts = await latestBlockTimestamp(ctx.publicClient);
-		const nonce = await ctx.envelopeRegistry.read.nonce([senderAddr]);
 		const recallSig = await signRecallEnvelope({
 			wallet: ctx.sender,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
@@ -961,7 +1018,6 @@ describe("FSEnvelopeRegistry", () => {
 			pieceCid,
 			orgIdCommitment: zeroOrg,
 			timestamp: ts,
-			nonce,
 		});
 		await assert.rejects(
 			ctx.envelopeRegistry.write.recallEnvelope(
@@ -969,6 +1025,84 @@ describe("FSEnvelopeRegistry", () => {
 				{ account: walletAccount(ctx.server) },
 			),
 		);
+	});
+
+	describe("setOrgControllers", () => {
+		it("getOrgControllers returns synced wallets", async () => {
+			const ctx = await deployFullSystem();
+			const controller = walletAccount(ctx.payout).address;
+			await setOrgControllersForTest(ctx, testOrgIdCommitment, [controller]);
+			const list = await ctx.envelopeRegistry.read.getOrgControllers([
+				testOrgIdCommitment,
+			]);
+			expect(list.map((a) => a.toLowerCase())).to.deep.equal([
+				controller.toLowerCase(),
+			]);
+			expect(
+				await ctx.envelopeRegistry.read.isOrgController([
+					testOrgIdCommitment,
+					controller,
+				]),
+			).to.equal(true);
+		});
+
+		it("reverts ZeroOrgIdCommitment for zero org id", async () => {
+			const ctx = await deployFullSystem();
+			await assert.rejects(
+				ctx.envelopeRegistry.write.setOrgControllers(
+					[zeroOrg, [walletAccount(ctx.payout).address]],
+					{ account: walletAccount(ctx.server) },
+				),
+			);
+		});
+
+		it("reverts DuplicateOrgController for duplicate wallets", async () => {
+			const ctx = await deployFullSystem();
+			const wallet = walletAccount(ctx.payout).address;
+			await assert.rejects(
+				ctx.envelopeRegistry.write.setOrgControllers(
+					[testOrgIdCommitment, [wallet, wallet]],
+					{ account: walletAccount(ctx.server) },
+				),
+			);
+		});
+
+		it("reverts ExceedsMaxOrgControllers when over 64 wallets", async () => {
+			const ctx = await deployFullSystem();
+			const wallets = Array.from({ length: 65 }, (_, i) => {
+				const hex = (i + 1).toString(16).padStart(40, "0");
+				return `0x${hex}` as `0x${string}`;
+			});
+			await assert.rejects(
+				ctx.envelopeRegistry.write.setOrgControllers(
+					[testOrgIdCommitment, wallets],
+					{ account: walletAccount(ctx.server) },
+				),
+			);
+		});
+
+		it("empty wallets clears on-chain controller set", async () => {
+			const ctx = await deployFullSystem();
+			const controller = walletAccount(ctx.payout).address;
+			await setOrgControllersForTest(ctx, testOrgIdCommitment, [controller]);
+			await ctx.envelopeRegistry.write.setOrgControllers(
+				[testOrgIdCommitment, []],
+				{ account: walletAccount(ctx.server) },
+			);
+			expect(
+				await ctx.envelopeRegistry.read.isOrgController([
+					testOrgIdCommitment,
+					controller,
+				]),
+			).to.equal(false);
+			expect(
+				(
+					await ctx.envelopeRegistry.read.getOrgControllers([
+						testOrgIdCommitment,
+					])
+				).length,
+			).to.equal(0);
+		});
 	});
 
 	it("rosterSignedCount tracks signed roster members", async () => {

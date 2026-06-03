@@ -5,6 +5,7 @@ export * from "./useCreateOrganization";
 export * from "./useCreateOrgTemplate";
 export * from "./useDeleteOrgTemplate";
 export * from "./useInviteOrgMember";
+export * from "./useLinkOrgWallet";
 export * from "./useOrganizationGet";
 export * from "./useOrganizations";
 export * from "./usePublishOrgMemberKeyWrap";

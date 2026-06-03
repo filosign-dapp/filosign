@@ -21,6 +21,9 @@
 		"./billing": {
 			"default": "./src/hooks/billing/index.ts"
 		},
+		"./archival": {
+			"default": "./src/hooks/archival/index.ts"
+		},
 		"./orgs": {
 			"default": "./src/hooks/orgs/index.ts"
 		},

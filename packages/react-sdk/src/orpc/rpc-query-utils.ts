@@ -33,6 +33,9 @@ export function createFilosignRpcQueryUtils(client: AppRouterClient) {
 		billing: createTanstackQueryUtils(client.billing, {
 			path: [...ROOT, "billing"],
 		}),
+		archival: createTanstackQueryUtils(client.archival, {
+			path: [...ROOT, "archival"],
+		}),
 		orgs: createTanstackQueryUtils(client.orgs, {
 			path: [...ROOT, "orgs"],
 		}),

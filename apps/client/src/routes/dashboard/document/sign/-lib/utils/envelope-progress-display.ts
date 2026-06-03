@@ -1,13 +1,13 @@
+import type { Address } from "viem";
+
 export type EnvelopeProgressLike = {
 	routingMode: number;
 	requiredSignersCount: number;
 	requiredSignaturesCount: number;
-	optionalSignersCount: number;
-	optionalSignaturesCount: number;
 	quorumN: number;
-	allRequiredSigned: boolean;
-	allSigned: boolean;
-	quorumMet: boolean;
+	completedAt?: number | null;
+	revokedBeforeCompletedAt?: number | null;
+	revokedBy?: Address | null;
 	nextSignerEmail: string | null;
 };
 
@@ -15,10 +15,8 @@ export function envelopeProgressTotals(progress: EnvelopeProgressLike): {
 	signedCount: number;
 	totalSigners: number;
 } {
-	const totalSigners =
-		progress.requiredSignersCount + progress.optionalSignersCount;
-	const signedCount =
-		progress.requiredSignaturesCount + progress.optionalSignaturesCount;
+	const totalSigners = progress.requiredSignersCount;
+	const signedCount = progress.requiredSignaturesCount;
 	return { signedCount, totalSigners };
 }
 
@@ -38,22 +36,21 @@ export function buildEnvelopeProgressLines(
 		routingMode,
 		requiredSignaturesCount,
 		requiredSignersCount,
-		optionalSignaturesCount,
-		optionalSignersCount,
 		quorumN,
-		allRequiredSigned,
-		quorumMet,
 		nextSignerEmail,
 	} = progress;
 
 	const lines: string[] = [];
-	const hasOptional = optionalSignersCount > 0;
+	if (progress.revokedBeforeCompletedAt) {
+		lines.push("This envelope was voided on-chain before completion.");
+		return lines;
+	}
+	if (progress.completedAt) {
+		lines.push("This envelope is complete on-chain.");
+		return lines;
+	}
 
-	if (hasOptional) {
-		lines.push(
-			`${requiredSignaturesCount} of ${requiredSignersCount} required signers done · ${optionalSignaturesCount} of ${optionalSignersCount} optional signers done.`,
-		);
-	} else if (requiredSignersCount > 0) {
+	if (requiredSignersCount > 0) {
 		const countLine = `${requiredSignaturesCount} of ${requiredSignersCount} signers have signed.`;
 		if (routingMode === 1) {
 			if (canSignByRouting === false) {
@@ -72,14 +69,8 @@ export function buildEnvelopeProgressLines(
 
 	if (quorumN > 0) {
 		lines.push(
-			quorumMet
-				? `Minimum signatures for this envelope are met (${quorumN} needed).`
-				: `Still need ${quorumN} more signature${quorumN === 1 ? "" : "s"} on this envelope.`,
+			`This envelope completes when ${quorumN} signer${quorumN === 1 ? "" : "s"} from the quorum set have signed.`,
 		);
-	}
-
-	if (allRequiredSigned && !hasOptional && lines.length === 0) {
-		lines.push("Everyone required to sign has signed.");
 	}
 
 	return lines;

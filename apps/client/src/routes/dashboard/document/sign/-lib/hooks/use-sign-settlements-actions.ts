@@ -7,6 +7,7 @@ import {
 	useAttachSettlementForFile,
 	useCancelSettlementRule,
 	useManualSettlementPayout,
+	useRecallEnvelope,
 	useRevokeSettlementAllowance,
 	useSettlementsListByFile,
 	useTrySettleSettlement,
@@ -40,6 +41,7 @@ export function useSignSettlementsActions(
 	const updateSettlementRule = useUpdateSettlementRule(pieceCid);
 	const cancelSettlementRule = useCancelSettlementRule(pieceCid);
 	const amendSigner = useAmendSigner(pieceCid);
+	const recallEnvelope = useRecallEnvelope(pieceCid);
 	const attachSettlementRules = useAttachSettlementForFile(pieceCid);
 	const { data: entitlements } = useEntitlements();
 	const canManageSettlements = canUseAdvancedSettlements(entitlements);
@@ -49,6 +51,7 @@ export function useSignSettlementsActions(
 		useState<SettlementRuleRow | null>(null);
 	const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
 	const [amendDialogOpen, setAmendDialogOpen] = useState(false);
+	const [recallDialogOpen, setRecallDialogOpen] = useState(false);
 	const [attachDialogOpen, setAttachDialogOpen] = useState(false);
 
 	const settlementRules = settlementsQuery.data ?? [];
@@ -137,6 +140,16 @@ export function useSignSettlementsActions(
 		[updateRuleTarget, updateSettlementRule],
 	);
 
+	const onConfirmRecallEnvelope = useCallback(
+		async (organizationId?: string | null) => {
+			try {
+				await recallEnvelope.mutateAsync({ organizationId });
+				toast.success("Envelope recalled");
+			} catch {}
+		},
+		[recallEnvelope],
+	);
+
 	const onConfirmAmendSigner = useCallback(
 		async (args: {
 			oldCommitment: `0x${string}`;
@@ -209,6 +222,10 @@ export function useSignSettlementsActions(
 		setAmendDialogOpen,
 		onConfirmAmendSigner,
 		amendPending: amendSigner.isPending,
+		recallDialogOpen,
+		setRecallDialogOpen,
+		onConfirmRecallEnvelope,
+		recallPending: recallEnvelope.isPending,
 		attachDialogOpen,
 		setAttachDialogOpen,
 		onConfirmAttachSettlement,

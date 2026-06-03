@@ -52,12 +52,16 @@ export function SignDocumentSidebar() {
 		canAttachSettlement,
 		setAttachDialogOpen,
 		setAmendDialogOpen,
+		setRecallDialogOpen,
 	} = useSignSettlements();
 	const signers = file?.signers ?? [];
 	const signatures = file?.signatures;
 	const viewers = file?.viewers;
 	const envelopeProgress = file?.envelopeProgress;
 	const canSignByRouting = file?.participantAccess?.canSignByRouting;
+	const isRevoked = Boolean(envelopeProgress?.revokedBeforeCompletedAt);
+	const isComplete = Boolean(envelopeProgress?.completedAt);
+	const canRecall = isSender && !isRevoked && !isComplete;
 
 	return (
 		<aside className="hidden lg:block w-72 border-l border-border bg-background overflow-y-auto">
@@ -218,8 +222,25 @@ export function SignDocumentSidebar() {
 					)}
 				</div>
 
+				{isRevoked ? (
+					<p className="text-xs text-destructive font-medium rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
+						This envelope was voided on-chain and can no longer be signed.
+					</p>
+				) : null}
+
 				{isSender ? (
 					<div className="flex flex-wrap gap-2">
+						{canRecall ? (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="h-8 text-xs text-destructive hover:text-destructive"
+								onClick={() => setRecallDialogOpen(true)}
+							>
+								Recall envelope
+							</Button>
+						) : null}
 						{canAttachSettlement ? (
 							<Button
 								type="button"

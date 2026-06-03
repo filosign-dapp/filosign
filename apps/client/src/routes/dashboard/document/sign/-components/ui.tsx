@@ -5,6 +5,7 @@ import {
 	signerOptionsFromFile,
 } from "@/src/routes/dashboard/document/sign/-components/amend-signer-dialog";
 import { AttachSettlementDialog } from "@/src/routes/dashboard/document/sign/-components/attach-settlement-dialog";
+import { RecallEnvelopeDialog } from "@/src/routes/dashboard/document/sign/-components/recall-envelope-dialog";
 import { SettlementUpdateDialog } from "@/src/routes/dashboard/document/sign/-components/settlement-update-dialog";
 import {
 	type SignDocumentContextValue,
@@ -90,6 +91,14 @@ function SignSettlementDialogs() {
 				signers={signerOptions}
 				onConfirm={settlements.onConfirmAmendSigner}
 				pending={settlements.amendPending}
+			/>
+			<RecallEnvelopeDialog
+				open={settlements.recallDialogOpen}
+				onOpenChange={settlements.setRecallDialogOpen}
+				onConfirm={() =>
+					settlements.onConfirmRecallEnvelope(file?.organizationId)
+				}
+				pending={settlements.recallPending}
 			/>
 			<AttachSettlementDialog
 				open={settlements.attachDialogOpen}

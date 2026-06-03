@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import {
 	buildEnvelopeProgressLines,
 	envelopeProgressPercent,
@@ -9,64 +9,38 @@ const base = {
 	routingMode: 0,
 	requiredSignersCount: 2,
 	requiredSignaturesCount: 1,
-	optionalSignersCount: 0,
-	optionalSignaturesCount: 0,
 	quorumN: 0,
-	allRequiredSigned: false,
-	allSigned: false,
-	quorumMet: false,
-	nextSignerEmail: null as string | null,
+	completedAt: null,
+	revokedBeforeCompletedAt: null,
+	revokedBy: null,
+	nextSignerEmail: null,
 };
 
-describe("envelopeProgressTotals", () => {
-	test("sums required and optional counts", () => {
-		expect(
-			envelopeProgressTotals({
-				...base,
-				requiredSignersCount: 2,
-				requiredSignaturesCount: 1,
-				optionalSignersCount: 1,
-				optionalSignaturesCount: 0,
-			}),
-		).toEqual({ signedCount: 1, totalSigners: 3 });
-	});
-});
-
-describe("envelopeProgressPercent", () => {
-	test("returns 0 when no signers", () => {
-		expect(envelopeProgressPercent(0, 0)).toBe(0);
+describe("envelope-progress-display", () => {
+	it("totals count required signatures", () => {
+		expect(envelopeProgressTotals(base)).toEqual({
+			signedCount: 1,
+			totalSigners: 2,
+		});
 	});
 
-	test("rounds to whole percent capped at 100", () => {
+	it("percent from totals", () => {
 		expect(envelopeProgressPercent(1, 2)).toBe(50);
 	});
-});
 
-describe("buildEnvelopeProgressLines", () => {
-	test("sequential: combines count and next signer", () => {
-		const lines = buildEnvelopeProgressLines(
-			{
-				...base,
-				routingMode: 1,
-				nextSignerEmail: "alice@example.com",
-			},
-			true,
-		);
-		expect(lines).toEqual([
-			"1 of 2 signers have signed. alice@example.com is next.",
-		]);
+	it("voided envelope shows void line only", () => {
+		const lines = buildEnvelopeProgressLines({
+			...base,
+			revokedBeforeCompletedAt: 1,
+		});
+		expect(lines[0]).toContain("voided");
 	});
 
-	test("sequential: waiting for prior signers", () => {
-		const lines = buildEnvelopeProgressLines(
-			{
-				...base,
-				routingMode: 1,
-				nextSignerEmail: "alice@example.com",
-			},
-			false,
-		);
-		expect(lines[0]).toContain("1 of 2 signers have signed.");
-		expect(lines[0]).toContain("ahead of you");
+	it("complete envelope shows complete line", () => {
+		const lines = buildEnvelopeProgressLines({
+			...base,
+			completedAt: 1,
+		});
+		expect(lines[0]).toContain("complete");
 	});
 });

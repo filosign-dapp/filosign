@@ -10,6 +10,11 @@ import type { RouterClient } from "@orpc/server";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import {
+	archivalProducts,
+	archivalPurchase,
+	archivalStatus,
+} from "@/api/handlers/archival-handlers";
+import {
 	attachmentsLinkOnChainRuleHandler,
 	attachmentsPacketAccessHandler,
 } from "@/api/handlers/attachments";
@@ -536,7 +541,21 @@ export const appRouter = {
 			.input(fileHandlers.zAmendSignerBody)
 			.output(out.files.amendSigner)
 			.handler(({ context, input }) =>
-				fileHandlers.filesAmendSigner(context.userWallet, input),
+				fileHandlers.filesAmendSigner(
+					context.userWallet,
+					input,
+					context.activeOrg ?? null,
+				),
+			),
+		recallEnvelope: authenticatedProcedure
+			.input(fileHandlers.zRecallEnvelopeBody)
+			.output(out.files.recallEnvelope)
+			.handler(({ context, input }) =>
+				fileHandlers.filesRecallEnvelope(
+					context.userWallet,
+					input,
+					context.activeOrg ?? null,
+				),
 			),
 		list: {
 			sent: authenticatedProcedure
@@ -559,25 +578,6 @@ export const appRouter = {
 					}
 					return fileHandlers.filesListOrg(context.activeOrg.organizationId);
 				}),
-		},
-		archival: {
-			purchase: authenticatedProcedure
-				.input(
-					z.object({
-						pieceCid: z.string().min(1),
-						tier: z.enum(["1y", "5y", "10y"]),
-					}),
-				)
-				.output(out.files.archival.purchase)
-				.handler(({ context, input }) =>
-					fileHandlers.filesArchivalPurchase(context.userWallet, input),
-				),
-			status: authenticatedProcedure
-				.input(z.object({ pieceCid: z.string().min(1) }))
-				.output(out.files.archival.status)
-				.handler(({ context, input }) =>
-					fileHandlers.filesArchivalStatus(context.userWallet, input),
-				),
 		},
 		coldInvite: {
 			inviteByToken: publicProcedure
@@ -877,6 +877,30 @@ export const appRouter = {
 			.output(z.object({ ok: z.literal(true) }))
 			.handler(({ input }) => billingResendSetupLink(input)),
 	},
+	archival: {
+		products: publicProcedure
+			.output(out.archival.products)
+			.handler(() => archivalProducts()),
+		purchase: authenticatedProcedure
+			.input(
+				z.object({
+					productId: z.string().min(1),
+					returnUrl: z.url(),
+				}),
+			)
+			.output(out.archival.purchase)
+			.handler(({ context, input }) =>
+				archivalPurchase({
+					wallet: context.userWallet,
+					activeOrg: context.activeOrg,
+					productId: input.productId,
+					returnUrl: input.returnUrl,
+				}),
+			),
+		status: authenticatedProcedure
+			.output(out.archival.status)
+			.handler(({ context }) => archivalStatus(context.activeOrg)),
+	},
 	metrics: {
 		invitesSummary: authenticatedProcedure
 			.input(
@@ -963,6 +987,21 @@ export const appRouter = {
 					});
 				}
 				return orgsHandlers.orgsUpdate(
+					context.userWallet,
+					context.activeOrg,
+					input,
+				);
+			}),
+		linkWallet: authenticatedProcedure
+			.input(z.record(z.string(), unk))
+			.output(out.orgs.linkWallet)
+			.handler(({ context, input }) => {
+				if (!context.activeOrg) {
+					throw new ORPCError("BAD_REQUEST", {
+						message: "X-Org-Id header required",
+					});
+				}
+				return orgsHandlers.orgsLinkOrgWallet(
 					context.userWallet,
 					context.activeOrg,
 					input,

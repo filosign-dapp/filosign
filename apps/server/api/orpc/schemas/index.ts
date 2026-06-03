@@ -1,4 +1,9 @@
 import {
+	archivalProductsOutput,
+	archivalPurchaseOutput,
+	archivalStatusOutput,
+} from "./archival-output";
+import {
 	rpcAttachmentsLinkOnChainRuleOutputSchema,
 	rpcAttachmentsPacketAccessOutputSchema,
 	rpcAttachmentsUploadStartOutputSchema,
@@ -35,16 +40,13 @@ import {
 	rpcDraftsShareExternalOutputSchema,
 } from "./drafts-output";
 import {
-	rpcFilesArchivalPurchaseOutputSchema,
-	rpcFilesArchivalStatusOutputSchema,
-} from "./files-archival-output";
-import {
 	rpcColdInviteByTokenOutputSchema,
 	rpcColdInviteClaimOutputSchema,
 	rpcColdInviteRegenerateOutputSchema,
 	rpcFilesAmendSignerOutputSchema,
 	rpcFilesListReceivedOutputSchema,
 	rpcFilesListSentOutputSchema,
+	rpcFilesRecallEnvelopeOutputSchema,
 	rpcFilesRegisterOutputSchema,
 	rpcFilesUploadStartOutputSchema,
 } from "./files-output";
@@ -67,6 +69,7 @@ import {
 	rpcOrgsCreateOutputSchema,
 	rpcOrgsGetOutputSchema,
 	rpcOrgsInviteCreateOutputSchema,
+	rpcOrgsLinkWalletOutputSchema,
 	rpcOrgsListMineOutputSchema,
 	rpcOrgsMemberOutputSchema,
 	rpcOrgsTemplateOutputSchema,
@@ -123,14 +126,11 @@ export const rpcOut = {
 		uploadStart: rpcFilesUploadStartOutputSchema,
 		register: rpcFilesRegisterOutputSchema,
 		amendSigner: rpcFilesAmendSignerOutputSchema,
+		recallEnvelope: rpcFilesRecallEnvelopeOutputSchema,
 		list: {
 			sent: rpcFilesListSentOutputSchema,
 			received: rpcFilesListReceivedOutputSchema,
 			org: rpcFilesListSentOutputSchema,
-		},
-		archival: {
-			purchase: rpcFilesArchivalPurchaseOutputSchema,
-			status: rpcFilesArchivalStatusOutputSchema,
 		},
 		coldInvite: {
 			inviteByToken: rpcColdInviteByTokenOutputSchema,
@@ -146,6 +146,11 @@ export const rpcOut = {
 			complianceBundle: rpcPieceComplianceBundleOutputSchema,
 			sign: rpcPieceSignOutputSchema,
 		},
+	},
+	archival: {
+		products: archivalProductsOutput,
+		purchase: archivalPurchaseOutput,
+		status: archivalStatusOutput,
 	},
 	billing: {
 		entitlements: rpcBillingEntitlementsOutputSchema,
@@ -175,6 +180,7 @@ export const rpcOut = {
 		create: rpcOrgsCreateOutputSchema,
 		listMine: rpcOrgsListMineOutputSchema,
 		get: rpcOrgsGetOutputSchema,
+		linkWallet: rpcOrgsLinkWalletOutputSchema,
 		update: rpcOrgsUpdateOutputSchema,
 		member: rpcOrgsMemberOutputSchema,
 		inviteCreate: rpcOrgsInviteCreateOutputSchema,

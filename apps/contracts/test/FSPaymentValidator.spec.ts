@@ -580,12 +580,17 @@ describe("FSPaymentValidator", () => {
 			account: walletAccount(ctx.sender),
 		});
 
+		const quorumRouting = {
+			routingOrder: [] as Hex[],
+			quorumSet: [signerCommitment, secondSignerCommitment],
+		};
 		await registerEnvelopeSignatureStep({
 			ctx,
 			pieceCid: piece,
 			senderAddr,
 			signerWallet: ctx.sender,
 			signerEmailCommitment: signerCommitment,
+			...quorumRouting,
 		});
 		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.false;
 
@@ -595,6 +600,7 @@ describe("FSPaymentValidator", () => {
 			senderAddr,
 			signerWallet: ctx.coSigner,
 			signerEmailCommitment: secondSignerCommitment,
+			...quorumRouting,
 		});
 		await ctx.paymentValidator.write.executePayout([ruleId], {
 			account: walletAccount(ctx.payout),

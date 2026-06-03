@@ -70,13 +70,11 @@ export async function signRegisterEnvelope(args: {
 	senderEmailCommitment: Hex;
 	senderAuthSubjectCommitment: Hex;
 	orgIdCommitment?: Hex;
-	orgWallet?: Address;
 	routingMode?: number;
 	routingOrder?: Hex[];
 	quorumN?: number;
 	quorumSet?: Hex[];
 	timestamp: bigint;
-	nonce: bigint;
 }): Promise<Hex> {
 	const account = args.wallet.account as Account;
 	const cidId = keccak256(toBytes(args.pieceCid));
@@ -85,8 +83,6 @@ export async function signRegisterEnvelope(args: {
 	const orgIdCommitment =
 		args.orgIdCommitment ??
 		("0x0000000000000000000000000000000000000000000000000000000000000000" as Hex);
-	const orgWallet =
-		args.orgWallet ?? ("0x0000000000000000000000000000000000000000" as Address);
 	const routingMode = args.routingMode ?? 0;
 	const routingOrder = args.routingOrder ?? [];
 	const quorumN = args.quorumN ?? 0;
@@ -96,7 +92,7 @@ export async function signRegisterEnvelope(args: {
 		account,
 		domain: {
 			name: "FSEnvelopeRegistry",
-			version: "2",
+			version: "4",
 			chainId: args.chainId,
 			verifyingContract: args.envelopeRegistryAddress,
 		},
@@ -110,7 +106,6 @@ export async function signRegisterEnvelope(args: {
 				{ name: "senderEmailCommitment", type: "bytes32" },
 				{ name: "senderAuthSubjectCommitment", type: "bytes32" },
 				{ name: "orgIdCommitment", type: "bytes32" },
-				{ name: "orgWallet", type: "address" },
 				{ name: "requiredCommitmentsHash", type: "bytes32" },
 				{ name: "optionalCommitmentsHash", type: "bytes32" },
 				{ name: "routingMode", type: "uint8" },
@@ -118,7 +113,6 @@ export async function signRegisterEnvelope(args: {
 				{ name: "quorumN", type: "uint8" },
 				{ name: "quorumSetHash", type: "bytes32" },
 				{ name: "timestamp", type: "uint256" },
-				{ name: "nonce", type: "uint256" },
 			],
 		},
 		primaryType: "RegisterEnvelope",
@@ -131,7 +125,6 @@ export async function signRegisterEnvelope(args: {
 			senderEmailCommitment: args.senderEmailCommitment,
 			senderAuthSubjectCommitment: args.senderAuthSubjectCommitment,
 			orgIdCommitment,
-			orgWallet,
 			requiredCommitmentsHash: hashCommitments(args.requiredCommitments),
 			optionalCommitmentsHash: hashCommitments(optionalCommitments),
 			routingMode,
@@ -139,7 +132,6 @@ export async function signRegisterEnvelope(args: {
 			quorumN,
 			quorumSetHash: hashCommitments(quorumSet),
 			timestamp: args.timestamp,
-			nonce: args.nonce,
 		},
 	});
 }
@@ -152,7 +144,6 @@ export async function signAmendSigner(args: {
 	oldCommitment: Hex;
 	newCommitment: Hex;
 	timestamp: bigint;
-	nonce: bigint;
 	/** Defaults to connected wallet; use org controller for org-initiated amend. */
 	recaller?: Address;
 }): Promise<Hex> {
@@ -164,7 +155,7 @@ export async function signAmendSigner(args: {
 		account,
 		domain: {
 			name: "FSEnvelopeRegistry",
-			version: "2",
+			version: "4",
 			chainId: args.chainId,
 			verifyingContract: args.envelopeRegistryAddress,
 		},
@@ -175,7 +166,6 @@ export async function signAmendSigner(args: {
 				{ name: "oldCommitment", type: "bytes32" },
 				{ name: "newCommitment", type: "bytes32" },
 				{ name: "timestamp", type: "uint256" },
-				{ name: "nonce", type: "uint256" },
 			],
 		},
 		primaryType: "AmendSigner",
@@ -185,7 +175,6 @@ export async function signAmendSigner(args: {
 			oldCommitment: args.oldCommitment,
 			newCommitment: args.newCommitment,
 			timestamp: args.timestamp,
-			nonce: args.nonce,
 		},
 	});
 }
@@ -197,7 +186,6 @@ export async function signRecallEnvelope(args: {
 	pieceCid: string;
 	orgIdCommitment: Hex;
 	timestamp: bigint;
-	nonce: bigint;
 	recaller?: Address;
 }): Promise<Hex> {
 	const account = args.wallet.account as Account;
@@ -208,7 +196,7 @@ export async function signRecallEnvelope(args: {
 		account,
 		domain: {
 			name: "FSEnvelopeRegistry",
-			version: "2",
+			version: "4",
 			chainId: args.chainId,
 			verifyingContract: args.envelopeRegistryAddress,
 		},
@@ -218,7 +206,6 @@ export async function signRecallEnvelope(args: {
 				{ name: "recaller", type: "address" },
 				{ name: "orgIdCommitment", type: "bytes32" },
 				{ name: "timestamp", type: "uint256" },
-				{ name: "nonce", type: "uint256" },
 			],
 		},
 		primaryType: "RecallEnvelope",
@@ -227,7 +214,6 @@ export async function signRecallEnvelope(args: {
 			recaller,
 			orgIdCommitment: args.orgIdCommitment,
 			timestamp: args.timestamp,
-			nonce: args.nonce,
 		},
 	});
 }
@@ -244,7 +230,6 @@ export async function signRegisterEnvelopeSignature(args: {
 	completionsRoot: Hex;
 	leafSchemaVersion: number;
 	timestamp: bigint;
-	nonce: bigint;
 }): Promise<Hex> {
 	const account = args.wallet.account as Account;
 	const cidId = keccak256(toBytes(args.pieceCid));
@@ -253,7 +238,7 @@ export async function signRegisterEnvelopeSignature(args: {
 		account,
 		domain: {
 			name: "FSEnvelopeRegistry",
-			version: "2",
+			version: "4",
 			chainId: args.chainId,
 			verifyingContract: args.envelopeRegistryAddress,
 		},
@@ -268,7 +253,6 @@ export async function signRegisterEnvelopeSignature(args: {
 				{ name: "completionsRoot", type: "bytes32" },
 				{ name: "leafSchemaVersion", type: "uint8" },
 				{ name: "timestamp", type: "uint256" },
-				{ name: "nonce", type: "uint256" },
 			],
 		},
 		primaryType: "SignEnvelope",
@@ -282,7 +266,6 @@ export async function signRegisterEnvelopeSignature(args: {
 			completionsRoot: args.completionsRoot,
 			leafSchemaVersion: args.leafSchemaVersion,
 			timestamp: args.timestamp,
-			nonce: args.nonce,
 		},
 	});
 }

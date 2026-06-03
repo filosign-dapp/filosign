@@ -84,6 +84,8 @@ describe("ERC-1271 signature paths (Safe-compatible)", () => {
 					dummy1271Sig,
 					`0x${"77".repeat(32)}`,
 					1,
+					[],
+					[],
 				],
 				{ account: walletAccount(ctx.server) },
 			);
@@ -118,6 +120,8 @@ describe("ERC-1271 signature paths (Safe-compatible)", () => {
 						dummy1271Sig,
 						`0x${"77".repeat(32)}`,
 						1,
+						[],
+						[],
 					],
 					{ account: walletAccount(ctx.server) },
 				),

@@ -1,8 +1,8 @@
 import hre from "hardhat";
-import type { Address, Hex, PublicClient, WalletClient } from "viem";
+import type { Account, Address, Hex, PublicClient, WalletClient } from "viem";
+import { keccak256, toBytes } from "viem";
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
 import {
-	mergeSortedCommitments,
 	signRegisterEnvelope,
 	signRegisterEnvelopeSignature,
 	signRegisterKeygen,
@@ -33,6 +33,30 @@ export const defaultSenderEmail = `0x${"cd".repeat(32)}` as Hex;
 export const defaultSenderAuth = `0x${"ef".repeat(32)}` as Hex;
 export const zeroOrg =
 	"0x0000000000000000000000000000000000000000000000000000000000000000" as Hex;
+
+/** Stable org id commitment for multi-controller tests. */
+export const testOrgIdCommitment = keccak256(
+	toBytes("filosign-test-org"),
+) as Hex;
+
+export async function setOrgControllersForTest(
+	ctx: FullSystemFixture,
+	orgIdCommitment: Hex,
+	controllers: Address[],
+) {
+	await ctx.envelopeRegistry.write.setOrgControllers(
+		[orgIdCommitment, controllers],
+		{ account: walletAccount(ctx.server) as Account },
+	);
+}
+
+export async function deployAttachmentRelease(ctx: FullSystemFixture) {
+	return hre.viem.deployContract(
+		"FSAttachmentRelease",
+		[ctx.envelopeRegistry.address, BigInt(ctx.chainId)],
+		{ client: { wallet: ctx.deployer } },
+	);
+}
 
 /** Stand-in for Safe / ERC-1271 contract wallets in signature tests. */
 export async function deployMock1271(valid: boolean): Promise<Address> {
@@ -145,7 +169,6 @@ export type RegisterEnvelopeOptions = {
 	senderEmailCommitment?: Hex;
 	senderAuthSubjectCommitment?: Hex;
 	orgIdCommitment?: Hex;
-	orgWallet?: Address;
 };
 
 export async function buildRegisterEnvelopeInput(
@@ -167,13 +190,10 @@ export async function buildRegisterEnvelopeInput(
 	const quorumN = options.quorumN ?? 0;
 	const quorumSet = options.quorumSet ?? [];
 	const timestamp = await latestBlockTimestamp(ctx.publicClient);
-	const nonce = await ctx.envelopeRegistry.read.nonce([senderAddress]);
-	const merged = mergeSortedCommitments(
-		options.requiredCommitments,
-		optionalCommitments,
-	);
 	const signersCommitment =
-		await ctx.envelopeRegistry.read.computeEmailSignerCommitment([merged]);
+		await ctx.envelopeRegistry.read.computeEmailSignerCommitment([
+			options.requiredCommitments,
+		]);
 	const viewersCommitment =
 		viewerEmailCommitments.length === 0
 			? ("0x0000000000000000000000000000000000000000" as Hex)
@@ -204,15 +224,11 @@ export async function buildRegisterEnvelopeInput(
 					senderAuthSubjectCommitment:
 						options.senderAuthSubjectCommitment ?? defaultSenderAuth,
 					orgIdCommitment: options.orgIdCommitment ?? zeroOrg,
-					orgWallet:
-						options.orgWallet ??
-						("0x0000000000000000000000000000000000000000" as Address),
 					routingMode,
 					routingOrder,
 					quorumN,
 					quorumSet,
 					timestamp,
-					nonce,
 				}));
 
 	if (!signature) {
@@ -229,9 +245,6 @@ export async function buildRegisterEnvelopeInput(
 		senderAuthSubjectCommitment:
 			options.senderAuthSubjectCommitment ?? defaultSenderAuth,
 		orgIdCommitment: options.orgIdCommitment ?? zeroOrg,
-		orgWallet:
-			options.orgWallet ??
-			("0x0000000000000000000000000000000000000000" as Address),
 		routingMode,
 		routingOrder,
 		quorumN,
@@ -274,13 +287,14 @@ export async function registerEnvelopeSignatureStep(args: {
 	senderAddr: `0x${string}`;
 	signerWallet: WalletClient;
 	signerEmailCommitment: Hex;
+	routingOrder?: Hex[];
+	quorumSet?: Hex[];
 }): Promise<void> {
 	const { ctx, pieceCid, senderAddr, signerWallet, signerEmailCommitment } =
 		args;
+	const routingOrder = args.routingOrder ?? [];
+	const quorumSet = args.quorumSet ?? [];
 	const signTs = await latestBlockTimestamp(ctx.publicClient);
-	const signNonce = await ctx.envelopeRegistry.read.nonce([
-		walletAccount(signerWallet).address,
-	]);
 	const signSig = await signRegisterEnvelopeSignature({
 		wallet: signerWallet,
 		envelopeRegistryAddress: ctx.envelopeRegistry.address,
@@ -293,7 +307,6 @@ export async function registerEnvelopeSignatureStep(args: {
 		completionsRoot: signDefaults.root,
 		leafSchemaVersion: signDefaults.leafVersion,
 		timestamp: signTs,
-		nonce: signNonce,
 	});
 	await ctx.envelopeRegistry.write.registerEnvelopeSignature(
 		[
@@ -307,10 +320,17 @@ export async function registerEnvelopeSignatureStep(args: {
 			signSig,
 			signDefaults.root,
 			signDefaults.leafVersion,
+			routingOrder,
+			quorumSet,
 		],
 		{ account: walletAccount(ctx.server) },
 	);
 }
+
+export const emptyRoutingCalldata = {
+	routingOrder: [] as Hex[],
+	quorumSet: [] as Hex[],
+};
 
 export type PaymentRuleOptions = {
 	payer: Address;

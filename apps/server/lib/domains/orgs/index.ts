@@ -1,4 +1,11 @@
 export {
+	assertOrgControllerMayRelay,
+	isOrgControllerWallet,
+	listOrgControllerWallets,
+	readOrgControllerOnChain,
+	syncOrgControllersOnChain,
+} from "./controllers";
+export {
 	type ActiveOrgContext,
 	assertOrganizationDeletionAllowed,
 	assertOrgPermission,

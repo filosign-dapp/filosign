@@ -24,8 +24,14 @@ export const rpcOrgListItemSchema = z.object({
 	name: z.string(),
 	slug: z.string(),
 	encryptionPublicKey: z.string(),
+	orgWalletAddress: z.string().nullable(),
 	role: zOrgMemberRole,
 	status: zOrgMemberStatus,
+});
+
+export const rpcOrgsLinkWalletOutputSchema = z.object({
+	orgWalletAddress: z.string(),
+	orgWalletLinkedAt: zDateWire,
 });
 
 export const rpcOrgMemberSchema = z.object({

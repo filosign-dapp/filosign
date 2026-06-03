@@ -97,6 +97,7 @@ export type UserOrgRow = {
 	name: string;
 	slug: string;
 	encryptionPublicKey: string;
+	orgWalletAddress: string | null;
 	role: OrgMemberRole;
 	status: OrgMemberStatus;
 };
@@ -259,6 +260,7 @@ export async function fetchUserOrgs(
 			name: organizations.name,
 			slug: organizations.slug,
 			encryptionPublicKey: organizations.encryptionPublicKey,
+			orgWalletAddress: organizations.orgWalletAddress,
 			role: organizationMembers.role,
 			status: organizationMembers.status,
 		})

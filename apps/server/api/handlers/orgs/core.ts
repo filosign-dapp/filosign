@@ -15,7 +15,9 @@ import {
 	listUserOrgsCached,
 	resolveIsPersonalForNewOrganization,
 	slugifyOrgName,
+	syncOrgControllersOnChain,
 } from "@/lib/domains/orgs";
+import { validateLinkOrgWalletSignature } from "@/lib/domains/orgs/utils/link-wallet";
 import {
 	attachPendingOrgBillingOnCreateWithTx,
 	grantAdminOrgTeamsProIfEligibleWithTx,
@@ -124,6 +126,15 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 
 	await invalidateUserOrgs(creator);
 	await invalidateOrgEntitlements(result.data.id);
+
+	if (!isPersonal) {
+		const syncRes = await tryCatch(syncOrgControllersOnChain(result.data.id));
+		if (syncRes.error) {
+			throw new ORPCError("INTERNAL_SERVER_ERROR", {
+				message: "Failed to sync organization controllers on-chain",
+			});
+		}
+	}
 
 	return { organization: result.data };
 }
@@ -317,6 +328,14 @@ export async function orgsMembersSetRole(
 	if (!member)
 		throw new ORPCError("NOT_FOUND", { message: "Member not found" });
 	await invalidateOnMembershipChange(activeOrg.organizationId, targetWallet);
+	const syncRes = await tryCatch(
+		syncOrgControllersOnChain(activeOrg.organizationId),
+	);
+	if (syncRes.error) {
+		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+			message: "Failed to sync organization controllers on-chain",
+		});
+	}
 	return { member };
 }
 
@@ -404,5 +423,82 @@ export async function orgsMembersRemove(
 		},
 	});
 	await invalidateOnMembershipChange(activeOrg.organizationId, targetWallet);
+	const syncRes = await tryCatch(
+		syncOrgControllersOnChain(activeOrg.organizationId),
+	);
+	if (syncRes.error) {
+		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+			message: "Failed to sync organization controllers on-chain",
+		});
+	}
 	return { member };
+}
+
+const zLinkOrgWalletBody = z.object({
+	organizationId: z.uuid(),
+	orgWalletAddress: zEvmAddress(),
+	timestamp: z.number().int().positive(),
+	signature: zHexString(),
+});
+
+export async function orgsLinkOrgWallet(
+	wallet: Address,
+	activeOrg: ActiveOrgContext,
+	body: unknown,
+) {
+	assertOrgPermission(activeOrg, "org:manage");
+	const parsed = zLinkOrgWalletBody.safeParse(body);
+	if (!parsed.success) {
+		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+	}
+	if (parsed.data.organizationId !== activeOrg.organizationId) {
+		throw new ORPCError("FORBIDDEN", { message: "Organization mismatch" });
+	}
+
+	const orgWallet = getAddress(parsed.data.orgWalletAddress);
+	const signer = getAddress(wallet);
+	if (orgWallet !== signer) {
+		throw new ORPCError("FORBIDDEN", {
+			message: "Connected wallet must match org controller address",
+		});
+	}
+
+	const valid = await validateLinkOrgWalletSignature({
+		walletAddress: orgWallet,
+		organizationId: parsed.data.organizationId,
+		timestamp: parsed.data.timestamp,
+		signature: parsed.data.signature,
+	});
+	if (!valid) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "Invalid link org wallet signature",
+		});
+	}
+
+	const linkedAt = new Date();
+	const [org] = await db
+		.update(organizations)
+		.set({
+			orgWalletAddress: orgWallet,
+			orgWalletLinkedAt: linkedAt,
+			updatedAt: linkedAt,
+		})
+		.where(eq(organizations.id, activeOrg.organizationId))
+		.returning({
+			orgWalletAddress: organizations.orgWalletAddress,
+			orgWalletLinkedAt: organizations.orgWalletLinkedAt,
+		});
+
+	if (!org?.orgWalletAddress || !org.orgWalletLinkedAt) {
+		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+			message: "Failed to link org wallet",
+		});
+	}
+
+	await invalidateOrgEntitlements(activeOrg.organizationId);
+
+	return {
+		orgWalletAddress: org.orgWalletAddress,
+		orgWalletLinkedAt: org.orgWalletLinkedAt,
+	};
 }

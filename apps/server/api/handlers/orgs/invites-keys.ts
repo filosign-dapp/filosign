@@ -11,10 +11,12 @@ import {
 	type ActiveOrgContext,
 	assertOrgPermission,
 	getOrgMemberWithDocumentRead,
+	syncOrgControllersOnChain,
 } from "@/lib/domains/orgs";
 import { invalidateOnMembershipChange } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import type { OrgMemberRole } from "@/lib/platform/db/schema/organization";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { zOrgMemberRole } from "./schemas";
 
 const {
@@ -356,5 +358,13 @@ export async function orgsInvitesAccept(wallet: Address, body: unknown) {
 	});
 
 	await invalidateOnMembershipChange(invite.organizationId, invitee);
+	const syncRes = await tryCatch(
+		syncOrgControllersOnChain(invite.organizationId),
+	);
+	if (syncRes.error) {
+		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+			message: "Failed to sync organization controllers on-chain",
+		});
+	}
 	return { organizationId: invite.organizationId };
 }

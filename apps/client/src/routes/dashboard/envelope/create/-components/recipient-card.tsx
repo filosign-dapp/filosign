@@ -1,7 +1,5 @@
 import type { DraggableAttributes } from "@dnd-kit/core";
 import type { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
-import { useEntitlements } from "@filosign/react/billing";
-import { canUseAdvancedRouting } from "@filosign/react/files";
 import { settlementReleaseTypeLabel } from "@filosign/shared";
 import {
 	CheckCircleIcon,
@@ -18,7 +16,6 @@ import {
 } from "@/src/lib/components/ui/avatar";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
-import { Checkbox } from "@/src/lib/components/ui/checkbox";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import {
@@ -34,7 +31,6 @@ import {
 	RECIPIENT_FIELD_LABEL_CLASS,
 	RECIPIENT_ROLE_LABELS,
 } from "@/src/routes/dashboard/envelope/create/-lib/constants/recipient-card";
-import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
 import { useRecipientCard } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-recipient-card";
 import { formatAttachedUsdcAmount } from "@/src/routes/dashboard/envelope/create/-lib/utils/filosign-profile";
 
@@ -72,14 +68,7 @@ export function RecipientCard({
 		saveSettlementDraft,
 		removeSettlementDraft,
 	} = useRecipientCard(index);
-	const { data: entitlements } = useEntitlements();
-	const promptPlanUpgrade = usePromptPlanUpgrade();
-	const advancedRouting = canUseAdvancedRouting(entitlements);
-
 	if (!recipient) return null;
-
-	const isRequiredSigner =
-		recipient.role !== "signer" || recipient.signerRequired !== false;
 
 	const showAvatarUserIcon = !recipient.name.trim() && !recipient.email.trim();
 	const avatarInitials = initialsFromName(
@@ -199,12 +188,7 @@ export function RecipientCard({
 									value={recipient.role}
 									onValueChange={(role) => {
 										const nextRole = role as "signer" | "viewer";
-										updateRecipient(index, {
-											role: nextRole,
-											...(nextRole === "viewer"
-												? { signerRequired: undefined }
-												: {}),
-										});
+										updateRecipient(index, { role: nextRole });
 									}}
 								>
 									<SelectTrigger
@@ -251,31 +235,6 @@ export function RecipientCard({
 								</Button>
 							</div>
 						</div>
-
-						{recipient.role === "signer" ? (
-							<label
-								htmlFor={`recipient-required-${index}`}
-								className="flex items-start gap-2 text-sm"
-							>
-								<Checkbox
-									id={`recipient-required-${index}`}
-									className="mt-0.5"
-									checked={isRequiredSigner}
-									onCheckedChange={(next) => {
-										if (next !== true && !advancedRouting) {
-											promptPlanUpgrade("features.routing.advanced");
-											return;
-										}
-										updateRecipient(index, {
-											signerRequired: next === true,
-										});
-									}}
-								/>
-								<span className="text-muted-foreground leading-snug">
-									Required
-								</span>
-							</label>
-						) : null}
 					</div>
 				</div>
 			</motion.div>

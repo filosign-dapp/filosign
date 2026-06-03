@@ -286,7 +286,7 @@ export function useAddSignController() {
 				assignedSignerEmail: selfOnRoster.email,
 				assignedSignerName: "Me",
 				assignedSignerWallet: rosterWallet || field.assignedSignerWallet,
-				required: selfOnRoster.recipient.signerRequired !== false,
+				required: selfOnRoster.recipient.role === "signer",
 			};
 		});
 		if (remapped) {
@@ -615,7 +615,7 @@ export function useAddSignController() {
 
 		const coldRecipients = createForm.recipients.filter(isColdRecipient);
 		const requiredSignerRecipients = signerRecipients.filter(
-			(s) => s.signerRequired !== false,
+			(s) => s.role === "signer",
 		);
 		if (requiredSignerRecipients.length === 0) {
 			setSendStatus("error");
@@ -640,7 +640,6 @@ export function useAddSignController() {
 		}
 
 		for (const signer of signerRecipients) {
-			if (signer.signerRequired === false) continue;
 			const signerEmail = normalizePlacementRecipientEmail(
 				signer.email?.trim() ?? "",
 			);

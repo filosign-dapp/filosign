@@ -45,7 +45,7 @@ export function countFieldsByAssignee(
 }
 
 function signerRequiredFromRecipient(recipient: Recipient): boolean {
-	return recipient.signerRequired !== false;
+	return recipient.role === "signer";
 }
 
 export function buildActiveAssignees(

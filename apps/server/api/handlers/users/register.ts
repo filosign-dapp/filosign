@@ -11,7 +11,7 @@ import {
 import { verifyThirdwebAuthTokenWithWallet } from "@/lib/platform/utils/thirdweb";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
-const zRegisterBody = z.object({
+export const zUserRegisterBody = z.object({
 	saltPin: zHexString(),
 	saltSeed: zHexString(),
 	saltChallenge: zHexString(),
@@ -25,11 +25,11 @@ const zRegisterBody = z.object({
 	platformInviteToken: z.string().min(8).optional(),
 	setupToken: z.string().min(8).optional(),
 	coldInviteToken: z.string().min(8).optional(),
-	coldRecipientEmail: z.string().email().optional(),
+	coldRecipientEmail: z.email().optional(),
 });
 
 export async function userRegister(body: unknown) {
-	const parsedBody = zRegisterBody.safeParse(body);
+	const parsedBody = zUserRegisterBody.safeParse(body);
 
 	if (parsedBody.error) {
 		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });

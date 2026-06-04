@@ -5,13 +5,13 @@ export const rpcAttachmentsPacketAccessOutputSchema = z.object({
 	packetCid: z.string(),
 	label: z.string().nullable(),
 	releaseMode: z.enum(["review", "conditional"]),
-	downloadUrl: z.string().url(),
+	downloadUrl: z.url(),
 	kemCiphertext: z.string().optional(),
 	encryptedPacketDek: z.string().optional(),
 });
 
 export const rpcAttachmentsUploadStartOutputSchema = z.object({
-	uploadUrl: z.string().url(),
+	uploadUrl: z.url(),
 	key: z.string(),
 });
 

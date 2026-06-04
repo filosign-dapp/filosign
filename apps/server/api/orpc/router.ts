@@ -82,10 +82,14 @@ import {
 } from "@/api/handlers/storage-handlers";
 import { txProcessIndexerHash } from "@/api/handlers/tx";
 import * as userHandlers from "@/api/handlers/users";
+import { filesPieceRouter } from "@/api/orpc/routers/files-piece";
+import { zLinkAttachmentOnChainRuleInput } from "@/lib/domains/attachments";
 import {
 	CHECKOUT_PLAN_IDS,
 	UPGRADE_LIMIT_REASONS,
 } from "@/lib/domains/billing";
+import { zDraftCommentAppendBody } from "@/lib/domains/drafts";
+import { zFileCommentAppendBody, zFileRegisterBody } from "@/lib/domains/files";
 import { loadPlatformRuntime } from "@/lib/domains/runtime";
 import { zIndexerTxBody } from "@/lib/platform/validation/tx-registration";
 import {
@@ -93,17 +97,48 @@ import {
 	orgProcedure,
 	publicProcedure,
 } from "./procedures";
-import { rpcOut as out } from "./schemas";
+import {
+	rpcOut as out,
+	zPlatformAdminInviteCreateInput,
+	zPlatformAdminSetFeatureOverridesInput,
+	zPlatformAdminSetPlanInput,
+} from "./schemas";
+import {
+	zColdInviteClaimBody,
+	zColdInviteRegenerateBody,
+	zDraftCreateBody,
+	zDraftMarkSentBody,
+	zDraftPrepareSaveBody,
+	zDraftPresignDocumentsBody,
+	zDraftRevokeExternalShareBody,
+	zDraftSaveBody,
+	zDraftShareExternalBody,
+	zOrgsConnectionAddBody,
+	zOrgsConnectionRevokeBody,
+	zOrgsCreateBody,
+	zOrgsInviteCreateBody,
+	zOrgsKeysPublishWrapBody,
+	zOrgsLinkWalletBody,
+	zOrgsMembersRemoveBody,
+	zOrgsMembersSetRoleBody,
+	zOrgsTemplateCreateBody,
+	zOrgsUpdateBody,
+	zSharingRequestInviteBody,
+	zUserProfilePutBody,
+	zUserRegisterBody,
+	zUserSetPrimaryEmailBody,
+	zUserSignatureCreateBody,
+	zUserSyncThirdwebEmailBody,
+} from "./schemas/procedure-inputs";
+import { zViemChain } from "./schemas/runtime-output";
 
 const platformRuntimeSchema = z.object({
 	uptime: z.number(),
-	chain: z.unknown(),
+	chain: zViemChain,
 	chainKey: z.enum(["local", "testnet", "mainnet"]),
 	deployment: z.enum(DEPLOYMENTS),
 	signupPolicy: z.enum(SIGNUP_POLICIES),
 });
-
-const unk = z.unknown();
 
 export const appRouter = {
 	healthCheck: publicProcedure
@@ -135,7 +170,7 @@ export const appRouter = {
 		submitAccessRequest: publicProcedure
 			.input(
 				z.object({
-					email: z.string().email(),
+					email: z.email(),
 					name: z.string().max(120).optional(),
 					company: z.string().max(120).optional(),
 					message: z.string().max(2000).optional(),
@@ -150,47 +185,39 @@ export const appRouter = {
 			.handler(({ context }) => platformAdminAccess(context.userWallet)),
 		invites: {
 			list: authenticatedProcedure
-				.output(
-					z.object({
-						invites: z.array(z.record(z.string(), z.unknown())),
-					}),
-				)
+				.output(out.platformAdmin.invitesList)
 				.handler(({ context }) => platformAdminInvitesList(context.userWallet)),
 			create: authenticatedProcedure
-				.input(z.record(z.string(), unk))
-				.output(z.record(z.string(), unk))
+				.input(zPlatformAdminInviteCreateInput)
+				.output(out.platformAdmin.inviteCreate)
 				.handler(({ context, input }) =>
 					platformAdminInvitesCreate(context.userWallet, input),
 				),
 			revoke: authenticatedProcedure
-				.input(z.object({ inviteId: z.string().uuid() }))
+				.input(z.object({ inviteId: z.uuid() }))
 				.output(z.object({ ok: z.literal(true) }))
 				.handler(({ context, input }) =>
 					platformAdminInvitesRevoke(context.userWallet, input.inviteId),
 				),
 			rebook: authenticatedProcedure
-				.input(z.object({ inviteId: z.string().uuid() }))
-				.output(z.record(z.string(), unk))
+				.input(z.object({ inviteId: z.uuid() }))
+				.output(out.platformAdmin.inviteRebook)
 				.handler(({ context, input }) =>
 					platformAdminInvitesRebook(context.userWallet, input.inviteId),
 				),
 		},
 		users: {
 			list: authenticatedProcedure
-				.output(
-					z.object({
-						users: z.array(z.record(z.string(), z.unknown())),
-					}),
-				)
+				.output(out.platformAdmin.usersList)
 				.handler(({ context }) => platformAdminUsersList(context.userWallet)),
 			setFeatureOverrides: authenticatedProcedure
-				.input(z.record(z.string(), unk))
+				.input(zPlatformAdminSetFeatureOverridesInput)
 				.output(z.object({ ok: z.literal(true) }))
 				.handler(({ context, input }) =>
 					platformAdminUsersSetFeatureOverrides(context.userWallet, input),
 				),
 			setPlan: authenticatedProcedure
-				.input(z.record(z.string(), unk))
+				.input(zPlatformAdminSetPlanInput)
 				.output(z.object({ ok: z.literal(true) }))
 				.handler(({ context, input }) =>
 					platformAdminUsersSetPlan(context.userWallet, input),
@@ -198,18 +225,14 @@ export const appRouter = {
 		},
 		accessRequests: {
 			list: authenticatedProcedure
-				.output(
-					z.object({
-						requests: z.array(z.record(z.string(), z.unknown())),
-					}),
-				)
+				.output(out.platformAdmin.accessRequestsList)
 				.handler(({ context }) =>
 					platformAdminAccessRequestsList(context.userWallet),
 				),
 			approve: authenticatedProcedure
 				.input(
 					z.object({
-						requestId: z.string().uuid(),
+						requestId: z.uuid(),
 						planId: z
 							.enum(["free", "individual", "teams", "teams_pro", "enterprise"])
 							.optional(),
@@ -226,7 +249,7 @@ export const appRouter = {
 					platformAdminAccessRequestsApprove(context.userWallet, input),
 				),
 			reject: authenticatedProcedure
-				.input(z.object({ requestId: z.string().uuid() }))
+				.input(z.object({ requestId: z.uuid() }))
 				.output(z.object({ ok: z.literal(true) }))
 				.handler(({ context, input }) =>
 					platformAdminAccessRequestsReject(
@@ -237,33 +260,29 @@ export const appRouter = {
 		},
 		settlementFeatureAccess: {
 			list: authenticatedProcedure
-				.output(
-					z.object({
-						requests: z.array(z.record(z.string(), z.unknown())),
-					}),
-				)
+				.output(out.platformAdmin.settlementAccessList)
 				.handler(({ context }) =>
 					settlementAdminListAccessRequests(context.userWallet),
 				),
 			approve: authenticatedProcedure
 				.input(
 					z.object({
-						organizationId: z.string().uuid(),
+						organizationId: z.uuid(),
 						reviewNote: z.string().max(2000).optional(),
 					}),
 				)
-				.output(z.record(z.string(), z.unknown()))
+				.output(out.platformAdmin.settlementAccessDecision)
 				.handler(({ context, input }) =>
 					settlementAdminApproveAccess(context.userWallet, input),
 				),
 			reject: authenticatedProcedure
 				.input(
 					z.object({
-						organizationId: z.string().uuid(),
+						organizationId: z.uuid(),
 						reviewNote: z.string().max(2000).optional(),
 					}),
 				)
-				.output(z.record(z.string(), z.unknown()))
+				.output(out.platformAdmin.settlementAccessDecision)
 				.handler(({ context, input }) =>
 					settlementAdminRejectAccess(context.userWallet, input),
 				),
@@ -271,7 +290,7 @@ export const appRouter = {
 	},
 	drafts: {
 		create: orgProcedure
-			.input(z.record(z.string(), unk))
+			.input(zDraftCreateBody)
 			.output(out.drafts.create)
 			.handler(({ context, input }) =>
 				draftHandlers.draftsCreate(
@@ -281,7 +300,7 @@ export const appRouter = {
 				),
 			),
 		save: orgProcedure
-			.input(z.record(z.string(), unk))
+			.input(zDraftSaveBody)
 			.output(out.drafts.save)
 			.handler(({ context, input }) =>
 				draftHandlers.draftsSave(context.userWallet, context.activeOrg, input),
@@ -292,7 +311,7 @@ export const appRouter = {
 				draftHandlers.draftsList(context.userWallet, context.activeOrg),
 			),
 		get: orgProcedure
-			.input(z.object({ draftId: z.string().uuid() }))
+			.input(z.object({ draftId: z.uuid() }))
 			.output(out.drafts.get)
 			.handler(({ context, input }) =>
 				draftHandlers.draftsGet(
@@ -302,7 +321,7 @@ export const appRouter = {
 				),
 			),
 		presignSnapshot: orgProcedure
-			.input(z.object({ draftId: z.string().uuid() }))
+			.input(z.object({ draftId: z.uuid() }))
 			.output(out.drafts.presignSnapshot)
 			.handler(({ context, input }) =>
 				draftHandlers.draftsPresignSnapshot(
@@ -312,7 +331,7 @@ export const appRouter = {
 				),
 			),
 		prepareSave: orgProcedure
-			.input(z.record(z.string(), unk))
+			.input(zDraftPrepareSaveBody)
 			.output(out.drafts.prepareSave)
 			.handler(({ context, input }) =>
 				draftHandlers.draftsPrepareSave(
@@ -322,7 +341,7 @@ export const appRouter = {
 				),
 			),
 		presignDocuments: orgProcedure
-			.input(z.record(z.string(), unk))
+			.input(zDraftPresignDocumentsBody)
 			.output(out.drafts.presignDocuments)
 			.handler(({ context, input }) =>
 				draftHandlers.draftsPresignDocuments(
@@ -332,7 +351,7 @@ export const appRouter = {
 				),
 			),
 		shareExternal: orgProcedure
-			.input(z.record(z.string(), unk))
+			.input(zDraftShareExternalBody)
 			.output(out.drafts.shareExternal)
 			.handler(({ context, input }) =>
 				draftHandlers.draftsShareExternal(
@@ -342,7 +361,7 @@ export const appRouter = {
 				),
 			),
 		listExternalShares: orgProcedure
-			.input(z.object({ draftId: z.string().uuid() }))
+			.input(z.object({ draftId: z.uuid() }))
 			.output(out.drafts.listExternalShares)
 			.handler(({ context, input }) =>
 				draftHandlers.draftsListExternalShares(
@@ -352,7 +371,7 @@ export const appRouter = {
 				),
 			),
 		revokeExternalShare: orgProcedure
-			.input(z.record(z.string(), unk))
+			.input(zDraftRevokeExternalShareBody)
 			.output(out.drafts.revokeExternalShare)
 			.handler(({ context, input }) =>
 				draftHandlers.draftsRevokeExternalShare(
@@ -377,7 +396,7 @@ export const appRouter = {
 				),
 			),
 		markSent: orgProcedure
-			.input(z.record(z.string(), unk))
+			.input(zDraftMarkSentBody)
 			.output(out.drafts.markSent)
 			.handler(({ context, input }) =>
 				draftHandlers.draftsMarkSent(
@@ -387,7 +406,7 @@ export const appRouter = {
 				),
 			),
 		archive: orgProcedure
-			.input(z.object({ draftId: z.string().uuid() }))
+			.input(z.object({ draftId: z.uuid() }))
 			.output(out.drafts.archive)
 			.handler(({ context, input }) =>
 				draftHandlers.draftsArchive(
@@ -398,7 +417,7 @@ export const appRouter = {
 			),
 		comments: {
 			list: orgProcedure
-				.input(z.object({ draftId: z.string().uuid() }))
+				.input(z.object({ draftId: z.uuid() }))
 				.output(out.drafts.commentsList)
 				.handler(({ context, input }) =>
 					draftHandlers.draftsCommentsList(
@@ -408,7 +427,7 @@ export const appRouter = {
 					),
 				),
 			append: orgProcedure
-				.input(z.record(z.string(), unk))
+				.input(zDraftCommentAppendBody)
 				.output(out.drafts.commentsAppend)
 				.handler(({ context, input }) =>
 					draftHandlers.draftsCommentsAppend(
@@ -438,7 +457,7 @@ export const appRouter = {
 				attachmentsPacketAccessHandler(context.userWallet, input),
 			),
 		linkOnChainRule: authenticatedProcedure
-			.input(z.unknown())
+			.input(zLinkAttachmentOnChainRuleInput)
 			.output(out.attachments.linkOnChainRule)
 			.handler(({ context, input }) =>
 				attachmentsLinkOnChainRuleHandler(context.userWallet, input),
@@ -478,7 +497,7 @@ export const appRouter = {
 			.input(
 				z.object({
 					pieceCid: z.string().min(1),
-					organizationId: z.string().uuid().optional(),
+					organizationId: z.uuid().optional(),
 					rules: zSettlementRulesRegisterBatch.min(1),
 				}),
 			)
@@ -528,7 +547,7 @@ export const appRouter = {
 				fileHandlers.filesUploadStart(context.userWallet, input),
 			),
 		register: authenticatedProcedure
-			.input(z.record(z.string(), unk))
+			.input(zFileRegisterBody)
 			.output(out.files.register)
 			.handler(({ context, input }) =>
 				fileHandlers.filesRegister(
@@ -537,11 +556,31 @@ export const appRouter = {
 					context.activeOrg ?? null,
 				),
 			),
-		amendSigner: authenticatedProcedure
-			.input(fileHandlers.zAmendSignerBody)
-			.output(out.files.amendSigner)
+		proposeSignerReplacement: authenticatedProcedure
+			.input(fileHandlers.zProposeSignerReplacementBody)
+			.output(out.files.proposeSignerReplacement)
 			.handler(({ context, input }) =>
-				fileHandlers.filesAmendSigner(
+				fileHandlers.filesProposeSignerReplacement(
+					context.userWallet,
+					input,
+					context.activeOrg ?? null,
+				),
+			),
+		executeSignerReplacement: authenticatedProcedure
+			.input(fileHandlers.zExecuteSignerReplacementBody)
+			.output(out.files.executeSignerReplacement)
+			.handler(({ context, input }) =>
+				fileHandlers.filesExecuteSignerReplacement(
+					context.userWallet,
+					input,
+					context.activeOrg ?? null,
+				),
+			),
+		cancelSignerReplacement: authenticatedProcedure
+			.input(fileHandlers.zCancelSignerReplacementBody)
+			.output(out.files.cancelSignerReplacement)
+			.handler(({ context, input }) =>
+				fileHandlers.filesCancelSignerReplacement(
 					context.userWallet,
 					input,
 					context.activeOrg ?? null,
@@ -590,7 +629,7 @@ export const appRouter = {
 				.input(
 					z.object({
 						inviteToken: z.string().min(8),
-						body: z.record(z.string(), unk),
+						body: zColdInviteClaimBody,
 					}),
 				)
 				.output(out.files.coldInvite.claim)
@@ -605,7 +644,7 @@ export const appRouter = {
 				.input(
 					z.object({
 						pieceCid: z.string().min(1),
-						body: z.record(z.string(), unk),
+						body: zColdInviteRegenerateBody,
 					}),
 				)
 				.output(out.files.coldInvite.regenerate)
@@ -617,126 +656,20 @@ export const appRouter = {
 					}),
 				),
 		},
-		piece: {
-			detail: authenticatedProcedure
+		piece: filesPieceRouter,
+		comments: {
+			list: authenticatedProcedure
 				.input(z.object({ pieceCid: z.string().min(1) }))
-				.output(out.files.piece.detail)
+				.output(out.files.comments.list)
 				.handler(({ context, input }) =>
-					fileHandlers.pieceDetail(context.userWallet, input.pieceCid),
+					fileHandlers.filesCommentsList(context.userWallet, input.pieceCid),
 				),
-			ack: authenticatedProcedure
-				.input(
-					z.object({
-						pieceCid: z.string().min(1),
-						body: z.record(z.string(), unk),
-					}),
-				)
-				.output(out.files.piece.ack)
-				.handler(({ context, input }) => {
-					const h = context.hono.req;
-					const ua = h.header("user-agent") ?? null;
-					const fwd = h.header("x-forwarded-for");
-					const requestIp = fwd?.split(",")[0]?.trim() ?? null;
-					return fileHandlers.pieceAck({
-						userWallet: context.userWallet,
-						pieceCid: input.pieceCid,
-						body: input.body,
-						requestIp,
-						requestUserAgent: ua,
-					});
-				}),
-			recordView: authenticatedProcedure
-				.input(
-					z.object({
-						pieceCid: z.string().min(1),
-						body: z
-							.object({
-								source: z
-									.enum(["sign_page", "file_viewer", "inbox"])
-									.optional(),
-							})
-							.optional(),
-					}),
-				)
-				.output(out.files.piece.recordView)
+			append: authenticatedProcedure
+				.input(zFileCommentAppendBody)
+				.output(out.files.comments.append)
 				.handler(({ context, input }) =>
-					fileHandlers.pieceRecordView({
-						userWallet: context.userWallet,
-						pieceCid: input.pieceCid,
-						body: input.body ?? {},
-					}),
+					fileHandlers.filesCommentsAppend(context.userWallet, input),
 				),
-			signDraftGet: authenticatedProcedure
-				.input(z.object({ pieceCid: z.string().min(1) }))
-				.output(out.files.piece.signDraftFieldIds)
-				.handler(({ context, input }) =>
-					fileHandlers.pieceSignDraftGet(context.userWallet, input.pieceCid),
-				),
-			signDraftPut: authenticatedProcedure
-				.input(
-					z.object({
-						pieceCid: z.string().min(1),
-						body: z.record(z.string(), unk),
-					}),
-				)
-				.output(out.files.piece.signDraftFieldIds)
-				.handler(({ context, input }) =>
-					fileHandlers.pieceSignDraftPut({
-						userWallet: context.userWallet,
-						pieceCid: input.pieceCid,
-						body: input.body,
-					}),
-				),
-			downloadUrl: authenticatedProcedure
-				.input(z.object({ pieceCid: z.string().min(1) }))
-				.output(out.files.piece.downloadUrl)
-				.handler(({ context, input }) =>
-					fileHandlers.pieceDownloadUrl(context.userWallet, input.pieceCid),
-				),
-			complianceBundle: authenticatedProcedure
-				.input(
-					z.object({
-						pieceCid: z.string().min(1),
-						documentSha256: z.string().optional(),
-					}),
-				)
-				.output(out.files.piece.complianceBundle)
-				.handler(({ context, input }) => {
-					const h = context.hono.req;
-					const ua = h.header("user-agent") ?? null;
-					const fwd = h.header("x-forwarded-for");
-					const requestIp = fwd?.split(",")[0]?.trim() ?? null;
-					return fileHandlers.pieceComplianceBundle({
-						userWallet: context.userWallet,
-						pieceCid: input.pieceCid,
-						documentSha256: input.documentSha256,
-						userAgent: ua,
-						requestIp,
-					});
-				}),
-			sign: authenticatedProcedure
-				.input(
-					z.object({
-						pieceCid: z.string().min(1),
-						body: z.record(z.string(), unk),
-					}),
-				)
-				.output(out.files.piece.sign)
-				.handler(({ context, input }) => {
-					const requestIp =
-						context.hono.req.header("x-forwarded-for") ||
-						context.hono.req.header("x-real-ip") ||
-						null;
-					const requestUserAgent =
-						context.hono.req.header("user-agent") || null;
-					return fileHandlers.pieceSign({
-						userWallet: context.userWallet,
-						pieceCid: input.pieceCid,
-						body: input.body,
-						requestIp,
-						requestUserAgent,
-					});
-				}),
 		},
 	},
 	billing: {
@@ -792,7 +725,7 @@ export const appRouter = {
 		previewMarketingCheckout: publicProcedure
 			.input(
 				z.object({
-					email: z.string().email(),
+					email: z.email(),
 					planId: z.enum(["individual", "teams", "teams_pro"]),
 					interval: z.enum(["monthly", "yearly"]).default("monthly"),
 					seatCount: z.number().int().min(1).optional(),
@@ -864,7 +797,7 @@ export const appRouter = {
 		requestCheckoutLink: publicProcedure
 			.input(
 				z.object({
-					email: z.string().email(),
+					email: z.email(),
 					planId: z.enum(CHECKOUT_PLAN_IDS),
 					interval: z.enum(["monthly", "yearly"]).default("monthly"),
 					seatCount: z.number().int().min(1).optional(),
@@ -873,7 +806,7 @@ export const appRouter = {
 			.output(z.object({ ok: z.literal(true) }))
 			.handler(({ input }) => billingRequestCheckoutLink(input)),
 		resendSetupLink: publicProcedure
-			.input(z.object({ email: z.string().email() }))
+			.input(z.object({ email: z.email() }))
 			.output(z.object({ ok: z.literal(true) }))
 			.handler(({ input }) => billingResendSetupLink(input)),
 	},
@@ -906,8 +839,8 @@ export const appRouter = {
 			.input(
 				z.object({
 					senderWallet: z.string().optional(),
-					from: z.string().datetime().optional(),
-					to: z.string().datetime().optional(),
+					from: z.iso.datetime().optional(),
+					to: z.iso.datetime().optional(),
 				}),
 			)
 			.output(out.metrics.invitesSummary)
@@ -946,7 +879,7 @@ export const appRouter = {
 				sharingHandlers.sharingInviteClaim(context.userWallet, input.id),
 			),
 		requestInvite: authenticatedProcedure
-			.input(z.record(z.string(), unk))
+			.input(zSharingRequestInviteBody)
 			.output(out.sharing.requestInvite)
 			.handler(({ context, input }) =>
 				sharingHandlers.sharingRequestInvite(context.userWallet, input),
@@ -954,7 +887,7 @@ export const appRouter = {
 	},
 	orgs: {
 		create: authenticatedProcedure
-			.input(z.record(z.string(), unk))
+			.input(zOrgsCreateBody)
 			.output(out.orgs.create)
 			.handler(({ context, input }) =>
 				orgsHandlers.orgsCreate(context.userWallet, input),
@@ -963,7 +896,7 @@ export const appRouter = {
 			.output(out.orgs.listMine)
 			.handler(({ context }) => orgsHandlers.orgsListMine(context.userWallet)),
 		get: authenticatedProcedure
-			.input(z.object({ organizationId: z.string().uuid() }))
+			.input(z.object({ organizationId: z.uuid() }))
 			.output(out.orgs.get)
 			.handler(({ context, input }) => {
 				if (!context.activeOrg) {
@@ -978,7 +911,7 @@ export const appRouter = {
 				);
 			}),
 		update: authenticatedProcedure
-			.input(z.record(z.string(), unk))
+			.input(zOrgsUpdateBody)
 			.output(out.orgs.update)
 			.handler(({ context, input }) => {
 				if (!context.activeOrg) {
@@ -993,7 +926,7 @@ export const appRouter = {
 				);
 			}),
 		linkWallet: authenticatedProcedure
-			.input(z.record(z.string(), unk))
+			.input(zOrgsLinkWalletBody)
 			.output(out.orgs.linkWallet)
 			.handler(({ context, input }) => {
 				if (!context.activeOrg) {
@@ -1009,22 +942,22 @@ export const appRouter = {
 			}),
 		settlementFeatureAccess: {
 			get: authenticatedProcedure
-				.input(z.object({ organizationId: z.string().uuid() }))
-				.output(z.record(z.string(), z.unknown()))
+				.input(z.object({ organizationId: z.uuid() }))
+				.output(out.platformAdmin.settlementAccessDecision)
 				.handler(({ context, input }) =>
 					settlementAccessGetForOrg(context.userWallet, input.organizationId),
 				),
 			submitRequest: authenticatedProcedure
 				.input(
 					z.object({
-						organizationId: z.string().uuid(),
+						organizationId: z.uuid(),
 						acceptTerms: z.literal(true),
 						sanctionsSelfCert: z.literal(true),
 						useCase: z.string().min(10).max(2000),
 						termsVersion: z.string().min(1),
 					}),
 				)
-				.output(z.record(z.string(), z.unknown()))
+				.output(out.platformAdmin.settlementAccessDecision)
 				.handler(({ context, input }) =>
 					settlementAccessSubmitRequest(
 						context.userWallet,
@@ -1035,7 +968,7 @@ export const appRouter = {
 		},
 		members: {
 			setRole: authenticatedProcedure
-				.input(z.record(z.string(), unk))
+				.input(zOrgsMembersSetRoleBody)
 				.output(out.orgs.member)
 				.handler(({ context, input }) => {
 					if (!context.activeOrg) {
@@ -1050,7 +983,7 @@ export const appRouter = {
 					);
 				}),
 			remove: authenticatedProcedure
-				.input(z.record(z.string(), unk))
+				.input(zOrgsMembersRemoveBody)
 				.output(out.orgs.member)
 				.handler(({ context, input }) => {
 					if (!context.activeOrg) {
@@ -1067,7 +1000,7 @@ export const appRouter = {
 		},
 		keys: {
 			wrapForMine: authenticatedProcedure
-				.input(z.object({ organizationId: z.string().uuid() }))
+				.input(z.object({ organizationId: z.uuid() }))
 				.output(
 					z.object({
 						wrappedOmk: zHexString(),
@@ -1099,7 +1032,7 @@ export const appRouter = {
 					);
 				}),
 			publishWrap: authenticatedProcedure
-				.input(z.record(z.string(), unk))
+				.input(zOrgsKeysPublishWrapBody)
 				.output(z.object({ ok: z.literal(true) }))
 				.handler(({ context, input }) => {
 					if (!context.activeOrg) {
@@ -1116,7 +1049,7 @@ export const appRouter = {
 		},
 		invites: {
 			create: authenticatedProcedure
-				.input(z.record(z.string(), unk))
+				.input(zOrgsInviteCreateBody)
 				.output(out.orgs.inviteCreate)
 				.handler(({ context, input }) => {
 					if (!context.activeOrg) {
@@ -1132,14 +1065,14 @@ export const appRouter = {
 				}),
 			accept: authenticatedProcedure
 				.input(z.object({ token: z.string().min(16) }))
-				.output(z.object({ organizationId: z.string().uuid() }))
+				.output(z.object({ organizationId: z.uuid() }))
 				.handler(({ context, input }) =>
 					orgsHandlers.orgsInvitesAccept(context.userWallet, input),
 				),
 		},
 		connections: {
 			add: authenticatedProcedure
-				.input(z.record(z.string(), unk))
+				.input(zOrgsConnectionAddBody)
 				.output(out.orgs.connection)
 				.handler(({ context, input }) => {
 					if (!context.activeOrg) {
@@ -1167,7 +1100,7 @@ export const appRouter = {
 					);
 				}),
 			revoke: authenticatedProcedure
-				.input(z.record(z.string(), unk))
+				.input(zOrgsConnectionRevokeBody)
 				.output(out.orgs.connection)
 				.handler(({ context, input }) => {
 					if (!context.activeOrg) {
@@ -1184,7 +1117,7 @@ export const appRouter = {
 		},
 		templates: {
 			create: authenticatedProcedure
-				.input(z.record(z.string(), unk))
+				.input(zOrgsTemplateCreateBody)
 				.output(out.orgs.template)
 				.handler(({ context, input }) => {
 					if (!context.activeOrg) {
@@ -1212,7 +1145,7 @@ export const appRouter = {
 					);
 				}),
 			get: authenticatedProcedure
-				.input(z.object({ templateId: z.string().uuid() }))
+				.input(z.object({ templateId: z.uuid() }))
 				.output(out.orgs.template)
 				.handler(({ context, input }) => {
 					if (!context.activeOrg) {
@@ -1227,7 +1160,7 @@ export const appRouter = {
 					);
 				}),
 			cloneToEnvelope: authenticatedProcedure
-				.input(z.object({ templateId: z.string().uuid() }))
+				.input(z.object({ templateId: z.uuid() }))
 				.output(out.orgs.templatesClone)
 				.handler(({ context, input }) => {
 					if (!context.activeOrg) {
@@ -1242,7 +1175,7 @@ export const appRouter = {
 					);
 				}),
 			delete: authenticatedProcedure
-				.input(z.object({ templateId: z.string().uuid() }))
+				.input(z.object({ templateId: z.uuid() }))
 				.output(out.orgs.template)
 				.handler(({ context, input }) => {
 					if (!context.activeOrg) {
@@ -1260,7 +1193,7 @@ export const appRouter = {
 	},
 	users: {
 		register: publicProcedure
-			.input(z.record(z.string(), unk))
+			.input(zUserRegisterBody)
 			.output(out.users.register)
 			.handler(({ input }) => userHandlers.userRegister(input)),
 		registrationSnapshot: publicProcedure
@@ -1296,7 +1229,7 @@ export const appRouter = {
 		privacyRequestTransition: authenticatedProcedure
 			.input(
 				z.object({
-					requestId: z.string().uuid(),
+					requestId: z.uuid(),
 					status: z.enum([
 						"submitted",
 						"in_review",
@@ -1335,7 +1268,7 @@ export const appRouter = {
 					userHandlers.userProfileMe(context.userWallet),
 				),
 			update: authenticatedProcedure
-				.input(z.record(z.string(), unk))
+				.input(zUserProfilePutBody)
 				.output(out.users.profileUpdate)
 				.handler(({ context, input }) =>
 					userHandlers.userProfileUpdate(context.userWallet, input),
@@ -1356,13 +1289,13 @@ export const appRouter = {
 					userHandlers.userProfileLookup(context.userWallet, input.query),
 				),
 			syncThirdwebEmail: authenticatedProcedure
-				.input(z.record(z.string(), unk))
+				.input(zUserSyncThirdwebEmailBody)
 				.output(out.users.profileSyncThirdwebEmail)
 				.handler(({ context, input }) =>
 					userHandlers.userProfileSyncThirdwebEmail(context.userWallet, input),
 				),
 			setPrimaryEmail: authenticatedProcedure
-				.input(z.record(z.string(), unk))
+				.input(zUserSetPrimaryEmailBody)
 				.output(out.users.profileSetPrimaryEmail)
 				.handler(({ context, input }) =>
 					userHandlers.userProfileSetPrimaryEmail(context.userWallet, input),
@@ -1370,7 +1303,7 @@ export const appRouter = {
 		},
 		signatures: {
 			create: authenticatedProcedure
-				.input(z.record(z.string(), unk))
+				.input(zUserSignatureCreateBody)
 				.output(out.users.signaturesCreate)
 				.handler(({ context, input }) =>
 					userHandlers.userSignaturesCreate(context.userWallet, input),

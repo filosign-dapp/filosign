@@ -23,7 +23,7 @@ export const archivalPurchaseOutput = z.object({
 export const archivalStatusOutput = z.object({
 	active: z.boolean(),
 	productId: archivalProductIdSchema.nullable(),
-	retentionUntil: z.string().datetime().nullable(),
-	exportGraceUntil: z.string().datetime().nullable(),
+	retentionUntil: z.iso.datetime().nullable(),
+	exportGraceUntil: z.iso.datetime().nullable(),
 	subscriptionStatus: z.enum(["none", "active", "lapsed"]),
 });

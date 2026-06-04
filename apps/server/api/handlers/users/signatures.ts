@@ -6,12 +6,12 @@ import db from "@/lib/platform/db";
 
 const { userSignatures } = db.schema;
 
-const zSignaturePostBody = z.object({
+export const zUserSignatureCreateBody = z.object({
 	data: z.string(),
 });
 
 export async function userSignaturesCreate(wallet: Address, body: unknown) {
-	const parsedBody = zSignaturePostBody.safeParse(body);
+	const parsedBody = zUserSignatureCreateBody.safeParse(body);
 
 	if (parsedBody.error) {
 		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });

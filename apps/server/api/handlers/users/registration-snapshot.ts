@@ -1,3 +1,4 @@
+import { zUserKeygenDataJson } from "@filosign/shared";
 import { zEvmAddress } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
@@ -6,14 +7,6 @@ import { z } from "zod";
 import db from "@/lib/platform/db";
 
 const { users } = db.schema;
-
-const zKeygenJson = z.object({
-	saltPin: z.string(),
-	saltSeed: z.string(),
-	saltChallenge: z.string(),
-	commitmentKem: z.string(),
-	commitmentSig: z.string(),
-});
 
 export const zRegistrationSnapshotInput = z.object({
 	walletAddress: zEvmAddress(),
@@ -38,7 +31,7 @@ export async function userRegistrationSnapshot(body: unknown) {
 		return { isRegistered: false, storedKeygenData: null };
 	}
 
-	const keygen = zKeygenJson.safeParse(row.keygenDataJson);
+	const keygen = zUserKeygenDataJson.safeParse(row.keygenDataJson);
 	if (!keygen.success) {
 		return { isRegistered: true, storedKeygenData: null };
 	}

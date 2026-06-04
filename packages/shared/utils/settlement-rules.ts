@@ -116,6 +116,8 @@ export const zSettlementReleaseParams = z.discriminatedUnion("releaseType", [
 	}),
 ]);
 
+export type SettlementReleaseParams = z.infer<typeof zSettlementReleaseParams>;
+
 export const zSettlementRuleRegistrationInput = z
 	.object({
 		onChainRuleId: z.string().regex(/^\d+$/),
@@ -147,8 +149,8 @@ export function settlementRuleTotalAmount(
 	return legs.reduce((sum, leg) => sum + BigInt(leg.amount), 0n);
 }
 
-/** Top-level API fields derived from the first payout leg (legacy response shape). */
-export function settlementRuleLegacyTopLevel(
+/** Top-level API fields derived from the first payout leg (convenience for list rows). */
+export function firstSettlementLeg(
 	legs: readonly SettlementPayoutLegInput[],
 ): Pick<
 	SettlementPayoutLegInput,

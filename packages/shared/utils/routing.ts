@@ -9,7 +9,6 @@ import {
 import type { PlacementManifest } from "./placement";
 
 export type RegisterRoutingInput = {
-	optionalSignerEmails?: string[];
 	routingMode?: 0 | 1;
 	routingOrderEmails?: string[];
 	quorumN?: number;
@@ -17,11 +16,10 @@ export type RegisterRoutingInput = {
 };
 
 export const zRegisterRoutingInput = z.object({
-	optionalSignerEmails: z.array(z.string().email()).optional(),
 	routingMode: z.union([z.literal(0), z.literal(1)]).optional(),
-	routingOrderEmails: z.array(z.string().email()).optional(),
+	routingOrderEmails: z.array(z.email()).optional(),
 	quorumN: z.number().int().min(0).max(255).optional(),
-	quorumSetEmails: z.array(z.string().email()).optional(),
+	quorumSetEmails: z.array(z.email()).optional(),
 });
 
 export type RegisterRoutingCalldata = {

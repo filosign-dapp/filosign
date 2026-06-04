@@ -359,10 +359,19 @@ function TestFileSend(props: { notify: NotifierFn }) {
 
 	const testPlacementManifest: PlacementManifest = useMemo(
 		() => ({
-			version: 2,
+			version: 1,
+			documents: [
+				{
+					id: "test-doc-1",
+					name: "test.pdf",
+					sha256Plaintext: `0x${"00".repeat(32)}`,
+					pageCount: 1,
+				},
+			],
 			fields: [
 				{
 					id: "test-signature-1",
+					documentId: "test-doc-1",
 					pageIndex: 0,
 					rect: { x: 0.1, y: 0.1, width: 0.2, height: 0.05 },
 					assignedRecipientEmail: normalizePlacementRecipientEmail(

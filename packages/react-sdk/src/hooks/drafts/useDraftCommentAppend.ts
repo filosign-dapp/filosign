@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Address, Hex } from "viem";
 import { toHex } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { encryptDraftComment } from "../../lib/draft-crypto";
@@ -8,6 +7,7 @@ import {
 	resolveDraftDek,
 } from "../../lib/resolve-draft-dek";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
+import { walletAccountAddress } from "../../utils/evm";
 
 export function useDraftCommentAppend() {
 	const { wallet } = useFilosignContext();
@@ -29,7 +29,7 @@ export function useDraftCommentAppend() {
 			const trimmed = args.body.trim();
 			if (!trimmed) throw new Error("Comment cannot be empty");
 
-			const walletAddress = wallet.account.address as Address;
+			const walletAddress = walletAccountAddress(wallet.account);
 			let dek = args.reviewDek;
 
 			if (!dek) {
@@ -43,8 +43,8 @@ export function useDraftCommentAppend() {
 					head,
 					wallet: walletAddress,
 					myOrgWrap: {
-						wrappedOmk: myWrap.wrappedOmk as Hex,
-						wrapKemCiphertext: myWrap.wrapKemCiphertext as Hex,
+						wrappedOmk: myWrap.wrappedOmk,
+						wrapKemCiphertext: myWrap.wrapKemCiphertext,
 					},
 				});
 			}

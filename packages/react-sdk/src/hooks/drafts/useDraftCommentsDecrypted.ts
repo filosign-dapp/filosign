@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Address, Hex } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import {
 	draftOrganizationId,
 	resolveDraftDek,
 } from "../../lib/resolve-draft-dek";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
+import { walletAccountAddress } from "../../utils/evm";
 import { decryptDraftCommentsList } from "./useDraftComments";
 
 export function useDraftCommentsDecrypted(args: {
@@ -38,7 +38,7 @@ export function useDraftCommentsDecrypted(args: {
 			let dek = args.reviewDek;
 			if (!dek) {
 				if (!wallet?.account) throw new Error("Wallet required");
-				const walletAddress = wallet.account.address as Address;
+				const walletAddress = walletAccountAddress(wallet.account);
 				const head = await rpc.drafts.get({ draftId });
 				const organizationId = draftOrganizationId(head);
 				const myWrap = await rpcQuery.orgs.keys.wrapForMine.call({
@@ -49,8 +49,8 @@ export function useDraftCommentsDecrypted(args: {
 					head,
 					wallet: walletAddress,
 					myOrgWrap: {
-						wrappedOmk: myWrap.wrappedOmk as Hex,
-						wrapKemCiphertext: myWrap.wrapKemCiphertext as Hex,
+						wrappedOmk: myWrap.wrappedOmk,
+						wrapKemCiphertext: myWrap.wrapKemCiphertext,
 					},
 				});
 			}

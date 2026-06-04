@@ -1,7 +1,7 @@
 import { randomBytes, toHex } from "@filosign/crypto-utils";
+import type { InferClientInputs } from "@orpc/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Address, Hex } from "viem";
-import { getAddress } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import {
 	buildColdExternalShare,
@@ -10,6 +10,12 @@ import {
 } from "../../lib/draft-crypto";
 import { draftOrganizationId } from "../../lib/resolve-draft-dek";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
+import type { AppRouterClient } from "../../orpc/app-router-types";
+import { walletAccountAddress } from "../../utils/evm";
+
+type DraftShareExternalInput =
+	InferClientInputs<AppRouterClient>["drafts"]["shareExternal"];
+type DraftShareExternalPayload = DraftShareExternalInput["shares"][number];
 
 export type ShareDraftExternalResult = {
 	shares: {
@@ -34,7 +40,7 @@ export function useShareDraftExternal() {
 			if (!wallet?.account || !isAuthed) {
 				throw new Error("Wallet required");
 			}
-			const walletAddress = wallet.account.address as Address;
+			const walletAddress = walletAccountAddress(wallet.account);
 			const head = await rpc.drafts.get({ draftId: args.draftId });
 			const organizationId = draftOrganizationId(head);
 			if (!head.headDekWrappedOmk || !head.headOmkKemCiphertext) {
@@ -45,49 +51,38 @@ export function useShareDraftExternal() {
 			});
 			const dek = await decryptDraftDekFromOrgHead({
 				draftId: args.draftId,
-				headDekWrappedOmk: head.headDekWrappedOmk as Hex,
-				headOmkKemCiphertext: head.headOmkKemCiphertext as Hex,
+				headDekWrappedOmk: head.headDekWrappedOmk,
+				headOmkKemCiphertext: head.headOmkKemCiphertext,
 				wallet: walletAddress,
-				myWrap: {
-					wrappedOmk: myWrap.wrappedOmk as Hex,
-					wrapKemCiphertext: myWrap.wrapKemCiphertext as Hex,
-				},
+				myWrap,
 			});
 
 			const shares: ShareDraftExternalResult["shares"] = [];
-			const payloadShares: {
-				accessKind: "warm" | "cold";
-				email: string;
-				inviteToken: string;
-				recipientWallet?: string;
-				kemCiphertext?: Hex;
-				encryptedDek?: Hex;
-				wrappedDek?: Hex;
-			}[] = [];
+			const payloadShares: DraftShareExternalPayload[] = [];
 
 			for (const rawEmail of args.emails) {
 				const email = rawEmail.trim().toLowerCase();
 				if (!email) continue;
 				const inviteToken = toHex(randomBytes(32));
 
-				let pk: string | undefined;
+				let recipientPk: Hex | undefined;
 				let recipientWallet: Address | undefined;
 				try {
 					const profile = await rpc.users.profile.lookup({ query: email });
-					pk = profile.encryptionPublicKey?.trim() || undefined;
-					if (pk && profile.walletAddress) {
-						recipientWallet = getAddress(profile.walletAddress as Address);
+					if (profile.encryptionPublicKey && profile.walletAddress) {
+						recipientPk = profile.encryptionPublicKey;
+						recipientWallet = profile.walletAddress;
 					}
 				} catch {
 					// Off-platform email → cold invite
 				}
 
-				if (pk && recipientWallet) {
+				if (recipientPk && recipientWallet) {
 					const warm = await buildWarmExternalShare({
 						dek,
 						draftId: args.draftId,
 						inviteToken,
-						recipientEncryptionPublicKey: pk as Hex,
+						recipientEncryptionPublicKey: recipientPk,
 						recipientWallet,
 					});
 					payloadShares.push({

@@ -16,7 +16,6 @@ export type DecryptedDraft = {
 
 export type DecryptDraftHead = DraftHead & {
 	draft: DraftHead["draft"] & { revision: number };
-	headSnapshot?: DraftSnapshot | null;
 	snapshot: { downloadUrl: string };
 	documents: {
 		docId: string;
@@ -70,7 +69,6 @@ export async function decryptDraftWithHead(
 	debugDraftLoad("head.ok", {
 		draftId,
 		revision: head.draft.revision,
-		headSnapshotFromDb: Boolean(head.headSnapshot),
 		documentCount: head.documents.length,
 	});
 
@@ -89,20 +87,14 @@ export async function decryptDraftWithHead(
 		debugDraftLoad("dek.cache_hit", { draftId });
 	}
 
-	let snapshot: DraftSnapshot;
-	if (head.headSnapshot) {
-		debugDraftLoad("snapshot.from_db");
-		snapshot = head.headSnapshot;
-	} else {
-		debugDraftLoad("snapshot.from_s3");
-		const snapRes = await fetch(head.snapshot.downloadUrl);
-		if (!snapRes.ok) throw new Error("Failed to download draft snapshot");
-		snapshot = await decryptDraftSnapshot({
-			dek,
-			draftId,
-			ciphertext: new Uint8Array(await snapRes.arrayBuffer()),
-		});
-	}
+	debugDraftLoad("snapshot.from_s3");
+	const snapRes = await fetch(head.snapshot.downloadUrl);
+	if (!snapRes.ok) throw new Error("Failed to download draft snapshot");
+	const snapshot = await decryptDraftSnapshot({
+		dek,
+		draftId,
+		ciphertext: new Uint8Array(await snapRes.arrayBuffer()),
+	});
 
 	const documents = await Promise.all(
 		head.documents.map((doc) => decryptOneDocument({ dek, draftId, doc })),

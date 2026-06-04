@@ -1,7 +1,7 @@
 import { type DraftSnapshot, draftDocumentKey } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import type { Address, Hex } from "viem";
+import type { Hex } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import {
 	decryptDraftDekFromOrgHead,
@@ -22,6 +22,7 @@ import {
 } from "../../lib/draft-save-debug";
 import { draftOrganizationId } from "../../lib/resolve-draft-dek";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
+import { walletAccountAddress } from "../../utils/evm";
 
 export type SaveDraftDocumentInput = {
 	id: string;
@@ -83,7 +84,7 @@ export function useSaveDraft() {
 					throw new Error("Wallet required");
 				}
 
-				const walletAddress = wallet.account.address as Address;
+				const walletAddress = walletAccountAddress(wallet.account);
 				let dek: Uint8Array;
 				let reuseHeadDek = false;
 
@@ -105,13 +106,10 @@ export function useSaveDraft() {
 					try {
 						dek = await decryptDraftDekFromOrgHead({
 							draftId: input.draftId,
-							headDekWrappedOmk: existing.headDekWrappedOmk as Hex,
-							headOmkKemCiphertext: existing.headOmkKemCiphertext as Hex,
+							headDekWrappedOmk: existing.headDekWrappedOmk,
+							headOmkKemCiphertext: existing.headOmkKemCiphertext,
 							wallet: walletAddress,
-							myWrap: {
-								wrappedOmk: myWrap.wrappedOmk as Hex,
-								wrapKemCiphertext: myWrap.wrapKemCiphertext as Hex,
-							},
+							myWrap,
 						});
 					} catch (error) {
 						if (

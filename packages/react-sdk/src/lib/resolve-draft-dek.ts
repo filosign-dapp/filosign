@@ -3,8 +3,8 @@ import { decryptDraftDekFromOrgHead } from "./draft-crypto";
 
 export type DraftHead = {
 	draft?: { organizationId?: string | null };
-	headDekWrappedOmk?: string | null;
-	headOmkKemCiphertext?: string | null;
+	headDekWrappedOmk?: Hex | null;
+	headOmkKemCiphertext?: Hex | null;
 };
 
 /** Org id from draft metadata (not the active workspace selector). */
@@ -25,8 +25,8 @@ export async function resolveDraftDek(args: {
 	}
 	return decryptDraftDekFromOrgHead({
 		draftId: args.draftId,
-		headDekWrappedOmk: args.head.headDekWrappedOmk as Hex,
-		headOmkKemCiphertext: args.head.headOmkKemCiphertext as Hex,
+		headDekWrappedOmk: args.head.headDekWrappedOmk,
+		headOmkKemCiphertext: args.head.headOmkKemCiphertext,
 		wallet: args.wallet,
 		myWrap: args.myOrgWrap,
 	});

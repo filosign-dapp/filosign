@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { type Hex, toBytes } from "viem";
+import { toBytes } from "viem";
 import { decryptDraftComment } from "../../lib/draft-crypto";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 
@@ -52,7 +52,7 @@ export async function decryptDraftCommentsList(args: {
 				dek: args.dek,
 				draftId: args.draftId,
 				commentId: row.id,
-				ciphertext: toBytes(row.ciphertext as Hex),
+				ciphertext: toBytes(row.ciphertext),
 			});
 			out.push({
 				id: row.id,

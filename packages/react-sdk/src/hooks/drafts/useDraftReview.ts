@@ -1,6 +1,6 @@
 import type { DraftSnapshot } from "@filosign/shared";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import type { Address, Hex } from "viem";
+import type { Hex } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import {
 	decryptDraftDekFromColdShare,
@@ -9,6 +9,7 @@ import {
 	decryptDraftSnapshot,
 } from "../../lib/draft-crypto";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
+import { walletAccountAddress } from "../../utils/evm";
 
 export function useDraftReviewByToken(inviteToken: string | undefined) {
 	const { rpc } = useFilosignRpc();
@@ -99,14 +100,14 @@ export function useDecryptDraftReviewWarm() {
 			if (!wallet?.account || !isAuthed) {
 				throw new Error("Connect wallet to open this draft");
 			}
-			const walletAddress = wallet.account.address as Address;
+			const walletAddress = walletAccountAddress(wallet.account);
 			const head = await rpc.drafts.reviewForWallet({
 				inviteToken: args.inviteToken,
 			});
 
 			const dek = await decryptDraftDekFromWarmShare({
-				kemCiphertext: head.kemCiphertext as Hex,
-				encryptedDek: head.encryptedDek as Hex,
+				kemCiphertext: head.kemCiphertext,
+				encryptedDek: head.encryptedDek,
 				draftId: head.draftId,
 				inviteToken: args.inviteToken,
 				wallet: walletAddress,

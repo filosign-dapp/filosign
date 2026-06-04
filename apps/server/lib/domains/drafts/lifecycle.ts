@@ -101,11 +101,11 @@ export async function listDraftsForWallet(args: {
 		.orderBy(desc(envelopeDrafts.updatedAt));
 }
 
-const zCreateBody = z.object({
+export const zDraftCreateBody = z.object({
 	title: z.string().min(1).max(200).optional(),
 });
 
-const zMarkSentBody = z.object({
+export const zDraftMarkSentBody = z.object({
 	draftId: z.uuid(),
 	pieceCid: z.string().min(1),
 });
@@ -119,7 +119,7 @@ export async function draftsCreate(
 	activeOrg: ActiveOrgContext,
 	body: unknown,
 ) {
-	const parsed = zCreateBody.safeParse(body);
+	const parsed = zDraftCreateBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
@@ -257,7 +257,7 @@ export async function draftsMarkSent(
 	activeOrg: ActiveOrgContext,
 	body: unknown,
 ) {
-	const parsed = zMarkSentBody.safeParse(body);
+	const parsed = zDraftMarkSentBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}

@@ -30,7 +30,6 @@ export {
 } from "./invites";
 
 export {
-	assertPlatformAccess,
 	assertRegistrationComplete,
 	attachPendingOrgBillingOnCreateWithTx,
 	isUserRegistered,

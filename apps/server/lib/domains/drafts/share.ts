@@ -32,7 +32,7 @@ function pendingDraftShareFilter() {
 	);
 }
 
-const zShareExternalBody = z.object({
+export const zDraftShareExternalBody = z.object({
 	draftId: z.uuid(),
 	shares: z
 		.array(
@@ -44,14 +44,14 @@ const zShareExternalBody = z.object({
 					recipientWallet: z.string(),
 					kemCiphertext: zHexString(),
 					encryptedDek: zHexString(),
-					expiresAt: z.string().datetime().optional(),
+					expiresAt: z.iso.datetime().optional(),
 				}),
 				z.object({
 					accessKind: z.literal("cold"),
 					email: z.email(),
 					inviteToken: z.string().min(16),
 					wrappedDek: zHexString(),
-					expiresAt: z.string().datetime().optional(),
+					expiresAt: z.iso.datetime().optional(),
 				}),
 			]),
 		)
@@ -59,23 +59,25 @@ const zShareExternalBody = z.object({
 		.max(50),
 });
 
-const zRevokeShareBody = z.object({
+export const zDraftRevokeExternalShareBody = z.object({
 	shareId: z.uuid(),
 });
 
-const zCommentAppendBody = z.object({
+export const zDraftCommentAppendBody = z.object({
 	draftId: z.uuid(),
 	commentId: z.uuid(),
 	ciphertext: zHexString(),
 	inviteToken: z.string().min(8).optional(),
 });
 
+export type DraftCommentAppendBody = z.infer<typeof zDraftCommentAppendBody>;
+
 export async function draftsShareExternal(
 	wallet: Address,
 	activeOrg: ActiveOrgContext,
 	body: unknown,
 ) {
-	const parsed = zShareExternalBody.safeParse(body);
+	const parsed = zDraftShareExternalBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
@@ -231,7 +233,7 @@ export async function draftsRevokeExternalShare(
 	activeOrg: ActiveOrgContext,
 	body: unknown,
 ) {
-	const parsed = zRevokeShareBody.safeParse(body);
+	const parsed = zDraftRevokeExternalShareBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
@@ -448,7 +450,7 @@ export async function draftsCommentsAppend(
 	activeOrg: ActiveOrgContext,
 	body: unknown,
 ) {
-	const parsed = zCommentAppendBody.safeParse(body);
+	const parsed = zDraftCommentAppendBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}

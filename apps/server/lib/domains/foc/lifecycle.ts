@@ -1,4 +1,4 @@
-import { and, eq, isNull, lte } from "drizzle-orm";
+import { and, eq, exists, isNull, lte, or } from "drizzle-orm";
 import env from "@/env";
 import { resolveFocRetentionUntil } from "@/lib/domains/foc/retention-policy";
 import db from "@/lib/platform/db";
@@ -13,9 +13,25 @@ import { logger } from "@/lib/platform/pino";
 import { bucket } from "@/lib/platform/s3/client";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
-const { focObjects } = db.schema;
+const { complianceExportLogs, files, focObjects } = db.schema;
 
 const uploadsKey = (pieceCid: string) => `uploads/${pieceCid}`;
+
+/** Defer FOC replication while hot window is active and sender has not exported. */
+export function shouldDeferFocTransition(args: {
+	inHotWindow: boolean;
+	senderExported: boolean;
+}): boolean {
+	return args.inHotWindow && !args.senderExported;
+}
+
+/** Pending row is eligible for cron discovery (hot window ended or sender exported). */
+export function isFocTransitionDiscoverable(args: {
+	inHotWindow: boolean;
+	senderExported: boolean;
+}): boolean {
+	return !args.inHotWindow || args.senderExported;
+}
 
 function addDays(from: Date, days: number): Date {
 	const d = new Date(from);
@@ -60,6 +76,21 @@ export async function createFocStubForCompletedEnvelope(
 	});
 }
 
+async function senderHasComplianceExport(pieceCid: string): Promise<boolean> {
+	const [row] = await db
+		.select({ id: complianceExportLogs.id })
+		.from(complianceExportLogs)
+		.innerJoin(files, eq(files.pieceCid, complianceExportLogs.filePieceCid))
+		.where(
+			and(
+				eq(complianceExportLogs.filePieceCid, pieceCid),
+				eq(complianceExportLogs.requestedBy, files.sender),
+			),
+		)
+		.limit(1);
+	return Boolean(row);
+}
+
 export async function runFocTransitionForPiece(
 	pieceCid: string,
 ): Promise<void> {
@@ -70,13 +101,24 @@ export async function runFocTransitionForPiece(
 		.where(eq(focObjects.pieceCid, pieceCid))
 		.limit(1);
 
-	if (
-		!row ||
-		row.replicateStatus === "replicated" ||
-		row.r2EvictedAt ||
-		row.r2EvictAfter > now
-	) {
+	if (!row || row.replicateStatus === "replicated" || row.r2EvictedAt) {
 		return;
+	}
+
+	const inHotWindow = row.r2EvictAfter > now;
+	const senderExported = await senderHasComplianceExport(pieceCid);
+	if (shouldDeferFocTransition({ inHotWindow, senderExported })) {
+		logger.info(
+			{ pieceCid, organizationId: row.organizationId },
+			"foc-transition: deferred until sender exports compliance packet",
+		);
+		return;
+	}
+	if (!senderExported && !inHotWindow) {
+		logger.warn(
+			{ pieceCid, organizationId: row.organizationId },
+			"foc-transition: proceeding without sender export after r2EvictAfter",
+		);
 	}
 
 	const r2Key = row.r2Key;
@@ -167,14 +209,26 @@ export async function runFocTransitionForPiece(
 }
 
 export async function listFocTransitionsDue(limit = 50): Promise<string[]> {
+	const now = new Date();
+	const senderExportExists = db
+		.select({ id: complianceExportLogs.id })
+		.from(complianceExportLogs)
+		.innerJoin(files, eq(files.pieceCid, complianceExportLogs.filePieceCid))
+		.where(
+			and(
+				eq(complianceExportLogs.filePieceCid, focObjects.pieceCid),
+				eq(complianceExportLogs.requestedBy, files.sender),
+			),
+		);
+
 	const rows = await db
 		.select({ pieceCid: focObjects.pieceCid })
 		.from(focObjects)
 		.where(
 			and(
 				eq(focObjects.replicateStatus, "pending"),
-				lte(focObjects.r2EvictAfter, new Date()),
 				isNull(focObjects.r2EvictedAt),
+				or(lte(focObjects.r2EvictAfter, now), exists(senderExportExists)),
 			),
 		)
 		.limit(limit);

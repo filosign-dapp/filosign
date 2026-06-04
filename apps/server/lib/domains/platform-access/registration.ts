@@ -263,6 +263,3 @@ export async function assertRegistrationComplete(
 		});
 	}
 }
-
-/** @deprecated Use {@link assertRegistrationComplete}. */
-export const assertPlatformAccess = assertRegistrationComplete;

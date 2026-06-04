@@ -38,7 +38,12 @@ const zDocumentRow = z.object({
 	mimeType: z.string().min(1).max(128),
 });
 
-const zSaveBody = z.object({
+export const zDraftPresignDocumentsBody = z.object({
+	draftId: z.uuid(),
+	docIds: z.array(z.string().min(1).max(128)).min(1).max(20),
+});
+
+export const zDraftSaveBody = z.object({
 	draftId: z.uuid(),
 	expectedRevision: z.number().int().nonnegative(),
 	title: z.string().min(1).max(200).optional(),
@@ -51,7 +56,7 @@ const zSaveBody = z.object({
 
 const zSnapshotDigest = zHexString();
 
-const zPrepareSaveBody = z.object({
+export const zDraftPrepareSaveBody = z.object({
 	draftId: z.uuid(),
 	docIds: z.array(z.string().min(1).max(128)).max(20),
 	snapshotDigest: zSnapshotDigest.optional(),
@@ -62,7 +67,7 @@ export async function draftsSave(
 	activeOrg: ActiveOrgContext,
 	body: unknown,
 ) {
-	const parsed = zSaveBody.safeParse(body);
+	const parsed = zDraftSaveBody.safeParse(body);
 	if (!parsed.success) {
 		logDraftSave("save.parse_failed", { issues: parsed.error.message });
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
@@ -90,7 +95,7 @@ export async function draftsSave(
 async function draftsSaveInner(
 	wallet: Address,
 	activeOrg: ActiveOrgContext,
-	parsed: z.infer<typeof zSaveBody>,
+	parsed: z.infer<typeof zDraftSaveBody>,
 ) {
 	assertOrgPermission(activeOrg, "drafts:write");
 	const draft = await loadDraftOrThrow(parsed.draftId);
@@ -192,7 +197,6 @@ async function draftsSaveInner(
 				title: parsed.title?.trim() ?? draft.title,
 				revision: nextRevision,
 				headSnapshotS3Key: computedSnapshotKey,
-				headSnapshot: null,
 				headSnapshotDigest: incomingSnapshotDigest,
 				headDekWrappedOmk,
 				headOmkKemCiphertext,
@@ -253,7 +257,7 @@ export async function draftsPrepareSave(
 	activeOrg: ActiveOrgContext,
 	body: unknown,
 ) {
-	const parsed = zPrepareSaveBody.safeParse(body);
+	const parsed = zDraftPrepareSaveBody.safeParse(body);
 	if (!parsed.success) {
 		logDraftSave("prepare.parse_failed", { issues: parsed.error.message });
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
@@ -390,12 +394,7 @@ export async function draftsPresignDocuments(
 	activeOrg: ActiveOrgContext,
 	body: unknown,
 ) {
-	const parsed = z
-		.object({
-			draftId: z.uuid(),
-			docIds: z.array(z.string().min(1).max(128)).min(1).max(20),
-		})
-		.safeParse(body);
+	const parsed = zDraftPresignDocumentsBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}

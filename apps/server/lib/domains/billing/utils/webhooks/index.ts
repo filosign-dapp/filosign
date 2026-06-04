@@ -245,16 +245,6 @@ export async function ackDodoWebhook(args: {
 	return { ok: true };
 }
 
-/** @deprecated Use ackDodoWebhook on API; processing runs in billing-webhook worker. */
-export async function handleDodoWebhook(args: {
-	rawBody: string;
-	webhookId: string;
-	webhookTimestamp: string;
-	webhookSignature: string;
-}) {
-	return ackDodoWebhook(args);
-}
-
 export {
 	resolveCheckoutFirstBillingInterval,
 	resolveCheckoutFirstSeatCount,

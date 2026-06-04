@@ -26,4 +26,5 @@ export {
 	draftsReviewForWallet,
 	draftsRevokeExternalShare,
 	draftsShareExternal,
+	zDraftCommentAppendBody,
 } from "./share";

@@ -29,7 +29,7 @@ Mount or inject `postgresql.conf` fragments:
 archive_mode = on
 wal_level = replica
 max_wal_size = 1GB
-archive_command = 'pgbackrest --stanza=filosign archive-push %p'
+archive_command = 'pgbackrest --stanza=filosign --spool-path=/var/lib/pgbackrest archive-push %p'
 max_wal_senders = 3
 ```
 
@@ -75,11 +75,13 @@ pg1-database=filosign
 All pgBackRest commands on **`filosign-postgres`** (`compose.data.yml` — no sidecar; `pg1-host` over Docker DNS implies SSH and fails without keys).
 
 ```bash
-docker exec filosign-postgres pgbackrest --stanza=filosign stanza-create
-docker exec filosign-postgres pgbackrest --stanza=filosign check
-docker exec filosign-postgres pgbackrest --stanza=filosign backup --type=full
-docker exec filosign-postgres ls -la /var/lib/pgbackrest/archive/filosign/
+docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign stanza-create
+docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign check
+docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign backup --type=full
+docker exec -u postgres filosign-postgres ls -la /var/lib/pgbackrest/archive/filosign/
 ```
+
+Use **`-u postgres`** on every `docker exec` — root creates locks under `/tmp/pgbackrest` that `archive-push` (postgres user) cannot read (`[041] Permission denied`).
 
 Local dev (`compose.dev-full.yml`) may still use a **pgbackrest sidecar** with shared `postgres_data` and **no** `pg1-host` in `pgbackrest.conf` — see [`pgbackrest.conf.example`](../../deploy/pgbackrest/pgbackrest.conf.example).
 

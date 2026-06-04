@@ -19,7 +19,7 @@ case "$TYPE" in
     ;;
 esac
 
-if ! docker exec "$CONTAINER" pgbackrest --stanza="$STANZA" "${CMD[@]}"; then
+if ! docker exec -u postgres "$CONTAINER" pgbackrest --stanza="$STANZA" "${CMD[@]}"; then
   echo "pgbackrest failed: stanza=$STANZA cmd=${CMD[*]}" >&2
   REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
   if command -v bun >/dev/null 2>&1; then

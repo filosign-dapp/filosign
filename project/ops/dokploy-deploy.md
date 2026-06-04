@@ -60,10 +60,11 @@ No Filosign app secrets on the data project.
 **pgBackRest after data deploy:** All commands run on **`filosign-postgres`** (pgBackRest is installed in that image; `archive-push` also runs there). Do **not** use a sidecar with `pg1-host` — pgBackRest defaults to SSH and fails without keys.
 
 ```bash
-docker exec filosign-postgres pgbackrest --stanza=filosign stanza-create
-docker exec filosign-postgres pgbackrest --stanza=filosign check
-docker exec filosign-postgres pgbackrest --stanza=filosign backup --type=full
-docker exec filosign-postgres ls -la /var/lib/pgbackrest/archive/filosign/
+# Always -u postgres (archive-push runs as postgres; root docker exec causes /tmp permission errors)
+docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign stanza-create
+docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign check
+docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign backup --type=full
+docker exec -u postgres filosign-postgres ls -la /var/lib/pgbackrest/archive/filosign/
 ```
 
 Until `stanza-create` succeeds, postgres logs may show `[103] … has a stanza-create been performed?` — DB still accepts connections; fix backups before relying on PITR.

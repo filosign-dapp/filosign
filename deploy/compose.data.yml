@@ -30,10 +30,12 @@ services:
       PGBACKREST_PG1_USER: ${POSTGRES_USER:-filosign}
       PGBACKREST_PG1_DATABASE: ${POSTGRES_DB:-filosign}
       PGBACKREST_REPO1_RETENTION_FULL: ${PGBACKREST_REPO1_RETENTION_FULL:-2}
+      # Locks/spool — must match postgres OS user (not root /tmp/pgbackrest from docker exec)
+      PGBACKREST_SPOOL_PATH: /var/lib/pgbackrest
     volumes:
       # PG 18+: mount parent dir (PGDATA = /var/lib/postgresql/18/docker)
       - postgres_data:/var/lib/postgresql
-      # Shared with pgbackrest sidecar — archive-push needs spool/archive.info here
+      # Shared spool — archive-push + manual pgbackrest (same postgres OS user)
       - pgbackrest_spool:/var/lib/pgbackrest
       - ./postgres/postgresql.production.conf:/etc/postgresql/postgresql.conf:ro
     command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]

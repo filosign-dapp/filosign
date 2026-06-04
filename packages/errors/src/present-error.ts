@@ -8,9 +8,14 @@ import {
 	readEntitlementCodeFromOrpc,
 	readParamsFromOrpc,
 } from "./is-orpc-error";
-import { legacyAppCodeFromMessage } from "./legacy-messages";
 import { resolveSupportUrl } from "./resolve-support-url";
 import type { PresentErrorOptions, PresentedError } from "./types";
+
+const ORPC_ENTITLEMENT_CODE_TO_APP: Record<string, AppErrorCode> = {
+	FEATURE_DISABLED: "ENTITLEMENT.FEATURE_DISABLED",
+	QUOTA_EXCEEDED: "ENTITLEMENT.QUOTA_EXCEEDED",
+	LIMIT_EXCEEDED: "ENTITLEMENT.LIMIT_EXCEEDED",
+};
 
 function isNetworkError(error: unknown): boolean {
 	if (error instanceof TypeError) {
@@ -102,7 +107,14 @@ function resolveAppCode(error: unknown): {
 
 		const entitlementCode = readEntitlementCodeFromOrpc(error);
 		if (entitlementCode) {
-			const mapped = legacyAppCodeFromMessage(entitlementCode);
+			if (isAppErrorCode(entitlementCode)) {
+				return {
+					code: entitlementCode,
+					params: readParamsFromOrpc(error),
+					devDetail: error.message,
+				};
+			}
+			const mapped = ORPC_ENTITLEMENT_CODE_TO_APP[entitlementCode];
 			if (mapped) {
 				return {
 					code: mapped,
@@ -114,15 +126,6 @@ function resolveAppCode(error: unknown): {
 
 		if (error.code === "UNAUTHORIZED") {
 			return { code: "AUTH.UNAUTHORIZED", devDetail: error.message };
-		}
-
-		const legacy = legacyAppCodeFromMessage(error.message);
-		if (legacy) {
-			return {
-				code: legacy,
-				params: readParamsFromOrpc(error),
-				devDetail: error.message,
-			};
 		}
 
 		return { code: null, devDetail: error.message };

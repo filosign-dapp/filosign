@@ -23,14 +23,6 @@ describe("presentError", () => {
 		expect(presented.code).toBe("GENERIC.NETWORK");
 	});
 
-	test("maps legacy message to catalog", () => {
-		const presented = presentError({
-			code: "FORBIDDEN",
-			message: "Document must be viewed before signing",
-		});
-		expect(presented.code).toBe("SIGNING.VIEW_BEFORE_SIGN");
-	});
-
 	test("interpolates entitlement params", () => {
 		const presented = presentError({
 			code: "FORBIDDEN",

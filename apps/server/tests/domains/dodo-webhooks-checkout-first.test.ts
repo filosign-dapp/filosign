@@ -62,9 +62,9 @@ describe("org billing attach contract", () => {
 });
 
 describe("checkout-first routing contract", () => {
-	test("handleDodoWebhook exports checkout-first seat helpers", async () => {
+	test("ackDodoWebhook module exports checkout-first seat helpers", async () => {
 		const mod = await import("@/lib/domains/billing/utils/webhooks");
-		expect(typeof mod.handleDodoWebhook).toBe("function");
+		expect(typeof mod.ackDodoWebhook).toBe("function");
 		expect(typeof mod.resolveCheckoutFirstSeatCount).toBe("function");
 		expect(typeof mod.resolveCheckoutFirstBillingInterval).toBe("function");
 	});

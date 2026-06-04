@@ -5,12 +5,14 @@ import { jobOutbox as jobOutboxTable } from "@/lib/platform/db/schema/job-outbox
 import {
 	sendColdDocumentInviteEmail,
 	sendDocumentReceivedEmail,
+	sendEnvelopeCompletedEmail,
 } from "@/lib/platform/email";
 import { logger } from "@/lib/platform/pino";
 import type { EmailQueueJobData } from "../queues";
 import {
 	type ColdDocInviteOutboxPayload,
 	type DocReceivedOutboxPayload,
+	type EnvelopeCompletedOutboxPayload,
 	markOutboxFailed,
 	markOutboxProcessed,
 	parseOutboxPayload,
@@ -30,6 +32,21 @@ export async function processEmailFromOutbox(
 			senderWallet: parsed.senderWallet,
 			pieceCid: parsed.pieceCid,
 			senderName: parsed.senderName,
+		});
+		return;
+	}
+
+	if (kind === "envelope_completed") {
+		const parsed = parseOutboxPayload(
+			kind,
+			payload,
+		) as EnvelopeCompletedOutboxPayload;
+		await sendEnvelopeCompletedEmail({
+			to: parsed.to,
+			senderWallet: parsed.senderWallet,
+			pieceCid: parsed.pieceCid,
+			senderName: parsed.senderName,
+			envelopeName: parsed.envelopeName,
 		});
 		return;
 	}

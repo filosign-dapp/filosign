@@ -13,6 +13,7 @@ import {
 	createServerChainRpcTransport,
 	serverChainRpcTransportArgs,
 } from "@/lib/platform/chain-rpc";
+import { relayContractWrite } from "@/lib/platform/evm/contract-write";
 import { withRegistryWalletLock } from "@/lib/platform/evm/registry-wallet-lock";
 import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 
@@ -70,14 +71,20 @@ type EnvelopeRegistryRelayWrite = {
 	registerEnvelopeSignature: (
 		args: readonly unknown[],
 	) => Promise<`0x${string}`>;
-	amendSigner: (args: readonly unknown[]) => Promise<`0x${string}`>;
+	proposeSignerReplacement: (
+		args: readonly unknown[],
+	) => Promise<`0x${string}`>;
+	executeSignerReplacement: (
+		args: readonly unknown[],
+	) => Promise<`0x${string}`>;
+	cancelSignerReplacement: (args: readonly unknown[]) => Promise<`0x${string}`>;
 	recallEnvelope: (args: readonly unknown[]) => Promise<`0x${string}`>;
 };
 
 function envelopeRegistryRelayWrite(
 	registry: EnvelopeRegistryContract,
 ): EnvelopeRegistryRelayWrite {
-	return registry.write as unknown as EnvelopeRegistryRelayWrite;
+	return relayContractWrite<EnvelopeRegistryRelayWrite>(registry.write);
 }
 
 /** Relay server-signed registry writes when viem contract typings omit methods. */
@@ -93,14 +100,38 @@ export async function relayRegisterEnvelopeSignature(
 	);
 }
 
-export async function relayAmendSigner(
+export async function relayProposeSignerReplacement(
 	registry: EnvelopeRegistryContract,
 	args: readonly unknown[],
 ): Promise<`0x${string}`> {
 	const recaller = getAddress(args[1] as `0x${string}`);
 	return withRelayerLock(() =>
 		withRegistryWalletLock(recaller, () =>
-			envelopeRegistryRelayWrite(registry).amendSigner(args),
+			envelopeRegistryRelayWrite(registry).proposeSignerReplacement(args),
+		),
+	);
+}
+
+export async function relayExecuteSignerReplacement(
+	registry: EnvelopeRegistryContract,
+	args: readonly unknown[],
+): Promise<`0x${string}`> {
+	const recaller = getAddress(args[1] as `0x${string}`);
+	return withRelayerLock(() =>
+		withRegistryWalletLock(recaller, () =>
+			envelopeRegistryRelayWrite(registry).executeSignerReplacement(args),
+		),
+	);
+}
+
+export async function relayCancelSignerReplacement(
+	registry: EnvelopeRegistryContract,
+	args: readonly unknown[],
+): Promise<`0x${string}`> {
+	const recaller = getAddress(args[1] as `0x${string}`);
+	return withRelayerLock(() =>
+		withRegistryWalletLock(recaller, () =>
+			envelopeRegistryRelayWrite(registry).cancelSignerReplacement(args),
 		),
 	);
 }

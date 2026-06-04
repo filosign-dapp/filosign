@@ -1,3 +1,4 @@
+import type { UserKeygenDataJson } from "@filosign/shared";
 import * as t from "drizzle-orm/pg-core";
 import { tEvmAddress, timestamps } from "@/lib/platform/db/helpers";
 import { randomUuidV7 } from "@/lib/platform/db/random-uuid-v7";
@@ -12,7 +13,7 @@ export type UserInviteStatus = (typeof userInviteStatuses)[number];
 
 export const users = t.pgTable("users", {
 	walletAddress: tEvmAddress().primaryKey(),
-	keygenDataJson: t.jsonb(),
+	keygenDataJson: t.jsonb().$type<UserKeygenDataJson>(),
 	encryptionPublicKey: t.text().notNull(),
 	signaturePublicKey: t.text().notNull(),
 

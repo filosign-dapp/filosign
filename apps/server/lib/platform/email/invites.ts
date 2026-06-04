@@ -142,6 +142,46 @@ export async function sendDocumentReceivedEmail(
 	});
 }
 
+export async function sendEnvelopeCompletedEmail(args: {
+	to: string;
+	senderWallet: Address;
+	pieceCid: string;
+	senderName?: string | null;
+	envelopeName: string;
+}) {
+	if (shouldSkipEmail()) return;
+
+	const appUrl = getClientUrl();
+	const downloadUrl = `${appUrl}/dashboard/document/sign?pieceCid=${encodeURIComponent(args.pieceCid)}`;
+	const senderLabel =
+		args.senderName?.trim() || formatAddress(args.senderWallet);
+	const subject = `Completed: ${args.envelopeName}`;
+	const text = [
+		`"${args.envelopeName}" is fully executed on Filosign.`,
+		`${senderLabel} and all required parties have finished signing.`,
+		"",
+		"Download the completion packet (ZIP with the original file, compliance report, and audit record):",
+		downloadUrl,
+	].join("\n");
+	const html = [
+		`<p><strong>${escapeHtml(args.envelopeName)}</strong> is fully executed on Filosign.</p>`,
+		`<p>Download the completion packet (original file, compliance report, and audit record):</p>`,
+		`<p><a href="${escapeHtml(downloadUrl)}">Open in Filosign</a></p>`,
+	].join("");
+
+	await deliverEmail({
+		to: args.to,
+		subject,
+		text,
+		html,
+		idempotencySegments: [
+			"envelope-completed",
+			args.to.trim().toLowerCase(),
+			args.pieceCid,
+		],
+	});
+}
+
 export async function sendCheckoutContinueEmail(args: {
 	to: string;
 	continueUrl: string;

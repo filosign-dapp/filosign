@@ -17,18 +17,26 @@ export type JobOutboxPayload = Record<string, unknown>;
 const zAddress = z.string().transform((v) => getAddress(v as Address));
 
 export const zDocReceivedOutboxPayload = z.object({
-	to: z.string().email(),
+	to: z.email(),
 	senderWallet: zAddress,
 	pieceCid: z.string().min(1),
 	senderName: z.string().optional(),
 });
 
 export const zColdDocInviteOutboxPayload = z.object({
-	to: z.string().email(),
+	to: z.email(),
 	senderWallet: zAddress,
 	pieceCid: z.string().min(1),
 	inviteToken: z.string().min(16),
 	senderName: z.string().optional(),
+});
+
+export const zEnvelopeCompletedOutboxPayload = z.object({
+	to: z.email(),
+	senderWallet: zAddress,
+	pieceCid: z.string().min(1),
+	senderName: z.string().optional(),
+	envelopeName: z.string().min(1),
 });
 
 export type DocReceivedOutboxPayload = z.infer<
@@ -37,13 +45,22 @@ export type DocReceivedOutboxPayload = z.infer<
 export type ColdDocInviteOutboxPayload = z.infer<
 	typeof zColdDocInviteOutboxPayload
 >;
+export type EnvelopeCompletedOutboxPayload = z.infer<
+	typeof zEnvelopeCompletedOutboxPayload
+>;
 
 export function parseOutboxPayload(
 	kind: JobOutboxKind,
 	payload: Record<string, unknown>,
-): DocReceivedOutboxPayload | ColdDocInviteOutboxPayload {
+):
+	| DocReceivedOutboxPayload
+	| ColdDocInviteOutboxPayload
+	| EnvelopeCompletedOutboxPayload {
 	if (kind === "doc_received") {
 		return zDocReceivedOutboxPayload.parse(payload);
+	}
+	if (kind === "envelope_completed") {
+		return zEnvelopeCompletedOutboxPayload.parse(payload);
 	}
 	return zColdDocInviteOutboxPayload.parse(payload);
 }

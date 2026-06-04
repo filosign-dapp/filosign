@@ -13,6 +13,7 @@ export {
 	sendDocumentReceivedEmail,
 	sendDocumentSharedEmail,
 	sendDraftReviewInviteEmail,
+	sendEnvelopeCompletedEmail,
 	sendPaidSetupEmail,
 } from "./invites";
 export {

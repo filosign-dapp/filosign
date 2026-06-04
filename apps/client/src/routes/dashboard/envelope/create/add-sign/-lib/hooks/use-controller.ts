@@ -16,7 +16,11 @@ import {
 	useSignFile,
 } from "@filosign/react/files";
 import { useActiveOrganization } from "@filosign/react/orgs";
-import { useProfilesByAddresses, useUserProfile } from "@filosign/react/users";
+import {
+	type ProfileByAddress,
+	useProfilesByAddresses,
+	useUserProfile,
+} from "@filosign/react/users";
 import {
 	normalizePlacementRecipientEmail,
 	validateRegisterRoutingForSend,
@@ -24,7 +28,7 @@ import {
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { type Address, BaseError, type Hex } from "viem";
+import { type Address, BaseError } from "viem";
 import {
 	draftSyncModeFromSearch,
 	hydrateAttachmentPacketDrafts,
@@ -33,12 +37,12 @@ import {
 	useServerDraftHydrate,
 } from "@/src/lib/domains/drafts";
 import { toAttachmentPacketDraftsForSend } from "@/src/lib/domains/files/attachment-packet-compose";
-import { buildPlacementManifestV3ForEnvelope } from "@/src/lib/domains/files/build-placement-manifest";
+import { buildPlacementManifestForEnvelope } from "@/src/lib/domains/files/build-placement-manifest";
 import { buildRegisterRoutingFromForm } from "@/src/lib/domains/files/build-register-routing-from-form";
 import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
 import {
+	defaultPlacementFieldRect,
 	normalizeSignatureFieldsList,
-	signatureFieldBoxCssPx,
 } from "@/src/lib/domains/files/field-box";
 import {
 	validateAttachmentPacketComposeDrafts,
@@ -131,23 +135,14 @@ export function useAddSignController() {
 	const recipientProfilesMapWithRecipient = useMemo(() => {
 		const map = new Map<
 			Address,
-			{
-				recipient: Recipient;
-				profile: { encryptionPublicKey: string; [key: string]: unknown };
-			}
+			{ recipient: Recipient; profile: ProfileByAddress }
 		>();
 		createForm?.recipients?.forEach((recipient) => {
 			const addr = recipientResolvedSignerAddress(recipient);
 			if (!addr) return;
 			const profile = recipientProfilesMap?.get(addr);
 			if (profile) {
-				map.set(addr, {
-					recipient,
-					profile: profile as {
-						encryptionPublicKey: string;
-						[key: string]: unknown;
-					},
-				});
+				map.set(addr, { recipient, profile });
 			}
 		});
 		return map;
@@ -159,7 +154,7 @@ export function useAddSignController() {
 		margin,
 		isMobile,
 	} = useDocumentDimensions();
-	const fieldBoxCss = signatureFieldBoxCssPx(isMobile);
+	const fieldBoxCss = defaultPlacementFieldRect("signature", isMobile);
 	const [pdfLayoutHeight, setPdfLayoutHeight] = useState<number | null>(null);
 	const [pdfNumPages, setPdfNumPages] = useState<number | null>(null);
 	const pageHeightsRef = useRef<Map<number, number>>(new Map());
@@ -779,7 +774,7 @@ export function useAddSignController() {
 				coldInvites: coldInvitePayload,
 			});
 
-			const placementManifest = await buildPlacementManifestV3ForEnvelope({
+			const placementManifest = await buildPlacementManifestForEnvelope({
 				documents: docPayloads,
 				signerEmailsInOrder: signerEmailsForPlacementManifest({
 					signerRecipients,
@@ -809,7 +804,7 @@ export function useAddSignController() {
 					return {
 						email: recipient.email.trim(),
 						address: addr,
-						encryptionPublicKey: profile.encryptionPublicKey as Hex,
+						encryptionPublicKey: profile.encryptionPublicKey,
 					};
 				})
 				.filter((x): x is NonNullable<typeof x> => x !== null);
@@ -895,7 +890,7 @@ export function useAddSignController() {
 					...(activeOrg
 						? {
 								organizationId: activeOrg.id,
-								orgEncryptionPublicKey: activeOrg.encryptionPublicKey as Hex,
+								orgEncryptionPublicKey: activeOrg.encryptionPublicKey,
 							}
 						: {}),
 				},

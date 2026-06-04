@@ -19,11 +19,11 @@ const composeRecipientSchema = z.object({
 
 export const composeDocumentsSchema = z
 	.array(uploadedFileSchema)
-	.min(1, "Please upload at least one document");
+	.min(1, { error: "Please upload at least one document" });
 
 export const composeRecipientsSchema = z
 	.array(composeRecipientSchema)
-	.min(1, "Please add at least one recipient")
+	.min(1, { error: "Please add at least one recipient" })
 	.superRefine((recipients, ctx) => {
 		const hasInvalidEmail = recipients.some(
 			(r) => !isValidRecipientEmail(r.email ?? ""),

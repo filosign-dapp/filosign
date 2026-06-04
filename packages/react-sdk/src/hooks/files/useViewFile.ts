@@ -1,6 +1,7 @@
 import { encryption, KEM, toBytes } from "@filosign/crypto-utils";
 import {
 	decodeFileData,
+	documentsMerkleRootV1,
 	ORG_OMK_WRAP_INFO,
 	type PlacementManifest,
 } from "@filosign/shared";
@@ -37,11 +38,12 @@ export type ViewFileDocument = {
 };
 
 export type ViewFileResult = {
-	version: 1 | 2;
-	/** Legacy single-document view (v1 packages and convenience). */
+	version: 1;
+	/** Merkle root of per-document SHA-256 leaves (matches on-chain documentSha256). */
+	registerDocumentSha256: `0x${string}`;
+	/** First signable document bytes (preview convenience). */
 	fileBytes: Uint8Array;
-	/** Multi-document signable package (v2). */
-	documents?: ViewFileDocument[];
+	documents: ViewFileDocument[];
 	sender: `0x${string}`;
 	timestamp: number;
 	metadata: ViewFileMetadata;
@@ -141,28 +143,28 @@ export function useViewFile() {
 			});
 
 			const parsedData = await decodeFileData(decryptedData);
+			const registerDocumentSha256 = await documentsMerkleRootV1({
+				documents: parsedData.documents.map((d) => ({
+					id: d.id,
+					bytes: d.bytes,
+				})),
+			});
 
-			if (parsedData.version === 2) {
-				const primary = parsedData.documents[0];
-				return {
-					version: 2 as const,
-					fileBytes: primary?.bytes ?? new Uint8Array(),
-					documents: parsedData.documents.map((d) => ({
-						id: d.id,
-						name: d.name,
-						mimeType: d.mimeType,
-						bytes: d.bytes,
-					})),
-					sender: parsedData.sender,
-					timestamp: parsedData.timestamp,
-					metadata: parsedData.metadata,
-					placementManifest: parsedData.placementManifest,
-				};
+			const primary = parsedData.documents[0];
+			if (!primary) {
+				throw new Error("File data has no documents");
 			}
 
 			return {
 				version: 1 as const,
-				fileBytes: parsedData.bytes,
+				registerDocumentSha256,
+				fileBytes: primary.bytes,
+				documents: parsedData.documents.map((d) => ({
+					id: d.id,
+					name: d.name,
+					mimeType: d.mimeType,
+					bytes: d.bytes,
+				})),
 				sender: parsedData.sender,
 				timestamp: parsedData.timestamp,
 				metadata: parsedData.metadata,

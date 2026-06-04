@@ -12,12 +12,13 @@ import {
 	type AttachmentPacketSendInput,
 	buildRegistrationEmailCommitments,
 	computePlacementCommitment,
-	encodeFileDataV2,
+	documentsMerkleRootV1,
+	encodeFileData,
 	hashNormalizedSignerEmail,
 	hashOrgIdCommitment,
-	isPlacementManifestV3,
 	normalizePlacementRecipientEmail,
 	type PlacementManifest,
+	parseHexString,
 	type RegisterRoutingInput,
 	ZERO_ORG_ID_COMMITMENT,
 } from "@filosign/shared";
@@ -88,7 +89,7 @@ export function useSendFile() {
 			orgEncryptionPublicKey?: Hex;
 			/** On-chain settlement rules (register + approve before files.register). */
 			settlementRules?: SettlementRuleDraft[];
-			/** Advanced registry routing (sequential, optional signers, quorum). */
+			/** Advanced registry routing (sequential/parallel + quorum). */
 			routing?: RegisterRoutingInput;
 		}) => {
 			const {
@@ -135,10 +136,17 @@ export function useSendFile() {
 				throw new Error("At least one signable document is required");
 			}
 
-			if (!isPlacementManifestV3(placementManifest)) {
-				throw new Error("New sends require placement manifest version 3");
+			if (placementManifest.version !== 1) {
+				throw new Error("Sends require placement manifest version 1");
 			}
-			const data = await encodeFileDataV2({
+			const documentSha256 = await documentsMerkleRootV1({
+				documents: documents.map((d) => ({
+					id: d.id,
+					bytes: d.bytes,
+				})),
+			});
+
+			const data = await encodeFileData({
 				documents,
 				sender: wallet.account.address,
 				timestamp,
@@ -285,6 +293,7 @@ export function useSendFile() {
 								{ name: "signersCommitment", type: "bytes20" },
 								{ name: "viewersCommitment", type: "bytes20" },
 								{ name: "placementCommitment", type: "bytes32" },
+								{ name: "documentSha256", type: "bytes32" },
 								{ name: "senderEmailCommitment", type: "bytes32" },
 								{ name: "senderAuthSubjectCommitment", type: "bytes32" },
 								{ name: "orgIdCommitment", type: "bytes32" },
@@ -304,6 +313,7 @@ export function useSendFile() {
 							signersCommitment,
 							viewersCommitment,
 							placementCommitment,
+							documentSha256,
 							senderEmailCommitment,
 							senderAuthSubjectCommitment,
 							orgIdCommitment,
@@ -434,6 +444,12 @@ export function useSendFile() {
 					}
 				: undefined;
 
+			if (!organizationId || !orgKemCiphertext || !orgEncryptedEncryptionKey) {
+				throw new Error(
+					"Active workspace required to register an envelope (org DEK wrap missing)",
+				);
+			}
+
 			const requestPayload = {
 				pieceCid: pieceCid.toString(),
 				participants: participants,
@@ -441,15 +457,12 @@ export function useSendFile() {
 				senderEncryptedEncryptionKey: toHex(selfEncryptedEncryptionKey),
 				senderKemCiphertext: toHex(selfKemCiphertext),
 				timestamp: timestamp,
+				documentSha256,
 				placementCommitment,
 				placementManifest,
-				...(organizationId && orgKemCiphertext && orgEncryptedEncryptionKey
-					? {
-							organizationId,
-							orgKemCiphertext,
-							orgEncryptedEncryptionKey,
-						}
-					: {}),
+				organizationId,
+				orgKemCiphertext,
+				orgEncryptedEncryptionKey,
 				...(coldInviteRows.length > 0 ? { coldInvites: coldInviteRows } : {}),
 				...(routing ? { routing } : {}),
 				...(attachmentPackets.length > 0 ? { attachmentPackets } : {}),
@@ -482,7 +495,7 @@ export function useSendFile() {
 						const releaseType = draft.releaseType ?? "all_required_signed";
 						return {
 							packetId: draft.packetId,
-							packetContentHash: packet.packetContentHash as Hex,
+							packetContentHash: parseHexString(packet.packetContentHash),
 							releaseType,
 							releaseParams: (draft.releaseParams ?? {
 								releaseType,

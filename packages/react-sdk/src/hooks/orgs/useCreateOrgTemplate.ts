@@ -1,3 +1,4 @@
+import type { DraftPlacementManifest } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 
@@ -5,7 +6,7 @@ export type CreateOrgTemplateInput = {
 	name: string;
 	s3Key: string;
 	dekWrappedOmk: string;
-	placementManifest: unknown;
+	placementManifest: DraftPlacementManifest;
 };
 
 export function useCreateOrgTemplate() {

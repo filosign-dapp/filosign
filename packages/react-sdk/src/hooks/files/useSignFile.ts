@@ -14,7 +14,6 @@ import {
 } from "@filosign/shared";
 import type { InferClientOutputs } from "@orpc/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Hex } from "viem";
 import { getAddress } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { latestChainTimestamp } from "../../lib/chain-time";
@@ -107,7 +106,7 @@ export function useSignFile() {
 					);
 				}
 
-				const placementCommitmentHex = placementCommitment as Hex;
+				const placementCommitmentHex = placementCommitment;
 
 				const assignedIds = manifest.fields
 					.filter((f) => f.assignedRecipientEmail === signerEmail)
@@ -135,6 +134,8 @@ export function useSignFile() {
 				});
 
 				const cidIdentifier = computeCidIdentifier(pieceCid);
+				const reg = await registry.read.envelopeRegistrations([cidIdentifier]);
+				const signersCommitment = reg.signersCommitment;
 
 				const dl3SignatureMessage = jsonStringify({
 					pieceCid,
@@ -172,6 +173,7 @@ export function useSignFile() {
 										{ name: "dl3SignatureCommitment", type: "bytes20" },
 										{ name: "completionsRoot", type: "bytes32" },
 										{ name: "leafSchemaVersion", type: "uint8" },
+										{ name: "signersCommitment", type: "bytes20" },
 										{ name: "timestamp", type: "uint256" },
 									],
 								},
@@ -185,6 +187,7 @@ export function useSignFile() {
 									dl3SignatureCommitment,
 									completionsRoot,
 									leafSchemaVersion: LEAF_SCHEMA_VERSION_V1,
+									signersCommitment,
 									timestamp: BigInt(timestamp),
 								},
 							},

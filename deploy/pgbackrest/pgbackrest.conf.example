@@ -14,7 +14,6 @@ repo1-retention-full-time=30d
 repo1-cipher-type=aes-256-cbc
 repo1-cipher-pass=change-me-long-random-passphrase
 lock-path=/var/lib/pgbackrest/lock
-spool-path=/var/lib/pgbackrest/spool
 log-path=/var/lib/pgbackrest/log
 
 [filosign]

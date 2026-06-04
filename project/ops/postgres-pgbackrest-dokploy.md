@@ -13,7 +13,7 @@ Community + pgBackRest maintainer guidance converges on this pattern ([Data Egre
 | **`archive-push` in the postgres container** (local `pg1-path`) | Host-machine pgBackRest pointing at a bind-mounted volume (unix socket mismatch) |
 | **S3/R2 repo** off the VPS disk | POSIX repo on same volume as PGDATA (survives container restart, not disk loss) |
 | **`docker exec -u postgres`** for manual commands | `docker exec` as **root** (locks under `/tmp/pgbackrest` → `[041] Permission denied` for archive-push) |
-| **`lock-path` + `spool-path` on a persistent volume** owned by `postgres` | Default `/tmp/pgbackrest` locks shared across users |
+| **`lock-path` on a persistent volume** owned by `postgres` | Default `/tmp/pgbackrest` locks; **`spool-path` without `archive-async=y`** (error [031]) |
 | **Test restore** into a fresh volume quarterly | Assume backups work because `stanza-create` succeeded |
 
 Filosign **`compose.data.yml`** implements this: `deploy/postgres/Dockerfile` builds `filosign-postgres-pgbackrest:18` (Postgres + pgBackRest + baked [`pgbackrest.conf`](../../deploy/postgres/pgbackrest.conf)); Dokploy env supplies **S3 secrets only**.
@@ -72,6 +72,13 @@ If you previously ran pgBackRest as root, clear stale locks first:
 ```bash
 docker exec filosign-postgres rm -rf /tmp/pgbackrest
 docker exec filosign-postgres chown -R postgres:postgres /var/lib/pgbackrest
+```
+
+If logs show `archive-push … --spool-path=…` but [`postgresql.production.conf`](../../deploy/postgres/postgresql.production.conf) does not, **`postgresql.auto.conf` still has an old `ALTER SYSTEM`** — reset it:
+
+```bash
+docker exec filosign-postgres psql -U filosign -d filosign -c "ALTER SYSTEM RESET archive_command;"
+docker exec filosign-postgres psql -U filosign -d filosign -c "SELECT pg_reload_conf();"
 ```
 
 ## Schedules (host cron or Dokploy job)

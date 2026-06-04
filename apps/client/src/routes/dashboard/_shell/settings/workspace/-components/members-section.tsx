@@ -5,7 +5,6 @@ import {
 	UserMinusIcon,
 	UsersIcon,
 } from "@phosphor-icons/react";
-import type { Address } from "viem";
 import { Avatar, AvatarFallback } from "@/src/lib/components/ui/avatar";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -210,8 +209,7 @@ export function MembersSection(props: { onInviteClick?: () => void }) {
 																					onClick={() => {
 																						setRole.mutate(
 																							{
-																								walletAddress:
-																									m.walletAddress as Address,
+																								walletAddress: m.walletAddress,
 																								role: r,
 																							},
 																							{
@@ -241,7 +239,7 @@ export function MembersSection(props: { onInviteClick?: () => void }) {
 																onClick={() => {
 																	wrapKey.mutate(
 																		{
-																			targetWallet: m.walletAddress as Address,
+																			targetWallet: m.walletAddress,
 																		},
 																		{
 																			onSuccess: () => void orgDetail.refetch(),
@@ -267,7 +265,7 @@ export function MembersSection(props: { onInviteClick?: () => void }) {
 																onClick={() => {
 																	removeMember.mutate(
 																		{
-																			walletAddress: m.walletAddress as Address,
+																			walletAddress: m.walletAddress,
 																		},
 																		{
 																			onSuccess: () => void orgDetail.refetch(),

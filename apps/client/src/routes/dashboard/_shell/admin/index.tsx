@@ -1,6 +1,7 @@
 import { getPlanName, type PlanId } from "@filosign/entitlements";
 import { MotionReveal } from "@filosign/motion";
 import { useFilosignContext } from "@filosign/react";
+import type { AppRouterClient, InferClientOutputs } from "@filosign/react/orpc";
 import {
 	ArrowLeftIcon,
 	CurrencyCircleDollarIcon,
@@ -19,6 +20,16 @@ import { Button } from "@/src/lib/components/ui/button";
 import { Input } from "@/src/lib/components/ui/input";
 import { formatInlineAppError } from "@/src/lib/errors";
 import { cn } from "@/src/lib/utils/index";
+import { AdminMetricsSection } from "@/src/routes/dashboard/_shell/admin/-components/admin-metrics-section";
+
+type AdminInviteRow =
+	InferClientOutputs<AppRouterClient>["platformAdmin"]["invites"]["list"]["invites"][number];
+type AdminUserRow =
+	InferClientOutputs<AppRouterClient>["platformAdmin"]["users"]["list"]["users"][number];
+type AdminAccessRequestRow =
+	InferClientOutputs<AppRouterClient>["platformAdmin"]["accessRequests"]["list"]["requests"][number];
+type AdminSettlementAccessRow =
+	InferClientOutputs<AppRouterClient>["platformAdmin"]["settlementFeatureAccess"]["list"]["requests"][number];
 
 export const Route = createFileRoute("/dashboard/_shell/admin/")({
 	component: AdminPage,
@@ -219,7 +230,7 @@ function AdminPage() {
 			current: Record<string, unknown>;
 		}) =>
 			rpc.platformAdmin.users.setFeatureOverrides({
-				walletAddress: args.walletAddress,
+				wallet: args.walletAddress,
 				featureOverrides: {
 					...args.current,
 					"features.settlement.basic": args.enabled,
@@ -263,24 +274,12 @@ function AdminPage() {
 		);
 	}
 
-	const invites =
-		(invitesQuery.data as { invites?: Array<Record<string, unknown>> })
-			?.invites ?? [];
-	const users =
-		(usersQuery.data as { users?: Array<Record<string, unknown>> })?.users ??
-		[];
-	const accessRequests =
-		(
-			accessRequestsQuery.data as {
-				requests?: Array<Record<string, unknown>>;
-			}
-		)?.requests ?? [];
-	const settlementAccessRequests =
-		(
-			settlementAccessQuery.data as {
-				requests?: Array<Record<string, unknown>>;
-			}
-		)?.requests ?? [];
+	const invites: AdminInviteRow[] = invitesQuery.data?.invites ?? [];
+	const users: AdminUserRow[] = usersQuery.data?.users ?? [];
+	const accessRequests: AdminAccessRequestRow[] =
+		accessRequestsQuery.data?.requests ?? [];
+	const settlementAccessRequests: AdminSettlementAccessRow[] =
+		settlementAccessQuery.data?.requests ?? [];
 
 	return (
 		<div className="mx-auto w-full max-w-3xl space-y-8 px-6 py-8 sm:px-8">
@@ -675,8 +674,7 @@ function AdminPage() {
 						<ul className="divide-y divide-border/50">
 							{users.map((user) => {
 								const wallet = String(user.walletAddress);
-								const overrides =
-									(user.featureOverrides as Record<string, unknown>) ?? {};
+								const overrides = user.featureOverrides;
 								const settlementOn =
 									overrides["features.settlement.basic"] !== false;
 								return (
@@ -741,6 +739,10 @@ function AdminPage() {
 						</ul>
 					)}
 				</AdminSection>
+			</MotionReveal>
+
+			<MotionReveal delay={0.08}>
+				<AdminMetricsSection enabled={isAdmin} />
 			</MotionReveal>
 		</div>
 	);

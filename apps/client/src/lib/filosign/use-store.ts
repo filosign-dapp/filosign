@@ -3,12 +3,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
 	clearDraftDocuments,
-	recipientFingerprint,
 	shouldPersistCreateFormToDisk,
 	stripCreateFormForPersist,
 } from "@/src/lib/domains/drafts";
 import type { CreateForm } from "@/src/lib/domains/files/envelope-form-types";
-import { createClientId } from "@/src/lib/utils/id";
 
 interface OnboardingForm {
 	firstName: string;
@@ -90,37 +88,7 @@ export const useStorePersist = create<StorePersist>()(
 		}),
 		{
 			name: "filosign-client",
-			version: 3,
-			migrate: (persisted, version) => {
-				const row = persisted as {
-					activeOrgId?: string | null;
-					createForm?: CreateForm | null;
-				};
-				if (version < 2) {
-					return {
-						activeOrgId: row.activeOrgId ?? null,
-						createForm: null,
-					};
-				}
-				const cf = row.createForm;
-				if (cf && version < 3) {
-					return {
-						activeOrgId: row.activeOrgId ?? null,
-						createForm: {
-							...cf,
-							draftId: cf.draftId ?? createClientId(),
-							recipientFingerprint:
-								cf.recipientFingerprint ||
-								recipientFingerprint(cf.recipients ?? []),
-							signatureFields: cf.signatureFields ?? [],
-						},
-					};
-				}
-				return {
-					activeOrgId: row.activeOrgId ?? null,
-					createForm: row.createForm ?? null,
-				};
-			},
+			version: 1,
 			partialize: (state) => ({
 				activeOrgId: state.activeOrgId,
 				createForm: shouldPersistCreateFormToDisk()

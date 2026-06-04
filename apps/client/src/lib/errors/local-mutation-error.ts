@@ -1,10 +1,12 @@
 import { suppressGlobalErrorToast } from "./mutation-meta";
 import { presentAppError, showAppErrorToast } from "./present-app-error";
 
+/** TanStack mutate options with global toast suppressed and local catalog toast on failure. */
 export function localMutationErrorOptions<T extends Record<string, unknown>>(
 	overrides: T = {} as T,
 ): T & { meta: { suppressErrorToast: true } } {
 	const { onError, ...rest } = overrides;
+	// Generic T cannot be inferred through wrapped onError; one bridge cast is intentional.
 	return suppressGlobalErrorToast({
 		...rest,
 		onError: (err: unknown, ...args: unknown[]) => {

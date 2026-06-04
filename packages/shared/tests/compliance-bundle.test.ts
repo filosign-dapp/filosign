@@ -7,10 +7,19 @@ import {
 } from "..";
 
 const minimalManifest: PlacementManifest = {
-	version: 2,
+	version: 1,
+	documents: [
+		{
+			id: "doc1",
+			name: "contract.pdf",
+			sha256Plaintext: `0x${"ab".repeat(32)}`,
+			pageCount: 1,
+		},
+	],
 	fields: [
 		{
 			id: "f1",
+			documentId: "doc1",
 			pageIndex: 0,
 			rect: { x: 0, y: 0, width: 0.1, height: 0.1 },
 			assignedRecipientEmail: "signer@example.com",
@@ -23,7 +32,7 @@ const minimalManifest: PlacementManifest = {
 describe("ComplianceBundle", () => {
 	it("parses minimal bundle and canonical JSON is stable", () => {
 		const raw = {
-			version: 7 as const,
+			version: 1 as const,
 			pieceCid: "bafyTEST",
 			chainId: 84532,
 			exportedAtIso: "2026-01-01T00:00:00.000Z",
@@ -36,6 +45,8 @@ describe("ComplianceBundle", () => {
 				registrationTxHash:
 					"0x0000000000000000000000000000000000000000000000000000000000000002",
 				createdAtIso: "2026-01-01T00:00:00.000Z",
+				registerDocumentSha256:
+					"0x1212121212121212121212121212121212121212121212121212121212121212",
 			},
 			parties: [
 				{

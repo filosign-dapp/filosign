@@ -18,10 +18,12 @@ const minimalSnapshot = (): DraftSnapshot => ({
 	signatureFields: [],
 	settlementDrafts: [],
 	placementManifest: {
-		version: 2,
+		version: 1,
+		documents: [],
 		fields: [
 			{
 				id: "f1",
+				documentId: "d1",
 				pageIndex: 0,
 				rect: { x: 0.1, y: 0.2, width: 0.3, height: 0.1 },
 				assignedRecipientEmail: "a@example.com",
@@ -62,7 +64,7 @@ describe("digestDraftSnapshot", () => {
 		const snap: DraftSnapshot = {
 			...minimalSnapshot(),
 			signatureFields: [],
-			placementManifest: { version: 2, fields: [] },
+			placementManifest: { version: 1, documents: [], fields: [] },
 		};
 		expect(() => digestDraftSnapshot(snap)).not.toThrow();
 	});

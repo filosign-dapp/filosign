@@ -3,7 +3,6 @@ import {
 	publicRpcUrlForChain,
 	summarizeChainRpcConfig,
 } from "@filosign/shared";
-import type { Transport } from "viem";
 import { base } from "viem/chains";
 import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics";
 import {
@@ -13,6 +12,7 @@ import {
 	mockLoggerTelegramCapture,
 } from "../support/alerts";
 import { testEnvStub } from "../support/env-stub";
+import { mockChainRpcTransport } from "../support/mock-transport";
 
 mockLoggerTelegramCapture();
 mock.module("@/env", () => ({
@@ -79,16 +79,11 @@ describe("wrapChainRpcTransportObservability", () => {
 			chainKey: "mainnet",
 			primaryUrl: "https://primary-rpc.example.com",
 		});
-		const inner = (() => ({
-			config: { key: "mock" },
-			name: "mock",
-			request: async () => {
-				throw Object.assign(new Error("429 rate limit exceeded"), {
-					status: 429,
-				});
-			},
-			value: {} as never,
-		})) as unknown as Transport;
+		const inner = mockChainRpcTransport(async () => {
+			throw Object.assign(new Error("429 rate limit exceeded"), {
+				status: 429,
+			});
+		});
 		const wrapped = wrapChainRpcTransportObservability(inner, summary);
 		const transport = wrapped({ chain: base });
 

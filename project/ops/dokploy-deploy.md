@@ -57,15 +57,15 @@ Wire secrets via **Infisical** → Dokploy env injection. Split by project:
 
 No Filosign app secrets on the data project.
 
-**pgBackRest after data deploy:** WAL `archive-push` runs inside **postgres** (local `pg1-path`, no `pg1-host`). The **pgbackrest** sidecar uses `pg1-host=postgres` for `docker exec` backups. Once all three containers are up:
+**pgBackRest after data deploy:** WAL `archive-push` runs inside **postgres** (local `pg1-path`, shared `pgbackrest_spool` volume). Run **stanza-create on the postgres container** (not only the sidecar):
 
 ```bash
-docker exec filosign-pgbackrest pgbackrest --stanza=filosign stanza-create
+docker exec filosign-postgres pgbackrest --stanza=filosign stanza-create
 docker exec filosign-pgbackrest pgbackrest --stanza=filosign check
 docker exec filosign-pgbackrest pgbackrest --stanza=filosign backup --type=full
 ```
 
-Postgres logs should not repeat `[072] archive-push command must be run on the PostgreSQL host` after redeploying current `compose.data.yml`.
+Until `stanza-create` succeeds, postgres logs may show `[103] … has a stanza-create been performed?` — DB still accepts connections; fix backups before relying on PITR.
 
 ### `filosign-app` project
 

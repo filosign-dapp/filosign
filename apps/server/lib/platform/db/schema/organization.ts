@@ -1,3 +1,4 @@
+import type { DraftPlacementManifest } from "@filosign/shared";
 import { sql } from "drizzle-orm";
 import * as t from "drizzle-orm/pg-core";
 import { tEvmAddress, tHex, timestamps } from "@/lib/platform/db/helpers";
@@ -184,7 +185,7 @@ export const organizationTemplates = t.pgTable(
 		name: t.text().notNull(),
 		s3Key: t.text().notNull(),
 		dekWrappedOmk: tHex().notNull(),
-		placementManifestJson: t.jsonb().notNull(),
+		placementManifestJson: t.jsonb().$type<DraftPlacementManifest>().notNull(),
 		createdByWallet: tEvmAddress()
 			.notNull()
 			.references(() => users.walletAddress),

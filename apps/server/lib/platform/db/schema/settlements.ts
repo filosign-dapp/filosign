@@ -1,5 +1,6 @@
 import type {
 	SettlementPayoutLegStored,
+	SettlementReleaseParams,
 	SettlementReleaseType,
 } from "@filosign/shared";
 import {
@@ -29,7 +30,7 @@ export const fileSettlementRules = t.pgTable(
 		legs: t.jsonb().$type<SettlementPayoutLegStored[]>().notNull(),
 		expiresAt: t.numeric({ precision: 78, scale: 0 }),
 		releaseType: t.text({ enum: settlementReleaseTypes }).notNull(),
-		releaseParams: t.jsonb().$type<Record<string, unknown>>().notNull(),
+		releaseParams: t.jsonb().$type<SettlementReleaseParams>().notNull(),
 		validatorAddress: tEvmAddress().notNull(),
 		status: t
 			.text({ enum: settlementRuleStatuses })

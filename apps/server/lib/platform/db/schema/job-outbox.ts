@@ -1,7 +1,11 @@
 import * as t from "drizzle-orm/pg-core";
 import { randomUuidV7 } from "@/lib/platform/db/random-uuid-v7";
 
-export const jobOutboxKinds = ["doc_received", "cold_doc_invite"] as const;
+export const jobOutboxKinds = [
+	"doc_received",
+	"cold_doc_invite",
+	"envelope_completed",
+] as const;
 export type JobOutboxKind = (typeof jobOutboxKinds)[number];
 
 export type JobOutboxPayload = Record<string, unknown>;

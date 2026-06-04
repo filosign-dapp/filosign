@@ -96,9 +96,9 @@ function complianceRetentionCutoff(): Date {
 export async function runRedactComplianceMetadataJob(): Promise<{
 	redacted: number;
 }> {
-	const { complianceExportLogs } = db.schema;
+	const { complianceExportLogs, fileSignatures } = db.schema;
 	const cutoff = complianceRetentionCutoff();
-	const rows = await db
+	const exportRows = await db
 		.update(complianceExportLogs)
 		.set({
 			requestIp: null,
@@ -114,7 +114,28 @@ export async function runRedactComplianceMetadataJob(): Promise<{
 			),
 		)
 		.returning({ id: complianceExportLogs.id });
-	return { redacted: rows.length };
+
+	const signatureRows = await db
+		.update(fileSignatures)
+		.set({
+			requestIp: null,
+			requestUserAgent: null,
+		})
+		.where(
+			and(
+				lt(fileSignatures.createdAt, cutoff),
+				or(
+					isNotNull(fileSignatures.requestIp),
+					isNotNull(fileSignatures.requestUserAgent),
+				),
+			),
+		)
+		.returning({
+			filePieceCid: fileSignatures.filePieceCid,
+			signer: fileSignatures.signer,
+		});
+
+	return { redacted: exportRows.length + signatureRows.length };
 }
 
 export async function runRedactComplianceMetadataCronTick(): Promise<void> {

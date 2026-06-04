@@ -45,6 +45,8 @@ export const files = t.pgTable(
 		registryAddress: tEvmAddress().notNull(),
 
 		placementCommitment: tBytes32().notNull(),
+		/** Merkle root of per-document SHA-256 leaves (sender-signed at register). */
+		documentSha256: tBytes32().notNull(),
 		placementManifestJson: t.jsonb().$type<PlacementManifest>().notNull(),
 		/** Snapshot of register routing for sign UX (sequential order, quorum). */
 		registerRoutingJson: t.jsonb().$type<RegisterRoutingInput>(),
@@ -87,6 +89,8 @@ export const fileParticipants = t.pgTable(
 
 		role: t.text({ enum: ["sender", "viewer", "signer"] }).notNull(),
 
+		emailCommitment: tBytes32(),
+
 		kemCiphertext: tHex().notNull(),
 		encryptedEncryptionKey: tHex().notNull(),
 
@@ -99,6 +103,9 @@ export const fileParticipants = t.pgTable(
 		}),
 		t.index("idx_participants_wallet").on(table.wallet),
 		t.index("idx_participants_file").on(table.filePieceCid),
+		t
+			.index("idx_participants_file_email_commitment")
+			.on(table.filePieceCid, table.emailCommitment),
 	],
 );
 
@@ -112,6 +119,7 @@ export const fileColdInvites = t.pgTable(
 			.notNull()
 			.references(() => files.pieceCid, { onDelete: "cascade" }),
 		email: t.text().notNull(),
+		emailCommitment: tBytes32().notNull(),
 		wrappedEncryptionKey: tHex(),
 		isSigner: t.boolean().notNull().default(false),
 		status: t.text({ enum: coldInviteStatuses }).notNull().default("pending"),
@@ -122,6 +130,9 @@ export const fileColdInvites = t.pgTable(
 	},
 	(table) => [
 		t.index("idx_file_cold_invites_piece").on(table.filePieceCid),
+		t
+			.index("idx_file_cold_invites_piece_email_commitment")
+			.on(table.filePieceCid, table.emailCommitment),
 		t.index("idx_file_cold_invites_token").on(table.inviteToken),
 		t.index("idx_file_cold_invites_email").on(table.email),
 		t.index("idx_file_cold_invites_expires").on(table.expiresAt),
@@ -221,6 +232,28 @@ export const fileSignerDrafts = t.pgTable(
 	],
 );
 
+export const fileComments = t.pgTable(
+	"file_comments",
+	{
+		id: t.uuid().primaryKey().$defaultFn(randomUuidV7),
+		filePieceCid: t
+			.text()
+			.notNull()
+			.references(() => files.pieceCid, { onDelete: "cascade" }),
+		authorWallet: tEvmAddress()
+			.notNull()
+			.references(() => users.walletAddress),
+		ciphertext: tHex().notNull(),
+		...timestamps,
+	},
+	(table) => [
+		t.index("idx_file_comments_piece").on(table.filePieceCid),
+		t
+			.index("idx_file_comments_piece_created")
+			.on(table.filePieceCid, table.createdAt),
+	],
+);
+
 export const fileSignatures = t.pgTable(
 	"file_signatures",
 	{
@@ -236,6 +269,8 @@ export const fileSignatures = t.pgTable(
 		completedFieldIds: t.jsonb().$type<string[]>().notNull(),
 		completionsRoot: tBytes32().notNull(),
 		leafSchemaVersion: t.smallint().notNull(),
+		requestIp: t.text(),
+		requestUserAgent: t.text(),
 		...timestamps,
 	},
 	(table) => [
@@ -264,6 +299,7 @@ export const complianceExportLogs = t.pgTable(
 			.text({ enum: ["fully_executed", "partially_executed"] })
 			.notNull(),
 		signaturesSnapshotCount: t.integer().notNull(),
+		exportKind: t.text({ enum: ["zip", "pdf", "json"] }).notNull(),
 		documentSha256: t.text(),
 		requestUserAgent: t.text(),
 		requestIp: t.text(),
@@ -276,6 +312,28 @@ export const complianceExportLogs = t.pgTable(
 		t.index("idx_compliance_export_requester").on(table.requestedBy),
 	],
 );
+
+export const signerAmendmentStatuses = [
+	"pending",
+	"executed",
+	"cancelled",
+] as const;
+
+export type SignerAmendmentStatus = (typeof signerAmendmentStatuses)[number];
+
+export type PendingNewSignerJson =
+	| {
+			kind: "warm";
+			wallet: `0x${string}`;
+			kemCiphertext: `0x${string}`;
+			encryptedEncryptionKey: `0x${string}`;
+	  }
+	| {
+			kind: "cold";
+			email: string;
+			inviteToken: string;
+			wrappedEncryptionKey: `0x${string}`;
+	  };
 
 export const fileSignerAmendments = t.pgTable(
 	"file_signer_amendments",
@@ -290,10 +348,20 @@ export const fileSignerAmendments = t.pgTable(
 			.references(() => files.pieceCid, { onDelete: "cascade" }),
 		oldCommitment: tBytes32().notNull(),
 		newCommitment: tBytes32().notNull(),
-		amendTxHash: tBytes32().notNull(),
+		status: t
+			.text({ enum: signerAmendmentStatuses })
+			.notNull()
+			.default("pending"),
+		pendingNewSignerJson: t.jsonb().$type<PendingNewSignerJson>(),
+		proposeTxHash: tBytes32().notNull(),
+		executeTxHash: tBytes32(),
+		cancelTxHash: tBytes32(),
 		createdAt: t.timestamp({ withTimezone: true }).notNull().defaultNow(),
 	},
 	(table) => [
 		t.index("idx_file_signer_amendments_piece").on(table.filePieceCid),
+		t
+			.index("idx_file_signer_amendments_piece_status")
+			.on(table.filePieceCid, table.status),
 	],
 );

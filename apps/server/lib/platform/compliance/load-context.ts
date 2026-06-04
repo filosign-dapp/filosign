@@ -29,7 +29,8 @@ export type ComplianceLoadContext = {
 		registryAddress: Address;
 		createdAt: Date;
 		placementCommitment: Hex;
-		placementManifestJson: unknown;
+		documentSha256: Hex;
+		placementManifestJson: PlacementManifest;
 		revokedBeforeCompletedAt: Date | null;
 		revokedBy: Address | null;
 		completedAt: Date | null;
@@ -43,6 +44,8 @@ export type ComplianceLoadContext = {
 		completedFieldIds: string[];
 		completionsRoot: Hex | null;
 		leafSchemaVersion: number | null;
+		requestIp: string | null;
+		requestUserAgent: string | null;
 	}[];
 	draftByWallet: Map<string, string[]>;
 	sigByWallet: Map<string, ComplianceLoadContext["sigRows"][number]>;
@@ -86,7 +89,10 @@ export type ComplianceLoadContext = {
 	amendmentRows: {
 		oldCommitment: Hex;
 		newCommitment: Hex;
-		amendTxHash: Hex;
+		status: string;
+		proposeTxHash: Hex;
+		executeTxHash: Hex | null;
+		cancelTxHash: Hex | null;
 		createdAt: Date;
 	}[];
 	settlementRecipientAckRows: {
@@ -110,6 +116,7 @@ export async function loadComplianceContext(args: {
 			registryAddress: files.registryAddress,
 			createdAt: files.createdAt,
 			placementCommitment: files.placementCommitment,
+			documentSha256: files.documentSha256,
 			placementManifestJson: files.placementManifestJson,
 			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
 			revokedBy: files.revokedBy,
@@ -139,6 +146,8 @@ export async function loadComplianceContext(args: {
 			completedFieldIds: fileSignatures.completedFieldIds,
 			completionsRoot: fileSignatures.completionsRoot,
 			leafSchemaVersion: fileSignatures.leafSchemaVersion,
+			requestIp: fileSignatures.requestIp,
+			requestUserAgent: fileSignatures.requestUserAgent,
 		})
 		.from(fileSignatures)
 		.where(eq(fileSignatures.filePieceCid, pieceCid));
@@ -207,6 +216,8 @@ export async function loadComplianceContext(args: {
 		completedFieldIds: s.completedFieldIds,
 		completionsRoot: s.completionsRoot as Hex | null,
 		leafSchemaVersion: s.leafSchemaVersion,
+		requestIp: s.requestIp,
+		requestUserAgent: s.requestUserAgent,
 	}));
 
 	const sigByWallet = new Map(
@@ -239,6 +250,7 @@ export async function loadComplianceContext(args: {
 					signersCommitment: Hex;
 					viewersCommitment: Hex;
 					placementCommitment: Hex;
+					documentSha256: Hex;
 					senderEmailCommitment: Hex;
 					senderAuthSubjectCommitment: Hex;
 					orgIdCommitment: Hex;
@@ -282,6 +294,7 @@ export async function loadComplianceContext(args: {
 				signersCommitment: reg.signersCommitment as Hex,
 				viewersCommitment: reg.viewersCommitment as Hex,
 				placementCommitment: reg.placementCommitment as Hex,
+				documentSha256: reg.documentSha256 as Hex,
 				senderEmailCommitment: reg.senderEmailCommitment as Hex,
 				senderAuthSubjectCommitment: reg.senderAuthSubjectCommitment as Hex,
 				requiredSignersCount: Number(reg.requiredSignersCount),
@@ -325,7 +338,10 @@ export async function loadComplianceContext(args: {
 		.select({
 			oldCommitment: fileSignerAmendments.oldCommitment,
 			newCommitment: fileSignerAmendments.newCommitment,
-			amendTxHash: fileSignerAmendments.amendTxHash,
+			status: fileSignerAmendments.status,
+			proposeTxHash: fileSignerAmendments.proposeTxHash,
+			executeTxHash: fileSignerAmendments.executeTxHash,
+			cancelTxHash: fileSignerAmendments.cancelTxHash,
 			createdAt: fileSignerAmendments.createdAt,
 		})
 		.from(fileSignerAmendments)
@@ -348,7 +364,10 @@ export async function loadComplianceContext(args: {
 	const amendmentRows = amendmentRowsRaw.map((r) => ({
 		oldCommitment: r.oldCommitment as Hex,
 		newCommitment: r.newCommitment as Hex,
-		amendTxHash: r.amendTxHash as Hex,
+		status: r.status,
+		proposeTxHash: r.proposeTxHash as Hex,
+		executeTxHash: r.executeTxHash ? (r.executeTxHash as Hex) : null,
+		cancelTxHash: r.cancelTxHash ? (r.cancelTxHash as Hex) : null,
 		createdAt: r.createdAt,
 	}));
 
@@ -369,6 +388,7 @@ export async function loadComplianceContext(args: {
 			registryAddress: fileRecord.registryAddress,
 			createdAt: fileRecord.createdAt,
 			placementCommitment: fileRecord.placementCommitment as Hex,
+			documentSha256: fileRecord.documentSha256 as Hex,
 			placementManifestJson: fileRecord.placementManifestJson,
 			revokedBeforeCompletedAt: fileRecord.revokedBeforeCompletedAt,
 			revokedBy: fileRecord.revokedBy ? getAddress(fileRecord.revokedBy) : null,

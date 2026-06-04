@@ -1,6 +1,7 @@
 import {
 	type AttachmentPacketReleaseMode,
 	attachmentPacketReleaseModes,
+	type SettlementReleaseParams,
 	settlementReleaseTypes,
 } from "@filosign/shared";
 import * as t from "drizzle-orm/pg-core";
@@ -32,7 +33,7 @@ export const envelopeAttachmentPackets = t.pgTable(
 			.notNull()
 			.$type<AttachmentPacketReleaseMode>(),
 		releaseType: t.text({ enum: settlementReleaseTypes }),
-		releaseParams: t.jsonb().$type<Record<string, unknown>>(),
+		releaseParams: t.jsonb().$type<SettlementReleaseParams>(),
 		recipientsCommitment: tBytes32(),
 		onChainRuleId: t.bigint({ mode: "bigint" }),
 		releaseContractAddress: tEvmAddress(),

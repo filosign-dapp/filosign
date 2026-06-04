@@ -1,6 +1,7 @@
+import { zPlacementManifest } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { z } from "zod";
-import { rpcEmptyOutputSchema } from "./rpc-wire";
+import { rpcEmptyOutputSchema, zDateWire } from "./rpc-wire";
 
 export const rpcFilesUploadStartOutputSchema = z.object({
 	uploadUrl: z.string(),
@@ -49,7 +50,7 @@ export const rpcColdInviteByTokenOutputSchema = z.object({
 	isSigner: z.boolean(),
 	sender: z.string(),
 	senderLabel: z.string(),
-	placementManifest: z.unknown(),
+	placementManifest: zPlacementManifest,
 	expiresAt: z.string().nullable(),
 	downloadUrl: z.string(),
 	entitledPackets: z.array(rpcColdInviteEntitledPacketSchema),
@@ -68,7 +69,16 @@ export const rpcColdInviteRegenerateOutputSchema = z.object({
 
 export const rpcFilesRegisterOutputSchema = rpcEmptyOutputSchema;
 
-export const rpcFilesAmendSignerOutputSchema = z.object({
+export const rpcFilesProposeSignerReplacementOutputSchema = z.object({
+	txHash: zHexString(),
+	pending: z.boolean(),
+});
+
+export const rpcFilesExecuteSignerReplacementOutputSchema = z.object({
+	txHash: zHexString(),
+});
+
+export const rpcFilesCancelSignerReplacementOutputSchema = z.object({
 	txHash: zHexString(),
 });
 
@@ -76,4 +86,22 @@ export const rpcFilesRecallEnvelopeOutputSchema = z.object({
 	txHash: zHexString(),
 	revokedBeforeCompletedAt: z.string(),
 	revokedBy: zEvmAddress(),
+});
+
+export const rpcFileCommentRowSchema = z.object({
+	id: z.uuid(),
+	authorWallet: zEvmAddress(),
+	ciphertext: zHexString(),
+	createdAt: zDateWire,
+});
+
+export const rpcFilesCommentsListOutputSchema = z.object({
+	comments: z.array(rpcFileCommentRowSchema),
+});
+
+export const rpcFilesCommentsAppendOutputSchema = z.object({
+	comment: z.object({
+		id: z.uuid(),
+		createdAt: zDateWire,
+	}),
 });

@@ -35,8 +35,8 @@ export const rpcBillingOrgSummaryOutputSchema = z.object({
 	status: z.string(),
 	provider: z.string(),
 	billingInterval: z.enum(["monthly", "yearly"]).nullable(),
-	periodStart: z.string().datetime().nullable(),
-	periodEnd: z.string().datetime().nullable(),
+	periodStart: z.iso.datetime().nullable(),
+	periodEnd: z.iso.datetime().nullable(),
 	cancelAtPeriodEnd: z.boolean(),
 	hasDodoSubscription: z.boolean(),
 });
@@ -73,8 +73,8 @@ export const rpcBillingUserSummaryOutputSchema = z.object({
 	status: z.string(),
 	provider: z.string(),
 	billingInterval: z.enum(["monthly", "yearly"]).nullable(),
-	periodStart: z.string().datetime().nullable(),
-	periodEnd: z.string().datetime().nullable(),
+	periodStart: z.iso.datetime().nullable(),
+	periodEnd: z.iso.datetime().nullable(),
 	cancelAtPeriodEnd: z.boolean(),
 	hasDodoSubscription: z.boolean(),
 });

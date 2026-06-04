@@ -1,3 +1,4 @@
+import { zHexString } from "@filosign/shared/zod";
 import { z } from "zod";
 import { zDateWire } from "./rpc-wire";
 
@@ -43,8 +44,8 @@ export const rpcDraftDocumentDownloadSchema = z.object({
 
 export const rpcDraftsGetOutputSchema = z.object({
 	draft: rpcDraftSummarySchema,
-	headDekWrappedOmk: z.string().nullable().optional(),
-	headOmkKemCiphertext: z.string().nullable().optional(),
+	headDekWrappedOmk: zHexString().nullable().optional(),
+	headOmkKemCiphertext: zHexString().nullable().optional(),
 	snapshot: z.object({
 		s3Key: z.string(),
 		downloadUrl: z.string(),
@@ -149,8 +150,8 @@ export const rpcDraftsReviewForWalletOutputSchema = z.object({
 	draftId: z.uuid(),
 	title: z.string(),
 	email: z.string(),
-	kemCiphertext: z.string(),
-	encryptedDek: z.string(),
+	kemCiphertext: zHexString(),
+	encryptedDek: zHexString(),
 	snapshotDownloadUrl: z.string(),
 	documents: z.array(
 		z.object({
@@ -175,7 +176,7 @@ export const rpcDraftCommentSchema = z.object({
 	id: z.uuid(),
 	authorWallet: z.string().nullable().optional(),
 	inviteToken: z.string().nullable().optional(),
-	ciphertext: z.string(),
+	ciphertext: zHexString(),
 	createdAt: zDateWire,
 });
 

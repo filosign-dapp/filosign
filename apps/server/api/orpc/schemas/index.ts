@@ -43,9 +43,13 @@ import {
 	rpcColdInviteByTokenOutputSchema,
 	rpcColdInviteClaimOutputSchema,
 	rpcColdInviteRegenerateOutputSchema,
-	rpcFilesAmendSignerOutputSchema,
+	rpcFilesCancelSignerReplacementOutputSchema,
+	rpcFilesCommentsAppendOutputSchema,
+	rpcFilesCommentsListOutputSchema,
+	rpcFilesExecuteSignerReplacementOutputSchema,
 	rpcFilesListReceivedOutputSchema,
 	rpcFilesListSentOutputSchema,
+	rpcFilesProposeSignerReplacementOutputSchema,
 	rpcFilesRecallEnvelopeOutputSchema,
 	rpcFilesRegisterOutputSchema,
 	rpcFilesUploadStartOutputSchema,
@@ -77,6 +81,15 @@ import {
 	rpcOrgsTemplatesListOutputSchema,
 	rpcOrgsUpdateOutputSchema,
 } from "./orgs-output";
+import {
+	rpcPlatformAdminAccessRequestsListOutputSchema,
+	rpcPlatformAdminInviteCreateOutputSchema,
+	rpcPlatformAdminInviteRebookOutputSchema,
+	rpcPlatformAdminInvitesListOutputSchema,
+	rpcPlatformAdminSettlementAccessDecisionOutputSchema,
+	rpcPlatformAdminSettlementAccessListOutputSchema,
+	rpcPlatformAdminUsersListOutputSchema,
+} from "./platform-admin-output";
 import {
 	rpcSettlementsCancelRuleOutputSchema,
 	rpcSettlementsConfirmSettlementOutputSchema,
@@ -125,8 +138,14 @@ export const rpcOut = {
 	files: {
 		uploadStart: rpcFilesUploadStartOutputSchema,
 		register: rpcFilesRegisterOutputSchema,
-		amendSigner: rpcFilesAmendSignerOutputSchema,
+		proposeSignerReplacement: rpcFilesProposeSignerReplacementOutputSchema,
+		executeSignerReplacement: rpcFilesExecuteSignerReplacementOutputSchema,
+		cancelSignerReplacement: rpcFilesCancelSignerReplacementOutputSchema,
 		recallEnvelope: rpcFilesRecallEnvelopeOutputSchema,
+		comments: {
+			list: rpcFilesCommentsListOutputSchema,
+			append: rpcFilesCommentsAppendOutputSchema,
+		},
 		list: {
 			sent: rpcFilesListSentOutputSchema,
 			received: rpcFilesListReceivedOutputSchema,
@@ -203,6 +222,16 @@ export const rpcOut = {
 		updateRule: rpcSettlementsUpdateRuleOutputSchema,
 		cancelRule: rpcSettlementsCancelRuleOutputSchema,
 	},
+	platformAdmin: {
+		invitesList: rpcPlatformAdminInvitesListOutputSchema,
+		inviteCreate: rpcPlatformAdminInviteCreateOutputSchema,
+		inviteRebook: rpcPlatformAdminInviteRebookOutputSchema,
+		usersList: rpcPlatformAdminUsersListOutputSchema,
+		accessRequestsList: rpcPlatformAdminAccessRequestsListOutputSchema,
+		settlementAccessList: rpcPlatformAdminSettlementAccessListOutputSchema,
+		settlementAccessDecision:
+			rpcPlatformAdminSettlementAccessDecisionOutputSchema,
+	},
 	drafts: {
 		create: rpcDraftsCreateOutputSchema,
 		save: rpcDraftsSaveOutputSchema,
@@ -242,3 +271,11 @@ export const rpcOut = {
 		signaturesGet: rpcUserSignaturesGetOutputSchema,
 	},
 } as const;
+
+export { zDraftCommentAppendBody as zDraftCommentAppendInput } from "@/lib/domains/drafts";
+export { zFileCommentAppendBody as zFilesCommentAppendInput } from "@/lib/domains/files";
+export {
+	zPlatformAdminInviteCreateInput,
+	zPlatformAdminSetFeatureOverridesInput,
+	zPlatformAdminSetPlanInput,
+} from "./platform-admin-output";

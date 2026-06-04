@@ -1,4 +1,5 @@
-import { zPlacementManifest } from "@filosign/shared";
+import { zDraftPlacementManifest, zPlacementManifest } from "@filosign/shared";
+import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { z } from "zod";
 import { zDateWire } from "./rpc-wire";
 
@@ -10,8 +11,8 @@ export const rpcOrgRowSchema = z.object({
 	id: z.uuid(),
 	name: z.string(),
 	slug: z.string(),
-	encryptionPublicKey: z.string(),
-	createdByWallet: z.string(),
+	encryptionPublicKey: zHexString(),
+	createdByWallet: zEvmAddress(),
 	signingMode: zOrgSigningMode,
 	orgWalletAddress: z.string().nullable(),
 	orgWalletLinkedAt: zDateWire.nullable(),
@@ -23,8 +24,8 @@ export const rpcOrgListItemSchema = z.object({
 	id: z.uuid(),
 	name: z.string(),
 	slug: z.string(),
-	encryptionPublicKey: z.string(),
-	orgWalletAddress: z.string().nullable(),
+	encryptionPublicKey: zHexString(),
+	orgWalletAddress: zEvmAddress().nullable(),
 	role: zOrgMemberRole,
 	status: zOrgMemberStatus,
 });
@@ -35,7 +36,7 @@ export const rpcOrgsLinkWalletOutputSchema = z.object({
 });
 
 export const rpcOrgMemberSchema = z.object({
-	walletAddress: z.string(),
+	walletAddress: zEvmAddress(),
 	role: zOrgMemberRole,
 	status: zOrgMemberStatus,
 	hasKeyWrap: z.boolean(),
@@ -51,22 +52,18 @@ export const rpcOrgTemplateSummarySchema = z.object({
 	createdByWallet: z.string(),
 });
 
-/** Full template row as returned from DB (may include storage fields). */
-export const rpcOrgTemplateWireSchema = z
-	.object({
-		id: z.uuid(),
-		organizationId: z.uuid(),
-		name: z.string(),
-		createdByWallet: z.string(),
-		createdAt: zDateWire,
-		updatedAt: zDateWire,
-		placementManifest: zPlacementManifest.optional(),
-		placementManifestJson: z.unknown().optional(),
-		s3Key: z.string().optional(),
-		dekWrappedOmk: z.string().optional(),
-		deletedAt: zDateWire.nullable().optional(),
-	})
-	.loose();
+/** Full template row as returned from DB. */
+export const rpcOrgTemplateWireSchema = z.object({
+	id: z.uuid(),
+	organizationId: z.uuid(),
+	name: z.string(),
+	createdByWallet: z.string(),
+	createdAt: zDateWire,
+	updatedAt: zDateWire,
+	placementManifestJson: zDraftPlacementManifest,
+	s3Key: z.string(),
+	dekWrappedOmk: z.string(),
+});
 
 export const rpcOrgConnectionSchema = z.object({
 	organizationId: z.uuid(),
@@ -143,7 +140,7 @@ export const rpcOrgsTemplatesCloneOutputSchema = z.object({
 		id: z.uuid(),
 		name: z.string(),
 		type: z.string(),
-		dataUrl: z.string().url(),
+		dataUrl: z.url(),
 	}),
 	placementManifest: zPlacementManifest.optional().nullable(),
 });

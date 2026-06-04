@@ -1,4 +1,4 @@
-import { zComplianceBundle } from "@filosign/shared";
+import { zComplianceBundle, zPlacementManifest } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { z } from "zod";
 
@@ -26,6 +26,7 @@ const envelopeProgressSchema = z.object({
 	revokedBeforeCompletedAt: z.number().int().nullable().optional(),
 	revokedBy: zEvmAddress().nullable().optional(),
 	nextSignerEmail: z.string().nullable(),
+	signerReplacementPending: z.boolean().optional(),
 });
 
 export const rpcPieceDetailOutputSchema = z.object({
@@ -36,7 +37,7 @@ export const rpcPieceDetailOutputSchema = z.object({
 	onchainTxHash: zHexString(),
 	createdAt: z.union([z.string(), z.date()]),
 	placementCommitment: zHexString(),
-	placementManifest: z.unknown().nullable(),
+	placementManifest: zPlacementManifest.nullable(),
 	signers: z.array(rosterPersonSchema),
 	viewers: z.array(rosterPersonSchema),
 	signatures: z.array(
@@ -48,6 +49,15 @@ export const rpcPieceDetailOutputSchema = z.object({
 	),
 	participantAccess: participantAccessSchema,
 	envelopeProgress: envelopeProgressSchema.nullable().optional(),
+	pendingSignerReplacement: z
+		.object({
+			oldCommitment: zHexString(),
+			newCommitment: zHexString(),
+			proposeTxHash: zHexString(),
+			createdAt: z.union([z.string(), z.date()]),
+		})
+		.nullable()
+		.optional(),
 	conditionalAttachmentPackets: z
 		.array(
 			z.object({
@@ -75,9 +85,27 @@ export const rpcPieceDetailOutputSchema = z.object({
 		.optional(),
 	kemCiphertext: zHexString().nullable(),
 	encryptedEncryptionKey: zHexString().nullable(),
-	organizationId: z.string().uuid().nullable().optional(),
+	organizationId: z.uuid().nullable().optional(),
 	orgKemCiphertext: zHexString().nullable().optional(),
 	orgEncryptedEncryptionKey: zHexString().nullable().optional(),
+	focStatus: z
+		.object({
+			lifecycle: z.enum(["active", "pending_deletion", "deleted"]),
+			replicateStatus: z.enum(["pending", "replicated"]),
+			retentionUntil: z.string(),
+			focVerifiedAt: z.string().nullable(),
+			dealId: z.string().nullable(),
+		})
+		.nullable()
+		.optional(),
+	latestComplianceExport: z
+		.object({
+			exportKind: z.enum(["zip", "pdf", "json"]),
+			createdAt: z.string(),
+			documentSha256: z.string().nullable(),
+		})
+		.nullable()
+		.optional(),
 });
 
 export type RpcPieceDetailOutput = z.output<typeof rpcPieceDetailOutputSchema>;
@@ -98,7 +126,7 @@ export const rpcPieceDownloadUrlOutputSchema = z.object({
 });
 
 export const rpcPieceComplianceBundleOutputSchema = z.object({
-	exportId: z.string().uuid(),
+	exportId: z.uuid(),
 	bundleHash: zHexString(),
 	bundle: zComplianceBundle,
 });

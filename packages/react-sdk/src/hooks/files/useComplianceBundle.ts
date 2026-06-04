@@ -12,11 +12,13 @@ export function useComplianceBundle() {
 	return useMutation({
 		mutationFn: async (args: {
 			pieceCid: string;
+			exportKind?: "zip" | "pdf" | "json";
 			documentSha256?: string | undefined;
 		}): Promise<ComplianceBundleResponse> => {
 			if (!isAuthed) throw new Error("Not authenticated");
 			return rpcQuery.files.piece.complianceBundle.call({
 				pieceCid: args.pieceCid,
+				exportKind: args.exportKind ?? "pdf",
 				...(args.documentSha256 !== undefined && args.documentSha256 !== ""
 					? { documentSha256: args.documentSha256 }
 					: {}),

@@ -1,5 +1,5 @@
 import { encryption, unwrapColdInviteDek } from "@filosign/crypto-utils";
-import { decodeFileData } from "@filosign/shared";
+import { decodeFileData, documentsMerkleRootV1 } from "@filosign/shared";
 import { useMutation } from "@tanstack/react-query";
 import { type Hex, toBytes } from "viem";
 import type { ViewFileResult } from "./useViewFile";
@@ -40,29 +40,28 @@ export function useColdInviteDecrypt() {
 				info: FILE_ENCRYPTION_INFO,
 			});
 			const parsed = await decodeFileData(decrypted);
+			const registerDocumentSha256 = await documentsMerkleRootV1({
+				documents: parsed.documents.map((d) => ({
+					id: d.id,
+					bytes: d.bytes,
+				})),
+			});
 
-			if (parsed.version === 2) {
-				const primary = parsed.documents[0];
-				return {
-					version: 2 as const,
-					fileBytes: primary?.bytes ?? new Uint8Array(),
-					documents: parsed.documents.map((d) => ({
-						id: d.id,
-						name: d.name,
-						mimeType: d.mimeType,
-						bytes: d.bytes,
-					})),
-					sender: parsed.sender,
-					timestamp: parsed.timestamp,
-					metadata: parsed.metadata,
-					placementManifest: parsed.placementManifest,
-					encryptionKey,
-				};
+			const primary = parsed.documents[0];
+			if (!primary) {
+				throw new Error("File data has no documents");
 			}
 
 			return {
 				version: 1 as const,
-				fileBytes: parsed.bytes,
+				registerDocumentSha256,
+				fileBytes: primary.bytes,
+				documents: parsed.documents.map((d) => ({
+					id: d.id,
+					name: d.name,
+					mimeType: d.mimeType,
+					bytes: d.bytes,
+				})),
 				sender: parsed.sender,
 				timestamp: parsed.timestamp,
 				metadata: parsed.metadata,

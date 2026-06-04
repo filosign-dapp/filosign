@@ -1,40 +1,35 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Hex } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { latestChainTimestamp } from "../../lib/chain-time";
-import { signAmendSigner } from "../../lib/signatures";
+import { signCancelSignerReplacement } from "../../lib/signatures";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 
-export function useAmendSigner(pieceCid: string | undefined) {
+export function useCancelSignerReplacement(pieceCid: string | undefined) {
 	const { wallet, contracts } = useFilosignContext();
 	const { rpcQuery, isAuthed } = useFilosignRpc();
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: async (args: { oldCommitment: Hex; newCommitment: Hex }) => {
+		mutationFn: async () => {
 			if (!pieceCid) throw new Error("pieceCid is required");
 			if (!wallet?.account || !contracts) {
-				throw new Error("Connect your wallet to amend a signer.");
+				throw new Error("Connect your wallet to cancel the roster change.");
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 
 			const timestamp = await latestChainTimestamp(contracts);
 			const recaller = wallet.account.address;
-			const signature = await signAmendSigner({
+			const signature = await signCancelSignerReplacement({
 				wallet,
 				contracts,
 				pieceCid,
-				oldCommitment: args.oldCommitment,
-				newCommitment: args.newCommitment,
 				timestamp,
 				recaller,
 			});
 
-			return rpcQuery.files.amendSigner.call({
+			return rpcQuery.files.cancelSignerReplacement.call({
 				pieceCid,
 				recaller,
-				oldCommitment: args.oldCommitment,
-				newCommitment: args.newCommitment,
 				timestamp,
 				signature,
 			});

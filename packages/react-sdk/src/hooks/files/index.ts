@@ -13,6 +13,7 @@ export {
 	canUseSupplementaryAttachments,
 } from "../../lib/entitlements";
 export { buildValidatedRegisterRouting } from "../../lib/register-routing";
+export type { PieceFileDekSource } from "../../lib/resolve-piece-file-dek";
 export {
 	formatSettlementSimError,
 	paymentValidatorAt,
@@ -31,10 +32,10 @@ export {
 } from "../../lib/settlement-rules.ts";
 export type { SettlementRuleRow } from "../../lib/settlement-types.ts";
 export * from "./useAckFile";
-export * from "./useAmendSigner";
 export * from "./useAttachSettlementForFile";
 export * from "./useCancelAttachmentRule";
 export * from "./useCancelSettlementRule";
+export * from "./useCancelSignerReplacement";
 export * from "./useClaimColdInvite";
 export * from "./useColdInviteDecrypt";
 export * from "./useColdInvitePayload";
@@ -45,6 +46,13 @@ export type {
 	DownloadSupplementaryPacketResult,
 } from "./useDownloadSupplementaryPacket";
 export * from "./useDownloadSupplementaryPacket";
+export * from "./useExecuteSignerReplacement";
+export {
+	decryptFileCommentsList,
+	useFileCommentAppend,
+	useFileCommentsList,
+} from "./useFileComments";
+export { useFileCommentsDecrypted } from "./useFileCommentsDecrypted";
 export type {
 	FileInfo,
 	MySupplementaryPacketRow,
@@ -53,6 +61,7 @@ export type {
 export * from "./useFileInfo";
 export * from "./useManualSettlementPayout";
 export * from "./useOrgFiles";
+export * from "./useProposeSignerReplacement";
 export * from "./useRecallEnvelope";
 export * from "./useReceivedFiles";
 export * from "./useRecordDocumentView";

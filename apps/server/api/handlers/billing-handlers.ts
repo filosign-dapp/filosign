@@ -84,7 +84,7 @@ export async function billingGetUpgradeOfferings(
 export async function billingPreviewMarketingCheckout(body: unknown) {
 	const parsed = z
 		.object({
-			email: z.string().email(),
+			email: z.email(),
 			planId: z.enum(CHECKOUT_PLAN_IDS),
 			interval: z.enum(["monthly", "yearly"]).default("monthly"),
 			seatCount: z.number().int().min(1).optional(),
@@ -183,7 +183,7 @@ export async function billingChangeOrgPlan(args: {
 export async function billingRequestCheckoutLink(body: unknown) {
 	const parsed = z
 		.object({
-			email: z.string().email(),
+			email: z.email(),
 			planId: z.enum(CHECKOUT_PLAN_IDS),
 			interval: z.enum(["monthly", "yearly"]).default("monthly"),
 			seatCount: z.number().int().min(1).optional(),
@@ -203,7 +203,7 @@ export async function billingRequestCheckoutLink(body: unknown) {
 }
 
 export async function billingResendSetupLink(body: unknown) {
-	const parsed = z.object({ email: z.string().email() }).safeParse(body);
+	const parsed = z.object({ email: z.email() }).safeParse(body);
 	if (parsed.error) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}

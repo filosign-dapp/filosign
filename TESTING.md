@@ -40,6 +40,6 @@ Typecheck including tests: each workspace with `tests/` runs `tsc -p tsconfig.te
 
 ## Adding tests
 
-- **New Bun workspace:** create `tests/` at package root; add `tsconfig.tests.json` if the main `tsconfig` excludes tests.
+- **New Bun workspace:** create `tests/` at package root; add `tsconfig.tests.json` if the main `tsconfig` excludes tests, plus `tests/tsconfig.json` extending it so the IDE typechecks test files with Bun types (same pattern as [`apps/server/tests/tsconfig.json`](apps/server/tests/tsconfig.json)).
 - **Shared mocks:** `tests/support/` — do not put under `lib/`.
 - **Client / react-sdk:** use `tests/` when first unit tests land; `tests/e2e/` optional for Playwright later.

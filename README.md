@@ -37,7 +37,7 @@ FiloSign has five main layers:
 - **Client app:** React 19, TanStack Router, TanStack Query, thirdweb (embedded wallet + Connect UI) with Viem via `viemAdapter`, Tailwind, Radix UI, and Motion.
 - **API server:** Bun + Hono service for auth, users, files, sharing, uploads, indexing, and server-side protocol actions.
 - **React SDK:** Hooks and provider logic for authentication, file workflows, sharing approvals, signing, and profiles.
-- **Contracts (v1, immutable):** On-chain surface is **`FSEnvelopeRegistry`** (file registration, routing, quorum, `amendSigner`) and **`FSPaymentValidator`** (multi-leg USDC pull payouts, rule CRUD). Identity, KEM, and sharing approvals are off-chain.
+- **Contracts (v1, immutable):** On-chain surface is **`FSEnvelopeRegistry`** (file registration, routing, quorum, signer replacement propose/execute/cancel) and **`FSPaymentValidator`** (multi-leg USDC pull payouts, rule CRUD). Identity, KEM, and sharing approvals are off-chain.
 - **Crypto/shared libraries:** ML-KEM/Kyber, Dilithium, AES-GCM, stable encoding, Zod schemas, and EVM helpers.
 
 ## Core Workflow

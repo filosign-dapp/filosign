@@ -50,7 +50,7 @@ Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).
 ## Boundaries
 
 - **HTTP (client):** `useFilosignContext().rpc` + `@filosign/react` hooks only. No `fetch`/axios to JSON API except: blob/doc bytes ([send-envelope.ts](apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope.ts)), static assets ([compliance-pdf/utils/images.ts](apps/client/src/lib/domains/files/compliance-pdf/utils/images.ts)), **PUT to `storage.presignPut` URLs** (no API body proxy).
-- **Settlements:** Server never custodies USDC. Client `registerRule` + `approve` on-chain; server indexes via `**settlements.registerForFile`**. Sign page Settle payment → `settlements.trySettle` (server relay); fallback Settle from wallet → `settlements.confirmSettlement`. Teams Pro: `updateRule` / `cancelRule` + post-send attach. `**files.amendSigner`** for pre-sign roster changes. Daily cron syncs off-platform `executed` state. See `[lib/domains/settlements/](apps/server/lib/domains/settlements/)` and `[project/settlements/architecture-and-non-custody.md](project/settlements/architecture-and-non-custody.md)`.
+- **Settlements:** Server never custodies USDC. Client `registerRule` + `approve` on-chain; server indexes via `**settlements.registerForFile`**. Sign page Settle payment → `settlements.trySettle` (server relay); fallback Settle from wallet → `settlements.confirmSettlement`. Teams Pro: `updateRule` / `cancelRule` + post-send attach. `**files.proposeSignerReplacement` / `executeSignerReplacement` / `cancelSignerReplacement`** for signer swaps (pending + re-sign when partially signed). Daily cron syncs off-platform `executed` state. See `[lib/domains/settlements/](apps/server/lib/domains/settlements/)` and `[project/settlements/architecture-and-non-custody.md](project/settlements/architecture-and-non-custody.md)`.
 - **Logic:** UI `apps/client` | hooks/SDK `packages/react-sdk` | API/DB/relay `apps/server`.
 - **Imports:** Client uses minimal `@filosign/contracts` ([constants](apps/client/src/constants.ts)); prefer SDK/runtime for new code.
 - **Definitions:** Never hand-edit `apps/contracts/definitions/`. Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy). Redeploy / rebrand ops: `[project/contracts/envelope-registry-migration.md](project/contracts/envelope-registry-migration.md)`.
@@ -63,8 +63,7 @@ Mount: `[api/orpc/hono-mount.ts](apps/server/api/orpc/hono-mount.ts)` (`apiRoute
 - **Outputs:** Concrete Zod `.output` per procedure in `[api/orpc/schemas/](apps/server/api/orpc/schemas/)` (not `z.unknown()`).
 - `**createORPCClient` is a Proxy** — never put `rpc` in TanStack `queryKey`/deep-stringified payloads (use primitives); `JSON.stringify` can hit `toJSON` → bogus RPC.
 - **Query utils:** `createFilosignRpcQueryUtils` → `rpcQuery.{users,files,storage,…}` ([rpc-query-utils.ts](packages/react-sdk/src/orpc/rpc-query-utils.ts)).
-- **Type Safety Flow:** Never strip type safety with loose casts like `(data as { files?: unknown[] })` or `any`. Let oRPC automatic type-safety flow directly from the server schemas down to select functions.
-- **Client Type Aliases:** When nested type aliases (like specific row items) are needed on the client, extract them directly from the oRPC contract schemas via `InferClientOutputs<AppRouterClient>` (e.g. `type OrgFileRow = InferClientOutputs<AppRouterClient>["files"]["list"]["org"]["files"][number]`). Do not re-write manual interface duplicates.
+- **Types:** Follow [Zod v4 & types](#zod-v4--types) — infer from schemas end-to-end; no loose casts or duplicate interfaces.
 - **Storage:** Browser PUT to presign URLs; object keys in Postgres; serve via presigned GET (no public bucket URLs on PUT paths).
 - **Session:** thirdweb Bearer + `X-Wallet-Address`; invalid/missing → public procedures only; protected → `UNAUTHORIZED`.
 - **Hono:** `[hono-mount.ts](apps/server/api/orpc/hono-mount.ts)` — `/api/rpc` then `/api/api-reference`; `proxyRawRequest` avoids consumed body.
@@ -72,8 +71,8 @@ Mount: `[api/orpc/hono-mount.ts](apps/server/api/orpc/hono-mount.ts)` (`apiRoute
 ## Vertical slice
 
 1. Contracts `src` → compile → tests ([TESTING.md](apps/contracts/TESTING.md)) aligned in same PR.
-2. Server: oRPC `api/orpc/` + handlers + `fsContracts`; `file_settlement_rules` (legs jsonb); register routing on `files.register`; `settlements.registerForFile` / update / cancel; `files.amendSigner`; post-sign + `trySettle` auto-execute; daily cron backfill; compliance v7.
-3. SDK: hooks + `useFilosignContext()` (`registerSettlementRulesOnChain`, `buildValidatedRegisterRouting`, `useSettlementsListByFile`, `useTrySettleSettlement`, `useManualSettlementPayout`, `useUpdateSettlementRule`, `useCancelSettlementRule`, `useAmendSigner`).
+2. Server: oRPC `api/orpc/` + handlers + `fsContracts`; `file_settlement_rules` (legs jsonb); register routing on `files.register`; `settlements.registerForFile` / update / cancel; `files.proposeSignerReplacement` (+ execute/cancel); post-sign + `trySettle` auto-execute; daily cron backfill; compliance bundle v1.
+3. SDK: hooks + `useFilosignContext()` (`registerSettlementRulesOnChain`, `buildValidatedRegisterRouting`, `useSettlementsListByFile`, `useTrySettleSettlement`, `useManualSettlementPayout`, `useUpdateSettlementRule`, `useCancelSettlementRule`, `useProposeSignerReplacement`, `useExecuteSignerReplacement`, `useCancelSignerReplacement`).
 4. Client: UI only, `@filosign/react` (envelope routing/settlement create, sign-page settle/attach/update/cancel/amend).
 5. Verify: [SCRIPTS.md](SCRIPTS.md) — `check`, `test`; contract changes: `bun run sanity` (includes Hardhat) or `bun run sanity -- --fast` without Hardhat.
 
@@ -89,7 +88,57 @@ All commands: **[SCRIPTS.md](SCRIPTS.md)** (or `bun run <script> -- --help`). Pr
 
 Use when relevant (`~/.agents/skills/`): **ETHSKILLS** / `~/.cursor/skills/ethskills` (Solidity, onchain) · `/vercel-react-best-practices` (client, SDK) · `/vercel-composition-patterns` (client) · `/frontend-design` (client, astro) · `/web-design-guidelines` (TSX) · `/develop-secure-contracts` (contracts) · `/copywriting` (astro, client) · `/playwright` (E2E). Frontend polish: [impeccable.style](https://impeccable.style/docs/) + [design.mdc](.cursor/rules/apps/web/design.mdc).
 
-Always use Zod v4 schemas: Fetch migration guide from [https://zod.dev/v4/changelog](https://zod.dev/v4/changelog)
+## Zod v4 & types
+
+Monorepo uses **Zod 4** (`catalog`). [v4 changelog](https://zod.dev/v4/changelog).
+
+**Syntax (v4, not v3):**
+
+- Top-level formats: `z.email()`, `z.url()`, `z.uuid()`, `z.iso.datetime()` — not `z.string().email()` / `.url()` / `.uuid()` / `.datetime()`.
+- Validation messages: `{ error: "…" }` on `.min()` / refinements — not a positional string, `invalid_type_error`, `required_error`, or `errorMap`.
+- `z.record(keySchema, valueSchema)` — always two arguments.
+- Server parse errors: [`zodSafeParseMessage`](apps/server/lib/platform/utils/zodHttp.ts) (`z.treeifyError`) — not `.flatten()` / `.format()` on `ZodError`.
+
+**Where schemas live:**
+
+- **Shared wire shapes:** `@filosign/shared` (e.g. `zPlacementManifest`, `zDraftPlacementManifest`, `zSettlementReleaseParams`, `zUserKeygenDataJson`, `zAttachmentPacketSendInput`) — extend here when client + server agree.
+- **Domain/handlers:** `export` Zod next to the `safeParse` that uses it (`lib/domains/*`, `api/handlers/*`).
+- **oRPC contract:** concrete `.input` / `.output` in [`apps/server/api/orpc/schemas/`](apps/server/api/orpc/schemas/) — wire router from [`procedure-inputs.ts`](apps/server/api/orpc/schemas/procedure-inputs.ts) or schema re-exports; never `z.unknown()`, `z.any()`, `.passthrough()`, or `.loose()` on procedure I/O.
+- **DB jsonb:** Drizzle `$type<…>` must match the same Zod shape you parse at runtime.
+
+**TypeScript (no parallel type systems):**
+
+- Client/SDK: `InferClientInputs<AppRouterClient>` / `InferClientOutputs<AppRouterClient>` for procedure shapes — do not hand-write duplicate interfaces.
+- No `(data as { files?: unknown[] })`, `any`, or widening RPC outputs after the fact; let oRPC inference flow through hooks and `select`.
+- Prefer `z.infer<typeof schema>` (or shared exported types) over duplicating object shapes in TS.
+
+## TypeScript
+
+Strict mode everywhere. [TS handbook — Do's and Don'ts](https://www.typescriptlang.org/docs/handbook/declaration-files/do-s-and-don-ts.html).
+
+**Do:**
+
+- Primitives: `string`, `number`, `boolean`, `bigint` — never boxed `String` / `Number` / `Boolean`.
+- Unknown JSON at boundaries: `unknown` + narrow (`safeParse`, type guards) — not `any`.
+- oRPC / Zod: infer types; export row aliases from `InferClientOutputs` / `InferClientInputs` (see [Zod v4 & types](#zod-v4--types)).
+- viem: `Address`, `Hex` from schema/`zHexString`/`zEvmAddress` — `as Address` only on values already validated or from wallet context.
+- Callbacks that ignore return values: `() => void`, not `() => any`.
+
+**Don't:**
+
+- `@ts-ignore` / `@ts-expect-error` except documented third-party gaps (e.g. bigint JSON, WASM); fix root cause first.
+- `as unknown as T` to silence mismatches — fix the model (e.g. optional `bytes` vs `size` on persisted draft files).
+- `Record<string, unknown>` for typed RPC bodies, admin rows, or manifests when a concrete schema exists.
+- `.passthrough()` / `.loose()` Zod objects for production API contracts.
+- Re-declaring overloads that differ only in optional trailing args — use optional parameters or unions instead.
+
+**Wire parsers (`@filosign/shared`):** `parseEvmAddress` / `parseHexString` at crypto and wallet boundaries when inference is still `string`.
+
+**Server relay writes:** `relayContractWrite<T>(contract.write)` in [`lib/platform/evm/contract-write.ts`](apps/server/lib/platform/evm/contract-write.ts) — one documented bridge for viem typings that omit registry/release methods.
+
+**SDK wallet:** `walletAccountAddress(account)` from [`packages/react-sdk/src/utils/evm.ts`](packages/react-sdk/src/utils/evm.ts).
+
+**Legitimate casts (keep narrow):** generated `definitions/` index, dynamic WASM `import()`, test mocks in `apps/server/tests/support/`, literal `0x…` constants with `satisfies Hex`.
 
 ## Refactoring Guide
 

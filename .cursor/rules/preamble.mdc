@@ -4,6 +4,7 @@ alwaysApply: true
 
 ## Before You Code
 
+- Always start by reading AGENTS.md from root repo and READMEs from packages you are going to touch.
 - Read existing code in the area you're changing. Match its patterns.
 - For 3+ step tasks: list steps first, then implement.
 - Write detailed specs upfront to reduce ambiguity.

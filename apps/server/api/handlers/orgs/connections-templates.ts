@@ -1,4 +1,7 @@
-import type { PlacementManifest } from "@filosign/shared";
+import {
+	type PlacementManifest,
+	zDraftPlacementManifest,
+} from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq } from "drizzle-orm";
@@ -21,7 +24,7 @@ import { bucket } from "@/lib/platform/s3/client";
 
 const { organizationConnections, organizationTemplates } = db.schema;
 
-const zConnectionBody = z.object({
+export const zOrgsConnectionAddBody = z.object({
 	recipientWallet: zEvmAddress(),
 	label: z.string().max(200).optional(),
 });
@@ -32,7 +35,7 @@ export async function orgsConnectionsAdd(
 	body: unknown,
 ) {
 	assertOrgPermission(activeOrg, "connections:request");
-	const parsed = zConnectionBody.safeParse(body);
+	const parsed = zOrgsConnectionAddBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
@@ -81,7 +84,7 @@ export async function orgsConnectionsList(
 	return { connections: rows };
 }
 
-const zConnectionRevokeBody = z.object({
+export const zOrgsConnectionRevokeBody = z.object({
 	recipientWallet: zEvmAddress(),
 });
 
@@ -91,7 +94,7 @@ export async function orgsConnectionsRevoke(
 	body: unknown,
 ) {
 	assertOrgPermission(activeOrg, "connections:manage");
-	const parsed = zConnectionRevokeBody.safeParse(body);
+	const parsed = zOrgsConnectionRevokeBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
@@ -115,11 +118,11 @@ export async function orgsConnectionsRevoke(
 	return { connection };
 }
 
-const zTemplateCreate = z.object({
+export const zOrgsTemplateCreateBody = z.object({
 	name: z.string().min(1).max(120),
 	s3Key: z.string().min(1),
 	dekWrappedOmk: zHexString(),
-	placementManifest: z.unknown(),
+	placementManifest: zDraftPlacementManifest,
 });
 
 export async function orgsTemplatesCreate(
@@ -133,7 +136,7 @@ export async function orgsTemplatesCreate(
 		activeOrg.organizationId,
 	);
 	assertEntitlement(entitlementCtx, "features.shared_templates");
-	const parsed = zTemplateCreate.safeParse(body);
+	const parsed = zOrgsTemplateCreateBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}

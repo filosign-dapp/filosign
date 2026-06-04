@@ -39,7 +39,7 @@ const {
 	users,
 } = db.schema;
 
-const zCreateOrgBody = z.object({
+export const zOrgsCreateBody = z.object({
 	name: z.string().min(1).max(120),
 	slug: z.string().min(1).max(64).optional(),
 	encryptionPublicKey: z.string().min(1),
@@ -48,7 +48,7 @@ const zCreateOrgBody = z.object({
 });
 
 export async function orgsCreate(wallet: Address, body: unknown) {
-	const parsed = zCreateOrgBody.safeParse(body);
+	const parsed = zOrgsCreateBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
@@ -193,7 +193,7 @@ export async function orgsGet(
 	return { organization: org, members, templates };
 }
 
-const zOrgUpdateBody = z
+export const zOrgsUpdateBody = z
 	.object({
 		name: z.string().min(1).max(120).optional(),
 		slug: z.string().min(1).max(64).optional(),
@@ -208,7 +208,7 @@ export async function orgsUpdate(
 	body: unknown,
 ) {
 	assertOrgPermission(activeOrg, "org:manage");
-	const parsed = zOrgUpdateBody.safeParse(body);
+	const parsed = zOrgsUpdateBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
@@ -243,7 +243,7 @@ export async function orgsUpdate(
 	return { organization };
 }
 
-const zMembersSetRoleBody = z.object({
+export const zOrgsMembersSetRoleBody = z.object({
 	walletAddress: zEvmAddress(),
 	role: zOrgMemberRole,
 });
@@ -254,7 +254,7 @@ export async function orgsMembersSetRole(
 	body: unknown,
 ) {
 	assertOrgPermission(activeOrg, "org:manage");
-	const parsed = zMembersSetRoleBody.safeParse(body);
+	const parsed = zOrgsMembersSetRoleBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
@@ -339,7 +339,7 @@ export async function orgsMembersSetRole(
 	return { member };
 }
 
-const zMembersRemoveBody = z.object({
+export const zOrgsMembersRemoveBody = z.object({
 	walletAddress: zEvmAddress(),
 });
 
@@ -349,7 +349,7 @@ export async function orgsMembersRemove(
 	body: unknown,
 ) {
 	assertOrgPermission(activeOrg, "members:remove");
-	const parsed = zMembersRemoveBody.safeParse(body);
+	const parsed = zOrgsMembersRemoveBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
@@ -434,7 +434,7 @@ export async function orgsMembersRemove(
 	return { member };
 }
 
-const zLinkOrgWalletBody = z.object({
+export const zOrgsLinkWalletBody = z.object({
 	organizationId: z.uuid(),
 	orgWalletAddress: zEvmAddress(),
 	timestamp: z.number().int().positive(),
@@ -447,7 +447,7 @@ export async function orgsLinkOrgWallet(
 	body: unknown,
 ) {
 	assertOrgPermission(activeOrg, "org:manage");
-	const parsed = zLinkOrgWalletBody.safeParse(body);
+	const parsed = zOrgsLinkWalletBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}

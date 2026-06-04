@@ -140,12 +140,12 @@ export async function platformAdminInvitesCreate(
 			kind: z.enum(["partner_trial", "manual_paid"]).default("partner_trial"),
 			planId: z.enum(PLAN_IDS).default("teams_pro"),
 			trialDays: z.number().int().min(1).max(365).default(30),
-			email: z.string().email().optional().nullable(),
+			email: z.email().optional().nullable(),
 			featureOverrides: z
 				.record(z.string(), z.union([z.number(), z.boolean()]))
 				.optional(),
 			maxRedemptions: z.number().int().min(1).max(100).default(1),
-			expiresAt: z.string().datetime().optional().nullable(),
+			expiresAt: z.iso.datetime().optional().nullable(),
 			note: z.string().max(500).optional().nullable(),
 		})
 		.safeParse(body);
@@ -219,7 +219,7 @@ export async function platformAdminUsersSetFeatureOverrides(
 	await assertPlatformAdmin(adminWallet);
 	const parsed = z
 		.object({
-			walletAddress: z.string().min(1),
+			wallet: z.string().min(1),
 			featureOverrides: z.record(
 				z.string(),
 				z.union([z.number(), z.boolean()]),
@@ -230,7 +230,7 @@ export async function platformAdminUsersSetFeatureOverrides(
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
 	await setUserFeatureOverrides({
-		wallet: parsed.data.walletAddress as Address,
+		wallet: parsed.data.wallet as Address,
 		featureOverrides: parsed.data.featureOverrides,
 	});
 	return { ok: true as const };
@@ -243,17 +243,17 @@ export async function platformAdminUsersSetPlan(
 	await assertPlatformAdmin(adminWallet);
 	const parsed = z
 		.object({
-			walletAddress: z.string().min(1),
+			wallet: z.string().min(1),
 			planId: z.enum(PLAN_IDS),
 			status: z.enum(["active", "trialing", "canceled"]).optional(),
-			periodEnd: z.string().datetime().optional().nullable(),
+			periodEnd: z.iso.datetime().optional().nullable(),
 		})
 		.safeParse(body);
 	if (parsed.error) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
 	await setUserPlanManual({
-		wallet: parsed.data.walletAddress as Address,
+		wallet: parsed.data.wallet as Address,
 		planId: parsed.data.planId,
 		status: parsed.data.status,
 		periodEnd: parsed.data.periodEnd ? new Date(parsed.data.periodEnd) : null,
@@ -264,7 +264,7 @@ export async function platformAdminUsersSetPlan(
 export async function platformAccessSubmitAccessRequest(body: unknown) {
 	const parsed = z
 		.object({
-			email: z.string().email(),
+			email: z.email(),
 			name: z.string().max(120).optional(),
 			company: z.string().max(120).optional(),
 			message: z.string().max(2000).optional(),
@@ -291,7 +291,7 @@ export async function platformAdminAccessRequestsApprove(
 	await assertPlatformAdmin(adminWallet);
 	const parsed = z
 		.object({
-			requestId: z.string().uuid(),
+			requestId: z.uuid(),
 			planId: z.enum(PLAN_IDS).optional(),
 			trialDays: z.number().int().min(1).max(365).optional(),
 		})

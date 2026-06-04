@@ -27,7 +27,7 @@ const {
 	users,
 } = db.schema;
 
-const zPublishWrapBody = z.object({
+export const zOrgsKeysPublishWrapBody = z.object({
 	targetWallet: zEvmAddress(),
 	wrappedOmk: zHexString(),
 	wrapKemCiphertext: zHexString(),
@@ -107,7 +107,7 @@ export async function orgsKeysPublishWrap(
 	body: unknown,
 ) {
 	assertOrgPermission(activeOrg, "members:invite");
-	const parsed = zPublishWrapBody.safeParse(body);
+	const parsed = zOrgsKeysPublishWrapBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}
@@ -156,7 +156,7 @@ export async function orgsKeysPublishWrap(
 	return { ok: true as const };
 }
 
-const zInviteCreateBody = z.object({
+export const zOrgsInviteCreateBody = z.object({
 	email: z.string().min(3).max(320),
 	role: zOrgMemberRole.optional().default("sender"),
 });
@@ -211,7 +211,7 @@ export async function orgsInvitesCreate(
 	body: unknown,
 ) {
 	assertOrgPermission(activeOrg, "members:invite");
-	const parsed = zInviteCreateBody.safeParse(body);
+	const parsed = zOrgsInviteCreateBody.safeParse(body);
 	if (!parsed.success) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}

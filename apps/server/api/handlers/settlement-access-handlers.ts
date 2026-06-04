@@ -44,7 +44,7 @@ export async function settlementAdminApproveAccess(
 	await assertPlatformAdmin(adminWallet);
 	const parsed = z
 		.object({
-			organizationId: z.string().uuid(),
+			organizationId: z.uuid(),
 			reviewNote: z.string().max(2000).optional(),
 		})
 		.safeParse(body);
@@ -65,7 +65,7 @@ export async function settlementAdminRejectAccess(
 	await assertPlatformAdmin(adminWallet);
 	const parsed = z
 		.object({
-			organizationId: z.string().uuid(),
+			organizationId: z.uuid(),
 			reviewNote: z.string().max(2000).optional(),
 		})
 		.safeParse(body);

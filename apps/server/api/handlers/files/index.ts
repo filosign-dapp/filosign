@@ -1,7 +1,13 @@
 export {
-	filesAmendSigner,
+	fileCommentsAppend as filesCommentsAppend,
+	fileCommentsList as filesCommentsList,
+	filesCancelSignerReplacement,
+	filesExecuteSignerReplacement,
+	filesProposeSignerReplacement,
 	filesRecallEnvelope,
-	zAmendSignerBody,
+	zCancelSignerReplacementBody,
+	zExecuteSignerReplacementBody,
+	zProposeSignerReplacementBody,
 	zRecallEnvelopeBody,
 } from "@/lib/domains/files";
 export * from "./cold-invite";

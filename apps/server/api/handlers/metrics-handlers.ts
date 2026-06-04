@@ -10,18 +10,13 @@ import { assertPlatformAdmin } from "@/lib/platform/admin";
 import db from "@/lib/platform/db";
 import { fileColdInvites, files } from "@/lib/platform/db/schema/file";
 
-/** @deprecated Use {@link assertPlatformAdmin}. */
-export async function assertMetricsAdmin(wallet: Address): Promise<void> {
-	await assertPlatformAdmin(wallet);
-}
-
 export async function metricsInvitesSummary(args: {
 	adminWallet: Address;
 	senderWallet?: string | undefined;
 	from?: Date | undefined;
 	to?: Date | undefined;
 }) {
-	await assertMetricsAdmin(args.adminWallet);
+	await assertPlatformAdmin(args.adminWallet);
 
 	const conditions = [];
 	if (args.senderWallet) {
@@ -73,7 +68,7 @@ export async function metricsSenderUsage(args: {
 	adminWallet: Address;
 	wallet: string;
 }) {
-	await assertMetricsAdmin(args.adminWallet);
+	await assertPlatformAdmin(args.adminWallet);
 	if (!isAddress(args.wallet)) {
 		throw new ORPCError("BAD_REQUEST", { message: "Invalid wallet" });
 	}

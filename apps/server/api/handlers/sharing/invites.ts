@@ -204,13 +204,13 @@ async function insertUserInvite(args: {
 	return { alreadyInvited: false as const };
 }
 
+export const zSharingRequestInviteBody = z.object({
+	inviteeEmail: z.string(),
+	message: z.string().max(500).nullable().optional(),
+});
+
 export async function sharingRequestInvite(wallet: Address, body: unknown) {
-	const parsed = z
-		.object({
-			inviteeEmail: z.string(),
-			message: z.string().max(500).nullable().optional(),
-		})
-		.safeParse(body);
+	const parsed = zSharingRequestInviteBody.safeParse(body);
 
 	const inviteeEmail =
 		parsed.success && parsed.data.inviteeEmail

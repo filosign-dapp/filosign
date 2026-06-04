@@ -38,7 +38,7 @@ Deeper context: [`AGENTS.md`](../../AGENTS.md), [api-routes.mdc](../../.cursor/r
 |---------|---------|
 | `@filosign/react` | `FilosignProvider`, `useFilosignContext` (`rpc`, `rpcQuery`, `session`, `contracts`, `runtime`, `wallet`, `wasm`) |
 | `@filosign/react/auth` | Login, logout, `useAuthedApi`, registration, recovery |
-| `@filosign/react/files` | Documents, cold invite, sign/ack/view/send, register routing (`useSendFile` + `routing`), amend signer (`useAmendSigner`), settlements (`useSettlementsListByFile`, `useTrySettleSettlement`, `useManualSettlementPayout`, `useUpdateSettlementRule`, `useCancelSettlementRule`) |
+| `@filosign/react/files` | Documents, cold invite, sign/ack/view/send, register routing (`useSendFile` + `routing`), signer replacement (`useProposeSignerReplacement`, `useExecuteSignerReplacement`, `useCancelSignerReplacement`), settlements (`useSettlementsListByFile`, `useTrySettleSettlement`, `useManualSettlementPayout`, `useUpdateSettlementRule`, `useCancelSettlementRule`) |
 | `@filosign/react/sharing` | Connections, approvals, requests |
 | `@filosign/react/users` | Profile, Thirdweb email, lookup |
 | `@filosign/react/runtime` | `useRuntimeChain` |
@@ -160,7 +160,9 @@ Helpers: `buildValidatedRegisterRouting`, `canUseAdvancedRouting` (entitlement p
 | `useUpdateSettlementRule` | update + index |
 | `useCancelSettlementRule` | cancel + index |
 | `useRevokeSettlementAllowance` | ERC-20 approve(0) |
-| `useAmendSigner` | amend signer relay |
+| `useProposeSignerReplacement` | propose signer swap (+ E2EE payload) |
+| `useExecuteSignerReplacement` | apply pending swap (clears on-chain sigs) |
+| `useCancelSignerReplacement` | cancel pending swap |
 
 On-chain helpers exported from `@filosign/react/files`: `registerSettlementRulesOnChain`, `updateSettlementRuleOnChain`, `cancelSettlementRuleOnChain`, etc.
 

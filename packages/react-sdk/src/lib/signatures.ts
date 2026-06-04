@@ -4,14 +4,14 @@ import type { Hex } from "viem";
 import { withRegistryWalletActionLock } from "./registry-wallet-action-lock";
 import type { FilosignWallet } from "./wallet";
 
-export async function signAmendSigner(args: {
+export async function signProposeSignerReplacement(args: {
 	wallet: FilosignWallet;
 	contracts: FilosignContracts;
 	pieceCid: string;
 	oldCommitment: Hex;
 	newCommitment: Hex;
+	signersCommitmentAfter: Hex;
 	timestamp: number;
-	/** Defaults to connected wallet (sender or org controller). */
 	recaller?: `0x${string}`;
 }): Promise<Hex> {
 	const recaller = args.recaller ?? args.wallet.account.address;
@@ -20,20 +20,51 @@ export async function signAmendSigner(args: {
 	return withRegistryWalletActionLock(recaller, () =>
 		eip712signature(args.contracts, "FSEnvelopeRegistry", {
 			types: {
-				AmendSigner: [
+				ProposeSignerReplacement: [
 					{ name: "cidIdentifier", type: "bytes32" },
 					{ name: "recaller", type: "address" },
 					{ name: "oldCommitment", type: "bytes32" },
 					{ name: "newCommitment", type: "bytes32" },
+					{ name: "signersCommitmentAfter", type: "bytes20" },
 					{ name: "timestamp", type: "uint256" },
 				],
 			},
-			primaryType: "AmendSigner",
+			primaryType: "ProposeSignerReplacement",
 			message: {
 				cidIdentifier,
 				recaller,
 				oldCommitment: args.oldCommitment,
 				newCommitment: args.newCommitment,
+				signersCommitmentAfter: args.signersCommitmentAfter,
+				timestamp: BigInt(args.timestamp),
+			},
+		}),
+	);
+}
+
+export async function signCancelSignerReplacement(args: {
+	wallet: FilosignWallet;
+	contracts: FilosignContracts;
+	pieceCid: string;
+	timestamp: number;
+	recaller?: `0x${string}`;
+}): Promise<Hex> {
+	const recaller = args.recaller ?? args.wallet.account.address;
+	const cidIdentifier = computeCidIdentifier(args.pieceCid);
+
+	return withRegistryWalletActionLock(recaller, () =>
+		eip712signature(args.contracts, "FSEnvelopeRegistry", {
+			types: {
+				CancelSignerReplacement: [
+					{ name: "cidIdentifier", type: "bytes32" },
+					{ name: "recaller", type: "address" },
+					{ name: "timestamp", type: "uint256" },
+				],
+			},
+			primaryType: "CancelSignerReplacement",
+			message: {
+				cidIdentifier,
+				recaller,
 				timestamp: BigInt(args.timestamp),
 			},
 		}),

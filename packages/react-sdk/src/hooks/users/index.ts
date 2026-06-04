@@ -1,4 +1,7 @@
-export { useProfilesByAddresses } from "./useProfilesByAddresses";
+export {
+	type ProfileByAddress,
+	useProfilesByAddresses,
+} from "./useProfilesByAddresses";
 export { useSetPrimaryEmail } from "./useSetPrimaryEmail";
 export { useSyncThirdwebEmail } from "./useSyncThirdwebEmail";
 export { useUpdateUserProfile } from "./useUpdateUserProfile";

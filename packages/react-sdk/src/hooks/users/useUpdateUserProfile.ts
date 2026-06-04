@@ -1,14 +1,17 @@
+import type { InferClientInputs } from "@orpc/client";
 import { useMutation } from "@tanstack/react-query";
 import imageCompression from "browser-image-compression";
 import { useInvalidateUserProfile } from "../../lib/invalidate-user-profile";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
+import type { AppRouterClient } from "../../orpc/app-router-types";
 
-type ProfileTextFields = {
-	email?: string;
-	username?: string;
-	firstName?: string;
-	lastName?: string;
-};
+type ProfileUpdateInput =
+	InferClientInputs<AppRouterClient>["users"]["profile"]["update"];
+
+type ProfileTextFields = Pick<
+	ProfileUpdateInput,
+	"email" | "username" | "firstName" | "lastName"
+>;
 
 export function useUpdateUserProfile() {
 	const { rpcQuery, isAuthed } = useFilosignRpc();
@@ -20,7 +23,7 @@ export function useUpdateUserProfile() {
 
 			const { avatar, ...rest } = args;
 
-			const payload: Record<string, unknown> = {};
+			const payload: ProfileUpdateInput = {};
 			if (rest.email !== undefined) payload.email = rest.email;
 			if (rest.username !== undefined) payload.username = rest.username;
 			if (rest.firstName !== undefined) payload.firstName = rest.firstName;

@@ -1,7 +1,7 @@
 import { encryption, KEM, toBytes, toHex } from "@filosign/crypto-utils";
 import { ORG_OMK_WRAP_INFO } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Address, Hex } from "viem";
+import type { Address } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import { getSessionSeed } from "../auth/session-seed";
@@ -22,13 +22,11 @@ export function usePublishOrgMemberKeyWrap() {
 			}
 			const me = wallet.account.address;
 			const wrappedMine = await rpcQuery.orgs.keys.myWrap.call();
-			const wOmk = wrappedMine.wrappedOmk as Hex;
-			const wKem = wrappedMine.wrapKemCiphertext as Hex;
 
 			const profile = await rpcQuery.users.profile.lookup.call({
 				query: args.targetWallet,
 			});
-			const targetPk = profile.encryptionPublicKey?.trim();
+			const targetPk = profile.encryptionPublicKey;
 			if (!targetPk) {
 				throw new Error("Invitee has no encryption public key on profile");
 			}
@@ -43,12 +41,12 @@ export function usePublishOrgMemberKeyWrap() {
 			});
 
 			const { sharedSecret: ssSelf } = await KEM.decapsulate({
-				ciphertext: toBytes(wKem),
+				ciphertext: toBytes(wrappedMine.wrapKemCiphertext),
 				privateKeySelf: privateKey,
 			});
 
 			const omkSeed = await encryption.decrypt({
-				ciphertext: toBytes(wOmk),
+				ciphertext: toBytes(wrappedMine.wrappedOmk),
 				secretKey: ssSelf,
 				info: ORG_OMK_WRAP_INFO,
 			});

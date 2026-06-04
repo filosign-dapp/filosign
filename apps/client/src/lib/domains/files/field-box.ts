@@ -36,15 +36,6 @@ export function defaultPlacementFieldRect(
 	};
 }
 
-/** @deprecated Use defaultPlacementFieldRect per type */
-export function signatureFieldBoxCssPx(isMobile: boolean): {
-	width: number;
-	height: number;
-} {
-	const rect = defaultPlacementFieldRect("signature", isMobile);
-	return { width: rect.width, height: rect.height };
-}
-
 export function clampFieldWidth(
 	type: PlacementFieldType,
 	width: number,

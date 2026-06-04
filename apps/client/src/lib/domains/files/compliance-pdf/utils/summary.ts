@@ -71,10 +71,17 @@ export function buildCompliancePdfSummaryFromBundle(
 		},
 	];
 
-	if (documentSha256) {
+	const registerHash =
+		bundle.registration.registerDocumentSha256 ?? documentSha256;
+	if (registerHash) {
 		fields.push({
-			label: "Document SHA-256",
-			value: documentSha256,
+			label: "Register document Merkle root",
+			value: registerHash,
+		});
+		fields.push({
+			label: "Document hash scheme",
+			value:
+				"Merkle root over SHA-256(raw file bytes) per signable document; leaves sorted by document id. See completion packet proofs for per-file verification.",
 		});
 	}
 

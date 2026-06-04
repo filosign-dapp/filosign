@@ -91,7 +91,7 @@ export type CreateForm = {
 	documents: StoredDocument[];
 	settlementDrafts: SettlementAttachmentDraft[];
 	signatureFields: SignatureField[];
-	/** Teams Pro: sequential routing, quorum, optional signers. */
+	/** Teams Pro: sequential routing and quorum (no optional signers on-chain). */
 	registerRouting?: RegisterRoutingInput;
 	/** Teams Pro: merge recipient payouts into one multi-leg rule. */
 	combineSettlementLegs?: boolean;

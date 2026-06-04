@@ -5,11 +5,17 @@ import {
 	MagnifyingGlassIcon,
 	MagnifyingGlassMinusIcon,
 	MagnifyingGlassPlusIcon,
+	PackageIcon,
 	ScrollIcon,
 	StackIcon,
 	XIcon,
 } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
+import {
+	EnvelopeCommentsBlock,
+	pieceDetailToDekSource,
+} from "@/src/lib/domains/files/envelope-comments-block";
+import { EnvelopeOpsStatus } from "@/src/lib/domains/files/envelope-ops-status";
 import { useFileViewer } from "@/src/lib/domains/files/file-viewer/-lib/context/context";
 
 const toolbarIconClass = "size-6 @md:size-7";
@@ -26,18 +32,23 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 		handleZoomOut,
 		pdfExportBusy,
 		handleDownload,
+		exportsAllowed,
 		handleDownloadCompliancePdf,
 		handleDownloadDocumentWithCompliancePdf,
+		handleDownloadCompletionPacket,
 	} = useFileViewer();
 
 	return (
 		<div className="absolute top-0 left-0 right-0 z-50 shrink-0 border-b border-border bg-transparent px-4 py-3 @md:px-6 @md:py-4 glass">
 			<div className="flex flex-col gap-3 @md:gap-3">
 				<div className="flex min-w-0 items-center justify-between gap-3">
-					<h2 className="truncate pr-2 text-base font-semibold text-primary-foreground @md:text-lg">
-						{fileData?.metadata.name ||
-							`Document - ${file?.pieceCid.slice(0, 8)}...`}
-					</h2>
+					<div className="min-w-0 flex-1 pr-2">
+						<h2 className="truncate text-base font-semibold text-primary-foreground @md:text-lg">
+							{fileData?.metadata.name ||
+								`Document - ${file?.pieceCid.slice(0, 8)}...`}
+						</h2>
+						<EnvelopeOpsStatus fileInfo={fileInfo} />
+					</div>
 					<Button
 						variant="ghost"
 						size="sm"
@@ -51,6 +62,12 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 
 				<div className="relative flex min-h-12 w-full items-center">
 					<div className="relative z-10 flex min-w-0 flex-1 items-center justify-start gap-1 @md:gap-2">
+						{fileInfo ? (
+							<EnvelopeCommentsBlock
+								pieceCid={fileInfo.pieceCid}
+								dekSource={pieceDetailToDekSource(fileInfo)}
+							/>
+						) : null}
 						<Button
 							variant="ghost"
 							size="sm"
@@ -124,8 +141,23 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 							variant="ghost"
 							size="sm"
 							type="button"
+							onClick={() => void handleDownloadCompletionPacket()}
+							disabled={!fileData || !exportsAllowed || pdfExportBusy}
+							title={
+								exportsAllowed
+									? "Download completion packet (ZIP)"
+									: "Available when the envelope is fully executed"
+							}
+							className={toolbarBtnClass}
+						>
+							<PackageIcon className={toolbarIconClass} />
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							type="button"
 							onClick={handleDownloadCompliancePdf}
-							disabled={!fileInfo || pdfExportBusy}
+							disabled={!fileInfo || !exportsAllowed || pdfExportBusy}
 							title="Download compliance report (PDF)"
 							className={toolbarBtnClass}
 						>
@@ -136,7 +168,9 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 							size="sm"
 							type="button"
 							onClick={handleDownloadDocumentWithCompliancePdf}
-							disabled={!fileData || !fileInfo || pdfExportBusy}
+							disabled={
+								!fileData || !fileInfo || !exportsAllowed || pdfExportBusy
+							}
 							title="Download document + compliance appendix (PDF)"
 							className={toolbarBtnClass}
 						>

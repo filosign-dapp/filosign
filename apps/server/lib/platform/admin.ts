@@ -45,7 +45,7 @@ export function isPlatformAdminWallet(wallet: Address): boolean {
 	return admins.has(getAddress(wallet).toLowerCase());
 }
 
-/** Platform admin: env email list and/or legacy ADMIN_WALLETS break-glass. */
+/** Platform admin: PLATFORM_ADMIN_EMAILS and/or ADMIN_WALLETS env allowlist. */
 export async function assertPlatformAdmin(wallet: Address): Promise<void> {
 	const walletNorm = getAddress(wallet);
 

@@ -149,6 +149,8 @@ export async function assembleComplianceBundle(
 				draftCompletedFieldIds: [] as string[],
 				acknowledgedAtIso: timeline.acknowledgedAtIso,
 				firstViewedAtIso: timeline.firstViewedAtIso,
+				requestIp: sig.requestIp ?? null,
+				requestUserAgent: sig.requestUserAgent ?? null,
 			};
 		}
 
@@ -204,11 +206,29 @@ export async function assembleComplianceBundle(
 	for (const amend of amendmentRows) {
 		txDrafts.push({
 			kind: "signer_amended",
-			txHash: amend.amendTxHash,
+			txHash: amend.proposeTxHash,
 			contractAddress: regAddr,
-			summary: `amendSigner — ${amend.oldCommitment} → ${amend.newCommitment}`,
+			summary: `proposeSignerReplacement (${amend.status}) — ${amend.oldCommitment} → ${amend.newCommitment}`,
 			relatedAddresses: [senderNorm],
 		});
+		if (amend.executeTxHash) {
+			txDrafts.push({
+				kind: "signer_amended",
+				txHash: amend.executeTxHash,
+				contractAddress: regAddr,
+				summary: `executeSignerReplacement — ${amend.oldCommitment} → ${amend.newCommitment}`,
+				relatedAddresses: [senderNorm],
+			});
+		}
+		if (amend.cancelTxHash) {
+			txDrafts.push({
+				kind: "signer_amended",
+				txHash: amend.cancelTxHash,
+				contractAddress: regAddr,
+				summary: `cancelSignerReplacement — ${amend.oldCommitment} → ${amend.newCommitment}`,
+				relatedAddresses: [senderNorm],
+			});
+		}
 	}
 
 	if (fileRecord.revokeOnchainTxHash) {
@@ -356,7 +376,7 @@ export async function assembleComplianceBundle(
 	);
 
 	return {
-		version: 7,
+		version: 1,
 		pieceCid,
 		chainId,
 		exportedAtIso,
@@ -367,6 +387,7 @@ export async function assembleComplianceBundle(
 			sender: senderNorm,
 			registrationTxHash: fileRecord.onchainTxHash,
 			createdAtIso: fileRecord.createdAt.toISOString(),
+			registerDocumentSha256: fileRecord.documentSha256,
 		},
 		parties,
 		onchainRegistration,

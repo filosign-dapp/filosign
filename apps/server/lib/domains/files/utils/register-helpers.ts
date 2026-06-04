@@ -2,6 +2,7 @@ import type { PlacementManifest, RegisterRoutingInput } from "@filosign/shared";
 import {
 	buildRegisterRoutingCalldata,
 	buildRegistrationEmailCommitmentsForRouting,
+	hashNormalizedSignerEmail,
 	validateRegisterRoutingCalldata,
 } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
@@ -28,6 +29,7 @@ export type PersistRegisteredFileArgs = {
 	onchainTxHash: `0x${string}`;
 	registryAddress: Address;
 	placementCommitment: `0x${string}`;
+	documentSha256: `0x${string}`;
 	placementManifest: PlacementManifest;
 	registerRouting?: RegisterRoutingInput;
 	warmParticipantCount: number;
@@ -57,6 +59,33 @@ export type PersistRegisteredFileArgs = {
 export type RegisterPersistTx = Parameters<
 	Parameters<typeof db.transaction>[0]
 >[0];
+
+async function signerEmailCommitmentsByWallet(
+	tx: RegisterPersistTx,
+	wallets: Address[],
+): Promise<Map<string, `0x${string}`>> {
+	const unique = [...new Set(wallets.map((w) => getAddress(w)))];
+	if (unique.length === 0) return new Map();
+
+	const rows = await tx
+		.select({
+			walletAddress: users.walletAddress,
+			email: users.email,
+		})
+		.from(users)
+		.where(inArray(users.walletAddress, unique));
+
+	const map = new Map<string, `0x${string}`>();
+	for (const row of rows) {
+		const email = row.email?.trim();
+		if (!email) continue;
+		map.set(
+			getAddress(row.walletAddress).toLowerCase(),
+			hashNormalizedSignerEmail(email),
+		);
+	}
+	return map;
+}
 
 export function resolveRegisterRoutingCalldata(args: {
 	placementManifest: PlacementManifest;
@@ -121,6 +150,7 @@ export async function persistRegisteredFileInTx(
 			onchainTxHash: args.onchainTxHash,
 			registryAddress: args.registryAddress,
 			placementCommitment: args.placementCommitment,
+			documentSha256: args.documentSha256,
 			placementManifestJson: args.placementManifest,
 			registerRoutingJson: args.registerRouting ?? null,
 			warmParticipantCount: args.warmParticipantCount,
@@ -134,6 +164,14 @@ export async function persistRegisteredFileInTx(
 		})
 		.returning();
 
+	const signerWallets = args.participants
+		.filter((p) => p.isSigner)
+		.map((p) => getAddress(p.address));
+	const signerCommitmentsByWallet = await signerEmailCommitmentsByWallet(
+		tx,
+		signerWallets,
+	);
+
 	await tx.insert(fileParticipants).values([
 		{
 			filePieceCid: args.pieceCid,
@@ -142,13 +180,27 @@ export async function persistRegisteredFileInTx(
 			kemCiphertext: args.senderKemCiphertext,
 			encryptedEncryptionKey: args.senderEncryptedEncryptionKey,
 		},
-		...args.participants.map((p) => ({
-			filePieceCid: args.pieceCid,
-			wallet: getAddress(p.address),
-			role: p.isSigner ? ("signer" as const) : ("viewer" as const),
-			kemCiphertext: p.kemCiphertext,
-			encryptedEncryptionKey: p.encryptedEncryptionKey,
-		})),
+		...args.participants.map((p) => {
+			const wallet = getAddress(p.address);
+			let emailCommitment: `0x${string}` | null = null;
+			if (p.isSigner) {
+				emailCommitment =
+					signerCommitmentsByWallet.get(wallet.toLowerCase()) ?? null;
+				if (!emailCommitment) {
+					throw new ORPCError("BAD_REQUEST", {
+						message: `Signer ${wallet} has no primary email for commitment`,
+					});
+				}
+			}
+			return {
+				filePieceCid: args.pieceCid,
+				wallet,
+				role: p.isSigner ? ("signer" as const) : ("viewer" as const),
+				emailCommitment,
+				kemCiphertext: p.kemCiphertext,
+				encryptedEncryptionKey: p.encryptedEncryptionKey,
+			};
+		}),
 	]);
 
 	if (args.coldInvites.length > 0) {
@@ -156,6 +208,7 @@ export async function persistRegisteredFileInTx(
 			args.coldInvites.map((c) => ({
 				filePieceCid: args.pieceCid,
 				email: c.email.trim().toLowerCase(),
+				emailCommitment: hashNormalizedSignerEmail(c.email),
 				inviteToken: c.inviteToken,
 				wrappedEncryptionKey: c.wrappedEncryptionKey,
 				isSigner: c.isSigner,

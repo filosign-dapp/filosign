@@ -1,5 +1,6 @@
 import {
 	type ComplianceBundle,
+	type ComplianceExportKind,
 	canonicalComplianceBundleJson,
 } from "@filosign/shared";
 import type { Address } from "viem";
@@ -20,6 +21,7 @@ export async function insertComplianceExportLog(args: {
 	requestedBy: Address;
 	bundle: ComplianceBundle;
 	bundleHash: `0x${string}`;
+	exportKind: ComplianceExportKind;
 	documentSha256?: string | undefined;
 	requestUserAgent?: string | null;
 	requestIp?: string | null;
@@ -30,6 +32,7 @@ export async function insertComplianceExportLog(args: {
 		requestedBy,
 		bundle,
 		bundleHash,
+		exportKind,
 		documentSha256,
 		requestUserAgent,
 		requestIp,
@@ -59,6 +62,7 @@ export async function insertComplianceExportLog(args: {
 			storageKey,
 			executionStatus: bundle.executionStatus,
 			signaturesSnapshotCount,
+			exportKind,
 			documentSha256: documentSha256 ?? null,
 			requestUserAgent: requestUserAgent ?? null,
 			requestIp: requestIp ?? null,

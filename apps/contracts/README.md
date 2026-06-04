@@ -88,7 +88,7 @@ Sender-signed at send. Stored per file:
 ### Other registry APIs
 
 - **`registerEnvelopeSignature`** — sequential order enforced when configured; verifies routing/quorum calldata against stored hashes; increments required counters; may set `completedAt` via `_markCompleteIfNeeded`
-- **`amendSigner`** — recaller EIP-712 (sender or org controller); relay passes before/after routing/quorum calldata
+- **`proposeSignerReplacement`** — instant apply when nobody signed; otherwise pending + freeze until **`executeSignerReplacement`** (clears all signatures) or **`cancelSignerReplacement`**
 - **`recallEnvelope`** — void before complete; recaller = sender or `isOrgController(orgIdCommitment, recaller)`; emits `EnvelopeRevokedBeforeComplete`
 - **`setOrgControllers` / `getOrgControllers` / `isOrgController`** — server-synced owner+admin set per org; emits **`OrgControllersSet`** (full replace — index as authoritative snapshot)
 - **`validateEnvelopeAckSignature`** — viewer/signer ack validation (off-chain consent; not used for payout release)

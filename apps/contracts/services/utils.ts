@@ -70,7 +70,7 @@ export async function eip712signature(
 ) {
 	const domain = {
 		name: contractName,
-		version: contractName === "FSEnvelopeRegistry" ? "4" : "1",
+		version: contractName === "FSEnvelopeRegistry" ? "5" : "1",
 		chainId: contracts.$client.chain.id,
 		verifyingContract:
 			options?.verifyingContract ?? contracts[contractName].address,

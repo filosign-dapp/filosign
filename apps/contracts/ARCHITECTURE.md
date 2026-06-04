@@ -39,7 +39,7 @@ flowchart TB
   end
 ```
 
-1. **`FSEnvelopeRegistry(server)`** — permanent auditable send + sign trail (EIP-712 **v4** `RegisterEnvelope`, required signers, parallel/sequential routing, quorum, `amendSigner`, org controller governance).
+1. **`FSEnvelopeRegistry(server)`** — permanent auditable send + sign trail (EIP-712 **v5** `SignEnvelope` (binds `signersCommitment`), `RegisterEnvelope`, required signers, parallel/sequential routing, quorum, `proposeSignerReplacement` / `executeSignerReplacement` / `cancelSignerReplacement`, org controller governance).
 2. **`FSPaymentValidator(envelopeRegistry, chainId)`** — permissionless pull settlement on sign; multi-leg rules, release types, payer CRUD, `expiresAt`; no custody.
 3. **`FSAttachmentRelease(envelopeRegistry, chainId)`** (Teams Pro) — supplementary packet release rules; sender or org controller may register/cancel.
 

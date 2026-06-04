@@ -25,6 +25,18 @@ const config: HardhatUserConfig = {
 			},
 			viaIR: true,
 			evmVersion: "cancun",
+			outputSelection: {
+				"*": {
+					"*": [
+						"abi",
+						"evm.bytecode",
+						"evm.deployedBytecode",
+						"evm.methodIdentifiers",
+						"metadata",
+						"storageLayout",
+					],
+				},
+			},
 		},
 	},
 	sourcify: { enabled: false },

@@ -4,7 +4,7 @@ import { zDateWire } from "./rpc-wire";
 export const rpcSharingEmailInvitesOutputSchema = z.object({
 	invites: z.array(
 		z.object({
-			id: z.string().uuid(),
+			id: z.uuid(),
 			inviteeEmail: z.string(),
 			message: z.string().nullable(),
 			accepted: z.boolean(),
@@ -14,7 +14,7 @@ export const rpcSharingEmailInvitesOutputSchema = z.object({
 });
 
 export const rpcSharingInviteByIdOutputSchema = z.object({
-	id: z.string().uuid(),
+	id: z.uuid(),
 	inviteeEmail: z.string(),
 	message: z.string().nullable(),
 	createdAt: zDateWire,
@@ -22,7 +22,7 @@ export const rpcSharingInviteByIdOutputSchema = z.object({
 });
 
 const userInviteRowSchema = z.object({
-	id: z.string().uuid(),
+	id: z.uuid(),
 	sender: z.string(),
 	inviteeEmail: z.string(),
 	accepted: z.boolean(),

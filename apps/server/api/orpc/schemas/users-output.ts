@@ -1,3 +1,5 @@
+import { zUserKeygenDataJson } from "@filosign/shared";
+import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { z } from "zod";
 import { rpcEmptyOutputSchema, zDateWire } from "./rpc-wire";
 
@@ -16,9 +18,9 @@ export const rpcUserRegistrationSnapshotOutputSchema = z.object({
 });
 
 export const rpcUserProfileMeOutputSchema = z.object({
-	walletAddress: z.string(),
-	encryptionPublicKey: z.string(),
-	keygenData: z.unknown().nullable(),
+	walletAddress: zEvmAddress(),
+	encryptionPublicKey: zHexString(),
+	keygenData: zUserKeygenDataJson.nullable(),
 	createdAt: zDateWire,
 	email: z.string(),
 	username: z.string().nullable(),
@@ -37,8 +39,8 @@ export const rpcUserProfilePrevalidateOutputSchema = z.union([
 ]);
 
 export const rpcUserProfileLookupOutputSchema = z.object({
-	walletAddress: z.string(),
-	encryptionPublicKey: z.string(),
+	walletAddress: zEvmAddress(),
+	encryptionPublicKey: zHexString(),
 	createdAt: zDateWire,
 	firstName: z.string().nullable(),
 	lastName: z.string().nullable(),
@@ -78,7 +80,7 @@ export const rpcUserPrivacyStateOutputSchema = z.object({
 		.nullable(),
 	privacyRequests: z.array(
 		z.object({
-			id: z.string().uuid(),
+			id: z.uuid(),
 			type: z.enum(["export", "erasure"]),
 			status: z.enum([
 				"submitted",
@@ -102,7 +104,7 @@ export const rpcUserSetAnalyticsConsentOutputSchema = z.object({
 });
 
 export const rpcUserPrivacyRequestSchema = z.object({
-	id: z.string().uuid(),
+	id: z.uuid(),
 	type: z.enum(["export", "erasure"]),
 	status: z.enum([
 		"submitted",
@@ -140,15 +142,15 @@ export const rpcUserExportAccountDataOutputSchema = z.object({
 	}),
 	drafts: z.array(
 		z.object({
-			id: z.string().uuid(),
+			id: z.uuid(),
 			status: z.enum(["active", "archived", "sent"]),
-			organizationId: z.string().uuid(),
+			organizationId: z.uuid(),
 			updatedAt: zDateWire,
 		}),
 	),
 	invitesSent: z.array(
 		z.object({
-			id: z.string().uuid(),
+			id: z.uuid(),
 			inviteeEmail: z.string(),
 			status: z.enum(["pending", "claimed", "expired", "revoked"]),
 			expiresAt: zDateWire,
@@ -157,8 +159,8 @@ export const rpcUserExportAccountDataOutputSchema = z.object({
 	),
 	orgInvitesSent: z.array(
 		z.object({
-			id: z.string().uuid(),
-			organizationId: z.string().uuid(),
+			id: z.uuid(),
+			organizationId: z.uuid(),
 			email: z.string(),
 			status: z.enum(["pending", "claimed", "expired", "revoked"]),
 			expiresAt: zDateWire,
@@ -167,7 +169,7 @@ export const rpcUserExportAccountDataOutputSchema = z.object({
 	),
 	coldInvitesClaimed: z.array(
 		z.object({
-			id: z.string().uuid(),
+			id: z.uuid(),
 			filePieceCid: z.string(),
 			email: z.string(),
 			status: z.enum(["pending", "claimed", "expired", "revoked"]),
@@ -184,7 +186,7 @@ export const rpcUserExportAccountDataOutputSchema = z.object({
 	),
 	privacyRequests: z.array(
 		z.object({
-			id: z.string().uuid(),
+			id: z.uuid(),
 			type: z.enum(["export", "erasure"]),
 			status: z.enum([
 				"submitted",
@@ -200,7 +202,7 @@ export const rpcUserExportAccountDataOutputSchema = z.object({
 	),
 	privacyErasureLedger: z.array(
 		z.object({
-			id: z.string().uuid(),
+			id: z.uuid(),
 			action: z.string(),
 			executedAt: zDateWire,
 			replayRequired: z.boolean(),
@@ -208,7 +210,7 @@ export const rpcUserExportAccountDataOutputSchema = z.object({
 	),
 	platformInviteRedemptions: z.array(
 		z.object({
-			id: z.string().uuid(),
+			id: z.uuid(),
 			email: z.string(),
 			redeemedAt: zDateWire,
 		}),
@@ -226,7 +228,7 @@ export const rpcUserExportAccountDataOutputSchema = z.object({
 export const rpcUserSignaturesCreateOutputSchema = rpcEmptyOutputSchema;
 
 const userSignatureRowSchema = z.object({
-	id: z.string().uuid(),
+	id: z.uuid(),
 	walletAddress: z.string(),
 	data: z.string(),
 	createdAt: zDateWire,

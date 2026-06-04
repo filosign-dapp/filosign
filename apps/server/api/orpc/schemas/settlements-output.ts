@@ -3,6 +3,7 @@ import {
 	settlementReleaseTypes,
 	settlementRuleStatuses,
 	zSettlementPayoutLegStored,
+	zSettlementReleaseParams,
 } from "@filosign/shared";
 import z from "zod";
 
@@ -45,7 +46,7 @@ export const rpcSettlementsListByFileOutputSchema = z.array(
 		tokenAddress: z.string(),
 		validatorAddress: z.string(),
 		releaseType: z.enum(settlementReleaseTypes),
-		releaseParams: z.record(z.string(), z.unknown()),
+		releaseParams: zSettlementReleaseParams,
 		expiresAt: z.string().nullable(),
 		status: z.enum(settlementRuleStatuses),
 		payoutTxHash: z.string().nullable(),

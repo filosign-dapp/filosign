@@ -6,6 +6,7 @@ export {
 export {
 	insertAttachmentPacketsForFile,
 	linkAttachmentPacketOnChainRule,
+	zLinkAttachmentOnChainRuleInput,
 } from "./register";
 export {
 	runSyncAttachmentReleasesJob,

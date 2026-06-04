@@ -30,7 +30,7 @@ const zAttachmentPacketsRegister = z
 	.array(zAttachmentPacketSendInput)
 	.max(SUPPLEMENTARY_ATTACHMENT_LIMITS.maxPacketsPerEnvelope);
 
-const zLinkBody = z.object({
+export const zLinkAttachmentOnChainRuleInput = z.object({
 	pieceCid: z.string().min(8),
 	packetId: z.string().min(1),
 	onChainRuleId: z.string().regex(/^\d+$/),
@@ -193,7 +193,7 @@ export async function linkAttachmentPacketOnChainRule(
 	sender: Address,
 	body: unknown,
 ) {
-	const parsed = zLinkBody.safeParse(body);
+	const parsed = zLinkAttachmentOnChainRuleInput.safeParse(body);
 	if (parsed.error) {
 		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
 	}

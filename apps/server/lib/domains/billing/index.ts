@@ -50,7 +50,6 @@ export { createDodoClient, requireDodoApiKey } from "./utils/policy";
 export {
 	ackDodoWebhook,
 	type DodoWebhookEnvelope,
-	handleDodoWebhook,
 	parseOptionalDate,
 	resolveOrgIdForWebhookAck,
 	verifyDodoWebhookSignature,

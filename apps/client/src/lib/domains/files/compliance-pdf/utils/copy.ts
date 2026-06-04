@@ -89,7 +89,7 @@ const TX_KIND_GLOSSARY: Record<ChainTxKind, string> = {
 	file_signed:
 		"A signer’s signature recorded on-chain for this file (registry `registerEnvelopeSignature`).",
 	signer_amended:
-		"Sender replaced a signer email commitment before signing (`amendSigner` on FSEnvelopeRegistry).",
+		"Sender proposed or executed a signer replacement on FSEnvelopeRegistry.",
 	envelope_revoked_before_complete:
 		"Sender or workspace controller voided the envelope on-chain before completion (`recallEnvelope` on FSEnvelopeRegistry). Partial signatures may remain in the audit trail.",
 	payout_executed:
@@ -191,7 +191,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 	lines.push(
 		{ text: "" },
 		{
-			text: "Appendix B - JSON field map (bundle version 4)",
+			text: "Appendix B - JSON field map (bundle version 1)",
 			textStyle: "subheading",
 		},
 		{ text: "" },
@@ -203,7 +203,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 	);
 
 	const rows: Array<[string, string]> = [
-		["version", "Schema version; must be 4 for this layout."],
+		["version", "Schema version; must be 1 for this layout."],
 		["pieceCid", "Content id for the encrypted document payload."],
 		["chainId", "EVM chain id for all on-chain references in the bundle."],
 		["exportedAtIso", "UTC timestamp when Filosign finalized this bundle."],

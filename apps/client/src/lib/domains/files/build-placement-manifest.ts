@@ -1,4 +1,8 @@
-import type { PlacementManifest, PlacementManifestV3 } from "@filosign/shared";
+import type {
+	DraftPlacementManifest,
+	PlacementField,
+	PlacementManifest,
+} from "@filosign/shared";
 import {
 	normalizePlacementRecipientEmail,
 	sha256PlaintextHex,
@@ -14,7 +18,7 @@ export function buildPlacementManifestForDocument(args: {
 	docHeight: number;
 	fieldBox: { width: number; height: number };
 	strict?: boolean;
-}): PlacementManifest {
+}): DraftPlacementManifest {
 	const {
 		docId,
 		signerEmailsInOrder,
@@ -30,7 +34,7 @@ export function buildPlacementManifestForDocument(args: {
 	const fieldsForDoc = signatureFields.filter((f) => f.documentId === docId);
 	if (signerEmailsInOrder.length === 0 || fieldsForDoc.length === 0) {
 		if (!strict) {
-			return { version: 2, fields: [] };
+			return { version: 1, documents: [], fields: [] };
 		}
 		if (signerEmailsInOrder.length === 0) {
 			throw new Error("At least one signer email is required for placement");
@@ -42,14 +46,7 @@ export function buildPlacementManifestForDocument(args: {
 		signerEmailsInOrder.map((e) => normalizePlacementRecipientEmail(e)),
 	);
 
-	const manifestFields: Array<{
-		id: string;
-		pageIndex: number;
-		rect: PlacementManifestV3["fields"][number]["rect"];
-		assignedRecipientEmail: string;
-		required: boolean;
-		type: PlacementManifestV3["fields"][number]["type"];
-	}> = [];
+	const manifestFields: PlacementField[] = [];
 
 	for (const field of fieldsForDoc) {
 		const assigned = normalizePlacementRecipientEmail(
@@ -66,6 +63,7 @@ export function buildPlacementManifestForDocument(args: {
 
 		manifestFields.push({
 			id: field.id,
+			documentId: docId,
 			pageIndex: Math.max(0, field.page - 1),
 			rect: placementManifestRectFromField({
 				x: field.x,
@@ -81,10 +79,10 @@ export function buildPlacementManifestForDocument(args: {
 		});
 	}
 
-	return { version: 2, fields: manifestFields };
+	return { version: 1, documents: [], fields: manifestFields };
 }
 
-export async function buildPlacementManifestV3ForEnvelope(args: {
+export async function buildPlacementManifestForEnvelope(args: {
 	documents: {
 		id: string;
 		name: string;
@@ -102,7 +100,7 @@ export async function buildPlacementManifestV3ForEnvelope(args: {
 		}
 	>;
 	strict?: boolean;
-}): Promise<PlacementManifestV3> {
+}): Promise<PlacementManifest> {
 	const {
 		documents,
 		signerEmailsInOrder,
@@ -111,17 +109,16 @@ export async function buildPlacementManifestV3ForEnvelope(args: {
 		strict = true,
 	} = args;
 
-	const placementDocuments: PlacementManifestV3["documents"] =
-		await Promise.all(
-			documents.map(async (d) => ({
-				id: d.id,
-				name: d.name,
-				sha256Plaintext: await sha256PlaintextHex(d.bytes),
-				pageCount: d.pageCount,
-			})),
-		);
+	const placementDocuments: PlacementManifest["documents"] = await Promise.all(
+		documents.map(async (d) => ({
+			id: d.id,
+			name: d.name,
+			sha256Plaintext: await sha256PlaintextHex(d.bytes),
+			pageCount: d.pageCount,
+		})),
+	);
 
-	const allFields: PlacementManifestV3["fields"] = [];
+	const allFields: PlacementField[] = [];
 
 	for (const doc of documents) {
 		const layout = docLayouts.get(doc.id);
@@ -137,13 +134,8 @@ export async function buildPlacementManifestV3ForEnvelope(args: {
 			fieldBox: layout.fieldBox,
 			strict,
 		});
-		if (partial.version === 2 && partial.fields.length > 0) {
-			for (const f of partial.fields) {
-				allFields.push({
-					...f,
-					documentId: doc.id,
-				});
-			}
+		if (partial.fields.length > 0) {
+			allFields.push(...partial.fields);
 		}
 	}
 
@@ -155,7 +147,7 @@ export async function buildPlacementManifestV3ForEnvelope(args: {
 	}
 
 	return {
-		version: 3,
+		version: 1,
 		documents: placementDocuments,
 		fields: allFields,
 	};

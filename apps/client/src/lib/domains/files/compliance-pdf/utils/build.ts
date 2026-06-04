@@ -7,6 +7,7 @@ import {
 	rgb,
 	StandardFonts,
 } from "pdf-lib";
+import { mergedPdfBytesForView } from "@/src/lib/domains/files/signable-documents";
 import type {
 	CompliancePdfBundleOptions,
 	CompliancePdfOptions,
@@ -19,21 +20,6 @@ import {
 	signersByNormalizedRecipientEmail,
 } from "./placement";
 import { lineHeightAt, wrapLines } from "./text";
-
-/** SHA-256 over bytes as lowercase 0x-prefixed hex (for compliance export query + appendix). */
-export async function sha256HexOfBytes(
-	bytes: Uint8Array,
-): Promise<`0x${string}`> {
-	const buf = bytes.buffer.slice(
-		bytes.byteOffset,
-		bytes.byteOffset + bytes.byteLength,
-	) as ArrayBuffer;
-	const digest = await crypto.subtle.digest("SHA-256", buf);
-	const hex = [...new Uint8Array(digest)]
-		.map((b) => b.toString(16).padStart(2, "0"))
-		.join("");
-	return `0x${hex}` as `0x${string}`;
-}
 
 type OverlayTextSeg = { text: string; font: PDFFont; size: number };
 
@@ -188,12 +174,6 @@ export async function buildCompliancePdfOnly(
 	return doc.save();
 }
 
-function isPdfFile(fileData: ViewFileResult): boolean {
-	const mime = fileData.metadata.mimeType?.toLowerCase() ?? "";
-	const name = fileData.metadata.name?.toLowerCase() ?? "";
-	return mime === "application/pdf" || name.endsWith(".pdf");
-}
-
 function isRasterableImageMime(mime: string): boolean {
 	return (
 		mime.startsWith("image/") &&
@@ -304,10 +284,25 @@ export async function buildDocumentPlusCompliancePdf(
 ): Promise<Uint8Array> {
 	const { fileData } = options;
 	const out = await PDFDocument.create();
+	const documentBytes =
+		(await mergedPdfBytesForView(fileData)) ?? fileData.fileBytes;
+	const documentMime =
+		fileData.documents.length > 1 &&
+		fileData.documents.every(
+			(d) =>
+				d.mimeType === "application/pdf" ||
+				d.name.toLowerCase().endsWith(".pdf"),
+		)
+			? "application/pdf"
+			: fileData.metadata.mimeType;
+	const documentName = fileData.metadata.name;
 
-	if (isPdfFile(fileData)) {
+	if (
+		documentMime === "application/pdf" ||
+		documentName.toLowerCase().endsWith(".pdf")
+	) {
 		try {
-			const src = await PDFDocument.load(fileData.fileBytes);
+			const src = await PDFDocument.load(documentBytes);
 			const copied = await out.copyPages(src, src.getPageIndices());
 			for (const p of copied) {
 				out.addPage(p);
@@ -324,16 +319,16 @@ export async function buildDocumentPlusCompliancePdf(
 		}
 	} else {
 		const resolved = resolveRasterImageMime(
-			fileData.fileBytes,
-			fileData.metadata.mimeType,
-			fileData.metadata.name,
+			documentBytes,
+			documentMime,
+			documentName,
 		);
 		if (!resolved) {
 			throw new Error(
 				"Bundled PDF export supports PDF and image documents. Download the file and compliance appendix separately.",
 			);
 		}
-		await embedImagePage(out, fileData.fileBytes, resolved);
+		await embedImagePage(out, documentBytes, resolved);
 		await drawPlacementOverlaysOnDocumentPdf(
 			out,
 			options.bundle.placementManifest,
@@ -352,16 +347,25 @@ export async function buildDocumentPlusCompliancePdf(
 	return out.save();
 }
 
-export function downloadPdfBytes(bytes: Uint8Array, filenameBase: string) {
+export function downloadBlobBytes(
+	bytes: Uint8Array,
+	filenameBase: string,
+	mimeType: string,
+	extension: string,
+) {
 	const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 	const safe = filenameBase.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 48);
-	const blob = new Blob([bytes.slice()], { type: "application/pdf" });
+	const blob = new Blob([bytes.slice()], { type: mimeType });
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement("a");
 	a.href = url;
-	a.download = `${safe}-${stamp}.pdf`;
+	a.download = `${safe}-${stamp}.${extension}`;
 	document.body.appendChild(a);
 	a.click();
 	document.body.removeChild(a);
 	URL.revokeObjectURL(url);
+}
+
+export function downloadPdfBytes(bytes: Uint8Array, filenameBase: string) {
+	downloadBlobBytes(bytes, filenameBase, "application/pdf", "pdf");
 }

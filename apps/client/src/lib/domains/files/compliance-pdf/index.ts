@@ -10,6 +10,5 @@ export {
 	buildCompliancePdfOnly,
 	buildDocumentPlusCompliancePdf,
 	downloadPdfBytes,
-	sha256HexOfBytes,
 } from "./utils/build";
 export { buildCompliancePdfSummaryFromBundle } from "./utils/summary";

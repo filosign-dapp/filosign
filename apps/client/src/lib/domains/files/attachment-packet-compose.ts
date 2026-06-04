@@ -5,6 +5,15 @@ import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
 import { buildReleaseParamsFromDraft } from "@/src/lib/domains/settlements/build-release-params";
 import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
 
+/** File row in compose UI; `bytes` in memory, `size` only when persisted to localStorage. */
+export type AttachmentPacketComposeFile = {
+	id: string;
+	name: string;
+	mimeType: string;
+	bytes?: Uint8Array;
+	size?: number;
+};
+
 /** UI-editable supplementary packet stored on the compose draft. */
 export type AttachmentPacketComposeDraft = {
 	packetId: string;
@@ -14,7 +23,7 @@ export type AttachmentPacketComposeDraft = {
 	specificSignerEmail?: string;
 	thresholdN?: number;
 	recipientEmails: string[];
-	files: AttachmentPacketDraft["files"];
+	files: AttachmentPacketComposeFile[];
 };
 
 function releaseParamsFromComposeDraft(
@@ -49,7 +58,17 @@ export function toAttachmentPacketDraft(
 			? releaseParamsFromComposeDraft(draft, recipients)
 			: undefined,
 		recipientEmails: draft.recipientEmails,
-		files: draft.files,
+		files: draft.files
+			.filter(
+				(file): file is AttachmentPacketComposeFile & { bytes: Uint8Array } =>
+					file.bytes instanceof Uint8Array && file.bytes.byteLength > 0,
+			)
+			.map((file) => ({
+				id: file.id,
+				name: file.name,
+				mimeType: file.mimeType,
+				bytes: file.bytes,
+			})),
 	};
 }
 

@@ -64,7 +64,8 @@ export const zFileRegisterBody = z.object({
 	senderKemCiphertext: zHexString(),
 	timestamp: z.number({ error: "timestamp must be a number" }),
 	placementCommitment: zHexString(),
-	placementManifest: z.unknown(),
+	documentSha256: zHexString(),
+	placementManifest: zPlacementManifest,
 	coldInvites: z
 		.array(
 			z.object({
@@ -103,6 +104,7 @@ export async function filesRegister(
 		senderKemCiphertext,
 		timestamp,
 		placementCommitment,
+		documentSha256,
 		placementManifest: placementManifestRaw,
 		coldInvites = [],
 		organizationId,
@@ -136,6 +138,11 @@ export async function filesRegister(
 	if (derivedCommitment.toLowerCase() !== placementCommitment.toLowerCase()) {
 		throw new ORPCError("BAD_REQUEST", {
 			message: "placementCommitment does not match manifest",
+		});
+	}
+	if (documentSha256 === `0x${"0".repeat(64)}`) {
+		throw new ORPCError("BAD_REQUEST", {
+			message: "documentSha256 must be non-zero",
 		});
 	}
 	const viewerEmails = await normalizedViewerEmailsForRegister({
@@ -199,6 +206,7 @@ export async function filesRegister(
 				timestamp: BigInt(timestamp),
 				signature,
 				placementCommitment,
+				documentSha256,
 			},
 		]),
 	);
@@ -262,6 +270,7 @@ export async function filesRegister(
 					timestamp: BigInt(timestamp),
 					signature,
 					placementCommitment,
+					documentSha256,
 				},
 			]),
 		),
@@ -276,6 +285,7 @@ export async function filesRegister(
 		onchainTxHash: txHash,
 		registryAddress: getAddress(FSEnvelopeRegistry.address),
 		placementCommitment,
+		documentSha256,
 		placementManifest,
 		registerRouting: routing,
 		warmParticipantCount: slotCounts.warmParticipantCount,

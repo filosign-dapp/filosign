@@ -9,6 +9,7 @@ import db from "@/lib/platform/db";
 import { fsEnvelopeRegistryAt, relayRecallEnvelope } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { assertRecallerMayRelay } from "./recall-auth";
+import { cancelPendingSignerAmendmentsForPiece } from "./signer-replacement";
 
 const { files, fileColdInvites } = db.schema;
 
@@ -111,6 +112,8 @@ export async function filesRecallEnvelope(
 					eq(fileColdInvites.status, "pending"),
 				),
 			);
+
+		await cancelPendingSignerAmendmentsForPiece(tx, pieceCid);
 	});
 
 	return {

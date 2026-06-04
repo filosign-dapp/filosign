@@ -14,15 +14,13 @@ import {
 	zPlacementManifest,
 	zRegisterRoutingInput,
 } from "@filosign/shared";
-import { zEvmAddress, zHexString } from "@filosign/shared/zod";
+import { zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { tryExecuteAttachmentReleasesForPiece } from "@/lib/domains/attachments";
-import { assertRecallerMayRelay } from "@/lib/domains/files/recall-auth";
-import type { ActiveOrgContext } from "@/lib/domains/orgs";
 import {
 	assertSettlementRecipientAckProvided,
 	recordSettlementRecipientAck,
@@ -35,30 +33,35 @@ import db from "@/lib/platform/db";
 import {
 	evmClient,
 	fsEnvelopeRegistryAt,
-	relayAmendSigner,
 	relayRegisterEnvelopeSignature,
 } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
 import { primaryEmailForWallet } from "./invites";
+import { isSignerReplacementPendingOnChain } from "./signer-replacement";
+import { buildEnvelopeCompletedEmailOutboxRows } from "./utils/completion-email";
 import {
 	isEnvelopeRoutingCompleteOnChain,
 	requireCanSign,
 } from "./utils/piece-helpers";
-import {
-	patchRoutingCalldataForAmend,
-	resolveSignRoutingCalldata,
-} from "./utils/routing-calldata";
+import { resolveSignRoutingCalldata } from "./utils/routing-calldata";
 
-const {
-	files,
-	fileParticipants,
-	fileSignatures,
-	fileSignerDrafts,
-	fileSignerAmendments,
-	users,
-} = db.schema;
+const { files, fileParticipants, fileSignatures, fileSignerDrafts, users } =
+	db.schema;
+
+export const zPieceSignBody = z.object({
+	signature: zHexString(),
+	timestamp: z.number({ error: "timestamp must be a number" }),
+	dl3Signature: zHexString(),
+	completedFieldIds: z.array(z.string()),
+	settlementRecipientAck: z
+		.object({
+			termsVersion: z.string().min(1),
+			acceptedAt: z.number().int().positive(),
+		})
+		.optional(),
+});
 
 export async function pieceSign(args: {
 	userWallet: Address;
@@ -72,20 +75,7 @@ export async function pieceSign(args: {
 	const encoder = new TextEncoder();
 	const dilithium = await signatures.dilithiumInstance();
 
-	const parsedBody = z
-		.object({
-			signature: zHexString(),
-			timestamp: z.number({ error: "timestamp must be a number" }),
-			dl3Signature: zHexString(),
-			completedFieldIds: z.array(z.string()),
-			settlementRecipientAck: z
-				.object({
-					termsVersion: z.string().min(1),
-					acceptedAt: z.number().int().positive(),
-				})
-				.optional(),
-		})
-		.safeParse(args.body);
+	const parsedBody = zPieceSignBody.safeParse(args.body);
 	if (parsedBody.error) {
 		throw new ORPCError("BAD_REQUEST", {
 			message: zodSafeParseMessage(parsedBody.error),
@@ -123,6 +113,17 @@ export async function pieceSign(args: {
 	}
 	if (fileRecord.completedAt) {
 		throw new ORPCError("FORBIDDEN", { message: "Envelope complete" });
+	}
+
+	if (
+		await isSignerReplacementPendingOnChain(
+			fileRecord.registryAddress,
+			pieceCid,
+		)
+	) {
+		throw new ORPCError("FORBIDDEN", {
+			message: "Signer replacement pending — execute or cancel before signing",
+		});
 	}
 
 	const userWalletNorm = getAddress(userWallet);
@@ -346,6 +347,8 @@ export async function pieceSign(args: {
 		completedFieldIds: completedFieldIdsStored,
 		completionsRoot,
 		leafSchemaVersion: LEAF_SCHEMA_VERSION_V1,
+		requestIp: args.requestIp ?? null,
+		requestUserAgent: args.requestUserAgent ?? null,
 		createdAt: new Date(timestamp * 1000),
 	});
 
@@ -389,6 +392,20 @@ export async function pieceSign(args: {
 			.set({ completedAt: new Date(), updatedAt: new Date() })
 			.where(eq(files.pieceCid, pieceCid));
 
+		const { enqueueOutboxByIds, insertJobOutboxRows } = await import(
+			"@/lib/platform/jobs"
+		);
+		const completionOutbox = await buildEnvelopeCompletedEmailOutboxRows({
+			pieceCid,
+			sender: getAddress(fileRecord.sender),
+		});
+		if (completionOutbox.length > 0) {
+			const inserted = await db.transaction(async (tx) =>
+				insertJobOutboxRows(tx, completionOutbox),
+			);
+			await enqueueOutboxByIds(inserted.map((r) => r.id));
+		}
+
 		trackServerEvent({
 			distinctId: getAddress(fileRecord.sender),
 			event: SERVER_ANALYTICS_EVENTS.envelopeFullySigned,
@@ -428,123 +445,4 @@ export async function pieceSign(args: {
 	});
 
 	return { txHash, signature };
-}
-
-export const zAmendSignerBody = z.object({
-	pieceCid: z.string().min(1),
-	recaller: zEvmAddress(),
-	oldCommitment: zHexString(),
-	newCommitment: zHexString(),
-	timestamp: z.number().int().positive(),
-	signature: zHexString(),
-});
-
-export async function filesAmendSigner(
-	wallet: Address,
-	rawBody: unknown,
-	activeOrg: ActiveOrgContext | null = null,
-) {
-	const parsed = zAmendSignerBody.safeParse(rawBody);
-	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
-	}
-
-	const {
-		pieceCid,
-		recaller,
-		oldCommitment,
-		newCommitment,
-		timestamp,
-		signature,
-	} = parsed.data;
-
-	const [file] = await db
-		.select({
-			sender: files.sender,
-			organizationId: files.organizationId,
-			registryAddress: files.registryAddress,
-			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
-			completedAt: files.completedAt,
-			placementManifestJson: files.placementManifestJson,
-			registerRoutingJson: files.registerRoutingJson,
-		})
-		.from(files)
-		.where(eq(files.pieceCid, pieceCid))
-		.limit(1);
-	if (!file) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
-	}
-	if (file.revokedBeforeCompletedAt) {
-		throw new ORPCError("BAD_REQUEST", { message: "Envelope voided" });
-	}
-	if (file.completedAt) {
-		throw new ORPCError("BAD_REQUEST", { message: "Envelope complete" });
-	}
-
-	const manifestParsed = zPlacementManifest.safeParse(
-		file.placementManifestJson,
-	);
-	if (!manifestParsed.success) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
-			message: "File placement manifest missing or invalid",
-		});
-	}
-	const registerRoutingParsed = zRegisterRoutingInput.safeParse(
-		file.registerRoutingJson ?? {},
-	);
-	const baseRouting = resolveSignRoutingCalldata({
-		placementManifest: manifestParsed.data,
-		registerRouting: registerRoutingParsed.success
-			? registerRoutingParsed.data
-			: undefined,
-	});
-	const routingCalldata = patchRoutingCalldataForAmend({
-		...baseRouting,
-		oldCommitment,
-		newCommitment,
-	});
-
-	await assertRecallerMayRelay({
-		wallet,
-		file: {
-			sender: file.sender,
-			organizationId: file.organizationId,
-		},
-		recaller,
-		activeOrg,
-		registryAddress: file.registryAddress,
-	});
-
-	const registry = fsEnvelopeRegistryAt(file.registryAddress);
-	const amendArgs = [
-		pieceCid,
-		recaller,
-		oldCommitment,
-		newCommitment,
-		BigInt(timestamp),
-		signature,
-		baseRouting.routingOrder,
-		routingCalldata.routingOrder,
-		baseRouting.quorumSet,
-		routingCalldata.quorumSet,
-	] as const;
-
-	const txHash = await tryCatch(relayAmendSigner(registry, amendArgs));
-	if (txHash.error) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				txHash.error instanceof Error
-					? txHash.error.message
-					: "amendSigner relay failed",
-		});
-	}
-
-	await db.insert(fileSignerAmendments).values({
-		filePieceCid: pieceCid,
-		oldCommitment,
-		newCommitment,
-		amendTxHash: txHash.data as `0x${string}`,
-	});
-
-	return { txHash: txHash.data };
 }

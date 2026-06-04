@@ -33,7 +33,7 @@ const {
 	users,
 } = db.schema;
 
-const zPieceAckBody = z.object({
+export const zPieceAckBody = z.object({
 	signature: zHexString(),
 	timestamp: z.number({ error: "timestamp must be a number" }),
 	intentVersion: z.literal(FILE_ACK_INTENT_VERSION_V1).optional(),

@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import type { UploadResult } from "@filoz/synapse-sdk";
 import type { EnvelopeRegistryProgress } from "@/lib/domains/files/utils/piece-helpers";
 import { envelopeRoutingCompleteFromProgress } from "@/lib/domains/files/utils/piece-helpers";
 import { retentionEpochsFromUntil } from "@/lib/platform/foc/retention";
 import { dealIdFromUploadResult } from "@/lib/platform/foc/synapse";
 import { focTransitionJobId } from "@/lib/platform/jobs/utils/idempotency";
+import { uploadResultStub } from "../support/upload-result-stub";
 
 describe("retentionEpochsFromUntil", () => {
 	test("returns positive epochs for future retention", () => {
@@ -19,14 +19,14 @@ describe("retentionEpochsFromUntil", () => {
 
 describe("dealIdFromUploadResult", () => {
 	test("formats dataSetId and pieceId from primary copy", () => {
-		const result = {
+		const result = uploadResultStub({
 			copies: [{ dataSetId: 42n, pieceId: 7n, role: "primary" }],
-		} as UploadResult;
+		});
 		expect(dealIdFromUploadResult(result)).toBe("42:7");
 	});
 
 	test("throws when no copies committed", () => {
-		const result = { copies: [] } as unknown as UploadResult;
+		const result = uploadResultStub({ copies: [] });
 		expect(() => dealIdFromUploadResult(result)).toThrow(/no committed copies/);
 	});
 });

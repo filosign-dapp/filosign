@@ -1,5 +1,5 @@
 import {
-	settlementRuleLegacyTopLevel,
+	firstSettlementLeg,
 	settlementRuleTotalAmount,
 } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
@@ -114,15 +114,15 @@ export async function settlementsListByFile(
 				canExecuteOnChain = res.error ? null : res.data;
 			}
 
-			const legacyTopLevel = settlementRuleLegacyTopLevel(r.legs);
+			const topLeg = firstSettlementLeg(r.legs);
 
 			return {
 				id: r.id,
 				onChainRuleId: r.onChainRuleId.toString(),
 				legs: r.legs,
-				recipientWallet: legacyTopLevel.recipientWallet,
-				recipientSource: legacyTopLevel.recipientSource,
-				amount: legacyTopLevel.amount,
+				recipientWallet: topLeg.recipientWallet,
+				recipientSource: topLeg.recipientSource,
+				amount: topLeg.amount,
 				totalAmount: settlementRuleTotalAmount(r.legs).toString(),
 				tokenAddress: r.tokenAddress,
 				validatorAddress: r.validatorAddress,

@@ -25,12 +25,12 @@ const {
 	envelopeAttachmentPacketColdWraps,
 } = db.schema;
 
-const zColdClaimBody = z.object({
+export const zColdInviteClaimBody = z.object({
 	kemCiphertext: zHexString(),
 	encryptedEncryptionKey: zHexString(),
 });
 
-const zRegenerateColdBody = z.object({
+export const zColdInviteRegenerateBody = z.object({
 	inviteToken: z.string().min(16),
 	wrappedEncryptionKey: zHexString(),
 });
@@ -214,7 +214,7 @@ export async function filesColdInviteClaim(args: {
 	inviteToken: string;
 	body: unknown;
 }) {
-	const parsedBody = zColdClaimBody.safeParse(args.body);
+	const parsedBody = zColdInviteClaimBody.safeParse(args.body);
 	if (parsedBody.error) {
 		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });
 	}
@@ -238,6 +238,7 @@ export async function filesColdInviteClaim(args: {
 			id: fileColdInvites.id,
 			filePieceCid: fileColdInvites.filePieceCid,
 			email: fileColdInvites.email,
+			emailCommitment: fileColdInvites.emailCommitment,
 			isSigner: fileColdInvites.isSigner,
 		})
 		.from(fileColdInvites)
@@ -254,6 +255,13 @@ export async function filesColdInviteClaim(args: {
 		});
 	}
 
+	if (invite.isSigner && !invite.emailCommitment) {
+		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+			message: "Cold signer invite missing email commitment",
+		});
+	}
+	const signerEmailCommitment = invite.isSigner ? invite.emailCommitment : null;
+
 	const now = new Date();
 	await db.transaction(async (tx) => {
 		await tx
@@ -262,6 +270,7 @@ export async function filesColdInviteClaim(args: {
 				filePieceCid: invite.filePieceCid,
 				wallet: userWallet,
 				role: invite.isSigner ? "signer" : "viewer",
+				emailCommitment: signerEmailCommitment,
 				kemCiphertext: parsedBody.data.kemCiphertext,
 				encryptedEncryptionKey: parsedBody.data.encryptedEncryptionKey,
 				createdAt: now,
@@ -271,6 +280,7 @@ export async function filesColdInviteClaim(args: {
 				target: [fileParticipants.filePieceCid, fileParticipants.wallet],
 				set: {
 					role: invite.isSigner ? "signer" : "viewer",
+					emailCommitment: signerEmailCommitment,
 					kemCiphertext: parsedBody.data.kemCiphertext,
 					encryptedEncryptionKey: parsedBody.data.encryptedEncryptionKey,
 					updatedAt: now,
@@ -301,7 +311,7 @@ export async function filesColdInviteRegenerate(args: {
 	pieceCid: string;
 	body: unknown;
 }) {
-	const parsedBody = zRegenerateColdBody.safeParse(args.body);
+	const parsedBody = zColdInviteRegenerateBody.safeParse(args.body);
 	if (parsedBody.error) {
 		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });
 	}

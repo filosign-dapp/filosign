@@ -1,6 +1,6 @@
 import { zPlacementManifest } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import { listSupplementaryPacketsForParticipant } from "@/lib/domains/attachments";
@@ -12,6 +12,12 @@ import {
 import db from "@/lib/platform/db";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { primaryEmailForWallet } from "./invites";
+import { readPendingSignerReplacementForPiece } from "./signer-replacement";
+import {
+	assertExportDocumentSha256Matches,
+	ExportDocumentSha256MismatchError,
+	isComplianceExportAllowed,
+} from "./utils/compliance-export";
 import {
 	getDocumentView,
 	getValidAck,
@@ -19,7 +25,14 @@ import {
 	readEnvelopeRegistryProgress,
 } from "./utils/piece-helpers";
 
-const { files, fileParticipants, fileSignatures, users } = db.schema;
+const {
+	complianceExportLogs,
+	fileParticipants,
+	fileSignatures,
+	files,
+	focObjects,
+	users,
+} = db.schema;
 
 export async function pieceDetail(userWallet: Address, pieceCid: string) {
 	const [fileRecord] = await db
@@ -178,6 +191,9 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		isSender && senderEmailForManifest
 			? senderEmailForManifest
 			: (participantUser?.email ?? null);
+	const pendingSignerReplacement =
+		await readPendingSignerReplacementForPiece(pieceCid);
+
 	const envelopeProgress = await readEnvelopeRegistryProgress({
 		pieceCid,
 		registryAddress: fileRecord.registryAddress,
@@ -186,11 +202,13 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 	});
 
 	const canSignByRouting = envelopeProgress?.canSignByRouting ?? true;
+	const signerReplacementBlocksSign = Boolean(pendingSignerReplacement);
 	const canSign = Boolean(
 		isSigner &&
 			(isSender || (acknowledged && firstViewedAt)) &&
 			!mySignature &&
-			canSignByRouting,
+			canSignByRouting &&
+			!signerReplacementBlocksSign,
 	);
 
 	const manifestUnlocked =
@@ -216,6 +234,29 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 					signerEmails,
 				})
 			: [];
+
+	const [focRow] = await db
+		.select({
+			lifecycle: focObjects.lifecycle,
+			replicateStatus: focObjects.replicateStatus,
+			retentionUntil: focObjects.retentionUntil,
+			focVerifiedAt: focObjects.focVerifiedAt,
+			dealId: focObjects.dealId,
+		})
+		.from(focObjects)
+		.where(eq(focObjects.pieceCid, pieceCid))
+		.limit(1);
+
+	const [latestExport] = await db
+		.select({
+			exportKind: complianceExportLogs.exportKind,
+			createdAt: complianceExportLogs.createdAt,
+			documentSha256: complianceExportLogs.documentSha256,
+		})
+		.from(complianceExportLogs)
+		.where(eq(complianceExportLogs.filePieceCid, pieceCid))
+		.orderBy(desc(complianceExportLogs.createdAt))
+		.limit(1);
 
 	return {
 		pieceCid: fileRecord.pieceCid,
@@ -252,6 +293,15 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 					revokedBeforeCompletedAt: envelopeProgress.revokedBeforeCompletedAt,
 					revokedBy: envelopeProgress.revokedBy,
 					nextSignerEmail: envelopeProgress.nextSignerEmail,
+					signerReplacementPending: signerReplacementBlocksSign,
+				}
+			: null,
+		pendingSignerReplacement: pendingSignerReplacement
+			? {
+					oldCommitment: pendingSignerReplacement.oldCommitment,
+					newCommitment: pendingSignerReplacement.newCommitment,
+					proposeTxHash: pendingSignerReplacement.proposeTxHash,
+					createdAt: pendingSignerReplacement.createdAt,
 				}
 			: null,
 		...(conditionalAttachmentPackets ? { conditionalAttachmentPackets } : {}),
@@ -270,12 +320,29 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 			? fileRecord.orgEncryptedEncryptionKey
 			: null,
 		organizationId: canReadOrg ? fileRecord.organizationId : null,
+		focStatus: focRow
+			? {
+					lifecycle: focRow.lifecycle,
+					replicateStatus: focRow.replicateStatus,
+					retentionUntil: focRow.retentionUntil.toISOString(),
+					focVerifiedAt: focRow.focVerifiedAt?.toISOString() ?? null,
+					dealId: focRow.dealId,
+				}
+			: null,
+		latestComplianceExport: latestExport
+			? {
+					exportKind: latestExport.exportKind,
+					createdAt: latestExport.createdAt.toISOString(),
+					documentSha256: latestExport.documentSha256,
+				}
+			: null,
 	};
 }
 
 export async function pieceComplianceBundle(args: {
 	userWallet: Address;
 	pieceCid: string;
+	exportKind: "zip" | "pdf" | "json";
 	documentSha256?: string | undefined;
 	userAgent: string | null;
 	requestIp: string | null;
@@ -298,12 +365,35 @@ export async function pieceComplianceBundle(args: {
 		.where(eq(fileParticipants.filePieceCid, pieceCid));
 
 	const [fileRecord] = await db
-		.select({ pieceCid: files.pieceCid, sender: files.sender })
+		.select({
+			pieceCid: files.pieceCid,
+			sender: files.sender,
+			documentSha256: files.documentSha256,
+			completedAt: files.completedAt,
+			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
+		})
 		.from(files)
 		.where(eq(files.pieceCid, pieceCid));
 
 	if (!fileRecord) {
 		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+	}
+	try {
+		assertExportDocumentSha256Matches({
+			provided: documentSha256,
+			registered: fileRecord.documentSha256,
+		});
+	} catch (e) {
+		if (e instanceof ExportDocumentSha256MismatchError) {
+			throw new ORPCError("BAD_REQUEST", { message: e.message });
+		}
+		throw e;
+	}
+	if (!isComplianceExportAllowed(fileRecord)) {
+		throw new ORPCError("FORBIDDEN", {
+			message:
+				"Compliance export is available only after the envelope is fully executed or voided",
+		});
 	}
 
 	const userWalletNorm = getAddress(args.userWallet);
@@ -350,6 +440,7 @@ export async function pieceComplianceBundle(args: {
 			requestedBy: userWalletNorm,
 			bundle: bundleResult.bundle,
 			bundleHash: bundleResult.bundleHash,
+			exportKind: args.exportKind,
 			documentSha256,
 			requestUserAgent: args.userAgent,
 			requestIp: args.requestIp,

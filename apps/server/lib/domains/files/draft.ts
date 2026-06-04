@@ -10,7 +10,7 @@ import { requireAckForParticipantAccess } from "./utils/piece-helpers";
 
 const { files, fileParticipants, fileSignerDrafts } = db.schema;
 
-const zSignDraftPutBody = z.object({
+export const zPieceSignDraftPutBody = z.object({
 	completedFieldIds: z.array(z.string()),
 });
 
@@ -87,7 +87,7 @@ export async function pieceSignDraftPut(args: {
 	pieceCid: string;
 	body: unknown;
 }) {
-	const parsedBody = zSignDraftPutBody.safeParse(args.body);
+	const parsedBody = zPieceSignDraftPutBody.safeParse(args.body);
 	if (parsedBody.error) {
 		throw new ORPCError("BAD_REQUEST", {
 			message: zodSafeParseMessage(parsedBody.error),

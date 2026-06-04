@@ -1,3 +1,8 @@
+export {
+	fileCommentsAppend,
+	fileCommentsList,
+	zFileCommentAppendBody,
+} from "./comments";
 export { pieceComplianceBundle, pieceDetail } from "./detail";
 export { pieceSignDraftGet, pieceSignDraftPut } from "./draft";
 export {
@@ -14,5 +19,14 @@ export {
 } from "./piece";
 export { filesRecallEnvelope, zRecallEnvelopeBody } from "./recall";
 export { filesRegister, zFileRegisterBody } from "./register";
-export { filesAmendSigner, pieceSign, zAmendSignerBody } from "./sign";
+export { pieceSign } from "./sign";
+export {
+	filesCancelSignerReplacement,
+	filesExecuteSignerReplacement,
+	filesProposeSignerReplacement,
+	zCancelSignerReplacementBody,
+	zExecuteSignerReplacementBody,
+	zProposeSignerReplacementBody,
+} from "./signer-replacement";
 export { isEnvelopeRoutingCompleteOnChain } from "./utils/piece-helpers";
+export { assertPieceReadAccess } from "./utils/piece-read-access";

@@ -14,7 +14,7 @@ import { MotionProvider } from "./MotionProvider";
 const trustBullets = [
 	"Your documents stay private by default",
 	"Export clear evidence for review",
-	"Approve exact payouts from your own wallet",
+	"Keep payout control in your own wallet",
 	"Unlock files only after the right signatures",
 	"Built from real grant and contributor workflow feedback",
 ] as const;
@@ -66,10 +66,9 @@ export default function TrustCtaBand() {
 									Built for teams that need privacy they can explain.
 								</h2>
 								<p className="font-manrope text-base leading-relaxed text-muted-foreground text-pretty">
-									Filosign combines client-side encryption, exportable proof
-									packets, and non-custodial payout workflows. It was built with
-									feedback from the Filecoin ecosystem and ranked first overall
-									in the Filecoin Onchain Cloud Alpha Cohort.
+									Filosign combines private documents, exportable proof packets,
+									gated file release, and payout workflows for teams that need a
+									clear record after everyone signs.
 								</p>
 							</div>
 

@@ -110,20 +110,20 @@ export function buildPricingComparisonRows(): ComparisonRow[] {
 			teams_pro: maxCell("teams_pro", "envelope.recipients.max"),
 		}),
 
-		section("Security & proof"),
-		staticRow("marketing.e2ee", "End-to-end encryption", {
+		section("Privacy & proof"),
+		staticRow("marketing.e2ee", "Private document encryption", {
 			free: true,
 			individual: true,
 			teams: true,
 			teams_pro: true,
 		}),
-		staticRow("marketing.proof_packet", "Proof packet export", {
+		staticRow("marketing.proof_packet", "Exportable proof packets", {
 			free: "Basic audit",
 			individual: true,
 			teams: true,
 			teams_pro: true,
 		}),
-		staticRow("marketing.extended_archival", "Filecoin archival (org add-on)", {
+		staticRow("marketing.extended_archival", "Long-term storage options", {
 			free: null,
 			individual: true,
 			teams: true,
@@ -151,20 +151,20 @@ export function buildPricingComparisonRows(): ComparisonRow[] {
 			featureMarketingLabel("features.envelope.team_visibility"),
 			"features.envelope.team_visibility",
 		),
-		section("Settlement"),
+		section("Workflow actions"),
 		booleanRow(
 			"features.settlement.basic",
-			featureMarketingLabel("features.settlement.basic"),
+			"Payout packets",
 			"features.settlement.basic",
 		),
 		booleanRow(
 			"features.settlement.advanced",
-			featureMarketingLabel("features.settlement.advanced"),
+			"Multi-recipient payout rules",
 			"features.settlement.advanced",
 		),
 		booleanRow(
 			"features.routing.advanced",
-			featureMarketingLabel("features.routing.advanced"),
+			"Advanced signing conditions",
 			"features.routing.advanced",
 		),
 

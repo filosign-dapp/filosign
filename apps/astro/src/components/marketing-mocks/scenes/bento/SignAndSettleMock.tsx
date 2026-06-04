@@ -5,7 +5,7 @@ import MockPanel from "../../kit/MockPanel";
 
 const checklistItems = [
 	"Contractor signs handover",
-	"Payment can settle on-chain",
+	"Payout packet is ready",
 	"Less payout follow-up",
 ] as const;
 
@@ -17,16 +17,16 @@ export default function SignAndSettleMock() {
 					<MockAvatar initial="S" />
 					<div>
 						<div className="font-manrope text-sm font-semibold text-foreground">
-							Sign and settle
+							Sign and release
 						</div>
 						<div className="font-manrope text-xs text-muted-foreground">
-							Optional settlement
+							Optional payout packet
 						</div>
 					</div>
 				</div>
 				<div className="text-right">
 					<div className="font-manrope text-sm font-medium text-muted-foreground">
-						Auto-Payout
+						Ready
 					</div>
 					<div className="mt-1 font-manrope text-2xl text-primary">100%</div>
 				</div>

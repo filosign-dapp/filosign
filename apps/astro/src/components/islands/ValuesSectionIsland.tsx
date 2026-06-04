@@ -19,21 +19,21 @@ const values: {
 	icon: ReactNode;
 }[] = [
 	{
-		title: "Verify anywhere",
+		title: "Proof should travel with you",
 		description:
-			"Signing should leave a record you can share and check, not a line item locked inside a vendor dashboard.",
+			"Signing should leave a record you can export, share, and review without rebuilding the story from emails and screenshots.",
 		icon: <ShieldCheckIcon className="size-6" aria-hidden />,
 	},
 	{
-		title: "Private by default",
+		title: "Sensitive files should stay private",
 		description:
-			"Documents are encrypted before upload. Filosign should not need plaintext access to your agreements.",
+			"Documents are encrypted before upload. Filosign should not need plaintext access to your agreements to run the workflow.",
 		icon: <LockKeyIcon className="size-6" aria-hidden />,
 	},
 	{
-		title: "Non-custodial payouts",
+		title: "Actions should follow signatures",
 		description:
-			"Attached payouts use exact user approvals. Filosign never holds your funds.",
+			"Attach payout packets or gated files when the agreement needs to trigger the next business step.",
 		icon: <WalletIcon className="size-6" aria-hidden />,
 	},
 ];
@@ -48,7 +48,8 @@ export default function ValuesSectionIsland() {
 				>
 					<div className={badgeClass}>What we optimize for</div>
 					<h2 className="max-w-3xl font-manrope text-3xl font-medium tracking-tight text-balance md:text-4xl lg:text-5xl">
-						Agreements should stay private, verifiable, and ready to execute.
+						Agreements should stay private, create proof, and unlock what comes
+						next.
 					</h2>
 				</MarketingInViewStagger>
 

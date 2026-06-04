@@ -18,7 +18,7 @@ export default function SettlementRuleSummary({
 			<div className="flex items-center justify-between">
 				<div>
 					<div className="font-manrope text-xs text-muted-foreground">
-						Payout rule
+						Payout packet
 					</div>
 					<div className="font-manrope text-lg font-medium text-primary">
 						{amount}

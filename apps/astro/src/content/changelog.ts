@@ -24,9 +24,9 @@ export const ChangelogEntries: ChangelogEntry[] = [
 		id: "14",
 		date: "May 18, 2026",
 		type: "Feature",
-		title: "Attached payouts",
+		title: "Payout packets",
 		description: [
-			"Attach a payout to a document so payment releases when signing completes. Funds move directly between payer and recipient, and Filosign never holds your money.",
+			"Attach a payout packet to an agreement so approved payments can move when signing conditions are complete. Funds move directly between payer and recipient, and Filosign never holds your money.",
 		],
 	},
 	{
@@ -53,7 +53,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 		type: "Feature",
 		title: "Field-level signing proof you can export",
 		description: [
-			"See which fields each person signed and export a proof package for counsel, auditors, or counterparties. Stronger audit trails when you need field-by-field evidence.",
+			"See which fields each person signed and export a proof packet for counsel, finance, reviewers, or counterparties.",
 		],
 	},
 	{

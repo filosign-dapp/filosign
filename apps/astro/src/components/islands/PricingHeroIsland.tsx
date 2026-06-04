@@ -24,14 +24,14 @@ export default function PricingHeroIsland() {
 					>
 						<div className="max-w-3xl">
 							<h1 className="text-4xl md:text-5xl lg:text-5xl font-medium font-manrope tracking-tight text-foreground mb-6 leading-[1.1]">
-								Sign agreements you can prove.
+								Price the workflow, not just the signature.
 								<br />
-								Pricing that stays simple.
+								Plans that stay simple.
 							</h1>
 							<p className="text-lg md:text-xl font-light font-manrope text-muted-foreground max-w-xl leading-relaxed">
-								Wallet-native encryption, verifiable signatures, and optional
-								attached payouts, from three documents a month to team-scale
-								volume.
+								Choose the plan for how many private agreement workflows you
+								need, from solo proof exports to team workflows with gated files
+								and payout packets.
 							</p>
 						</div>
 

@@ -31,11 +31,24 @@ export function useSignDocument() {
 		viewer.signPdfNumPages ?? placement.signPdfPageCountHint;
 
 	const compliance = useCompliancePdfExports({
-		file: file ?? null,
+		file: file
+			? {
+					pieceCid: file.pieceCid,
+					status: file.status,
+					isFinalized: Boolean(
+						file.envelopeProgress?.completedAt ||
+							file.envelopeProgress?.revokedBeforeCompletedAt,
+					),
+				}
+			: null,
 		fileData: viewer.fileData,
 	});
 
-	const settlements = useSignSettlementsActions(pieceCid, file);
+	const settlements = useSignSettlementsActions(
+		pieceCid,
+		file,
+		identity.user?.wallet?.address as `0x${string}` | undefined,
+	);
 
 	const actions = useSignActions({
 		pieceCid,
@@ -85,10 +98,12 @@ export function useSignDocument() {
 		},
 		compliance: {
 			pdfExportBusy: compliance.pdfExportBusy,
+			exportsAllowed: compliance.exportsAllowed,
 			handleDownload: compliance.handleDownload,
 			handleDownloadCompliancePdf: compliance.handleDownloadCompliancePdf,
 			handleDownloadDocumentWithCompliancePdf:
 				compliance.handleDownloadDocumentWithCompliancePdf,
+			handleDownloadCompletionPacket: compliance.handleDownloadCompletionPacket,
 		},
 		coldShare: {
 			coldShareDialogOpen: actions.coldShareDialogOpen,

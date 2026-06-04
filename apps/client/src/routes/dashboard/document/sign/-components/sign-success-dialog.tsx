@@ -23,6 +23,8 @@ export function SignSuccessDialog({
 	const { fileData } = useSignViewer();
 	const {
 		pdfExportBusy,
+		exportsAllowed,
+		handleDownloadCompletionPacket,
 		handleDownloadCompliancePdf,
 		handleDownloadDocumentWithCompliancePdf,
 	} = useSignCompliance();
@@ -35,17 +37,37 @@ export function SignSuccessDialog({
 						Document signed
 					</DialogTitle>
 					<DialogDescription>
-						Your signature was recorded successfully. Download the compliance
-						report below.
+						{exportsAllowed
+							? "Your envelope is fully executed. Download the completion packet below."
+							: "Your signature was recorded. Compliance exports unlock when every required party has signed."}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="flex flex-col gap-2 py-2">
+					{exportsAllowed ? (
+						<Button
+							type="button"
+							variant="outline"
+							className="justify-start gap-3 h-auto py-3"
+							onClick={() => void handleDownloadCompletionPacket()}
+							disabled={pdfExportBusy}
+						>
+							<DownloadIcon className="size-5 shrink-0" />
+							<span className="text-left">
+								<span className="block font-medium">
+									Completion packet (ZIP)
+								</span>
+								<span className="block text-xs text-muted-foreground font-normal">
+									Original file(s), compliance report, merged PDF, README
+								</span>
+							</span>
+						</Button>
+					) : null}
 					<Button
 						type="button"
 						variant="outline"
 						className="justify-start gap-3 h-auto py-3"
 						onClick={() => void handleDownloadCompliancePdf()}
-						disabled={pdfExportBusy}
+						disabled={!exportsAllowed || pdfExportBusy}
 					>
 						<ScrollIcon className="size-5 shrink-0" />
 						<span className="text-left">
@@ -60,7 +82,7 @@ export function SignSuccessDialog({
 						variant="outline"
 						className="justify-start gap-3 h-auto py-3"
 						onClick={() => void handleDownloadDocumentWithCompliancePdf()}
-						disabled={!fileData || pdfExportBusy}
+						disabled={!fileData || !exportsAllowed || pdfExportBusy}
 					>
 						<DownloadIcon className="size-5 shrink-0" />
 						<span className="text-left">

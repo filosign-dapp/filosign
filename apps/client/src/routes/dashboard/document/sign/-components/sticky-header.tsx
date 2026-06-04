@@ -9,6 +9,7 @@ import {
 	FileArrowDownIcon,
 	MagnifyingGlassMinusIcon,
 	MagnifyingGlassPlusIcon,
+	PackageIcon,
 	ScrollIcon,
 	SpinnerIcon,
 } from "@phosphor-icons/react";
@@ -18,6 +19,10 @@ import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialo
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
+import {
+	EnvelopeCommentsBlock,
+	pieceDetailToDekSource,
+} from "@/src/lib/domains/files/envelope-comments-block";
 import { SettlementHeaderBadge } from "@/src/routes/dashboard/document/sign/-components/settlement-header-badge";
 import { SettlementRevokeAllowanceButton } from "@/src/routes/dashboard/document/sign/-components/settlement-revoke-allowance-button";
 import { SignConfirmDialog } from "@/src/routes/dashboard/document/sign/-components/sign-confirm-dialog";
@@ -64,9 +69,11 @@ export function SignDocumentStickyHeader() {
 	});
 	const {
 		pdfExportBusy,
+		exportsAllowed,
 		handleDownload,
 		handleDownloadCompliancePdf,
 		handleDownloadDocumentWithCompliancePdf,
+		handleDownloadCompletionPacket,
 	} = useSignCompliance();
 	const { executeRotateInvite, regenerateColdInvite } = useSignColdShare();
 	const [rotateInviteOpen, setRotateInviteOpen] = useState(false);
@@ -205,6 +212,12 @@ export function SignDocumentStickyHeader() {
 					</div>
 
 					<div className="flex items-center gap-2">
+						{file ? (
+							<EnvelopeCommentsBlock
+								pieceCid={pieceCid}
+								dekSource={pieceDetailToDekSource(file)}
+							/>
+						) : null}
 						<Button
 							variant="ghost"
 							size="sm"
@@ -379,6 +392,12 @@ export function SignDocumentStickyHeader() {
 					<div className="w-px h-6 bg-border mx-2" />
 
 					<div className="flex items-center gap-3">
+						{file ? (
+							<EnvelopeCommentsBlock
+								pieceCid={pieceCid}
+								dekSource={pieceDetailToDekSource(file)}
+							/>
+						) : null}
 						<Button
 							variant="ghost"
 							size="sm"
@@ -389,13 +408,29 @@ export function SignDocumentStickyHeader() {
 						>
 							<FileArrowDownIcon className="size-5" />
 						</Button>
+						{exportsAllowed ? (
+							<Button
+								variant="ghost"
+								size="sm"
+								onClick={() => void handleDownloadCompletionPacket()}
+								disabled={!fileData || pdfExportBusy}
+								className="text-muted-foreground hover:text-foreground hover:bg-accent/50 h-8 w-8 p-0"
+								title="Download completion packet (ZIP)"
+							>
+								<PackageIcon className="size-5" />
+							</Button>
+						) : null}
 						<Button
 							variant="ghost"
 							size="sm"
 							onClick={handleDownloadCompliancePdf}
-							disabled={pdfExportBusy}
+							disabled={!exportsAllowed || pdfExportBusy}
 							className="text-muted-foreground hover:text-foreground hover:bg-accent/50 h-8 w-8 p-0"
-							title="Download compliance report"
+							title={
+								exportsAllowed
+									? "Download compliance report"
+									: "Available when fully executed"
+							}
 						>
 							<ScrollIcon className="size-5" />
 						</Button>
@@ -403,7 +438,7 @@ export function SignDocumentStickyHeader() {
 							variant="ghost"
 							size="sm"
 							onClick={handleDownloadDocumentWithCompliancePdf}
-							disabled={!fileData || pdfExportBusy}
+							disabled={!fileData || !exportsAllowed || pdfExportBusy}
 							className="text-muted-foreground hover:text-foreground hover:bg-accent/50 h-8 w-8 p-0"
 							title="Download document with proof"
 						>

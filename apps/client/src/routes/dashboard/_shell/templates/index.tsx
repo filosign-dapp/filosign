@@ -9,6 +9,7 @@ import {
 	useDeleteOrgTemplate,
 	useOrganizationGet,
 } from "@filosign/react/orgs";
+import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import {
 	FileTextIcon,
 	FolderOpenIcon,
@@ -89,17 +90,15 @@ function TemplatesIndexPage() {
 			success: (res: OrgsTemplatesCloneOutput) => {
 				void (async () => {
 					const docMeta = res.document;
-					const fields =
-						(res.placementManifest?.fields as Record<string, unknown>[]) ?? [];
-					const signerEmails: string[] = [
-						...new Set(
-							fields
-								.map((f: { assignedRecipientEmail?: string }) =>
-									f.assignedRecipientEmail?.trim().toLowerCase(),
-								)
-								.filter((v): v is string => Boolean(v)),
-						),
-					];
+					const signerEmails = res.placementManifest
+						? [
+								...new Set(
+									res.placementManifest.fields.map((f) =>
+										normalizePlacementRecipientEmail(f.assignedRecipientEmail),
+									),
+								),
+							]
+						: [];
 					const draft = await buildCreateForm(
 						{
 							documents: [
@@ -167,7 +166,11 @@ function TemplatesIndexPage() {
 			}
 
 			const primaryDoc = draftDetails.documents[0];
-			const placementManifest = { fields: [] };
+			const placementManifest = {
+				version: 1 as const,
+				documents: [],
+				fields: [],
+			};
 
 			await createTemplate.mutateAsync(
 				{

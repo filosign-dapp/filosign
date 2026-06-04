@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Button } from "@/src/lib/components/ui/button";
 import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import {
 	AmendSignerDialog,
@@ -85,6 +86,48 @@ function SignSettlementDialogs() {
 				onConfirm={settlements.onConfirmUpdateRule}
 				pending={settlements.updatePending}
 			/>
+			{settlements.pendingSignerReplacement ? (
+				<div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-950 dark:text-amber-100">
+					<p className="font-medium">Roster change pending</p>
+					<p className="mt-1 text-muted-foreground">
+						Signing is frozen until you execute or cancel this change.
+					</p>
+					<div className="mt-2 flex flex-wrap gap-2">
+						<Button
+							type="button"
+							size="sm"
+							variant="primary"
+							className="h-7 text-xs"
+							disabled={settlements.executeSignerReplacementPending}
+							onClick={() =>
+								void settlements
+									.onExecuteSignerReplacement()
+									.catch(console.error)
+							}
+						>
+							{settlements.executeSignerReplacementPending
+								? "Executing…"
+								: "Execute change"}
+						</Button>
+						<Button
+							type="button"
+							size="sm"
+							variant="outline"
+							className="h-7 text-xs"
+							disabled={settlements.cancelSignerReplacementPending}
+							onClick={() =>
+								void settlements
+									.onCancelSignerReplacement()
+									.catch(console.error)
+							}
+						>
+							{settlements.cancelSignerReplacementPending
+								? "Cancelling…"
+								: "Cancel"}
+						</Button>
+					</div>
+				</div>
+			) : null}
 			<AmendSignerDialog
 				open={settlements.amendDialogOpen}
 				onOpenChange={settlements.setAmendDialogOpen}

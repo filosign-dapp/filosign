@@ -8,6 +8,10 @@ import {
 import { defaultChain } from "@/src/constants";
 import { Button } from "@/src/lib/components/ui/button";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
+import {
+	EnvelopeCommentsBlock,
+	pieceDetailToDekSource,
+} from "@/src/lib/domains/files/envelope-comments-block";
 import { cn } from "@/src/lib/utils";
 import { ConditionalAttachmentsPanel } from "@/src/routes/dashboard/document/sign/-components/conditional-attachments-panel";
 import { SettlementStatusPanel } from "@/src/routes/dashboard/document/sign/-components/settlement-status-panel";
@@ -227,6 +231,11 @@ export function SignDocumentSidebar() {
 						This envelope was voided on-chain and can no longer be signed.
 					</p>
 				) : null}
+
+				<EnvelopeCommentsBlock
+					pieceCid={file?.pieceCid ?? ""}
+					dekSource={file?.pieceCid ? pieceDetailToDekSource(file) : undefined}
+				/>
 
 				{isSender ? (
 					<div className="flex flex-wrap gap-2">

@@ -37,6 +37,7 @@ type Props = {
 	onConfirm: (args: {
 		oldCommitment: Hex;
 		newCommitment: Hex;
+		newEmail: string;
 	}) => Promise<void>;
 	pending?: boolean;
 };
@@ -70,6 +71,7 @@ export function AmendSignerDialog({
 		await onConfirm({
 			oldCommitment: selected.commitment,
 			newCommitment,
+			newEmail: normalizePlacementRecipientEmail(newEmail.trim()),
 		});
 		onOpenChange(false);
 	};
@@ -80,8 +82,9 @@ export function AmendSignerDialog({
 				<DialogHeader>
 					<DialogTitle>Change a signer</DialogTitle>
 					<DialogDescription>
-						Swap one signer for someone else before they sign. We won&apos;t
-						resend the envelope—you may want to tell them yourself.
+						Replace one signer with a new email. If someone has already signed,
+						signing pauses until you execute the change; cleared signatures must
+						be collected again.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4 py-1">

@@ -236,7 +236,7 @@ export function useSignInviteUnlock(args: {
 		if (!profile.encryptionPublicKey?.trim()) {
 			throw new Error("Missing recipient encryption key");
 		}
-		return profile.encryptionPublicKey as Hex;
+		return profile.encryptionPublicKey;
 		// rpc is a stable Filosign proxy; omit from deps to avoid effect churn
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [session, queryClient]);
@@ -316,7 +316,7 @@ export function useSignInviteUnlock(args: {
 
 			const result = await coldDecrypt.mutateAsync({
 				phrase: normalizedPhrase,
-				wrappedEncryptionKey: invite.wrappedEncryptionKey as Hex,
+				wrappedEncryptionKey: invite.wrappedEncryptionKey,
 				downloadUrl: invite.downloadUrl,
 			});
 

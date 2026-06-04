@@ -6,10 +6,19 @@ import {
 } from "..";
 
 const minimalManifest = zPlacementManifest.parse({
-	version: 2,
+	version: 1,
+	documents: [
+		{
+			id: "doc1",
+			name: "contract.pdf",
+			sha256Plaintext: `0x${"ab".repeat(32)}`,
+			pageCount: 1,
+		},
+	],
 	fields: [
 		{
 			id: "f1",
+			documentId: "doc1",
 			pageIndex: 0,
 			rect: { x: 0.1, y: 0.2, width: 0.3, height: 0.05 },
 			assignedRecipientEmail: "signer@example.com",
@@ -31,6 +40,7 @@ describe("computePlacementCommitment", () => {
 		const commitment = computePlacementCommitment(minimalManifest);
 		const permuted = {
 			fields: raw.fields,
+			documents: raw.documents,
 			version: raw.version,
 		};
 		const recommit = computePlacementCommitment(

@@ -33,6 +33,8 @@ export const zSignerComplianceRow = z.object({
 	blockTimestampFromTx: z.number().int().nonnegative().nullable(),
 	acknowledgedAtIso: z.string().nullable(),
 	firstViewedAtIso: z.string().nullable(),
+	requestIp: z.string().nullable().optional(),
+	requestUserAgent: z.string().nullable().optional(),
 });
 
 export const zPartyRole = z.enum(["sender", "signer", "viewer"]);
@@ -52,6 +54,7 @@ export const zOnchainRegistrationSnapshot = z.object({
 	signersCommitment: zHexString(),
 	viewersCommitment: zHexString(),
 	placementCommitment: zHexString(),
+	documentSha256: zHexString(),
 	senderEmailCommitment: zHexString(),
 	senderAuthSubjectCommitment: zHexString(),
 	requiredSignersCount: z.number().int().min(0).max(255),
@@ -143,8 +146,11 @@ export const zOffChainEvidence = z.object({
 	payoutRecipientAcknowledgements: z.array(zSettlementRecipientAckRow),
 });
 
+export const zComplianceExportKind = z.enum(["zip", "pdf", "json"]);
+export type ComplianceExportKind = z.infer<typeof zComplianceExportKind>;
+
 export const zComplianceBundle = z.object({
-	version: z.literal(7),
+	version: z.literal(1),
 	pieceCid: z.string(),
 	chainId: z.number().int(),
 	exportedAtIso: z.string(),
@@ -155,6 +161,7 @@ export const zComplianceBundle = z.object({
 		sender: zEvmAddress(),
 		registrationTxHash: zHexString(),
 		createdAtIso: z.string(),
+		registerDocumentSha256: zHexString(),
 	}),
 	parties: z.array(zPartyRow),
 	onchainRegistration: zOnchainRegistrationSnapshot.nullable(),

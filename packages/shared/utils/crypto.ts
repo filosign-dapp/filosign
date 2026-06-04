@@ -50,6 +50,10 @@ export function draftCommentInfo(draftId: string, commentId: string): string {
 	return `filosign:draft-comment:v1:${draftId}:${commentId}`;
 }
 
+export function fileCommentInfo(pieceCid: string, commentId: string): string {
+	return `filosign:file-comment:v1:${pieceCid}:${commentId}`;
+}
+
 export function draftReviewLinkInfo(
 	draftId: string,
 	inviteToken: string,

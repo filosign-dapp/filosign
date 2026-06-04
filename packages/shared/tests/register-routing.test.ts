@@ -11,10 +11,19 @@ import {
 } from "..";
 
 const manifest: PlacementManifest = {
-	version: 2,
+	version: 1,
+	documents: [
+		{
+			id: "doc1",
+			name: "contract.pdf",
+			sha256Plaintext: `0x${"cd".repeat(32)}`,
+			pageCount: 1,
+		},
+	],
 	fields: [
 		{
 			id: "f1",
+			documentId: "doc1",
 			pageIndex: 0,
 			rect: { x: 0, y: 0, width: 0.1, height: 0.1 },
 			assignedRecipientEmail: "a@example.com",
@@ -23,6 +32,7 @@ const manifest: PlacementManifest = {
 		},
 		{
 			id: "f2",
+			documentId: "doc1",
 			pageIndex: 0,
 			rect: { x: 0.1, y: 0, width: 0.1, height: 0.1 },
 			assignedRecipientEmail: "b@example.com",
@@ -44,10 +54,9 @@ describe("register routing helpers", () => {
 		expect(usesAdvancedRegisterRouting(undefined)).toBe(false);
 	});
 
-	it("ignores legacy optionalSignerEmails — all manifest signers are required", () => {
+	it("all manifest signers are required commitments", () => {
 		const calldata = buildRegisterRoutingCalldata({
 			placementManifest: manifest,
-			routing: { optionalSignerEmails: ["b@example.com"] },
 		});
 		expect(calldata.requiredCommitments).toHaveLength(2);
 		expect(calldata.optionalCommitments).toHaveLength(0);

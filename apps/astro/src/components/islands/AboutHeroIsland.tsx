@@ -16,12 +16,12 @@ export default function AboutHeroIsland() {
 							className="flex flex-col items-start text-left"
 						>
 							<h1 className="mb-6 font-manrope text-4xl font-medium tracking-tight text-foreground text-balance md:text-5xl lg:text-6xl">
-								We build signing workflows you can trust after the ink dries.
+								We build agreements that keep working after they are signed.
 							</h1>
 							<p className="max-w-3xl font-manrope text-xl leading-relaxed text-muted-foreground text-pretty">
-								Encrypted agreements, records you can verify, and optional
-								payouts when everyone has signed, for teams whose deals should
-								not stop at a PDF.
+								Filosign gives sensitive workflows one place to sign, prove,
+								release files, and attach approved payouts, without making teams
+								juggle PDFs, folders, chats, and payment tools.
 							</p>
 						</MarketingStagger>
 					</div>

@@ -19,7 +19,7 @@ const useCases = [
 	{
 		title: "Bounty and hackathon payouts",
 		outcome:
-			"Collect winner paperwork first, then settle approved payouts with a clean record for finance and community review.",
+			"Collect winner paperwork first, then release approved payouts with a clean record for finance and community review.",
 		image: landingMedia.useCases.bounties,
 	},
 	{

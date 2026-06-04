@@ -83,44 +83,44 @@ export default function BentoGridIsland() {
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 				<BentoCard
 					imageSrc="/images/stock_1.webp"
-					imageAlt="Legal Compliance"
+					imageAlt="Agreement evidence"
 					badgeIcon={<GlobeIcon className="size-5 text-black" weight="fill" />}
-					badgeText="Global"
+					badgeText="Evidence"
 					badgeBgColor="bg-primary-light"
 					stat="4"
-					subtitle="Evidence pillars"
-					title="Built for legal evidence"
-					description="Designed to support evidence of intent, attribution, record integrity, and retention patterns used in e-signature frameworks."
+					subtitle="Proof pillars"
+					title="Proof you can explain"
+					description="Capture intent, attribution, record integrity, and retention details in a proof packet your team can review later."
 					delay={0.1}
 				/>
 
 				<BentoCard
 					imageSrc="/images/stock_3.webp"
-					imageAlt="Perpetual Storage"
+					imageAlt="Private storage"
 					badgeIcon={
 						<HardDrivesIcon className="size-5 text-black" weight="fill" />
 					}
-					badgeText="Perpetual"
+					badgeText="Private"
 					badgeBgColor="bg-primary-light"
 					stat={<InfinityIcon className="size-16 -my-2 text-white" />}
 					subtitle="Verifiable records"
-					title="Long-term proof options"
-					description="Encrypted documents and proof records can use long-term verifiable storage options without exposing agreement contents."
+					title="Private records"
+					description="Keep document contents encrypted while still producing records that are useful for review and follow-up."
 					delay={0.2}
 				/>
 
 				<BentoCard
 					imageSrc="/images/stock_5.webp"
-					imageAlt="Accelerated Workflow"
+					imageAlt="Workflow action"
 					badgeIcon={
 						<LightningIcon className="size-4 text-black" weight="fill" />
 					}
-					badgeText="Velocity"
+					badgeText="Action"
 					badgeBgColor="bg-secondary-medium"
 					stat="1"
 					subtitle="Workflow"
-					title="Programmable Settlement"
-					description="Attach non-custodial payout rules so payment can settle on-chain when signing conditions are met."
+					title="Payout packets"
+					description="Attach approved payout rules so the agreement can trigger payment follow-up when signing conditions are met."
 					delay={0.3}
 				/>
 			</div>

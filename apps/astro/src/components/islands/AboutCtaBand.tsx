@@ -36,11 +36,12 @@ export default function AboutCtaBand() {
 						<div className="flex flex-col gap-6">
 							<div className="space-y-3">
 								<h2 className="text-2xl tracking-tight text-balance md:text-3xl">
-									Ready to send your first agreement?
+									Ready to move the whole workflow?
 								</h2>
 								<p className="font-manrope text-base leading-relaxed text-muted-foreground">
-									Pick a plan or try the sandbox: encrypted signing, exportable
-									records, and optional settlement when you need it.
+									Pick a plan or try the sandbox: private documents, signatures,
+									proof, gated files, and payout packets when the agreement
+									calls for them.
 								</p>
 								<a
 									href="/security"

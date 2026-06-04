@@ -207,8 +207,8 @@ export default function BlogListIsland({ posts }: BlogListIslandProps) {
 								Newsletter
 							</h3>
 							<p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-								Get cryptographic insights and product updates delivered
-								directly to your inbox.
+								Get product notes on private agreements, proof, handoffs, and
+								payout workflows.
 							</p>
 
 							{subscribed ? (
@@ -269,11 +269,11 @@ export default function BlogListIsland({ posts }: BlogListIslandProps) {
 							<div className="absolute -right-16 -top-16 w-32 h-32 rounded-full bg-emerald-500/25 blur-2xl transition-transform duration-500 group-hover:scale-150" />
 
 							<h3 className="font-manrope text-lg font-semibold tracking-tight text-white mb-2">
-								Sovereign Agreements
+								Agreements that unlock the next step
 							</h3>
 							<p className="text-xs text-primary-foreground/80 leading-relaxed mb-6">
-								Experience end-to-end client-side encryption and post-quantum
-								signing with programmable settlements.
+								Try private signing with proof exports, gated files, and payout
+								packets when your workflow needs them.
 							</p>
 							<a
 								href={MARKETING_CTA.sandboxUrl}

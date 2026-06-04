@@ -31,7 +31,7 @@ const steps = [
 	{
 		kicker: "04",
 		title: "Export proof or release action",
-		body: "Download a proof packet, release gated files, or settle an approved payout once the signing conditions are complete.",
+		body: "Download a proof packet, release gated files, or move an approved payout once the signing conditions are complete.",
 		mock: <SettleStepMock />,
 	},
 ] as const satisfies ReadonlyArray<{

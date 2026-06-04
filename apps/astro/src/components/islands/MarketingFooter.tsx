@@ -34,9 +34,9 @@ function getFooterSections() {
 				{ label: "Terms of Service", href: "/terms" },
 				{ label: "Privacy Policy", href: "/privacy" },
 				{ label: "Acceptable Use", href: "/acceptable-use" },
-				{ label: "Onchain e-signatures", href: "/legal/e-signature-validity" },
+				{ label: "E-signature evidence", href: "/legal/e-signature-validity" },
 				{
-					label: "Non-custodial Payouts",
+					label: "Payout attachment",
 					href: "/legal/non-custodial-settlement",
 				},
 			],
@@ -64,7 +64,7 @@ export default function MarketingFooter() {
 								viewport={{ once: true }}
 								className="text-4xl md:text-5xl font-semibold tracking-tight mb-8 font-manrope text-balance"
 							>
-								Start a private agreement workflow
+								Start an agreement that unlocks the next step
 							</motion.h2>
 						</div>
 						<motion.div

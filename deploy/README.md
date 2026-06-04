@@ -6,7 +6,7 @@
 |------|---------|
 | [`compose.dev.yml`](compose.dev.yml) | **Daily dev** — Dragonfly on `localhost:6379` (minimal flags; session cache) |
 | [`compose.dev-full.yml`](compose.dev-full.yml) | Local Postgres + pgBackRest → R2 + **Dragonfly with BullMQ flags** (prod-shaped drill) |
-| [`compose.data.yml`](compose.data.yml) | **Production data stack** — Postgres (`archive_mode`), pgBackRest, Dragonfly |
+| [`compose.data.yml`](compose.data.yml) | **Production data stack** — Postgres+pgBackRest image, Dragonfly |
 | [`compose.app.yml`](compose.app.yml) | **Production app stack** — API + worker (`SERVER_ROLE`, worker replicas 1) |
 | [`compose.production.yml`](compose.production.yml) | **Optional all-in-one** — all five services for first solo VPS |
 
@@ -16,8 +16,9 @@ Dokploy wiring: [`project/ops/dokploy-deploy.md`](../project/ops/dokploy-deploy.
 
 | Service | Default image | Notes |
 |---------|---------------|--------|
-| Postgres | `postgres:18-alpine` | Volume mount **`/var/lib/postgresql`** (PG 18 layout; not `/data`) |
-| pgBackRest | `percona/percona-pgbackrest:2.58.0-1` | [pgBackRest 2.58.0](https://pgbackrest.org/release.html) |
+| Postgres (VPS data) | `filosign-postgres-pgbackrest:18` (build [`postgres/Dockerfile`](postgres/Dockerfile)) | Postgres 18 + PGDG pgBackRest in **one container** — see [`postgres-pgbackrest-dokploy.md`](../project/ops/postgres-pgbackrest-dokploy.md) |
+| Postgres (local dev-full) | `postgres:18-alpine` | Volume mount **`/var/lib/postgresql`** (PG 18 layout) |
+| pgBackRest (dev-full sidecar only) | `percona/percona-pgbackrest:2.58.0-1` | Shared `postgres_data`; **no `pg1-host`** in conf |
 | Dragonfly | `docker.dragonflydb.io/dragonflydb/dragonfly:v1.37.2` | BullMQ flags in `compose.data.yml` |
 
 Override via [`deploy/.env.example`](.env.example) → copy to `deploy/.env` or set in Dokploy.

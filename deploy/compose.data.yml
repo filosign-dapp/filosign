@@ -16,22 +16,14 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-filosign}
       PGBACKREST_STANZA: filosign
-      PGBACKREST_REPO1_TYPE: s3
+      # Secrets only — paths/stanza in deploy/postgres/pgbackrest.conf (baked into image)
       PGBACKREST_REPO1_S3_ENDPOINT: ${PGBACKREST_REPO1_S3_ENDPOINT:?set PGBACKREST_REPO1_S3_ENDPOINT}
       PGBACKREST_REPO1_S3_BUCKET: ${PGBACKREST_REPO1_S3_BUCKET:?set PGBACKREST_REPO1_S3_BUCKET}
       PGBACKREST_REPO1_S3_KEY: ${PGBACKREST_REPO1_S3_KEY:?set PGBACKREST_REPO1_S3_KEY}
       PGBACKREST_REPO1_S3_KEY_SECRET: ${PGBACKREST_REPO1_S3_KEY_SECRET:?set PGBACKREST_REPO1_S3_KEY_SECRET}
-      PGBACKREST_REPO1_S3_REGION: ${PGBACKREST_REPO1_S3_REGION:-auto}
-      PGBACKREST_REPO1_S3_URI_STYLE: ${PGBACKREST_REPO1_S3_URI_STYLE:-path}
-      PGBACKREST_REPO1_CIPHER_TYPE: ${PGBACKREST_REPO1_CIPHER_TYPE:-aes-256-cbc}
       PGBACKREST_REPO1_CIPHER_PASS: ${PGBACKREST_REPO1_CIPHER_PASS:?set PGBACKREST_REPO1_CIPHER_PASS}
-      # archive-push runs inside this container — pg1-host must be unset (not "postgres")
-      PGBACKREST_PG1_PATH: ${PGBACKREST_PG1_PATH:-/var/lib/postgresql/18/docker}
       PGBACKREST_PG1_USER: ${POSTGRES_USER:-filosign}
       PGBACKREST_PG1_DATABASE: ${POSTGRES_DB:-filosign}
-      PGBACKREST_REPO1_RETENTION_FULL: ${PGBACKREST_REPO1_RETENTION_FULL:-2}
-      # Locks/spool — must match postgres OS user (not root /tmp/pgbackrest from docker exec)
-      PGBACKREST_SPOOL_PATH: /var/lib/pgbackrest
     volumes:
       # PG 18+: mount parent dir (PGDATA = /var/lib/postgresql/18/docker)
       - postgres_data:/var/lib/postgresql

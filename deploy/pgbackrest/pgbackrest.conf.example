@@ -13,7 +13,9 @@ repo1-retention-full-type=time
 repo1-retention-full-time=30d
 repo1-cipher-type=aes-256-cbc
 repo1-cipher-pass=change-me-long-random-passphrase
-spool-path=/var/lib/pgbackrest
+lock-path=/var/lib/pgbackrest/lock
+spool-path=/var/lib/pgbackrest/spool
+log-path=/var/lib/pgbackrest/log
 
 [filosign]
 # PG 18 official image: PGDATA is /var/lib/postgresql/18/docker (volume mount at /var/lib/postgresql)

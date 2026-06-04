@@ -29,6 +29,8 @@ export type FullSystemFixture = {
 };
 
 export const defaultPlacement = `0x${"ab".repeat(32)}` as Hex;
+/** Non-zero register document hash for tests (distinct from placement). */
+export const defaultDocumentSha256 = `0x${"12".repeat(32)}` as Hex;
 export const defaultSenderEmail = `0x${"cd".repeat(32)}` as Hex;
 export const defaultSenderAuth = `0x${"ef".repeat(32)}` as Hex;
 export const zeroOrg =
@@ -166,6 +168,7 @@ export type RegisterEnvelopeOptions = {
 	quorumSet?: Hex[];
 	signature?: Hex;
 	placementCommitment?: Hex;
+	documentSha256?: Hex;
 	senderEmailCommitment?: Hex;
 	senderAuthSubjectCommitment?: Hex;
 	orgIdCommitment?: Hex;
@@ -219,6 +222,7 @@ export async function buildRegisterEnvelopeInput(
 					signersCommitment,
 					viewersCommitment,
 					placementCommitment: options.placementCommitment ?? defaultPlacement,
+					documentSha256: options.documentSha256 ?? defaultDocumentSha256,
 					senderEmailCommitment:
 						options.senderEmailCommitment ?? defaultSenderEmail,
 					senderAuthSubjectCommitment:
@@ -252,6 +256,7 @@ export async function buildRegisterEnvelopeInput(
 		timestamp,
 		signature,
 		placementCommitment: options.placementCommitment ?? defaultPlacement,
+		documentSha256: options.documentSha256 ?? defaultDocumentSha256,
 	};
 }
 
@@ -294,6 +299,8 @@ export async function registerEnvelopeSignatureStep(args: {
 		args;
 	const routingOrder = args.routingOrder ?? [];
 	const quorumSet = args.quorumSet ?? [];
+	const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
+	const reg = await ctx.envelopeRegistry.read.envelopeRegistrations([cidId]);
 	const signTs = await latestBlockTimestamp(ctx.publicClient);
 	const signSig = await signRegisterEnvelopeSignature({
 		wallet: signerWallet,
@@ -306,6 +313,7 @@ export async function registerEnvelopeSignatureStep(args: {
 		dl3SignatureCommitment: signDefaults.dl3,
 		completionsRoot: signDefaults.root,
 		leafSchemaVersion: signDefaults.leafVersion,
+		signersCommitment: reg.signersCommitment,
 		timestamp: signTs,
 	});
 	await ctx.envelopeRegistry.write.registerEnvelopeSignature(

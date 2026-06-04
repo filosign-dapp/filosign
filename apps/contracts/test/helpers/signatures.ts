@@ -2,6 +2,8 @@ import type { Account, Address, Hex, WalletClient } from "viem";
 import { encodePacked, keccak256, toBytes } from "viem";
 
 const ZERO_BYTES20 = "0x0000000000000000000000000000000000000000" as const;
+/** FSEnvelopeRegistry EIP-712 domain version (SignEnvelope v5 binds signersCommitment). */
+export const REGISTRY_EIP712_VERSION = "7" as const;
 
 export const SALT_PIN = `0x${"01".repeat(16)}` as Hex;
 export const SALT_SEED = `0x${"02".repeat(16)}` as Hex;
@@ -67,6 +69,7 @@ export async function signRegisterEnvelope(args: {
 	signersCommitment: Hex;
 	viewersCommitment?: Hex;
 	placementCommitment: Hex;
+	documentSha256: Hex;
 	senderEmailCommitment: Hex;
 	senderAuthSubjectCommitment: Hex;
 	orgIdCommitment?: Hex;
@@ -92,7 +95,7 @@ export async function signRegisterEnvelope(args: {
 		account,
 		domain: {
 			name: "FSEnvelopeRegistry",
-			version: "4",
+			version: REGISTRY_EIP712_VERSION,
 			chainId: args.chainId,
 			verifyingContract: args.envelopeRegistryAddress,
 		},
@@ -103,6 +106,7 @@ export async function signRegisterEnvelope(args: {
 				{ name: "signersCommitment", type: "bytes20" },
 				{ name: "viewersCommitment", type: "bytes20" },
 				{ name: "placementCommitment", type: "bytes32" },
+				{ name: "documentSha256", type: "bytes32" },
 				{ name: "senderEmailCommitment", type: "bytes32" },
 				{ name: "senderAuthSubjectCommitment", type: "bytes32" },
 				{ name: "orgIdCommitment", type: "bytes32" },
@@ -122,6 +126,7 @@ export async function signRegisterEnvelope(args: {
 			signersCommitment: args.signersCommitment,
 			viewersCommitment,
 			placementCommitment: args.placementCommitment,
+			documentSha256: args.documentSha256,
 			senderEmailCommitment: args.senderEmailCommitment,
 			senderAuthSubjectCommitment: args.senderAuthSubjectCommitment,
 			orgIdCommitment,
@@ -136,15 +141,15 @@ export async function signRegisterEnvelope(args: {
 	});
 }
 
-export async function signAmendSigner(args: {
+export async function signProposeSignerReplacement(args: {
 	wallet: WalletClient;
 	envelopeRegistryAddress: Address;
 	chainId: number;
 	pieceCid: string;
 	oldCommitment: Hex;
 	newCommitment: Hex;
+	signersCommitmentAfter: Hex;
 	timestamp: bigint;
-	/** Defaults to connected wallet; use org controller for org-initiated amend. */
 	recaller?: Address;
 }): Promise<Hex> {
 	const account = args.wallet.account as Account;
@@ -155,25 +160,63 @@ export async function signAmendSigner(args: {
 		account,
 		domain: {
 			name: "FSEnvelopeRegistry",
-			version: "4",
+			version: REGISTRY_EIP712_VERSION,
 			chainId: args.chainId,
 			verifyingContract: args.envelopeRegistryAddress,
 		},
 		types: {
-			AmendSigner: [
+			ProposeSignerReplacement: [
 				{ name: "cidIdentifier", type: "bytes32" },
 				{ name: "recaller", type: "address" },
 				{ name: "oldCommitment", type: "bytes32" },
 				{ name: "newCommitment", type: "bytes32" },
+				{ name: "signersCommitmentAfter", type: "bytes20" },
 				{ name: "timestamp", type: "uint256" },
 			],
 		},
-		primaryType: "AmendSigner",
+		primaryType: "ProposeSignerReplacement",
 		message: {
 			cidIdentifier: cidId,
 			recaller,
 			oldCommitment: args.oldCommitment,
 			newCommitment: args.newCommitment,
+			signersCommitmentAfter: args.signersCommitmentAfter,
+			timestamp: args.timestamp,
+		},
+	});
+}
+
+export async function signCancelSignerReplacement(args: {
+	wallet: WalletClient;
+	envelopeRegistryAddress: Address;
+	chainId: number;
+	pieceCid: string;
+	timestamp: bigint;
+	recaller?: Address;
+}): Promise<Hex> {
+	const account = args.wallet.account as Account;
+	const cidId = keccak256(toBytes(args.pieceCid));
+	const recaller = args.recaller ?? account.address;
+
+	return args.wallet.signTypedData({
+		account,
+		domain: {
+			name: "FSEnvelopeRegistry",
+			version: REGISTRY_EIP712_VERSION,
+			chainId: args.chainId,
+			verifyingContract: args.envelopeRegistryAddress,
+		},
+		types: {
+			CancelSignerReplacement: [
+				{ name: "cidIdentifier", type: "bytes32" },
+				{ name: "recaller", type: "address" },
+				{ name: "timestamp", type: "uint256" },
+			],
+		},
+		primaryType: "CancelSignerReplacement",
+		message: {
+			cidIdentifier: cidId,
+			recaller,
 			timestamp: args.timestamp,
 		},
 	});
@@ -196,7 +239,7 @@ export async function signRecallEnvelope(args: {
 		account,
 		domain: {
 			name: "FSEnvelopeRegistry",
-			version: "4",
+			version: REGISTRY_EIP712_VERSION,
 			chainId: args.chainId,
 			verifyingContract: args.envelopeRegistryAddress,
 		},
@@ -229,6 +272,7 @@ export async function signRegisterEnvelopeSignature(args: {
 	dl3SignatureCommitment: Hex;
 	completionsRoot: Hex;
 	leafSchemaVersion: number;
+	signersCommitment: Hex;
 	timestamp: bigint;
 }): Promise<Hex> {
 	const account = args.wallet.account as Account;
@@ -238,7 +282,7 @@ export async function signRegisterEnvelopeSignature(args: {
 		account,
 		domain: {
 			name: "FSEnvelopeRegistry",
-			version: "4",
+			version: REGISTRY_EIP712_VERSION,
 			chainId: args.chainId,
 			verifyingContract: args.envelopeRegistryAddress,
 		},
@@ -252,6 +296,7 @@ export async function signRegisterEnvelopeSignature(args: {
 				{ name: "dl3SignatureCommitment", type: "bytes20" },
 				{ name: "completionsRoot", type: "bytes32" },
 				{ name: "leafSchemaVersion", type: "uint8" },
+				{ name: "signersCommitment", type: "bytes20" },
 				{ name: "timestamp", type: "uint256" },
 			],
 		},
@@ -265,6 +310,7 @@ export async function signRegisterEnvelopeSignature(args: {
 			dl3SignatureCommitment: args.dl3SignatureCommitment,
 			completionsRoot: args.completionsRoot,
 			leafSchemaVersion: args.leafSchemaVersion,
+			signersCommitment: args.signersCommitment,
 			timestamp: args.timestamp,
 		},
 	});

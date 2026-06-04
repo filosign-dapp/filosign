@@ -9,27 +9,28 @@ interface IFSEnvelopeRegistry {
     struct EnvelopeRegistration {
         bytes32 cidIdentifier;
         address sender;
-        bytes20 signersCommitment;
-        bytes20 viewersCommitment;
-        bytes32 placementCommitment;
-        bytes32 senderEmailCommitment;
-        bytes32 senderAuthSubjectCommitment;
-        mapping(bytes32 => bool) viewerEmailRegistered;
-        mapping(bytes32 => bool) isRequiredSigner;
-        mapping(bytes32 => bytes) signatures;
-        bytes32[] signerRoster;
-        uint256 timestamp;
-        bytes32 orgIdCommitment;
-        uint48 completedAt;
-        uint48 revokedBeforeCompletedAt;
-        address revokedBy;
+        uint48 timestamp;
         uint8 requiredSignersCount;
         uint8 requiredSignaturesCount;
         uint8 signaturesCount;
         uint8 quorumN;
         RoutingMode routingMode;
+        bytes20 signersCommitment;
+        uint48 completedAt;
+        bytes20 viewersCommitment;
+        uint48 revokedBeforeCompletedAt;
+        address revokedBy;
+        bytes32 placementCommitment;
+        bytes32 documentSha256;
+        bytes32 senderEmailCommitment;
+        bytes32 senderAuthSubjectCommitment;
+        bytes32 orgIdCommitment;
         bytes32 routingOrderHash;
         bytes32 quorumSetHash;
+        bytes32[] signerRoster;
+        mapping(bytes32 => bool) viewerEmailRegistered;
+        mapping(bytes32 => bool) isRequiredSigner;
+        mapping(bytes32 => bytes) signatures;
     }
 
     struct EnvelopeRegistrationView {
@@ -38,6 +39,7 @@ interface IFSEnvelopeRegistry {
         bytes20 signersCommitment;
         bytes20 viewersCommitment;
         bytes32 placementCommitment;
+        bytes32 documentSha256;
         bytes32 senderEmailCommitment;
         bytes32 senderAuthSubjectCommitment;
         uint8 requiredSignersCount;
@@ -56,11 +58,24 @@ interface IFSEnvelopeRegistry {
 
     event EnvelopeRegistered();
     event EnvelopeSigned();
-    event SignerAmended();
+    event SignerReplacementProposed();
+    event SignerReplacementExecuted();
+    event SignerReplacementCancelled();
     event ServerUpdated();
     event EnvelopeRevokedBeforeComplete();
     event EnvelopeCompleted();
     event OrgControllersSet();
+    struct PendingSignerReplacement {
+        bytes32 oldCommitment;
+        bytes32 newCommitment;
+        address recaller;
+        uint48 proposedAt;
+        bool active;
+        bytes32 routingOrderHashAfter;
+        bytes32 quorumSetHashAfter;
+        bytes20 signersCommitmentAfter;
+    }
+
     function server() external view returns (address);
     function setServer(address newServer_) external;
     function isOrgController(bytes32 orgIdCommitment_, address wallet_) external view returns (bool);
@@ -77,6 +92,7 @@ interface IFSEnvelopeRegistry {
         bytes20 signersCommitment;
         bytes20 viewersCommitment;
         bytes32 placementCommitment;
+        bytes32 documentSha256;
         bytes32 senderEmailCommitment;
         bytes32 senderAuthSubjectCommitment;
         bytes32 orgIdCommitment;
@@ -95,6 +111,7 @@ interface IFSEnvelopeRegistry {
         bytes20 signersCommitment;
         bytes20 viewersCommitment;
         bytes32 placementCommitment;
+        bytes32 documentSha256;
         bytes32 senderEmailCommitment;
         bytes32 senderAuthSubjectCommitment;
         uint8 routingMode;
@@ -120,10 +137,14 @@ interface IFSEnvelopeRegistry {
         uint256 timestamp;
         bytes signature;
         bytes32 placementCommitment;
+        bytes32 documentSha256;
     }
 
     function registerEnvelope(RegisterEnvelopeInput calldata input) external;
-    function amendSigner(string calldata pieceCid_, address recaller_, bytes32 oldCommitment_, bytes32 newCommitment_, uint256 timestamp_, bytes calldata signature_, bytes32[] calldata routingOrderBefore_, bytes32[] calldata routingOrderAfter_, bytes32[] calldata quorumSetBefore_, bytes32[] calldata quorumSetAfter_) external;
+    function getPendingSignerReplacement(bytes32 cidId) external view returns (bool active, bytes32 oldCommitment, bytes32 newCommitment, address recaller, bytes32 routingOrderHashAfter, bytes32 quorumSetHashAfter, bytes20 signersCommitmentAfter, uint48 proposedAt);
+    function proposeSignerReplacement(string calldata pieceCid_, address recaller_, bytes32 oldCommitment_, bytes32 newCommitment_, uint256 timestamp_, bytes calldata signature_, bytes32[] calldata routingOrderBefore_, bytes32[] calldata routingOrderAfter_, bytes32[] calldata quorumSetBefore_, bytes32[] calldata quorumSetAfter_) external;
+    function executeSignerReplacement(string calldata pieceCid_, address recaller_, bytes32[] calldata routingOrderAfter_, bytes32[] calldata quorumSetAfter_) external;
+    function cancelSignerReplacement(string calldata pieceCid_, address recaller_, uint256 timestamp_, bytes calldata signature_) external;
     function recallEnvelope(string calldata pieceCid_, address recaller_, uint256 timestamp_, bytes calldata signature_) external;
     function registerEnvelopeSignature(string calldata pieceCid_, address sender_, address signerWallet_, bytes32 signerEmailCommitment_, bytes32 authSubjectCommitment_, bytes20 dl3SignatureCommitment_, uint256 timestamp_, bytes calldata signature_, bytes32 completionsRoot_, uint8 leafSchemaVersion_, bytes32[] calldata routingOrder_, bytes32[] calldata quorumSet_) external;
     function isSigner(bytes32 cidId, bytes32 signerEmailCommitment_) external view returns (bool);

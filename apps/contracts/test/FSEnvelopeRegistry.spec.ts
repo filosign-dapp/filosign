@@ -5,6 +5,7 @@ import type { Hex } from "viem";
 import { keccak256, parseAbiItem, toBytes } from "viem";
 import {
 	buildRegisterEnvelopeInput,
+	defaultDocumentSha256,
 	defaultPlacement,
 	defaultSenderAuth,
 	defaultSenderEmail,
@@ -18,7 +19,7 @@ import {
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
 import {
 	mergeSortedCommitments,
-	signAmendSigner,
+	signProposeSignerReplacement,
 	signRecallEnvelope,
 	signRegisterEnvelope,
 	signRegisterEnvelopeSignature,
@@ -148,6 +149,8 @@ describe("FSEnvelopeRegistry", () => {
 		const pieceCid = "invalid-signer";
 		await registerEnvelopeOnly(ctx, pieceCid, [onFile]);
 
+		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
+		const reg = await ctx.envelopeRegistry.read.envelopeRegistrations([cidId]);
 		const ts = await latestBlockTimestamp(ctx.publicClient);
 		const signSig = await signRegisterEnvelopeSignature({
 			wallet: ctx.payout,
@@ -160,6 +163,7 @@ describe("FSEnvelopeRegistry", () => {
 			dl3SignatureCommitment: `0x${"88".repeat(20)}` as Hex,
 			completionsRoot: defaultPlacement,
 			leafSchemaVersion: 1,
+			signersCommitment: reg.signersCommitment,
 			timestamp: ts,
 		});
 		await assert.rejects(
@@ -331,27 +335,30 @@ describe("FSEnvelopeRegistry", () => {
 		).to.equal(true);
 	});
 
-	it("amendSigner replaces commitment before sign", async () => {
+	it("proposeSignerReplacement instant path replaces commitment before sign", async () => {
 		const ctx = await deployFullSystem();
 		const oldC = `0x${"51".repeat(32)}` as Hex;
 		const newC = `0x${"52".repeat(32)}` as Hex;
-		const pieceCid = "amend-signer";
+		const pieceCid = "propose-signer-instant";
 		await registerEnvelopeOnly(ctx, pieceCid, [oldC]);
 
+		const signersCommitmentAfter =
+			await ctx.envelopeRegistry.read.computeEmailSignerCommitment([[newC]]);
 		const ts = await latestBlockTimestamp(ctx.publicClient);
-		const amendSig = await signAmendSigner({
+		const proposeSig = await signProposeSignerReplacement({
 			wallet: ctx.sender,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
 			chainId: ctx.chainId,
 			pieceCid,
 			oldCommitment: oldC,
 			newCommitment: newC,
+			signersCommitmentAfter,
 			timestamp: ts,
 		});
 
 		const senderAddr = walletAccount(ctx.sender).address;
-		await ctx.envelopeRegistry.write.amendSigner(
-			[pieceCid, senderAddr, oldC, newC, ts, amendSig, [], [], [], []],
+		await ctx.envelopeRegistry.write.proposeSignerReplacement(
+			[pieceCid, senderAddr, oldC, newC, ts, proposeSig, [], [], [], []],
 			{ account: walletAccount(ctx.server) },
 		);
 
@@ -364,52 +371,133 @@ describe("FSEnvelopeRegistry", () => {
 		);
 
 		const reg = await ctx.envelopeRegistry.read.envelopeRegistrations([cidId]);
-		const expectedCommitment =
-			await ctx.envelopeRegistry.read.computeEmailSignerCommitment([[newC]]);
-		expect(reg.signersCommitment).to.equal(expectedCommitment);
+		expect(reg.signersCommitment).to.equal(signersCommitmentAfter);
 	});
 
-	it("amendSigner recomputes signersCommitment for multi-signer roster", async () => {
+	it("proposeSignerReplacement recomputes signersCommitment for multi-signer roster", async () => {
 		const ctx = await deployFullSystem();
 		const oldA = `0x${"41".repeat(32)}` as Hex;
 		const oldB = `0x${"42".repeat(32)}` as Hex;
 		const oldC = `0x${"43".repeat(32)}` as Hex;
 		const newB = `0x${"44".repeat(32)}` as Hex;
-		const pieceCid = "amend-multi-signer";
+		const pieceCid = "propose-multi-signer";
 		await registerEnvelopeOnly(ctx, pieceCid, [oldA, oldB, oldC]);
 
+		const expectedRoster = mergeSortedCommitments([oldA, oldC], [newB]);
+		const signersCommitmentAfter =
+			await ctx.envelopeRegistry.read.computeEmailSignerCommitment([
+				expectedRoster,
+			]);
 		const ts = await latestBlockTimestamp(ctx.publicClient);
-		const amendSig = await signAmendSigner({
+		const proposeSig = await signProposeSignerReplacement({
 			wallet: ctx.sender,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
 			chainId: ctx.chainId,
 			pieceCid,
 			oldCommitment: oldB,
 			newCommitment: newB,
+			signersCommitmentAfter,
 			timestamp: ts,
 		});
 
 		const senderAddr = walletAccount(ctx.sender).address;
-		await ctx.envelopeRegistry.write.amendSigner(
-			[pieceCid, senderAddr, oldB, newB, ts, amendSig, [], [], [], []],
+		await ctx.envelopeRegistry.write.proposeSignerReplacement(
+			[pieceCid, senderAddr, oldB, newB, ts, proposeSig, [], [], [], []],
 			{ account: walletAccount(ctx.server) },
 		);
 
 		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
-		const expectedRoster = mergeSortedCommitments([oldA, oldC], [newB]);
-		const expectedCommitment =
-			await ctx.envelopeRegistry.read.computeEmailSignerCommitment([
-				expectedRoster,
-			]);
 		const reg = await ctx.envelopeRegistry.read.envelopeRegistrations([cidId]);
-		expect(reg.signersCommitment).to.equal(expectedCommitment);
+		expect(reg.signersCommitment).to.equal(signersCommitmentAfter);
 	});
 
-	it("amendSigner reverts after old commitment signed", async () => {
+	it("proposeSignerReplacement pending then execute clears signatures", async () => {
 		const ctx = await deployFullSystem();
-		const oldC = `0x${"61".repeat(32)}` as Hex;
-		const newC = `0x${"62".repeat(32)}` as Hex;
-		const pieceCid = "amend-after-sign";
+		const vpC = `0x${"61".repeat(32)}` as Hex;
+		const ceoC = `0x${"62".repeat(32)}` as Hex;
+		const cfoC = `0x${"63".repeat(32)}` as Hex;
+		const pieceCid = "propose-pending-execute";
+		await registerEnvelopeOnly(ctx, pieceCid, [vpC, ceoC]);
+
+		await registerEnvelopeSignatureStep({
+			ctx,
+			pieceCid,
+			senderAddr: walletAccount(ctx.sender).address,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: vpC,
+		});
+
+		const signersCommitmentAfter =
+			await ctx.envelopeRegistry.read.computeEmailSignerCommitment([
+				mergeSortedCommitments([vpC], [cfoC]),
+			]);
+		const ts = await latestBlockTimestamp(ctx.publicClient);
+		const proposeSig = await signProposeSignerReplacement({
+			wallet: ctx.sender,
+			envelopeRegistryAddress: ctx.envelopeRegistry.address,
+			chainId: ctx.chainId,
+			pieceCid,
+			oldCommitment: ceoC,
+			newCommitment: cfoC,
+			signersCommitmentAfter,
+			timestamp: ts,
+		});
+		const senderAddr = walletAccount(ctx.sender).address;
+		await ctx.envelopeRegistry.write.proposeSignerReplacement(
+			[pieceCid, senderAddr, ceoC, cfoC, ts, proposeSig, [], [], [], []],
+			{ account: walletAccount(ctx.server) },
+		);
+
+		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
+		expect(await ctx.envelopeRegistry.read.hasSigned([cidId, vpC])).to.equal(
+			true,
+		);
+		const pending = await ctx.envelopeRegistry.read.getPendingSignerReplacement(
+			[cidId],
+		);
+		expect(pending[0]).to.equal(true);
+		expect(pending[1]).to.equal(ceoC);
+		expect(pending[2]).to.equal(cfoC);
+
+		await assert.rejects(
+			registerEnvelopeSignatureStep({
+				ctx,
+				pieceCid,
+				senderAddr,
+				signerWallet: ctx.payout,
+				signerEmailCommitment: cfoC,
+			}),
+		);
+
+		await ctx.envelopeRegistry.write.executeSignerReplacement(
+			[pieceCid, senderAddr, [], []],
+			{ account: walletAccount(ctx.server) },
+		);
+
+		expect(await ctx.envelopeRegistry.read.hasSigned([cidId, vpC])).to.equal(
+			false,
+		);
+		expect(await ctx.envelopeRegistry.read.isSigner([cidId, cfoC])).to.equal(
+			true,
+		);
+
+		await registerEnvelopeSignatureStep({
+			ctx,
+			pieceCid,
+			senderAddr,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: vpC,
+		});
+		expect(await ctx.envelopeRegistry.read.hasSigned([cidId, vpC])).to.equal(
+			true,
+		);
+	});
+
+	it("proposeSignerReplacement reverts after old commitment signed", async () => {
+		const ctx = await deployFullSystem();
+		const oldC = `0x${"64".repeat(32)}` as Hex;
+		const newC = `0x${"65".repeat(32)}` as Hex;
+		const pieceCid = "propose-after-old-signed";
 		await registerEnvelopeOnly(ctx, pieceCid, [oldC]);
 		await registerEnvelopeSignatureStep({
 			ctx,
@@ -419,24 +507,25 @@ describe("FSEnvelopeRegistry", () => {
 			signerEmailCommitment: oldC,
 		});
 
+		const signersCommitmentAfter =
+			await ctx.envelopeRegistry.read.computeEmailSignerCommitment([[newC]]);
 		const ts = await latestBlockTimestamp(ctx.publicClient);
-		const amendSig = await signAmendSigner({
+		const proposeSig = await signProposeSignerReplacement({
 			wallet: ctx.sender,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
 			chainId: ctx.chainId,
 			pieceCid,
 			oldCommitment: oldC,
 			newCommitment: newC,
+			signersCommitmentAfter,
 			timestamp: ts,
 		});
 
 		const senderAddr = walletAccount(ctx.sender).address;
 		await assert.rejects(
-			ctx.envelopeRegistry.write.amendSigner(
-				[pieceCid, senderAddr, oldC, newC, ts, amendSig, [], [], [], []],
-				{
-					account: walletAccount(ctx.server),
-				},
+			ctx.envelopeRegistry.write.proposeSignerReplacement(
+				[pieceCid, senderAddr, oldC, newC, ts, proposeSig, [], [], [], []],
+				{ account: walletAccount(ctx.server) },
 			),
 		);
 	});
@@ -467,6 +556,7 @@ describe("FSEnvelopeRegistry", () => {
 						timestamp,
 						signature: `0x${"00".repeat(65)}` as Hex,
 						placementCommitment: defaultPlacement,
+						documentSha256: defaultDocumentSha256,
 					},
 				],
 				{ account: walletAccount(ctx.server) },
@@ -578,6 +668,7 @@ describe("FSEnvelopeRegistry", () => {
 					[signer],
 				]),
 			placementCommitment: defaultPlacement,
+			documentSha256: defaultDocumentSha256,
 			senderEmailCommitment: defaultSenderEmail,
 			senderAuthSubjectCommitment: defaultSenderAuth,
 			timestamp: signedAt,
@@ -601,9 +692,26 @@ describe("FSEnvelopeRegistry", () => {
 					timestamp: signedAt,
 					signature,
 					placementCommitment: defaultPlacement,
+					documentSha256: defaultDocumentSha256,
 				},
 			],
 			{ account: walletAccount(ctx.server) },
+		);
+	});
+
+	it("registerEnvelope reverts when documentSha256 is zero", async () => {
+		const ctx = await deployFullSystem();
+		const signer = `0x${"7a".repeat(32)}` as Hex;
+		const pieceCid = "zero-document-hash";
+		const input = await buildRegisterEnvelopeInput(ctx, {
+			pieceCid,
+			requiredCommitments: [signer],
+			documentSha256: `0x${"00".repeat(32)}` as Hex,
+		});
+		await assert.rejects(
+			ctx.envelopeRegistry.write.registerEnvelope([input], {
+				account: walletAccount(ctx.server),
+			}),
 		);
 	});
 
@@ -623,6 +731,7 @@ describe("FSEnvelopeRegistry", () => {
 					[signer],
 				]),
 			placementCommitment: defaultPlacement,
+			documentSha256: defaultDocumentSha256,
 			senderEmailCommitment: defaultSenderEmail,
 			senderAuthSubjectCommitment: defaultSenderAuth,
 			timestamp: signedAt,
@@ -647,6 +756,7 @@ describe("FSEnvelopeRegistry", () => {
 						timestamp: signedAt,
 						signature,
 						placementCommitment: defaultPlacement,
+						documentSha256: defaultDocumentSha256,
 					},
 				],
 				{ account: walletAccount(ctx.server) },
@@ -671,6 +781,7 @@ describe("FSEnvelopeRegistry", () => {
 					[signer],
 				]),
 			placementCommitment: defaultPlacement,
+			documentSha256: defaultDocumentSha256,
 			senderEmailCommitment: defaultSenderEmail,
 			senderAuthSubjectCommitment: defaultSenderAuth,
 			timestamp: staleTimestamp,
@@ -695,6 +806,7 @@ describe("FSEnvelopeRegistry", () => {
 						timestamp: staleTimestamp,
 						signature,
 						placementCommitment: defaultPlacement,
+						documentSha256: defaultDocumentSha256,
 					},
 				],
 				{ account: walletAccount(ctx.server) },
@@ -719,6 +831,7 @@ describe("FSEnvelopeRegistry", () => {
 					[signer],
 				]),
 			placementCommitment: defaultPlacement,
+			documentSha256: defaultDocumentSha256,
 			senderEmailCommitment: defaultSenderEmail,
 			senderAuthSubjectCommitment: defaultSenderAuth,
 			timestamp: futureTimestamp,
@@ -743,6 +856,7 @@ describe("FSEnvelopeRegistry", () => {
 						timestamp: futureTimestamp,
 						signature,
 						placementCommitment: defaultPlacement,
+						documentSha256: defaultDocumentSha256,
 					},
 				],
 				{ account: walletAccount(ctx.server) },
@@ -791,17 +905,17 @@ describe("FSEnvelopeRegistry", () => {
 		);
 	});
 
-	it("amendSigner reverts on invalid sender signature", async () => {
+	it("proposeSignerReplacement reverts on invalid sender signature", async () => {
 		const ctx = await deployFullSystem();
 		const oldC = `0x${"79".repeat(32)}` as Hex;
 		const newC = `0x${"7a".repeat(32)}` as Hex;
-		const pieceCid = "bad-amend-sig";
+		const pieceCid = "bad-propose-sig";
 		await registerEnvelopeOnly(ctx, pieceCid, [oldC]);
 
 		const ts = await latestBlockTimestamp(ctx.publicClient);
 		const senderAddr = walletAccount(ctx.sender).address;
 		await assert.rejects(
-			ctx.envelopeRegistry.write.amendSigner(
+			ctx.envelopeRegistry.write.proposeSignerReplacement(
 				[
 					pieceCid,
 					senderAddr,
@@ -819,40 +933,45 @@ describe("FSEnvelopeRegistry", () => {
 		);
 	});
 
-	it("amendSigner reverts when quorum calldata does not match stored config", async () => {
+	it("proposeSignerReplacement reverts when quorum calldata does not match stored config", async () => {
 		const ctx = await deployFullSystem();
 		const a = `0x${"71".repeat(32)}` as Hex;
 		const b = `0x${"72".repeat(32)}` as Hex;
 		const newB = `0x${"73".repeat(32)}` as Hex;
-		const pieceCid = "amend-bad-quorum-calldata";
+		const pieceCid = "propose-bad-quorum-calldata";
 		const quorumSet = [a, b];
 		await registerEnvelopeOnly(ctx, pieceCid, [a, b], {
 			quorumN: 2,
 			quorumSet,
 		});
 
+		const signersCommitmentAfter =
+			await ctx.envelopeRegistry.read.computeEmailSignerCommitment([
+				mergeSortedCommitments([a], [newB]),
+			]);
 		const ts = await latestBlockTimestamp(ctx.publicClient);
-		const amendSig = await signAmendSigner({
+		const proposeSig = await signProposeSignerReplacement({
 			wallet: ctx.sender,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
 			chainId: ctx.chainId,
 			pieceCid,
 			oldCommitment: b,
 			newCommitment: newB,
+			signersCommitmentAfter,
 			timestamp: ts,
 		});
 		const senderAddr = walletAccount(ctx.sender).address;
 		const patchedQuorum = [a, newB];
 
 		await assert.rejects(
-			ctx.envelopeRegistry.write.amendSigner(
+			ctx.envelopeRegistry.write.proposeSignerReplacement(
 				[
 					pieceCid,
 					senderAddr,
 					b,
 					newB,
 					ts,
-					amendSig,
+					proposeSig,
 					[],
 					[],
 					[],

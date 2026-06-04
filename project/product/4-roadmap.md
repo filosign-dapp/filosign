@@ -97,7 +97,7 @@ Pricing source (catalog v1 — [`packages/entitlements/src/catalog/v1.ts`](../..
 
 Near-term priorities:
 
-- **v1 shipped (contracts + app):** on-chain routing/quorum, `amendSigner`, multi-leg settlement CRUD, `settlements.registerForFile` indexing, compliance bundle v7
+- **v1 shipped (contracts + app):** on-chain routing/quorum, `amendSigner`, multi-leg settlement CRUD, `settlements.registerForFile` indexing, compliance bundle v1
 - mainnet deploy + Dodo live SKUs aligned to catalog v1 pricing
 - clear non-custodial payment wording
 - request-access / design-partner onboarding

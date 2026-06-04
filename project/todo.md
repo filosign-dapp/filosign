@@ -30,6 +30,22 @@ Ranked **high → low**. Keep bullets actionable; link detail docs in `project/e
 
 ---
 
+## Planned entitlement features (catalog only — not shipped)
+
+These keys remain in the entitlements catalog for marketing/comparison but have **no product implementation** yet (do not confuse with **`features.comments`**, shipped as post-send E2EE envelope threads, or **`features.draft_comments`**, shipped on compose):
+
+- `features.bulk_send` — CSV bulk send
+- `features.webhooks` — outbound webhooks
+- `features.integrations.custom` — custom integrations
+- `features.template_folders` — shared template folders
+- `features.branding.custom` — custom sign-page branding
+- `features.metadata.tags` — envelope metadata tags
+- `features.quota_allocation` — seat quota allocation UI
+
+**Related gaps (not separate catalog flags):** rich placement field value types beyond current set; `files.remindSigners` reminder automation; **optional signers** (blocked on-chain — `OptionalSignersNotSupported` in v1; use sequential routing + quorum only).
+
+---
+
 ## P1 — Product & GTM (near launch)
 
 - **Dashboard walkthroughs / tutorials:** per major flow (onboard, send, sign, payments, compliance export, team).

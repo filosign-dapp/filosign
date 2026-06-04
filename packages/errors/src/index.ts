@@ -20,10 +20,6 @@ export {
 	readAppCodeFromOrpc,
 } from "./is-orpc-error";
 export { isValidationOrpcError } from "./is-validation-orpc-error";
-export {
-	LEGACY_MESSAGE_TO_APP_CODE,
-	legacyAppCodeFromMessage,
-} from "./legacy-messages";
 export { presentError } from "./present-error";
 export { resolveSupportUrl } from "./resolve-support-url";
 export type {

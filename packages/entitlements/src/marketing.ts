@@ -12,10 +12,10 @@ const MARKETING_LABELS: Record<FeatureKey, string> = {
 	"features.draft_comments": "Comments on drafts",
 	"features.comments": "Comments on documents",
 	"features.envelope.team_visibility": "Team envelope visibility",
-	"features.routing.advanced": "Advanced routing & quorum",
-	"features.settlement.basic": "Document-linked USDC settlement",
-	"features.settlement.advanced": "Multi-recipient splits & rule updates",
-	"features.supplementary_attachments": "Supplementary attachment packets",
+	"features.routing.advanced": "Advanced signing conditions",
+	"features.settlement.basic": "Payout packets",
+	"features.settlement.advanced": "Multi-recipient payout rules",
+	"features.supplementary_attachments": "Gated file packets",
 	"features.supplementary_attachments.recipient_select":
 		"Per-packet recipient selection",
 	"features.supplementary_attachments.conditional_release":
@@ -27,7 +27,7 @@ const MARKETING_LABELS: Record<FeatureKey, string> = {
 	"features.branding.custom": "Custom branding on sign pages",
 	"features.webhooks": "Webhook notifications",
 	"features.metadata.tags": "Envelope metadata tags",
-	"features.archival.purchase": "Filecoin archival for all org documents",
+	"features.archival.purchase": "Long-term storage for org documents",
 };
 
 /** Customer-facing label for pricing / comparison tables. */

@@ -65,7 +65,7 @@ Before `settlements.registerForFile` or attach UI:
 
 ## Recipient disclosure at sign
 
-When indexed payout rules exist, signers must accept the payout disclosure checkbox; server stores `file_settlement_recipient_acks` and includes them in compliance export v7+.
+When indexed payout rules exist, signers must accept the payout disclosure checkbox; server stores `file_settlement_recipient_acks` and includes them in compliance export v1.
 
 ## Supported path vs bypass
 

@@ -25,12 +25,12 @@ const plans = [
 	{
 		name: "Solo",
 		description:
-			"For freelancers, counsel, and operators who need private signing and clean proof records.",
+			"For solo operators who need private signing, clean proof records, and client handoffs.",
 		price: { monthly: 20 },
 		features: [
 			"10 documents per month",
 			"Up to 3 signers per document",
-			"Long-term verifiable storage options",
+			"Private document workflows",
 			"Full proof packet export",
 			"Draft review links for clients",
 			"Advanced fields and CSV export",
@@ -42,7 +42,7 @@ const plans = [
 	{
 		name: "Teams",
 		description:
-			"For startups that need pooled quotas, shared workflows, and attached payouts.",
+			"For teams that need shared workflows, reviewer handoffs, and payout packets.",
 		price: { monthly: 35 },
 		features: [
 			"15 documents per user per month",
@@ -50,7 +50,7 @@ const plans = [
 			"Shared templates and team envelope drafts",
 			"Advanced routing and draft review links",
 			"Team envelope visibility",
-			"Attached payouts when signing rules are met",
+			"USDC payout packets tied to signing rules",
 		],
 		cta: "Start Teams",
 		highlight: true,
@@ -60,12 +60,13 @@ const plans = [
 	{
 		name: "Teams Pro",
 		description:
-			"For growing teams that need higher volume and operational control.",
+			"For growing teams that need conditional file release, higher volume, and operational control.",
 		price: { monthly: 59 },
 		features: [
 			"Everything in Teams, plus:",
 			"25 documents per user per month",
 			"Up to 15 signers per document",
+			"Sequential signing order and quorum (minimum signatures)",
 			"Custom integrations",
 			"Seat quota allocation",
 			"Bulk send from CSV",
@@ -81,15 +82,15 @@ const plans = [
 
 const enterpriseBanner = {
 	headline: "Are you an enterprise?",
-	body: "Custom limits, security reviews, support terms, and procurement-friendly contracts. Contact us directly and we'll scope a plan with your team.",
+	body: "Custom limits, security reviews, support terms, and procurement-friendly contracts for sensitive agreement workflows. Contact us directly and we'll scope a plan with your team.",
 	cta: "Contact us",
 	href: "mailto:sales@filosign.xyz?subject=Filosign%20Enterprise",
 };
 ---
 
 <BaseLayout
-	title="Pricing - Encrypted signing with proof you can verify"
-	description="Filosign pricing: Free, Solo, Teams, and Teams Pro. Encrypted signing, proof exports, and attached payouts. Enterprise plans by request."
+	title="Pricing - Private agreement workflows"
+	description="Filosign pricing for private documents, proof exports, gated files, and payout packets. Enterprise plans by request."
 >
 	<MarketingPageShell>
 		<PricingHeroIsland client:load />

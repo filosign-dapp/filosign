@@ -1,5 +1,4 @@
 import { useMutation } from "@tanstack/react-query";
-import type { Address, Hex } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import {
 	type DecryptDraftHead,
@@ -7,6 +6,7 @@ import {
 	decryptDraftWithHead,
 } from "../../lib/decrypt-draft-core";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
+import { walletAccountAddress } from "../../utils/evm";
 
 export type { DecryptDraftHead, DecryptedDraft };
 
@@ -23,18 +23,13 @@ export function useDecryptDraft() {
 			if (!wallet?.account || !isAuthed) {
 				throw new Error("Wallet required");
 			}
-			const walletAddress = wallet.account.address as Address;
+			const walletAddress = walletAccountAddress(wallet.account);
 			return decryptDraftWithHead(
 				{
 					wallet: walletAddress,
 					fetchHead: (draftId) => rpc.drafts.get({ draftId }),
 					wrapForMine: (organizationId) =>
-						rpcQuery.orgs.keys.wrapForMine
-							.call({ organizationId })
-							.then((row) => ({
-								wrappedOmk: row.wrappedOmk as Hex,
-								wrapKemCiphertext: row.wrapKemCiphertext as Hex,
-							})),
+						rpcQuery.orgs.keys.wrapForMine.call({ organizationId }),
 				},
 				{ draftId: args.draftId, head: args.head },
 			);

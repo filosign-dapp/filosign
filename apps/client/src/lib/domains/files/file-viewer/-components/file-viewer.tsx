@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { DocCanvasPanel } from "@/src/lib/domains/files/components/doc-canvas-panel";
 import { FileViewerContent } from "@/src/lib/domains/files/file-viewer/-components/file-viewer-content";
 import { FileViewerToolbar } from "@/src/lib/domains/files/file-viewer/-components/file-viewer-toolbar";
@@ -98,9 +98,21 @@ function FileViewerShell({
 
 export function FileViewer({ file, open, onOpenChange }: FileViewerProps) {
 	const controller = useFileViewerController(file, { viewerOpen: open });
+	const providerValue = useMemo(
+		() => controller,
+		[
+			controller.fileData,
+			controller.viewError,
+			controller.docCanvasBusy,
+			controller.showRecoveryInCanvas,
+			controller.recoveryPending,
+			controller.fileLoading,
+			controller.viewFile.isPending,
+		],
+	);
 
 	return (
-		<FileViewerProvider value={controller}>
+		<FileViewerProvider value={providerValue}>
 			<FileViewerShell open={open} onOpenChange={onOpenChange} />
 		</FileViewerProvider>
 	);

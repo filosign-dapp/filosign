@@ -7,8 +7,9 @@ import {
 } from "@filosign/react/files";
 import type { DocumentViewSource } from "@filosign/shared";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useCryptoRequired } from "@/src/lib/auth/use-crypto-required";
+import { mergedPdfBytesForView } from "@/src/lib/domains/files/signable-documents";
 
 export type DecryptableFileRecord = {
 	pieceCid: string;
@@ -137,7 +138,7 @@ export function useDecryptedFileView(options: {
 		recordView,
 		viewSource,
 		queryClient,
-		rpcQuery.files.piece.detail,
+		file?.pieceCid,
 	]);
 
 	useEffect(() => {
@@ -183,12 +184,22 @@ export function useDecryptedFileView(options: {
 				viewFile.isPending ||
 				(!fileData && !viewError));
 
-	const previewPdfBytes = useMemo(() => {
-		if (!fileData) return null;
-		const mime = fileData.metadata.mimeType;
-		const name = fileData.metadata.name?.toLowerCase() ?? "";
-		if (mime !== "application/pdf" && !name.endsWith(".pdf")) return null;
-		return fileData.fileBytes.slice();
+	const [previewPdfBytes, setPreviewPdfBytes] = useState<Uint8Array | null>(
+		null,
+	);
+
+	useEffect(() => {
+		if (!fileData) {
+			setPreviewPdfBytes(null);
+			return;
+		}
+		let cancelled = false;
+		void mergedPdfBytesForView(fileData).then((bytes) => {
+			if (!cancelled) setPreviewPdfBytes(bytes);
+		});
+		return () => {
+			cancelled = true;
+		};
 	}, [fileData]);
 
 	return {

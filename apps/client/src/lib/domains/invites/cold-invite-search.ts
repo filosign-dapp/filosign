@@ -1,4 +1,4 @@
-import { type Address, getAddress } from "viem";
+import { getAddress } from "viem";
 import { z } from "zod";
 
 export const coldInviteEntrySearchSchema = z.object({
@@ -102,10 +102,7 @@ export function coldInviteRecipientMatchesIdentity(args: {
 	);
 	if (args.senderWallet?.trim() && args.inviteSender.trim()) {
 		try {
-			if (
-				getAddress(args.senderWallet as Address) ===
-				getAddress(args.inviteSender as Address)
-			) {
+			if (getAddress(args.senderWallet) === getAddress(args.inviteSender)) {
 				return true;
 			}
 		} catch {

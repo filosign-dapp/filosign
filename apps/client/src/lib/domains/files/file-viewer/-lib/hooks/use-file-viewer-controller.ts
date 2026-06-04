@@ -26,8 +26,21 @@ export function useFileViewerController(
 		initialZoom: 75,
 	});
 
+	const complianceFileRef = fileInfo ?? file;
 	const compliance = useCompliancePdfExports({
-		file: fileInfo ?? file,
+		file: complianceFileRef
+			? {
+					pieceCid: complianceFileRef.pieceCid,
+					status:
+						"status" in complianceFileRef
+							? complianceFileRef.status
+							: undefined,
+					isFinalized: Boolean(
+						fileInfo?.envelopeProgress?.completedAt ||
+							fileInfo?.envelopeProgress?.revokedBeforeCompletedAt,
+					),
+				}
+			: null,
 		fileData: decrypt.fileData,
 	});
 

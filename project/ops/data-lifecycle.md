@@ -20,7 +20,8 @@ This is the engineer-facing deletion and retention policy for server/domain work
 - **Drafts**: archive first, then worker purges archived drafts older than retention.
 - **Org members**: use `status = "removed"`, keep historical rows.
 - **Invites**: expire by status; optional delayed purge for stale expired invites.
-- **Compliance exports**: preserve legal evidence while redacting old request metadata.
+- **Compliance exports**: preserve legal evidence while redacting old request metadata. Export allowed when envelope is fully executed or voided (`completedAt` or `revokedBeforeCompletedAt`). On-chain `documentSha256` is the Merkle root of per-document file hashes.
+- **FOC / hot R2**: prefer sender compliance export before `r2EvictAfter`; replication may proceed after the hot window even if the sender never exported.
 - **Users**: erase account by anonymizing PII and revoking sessions; do not delete user rows with legal references.
 
 ## Schema guardrails (pending migration)

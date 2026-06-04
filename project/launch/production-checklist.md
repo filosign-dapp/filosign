@@ -95,10 +95,10 @@ Run on prod stack with a test wallet before GA:
 | 1 | Wallet login + off-chain keygen registration | |
 | 2 | Solo checkout (live Dodo) → webhook → entitlements | |
 | 3 | Create org → Teams checkout (`quantity = seats`) → webhook seat sync | |
-| 4 | Send envelope with routing (parallel/sequential + optional signer) | |
+| 4 | Send envelope with routing (parallel/sequential + quorum) | |
 | 5 | Sign → `registerEnvelopeSignature` visible on Base scan | |
 | 6 | Settlement: payer `registerRule` + USDC `approve` → auto or manual settle | |
-| 7 | Compliance PDF export (bundle v7, correct registry/validator addresses) | |
+| 7 | Compliance PDF export (bundle v1, correct registry/validator addresses) | |
 | 8 | Cancel-at-period-end: plan stays until `subscription.expired` | |
 | 9 | Customer portal return URL lands on workspace/profile settings | |
 

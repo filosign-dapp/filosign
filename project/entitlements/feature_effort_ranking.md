@@ -19,7 +19,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | Feature | Tier | Why so low | How to build |
 | ------- | ---- | ---------- | ------------ |
 | **Standard form fields** | Free | **Done:** 7 placement types in [`field-types.ts`](../../apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types.ts); manifest + send path exists | Entitlement gates per tier; sign flow still tracks `completedFieldIds` only (not rich field values) |
-| **Basic audit trail** | Free | **Done:** compliance PDF (bundle **v7**, [`compliance-pdf/`](../../apps/client/src/lib/domains/files/compliance-pdf/)) | Add signer IP capture on register/sign in [`lib/domains/files/`](../../apps/server/lib/domains/files/); include in compliance bundle |
+| **Basic audit trail** | Free | **Done:** compliance PDF (bundle **v1**, [`compliance-pdf/`](../../apps/client/src/lib/domains/files/compliance-pdf/)) | Add signer IP capture on register/sign in [`lib/domains/files/`](../../apps/server/lib/domains/files/); include in compliance bundle |
 | **Mobile-responsive signing UI** | Free | **Partial:** sticky header, responsive sign layout | Polish breakpoints, touch targets, field overlays on small screens |
 | **Embedded signing sandbox (testnet)** | Platform Starter | **Partial:** `VITE_CHAIN=testnet`, Base Sepolia | Document sandbox for API consumers; optional testnet-only API base URL / keys |
 
@@ -55,7 +55,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | **Local CSV data export** | Solo | No CSV; decrypt path exists | Client: fetch blobs → decrypt → flatten manifest + fields → CSV |
 | **Custom branding** | Team Pro | Not in app UI | Org logo/colors; email template vars on sign + emails |
 | **Bulk send (client-side loop)** | Team Pro | Single send pipeline done | CSV → loop `useSendFile`; progress UI; rate limits |
-| **E2EE collaborative comments** | Team Pro | Catalog flag only | Encrypted comment blob; sidebar; oRPC append/list |
+| **E2EE collaborative comments** | Team Pro | **Shipped** (`features.comments` on sent envelopes; `features.draft_comments` on drafts) | Piece/draft DEK; oRPC append/list; sign + file viewer UI |
 | **Team activity logs** | Enterprise | `auth_audit_events` only | Workspace audit table; emit from handlers |
 | **Audit log streaming (SIEM)** | Enterprise | Extension of activity logs | HTTP/syslog sink per org |
 | **Document assembly API (anchor text)** | Platform Pro | Manual PDF placement only | PDF text search → coordinates → manifest; API anchor strings |
@@ -133,7 +133,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | Reminders / expiration | **partial** | `expire-invites.ts` |
 | Seat / billing | **partial** | `packages/entitlements/`, `billing.ts` |
 | Bulk send | **none** | — |
-| Comments | **none** (flag only) | `features.comments` |
+| Comments (post-send) | **shipped** | `features.comments`, `lib/domains/files/comments.ts` |
 | Conditional fields | **none** | — |
 | Branding / subdomains | **none** / marketing | astro pricing |
 | API keys | **none** | oRPC + JWT only |

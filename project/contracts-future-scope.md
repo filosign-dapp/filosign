@@ -12,9 +12,9 @@
 
 ## What does not need v1 contract changes
 
-Server, DB, client, and auth only: fields/placement manifest, **reminders/expiration**, audit PDF, metadata/tags/templates/branding, webhooks/API keys, bulk send, E2EE comments/attachments, team keys, SSO/LDAP/BYOK, SIEM/logs, embed/postMessage, anchor-text assembly, entitlements/Dodo/legal/ops items in `project/todo.md`.
+Server, DB, client, and auth only: fields/placement manifest, **reminders/expiration**, audit PDF, metadata/tags/templates/branding, webhooks/API keys, bulk send, supplementary attachments (beyond current), team keys, SSO/LDAP/BYOK, SIEM/logs, embed/postMessage, anchor-text assembly, entitlements/Dodo/legal/ops items in `project/todo.md`. Post-send **E2EE envelope comments** (`features.comments`) are shipped off-chain.
 
-**Already on-chain in v1 (not future work):** parallel/sequential **routing**, optional signers, registry **quorum**, **`amendSigner`**, multi-leg settlement CRUD on `FSPaymentValidator`.
+**Already on-chain in v1 (not future work):** parallel/sequential **routing**, registry **quorum** (no optional signers — contract reverts `OptionalSignersNotSupported`), **`amendSigner`**, multi-leg settlement CRUD on `FSPaymentValidator`.
 
 ## Allowed on-chain evolution (without touching v1 core)
 

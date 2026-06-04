@@ -64,20 +64,26 @@ repo1-cipher-pass=<from-infisical>
 
 [filosign]
 pg1-path=/var/lib/postgresql/18/docker
-pg1-host=postgres
-pg1-port=5432
 pg1-user=filosign
+pg1-database=filosign
 ```
 
 **R2 requires `repo1-s3-uri-style=path`** — virtual-hosted style (`bucket.endpoint`) fails.
 
 ## One-time stanza setup
 
+All pgBackRest commands on **`filosign-postgres`** (`compose.data.yml` — no sidecar; `pg1-host` over Docker DNS implies SSH and fails without keys).
+
 ```bash
-docker exec <pgbackrest-container> pgbackrest --stanza=filosign stanza-create
-docker exec <pgbackrest-container> pgbackrest --stanza=filosign check
-docker exec <pgbackrest-container> pgbackrest --stanza=filosign backup --type=full
+docker exec filosign-postgres pgbackrest --stanza=filosign stanza-create
+docker exec filosign-postgres pgbackrest --stanza=filosign check
+docker exec filosign-postgres pgbackrest --stanza=filosign backup --type=full
+docker exec filosign-postgres ls -la /var/lib/pgbackrest/archive/filosign/
 ```
+
+Local dev (`compose.dev-full.yml`) may still use a **pgbackrest sidecar** with shared `postgres_data` and **no** `pg1-host` in `pgbackrest.conf` — see [`pgbackrest.conf.example`](../../deploy/pgbackrest/pgbackrest.conf.example).
+
+Until `stanza-create` succeeds, postgres logs repeat `[103] … has a stanza-create been performed?` — the DB still accepts connections.
 
 ## Schedules (host cron or Dokploy job)
 

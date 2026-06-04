@@ -28,6 +28,8 @@ services:
       # archive-push runs inside this container — pg1-host must be unset (not "postgres")
       PGBACKREST_PG1_PATH: ${PGBACKREST_PG1_PATH:-/var/lib/postgresql/18/docker}
       PGBACKREST_PG1_USER: ${POSTGRES_USER:-filosign}
+      PGBACKREST_PG1_DATABASE: ${POSTGRES_DB:-filosign}
+      PGBACKREST_REPO1_RETENTION_FULL: ${PGBACKREST_REPO1_RETENTION_FULL:-2}
     volumes:
       # PG 18+: mount parent dir (PGDATA = /var/lib/postgresql/18/docker)
       - postgres_data:/var/lib/postgresql
@@ -47,38 +49,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 20s
-    networks:
-      - filosign_net
-
-  pgbackrest:
-    image: ${PGBACKREST_IMAGE:-percona/percona-pgbackrest:2.58.0-1}
-    container_name: filosign-pgbackrest
-    restart: unless-stopped
-    # Sidecar stays up for `docker exec … pgbackrest backup|check|stanza-create`
-    command: ["sleep", "infinity"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      PGBACKREST_STANZA: filosign
-      PGBACKREST_REPO1_TYPE: s3
-      PGBACKREST_REPO1_S3_ENDPOINT: ${PGBACKREST_REPO1_S3_ENDPOINT}
-      PGBACKREST_REPO1_S3_BUCKET: ${PGBACKREST_REPO1_S3_BUCKET}
-      PGBACKREST_REPO1_S3_KEY: ${PGBACKREST_REPO1_S3_KEY}
-      PGBACKREST_REPO1_S3_KEY_SECRET: ${PGBACKREST_REPO1_S3_KEY_SECRET}
-      PGBACKREST_REPO1_S3_REGION: ${PGBACKREST_REPO1_S3_REGION:-auto}
-      PGBACKREST_REPO1_S3_URI_STYLE: ${PGBACKREST_REPO1_S3_URI_STYLE:-path}
-      PGBACKREST_REPO1_RETENTION_FULL_TYPE: ${PGBACKREST_REPO1_RETENTION_FULL_TYPE:-time}
-      PGBACKREST_REPO1_RETENTION_FULL_TIME: ${PGBACKREST_REPO1_RETENTION_FULL_TIME:-30d}
-      PGBACKREST_REPO1_CIPHER_TYPE: ${PGBACKREST_REPO1_CIPHER_TYPE:-aes-256-cbc}
-      PGBACKREST_REPO1_CIPHER_PASS: ${PGBACKREST_REPO1_CIPHER_PASS}
-      PGBACKREST_PG1_PATH: ${PGBACKREST_PG1_PATH:-/var/lib/postgresql/18/docker}
-      PGBACKREST_PG1_HOST: postgres
-      PGBACKREST_PG1_PORT: 5432
-      PGBACKREST_PG1_USER: ${POSTGRES_USER:-filosign}
-    volumes:
-      - postgres_data:/var/lib/postgresql:ro
-      - pgbackrest_spool:/var/lib/pgbackrest
     networks:
       - filosign_net
 

@@ -11,7 +11,7 @@ Two Compose projects on one VPS is the **recommended** model. An optional single
 
 ### Two-stack topology
 
-**`filosign-data`** — Postgres (`archive_mode=on`), pgBackRest sidecar, Dragonfly (BullMQ flags).
+**`filosign-data`** — Postgres 18 + pgBackRest (in postgres image), Dragonfly (BullMQ flags).
 
 **`filosign-app`** — API (`SERVER_ROLE=api`, HTTP port) + worker (`SERVER_ROLE=worker`, no public port).
 
@@ -29,7 +29,7 @@ If the app project fails with **network not found**, the data stack has not been
 
 | Network | Created by | Used by |
 |---------|------------|---------|
-| `filosign-data_filosign_net` | `compose.data.yml` (`filosign_net` with explicit name) | `postgres`, `pgbackrest`, `dragonfly`, `api`, `worker` |
+| `filosign-data_filosign_net` | `compose.data.yml` (`filosign_net` with explicit name) | `postgres`, `dragonfly`, `api`, `worker` |
 
 App compose references it as an **external** network:
 
@@ -53,16 +53,17 @@ Wire secrets via **Infisical** → Dokploy env injection. Split by project:
 | `POSTGRES_USER` | postgres | Default `filosign` |
 | `POSTGRES_PASSWORD` | postgres | Required |
 | `POSTGRES_DB` | postgres | Default `filosign` |
-| `PGBACKREST_REPO1_S3_*`, `PGBACKREST_REPO1_CIPHER_PASS` | postgres + pgbackrest | Dokploy **Environment** (see [`compose.data.yml`](../../deploy/compose.data.yml)); not Infisical at runtime |
+| `PGBACKREST_REPO1_S3_*`, `PGBACKREST_REPO1_CIPHER_PASS` | postgres | Dokploy **Environment** (see [`compose.data.yml`](../../deploy/compose.data.yml)); not Infisical at runtime |
 
 No Filosign app secrets on the data project.
 
-**pgBackRest after data deploy:** WAL `archive-push` runs inside **postgres** (local `pg1-path`, shared `pgbackrest_spool` volume). Run **stanza-create on the postgres container** (not only the sidecar):
+**pgBackRest after data deploy:** All commands run on **`filosign-postgres`** (pgBackRest is installed in that image; `archive-push` also runs there). Do **not** use a sidecar with `pg1-host` — pgBackRest defaults to SSH and fails without keys.
 
 ```bash
 docker exec filosign-postgres pgbackrest --stanza=filosign stanza-create
-docker exec filosign-pgbackrest pgbackrest --stanza=filosign check
-docker exec filosign-pgbackrest pgbackrest --stanza=filosign backup --type=full
+docker exec filosign-postgres pgbackrest --stanza=filosign check
+docker exec filosign-postgres pgbackrest --stanza=filosign backup --type=full
+docker exec filosign-postgres ls -la /var/lib/pgbackrest/archive/filosign/
 ```
 
 Until `stanza-create` succeeds, postgres logs may show `[103] … has a stanza-create been performed?` — DB still accepts connections; fix backups before relying on PITR.

@@ -3,11 +3,15 @@ import type { Hex } from "viem";
 import { keccak256, stringToBytes } from "viem";
 import { z } from "zod";
 import { sortKeysDeep, zDraftPlacementManifest } from "./placement";
+import {
+	settlementRecipientSources,
+	settlementReleaseTypes,
+} from "./settlement-rules";
 
 const zRecipient = z.object({
 	clientRowId: z.string().optional(),
 	name: z.string(),
-	email: z.string(),
+	email: z.email(),
 	walletAddress: z.string().optional(),
 	role: z.enum(["signer", "viewer"]),
 });
@@ -34,20 +38,20 @@ const zSignatureField = z.object({
 	label: z.string().optional(),
 });
 
-const zSettlementDraft = z
-	.object({
-		id: z.string(),
-		recipientClientRowId: z.string(),
-		recipientEmail: z.string(),
-		recipientSource: z.string(),
-		recipientLabel: z.string(),
-		recipientWallet: z.string().optional(),
-		amountUsdc: z.string(),
-		releaseType: z.string(),
-		specificSignerEmail: z.string().optional(),
-		thresholdN: z.number().optional(),
-	})
-	.passthrough();
+/** Matches client `SettlementAttachmentDraft` persisted in draft snapshots. */
+const zSettlementDraft = z.object({
+	id: z.string(),
+	recipientClientRowId: z.string(),
+	recipientEmail: z.email(),
+	recipientSource: z.enum(settlementRecipientSources),
+	recipientLabel: z.string(),
+	recipientWallet: z.string().optional(),
+	amountUsdc: z.string(),
+	releaseType: z.enum(settlementReleaseTypes),
+	specificSignerEmail: z.email().optional(),
+	thresholdN: z.number().int().optional(),
+	expiresAtUnix: z.number().int().optional(),
+});
 
 export const zDraftSnapshot = z.object({
 	recipients: z.array(zRecipient),

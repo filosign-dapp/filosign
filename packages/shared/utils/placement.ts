@@ -34,11 +34,7 @@ export const zPlacementFieldBase = z.object({
 	]),
 });
 
-/** Legacy v2 field (single-doc envelopes). */
-export const zPlacementFieldV2 = zPlacementFieldBase;
-
-/** v3 field — pageIndex is per document. */
-export const zPlacementFieldV3 = zPlacementFieldBase.extend({
+export const zPlacementField = zPlacementFieldBase.extend({
 	documentId: z.string().min(1),
 });
 
@@ -49,41 +45,23 @@ export const zPlacementDocument = z.object({
 	pageCount: z.number().int().min(1),
 });
 
-/** Legacy single-doc manifest. */
-export const zPlacementManifestV2 = z.object({
-	version: z.literal(2),
-	fields: z.array(zPlacementFieldV2).min(1),
-});
-
-/** Multi-document manifest (committed at send). */
-export const zPlacementManifestV3 = z.object({
-	version: z.literal(3),
+/** Committed placement at send (multi-document). */
+export const zPlacementManifest = z.object({
+	version: z.literal(1),
 	documents: z.array(zPlacementDocument).min(1),
-	fields: z.array(zPlacementFieldV3).min(1),
+	fields: z.array(zPlacementField).min(1),
 });
 
-export const zPlacementManifest = z.discriminatedUnion("version", [
-	zPlacementManifestV2,
-	zPlacementManifestV3,
-]);
-
-/** Draft checkpoints — fields may be empty before add-sign placement. */
-export const zDraftPlacementManifest = z.discriminatedUnion("version", [
-	z.object({
-		version: z.literal(2),
-		fields: z.array(zPlacementFieldV2),
-	}),
-	z.object({
-		version: z.literal(3),
-		documents: z.array(zPlacementDocument),
-		fields: z.array(zPlacementFieldV3),
-	}),
-]);
+/** Draft checkpoints — fields and document metadata may be incomplete before send. */
+export const zDraftPlacementManifest = z.object({
+	version: z.literal(1),
+	documents: z.array(zPlacementDocument),
+	fields: z.array(zPlacementField),
+});
 
 export type PlacementManifest = z.infer<typeof zPlacementManifest>;
-export type PlacementManifestV3 = z.infer<typeof zPlacementManifestV3>;
 export type DraftPlacementManifest = z.infer<typeof zDraftPlacementManifest>;
-export type PlacementField = z.infer<typeof zPlacementFieldV3>;
+export type PlacementField = z.infer<typeof zPlacementField>;
 export type PlacementDocument = z.infer<typeof zPlacementDocument>;
 
 export function sortKeysDeep(value: unknown): unknown {
@@ -129,10 +107,4 @@ export function requiredFieldIdsForRecipientEmail(
 	return fieldIdsForRecipientEmail(manifest, recipientEmail)
 		.filter((f) => f.required)
 		.map((f) => f.id);
-}
-
-export function isPlacementManifestV3(
-	manifest: PlacementManifest,
-): manifest is PlacementManifestV3 {
-	return manifest.version === 3;
 }

@@ -29,6 +29,7 @@ services:
     image: ${PGBACKREST_IMAGE:-percona/percona-pgbackrest:2.58.0-1}
     container_name: filosign-pgbackrest-dev
     restart: unless-stopped
+    command: ["sleep", "infinity"]
     depends_on:
       postgres:
         condition: service_healthy

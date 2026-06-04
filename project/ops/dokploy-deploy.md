@@ -53,9 +53,19 @@ Wire secrets via **Infisical** → Dokploy env injection. Split by project:
 | `POSTGRES_USER` | postgres | Default `filosign` |
 | `POSTGRES_PASSWORD` | postgres | Required |
 | `POSTGRES_DB` | postgres | Default `filosign` |
-| R2 / pgBackRest keys | pgbackrest | In `pgbackrest.conf` mount — see [`postgres-pgbackrest-dokploy.md`](postgres-pgbackrest-dokploy.md) |
+| `PGBACKREST_REPO1_S3_*`, `PGBACKREST_REPO1_CIPHER_PASS` | postgres + pgbackrest | Dokploy **Environment** (see [`compose.data.yml`](../../deploy/compose.data.yml)); not Infisical at runtime |
 
 No Filosign app secrets on the data project.
+
+**pgBackRest after data deploy:** WAL `archive-push` runs inside **postgres** (local `pg1-path`, no `pg1-host`). The **pgbackrest** sidecar uses `pg1-host=postgres` for `docker exec` backups. Once all three containers are up:
+
+```bash
+docker exec filosign-pgbackrest pgbackrest --stanza=filosign stanza-create
+docker exec filosign-pgbackrest pgbackrest --stanza=filosign check
+docker exec filosign-pgbackrest pgbackrest --stanza=filosign backup --type=full
+```
+
+Postgres logs should not repeat `[072] archive-push command must be run on the PostgreSQL host` after redeploying current `compose.data.yml`.
 
 ### `filosign-app` project
 
@@ -103,7 +113,7 @@ Compose sets `deploy.replicas: 1`, but **Dokploy UI scale overrides compose**. I
 ## Dokploy checklist
 
 1. Create project **`filosign-data`** → compose file `deploy/compose.data.yml`.
-2. Mount / copy `deploy/pgbackrest/pgbackrest.conf` from [`pgbackrest.conf.example`](../../deploy/pgbackrest/pgbackrest.conf.example).
+2. Set all required `PGBACKREST_REPO1_*` + `POSTGRES_PASSWORD` in Dokploy Environment (see [`compose.data.yml`](../../deploy/compose.data.yml)).
 3. Deploy data stack; run stanza-create + check (see [`postgres-pgbackrest-dokploy.md`](postgres-pgbackrest-dokploy.md)).
 4. Create project **`filosign-app`** → compose file `deploy/compose.app.yml`.
 5. Inject Infisical secrets; override `FILOSIGN_IMAGE` only when using a pre-built registry image instead of compose `build`.

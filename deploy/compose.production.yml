@@ -43,6 +43,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    command: ["sleep", "infinity"]
     environment:
       PGBACKREST_STANZA: filosign
     volumes:

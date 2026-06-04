@@ -10,7 +10,6 @@ import { type DraftSnapshot, digestDraftSnapshot } from "@filosign/shared";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Hex } from "viem";
 import {
 	buildCreateForm,
 	loadDocumentBytes,
@@ -203,7 +202,7 @@ export function useServerDraftActions() {
 						}
 					},
 					organizationId: activeOrgId,
-					orgEncryptionPublicKey: activeOrg.encryptionPublicKey as Hex,
+					orgEncryptionPublicKey: activeOrg.encryptionPublicKey,
 				});
 				logPersistDraft("save_mutation.ok", {
 					draftId,

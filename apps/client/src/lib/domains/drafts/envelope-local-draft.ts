@@ -56,7 +56,9 @@ function attachmentFileKey(draftId: string, packetId: string, fileId: string) {
 
 export function attachmentFileHasBytes(
 	file: AttachmentPacketComposeDraft["files"][number],
-): boolean {
+): file is AttachmentPacketComposeDraft["files"][number] & {
+	bytes: Uint8Array;
+} {
 	return file.bytes instanceof Uint8Array && file.bytes.byteLength > 0;
 }
 
@@ -96,15 +98,10 @@ export function stripCreateFormForPersist(
 				id: file.id,
 				name: file.name,
 				mimeType: file.mimeType,
-				size:
-					file.bytes instanceof Uint8Array
-						? file.bytes.byteLength
-						: "size" in file && typeof file.size === "number"
-							? file.size
-							: 0,
+				size: attachmentFileByteLength(file),
 			})),
 		})),
-	} as unknown as CreateForm;
+	};
 }
 
 export async function saveAttachmentPacketDrafts(

@@ -12,7 +12,7 @@ import {
 } from "@/src/lib/domains/drafts/utils/draft-form-state";
 import { buildPlacementManifestForDocument } from "@/src/lib/domains/files/build-placement-manifest";
 import type { CreateForm } from "@/src/lib/domains/files/envelope-form-types";
-import { signatureFieldBoxCssPx } from "@/src/lib/domains/files/field-box";
+import { defaultPlacementFieldRect } from "@/src/lib/domains/files/field-box";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { safeAsync } from "@/src/lib/utils/safe";
 
@@ -29,7 +29,7 @@ export function placementManifestFromCreateForm(form: CreateForm) {
 		signatureFields: form.signatureFields ?? [],
 		docWidth: 612,
 		docHeight: 792,
-		fieldBox: signatureFieldBoxCssPx(false),
+		fieldBox: defaultPlacementFieldRect("signature", false),
 		strict: false,
 	});
 }

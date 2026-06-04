@@ -54,7 +54,7 @@ const COPY: Record<
 	"features.routing.advanced": {
 		title: "Advanced signing order needs Teams Pro",
 		description:
-			"Set turn order, optional signers, and minimum signatures with Teams Pro or Enterprise.",
+			"Set turn order (sequential or parallel) and minimum signatures (quorum) with Teams Pro or Enterprise.",
 	},
 	"features.shared_templates": {
 		title: "Templates require Teams plan",

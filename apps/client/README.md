@@ -42,7 +42,7 @@ From repo root (see [SCRIPTS.md](../../SCRIPTS.md)):
 
 Envelope create (`/dashboard/envelope/create`):
 
-- **`ComposeRoutingField`** — parallel/sequential signing, optional signers, quorum N (**Teams Pro**, `features.routing.advanced`).
+- **`ComposeRoutingField`** — parallel/sequential signing and quorum N (**Teams Pro**, `features.routing.advanced`). Optional signers are not supported on-chain in v1.
 - **`RecipientSettlementDialog`** — per-recipient USDC payout + release type (basic types on **Teams**, advanced on **Teams Pro**).
 - **`ComposeSettlementOptionsField`** — combine recipient drafts into one multi-leg rule (**Teams Pro**).
 - Send step passes routing + settlement drafts via `useSendFile`.

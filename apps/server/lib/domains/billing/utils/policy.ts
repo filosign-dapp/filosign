@@ -1,7 +1,15 @@
-import { dodoLive } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import DodoPayments from "dodopayments";
 import env from "@/env";
+import { resolveDodoLiveMode } from "./mode";
+
+/** Dodo API environment + default product IDs. `DODO_LIVE=false` → test_mode even on production. */
+export function isDodoLiveMode(): boolean {
+	return resolveDodoLiveMode({
+		deployment: env.DEPLOYMENT,
+		dodoLiveEnv: env.DODO_LIVE,
+	});
+}
 
 export function requireDodoApiKey(): string {
 	if (!env.DODO_API_KEY) {
@@ -18,7 +26,7 @@ export function createDodoClient(options?: { includeWebhookKey?: boolean }) {
 		...(options?.includeWebhookKey !== false && env.DODO_WEBHOOK_KEY
 			? { webhookKey: env.DODO_WEBHOOK_KEY }
 			: {}),
-		environment: dodoLive(env.DEPLOYMENT) ? "live_mode" : "test_mode",
+		environment: isDodoLiveMode() ? "live_mode" : "test_mode",
 	});
 }
 

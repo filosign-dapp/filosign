@@ -1,5 +1,4 @@
 import { getPlanName, type PlanId } from "@filosign/entitlements";
-import { dodoLive } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import type { Address } from "viem";
@@ -12,6 +11,7 @@ import {
 	type SubscriptionStatus,
 	userSubscriptions,
 } from "@/lib/platform/db/schema/billing";
+import { isDodoLiveMode } from "./utils/policy";
 import { subscriptionAccessFromRow } from "./utils/marketing";
 import { getOrgBillingSummary } from "./utils/org";
 import {
@@ -68,7 +68,7 @@ export function resolveProductId(
 		if (planId === "teams_pro" && env.DODO_PRODUCT_ID_TEAMS_PRO_YEARLY) {
 			return env.DODO_PRODUCT_ID_TEAMS_PRO_YEARLY;
 		}
-		return dodoLive(env.DEPLOYMENT)
+		return isDodoLiveMode()
 			? DODO_LIVE_PLAN_PRODUCT_IDS_YEARLY[planId]
 			: DODO_TEST_PLAN_PRODUCT_IDS_YEARLY[planId];
 	}
@@ -81,7 +81,7 @@ export function resolveProductId(
 	if (planId === "teams_pro" && env.DODO_PRODUCT_ID_TEAMS_PRO_MONTHLY) {
 		return env.DODO_PRODUCT_ID_TEAMS_PRO_MONTHLY;
 	}
-	return dodoLive(env.DEPLOYMENT)
+	return isDodoLiveMode()
 		? DODO_LIVE_PLAN_PRODUCT_IDS[planId]
 		: DODO_TEST_PLAN_PRODUCT_IDS[planId];
 }

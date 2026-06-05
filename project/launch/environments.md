@@ -29,7 +29,7 @@ Every deployed server needs:
 
 - `DEPLOYMENT` — one of `local` | `staging` | `sandbox` | `production`
 - `CHAIN` — must match tier (`staging`/`sandbox` → `testnet`, `production` → `mainnet`, `local` → `local`)
-- `DODO_API_KEY` / `DODO_WEBHOOK_KEY` — required on every tier (test mode except `production`, which uses live mode via `dodoLive()`)
+- `DODO_API_KEY` / `DODO_WEBHOOK_KEY` — required on every tier; live mode on `production` unless `DODO_LIVE=false` (test keys + test product IDs)
 
 Client build vars (see `apps/client/.env*.example`):
 

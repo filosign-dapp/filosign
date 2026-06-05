@@ -1,5 +1,5 @@
-import { dodoLive } from "@filosign/shared";
 import env from "@/env";
+import { isDodoLiveMode } from "./policy";
 
 export const ARCHIVAL_PRODUCT_IDS = [
 	"archival_year",
@@ -76,7 +76,7 @@ function registerArchivalProductMappings() {
 			archival_bundle_3y: env.DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_3Y,
 			archival_bundle_5y: env.DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_5Y,
 		}[productId];
-		const fallback = dodoLive(env.DEPLOYMENT)
+		const fallback = isDodoLiveMode()
 			? DODO_LIVE_ARCHIVAL_PRODUCT_IDS[productId]
 			: DODO_TEST_ARCHIVAL_PRODUCT_IDS[productId];
 		const dodoId = envKey ?? fallback;
@@ -95,7 +95,7 @@ export function resolveDodoProductIdForArchival(
 		archival_bundle_5y: env.DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_5Y,
 	}[productId];
 	if (fromEnv) return fromEnv;
-	return dodoLive(env.DEPLOYMENT)
+	return isDodoLiveMode()
 		? DODO_LIVE_ARCHIVAL_PRODUCT_IDS[productId]
 		: DODO_TEST_ARCHIVAL_PRODUCT_IDS[productId];
 }

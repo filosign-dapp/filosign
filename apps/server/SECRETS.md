@@ -60,7 +60,7 @@ Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`, `FC_OWNER_ADD
 
 1. Open project **Filosign** (linked via [`.infisical.json`](../../.infisical.json)).
 2. Environments **`staging`**, **`sandbox`**, and **`prod`** with server keys from [README Environment](../../README.md).
-3. Per env: set `DEPLOYMENT` + `CHAIN` (see table above). `DODO_*` required for `staging` and `prod`; optional for `sandbox`.
+3. Per env: set `DEPLOYMENT` + `CHAIN` (see table above). `DODO_*` required for `staging` and `prod`; optional for `sandbox`. Pre-launch prod billing: `DODO_LIVE=false` + test `DODO_API_KEY`.
 4. Copy **Project ID** → `INFISICAL_PROJECT_ID` in Dokploy.
 
 **Laptop (server):** `infisical login`, then e.g. `bun run dev:staging` / `db:push:staging` in `apps/server`.

@@ -71,6 +71,8 @@ const parsedEnv = createEnv({
 		ADMIN_WALLETS: z.string().optional(),
 		PLATFORM_ADMIN_EMAILS: z.string().optional(),
 		INVITE_TTL_DAYS: z.coerce.number().int().min(1).default(7),
+		/** Unset → live on `production`, test elsewhere. `false` → test_mode always. */
+		DODO_LIVE: z.enum(["true", "false"]).optional(),
 		DODO_API_KEY: z.string().min(1).optional(),
 		DODO_WEBHOOK_KEY: z.string().min(1).optional(),
 		DODO_API_BASE: z

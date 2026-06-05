@@ -13,6 +13,7 @@ export function useRecallEnvelope(pieceCid: string | undefined) {
 	return useMutation({
 		mutationFn: async (args: {
 			organizationId?: string | null;
+			registryAddress?: `0x${string}` | null;
 			recaller?: `0x${string}`;
 		}) => {
 			if (!pieceCid) throw new Error("pieceCid is required");
@@ -21,9 +22,17 @@ export function useRecallEnvelope(pieceCid: string | undefined) {
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 
+			const fileResponse = await rpcQuery.files.piece.detail.call({
+				pieceCid,
+			});
+			const organizationId =
+				args.organizationId ?? fileResponse.organizationId ?? null;
+			const registryAddress =
+				args.registryAddress ?? fileResponse.registryAddress;
+
 			const recaller = args.recaller ?? wallet.account.address;
-			const orgIdCommitment = args.organizationId
-				? hashOrgIdCommitment(args.organizationId)
+			const orgIdCommitment = organizationId
+				? hashOrgIdCommitment(organizationId)
 				: ZERO_ORG_ID_COMMITMENT;
 
 			const timestamp = await latestChainTimestamp(contracts);
@@ -33,6 +42,7 @@ export function useRecallEnvelope(pieceCid: string | undefined) {
 				pieceCid,
 				orgIdCommitment,
 				timestamp,
+				registryAddress,
 				recaller,
 			});
 

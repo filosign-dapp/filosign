@@ -206,9 +206,22 @@ describe("boolean features", () => {
 		).toBe(true);
 	});
 
-	const proOnly: FeatureKey[] = [
+	const teamComments: FeatureKey[] = [
 		"features.comments",
 		"features.draft_comments",
+	];
+
+	for (const key of teamComments) {
+		test(`${key} enabled on teams, teams_pro, and enterprise`, () => {
+			expect(check(ctx("free"), key).allowed).toBe(false);
+			expect(check(ctx("individual"), key).allowed).toBe(false);
+			expect(check(ctx("teams"), key).allowed).toBe(true);
+			expect(check(ctx("teams_pro"), key).allowed).toBe(true);
+			expect(check(ctx("enterprise"), key).allowed).toBe(true);
+		});
+	}
+
+	const proOnly: FeatureKey[] = [
 		"features.integrations.custom",
 		"features.quota_allocation",
 		"features.bulk_send",

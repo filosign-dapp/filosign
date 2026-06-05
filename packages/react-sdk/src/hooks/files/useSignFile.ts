@@ -7,6 +7,7 @@ import {
 } from "@filosign/crypto-utils";
 import {
 	completionsMerkleRootV1,
+	type FieldCompletionMap,
 	hashNormalizedSignerEmail,
 	LEAF_SCHEMA_VERSION_V1,
 	SETTLEMENT_FEATURE_TERMS_VERSION,
@@ -40,6 +41,7 @@ export function useSignFile() {
 		mutationFn: async (args: {
 			pieceCid: string;
 			completedFieldIds: string[];
+			fieldCompletions?: FieldCompletionMap;
 			settlementRecipientAck?: {
 				termsVersion: string;
 				acceptedAt: number;
@@ -47,7 +49,12 @@ export function useSignFile() {
 		}) => {
 			let success = false;
 
-			const { pieceCid, completedFieldIds, settlementRecipientAck } = args;
+			const {
+				pieceCid,
+				completedFieldIds,
+				fieldCompletions,
+				settlementRecipientAck,
+			} = args;
 			const textEncoder = new TextEncoder();
 
 			const dilithium = wasm.dilithium;
@@ -217,6 +224,23 @@ export function useSignFile() {
 						timestamp,
 						dl3Signature: toHex(dl3Signature),
 						completedFieldIds,
+						...(fieldCompletions && Object.keys(fieldCompletions).length > 0
+							? {
+									fieldCompletions: Object.fromEntries(
+										Object.entries(fieldCompletions).map(([id, c]) => [
+											id,
+											{
+												fieldId: c.fieldId,
+												valueKind: c.valueKind,
+												sourceArtifactId: c.sourceArtifactId,
+												storageKey: c.storageKey,
+												contentSha256: c.contentSha256,
+												textValue: c.textValue,
+											},
+										]),
+									),
+								}
+							: {}),
 						...(needsPayoutAck ? { settlementRecipientAck } : {}),
 					},
 				});

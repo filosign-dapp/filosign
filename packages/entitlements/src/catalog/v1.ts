@@ -1,6 +1,14 @@
 import type { FeatureKey } from "../features";
 import type { PlanEntitlements, PlanId } from "../types";
 
+const teamCommentFeatures = {
+	"features.draft_comments": { kind: "boolean", enabled: true },
+	"features.comments": { kind: "boolean", enabled: true },
+} as const satisfies Pick<
+	PlanEntitlements,
+	"features.draft_comments" | "features.comments"
+>;
+
 const teamCollaborationFeatures = {
 	"features.shared_templates": { kind: "boolean", enabled: true },
 	"features.team_drafts": { kind: "boolean", enabled: true },
@@ -215,6 +223,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		"features.routing.advanced": { kind: "boolean", enabled: false },
 		"features.settlement.advanced": { kind: "boolean", enabled: false },
 		...disabledProFeatures,
+		...teamCommentFeatures,
 		...teamsSupplementaryFeatures,
 		...paidArchivalPurchase,
 	},

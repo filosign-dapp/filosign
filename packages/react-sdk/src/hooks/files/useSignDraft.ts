@@ -1,3 +1,4 @@
+import type { FieldCompletionMap } from "@filosign/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 
@@ -9,7 +10,10 @@ export function useSignDraft(pieceCid: string | undefined) {
 			input: { pieceCid: pieceCid ?? "" },
 		}),
 		enabled: isAuthed && !!pieceCid,
-		select: (data) => data.completedFieldIds,
+		select: (data) => ({
+			completedFieldIds: data.completedFieldIds,
+			fieldCompletions: data.fieldCompletions,
+		}),
 	});
 }
 
@@ -21,11 +25,15 @@ export function useUpdateSignDraft() {
 		mutationFn: async (args: {
 			pieceCid: string;
 			completedFieldIds: string[];
+			fieldCompletions?: FieldCompletionMap;
 		}) => {
 			if (!isAuthed) throw new Error("Not authenticated");
 			return rpcQuery.files.piece.signDraftPut.call({
 				pieceCid: args.pieceCid,
-				body: { completedFieldIds: args.completedFieldIds },
+				body: {
+					completedFieldIds: args.completedFieldIds,
+					fieldCompletions: args.fieldCompletions,
+				},
 			});
 		},
 		onSuccess: (data, variables) => {

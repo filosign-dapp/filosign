@@ -5,12 +5,14 @@ export * from "./utils/deployment";
 export * from "./utils/document-merkle";
 export * from "./utils/draft";
 export * from "./utils/evm-wire";
+export * from "./utils/field-completion";
 export * from "./utils/file-data";
 export * from "./utils/keygen";
 export * from "./utils/placement";
 export * from "./utils/routing";
 export * from "./utils/settlement-legal";
 export * from "./utils/settlement-rules";
+export * from "./utils/signature-artifact";
 export * from "./utils/supplementary-packet-unlock";
 
 export function base64ToUint8(base64: string): Uint8Array {

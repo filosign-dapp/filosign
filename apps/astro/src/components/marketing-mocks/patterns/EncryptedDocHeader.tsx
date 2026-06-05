@@ -1,6 +1,7 @@
 import { FileTextIcon } from "@phosphor-icons/react";
 import MockBadge from "../kit/MockBadge";
-import MockMonoChip from "../kit/MockMonoChip";
+import MockRecipientChip from "../kit/MockRecipientChip";
+import { mockPersonas } from "../tokens";
 
 type EncryptedDocHeaderProps = {
 	filename?: string;
@@ -11,7 +12,7 @@ type EncryptedDocHeaderProps = {
 export default function EncryptedDocHeader({
 	filename = "Contractor_Agreement.pdf",
 	fieldCount = 3,
-	recipients = ["0xAB…CD", "0x12…89"],
+	recipients = [mockPersonas.alice.email, mockPersonas.bob.email],
 }: EncryptedDocHeaderProps) {
 	return (
 		<div className="space-y-4">
@@ -30,8 +31,8 @@ export default function EncryptedDocHeader({
 				<MockBadge className="px-2 py-0.5">Encrypted</MockBadge>
 			</div>
 			<div className="flex flex-wrap gap-2">
-				{recipients.map((address) => (
-					<MockMonoChip key={address}>{address}</MockMonoChip>
+				{recipients.map((email) => (
+					<MockRecipientChip key={email}>{email}</MockRecipientChip>
 				))}
 			</div>
 		</div>

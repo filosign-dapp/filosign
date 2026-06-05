@@ -1,3 +1,9 @@
+/** Shared email identities for marketing mocks (user-facing, not wallet addresses). */
+export const mockPersonas = {
+	alice: { name: "Alice", email: "alice@agency.co" },
+	bob: { name: "Bob", email: "bob@client.com" },
+} as const;
+
 export type MockPanelVariant = "compact" | "default" | "auto";
 
 export const mockPanelShell =

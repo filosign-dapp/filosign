@@ -10,20 +10,25 @@ Release conditions answer one question: **when should this happen?**
 
 Payout packets and gated files share the same list of release condition options.
 
-## What happens when the condition is met
+## When to use this
 
-You do not press a button. Filosign handles it.
+* You are attaching a payout packet and need to pick **Pay out when**
+* You are adding gated files with **Conditions are met** unlock
+* Two condition labels sound similar and you want to know which to pick
+* You need to understand what happens automatically when a condition is met
+
+## How it works
+
+You do not press a button. Filosign handles it after signatures, as signing progress updates.
 
 | Feature | What Filosign does |
 |---|---|
 | **Payout packets** | Moves approved USDC from the payer wallet to each recipient in that payout packet. See [Payout packets](/docs/workflows/payouts/). |
 | **Gated files** | Unlocks the file packet so chosen recipients can download. See [Gated file release](/docs/workflows/attached-files/). |
 
-This runs after signatures, as signing progress updates. If something fails, the sign page may show **Pay now** (payouts only) so you can retry.
-
 **Right after send** file packets ignore release conditions. They unlock as soon as the envelope is sent.
 
-## All release options
+### All release options
 
 | Option in the app | What has to happen |
 |---|---|
@@ -37,27 +42,36 @@ This runs after signatures, as signing progress updates. If something fails, the
 | **Enough people from the full roster sign** | At least **N** people from the full signer list have signed |
 | **Everyone on your list signs** | Every signer on the roster has signed |
 
-## Extra fields you may see
+### Extra fields you may see
 
-**Which signer triggers payout** appears when you pick **A specific person signs** for a payout packet. Choose one person from the envelope.
+**Which signer triggers payout** appears when you pick **A specific person signs** for a payout packet.
 
-**How many signatures are needed** appears for the options that use a number. Enter how many signatures count.
+**How many signatures are needed** appears for options that use a number.
 
-**Cutoff date (optional)** appears when you attach a payout packet. After that date and time, the payout cannot run. You cannot change the cutoff later from **Change payout amounts**.
+**Cutoff date (optional)** appears when you attach a payout packet. Gated file packets do not offer a cutoff date in the compose dialog today.
 
-Gated file packets do not offer a cutoff date in the compose dialog today.
+## Example workflow
 
-## Tips
+An HR team sends a bonus waiver to an employee and manager. The payout packet uses **Pay out when: A specific person signs** with the manager selected. When the manager signs, USDC sends to the employee even if optional viewers have not opened the document.
 
-**Some options sound different but fire at the same milestone.** A few choices describe different intents (for example, "everyone required" vs "everyone including optional") but may unlock or pay at the same point depending on who is on the envelope. Pick the label that best matches what you mean.
+## What to watch out for
 
-**Group options use the full signer list.** For **Enough people sign** and similar options, Filosign uses everyone on the envelope roster. You cannot pick a custom subgroup in the UI today.
+* Some options sound different but fire at the same milestone depending on who is on the envelope. Pick the label that best matches what you mean.
+* Group options use the full signer list. You cannot pick a custom subgroup in the UI today.
+* If a payout fails (not enough USDC, approval removed), the sign page may show **Pay now** so you can retry.
+* Turn order and minimum signatures from [Signing and routing](/docs/workflows/signing-and-routing/) affect when "everyone has signed" is satisfied.
+
+## How to pick a condition in the app
+
+1. While attaching a payout packet or gated file packet, open the **Pay out when** or **Unlock when** dropdown.
+2. Choose the condition that matches your business rule.
+3. Fill in **N** or pick a specific signer if the option asks for it.
+4. For payouts, optionally set a **Cutoff date**.
 
 ## Related guides
 
 * [Payout packets](/docs/workflows/payouts/)
 * [Gated file release](/docs/workflows/attached-files/)
-
-## Policies
+* [Signing and routing](/docs/workflows/signing-and-routing/)
 
 Release conditions for payout packets are part of the [Payout attachment](/legal/non-custodial-settlement) model in our [Terms of Service](/terms). Signing evidence is described in [E-signature evidence](/legal/e-signature-validity).

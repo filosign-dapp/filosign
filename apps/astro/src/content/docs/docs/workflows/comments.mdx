@@ -5,40 +5,47 @@ description: Encrypted team comments while composing drafts and on sent envelope
 
 **Comments** let workspace members coordinate on drafts and open envelopes without leaving Filosign. Comments are **end-to-end encrypted** like the documents they discuss.
 
-## Plans
+## When to use this
+
+* Legal or finance wants internal notes on a draft before send
+* Your team needs to agree on a [void](/docs/workflows/envelope-governance/) or [signer amendment](/docs/workflows/envelope-governance/) before acting
+* You want to flag payout or attachment questions on an open envelope
+
+## How it works
 
 Comments on **drafts** and **documents** require **Teams** or **Teams Pro**.
 
-## Draft comments
+**Draft comments** appear on saved team drafts while you are still composing. Everyone who can access the draft can read and post.
 
-While composing a saved team draft:
+**Envelope comments** appear on the sign or document page header. Everyone who can decrypt the envelope can read and post.
 
-1. Open the **Comments** panel on the add-sign step.
-2. Post notes visible to everyone who can access the draft.
+Comments are not included as formal proof fields in the proof report. Workflow events and signatures are.
 
-Use draft comments for internal review ("Legal wants clause 4 moved", "Wait for finance before send").
+## Example workflow
 
-Draft comments require **Teams+** and a saved team draft.
+Before voiding a sent agreement, an admin posts in envelope comments: "Legal approved void; waiting for finance." The team aligns in the encrypted thread, then the admin voids from the document page.
 
-## Envelope comments
+## What to watch out for
 
-On the sign or document page, open **Comments** in the header.
+* Comments are not public or visible to recipients outside the encrypted thread.
+* Comments are not a substitute for legal advice or external counsel review.
+* Comments do not replace [draft review links](/docs/workflows/drafts/) when external clients need view-only access.
 
-Everyone who can decrypt the envelope can read and post. Typical uses:
+## How to comment in the app
 
-* Coordinate a [signer amendment](/docs/workflows/envelope-governance/)
-* Discuss a [void](/docs/workflows/envelope-governance/) before executing
-* Flag payout or attachment questions
+### On a draft
 
-Comments are not a substitute for legal advice or external counsel review.
+1. Open a saved team draft on the add-sign step.
+2. Open the **Comments** panel.
+3. Post notes visible to everyone who can access the draft.
 
-## What comments are not
+### On a sent envelope
 
-* Public or visible to recipients outside the encrypted thread
-* Included as formal proof fields in the proof report (workflow events and signatures are)
-* A replacement for [draft review links](/docs/workflows/drafts/) when external clients need view-only access
+1. Open the sign or document page.
+2. Open **Comments** in the header.
+3. Post and read notes with teammates who can decrypt the envelope.
 
-## Related
+## Related guides
 
 * [Drafts](/docs/workflows/drafts/)
 * [Envelope governance](/docs/workflows/envelope-governance/)

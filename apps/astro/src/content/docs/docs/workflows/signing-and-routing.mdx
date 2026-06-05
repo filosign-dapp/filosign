@@ -3,54 +3,58 @@ title: Signing and routing
 description: What signers experience, signing order, and minimum signatures.
 ---
 
-## What does my signer see?
+After you **send**, each recipient opens a familiar signing page: accept electronic records (if prompted), read the document, fill assigned fields, and confirm signing in the app. Filosign records each step for your [proof export](/docs/proof/completion-packet/). Signers do not need special software.
 
-After you **send**, each recipient opens a familiar signing page:
+## When to use this
 
-1. Accept access to electronic records (if prompted)
-2. Read the document
-3. Fill assigned fields (signature, date, text, and so on)
-4. Confirm signing in the app
+* You are setting up an envelope and need to choose parallel vs sequential signing
+* You need **minimum signatures** (for example, 2 of 5 board members) on Teams Pro
+* A recipient does not have a Filosign account yet
+* You want to understand how routing affects payout and gated-file release
 
-Filosign records each step for your [proof export](/docs/proof/completion-packet/). Signers do not need special software.
+## How it works
 
-## Can everyone sign at once?
+By default, all signers can open and sign in **parallel**, like most e-sign tools.
 
-**Yes, by default.** All signers can open and sign in parallel, like most e-sign tools.
+**Teams Pro** adds:
 
-## I need people to sign in order
-
-**Teams Pro** supports **turn order**: signers must sign in the sequence you set (e.g. employee, then manager, then HR).
-
-While composing, open **Signing order** and arrange recipients.
-
-## I only need some signatures, not all
-
-**Teams Pro** supports **minimum signatures**: set how many signers must finish for the envelope to count as complete (for example, 2 of 5 board members).
-
-Enable **Minimum signatures** while composing.
+* **Turn order**: signers must sign in the sequence you set (for example, employee, then manager, then HR)
+* **Minimum signatures**: set how many signers must finish for the envelope to count as complete
 
 Turn order and minimum signatures affect when [payout packets](/docs/workflows/payouts/) and [gated file release](/docs/workflows/attached-files/) release.
 
-## Recipients without an account yet
+**Viewers** can read but do not sign. Their access is still private and logged in proof exports.
 
 Some people receive an invite before they create a Filosign account. They use a **one-time recovery phrase** from the invite to open the document, then complete the same signing steps.
 
-## Viewers
+When signing finishes:
 
-**Viewers** can read but do not sign. Their access is still private and logged in proof exports.
+* Status becomes **completed**
+* Payouts and locked files [release automatically](/docs/workflows/) when your rules match
+* **Proof downloads** unlock
 
-## What happens when signing finishes?
+## Example workflow
 
-- Status becomes **completed**
-- Payouts and locked files [release automatically](/docs/workflows/) when your rules match
-- **Proof downloads** unlock
+A company sends an employment agreement to an employee, manager, and HR. On Teams Pro, they enable **Signing order** so the employee signs first, then the manager, then HR. The attached payout packet uses **Pay out when: Everyone required has signed**, which fires after HR completes the sequence.
 
-## Problems while signing?
+## What to watch out for
 
-Search [Troubleshooting](/docs/troubleshooting/) for the exact message (for example, waiting for another signer, or open the document before signing).
+* Minimum signatures and turn order change what "complete" means for release conditions.
+* Recipients without accounts need their one-time phrase from the invite.
+* Signing problems often mean waiting for another signer or opening the document before signing. Search [Troubleshooting](/docs/troubleshooting/) for the exact message.
 
-## Related
+## How to set routing in the app
 
-- [Signature library](/docs/proof/signature-library/)
-- [E-signature evidence](/docs/proof/e-signature-evidence/)
+1. While composing, add recipients and assign signer vs viewer roles.
+2. Open **Signing order** to arrange turn sequence (Teams Pro).
+3. Enable **Minimum signatures** and enter how many signers must finish (Teams Pro).
+4. Place fields for each signer, then send.
+
+Signers use the [signature library](/docs/proof/signature-library/) to reuse saved signature styles when fields are assigned to them.
+
+## Related guides
+
+* [Release conditions](/docs/workflows/release-conditions/)
+* [Signature library](/docs/proof/signature-library/)
+* [E-signature evidence](/docs/proof/e-signature-evidence/)
+* [Troubleshooting](/docs/troubleshooting/)

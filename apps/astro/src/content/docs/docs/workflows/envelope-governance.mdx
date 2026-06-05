@@ -3,36 +3,25 @@ title: Void or change a sent envelope
 description: Cancel before completion, replace a signer, or adjust payout packets and gated files after send.
 ---
 
-## Can I cancel after I hit Send?
+Workspace **owners** and **admins** can void (recall) an envelope before everyone required has signed. Senders can too in many cases. You cannot void after the envelope is **fully complete** (or after your minimum signature rule is satisfied).
 
-**Yes, before everyone required has signed.** Workspace **owners** and **admins** can **void** (recall) the envelope. Senders can too in many cases. You cannot void after the envelope is **fully complete** (or after your minimum signature rule is satisfied).
+## When to use this
 
-Voiding:
+* You sent to the wrong signer and they have **not signed yet**
+* You need to cancel an in-progress agreement before it completes
+* You want to attach, update, or cancel payout packets or gated files after send
+* Your team needs to agree on a void or signer change before acting
 
-* Stops outstanding invites.
-* Marks the workflow as voided in your records.
-* Still lets you download a [proof packet](/docs/proof/completion-packet/) showing what happened.
+## How it works
 
-Signatures that already occurred may still appear in the verification record. See [Verification records](/docs/security/on-chain-record/).
+**Voiding** stops outstanding invites, marks the workflow as voided in your records, and still lets you download a [proof packet](/docs/proof/completion-packet/) showing what happened. Signatures that already occurred may still appear in the verification record. See [Verification records](/docs/security/on-chain-record/).
 
-Open **Void envelope** from the document page.
+**Signer amendment**: if a signer **has not signed yet**, owners and admins can replace them with someone else. New invites go out automatically. If they **already signed**, you need a new envelope.
 
-## The wrong person is listed as a signer
+After send, on eligible plans, you can often:
 
-If they **have not signed yet**, owners and admins can **amend** the roster: replace them with someone else. New invites go out automatically.
-
-If they **already signed**, you need a different workflow (new envelope). Filosign does not silently swap completed signatures.
-
-## Can I change payout packets or gated files after send?
-
-Often **yes**, on eligible plans:
-
-* **Payout packets**: attach, update, or cancel rules that have not executed yet.
-* **Gated files**: attach or cancel packets on Teams Pro before they unlock.
-
-Treasury payouts still need your **team wallet** to approve funds. See [Payout packets](/docs/workflows/payouts/).
-
-## Who is allowed to do this?
+* **Payout packets**: attach, update, or cancel rules that have not executed yet
+* **Gated files**: attach or cancel packets on Teams Pro before they unlock
 
 | Role | Void / amend | Send envelopes |
 |------|:------------:|:--------------:|
@@ -40,11 +29,28 @@ Treasury payouts still need your **team wallet** to approve funds. See [Payout p
 | Sender | Send only; cannot override admin void rules | Yes |
 | Viewer | No | No |
 
-## Coordinate with your team
+## Example workflow
 
-Use [Comments](/docs/workflows/comments/) on the envelope to agree on a void or signer change before you act.
+An admin notices the wrong email on an NDA signer who has not opened the document yet. They open the document page, amend the roster to swap in the correct recipient, and coordinate with legal through [Comments](/docs/workflows/comments/) before anyone signs.
 
-## Related
+## What to watch out for
+
+* You cannot void after the envelope is fully complete.
+* Filosign does not silently swap completed signatures.
+* You cannot change payout terms after the first required signer signs, or after anyone has been paid.
+* Treasury payouts still need your **team wallet** to approve funds.
+
+## How to govern envelopes in the app
+
+1. Open the document page for the sent envelope.
+2. Use **Void envelope** to cancel before completion.
+3. Use signer amendment to replace someone who has not signed yet.
+4. Use **Attach payout**, **Change payout amounts**, or gated-file controls while rules are still eligible.
+5. Download a proof packet after void if you need a record of partial progress.
+
+## Related guides
 
 * [Signing and routing](/docs/workflows/signing-and-routing/)
+* [Payout packets](/docs/workflows/payouts/)
+* [Comments](/docs/workflows/comments/)
 * [Verification records](/docs/security/on-chain-record/)

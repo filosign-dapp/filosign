@@ -12,11 +12,13 @@ import {
 function BentoCard({
 	title,
 	description,
+	docsHref,
 	body,
 	cardClassName,
 }: {
 	title: string;
 	description: string;
+	docsHref?: string;
 	body: ReactNode;
 	cardClassName?: string;
 }) {
@@ -32,6 +34,14 @@ function BentoCard({
 				<p className="text-muted-foreground text-sm leading-relaxed font-manrope mt-2 font-light">
 					{description}
 				</p>
+				{docsHref ? (
+					<a
+						href={docsHref}
+						className="mt-3 inline-block text-sm font-medium text-primary underline-offset-4 hover:underline font-manrope"
+					>
+						Learn more in the docs
+					</a>
+				) : null}
 			</div>
 			<div className="p-6 pt-0 flex-1 flex flex-col justify-end">{body}</div>
 		</div>
@@ -44,18 +54,21 @@ export default function FeaturesBentoIsland() {
 			title: "Private documents",
 			description:
 				"Files are encrypted in your browser before upload. Filosign does not receive the plaintext document in normal operation.",
+			docsHref: "/docs/security/encrypted-workflows",
 			body: <PrivateByDefaultMock />,
 		},
 		{
 			title: "Proof you can export",
 			description:
 				"Download a clear record of who signed, when they signed, which fields were completed, and the verification data behind it.",
+			docsHref: "/docs/proof/completion-packet",
 			body: <ProofOutsideMock />,
 		},
 		{
 			title: "Recipient control",
 			description:
 				"Recipients can approve who is allowed to send them documents, reducing spam and unwanted signing requests.",
+			docsHref: "/docs/workspace/connections",
 			body: <RecipientControlMock />,
 		},
 	];
@@ -122,6 +135,12 @@ export default function FeaturesBentoIsland() {
 									when the required signatures are complete. Filosign does not
 									hold payout funds.
 								</p>
+								<a
+									href="/docs/workflows"
+									className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline font-manrope"
+								>
+									See agreement workflow guides
+								</a>
 							</div>
 
 							<SignAndSettleMock />

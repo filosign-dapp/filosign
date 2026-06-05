@@ -2,6 +2,7 @@ import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import { z } from "zod";
 import env from "@/env";
 import {
 	type ArchivalProductId,
@@ -21,6 +22,7 @@ import {
 } from "@/lib/domains/entitlements";
 import db from "@/lib/platform/db";
 import type { OrganizationArchivalStatus } from "@/lib/platform/db/schema/organization";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const { organizationArchival } = db.schema;
 
@@ -67,9 +69,15 @@ export async function createOrgArchivalCheckoutSession(args: {
 			allowedOrigins: env.BILLING_RETURN_URL_ORIGINS,
 		})
 	) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "returnUrl origin is not allowed",
-		});
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["returnUrl"],
+					message: "returnUrl origin is not allowed",
+				},
+			]),
+		);
 	}
 
 	const entitlementCtx = await resolveEntitlementContext(
@@ -103,7 +111,7 @@ export async function createOrgArchivalCheckoutSession(args: {
 			},
 		})) as typeof checkout;
 	} catch (error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to create archival checkout session",
 			cause: error,
 		});
@@ -111,7 +119,7 @@ export async function createOrgArchivalCheckoutSession(args: {
 
 	const checkoutUrl = checkout.url ?? checkout.checkout_url;
 	if (!checkoutUrl) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Dodo checkout URL was not returned",
 		});
 	}
@@ -123,7 +131,15 @@ export function parseArchivalPurchaseProductId(
 	productId: string,
 ): ArchivalProductId {
 	if (!isArchivalProductId(productId)) {
-		throw new ORPCError("BAD_REQUEST", { message: "Unknown archival product" });
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["productId"],
+					message: "Unknown archival product",
+				},
+			]),
+		);
 	}
 	return productId;
 }

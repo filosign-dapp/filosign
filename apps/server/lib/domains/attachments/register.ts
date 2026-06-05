@@ -1,4 +1,5 @@
 import { computeCidIdentifier } from "@filosign/contracts";
+import { throwAppError } from "@filosign/errors/server";
 import {
 	hashNormalizedSignerEmail,
 	SUPPLEMENTARY_ATTACHMENT_LIMITS,
@@ -17,6 +18,7 @@ import db from "@/lib/platform/db";
 import { fsAttachmentReleaseAt } from "@/lib/platform/evm";
 import { bucket } from "@/lib/platform/s3/client";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const {
 	files,
@@ -61,7 +63,7 @@ export async function insertAttachmentPacketsForFile(args: {
 }) {
 	const parsed = zAttachmentPacketsRegister.safeParse(args.packets ?? []);
 	if (parsed.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 	if (parsed.data.length === 0) return;
 
@@ -83,9 +85,7 @@ export async function insertAttachmentPacketsForFile(args: {
 	for (const packet of parsed.data) {
 		const storageKey = `uploads/attachments/${packet.packetCid}`;
 		if (!(await bucket.exists(storageKey))) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: `Attachment packet not found on storage: ${packet.packetId}`,
-			});
+			throw throwAppError("ATTACHMENTS.PACKET_NOT_FOUND");
 		}
 	}
 
@@ -156,8 +156,10 @@ export async function insertAttachmentPacketsForFile(args: {
 			if (packet.coldWraps?.length) {
 				const token = args.coldInviteToken?.trim();
 				if (!token) {
-					throw new ORPCError("BAD_REQUEST", {
-						message: "Cold packet wraps require envelope cold invite",
+					throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+						params: {
+							reason: "Cold packet wraps require envelope cold invite",
+						},
 					});
 				}
 				await tx.insert(envelopeAttachmentPacketColdWraps).values(
@@ -195,7 +197,7 @@ export async function linkAttachmentPacketOnChainRule(
 ) {
 	const parsed = zLinkAttachmentOnChainRuleInput.safeParse(body);
 	if (parsed.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 	const input = parsed.data;
 
@@ -205,7 +207,7 @@ export async function linkAttachmentPacketOnChainRule(
 		.where(eq(files.pieceCid, input.pieceCid))
 		.limit(1);
 	if (!file || getAddress(file.sender) !== getAddress(sender)) {
-		throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+		throw throwAppError("ATTACHMENTS.FORBIDDEN");
 	}
 
 	const [packet] = await db
@@ -219,7 +221,7 @@ export async function linkAttachmentPacketOnChainRule(
 		)
 		.limit(1);
 	if (!packet) {
-		throw new ORPCError("NOT_FOUND", { message: "Packet not found" });
+		throw throwAppError("ATTACHMENTS.PACKET_NOT_FOUND");
 	}
 
 	const releaseContractAddress = getAddress(input.releaseContractAddress);
@@ -249,21 +251,25 @@ export async function linkAttachmentPacketOnChainRule(
 		if (existingRule && existingRule.packetRowId !== packet.id) {
 			const release = fsAttachmentReleaseAt(releaseContractAddress);
 			if (!release) {
-				throw new ORPCError("INTERNAL_SERVER_ERROR", {
+				throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 					message: "Attachment release contract unavailable",
 				});
 			}
 			const ruleRes = await tryCatch(release.read.rules([onChainRuleId]));
 			if (ruleRes.error) {
-				throw new ORPCError("BAD_REQUEST", {
-					message: "Could not verify on-chain attachment rule",
+				throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+					params: {
+						reason: "Could not verify on-chain attachment rule",
+					},
 				});
 			}
 			const onChainCidId = ruleRes.data[0] as Hex;
 			const expectedCidId = computeCidIdentifier(input.pieceCid);
 			if (onChainCidId !== expectedCidId) {
-				throw new ORPCError("BAD_REQUEST", {
-					message: "On-chain attachment rule already linked to another packet",
+				throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+					params: {
+						reason: "On-chain attachment rule already linked to another packet",
+					},
 				});
 			}
 

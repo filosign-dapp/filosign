@@ -1,4 +1,4 @@
-import { ORPCError } from "@orpc/server";
+import { throwAppError } from "@filosign/errors/server";
 import type { Address } from "viem";
 import {
 	createOrgArchivalCheckoutSession,
@@ -14,9 +14,7 @@ export function archivalProducts() {
 
 export async function archivalStatus(activeOrg: ActiveOrgContext | null) {
 	if (!activeOrg) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "X-Org-Id header required",
-		});
+		throw throwAppError("WORKSPACE.ORG_CONTEXT_REQUIRED");
 	}
 	return getOrgArchivalStatus(activeOrg.organizationId);
 }
@@ -28,9 +26,7 @@ export async function archivalPurchase(args: {
 	returnUrl: string;
 }) {
 	if (!args.activeOrg) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "X-Org-Id header required",
-		});
+		throw throwAppError("WORKSPACE.ORG_CONTEXT_REQUIRED");
 	}
 	assertOrgPermission(args.activeOrg, "billing:manage");
 	const productId = parseArchivalPurchaseProductId(args.productId);

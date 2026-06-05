@@ -1,3 +1,4 @@
+import { throwAppError } from "@filosign/errors/server";
 import {
 	normalizePlacementRecipientEmail,
 	supplementaryPacketUnlockSummary,
@@ -6,11 +7,13 @@ import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import { z } from "zod";
 import { primaryEmailForWallet } from "@/lib/domains/files";
 import db from "@/lib/platform/db";
 import { fsAttachmentReleaseAt } from "@/lib/platform/evm";
 import { bucket } from "@/lib/platform/s3/client";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const {
 	files,
@@ -58,9 +61,7 @@ export async function selectAttachmentReleaseRule(
 		)
 		.limit(1);
 	if (!row) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "Attachment release rule not found",
-		});
+		throw throwAppError("SETTLEMENTS.RULE_NOT_FOUND");
 	}
 	return row;
 }
@@ -72,7 +73,15 @@ export async function listSupplementaryPacketsForParticipant(args: {
 }): Promise<SupplementaryPacketForParticipant[]> {
 	const pieceCid = args.pieceCid.trim();
 	if (!pieceCid) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid pieceCid" });
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["pieceCid"],
+					message: "Invalid pieceCid",
+				},
+			]),
+		);
 	}
 
 	const userWallet = getAddress(args.userWallet);
@@ -191,15 +200,21 @@ export async function attachmentsPacketAccess(args: {
 	const pieceCid = args.pieceCid.trim();
 	const packetId = args.packetId.trim();
 	if (!pieceCid || !packetId) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid request" });
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["pieceCid"],
+					message: "Invalid request",
+				},
+			]),
+		);
 	}
 
 	const userWallet = getAddress(args.userWallet);
 	const profileEmail = await primaryEmailForWallet(userWallet);
 	if (!profileEmail) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Profile email required to access attachment packets",
-		});
+		throw throwAppError("ATTACHMENTS.FORBIDDEN");
 	}
 	const emailKey = normalizePlacementRecipientEmail(profileEmail);
 
@@ -214,9 +229,7 @@ export async function attachmentsPacketAccess(args: {
 		)
 		.limit(1);
 	if (!packet) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "Attachment packet not found",
-		});
+		throw throwAppError("ATTACHMENTS.PACKET_NOT_FOUND");
 	}
 
 	const [file] = await db
@@ -230,7 +243,7 @@ export async function attachmentsPacketAccess(args: {
 		.where(eq(files.pieceCid, pieceCid))
 		.limit(1);
 	if (!file) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throw throwAppError("FILES.NOT_FOUND");
 	}
 
 	const isSender = getAddress(file.sender) === userWallet;
@@ -246,9 +259,7 @@ export async function attachmentsPacketAccess(args: {
 		.limit(1);
 
 	if (!isSender && !participant) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Not allowed to access attachment packets for this file",
-		});
+		throw throwAppError("ATTACHMENTS.FORBIDDEN");
 	}
 
 	const [recipientRow] = await db
@@ -263,17 +274,13 @@ export async function attachmentsPacketAccess(args: {
 		.limit(1);
 
 	if (!recipientRow && !isSender) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "This attachment packet is not shared with your email",
-		});
+		throw throwAppError("ATTACHMENTS.FORBIDDEN");
 	}
 
 	if (isSender) {
 		const storageKey = `uploads/attachments/${packet.packetCid}`;
 		if (!(await bucket.exists(storageKey))) {
-			throw new ORPCError("NOT_FOUND", {
-				message: "Packet ciphertext not found",
-			});
+			throw throwAppError("ATTACHMENTS.PACKET_NOT_FOUND");
 		}
 		return {
 			packetId: packet.packetId,
@@ -289,13 +296,15 @@ export async function attachmentsPacketAccess(args: {
 
 	if (packet.releaseMode === "conditional") {
 		if (packet.onChainRuleId == null || !packet.releaseContractAddress) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "Conditional packet missing on-chain rule",
+			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+				params: {
+					reason: "Conditional packet missing on-chain rule",
+				},
 			});
 		}
 		const release = fsAttachmentReleaseAt(packet.releaseContractAddress);
 		if (!release) {
-			throw new ORPCError("INTERNAL_SERVER_ERROR", {
+			throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 				message: "Attachment release contract unavailable",
 			});
 		}
@@ -303,17 +312,13 @@ export async function attachmentsPacketAccess(args: {
 		const released = !rulesRes.error && rulesRes.data[8];
 		const cancelled = !rulesRes.error && rulesRes.data[9];
 		if (cancelled || !released) {
-			throw new ORPCError("FORBIDDEN", {
-				message: "Attachment packet is not yet releasable",
-			});
+			throw throwAppError("ATTACHMENTS.FORBIDDEN");
 		}
 	}
 
 	const storageKey = `uploads/attachments/${packet.packetCid}`;
 	if (!(await bucket.exists(storageKey))) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "Packet ciphertext not found",
-		});
+		throw throwAppError("ATTACHMENTS.PACKET_NOT_FOUND");
 	}
 
 	const downloadUrl = bucket.presign(storageKey, {

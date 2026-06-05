@@ -1,3 +1,4 @@
+import { throwAppError } from "@filosign/errors/server";
 import { draftSnapshotKey } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq, isNull } from "drizzle-orm";
@@ -12,6 +13,7 @@ import {
 import db from "@/lib/platform/db";
 import { randomUuidV7 } from "@/lib/platform/db/random-uuid-v7";
 import { bucket } from "@/lib/platform/s3/client";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const {
 	envelopeDrafts,
@@ -29,7 +31,7 @@ export async function loadDraftOrThrow(draftId: string): Promise<DraftRow> {
 		.where(eq(envelopeDrafts.id, draftId))
 		.limit(1);
 	if (!row) {
-		throw new ORPCError("NOT_FOUND", { message: "Draft not found" });
+		throwAppError("DRAFTS.NOT_FOUND");
 	}
 	return row;
 }
@@ -39,9 +41,7 @@ export async function assertDraftCreator(
 	draft: DraftRow,
 ): Promise<void> {
 	if (getAddress(draft.createdByWallet) !== getAddress(wallet)) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Only the draft creator can perform this action",
-		});
+		throwAppError("DRAFTS.FORBIDDEN");
 	}
 }
 
@@ -54,9 +54,7 @@ export async function assertCanReadDraft(args: {
 	if (getAddress(args.draft.createdByWallet) === walletNorm) return;
 
 	if (args.activeOrg.organizationId !== args.draft.organizationId) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Switch to the draft organization to access it",
-		});
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 	assertOrgPermission(args.activeOrg, "drafts:read");
 	const [member] = await db
@@ -71,7 +69,7 @@ export async function assertCanReadDraft(args: {
 		)
 		.limit(1);
 	if (!member || !orgRoleHasPermission(member.role, "drafts:read")) {
-		throw new ORPCError("FORBIDDEN", { message: "No draft access" });
+		throwAppError("DRAFTS.FORBIDDEN");
 	}
 }
 
@@ -121,7 +119,7 @@ export async function draftsCreate(
 ) {
 	const parsed = zDraftCreateBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	assertOrgPermission(activeOrg, "drafts:write");
@@ -147,7 +145,7 @@ export async function draftsCreate(
 		.returning();
 
 	if (!row) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Draft not created",
 		});
 	}
@@ -197,13 +195,19 @@ export async function draftsGet(
 	const draft = await loadDraftOrThrow(draftId);
 	await assertCanReadDraft({ wallet, draft, activeOrg });
 	if (draft.status === "archived") {
-		throw new ORPCError("NOT_FOUND", { message: "Draft not found" });
+		throwAppError("DRAFTS.NOT_FOUND");
 	}
 
 	if (!draft.headSnapshotS3Key) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Draft has no saved content",
-		});
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: "Draft has no saved content",
+					path: ["headSnapshotS3Key"],
+				},
+			]),
+		);
 	}
 
 	const documents = await db
@@ -259,22 +263,18 @@ export async function draftsMarkSent(
 ) {
 	const parsed = zDraftMarkSentBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	assertOrgPermission(activeOrg, "drafts:write");
 	const draft = await loadDraftOrThrow(parsed.data.draftId);
 	if (draft.organizationId !== activeOrg.organizationId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "X-Org-Id must match this org draft",
-		});
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 	await assertDraftCreator(wallet, draft);
 
 	if (draft.status !== "active") {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Only active drafts can be marked sent",
-		});
+		throwAppError("DRAFTS.NOT_EDITABLE");
 	}
 
 	const now = new Date();
@@ -309,22 +309,18 @@ export async function draftsArchive(
 ) {
 	const parsed = zArchiveBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	assertOrgPermission(activeOrg, "drafts:write");
 	const draft = await loadDraftOrThrow(parsed.data.draftId);
 	if (draft.organizationId !== activeOrg.organizationId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "X-Org-Id must match this org draft",
-		});
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 	await assertDraftCreator(wallet, draft);
 
 	if (draft.status !== "active") {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Only active drafts can be deleted",
-		});
+		throwAppError("DRAFTS.NOT_EDITABLE");
 	}
 
 	const now = new Date();

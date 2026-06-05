@@ -1,3 +1,4 @@
+import { throwAppError } from "@filosign/errors/server";
 import {
 	digestDraftSnapshot,
 	draftDocumentKey,
@@ -13,6 +14,7 @@ import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
 import db from "@/lib/platform/db";
 import { logger } from "@/lib/platform/pino";
 import { bucket } from "@/lib/platform/s3/client";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { assertDraftCreator, loadDraftOrThrow } from "./lifecycle";
 import {
 	assertDraftDocumentsExistOnS3,
@@ -70,7 +72,7 @@ export async function draftsSave(
 	const parsed = zDraftSaveBody.safeParse(body);
 	if (!parsed.success) {
 		logDraftSave("save.parse_failed", { issues: parsed.error.message });
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	logDraftSave("save.start", {
@@ -100,14 +102,12 @@ async function draftsSaveInner(
 	assertOrgPermission(activeOrg, "drafts:write");
 	const draft = await loadDraftOrThrow(parsed.draftId);
 	if (draft.organizationId !== activeOrg.organizationId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "X-Org-Id must match this org draft",
-		});
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 	await assertDraftCreator(wallet, draft);
 
 	if (draft.status !== "active") {
-		throw new ORPCError("BAD_REQUEST", { message: "Draft is not editable" });
+		throwAppError("DRAFTS.NOT_EDITABLE");
 	}
 	if (draft.revision !== parsed.expectedRevision) {
 		logDraftSave("save.revision_conflict", {
@@ -115,10 +115,7 @@ async function draftsSaveInner(
 			expectedRevision: parsed.expectedRevision,
 			actualRevision: draft.revision,
 		});
-		throw new ORPCError("CONFLICT", {
-			message: "Draft was updated elsewhere; reload and try again",
-			data: { revision: draft.revision },
-		});
+		throwAppError("DRAFTS.REVISION_CONFLICT");
 	}
 
 	const headDekWrappedOmk =
@@ -127,10 +124,16 @@ async function draftsSaveInner(
 		parsed.headOmkKemCiphertext ?? draft.headOmkKemCiphertext ?? undefined;
 
 	if (!headDekWrappedOmk || !headOmkKemCiphertext) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"headDekWrappedOmk and headOmkKemCiphertext required for org drafts",
-		});
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message:
+						"headDekWrappedOmk and headOmkKemCiphertext required for org drafts",
+					path: ["headDekWrappedOmk"],
+				},
+			]),
+		);
 	}
 
 	const nextRevision = draft.revision + 1;
@@ -211,10 +214,7 @@ async function draftsSaveInner(
 			.returning();
 
 		if (!updated) {
-			throw new ORPCError("CONFLICT", {
-				message: "Draft was updated elsewhere; reload and try again",
-				data: { revision: draft.revision },
-			});
+			throwAppError("DRAFTS.REVISION_CONFLICT");
 		}
 
 		await tx
@@ -260,7 +260,7 @@ export async function draftsPrepareSave(
 	const parsed = zDraftPrepareSaveBody.safeParse(body);
 	if (!parsed.success) {
 		logDraftSave("prepare.parse_failed", { issues: parsed.error.message });
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	logDraftSave("prepare.start", {
@@ -271,14 +271,12 @@ export async function draftsPrepareSave(
 	assertOrgPermission(activeOrg, "drafts:write");
 	const draft = await loadDraftOrThrow(parsed.data.draftId);
 	if (draft.organizationId !== activeOrg.organizationId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "X-Org-Id must match this org draft",
-		});
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 	await assertDraftCreator(wallet, draft);
 
 	if (draft.status !== "active") {
-		throw new ORPCError("BAD_REQUEST", { message: "Draft is not editable" });
+		throwAppError("DRAFTS.NOT_EDITABLE");
 	}
 
 	const snapshotKey = draftSnapshotKey({
@@ -368,15 +366,19 @@ export async function draftsPresignSnapshot(
 	assertOrgPermission(activeOrg, "drafts:write");
 	const draft = await loadDraftOrThrow(draftId);
 	if (draft.organizationId !== activeOrg.organizationId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "X-Org-Id must match this org draft",
-		});
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 	await assertDraftCreator(wallet, draft);
 	if (!draft.headSnapshotS3Key) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Draft has no snapshot key",
-		});
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: "Draft has no snapshot key",
+					path: ["headSnapshotS3Key"],
+				},
+			]),
+		);
 	}
 	const uploadUrl = bucket.presign(draft.headSnapshotS3Key, {
 		method: "PUT",
@@ -396,15 +398,13 @@ export async function draftsPresignDocuments(
 ) {
 	const parsed = zDraftPresignDocumentsBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	assertOrgPermission(activeOrg, "drafts:write");
 	const draft = await loadDraftOrThrow(parsed.data.draftId);
 	if (draft.organizationId !== activeOrg.organizationId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "X-Org-Id must match this org draft",
-		});
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 	await assertDraftCreator(wallet, draft);
 

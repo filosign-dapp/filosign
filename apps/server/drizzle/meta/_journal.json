@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1780358117461,
-      "tag": "0000_colossal_nehzno",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1780363566834,
-      "tag": "0001_bumpy_nightmare",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1780366523896,
-      "tag": "0002_production_hardening",
+      "when": 1780630830562,
+      "tag": "0000_initial",
       "breakpoints": true
     }
   ]

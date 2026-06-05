@@ -57,6 +57,16 @@ All marketing pages migrated from the React app:
 | `/docs/workflows/release-conditions` | Payout and unlock release conditions |
 | `/docs/workflows/drafts` | Envelope drafts |
 | `/docs/workflows/templates` | Org templates |
+| `/docs/workflows/signing-and-routing` | Sign page flow, turn order, quorum |
+| `/docs/workflows/envelope-governance` | Void, amend signers, post-send changes |
+| `/docs/workflows/comments` | Encrypted draft and envelope comments |
+| `/docs/workspace` | Workspace overview (teams, billing, roles) |
+| `/docs/security/encrypted-workflows` | Browser encryption and decryption |
+| `/docs/proof/e-signature-evidence` | E-signature evidence guide |
+| `/docs/proof/completion-packet` | ZIP export contents |
+| `/docs/storage/how-retention-works` | Hot storage, Filecoin backup, archival |
+| `/docs/plans` | Plans and limits |
+| `/docs/plans/roadmap` | Catalog features not shipped yet |
 | `/docs/troubleshooting` | Error catalog search (mirrors dashboard Support Center) |
 
 ### Docs authoring (Starlight)

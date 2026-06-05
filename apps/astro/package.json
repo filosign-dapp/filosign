@@ -16,7 +16,9 @@
 		"check-types": "astro check"
 	},
 	"dependencies": {
+		"@astrojs/starlight": "^0.38.0",
 		"@filosign/entitlements": "workspace:*",
+		"@filosign/errors": "workspace:*",
 		"@filosign/motion": "workspace:*",
 		"@filosign/react": "workspace:*",
 		"@astrojs/mdx": "5.0.4",

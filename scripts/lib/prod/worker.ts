@@ -1,8 +1,4 @@
-import {
-	containerHealthOk,
-	dockerExec,
-	dockerState,
-} from "./ssh.ts";
+import { containerHealthOk, dockerExec, dockerState } from "./ssh.ts";
 import type { Action, ProbeResult, ProdContext } from "./types.ts";
 
 const HEARTBEAT_KEY = "fs:worker:heartbeat";

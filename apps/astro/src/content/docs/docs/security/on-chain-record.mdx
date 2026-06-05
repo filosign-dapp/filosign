@@ -1,0 +1,50 @@
+---
+title: Verification records
+description: What happens if someone disputes who signed or when, and how signing events are recorded.
+---
+
+Filosign records signing events in a way that can be checked outside the app. This helps your proof packet remain useful even when the document needs to be reviewed later by finance, legal, a grant reviewer, or a counterparty.
+
+Everyday users can rely on the proof packet. Technical reviewers can inspect the underlying public references when deeper verification is needed.
+
+## What details are recorded?
+
+Filosign builds a **verification record** when you run a workflow. It captures:
+
+* **Who** sent it and **who** signed (names, emails, and account ties in your proof export).
+* **When** each person signed and opened the document.
+* **Which fields** each signer completed.
+* Whether the envelope was **voided** or a signer was **changed** before completion.
+* Payout or gated-file events when those were part of the workflow.
+
+You download this as a **proof report** or **proof packet**. See [Proof packets](/docs/proof/completion-packet/).
+
+## How records are verified
+
+The signing record is designed to be tamper-evident and verifiable outside the app. Filosign anchors key facts to a public record that third parties can check. That supports "this agreement really was signed on this date by these people."
+
+Some details (the actual PDF bytes, signature images, typed field values) stay in **encrypted storage and exports**, not in that public record.
+
+## Can Filosign delete a signature from history?
+
+Filosign can **void** an incomplete envelope (cancel the workflow). That adds a void entry. It does **not** erase signatures that already happened. Plan for that if wallets or emails are sensitive.
+
+## Do signers need crypto knowledge?
+
+**No.** Filosign handles the technical steps so signers use a normal browser flow. Authorizing a signature feels like confirming an action in the app, not managing cryptocurrency.
+
+## How is this different from a DocuSign certificate?
+
+Traditional tools attach a certificate PDF to the signed file. Filosign gives you:
+
+* A **human-readable proof report**
+* A **proof packet** with documents plus evidence
+* Independent references auditors can verify outside Filosign
+
+Filosign does **not** tell you whether a document is legally valid in your country. See [E-signature evidence](/docs/proof/e-signature-evidence/).
+
+## Related
+
+* [Document privacy](/docs/security/encrypted-workflows/)
+* [Envelope governance](/docs/workflows/envelope-governance/)
+* [Proof packets](/docs/proof/completion-packet/)

@@ -13,3 +13,11 @@ export {
 	userProfileUpdate,
 	userSetAnalyticsConsent,
 } from "./profile";
+export {
+	userSignatureCreate,
+	userSignatureDelete,
+	userSignatureGetById,
+	userSignatureSetDefault,
+	userSignaturesList,
+	zUserSignatureSetDefaultBody,
+} from "./signatures";

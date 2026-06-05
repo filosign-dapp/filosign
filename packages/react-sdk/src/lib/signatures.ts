@@ -1,6 +1,7 @@
 import type { FilosignContracts } from "@filosign/contracts";
 import { computeCidIdentifier, eip712signature } from "@filosign/contracts";
-import type { Hex } from "viem";
+import type { Address, Hex } from "viem";
+import { envelopeRegistryAt } from "./envelope-registry-at";
 import { withRegistryWalletActionLock } from "./registry-wallet-action-lock";
 import type { FilosignWallet } from "./wallet";
 
@@ -77,29 +78,36 @@ export async function signRecallEnvelope(args: {
 	pieceCid: string;
 	orgIdCommitment: Hex;
 	timestamp: number;
+	registryAddress?: Address | string | null;
 	recaller?: `0x${string}`;
 }): Promise<Hex> {
 	const recaller = args.recaller ?? args.wallet.account.address;
 	const cidIdentifier = computeCidIdentifier(args.pieceCid);
+	const registry = envelopeRegistryAt(args.contracts, args.registryAddress);
 
 	return withRegistryWalletActionLock(recaller, () =>
-		eip712signature(args.contracts, "FSEnvelopeRegistry", {
-			types: {
-				RecallEnvelope: [
-					{ name: "cidIdentifier", type: "bytes32" },
-					{ name: "recaller", type: "address" },
-					{ name: "orgIdCommitment", type: "bytes32" },
-					{ name: "timestamp", type: "uint256" },
-				],
+		eip712signature(
+			args.contracts,
+			"FSEnvelopeRegistry",
+			{
+				types: {
+					RecallEnvelope: [
+						{ name: "cidIdentifier", type: "bytes32" },
+						{ name: "recaller", type: "address" },
+						{ name: "orgIdCommitment", type: "bytes32" },
+						{ name: "timestamp", type: "uint256" },
+					],
+				},
+				primaryType: "RecallEnvelope",
+				message: {
+					cidIdentifier,
+					recaller,
+					orgIdCommitment: args.orgIdCommitment,
+					timestamp: BigInt(args.timestamp),
+				},
 			},
-			primaryType: "RecallEnvelope",
-			message: {
-				cidIdentifier,
-				recaller,
-				orgIdCommitment: args.orgIdCommitment,
-				timestamp: BigInt(args.timestamp),
-			},
-		}),
+			{ verifyingContract: registry.address },
+		),
 	);
 }
 

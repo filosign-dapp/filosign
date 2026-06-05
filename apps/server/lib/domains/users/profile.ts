@@ -63,6 +63,8 @@ export async function userProfileMe(wallet: Address) {
 			lastName: users.lastName,
 			avatarKey: users.avatarKey,
 			authProviderId: users.authProviderId,
+			defaultSignatureId: users.defaultSignatureId,
+			defaultInitialId: users.defaultInitialId,
 		})
 		.from(users)
 		.where(eq(users.walletAddress, wallet));
@@ -84,11 +86,16 @@ export async function userProfileMe(wallet: Address) {
 	const authSubjectCommitment = hashAuthSubjectCommitment(authProviderId);
 	const keygenParsed = zUserKeygenDataJson.safeParse(keygenRaw);
 
+	const { defaultSignatureArtifactsForWallet } = await import("./signatures");
+	const defaults = await defaultSignatureArtifactsForWallet(wallet);
+
 	return {
 		...rest,
 		keygenData: keygenParsed.success ? keygenParsed.data : null,
 		avatarUrl,
 		authSubjectCommitment,
+		defaultSignaturePreviewUrl: defaults.signature?.previewUrl ?? null,
+		defaultInitialPreviewUrl: defaults.initial?.previewUrl ?? null,
 	};
 }
 

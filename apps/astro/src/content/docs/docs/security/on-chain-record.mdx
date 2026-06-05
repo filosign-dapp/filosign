@@ -7,44 +7,43 @@ Filosign records signing events in a way that can be checked outside the app. Th
 
 Everyday users can rely on the proof packet. Technical reviewers can inspect the underlying public references when deeper verification is needed.
 
-## What details are recorded?
+## When to use this
 
-Filosign builds a **verification record** when you run a workflow. It captures:
+* Someone disputes **who signed** or **when** a signature happened
+* Counsel or audit asks for evidence that can be verified outside Filosign
+* You need to understand what happens if an envelope is **voided** or a signer is **changed**
+* Finance wants to know what payout or gated-file events were recorded
 
-* **Who** sent it and **who** signed (names, emails, and account ties in your proof export).
-* **When** each person signed and opened the document.
-* **Which fields** each signer completed.
-* Whether the envelope was **voided** or a signer was **changed** before completion.
-* Payout or gated-file events when those were part of the workflow.
+## How it works
 
-You download this as a **proof report** or **proof packet**. See [Proof packets](/docs/proof/completion-packet/).
+1. Filosign builds a **verification record** when you run a workflow.
+2. The record captures who sent and signed, timestamps, field completions, voids, signer changes, and payout or gated-file events when applicable.
+3. Key facts are anchored to a public record that third parties can check.
+4. Document bytes, signature images, and typed field values stay in **encrypted storage and exports**, not in that public record.
+5. You download the human-readable version as a **proof report** or **proof packet**.
 
-## How records are verified
+Filosign can **void** an incomplete envelope (cancel the workflow). That adds a void entry. It does **not** erase signatures that already happened.
 
-The signing record is designed to be tamper-evident and verifiable outside the app. Filosign anchors key facts to a public record that third parties can check. That supports "this agreement really was signed on this date by these people."
+## Example workflow
 
-Some details (the actual PDF bytes, signature images, typed field values) stay in **encrypted storage and exports**, not in that public record.
+After a grant closes, an auditor asks whether both parties signed on the dates shown in the contract file. The team shares the proof packet. The auditor reads the proof report for everyday questions and, if needed, checks the public references listed for independent verification.
 
-## Can Filosign delete a signature from history?
+## What to watch out for
 
-Filosign can **void** an incomplete envelope (cancel the workflow). That adds a void entry. It does **not** erase signatures that already happened. Plan for that if wallets or emails are sensitive.
+* Filosign does **not** tell you whether a document is legally valid in your country. See [E-signature evidence](/docs/proof/e-signature-evidence/).
+* Signers do **not** need crypto knowledge. Filosign handles the technical steps in a normal browser flow.
+* Plan ahead if wallets or emails are sensitive; completed signatures remain in the record.
 
-## Do signers need crypto knowledge?
+## How to review records in the app
 
-**No.** Filosign handles the technical steps so signers use a normal browser flow. Authorizing a signature feels like confirming an action in the app, not managing cryptocurrency.
+1. Open a **completed** or **voided** envelope.
+2. Download the [proof packet](/docs/proof/completion-packet/) or proof report.
+3. Share the proof report with counsel for day-to-day review.
+4. Use the README or appendix in the ZIP only if an expert asks for deeper verification.
 
-## How is this different from a DocuSign certificate?
-
-Traditional tools attach a certificate PDF to the signed file. Filosign gives you:
-
-* A **human-readable proof report**
-* A **proof packet** with documents plus evidence
-* Independent references auditors can verify outside Filosign
-
-Filosign does **not** tell you whether a document is legally valid in your country. See [E-signature evidence](/docs/proof/e-signature-evidence/).
-
-## Related
+## Related guides
 
 * [Document privacy](/docs/security/encrypted-workflows/)
-* [Envelope governance](/docs/workflows/envelope-governance/)
 * [Proof packets](/docs/proof/completion-packet/)
+* [Envelope governance](/docs/workflows/envelope-governance/)
+* [E-signature evidence](/docs/proof/e-signature-evidence/)

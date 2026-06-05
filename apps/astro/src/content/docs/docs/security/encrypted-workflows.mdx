@@ -3,32 +3,24 @@ title: Document privacy
 description: Can Filosign read my documents? Who else can open them?
 ---
 
-## Can Filosign read my documents?
-
-**No, not in normal use.** Your files are locked **before they leave your browser**. Filosign stores locked copies and the keys that let invited people unlock them. Filosign does not hold the master key that reveals document text.
+Filosign encrypts documents before they leave your browser. Filosign stores locked copies and the keys that let invited people unlock them. Filosign does not hold the master key that reveals document text in normal operation.
 
 That is a meaningful difference from many traditional e-sign tools, where the provider often holds readable copies on their servers.
 
-## Who can open a document?
+## When to use this guide
 
-Only people you put on the envelope:
+* You are evaluating Filosign against other e-sign tools and need to understand who can read your files
+* Your compliance team asks whether Filosign staff can access contract text
+* You are onboarding recipients who worry about document confidentiality
+* You want to understand how drafts, sent envelopes, and recovery phrases differ
 
-- The **sender**
-- **Signers** and **viewers** you listed
-- **Teammates** in a shared workspace (when the envelope belongs to a team)
-- **Draft reviewers** if you shared a draft link before send
+## How it works
 
-If someone is not invited, they cannot read the file, even if they work at Filosign.
-
-## What about passwords and recovery?
-
-You sign in and confirm actions in the app (including with a linked wallet). That unlocks your personal keys for the session.
-
-If you set up a **recovery phrase** during onboarding, guard it like a password. Filosign cannot reset it for you.
-
-Some recipients get a **one-time phrase** with their invite if they do not have an account yet. They need that phrase to open the document the first time.
-
-## Drafts vs sent envelopes
+1. You upload or compose a document in the browser.
+2. Filosign encrypts the file before it leaves your device.
+3. Encrypted copies are stored; invited recipients receive keys to decrypt.
+4. Only people on the envelope roster (plus teammates on shared workspaces) can open the document.
+5. Sending turns a draft into a tracked envelope with signing records and exportable proof.
 
 | | Draft | Sent envelope |
 |---|-------|---------------|
@@ -36,14 +28,36 @@ Some recipients get a **one-time phrase** with their invite if they do not have 
 | **Purpose** | Work in progress | Completed workflow with proof |
 | **Who sees it** | You and people you share the draft with | Sender, signers, viewers on the roster |
 
-Sending turns your draft into a tracked envelope with signing records and exportable proof.
+## Example workflow
 
-## How does this compare to DocuSign?
+A legal team sends a sensitive acquisition term sheet to three board members. Each signer opens the document through their invite. Filosign staff cannot read the term sheet text from storage; only the sender, signers, and viewers on the roster can decrypt it in the app.
 
-Both tools help people sign electronically. Filosign emphasizes **privacy by default**: the document text is not meant to be readable on Filosign's servers. You still get signing records, timestamps, and exports for disputes or audits.
+## What to watch out for
 
-## Learn more
+* If someone is not invited, they cannot read the file, even if they work at Filosign.
+* Guard your **recovery phrase** like a password. Filosign cannot reset it for you.
+* Some recipients get a **one-time phrase** with their invite if they do not have an account yet.
+* Encryption protects document text; you still share workflow metadata (recipient emails, status) needed to run signing.
 
-- [What Filosign can see](/docs/security/what-we-can-see/)
-- [Security overview](/security)
-- [Privacy Policy](/privacy)
+## How privacy works in the app
+
+### Who can open a document?
+
+Only people you put on the envelope:
+
+* The **sender**
+* **Signers** and **viewers** you listed
+* **Teammates** in a shared workspace (when the envelope belongs to a team)
+* **Draft reviewers** if you shared a draft link before send
+
+### Passwords and recovery
+
+You sign in and confirm actions in the app (including with a linked wallet). That unlocks your personal keys for the session.
+
+## Related guides
+
+* [What Filosign can see](/docs/security/what-we-can-see/)
+* [Verification records](/docs/security/on-chain-record/)
+* [Proof packets](/docs/proof/completion-packet/)
+* [Security overview](/security)
+* [Privacy Policy](/privacy)

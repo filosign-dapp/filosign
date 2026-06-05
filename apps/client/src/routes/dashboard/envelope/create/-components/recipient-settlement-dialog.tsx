@@ -1,7 +1,6 @@
-import { useEntitlements } from "@filosign/react/billing";
 import {
 	canUseAdvancedSettlements,
-	canUseBasicSettlements,
+	useBasicPayoutAttachGate,
 } from "@filosign/react/files";
 import type { SettlementReleaseType } from "@filosign/shared";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
@@ -18,6 +17,7 @@ import {
 } from "@/src/lib/components/ui/dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { handleBasicPayoutGateBlock } from "@/src/lib/domains/settlements/basic-payout-gate";
 import {
 	expiresAtFromDatetimeLocal,
 	SettlementExpiresAtField,
@@ -51,9 +51,8 @@ export function RecipientSettlementDialog({
 	onSave,
 	onRemove,
 }: Props) {
-	const { data: entitlements } = useEntitlements();
 	const promptPlanUpgrade = usePromptPlanUpgrade();
-	const canBasic = canUseBasicSettlements(entitlements);
+	const { entitlements, gate } = useBasicPayoutAttachGate();
 	const canAdvanced = canUseAdvancedSettlements(entitlements);
 
 	const [amountUsdc, setAmountUsdc] = useState("");
@@ -93,10 +92,7 @@ export function RecipientSettlementDialog({
 	const emailValid = isValidRecipientEmail(recipient.email ?? "");
 
 	const handleSave = () => {
-		if (!canBasic) {
-			promptPlanUpgrade("features.settlement.basic");
-			return;
-		}
+		if (handleBasicPayoutGateBlock(gate, promptPlanUpgrade)) return;
 		const trimmed = amountUsdc.trim();
 		if (!trimmed || Number(trimmed) <= 0) return;
 		if (!emailValid) return;

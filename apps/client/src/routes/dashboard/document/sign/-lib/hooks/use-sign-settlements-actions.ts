@@ -2,9 +2,9 @@ import { useEntitlements } from "@filosign/react/billing";
 import {
 	buildNewSignerE2eeForAmend,
 	canUseAdvancedSettlements,
-	canUseBasicSettlements,
 	type SettlementRuleRow,
 	useAttachSettlementForFile,
+	useBasicPayoutAttachGate,
 	useCancelSettlementRule,
 	useCancelSignerReplacement,
 	useExecuteSignerReplacement,
@@ -63,8 +63,8 @@ export function useSignSettlementsActions(
 	const recallEnvelope = useRecallEnvelope(pieceCid);
 	const attachSettlementRules = useAttachSettlementForFile(pieceCid);
 	const { data: entitlements } = useEntitlements();
+	const { canAttach: canAttachSettlement } = useBasicPayoutAttachGate();
 	const canManageSettlements = canUseAdvancedSettlements(entitlements);
-	const canAttachSettlement = canUseBasicSettlements(entitlements);
 
 	const [updateRuleTarget, setUpdateRuleTarget] =
 		useState<SettlementRuleRow | null>(null);

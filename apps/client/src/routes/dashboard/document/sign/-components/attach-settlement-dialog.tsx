@@ -1,8 +1,7 @@
-import { useEntitlements } from "@filosign/react/billing";
 import type { SettlementRuleDraft } from "@filosign/react/files";
 import {
 	canUseAdvancedSettlements,
-	canUseBasicSettlements,
+	useBasicPayoutAttachGate,
 } from "@filosign/react/files";
 import type { SettlementReleaseType } from "@filosign/shared";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
@@ -27,6 +26,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/src/lib/components/ui/select";
+import { handleBasicPayoutGateBlock } from "@/src/lib/domains/settlements/basic-payout-gate";
 import { buildReleaseParamsFromSignerEmails } from "@/src/lib/domains/settlements/build-release-params";
 import {
 	expiresAtFromDatetimeLocal,
@@ -61,9 +61,8 @@ export function AttachSettlementDialog({
 	onConfirm,
 	pending,
 }: Props) {
-	const { data: entitlements } = useEntitlements();
 	const promptPlanUpgrade = usePromptPlanUpgrade();
-	const canBasic = canUseBasicSettlements(entitlements);
+	const { entitlements, gate } = useBasicPayoutAttachGate();
 	const canAdvanced = canUseAdvancedSettlements(entitlements);
 
 	const [payeeWallet, setPayeeWallet] = useState("");
@@ -94,10 +93,7 @@ export function AttachSettlementDialog({
 	const options = useMemo(() => payees, [payees]);
 
 	const handleAttach = async () => {
-		if (!canBasic) {
-			promptPlanUpgrade("features.settlement.basic");
-			return;
-		}
+		if (handleBasicPayoutGateBlock(gate, promptPlanUpgrade)) return;
 		const payee = options.find((p) => p.wallet === payeeWallet);
 		const trimmed = amountUsdc.trim();
 		if (!payee || !trimmed || Number(trimmed) <= 0) return;

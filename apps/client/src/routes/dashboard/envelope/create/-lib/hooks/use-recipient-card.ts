@@ -1,5 +1,4 @@
-import { useEntitlements } from "@filosign/react/billing";
-import { canUseBasicSettlements } from "@filosign/react/files";
+import { useBasicPayoutAttachGate } from "@filosign/react/files";
 import { useUserProfileByQuery } from "@filosign/react/users";
 import { useEffect, useRef, useState } from "react";
 import { getAddress, isAddress } from "viem";
@@ -26,8 +25,7 @@ export function useRecipientCard(index: number) {
 		settlementDrafts,
 		onSettlementDraftsChange,
 	} = useRecipientsContext();
-	const { data: entitlements } = useEntitlements();
-	const settlementBasicAllowed = canUseBasicSettlements(entitlements);
+	const { canAttach: settlementBasicAllowed } = useBasicPayoutAttachGate();
 	const allRecipients = recipients ?? [];
 	const [settlementDialogOpen, setSettlementDialogOpen] = useState(false);
 

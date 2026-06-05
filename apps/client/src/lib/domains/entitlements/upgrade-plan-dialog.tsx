@@ -42,9 +42,9 @@ const COPY: Record<
 			"You've reached the maximum recipients per envelope on your current plan. Upgrade to add more recipients.",
 	},
 	"features.settlement.basic": {
-		title: "USDC payouts need a Teams plan",
+		title: "USDC payouts need a paid plan",
 		description:
-			"Attach payouts to envelopes on Teams or higher. Upgrade to pay signers or partners when signing finishes.",
+			"Upgrade to Solo or higher, then request payout attachment access in Workspace settings. After Filosign approves, you can attach USDC payouts when signing finishes.",
 	},
 	"features.settlement.advanced": {
 		title: "Advanced payouts need Teams Pro",

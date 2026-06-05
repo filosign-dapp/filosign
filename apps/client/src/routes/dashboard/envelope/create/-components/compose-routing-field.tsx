@@ -2,7 +2,7 @@ import { useEntitlements } from "@filosign/react/billing";
 import {
 	canUseAdvancedRouting,
 	canUseAdvancedSettlements,
-	canUseBasicSettlements,
+	useBasicPayoutAttachGate,
 } from "@filosign/react/files";
 import type { RegisterRoutingInput } from "@filosign/shared";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
@@ -12,6 +12,7 @@ import { Checkbox } from "@/src/lib/components/ui/checkbox";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { Switch } from "@/src/lib/components/ui/switch";
+import { handleBasicPayoutGateBlock } from "@/src/lib/domains/settlements/basic-payout-gate";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
 import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
@@ -155,7 +156,7 @@ export function ComposeSettlementOptionsField() {
 	const { data: entitlements } = useEntitlements();
 	const promptPlanUpgrade = usePromptPlanUpgrade();
 	const advanced = canUseAdvancedSettlements(entitlements);
-	const basic = canUseBasicSettlements(entitlements);
+	const { gate } = useBasicPayoutAttachGate();
 	const draftCount = createForm?.settlementDrafts?.length ?? 0;
 
 	if (!createForm || draftCount < 2) return null;
@@ -180,10 +181,7 @@ export function ComposeSettlementOptionsField() {
 							promptPlanUpgrade("features.settlement.advanced");
 							return;
 						}
-						if (!basic) {
-							promptPlanUpgrade("features.settlement.basic");
-							return;
-						}
+						if (handleBasicPayoutGateBlock(gate, promptPlanUpgrade)) return;
 						setCreateForm({
 							...createForm,
 							combineSettlementLegs: next === true,

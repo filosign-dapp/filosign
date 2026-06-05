@@ -1,8 +1,10 @@
+import type { UserSignatureRole } from "@filosign/shared";
 import { SignatureIcon, TextAaIcon, TrashIcon } from "@phosphor-icons/react";
 import { useCallback, useRef, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { compressPng } from "@/src/lib/utils/compress-image";
 import { useSignatureCreate } from "@/src/routes/dashboard/signature/create/-lib/context/context";
+import { SignatureUploadCropDialog } from "./signature-upload-crop-dialog";
 
 const ACCEPTED_FILE_TYPES = [
 	"image/gif",
@@ -14,6 +16,7 @@ const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
 interface UploadAreaProps {
 	icon: React.ReactNode;
+	signatureRole: UserSignatureRole;
 	uploadedFile: string | null;
 	onFileUpload: (dataUrl: string) => void;
 	onFileClear: () => void;
@@ -21,12 +24,15 @@ interface UploadAreaProps {
 
 function UploadArea({
 	icon,
+	signatureRole,
 	uploadedFile,
 	onFileUpload,
 	onFileClear,
 }: UploadAreaProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [error, setError] = useState<string | null>(null);
+	const [pendingCropImage, setPendingCropImage] = useState<string | null>(null);
+	const [cropDialogOpen, setCropDialogOpen] = useState(false);
 
 	const handleFileSelect = useCallback(
 		async (file: File | null) => {
@@ -44,19 +50,24 @@ function UploadArea({
 				return;
 			}
 
+			const readAsDataUrl = (input: File) =>
+				new Promise<string>((resolve, reject) => {
+					const reader = new FileReader();
+					reader.onload = () => resolve(String(reader.result ?? ""));
+					reader.onerror = () =>
+						reject(new Error("Failed to read selected file"));
+					reader.readAsDataURL(input);
+				});
+
 			try {
 				const compressedFile = await compressPng(file);
-				const reader = new FileReader();
-				reader.onload = () => {
-					onFileUpload(reader.result as string);
-				};
-				reader.readAsDataURL(compressedFile);
+				const dataUrl = await readAsDataUrl(compressedFile);
+				setPendingCropImage(dataUrl);
+				setCropDialogOpen(true);
 			} catch {
-				const reader = new FileReader();
-				reader.onload = () => {
-					onFileUpload(reader.result as string);
-				};
-				reader.readAsDataURL(file);
+				const dataUrl = await readAsDataUrl(file);
+				setPendingCropImage(dataUrl);
+				setCropDialogOpen(true);
 			}
 		},
 		[onFileUpload],
@@ -125,6 +136,20 @@ function UploadArea({
 				)}
 			</button>
 			{error && <p className="text-sm text-center text-destructive">{error}</p>}
+			<SignatureUploadCropDialog
+				isOpen={cropDialogOpen}
+				imageDataUrl={pendingCropImage}
+				role={signatureRole}
+				onClose={() => {
+					setCropDialogOpen(false);
+					setPendingCropImage(null);
+				}}
+				onCropComplete={(croppedDataUrl) => {
+					onFileUpload(croppedDataUrl);
+					setCropDialogOpen(false);
+					setPendingCropImage(null);
+				}}
+			/>
 		</div>
 	);
 }
@@ -147,12 +172,14 @@ export function SignatureUpload() {
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				<UploadArea
 					icon={<SignatureIcon className="size-16 text-muted-foreground" />}
+					signatureRole="signature"
 					uploadedFile={signatureData}
 					onFileUpload={handleSignatureUpload}
 					onFileClear={handleClearSignature}
 				/>
 				<UploadArea
 					icon={<TextAaIcon className="size-16 text-muted-foreground" />}
+					signatureRole="initial"
 					uploadedFile={initialsData}
 					onFileUpload={handleInitialsUpload}
 					onFileClear={handleClearInitials}

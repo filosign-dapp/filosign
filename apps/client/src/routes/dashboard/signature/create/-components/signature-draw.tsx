@@ -94,7 +94,7 @@ export function SignatureDraw() {
 				</div>
 			</div>
 
-			<p className="text-sm text-muted-foreground">WebP</p>
+			<p className="text-sm text-muted-foreground">SVG</p>
 
 			<div className="flex gap-4 justify-end mx-auto w-full max-w-6xl">
 				<Button variant="ghost" size="lg">

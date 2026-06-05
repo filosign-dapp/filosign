@@ -10,6 +10,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/src/lib/components/ui/dialog";
+import {
+	exportSignatureSvgFromEditor,
+	svgToDataUrl,
+} from "@/src/routes/dashboard/signature/create/-lib/utils/signature-svg";
 
 interface SignatureDialogProps {
 	isOpen: boolean;
@@ -33,35 +37,16 @@ export default function SignatureDialog({
 		}
 
 		try {
-			// Get all shapes on the current page using the proper API
-			const shapes = editorRef.current.getCurrentPageShapes();
-			if (shapes.length === 0) {
-				alert("Please draw something before saving.");
-				return;
-			}
-
-			// Get shape IDs for export
-			const shapeIds = shapes.map((shape) => shape.id);
-
-			// Export as WebP image using the native tldraw method
-			const result = await editorRef.current.toImage(shapeIds, {
-				format: "webp",
-				scale: 2, // Higher resolution for crisp signatures
-				quality: 0.8, // WebP quality setting
-			});
-			const blob = result.blob;
-
-			// Convert blob to data URL
-			const reader = new FileReader();
-			reader.onload = () => {
-				onSave(reader.result as string);
-			};
-			reader.readAsDataURL(blob);
-
+			const svg = await exportSignatureSvgFromEditor(editorRef.current);
+			onSave(svgToDataUrl(svg));
 			onClose();
 		} catch (error) {
 			console.error("Error saving signature:", error);
-			alert("Error saving signature. Please try again.");
+			alert(
+				error instanceof Error
+					? error.message
+					: "Error saving signature. Please try again.",
+			);
 		}
 	};
 

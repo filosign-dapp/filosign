@@ -4,6 +4,7 @@ import { useProfileSettingsContext } from "../-lib/context/context";
 // import { LinkedAccountsSection } from "./LinkedAccountsSection";
 import { PersonalInfoSection } from "./PersonalInfoSection";
 import { ProfileBillingSection } from "./profile-billing-section";
+import { SignatureLibrarySection } from "./signature-library-section";
 import { ThemeSection } from "./ThemeSection";
 import { WalletUsdcBalanceCard } from "./WalletUsdcBalanceCard";
 
@@ -36,6 +37,7 @@ export function ProfileSettingsPage() {
 						<WalletUsdcBalanceCard />
 						<ProfileBillingSection />
 						<PersonalInfoSection />
+						<SignatureLibrarySection />
 						{/* <LinkedAccountsSection /> */}
 						<ThemeSection />
 					</MotionReveal>

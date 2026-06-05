@@ -1,6 +1,6 @@
 import type { PlanId } from "@filosign/entitlements";
+import { throwAppError } from "@filosign/errors/server";
 import { signupPolicyIsGated } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { and, eq, gt, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -239,16 +239,12 @@ export async function assertRegistrationAllowed(args: {
 			setupToken: args.gate.setupToken,
 		});
 		if (!preview.valid) {
-			throw new ORPCError("FORBIDDEN", {
-				message: preview.reason,
-				data: { code: "INVITE_REQUIRED" },
+			throwAppError("WORKSPACE.PLATFORM_INVITE_REQUIRED", {
+				params: { reason: preview.reason },
 			});
 		}
 		if (preview.lockedEmail && preview.lockedEmail !== emailNorm) {
-			throw new ORPCError("FORBIDDEN", {
-				message: "Email does not match paid setup",
-				data: { code: "EMAIL_MISMATCH" },
-			});
+			throwAppError("WORKSPACE.PLATFORM_EMAIL_MISMATCH");
 		}
 		return;
 	}
@@ -262,16 +258,12 @@ export async function assertRegistrationAllowed(args: {
 			email: args.gate.coldRecipientEmail,
 		});
 		if (!preview.valid) {
-			throw new ORPCError("FORBIDDEN", {
-				message: preview.reason,
-				data: { code: "INVITE_REQUIRED" },
+			throwAppError("WORKSPACE.PLATFORM_INVITE_REQUIRED", {
+				params: { reason: preview.reason },
 			});
 		}
 		if (preview.lockedEmail !== emailNorm) {
-			throw new ORPCError("FORBIDDEN", {
-				message: "Email does not match document invite",
-				data: { code: "EMAIL_MISMATCH" },
-			});
+			throwAppError("WORKSPACE.PLATFORM_EMAIL_MISMATCH");
 		}
 		return;
 	}
@@ -281,16 +273,12 @@ export async function assertRegistrationAllowed(args: {
 			token: args.gate.platformInviteToken,
 		});
 		if (!preview.valid) {
-			throw new ORPCError("FORBIDDEN", {
-				message: preview.reason,
-				data: { code: "INVITE_REQUIRED" },
+			throwAppError("WORKSPACE.PLATFORM_INVITE_REQUIRED", {
+				params: { reason: preview.reason },
 			});
 		}
 		if (preview.lockedEmail && preview.lockedEmail !== emailNorm) {
-			throw new ORPCError("FORBIDDEN", {
-				message: "Email does not match invite",
-				data: { code: "EMAIL_MISMATCH" },
-			});
+			throwAppError("WORKSPACE.PLATFORM_EMAIL_MISMATCH");
 		}
 		return;
 	}
@@ -299,8 +287,9 @@ export async function assertRegistrationAllowed(args: {
 		return;
 	}
 
-	throw new ORPCError("FORBIDDEN", {
-		message: "Platform invite or paid access required to create an account",
-		data: { code: "INVITE_REQUIRED" },
+	throwAppError("WORKSPACE.PLATFORM_INVITE_REQUIRED", {
+		params: {
+			reason: "Platform invite or paid access required to create an account",
+		},
 	});
 }

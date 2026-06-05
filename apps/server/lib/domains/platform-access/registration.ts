@@ -1,5 +1,5 @@
+import { throwAppError } from "@filosign/errors/server";
 import { signupPolicyIsGated } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -66,12 +66,10 @@ export async function redeemPlatformInviteOnRegisterWithTx(
 		.limit(1);
 
 	if (!invite || !inviteIsActive(invite)) {
-		throw new ORPCError("FORBIDDEN", { message: "Invite not valid" });
+		throwAppError("WORKSPACE.PLATFORM_INVITE_NOT_FOUND");
 	}
 	if (invite.email && normalizeEmail(invite.email) !== emailNorm) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Email does not match invite",
-		});
+		throwAppError("WORKSPACE.PLATFORM_EMAIL_MISMATCH");
 	}
 
 	const [existingRedemption] = await tx
@@ -146,7 +144,7 @@ export async function linkPaidSetupOnRegisterWithTx(
 		.limit(1);
 
 	if (!pending) {
-		throw new ORPCError("FORBIDDEN", { message: "Invalid setup token" });
+		throwAppError("WORKSPACE.PLATFORM_INVITE_NOT_FOUND");
 	}
 
 	if (pending.status === "linked") {
@@ -157,20 +155,18 @@ export async function linkPaidSetupOnRegisterWithTx(
 		) {
 			return;
 		}
-		throw new ORPCError("FORBIDDEN", {
-			message: "Setup token already used",
-		});
+		throwAppError("WORKSPACE.PLATFORM_INVITE_NOT_FOUND");
 	}
 
 	if (
 		pending.status !== "pending_wallet" ||
 		pending.expiresAt.getTime() <= Date.now()
 	) {
-		throw new ORPCError("FORBIDDEN", { message: "Invalid setup token" });
+		throwAppError("WORKSPACE.PLATFORM_INVITE_NOT_FOUND");
 	}
 
 	if (normalizeEmail(pending.email) !== emailNorm) {
-		throw new ORPCError("FORBIDDEN", { message: "Invalid setup token" });
+		throwAppError("WORKSPACE.PLATFORM_EMAIL_MISMATCH");
 	}
 
 	await tx
@@ -257,9 +253,8 @@ export async function assertRegistrationComplete(
 
 	const walletNorm = getAddress(wallet);
 	if (!(await isUserRegistered(walletNorm))) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Complete account setup to continue",
-			data: { code: "INVITE_REQUIRED" },
+		throwAppError("WORKSPACE.PLATFORM_INVITE_REQUIRED", {
+			params: { reason: "Complete account setup to continue" },
 		});
 	}
 }

@@ -1,4 +1,5 @@
 import type { PlanId } from "@filosign/entitlements";
+import { throwAppError } from "@filosign/errors/server";
 import { ORPCError } from "@orpc/server";
 import { and, eq, sql } from "drizzle-orm";
 import type { Address } from "viem";
@@ -18,7 +19,9 @@ export async function submitAccessRequest(args: {
 }): Promise<{ ok: true }> {
 	const email = normalizeEmail(args.email);
 	if (!email) {
-		throw new ORPCError("BAD_REQUEST", { message: "Email is required" });
+		throw new ORPCError("BAD_REQUEST" /* error-audit-allow */, {
+			message: "Email is required",
+		});
 	}
 
 	const [existingPending] = await db
@@ -83,7 +86,7 @@ export async function approveAccessRequest(args: {
 		.limit(1);
 
 	if (!request || request.status !== "pending") {
-		throw new ORPCError("NOT_FOUND", { message: "Access request not found" });
+		throwAppError("WORKSPACE.PLATFORM_ACCESS_REQUEST_NOT_FOUND");
 	}
 
 	const invite = await createPlatformInvite({
@@ -131,7 +134,7 @@ export async function rejectAccessRequest(args: {
 		.limit(1);
 
 	if (!request || request.status !== "pending") {
-		throw new ORPCError("NOT_FOUND", { message: "Access request not found" });
+		throwAppError("WORKSPACE.PLATFORM_ACCESS_REQUEST_NOT_FOUND");
 	}
 
 	await db

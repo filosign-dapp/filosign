@@ -1,5 +1,5 @@
+import { throwAppError } from "@filosign/errors/server";
 import { signupPolicyIsGated } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -122,18 +122,14 @@ async function completeExistingUserRegistration(args: {
 			email: args.gate.coldRecipientEmail,
 		});
 		if (!preview.valid) {
-			throw new ORPCError("FORBIDDEN", {
-				message: preview.reason ?? "Invalid document invite",
-				data: { code: "INVITE_REQUIRED" },
+			throwAppError("WORKSPACE.PLATFORM_INVITE_REQUIRED", {
+				params: { reason: preview.reason ?? "Invalid document invite" },
 			});
 		}
 		if (preview.lockedEmail === emailNorm) {
 			return;
 		}
-		throw new ORPCError("FORBIDDEN", {
-			message: "Email does not match document invite",
-			data: { code: "EMAIL_MISMATCH" },
-		});
+		throwAppError("WORKSPACE.PLATFORM_EMAIL_MISMATCH");
 	}
 
 	if (await userHasGatedRegistrationRecord(wallet)) {
@@ -150,10 +146,11 @@ async function completeExistingUserRegistration(args: {
 		return;
 	}
 
-	throw new ORPCError("FORBIDDEN", {
-		message:
-			"Registration incomplete. Open your invite or setup link and try again.",
-		data: { code: "INVITE_REQUIRED" },
+	throwAppError("WORKSPACE.PLATFORM_INVITE_REQUIRED", {
+		params: {
+			reason:
+				"Registration incomplete. Open your invite or setup link and try again.",
+		},
 	});
 }
 

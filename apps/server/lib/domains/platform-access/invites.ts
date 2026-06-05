@@ -1,4 +1,5 @@
 import type { PlanId } from "@filosign/entitlements";
+import { throwAppError } from "@filosign/errors/server";
 import { ORPCError } from "@orpc/server";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Address } from "viem";
@@ -43,7 +44,7 @@ export async function createPlatformInvite(args: {
 		.returning();
 
 	if (!row) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to create invite",
 		});
 	}
@@ -70,7 +71,7 @@ export async function rebookPlatformInvite(args: {
 		.where(eq(platformInvites.id, args.inviteId))
 		.limit(1);
 	if (!old) {
-		throw new ORPCError("NOT_FOUND", { message: "Invite not found" });
+		throwAppError("WORKSPACE.PLATFORM_INVITE_NOT_FOUND");
 	}
 
 	await revokePlatformInvite(old.id);
@@ -182,7 +183,7 @@ export async function setUserFeatureOverrides(args: {
 			.where(eq(userSubscriptions.walletAddress, wallet)),
 	);
 	if (res.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to update overrides",
 		});
 	}

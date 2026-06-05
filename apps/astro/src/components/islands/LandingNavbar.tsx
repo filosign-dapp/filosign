@@ -27,9 +27,9 @@ const drawerLinkClass =
 const navLinks = [
 	{ label: "About", href: "/about" },
 	{ label: "Pricing", href: "/pricing" },
-	{ label: "Docs", href: "/docs" },
 	{ label: "Blog", href: "/blog" },
 	{ label: "Changelog", href: "/changelog" },
+	{ label: "Docs", href: "/docs" },
 ] as const;
 
 interface LandingNavbarProps {

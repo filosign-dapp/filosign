@@ -17,6 +17,7 @@ import {
 	GearIcon,
 	HouseIcon,
 	PlusIcon,
+	QuestionIcon,
 	SealIcon,
 	ShieldCheckIcon,
 	UserCircleIcon,
@@ -142,6 +143,18 @@ const groups: { label: string; items: NavItem[] }[] = [
 				icon: UsersThreeIcon,
 				match: (p) => matchPrefix(p, "/dashboard/connections"),
 				tooltip: "Your Recipients",
+			},
+		],
+	},
+	{
+		label: "Support",
+		items: [
+			{
+				title: "Support Center",
+				url: "/dashboard/support/",
+				icon: QuestionIcon,
+				match: (p) => matchPrefix(p, "/dashboard/support"),
+				tooltip: "Support Center",
 			},
 		],
 	},

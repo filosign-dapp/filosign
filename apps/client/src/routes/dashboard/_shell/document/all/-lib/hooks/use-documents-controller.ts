@@ -124,7 +124,8 @@ export function useDocumentsController() {
 	}, [allFilesData, draftsData]);
 
 	const filteredItems = useMemo(() => {
-		if (activeTab === "all") return unifiedItems;
+		if (activeTab === "all")
+			return unifiedItems.filter((item) => !item.isDraft);
 		if (activeTab === "sent")
 			return unifiedItems.filter(
 				(item) => !item.isDraft && item.type === "sent",

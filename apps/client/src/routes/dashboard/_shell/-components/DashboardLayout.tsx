@@ -8,6 +8,7 @@ import { DeploymentBanner } from "@/src/lib/components/app/deployment-banner";
 import { Loader } from "@/src/lib/components/ui/loader";
 import { SidebarInset, SidebarProvider } from "@/src/lib/components/ui/sidebar";
 import { TooltipProvider } from "@/src/lib/components/ui/tooltip";
+import { SupportNavigationProvider } from "@/src/lib/errors/support-navigation-provider";
 import DashboardNav from "./dashboard-nav";
 import { DashboardSidebar } from "./dashboard-sidebar";
 
@@ -58,24 +59,26 @@ export default function DashboardLayout({
 
 	return (
 		<TooltipProvider delay={200}>
-			<DeploymentBanner />
-			{isCheckingOut && (
-				<div className="fixed inset-0 z-100 bg-background/80 backdrop-blur-xs flex items-center justify-center">
-					<Loader text="Preparing your secure checkout..." />
-				</div>
-			)}
-			<SidebarProvider defaultOpen>
-				<DashboardSidebar />
-				<SidebarInset className="flex min-h-svh w-full flex-col bg-background">
-					<DashboardNav />
-					<section
-						id="dashboard-content"
-						className="flex flex-1 flex-col gap-4"
-					>
-						{children}
-					</section>
-				</SidebarInset>
-			</SidebarProvider>
+			<SupportNavigationProvider>
+				<DeploymentBanner />
+				{isCheckingOut && (
+					<div className="fixed inset-0 z-100 bg-background/80 backdrop-blur-xs flex items-center justify-center">
+						<Loader text="Preparing your secure checkout..." />
+					</div>
+				)}
+				<SidebarProvider defaultOpen>
+					<DashboardSidebar />
+					<SidebarInset className="flex min-h-svh w-full flex-col bg-background">
+						<DashboardNav />
+						<section
+							id="dashboard-content"
+							className="flex flex-1 flex-col gap-4"
+						>
+							{children}
+						</section>
+					</SidebarInset>
+				</SidebarProvider>
+			</SupportNavigationProvider>
 		</TooltipProvider>
 	);
 }

@@ -22,6 +22,7 @@ import { Route as DashboardSignatureCreateIndexRouteImport } from "./routes/dash
 import { Route as DashboardEnvelopeCreateIndexRouteImport } from "./routes/dashboard/envelope/create/index"
 import { Route as DashboardDocumentSignIndexRouteImport } from "./routes/dashboard/document/sign/index"
 import { Route as DashboardShellTemplatesIndexRouteImport } from "./routes/dashboard/_shell/templates/index"
+import { Route as DashboardShellSupportIndexRouteImport } from "./routes/dashboard/_shell/support/index"
 import { Route as DashboardShellDraftsIndexRouteImport } from "./routes/dashboard/_shell/drafts/index"
 import { Route as DashboardShellConnectionsIndexRouteImport } from "./routes/dashboard/_shell/connections/index"
 import { Route as DashboardShellAdminIndexRouteImport } from "./routes/dashboard/_shell/admin/index"
@@ -99,6 +100,12 @@ const DashboardShellTemplatesIndexRoute =
     path: "/templates/",
     getParentRoute: () => DashboardShellRouteRoute,
   } as any)
+const DashboardShellSupportIndexRoute =
+  DashboardShellSupportIndexRouteImport.update({
+    id: "/support/",
+    path: "/support/",
+    getParentRoute: () => DashboardShellRouteRoute,
+  } as any)
 const DashboardShellDraftsIndexRoute =
   DashboardShellDraftsIndexRouteImport.update({
     id: "/drafts/",
@@ -154,6 +161,7 @@ export interface FileRoutesByFullPath {
   "/dashboard/admin/": typeof DashboardShellAdminIndexRoute
   "/dashboard/connections/": typeof DashboardShellConnectionsIndexRoute
   "/dashboard/drafts/": typeof DashboardShellDraftsIndexRoute
+  "/dashboard/support/": typeof DashboardShellSupportIndexRoute
   "/dashboard/templates/": typeof DashboardShellTemplatesIndexRoute
   "/dashboard/document/sign/": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create/": typeof DashboardEnvelopeCreateIndexRoute
@@ -173,6 +181,7 @@ export interface FileRoutesByTo {
   "/dashboard/admin": typeof DashboardShellAdminIndexRoute
   "/dashboard/connections": typeof DashboardShellConnectionsIndexRoute
   "/dashboard/drafts": typeof DashboardShellDraftsIndexRoute
+  "/dashboard/support": typeof DashboardShellSupportIndexRoute
   "/dashboard/templates": typeof DashboardShellTemplatesIndexRoute
   "/dashboard/document/sign": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create": typeof DashboardEnvelopeCreateIndexRoute
@@ -196,6 +205,7 @@ export interface FileRoutesById {
   "/dashboard/_shell/admin/": typeof DashboardShellAdminIndexRoute
   "/dashboard/_shell/connections/": typeof DashboardShellConnectionsIndexRoute
   "/dashboard/_shell/drafts/": typeof DashboardShellDraftsIndexRoute
+  "/dashboard/_shell/support/": typeof DashboardShellSupportIndexRoute
   "/dashboard/_shell/templates/": typeof DashboardShellTemplatesIndexRoute
   "/dashboard/document/sign/": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create/": typeof DashboardEnvelopeCreateIndexRoute
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
     | "/dashboard/admin/"
     | "/dashboard/connections/"
     | "/dashboard/drafts/"
+    | "/dashboard/support/"
     | "/dashboard/templates/"
     | "/dashboard/document/sign/"
     | "/dashboard/envelope/create/"
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | "/dashboard/admin"
     | "/dashboard/connections"
     | "/dashboard/drafts"
+    | "/dashboard/support"
     | "/dashboard/templates"
     | "/dashboard/document/sign"
     | "/dashboard/envelope/create"
@@ -260,6 +272,7 @@ export interface FileRouteTypes {
     | "/dashboard/_shell/admin/"
     | "/dashboard/_shell/connections/"
     | "/dashboard/_shell/drafts/"
+    | "/dashboard/_shell/support/"
     | "/dashboard/_shell/templates/"
     | "/dashboard/document/sign/"
     | "/dashboard/envelope/create/"
@@ -371,6 +384,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardShellTemplatesIndexRouteImport
       parentRoute: typeof DashboardShellRouteRoute
     }
+    "/dashboard/_shell/support/": {
+      id: "/dashboard/_shell/support/"
+      path: "/support"
+      fullPath: "/dashboard/support/"
+      preLoaderRoute: typeof DashboardShellSupportIndexRouteImport
+      parentRoute: typeof DashboardShellRouteRoute
+    }
     "/dashboard/_shell/drafts/": {
       id: "/dashboard/_shell/drafts/"
       path: "/drafts"
@@ -427,6 +447,7 @@ interface DashboardShellRouteRouteChildren {
   DashboardShellAdminIndexRoute: typeof DashboardShellAdminIndexRoute
   DashboardShellConnectionsIndexRoute: typeof DashboardShellConnectionsIndexRoute
   DashboardShellDraftsIndexRoute: typeof DashboardShellDraftsIndexRoute
+  DashboardShellSupportIndexRoute: typeof DashboardShellSupportIndexRoute
   DashboardShellTemplatesIndexRoute: typeof DashboardShellTemplatesIndexRoute
   DashboardShellDocumentAllIndexRoute: typeof DashboardShellDocumentAllIndexRoute
   DashboardShellSettingsProfileIndexRoute: typeof DashboardShellSettingsProfileIndexRoute
@@ -437,6 +458,7 @@ const DashboardShellRouteRouteChildren: DashboardShellRouteRouteChildren = {
   DashboardShellAdminIndexRoute: DashboardShellAdminIndexRoute,
   DashboardShellConnectionsIndexRoute: DashboardShellConnectionsIndexRoute,
   DashboardShellDraftsIndexRoute: DashboardShellDraftsIndexRoute,
+  DashboardShellSupportIndexRoute: DashboardShellSupportIndexRoute,
   DashboardShellTemplatesIndexRoute: DashboardShellTemplatesIndexRoute,
   DashboardShellDocumentAllIndexRoute: DashboardShellDocumentAllIndexRoute,
   DashboardShellSettingsProfileIndexRoute:

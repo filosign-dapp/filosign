@@ -1,10 +1,10 @@
 /** Profile and thirdweb email sync. */
 
+import { throwAppError } from "@filosign/errors/server";
 import {
 	hashAuthSubjectCommitment,
 	zUserKeygenDataJson,
 } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { desc, eq, inArray } from "drizzle-orm";
 import type { Address } from "viem";
 import { isAddress } from "viem";
@@ -20,6 +20,7 @@ import {
 	verifiedThirdwebEmailForWallet,
 } from "@/lib/platform/utils/thirdweb";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const {
 	users,
@@ -67,7 +68,7 @@ export async function userProfileMe(wallet: Address) {
 		.where(eq(users.walletAddress, wallet));
 
 	if (!userData) {
-		throw new ORPCError("NOT_FOUND", { message: "User not found" });
+		throw throwAppError("USERS.USER_NOT_FOUND");
 	}
 
 	let avatarUrl: string | null = null;
@@ -116,7 +117,7 @@ export async function userProfileUpdate(wallet: Address, body: unknown) {
 	const parsedBody = zUserProfilePutBody.safeParse(body);
 
 	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });
+		throw throwZodBadRequest(parsedBody.error);
 	}
 
 	const {
@@ -156,17 +157,12 @@ export async function userProfileUpdate(wallet: Address, body: unknown) {
 		const trimmed = parsedBody.data.avatarKey.trim();
 		const expectedKey = userAvatarWebpKey(wallet);
 		if (trimmed !== expectedKey) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "Avatar key does not match this wallet",
-			});
+			throw throwAppError("USERS.AVATAR_KEY_MISMATCH");
 		}
 		const { bucket } = await import("@/lib/platform/s3/client");
 		const exists = await bucket.exists(expectedKey);
 		if (!exists) {
-			throw new ORPCError("BAD_REQUEST", {
-				message:
-					"Avatar upload not found — PUT the WebP to the issued URL first",
-			});
+			throw throwAppError("USERS.AVATAR_UPLOAD_NOT_FOUND");
 		}
 		await db.updateUserFieldWithLog({
 			walletAddress: wallet,
@@ -261,7 +257,7 @@ export async function userProfileLookup(_wallet: Address, q: string) {
 	}
 
 	if (!userData) {
-		throw new ORPCError("NOT_FOUND", { message: "User not found" });
+		throw throwAppError("USERS.USER_NOT_FOUND");
 	}
 
 	let avatarUrl: string | null = null;
@@ -305,7 +301,7 @@ export async function userProfileSyncThirdwebEmail(
 	const parsedBody = zUserSyncThirdwebEmailBody.safeParse(body);
 
 	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });
+		throw throwZodBadRequest(parsedBody.error);
 	}
 
 	const [existing] = await db
@@ -318,9 +314,7 @@ export async function userProfileSyncThirdwebEmail(
 	);
 
 	if (emailResult.error) {
-		throw new ORPCError("UNAUTHORIZED", {
-			message: `Wallet auth verification failed: ${emailResult.error.message}`,
-		});
+		throw throwAppError("USERS.THIRDWEB_SYNC_FAILED");
 	}
 
 	const email = emailResult.data;
@@ -368,7 +362,7 @@ export async function userProfileSetPrimaryEmail(
 	const parsedBody = zUserSetPrimaryEmailBody.safeParse(body);
 
 	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });
+		throw throwZodBadRequest(parsedBody.error);
 	}
 
 	const { identityToken, email: requestedRaw } = parsedBody.data;
@@ -377,9 +371,7 @@ export async function userProfileSetPrimaryEmail(
 	);
 
 	if (linkedResult.error) {
-		throw new ORPCError("UNAUTHORIZED", {
-			message: `Wallet auth verification failed: ${linkedResult.error.message}`,
-		});
+		throw throwAppError("USERS.THIRDWEB_SYNC_FAILED");
 	}
 
 	const linked = linkedResult.data;
@@ -387,9 +379,7 @@ export async function userProfileSetPrimaryEmail(
 	const canonical = linked.find((e) => e.toLowerCase() === normalizedRequested);
 
 	if (!canonical) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "This email is not linked to your sign-in account.",
-		});
+		throw throwAppError("USERS.EMAIL_NOT_LINKED");
 	}
 
 	await db.updateUserFieldWithLog({
@@ -463,7 +453,7 @@ export async function userEraseAccount(wallet: Address) {
 		.limit(1);
 
 	if (!user) {
-		throw new ORPCError("NOT_FOUND", { message: "User not found" });
+		throw throwAppError("USERS.USER_NOT_FOUND");
 	}
 
 	const drafts = await db
@@ -626,7 +616,7 @@ export async function userPrivacyState(wallet: Address) {
 		.limit(1);
 
 	if (!user) {
-		throw new ORPCError("NOT_FOUND", { message: "User not found" });
+		throw throwAppError("USERS.USER_NOT_FOUND");
 	}
 
 	const [latestConsent] = await db
@@ -680,7 +670,7 @@ export async function userSetAnalyticsConsent(
 		})
 		.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 
 	await db.insert(analyticsConsentReceipts).values({
@@ -702,7 +692,7 @@ export async function userPrivacyRequestCreate(wallet: Address, body: unknown) {
 		})
 		.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 
 	const now = new Date();
@@ -763,7 +753,7 @@ export async function userPrivacyRequestTransition(
 		})
 		.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 	const now = new Date();
 	const [updated] = await db
@@ -787,7 +777,7 @@ export async function userPrivacyRequestTransition(
 			legalHoldReason: privacyRequests.legalHoldReason,
 		});
 	if (!updated) {
-		throw new ORPCError("NOT_FOUND", { message: "Privacy request not found" });
+		throw throwAppError("USERS.PRIVACY_REQUEST_NOT_FOUND");
 	}
 	if (updated.status === "completed" && updated.type === "erasure") {
 		await db.insert(privacyErasureLedger).values({
@@ -818,7 +808,7 @@ export async function userExportAccountData(wallet: Address) {
 		.limit(1);
 
 	if (!user) {
-		throw new ORPCError("NOT_FOUND", { message: "User not found" });
+		throw throwAppError("USERS.USER_NOT_FOUND");
 	}
 
 	const [

@@ -1,7 +1,7 @@
 import { computeCidIdentifier } from "@filosign/contracts";
+import { throwAppError } from "@filosign/errors/server";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import { SETTLEMENT_RELEASE_TYPE_UINT } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
@@ -19,8 +19,10 @@ const { organizations } = db.schema;
 async function assertTxSucceeded(hash: Hex, label: string) {
 	const res = await tryCatch(evmClient.waitForTransactionReceipt({ hash }));
 	if (res.error || !res.data || res.data.status !== "success") {
-		throw new ORPCError("BAD_REQUEST", {
-			message: `${label} transaction not found or failed on-chain`,
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: `${label} transaction not found or failed on-chain`,
+			},
 		});
 	}
 }
@@ -32,16 +34,20 @@ async function assertEnvelopeRegisteredOnChain(
 	const registry = fsEnvelopeRegistryAt(registryAddress ?? null);
 	const cidRes = await tryCatch(registry.read.cidIdentifier([pieceCid]));
 	if (cidRes.error || !cidRes.data) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Could not resolve document identifier on registry",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "Could not resolve document identifier on registry",
+			},
 		});
 	}
 	const regRes = await tryCatch(
 		registry.read.envelopeRegistrations([cidRes.data as Hex]),
 	);
 	if (regRes.error || !regRes.data || regRes.data.timestamp === 0n) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Document is not registered on-chain",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "Document is not registered on-chain",
+			},
 		});
 	}
 }
@@ -60,16 +66,20 @@ async function assertRuleMatchesOnChain(args: {
 	assertSettlementUsdcToken(rule.tokenAddress);
 
 	if (rule.cidIdentifier.toLowerCase() !== expectedCid.toLowerCase()) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Settlement rule cidIdentifier does not match document",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "Settlement rule cidIdentifier does not match document",
+			},
 		});
 	}
 
 	const ruleId = BigInt(rule.onChainRuleId);
 	const readRes = await tryCatch(validator.read.rules([ruleId]));
 	if (readRes.error || !readRes.data) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: `Settlement rule ${rule.onChainRuleId} not found on-chain`,
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: `Settlement rule ${rule.onChainRuleId} not found on-chain`,
+			},
 		});
 	}
 
@@ -86,42 +96,57 @@ async function assertRuleMatchesOnChain(args: {
 	] = readRes.data;
 
 	if (executed || cancelled) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: `Settlement rule ${rule.onChainRuleId} is not active on-chain`,
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: `Settlement rule ${rule.onChainRuleId} is not active on-chain`,
+			},
 		});
 	}
 	if (getAddress(token) !== getAddress(rule.tokenAddress)) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "On-chain token does not match submitted settlement rule",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "On-chain token does not match submitted settlement rule",
+			},
 		});
 	}
 	if (cidId.toLowerCase() !== expectedCid.toLowerCase()) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "On-chain cidId does not match document",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "On-chain cidId does not match document",
+			},
 		});
 	}
 	if (Number(releaseType) !== SETTLEMENT_RELEASE_TYPE_UINT[rule.releaseType]) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "On-chain release type does not match submitted settlement rule",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason:
+					"On-chain release type does not match submitted settlement rule",
+			},
 		});
 	}
 
 	const expectedExpires = rule.expiresAt ? BigInt(rule.expiresAt) : 0n;
 	if (expiresAtOnChain !== expectedExpires) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "On-chain expiresAt does not match submitted settlement rule",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "On-chain expiresAt does not match submitted settlement rule",
+			},
 		});
 	}
 
 	const legsRes = await tryCatch(validator.read.ruleLegs([ruleId]));
 	if (legsRes.error || !legsRes.data?.length) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "On-chain payout legs missing for settlement rule",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "On-chain payout legs missing for settlement rule",
+			},
 		});
 	}
 	if (legsRes.data.length !== rule.legs.length) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "On-chain leg count does not match submitted settlement rule",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "On-chain leg count does not match submitted settlement rule",
+			},
 		});
 	}
 	for (let i = 0; i < rule.legs.length; i++) {
@@ -130,13 +155,17 @@ async function assertRuleMatchesOnChain(args: {
 		if (
 			getAddress(onChain.recipient) !== getAddress(submitted.recipientWallet)
 		) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "On-chain payout recipient does not match submitted leg",
+			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+				params: {
+					reason: "On-chain payout recipient does not match submitted leg",
+				},
 			});
 		}
 		if (onChain.amount !== BigInt(submitted.amount)) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "On-chain payout amount does not match submitted leg",
+			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+				params: {
+					reason: "On-chain payout amount does not match submitted leg",
+				},
 			});
 		}
 	}
@@ -149,8 +178,10 @@ async function assertRuleMatchesOnChain(args: {
 			normHex(specificCommitment) !==
 			normHex(rule.releaseParams.signerEmailCommitment)
 		) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "On-chain signer commitment does not match settlement rule",
+			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+				params: {
+					reason: "On-chain signer commitment does not match settlement rule",
+				},
 			});
 		}
 	}
@@ -164,8 +195,10 @@ async function assertRuleMatchesOnChain(args: {
 			validator.read.signerCommitments([ruleId]),
 		);
 		if (commitmentsRes.error || !commitmentsRes.data) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "On-chain signer commitments missing for settlement rule",
+			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+				params: {
+					reason: "On-chain signer commitments missing for settlement rule",
+				},
 			});
 		}
 		const onChain = commitmentsRes.data.map(normHex).sort();
@@ -179,9 +212,11 @@ async function assertRuleMatchesOnChain(args: {
 			onChain.length !== submitted.length ||
 			onChain.some((c, i) => c !== submitted[i])
 		) {
-			throw new ORPCError("BAD_REQUEST", {
-				message:
-					"On-chain signer commitments do not match submitted settlement rule",
+			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+				params: {
+					reason:
+						"On-chain signer commitments do not match submitted settlement rule",
+				},
 			});
 		}
 	}
@@ -191,8 +226,10 @@ async function assertRuleMatchesOnChain(args: {
 		rule.releaseParams.releaseType === "at_least_n"
 	) {
 		if (Number(thresholdN) !== rule.releaseParams.thresholdN) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "On-chain threshold does not match settlement rule",
+			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+				params: {
+					reason: "On-chain threshold does not match settlement rule",
+				},
 			});
 		}
 	}
@@ -201,8 +238,10 @@ async function assertRuleMatchesOnChain(args: {
 		rule.releaseParams.releaseType === "quorum_set"
 	) {
 		if (Number(thresholdN) !== rule.releaseParams.thresholdN) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "On-chain quorum threshold does not match settlement rule",
+			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+				params: {
+					reason: "On-chain quorum threshold does not match settlement rule",
+				},
 			});
 		}
 	}
@@ -213,8 +252,10 @@ async function assertRuleMatchesOnChain(args: {
 			rule.releaseParams.releaseType === "quorum_all")
 	) {
 		if (Number(thresholdN) !== rule.releaseParams.thresholdN) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "On-chain threshold does not match settlement rule",
+			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+				params: {
+					reason: "On-chain threshold does not match settlement rule",
+				},
 			});
 		}
 	}
@@ -251,9 +292,11 @@ export async function assertSettlementRulesVerifiedOnChain(
 
 	const validator = fsPaymentValidatorAt(validatorAddress ?? null);
 	if (!validator) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"FSPaymentValidator is not deployed on this chain. Run contracts deploy/migrate first.",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason:
+					"FSPaymentValidator is not deployed on this chain. Run contracts deploy/migrate first.",
+			},
 		});
 	}
 

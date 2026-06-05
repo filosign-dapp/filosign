@@ -1,7 +1,7 @@
 import type { EntitlementContext } from "@filosign/entitlements";
+import { throwAppError } from "@filosign/errors/server";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import { isAdvancedSettlementReleaseType } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import type { Address } from "viem";
 import { MAX_SETTLEMENT_LEGS_PRODUCT } from "@/constants";
 import { assertEntitlement } from "@/lib/domains/entitlements";
@@ -11,10 +11,7 @@ function requireSettlementOrganizationId(
 	organizationId: string | null,
 ): string {
 	if (!organizationId) {
-		throw new ORPCError("FORBIDDEN", {
-			message:
-				"Payout attachment requires a workspace envelope. Send from a team workspace, not a personal send.",
-		});
+		throw throwAppError("SETTLEMENTS.FORBIDDEN");
 	}
 	return organizationId;
 }
@@ -33,9 +30,7 @@ export async function assertSettlementRuleEntitlements(
 		assertEntitlement(ctx, "features.settlement.advanced");
 	}
 	if (rule.legs.length > MAX_SETTLEMENT_LEGS_PRODUCT) {
-		throw new ORPCError("FORBIDDEN", {
-			message: `Settlement supports at most ${MAX_SETTLEMENT_LEGS_PRODUCT} payout legs on your plan`,
-		});
+		throw throwAppError("ENTITLEMENT.LIMIT_EXCEEDED");
 	}
 	if (isAdvancedSettlementReleaseType(rule.releaseType)) {
 		assertEntitlement(ctx, "features.settlement.advanced");

@@ -12,9 +12,9 @@ Last updated: 2026-06-02
 | Sent draft encrypted blob lifecycle (active+90 policy) | implemented | `apps/server/lib/platform/cron/purge-sent-draft-blobs.ts` |
 | Compliance metadata redaction | implemented | `apps/server/lib/platform/cron/redact-compliance-metadata.ts` |
 | Access request PII redaction (180-day) | implemented | `apps/server/lib/platform/cron/redact-access-request-pii.ts` |
-| Draft plaintext snapshot runtime/output reliance removed | implemented | `apps/server/lib/domains/drafts/drafts-lifecycle.ts`, `apps/server/api/orpc/schemas/drafts-output.ts`, migration backfill in `apps/server/drizzle/0003_gdpr_guardrails.sql` |
-| FK safety: org->files restrict, `user_signatures` FK | implemented (staging/prod rollout required) | `apps/server/lib/platform/db/schema/file.ts`, `apps/server/lib/platform/db/schema/user.ts`, migration `apps/server/drizzle/0003_gdpr_guardrails.sql`, rollout in `project/ops/production-smoke-tests.md` |
-| DSAR endpoints + request lifecycle + erasure ledger | implemented | `apps/server/api/orpc/router.ts`, `apps/server/api/handlers/users/profile.ts`, `apps/server/api/orpc/schemas/users-output.ts`, `apps/server/lib/platform/db/schema/privacy.ts`, migration `apps/server/drizzle/0004_privacy_lifecycle.sql` |
+| Draft plaintext snapshot runtime/output reliance removed | implemented | `apps/server/lib/domains/drafts/drafts-lifecycle.ts`, `apps/server/api/orpc/schemas/drafts-output.ts`, squashed in `apps/server/drizzle/0000_initial.sql` |
+| FK safety: org->files restrict, `user_signatures` FK | implemented (staging/prod rollout required) | `apps/server/lib/platform/db/schema/file.ts`, `apps/server/lib/platform/db/schema/user.ts`, `apps/server/drizzle/0000_initial.sql`, rollout in `project/ops/production-smoke-tests.md` |
+| DSAR endpoints + request lifecycle + erasure ledger | implemented | `apps/server/api/orpc/router.ts`, `apps/server/api/handlers/users/profile.ts`, `apps/server/api/orpc/schemas/users-output.ts`, `apps/server/lib/platform/db/schema/privacy.ts`, `apps/server/drizzle/0000_initial.sql` |
 | Server-side analytics consent receipts | implemented | `apps/server/lib/platform/db/schema/privacy.ts`, `apps/server/api/handlers/users/profile.ts`, `apps/server/api/orpc/router.ts` |
 | PII-minimized delivery logs | implemented | `apps/server/lib/platform/email/deliver.ts` |
 | Analytics scrubber hardening | implemented | `packages/shared/utils/compliance.ts`, `packages/shared/tests/analytics-scrub.test.ts` |
@@ -24,5 +24,5 @@ Last updated: 2026-06-02
 ## Residual Risks / Follow-up
 
 - Legal team must replace `TBD` transfer evidence placeholders with signed artifact IDs.
-- Production rollout of migrations `0003_gdpr_guardrails.sql` and `0004_privacy_lifecycle.sql` with staging preflight checks.
+- Production rollout of squashed schema `0000_initial.sql` with staging preflight checks (see `project/ops/postgres-ops.md`).
 - Backup restoration suppression procedure should be validated in an ops drill.

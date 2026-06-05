@@ -1,7 +1,7 @@
 export const definitions = {
 	"0x14a34": {
 		FSEnvelopeRegistry: {
-			address: "0xF7e2cC7076f0363B0bef7e0356bb3c2885D4315D",
+			address: "0x01FA7c14E435A5e43810E4cb2DA65567C4e208f0",
 			abi: [
 				{
 					inputs: [
@@ -1537,7 +1537,7 @@ export const definitions = {
 			],
 		},
 		FSPaymentValidator: {
-			address: "0x85F79bCCF5bC0F71cf3bCd32440B0D2387dc92eE",
+			address: "0x1aB8D353349F3c1E00A1d91FE83DF5B1cD17ca68",
 			abi: [
 				{
 					inputs: [
@@ -2225,7 +2225,7 @@ export const definitions = {
 			],
 		},
 		FSAttachmentRelease: {
-			address: "0x67370563De9f190A5342FC244248a20fF29d5213",
+			address: "0xd9aae24c471b4c01DBBD2850e49b69FC845aCfFD",
 			abi: [
 				{
 					inputs: [

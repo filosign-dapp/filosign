@@ -1,6 +1,7 @@
 import { encodePacked, fromHex, type Hex, keccak256, pad, toHex } from "viem";
 import type { SignTypedDataParameters } from "viem/accounts";
 import type { FilosignContracts } from "./contracts";
+import { readRegistryEip712Domain } from "./registry-eip712";
 
 export function parsePieceCid(pieceCid: string) {
 	const bytes = new TextEncoder().encode(pieceCid);
@@ -68,16 +69,20 @@ export async function eip712signature(
 	args: Omit<SignTypedDataParameters, "domain" | "privateKey">,
 	options?: { verifyingContract?: `0x${string}` },
 ) {
-	const domain = {
-		name: contractName,
-		version: contractName === "FSEnvelopeRegistry" ? "5" : "1",
-		chainId: contracts.$client.chain.id,
-		verifyingContract:
-			options?.verifyingContract ?? contracts[contractName].address,
-	};
+	const verifyingContract =
+		options?.verifyingContract ?? contracts[contractName].address;
+	const onChainDomain = await readRegistryEip712Domain(
+		contracts,
+		verifyingContract,
+	);
 
 	return contracts.$client.signTypedData({
-		domain,
+		domain: {
+			name: onChainDomain.name,
+			version: onChainDomain.version,
+			chainId: onChainDomain.chainId,
+			verifyingContract: onChainDomain.verifyingContract,
+		},
 		...args,
 	});
 }

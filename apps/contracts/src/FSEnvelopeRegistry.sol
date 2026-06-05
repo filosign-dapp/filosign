@@ -142,7 +142,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
 
     constructor(
         address server_
-    ) EIP712("FSEnvelopeRegistry", "7") Ownable(msg.sender) {
+    ) EIP712("FSEnvelopeRegistry", "1") Ownable(msg.sender) {
         if (server_ == address(0)) revert ZeroAddress();
         server = server_;
     }

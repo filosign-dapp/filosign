@@ -12,6 +12,11 @@ export {
 	getContracts,
 } from "./services/contracts";
 export {
+	clearRegistryEip712DomainCache,
+	REGISTRY_EIP712_VERSION,
+	readRegistryEip712Domain,
+} from "./services/registry-eip712";
+export {
 	computeCidIdentifier,
 	eip712signature,
 	FILOSIGN_REGISTRATION_DOMAIN_NAME,

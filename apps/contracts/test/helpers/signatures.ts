@@ -2,8 +2,8 @@ import type { Account, Address, Hex, WalletClient } from "viem";
 import { encodePacked, keccak256, toBytes } from "viem";
 
 const ZERO_BYTES20 = "0x0000000000000000000000000000000000000000" as const;
-/** FSEnvelopeRegistry EIP-712 domain version (SignEnvelope v5 binds signersCommitment). */
-export const REGISTRY_EIP712_VERSION = "7" as const;
+/** FSEnvelopeRegistry EIP-712 domain version — must match constructor. */
+export const REGISTRY_EIP712_VERSION = "1" as const;
 
 export const SALT_PIN = `0x${"01".repeat(16)}` as Hex;
 export const SALT_SEED = `0x${"02".repeat(16)}` as Hex;

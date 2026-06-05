@@ -407,23 +407,6 @@ function PricingPlansContent({
 					<div className="col-span-full">
 						<ComparisonAccordion />
 					</div>
-					<p className="col-span-full text-center text-sm text-muted-foreground font-manrope">
-						Plan limits and feature details are in the{" "}
-						<a
-							href="/docs/plans"
-							className="font-medium text-primary underline-offset-4 hover:underline"
-						>
-							Filosign docs
-						</a>
-						. Teams Pro items marked coming soon are on the{" "}
-						<a
-							href="/docs/plans/roadmap"
-							className="font-medium text-primary underline-offset-4 hover:underline"
-						>
-							roadmap
-						</a>
-						.
-					</p>
 					{enterpriseBanner ? (
 						<div className="col-span-full flex flex-col gap-6 rounded-3xl border border-border/60 bg-muted/25 p-8 md:flex-row md:items-center md:justify-between md:gap-10">
 							<div className="max-w-3xl space-y-2">
@@ -448,6 +431,23 @@ function PricingPlansContent({
 							</Pressable>
 						</div>
 					) : null}
+					<p className="col-span-full text-center text-sm text-muted-foreground font-manrope">
+						Plan limits and feature details are in the{" "}
+						<a
+							href="/docs/plans"
+							className="font-medium text-primary underline-offset-4 hover:underline"
+						>
+							Filosign docs
+						</a>
+						. Teams Pro items marked coming soon are on the{" "}
+						<a
+							href="/docs/plans/roadmap"
+							className="font-medium text-primary underline-offset-4 hover:underline"
+						>
+							roadmap
+						</a>
+						.
+					</p>
 				</MarketingPageBody>
 			</section>
 			{checkoutPlan?.planId ? (

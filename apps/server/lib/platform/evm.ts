@@ -1,4 +1,4 @@
-import { getContracts } from "@filosign/contracts";
+import { getContracts, getHistoricalAbi } from "@filosign/contracts";
 import {
 	createWalletClient,
 	getAddress,
@@ -49,18 +49,34 @@ const keyedClient = { public: evmClient, wallet: evmClient } as const;
 
 export function fsEnvelopeRegistryAt(address?: string | null) {
 	if (!address) return fsContracts.FSEnvelopeRegistry;
+	const resolvedAddress = getAddress(address);
+	const historicalAbi = getHistoricalAbi(
+		"FSEnvelopeRegistry",
+		resolvedAddress,
+		config.chainKey,
+	);
 	return getContract({
-		address: getAddress(address),
-		abi: fsContracts.FSEnvelopeRegistry.abi,
+		address: resolvedAddress,
+		abi:
+			(historicalAbi as typeof fsContracts.FSEnvelopeRegistry.abi) ??
+			fsContracts.FSEnvelopeRegistry.abi,
 		client: keyedClient,
 	});
 }
 
 export function fsPaymentValidatorAt(address?: string | null) {
 	if (!address) return fsContracts.FSPaymentValidator;
+	const resolvedAddress = getAddress(address);
+	const historicalAbi = getHistoricalAbi(
+		"FSPaymentValidator",
+		resolvedAddress,
+		config.chainKey,
+	);
 	return getContract({
-		address: getAddress(address),
-		abi: fsContracts.FSPaymentValidator.abi,
+		address: resolvedAddress,
+		abi:
+			(historicalAbi as typeof fsContracts.FSPaymentValidator.abi) ??
+			fsContracts.FSPaymentValidator.abi,
 		client: keyedClient,
 	});
 }
@@ -154,9 +170,14 @@ export function fsAttachmentReleaseAt(address?: string | null) {
 	if (!address) return base;
 	const resolved = getAddress(address);
 	if (resolved.toLowerCase() === base.address.toLowerCase()) return base;
+	const historicalAbi = getHistoricalAbi(
+		"FSAttachmentRelease",
+		resolved,
+		config.chainKey,
+	);
 	return getContract({
 		address: resolved,
-		abi: base.abi,
+		abi: (historicalAbi as typeof base.abi) ?? base.abi,
 		client: keyedClient,
 	});
 }

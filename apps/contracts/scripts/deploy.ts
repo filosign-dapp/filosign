@@ -1,6 +1,6 @@
 import { $ } from "bun";
 import hre from "hardhat";
-import { getAddress, toHex } from "viem";
+import { getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { ChainKey } from "../definitions/index.js";
 import env from "../env";
@@ -246,16 +246,65 @@ async function main() {
 		await writeMockUsdAddressFile(mockUsd.address);
 	}
 
-	const definitions = {
+	const chainKey = chainKeyFromId(chainId);
+	const jsonPath = `definitions/${chainKey}.json`;
+	const tsPath = `definitions/${chainKey}.ts`;
+
+	// Load existing JSON definitions
+	let existingJson = {
+		latest: {} as Record<string, unknown>,
+		byAddress: {} as Record<string, unknown>,
+	};
+	try {
+		const file = Bun.file(jsonPath);
+		if (await file.exists()) {
+			existingJson = await file.json();
+		}
+	} catch (error) {
+		console.warn(
+			`Failed to read existing JSON definitions at ${jsonPath}:`,
+			error,
+		);
+	}
+
+	// Make sure fields exist
+	if (!existingJson.latest) existingJson.latest = {};
+	if (!existingJson.byAddress) existingJson.byAddress = {};
+
+	const latestEntry = {
 		FSEnvelopeRegistry: abiFromContract(envelopeRegistry),
 		FSPaymentValidator: abiFromContract(paymentValidator),
 		FSAttachmentRelease: abiFromContract(attachmentRelease),
 		...(chainId === CHAIN_ID.local && mockUsd ? { MockUSDC: mockUsd } : {}),
-	} as const;
+	};
 
-	const path = `definitions/${chainKeyFromId(chainId)}.ts`;
-	await Bun.write(path, definitionsFileBody({ [toHex(chainId)]: definitions }));
-	console.log(`Definitions written to ${path}`);
+	// Update latest
+	existingJson.latest = latestEntry;
+
+	// Append deployed contracts to byAddress
+	const contractsToRegister = [
+		{ name: "FSEnvelopeRegistry", ...latestEntry.FSEnvelopeRegistry },
+		{ name: "FSPaymentValidator", ...latestEntry.FSPaymentValidator },
+		{ name: "FSAttachmentRelease", ...latestEntry.FSAttachmentRelease },
+		...(chainId === CHAIN_ID.local && mockUsd
+			? [{ name: "MockUSDC", ...mockUsd }]
+			: []),
+	];
+
+	for (const item of contractsToRegister) {
+		existingJson.byAddress[item.address.toLowerCase()] = {
+			name: item.name,
+			abi: item.abi,
+		};
+	}
+
+	// Write JSON back
+	await Bun.write(jsonPath, JSON.stringify(existingJson, null, 2));
+	console.log(`Definitions JSON written to ${jsonPath}`);
+
+	// Write TS back
+	await Bun.write(tsPath, definitionsFileBody(existingJson));
+	console.log(`Definitions TS written to ${tsPath}`);
 
 	await verifyOnBaseExplorerIfApplicable({
 		networkName: hre.network.name,

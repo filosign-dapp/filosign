@@ -4,7 +4,6 @@ import {
 	type Address,
 	type Client,
 	createPublicClient,
-	custom,
 	type GetContractReturnType,
 	getContract,
 	type PublicClient,
@@ -53,13 +52,10 @@ type CoreDefinitionContracts = Pick<
 	"FSEnvelopeRegistry" | "FSPaymentValidator"
 >;
 
-type AttachmentReleaseDefinition = ChainDefinitionsEntry extends {
-	FSAttachmentRelease: infer R;
-}
-	? R extends { abi: Abi; address: Address }
-		? R
-		: never
-	: never;
+type AttachmentReleaseDefinition = Exclude<
+	ChainDefinitionsEntry["FSAttachmentRelease"],
+	undefined
+>;
 
 type CoreFilosignContracts<_T extends Wallet> = {
 	[K in keyof CoreDefinitionContracts]: GetContractReturnType<
@@ -86,6 +82,7 @@ export type FilosignContracts<T extends Wallet = Wallet> =
 	CoreFilosignContracts<T> &
 		OptionalAttachmentReleaseContract<T> & {
 			$client: T;
+			$chainKey: ChainKey;
 		};
 
 function getKeyedClient<T extends Client | WalletClient>(
@@ -93,11 +90,13 @@ function getKeyedClient<T extends Client | WalletClient>(
 	chainKey: ChainKey,
 ) {
 	const chain = VIEM_CHAIN_BY_KEY[chainKey];
-	const source = client as Client;
 	return {
 		public: createPublicClient({
 			chain,
-			transport: custom(source),
+			transport: () => ({
+				config: (client as Client).transport,
+				request: (client as Client).request,
+			}),
 		}),
 		wallet: client,
 	} as FilosignKeyedContractClient;
@@ -135,5 +134,6 @@ export function getContracts<T extends Wallet>(options: {
 				}
 			: {}),
 		$client: client,
+		$chainKey: chainKey,
 	} as FilosignContracts<T>;
 }

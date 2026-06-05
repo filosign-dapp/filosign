@@ -1,4 +1,5 @@
 import type { FilosignContracts } from "@filosign/contracts";
+import { getHistoricalAbi } from "@filosign/contracts";
 import {
 	type Address,
 	createPublicClient,
@@ -26,9 +27,14 @@ export function envelopeRegistryAt(
 	if (!registryAddress) return base;
 	const address = getAddress(registryAddress);
 	if (address.toLowerCase() === base.address.toLowerCase()) return base;
+	const historicalAbi = getHistoricalAbi(
+		"FSEnvelopeRegistry",
+		address,
+		contracts.$chainKey,
+	);
 	return getContract({
 		address,
-		abi: base.abi,
+		abi: (historicalAbi as typeof base.abi) ?? base.abi,
 		client: {
 			public: publicClientFor(contracts),
 			wallet: contracts.$client,

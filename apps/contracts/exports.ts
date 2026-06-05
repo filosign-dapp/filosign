@@ -3,6 +3,7 @@ export {
 	type ChainDefinitionsEntry,
 	type ChainKey,
 	getDefinitionsEntry,
+	getHistoricalAbi,
 	LOCAL_MOCK_USDC_ADDRESS,
 } from "./definitions/index";
 export {

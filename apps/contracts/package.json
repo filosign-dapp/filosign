@@ -1,8 +1,7 @@
 {
 	"name": "@filosign/contracts",
 	"version": "1.0.0",
-	"main": "./dist/exports.js",
-	"types": "./dist/exports.d.ts",
+	"types": "./exports.ts",
 	"files": [
 		"dist/**/*",
 		"artifacts/**/*"

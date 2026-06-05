@@ -9,12 +9,12 @@ describe("presentError", () => {
 				message: "View the document first",
 				data: { appCode: "SIGNING.VIEW_REQUIRED" },
 			},
-			{ helpBaseUrl: "https://filosign.com" },
+			{ helpBaseUrl: "/dashboard/support" },
 		);
 		expect(presented.code).toBe("SIGNING.VIEW_REQUIRED");
 		expect(presented.title).toBe("Open the document first");
 		expect(presented.supportUrl).toBe(
-			"https://filosign.com/help#signing-view-required",
+			"/dashboard/support#signing-view-required",
 		);
 	});
 

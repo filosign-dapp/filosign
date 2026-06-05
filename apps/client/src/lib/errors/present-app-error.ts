@@ -4,7 +4,7 @@ import {
 	presentError,
 } from "@filosign/errors";
 import { showErrorToast } from "@filosign/errors/client";
-import env from "@/src/env";
+import { navigateToSupportUrl, SUPPORT_BASE_PATH } from "./support-navigation";
 
 export function presentAppError(
 	error: unknown,
@@ -12,12 +12,15 @@ export function presentAppError(
 ): PresentedError {
 	return presentError(error, {
 		...options,
-		helpBaseUrl: env.VITE_ASTRO_URL.replace(/\/$/, ""),
+		helpBaseUrl: SUPPORT_BASE_PATH,
 		devMode: import.meta.env.DEV,
 	});
 }
 
 export function showAppErrorToast(error: unknown): void {
 	const presented = presentAppError(error);
-	showErrorToast(presented, { devMode: import.meta.env.DEV });
+	showErrorToast(presented, {
+		devMode: import.meta.env.DEV,
+		onSupportClick: navigateToSupportUrl,
+	});
 }

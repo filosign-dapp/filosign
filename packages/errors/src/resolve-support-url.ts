@@ -9,5 +9,5 @@ export function resolveSupportUrl(
 	if (!def || def.audience !== "user" || !def.supportSlug) return null;
 	if (def.showSupportLink === false) return null;
 	const base = helpBaseUrl.replace(/\/$/, "");
-	return `${base}/help#${def.supportSlug}`;
+	return `${base}#${def.supportSlug}`;
 }

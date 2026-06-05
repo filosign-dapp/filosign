@@ -1,10 +1,10 @@
+import { throwAppError } from "@filosign/errors/server";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import {
 	settlementRuleTotalAmount,
 	zSettlementRuleCancelInput,
 	zSettlementRuleUpdateInput,
 } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -13,6 +13,7 @@ import { resolveEntitlementContext } from "@/lib/domains/entitlements";
 import db from "@/lib/platform/db";
 import { evmClient, fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { assertSettlementRecipientsAllowlisted } from "./register";
 import {
 	markSettlementRuleCancelled,
@@ -37,17 +38,13 @@ async function loadPayerRule(
 		getAddress(validatorAddress),
 	);
 	if (!rule) {
-		throw new ORPCError("NOT_FOUND", { message: "Settlement rule not found" });
+		throw throwAppError("SETTLEMENTS.RULE_NOT_FOUND");
 	}
 	if (getAddress(rule.payerWallet) !== getAddress(sender)) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Only the payer can modify this settlement rule",
-		});
+		throw throwAppError("SETTLEMENTS.FORBIDDEN");
 	}
 	if (rule.status === "executed" || rule.status === "cancelled") {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Settlement rule is no longer active",
-		});
+		throw throwAppError("SETTLEMENTS.RULE_MUTATION_NOT_ALLOWED");
 	}
 	return rule;
 }
@@ -55,16 +52,14 @@ async function loadPayerRule(
 export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 	const parsed = zSettlementRuleUpdateInput.safeParse(rawBody);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 	const input = parsed.data;
 	const ruleId = BigInt(input.onChainRuleId);
 	const rule = await loadPayerRule(sender, ruleId, input.validatorAddress);
 
 	if (input.legs.length > MAX_SETTLEMENT_LEGS_PRODUCT) {
-		throw new ORPCError("FORBIDDEN", {
-			message: `Settlement supports at most ${MAX_SETTLEMENT_LEGS_PRODUCT} payout legs on your plan`,
-		});
+		throw throwAppError("ENTITLEMENT.LIMIT_EXCEEDED");
 	}
 
 	const [file] = await db
@@ -119,7 +114,7 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 	);
 
 	if (settlementRuleTotalAmount(input.legs) <= 0n) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid payout total" });
+		throw throwAppError("SETTLEMENTS.INVALID_PAYOUT_TOTAL");
 	}
 
 	await markSettlementRuleUpdated({
@@ -138,7 +133,7 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 export async function settlementsCancelRule(sender: Address, rawBody: unknown) {
 	const parsed = zSettlementRuleCancelInput.safeParse(rawBody);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 	const input = parsed.data;
 	const ruleId = BigInt(input.onChainRuleId);
@@ -148,16 +143,20 @@ export async function settlementsCancelRule(sender: Address, rawBody: unknown) {
 		evmClient.waitForTransactionReceipt({ hash: input.cancelRuleTxHash }),
 	);
 	if (receiptRes.error || receiptRes.data?.status !== "success") {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "cancelRule transaction not found or failed on-chain",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "cancelRule transaction not found or failed on-chain",
+			},
 		});
 	}
 
 	const validator = fsPaymentValidatorAt(rule.validatorAddress);
 	const rulesRes = await tryCatch(validator.read.rules([ruleId]));
 	if (rulesRes.error || !rulesRes.data?.[8]) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Settlement rule is not cancelled on-chain",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "Settlement rule is not cancelled on-chain",
+			},
 		});
 	}
 

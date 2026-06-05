@@ -1,12 +1,13 @@
+import { throwAppError } from "@filosign/errors/server";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import { zSettlementRuleRegistrationInput } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import { type Address, getAddress } from "viem";
 import z from "zod";
 import { resolveEntitlementContext } from "@/lib/domains/entitlements";
 import db from "@/lib/platform/db";
 import { fsContracts } from "@/lib/platform/evm";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { assertSettlementRulesUsdcToken } from "./utils/assert-settlement-token";
 import { assertSettlementRuleEntitlements } from "./utils/entitlements";
 import { assertSettlementRulesVerifiedOnChain } from "./utils/verify-rules-on-chain";
@@ -36,8 +37,10 @@ export async function insertSettlementRulesForFile(
 	await executor.insert(fileSettlementRules).values(
 		rules.map((r) => {
 			if (!r.legs[0]) {
-				throw new ORPCError("BAD_REQUEST", {
-					message: "Settlement rule requires at least one payout leg",
+				throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+					params: {
+						reason: "Settlement rule requires at least one payout leg",
+					},
 				});
 			}
 			return {
@@ -91,17 +94,21 @@ export async function assertSettlementRecipientsAllowlisted(args: {
 			const recipient = norm(leg.recipientWallet);
 
 			if (!allowed.has(recipient)) {
-				throw new ORPCError("BAD_REQUEST", {
-					message:
-						"Settlement recipient must be an envelope participant or the organization payout wallet",
+				throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+					params: {
+						reason:
+							"Settlement recipient must be an envelope participant or the organization payout wallet",
+					},
 				});
 			}
 
 			if (leg.recipientSource === "org_wallet") {
 				if (!orgWallet || recipient !== norm(orgWallet)) {
-					throw new ORPCError("BAD_REQUEST", {
-						message:
-							"Organization payout wallet is not linked or does not match",
+					throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+						params: {
+							reason:
+								"Organization payout wallet is not linked or does not match",
+						},
 					});
 				}
 				continue;
@@ -112,8 +119,10 @@ export async function assertSettlementRecipientsAllowlisted(args: {
 				leg.recipientSource === "viewer"
 			) {
 				if (!args.participantWallets.some((w) => norm(w) === recipient)) {
-					throw new ORPCError("BAD_REQUEST", {
-						message: "Settlement recipient must be on this envelope",
+					throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+						params: {
+							reason: "Settlement recipient must be on this envelope",
+						},
 					});
 				}
 			}
@@ -133,7 +142,7 @@ export async function settlementsRegisterForFile(
 		})
 		.safeParse(rawBody);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 
 	const { pieceCid, organizationId, rules } = parsed.data;
@@ -147,12 +156,10 @@ export async function settlementsRegisterForFile(
 		.where(eq(files.pieceCid, pieceCid))
 		.limit(1);
 	if (!file) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throw throwAppError("FILES.NOT_FOUND");
 	}
 	if (getAddress(file.sender) !== getAddress(sender)) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Only the sender can attach settlement rules",
-		});
+		throw throwAppError("SETTLEMENTS.FORBIDDEN");
 	}
 
 	const entitlementCtx = await resolveEntitlementContext(

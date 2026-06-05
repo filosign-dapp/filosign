@@ -1,5 +1,5 @@
+import { throwAppError } from "@filosign/errors/server";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import type { Address } from "viem";
 import db from "@/lib/platform/db";
 import { settlementRuleWhere } from "./rule-lookup";
@@ -37,8 +37,10 @@ export async function markSettlementRuleUpdated(args: {
 	expiresAt?: string;
 }) {
 	if (!args.legs[0]) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Settlement rule requires at least one payout leg",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "Settlement rule requires at least one payout leg",
+			},
 		});
 	}
 	await db

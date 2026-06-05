@@ -1,8 +1,8 @@
+import { throwAppError } from "@filosign/errors/server";
 import {
 	firstSettlementLeg,
 	settlementRuleTotalAmount,
 } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { and, eq, ne } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 import { getAddress, isHex } from "viem";
@@ -36,7 +36,7 @@ async function assertCanSettleSettlementRule(
 	);
 
 	if (!rule) {
-		throw new ORPCError("NOT_FOUND", { message: "Settlement rule not found" });
+		throw throwAppError("SETTLEMENTS.RULE_NOT_FOUND");
 	}
 
 	const [file] = await db
@@ -46,7 +46,7 @@ async function assertCanSettleSettlementRule(
 		.limit(1);
 
 	if (!file) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throw throwAppError("FILES.NOT_FOUND");
 	}
 
 	const wallet = userWallet.toLowerCase();
@@ -56,9 +56,7 @@ async function assertCanSettleSettlementRule(
 	);
 
 	if (!isSender && !isRecipient) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Only the sender or payout recipient can settle this rule",
-		});
+		throw throwAppError("SETTLEMENTS.FORBIDDEN");
 	}
 
 	return rule;
@@ -82,7 +80,7 @@ export async function settlementsListByFile(
 		.limit(1);
 
 	if (!file) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throw throwAppError("FILES.NOT_FOUND");
 	}
 
 	const isSender = file.sender.toLowerCase() === userWallet.toLowerCase();
@@ -98,9 +96,7 @@ export async function settlementsListByFile(
 		);
 
 	if (!canView) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Not allowed to view payouts",
-		});
+		throw throwAppError("SETTLEMENTS.FORBIDDEN");
 	}
 
 	return Promise.all(
@@ -162,9 +158,7 @@ export async function settlementsTrySettle(
 		};
 	}
 	if (rule.status === "cancelled") {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Settlement rule was cancelled",
-		});
+		throw throwAppError("SETTLEMENTS.RULE_MUTATION_NOT_ALLOWED");
 	}
 
 	const result = await tryExecuteSettlementPayout({
@@ -205,11 +199,13 @@ export async function settlementsTrySettle(
 		};
 	}
 
-	throw new ORPCError("BAD_REQUEST", {
-		message:
-			updated?.lastError ??
-			result.skipped ??
-			"Settlement could not be executed",
+	throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+		params: {
+			reason:
+				updated?.lastError ??
+				result.skipped ??
+				"Settlement could not be executed",
+		},
 	});
 }
 
@@ -224,7 +220,7 @@ export async function settlementsConfirmSettlement(
 	const ruleId = BigInt(input.onChainRuleId);
 	const validatorAddress = getAddress(input.validatorAddress);
 	if (!isHex(input.payoutTxHash)) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid transaction hash" });
+		throw throwAppError("SETTLEMENTS.INVALID_TX_HASH");
 	}
 
 	const rule = await assertCanSettleSettlementRule(
@@ -247,9 +243,11 @@ export async function settlementsConfirmSettlement(
 		input.payoutTxHash,
 	);
 	if (!syncRes.synced) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"No payout legs were executed on-chain yet. Confirm after a successful executePayoutLeg transaction.",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason:
+					"No payout legs were executed on-chain yet. Confirm after a successful executePayoutLeg transaction.",
+			},
 		});
 	}
 

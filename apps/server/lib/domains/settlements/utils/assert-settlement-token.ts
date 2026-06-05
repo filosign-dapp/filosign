@@ -1,6 +1,6 @@
 import { LOCAL_MOCK_USDC_ADDRESS } from "@filosign/contracts";
+import { throwAppError } from "@filosign/errors/server";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { getAddress } from "viem";
 import config from "@/config";
 
@@ -20,9 +20,7 @@ function settlementUsdcTokenAddress(): `0x${string}` {
 export function assertSettlementUsdcToken(tokenAddress: string) {
 	const allowed = settlementUsdcTokenAddress();
 	if (getAddress(tokenAddress) !== allowed) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Settlement token must be USDC on this chain",
-		});
+		throw throwAppError("SETTLEMENTS.TOKEN_NOT_SUPPORTED");
 	}
 }
 

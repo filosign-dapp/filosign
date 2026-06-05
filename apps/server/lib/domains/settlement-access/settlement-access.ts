@@ -1,5 +1,5 @@
+import { throwAppError } from "@filosign/errors/server";
 import { SETTLEMENT_FEATURE_TERMS_VERSION } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -7,6 +7,7 @@ import z from "zod";
 import { assertOrgPermission, resolveActiveOrg } from "@/lib/domains/orgs";
 import { isPlatformAdminForWallet } from "@/lib/platform/admin";
 import db from "@/lib/platform/db";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 function settlementAccessSchema() {
 	const { organizationSettlementFeatureAccess, organizations } = db.schema;
@@ -94,14 +95,11 @@ export async function submitOrganizationSettlementFeatureRequest(args: {
 		.safeParse(args.body);
 
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 
 	if (parsed.data.termsVersion !== SETTLEMENT_FEATURE_TERMS_VERSION) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"Settlement terms version is outdated; refresh and accept the current addendum",
-		});
+		throw throwAppError("SETTLEMENTS.TERMS_OUTDATED");
 	}
 
 	const { organizationSettlementFeatureAccess } = settlementAccessSchema();
@@ -122,9 +120,7 @@ export async function submitOrganizationSettlementFeatureRequest(args: {
 	}
 
 	if (existing?.status === "pending") {
-		throw new ORPCError("CONFLICT", {
-			message: "A payout attachment access request is already pending review",
-		});
+		throw throwAppError("SETTLEMENTS.ACCESS_REQUEST_PENDING");
 	}
 
 	await db
@@ -173,16 +169,10 @@ export async function assertOrganizationSettlementFeatureApproved(
 
 	const access = await getOrganizationSettlementFeatureAccess(organizationId);
 	if (access.status !== "approved") {
-		throw new ORPCError("FORBIDDEN", {
-			message:
-				"Payout attachment is not enabled for this workspace. Request access in workspace settings.",
-		});
+		throw throwAppError("SETTLEMENTS.FEATURE_ACCESS_REQUIRED");
 	}
 	if (!access.termsCurrent) {
-		throw new ORPCError("FORBIDDEN", {
-			message:
-				"Settlement Feature Addendum was updated. Request payout attachment access again with the current terms.",
-		});
+		throw throwAppError("SETTLEMENTS.TERMS_OUTDATED");
 	}
 }
 
@@ -244,9 +234,7 @@ export async function approveOrganizationSettlementFeatureAccess(args: {
 		});
 
 	if (updated.length === 0) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "No settlement feature access request for this workspace",
-		});
+		throw throwAppError("SETTLEMENTS.ACCESS_REQUEST_NOT_FOUND");
 	}
 
 	return getOrganizationSettlementFeatureAccess(args.organizationId);
@@ -279,9 +267,7 @@ export async function rejectOrganizationSettlementFeatureAccess(args: {
 		});
 
 	if (updated.length === 0) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "No settlement feature access request for this workspace",
-		});
+		throw throwAppError("SETTLEMENTS.ACCESS_REQUEST_NOT_FOUND");
 	}
 
 	return getOrganizationSettlementFeatureAccess(args.organizationId);

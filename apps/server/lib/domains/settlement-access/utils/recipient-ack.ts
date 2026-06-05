@@ -1,8 +1,8 @@
+import { throwAppError } from "@filosign/errors/server";
 import {
 	SETTLEMENT_FEATURE_TERMS_VERSION,
 	SETTLEMENT_RECIPIENT_ACK_INTENT_VERSION,
 } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -41,16 +41,20 @@ export async function assertSettlementRecipientAckProvided(args: {
 		.safeParse(args.body);
 
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"Acknowledge the attached payout disclosure before signing this document",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason:
+					"Acknowledge the attached payout disclosure before signing this document",
+			},
 		});
 	}
 
 	const ack = parsed.data.settlementRecipientAck;
 	if (ack.termsVersion !== SETTLEMENT_FEATURE_TERMS_VERSION) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Payout disclosure version is outdated; refresh the sign page",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "Payout disclosure version is outdated; refresh the sign page",
+			},
 		});
 	}
 }

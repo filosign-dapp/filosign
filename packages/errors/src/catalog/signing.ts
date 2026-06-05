@@ -130,4 +130,16 @@ export const signingErrors = {
 		severity: "warning",
 		defaultOrpcCode: "FORBIDDEN",
 	},
+	"SIGNING.REPLACEMENT_PENDING": {
+		title: "Signer replacement pending",
+		description:
+			"A signer replacement proposal is pending on-chain. Execute or cancel the proposal before signing.",
+		steps: [
+			"Check pending proposals in document settings.",
+			"Wait for the administrator to execute or cancel the replacement.",
+		],
+		audience: "user",
+		severity: "warning",
+		defaultOrpcCode: "FORBIDDEN",
+	},
 } as const satisfies Record<string, ErrorDefinition>;

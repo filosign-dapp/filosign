@@ -4,6 +4,7 @@ import {
 	useSignFile,
 } from "@filosign/react/files";
 import { buildRotatedInviteEnvelope } from "@filosign/react/utils";
+import type { FieldCompletionMap } from "@filosign/shared";
 import { useCallback, useState } from "react";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
@@ -20,9 +21,16 @@ export function useSignActions(options: {
 	user: { wallet?: { address?: string } } | null | undefined;
 	canSubmitPlacementSign: boolean;
 	completedFieldIds: string[];
+	fieldCompletions: FieldCompletionMap;
 }) {
-	const { pieceCid, file, user, canSubmitPlacementSign, completedFieldIds } =
-		options;
+	const {
+		pieceCid,
+		file,
+		user,
+		canSubmitPlacementSign,
+		completedFieldIds,
+		fieldCompletions,
+	} = options;
 
 	const acknowledgeFile = useAckFile();
 	const signFile = useSignFile();
@@ -59,6 +67,7 @@ export function useSignActions(options: {
 				signFile.mutateAsync({
 					pieceCid,
 					completedFieldIds,
+					fieldCompletions,
 					...(opts?.settlementRecipientAck
 						? { settlementRecipientAck: opts.settlementRecipientAck }
 						: {}),
@@ -67,7 +76,13 @@ export function useSignActions(options: {
 			if (err) return;
 			setSignSuccessDialogOpen(true);
 		},
-		[pieceCid, canSubmitPlacementSign, completedFieldIds, signFile],
+		[
+			pieceCid,
+			canSubmitPlacementSign,
+			completedFieldIds,
+			fieldCompletions,
+			signFile,
+		],
 	);
 
 	const executeRotateInvite = useCallback(async () => {

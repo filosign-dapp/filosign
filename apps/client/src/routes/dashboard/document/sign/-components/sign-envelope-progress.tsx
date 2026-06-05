@@ -47,7 +47,7 @@ export function SignEnvelopeProgressBanner({
 						aria-label={`${signedCount} of ${totalSigners} signers have signed`}
 					>
 						<div
-							className="h-full bg-chart-2 transition-all duration-500"
+							className="h-full bg-secondary transition-all duration-300"
 							style={{ width: `${percent}%` }}
 						/>
 					</div>

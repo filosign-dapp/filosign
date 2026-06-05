@@ -66,6 +66,7 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 							<EnvelopeCommentsBlock
 								pieceCid={fileInfo.pieceCid}
 								dekSource={pieceDetailToDekSource(fileInfo)}
+								commentsFeatureEnabled={fileInfo.commentsFeatureEnabled}
 							/>
 						) : null}
 						<Button

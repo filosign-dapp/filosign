@@ -1,15 +1,19 @@
+import { zPlacementManifest } from "@filosign/shared";
 import { DownloadIcon, FileIcon } from "@phosphor-icons/react";
+import { useMemo } from "react";
 import {
 	LazyBoundary,
 	LazyPdfJsPreview,
 } from "@/src/lib/components/app/suspense";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { FileViewerFieldOverlay } from "@/src/lib/domains/files/file-viewer/-components/field-overlay";
 import { useFileViewer } from "@/src/lib/domains/files/file-viewer/-lib/context/context";
 
 export function FileViewerContent() {
 	const {
 		file,
+		fileInfo,
 		viewError,
 		fileData,
 		viewFile,
@@ -59,6 +63,15 @@ export function FileViewerContent() {
 	const mimeType = metadata.mimeType;
 	const fileName = metadata.name;
 
+	const placementFields = useMemo(() => {
+		const manifest = fileInfo?.placementManifest ?? fileData.placementManifest;
+		if (!manifest) return [];
+		const parsed = zPlacementManifest.safeParse(manifest);
+		return parsed.success ? parsed.data.fields : [];
+	}, [fileInfo?.placementManifest, fileData.placementManifest]);
+
+	const fieldCompletions = fileInfo?.fieldCompletions ?? [];
+
 	const scaledFrameStyle = {
 		width: documentDimensions.width,
 		height: documentDimensions.height,
@@ -86,6 +99,11 @@ export function FileViewerContent() {
 						alt={fileName || "Document"}
 						className="absolute inset-0 w-full h-full object-contain"
 						onLoad={() => URL.revokeObjectURL(imageUrl)}
+					/>
+					<FileViewerFieldOverlay
+						pageIndex={0}
+						fields={placementFields}
+						completions={fieldCompletions}
 					/>
 				</div>
 			</div>
@@ -126,6 +144,11 @@ export function FileViewerContent() {
 							width={documentDimensions.width}
 						/>
 					</LazyBoundary>
+					<FileViewerFieldOverlay
+						pageIndex={0}
+						fields={placementFields}
+						completions={fieldCompletions}
+					/>
 				</div>
 			</div>
 		);

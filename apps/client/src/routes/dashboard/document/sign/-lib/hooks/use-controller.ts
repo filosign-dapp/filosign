@@ -1,3 +1,5 @@
+import { zPlacementManifest } from "@filosign/shared";
+import { useMemo } from "react";
 import { useCompliancePdfExports } from "@/src/lib/domains/files/compliance-pdf";
 import { useSignActions } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-sign-actions";
 import { useSignDraftState } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-sign-draft";
@@ -16,14 +18,33 @@ export function useSignDocument() {
 	const { file, filePending, fileError } = useSignFileMeta(pieceCid);
 	const identity = useSignIdentity(file);
 	const signingMeta = useSignSigningMeta(file, identity.signerAddress);
-
-	const draft = useSignDraftState(pieceCid, file, signingMeta.alreadySigned);
 	const viewer = useSignViewer(file, pieceCid);
+
+	const myPlacementFieldsBootstrap = useMemo(() => {
+		if (!viewer.fileData?.placementManifest || !identity.signerPlacementEmail) {
+			return [];
+		}
+		const parsed = zPlacementManifest.safeParse(
+			viewer.fileData.placementManifest,
+		);
+		if (!parsed.success) return [];
+		return parsed.data.fields.filter(
+			(f) => f.assignedRecipientEmail === identity.signerPlacementEmail,
+		);
+	}, [viewer.fileData?.placementManifest, identity.signerPlacementEmail]);
+
+	const draft = useSignDraftState(
+		pieceCid,
+		file,
+		signingMeta.alreadySigned,
+		myPlacementFieldsBootstrap,
+	);
 
 	const placement = useSignPlacement({
 		fileData: viewer.fileData,
 		signerPlacementEmail: identity.signerPlacementEmail,
 		completedFieldIds: draft.completedFieldIds,
+		fieldCompletions: draft.fieldCompletions,
 		canSign: signingMeta.canSign,
 	});
 
@@ -56,6 +77,7 @@ export function useSignDocument() {
 		user: identity.user,
 		canSubmitPlacementSign: placement.canSubmitPlacementSign,
 		completedFieldIds: draft.completedFieldIds,
+		fieldCompletions: draft.fieldCompletions,
 	});
 
 	return {
@@ -73,8 +95,12 @@ export function useSignDocument() {
 		identity,
 		placement: {
 			completedFieldIds: draft.completedFieldIds,
+			fieldCompletions: draft.fieldCompletions,
 			myPlacementFields: placement.myPlacementFields,
-			togglePlacementField: draft.togglePlacementField,
+			visiblePlacementFields: placement.visiblePlacementFields,
+			applyPlacementField: draft.applyPlacementField,
+			handleTextChange: draft.handleTextChange,
+			handleCheckboxToggle: draft.handleCheckboxToggle,
 			isMyPlacementFieldDone: draft.isMyPlacementFieldDone,
 			canSubmitPlacementSign: placement.canSubmitPlacementSign,
 			signerPlacementEmail: identity.signerPlacementEmail,

@@ -1,8 +1,5 @@
-import {
-	useDecryptDraftReviewCold,
-	useDecryptDraftReviewWarm,
-	useDraftReviewByToken,
-} from "@filosign/react/drafts";
+import { useDecryptDraftReviewCold } from "@filosign/react/drafts";
+import { SpinnerIcon } from "@phosphor-icons/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -11,8 +8,11 @@ import {
 	LazyPdfJsPreview,
 } from "@/src/lib/components/app/suspense";
 import { Button } from "@/src/lib/components/ui/button";
+import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { Textarea } from "@/src/lib/components/ui/textarea";
+import { useDraftReviewWarmUnlock } from "@/src/routes/draft/review/-lib/use-draft-review-warm-unlock";
 
 export const Route = createFileRoute("/draft/review/")({
 	validateSearch: (search: Record<string, unknown>) => ({
@@ -23,17 +23,19 @@ export const Route = createFileRoute("/draft/review/")({
 
 function DraftReviewPage() {
 	const { token } = Route.useSearch();
-	const payload = useDraftReviewByToken(token);
+	const warmUnlock = useDraftReviewWarmUnlock(token);
+	const payload = warmUnlock.payload;
 	const decryptCold = useDecryptDraftReviewCold();
-	const decryptWarm = useDecryptDraftReviewWarm();
 	const [phrase, setPhrase] = useState("");
-	const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
+	const [coldPdfBytes, setColdPdfBytes] = useState<Uint8Array | null>(null);
 
 	useEffect(() => {
-		setPdfBytes(null);
+		setColdPdfBytes(null);
+		setPhrase("");
 	}, [token]);
 
 	const data = payload.data;
+	const pdfBytes = warmUnlock.isWarm ? warmUnlock.pdfBytes : coldPdfBytes;
 
 	return (
 		<div className="min-h-screen bg-background p-6">
@@ -48,32 +50,27 @@ function DraftReviewPage() {
 					</p>
 				</header>
 
+				{!token.trim() ? (
+					<p className="text-sm text-destructive">
+						Missing review link. Open the link from your email invitation.
+					</p>
+				) : null}
+
+				{token.trim() && payload.isLoading ? (
+					<div className="flex items-center gap-2 text-sm text-muted-foreground">
+						<InlineLoader size="sm" />
+						<span>Loading invite…</span>
+					</div>
+				) : null}
+
+				{token.trim() && payload.isError ? (
+					<p className="text-sm text-destructive">
+						This review link is invalid or has expired.
+					</p>
+				) : null}
+
 				{data?.accessKind === "warm" ? (
-					<Button
-						type="button"
-						variant="primary"
-						disabled={decryptWarm.isPending}
-						onClick={() => {
-							void decryptWarm
-								.mutateAsync({ inviteToken: token })
-								.then((res) => {
-									const doc = res.documents[0];
-									if (doc) {
-										setPdfBytes(doc.bytes);
-										toast.success("Draft decrypted successfully");
-									} else {
-										toast.error("No documents found in draft");
-									}
-								})
-								.catch((err) => {
-									toast.error(
-										err instanceof Error ? err.message : "Decryption failed",
-									);
-								});
-						}}
-					>
-						{decryptWarm.isPending ? "Unlocking…" : "Unlock with wallet"}
-					</Button>
+					<WarmDraftReviewPanel unlock={warmUnlock} />
 				) : null}
 
 				{data?.accessKind === "cold" ? (
@@ -105,7 +102,7 @@ function DraftReviewPage() {
 									.then((res) => {
 										const doc = res.documents[0];
 										if (doc) {
-											setPdfBytes(doc.bytes);
+											setColdPdfBytes(doc.bytes);
 											toast.success("Draft decrypted successfully");
 										} else {
 											toast.error("No documents found in draft");
@@ -139,4 +136,126 @@ function DraftReviewPage() {
 			</div>
 		</div>
 	);
+}
+
+type WarmUnlock = ReturnType<typeof useDraftReviewWarmUnlock>;
+
+function WarmDraftReviewPanel({ unlock }: { unlock: WarmUnlock }) {
+	const panel = unlock.warmPanel;
+
+	if (panel === "wrongAccount") {
+		return (
+			<div className="max-w-md space-y-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+				<p className="font-medium">
+					This draft was shared with a different email
+				</p>
+				<p className="text-muted-foreground">
+					Invited: <span className="font-mono">{unlock.inviteEmail}</span>
+					<br />
+					Signed in as:{" "}
+					<span className="font-mono">
+						{unlock.signedInEmailForUi || "unknown"}
+					</span>
+				</p>
+				<Button
+					type="button"
+					variant="outline"
+					onClick={() => void unlock.runSwitchAccount()}
+				>
+					Switch account
+				</Button>
+			</div>
+		);
+	}
+
+	if (panel === "recovery") {
+		return (
+			<div className="max-w-md space-y-3 rounded-md border border-border p-4">
+				<div className="space-y-1">
+					<p className="font-medium">Unlock encryption keys</p>
+					<p className="text-sm text-muted-foreground">
+						Your wallet could not unlock this session automatically. Enter your
+						24-word Filosign recovery phrase to open this draft.
+					</p>
+				</div>
+				<div className="space-y-2">
+					<Label htmlFor="draft-review-recovery">Recovery phrase</Label>
+					<Textarea
+						id="draft-review-recovery"
+						autoComplete="off"
+						spellCheck={false}
+						rows={5}
+						className="font-mono text-sm"
+						value={unlock.filosignRecoveryPhrase}
+						onChange={(e) => unlock.setFilosignRecoveryPhrase(e.target.value)}
+						placeholder="24-word recovery phrase"
+					/>
+				</div>
+				{unlock.decryptError ? (
+					<p className="text-sm text-destructive">{unlock.decryptError}</p>
+				) : null}
+				<Button
+					type="button"
+					variant="primary"
+					disabled={
+						unlock.isFilosignRecoveryPending ||
+						!unlock.filosignRecoveryPhrase.trim()
+					}
+					onClick={() => void unlock.submitFilosignRecovery()}
+				>
+					{unlock.isFilosignRecoveryPending ? (
+						<>
+							<SpinnerIcon className="mr-2 size-4 animate-spin" />
+							Unlocking…
+						</>
+					) : (
+						"Unlock"
+					)}
+				</Button>
+			</div>
+		);
+	}
+
+	if (panel === "decryptFailed") {
+		return (
+			<div className="max-w-md space-y-3 rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm">
+				<p className="font-medium text-destructive">
+					Could not open this draft
+				</p>
+				<p className="text-muted-foreground">{unlock.decryptError}</p>
+				<Button
+					type="button"
+					variant="outline"
+					onClick={() => void unlock.retryDecrypt()}
+				>
+					Try again
+				</Button>
+			</div>
+		);
+	}
+
+	if (panel === "needsRegistration") {
+		return (
+			<p className="text-sm text-destructive">
+				This warm review link requires a registered Filosign account. Sign in
+				with the invited email or ask the sender for a new invite.
+			</p>
+		);
+	}
+
+	if (
+		panel === "signingIn" ||
+		panel === "busy" ||
+		panel === "unlocking" ||
+		panel === "decrypting"
+	) {
+		return (
+			<div className="flex items-center gap-2 text-sm text-muted-foreground">
+				<InlineLoader size="sm" />
+				<span>{unlock.warmStatusMessage ?? "Loading…"}</span>
+			</div>
+		);
+	}
+
+	return null;
 }

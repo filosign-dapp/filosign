@@ -10,6 +10,8 @@ export {
 export { useDraftCommentsDecrypted } from "./useDraftCommentsDecrypted";
 export { useDraftGet } from "./useDraftGet";
 export {
+	DRAFT_REVIEW_MISSING_CRYPTO_SEED,
+	normalizeDraftReviewDecryptError,
 	useDecryptDraftReviewCold,
 	useDecryptDraftReviewWarm,
 	useDraftReviewByToken,

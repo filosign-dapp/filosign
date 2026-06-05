@@ -10,6 +10,54 @@ import {
 } from "../../lib/draft-crypto";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import { walletAccountAddress } from "../../utils/evm";
+import { getSessionSeed } from "../auth/session-seed";
+
+export const DRAFT_REVIEW_MISSING_CRYPTO_SEED =
+	"DRAFT_REVIEW_MISSING_CRYPTO_SEED" as const;
+
+const DRAFT_REVIEW_DECRYPT_FAILED_MESSAGE =
+	"Could not decrypt this draft. Confirm you're signed in with the invited wallet and complete encryption unlock (wallet sign or recovery phrase).";
+
+export function normalizeDraftReviewDecryptError(error: unknown): Error {
+	if (
+		error instanceof Error &&
+		error.message === DRAFT_REVIEW_MISSING_CRYPTO_SEED
+	) {
+		return error;
+	}
+	if (
+		error instanceof Error &&
+		(error.message === "No unlocked key seed found" ||
+			error.message.includes("No unlocked key seed"))
+	) {
+		return new Error(DRAFT_REVIEW_MISSING_CRYPTO_SEED);
+	}
+	if (error instanceof DOMException) {
+		if (error.name === "OperationError" || error.name === "NotSupportedError") {
+			return new Error(DRAFT_REVIEW_DECRYPT_FAILED_MESSAGE);
+		}
+	}
+	if (error instanceof Error) {
+		if (
+			error.name === "OperationError" ||
+			error.message.includes("operation-specific reason")
+		) {
+			return new Error(DRAFT_REVIEW_DECRYPT_FAILED_MESSAGE);
+		}
+		return error;
+	}
+	return new Error(DRAFT_REVIEW_DECRYPT_FAILED_MESSAGE);
+}
+
+async function withDraftReviewDecryptErrors<T>(
+	fn: () => Promise<T>,
+): Promise<T> {
+	try {
+		return await fn();
+	} catch (error) {
+		throw normalizeDraftReviewDecryptError(error);
+	}
+}
 
 export function useDraftReviewByToken(inviteToken: string | undefined) {
 	const { rpc } = useFilosignRpc();
@@ -96,55 +144,60 @@ export function useDecryptDraftReviewWarm() {
 	const { rpc, isAuthed } = useFilosignRpc();
 
 	return useMutation({
-		mutationFn: async (args: { inviteToken: string }) => {
-			if (!wallet?.account || !isAuthed) {
-				throw new Error("Connect wallet to open this draft");
-			}
-			const walletAddress = walletAccountAddress(wallet.account);
-			const head = await rpc.drafts.reviewForWallet({
-				inviteToken: args.inviteToken,
-			});
+		mutationFn: async (args: { inviteToken: string }) =>
+			withDraftReviewDecryptErrors(async () => {
+				if (!wallet?.account || !isAuthed) {
+					throw new Error("Connect wallet to open this draft");
+				}
+				const walletAddress = walletAccountAddress(wallet.account);
+				if (!getSessionSeed(walletAddress)) {
+					throw new Error(DRAFT_REVIEW_MISSING_CRYPTO_SEED);
+				}
 
-			const dek = await decryptDraftDekFromWarmShare({
-				kemCiphertext: head.kemCiphertext,
-				encryptedDek: head.encryptedDek,
-				draftId: head.draftId,
-				inviteToken: args.inviteToken,
-				wallet: walletAddress,
-			});
+				const head = await rpc.drafts.reviewForWallet({
+					inviteToken: args.inviteToken,
+				});
 
-			const snapRes = await fetch(head.snapshotDownloadUrl);
-			if (!snapRes.ok) throw new Error("Failed to download snapshot");
-			const snapshot = await decryptDraftSnapshot({
-				dek,
-				draftId: head.draftId,
-				ciphertext: new Uint8Array(await snapRes.arrayBuffer()),
-			});
+				const dek = await decryptDraftDekFromWarmShare({
+					kemCiphertext: head.kemCiphertext,
+					encryptedDek: head.encryptedDek,
+					draftId: head.draftId,
+					inviteToken: args.inviteToken,
+					wallet: walletAddress,
+				});
 
-			const documents: {
-				id: string;
-				name: string;
-				type: string;
-				bytes: Uint8Array;
-			}[] = [];
-			for (const doc of head.documents) {
-				const dl = await fetch(doc.downloadUrl);
-				if (!dl.ok) throw new Error(`Failed to download ${doc.name}`);
-				const bytes = await decryptDraftDocument({
+				const snapRes = await fetch(head.snapshotDownloadUrl);
+				if (!snapRes.ok) throw new Error("Failed to download snapshot");
+				const snapshot = await decryptDraftSnapshot({
 					dek,
 					draftId: head.draftId,
-					docId: doc.docId,
-					ciphertext: new Uint8Array(await dl.arrayBuffer()),
+					ciphertext: new Uint8Array(await snapRes.arrayBuffer()),
 				});
-				documents.push({
-					id: doc.docId,
-					name: doc.name,
-					type: doc.mimeType,
-					bytes,
-				});
-			}
 
-			return { snapshot, documents, title: head.title };
-		},
+				const documents: {
+					id: string;
+					name: string;
+					type: string;
+					bytes: Uint8Array;
+				}[] = [];
+				for (const doc of head.documents) {
+					const dl = await fetch(doc.downloadUrl);
+					if (!dl.ok) throw new Error(`Failed to download ${doc.name}`);
+					const bytes = await decryptDraftDocument({
+						dek,
+						draftId: head.draftId,
+						docId: doc.docId,
+						ciphertext: new Uint8Array(await dl.arrayBuffer()),
+					});
+					documents.push({
+						id: doc.docId,
+						name: doc.name,
+						type: doc.mimeType,
+						bytes,
+					});
+				}
+
+				return { snapshot, documents, title: head.title };
+			}),
 	});
 }

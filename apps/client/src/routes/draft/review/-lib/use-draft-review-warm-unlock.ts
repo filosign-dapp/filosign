@@ -1,0 +1,306 @@
+import { useFilosignContext } from "@filosign/react";
+import {
+	useCryptoUnlocked,
+	useIsLoggedIn,
+	useIsRegistered,
+	useLogout,
+} from "@filosign/react/auth";
+import {
+	DRAFT_REVIEW_MISSING_CRYPTO_SEED,
+	useDecryptDraftReviewWarm,
+	useDraftReviewByToken,
+} from "@filosign/react/drafts";
+import {
+	filosignNonRpcRoots,
+	queryKeyHasNonRpcRoot,
+} from "@filosign/react/query-keys";
+import { useUserProfile } from "@filosign/react/users";
+import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCryptoRequired } from "@/src/lib/auth/use-crypto-required";
+import { useStorePersist } from "@/src/lib/filosign/use-store";
+import {
+	useThirdweb,
+	useThirdwebLoginAction,
+} from "@/src/lib/web3/use-thirdweb";
+import { executeSwitchAccountLogout } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
+
+export type DraftReviewWarmPanel =
+	| "signingIn"
+	| "busy"
+	| "unlocking"
+	| "recovery"
+	| "wrongAccount"
+	| "decrypting"
+	| "decryptFailed"
+	| "ready"
+	| "needsRegistration"
+	| null;
+
+function normalizeEmail(email: string | undefined | null): string {
+	return email?.trim().toLowerCase() ?? "";
+}
+
+export function useDraftReviewWarmUnlock(token: string) {
+	const active = Boolean(token.trim());
+	const navigate = useNavigate();
+	const queryClient = useQueryClient();
+	const { ready, authenticated, user, logout: logoutWallet } = useThirdweb();
+	const login = useThirdwebLoginAction();
+	const logoutFilosign = useLogout();
+	const clearOnboardingForm = useStorePersist((s) => s.clearOnboardingForm);
+	const { wallet } = useFilosignContext();
+
+	const payload = useDraftReviewByToken(active ? token : undefined);
+	const decryptWarm = useDecryptDraftReviewWarm();
+	const { data: userProfile } = useUserProfile();
+	const isRegistered = useIsRegistered();
+	const apiSession = useIsLoggedIn();
+	const cryptoUnlocked = useCryptoUnlocked();
+
+	const data = payload.data;
+	const isWarm = data?.accessKind === "warm";
+	const inviteEmail =
+		data?.accessKind === "warm" ? normalizeEmail(data.email) : "";
+
+	const cryptoRequired = useCryptoRequired({
+		enabled:
+			active &&
+			isWarm &&
+			ready &&
+			authenticated &&
+			isRegistered.data === true &&
+			!isRegistered.isPending,
+	});
+
+	const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
+	const [decryptError, setDecryptError] = useState<string | null>(null);
+	const [missingSeedHint, setMissingSeedHint] = useState(false);
+	const autoWalletLoginRef = useRef(false);
+	const autoDecryptStartedRef = useRef(false);
+
+	const loggedInEmail = useMemo(
+		() =>
+			normalizeEmail(
+				user?.email?.address?.trim() || user?.google?.email?.trim() || "",
+			),
+		[user?.email?.address, user?.google?.email],
+	);
+
+	const profileEmail = normalizeEmail(userProfile?.email);
+	const signedInEmailForUi =
+		user?.email?.address?.trim() ||
+		user?.google?.email?.trim() ||
+		userProfile?.email?.trim() ||
+		"";
+
+	const inviteMatchesCurrentUser = useMemo(() => {
+		if (!inviteEmail) return true;
+		if (loggedInEmail && loggedInEmail === inviteEmail) return true;
+		if (profileEmail && profileEmail === inviteEmail) return true;
+		return !loggedInEmail && !profileEmail;
+	}, [inviteEmail, loggedInEmail, profileEmail]);
+
+	const shouldSwitchAccount =
+		active &&
+		isWarm &&
+		Boolean(inviteEmail) &&
+		authenticated &&
+		!inviteMatchesCurrentUser;
+
+	useEffect(() => {
+		setPdfBytes(null);
+		setDecryptError(null);
+		setMissingSeedHint(false);
+		autoDecryptStartedRef.current = false;
+		autoWalletLoginRef.current = false;
+	}, [token]);
+
+	useEffect(() => {
+		if (!active || !isWarm || authenticated || autoWalletLoginRef.current) {
+			return;
+		}
+		autoWalletLoginRef.current = true;
+		void login();
+	}, [active, isWarm, authenticated, login]);
+
+	const resetAfterSwitchAccount = useCallback(() => {
+		setDecryptError(null);
+		cryptoRequired.setRecoveryPhrase("");
+		cryptoRequired.resetRecovery();
+		autoWalletLoginRef.current = false;
+		autoDecryptStartedRef.current = false;
+	}, [cryptoRequired]);
+
+	const runSwitchAccount = useCallback(async () => {
+		await executeSwitchAccountLogout({
+			clearOnboardingForm,
+			wallet,
+			logoutFilosign,
+			logoutWallet,
+			navigate,
+			stayAfterLogout: true,
+			onStayAfterLogout: resetAfterSwitchAccount,
+		});
+	}, [
+		clearOnboardingForm,
+		wallet,
+		logoutFilosign,
+		logoutWallet,
+		navigate,
+		resetAfterSwitchAccount,
+	]);
+
+	const submitFilosignRecovery = useCallback(async () => {
+		if (!cryptoRequired.recoveryPhrase.trim()) return;
+		setDecryptError(null);
+		try {
+			await cryptoRequired.submitRecovery();
+			setMissingSeedHint(false);
+			autoDecryptStartedRef.current = false;
+			await queryClient.refetchQueries({
+				predicate: (q) =>
+					queryKeyHasNonRpcRoot(q.queryKey, filosignNonRpcRoots.cryptoUnlocked),
+			});
+		} catch (e) {
+			const msg =
+				e instanceof Error
+					? e.message.includes("unlock") || e.message.includes("phrase")
+						? "Invalid recovery phrase"
+						: e.message
+					: "Could not unlock with this phrase";
+			setDecryptError(msg);
+		}
+	}, [cryptoRequired, queryClient]);
+
+	const runDecrypt = useCallback(async () => {
+		if (!active || !isWarm || shouldSwitchAccount) return;
+		setDecryptError(null);
+		try {
+			const res = await decryptWarm.mutateAsync({ inviteToken: token });
+			const doc = res.documents[0];
+			if (doc) {
+				setPdfBytes(doc.bytes);
+			} else {
+				setDecryptError("No documents found in this draft.");
+			}
+		} catch (e) {
+			if (
+				e instanceof Error &&
+				e.message === DRAFT_REVIEW_MISSING_CRYPTO_SEED
+			) {
+				setMissingSeedHint(true);
+				autoDecryptStartedRef.current = false;
+				return;
+			}
+			const msg =
+				e instanceof Error
+					? e.message
+					: "Could not decrypt this draft. Confirm you're signed in with the invited wallet and complete encryption unlock (wallet sign or recovery phrase).";
+			setDecryptError(msg);
+			autoDecryptStartedRef.current = false;
+		}
+	}, [active, isWarm, shouldSwitchAccount, decryptWarm, token]);
+
+	useEffect(() => {
+		if (!active || !isWarm || shouldSwitchAccount) return;
+		if (!authenticated || !apiSession.data || !cryptoUnlocked.data) return;
+		if (autoDecryptStartedRef.current || pdfBytes) return;
+		autoDecryptStartedRef.current = true;
+		void runDecrypt();
+	}, [
+		active,
+		isWarm,
+		shouldSwitchAccount,
+		authenticated,
+		apiSession.data,
+		cryptoUnlocked.data,
+		pdfBytes,
+		runDecrypt,
+	]);
+
+	const warmPanel = useMemo((): DraftReviewWarmPanel => {
+		if (!active || !isWarm) return null;
+		if (shouldSwitchAccount) return "wrongAccount";
+		if (!authenticated) return "signingIn";
+		if (
+			payload.isLoading ||
+			isRegistered.isPending ||
+			apiSession.isPending ||
+			cryptoUnlocked.isPending
+		) {
+			return "busy";
+		}
+		if (isRegistered.data === false) return "needsRegistration";
+		if (!apiSession.data) return "busy";
+		if (
+			!cryptoUnlocked.data &&
+			(cryptoRequired.needsRecovery || missingSeedHint)
+		) {
+			return "recovery";
+		}
+		if (!cryptoUnlocked.data && cryptoRequired.tryingWalletUnlock) {
+			return "unlocking";
+		}
+		if (!cryptoUnlocked.data) return "busy";
+		if (decryptWarm.isPending) return "decrypting";
+		if (pdfBytes) return "ready";
+		if (decryptError) return "decryptFailed";
+		return "decrypting";
+	}, [
+		active,
+		isWarm,
+		shouldSwitchAccount,
+		authenticated,
+		payload.isLoading,
+		isRegistered.isPending,
+		isRegistered.data,
+		apiSession.isPending,
+		apiSession.data,
+		cryptoUnlocked.isPending,
+		cryptoUnlocked.data,
+		cryptoRequired.needsRecovery,
+		cryptoRequired.tryingWalletUnlock,
+		missingSeedHint,
+		decryptWarm.isPending,
+		pdfBytes,
+		decryptError,
+	]);
+
+	const warmStatusMessage = useMemo(() => {
+		switch (warmPanel) {
+			case "signingIn":
+				return "Signing in…";
+			case "busy":
+				return "Connecting your session…";
+			case "unlocking":
+				return "Unlocking encryption keys…";
+			case "decrypting":
+				return "Opening draft…";
+			case "needsRegistration":
+				return "This invite requires a Filosign account.";
+			default:
+				return null;
+		}
+	}, [warmPanel]);
+
+	return {
+		active,
+		isWarm,
+		payload,
+		warmPanel,
+		warmStatusMessage,
+		pdfBytes,
+		decryptError,
+		shouldSwitchAccount,
+		inviteEmail,
+		signedInEmailForUi,
+		filosignRecoveryPhrase: cryptoRequired.recoveryPhrase,
+		setFilosignRecoveryPhrase: cryptoRequired.setRecoveryPhrase,
+		submitFilosignRecovery,
+		isFilosignRecoveryPending: cryptoRequired.recoveryPending,
+		runSwitchAccount,
+		retryDecrypt: runDecrypt,
+	};
+}

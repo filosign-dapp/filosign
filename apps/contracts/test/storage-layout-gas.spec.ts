@@ -78,7 +78,7 @@ describe("FSEnvelopeRegistry storage layout and register gas", () => {
 			Number(byLabel.viewerEmailRegistered?.slot),
 		);
 		expect(byLabel.timestamp?.type).to.equal("t_uint48");
-		expect(Number(byLabel.signatures?.slot)).to.equal(14);
+		expect(Number(byLabel.signatures?.slot)).to.equal(15);
 	});
 
 	it("registerEnvelope gas baseline (1 signer)", async () => {

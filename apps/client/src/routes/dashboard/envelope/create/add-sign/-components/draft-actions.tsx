@@ -162,7 +162,22 @@ export function AddSignDraftActions() {
 					type="button"
 					variant="outline"
 					size="sm"
-					disabled={planId !== "free" && !serverDraftId}
+					disabled={
+						planId !== "free" &&
+						(!serverDraftId ||
+							isSaving ||
+							hasChanges ||
+							(needsDraftCrypto && !cryptoRequired.isReady))
+					}
+					title={
+						isSaving
+							? "Wait for save to finish before sharing."
+							: hasChanges
+								? "Save your changes before sharing."
+								: needsDraftCrypto && !cryptoRequired.isReady
+									? "Unlock encryption keys before sharing."
+									: undefined
+					}
 					onClick={() => {
 						if (planId === "free") {
 							promptPlanUpgrade("documents.sent.monthly");

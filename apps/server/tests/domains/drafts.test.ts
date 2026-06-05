@@ -35,7 +35,7 @@ describe("assertDraftDocumentsExistOnS3", () => {
 		});
 	});
 
-	test("throws PRECONDITION_FAILED when a document key is missing", async () => {
+	test("throws BAD_REQUEST when a document key is missing", async () => {
 		await expect(
 			assertDraftDocumentsExistOnS3({
 				draftId: "draft-1",
@@ -44,7 +44,7 @@ describe("assertDraftDocumentsExistOnS3", () => {
 				probe: probeWith(new Set()),
 			}),
 		).rejects.toMatchObject({
-			code: "PRECONDITION_FAILED",
+			code: "BAD_REQUEST",
 		});
 	});
 });
@@ -58,7 +58,7 @@ describe("assertDraftSnapshotExistsOnS3", () => {
 				probe: probeWith(new Set()),
 			}),
 		).rejects.toMatchObject({
-			code: "PRECONDITION_FAILED",
+			code: "BAD_REQUEST",
 		});
 	});
 });

@@ -6,12 +6,14 @@ import { defineConfig, loadEnv } from "vite";
 import {
 	buildContentSecurityPolicy,
 	parseApiOrigin,
+	parsePosthogOrigin,
 	securityHeadersRecord,
 } from "./vite/security-headers";
 
 export default defineConfig(({ mode, command }) => {
 	const env = loadEnv(mode, process.cwd(), "");
 	const apiOrigin = parseApiOrigin(env.VITE_SERVER_URL);
+	const posthogOrigin = parsePosthogOrigin(env.VITE_POSTHOG_HOST);
 	const isDev = mode === "development";
 
 	return {
@@ -39,7 +41,10 @@ export default defineConfig(({ mode, command }) => {
 									injectTo: "head-prepend",
 									attrs: {
 										"http-equiv": "Content-Security-Policy",
-										content: buildContentSecurityPolicy(false, apiOrigin),
+										content: buildContentSecurityPolicy(false, apiOrigin, {
+											posthogOrigin,
+											includeFrameAncestors: false,
+										}),
 									},
 								},
 							],
@@ -59,11 +64,11 @@ export default defineConfig(({ mode, command }) => {
 		},
 		server: {
 			port: 3001,
-			headers: securityHeadersRecord(isDev, apiOrigin),
+			headers: securityHeadersRecord(isDev, apiOrigin, posthogOrigin),
 			fs: { strict: false },
 		},
 		preview: {
-			headers: securityHeadersRecord(false, apiOrigin),
+			headers: securityHeadersRecord(false, apiOrigin, posthogOrigin),
 		},
 		envPrefix: "VITE_",
 		optimizeDeps: {

@@ -8,6 +8,7 @@ import {
 	buildWarmExternalShare,
 	decryptDraftDekFromOrgHead,
 } from "../../lib/draft-crypto";
+import { getCachedDraftDek } from "../../lib/draft-dek-cache";
 import { draftOrganizationId } from "../../lib/resolve-draft-dek";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import type { AppRouterClient } from "../../orpc/app-router-types";
@@ -16,6 +17,13 @@ import { walletAccountAddress } from "../../utils/evm";
 type DraftShareExternalInput =
 	InferClientInputs<AppRouterClient>["drafts"]["shareExternal"];
 type DraftShareExternalPayload = DraftShareExternalInput["shares"][number];
+
+function isUserNotFoundLookupError(error: unknown): boolean {
+	if (!error || typeof error !== "object") return false;
+	const data = (error as { data?: unknown }).data;
+	if (!data || typeof data !== "object") return false;
+	return (data as { appCode?: unknown }).appCode === "USERS.USER_NOT_FOUND";
+}
 
 export type ShareDraftExternalResult = {
 	shares: {
@@ -49,13 +57,16 @@ export function useShareDraftExternal() {
 			const myWrap = await rpcQuery.orgs.keys.wrapForMine.call({
 				organizationId,
 			});
-			const dek = await decryptDraftDekFromOrgHead({
-				draftId: args.draftId,
-				headDekWrappedOmk: head.headDekWrappedOmk,
-				headOmkKemCiphertext: head.headOmkKemCiphertext,
-				wallet: walletAddress,
-				myWrap,
-			});
+			const cachedDek = getCachedDraftDek(args.draftId, walletAddress);
+			const dek =
+				cachedDek ??
+				(await decryptDraftDekFromOrgHead({
+					draftId: args.draftId,
+					headDekWrappedOmk: head.headDekWrappedOmk,
+					headOmkKemCiphertext: head.headOmkKemCiphertext,
+					wallet: walletAddress,
+					myWrap,
+				}));
 
 			const shares: ShareDraftExternalResult["shares"] = [];
 			const payloadShares: DraftShareExternalPayload[] = [];
@@ -73,8 +84,10 @@ export function useShareDraftExternal() {
 						recipientPk = profile.encryptionPublicKey;
 						recipientWallet = profile.walletAddress;
 					}
-				} catch {
-					// Off-platform email → cold invite
+				} catch (lookupError) {
+					if (!isUserNotFoundLookupError(lookupError)) {
+						throw lookupError;
+					}
 				}
 
 				if (recipientPk && recipientWallet) {
@@ -130,11 +143,17 @@ export function useShareDraftExternal() {
 				shares: payloadShares,
 			});
 
+			const phraseByInviteToken = new Map(
+				shares
+					.filter((row) => row.phrase)
+					.map((row) => [row.inviteToken, row.phrase] as const),
+			);
+
 			return {
-				shares: result.shares.map((row, i) => ({
+				shares: result.shares.map((row) => ({
 					...row,
 					accessKind: row.accessKind as "warm" | "cold",
-					phrase: shares[i]?.phrase,
+					phrase: phraseByInviteToken.get(row.inviteToken),
 				})),
 			};
 		},

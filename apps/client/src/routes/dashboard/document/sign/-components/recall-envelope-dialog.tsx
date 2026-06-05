@@ -7,6 +7,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/src/lib/components/ui/dialog";
+import { DocsLink } from "@/src/lib/docs/docs-link";
+import { DOCS_LINKS } from "@/src/lib/docs/links";
 
 type Props = {
 	open: boolean;
@@ -33,6 +35,9 @@ export function RecallEnvelopeDialog({
 						finished.
 					</DialogDescription>
 				</DialogHeader>
+				<DocsLink href={DOCS_LINKS.envelopeGovernance()} className="px-6 -mt-1">
+					Envelope governance guide
+				</DocsLink>
 				<DialogFooter className="gap-2 sm:gap-0">
 					<Button
 						type="button"

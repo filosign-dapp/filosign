@@ -75,7 +75,7 @@ export function useCompliancePdfExports(options: {
 			downloadPdfBytes(bytes, `filosign-file-record-${safe}`);
 		} catch (e) {
 			console.error(e);
-			toast.error("Compliance export failed");
+			toast.error("Proof report export failed");
 		} finally {
 			setPdfExportBusy(false);
 		}
@@ -111,7 +111,7 @@ export function useCompliancePdfExports(options: {
 			downloadPdfBytes(bytes, `filosign-document-with-record-${safe}`);
 		} catch (e) {
 			console.error(e);
-			toast.error("Compliance export failed");
+			toast.error("Proof report export failed");
 		} finally {
 			setPdfExportBusy(false);
 		}
@@ -169,7 +169,7 @@ export function useCompliancePdfExports(options: {
 			});
 		} catch (e) {
 			console.error(e);
-			toast.error("Completion packet export failed");
+			toast.error("Proof packet export failed");
 		} finally {
 			setPdfExportBusy(false);
 		}

@@ -216,7 +216,7 @@ export function SignDocumentStickyHeader() {
 							onClick={handleDownloadDocumentWithCompliancePdf}
 							disabled={!fileData || pdfExportBusy}
 							className="text-muted-foreground hover:text-foreground hover:bg-accent/50 h-8 w-8 p-0"
-							title="Download document with proof"
+							title="Download document with proof appendix"
 						>
 							<DownloadIcon className="size-5" />
 						</Button>
@@ -402,7 +402,7 @@ export function SignDocumentStickyHeader() {
 								onClick={() => void handleDownloadCompletionPacket()}
 								disabled={!fileData || pdfExportBusy}
 								className="text-muted-foreground hover:text-foreground hover:bg-accent/50 h-8 w-8 p-0"
-								title="Download completion packet (ZIP)"
+								title="Download proof packet (ZIP)"
 							>
 								<PackageIcon className="size-5" />
 							</Button>
@@ -415,7 +415,7 @@ export function SignDocumentStickyHeader() {
 							className="text-muted-foreground hover:text-foreground hover:bg-accent/50 h-8 w-8 p-0"
 							title={
 								exportsAllowed
-									? "Download compliance report"
+									? "Download proof report"
 									: "Available when fully executed"
 							}
 						>
@@ -427,7 +427,7 @@ export function SignDocumentStickyHeader() {
 							onClick={handleDownloadDocumentWithCompliancePdf}
 							disabled={!fileData || !exportsAllowed || pdfExportBusy}
 							className="text-muted-foreground hover:text-foreground hover:bg-accent/50 h-8 w-8 p-0"
-							title="Download document with proof"
+							title="Download document with proof appendix"
 						>
 							<DownloadIcon className="size-5" />
 						</Button>

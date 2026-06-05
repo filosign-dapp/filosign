@@ -8,6 +8,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/src/lib/components/ui/dialog";
+import { DocsLink } from "@/src/lib/docs/docs-link";
+import { DOCS_LINKS } from "@/src/lib/docs/links";
 import {
 	useSignCompliance,
 	useSignViewer,
@@ -38,8 +40,8 @@ export function SignSuccessDialog({
 					</DialogTitle>
 					<DialogDescription>
 						{exportsAllowed
-							? "Your envelope is fully executed. Download the completion packet below."
-							: "Your signature was recorded. Compliance exports unlock when every required party has signed."}
+							? "Your envelope is fully executed. Download the proof packet below."
+							: "Your signature was recorded. Proof exports unlock when every required party has signed."}
 					</DialogDescription>
 				</DialogHeader>
 				<div className="flex flex-col gap-2 py-2">
@@ -53,11 +55,9 @@ export function SignSuccessDialog({
 						>
 							<DownloadIcon className="size-5 shrink-0" />
 							<span className="text-left">
-								<span className="block font-medium">
-									Completion packet (ZIP)
-								</span>
+								<span className="block font-medium">Proof packet (ZIP)</span>
 								<span className="block text-xs text-muted-foreground font-normal">
-									Original file(s), compliance report, merged PDF, README
+									Original file(s), proof report, merged PDF, README
 								</span>
 							</span>
 						</Button>
@@ -71,7 +71,7 @@ export function SignSuccessDialog({
 					>
 						<ScrollIcon className="size-5 shrink-0" />
 						<span className="text-left">
-							<span className="block font-medium">Compliance report only</span>
+							<span className="block font-medium">Proof report only</span>
 							<span className="block text-xs text-muted-foreground font-normal">
 								On-chain record and audit metadata
 							</span>
@@ -87,7 +87,7 @@ export function SignSuccessDialog({
 						<DownloadIcon className="size-5 shrink-0" />
 						<span className="text-left">
 							<span className="block font-medium">
-								Document with compliance
+								Document with proof appendix
 							</span>
 							<span className="block text-xs text-muted-foreground font-normal">
 								Original file plus proof section
@@ -95,6 +95,11 @@ export function SignSuccessDialog({
 						</span>
 					</Button>
 				</div>
+				{exportsAllowed ? (
+					<DocsLink href={DOCS_LINKS.completionPacket()}>
+						What is in the proof packet?
+					</DocsLink>
+				) : null}
 				<DialogFooter>
 					<Button
 						type="button"

@@ -146,7 +146,7 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 							disabled={!fileData || !exportsAllowed || pdfExportBusy}
 							title={
 								exportsAllowed
-									? "Download completion packet (ZIP)"
+									? "Download proof packet (ZIP)"
 									: "Available when the envelope is fully executed"
 							}
 							className={toolbarBtnClass}
@@ -159,7 +159,7 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 							type="button"
 							onClick={handleDownloadCompliancePdf}
 							disabled={!fileInfo || !exportsAllowed || pdfExportBusy}
-							title="Download compliance report (PDF)"
+							title="Download proof report (PDF)"
 							className={toolbarBtnClass}
 						>
 							<ScrollIcon className={toolbarIconClass} />
@@ -172,7 +172,7 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 							disabled={
 								!fileData || !fileInfo || !exportsAllowed || pdfExportBusy
 							}
-							title="Download document + compliance appendix (PDF)"
+							title="Download document + proof appendix (PDF)"
 							className={toolbarBtnClass}
 						>
 							<StackIcon className={toolbarIconClass} />

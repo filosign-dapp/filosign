@@ -1,4 +1,5 @@
 import { computeCidIdentifier } from "@filosign/contracts";
+import { throwAppError } from "@filosign/errors/server";
 import {
 	normalizePlacementRecipientEmail,
 	type PlacementManifest,
@@ -21,6 +22,7 @@ import {
 	relayProposeSignerReplacement,
 } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { primaryEmailForWallet } from "./invites";
 import { assertRecallerMayRelay } from "./recall-auth";
 import {
@@ -83,7 +85,7 @@ async function loadFileForReplacement(
 		file.placementManifestJson,
 	);
 	if (!manifestParsed.success) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "File placement manifest missing or invalid",
 		});
 	}
@@ -101,10 +103,10 @@ async function loadFileForReplacement(
 
 function assertFileOpenForReplacement(file: FileRow): void {
 	if (file.revokedBeforeCompletedAt) {
-		throw new ORPCError("BAD_REQUEST", { message: "Envelope voided" });
+		throw throwAppError("FILES.ENVELOPE_VOIDED");
 	}
 	if (file.completedAt) {
-		throw new ORPCError("BAD_REQUEST", { message: "Envelope complete" });
+		throw throwAppError("FILES.ENVELOPE_COMPLETE");
 	}
 }
 
@@ -120,9 +122,7 @@ async function assertNoDbPendingAmendment(pieceCid: string): Promise<void> {
 		)
 		.limit(1);
 	if (row) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Signer replacement already pending",
-		});
+		throw throwAppError("FILES.REPLACEMENT_PENDING");
 	}
 }
 
@@ -345,7 +345,7 @@ export async function filesProposeSignerReplacement(
 ) {
 	const parsed = zProposeSignerReplacementBody.safeParse(rawBody);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 
 	const {
@@ -360,7 +360,7 @@ export async function filesProposeSignerReplacement(
 
 	const file = await loadFileForReplacement(pieceCid);
 	if (!file) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throw throwAppError("FILES.NOT_FOUND");
 	}
 	assertFileOpenForReplacement(file);
 	await assertNoDbPendingAmendment(pieceCid);
@@ -404,11 +404,13 @@ export async function filesProposeSignerReplacement(
 		relayProposeSignerReplacement(registry, proposeArgs),
 	);
 	if (txHash.error) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				txHash.error instanceof Error
-					? txHash.error.message
-					: "proposeSignerReplacement relay failed",
+		throw throwAppError("FILES.REPLACEMENT_RELAY_FAILED", {
+			params: {
+				reason:
+					txHash.error instanceof Error
+						? txHash.error.message
+						: "proposeSignerReplacement relay failed",
+			},
 		});
 	}
 
@@ -464,14 +466,14 @@ export async function filesExecuteSignerReplacement(
 ) {
 	const parsed = zExecuteSignerReplacementBody.safeParse(rawBody);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 
 	const { pieceCid, recaller } = parsed.data;
 
 	const file = await loadFileForReplacement(pieceCid);
 	if (!file) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throw throwAppError("FILES.NOT_FOUND");
 	}
 	assertFileOpenForReplacement(file);
 
@@ -487,9 +489,7 @@ export async function filesExecuteSignerReplacement(
 		.limit(1);
 	const pendingE2ee = pendingRow?.pendingNewSignerJson;
 	if (!pendingRow || !pendingE2ee) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "No pending signer replacement",
-		});
+		throw throwAppError("FILES.NO_PENDING_REPLACEMENT");
 	}
 
 	const baseRouting = resolveSignRoutingCalldata({
@@ -523,11 +523,13 @@ export async function filesExecuteSignerReplacement(
 		]),
 	);
 	if (txHash.error) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				txHash.error instanceof Error
-					? txHash.error.message
-					: "executeSignerReplacement relay failed",
+		throw throwAppError("FILES.REPLACEMENT_RELAY_FAILED", {
+			params: {
+				reason:
+					txHash.error instanceof Error
+						? txHash.error.message
+						: "executeSignerReplacement relay failed",
+			},
 		});
 	}
 
@@ -561,14 +563,14 @@ export async function filesCancelSignerReplacement(
 ) {
 	const parsed = zCancelSignerReplacementBody.safeParse(rawBody);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 
 	const { pieceCid, recaller, timestamp, signature } = parsed.data;
 
 	const file = await loadFileForReplacement(pieceCid);
 	if (!file) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throw throwAppError("FILES.NOT_FOUND");
 	}
 	assertFileOpenForReplacement(file);
 
@@ -583,9 +585,7 @@ export async function filesCancelSignerReplacement(
 		)
 		.limit(1);
 	if (!pendingRow) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "No pending signer replacement",
-		});
+		throw throwAppError("FILES.NO_PENDING_REPLACEMENT");
 	}
 
 	await assertRecallerMayRelay({
@@ -609,11 +609,13 @@ export async function filesCancelSignerReplacement(
 		]),
 	);
 	if (txHash.error) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				txHash.error instanceof Error
-					? txHash.error.message
-					: "cancelSignerReplacement relay failed",
+		throw throwAppError("FILES.REPLACEMENT_RELAY_FAILED", {
+			params: {
+				reason:
+					txHash.error instanceof Error
+						? txHash.error.message
+						: "cancelSignerReplacement relay failed",
+			},
 		});
 	}
 

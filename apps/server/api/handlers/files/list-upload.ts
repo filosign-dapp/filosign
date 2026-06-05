@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import { and, desc, eq, ne, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -8,6 +7,8 @@ import {
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
 import db from "@/lib/platform/db";
+
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const { files, fileParticipants, fileSignatures } = db.schema;
 
@@ -31,7 +32,15 @@ export async function filesUploadStart(
 
 	const pieceCid = input.pieceCid.trim();
 	if (!pieceCid) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid pieceCid" });
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["pieceCid"],
+					message: "Invalid pieceCid",
+				},
+			]),
+		);
 	}
 	const { bucket } = await import("@/lib/platform/s3/client");
 	const key = `uploads/${pieceCid}`;
@@ -51,7 +60,15 @@ export async function filesAttachmentUploadStart(
 
 	const packetCid = input.packetCid.trim();
 	if (!packetCid) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid packetCid" });
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["packetCid"],
+					message: "Invalid packetCid",
+				},
+			]),
+		);
 	}
 	const { bucket } = await import("@/lib/platform/s3/client");
 	const key = `uploads/attachments/${packetCid}`;

@@ -1,8 +1,10 @@
+import { throwAppError } from "@filosign/errors/server";
 import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { z } from "zod";
 import db from "@/lib/platform/db";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const { userSignatures } = db.schema;
 
@@ -14,7 +16,7 @@ export async function userSignaturesCreate(wallet: Address, body: unknown) {
 	const parsedBody = zUserSignatureCreateBody.safeParse(body);
 
 	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });
+		throw throwZodBadRequest(parsedBody.error);
 	}
 
 	try {
@@ -23,7 +25,7 @@ export async function userSignaturesCreate(wallet: Address, body: unknown) {
 			data: parsedBody.data.data,
 		});
 	} catch (error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: `Failed to upload signature ${error}`,
 		});
 	}
@@ -49,7 +51,7 @@ export async function userSignaturesGetById(wallet: Address, id: string) {
 		);
 
 	if (!dbEntry) {
-		throw new ORPCError("NOT_FOUND", { message: "Signature not found" });
+		throw throwAppError("USERS.SIGNATURE_NOT_FOUND");
 	}
 
 	return dbEntry;

@@ -1,3 +1,4 @@
+import { throwAppError } from "@filosign/errors/server";
 import type { PlacementManifest, RegisterRoutingInput } from "@filosign/shared";
 import {
 	buildRegisterRoutingCalldata,
@@ -5,10 +6,10 @@ import {
 	hashNormalizedSignerEmail,
 	validateRegisterRoutingCalldata,
 } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { eq, inArray } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import { z } from "zod";
 import { inviteExpiresAt } from "@/lib/domains/invites";
 import {
 	SERVER_ANALYTICS_EVENTS,
@@ -17,6 +18,7 @@ import {
 import db from "@/lib/platform/db";
 import { buildEmailIdempotencyKey } from "@/lib/platform/email";
 import type { JobOutboxInsert } from "@/lib/platform/jobs";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const { files, fileParticipants, fileColdInvites, users } = db.schema;
 
@@ -100,7 +102,15 @@ export function resolveRegisterRoutingCalldata(args: {
 	});
 	const routingError = validateRegisterRoutingCalldata(routingCalldata);
 	if (routingError) {
-		throw new ORPCError("BAD_REQUEST", { message: routingError });
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: routingError,
+					path: ["routing"],
+				},
+			]),
+		);
 	}
 
 	const {
@@ -187,8 +197,8 @@ export async function persistRegisteredFileInTx(
 				emailCommitment =
 					signerCommitmentsByWallet.get(wallet.toLowerCase()) ?? null;
 				if (!emailCommitment) {
-					throw new ORPCError("BAD_REQUEST", {
-						message: `Signer ${wallet} has no primary email for commitment`,
+					throw throwAppError("FILES.SIGNER_EMAIL_REQUIRED", {
+						params: { wallet },
 					});
 				}
 			}

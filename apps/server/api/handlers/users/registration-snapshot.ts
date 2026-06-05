@@ -1,10 +1,10 @@
 import { zUserKeygenDataJson } from "@filosign/shared";
 import { zEvmAddress } from "@filosign/shared/zod";
-import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import { type Address, getAddress, type Hex } from "viem";
 import { z } from "zod";
 import db from "@/lib/platform/db";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const { users } = db.schema;
 
@@ -15,7 +15,7 @@ export const zRegistrationSnapshotInput = z.object({
 export async function userRegistrationSnapshot(body: unknown) {
 	const parsed = zRegistrationSnapshotInput.safeParse(body);
 	if (parsed.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 
 	const wallet = getAddress(parsed.data.walletAddress) as Address;

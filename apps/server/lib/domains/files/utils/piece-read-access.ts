@@ -1,4 +1,4 @@
-import { ORPCError } from "@orpc/server";
+import { throwAppError } from "@filosign/errors/server";
 import { eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -22,7 +22,7 @@ export async function assertPieceReadAccess(
 		.limit(1);
 
 	if (!fileRecord) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throw throwAppError("FILES.NOT_FOUND");
 	}
 
 	const userWalletNorm = getAddress(userWallet);
@@ -44,9 +44,7 @@ export async function assertPieceReadAccess(
 		));
 
 	if (!isParticipant && !isSender && !orgRead) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "You dont have access to this file",
-		});
+		throw throwAppError("FILES.FORBIDDEN");
 	}
 
 	return { organizationId: fileRecord.organizationId };

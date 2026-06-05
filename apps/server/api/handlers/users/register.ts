@@ -1,5 +1,5 @@
+import { throwAppError } from "@filosign/errors/server";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
-import { ORPCError } from "@orpc/server";
 import { getAddress } from "viem";
 import { z } from "zod";
 import { registerUserAccount } from "@/lib/domains/platform-access/utils/register-user";
@@ -10,6 +10,7 @@ import {
 } from "@/lib/platform/analytics";
 import { verifyThirdwebAuthTokenWithWallet } from "@/lib/platform/utils/thirdweb";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 export const zUserRegisterBody = z.object({
 	saltPin: zHexString(),
@@ -32,7 +33,7 @@ export async function userRegister(body: unknown) {
 	const parsedBody = zUserRegisterBody.safeParse(body);
 
 	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });
+		throw throwZodBadRequest(parsedBody.error);
 	}
 
 	const {
@@ -59,25 +60,18 @@ export async function userRegister(body: unknown) {
 	);
 
 	if (authResult.error) {
-		throw new ORPCError("UNAUTHORIZED", {
-			message: `Wallet auth verification failed: ${authResult.error.message}`,
-		});
+		throw throwAppError("AUTH.UNAUTHORIZED");
 	}
 
 	const email = authResult.data.email ?? "";
 	const authProviderId = authResult.data.authProviderId;
 
 	if (!email) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"Email is required for registration. Please log in with email or Google.",
-		});
+		throw throwAppError("USERS.EMAIL_REQUIRED");
 	}
 
 	if (!authProviderId?.trim()) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Auth provider id is required for registration.",
-		});
+		throw throwAppError("USERS.AUTH_PROVIDER_REQUIRED");
 	}
 
 	const valid = await validateFilosignRegistrationSignature({
@@ -91,9 +85,7 @@ export async function userRegister(body: unknown) {
 	});
 
 	if (!valid) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Invalid registration signature",
-		});
+		throw throwAppError("USERS.INVALID_REGISTRATION_SIGNATURE");
 	}
 
 	await registerUserAccount({

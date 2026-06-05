@@ -1,20 +1,21 @@
 import MockPanel from "../../kit/MockPanel";
 import SignerContactRow from "../../patterns/SignerContactRow";
+import { mockPersonas } from "../../tokens";
 
 export default function RecipientControlMock() {
 	return (
 		<MockPanel variant="default">
 			<div className="space-y-2">
 				<SignerContactRow
-					initial="A"
-					title="Allowed Contacts"
-					subtitle="Can send you files"
+					initial={mockPersonas.alice.name[0] ?? "A"}
+					title={mockPersonas.alice.name}
+					subtitle={mockPersonas.alice.email}
 					allowed
 				/>
 				<SignerContactRow
-					initial="S"
-					title="Spam Senders"
-					subtitle="Blocked until approved"
+					initial="?"
+					title="Unknown sender"
+					subtitle="blocked@inbox.com"
 				/>
 			</div>
 		</MockPanel>

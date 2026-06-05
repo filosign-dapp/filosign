@@ -2,11 +2,12 @@ import { CheckCircleIcon } from "@phosphor-icons/react";
 import MockAvatar from "../../kit/MockAvatar";
 import MockChecklistRow from "../../kit/MockChecklistRow";
 import MockPanel from "../../kit/MockPanel";
+import { mockPersonas } from "../../tokens";
 
 const checklistItems = [
-	"Contractor signs handover",
-	"Payout packet is ready",
-	"Less payout follow-up",
+	`${mockPersonas.bob.name} signed acceptance`,
+	"Payout packet ready",
+	"Payment sends automatically",
 ] as const;
 
 export default function SignAndSettleMock() {
@@ -14,13 +15,13 @@ export default function SignAndSettleMock() {
 		<MockPanel variant="auto">
 			<div className="mb-6 flex items-center justify-between">
 				<div className="flex items-center gap-3">
-					<MockAvatar initial="S" />
+					<MockAvatar initial={mockPersonas.bob.name[0] ?? "B"} />
 					<div>
 						<div className="font-manrope text-sm font-semibold text-foreground">
-							Sign and release
+							Payment follow-up
 						</div>
 						<div className="font-manrope text-xs text-muted-foreground">
-							Optional payout packet
+							$4,200 payout packet
 						</div>
 					</div>
 				</div>

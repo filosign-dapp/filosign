@@ -1,7 +1,7 @@
-import { ORPCError } from "@orpc/server";
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress, isAddress } from "viem";
+import { z } from "zod";
 import {
 	buildEntitlementsSnapshot,
 	resolveEntitlementContext,
@@ -9,6 +9,7 @@ import {
 import { assertPlatformAdmin } from "@/lib/platform/admin";
 import db from "@/lib/platform/db";
 import { fileColdInvites, files } from "@/lib/platform/db/schema/file";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 export async function metricsInvitesSummary(args: {
 	adminWallet: Address;
@@ -21,7 +22,15 @@ export async function metricsInvitesSummary(args: {
 	const conditions = [];
 	if (args.senderWallet) {
 		if (!isAddress(args.senderWallet)) {
-			throw new ORPCError("BAD_REQUEST", { message: "Invalid sender wallet" });
+			throw throwZodBadRequest(
+				new z.ZodError([
+					{
+						code: "custom",
+						path: ["senderWallet"],
+						message: "Invalid sender wallet",
+					},
+				]),
+			);
 		}
 		conditions.push(eq(files.sender, getAddress(args.senderWallet)));
 	}
@@ -70,7 +79,15 @@ export async function metricsSenderUsage(args: {
 }) {
 	await assertPlatformAdmin(args.adminWallet);
 	if (!isAddress(args.wallet)) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid wallet" });
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["wallet"],
+					message: "Invalid wallet",
+				},
+			]),
+		);
 	}
 	const wallet = getAddress(args.wallet);
 	const ctx = await resolveEntitlementContext(wallet);

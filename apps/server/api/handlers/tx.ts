@@ -1,7 +1,7 @@
-import { ORPCError } from "@orpc/server";
 import { isHash } from "viem";
+import { z } from "zod";
 import { enqueueIndexerTransaction } from "@/lib/platform/jobs";
-import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { zIndexerTxBody } from "@/lib/platform/validation/tx-registration";
 
 export async function txProcessIndexerHash(
@@ -10,16 +10,21 @@ export async function txProcessIndexerHash(
 ) {
 	const txHash = params.hash.trim();
 	if (typeof txHash !== "string" || !isHash(txHash)) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Transaction hash param is required and must be a valid hash",
-		});
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["hash"],
+					message:
+						"Transaction hash param is required and must be a valid hash",
+				},
+			]),
+		);
 	}
 
 	const parsedBody = zIndexerTxBody.safeParse(body ?? {});
 	if (!parsedBody.success) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: zodSafeParseMessage(parsedBody.error),
-		});
+		throw throwZodBadRequest(parsedBody.error);
 	}
 
 	await enqueueIndexerTransaction({

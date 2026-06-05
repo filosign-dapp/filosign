@@ -1,8 +1,8 @@
-import { ORPCError } from "@orpc/server";
 import type { Address } from "viem";
 import { z } from "zod";
 import { userAvatarWebpKey } from "@/lib/domains/files";
 import { bucket } from "@/lib/platform/s3/client";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 /** Extend with discriminated unions as new wallet-scoped WebP kinds ship. */
 export const zStoragePresignPutInput = z.discriminatedUnion("kind", [
@@ -17,7 +17,15 @@ export function storagePresignPut(
 	input: StoragePresignPutInput,
 ) {
 	if (input.kind !== "webp_user_avatar") {
-		throw new ORPCError("BAD_REQUEST", { message: "Unsupported storage kind" });
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["kind"],
+					message: "Unsupported storage kind",
+				},
+			]),
+		);
 	}
 	const key = userAvatarWebpKey(wallet);
 

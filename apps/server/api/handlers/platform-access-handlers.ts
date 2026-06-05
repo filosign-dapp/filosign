@@ -1,6 +1,5 @@
 import type { PlanId } from "@filosign/entitlements";
 import { PLAN_IDS } from "@filosign/entitlements";
-import { ORPCError } from "@orpc/server";
 import type { Address } from "viem";
 import { z } from "zod";
 import {
@@ -24,6 +23,7 @@ import {
 	assertPlatformAdmin,
 	isPlatformAdminForWallet,
 } from "@/lib/platform/admin";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 export const zGatePreviewOutput = z.object({
 	valid: z.boolean(),
@@ -55,7 +55,7 @@ export async function platformAccessPreviewGate(body: unknown) {
 		.safeParse(body);
 
 	if (parsed.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	const result = await canStartEmailAuth(parsed.data);
@@ -151,7 +151,7 @@ export async function platformAdminInvitesCreate(
 		.safeParse(body);
 
 	if (parsed.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	const invite = await createPlatformInvite({
@@ -182,10 +182,11 @@ export async function platformAdminInvitesRevoke(
 	inviteId: string,
 ) {
 	await assertPlatformAdmin(adminWallet);
-	if (!inviteId) {
-		throw new ORPCError("BAD_REQUEST", { message: "inviteId required" });
+	const parsedId = z.string().uuid("inviteId required").safeParse(inviteId);
+	if (parsedId.error) {
+		throwZodBadRequest(parsedId.error);
 	}
-	await revokePlatformInvite(inviteId);
+	await revokePlatformInvite(parsedId.data);
 	return { ok: true as const };
 }
 
@@ -194,10 +195,14 @@ export async function platformAdminInvitesRebook(
 	inviteId: string,
 ) {
 	await assertPlatformAdmin(adminWallet);
-	if (!inviteId) {
-		throw new ORPCError("BAD_REQUEST", { message: "inviteId required" });
+	const parsedId = z.string().uuid("inviteId required").safeParse(inviteId);
+	if (parsedId.error) {
+		throwZodBadRequest(parsedId.error);
 	}
-	const invite = await rebookPlatformInvite({ adminWallet, inviteId });
+	const invite = await rebookPlatformInvite({
+		adminWallet,
+		inviteId: parsedId.data,
+	});
 	return {
 		id: invite.id,
 		token: invite.token,
@@ -227,7 +232,7 @@ export async function platformAdminUsersSetFeatureOverrides(
 		})
 		.safeParse(body);
 	if (parsed.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 	await setUserFeatureOverrides({
 		wallet: parsed.data.wallet as Address,
@@ -250,7 +255,7 @@ export async function platformAdminUsersSetPlan(
 		})
 		.safeParse(body);
 	if (parsed.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 	await setUserPlanManual({
 		wallet: parsed.data.wallet as Address,
@@ -272,7 +277,7 @@ export async function platformAccessSubmitAccessRequest(body: unknown) {
 		.safeParse(body);
 
 	if (parsed.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	return submitAccessRequest(parsed.data);
@@ -297,7 +302,7 @@ export async function platformAdminAccessRequestsApprove(
 		})
 		.safeParse(body);
 	if (parsed.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 	return approveAccessRequest({
 		adminWallet,
@@ -312,9 +317,10 @@ export async function platformAdminAccessRequestsReject(
 	requestId: string,
 ) {
 	await assertPlatformAdmin(adminWallet);
-	if (!requestId) {
-		throw new ORPCError("BAD_REQUEST", { message: "requestId required" });
+	const parsedId = z.string().uuid("requestId required").safeParse(requestId);
+	if (parsedId.error) {
+		throwZodBadRequest(parsedId.error);
 	}
-	await rejectAccessRequest({ adminWallet, requestId });
+	await rejectAccessRequest({ adminWallet, requestId: parsedId.data });
 	return { ok: true as const };
 }

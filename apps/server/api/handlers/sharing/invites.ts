@@ -1,3 +1,4 @@
+import { throwAppError } from "@filosign/errors/server";
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { Address } from "viem";
@@ -12,6 +13,7 @@ import {
 } from "@/lib/platform/analytics";
 import db from "@/lib/platform/db";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const { userInvites, users } = db.schema;
 
@@ -32,7 +34,7 @@ export async function sharingEmailInvites(wallet: Address) {
 
 	if (result.error) {
 		console.error("Error fetching email invites", result.error);
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to retrieve email invites",
 		});
 	}
@@ -41,7 +43,15 @@ export async function sharingEmailInvites(wallet: Address) {
 
 export async function sharingInviteById(id: string) {
 	if (!id) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invite ID is required" });
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["id"],
+					message: "Invite ID is required",
+				},
+			]),
+		);
 	}
 
 	const result = await tryCatch(
@@ -80,16 +90,14 @@ export async function sharingInviteById(id: string) {
 
 	if (result.error) {
 		console.error("Error fetching invite:", result.error);
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to retrieve invite",
 		});
 	}
 
 	const data = result.data;
 	if (data.notFound) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "Invite not found or expired",
-		});
+		throw throwAppError("WORKSPACE.INVITE_NOT_FOUND");
 	}
 
 	const { invite, sender } = data;
@@ -107,7 +115,15 @@ export async function sharingInviteById(id: string) {
 
 export async function sharingInviteClaim(wallet: Address, id: string) {
 	if (!id) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invite ID is required" });
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["id"],
+					message: "Invite ID is required",
+				},
+			]),
+		);
 	}
 
 	const result = await tryCatch(
@@ -148,12 +164,7 @@ export async function sharingInviteClaim(wallet: Address, id: string) {
 	);
 
 	if (result.error) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				result.error instanceof Error
-					? result.error.message
-					: "Invite claim failed",
-		});
+		throw throwAppError("WORKSPACE.INVITE_NOT_FOUND");
 	}
 
 	trackServerEvent({
@@ -205,37 +216,18 @@ async function insertUserInvite(args: {
 }
 
 export const zSharingRequestInviteBody = z.object({
-	inviteeEmail: z.string(),
+	inviteeEmail: z.string().email("Please provide a valid email address"),
 	message: z.string().max(500).nullable().optional(),
 });
 
 export async function sharingRequestInvite(wallet: Address, body: unknown) {
 	const parsed = zSharingRequestInviteBody.safeParse(body);
-
-	const inviteeEmail =
-		parsed.success && parsed.data.inviteeEmail
-			? String(parsed.data.inviteeEmail).trim()
-			: "";
-	const message = parsed.success ? parsed.data.message : undefined;
-
-	const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-	if (!inviteeEmail || !emailRegex.test(inviteeEmail)) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Please provide a valid email address",
-		});
+	if (!parsed.success) {
+		throw throwZodBadRequest(parsed.error);
 	}
 
-	if (
-		message !== undefined &&
-		message !== null &&
-		(typeof message !== "string" || message.length > 500)
-	) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Message too long (max 500 characters)",
-		});
-	}
-
-	const normalizedEmail = inviteeEmail.toLowerCase();
+	const { inviteeEmail, message } = parsed.data;
+	const normalizedEmail = inviteeEmail.trim().toLowerCase();
 	const out = await insertUserInvite({
 		sender: wallet,
 		inviteeEmail: normalizedEmail,

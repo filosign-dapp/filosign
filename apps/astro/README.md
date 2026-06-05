@@ -50,6 +50,21 @@ All marketing pages migrated from the React app:
 | `/blog` | Blog index — lists posts; hero uses `featured: true` or newest post |
 | `/blog/[slug]` | MDX articles under `src/content/blog/` (e.g. `/blog/introduction`) |
 | `/changelog` | What's new — feature updates and releases |
+| `/docs` | Product docs (Starlight): guides + public troubleshooting |
+| `/docs/workflows` | Agreement workflows overview |
+| `/docs/workflows/payouts` | Stablecoin Payouts user guide |
+| `/docs/workflows/attached-files` | Attached files (supplementary packets) |
+| `/docs/workflows/release-conditions` | Payout and unlock release conditions |
+| `/docs/workflows/drafts` | Envelope drafts |
+| `/docs/workflows/templates` | Org templates |
+| `/docs/troubleshooting` | Error catalog search (mirrors dashboard Support Center) |
+
+### Docs authoring (Starlight)
+
+- Content lives under `src/content/docs/docs/` (Starlight subpath → `/docs/*`).
+- Workflow guides live under `src/content/docs/docs/workflows/`; register in `astro.config.mjs` sidebar when adding pages.
+- `/docs/stablecoin-payouts` redirects to `/docs/workflows/payouts`.
+- Troubleshooting embeds `DocsTroubleshootingIsland` (`SupportCenterPanel` from `@filosign/errors/client`).
 
 ### Blog authoring (MDX + content collections)
 

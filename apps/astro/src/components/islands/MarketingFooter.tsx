@@ -23,7 +23,7 @@ function getFooterSections() {
 		{
 			title: "Support",
 			links: [
-				{ label: "Help", href: "/help" },
+				{ label: "Docs", href: "/docs" },
 				{ label: "Security overview", href: "/security" },
 				{ label: "Contact Support", href: "mailto:support@filosign.xyz" },
 			],

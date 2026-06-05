@@ -132,6 +132,11 @@ export function buildPricingComparisonRows(): ComparisonRow[] {
 
 		section("Team collaboration"),
 		booleanRow(
+			"features.draft_review_links",
+			featureMarketingLabel("features.draft_review_links"),
+			"features.draft_review_links",
+		),
+		booleanRow(
 			"features.shared_templates",
 			featureMarketingLabel("features.shared_templates"),
 			"features.shared_templates",
@@ -140,11 +145,6 @@ export function buildPricingComparisonRows(): ComparisonRow[] {
 			"features.team_drafts",
 			featureMarketingLabel("features.team_drafts"),
 			"features.team_drafts",
-		),
-		booleanRow(
-			"features.draft_review_links",
-			featureMarketingLabel("features.draft_review_links"),
-			"features.draft_review_links",
 		),
 		booleanRow(
 			"features.envelope.team_visibility",
@@ -179,40 +179,41 @@ export function buildPricingComparisonRows(): ComparisonRow[] {
 			featureMarketingLabel("features.draft_comments"),
 			"features.draft_comments",
 		),
-		booleanRow(
-			"features.integrations.custom",
-			featureMarketingLabel("features.integrations.custom"),
-			"features.integrations.custom",
-		),
-		booleanRow(
-			"features.quota_allocation",
-			featureMarketingLabel("features.quota_allocation"),
-			"features.quota_allocation",
-		),
-		booleanRow(
-			"features.bulk_send",
-			featureMarketingLabel("features.bulk_send"),
-			"features.bulk_send",
-		),
-		booleanRow(
-			"features.template_folders",
-			featureMarketingLabel("features.template_folders"),
-			"features.template_folders",
-		),
-		booleanRow(
-			"features.branding.custom",
-			featureMarketingLabel("features.branding.custom"),
-			"features.branding.custom",
-		),
-		booleanRow(
-			"features.webhooks",
-			featureMarketingLabel("features.webhooks"),
-			"features.webhooks",
-		),
-		booleanRow(
-			"features.metadata.tags",
-			featureMarketingLabel("features.metadata.tags"),
-			"features.metadata.tags",
-		),
+		// Catalog-only — not shipped; restore when implemented (see project/todo.md).
+		// booleanRow(
+		// 	"features.integrations.custom",
+		// 	featureMarketingLabel("features.integrations.custom"),
+		// 	"features.integrations.custom",
+		// ),
+		// booleanRow(
+		// 	"features.quota_allocation",
+		// 	featureMarketingLabel("features.quota_allocation"),
+		// 	"features.quota_allocation",
+		// ),
+		// booleanRow(
+		// 	"features.bulk_send",
+		// 	featureMarketingLabel("features.bulk_send"),
+		// 	"features.bulk_send",
+		// ),
+		// booleanRow(
+		// 	"features.template_folders",
+		// 	featureMarketingLabel("features.template_folders"),
+		// 	"features.template_folders",
+		// ),
+		// booleanRow(
+		// 	"features.branding.custom",
+		// 	featureMarketingLabel("features.branding.custom"),
+		// 	"features.branding.custom",
+		// ),
+		// booleanRow(
+		// 	"features.webhooks",
+		// 	featureMarketingLabel("features.webhooks"),
+		// 	"features.webhooks",
+		// ),
+		// booleanRow(
+		// 	"features.metadata.tags",
+		// 	featureMarketingLabel("features.metadata.tags"),
+		// 	"features.metadata.tags",
+		// ),
 	];
 }

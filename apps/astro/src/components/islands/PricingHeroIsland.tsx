@@ -22,16 +22,15 @@ export default function PricingHeroIsland() {
 						pace="page"
 						className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-8 lg:gap-12"
 					>
-						<div className="max-w-3xl">
+						<div className="max-w-5xl">
 							<h1 className="text-4xl md:text-5xl lg:text-5xl font-medium font-manrope tracking-tight text-foreground mb-6 leading-[1.1]">
-								Price the workflow, not just the signature.
+								They charge for the signature.
 								<br />
-								Plans that stay simple.
+								Filosign includes what comes next.
 							</h1>
 							<p className="text-lg md:text-xl font-light font-manrope text-muted-foreground max-w-xl leading-relaxed">
-								Choose the plan for how many private agreement workflows you
-								need, from solo proof exports to team workflows with gated files
-								and payout packets.
+								Private documents, proof exports, gated handoffs, and payment
+								release built into every plan.
 							</p>
 						</div>
 

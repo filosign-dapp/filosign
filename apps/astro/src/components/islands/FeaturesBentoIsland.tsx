@@ -1,12 +1,12 @@
-import { ChartBarIcon } from "@phosphor-icons/react";
+import { CurrencyDollarIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import type { ReactNode } from "react";
 import { marketingSectionShellClass } from "../../lib/marketing-layout";
 import {
+	GatedDeliverableMock,
 	PrivateByDefaultMock,
-	ProofOutsideMock,
-	RecipientControlMock,
 	SignAndSettleMock,
+	SigningConditionsMock,
 } from "../marketing-mocks";
 
 function BentoCard({
@@ -58,18 +58,18 @@ export default function FeaturesBentoIsland() {
 			body: <PrivateByDefaultMock />,
 		},
 		{
-			title: "Proof you can export",
+			title: "Gated deliverable release",
 			description:
-				"Download a clear record of who signed, when they signed, which fields were completed, and the verification data behind it.",
-			docsHref: "/docs/proof/completion-packet",
-			body: <ProofOutsideMock />,
+				"Attach final files to the envelope. Recipients get them only after acceptance is signed.",
+			docsHref: "/docs/workflows/attached-files",
+			body: <GatedDeliverableMock />,
 		},
 		{
-			title: "Recipient control",
+			title: "Flexible signing conditions",
 			description:
-				"Recipients can approve who is allowed to send them documents, reducing spam and unwanted signing requests.",
-			docsHref: "/docs/workspace/connections",
-			body: <RecipientControlMock />,
+				"Release payment or files when the right people sign, not only when everyone on the envelope is done.",
+			docsHref: "/docs/workflows/release-conditions",
+			body: <SigningConditionsMock />,
 		},
 	];
 
@@ -91,8 +91,9 @@ export default function FeaturesBentoIsland() {
 					transition={{ delay: 0.1 }}
 					className="text-muted-foreground text-lg md:text-xl max-w-3xl mx-auto font-manrope font-light"
 				>
-					Most signing tools stop at the signed PDF. Filosign is built for the
-					messy work around it: privacy, proof, payout, and handoff.
+					Most signing tools stop at the signed PDF. Filosign is built for what
+					comes next: private documents, controlled release, and payments that
+					move only when your conditions are met.
 				</motion.p>
 			</div>
 
@@ -120,26 +121,25 @@ export default function FeaturesBentoIsland() {
 					<div className="h-full bg-card border-none shadow-none rounded-2xl overflow-hidden p-2 md:p-4">
 						<div className="grid gap-6 p-6 md:p-8 items-center h-full lg:grid-cols-2">
 							<div className="flex flex-col justify-center h-full space-y-4">
-								<div className="flex items-center gap-2 text-primary mb-1">
-									<ChartBarIcon className="size-5" aria-hidden />
+								<div className="flex items-center gap-1 text-primary mb-2">
+									<CurrencyDollarIcon className="size-5" aria-hidden />
 									<span className="font-medium text-sm font-manrope">
-										When everyone has signed
+										When conditions are met
 									</span>
 								</div>
 								<h3 className="text-2xl md:text-3xl font-manrope font-light">
-									Payouts and files tied to signing conditions
+									Payments tied to signatures
 								</h3>
 								<p className="text-muted-foreground text-base leading-relaxed font-manrope font-light">
-									Attach USDC payout packets or supplementary files to an
-									agreement so approved payments and gated handoffs move only
-									when the required signatures are complete. Filosign does not
-									hold payout funds.
+									Attach an approved payout to an agreement so payment follow-up
+									moves automatically once signing conditions are satisfied.
+									Filosign does not hold your funds.
 								</p>
 								<a
-									href="/docs/workflows"
+									href="/docs/workflows/payouts"
 									className="inline-block text-sm font-medium text-primary underline-offset-4 hover:underline font-manrope"
 								>
-									See agreement workflow guides
+									Learn about payout packets
 								</a>
 							</div>
 

@@ -226,9 +226,16 @@ function DraggableFieldOverlay({
 				<span className="shrink-0 text-white">
 					<SignatureFieldTypeIcon type={field.type} isMobile={isMobile} />
 				</span>
-				<span className="min-w-0 flex-1 truncate text-[10px] sm:text-xs">
-					{field.assignedSignerEmail}
-				</span>
+				<div className="min-w-0 flex-1 leading-none">
+					<div className="truncate text-[10px] sm:text-xs">
+						{field.assignedSignerEmail}
+					</div>
+					<div className="truncate text-[9px] opacity-65">
+						{field.type === "signature" || field.type === "initial"
+							? `placeholder preview · ${signatureFieldTypeLabel(field.type)}`
+							: signatureFieldTypeLabel(field.type)}
+					</div>
+				</div>
 				{field.required ? (
 					<AsteriskIcon
 						className="size-3 shrink-0 text-amber-400"

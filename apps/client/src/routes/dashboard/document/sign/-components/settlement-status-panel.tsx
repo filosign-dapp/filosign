@@ -60,10 +60,14 @@ function explorerTxUrl(hash: string) {
 
 function StatusIcon({ status }: { status: SettlementRuleStatus }) {
 	if (status === "executed") {
-		return <CheckIcon className="size-4 text-white" weight="bold" />;
+		return (
+			<CheckIcon className="size-4 text-secondary-foreground" weight="bold" />
+		);
 	}
 	if (status === "partial") {
-		return <CheckIcon className="size-4 text-chart-2" weight="bold" />;
+		return (
+			<CheckIcon className="size-4 text-secondary-foreground" weight="bold" />
+		);
 	}
 	if (status.startsWith("failed_")) {
 		return <WarningIcon className="size-4 text-amber-700" weight="fill" />;
@@ -153,7 +157,7 @@ export function SettlementStatusPanel({
 							className={cn(
 								"flex items-start gap-3 p-3 rounded-lg border",
 								paid || partial
-									? "bg-chart-2/10 border-chart-2/30"
+									? "bg-secondary/10 border-secondary/30"
 									: failed
 										? "bg-amber-500/10 border-amber-500/30"
 										: cancelled
@@ -165,9 +169,9 @@ export function SettlementStatusPanel({
 								className={cn(
 									"size-8 rounded-full flex items-center justify-center shrink-0",
 									paid
-										? "bg-chart-2"
+										? "bg-secondary"
 										: partial
-											? "bg-chart-2/40"
+											? "bg-secondary/40"
 											: failed
 												? "bg-amber-100 dark:bg-amber-950"
 												: "bg-muted",
@@ -192,7 +196,7 @@ export function SettlementStatusPanel({
 									className={cn(
 										"text-xs",
 										paid || partial
-											? "text-chart-2"
+											? "text-secondary-foreground"
 											: failed
 												? "text-amber-800 dark:text-amber-200"
 												: "text-muted-foreground",

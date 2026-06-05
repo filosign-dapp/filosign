@@ -19,10 +19,7 @@ import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialo
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
-import {
-	EnvelopeCommentsBlock,
-	pieceDetailToDekSource,
-} from "@/src/lib/domains/files/envelope-comments-block";
+import { SignPageEnvelopeCommentsBlock } from "@/src/lib/domains/files/envelope-comments-block";
 import { SettlementHeaderBadge } from "@/src/routes/dashboard/document/sign/-components/settlement-header-badge";
 import { SettlementRevokeAllowanceButton } from "@/src/routes/dashboard/document/sign/-components/settlement-revoke-allowance-button";
 import { SignConfirmDialog } from "@/src/routes/dashboard/document/sign/-components/sign-confirm-dialog";
@@ -212,12 +209,7 @@ export function SignDocumentStickyHeader() {
 					</div>
 
 					<div className="flex items-center gap-2">
-						{file ? (
-							<EnvelopeCommentsBlock
-								pieceCid={pieceCid}
-								dekSource={pieceDetailToDekSource(file)}
-							/>
-						) : null}
+						<SignPageEnvelopeCommentsBlock file={file} />
 						<Button
 							variant="ghost"
 							size="sm"
@@ -392,12 +384,7 @@ export function SignDocumentStickyHeader() {
 					<div className="w-px h-6 bg-border mx-2" />
 
 					<div className="flex items-center gap-3">
-						{file ? (
-							<EnvelopeCommentsBlock
-								pieceCid={pieceCid}
-								dekSource={pieceDetailToDekSource(file)}
-							/>
-						) : null}
+						<SignPageEnvelopeCommentsBlock file={file} />
 						<Button
 							variant="ghost"
 							size="sm"

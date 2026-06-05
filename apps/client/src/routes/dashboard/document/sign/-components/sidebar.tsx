@@ -8,10 +8,7 @@ import {
 import { defaultChain } from "@/src/constants";
 import { Button } from "@/src/lib/components/ui/button";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
-import {
-	EnvelopeCommentsBlock,
-	pieceDetailToDekSource,
-} from "@/src/lib/domains/files/envelope-comments-block";
+import { SignPageEnvelopeCommentsBlock } from "@/src/lib/domains/files/envelope-comments-block";
 import { cn } from "@/src/lib/utils";
 import { ConditionalAttachmentsPanel } from "@/src/routes/dashboard/document/sign/-components/conditional-attachments-panel";
 import { SettlementStatusPanel } from "@/src/routes/dashboard/document/sign/-components/settlement-status-panel";
@@ -31,7 +28,7 @@ export function SignDocumentSidebar() {
 	const { signerAddress } = useSignIdentity();
 	const {
 		myPlacementFields,
-		togglePlacementField,
+		applyPlacementField,
 		isMyPlacementFieldDone,
 		canSubmitPlacementSign,
 	} = useSignPlacement();
@@ -105,10 +102,10 @@ export function SignDocumentSidebar() {
 												"min-w-0 flex-1 truncate text-left underline-offset-2 hover:underline disabled:cursor-default disabled:no-underline disabled:opacity-100",
 												done &&
 													(alreadySigned
-														? "font-medium text-emerald-700 dark:text-emerald-400"
+														? "font-medium text-secondary-foreground"
 														: "text-muted-foreground line-through"),
 											)}
-											onClick={() => togglePlacementField(field.id)}
+											onClick={() => applyPlacementField(field)}
 										>
 											{field.type} · p.{field.pageIndex + 1}
 											{field.required ? " · required" : ""}
@@ -116,7 +113,7 @@ export function SignDocumentSidebar() {
 										</button>
 										{done ? (
 											<CheckIcon
-												className="size-3.5 shrink-0 text-emerald-600"
+												className="size-3.5 shrink-0 text-secondary-foreground"
 												weight="bold"
 											/>
 										) : (
@@ -170,18 +167,21 @@ export function SignDocumentSidebar() {
 									className={cn(
 										"flex items-center gap-3 p-3 rounded-lg border",
 										hasSigned
-											? "bg-chart-2/10 border-chart-2/30"
+											? "bg-secondary/10 border-secondary/30"
 											: "bg-muted/30 border-border",
 									)}
 								>
 									<div
 										className={cn(
 											"size-8 rounded-full flex items-center justify-center shrink-0",
-											hasSigned ? "bg-chart-2" : "bg-muted",
+											hasSigned ? "bg-secondary" : "bg-muted",
 										)}
 									>
 										{hasSigned ? (
-											<CheckIcon className="size-4 text-white" weight="bold" />
+											<CheckIcon
+												className="size-4 text-secondary-foreground"
+												weight="bold"
+											/>
 										) : (
 											<ClockIcon className="size-4 text-muted-foreground" />
 										)}
@@ -203,7 +203,9 @@ export function SignDocumentSidebar() {
 										<p
 											className={cn(
 												"text-xs",
-												hasSigned ? "text-chart-2" : "text-muted-foreground",
+												hasSigned
+													? "text-secondary-foreground"
+													: "text-muted-foreground",
 											)}
 										>
 											{hasSigned ? "Signed" : "Pending"}
@@ -232,10 +234,7 @@ export function SignDocumentSidebar() {
 					</p>
 				) : null}
 
-				<EnvelopeCommentsBlock
-					pieceCid={file?.pieceCid ?? ""}
-					dekSource={file?.pieceCid ? pieceDetailToDekSource(file) : undefined}
-				/>
+				<SignPageEnvelopeCommentsBlock file={file} />
 
 				{isSender ? (
 					<div className="flex flex-wrap gap-2">

@@ -55,29 +55,27 @@ Wire secrets via **Infisical** → Dokploy env injection. Split by project:
 | `POSTGRES_DB` | postgres | Default `filosign` |
 | `PGBACKREST_REPO1_S3_*`, `PGBACKREST_REPO1_CIPHER_PASS` | postgres | Dokploy **Environment** (see [`compose.data.yml`](../../deploy/compose.data.yml)); not Infisical at runtime |
 
+**Backups:** see [`postgres-ops.md`](postgres-ops.md) — health, backup, restore scenarios.
+
 No Filosign app secrets on the data project.
-
-**pgBackRest after data deploy:** All commands run on **`filosign-postgres`** (pgBackRest is installed in that image; `archive-push` also runs there). Do **not** use a sidecar with `pg1-host` — pgBackRest defaults to SSH and fails without keys.
-
-```bash
-# Always -u postgres (archive-push runs as postgres; root docker exec causes /tmp permission errors)
-docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign stanza-create
-docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign check
-docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign backup --type=full
-docker exec -u postgres filosign-postgres ls -la /var/lib/pgbackrest/archive/filosign/
-```
-
-Until `stanza-create` succeeds, postgres logs may show `[103] … has a stanza-create been performed?` — DB still accepts connections; fix backups before relying on PITR.
 
 ### `filosign-app` project
 
+**Dokploy Environment is not automatic inside containers.** [`compose.app.yml`](../../deploy/compose.app.yml) only passes variables listed under `environment:` (via `${VAR}` from Dokploy). Infisical bootstrap + `POSTGRES_PASSWORD` must be in Dokploy; everything else can live in Infisical `prod` / `staging`.
+
 | Variable | api | worker | Notes |
 |----------|-----|--------|-------|
+| `INFISICAL_CLIENT_ID` | ✓ | ✓ | Machine identity — **required in Dokploy** (entrypoint) |
+| `INFISICAL_CLIENT_SECRET` | ✓ | ✓ | Machine identity — **required in Dokploy** |
+| `INFISICAL_PROJECT_ID` | ✓ | ✓ | Infisical project UUID — **required in Dokploy** |
+| `INFISICAL_ENV` | ✓ | ✓ | `prod` / `staging` / `sandbox` (default in compose: `prod`) |
+| `INFISICAL_API_URL` | ✓ | ✓ | EU: `https://eu.infisical.com` (omit for US cloud) |
+| `API_PORT` | ✓ | — | Host port for api only; use **3001** if Dokploy UI uses **3000** |
+| `POSTGRES_PASSWORD` | ✓ | ✓ | Interpolates into `PG_URI` at compose time — **required in Dokploy** |
 | `SERVER_ROLE` | `api` | `worker` | Set in compose; do not override |
 | `DRAGONFLY_URL` | ✓ | ✓ | `redis://dragonfly:6379` (hostname on shared network) |
-| `PG_URI` | ✓ | ✓ | `postgresql://user:pass@postgres:5432/:dbname` |
+| `PG_URI` | ✓ | ✓ | Built from `POSTGRES_*` in compose unless you change the file |
 | `DB_NAME` | ✓ | ✓ | Match data stack |
-| `POSTGRES_PASSWORD` | ✓ | ✓ | Interpolates into `PG_URI` in compose |
 | `FC_SERVER_PRIVATE_KEY` | ✓ | ✓ | Relayer key — worker signs txs |
 | `FC_SERVER_ADDRESS` | ✓ | ✓ | Relayer address |
 | `DEPLOYMENT`, `CHAIN`, `SERVER_URL`, `CLIENT_URL`, `ASTRO_URL` | ✓ | ✓ | Tier config |
@@ -116,7 +114,7 @@ Compose sets `deploy.replicas: 1`, but **Dokploy UI scale overrides compose**. I
 
 1. Create project **`filosign-data`** → compose file `deploy/compose.data.yml`.
 2. Set all required `PGBACKREST_REPO1_*` + `POSTGRES_PASSWORD` in Dokploy Environment (see [`compose.data.yml`](../../deploy/compose.data.yml)).
-3. Deploy data stack; run stanza-create + check (see [`postgres-pgbackrest-dokploy.md`](postgres-pgbackrest-dokploy.md)).
+3. Deploy data stack; first-time backup setup → [`postgres-ops.md`](postgres-ops.md).
 4. Create project **`filosign-app`** → compose file `deploy/compose.app.yml`.
 5. Inject Infisical secrets; override `FILOSIGN_IMAGE` only when using a pre-built registry image instead of compose `build`.
 6. Lock worker replicas to **1**.
@@ -126,4 +124,4 @@ Compose sets `deploy.replicas: 1`, but **Dokploy UI scale overrides compose**. I
 
 - [`deploy/README.md`](../../deploy/README.md) — file map, start order, Dragonfly checklist
 - [`dragonfly-bullmq-production.md`](dragonfly-bullmq-production.md) — broker flags, memory, failure modes
-- [`postgres-pgbackrest-dokploy.md`](postgres-pgbackrest-dokploy.md) — WAL archive, PITR, R2
+- [`postgres-ops.md`](postgres-ops.md) — Postgres backup, health, disaster recovery

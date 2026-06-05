@@ -99,7 +99,7 @@ Flags: `--client`, `--astro`, `--server`, `--harness` (`--test`), `--contracts`,
 
 **Local / staging:** edit schema → `push` (or `purge` → push). Generate/migrate only when promoting toward sandbox.
 
-Backups: [`project/ops/postgres-pgbackrest-dokploy.md`](project/ops/postgres-pgbackrest-dokploy.md) · local drill: [`deploy/README.md`](deploy/README.md).
+Backups: [`project/ops/postgres-ops.md`](project/ops/postgres-ops.md) · local drill: [`deploy/README.md`](deploy/README.md).
 
 ## `contracts`
 

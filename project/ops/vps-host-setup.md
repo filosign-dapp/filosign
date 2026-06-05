@@ -45,7 +45,7 @@ Then: `sudo systemctl restart docker` (brief downtime for running containers).
 2. Deploy **app** stack (`deploy/compose.app.yml`) on the shared Docker network.
 3. Inject secrets from Infisical; never commit `.env` files.
 4. **Worker replicas = 1** on solo VPS. Relayer Redis lock (`fs:lock:relayer:{address}`) serializes nonce usage, but multiple workers still multiply job concurrency and operational risk.
-5. Schedule pgBackRest jobs on the data project (see [`postgres-pgbackrest-dokploy.md`](postgres-pgbackrest-dokploy.md)).
+5. Schedule pgBackRest jobs on the data project (see [`postgres-ops.md`](postgres-ops.md)).
 6. Monitor Dragonfly memory and evictions — see [`dragonfly-bullmq-production.md`](dragonfly-bullmq-production.md).
 
 ## Relayer wallet

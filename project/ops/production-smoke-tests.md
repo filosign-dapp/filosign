@@ -3,7 +3,7 @@
 **Purpose:** Prove Sprints 0–5 mitigations on **staging** before production traffic.  
 **Prereqs:** Staging VPS per [`dokploy-deploy.md`](dokploy-deploy.md), [`vps-host-setup.md`](vps-host-setup.md), `TG_ANALYTICS=true` for alert scenarios 7–8.
 
-**Related:** [`job-idempotency.md`](job-idempotency.md) · [`postgres-pgbackrest-dokploy.md`](postgres-pgbackrest-dokploy.md) · [`dragonfly-bullmq-production.md`](dragonfly-bullmq-production.md) · [`deploy/README.md`](../../deploy/README.md) (api/worker env parity)
+**Related:** [`job-idempotency.md`](job-idempotency.md) · [`postgres-ops.md`](postgres-ops.md) · [`dragonfly-bullmq-production.md`](dragonfly-bullmq-production.md) · [`deploy/README.md`](../../deploy/README.md) (api/worker env parity)
 
 ---
 
@@ -120,7 +120,7 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 
 ## Scenario 6 — pgBackRest restore to clone DB + app boot
 
-**Proves:** PITR / restore path documented in [`postgres-pgbackrest-dokploy.md`](postgres-pgbackrest-dokploy.md).
+**Proves:** PITR / restore path documented in [`postgres-ops.md`](postgres-ops.md).
 
 **Steps:**
 

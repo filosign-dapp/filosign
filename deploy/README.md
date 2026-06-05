@@ -16,7 +16,7 @@ Dokploy wiring: [`project/ops/dokploy-deploy.md`](../project/ops/dokploy-deploy.
 
 | Service | Default image | Notes |
 |---------|---------------|--------|
-| Postgres (VPS data) | `filosign-postgres-pgbackrest:18` (build [`postgres/Dockerfile`](postgres/Dockerfile)) | Postgres 18 + PGDG pgBackRest in **one container** — see [`postgres-pgbackrest-dokploy.md`](../project/ops/postgres-pgbackrest-dokploy.md) |
+| Postgres (VPS data) | `filosign-postgres-pgbackrest:18` (build [`postgres/Dockerfile`](postgres/Dockerfile)) | See [`postgres-ops.md`](../project/ops/postgres-ops.md) |
 | Postgres (local dev-full) | `postgres:18-alpine` | Volume mount **`/var/lib/postgresql`** (PG 18 layout) |
 | pgBackRest (dev-full sidecar only) | `percona/percona-pgbackrest:2.58.0-1` | Shared `postgres_data`; **no `pg1-host`** in conf |
 | Dragonfly | `docker.dragonflydb.io/dragonflydb/dragonfly:v1.37.2` | BullMQ flags in `compose.data.yml` |
@@ -209,11 +209,11 @@ Plan headroom for BullMQ streams + cache keys on the same Dragonfly instance:
    docker exec filosign-postgres-dev psql -U filosign -d filosign -c 'SELECT 1'
    ```
 
-**Note:** `compose.dev-full.yml` uses minimal Postgres conf (no `archive_mode`) — proves **full backups to R2**. Continuous WAL archive + PITR on VPS uses [`postgres/postgresql.production.conf`](postgres/postgresql.production.conf) in `compose.data.yml` — see [`project/ops/postgres-pgbackrest-dokploy.md`](../project/ops/postgres-pgbackrest-dokploy.md).
+**Note:** `compose.dev-full.yml` uses minimal Postgres conf (no `archive_mode`) — proves **full backups to R2**. Continuous WAL archive + PITR on VPS uses [`postgres/postgresql.production.conf`](postgres/postgresql.production.conf) in `compose.data.yml` — see [`project/ops/postgres-ops.md`](../project/ops/postgres-ops.md).
 
 ## Database policy
 
 - **local / staging:** `bun run db -- push <profile>` for fast schema sync
 - **sandbox / production:** `db:generate` → commit `apps/server/drizzle/` → `migrate` only
 
-See [SCRIPTS.md](../SCRIPTS.md) and [project/ops/postgres-pgbackrest-dokploy.md](../project/ops/postgres-pgbackrest-dokploy.md).
+See [SCRIPTS.md](../SCRIPTS.md) and [project/ops/postgres-ops.md](../project/ops/postgres-ops.md).

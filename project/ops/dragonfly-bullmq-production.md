@@ -124,7 +124,7 @@ Dragonfly outage does **not** corrupt Postgres. Worst case: slower API (cache mi
 
 1. Optional: snapshot `dragonfly_data` volume before Dragonfly image upgrade.
 2. Rolling restart: single instance — brief queue pause; workers should drain gracefully.
-3. **Postgres pgBackRest backups** are the critical DR path — see [`postgres-pgbackrest-dokploy.md`](postgres-pgbackrest-dokploy.md).
+3. **Postgres pgBackRest backups** are the critical DR path — see [`postgres-ops.md`](postgres-ops.md).
 
 ## Production checklist
 

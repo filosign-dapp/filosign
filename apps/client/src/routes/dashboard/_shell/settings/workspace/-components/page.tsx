@@ -22,6 +22,8 @@ import {
 } from "@/src/lib/components/ui/dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { DocsLink } from "@/src/lib/docs/docs-link";
+import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
@@ -299,9 +301,12 @@ export function WorkspaceSettingsPage() {
 					</div>
 				</div>
 				<p className="mt-3 text-pretty text-sm text-muted-foreground">
-					Manage subscriptions, seat allocations, and teammate permissions for
-					your corporate environments.
+					Manage subscriptions, seats, and teammate permissions for your
+					workspace.
 				</p>
+				<DocsLink href={DOCS_LINKS.workspace()} className="mt-2">
+					Workspace guides
+				</DocsLink>
 			</header>
 
 			{activeOrgId ? (

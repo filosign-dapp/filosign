@@ -4,6 +4,8 @@ import { Button } from "@/src/lib/components/ui/button";
 import { Checkbox } from "@/src/lib/components/ui/checkbox";
 import { Label } from "@/src/lib/components/ui/label";
 import { Textarea } from "@/src/lib/components/ui/textarea";
+import { DocsLink } from "@/src/lib/docs/docs-link";
+import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
 import { usePayoutFeatureAccess } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/hooks/use-payout-feature-access";
 import { WorkspaceSection, WorkspaceSyncNotice } from "./workspace-section";
@@ -47,6 +49,9 @@ export function PayoutFeatureAccessSection() {
 			title="Payout attachment access"
 			description="Optional USDC payout instructions on documents. Available on paid plans after Filosign review."
 		>
+			<DocsLink href={DOCS_LINKS.payoutAccess()} className="mb-4">
+				Payout access guide
+			</DocsLink>
 			{accessQuery.isPending ? (
 				<p className="text-sm text-muted-foreground">Loading access status…</p>
 			) : status === "approved" && termsCurrent ? (

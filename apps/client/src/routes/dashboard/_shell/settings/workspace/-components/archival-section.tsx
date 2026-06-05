@@ -8,6 +8,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 import { Label } from "@/src/lib/components/ui/label";
+import { DocsLink } from "@/src/lib/docs/docs-link";
+import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { cn } from "@/src/lib/utils/index";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
 import { WorkspaceSection } from "./workspace-section";
@@ -257,9 +259,12 @@ export function ArchivalSection() {
 	return (
 		<WorkspaceSection
 			icon={<HardDrivesIcon className="size-4" aria-hidden="true" />}
-			title="Filecoin archival"
-			description="Org-wide retention on Filecoin for all signed documents in this workspace."
+			title="Archival storage"
+			description="Optional yearly plan to keep signed documents in this workspace for 1, 3, or 5 years."
 		>
+			<DocsLink href={DOCS_LINKS.storageRetention()} className="mb-4">
+				Keeping documents long term
+			</DocsLink>
 			{status.isLoading || products.isLoading ? (
 				<p className="text-sm text-muted-foreground">
 					Loading archival status…
@@ -279,7 +284,7 @@ export function ArchivalSection() {
 					<div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
 						Export window ends{" "}
 						{new Date(status.data.exportGraceUntil).toLocaleDateString()}.
-						Resubscribe to keep Filecoin copies.
+						Resubscribe to keep long-term copies.
 					</div>
 					{selectedProductId ? (
 						<ArchivalPlanPicker

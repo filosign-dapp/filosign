@@ -15,6 +15,8 @@ import {
 	TrashIcon,
 } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
+import { DocsLink } from "@/src/lib/docs/docs-link";
+import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { cn } from "@/src/lib/utils";
 import { ProfileSection } from "./profile-section";
 
@@ -103,6 +105,9 @@ export function SignatureLibrarySection() {
 			title="Signature library"
 			description="Manage saved signatures and initials used for field auto-fill."
 		>
+			<DocsLink href={DOCS_LINKS.signatureLibrary()} className="mb-4">
+				Signature library guide
+			</DocsLink>
 			{signatures.length === 0 ? (
 				<p className="text-sm text-muted-foreground">
 					No signatures saved yet. Create one from the signature setup flow.

@@ -12,6 +12,8 @@ import { Checkbox } from "@/src/lib/components/ui/checkbox";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { Switch } from "@/src/lib/components/ui/switch";
+import { DocsLink } from "@/src/lib/docs/docs-link";
+import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { handleBasicPayoutGateBlock } from "@/src/lib/domains/settlements/basic-payout-gate";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
@@ -146,6 +148,9 @@ export function ComposeRoutingField() {
 					</motion.div>
 				) : null}
 			</AnimatePresence>
+			<DocsLink href={DOCS_LINKS.signingAndRouting()} className="text-xs">
+				Signing and routing guide
+			</DocsLink>
 		</section>
 	);
 }

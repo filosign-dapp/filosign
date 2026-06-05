@@ -1,4 +1,4 @@
-import { ORPCError } from "@orpc/server";
+import { throwAppError } from "@filosign/errors/server";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import {
@@ -22,9 +22,7 @@ export async function assertRecallerMayRelay(args: {
 	const walletNorm = getAddress(args.wallet);
 
 	if (walletNorm !== recallerNorm) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Connected wallet must match recaller",
-		});
+		throw throwAppError("FILES.FORBIDDEN");
 	}
 
 	if (recallerNorm === senderNorm) return;
@@ -39,13 +37,9 @@ export async function assertRecallerMayRelay(args: {
 		!args.activeOrg ||
 		args.activeOrg.organizationId !== args.file.organizationId
 	) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Switch to the file organization to recall",
-		});
+		throw throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 	if (!orgRoleHasPermission(args.activeOrg.role, "org:manage")) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Organization manage permission required to recall",
-		});
+		throw throwAppError("FILES.FORBIDDEN");
 	}
 }

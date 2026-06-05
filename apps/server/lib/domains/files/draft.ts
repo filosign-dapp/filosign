@@ -1,10 +1,11 @@
+import { throwAppError } from "@filosign/errors/server";
 import { zPlacementManifest } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import z from "zod";
 import db from "@/lib/platform/db";
-import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { primaryEmailForWallet } from "./invites";
 import { requireAckForParticipantAccess } from "./utils/piece-helpers";
 
@@ -34,12 +35,10 @@ export async function pieceSignDraftGet(userWallet: Address, pieceCid: string) {
 		);
 
 	if (!fileRecord) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throwAppError("FILES.NOT_FOUND");
 	}
 	if (!participantRecord) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "You are not required to sign this file",
-		});
+		throwAppError("SIGNING.NOT_REQUIRED");
 	}
 
 	await requireAckForParticipantAccess(userWallet, pieceCid);
@@ -48,17 +47,14 @@ export async function pieceSignDraftGet(userWallet: Address, pieceCid: string) {
 		fileRecord.placementManifestJson,
 	);
 	if (!manifestParsed.success) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "File placement manifest missing or invalid",
 		});
 	}
 
 	const signerEmail = await primaryEmailForWallet(participantRecord.wallet);
 	if (!signerEmail) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"Add a primary email to your Filosign profile to use placement drafts",
-		});
+		throwAppError("SIGNING.EMAIL_REQUIRED");
 	}
 	const allowedIds = new Set(
 		manifestParsed.data.fields
@@ -89,9 +85,7 @@ export async function pieceSignDraftPut(args: {
 }) {
 	const parsedBody = zPieceSignDraftPutBody.safeParse(args.body);
 	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: zodSafeParseMessage(parsedBody.error),
-		});
+		throwZodBadRequest(parsedBody.error);
 	}
 	const { completedFieldIds: bodyIds } = parsedBody.data;
 	const pieceCid = args.pieceCid;
@@ -118,29 +112,24 @@ export async function pieceSignDraftPut(args: {
 		);
 
 	if (!fileRecord) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throwAppError("FILES.NOT_FOUND");
 	}
 	if (!participantRecord) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "You are not required to sign this file",
-		});
+		throwAppError("SIGNING.NOT_REQUIRED");
 	}
 
 	const manifestParsed = zPlacementManifest.safeParse(
 		fileRecord.placementManifestJson,
 	);
 	if (!manifestParsed.success) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "File placement manifest missing or invalid",
 		});
 	}
 
 	const signerEmail = await primaryEmailForWallet(participantRecord.wallet);
 	if (!signerEmail) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"Add a primary email to your Filosign profile to use placement drafts",
-		});
+		throwAppError("SIGNING.EMAIL_REQUIRED");
 	}
 	const allowedIds = new Set(
 		manifestParsed.data.fields
@@ -150,9 +139,15 @@ export async function pieceSignDraftPut(args: {
 
 	for (const id of bodyIds) {
 		if (!allowedIds.has(id)) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "completedFieldIds must match manifest fields for signer",
-			});
+			throwZodBadRequest(
+				new z.ZodError([
+					{
+						code: "custom",
+						message: "completedFieldIds must match manifest fields for signer",
+						path: ["completedFieldIds"],
+					},
+				]),
+			);
 		}
 	}
 

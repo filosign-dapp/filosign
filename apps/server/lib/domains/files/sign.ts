@@ -37,7 +37,7 @@ import {
 } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
-import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { primaryEmailForWallet } from "./invites";
 import { isSignerReplacementPendingOnChain } from "./signer-replacement";
 import { buildEnvelopeCompletedEmailOutboxRows } from "./utils/completion-email";
@@ -77,9 +77,7 @@ export async function pieceSign(args: {
 
 	const parsedBody = zPieceSignBody.safeParse(args.body);
 	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: zodSafeParseMessage(parsedBody.error),
-		});
+		throwZodBadRequest(parsedBody.error);
 	}
 	const { signature, timestamp, dl3Signature, completedFieldIds } =
 		parsedBody.data;
@@ -106,13 +104,13 @@ export async function pieceSign(args: {
 		.where(eq(files.pieceCid, pieceCid));
 
 	if (!fileRecord) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throwAppError("FILES.NOT_FOUND");
 	}
 	if (fileRecord.revokedBeforeCompletedAt) {
-		throw new ORPCError("FORBIDDEN", { message: "Envelope voided" });
+		throwAppError("FILES.ENVELOPE_VOIDED");
 	}
 	if (fileRecord.completedAt) {
-		throw new ORPCError("FORBIDDEN", { message: "Envelope complete" });
+		throwAppError("FILES.ENVELOPE_COMPLETE");
 	}
 
 	if (
@@ -121,9 +119,7 @@ export async function pieceSign(args: {
 			pieceCid,
 		)
 	) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Signer replacement pending — execute or cancel before signing",
-		});
+		throwAppError("SIGNING.REPLACEMENT_PENDING");
 	}
 
 	const userWalletNorm = getAddress(userWallet);
@@ -133,7 +129,7 @@ export async function pieceSign(args: {
 		fileRecord.placementManifestJson,
 	);
 	if (!manifestParsed.success) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "File placement manifest missing or invalid",
 		});
 	}
@@ -231,9 +227,15 @@ export async function pieceSign(args: {
 	const completedSet = new Set(fieldIds);
 	for (const id of fieldIds) {
 		if (!allowedIds.has(id)) {
-			throw new ORPCError("BAD_REQUEST", {
-				message: "completedFieldIds must match manifest fields for signer",
-			});
+			throwZodBadRequest(
+				new z.ZodError([
+					{
+						code: "custom",
+						message: "completedFieldIds must match manifest fields for signer",
+						path: ["completedFieldIds"],
+					},
+				]),
+			);
 		}
 	}
 	for (const req of requiredIds) {
@@ -243,9 +245,15 @@ export async function pieceSign(args: {
 	}
 
 	if (fieldIds.length === 0) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "No fields to complete for this signer",
-		});
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: "No fields to complete for this signer",
+					path: ["completedFieldIds"],
+				},
+			]),
+		);
 	}
 
 	const completedFieldIdsStored = [...new Set(fieldIds)].sort((a, b) =>
@@ -261,9 +269,15 @@ export async function pieceSign(args: {
 			signer: signerWallet,
 		});
 	} catch {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Could not compute completions root",
-		});
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: "Could not compute completions root",
+					path: ["completedFieldIds"],
+				},
+			]),
+		);
 	}
 
 	const [{ signaturePublicKey: signerDl3PubKey }] = await db
@@ -291,7 +305,7 @@ export async function pieceSign(args: {
 	});
 
 	if (!isDl3SignatureValid) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid DL3 signature" });
+		throwAppError("SIGNING.SIGNATURE_INVALID");
 	}
 
 	const signerEmailCommitment = hashNormalizedSignerEmail(signerEmail);

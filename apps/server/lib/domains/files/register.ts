@@ -32,6 +32,7 @@ import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 import { enqueueOutboxByIds, insertJobOutboxRows } from "@/lib/platform/jobs";
 import { bucket } from "@/lib/platform/s3/client";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { normalizedViewerEmailsForRegister } from "./invites";
 import {
 	buildRegisterEmailOutboxRows,
@@ -93,7 +94,7 @@ export async function filesRegister(
 ) {
 	const parsedBody = zFileRegisterBody.safeParse(rawBody);
 	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });
+		throwZodBadRequest(parsedBody.error);
 	}
 
 	const {
@@ -119,31 +120,38 @@ export async function filesRegister(
 
 	assertOrgPermission(activeOrg, "documents:send");
 	if (organizationId !== activeOrg.organizationId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"organizationId in request body must match X-Org-Id header context",
-		});
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 
 	const orgIdCommitment = hashOrgIdCommitment(organizationId);
 
 	const parsedManifest = zPlacementManifest.safeParse(placementManifestRaw);
 	if (!parsedManifest.success) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Invalid placement manifest",
-		});
+		throwZodBadRequest(parsedManifest.error);
 	}
 	const placementManifest = parsedManifest.data;
 	const derivedCommitment = computePlacementCommitment(placementManifest);
 	if (derivedCommitment.toLowerCase() !== placementCommitment.toLowerCase()) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "placementCommitment does not match manifest",
-		});
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: "placementCommitment does not match manifest",
+					path: ["placementCommitment"],
+				},
+			]),
+		);
 	}
 	if (documentSha256 === `0x${"0".repeat(64)}`) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "documentSha256 must be non-zero",
-		});
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: "documentSha256 must be non-zero",
+					path: ["documentSha256"],
+				},
+			]),
+		);
 	}
 	const viewerEmails = await normalizedViewerEmailsForRegister({
 		participants,
@@ -172,14 +180,12 @@ export async function filesRegister(
 		.where(eq(users.walletAddress, getAddress(sender)));
 
 	if (!senderUser) {
-		throw new ORPCError("NOT_FOUND", { message: "User not found" });
+		throwAppError("AUTH.UNAUTHORIZED");
 	}
 
 	const senderEmailRaw = senderUser.email?.trim();
 	if (!senderEmailRaw) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Add a primary email to your profile before sending documents",
-		});
+		throwAppError("SIGNING.EMAIL_REQUIRED");
 	}
 	const senderEmailCommitment = hashNormalizedSignerEmail(
 		normalizePlacementRecipientEmail(senderEmailRaw),
@@ -212,7 +218,7 @@ export async function filesRegister(
 	);
 
 	if (valid.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: `Error validating signature ${valid.error}`,
 		});
 	}
@@ -222,20 +228,32 @@ export async function filesRegister(
 
 	const fileExists = await bucket.exists(`uploads/${pieceCid}`);
 	if (!fileExists) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "File not found on storage",
-		});
+		throwAppError("FILES.UPLOAD_MISSING");
 	}
 
 	const file = bucket.file(`uploads/${pieceCid}`);
 	if (file.size > MAX_FILE_SIZE) {
-		throw new ORPCError("PAYLOAD_TOO_LARGE", {
-			message: "File exceeds maximum allowed size",
-		});
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: "File exceeds maximum allowed size",
+					path: ["file"],
+				},
+			]),
+		);
 	}
 
 	if (file.size === 0) {
-		throw new ORPCError("BAD_REQUEST", { message: "Uploaded file is empty" });
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: "Uploaded file is empty",
+					path: ["file"],
+				},
+			]),
+		);
 	}
 
 	const slotCounts = recipientSlotCounts({ participants, coldInvites });

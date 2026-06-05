@@ -1,5 +1,5 @@
+import { throwAppError } from "@filosign/errors/server";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
-import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -8,6 +8,7 @@ import type { ActiveOrgContext } from "@/lib/domains/orgs";
 import db from "@/lib/platform/db";
 import { fsEnvelopeRegistryAt, relayRecallEnvelope } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { assertRecallerMayRelay } from "./recall-auth";
 import { cancelPendingSignerAmendmentsForPiece } from "./signer-replacement";
 
@@ -29,7 +30,7 @@ export async function filesRecallEnvelope(
 ) {
 	const parsed = zRecallEnvelopeBody.safeParse(rawBody);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 
 	const { pieceCid, recaller, timestamp, signature } = parsed.data;
@@ -47,17 +48,13 @@ export async function filesRecallEnvelope(
 		.limit(1);
 
 	if (!file) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throw throwAppError("FILES.NOT_FOUND");
 	}
 	if (file.revokedBeforeCompletedAt) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Envelope already voided",
-		});
+		throw throwAppError("FILES.ENVELOPE_VOIDED");
 	}
 	if (file.completedAt) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Envelope is complete and cannot be voided",
-		});
+		throw throwAppError("FILES.ENVELOPE_COMPLETE");
 	}
 
 	await assertRecallerMayRelay({
@@ -81,11 +78,13 @@ export async function filesRecallEnvelope(
 		]),
 	);
 	if (txRes.error) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				txRes.error instanceof Error
-					? txRes.error.message
-					: "recallEnvelope relay failed",
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason:
+					txRes.error instanceof Error
+						? txRes.error.message
+						: "recallEnvelope relay failed",
+			},
 		});
 	}
 

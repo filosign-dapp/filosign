@@ -1,3 +1,4 @@
+import { throwAppError } from "@filosign/errors/server";
 import {
 	type DocumentViewSource,
 	documentViewSources,
@@ -7,7 +8,6 @@ import {
 	normalizePlacementRecipientEmail,
 } from "@filosign/shared";
 import { zHexString } from "@filosign/shared/zod";
-import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -19,7 +19,7 @@ import {
 import db from "@/lib/platform/db";
 import { fsEnvelopeRegistryAt } from "@/lib/platform/evm";
 import { bucket } from "@/lib/platform/s3/client";
-import { zodSafeParseMessage } from "@/lib/platform/utils/zodHttp";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import {
 	getValidAck,
 	requireAckForParticipantAccess,
@@ -57,9 +57,7 @@ export async function pieceAck(args: {
 }) {
 	const parsedBody = zPieceAckBody.safeParse(args.body);
 	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: zodSafeParseMessage(parsedBody.error),
-		});
+		throwZodBadRequest(parsedBody.error);
 	}
 	const { signature, timestamp } = parsedBody.data;
 	const intentVersion =
@@ -77,13 +75,13 @@ export async function pieceAck(args: {
 		.where(eq(files.pieceCid, args.pieceCid));
 
 	if (!fileRecord) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throwAppError("FILES.NOT_FOUND");
 	}
 	if (fileRecord.revokedBeforeCompletedAt) {
-		throw new ORPCError("FORBIDDEN", { message: "Envelope voided" });
+		throwAppError("FILES.ENVELOPE_VOIDED");
 	}
 	if (fileRecord.completedAt) {
-		throw new ORPCError("FORBIDDEN", { message: "Envelope complete" });
+		throwAppError("FILES.ENVELOPE_COMPLETE");
 	}
 
 	const [participantRecord] = await db
@@ -101,21 +99,17 @@ export async function pieceAck(args: {
 			),
 		);
 	if (!participantRecord) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "you are nto Participant in thies file",
-		});
+		throwAppError("FILES.FORBIDDEN");
 	}
 
 	const existingAck = await getValidAck(args.userWallet, args.pieceCid);
 	if (existingAck) {
-		throw new ORPCError("CONFLICT", { message: "File already acked" });
+		throwAppError("FILES.ALREADY_ACKED");
 	}
 
 	const viewerAckEmailRaw = participantRecord.email?.trim();
 	if (!viewerAckEmailRaw) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Profile email required to acknowledge",
-		});
+		throwAppError("SIGNING.EMAIL_REQUIRED");
 	}
 	const viewerAckEmail = normalizePlacementRecipientEmail(viewerAckEmailRaw);
 	const viewerEmailCommitment = hashNormalizedSignerEmail(viewerAckEmail);
@@ -136,7 +130,7 @@ export async function pieceAck(args: {
 	]);
 
 	if (!valid) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid signature" });
+		throwAppError("SIGNING.SIGNATURE_INVALID");
 	}
 	const walletNorm = getAddress(participantRecord.wallet);
 	const acknowledgedAt = new Date(timestamp * 1000);
@@ -165,7 +159,7 @@ export async function pieceAck(args: {
 		if (existing && existing.ack.toLowerCase() === signature.toLowerCase()) {
 			return {};
 		}
-		throw new ORPCError("CONFLICT", { message: "File already acked" });
+		throwAppError("FILES.ALREADY_ACKED");
 	}
 
 	trackServerEvent({
@@ -179,9 +173,14 @@ export async function pieceAck(args: {
 }
 
 export async function pieceDownloadUrl(userWallet: Address, pieceCid: string) {
-	if (!pieceCid || typeof pieceCid !== "string") {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid pieceCid" });
+	const parsedPieceCid = z
+		.string()
+		.min(1, "Invalid pieceCid")
+		.safeParse(pieceCid);
+	if (parsedPieceCid.error) {
+		throwZodBadRequest(parsedPieceCid.error);
 	}
+	const cleanPieceCid = parsedPieceCid.data;
 
 	const userWalletNorm = getAddress(userWallet);
 
@@ -195,9 +194,7 @@ export async function pieceDownloadUrl(userWallet: Address, pieceCid: string) {
 		.where(eq(files.pieceCid, pieceCid));
 
 	if (!fileRecord) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "File not found or not allowed to access",
-		});
+		throwAppError("FILES.NOT_FOUND");
 	}
 
 	const isSender = getAddress(fileRecord.sender) === userWalletNorm;
@@ -223,22 +220,20 @@ export async function pieceDownloadUrl(userWallet: Address, pieceCid: string) {
 		));
 
 	if (!participantRecord && !orgRead) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "File not found or not allowed to access",
-		});
+		throwAppError("FILES.FORBIDDEN");
 	}
 
 	if (participantRecord && !isSender) {
-		await requireAckForParticipantAccess(userWalletNorm, pieceCid);
+		await requireAckForParticipantAccess(userWalletNorm, cleanPieceCid);
 	}
 
-	const fileExists = await bucket.exists(`uploads/${pieceCid}`);
+	const fileExists = await bucket.exists(`uploads/${cleanPieceCid}`);
 
 	if (!fileExists) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found on S3" });
+		throwAppError("FILES.NOT_FOUND");
 	}
 
-	const presignedUrl = bucket.presign(`uploads/${pieceCid}`, {
+	const presignedUrl = bucket.presign(`uploads/${cleanPieceCid}`, {
 		method: "GET",
 		expiresIn: 60 * 5,
 	});
@@ -262,9 +257,7 @@ export async function pieceRecordView(args: {
 }) {
 	const parsedBody = zRecordViewBody.safeParse(args.body ?? {});
 	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: zodSafeParseMessage(parsedBody.error),
-		});
+		throwZodBadRequest(parsedBody.error);
 	}
 	const source: DocumentViewSource = parsedBody.data.source ?? "sign_page";
 	const walletNorm = getAddress(args.userWallet);
@@ -279,9 +272,7 @@ export async function pieceRecordView(args: {
 			),
 		);
 	if (!participantRecord) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "You dont have access to this file",
-		});
+		throwAppError("FILES.FORBIDDEN");
 	}
 
 	await requireAckForParticipantAccess(walletNorm, args.pieceCid);

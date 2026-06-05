@@ -1,3 +1,4 @@
+import { throwAppError } from "@filosign/errors/server";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
@@ -15,6 +16,7 @@ import {
 } from "@/lib/platform/analytics";
 import db from "@/lib/platform/db";
 import { bucket } from "@/lib/platform/s3/client";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const {
 	files,
@@ -110,7 +112,15 @@ export async function normalizedViewerEmailsForRegister(args: {
 
 export async function filesColdInviteByToken(inviteToken: string) {
 	if (!inviteToken || inviteToken.length < 8) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid invite" });
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: "Invalid invite token",
+					path: ["inviteToken"],
+				},
+			]),
+		);
 	}
 
 	const rows = await db
@@ -134,21 +144,21 @@ export async function filesColdInviteByToken(inviteToken: string) {
 		);
 
 	if (rows.length === 0) {
-		throw new ORPCError("NOT_FOUND", { message: "Invite not found" });
+		throwAppError("FILES.INVITE_NOT_FOUND");
 	}
 	const [row] = rows;
 	if (!row) {
-		throw new ORPCError("NOT_FOUND", { message: "Invite not found" });
+		throwAppError("FILES.INVITE_NOT_FOUND");
 	}
 	if (!row.inviteToken || !row.wrappedEncryptionKey) {
-		throw new ORPCError("NOT_FOUND", { message: "Invite not found" });
+		throwAppError("FILES.INVITE_NOT_FOUND");
 	}
 
 	const recipientEmails = [...new Set(rows.map((r) => r.email))];
 
 	const key = `uploads/${row.pieceCid}`;
 	if (!(await bucket.exists(key))) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throwAppError("FILES.NOT_FOUND");
 	}
 
 	const downloadUrl = bucket.presign(key, {
@@ -216,21 +226,26 @@ export async function filesColdInviteClaim(args: {
 }) {
 	const parsedBody = zColdInviteClaimBody.safeParse(args.body);
 	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });
+		throwZodBadRequest(parsedBody.error);
 	}
 	const inviteToken = args.inviteToken;
 	if (!inviteToken || inviteToken.length < 8) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid invite" });
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: "Invalid invite token",
+					path: ["inviteToken"],
+				},
+			]),
+		);
 	}
 
 	const userWallet = getAddress(args.userWallet);
 
 	const profileEmail = await primaryEmailForWallet(userWallet);
 	if (!profileEmail) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"Add a primary email to your profile before claiming this invite",
-		});
+		throwAppError("SIGNING.EMAIL_REQUIRED");
 	}
 
 	const [invite] = await db
@@ -250,13 +265,11 @@ export async function filesColdInviteClaim(args: {
 			),
 		);
 	if (!invite) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "Invite not found for this account email",
-		});
+		throwAppError("FILES.INVITE_NOT_FOUND");
 	}
 
 	if (invite.isSigner && !invite.emailCommitment) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Cold signer invite missing email commitment",
 		});
 	}
@@ -313,13 +326,21 @@ export async function filesColdInviteRegenerate(args: {
 }) {
 	const parsedBody = zColdInviteRegenerateBody.safeParse(args.body);
 	if (parsedBody.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsedBody.error.message });
+		throwZodBadRequest(parsedBody.error);
 	}
 	const pieceCid = args.pieceCid.trim();
 	const senderWallet = getAddress(args.userWallet);
 
 	if (!pieceCid || pieceCid.length < 8) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid request" });
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: "Invalid pieceCid",
+					path: ["pieceCid"],
+				},
+			]),
+		);
 	}
 
 	const [file] = await db
@@ -333,7 +354,7 @@ export async function filesColdInviteRegenerate(args: {
 		!file ||
 		getAddress(file.sender as Address) !== getAddress(senderWallet)
 	) {
-		throw new ORPCError("FORBIDDEN", { message: "Forbidden" });
+		throwAppError("FILES.FORBIDDEN");
 	}
 
 	const activeInvites = await db
@@ -348,9 +369,7 @@ export async function filesColdInviteRegenerate(args: {
 			),
 		);
 	if (activeInvites.length === 0) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "No active cold invites found",
-		});
+		throwAppError("FILES.INVITE_NOT_FOUND");
 	}
 
 	const expiresAt = inviteExpiresAt();

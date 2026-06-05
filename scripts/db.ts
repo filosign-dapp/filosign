@@ -73,7 +73,7 @@ function assertProfile(profile: string): Profile {
 function assertPushAllowed(profile: Profile): asserts profile is PushProfile {
 	if (profile === "production") {
 		die(
-			'Direct push to production is blocked. Use bun run prod -- --migrate after db:generate and committing apps/server/drizzle/.',
+			"Direct push to production is blocked. Use bun run prod -- --migrate after db:generate and committing apps/server/drizzle/.",
 		);
 	}
 	if (profile === "sandbox") {

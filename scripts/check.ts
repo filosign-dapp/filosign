@@ -75,9 +75,11 @@ function buildCommands(steps: Set<Step>, typesFilter: string): string[][] {
 
 	if (steps.has("lint")) {
 		cmds.push(["bunx", "biome", "check", "--write", "."]);
+		cmds.push(["bun", "scripts/audit-errors.ts", "--strict"]);
 	}
 	if (steps.has("ci")) {
 		cmds.push(["bunx", "biome", "check", "."]);
+		cmds.push(["bun", "scripts/audit-errors.ts", "--strict"]);
 	}
 	if (steps.has("types")) {
 		cmds.push(["bunx", "tsc", "--noEmit", "-p", "scripts/tsconfig.json"]);

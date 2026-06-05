@@ -16,13 +16,41 @@ App containers use `postgres` as DB host on Docker DNS. Your Mac cannot resolve 
 
 **One-time:** `FILOSIGN_PROD_SSH=root@YOUR_VPS` in `deploy/.env` (gitignored).
 
-**Every migrate** (from repo root, `infisical login` once):
+Schema history is a **single squashed migration**: [`apps/server/drizzle/0000_initial.sql`](../../apps/server/drizzle/0000_initial.sql). Future changes: `bun run --cwd apps/server db:generate` → commit → migrate.
+
+### First prod apply (or after squash reset)
+
+Pre-production only — wipes app data. Take a pgBackRest backup first.
+
+If prod was ever migrated with the old multi-file history (or `push`), Drizzle’s journal no longer matches. **Reset the public schema**, then migrate:
+
+```bash
+# SSH to VPS (or bun run prod -- --pg for tunnel + psql)
+docker exec -it filosign-postgres psql -U filosign -d filosign -c "
+  DROP SCHEMA public CASCADE;
+  CREATE SCHEMA public;
+  GRANT ALL ON SCHEMA public TO filosign;
+  GRANT ALL ON SCHEMA public TO public;
+"
+```
+
+Then from laptop:
 
 ```bash
 bun run prod -- --migrate
 ```
 
-Opens SSH `-L 5433:<postgres-container-ip>:5432` (auto-detected via `docker inspect` on the VPS), runs Infisical `prod` + `/app`, rewrites `PG_URI` to `127.0.0.1:5433`, applies Drizzle migrations.
+Verify: `head_snapshot_digest` exists on `envelope_drafts` and `drizzle.__drizzle_migrations` has one row (`0000_initial`).
+
+### Routine migrate (after first apply)
+
+From repo root (`infisical login` once):
+
+```bash
+bun run prod -- --migrate
+```
+
+Opens SSH `-L 5433:<postgres-container-ip>:5432` (auto-detected via `docker inspect` on the VPS), runs Infisical `prod` + `/app`, rewrites `PG_URI` to `127.0.0.1:5433`, applies pending Drizzle migrations.
 
 **Optional:** redeploy `filosign-data` with `127.0.0.1:5432:5432` in compose so the tunnel can use host loopback instead of the container IP.
 

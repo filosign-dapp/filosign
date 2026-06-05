@@ -180,9 +180,9 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 
 ---
 
-## GDPR migration preflight + rollout (0003)
+## GDPR migration preflight + rollout
 
-Run these checks before applying `apps/server/drizzle/0003_gdpr_guardrails.sql`.
+Run these checks before the **first** `bun run prod -- --migrate` on a database (squashed schema in `apps/server/drizzle/0000_initial.sql`). See [postgres-ops.md](postgres-ops.md) if prod still has a partial old schema — reset public schema first.
 
 ### Preflight SQL checks
 

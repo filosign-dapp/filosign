@@ -34,6 +34,8 @@ import {
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { DocsLink } from "@/src/lib/docs/docs-link";
+import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { buildCreateForm, uploadedFromDataUrl } from "@/src/lib/domains/drafts";
 import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
@@ -267,7 +269,10 @@ function TemplatesIndexPage() {
 							Shared Templates
 						</h2>
 						<p className="text-xs text-muted-foreground hidden sm:block">
-							Reuse standard team documents and pre-placed signature layouts.
+							Reuse standard team documents for new envelopes.{" "}
+							<DocsLink href={DOCS_LINKS.templates()}>
+								Read the templates guide
+							</DocsLink>
 						</p>
 					</div>
 					<Button

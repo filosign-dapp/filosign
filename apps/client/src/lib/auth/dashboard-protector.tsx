@@ -17,6 +17,8 @@ import { Loader } from "@/src/lib/components/ui/loader";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { hydrationMark } from "@/src/lib/utils/hydration-lifecycle";
+import { navigateToReturnTo, stashReturnTo } from "./return-to";
+import { ReturnToHandler } from "./return-to-handler";
 import { useSessionGateDerived, useSessionGateFlags } from "./use-session-gate";
 
 interface DashboardProtectorProps {
@@ -24,6 +26,7 @@ interface DashboardProtectorProps {
 }
 
 function WorkspaceSetupGate() {
+	const navigate = useNavigate();
 	const createOrg = useCreateOrganization();
 	const setActiveOrg = useSetPersistedActiveOrganizationId();
 	const { data: userProfile } = useUserProfile();
@@ -44,6 +47,9 @@ function WorkspaceSetupGate() {
 			if (res?.organization?.id) {
 				setActiveOrg(res.organization.id);
 				toast.success("Workspace created successfully!");
+				requestAnimationFrame(() => {
+					navigateToReturnTo(navigate);
+				});
 			}
 		} catch (err) {
 			showAppErrorToast(err);
@@ -101,6 +107,7 @@ export default function DashboardProtector({
 
 	useEffect(() => {
 		if (derived.shouldRedirectToSignIn) {
+			stashReturnTo();
 			const params = new URLSearchParams(window.location.search);
 			const upgrade = params.get("upgrade") || undefined;
 			const interval = params.get("interval") || undefined;
@@ -145,5 +152,10 @@ export default function DashboardProtector({
 		return <WorkspaceSetupGate />;
 	}
 
-	return <>{children}</>;
+	return (
+		<>
+			<ReturnToHandler />
+			{children}
+		</>
+	);
 }

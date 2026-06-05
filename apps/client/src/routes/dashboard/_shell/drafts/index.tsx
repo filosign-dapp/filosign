@@ -6,6 +6,8 @@ import { useMemo } from "react";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { DocsLink } from "@/src/lib/docs/docs-link";
+import { DOCS_LINKS } from "@/src/lib/docs/links";
 import {
 	DocumentCard,
 	formatDocumentCardDate,
@@ -85,7 +87,10 @@ function DraftsIndexPage() {
 								<p className="max-w-md px-4 text-muted-foreground">
 									You haven’t saved a draft yet. Start an envelope, place
 									fields, and hit{" "}
-									<span className="font-medium">Save draft</span>.
+									<span className="font-medium">Save draft</span>.{" "}
+									<DocsLink href={DOCS_LINKS.drafts()}>
+										Read the drafts guide
+									</DocsLink>
 								</p>
 								<Button
 									type="button"

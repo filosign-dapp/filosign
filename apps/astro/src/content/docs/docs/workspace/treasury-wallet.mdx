@@ -3,42 +3,45 @@ title: Treasury wallet
 description: Link a team treasury wallet (often a Safe) so payout rules can pay from shared funds.
 ---
 
-A **treasury wallet** is an external wallet your workspace links for **USDC payout packets**. It is often a multisig Safe or another treasury address your finance team controls.
+A **treasury wallet** is an external wallet your workspace links for **USDC payout packets**. It is often a multisig Safe or another treasury address your finance team controls. Filosign does not hold payout funds. The linked wallet must approve payment when a payout runs.
 
-Filosign does not hold payout funds. The linked wallet must approve payment when a payout runs.
+## When to use this
 
-## When you need it
+* Payouts should come from team funds, not an individual sender wallet
+* Finance requires a multisig to approve outgoing USDC
+* You want the org wallet to appear in payout compose options
 
-Link a treasury wallet when:
+## How it works
 
-- Payouts should come from team funds, not an individual sender wallet
-- Finance requires a multisig to approve outgoing USDC
+1. Connect and link a wallet from **Workspace settings** → **Workspace treasury**.
+2. The linked address appears in payout compose options as the **organization payout wallet**.
+3. When you attach a payout leg to the org wallet, the **treasury wallet** must approve USDC spending for Filosign to execute the transfer.
+4. Recipients must still be on the envelope (or the linked org wallet) per payout policy.
+
+Treasury payouts are separate from **payout attachment access**, the safety review Filosign may require before your workspace can attach payouts at all.
 
 Individual senders can still attach payouts from their own wallet without linking a treasury.
 
-## Link a wallet
+## Example workflow
+
+A DAO links its Safe as the workspace treasury wallet. When sending contributor agreements, finance selects the org wallet as payer and approves USDC spending. Payout packets send from the Safe when signing conditions are met.
+
+## What to watch out for
+
+* Workspace owners and admins can void envelopes and amend signers, but treasury payouts still require the **treasury wallet itself** to sign as payer when funds move.
+* Treasury linking does not replace [payout access](/docs/workspace/payout-access/) approval.
+* You need enough USDC on Base and valid approval at payout time.
+
+## How to link a treasury wallet in the app
 
 1. Open **Workspace settings** → **Workspace treasury**.
 2. Connect the wallet you want to link (must be able to sign).
 3. Confirm the link in the app.
+4. When composing payouts, pick the **organization payout wallet** as payer when appropriate.
 
-The linked address appears in payout compose options as the **organization payout wallet**.
+## Related guides
 
-## Payout rules and the treasury
-
-When you attach a payout leg to the org wallet:
-
-- The **treasury wallet** must approve USDC spending for Filosign to execute the transfer
-- Recipients must still be on the envelope (or the linked org wallet) per payout policy
-
-Treasury payouts are separate from **payout attachment access**, the manual review step Filosign may require before your workspace can attach payouts at all. See [Payout access](/docs/workspace/payout-access/).
-
-## Governance note
-
-Workspace owners and admins can void envelopes and amend signers. Treasury payouts still require the **treasury wallet itself** to sign as payer when funds move.
-
-## Related
-
-- [Payout packets](/docs/workflows/payouts/)
-- [Payout attachment (non-custodial)](/legal/non-custodial-settlement)
-- [Payout feature addendum](/legal/settlement-feature-addendum)
+* [Payout packets](/docs/workflows/payouts/)
+* [Payout access](/docs/workspace/payout-access/)
+* [Payout attachment (non-custodial)](/legal/non-custodial-settlement)
+* [Payout feature addendum](/legal/settlement-feature-addendum)

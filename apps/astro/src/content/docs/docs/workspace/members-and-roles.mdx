@@ -5,7 +5,14 @@ description: Invite teammates, assign roles, and understand what each role can d
 
 Workspace **members** share drafts, templates, and team-visible envelopes. Each person has a **role** that controls what they can do.
 
-## Roles at a glance
+## When to use this
+
+* You are inviting a colleague and need to pick the right role
+* You want to know who can void envelopes or manage billing
+* A new member shows **Encryption key pending** and cannot open team drafts yet
+* You are deciding between Sender and Viewer for a teammate
+
+## How it works
 
 | Role | Typical use |
 |------|-------------|
@@ -16,20 +23,32 @@ Workspace **members** share drafts, templates, and team-visible envelopes. Each 
 
 Owners and admins can void incomplete envelopes, amend signers, and manage supplementary attachment rules. Senders send on behalf of the org but cannot override those governance actions. See [Envelope governance](/docs/workflows/envelope-governance/).
 
-## Invite a teammate
+Team drafts and team envelope visibility require a **Teams** or **Teams Pro** plan.
+
+## Example workflow
+
+A growing agency adds a paralegal as **Viewer** so they can read team envelopes without sending, and promotes an operations lead to **Admin** so they can manage billing and void in-progress agreements.
+
+## What to watch out for
+
+* New members need to unlock encryption keys before they can open team drafts or envelopes.
+* Removing someone does not delete envelopes they already sent or signed.
+* Viewers cannot invite through [Connections](/docs/workspace/connections/).
+
+## How to manage members in the app
+
+### Invite a teammate
 
 1. Open **Workspace settings** → **Team members**.
 2. Click **Invite member**.
 3. Enter their email and pick a role.
 4. Send the invite.
 
-New members need to unlock encryption keys in Filosign before they can open team drafts or envelopes. The members list shows **Encryption key pending** until that step completes.
+### Change or remove a member
 
-## Change or remove a member
+Owners and admins can update roles or remove members from **Team members**.
 
-Owners and admins can update roles or remove members from **Team members**. Removing someone does not delete envelopes they already sent or signed.
-
-## Permissions by role
+### Permissions by role
 
 | Action | Owner | Admin | Sender | Viewer |
 |--------|:-----:|:-----:|:------:|:------:|
@@ -42,9 +61,9 @@ Owners and admins can update roles or remove members from **Team members**. Remo
 | Share drafts externally | ✓ | ✓ | ✓ | |
 | Manage connections | ✓ | ✓ | | |
 
-Team drafts and team envelope visibility require a **Teams** or **Teams Pro** plan. See [Plans and limits](/docs/plans/).
+## Related guides
 
-## Need help?
-
-- [Workspace overview](/docs/workspace/)
-- [Troubleshooting](/docs/troubleshooting/)
+* [Workspace overview](/docs/workspace/)
+* [Envelope governance](/docs/workflows/envelope-governance/)
+* [Plans and limits](/docs/plans/)
+* [Troubleshooting](/docs/troubleshooting/)

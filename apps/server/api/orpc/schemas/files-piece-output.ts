@@ -1,4 +1,9 @@
-import { zComplianceBundle, zPlacementManifest } from "@filosign/shared";
+import {
+	zComplianceBundle,
+	zFieldCompletionMap,
+	zFieldCompletionWireRow,
+	zPlacementManifest,
+} from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { z } from "zod";
 
@@ -106,6 +111,9 @@ export const rpcPieceDetailOutputSchema = z.object({
 		})
 		.nullable()
 		.optional(),
+	commentsFeatureEnabled: z.boolean(),
+	hasSenderComments: z.boolean(),
+	fieldCompletions: z.array(zFieldCompletionWireRow).optional(),
 });
 
 export type RpcPieceDetailOutput = z.output<typeof rpcPieceDetailOutputSchema>;
@@ -119,6 +127,7 @@ export const rpcPieceRecordViewOutputSchema = z.object({
 
 export const rpcPieceSignDraftFieldIdsOutputSchema = z.object({
 	completedFieldIds: z.array(z.string()),
+	fieldCompletions: zFieldCompletionMap,
 });
 
 export const rpcPieceDownloadUrlOutputSchema = z.object({

@@ -1,4 +1,9 @@
-import type { PlacementManifest, RegisterRoutingInput } from "@filosign/shared";
+import type {
+	FieldCompletionMap,
+	FieldValueKind,
+	PlacementManifest,
+	RegisterRoutingInput,
+} from "@filosign/shared";
 import { sql } from "drizzle-orm";
 import * as t from "drizzle-orm/pg-core";
 import {
@@ -9,7 +14,7 @@ import {
 } from "@/lib/platform/db/helpers";
 import { randomUuidV7 } from "@/lib/platform/db/random-uuid-v7";
 import { organizations } from "./organization";
-import { users } from "./user";
+import { userSignatures, users } from "./user";
 
 export const coldInviteStatuses = [
 	"pending",
@@ -221,6 +226,11 @@ export const fileSignerDrafts = t.pgTable(
 			.notNull()
 			.references(() => users.walletAddress),
 		completedFieldIds: t.jsonb().$type<string[]>().notNull(),
+		fieldCompletions: t
+			.jsonb()
+			.$type<FieldCompletionMap>()
+			.notNull()
+			.default({}),
 		...timestamps,
 	},
 	(table) => [
@@ -229,6 +239,41 @@ export const fileSignerDrafts = t.pgTable(
 			name: "pk_file_signer_drafts",
 		}),
 		t.index("idx_signer_drafts_wallet").on(table.wallet),
+	],
+);
+
+export const fieldValueKinds = ["visual", "text", "checkbox", "auto"] as const;
+
+/** Immutable per-envelope field visual/text snapshot at final sign. */
+export const fileFieldCompletions = t.pgTable(
+	"file_field_completions",
+	{
+		filePieceCid: t
+			.text()
+			.notNull()
+			.references(() => files.pieceCid, { onDelete: "cascade" }),
+		fieldId: t.text().notNull(),
+		signer: tEvmAddress()
+			.notNull()
+			.references(() => users.walletAddress),
+		valueKind: t
+			.text({ enum: fieldValueKinds })
+			.$type<FieldValueKind>()
+			.notNull(),
+		sourceArtifactId: t
+			.uuid()
+			.references(() => userSignatures.id, { onDelete: "restrict" }),
+		storageKey: t.text(),
+		contentSha256: t.text(),
+		textValue: t.text(),
+		...timestamps,
+	},
+	(table) => [
+		t.primaryKey({
+			columns: [table.filePieceCid, table.fieldId],
+			name: "pk_file_field_completions",
+		}),
+		t.index("idx_field_completions_piece").on(table.filePieceCid),
 	],
 );
 

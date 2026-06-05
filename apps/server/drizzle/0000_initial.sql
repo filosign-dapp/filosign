@@ -197,6 +197,21 @@ CREATE TABLE "file_signatures" (
 	CONSTRAINT "pk_file_signatures" PRIMARY KEY("file_piece_cid","signer")
 );
 --> statement-breakpoint
+CREATE TABLE "file_field_completions" (
+	"file_piece_cid" text NOT NULL,
+	"field_id" text NOT NULL,
+	"signer" text NOT NULL,
+	"value_kind" text NOT NULL,
+	"source_artifact_id" uuid,
+	"storage_key" text,
+	"content_sha256" text,
+	"text_value" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"deleted_at" timestamp with time zone,
+	CONSTRAINT "pk_file_field_completions" PRIMARY KEY("file_piece_cid","field_id")
+);
+--> statement-breakpoint
 CREATE TABLE "file_signer_amendments" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"file_piece_cid" text NOT NULL,
@@ -214,6 +229,7 @@ CREATE TABLE "file_signer_drafts" (
 	"file_piece_cid" text NOT NULL,
 	"wallet" text NOT NULL,
 	"completed_field_ids" jsonb NOT NULL,
+	"field_completions" jsonb DEFAULT '{}'::jsonb NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"deleted_at" timestamp with time zone,
@@ -646,7 +662,13 @@ CREATE TABLE "user_invites" (
 CREATE TABLE "user_signatures" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"wallet_address" text NOT NULL,
-	"data" text NOT NULL,
+	"kind" text NOT NULL,
+	"role" text NOT NULL,
+	"storage_key" text NOT NULL,
+	"content_type" text NOT NULL,
+	"content_sha256" text NOT NULL,
+	"typed_meta" jsonb,
+	"intrinsic_aspect_ratio" real,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"deleted_at" timestamp with time zone
@@ -684,6 +706,8 @@ CREATE TABLE "users" (
 	"last_name" text,
 	"avatar_key" text,
 	"invited_by" text,
+	"default_signature_id" uuid,
+	"default_initial_id" uuid,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"deleted_at" timestamp with time zone,
@@ -728,6 +752,9 @@ ALTER TABLE "file_signatures" ADD CONSTRAINT "file_signatures_file_piece_cid_fil
 ALTER TABLE "file_signer_amendments" ADD CONSTRAINT "file_signer_amendments_file_piece_cid_files_piece_cid_fk" FOREIGN KEY ("file_piece_cid") REFERENCES "public"."files"("piece_cid") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "file_signer_drafts" ADD CONSTRAINT "file_signer_drafts_file_piece_cid_files_piece_cid_fk" FOREIGN KEY ("file_piece_cid") REFERENCES "public"."files"("piece_cid") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "file_signer_drafts" ADD CONSTRAINT "file_signer_drafts_wallet_users_wallet_address_fk" FOREIGN KEY ("wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "file_field_completions" ADD CONSTRAINT "file_field_completions_file_piece_cid_files_piece_cid_fk" FOREIGN KEY ("file_piece_cid") REFERENCES "public"."files"("piece_cid") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "file_field_completions" ADD CONSTRAINT "file_field_completions_signer_users_wallet_address_fk" FOREIGN KEY ("signer") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "file_field_completions" ADD CONSTRAINT "file_field_completions_source_artifact_id_user_signatures_id_fk" FOREIGN KEY ("source_artifact_id") REFERENCES "public"."user_signatures"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "files" ADD CONSTRAINT "files_sender_users_wallet_address_fk" FOREIGN KEY ("sender") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "files" ADD CONSTRAINT "files_created_by_wallet_users_wallet_address_fk" FOREIGN KEY ("created_by_wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "files" ADD CONSTRAINT "files_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -810,6 +837,8 @@ CREATE INDEX "idx_signatures_file" ON "file_signatures" USING btree ("file_piece
 CREATE INDEX "idx_file_signer_amendments_piece" ON "file_signer_amendments" USING btree ("file_piece_cid");--> statement-breakpoint
 CREATE INDEX "idx_file_signer_amendments_piece_status" ON "file_signer_amendments" USING btree ("file_piece_cid","status");--> statement-breakpoint
 CREATE INDEX "idx_signer_drafts_wallet" ON "file_signer_drafts" USING btree ("wallet");--> statement-breakpoint
+CREATE INDEX "idx_field_completions_piece" ON "file_field_completions" USING btree ("file_piece_cid");--> statement-breakpoint
+CREATE INDEX "idx_user_signatures_wallet_role_sha" ON "user_signatures" USING btree ("wallet_address","role","content_sha256");--> statement-breakpoint
 CREATE INDEX "idx_files_owner" ON "files" USING btree ("sender");--> statement-breakpoint
 CREATE INDEX "idx_files_sender_created" ON "files" USING btree ("sender","created_at");--> statement-breakpoint
 CREATE INDEX "idx_files_organization" ON "files" USING btree ("organization_id");--> statement-breakpoint

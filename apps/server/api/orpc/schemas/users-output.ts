@@ -1,4 +1,9 @@
-import { zUserKeygenDataJson } from "@filosign/shared";
+import {
+	zUserKeygenDataJson,
+	zUserSignatureArtifact,
+	zUserSignatureCreateInput,
+	zUserSignatureRole,
+} from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { z } from "zod";
 import { rpcEmptyOutputSchema, zDateWire } from "./rpc-wire";
@@ -29,6 +34,10 @@ export const rpcUserProfileMeOutputSchema = z.object({
 	avatarKey: z.string().nullable(),
 	avatarUrl: z.string().nullable(),
 	authSubjectCommitment: z.string(),
+	defaultSignatureId: z.uuid().nullable().optional(),
+	defaultInitialId: z.uuid().nullable().optional(),
+	defaultSignaturePreviewUrl: z.string().nullable().optional(),
+	defaultInitialPreviewUrl: z.string().nullable().optional(),
 });
 
 export const rpcUserProfileUpdateOutputSchema = rpcEmptyOutputSchema;
@@ -225,19 +234,23 @@ export const rpcUserExportAccountDataOutputSchema = z.object({
 	}),
 });
 
-export const rpcUserSignaturesCreateOutputSchema = rpcEmptyOutputSchema;
-
-const userSignatureRowSchema = z.object({
-	id: z.uuid(),
-	walletAddress: z.string(),
-	data: z.string(),
-	createdAt: zDateWire,
-	updatedAt: zDateWire,
-	deletedAt: zDateWire.optional().nullable(),
+export const rpcUserSignaturesCreateOutputSchema = z.object({
+	artifact: zUserSignatureArtifact,
 });
 
 export const rpcUserSignaturesListOutputSchema = z.object({
-	signatures: z.array(userSignatureRowSchema),
+	signatures: z.array(zUserSignatureArtifact),
 });
 
-export const rpcUserSignaturesGetOutputSchema = userSignatureRowSchema;
+export const rpcUserSignaturesGetOutputSchema = zUserSignatureArtifact;
+
+export const rpcUserSignaturesSetDefaultOutputSchema = rpcEmptyOutputSchema;
+
+export const rpcUserSignaturesDeleteOutputSchema = rpcEmptyOutputSchema;
+
+export const rpcUserSignaturesSetDefaultInputSchema = z.object({
+	id: z.uuid(),
+	role: zUserSignatureRole,
+});
+
+export { zUserSignatureCreateInput as rpcUserSignaturesCreateInputSchema };

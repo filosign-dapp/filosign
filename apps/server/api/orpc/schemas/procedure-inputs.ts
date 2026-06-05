@@ -18,7 +18,10 @@ export {
 } from "@/api/handlers/orgs/invites-keys";
 export { zSharingRequestInviteBody } from "@/api/handlers/sharing/invites";
 export { zUserRegisterBody } from "@/api/handlers/users/register";
-export { zUserSignatureCreateBody } from "@/api/handlers/users/signatures";
+export {
+	zUserSignatureCreateBody,
+	zUserSignatureSetDefaultBody,
+} from "@/api/handlers/users/signatures";
 export {
 	zDraftCreateBody,
 	zDraftMarkSentBody,

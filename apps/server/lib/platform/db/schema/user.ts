@@ -1,4 +1,9 @@
-import type { UserKeygenDataJson } from "@filosign/shared";
+import type {
+	TypedSignatureMeta,
+	UserKeygenDataJson,
+	UserSignatureKind,
+	UserSignatureRole,
+} from "@filosign/shared";
 import * as t from "drizzle-orm/pg-core";
 import { tEvmAddress, timestamps } from "@/lib/platform/db/helpers";
 import { randomUuidV7 } from "@/lib/platform/db/random-uuid-v7";
@@ -25,6 +30,8 @@ export const users = t.pgTable("users", {
 	lastName: t.text(),
 	avatarKey: t.text(),
 	invitedBy: tEvmAddress(),
+	defaultSignatureId: t.uuid(),
+	defaultInitialId: t.uuid(),
 
 	...timestamps,
 });
@@ -85,12 +92,35 @@ export const userHistory = t.pgTable("user_history", {
 	...timestamps,
 });
 
-export const userSignatures = t.pgTable("user_signatures", {
-	id: t.uuid().primaryKey().$defaultFn(randomUuidV7),
-	walletAddress: tEvmAddress()
-		.notNull()
-		.references(() => users.walletAddress, { onDelete: "restrict" }),
-	data: t.text().notNull(),
+export const userSignatureKinds = ["typed", "drawn", "uploaded"] as const;
+export const userSignatureRoles = ["signature", "initial"] as const;
 
-	...timestamps,
-});
+export const userSignatures = t.pgTable(
+	"user_signatures",
+	{
+		id: t.uuid().primaryKey().$defaultFn(randomUuidV7),
+		walletAddress: tEvmAddress()
+			.notNull()
+			.references(() => users.walletAddress, { onDelete: "restrict" }),
+		kind: t
+			.text({ enum: userSignatureKinds })
+			.$type<UserSignatureKind>()
+			.notNull(),
+		role: t
+			.text({ enum: userSignatureRoles })
+			.$type<UserSignatureRole>()
+			.notNull(),
+		storageKey: t.text().notNull(),
+		contentType: t.text().notNull(),
+		contentSha256: t.text().notNull(),
+		typedMeta: t.jsonb().$type<TypedSignatureMeta>(),
+		intrinsicAspectRatio: t.real(),
+
+		...timestamps,
+	},
+	(table) => [
+		t
+			.index("idx_user_signatures_wallet_role_sha")
+			.on(table.walletAddress, table.role, table.contentSha256),
+	],
+);

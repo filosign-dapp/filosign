@@ -123,8 +123,10 @@ import {
 	rpcUserRegistrationSnapshotOutputSchema,
 	rpcUserSetAnalyticsConsentOutputSchema,
 	rpcUserSignaturesCreateOutputSchema,
+	rpcUserSignaturesDeleteOutputSchema,
 	rpcUserSignaturesGetOutputSchema,
 	rpcUserSignaturesListOutputSchema,
+	rpcUserSignaturesSetDefaultOutputSchema,
 } from "./users-output";
 
 /** Nested output schemas aligned with `appRouter`. */
@@ -269,6 +271,8 @@ export const rpcOut = {
 		signaturesCreate: rpcUserSignaturesCreateOutputSchema,
 		signaturesList: rpcUserSignaturesListOutputSchema,
 		signaturesGet: rpcUserSignaturesGetOutputSchema,
+		signaturesSetDefault: rpcUserSignaturesSetDefaultOutputSchema,
+		signaturesDelete: rpcUserSignaturesDeleteOutputSchema,
 	},
 } as const;
 

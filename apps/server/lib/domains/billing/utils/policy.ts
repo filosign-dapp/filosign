@@ -13,7 +13,7 @@ export function isDodoLiveMode(): boolean {
 
 export function requireDodoApiKey(): string {
 	if (!env.DODO_API_KEY) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Dodo Payments is not configured",
 		});
 	}

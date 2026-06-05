@@ -1,3 +1,4 @@
+import { throwAppError } from "@filosign/errors/server";
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import { invalidateOrgEntitlements } from "@/lib/platform/cache";
@@ -32,19 +33,13 @@ async function loadOrgSubscription(organizationId: string) {
 async function requireActiveOrgSubscription(organizationId: string) {
 	const sub = await loadOrgSubscription(organizationId);
 	if (!sub?.dodoSubscriptionId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Workspace has no active Dodo subscription",
-		});
+		throwAppError("BILLING.WORKSPACE_NO_SUBSCRIPTION");
 	}
 	if (!isWorkspaceBillingPlanId(sub.planId)) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Workspace subscription is not a paid plan",
-		});
+		throwAppError("BILLING.WORKSPACE_NOT_PAID_PLAN");
 	}
 	if (!sub.billingInterval) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Workspace billing interval is unknown; contact support",
-		});
+		throwAppError("BILLING.WORKSPACE_INTERVAL_UNKNOWN");
 	}
 	return sub;
 }
@@ -70,7 +65,7 @@ async function previewOrgPlanChangeInternal(args: {
 			proration_billing_mode: "prorated_immediately",
 		})) as PlanChangePreview;
 	} catch (error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to preview plan change",
 			cause: error,
 		});
@@ -92,7 +87,7 @@ async function changeOrgPlanInternal(args: {
 			on_payment_failure: args.onPaymentFailure ?? "prevent_change",
 		});
 	} catch (error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to change workspace plan",
 			cause: error,
 		});
@@ -115,12 +110,12 @@ async function fetchDodoSubscriptionQuantity(
 			return sub.quantity;
 		}
 	} catch (error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to fetch subscription from Dodo",
 			cause: error,
 		});
 	}
-	throw new ORPCError("INTERNAL_SERVER_ERROR", {
+	throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 		message: "Dodo subscription quantity is missing or invalid",
 	});
 }
@@ -174,14 +169,10 @@ function formatPlanChangePreview(
 
 function assertMinSeatCount(seatCount: number, usedSeats: number) {
 	if (!Number.isInteger(seatCount) || seatCount < 1) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "seatCount must be a positive integer",
-		});
+		throwAppError("BILLING.SEAT_COUNT_INVALID");
 	}
 	if (seatCount < usedSeats) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: `seatCount cannot be below current usage (${usedSeats} members and pending invites)`,
-		});
+		throwAppError("BILLING.SEAT_COUNT_BELOW_USAGE", { params: { usedSeats } });
 	}
 }
 
@@ -197,9 +188,7 @@ export async function previewOrgSeatChange(args: {
 		sub.dodoSubscriptionId as string,
 	);
 	if (args.seatCount === dodoQuantity) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: `Workspace is already on ${dodoQuantity} seats`,
-		});
+		throwAppError("BILLING.SEAT_COUNT_ALREADY_ON_TARGET");
 	}
 
 	const productId = resolveOrgProductId(
@@ -284,9 +273,7 @@ export async function previewOrgPlanChange(args: {
 }) {
 	const sub = await requireActiveOrgSubscription(args.organizationId);
 	if (sub.planId === args.planId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Workspace is already on this plan",
-		});
+		throwAppError("BILLING.WORKSPACE_ALREADY_ON_PLAN");
 	}
 
 	const dodoQuantity = await fetchDodoSubscriptionQuantity(

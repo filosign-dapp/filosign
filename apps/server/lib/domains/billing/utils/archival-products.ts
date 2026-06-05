@@ -24,9 +24,9 @@ export function archivalTermYears(productId: ArchivalProductId): number {
 }
 
 export function isArchivalSubscriptionProduct(
-	productId: ArchivalProductId,
+	_productId: ArchivalProductId,
 ): boolean {
-	return productId === "archival_year";
+	return true;
 }
 
 /** List USD prices (org-flat). Dodo dashboard should match. */
@@ -44,14 +44,14 @@ export const ARCHIVAL_LIST_PRICES_USD: Record<
 		billingModel: "subscription",
 	},
 	archival_bundle_3y: {
-		amountUsd: 267,
-		label: "3-year Filecoin retention (prepay)",
-		billingModel: "one_time",
+		amountUsd: 199,
+		label: "3-year Filecoin retention (auto-renew)",
+		billingModel: "subscription",
 	},
 	archival_bundle_5y: {
-		amountUsd: 420,
-		label: "5-year Filecoin retention (prepay)",
-		billingModel: "one_time",
+		amountUsd: 299,
+		label: "5-year Filecoin retention (auto-renew)",
+		billingModel: "subscription",
 	},
 };
 
@@ -62,9 +62,9 @@ const DODO_TEST_ARCHIVAL_PRODUCT_IDS: Record<ArchivalProductId, string> = {
 };
 
 const DODO_LIVE_ARCHIVAL_PRODUCT_IDS: Record<ArchivalProductId, string> = {
-	archival_year: "pdt_archival_year_live",
-	archival_bundle_3y: "pdt_archival_bundle_3y_live",
-	archival_bundle_5y: "pdt_archival_bundle_5y_live",
+	archival_year: "pdt_0NgMNUvCPUVHCwwTyW2m9",
+	archival_bundle_3y: "pdt_0NgMNh7e1JVDEcvpio6YA",
+	archival_bundle_5y: "pdt_0NgMNlhTy8EOF4WyPh9Bj",
 };
 
 const DODO_PRODUCT_ID_TO_ARCHIVAL: Record<string, ArchivalProductId> = {};

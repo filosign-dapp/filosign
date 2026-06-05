@@ -1,5 +1,5 @@
 import { getPlanName, type PlanId } from "@filosign/entitlements";
-import { ORPCError } from "@orpc/server";
+import { throwAppError } from "@filosign/errors/server";
 import { eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -11,7 +11,6 @@ import {
 	type SubscriptionStatus,
 	userSubscriptions,
 } from "@/lib/platform/db/schema/billing";
-import { isDodoLiveMode } from "./utils/policy";
 import { subscriptionAccessFromRow } from "./utils/marketing";
 import { getOrgBillingSummary } from "./utils/org";
 import {
@@ -19,6 +18,7 @@ import {
 	buildWorkspaceAllowedActions,
 	type UpgradeLimitReason,
 } from "./utils/plans";
+import { isDodoLiveMode } from "./utils/policy";
 
 export type BillingInterval = "monthly" | "yearly";
 
@@ -92,19 +92,13 @@ export async function createBillingCheckoutSession(_args: {
 	interval: BillingInterval;
 	returnUrl: string;
 }): Promise<{ checkoutUrl: string; sessionId: string }> {
-	throw new ORPCError("BAD_REQUEST", {
-		message:
-			"Subscriptions are billed per workspace. Open Workspace Settings → Billing.",
-	});
+	throwAppError("BILLING.PERSONAL_BILLING_DISABLED");
 }
 
 export async function createBillingPortalSession(_args: {
 	wallet: Address;
 }): Promise<{ url: string }> {
-	throw new ORPCError("BAD_REQUEST", {
-		message:
-			"Manage billing from Workspace Settings. Personal and team plans are billed per workspace.",
-	});
+	throwAppError("BILLING.PERSONAL_PORTAL_DISABLED");
 }
 
 export async function getUserBillingSummary(wallet: Address) {

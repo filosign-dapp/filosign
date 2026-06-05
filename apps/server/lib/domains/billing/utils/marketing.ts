@@ -1,6 +1,6 @@
 import { getPlanName, PLAN_IDS, type PlanId } from "@filosign/entitlements";
-import { ORPCError } from "@orpc/server";
 import { and, eq, inArray } from "drizzle-orm";
+import { z } from "zod";
 import env from "@/env";
 import { effectivePlanIdFromStatus } from "@/lib/domains/entitlements";
 import db from "@/lib/platform/db";
@@ -9,6 +9,7 @@ import {
 	organizationSubscriptions,
 } from "@/lib/platform/db/schema/organization";
 import { users } from "@/lib/platform/db/schema/user";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import type { BillingInterval } from "../billing";
 import { isOrgBillingPlanId, isWorkspaceBillingPlanId } from "./policy";
 
@@ -261,7 +262,15 @@ export async function previewMarketingCheckout(args: {
 }): Promise<MarketingCheckoutPreview> {
 	const email = normalizeEmail(args.email);
 	if (!email) {
-		throw new ORPCError("BAD_REQUEST", { message: "Email is required" });
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["email"],
+					message: "Email is required",
+				},
+			]),
+		);
 	}
 
 	const subscriber = await loadSubscriberByEmail(email);
@@ -289,6 +298,14 @@ export async function assertMarketingCheckoutAllowed(args: {
 			preview.action === "already_subscribed"
 				? preview.message
 				: preview.message;
-		throw new ORPCError("BAD_REQUEST", { message });
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["email"],
+					message,
+				},
+			]),
+		);
 	}
 }

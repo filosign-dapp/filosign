@@ -1,4 +1,5 @@
 import { getPlanName, type PlanId } from "@filosign/entitlements";
+import { throwAppError } from "@filosign/errors/server";
 import { ORPCError } from "@orpc/server";
 import { and, eq, sql } from "drizzle-orm";
 import type { Address } from "viem";
@@ -40,9 +41,7 @@ function assertAllowedReturnUrl(url: string) {
 			allowedOrigins: env.BILLING_RETURN_URL_ORIGINS,
 		})
 	) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "returnUrl origin is not allowed",
-		});
+		throwAppError("BILLING.RETURN_URL_DISALLOWED");
 	}
 }
 
@@ -105,9 +104,7 @@ export async function getOrCreateOrgDodoCustomer(args: {
 		.limit(1);
 
 	if (!user?.email) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Admin email is required for workspace checkout",
-		});
+		throwAppError("BILLING.ADMIN_EMAIL_REQUIRED");
 	}
 
 	const client = createBillingDodoClient();
@@ -123,7 +120,7 @@ export async function getOrCreateOrgDodoCustomer(args: {
 		})) as { customer_id: string };
 		customerId = customer.customer_id;
 	} catch (error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to create Dodo customer for workspace",
 			cause: error,
 		});
@@ -143,14 +140,10 @@ export async function getOrCreateOrgDodoCustomer(args: {
 
 function assertMinSeatCount(seatCount: number, usedSeats: number) {
 	if (!Number.isInteger(seatCount) || seatCount < 1) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "seatCount must be a positive integer",
-		});
+		throwAppError("BILLING.SEAT_COUNT_INVALID");
 	}
 	if (seatCount < usedSeats) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: `seatCount cannot be below current usage (${usedSeats} members and pending invites)`,
-		});
+		throwAppError("BILLING.SEAT_COUNT_BELOW_USAGE", { params: { usedSeats } });
 	}
 }
 
@@ -181,10 +174,7 @@ export async function createOrgBillingCheckoutSession(args: {
 		existing.planId !== "free" &&
 		existing.planId !== "enterprise"
 	) {
-		throw new ORPCError("BAD_REQUEST", {
-			message:
-				"Workspace already has a paid subscription. Adjust seats from billing settings.",
-		});
+		throwAppError("BILLING.ORG_HAS_ACTIVE_SUBSCRIPTION");
 	}
 
 	const productId = resolveOrgProductId(args.planId, args.interval);
@@ -218,7 +208,7 @@ export async function createOrgBillingCheckoutSession(args: {
 			checkout_url?: string | null;
 		};
 	} catch (error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to create Dodo checkout session",
 			cause: error,
 		});
@@ -226,7 +216,7 @@ export async function createOrgBillingCheckoutSession(args: {
 
 	const checkoutUrl = checkout.url ?? checkout.checkout_url;
 	if (!checkoutUrl) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Dodo checkout URL was not returned",
 		});
 	}
@@ -261,9 +251,7 @@ export async function getOrgBillingSummary(organizationId: string) {
 export async function createOrgBillingPortalSession(organizationId: string) {
 	const sub = await loadOrgSubscription(organizationId);
 	if (!sub?.dodoCustomerId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "No Dodo customer found for this workspace",
-		});
+		throwAppError("BILLING.NO_CUSTOMER_FOUND");
 	}
 
 	const client = createBillingDodoClient();
@@ -274,7 +262,7 @@ export async function createOrgBillingPortalSession(organizationId: string) {
 		)) as { link: string; url?: string };
 		return { url: portal.url ?? portal.link };
 	} catch (error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to create Dodo portal session",
 			cause: error,
 		});

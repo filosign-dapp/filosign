@@ -1,4 +1,5 @@
 import type { PlanId } from "@filosign/entitlements";
+import { throwAppError } from "@filosign/errors/server";
 import { ORPCError } from "@orpc/server";
 import { and, eq, gt } from "drizzle-orm";
 import {
@@ -99,7 +100,7 @@ async function createLockedEmailCheckoutSession(args: {
 			checkout_url?: string | null;
 		};
 	} catch (error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to create Dodo checkout session",
 			cause: error,
 		});
@@ -107,7 +108,7 @@ async function createLockedEmailCheckoutSession(args: {
 
 	const checkoutUrl = checkout.url ?? checkout.checkout_url;
 	if (!checkoutUrl) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Dodo checkout URL was not returned",
 		});
 	}
@@ -121,14 +122,10 @@ function resolveCheckoutSeatCount(args: {
 }): number {
 	const seatCount = args.seatCount ?? 1;
 	if (!Number.isInteger(seatCount) || seatCount < 1) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "seatCount must be a positive integer",
-		});
+		throwAppError("BILLING.SEAT_COUNT_INVALID");
 	}
 	if (!isOrgBillingPlanId(args.planId) && seatCount !== 1) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Individual checkout supports one seat only",
-		});
+		throwAppError("BILLING.INDIVIDUAL_CHECKOUT_SEATS_LIMIT");
 	}
 	return seatCount;
 }
@@ -162,7 +159,7 @@ export async function requestCheckoutLink(args: {
 		.returning({ id: checkoutIntents.id });
 
 	if (!row) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to create checkout intent",
 		});
 	}
@@ -182,7 +179,7 @@ export async function continueCheckoutFromToken(args: {
 }): Promise<{ checkoutUrl: string }> {
 	const token = args.token.trim();
 	if (token.length < 8) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid checkout link" });
+		throwAppError("BILLING.INVALID_CHECKOUT_LINK");
 	}
 
 	const [intent] = await db
@@ -197,9 +194,7 @@ export async function continueCheckoutFromToken(args: {
 		.limit(1);
 
 	if (!intent || intent.status === "expired" || intent.status === "completed") {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Checkout link not found or expired",
-		});
+		throwAppError("BILLING.CHECKOUT_LINK_NOT_FOUND");
 	}
 
 	if (intent.dodoSessionId && intent.status === "checkout_open") {
@@ -242,10 +237,6 @@ export async function resendPaidSetupLink(args: {
 	email: string;
 }): Promise<{ ok: true }> {
 	const email = normalizeEmail(args.email);
-	if (!email) {
-		throw new ORPCError("BAD_REQUEST", { message: "Email is required" });
-	}
-
 	const { platformAccessPending } = db.schema;
 	const [pending] = await db
 		.select({
@@ -263,10 +254,7 @@ export async function resendPaidSetupLink(args: {
 		.limit(1);
 
 	if (!pending) {
-		throw new ORPCError("NOT_FOUND", {
-			message:
-				"No pending setup found for this email. Check your inbox or contact support.",
-		});
+		throwAppError("BILLING.PENDING_SETUP_NOT_FOUND");
 	}
 
 	const setupUrl = `${getClientUrl()}/?setup=${encodeURIComponent(pending.setupToken)}`;

@@ -58,6 +58,10 @@ describe("billing", () => {
 							planId === "teams_pro"
 						);
 					},
+					isOrgBillingPlanId: (planId: string) => {
+						return planId === "teams" || planId === "teams_pro";
+					},
+					isDodoLiveMode: () => false,
 					isAllowedReturnUrlOrigin: () => true,
 				};
 			});
@@ -119,7 +123,7 @@ describe("billing", () => {
 					previewOrgSeatChange({ organizationId: orgId, seatCount: 2 }),
 				).rejects.toMatchObject({
 					code: "BAD_REQUEST",
-					message: "Workspace is already on 2 seats",
+					message: "Seat count already on target",
 				});
 				expect(previewChangePlanMock).not.toHaveBeenCalled();
 			});

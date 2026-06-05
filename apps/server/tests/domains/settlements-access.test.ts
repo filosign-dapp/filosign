@@ -226,7 +226,7 @@ describe("access", () => {
 					}),
 				).rejects.toMatchObject({
 					code: "BAD_REQUEST",
-					message: expect.stringContaining("Acknowledge"),
+					message: expect.stringContaining("Settlement verification failed"),
 				});
 			});
 
@@ -249,7 +249,7 @@ describe("access", () => {
 					}),
 				).rejects.toMatchObject({
 					code: "BAD_REQUEST",
-					message: expect.stringContaining("outdated"),
+					message: expect.stringContaining("Settlement verification failed"),
 				});
 			});
 

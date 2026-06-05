@@ -110,7 +110,9 @@ describe("settlements", () => {
 			}));
 		});
 
-		function ctx(planId: "teams" | "teams_pro"): EntitlementContext {
+		function ctx(
+			planId: "individual" | "teams" | "teams_pro",
+		): EntitlementContext {
 			return {
 				subject: {
 					type: "user",
@@ -151,12 +153,20 @@ describe("settlements", () => {
 					assertSettlementRuleEntitlements(ctx("teams"), baseRule(), null),
 				).rejects.toMatchObject({
 					code: "FORBIDDEN",
-					message: expect.stringContaining("workspace envelope"),
+					message: expect.stringContaining("Access denied"),
 				});
 			});
 
 			test("allows basic single-leg all_signed on teams with workspace", async () => {
 				await assertSettlementRuleEntitlements(ctx("teams"), baseRule(), orgId);
+			});
+
+			test("allows basic single-leg all_signed on individual with workspace", async () => {
+				await assertSettlementRuleEntitlements(
+					ctx("individual"),
+					baseRule(),
+					orgId,
+				);
 			});
 
 			test("rejects multi-leg rules without advanced entitlement", async () => {
@@ -194,7 +204,7 @@ describe("settlements", () => {
 					assertSettlementUpdateEntitlements(ctx("teams"), null),
 				).rejects.toMatchObject({
 					code: "FORBIDDEN",
-					message: expect.stringContaining("workspace envelope"),
+					message: expect.stringContaining("Access denied"),
 				});
 				await expect(
 					assertSettlementUpdateEntitlements(ctx("teams"), orgId),
@@ -323,7 +333,7 @@ describe("settlements", () => {
 					}),
 				).rejects.toMatchObject({
 					code: "BAD_REQUEST",
-					message: expect.stringContaining("envelope"),
+					message: expect.stringContaining("Settlement verification failed"),
 				});
 			});
 		});

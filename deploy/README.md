@@ -104,6 +104,8 @@ Both services share one image built from [`deploy/Dockerfile`](Dockerfile) (`bun
 
 **Healthchecks** use exec-form `CMD` and **do not** run through the Infisical `ENTRYPOINT` (Docker behavior). API: `curl /health`. Worker: `./worker-healthcheck` (only needs `DRAGONFLY_URL` from compose — not the full `@/env` bundle).
 
+**API on Dokploy:** compose exposes container port `3000` only (no host publish). Add a **Domain** in Dokploy with container port `3000` — do not map host `:3000` (Dokploy panel uses it). See [`project/ops/dokploy-deploy.md`](../project/ops/dokploy-deploy.md).
+
 ```yaml
 x-filosign-image: &filosign-image
   build:

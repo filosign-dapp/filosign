@@ -40,7 +40,18 @@ networks:
     name: filosign-data_filosign_net
 ```
 
-Do **not** publish Dragonfly `6379` or Postgres `5432` to the VPS public interface. API is the only service with a host port.
+Do **not** publish Dragonfly `6379`, Postgres `5432`, or API `3000` on the VPS host. Dokploy’s own panel uses **host `:3000`**; Filosign API listens on **container `:3000`** and is reached via **Domains** (Traefik → `filosign-api:3000`).
+
+## API routing (Dokploy Domains)
+
+Do **not** use Advanced → Ports to bind API to host `:3000` (conflicts with Dokploy).
+
+1. Open **filosign-app** → **Domains** → Create domain (e.g. `api.filosign.xyz`).
+2. **Container port:** `3000` (service `api` / container `filosign-api`).
+3. Enable HTTPS (Let’s Encrypt) for production.
+4. Set Infisical `SERVER_URL` to that public URL.
+
+Compose uses `expose: 3000` only — same pattern as staging (`3000/tcp` in `docker ps`, no `0.0.0.0:3000` mapping).
 
 ## Environment variables
 
@@ -71,7 +82,6 @@ No Filosign app secrets on the data project.
 | `INFISICAL_ENV` | ✓ | ✓ | `prod` / `staging` / `sandbox` (default in compose: `prod`) |
 | `INFISICAL_API_URL` | ✓ | ✓ | EU: `https://eu.infisical.com` (omit for US cloud) |
 | `INFISICAL_SECRET_PATH` | ✓ | ✓ | Infisical folder for app secrets (default `/app`; must match dashboard path) |
-| `API_PORT` | ✓ | — | Host port for api only; use **3001** if Dokploy UI uses **3000** |
 | `SERVER_ROLE` | `api` | `worker` | Set in compose; do not override |
 | `DRAGONFLY_URL` | ✓ | ✓ | `redis://dragonfly:6379` (hostname on shared network) |
 | `PG_URI` | Infisical | Infisical | e.g. `postgresql://filosign:SECRET@postgres:5432/:dbname` — **not** compose-built |
@@ -117,9 +127,10 @@ Compose sets `deploy.replicas: 1`, but **Dokploy UI scale overrides compose**. I
 2. Set all required `PGBACKREST_REPO1_*` + `POSTGRES_PASSWORD` in Dokploy Environment (see [`compose.data.yml`](../../deploy/compose.data.yml)).
 3. Deploy data stack; first-time backup setup → [`postgres-ops.md`](postgres-ops.md).
 4. Create project **`filosign-app`** → compose file `deploy/compose.app.yml`.
-5. Inject Infisical secrets; override `FILOSIGN_IMAGE` only when using a pre-built registry image instead of compose `build`.
-6. Lock worker replicas to **1**.
-7. Schedule pgBackRest cron jobs on data project (full / diff / check).
+5. Add **Domain** for API (container port **3000**); remove any `API_PORT` env override if present.
+6. Inject Infisical secrets; override `FILOSIGN_IMAGE` only when using a pre-built registry image instead of compose `build`.
+7. Lock worker replicas to **1**.
+8. Schedule pgBackRest cron jobs on data project (full / diff / check).
 
 ## Related docs
 

@@ -1,0 +1,44 @@
+---
+title: Treasury wallet
+description: Link a team treasury wallet (often a Safe) so payout rules can pay from shared funds.
+---
+
+A **treasury wallet** is an external wallet your workspace links for **USDC payout packets**. It is often a multisig Safe or another treasury address your finance team controls.
+
+Filosign does not hold payout funds. The linked wallet must approve payment when a payout runs.
+
+## When you need it
+
+Link a treasury wallet when:
+
+- Payouts should come from team funds, not an individual sender wallet
+- Finance requires a multisig to approve outgoing USDC
+
+Individual senders can still attach payouts from their own wallet without linking a treasury.
+
+## Link a wallet
+
+1. Open **Workspace settings** → **Workspace treasury**.
+2. Connect the wallet you want to link (must be able to sign).
+3. Confirm the link in the app.
+
+The linked address appears in payout compose options as the **organization payout wallet**.
+
+## Payout rules and the treasury
+
+When you attach a payout leg to the org wallet:
+
+- The **treasury wallet** must approve USDC spending for Filosign to execute the transfer
+- Recipients must still be on the envelope (or the linked org wallet) per payout policy
+
+Treasury payouts are separate from **payout attachment access**, the manual review step Filosign may require before your workspace can attach payouts at all. See [Payout access](/docs/workspace/payout-access/).
+
+## Governance note
+
+Workspace owners and admins can void envelopes and amend signers. Treasury payouts still require the **treasury wallet itself** to sign as payer when funds move.
+
+## Related
+
+- [Payout packets](/docs/workflows/payouts/)
+- [Payout attachment (non-custodial)](/legal/non-custodial-settlement)
+- [Payout feature addendum](/legal/settlement-feature-addendum)

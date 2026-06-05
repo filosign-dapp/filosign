@@ -1,0 +1,43 @@
+---
+title: Payout access
+description: How workspaces request approval to attach USDC payout packets to envelopes.
+---
+
+Before a workspace can attach **USDC payout packets**, Filosign may require a one-time **payout access** review. This is separate from your plan including payout features and separate from approving payment in your wallet at send time.
+
+## Why it exists
+
+Payouts move real money. Filosign reviews workspace requests to reduce abuse and align with our [Acceptable Use Policy](/acceptable-use) and [Payout feature addendum](/legal/settlement-feature-addendum).
+
+## Request access
+
+1. Open **Workspace settings** → **Payout attachment access**.
+2. Read the terms and submit a request.
+3. Wait for Filosign review.
+
+While status is **Pending**, compose and sign flows block new payout attachments. Existing envelopes are not affected unless you try to add new payout rules.
+
+## Status messages
+
+| Status | Meaning |
+|--------|---------|
+| **Not requested** | Submit a request to enable payouts |
+| **Pending** | Filosign is reviewing your request |
+| **Approved** | You can attach payout packets (subject to plan limits) |
+| **Not approved** | Request was declined; contact support if you believe this is an error |
+
+If terms change after approval, you may need to accept the current version before attaching new payouts.
+
+## This is not wallet approval
+
+Even with payout access approved, each payout still needs:
+
+- Enough **USDC on Base** in the paying wallet
+- A valid **wallet approval** so Filosign can transfer when conditions are met
+
+See [Payout packets](/docs/workflows/payouts/) for how attachments and automatic sends work.
+
+## Related
+
+- [Treasury wallet](/docs/workspace/treasury-wallet/)
+- [Payout attachment](/legal/non-custodial-settlement)

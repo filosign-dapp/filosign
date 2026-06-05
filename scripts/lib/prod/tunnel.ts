@@ -23,13 +23,7 @@ export async function withPostgresTunnel<T>(
 ): Promise<T> {
 	const ip = await postgresContainerIp(ctx);
 	const tunnel = Bun.spawn({
-		cmd: [
-			"ssh",
-			"-N",
-			"-L",
-			`${LOCAL_PG_PORT}:${ip}:5432`,
-			ctx.ssh,
-		],
+		cmd: ["ssh", "-N", "-L", `${LOCAL_PG_PORT}:${ip}:5432`, ctx.ssh],
 		stdout: "ignore",
 		stderr: "inherit",
 	});

@@ -1,8 +1,4 @@
-import {
-	containerHealthOk,
-	dockerExec,
-	dockerState,
-} from "./ssh.ts";
+import { containerHealthOk, dockerExec, dockerState } from "./ssh.ts";
 import type { Action, ProbeResult, ProdContext } from "./types.ts";
 
 export async function probe(
@@ -71,9 +67,7 @@ SELECT count(*)::int AS migrations FROM drizzle.__drizzle_migrations;
 
 	const ok = r.code === 0;
 	const detail = [r.stdout, r.stderr].filter(Boolean).join("\n").trim();
-	const summary = ok
-		? "postgres metrics"
-		: "psql returned errors (see detail)";
+	const summary = ok ? "postgres metrics" : "psql returned errors (see detail)";
 
 	return {
 		id: "postgres",

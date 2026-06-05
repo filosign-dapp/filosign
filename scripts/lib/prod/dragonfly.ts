@@ -1,8 +1,4 @@
-import {
-	containerHealthOk,
-	dockerExec,
-	dockerState,
-} from "./ssh.ts";
+import { containerHealthOk, dockerExec, dockerState } from "./ssh.ts";
 import type { Action, ProbeResult, ProdContext } from "./types.ts";
 
 export async function probe(
@@ -66,7 +62,12 @@ async function info(ctx: ProdContext): Promise<ProbeResult> {
 	]);
 
 	const ok = memory.code === 0 && stats.code === 0;
-	const detail = [`--- memory ---`, memory.stdout, `--- stats ---`, stats.stdout]
+	const detail = [
+		`--- memory ---`,
+		memory.stdout,
+		`--- stats ---`,
+		stats.stdout,
+	]
 		.filter(Boolean)
 		.join("\n")
 		.trim();

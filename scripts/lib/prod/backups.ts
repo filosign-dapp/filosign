@@ -32,7 +32,8 @@ async function health(ctx: ProdContext): Promise<ProbeResult> {
 			action: "health",
 			ok: false,
 			summary: "pgbackrest check failed",
-			detail: [r.stdout, r.stderr].filter(Boolean).join("\n").trim() || undefined,
+			detail:
+				[r.stdout, r.stderr].filter(Boolean).join("\n").trim() || undefined,
 		};
 	}
 

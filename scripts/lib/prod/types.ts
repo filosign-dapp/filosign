@@ -1,9 +1,4 @@
-export type ServiceId =
-	| "postgres"
-	| "backups"
-	| "dragonfly"
-	| "api"
-	| "worker";
+export type ServiceId = "postgres" | "backups" | "dragonfly" | "api" | "worker";
 
 export type Action = "health" | "info";
 

@@ -85,7 +85,9 @@ async function info(ctx: ProdContext): Promise<ProbeResult> {
 
 	const detail = [
 		started.code === 0 ? `started: ${started.stdout}` : null,
-		curl.code === 0 ? `GET /health: ${curl.stdout}` : curl.stderr || curl.stdout,
+		curl.code === 0
+			? `GET /health: ${curl.stdout}`
+			: curl.stderr || curl.stdout,
 	]
 		.filter(Boolean)
 		.join("\n");

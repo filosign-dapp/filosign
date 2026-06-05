@@ -1,7 +1,7 @@
 import { die } from "../cli.ts";
 import {
-	ALL_SERVICES,
 	type Action,
+	ALL_SERVICES,
 	type ParsedProdArgv,
 	type ServiceId,
 } from "./types.ts";
@@ -58,10 +58,14 @@ export function parseProdArgv(argv: string[]): ParsedProdArgv {
 		return { kind: "migrate" };
 	}
 
-	const targets: ServiceId[] = hasAll ? [...ALL_SERVICES] : collectTargets(argv);
+	const targets: ServiceId[] = hasAll
+		? [...ALL_SERVICES]
+		: collectTargets(argv);
 
 	if (targets.length === 0) {
-		die("Specify a target (--pg, --pgbackup, --dfly, --api, --worker) or --all, or --migrate");
+		die(
+			"Specify a target (--pg, --pgbackup, --dfly, --api, --worker) or --all, or --migrate",
+		);
 	}
 
 	let action: Action = "health";

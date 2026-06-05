@@ -12,6 +12,41 @@ export const usersErrors = {
 		severity: "error",
 		defaultOrpcCode: "NOT_FOUND",
 	},
+	"USERS.SIGNATURE_UPLOAD_NOT_FOUND": {
+		title: "Signature upload not found",
+		description: "No uploaded signature image was found for this key.",
+		steps: [
+			"Upload the signature again using the presigned URL before saving.",
+		],
+		audience: "user",
+		severity: "error",
+		defaultOrpcCode: "BAD_REQUEST",
+	},
+	"USERS.SIGNATURE_STORAGE_KEY_MISMATCH": {
+		title: "Invalid signature storage key",
+		description: "The storage key does not match your wallet and file hash.",
+		steps: ["Retry the signature upload from the create page."],
+		audience: "user",
+		severity: "warning",
+		defaultOrpcCode: "BAD_REQUEST",
+	},
+	"USERS.SIGNATURE_ROLE_MISMATCH": {
+		title: "Signature role mismatch",
+		description: "This artifact cannot be set as the default for that role.",
+		steps: ["Choose a signature or initial artifact matching the role."],
+		audience: "user",
+		severity: "warning",
+		defaultOrpcCode: "BAD_REQUEST",
+	},
+	"USERS.SIGNATURE_IN_USE": {
+		title: "Signature in use",
+		description:
+			"This signature was used on a completed envelope and cannot be deleted.",
+		steps: ["Create a new signature instead of deleting this one."],
+		audience: "user",
+		severity: "warning",
+		defaultOrpcCode: "CONFLICT",
+	},
 	"USERS.EMAIL_REQUIRED": {
 		title: "Email address required",
 		description:

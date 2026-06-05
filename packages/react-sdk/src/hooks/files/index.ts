@@ -5,12 +5,16 @@ export type {
 } from "@filosign/shared";
 export type { AttachmentPacketDraft } from "../../lib/attachment-packets";
 export {
+	type BasicPayoutGate,
+	type BasicPayoutGateReason,
+	canAttachBasicPayout,
 	canSelectSupplementaryRecipients,
 	canUseAdvancedRouting,
 	canUseAdvancedSettlements,
 	canUseBasicSettlements,
 	canUseConditionalAttachmentRelease,
 	canUseSupplementaryAttachments,
+	resolveBasicPayoutGate,
 } from "../../lib/entitlements";
 export { buildValidatedRegisterRouting } from "../../lib/register-routing";
 export type { PieceFileDekSource } from "../../lib/resolve-piece-file-dek";
@@ -33,6 +37,7 @@ export {
 export type { SettlementRuleRow } from "../../lib/settlement-types.ts";
 export * from "./useAckFile";
 export * from "./useAttachSettlementForFile";
+export { useBasicPayoutAttachGate } from "./useBasicPayoutAttachGate";
 export * from "./useCancelAttachmentRule";
 export * from "./useCancelSettlementRule";
 export * from "./useCancelSignerReplacement";

@@ -14,9 +14,8 @@ export function PayoutFeatureAccessSection() {
 	const { data: entitlements } = useEntitlements();
 	const { activeOrgId, activeMembership } = useWorkspaceSettings();
 
-	const isTeamsProOrEnterprise =
-		entitlements?.planId === "teams_pro" ||
-		entitlements?.planId === "enterprise";
+	const isPaidPlan =
+		entitlements?.planId !== undefined && entitlements.planId !== "free";
 
 	const canManage =
 		activeMembership?.role === "owner" || activeMembership?.role === "admin";
@@ -40,13 +39,13 @@ export function PayoutFeatureAccessSection() {
 		canManage,
 	});
 
-	if (!activeOrgId || !isTeamsProOrEnterprise) return null;
+	if (!activeOrgId || !isPaidPlan) return null;
 
 	return (
 		<WorkspaceSection
 			icon={<CurrencyCircleDollarIcon className="size-4" aria-hidden="true" />}
 			title="Payout attachment access"
-			description="Optional USDC payout instructions on documents."
+			description="Optional USDC payout instructions on documents. Available on paid plans after Filosign review."
 		>
 			{accessQuery.isPending ? (
 				<p className="text-sm text-muted-foreground">Loading access status…</p>

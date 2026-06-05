@@ -200,6 +200,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		...disabledProductFeatures,
 		...soloSupplementaryFeatures,
 		"features.draft_review_links": { kind: "boolean", enabled: true },
+		"features.settlement.basic": { kind: "boolean", enabled: true },
 		...paidArchivalPurchase,
 	},
 	teams: {

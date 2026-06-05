@@ -161,7 +161,6 @@ describe("boolean features", () => {
 	const teamCollaboration: FeatureKey[] = [
 		"features.shared_templates",
 		"features.envelope.team_visibility",
-		"features.settlement.basic",
 	];
 
 	for (const key of teamCollaboration) {
@@ -173,6 +172,15 @@ describe("boolean features", () => {
 			expect(check(ctx("enterprise"), key).allowed).toBe(true);
 		});
 	}
+
+	test("features.settlement.basic enabled on all paid plans", () => {
+		const key = "features.settlement.basic" as const;
+		expect(check(ctx("free"), key).allowed).toBe(false);
+		expect(check(ctx("individual"), key).allowed).toBe(true);
+		expect(check(ctx("teams"), key).allowed).toBe(true);
+		expect(check(ctx("teams_pro"), key).allowed).toBe(true);
+		expect(check(ctx("enterprise"), key).allowed).toBe(true);
+	});
 
 	test("features.routing.advanced enabled on teams_pro and enterprise only", () => {
 		expect(check(ctx("teams"), "features.routing.advanced").allowed).toBe(

@@ -60,7 +60,7 @@ const MIN_PLAN_FOR_REASON: Record<
 > = {
 	"documents.sent.monthly": "individual",
 	"envelope.recipients.max": "individual",
-	"features.settlement.basic": "teams",
+	"features.settlement.basic": "individual",
 	"features.settlement.advanced": "teams_pro",
 	"features.routing.advanced": "teams_pro",
 	"features.shared_templates": "teams",

@@ -4,6 +4,7 @@ import {
 	type Address,
 	type Client,
 	createPublicClient,
+	custom,
 	type GetContractReturnType,
 	getContract,
 	type PublicClient,
@@ -92,13 +93,11 @@ function getKeyedClient<T extends Client | WalletClient>(
 	chainKey: ChainKey,
 ) {
 	const chain = VIEM_CHAIN_BY_KEY[chainKey];
+	const source = client as Client;
 	return {
 		public: createPublicClient({
 			chain,
-			transport: () => ({
-				config: (client as Client).transport,
-				request: (client as Client).request,
-			}),
+			transport: custom(source),
 		}),
 		wallet: client,
 	} as FilosignKeyedContractClient;

@@ -216,7 +216,7 @@ async function insertUserInvite(args: {
 }
 
 export const zSharingRequestInviteBody = z.object({
-	inviteeEmail: z.string().email("Please provide a valid email address"),
+	inviteeEmail: z.email({ error: "Please provide a valid email address" }),
 	message: z.string().max(500).nullable().optional(),
 });
 

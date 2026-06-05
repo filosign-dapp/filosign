@@ -182,7 +182,7 @@ export async function platformAdminInvitesRevoke(
 	inviteId: string,
 ) {
 	await assertPlatformAdmin(adminWallet);
-	const parsedId = z.string().uuid("inviteId required").safeParse(inviteId);
+	const parsedId = z.uuid({ error: "inviteId required" }).safeParse(inviteId);
 	if (parsedId.error) {
 		throwZodBadRequest(parsedId.error);
 	}
@@ -195,7 +195,7 @@ export async function platformAdminInvitesRebook(
 	inviteId: string,
 ) {
 	await assertPlatformAdmin(adminWallet);
-	const parsedId = z.string().uuid("inviteId required").safeParse(inviteId);
+	const parsedId = z.uuid({ error: "inviteId required" }).safeParse(inviteId);
 	if (parsedId.error) {
 		throwZodBadRequest(parsedId.error);
 	}
@@ -317,7 +317,7 @@ export async function platformAdminAccessRequestsReject(
 	requestId: string,
 ) {
 	await assertPlatformAdmin(adminWallet);
-	const parsedId = z.string().uuid("requestId required").safeParse(requestId);
+	const parsedId = z.uuid({ error: "requestId required" }).safeParse(requestId);
 	if (parsedId.error) {
 		throwZodBadRequest(parsedId.error);
 	}

@@ -8,4 +8,6 @@ export const CLIENT_ANALYTICS_EVENTS = {
 	envelopeSendSucceeded: "envelope_send_succeeded",
 	coldShareDialogShown: "cold_share_dialog_shown",
 	envelopePostSendDialogShown: "envelope_post_send_dialog_shown",
+	signatureCreated: "signature_created",
+	signatureApplied: "signature_applied",
 } as const;

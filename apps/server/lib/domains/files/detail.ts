@@ -1,11 +1,13 @@
+import { check } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
 import { zPlacementManifest } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import { z } from "zod";
 import { listSupplementaryPacketsForParticipant } from "@/lib/domains/attachments";
+import { resolveEntitlementContext } from "@/lib/domains/entitlements";
 import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs";
 import {
 	buildComplianceBundleAndHash,
@@ -21,7 +23,9 @@ import {
 	ExportDocumentSha256MismatchError,
 	isComplianceExportAllowed,
 } from "./utils/compliance-export";
+import { listPieceFieldCompletions } from "./utils/field-completions";
 import {
+	backfillFileFinalizationFromChain,
 	getDocumentView,
 	getValidAck,
 	listConditionalAttachmentPacketsForSender,
@@ -30,6 +34,7 @@ import {
 
 const {
 	complianceExportLogs,
+	fileComments,
 	fileParticipants,
 	fileSignatures,
 	files,
@@ -259,6 +264,32 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		.orderBy(desc(complianceExportLogs.createdAt))
 		.limit(1);
 
+	const senderEntitlementCtx = await resolveEntitlementContext(
+		senderWallet,
+		fileRecord.organizationId,
+	);
+	const commentsFeatureEnabled = check(
+		senderEntitlementCtx,
+		"features.comments",
+	).allowed;
+
+	const [senderCommentRow] = await db
+		.select({ id: fileComments.id })
+		.from(fileComments)
+		.where(
+			and(
+				eq(fileComments.filePieceCid, pieceCid),
+				eq(fileComments.authorWallet, senderWallet),
+			),
+		)
+		.limit(1);
+	const hasSenderComments = Boolean(senderCommentRow);
+
+	const fieldCompletions =
+		manifestUnlocked || canReadOrg
+			? await listPieceFieldCompletions(pieceCid)
+			: undefined;
+
 	return {
 		pieceCid: fileRecord.pieceCid,
 		registryAddress: fileRecord.registryAddress,
@@ -320,7 +351,7 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		orgEncryptedEncryptionKey: canReadOrg
 			? fileRecord.orgEncryptedEncryptionKey
 			: null,
-		organizationId: canReadOrg ? fileRecord.organizationId : null,
+		organizationId: canReadOrg || isSender ? fileRecord.organizationId : null,
 		focStatus: focRow
 			? {
 					lifecycle: focRow.lifecycle,
@@ -337,6 +368,9 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 					documentSha256: latestExport.documentSha256,
 				}
 			: null,
+		commentsFeatureEnabled,
+		hasSenderComments,
+		...(fieldCompletions ? { fieldCompletions } : {}),
 	};
 }
 
@@ -370,6 +404,8 @@ export async function pieceComplianceBundle(args: {
 			pieceCid: files.pieceCid,
 			sender: files.sender,
 			documentSha256: files.documentSha256,
+			registryAddress: files.registryAddress,
+			registerRoutingJson: files.registerRoutingJson,
 			completedAt: files.completedAt,
 			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
 		})
@@ -394,7 +430,23 @@ export async function pieceComplianceBundle(args: {
 		}
 		throw e;
 	}
-	if (!isComplianceExportAllowed(fileRecord)) {
+	let exportAllowed = isComplianceExportAllowed(fileRecord);
+	if (!exportAllowed) {
+		const envelopeProgress = await readEnvelopeRegistryProgress({
+			pieceCid,
+			registryAddress: getAddress(fileRecord.registryAddress),
+			registerRouting: fileRecord.registerRoutingJson ?? undefined,
+		});
+		exportAllowed = isComplianceExportAllowed(fileRecord, envelopeProgress);
+		if (exportAllowed && envelopeProgress) {
+			await backfillFileFinalizationFromChain({
+				pieceCid,
+				file: fileRecord,
+				progress: envelopeProgress,
+			});
+		}
+	}
+	if (!exportAllowed) {
 		throwAppError("FILES.COMPLIANCE_EXPORT_NOT_ALLOWED");
 	}
 

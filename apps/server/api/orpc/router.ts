@@ -128,6 +128,7 @@ import {
 	zUserRegisterBody,
 	zUserSetPrimaryEmailBody,
 	zUserSignatureCreateBody,
+	zUserSignatureSetDefaultBody,
 	zUserSyncThirdwebEmailBody,
 } from "./schemas/procedure-inputs";
 import { zViemChain } from "./schemas/runtime-output";
@@ -1306,7 +1307,7 @@ export const appRouter = {
 				.input(zUserSignatureCreateBody)
 				.output(out.users.signaturesCreate)
 				.handler(({ context, input }) =>
-					userHandlers.userSignaturesCreate(context.userWallet, input),
+					userHandlers.userSignatureCreate(context.userWallet, input),
 				),
 			list: authenticatedProcedure
 				.output(out.users.signaturesList)
@@ -1314,10 +1315,22 @@ export const appRouter = {
 					userHandlers.userSignaturesList(context.userWallet),
 				),
 			get: authenticatedProcedure
-				.input(z.object({ id: z.string().min(1) }))
+				.input(z.object({ id: z.uuid() }))
 				.output(out.users.signaturesGet)
 				.handler(({ context, input }) =>
-					userHandlers.userSignaturesGetById(context.userWallet, input.id),
+					userHandlers.userSignatureGetById(context.userWallet, input.id),
+				),
+			setDefault: authenticatedProcedure
+				.input(zUserSignatureSetDefaultBody)
+				.output(out.users.signaturesSetDefault)
+				.handler(({ context, input }) =>
+					userHandlers.userSignatureSetDefault(context.userWallet, input),
+				),
+			delete: authenticatedProcedure
+				.input(z.object({ id: z.uuid() }))
+				.output(out.users.signaturesDelete)
+				.handler(({ context, input }) =>
+					userHandlers.userSignatureDelete(context.userWallet, input.id),
 				),
 		},
 	},

@@ -1,18 +1,42 @@
-import { useEntitlements } from "@filosign/react/billing";
 import type { PieceFileDekSource } from "@filosign/react/files";
+import type { AppRouterClient, InferClientOutputs } from "@filosign/react/orpc";
 import { useState } from "react";
 import {
 	FileCommentsSheet,
 	FileCommentsTrigger,
 } from "@/src/lib/domains/files/file-comments-sheet";
 
+type PieceDetailOutput =
+	InferClientOutputs<AppRouterClient>["files"]["piece"]["detail"];
+
+type PieceDetailDekFields = Pick<
+	PieceDetailOutput,
+	| "pieceCid"
+	| "kemCiphertext"
+	| "encryptedEncryptionKey"
+	| "orgKemCiphertext"
+	| "orgEncryptedEncryptionKey"
+	| "organizationId"
+>;
+
+type SignPageCommentVisibility = Pick<
+	PieceDetailOutput,
+	"commentsFeatureEnabled" | "hasSenderComments"
+>;
+
 export function EnvelopeCommentsBlock(props: {
 	pieceCid: string;
 	dekSource: PieceFileDekSource | null | undefined;
+	/** Sender org plan allows comments (from pieceDetail). */
+	commentsFeatureEnabled?: boolean;
+	/** Sign page: gate on envelope org plan + existing sender comments. */
+	signPageVisibility?: SignPageCommentVisibility;
 }) {
 	const [open, setOpen] = useState(false);
-	const { data: entitlements } = useEntitlements();
-	const enabled = Boolean(entitlements?.features["features.comments"]?.enabled);
+	const enabled = props.signPageVisibility
+		? props.signPageVisibility.commentsFeatureEnabled &&
+			props.signPageVisibility.hasSenderComments
+		: Boolean(props.commentsFeatureEnabled);
 	const canDecrypt = Boolean(
 		props.dekSource &&
 			((props.dekSource.orgKemCiphertext && props.dekSource.organizationId) ||
@@ -40,14 +64,31 @@ export function EnvelopeCommentsBlock(props: {
 	);
 }
 
-export function pieceDetailToDekSource(file: {
-	pieceCid: string;
-	kemCiphertext?: string | null;
-	encryptedEncryptionKey?: string | null;
-	orgKemCiphertext?: string | null;
-	orgEncryptedEncryptionKey?: string | null;
-	organizationId?: string | null;
-}): PieceFileDekSource {
+type SignPageCommentFile = PieceDetailDekFields &
+	Pick<PieceDetailOutput, "commentsFeatureEnabled" | "hasSenderComments">;
+
+export function SignPageEnvelopeCommentsBlock(props: {
+	file: SignPageCommentFile | null | undefined;
+}) {
+	if (!props.file?.pieceCid) {
+		return null;
+	}
+
+	return (
+		<EnvelopeCommentsBlock
+			pieceCid={props.file.pieceCid}
+			dekSource={pieceDetailToDekSource(props.file)}
+			signPageVisibility={{
+				commentsFeatureEnabled: props.file.commentsFeatureEnabled ?? false,
+				hasSenderComments: props.file.hasSenderComments ?? false,
+			}}
+		/>
+	);
+}
+
+export function pieceDetailToDekSource(
+	file: PieceDetailDekFields,
+): PieceFileDekSource {
 	return {
 		pieceCid: file.pieceCid,
 		kemCiphertext: file.kemCiphertext ?? null,

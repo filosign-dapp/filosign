@@ -339,3 +339,43 @@ export function envelopeRoutingCompleteFromProgress(
 ): boolean {
 	return progress.completedAt != null;
 }
+
+function chainTimestampToDate(unixSeconds: number): Date {
+	return unixSeconds > 1 ? new Date(unixSeconds * 1000) : new Date();
+}
+
+/** Sync DB finalization timestamps when chain is ahead of Postgres. */
+export async function backfillFileFinalizationFromChain(args: {
+	pieceCid: string;
+	file: {
+		completedAt: Date | null;
+		revokedBeforeCompletedAt: Date | null;
+	};
+	progress: EnvelopeRegistryProgress;
+}): Promise<void> {
+	const updates: {
+		completedAt?: Date;
+		revokedBeforeCompletedAt?: Date;
+		updatedAt: Date;
+	} = { updatedAt: new Date() };
+
+	if (args.file.completedAt == null && args.progress.completedAt != null) {
+		updates.completedAt = chainTimestampToDate(args.progress.completedAt);
+		updates.updatedAt = updates.completedAt;
+	}
+	if (
+		args.file.revokedBeforeCompletedAt == null &&
+		args.progress.revokedBeforeCompletedAt != null
+	) {
+		updates.revokedBeforeCompletedAt = chainTimestampToDate(
+			args.progress.revokedBeforeCompletedAt,
+		);
+		updates.updatedAt = updates.revokedBeforeCompletedAt;
+	}
+
+	const hasBackfill =
+		updates.completedAt != null || updates.revokedBeforeCompletedAt != null;
+	if (!hasBackfill) return;
+
+	await db.update(files).set(updates).where(eq(files.pieceCid, args.pieceCid));
+}

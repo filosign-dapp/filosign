@@ -1,5 +1,5 @@
 import { throwAppError } from "@filosign/errors/server";
-import { zPlacementManifest } from "@filosign/shared";
+import { zFieldCompletionMap, zPlacementManifest } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
@@ -7,12 +7,14 @@ import z from "zod";
 import db from "@/lib/platform/db";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { primaryEmailForWallet } from "./invites";
+import { parseFieldCompletionMap } from "./utils/field-completions";
 import { requireAckForParticipantAccess } from "./utils/piece-helpers";
 
 const { files, fileParticipants, fileSignerDrafts } = db.schema;
 
 export const zPieceSignDraftPutBody = z.object({
 	completedFieldIds: z.array(z.string()),
+	fieldCompletions: zFieldCompletionMap.optional(),
 });
 
 export async function pieceSignDraftGet(userWallet: Address, pieceCid: string) {
@@ -63,7 +65,10 @@ export async function pieceSignDraftGet(userWallet: Address, pieceCid: string) {
 	);
 
 	const [draft] = await db
-		.select({ completedFieldIds: fileSignerDrafts.completedFieldIds })
+		.select({
+			completedFieldIds: fileSignerDrafts.completedFieldIds,
+			fieldCompletions: fileSignerDrafts.fieldCompletions,
+		})
 		.from(fileSignerDrafts)
 		.where(
 			and(
@@ -74,8 +79,12 @@ export async function pieceSignDraftGet(userWallet: Address, pieceCid: string) {
 
 	const stored = draft?.completedFieldIds ?? [];
 	const completedFieldIds = stored.filter((id) => allowedIds.has(id));
+	const fieldCompletionsRaw = draft?.fieldCompletions ?? {};
+	const fieldCompletions = Object.fromEntries(
+		Object.entries(fieldCompletionsRaw).filter(([id]) => allowedIds.has(id)),
+	);
 
-	return { completedFieldIds };
+	return { completedFieldIds, fieldCompletions };
 }
 
 export async function pieceSignDraftPut(args: {
@@ -87,7 +96,8 @@ export async function pieceSignDraftPut(args: {
 	if (parsedBody.error) {
 		throwZodBadRequest(parsedBody.error);
 	}
-	const { completedFieldIds: bodyIds } = parsedBody.data;
+	const { completedFieldIds: bodyIds, fieldCompletions: bodyCompletions } =
+		parsedBody.data;
 	const pieceCid = args.pieceCid;
 	const userWallet = args.userWallet;
 
@@ -151,6 +161,24 @@ export async function pieceSignDraftPut(args: {
 		}
 	}
 
+	const fieldCompletions = bodyCompletions
+		? parseFieldCompletionMap(bodyCompletions)
+		: {};
+	for (const id of Object.keys(fieldCompletions)) {
+		if (!allowedIds.has(id)) {
+			throwZodBadRequest(
+				new z.ZodError([
+					{
+						code: "custom",
+						message:
+							"fieldCompletions keys must match manifest fields for signer",
+						path: ["fieldCompletions"],
+					},
+				]),
+			);
+		}
+	}
+
 	const completedFieldIds = [...new Set(bodyIds)];
 	const now = new Date();
 
@@ -160,6 +188,7 @@ export async function pieceSignDraftPut(args: {
 			filePieceCid: pieceCid,
 			wallet: participantRecord.wallet,
 			completedFieldIds,
+			fieldCompletions,
 			createdAt: now,
 			updatedAt: now,
 		})
@@ -167,9 +196,10 @@ export async function pieceSignDraftPut(args: {
 			target: [fileSignerDrafts.filePieceCid, fileSignerDrafts.wallet],
 			set: {
 				completedFieldIds,
+				fieldCompletions,
 				updatedAt: now,
 			},
 		});
 
-	return { completedFieldIds };
+	return { completedFieldIds, fieldCompletions };
 }

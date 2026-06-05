@@ -21,10 +21,14 @@
 	},
 	"peerDependencies": {
 		"@orpc/server": "catalog:",
+		"react": "catalog:",
 		"sonner": ">=2.0.0"
 	},
 	"peerDependenciesMeta": {
 		"@orpc/server": {
+			"optional": true
+		},
+		"react": {
 			"optional": true
 		},
 		"sonner": {
@@ -34,6 +38,8 @@
 	"devDependencies": {
 		"@orpc/server": "catalog:",
 		"@types/bun": "catalog:",
+		"@types/react": "catalog:",
+		"react": "catalog:",
 		"sonner": "2.0.7",
 		"typescript": "catalog:"
 	}

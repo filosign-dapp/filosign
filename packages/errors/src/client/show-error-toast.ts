@@ -4,6 +4,8 @@ import type { PresentedError } from "../types";
 export type ShowErrorToastOptions = {
 	/** When true, append devDetail below description */
 	devMode?: boolean;
+	/** In-app navigation for support URLs (e.g. dashboard SPA). Falls back to window.open. */
+	onSupportClick?: (url: string) => void;
 };
 
 export function showErrorToast(
@@ -29,7 +31,12 @@ export function showErrorToast(
 					label: "Help",
 					onClick: () => {
 						const url = presented.supportUrl;
-						if (url) window.open(url, "_blank", "noopener,noreferrer");
+						if (!url) return;
+						if (options.onSupportClick) {
+							options.onSupportClick(url);
+							return;
+						}
+						window.open(url, "_blank", "noopener,noreferrer");
 					},
 				}
 			: undefined,

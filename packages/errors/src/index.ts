@@ -22,6 +22,13 @@ export {
 export { isValidationOrpcError } from "./is-validation-orpc-error";
 export { presentError } from "./present-error";
 export { resolveSupportUrl } from "./resolve-support-url";
+export {
+	listSupportCenterEntries,
+	SUPPORT_CATEGORIES,
+	type SupportCategory,
+	type SupportCenterEntry,
+	supportCategoryForCode,
+} from "./support-center";
 export type {
 	ErrorAudience,
 	ErrorDefinition,

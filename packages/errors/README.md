@@ -1,11 +1,11 @@
 # @filosign/errors
 
-User-facing error catalog for Filosign (toasts + Astro help articles).
+User-facing error catalog for Filosign (toasts + dashboard Support Center).
 
 ## Add a user-facing error
 
 1. Add entry to `src/catalog/*.ts` with `audience: "user"` and `supportSlug`.
-2. Add `apps/astro/src/content/help-errors/{supportSlug}.mdx` (one MDX source per catalog code; rendered on `/help` in an accordion; toast Help links use `/help#{supportSlug}`).
+2. Add `apps/astro/src/content/help-errors/{supportSlug}.mdx` (authoring copy + MDX sync tests; dashboard + `/docs/troubleshooting` read the catalog via `listSupportCenterEntries()`). Toast Help links use `/dashboard/support#{supportSlug}`.
 
 Help steps must match real UI and server checks in the repo (no assumed flows like page-by-page scroll unless the product implements them).
 3. Server: `throwAppError("YOUR.CODE", { params? })` from `@filosign/errors/server`.
@@ -15,7 +15,7 @@ Help steps must match real UI and server checks in the repo (no assumed flows li
 
 - `@filosign/errors` — catalog, `presentError`, `isValidationOrpcError`
 - `@filosign/errors/server` — `throwAppError`
-- `@filosign/errors/client` — `showErrorToast` (requires `sonner`)
+- `@filosign/errors/client` — `showErrorToast` (requires `sonner`), `SupportCenterPanel` (catalog troubleshooting UI for dashboard + Astro docs)
 
 Internal failures: do not add user MDX; client shows `GENERIC.UNKNOWN`.
 

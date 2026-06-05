@@ -30,17 +30,43 @@ Ranked **high → low**. Keep bullets actionable; link detail docs in `project/e
 
 ---
 
-## Planned entitlement features (catalog only — not shipped)
+## Entitlement catalog inventory
 
-These keys remain in the entitlements catalog for marketing/comparison but have **no product implementation** yet (do not confuse with **`features.comments`**, shipped as post-send E2EE envelope threads, or **`features.draft_comments`**, shipped on compose):
+Source of truth: [`packages/entitlements/src/features.ts`](../packages/entitlements/src/features.ts) · plan matrix in [`catalog/v1.ts`](../packages/entitlements/src/catalog/v1.ts).
 
-- `features.bulk_send` — CSV bulk send
-- `features.webhooks` — outbound webhooks
-- `features.integrations.custom` — custom integrations
-- `features.template_folders` — shared template folders
-- `features.branding.custom` — custom sign-page branding
-- `features.metadata.tags` — envelope metadata tags
-- `features.quota_allocation` — seat quota allocation UI
+### Shipped (product implementation exists)
+
+| Key | Notes |
+|-----|--------|
+| `documents.sent.monthly` | Quota enforced on register / list-upload |
+| `envelope.recipients.max` | Max signers enforced at register |
+| `features.shared_templates` | Org template CRUD; `assertEntitlement` in connections-templates |
+| `features.team_drafts` | Org envelope drafts (`envelope_drafts`); org permission gated (no separate entitlement assert) |
+| `features.draft_review_links` | External draft share links; `assertEntitlement` in drafts/share |
+| `features.draft_comments` | E2EE comments on compose drafts; `assertEntitlement` in drafts/share |
+| `features.comments` | Post-send E2EE envelope threads; `assertEntitlement` in files/comments |
+| `features.envelope.team_visibility` | Org members read org envelopes via `canReadOrg` (no separate entitlement assert) |
+| `features.routing.advanced` | Sequential order + quorum at register; `assertEntitlement` in files/register |
+| `features.settlement.basic` | USDC payout packets; `assertEntitlement` in settlements utils |
+| `features.settlement.advanced` | Multi-recipient / advanced release rules; settlements utils |
+| `features.supplementary_attachments` | Gated file packets; `assertEntitlement` in attachments/register |
+| `features.supplementary_attachments.recipient_select` | Per-packet recipient picker (Teams Pro) |
+| `features.supplementary_attachments.conditional_release` | Signature-conditional release (Teams Pro) |
+| `features.archival.purchase` | Long-term storage purchase; `assertEntitlement` in archival |
+
+**Pricing matrix gap (shipped but not yet in comparison table):** supplementary attachment keys above — add rows when refreshing pricing UI.
+
+### Catalog only — not shipped (keep in entitlements; hidden on pricing page until built)
+
+| Key | Planned work |
+|-----|----------------|
+| `features.integrations.custom` | Custom integrations / embed API |
+| `features.quota_allocation` | Seat quota allocation UI |
+| `features.bulk_send` | CSV bulk send |
+| `features.template_folders` | Shared template folders |
+| `features.branding.custom` | Custom sign-page branding |
+| `features.webhooks` | Outbound webhooks |
+| `features.metadata.tags` | Envelope metadata tags |
 
 **Related gaps (not separate catalog flags):** rich placement field value types beyond current set; `files.remindSigners` reminder automation; **optional signers** (blocked on-chain — `OptionalSignersNotSupported` in v1; use sequential routing + quorum only).
 

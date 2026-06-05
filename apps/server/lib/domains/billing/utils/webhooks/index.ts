@@ -28,14 +28,14 @@ export function assertTimestampWithinTolerance(
 ) {
 	const parsed = parseDeliveryTimestamp(timestamp);
 	if (!parsed) {
-		throw new ORPCError("UNAUTHORIZED", {
+		throw new ORPCError("UNAUTHORIZED" /* error-audit-allow */, {
 			message: "Webhook timestamp is invalid",
 		});
 	}
 
 	const deltaMs = Math.abs(Date.now() - parsed.getTime());
 	if (deltaMs > toleranceMs) {
-		throw new ORPCError("UNAUTHORIZED", {
+		throw new ORPCError("UNAUTHORIZED" /* error-audit-allow */, {
 			message: "Webhook timestamp is outside tolerance window",
 		});
 	}
@@ -177,7 +177,7 @@ export async function ackDodoWebhook(args: {
 	try {
 		event = unwrapDodoWebhookEvent(args);
 	} catch (error) {
-		throw new ORPCError("UNAUTHORIZED", {
+		throw new ORPCError("UNAUTHORIZED" /* error-audit-allow */, {
 			message: "Invalid Dodo webhook signature",
 			cause: error,
 		});
@@ -203,7 +203,7 @@ export async function ackDodoWebhook(args: {
 			},
 			"unknown dodo product id",
 		);
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Unknown Dodo product id",
 		});
 	}

@@ -1,5 +1,5 @@
+import { throwAppError } from "@filosign/errors/server";
 import { draftDocumentKey, draftSnapshotKey } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { logDraftSave } from "../save";
 
 export type DraftStorageProbe = {
@@ -38,10 +38,7 @@ export async function assertDraftObjectExists(
 	const ok = await existsWithRetry(key, probe, attempts, delayMs);
 	logDraftSave("s3.exists", { s3Key: key, ok, attempts });
 	if (!ok) {
-		throw new ORPCError("PRECONDITION_FAILED", {
-			message: "Draft storage object is missing; upload before saving",
-			data: { s3Key: key },
-		});
+		throwAppError("FILES.UPLOAD_MISSING");
 	}
 }
 
@@ -71,10 +68,7 @@ export async function assertDraftDocumentsExistOnS3(args: {
 			const delayMs = retry?.delayMs ?? defaultDelayMs;
 			const ok = await existsWithRetry(s3Key, probe, attempts, delayMs);
 			if (!ok) {
-				throw new ORPCError("PRECONDITION_FAILED", {
-					message: `Document "${docId}" is not uploaded yet. Upload the file before saving.`,
-					data: { docId, s3Key },
-				});
+				throwAppError("FILES.UPLOAD_MISSING");
 			}
 		}),
 	);

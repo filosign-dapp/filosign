@@ -1,8 +1,10 @@
+import { throwAppError } from "@filosign/errors/server";
 import { zPlacementManifest } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import { z } from "zod";
 import { listSupplementaryPacketsForParticipant } from "@/lib/domains/attachments";
 import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs";
 import {
@@ -11,6 +13,7 @@ import {
 } from "@/lib/platform/compliance";
 import db from "@/lib/platform/db";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { primaryEmailForWallet } from "./invites";
 import { readPendingSignerReplacementForPiece } from "./signer-replacement";
 import {
@@ -69,7 +72,7 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		.where(eq(fileParticipants.filePieceCid, pieceCid));
 
 	if (!fileRecord) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throwAppError("FILES.NOT_FOUND");
 	}
 	const userWalletNorm = getAddress(userWallet);
 	const participantUser = participants.find(
@@ -85,9 +88,7 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		));
 
 	if (!participantUser && !orgRead) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "You dont have access to this file",
-		});
+		throwAppError("FILES.FORBIDDEN");
 	}
 
 	const fileSignaturesRecord = await db
@@ -376,7 +377,7 @@ export async function pieceComplianceBundle(args: {
 		.where(eq(files.pieceCid, pieceCid));
 
 	if (!fileRecord) {
-		throw new ORPCError("NOT_FOUND", { message: "File not found" });
+		throwAppError("FILES.NOT_FOUND");
 	}
 	try {
 		assertExportDocumentSha256Matches({
@@ -385,15 +386,16 @@ export async function pieceComplianceBundle(args: {
 		});
 	} catch (e) {
 		if (e instanceof ExportDocumentSha256MismatchError) {
-			throw new ORPCError("BAD_REQUEST", { message: e.message });
+			throwZodBadRequest(
+				new z.ZodError([
+					{ code: "custom", message: e.message, path: ["documentSha256"] },
+				]),
+			);
 		}
 		throw e;
 	}
 	if (!isComplianceExportAllowed(fileRecord)) {
-		throw new ORPCError("FORBIDDEN", {
-			message:
-				"Compliance export is available only after the envelope is fully executed or voided",
-		});
+		throwAppError("FILES.COMPLIANCE_EXPORT_NOT_ALLOWED");
 	}
 
 	const userWalletNorm = getAddress(args.userWallet);
@@ -401,9 +403,7 @@ export async function pieceComplianceBundle(args: {
 		(p) => getAddress(p.wallet) === userWalletNorm,
 	);
 	if (!participantUser) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "You dont have access to this file",
-		});
+		throwAppError("FILES.FORBIDDEN");
 	}
 
 	const participantRows = participants.map((p) => ({
@@ -424,7 +424,7 @@ export async function pieceComplianceBundle(args: {
 		}),
 	);
 	if (bundleRes.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message:
 				bundleRes.error instanceof Error
 					? bundleRes.error.message
@@ -447,7 +447,7 @@ export async function pieceComplianceBundle(args: {
 		}),
 	);
 	if (logRes.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to log compliance export",
 		});
 	}

@@ -1,5 +1,5 @@
+import { throwAppError } from "@filosign/errors/server";
 import { zHexString } from "@filosign/shared/zod";
-import { ORPCError } from "@orpc/server";
 import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -13,6 +13,7 @@ import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
 import db from "@/lib/platform/db";
 import { sendDraftReviewInviteEmail } from "@/lib/platform/email";
 import { bucket } from "@/lib/platform/s3/client";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import {
 	assertCanReadDraft,
 	assertDraftCreator,
@@ -79,14 +80,12 @@ export async function draftsShareExternal(
 ) {
 	const parsed = zDraftShareExternalBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	const draft = await loadDraftOrThrow(parsed.data.draftId);
 	if (draft.organizationId !== activeOrg.organizationId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "X-Org-Id must match this org draft",
-		});
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 	await assertDraftCreator(wallet, draft);
 
@@ -98,9 +97,15 @@ export async function draftsShareExternal(
 	assertEntitlement(entitlementCtx, "features.draft_review_links");
 
 	if (!draft.headSnapshotS3Key) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Save the draft before sharing",
-		});
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: "Save the draft before sharing",
+					path: ["headSnapshotS3Key"],
+				},
+			]),
+		);
 	}
 
 	const senderWallet = getAddress(wallet);
@@ -204,9 +209,7 @@ export async function draftsListExternalShares(
 ) {
 	const draft = await loadDraftOrThrow(draftId);
 	if (draft.organizationId !== activeOrg.organizationId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "X-Org-Id must match this org draft",
-		});
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 	await assertDraftCreator(wallet, draft);
 
@@ -235,7 +238,7 @@ export async function draftsRevokeExternalShare(
 ) {
 	const parsed = zDraftRevokeExternalShareBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	const [share] = await db
@@ -248,14 +251,12 @@ export async function draftsRevokeExternalShare(
 		.limit(1);
 
 	if (!share) {
-		throw new ORPCError("NOT_FOUND", { message: "Share not found" });
+		throwAppError("DRAFTS.SHARE_NOT_FOUND");
 	}
 
 	const draft = await loadDraftOrThrow(share.draftId);
 	if (draft.organizationId !== activeOrg.organizationId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "X-Org-Id must match this org draft",
-		});
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 	await assertDraftCreator(wallet, draft);
 
@@ -269,7 +270,15 @@ export async function draftsRevokeExternalShare(
 
 export async function draftsReviewByToken(inviteToken: string) {
 	if (!inviteToken || inviteToken.length < 8) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid invite" });
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: "Invalid invite token",
+					path: ["inviteToken"],
+				},
+			]),
+		);
 	}
 
 	const [share] = await db
@@ -293,12 +302,12 @@ export async function draftsReviewByToken(inviteToken: string) {
 		.limit(1);
 
 	if (!share) {
-		throw new ORPCError("NOT_FOUND", { message: "Invite not found" });
+		throwAppError("DRAFTS.INVITE_NOT_FOUND");
 	}
 
 	const draft = await loadDraftOrThrow(share.draftId);
 	if (draft.status !== "active" || !draft.headSnapshotS3Key) {
-		throw new ORPCError("NOT_FOUND", { message: "Draft not available" });
+		throwAppError("DRAFTS.NOT_FOUND");
 	}
 
 	if (share.accessKind === "warm") {
@@ -312,7 +321,7 @@ export async function draftsReviewByToken(inviteToken: string) {
 	}
 
 	if (!share.wrappedDek) {
-		throw new ORPCError("NOT_FOUND", { message: "Invite not found" });
+		throwAppError("DRAFTS.INVITE_NOT_FOUND");
 	}
 
 	const snapshotDownloadUrl = bucket.presign(draft.headSnapshotS3Key, {
@@ -353,7 +362,15 @@ export async function draftsReviewForWallet(
 	inviteToken: string,
 ) {
 	if (!inviteToken || inviteToken.length < 8) {
-		throw new ORPCError("BAD_REQUEST", { message: "Invalid invite" });
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: "Invalid invite token",
+					path: ["inviteToken"],
+				},
+			]),
+		);
 	}
 
 	const walletNorm = getAddress(wallet);
@@ -371,14 +388,12 @@ export async function draftsReviewForWallet(
 		.limit(1);
 
 	if (!share?.kemCiphertext || !share.encryptedDek) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "Warm draft invite not found for this wallet",
-		});
+		throwAppError("DRAFTS.INVITE_NOT_FOUND");
 	}
 
 	const draft = await loadDraftOrThrow(share.draftId);
 	if (draft.status !== "active" || !draft.headSnapshotS3Key) {
-		throw new ORPCError("NOT_FOUND", { message: "Draft not available" });
+		throwAppError("DRAFTS.NOT_FOUND");
 	}
 
 	const documents = await db
@@ -418,9 +433,7 @@ export async function draftsCommentsList(
 ) {
 	const draft = await loadDraftOrThrow(draftId);
 	if (draft.organizationId !== activeOrg.organizationId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "X-Org-Id must match this org draft",
-		});
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 	await assertCanReadDraft({ wallet, draft, activeOrg });
 
@@ -452,14 +465,12 @@ export async function draftsCommentsAppend(
 ) {
 	const parsed = zDraftCommentAppendBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	const draft = await loadDraftOrThrow(parsed.data.draftId);
 	if (draft.organizationId !== activeOrg.organizationId) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "X-Org-Id must match this org draft",
-		});
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 	await assertCanReadDraft({ wallet, draft, activeOrg });
 

@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import { z } from "zod";
@@ -29,6 +28,7 @@ import {
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 export async function billingEntitlements(
 	wallet: Address,
@@ -92,7 +92,7 @@ export async function billingPreviewMarketingCheckout(body: unknown) {
 		.safeParse(body);
 
 	if (parsed.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	return previewMarketingCheckout(parsed.data);
@@ -191,7 +191,7 @@ export async function billingRequestCheckoutLink(body: unknown) {
 		.safeParse(body);
 
 	if (parsed.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	await assertMarketingCheckoutAllowed({
@@ -205,7 +205,7 @@ export async function billingRequestCheckoutLink(body: unknown) {
 export async function billingResendSetupLink(body: unknown) {
 	const parsed = z.object({ email: z.email() }).safeParse(body);
 	if (parsed.error) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 	return resendPaidSetupLink(parsed.data);
 }

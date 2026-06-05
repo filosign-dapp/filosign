@@ -1,5 +1,4 @@
 import { zHexString } from "@filosign/shared/zod";
-import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -9,6 +8,7 @@ import {
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
 import db from "@/lib/platform/db";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { assertPieceReadAccess } from "./utils/piece-read-access";
 
 const { fileComments } = db.schema;
@@ -50,7 +50,7 @@ export async function fileCommentsAppend(
 ) {
 	const parsed = zFileCommentAppendBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	const { organizationId } = await assertPieceReadAccess(

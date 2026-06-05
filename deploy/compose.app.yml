@@ -8,17 +8,16 @@ x-filosign-image: &filosign-image
   image: ${FILOSIGN_IMAGE:-filosign/server:local}
 
 # Dokploy project env is NOT auto-injected into containers — list passthrough + ${VAR} here.
-# App secrets (DEPLOYMENT, S3_*, THIRDWEB_*, …) load at runtime via infisical-entrypoint.sh.
+# PG_URI, DB_NAME, DEPLOYMENT, S3_*, THIRDWEB_*, … come from Infisical at runtime (entrypoint).
+# Optional Dokploy override: set PG_URI + DB_NAME here only if not using Infisical for DB.
 x-app-env: &app-env
   DRAGONFLY_URL: redis://dragonfly:6379
-  PG_URI: postgresql://${POSTGRES_USER:-filosign}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in Dokploy}@postgres:5432/:dbname
-  DB_NAME: ${POSTGRES_DB:-filosign}
   INFISICAL_CLIENT_ID: ${INFISICAL_CLIENT_ID:?set INFISICAL_CLIENT_ID in Dokploy}
   INFISICAL_CLIENT_SECRET: ${INFISICAL_CLIENT_SECRET:?set INFISICAL_CLIENT_SECRET in Dokploy}
   INFISICAL_PROJECT_ID: ${INFISICAL_PROJECT_ID:?set INFISICAL_PROJECT_ID in Dokploy}
   INFISICAL_ENV: ${INFISICAL_ENV:-prod}
-  # EU tenants: INFISICAL_API_URL=https://eu.infisical.com
   INFISICAL_API_URL: ${INFISICAL_API_URL:-}
+  INFISICAL_SECRET_PATH: ${INFISICAL_SECRET_PATH:-/app}
 
 services:
   api:

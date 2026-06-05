@@ -70,12 +70,13 @@ No Filosign app secrets on the data project.
 | `INFISICAL_PROJECT_ID` | ✓ | ✓ | Infisical project UUID — **required in Dokploy** |
 | `INFISICAL_ENV` | ✓ | ✓ | `prod` / `staging` / `sandbox` (default in compose: `prod`) |
 | `INFISICAL_API_URL` | ✓ | ✓ | EU: `https://eu.infisical.com` (omit for US cloud) |
+| `INFISICAL_SECRET_PATH` | ✓ | ✓ | Infisical folder for app secrets (default `/app`; must match dashboard path) |
 | `API_PORT` | ✓ | — | Host port for api only; use **3001** if Dokploy UI uses **3000** |
-| `POSTGRES_PASSWORD` | ✓ | ✓ | Interpolates into `PG_URI` at compose time — **required in Dokploy** |
 | `SERVER_ROLE` | `api` | `worker` | Set in compose; do not override |
 | `DRAGONFLY_URL` | ✓ | ✓ | `redis://dragonfly:6379` (hostname on shared network) |
-| `PG_URI` | ✓ | ✓ | Built from `POSTGRES_*` in compose unless you change the file |
-| `DB_NAME` | ✓ | ✓ | Match data stack |
+| `PG_URI` | Infisical | Infisical | e.g. `postgresql://filosign:SECRET@postgres:5432/:dbname` — **not** compose-built |
+| `DB_NAME` | Infisical | Infisical | e.g. `filosign` — match data stack |
+| `POSTGRES_PASSWORD` | — | — | Only for **filosign-data** project; app stack does not need it in Dokploy if `PG_URI` is in Infisical |
 | `FC_SERVER_PRIVATE_KEY` | ✓ | ✓ | Relayer key — worker signs txs |
 | `FC_SERVER_ADDRESS` | ✓ | ✓ | Relayer address |
 | `DEPLOYMENT`, `CHAIN`, `SERVER_URL`, `CLIENT_URL`, `ASTRO_URL` | ✓ | ✓ | Tier config |

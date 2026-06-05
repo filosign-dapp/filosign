@@ -70,6 +70,16 @@
 	color-scheme: light;
 }
 
+::selection {
+	background-color: var(--fs-secondary);
+	color: var(--fs-secondary-foreground);
+}
+
+::-moz-selection {
+	background-color: var(--fs-secondary);
+	color: var(--fs-secondary-foreground);
+}
+
 /* Dark — client `.dark` */
 :root[data-theme="dark"],
 [data-theme="dark"] {

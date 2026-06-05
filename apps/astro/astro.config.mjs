@@ -18,14 +18,14 @@ export default defineConfig({
 	},
 	integrations: [
 		starlight({
-			title: "Filosign Docs",
+			title: "filosign",
 			description:
-				"Guides for agreement workflows, workspace teams, encryption, proof exports, storage, plans, and troubleshooting.",
+				"Plain-language guides for private agreement workflows: send documents, collect signatures, export proof, and release payouts or files when signing conditions are met.",
 			customCss: ["./src/styles/docs.css"],
 			sidebar: [
 				{ label: "Home", link: "/docs/" },
 				{
-					label: "Workflows",
+					label: "Agreement workflows",
 					items: [
 						{ label: "Overview", link: "/docs/workflows/" },
 						{
@@ -51,9 +51,59 @@ export default defineConfig({
 					],
 				},
 				{
-					label: "Workspace",
+					label: "Proof and evidence",
 					items: [
-						{ label: "Overview", link: "/docs/workspace/" },
+						{
+							label: "Proof packets",
+							link: "/docs/proof/completion-packet/",
+						},
+						{
+							label: "How to read the proof report",
+							link: "/docs/proof/read-compliance-report/",
+						},
+						{
+							label: "E-signature evidence",
+							link: "/docs/proof/e-signature-evidence/",
+						},
+						{
+							label: "Signature library",
+							link: "/docs/proof/signature-library/",
+						},
+					],
+				},
+				{
+					label: "Security and privacy",
+					items: [
+						{
+							label: "Document privacy",
+							link: "/docs/security/encrypted-workflows/",
+						},
+						{
+							label: "What Filosign can see",
+							link: "/docs/security/what-we-can-see/",
+						},
+						{
+							label: "Verification records",
+							link: "/docs/security/on-chain-record/",
+						},
+						{
+							label: "Keeping documents long term",
+							link: "/docs/storage/how-retention-works/",
+						},
+						{
+							label: "Download your own copy",
+							link: "/docs/storage/export-before-archival/",
+						},
+						{
+							label: "Storage status in the app",
+							link: "/docs/storage/status-in-app/",
+						},
+					],
+				},
+				{
+					label: "Teams and plans",
+					items: [
+						{ label: "Workspace overview", link: "/docs/workspace/" },
 						{
 							label: "Members and roles",
 							link: "/docs/workspace/members-and-roles/",
@@ -71,66 +121,6 @@ export default defineConfig({
 							link: "/docs/workspace/payout-access/",
 						},
 						{ label: "Connections", link: "/docs/workspace/connections/" },
-					],
-				},
-				{
-					label: "Privacy and records",
-					items: [
-						{
-							label: "Document privacy",
-							link: "/docs/security/encrypted-workflows/",
-						},
-						{
-							label: "What Filosign can see",
-							link: "/docs/security/what-we-can-see/",
-						},
-						{
-							label: "Verification records",
-							link: "/docs/security/on-chain-record/",
-						},
-					],
-				},
-				{
-					label: "Proof and legal review",
-					items: [
-						{
-							label: "E-signature evidence",
-							link: "/docs/proof/e-signature-evidence/",
-						},
-						{
-							label: "Proof for legal and finance",
-							link: "/docs/proof/completion-packet/",
-						},
-						{
-							label: "How to read the proof report",
-							link: "/docs/proof/read-compliance-report/",
-						},
-						{
-							label: "Signature library",
-							link: "/docs/proof/signature-library/",
-						},
-					],
-				},
-				{
-					label: "Storage and retention",
-					items: [
-						{
-							label: "Keeping documents long term",
-							link: "/docs/storage/how-retention-works/",
-						},
-						{
-							label: "Download your own copy",
-							link: "/docs/storage/export-before-archival/",
-						},
-						{
-							label: "Storage status in the app",
-							link: "/docs/storage/status-in-app/",
-						},
-					],
-				},
-				{
-					label: "Plans",
-					items: [
 						{ label: "Plans and limits", link: "/docs/plans/" },
 						{ label: "Roadmap", link: "/docs/plans/roadmap/" },
 					],

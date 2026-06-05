@@ -52,8 +52,8 @@ All marketing pages migrated from the React app:
 | `/changelog` | What's new — feature updates and releases |
 | `/docs` | Product docs (Starlight): guides + public troubleshooting |
 | `/docs/workflows` | Agreement workflows overview |
-| `/docs/workflows/payouts` | Stablecoin Payouts user guide |
-| `/docs/workflows/attached-files` | Attached files (supplementary packets) |
+| `/docs/workflows/payouts` | Payout packets user guide |
+| `/docs/workflows/attached-files` | Gated file release |
 | `/docs/workflows/release-conditions` | Payout and unlock release conditions |
 | `/docs/workflows/drafts` | Envelope drafts |
 | `/docs/workflows/templates` | Org templates |

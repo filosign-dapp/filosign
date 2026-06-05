@@ -9,15 +9,9 @@ import {
 import { useEffect, useRef } from "react";
 import { aboutMedia } from "../../config/about-media";
 
-/** Seconds before the marquee begins moving (after hero copy). */
 const START_DELAY_SEC = 1;
-/** One full pass over half the duplicated track (longer = lower peak speed). */
 const CYCLE_DURATION_SEC = 60;
 
-/**
- * Asymmetric ease: slow ramp-in, sustained cruise, slow ramp-out.
- * Zero slope at t=0 and t=1 so loop resets are visually seamless.
- */
 function marqueeDistanceProgress(t: number): number {
 	const rampInEnd = 0.2;
 	const cruiseEnd = 0.8;

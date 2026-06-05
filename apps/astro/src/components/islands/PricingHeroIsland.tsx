@@ -17,20 +17,20 @@ export default function PricingHeroIsland() {
 					marketingSectionYClass,
 				)}
 			>
-				<div className={`${marketingSectionClass} relative z-10 space-y-16`}>
+				<div className={`${marketingSectionClass} relative z-10`}>
 					<MarketingStagger
 						pace="page"
 						className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-8 lg:gap-12"
 					>
 						<div className="max-w-5xl">
 							<h1 className="text-4xl md:text-5xl lg:text-5xl font-medium font-manrope tracking-tight text-foreground mb-6 leading-[1.1]">
-								They charge for the signature.
+								Not just signatures.
 								<br />
-								Filosign includes what comes next.
+								Choose plans that fit your workflow.
 							</h1>
 							<p className="text-lg md:text-xl font-light font-manrope text-muted-foreground max-w-xl leading-relaxed">
-								Private documents, proof exports, gated handoffs, and payment
-								release built into every plan.
+								Private documents, permanent proofs, conditional handoffs, and
+								payment releases built into every plan.
 							</p>
 						</div>
 

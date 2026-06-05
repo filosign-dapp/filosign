@@ -25,7 +25,6 @@ const drawerLinkClass =
 	"block rounded-lg px-4 py-3 text-lg font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
 
 const navLinks = [
-	{ label: "About", href: "/about" },
 	{ label: "Pricing", href: "/pricing" },
 	{ label: "Blog", href: "/blog" },
 	{ label: "Changelog", href: "/changelog" },
@@ -89,7 +88,7 @@ export default function LandingNavbar({ pace = "page" }: LandingNavbarProps) {
 	return (
 		<section className={cn(marketingNavStickyClass, "px-page")}>
 			<motion.nav
-				className="flex min-w-0 items-center justify-between mx-auto max-w-3xl gap-2 p-rect rounded-large border border-foreground/10 bg-foreground text-background shadow-md lg:max-w-4xl"
+				className="flex min-w-0 items-center justify-between mx-auto max-w-3xl gap-2 p-rect rounded-large border border-foreground/10 bg-foreground text-background shadow-md lg:max-w-3xl"
 				aria-label="Primary"
 				initial={{ opacity: 0, y: -50 }}
 				animate={{

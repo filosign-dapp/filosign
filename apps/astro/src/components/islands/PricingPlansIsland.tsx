@@ -29,10 +29,12 @@ import {
 	YEARLY_DISCOUNT_RATE,
 	yearlyPerMonthPrice,
 } from "../../lib/pricing-display";
+import { EnterpriseScopeMock } from "../marketing-mocks";
 import ComparisonAccordion from "./ComparisonAccordion";
 import { MarketingPageBody, MarketingPageShell } from "./MarketingPageSequence";
 import { MotionProvider } from "./MotionProvider";
 import PricingCheckoutDialog from "./PricingCheckoutDialog";
+import PricingFaqIsland from "./PricingFaqIsland";
 
 const PRICING_HERO_TOP_COUNT = 3;
 
@@ -46,6 +48,8 @@ export type PricingPlan = {
 	highlight: boolean;
 	badge?: string;
 	planId?: string;
+	/** Testnet sandbox — links out to PUBLIC_SANDBOX_CLIENT_URL; excluded from comparison. */
+	sandbox?: boolean;
 };
 
 export type EnterprisePricingBanner = {
@@ -128,31 +132,36 @@ function PlanPriceBlock({
 	plan: PricingPlan;
 	billingInterval: BillingInterval;
 }) {
-	const isFree = plan.name.toLowerCase().includes("free");
+	const isSandbox = plan.sandbox === true;
 	const monthlyList = plan.price.monthly;
 	const hasNumericMonthly = typeof monthlyList === "number";
 
 	const displayPrice =
-		billingInterval === "yearly" && hasNumericMonthly
+		billingInterval === "yearly" && hasNumericMonthly && !isSandbox
 			? yearlyPerMonthPrice(monthlyList)
 			: monthlyList;
 
 	const isPerUser = plan.name.toLowerCase().includes("team");
 	const unitLabel = isPerUser ? "/user/month" : "/month";
 
-	const caption = isFree
-		? "always free"
+	const caption = isSandbox
+		? "testnet sandbox · no card required"
 		: billingInterval === "yearly"
-			? `7-day free trial, then ${unitLabel} billed yearly`
-			: `7-day free trial, then ${unitLabel} billed monthly`;
+			? `${unitLabel} billed yearly`
+			: `${unitLabel} billed monthly`;
 
 	return (
-		<div className="mb-8 flex h-28 flex-col justify-end">
+		<div className="flex h-28 flex-col justify-end">
 			<div className="flex min-h-14 items-baseline gap-2 flex-wrap">
-				{isFree ? (
-					<span className="text-3xl md:text-4xl font-medium font-manrope">
-						Free
-					</span>
+				{isSandbox ? (
+					<div className="flex items-baseline gap-1.5">
+						<span className="text-3xl md:text-4xl font-medium font-manrope tabular-nums tracking-tight">
+							$0
+						</span>
+						<span className="text-sm font-medium text-muted-foreground">
+							USD
+						</span>
+					</div>
 				) : typeof displayPrice === "number" ? (
 					<div className="flex items-baseline gap-2 flex-wrap select-none overflow-hidden py-1">
 						<AnimatePresence mode="popLayout" initial={false}>
@@ -210,7 +219,7 @@ function PricingPlanCard({
 	index: number;
 	onCheckout: (plan: PricingPlan) => void;
 }) {
-	const isFree = plan.name.toLowerCase().includes("free");
+	const isSandbox = plan.sandbox === true;
 
 	return (
 		<motion.div
@@ -220,8 +229,8 @@ function PricingPlanCard({
 			transition={{ duration: 0.5, delay: index * 0.1 }}
 			className={
 				plan.highlight
-					? "relative flex flex-col p-8 rounded-3xl bg-background border-2 border-foreground text-foreground shadow-xl md:scale-[1.02] z-10"
-					: "relative flex flex-col p-8 rounded-3xl bg-muted/80 border border-transparent hover:border-border/50"
+					? "relative row-span-4 grid h-full min-h-0 grid-rows-subgrid gap-y-0 p-8 rounded-3xl bg-background border-2 border-foreground text-foreground shadow-xl md:scale-[1.02] z-10"
+					: "relative row-span-4 grid h-full min-h-0 grid-rows-subgrid gap-y-0 p-8 rounded-3xl bg-muted/80 border border-transparent hover:border-border/50"
 			}
 		>
 			{plan.highlight && plan.badge ? (
@@ -230,24 +239,26 @@ function PricingPlanCard({
 				</div>
 			) : null}
 
-			<div className="mb-4 flex flex-col">
+			<div className="flex flex-col self-start">
 				<div className="inline-block w-fit px-3 py-1 rounded-full bg-background border border-border text-xs font-medium mb-4">
 					{plan.name}
 				</div>
-				<p className="text-sm text-muted-foreground min-h-12 font-manrope leading-relaxed">
+				<p className="text-sm text-muted-foreground font-manrope leading-relaxed">
 					{plan.description}
 				</p>
 			</div>
 
-			<PlanPriceBlock plan={plan} billingInterval={billingInterval} />
+			<div className="self-start">
+				<PlanPriceBlock plan={plan} billingInterval={billingInterval} />
+			</div>
 
-			<div className="mb-8">
+			<div className="self-stretch mb-6">
 				<Pressable
 					preset="snappy"
 					whileHover={MARKETING_PRESSABLE_HOVER}
 					whileTap={MARKETING_PRESSABLE_TAP}
 				>
-					{isFree ? (
+					{isSandbox ? (
 						<a
 							href={MARKETING_CTA.sandboxUrl}
 							target="_blank"
@@ -268,7 +279,7 @@ function PricingPlanCard({
 				</Pressable>
 			</div>
 
-			<div className="grow">
+			<div className="min-h-0 self-start">
 				<ul className="space-y-3">
 					{plan.features.map((feature) => (
 						<li
@@ -382,55 +393,63 @@ function PricingPlansContent({
 
 	return (
 		<MarketingPageShell>
-			<section id="pricing" className="bg-background py-12 md:py-20">
+			<section id="pricing" className="bg-background pb-12 md:pb-20 pt-8">
 				<MarketingPageBody
 					pace="page"
 					heroTopChildCount={PRICING_HERO_TOP_COUNT}
 					heroBottomChildCount={1}
-					className={`${marketingSectionClass} grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12 *:first:col-span-full`}
+					className={`${marketingSectionClass} grid grid-cols-1 gap-8 lg:gap-12 *:first:col-span-full`}
 				>
 					<BillingIntervalToggle
 						billingInterval={billingInterval}
 						onChange={setBillingInterval}
 						savePercentLabel={savePercentLabel}
 					/>
-					{plans.map((plan, index) => (
-						<PricingPlanCard
-							key={plan.name}
-							plan={plan}
-							billingInterval={billingInterval}
-							index={index}
-							onCheckout={setCheckoutPlan}
-						/>
-					))}
+					<div className="col-span-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8 lg:gap-12 grid-rows-[auto_auto_auto_1fr] items-stretch">
+						{plans.map((plan, index) => (
+							<PricingPlanCard
+								key={plan.name}
+								plan={plan}
+								billingInterval={billingInterval}
+								index={index}
+								onCheckout={setCheckoutPlan}
+							/>
+						))}
+					</div>
 					<ComparisonTable />
 					<div className="col-span-full">
 						<ComparisonAccordion />
 					</div>
-					{enterpriseBanner ? (
-						<div className="col-span-full flex flex-col gap-6 rounded-3xl border border-border/60 bg-muted/25 p-8 md:flex-row md:items-center md:justify-between md:gap-10">
-							<div className="max-w-3xl space-y-2">
-								<p className="text-lg font-medium font-manrope text-foreground">
-									{enterpriseBanner.headline}
-								</p>
-								<p className="text-sm leading-relaxed text-muted-foreground font-manrope">
-									{enterpriseBanner.body}
-								</p>
+					<div className="col-span-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 lg:items-start">
+						<PricingFaqIsland />
+						{enterpriseBanner ? (
+							<div className="flex flex-col gap-5 rounded-3xl border border-border/60 bg-muted/25 p-6 md:p-8">
+								<div className="space-y-2">
+									<p className="text-lg font-medium font-manrope text-foreground">
+										{enterpriseBanner.headline}
+									</p>
+									<p className="text-sm leading-relaxed text-muted-foreground font-manrope">
+										{enterpriseBanner.body}
+									</p>
+								</div>
+								<EnterpriseScopeMock />
+								<div className="w-full sm:w-auto">
+									<Pressable
+										preset="snappy"
+										whileHover={MARKETING_PRESSABLE_HOVER}
+										whileTap={MARKETING_PRESSABLE_TAP}
+									>
+										<a
+											href={enterpriseBanner.href}
+											className={cn(marketingGhostLgClass, "w-full sm:w-auto")}
+										>
+											{enterpriseBanner.cta}
+										</a>
+									</Pressable>
+								</div>
 							</div>
-							<Pressable
-								preset="snappy"
-								whileHover={MARKETING_PRESSABLE_HOVER}
-								whileTap={MARKETING_PRESSABLE_TAP}
-							>
-								<a
-									href={enterpriseBanner.href}
-									className={cn(marketingGhostLgClass, "shrink-0")}
-								>
-									{enterpriseBanner.cta}
-								</a>
-							</Pressable>
-						</div>
-					) : null}
+						) : null}
+					</div>
 					<p className="col-span-full text-center text-sm text-muted-foreground font-manrope">
 						Plan limits and feature details are in the{" "}
 						<a

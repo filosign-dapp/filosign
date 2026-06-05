@@ -130,6 +130,32 @@ export function buildPricingComparisonRows(): ComparisonRow[] {
 			teams_pro: true,
 		}),
 
+		section("Handoffs"),
+		booleanRow(
+			"features.settlement.basic",
+			featureMarketingLabel("features.settlement.basic"),
+			"features.settlement.basic",
+		),
+		booleanRow(
+			"features.supplementary_attachments",
+			featureMarketingLabel("features.supplementary_attachments"),
+			"features.supplementary_attachments",
+		),
+		booleanRow(
+			"features.supplementary_attachments.recipient_select",
+			featureMarketingLabel(
+				"features.supplementary_attachments.recipient_select",
+			),
+			"features.supplementary_attachments.recipient_select",
+		),
+		booleanRow(
+			"features.supplementary_attachments.conditional_release",
+			featureMarketingLabel(
+				"features.supplementary_attachments.conditional_release",
+			),
+			"features.supplementary_attachments.conditional_release",
+		),
+
 		section("Team collaboration"),
 		booleanRow(
 			"features.draft_review_links",
@@ -151,20 +177,16 @@ export function buildPricingComparisonRows(): ComparisonRow[] {
 			featureMarketingLabel("features.envelope.team_visibility"),
 			"features.envelope.team_visibility",
 		),
-		section("Workflow actions"),
-		booleanRow(
-			"features.settlement.basic",
-			"Payout packets",
-			"features.settlement.basic",
-		),
+
+		section("Workflow control"),
 		booleanRow(
 			"features.settlement.advanced",
-			"Multi-recipient payout rules",
+			featureMarketingLabel("features.settlement.advanced"),
 			"features.settlement.advanced",
 		),
 		booleanRow(
 			"features.routing.advanced",
-			"Advanced signing conditions",
+			featureMarketingLabel("features.routing.advanced"),
 			"features.routing.advanced",
 		),
 

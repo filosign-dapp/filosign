@@ -104,6 +104,7 @@ Defined in [`packages/react-sdk/src/analytics/events.ts`](packages/react-sdk/src
 | `envelope_send_succeeded` | From API response | Send succeeds | `had_cold_recipients` |
 | `cold_share_dialog_shown` | — | Cold share dialog opens | — |
 | `cold_invite_mismatch_shown` | — | *(constant exists; not emitted yet)* | — |
+| `upgrade_plan_prompt_shown` | — | Plan upgrade dialog opens | `reason` (`UpgradeLimitReason`) |
 
 ---
 

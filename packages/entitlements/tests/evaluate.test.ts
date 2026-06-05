@@ -182,6 +182,32 @@ describe("boolean features", () => {
 		expect(check(ctx("enterprise"), key).allowed).toBe(true);
 	});
 
+	test("features.supplementary_attachments enabled on all paid plans", () => {
+		const key = "features.supplementary_attachments" as const;
+		expect(check(ctx("free"), key).allowed).toBe(false);
+		expect(check(ctx("individual"), key).allowed).toBe(true);
+		expect(check(ctx("teams"), key).allowed).toBe(true);
+		expect(check(ctx("teams_pro"), key).allowed).toBe(true);
+		expect(check(ctx("enterprise"), key).allowed).toBe(true);
+	});
+
+	test("features.supplementary_attachments.recipient_select enabled on teams and above", () => {
+		const key = "features.supplementary_attachments.recipient_select" as const;
+		expect(check(ctx("free"), key).allowed).toBe(false);
+		expect(check(ctx("individual"), key).allowed).toBe(false);
+		expect(check(ctx("teams"), key).allowed).toBe(true);
+		expect(check(ctx("teams_pro"), key).allowed).toBe(true);
+		expect(check(ctx("enterprise"), key).allowed).toBe(true);
+	});
+
+	test("features.supplementary_attachments.conditional_release enabled on teams_pro and enterprise only", () => {
+		const key =
+			"features.supplementary_attachments.conditional_release" as const;
+		expect(check(ctx("teams"), key).allowed).toBe(false);
+		expect(check(ctx("teams_pro"), key).allowed).toBe(true);
+		expect(check(ctx("enterprise"), key).allowed).toBe(true);
+	});
+
 	test("features.routing.advanced enabled on teams_pro and enterprise only", () => {
 		expect(check(ctx("teams"), "features.routing.advanced").allowed).toBe(
 			false,

@@ -10,4 +10,5 @@ export const CLIENT_ANALYTICS_EVENTS = {
 	envelopePostSendDialogShown: "envelope_post_send_dialog_shown",
 	signatureCreated: "signature_created",
 	signatureApplied: "signature_applied",
+	upgradePlanPromptShown: "upgrade_plan_prompt_shown",
 } as const;

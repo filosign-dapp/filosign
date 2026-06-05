@@ -39,9 +39,8 @@ export default function AboutCtaBand() {
 									Ready to move the whole workflow?
 								</h2>
 								<p className="font-manrope text-base leading-relaxed text-muted-foreground">
-									Pick a plan or try the sandbox: private documents, signatures,
-									proof, gated files, and payout packets when the agreement
-									calls for them.
+									See how it works on the homepage, pick a plan, or try the
+									sandbox when you are ready to run a real envelope.
 								</p>
 								<a
 									href="/security"

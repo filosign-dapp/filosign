@@ -20,6 +20,7 @@ export { default as ProofStepMock } from "./scenes/how-it-works/ProofStepMock";
 export { default as SendStepMock } from "./scenes/how-it-works/SendStepMock";
 export { default as SettleStepMock } from "./scenes/how-it-works/SettleStepMock";
 export { default as SignStepMock } from "./scenes/how-it-works/SignStepMock";
+export { default as EnterpriseScopeMock } from "./scenes/pricing/EnterpriseScopeMock";
 export { default as AgencyDeliveryMock } from "./scenes/use-cases/AgencyDeliveryMock";
 export { default as BountyPayoutMock } from "./scenes/use-cases/BountyPayoutMock";
 export { default as ContractorHandoverMock } from "./scenes/use-cases/ContractorHandoverMock";

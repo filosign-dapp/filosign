@@ -1,4 +1,8 @@
 import { getPlanName, PLAN_PRICING } from "@filosign/entitlements";
+import {
+	CLIENT_ANALYTICS_EVENTS,
+	useCaptureAppEvent,
+} from "@filosign/react/analytics";
 import type { UpgradePlanLimitReason } from "@filosign/react/billing";
 import {
 	useChangeOrgPlan,
@@ -62,14 +66,14 @@ const COPY: Record<
 			"Create and reuse shared document templates with your team. Upgrade to Teams or Teams Pro to build templates.",
 	},
 	"features.supplementary_attachments": {
-		title: "Supplementary files need Teams+",
+		title: "Gated file packets need Solo or higher",
 		description:
-			"Send encrypted extra files with your envelope on Teams or higher.",
+			"Send encrypted extra files with your envelope on Solo or higher. Upgrade to unlock gated file packets.",
 	},
 	"features.supplementary_attachments.recipient_select": {
-		title: "Choose who gets supplementary files",
+		title: "Choose who gets each gated file packet",
 		description:
-			"Pick which recipients receive each supplementary packet with Teams Pro or Enterprise.",
+			"Pick which recipients receive each supplementary packet with Teams or higher.",
 	},
 	"features.supplementary_attachments.conditional_release": {
 		title: "Conditional file unlock needs Teams Pro",
@@ -96,6 +100,7 @@ export function UpgradePlanDialog({
 	reason,
 }: UpgradePlanDialogProps) {
 	const navigate = useNavigate();
+	const captureAppEvent = useCaptureAppEvent();
 	const offeringsQuery = useUpgradeOfferings(open ? reason : null);
 	const orgCheckout = useCreateOrgCheckoutSession();
 	const changePlan = useChangeOrgPlan();
@@ -114,6 +119,13 @@ export function UpgradePlanDialog({
 	useEffect(() => {
 		if (recommendedId) setSelectedPlan(recommendedId);
 	}, [recommendedId]);
+
+	useEffect(() => {
+		if (!open) return;
+		captureAppEvent(CLIENT_ANALYTICS_EVENTS.upgradePlanPromptShown, {
+			reason,
+		});
+	}, [open, reason, captureAppEvent]);
 
 	const selectedOffering = useMemo(
 		() => offerings.find((o) => o.planId === selectedPlan),

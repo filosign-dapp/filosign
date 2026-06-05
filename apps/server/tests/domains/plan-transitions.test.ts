@@ -43,6 +43,46 @@ describe("buildUpgradeOfferings", () => {
 		expect(solo).toBeUndefined();
 		expect(result.offerings.some((o) => o.planId === "teams")).toBe(true);
 	});
+
+	test("free workspace gated files can upgrade to solo", () => {
+		const result = buildUpgradeOfferings({
+			reason: "features.supplementary_attachments",
+			userPlanId: "free",
+			orgPlanId: "free",
+			hasUserDodo: false,
+			hasOrgDodo: false,
+		});
+		const solo = result.offerings.find((o) => o.planId === "individual");
+		expect(solo?.selectable).toBe(true);
+	});
+
+	test("solo workspace recipient select offers teams and teams_pro only", () => {
+		const result = buildUpgradeOfferings({
+			reason: "features.supplementary_attachments.recipient_select",
+			userPlanId: "free",
+			orgPlanId: "individual",
+			hasUserDodo: false,
+			hasOrgDodo: true,
+		});
+		expect(result.offerings.map((o) => o.planId)).toEqual([
+			"teams",
+			"teams_pro",
+		]);
+	});
+
+	test("solo workspace on gated files has handoff-specific no-upgrade message", () => {
+		const result = buildUpgradeOfferings({
+			reason: "features.supplementary_attachments",
+			userPlanId: "free",
+			orgPlanId: "individual",
+			hasUserDodo: false,
+			hasOrgDodo: true,
+		});
+		expect(result.offerings).toHaveLength(0);
+		expect(result.noUpgradeMessage).toContain(
+			"Solo, which includes this feature",
+		);
+	});
 });
 
 describe("resolveMarketingCheckoutPreview", () => {

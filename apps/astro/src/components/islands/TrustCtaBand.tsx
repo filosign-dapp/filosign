@@ -22,7 +22,9 @@ const trustBullets = [
 export default function TrustCtaBand() {
 	return (
 		<MotionProvider>
-			<section className={`${marketingSectionShellClass} space-y-6`}>
+			<section
+				className={`${marketingSectionShellClass} space-y-6 mb-6 md:mb-12`}
+			>
 				<motion.div
 					initial={{ opacity: 0, y: 20 }}
 					whileInView={{ opacity: 1, y: 0 }}

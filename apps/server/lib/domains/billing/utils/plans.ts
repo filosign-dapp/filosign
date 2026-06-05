@@ -64,12 +64,18 @@ const MIN_PLAN_FOR_REASON: Record<
 	"features.settlement.advanced": "teams_pro",
 	"features.routing.advanced": "teams_pro",
 	"features.shared_templates": "teams",
-	"features.supplementary_attachments": "teams",
-	"features.supplementary_attachments.recipient_select": "teams_pro",
+	"features.supplementary_attachments": "individual",
+	"features.supplementary_attachments.recipient_select": "teams",
 	"features.supplementary_attachments.conditional_release": "teams_pro",
 };
 
 const CHECKOUT_PLANS: CheckoutPlanId[] = ["individual", "teams", "teams_pro"];
+
+/** Volume limits — exhausted on current tier still warrant a higher plan. */
+const QUOTA_UPGRADE_REASONS = new Set<UpgradeLimitReason>([
+	"documents.sent.monthly",
+	"envelope.recipients.max",
+]);
 
 function planTier(planId: PlanId): number {
 	const idx = (PLAN_IDS as readonly string[]).indexOf(planId);
@@ -93,6 +99,10 @@ function upgradeTargetsForReason(
 	const min = MIN_PLAN_FOR_REASON[reason];
 	const minTier = planTier(min);
 	const effectiveTier = planTier(effectivePlanId);
+
+	if (!QUOTA_UPGRADE_REASONS.has(reason) && effectiveTier >= minTier) {
+		return [];
+	}
 
 	return CHECKOUT_PLANS.filter((p) => {
 		const t = planTier(p);
@@ -225,11 +235,18 @@ export function buildUpgradeOfferings(args: {
 
 	const primaryCta = primaryOffering?.cta ?? "none";
 
+	const soloHandoffReasons = new Set<UpgradeLimitReason>([
+		"features.settlement.basic",
+		"features.supplementary_attachments",
+	]);
+
 	const noUpgradeMessage =
 		offerings.length === 0
-			? effectivePlanId === "individual"
-				? "You're on Solo. Upgrade this workspace to Teams or Teams Pro for collaboration features."
-				: "You're already on a plan that includes this feature. Compare plans or contact support if something looks wrong."
+			? effectivePlanId === "individual" && soloHandoffReasons.has(args.reason)
+				? "You're on Solo, which includes this feature. Request payout access in Workspace settings if needed, or contact support if something looks wrong."
+				: effectivePlanId === "individual"
+					? "You're on Solo. Upgrade this workspace to Teams or Teams Pro for collaboration and advanced workflow features."
+					: "You're already on a plan that includes this feature. Compare plans or contact support if something looks wrong."
 			: null;
 
 	return {

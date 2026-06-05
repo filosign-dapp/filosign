@@ -50,11 +50,11 @@ Source of truth: [`packages/entitlements/src/features.ts`](../packages/entitleme
 | `features.settlement.basic` | USDC payout packets; `assertEntitlement` in settlements utils |
 | `features.settlement.advanced` | Multi-recipient / advanced release rules; settlements utils |
 | `features.supplementary_attachments` | Gated file packets; `assertEntitlement` in attachments/register |
-| `features.supplementary_attachments.recipient_select` | Per-packet recipient picker (Teams Pro) |
+| `features.supplementary_attachments.recipient_select` | Per-packet recipient picker (Teams+) |
 | `features.supplementary_attachments.conditional_release` | Signature-conditional release (Teams Pro) |
 | `features.archival.purchase` | Long-term storage purchase; `assertEntitlement` in archival |
 
-**Pricing matrix gap (shipped but not yet in comparison table):** supplementary attachment keys above — add rows when refreshing pricing UI.
+**Pricing matrix:** supplementary attachment rows live in `apps/astro/src/lib/pricing-comparison.ts`.
 
 ### Catalog only — not shipped (keep in entitlements; hidden on pricing page until built)
 

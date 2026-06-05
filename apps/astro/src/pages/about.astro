@@ -1,18 +1,18 @@
 ---
 import AboutCtaBand from "../components/islands/AboutCtaBand";
 import AboutHeroIsland from "../components/islands/AboutHeroIsland";
-import ValuesSectionIsland from "../components/islands/ValuesSectionIsland";
+import AboutStorySectionIsland from "../components/islands/AboutStorySectionIsland";
 import MarketingPageShell from "../components/MarketingPageShell.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
 <BaseLayout
 	title="About Filosign - Agreements that unlock the next step"
-	description="Why Filosign exists: private agreement workflows with signatures, proof, gated files, and payout packets."
+	description="Why Filosign exists: the story behind building private agreement workflows that keep working after the signature."
 >
 	<MarketingPageShell>
 		<AboutHeroIsland client:load />
-		<ValuesSectionIsland client:visible />
+		<AboutStorySectionIsland client:visible />
 		<AboutCtaBand client:visible />
 	</MarketingPageShell>
 </BaseLayout>

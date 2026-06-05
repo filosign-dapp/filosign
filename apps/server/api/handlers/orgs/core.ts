@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { throwAppError } from "@filosign/errors/server";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
 import { and, eq, sql } from "drizzle-orm";
@@ -29,6 +30,7 @@ import {
 } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { zOrgMemberRole } from "./schemas";
 
 const {
@@ -50,7 +52,7 @@ export const zOrgsCreateBody = z.object({
 export async function orgsCreate(wallet: Address, body: unknown) {
 	const parsed = zOrgsCreateBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 	const creator = getAddress(wallet);
 	const ownedBefore = await countOwnedOrganizations(creator);
@@ -119,9 +121,11 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 		const msg =
 			result.error instanceof Error ? result.error.message : "Create failed";
 		if (msg.includes("unique") || msg.includes("duplicate")) {
-			throw new ORPCError("CONFLICT", { message: "Organization slug taken" });
+			throwAppError("WORKSPACE.SLUG_TAKEN");
 		}
-		throw new ORPCError("INTERNAL_SERVER_ERROR", { message: msg });
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
+			message: msg,
+		});
 	}
 
 	await invalidateUserOrgs(creator);
@@ -130,7 +134,7 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 	if (!isPersonal) {
 		const syncRes = await tryCatch(syncOrgControllersOnChain(result.data.id));
 		if (syncRes.error) {
-			throw new ORPCError("INTERNAL_SERVER_ERROR", {
+			throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 				message: "Failed to sync organization controllers on-chain",
 			});
 		}
@@ -149,7 +153,7 @@ export async function orgsGet(
 	orgId: string,
 ) {
 	if (activeOrg.organizationId !== orgId) {
-		throw new ORPCError("FORBIDDEN", { message: "Organization mismatch" });
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 
 	const [org] = await db
@@ -158,8 +162,7 @@ export async function orgsGet(
 		.where(eq(organizations.id, orgId))
 		.limit(1);
 
-	if (!org)
-		throw new ORPCError("NOT_FOUND", { message: "Organization not found" });
+	if (!org) throwAppError("WORKSPACE.ORGANIZATION_NOT_FOUND");
 
 	const members = await db
 		.select({
@@ -210,7 +213,7 @@ export async function orgsUpdate(
 	assertOrgPermission(activeOrg, "org:manage");
 	const parsed = zOrgsUpdateBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	const patch: { name?: string; slug?: string; updatedAt: Date } = {
@@ -226,7 +229,7 @@ export async function orgsUpdate(
 		.returning();
 
 	if (!organization) {
-		throw new ORPCError("NOT_FOUND", { message: "Organization not found" });
+		throwAppError("WORKSPACE.ORGANIZATION_NOT_FOUND");
 	}
 
 	const members = await db
@@ -256,7 +259,7 @@ export async function orgsMembersSetRole(
 	assertOrgPermission(activeOrg, "org:manage");
 	const parsed = zOrgsMembersSetRoleBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 	const targetWallet = getAddress(parsed.data.walletAddress);
 	const actorWallet = getAddress(wallet);
@@ -275,26 +278,20 @@ export async function orgsMembersSetRole(
 		)
 		.limit(1);
 	if (!current || current.status !== "active") {
-		throw new ORPCError("NOT_FOUND", { message: "Member not found" });
+		throwAppError("WORKSPACE.MEMBER_NOT_FOUND");
 	}
 
 	if (activeOrg.role !== "owner") {
 		if (parsed.data.role === "owner") {
-			throw new ORPCError("FORBIDDEN", {
-				message: "Only organization owners can promote members to owner",
-			});
+			throwAppError("WORKSPACE.OWNER_REQUIRED_FOR_PROMOTION");
 		}
 		if (current.role === "owner") {
-			throw new ORPCError("FORBIDDEN", {
-				message: "Only organization owners can modify owner roles",
-			});
+			throwAppError("WORKSPACE.OWNER_REQUIRED_FOR_MODIFICATION");
 		}
 	}
 
 	if (targetWallet === actorWallet && parsed.data.role !== "owner") {
-		throw new ORPCError("FORBIDDEN", {
-			message: "You cannot demote yourself from owner",
-		});
+		throwAppError("WORKSPACE.SELF_DEMOTION_FORBIDDEN");
 	}
 
 	if (current.role === "owner" && parsed.data.role !== "owner") {
@@ -309,9 +306,7 @@ export async function orgsMembersSetRole(
 				),
 			);
 		if ((ownerCount?.count ?? 0) <= 1) {
-			throw new ORPCError("FORBIDDEN", {
-				message: "Organization must have at least one owner",
-			});
+			throwAppError("WORKSPACE.OWNER_REQUIRED");
 		}
 	}
 
@@ -325,14 +320,13 @@ export async function orgsMembersSetRole(
 			),
 		)
 		.returning();
-	if (!member)
-		throw new ORPCError("NOT_FOUND", { message: "Member not found" });
+	if (!member) throwAppError("WORKSPACE.MEMBER_NOT_FOUND");
 	await invalidateOnMembershipChange(activeOrg.organizationId, targetWallet);
 	const syncRes = await tryCatch(
 		syncOrgControllersOnChain(activeOrg.organizationId),
 	);
 	if (syncRes.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to sync organization controllers on-chain",
 		});
 	}
@@ -351,14 +345,12 @@ export async function orgsMembersRemove(
 	assertOrgPermission(activeOrg, "members:remove");
 	const parsed = zOrgsMembersRemoveBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 	const targetWallet = getAddress(parsed.data.walletAddress);
 	const actorWallet = getAddress(wallet);
 	if (targetWallet === actorWallet) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Use ownership transfer flow",
-		});
+		throwAppError("WORKSPACE.USE_OWNERSHIP_TRANSFER");
 	}
 
 	const [target] = await db
@@ -375,12 +367,10 @@ export async function orgsMembersRemove(
 		)
 		.limit(1);
 	if (!target || target.status !== "active") {
-		throw new ORPCError("NOT_FOUND", { message: "Member not found" });
+		throwAppError("WORKSPACE.MEMBER_NOT_FOUND");
 	}
 	if (target.role === "owner" && activeOrg.role !== "owner") {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Only organization owners can remove owners",
-		});
+		throwAppError("WORKSPACE.OWNER_REQUIRED_FOR_REMOVAL");
 	}
 	if (target.role === "owner") {
 		const [ownerCount] = await db
@@ -394,9 +384,7 @@ export async function orgsMembersRemove(
 				),
 			);
 		if ((ownerCount?.count ?? 0) <= 1) {
-			throw new ORPCError("FORBIDDEN", {
-				message: "Organization must have at least one owner",
-			});
+			throwAppError("WORKSPACE.OWNER_REQUIRED");
 		}
 	}
 
@@ -410,8 +398,7 @@ export async function orgsMembersRemove(
 			),
 		)
 		.returning();
-	if (!member)
-		throw new ORPCError("NOT_FOUND", { message: "Member not found" });
+	if (!member) throwAppError("WORKSPACE.MEMBER_NOT_FOUND");
 	await writeAuditEvent({
 		actorWallet,
 		organizationId: activeOrg.organizationId,
@@ -427,7 +414,7 @@ export async function orgsMembersRemove(
 		syncOrgControllersOnChain(activeOrg.organizationId),
 	);
 	if (syncRes.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to sync organization controllers on-chain",
 		});
 	}
@@ -449,18 +436,16 @@ export async function orgsLinkOrgWallet(
 	assertOrgPermission(activeOrg, "org:manage");
 	const parsed = zOrgsLinkWalletBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 	if (parsed.data.organizationId !== activeOrg.organizationId) {
-		throw new ORPCError("FORBIDDEN", { message: "Organization mismatch" });
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
 
 	const orgWallet = getAddress(parsed.data.orgWalletAddress);
 	const signer = getAddress(wallet);
 	if (orgWallet !== signer) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Connected wallet must match org controller address",
-		});
+		throwAppError("WORKSPACE.WALLET_CONTROLLER_MISMATCH");
 	}
 
 	const valid = await validateLinkOrgWalletSignature({
@@ -470,9 +455,7 @@ export async function orgsLinkOrgWallet(
 		signature: parsed.data.signature,
 	});
 	if (!valid) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Invalid link org wallet signature",
-		});
+		throwAppError("WORKSPACE.LINK_WALLET_SIGNATURE_INVALID");
 	}
 
 	const linkedAt = new Date();
@@ -490,7 +473,7 @@ export async function orgsLinkOrgWallet(
 		});
 
 	if (!org?.orgWalletAddress || !org.orgWalletLinkedAt) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to link org wallet",
 		});
 	}

@@ -1,4 +1,4 @@
-import { ORPCError } from "@orpc/server";
+import { throwAppError } from "@filosign/errors/server";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -194,14 +194,10 @@ export function assertOrgPermission(
 	permission: OrgPermission,
 ): asserts activeOrg is ActiveOrgContext {
 	if (!activeOrg) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Organization context required (X-Org-Id header)",
-		});
+		throw throwAppError("WORKSPACE.ORG_CONTEXT_REQUIRED");
 	}
 	if (!orgRoleHasPermission(activeOrg.role, permission)) {
-		throw new ORPCError("FORBIDDEN", {
-			message: `Missing permission: ${permission}`,
-		});
+		throw throwAppError("WORKSPACE.NOT_MEMBER");
 	}
 }
 
@@ -221,10 +217,7 @@ export async function assertOrganizationDeletionAllowed(
 		.where(eq(files.organizationId, organizationId));
 
 	if ((row?.count ?? 0) > 0) {
-		throw new ORPCError("FORBIDDEN", {
-			message:
-				"Organization contains legal file records; export/legal sign-off required before deletion",
-		});
+		throw throwAppError("WORKSPACE.DELETION_NOT_ALLOWED");
 	}
 }
 

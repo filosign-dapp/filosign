@@ -1,5 +1,5 @@
 import type { PlanId } from "@filosign/entitlements";
-import { ORPCError } from "@orpc/server";
+import { throwAppError } from "@filosign/errors/server";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -110,11 +110,7 @@ export async function assertCanCreateAdditionalWorkspace(
 		return;
 	}
 
-	throw new ORPCError("FORBIDDEN", {
-		message:
-			"Additional workspaces require Teams or Teams Pro. Upgrade your workspace, then create another.",
-		data: { code: "WORKSPACE_LIMIT" },
-	});
+	throw throwAppError("ENTITLEMENT.LIMIT_EXCEEDED");
 }
 
 export function resolveIsPersonalForNewOrganization(
@@ -125,9 +121,7 @@ export function resolveIsPersonalForNewOrganization(
 
 export function assertSeatCountForPlan(planId: PlanId, seatCount: number) {
 	if (planId === "individual" && seatCount !== 1) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Solo plan supports exactly one seat",
-		});
+		throw throwAppError("ENTITLEMENT.LIMIT_EXCEEDED");
 	}
 }
 

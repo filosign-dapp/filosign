@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { throwAppError } from "@filosign/errors/server";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
@@ -17,6 +18,7 @@ import { invalidateOnMembershipChange } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import type { OrgMemberRole } from "@/lib/platform/db/schema/organization";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { zOrgMemberRole } from "./schemas";
 
 const {
@@ -52,9 +54,7 @@ export async function orgsKeysMyWrap(
 		.limit(1);
 
 	if (!row) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "No wrapped org key for this account in this organization",
-		});
+		throwAppError("WORKSPACE.NO_WRAPPED_KEY");
 	}
 
 	return {
@@ -70,9 +70,7 @@ export async function orgsKeysMyWrapForOrganization(
 ) {
 	const can = await getOrgMemberWithDocumentRead(wallet, organizationId);
 	if (!can) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Not a member of this organization",
-		});
+		throwAppError("WORKSPACE.NOT_MEMBER");
 	}
 
 	const [row] = await db
@@ -90,9 +88,7 @@ export async function orgsKeysMyWrapForOrganization(
 		.limit(1);
 
 	if (!row) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "No wrapped org key for this account in this organization",
-		});
+		throwAppError("WORKSPACE.NO_WRAPPED_KEY");
 	}
 
 	return {
@@ -109,7 +105,7 @@ export async function orgsKeysPublishWrap(
 	assertOrgPermission(activeOrg, "members:invite");
 	const parsed = zOrgsKeysPublishWrapBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	const target = getAddress(parsed.data.targetWallet);
@@ -126,9 +122,7 @@ export async function orgsKeysPublishWrap(
 		.limit(1);
 
 	if (!member) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "Target is not an active member",
-		});
+		throwAppError("WORKSPACE.TARGET_NOT_ACTIVE_MEMBER");
 	}
 
 	await db
@@ -199,9 +193,7 @@ async function assertOrgHasInviteSeat(
 
 	const used = (activeMembers?.count ?? 0) + (openInvites?.count ?? 0);
 	if (used >= seatCount) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "SEAT_LIMIT: organization has no available seats",
-		});
+		throwAppError("WORKSPACE.SEAT_LIMIT_EXCEEDED");
 	}
 }
 
@@ -213,12 +205,10 @@ export async function orgsInvitesCreate(
 	assertOrgPermission(activeOrg, "members:invite");
 	const parsed = zOrgsInviteCreateBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 	if (parsed.data.role === "owner" && activeOrg.role !== "owner") {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Only organization owners can invite members as owners",
-		});
+		throwAppError("WORKSPACE.OWNER_INVITE_REQUIRED");
 	}
 	const emailNorm = normalizePlacementRecipientEmail(parsed.data.email.trim());
 
@@ -234,9 +224,7 @@ export async function orgsInvitesCreate(
 		)
 		.limit(1);
 	if (existing.length > 0) {
-		throw new ORPCError("CONFLICT", {
-			message: "An active invite already exists for this email",
-		});
+		throwAppError("WORKSPACE.INVITE_ALREADY_EXISTS");
 	}
 
 	const token = randomBytes(32).toString("hex");
@@ -263,7 +251,7 @@ export async function orgsInvitesCreate(
 		});
 
 	if (!invite) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to create invite",
 		});
 	}
@@ -278,7 +266,7 @@ const zInviteAcceptBody = z.object({
 export async function orgsInvitesAccept(wallet: Address, body: unknown) {
 	const parsed = zInviteAcceptBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	const [profile] = await db
@@ -289,9 +277,7 @@ export async function orgsInvitesAccept(wallet: Address, body: unknown) {
 
 	const rawEmail = profile?.email?.trim();
 	if (!rawEmail) {
-		throw new ORPCError("BAD_REQUEST", {
-			message: "Add a primary email to your Filosign profile before accepting",
-		});
+		throwAppError("WORKSPACE.EMAIL_REQUIRED_FOR_ACCEPT");
 	}
 	const emailNorm = normalizePlacementRecipientEmail(rawEmail);
 
@@ -307,14 +293,10 @@ export async function orgsInvitesAccept(wallet: Address, body: unknown) {
 		.limit(1);
 
 	if (!invite) {
-		throw new ORPCError("NOT_FOUND", {
-			message: "Invite not found or expired",
-		});
+		throwAppError("WORKSPACE.INVITE_NOT_FOUND");
 	}
 	if (invite.email !== emailNorm) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Invite email does not match your Filosign profile email",
-		});
+		throwAppError("WORKSPACE.INVITE_EMAIL_MISMATCH");
 	}
 
 	const invitee = getAddress(wallet);
@@ -362,7 +344,7 @@ export async function orgsInvitesAccept(wallet: Address, body: unknown) {
 		syncOrgControllersOnChain(invite.organizationId),
 	);
 	if (syncRes.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR", {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to sync organization controllers on-chain",
 		});
 	}

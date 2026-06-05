@@ -1,5 +1,5 @@
+import { throwAppError } from "@filosign/errors/server";
 import { hashOrgIdCommitment } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { and, eq, inArray } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -74,9 +74,7 @@ export async function assertOrgControllerMayRelay(args: {
 			wallet,
 		}))
 	) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Recaller is not an organization controller for this envelope",
-		});
+		throw throwAppError("WORKSPACE.NOT_MEMBER");
 	}
 	const onChain = await readOrgControllerOnChain({
 		organizationId: args.organizationId,
@@ -84,9 +82,7 @@ export async function assertOrgControllerMayRelay(args: {
 		registryAddress: args.registryAddress,
 	});
 	if (!onChain) {
-		throw new ORPCError("FORBIDDEN", {
-			message: "Organization controllers are not on-chain for this workspace",
-		});
+		throw throwAppError("WORKSPACE.WALLET_CONTROLLER_MISMATCH");
 	}
 }
 

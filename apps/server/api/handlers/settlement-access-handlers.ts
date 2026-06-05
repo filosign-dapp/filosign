@@ -1,4 +1,3 @@
-import { ORPCError } from "@orpc/server";
 import type { Address } from "viem";
 import { z } from "zod";
 import {
@@ -9,6 +8,7 @@ import {
 	submitOrganizationSettlementFeatureRequest,
 } from "@/lib/domains/settlement-access";
 import { assertPlatformAdmin } from "@/lib/platform/admin";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 export async function settlementAccessGetForOrg(
 	wallet: Address,
@@ -49,7 +49,7 @@ export async function settlementAdminApproveAccess(
 		})
 		.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 	return approveOrganizationSettlementFeatureAccess({
 		adminWallet,
@@ -70,7 +70,7 @@ export async function settlementAdminRejectAccess(
 		})
 		.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throw throwZodBadRequest(parsed.error);
 	}
 	return rejectOrganizationSettlementFeatureAccess({
 		adminWallet,

@@ -1,9 +1,9 @@
+import { throwAppError } from "@filosign/errors/server";
 import {
 	type PlacementManifest,
 	zDraftPlacementManifest,
 } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
-import { ORPCError } from "@orpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -21,6 +21,7 @@ import {
 import { invalidateOrgTemplates } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { bucket } from "@/lib/platform/s3/client";
+import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const { organizationConnections, organizationTemplates } = db.schema;
 
@@ -37,7 +38,7 @@ export async function orgsConnectionsAdd(
 	assertOrgPermission(activeOrg, "connections:request");
 	const parsed = zOrgsConnectionAddBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	const recipient = getAddress(parsed.data.recipientWallet);
@@ -96,7 +97,7 @@ export async function orgsConnectionsRevoke(
 	assertOrgPermission(activeOrg, "connections:manage");
 	const parsed = zOrgsConnectionRevokeBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 	const recipient = getAddress(parsed.data.recipientWallet);
 	const [connection] = await db
@@ -113,7 +114,7 @@ export async function orgsConnectionsRevoke(
 		)
 		.returning();
 	if (!connection) {
-		throw new ORPCError("NOT_FOUND", { message: "Connection not found" });
+		throwAppError("WORKSPACE.CONNECTION_NOT_FOUND");
 	}
 	return { connection };
 }
@@ -138,7 +139,7 @@ export async function orgsTemplatesCreate(
 	assertEntitlement(entitlementCtx, "features.shared_templates");
 	const parsed = zOrgsTemplateCreateBody.safeParse(body);
 	if (!parsed.success) {
-		throw new ORPCError("BAD_REQUEST", { message: parsed.error.message });
+		throwZodBadRequest(parsed.error);
 	}
 
 	const [row] = await db
@@ -193,7 +194,7 @@ export async function orgsTemplatesGet(
 		)
 		.limit(1);
 
-	if (!row) throw new ORPCError("NOT_FOUND", { message: "Template not found" });
+	if (!row) throwAppError("WORKSPACE.TEMPLATE_NOT_FOUND");
 	return { template: row };
 }
 
@@ -225,7 +226,7 @@ export async function orgsTemplatesCloneToEnvelope(
 		)
 		.limit(1);
 
-	if (!row) throw new ORPCError("NOT_FOUND", { message: "Template not found" });
+	if (!row) throwAppError("WORKSPACE.TEMPLATE_NOT_FOUND");
 
 	const presignedUrl = bucket.presign(row.s3Key, {
 		method: "GET",
@@ -265,8 +266,7 @@ export async function orgsTemplatesDelete(
 		)
 		.returning();
 
-	if (!deleted)
-		throw new ORPCError("NOT_FOUND", { message: "Template not found" });
+	if (!deleted) throwAppError("WORKSPACE.TEMPLATE_NOT_FOUND");
 	const s3DeleteRes = await bucket.delete(deleted.s3Key).then(
 		() => ({ error: null as Error | null }),
 		(error: unknown) => ({ error: error as Error }),

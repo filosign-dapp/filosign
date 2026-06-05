@@ -30,9 +30,9 @@ Utilities (@filosign/contracts):
 Migrate (deploy contracts; testnet optionally syncs staging DB via push):
   bun run contracts -- --migrate --local      (deploy to local Hardhat only)
   bun run contracts -- --migrate --testnet    (deploys + db push staging)
-  bun run contracts -- --migrate --mainnet    (deploy only — run db migrate production separately)
+  bun run contracts -- --migrate --mainnet    (deploy only — run prod --migrate separately)
 
-Local DB: bun run db -- push local  ·  bun run db -- migrate production  ·  bun run db -- purge local
+Local DB: bun run db -- push local  ·  bun run prod -- --migrate  ·  bun run db -- purge local
 
 Profiles: local (.env.local), testnet (.env.staging chain deploy), mainnet (.env.production) in apps/contracts
 `.trim();

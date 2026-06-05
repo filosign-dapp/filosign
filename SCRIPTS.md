@@ -26,6 +26,10 @@
 | Release builds | `bun run build` (+ flags) |
 | DB schema push (local / staging) | `bun run db -- push local\|staging` |
 | DB schema migrate (sandbox / prod + optional local/staging) | `bun run db -- migrate …` |
+| Prod VPS (SSH) | `FILOSIGN_PROD_SSH` in `deploy/.env` → `bun run prod -- --help` |
+| Prod health (all services) | `bun run prod` (or `bun run prod -- --all --health`) |
+| Prod service probe | `bun run prod -- --pg\|--pgbackup\|--dfly\|--api\|--worker` + `--health` or `--info` |
+| Prod migrate (SSH tunnel) | `bun run prod -- --migrate` |
 | Wipe DB | `bun run db -- purge local\|staging\|sandbox` (local/staging → push; sandbox → migrate) |
 | Generate migration SQL | `bun run --cwd apps/server db:generate` |
 | Schema ↔ migrations drift check | `bun run --cwd apps/server db:schema:check` (also in `bun run sanity -- --ci`) |
@@ -95,7 +99,7 @@ Flags: `--client`, `--astro`, `--server`, `--harness` (`--test`), `--contracts`,
 | `migrate` | all profiles | `drizzle-kit migrate` — **required** for sandbox + production |
 | `purge` | `local`, `staging`, `sandbox` | wipe schema; then **push** (local/staging) or **migrate** (sandbox) |
 
-**Sandbox / production:** never `push` (orchestrator blocks). After schema is stable on local/staging: `bun run --cwd apps/server db:generate` → commit `apps/server/drizzle/` → `bun run db -- migrate sandbox` → backup → `migrate production`.
+**Sandbox / production:** never `push` (orchestrator blocks). After schema is stable on local/staging: `bun run --cwd apps/server db:generate` → commit `apps/server/drizzle/` → `bun run db -- migrate sandbox` → backup → `bun run prod -- --migrate`.
 
 **Local / staging:** edit schema → `push` (or `purge` → push). Generate/migrate only when promoting toward sandbox.
 

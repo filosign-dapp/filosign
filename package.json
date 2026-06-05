@@ -11,6 +11,7 @@
 		"dev": "bun run scripts/dev.ts",
 		"build": "bun run scripts/build.ts",
 		"db": "bun run scripts/db.ts",
+		"prod": "bun run scripts/prod.ts",
 		"contracts": "bun run scripts/contracts.ts",
 		"test": "bun run scripts/test.ts",
 		"check": "bun run scripts/check.ts",

@@ -4,7 +4,7 @@
  *
  * Usage:
  *   bun run db -- push local|staging
- *   bun run db -- migrate local|staging|sandbox|production
+ *   bun run db -- migrate local|staging|sandbox
  *   bun run db -- purge local|staging|sandbox
  *   bun run db -- grant-plan local|staging|sandbox
  *   bun run db -- --help
@@ -25,7 +25,7 @@ Filosign database orchestrator (@filosign/server)
   bun run db -- migrate local     drizzle-kit migrate (.env.local) — optional; dev uses push
   bun run db -- migrate staging   drizzle-kit migrate (Infisical staging) — optional
   bun run db -- migrate sandbox   drizzle-kit migrate (Infisical sandbox)
-  bun run db -- migrate production drizzle-kit migrate (Infisical prod)
+  bun run prod -- --migrate       production (SSH tunnel) — see bun run prod -- --help
   bun run db -- purge local       clear schema + push (.env.local)
   bun run db -- purge staging     clear schema + push (Infisical staging)
   bun run db -- purge sandbox     clear schema + migrate (Infisical sandbox)
@@ -34,7 +34,7 @@ Filosign database orchestrator (@filosign/server)
   bun run db -- grant-plan sandbox Infisical sandbox
 
 local / staging: push (or purge → push) — no generate step.
-sandbox / production: generate → commit apps/server/drizzle/ → migrate (push blocked on sandbox + production).
+sandbox: generate → commit apps/server/drizzle/ → migrate (push blocked). Production: bun run prod -- --migrate.
 `.trim();
 
 type Action = "push" | "purge" | "grant-plan" | "migrate";
@@ -73,7 +73,7 @@ function assertProfile(profile: string): Profile {
 function assertPushAllowed(profile: Profile): asserts profile is PushProfile {
 	if (profile === "production") {
 		die(
-			'Direct push to production is blocked. Use "bun run db -- migrate production" after db:generate and committing apps/server/drizzle/.',
+			'Direct push to production is blocked. Use bun run prod -- --migrate after db:generate and committing apps/server/drizzle/.',
 		);
 	}
 	if (profile === "sandbox") {
@@ -133,6 +133,9 @@ runMain(async () => {
 	}
 
 	if (action === "migrate") {
+		if (profile === "production") {
+			die('Use "bun run prod -- --migrate" for production');
+		}
 		await runInheritExit(
 			rootDir,
 			packageRunCmd(rootDir, server, migrateScript(profile)),

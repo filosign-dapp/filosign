@@ -31,6 +31,9 @@ services:
       - pgbackrest_spool:/var/lib/pgbackrest
       - ./postgres/postgresql.production.conf:/etc/postgresql/postgresql.conf:ro
     command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    # VPS loopback only — laptop migrate via SSH tunnel (FILOSIGN_PROD_SSH); not exposed to the internet.
+    ports:
+      - "127.0.0.1:5432:5432"
     expose:
       - "5432"
     healthcheck:

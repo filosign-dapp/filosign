@@ -10,9 +10,29 @@ ENVs are required in dokploy, a backup is stored in infisical (filosigndapp@gmai
 
 ---
 
+## Migrate schema from your laptop (production)
+
+App containers use `postgres` as DB host on Docker DNS. Your Mac cannot resolve that — use the **SSH tunnel helper** (after `compose.data.yml` publishes Postgres on **VPS loopback** `127.0.0.1:5432` only).
+
+**One-time:** `FILOSIGN_PROD_SSH=root@YOUR_VPS` in `deploy/.env` (gitignored).
+
+**Every migrate** (from repo root, `infisical login` once):
+
+```bash
+bun run prod -- --migrate
+```
+
+Opens SSH `-L 5433:<postgres-container-ip>:5432` (auto-detected via `docker inspect` on the VPS), runs Infisical `prod` + `/app`, rewrites `PG_URI` to `127.0.0.1:5433`, applies Drizzle migrations.
+
+**Optional:** redeploy `filosign-data` with `127.0.0.1:5432:5432` in compose so the tunnel can use host loopback instead of the container IP.
+
+**On the VPS** (optional — same network as `postgres`): `infisical run --env=prod --path=/app -- bun run --cwd apps/server drizzle-kit:migrate` from a repo checkout.
+
+---
+
 ## Is everything OK?
 
-Run weekly (or before deploy/migrate):
+Run weekly (or before deploy/migrate). From laptop: `bun run prod` (see `bun run prod -- --help`).
 
 ```bash
 docker exec filosign-postgres pg_isready -U filosign -d filosign
@@ -210,7 +230,7 @@ If idle and no `status: ok` in `info`, run one backup (not the full setup script
 | Daily                          | `check`                                                                                  |
 | Daily                          | diff backup (cron + `[pgbackrest-backup.sh](../../deploy/scripts/pgbackrest-backup.sh)`) |
 | Weekly                         | full backup                                                                              |
-| Before `db migrate production` | full backup                                                                              |
+| Before `prod --migrate` | full backup                                                                              |
 | Quarterly                      | restore drill above                                                                      |
 
 

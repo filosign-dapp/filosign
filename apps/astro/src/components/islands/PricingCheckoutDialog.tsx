@@ -88,7 +88,8 @@ export default function PricingCheckoutDialog({
 					Start {planName}
 				</h2>
 				<p className="mt-2 text-sm text-muted-foreground font-manrope leading-relaxed">
-					Enter your email and we&apos;ll send a payment link.
+					Enter your email and we&apos;ll send a link to start your 7-day free
+					trial.
 				</p>
 
 				{status === "sent" ? (
@@ -193,7 +194,7 @@ export default function PricingCheckoutDialog({
 								disabled={status === "loading"}
 								className={cn(marketingPrimaryMdClass, "flex-1")}
 							>
-								{status === "loading" ? "Checking…" : "Send payment link"}
+								{status === "loading" ? "Checking…" : "Start 7-day free trial"}
 							</button>
 						</div>
 					</form>

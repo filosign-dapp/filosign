@@ -143,8 +143,8 @@ function PlanPriceBlock({
 	const caption = isFree
 		? "always free"
 		: billingInterval === "yearly"
-			? `${unitLabel}, billed yearly`
-			: `${unitLabel}, billed monthly`;
+			? `7-day free trial, then ${unitLabel} billed yearly`
+			: `7-day free trial, then ${unitLabel} billed monthly`;
 
 	return (
 		<div className="mb-8 flex h-28 flex-col justify-end">

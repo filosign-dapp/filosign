@@ -1,4 +1,6 @@
-import type { definitions as localDef } from "./local.js";
+import type { ChainDefinitions } from "./index.js";
 
-type ChainDefs = (typeof localDef)[keyof typeof localDef];
-export const definitions: Record<string, ChainDefs> = {};
+export const definitions = {
+	latest: {},
+	byAddress: {},
+} as unknown as ChainDefinitions;

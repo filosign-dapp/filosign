@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 
 type TreeNode = {
@@ -29,4 +30,13 @@ function firstTreeifyMessage(node: TreeNode): string | null {
 export function zodSafeParseMessage(error: z.ZodError): string {
 	const tree = z.treeifyError(error) as TreeNode;
 	return firstTreeifyMessage(tree) ?? "Invalid request";
+}
+
+export function throwZodBadRequest(error: z.ZodError): never {
+	throw new ORPCError("BAD_REQUEST", {
+		message: zodSafeParseMessage(error),
+		data: {
+			issues: error.issues,
+		},
+	});
 }

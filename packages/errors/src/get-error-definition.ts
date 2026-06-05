@@ -1,8 +1,4 @@
-import {
-	type AppErrorCode,
-	ERROR_CATALOG,
-	type ErrorCatalog,
-} from "./catalog/index";
+import { type AppErrorCode, ERROR_CATALOG } from "./catalog/index";
 import type { ErrorDefinition } from "./types";
 
 export function getErrorDefinition(code: string): ErrorDefinition | undefined {
@@ -20,7 +16,7 @@ export function listUserDocumentedErrors(): Array<{
 }> {
 	const rows: Array<{ code: AppErrorCode; supportSlug: string }> = [];
 	for (const code of Object.keys(ERROR_CATALOG) as AppErrorCode[]) {
-		const def = ERROR_CATALOG[code] as ErrorCatalog[AppErrorCode];
+		const def = ERROR_CATALOG[code] as ErrorDefinition;
 		if (def.audience !== "user" || !def.supportSlug) continue;
 		rows.push({ code, supportSlug: def.supportSlug });
 	}

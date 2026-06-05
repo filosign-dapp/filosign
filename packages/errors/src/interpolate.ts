@@ -1,6 +1,6 @@
 export function interpolateTemplate(
 	template: string,
-	params: Record<string, string | number | boolean> | undefined,
+	params: Record<string, string | number | boolean | bigint> | undefined,
 ): string {
 	if (!params) return template;
 	return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => {

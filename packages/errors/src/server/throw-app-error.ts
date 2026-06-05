@@ -25,7 +25,7 @@ export function throwAppError<Code extends AppErrorCode>(
 	const options = args[0];
 	const params =
 		options && "params" in options
-			? (options.params as Record<string, string | number | boolean>)
+			? (options.params as Record<string, string | number | boolean | bigint>)
 			: undefined;
 
 	const message = interpolateTemplate(def.title, params);

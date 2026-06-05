@@ -1,5 +1,9 @@
 import type { ViewFileResult } from "@filosign/react/files";
-import type { ComplianceBundle, PlacementManifest } from "@filosign/shared";
+import type {
+	ComplianceBundle,
+	FieldCompletionWireRow,
+	PlacementManifest,
+} from "@filosign/shared";
 import {
 	PDFDocument,
 	type PDFFont,
@@ -27,15 +31,70 @@ function overlaySegTotalHeight(segments: OverlayTextSeg[]): number {
 	return segments.reduce((acc, s) => acc + lineHeightAt(s.font, s.size), 0);
 }
 
+async function fetchCompletionImageBytes(
+	completion: FieldCompletionWireRow,
+): Promise<Uint8Array | null> {
+	if (!completion.previewUrl) return null;
+	try {
+		const res = await fetch(completion.previewUrl);
+		if (!res.ok) return null;
+		return new Uint8Array(await res.arrayBuffer());
+	} catch {
+		return null;
+	}
+}
+
+async function drawFieldCompletionVisual(
+	doc: PDFDocument,
+	page: ReturnType<PDFDocument["getPage"]>,
+	x: number,
+	yPdf: number,
+	rw: number,
+	rh: number,
+	completion: FieldCompletionWireRow,
+): Promise<boolean> {
+	if (completion.valueKind !== "visual" || !completion.previewUrl) {
+		return false;
+	}
+	const bytes = await fetchCompletionImageBytes(completion);
+	if (!bytes) return false;
+
+	let image: PDFImage;
+	try {
+		image = await doc.embedPng(await bytesToPngBytes(bytes, "image/png"));
+	} catch {
+		try {
+			image = await doc.embedPng(await bytesToPngBytes(bytes, "image/webp"));
+		} catch {
+			return false;
+		}
+	}
+
+	const pad = Math.min(4, Math.min(rw, rh) * 0.08);
+	const innerW = Math.max(1, rw - 2 * pad);
+	const innerH = Math.max(1, rh - 2 * pad);
+	const scale = Math.min(innerW / image.width, innerH / image.height);
+	const w = image.width * scale;
+	const h = image.height * scale;
+	const ix = x + (rw - w) / 2;
+	const iy = yPdf + (rh - h) / 2;
+	page.drawImage(image, { x: ix, y: iy, width: w, height: h });
+	return true;
+}
+
 async function drawPlacementOverlaysOnDocumentPdf(
 	doc: PDFDocument,
 	placementManifest: PlacementManifest,
 	signers: ComplianceBundle["signers"],
+	fieldCompletions: FieldCompletionWireRow[] | undefined,
 ): Promise<void> {
 	const font = await doc.embedFont(StandardFonts.Helvetica);
 	const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
 	const n = doc.getPageCount();
 	const signersByRecipient = signersByNormalizedRecipientEmail(signers);
+	const completionByFieldId = new Map(
+		(fieldCompletions ?? []).map((c) => [c.fieldId, c]),
+	);
 
 	for (const f of placementManifest.fields) {
 		const pi = f.pageIndex;
@@ -48,6 +107,46 @@ async function drawPlacementOverlaysOnDocumentPdf(
 		const x = f.rect.x * w;
 		const yTop = f.rect.y * h;
 		const yPdf = h - yTop - rh;
+
+		const completion = completionByFieldId.get(f.id);
+		if (completion) {
+			if (completion.valueKind === "visual") {
+				const drew = await drawFieldCompletionVisual(
+					doc,
+					page,
+					x,
+					yPdf,
+					rw,
+					rh,
+					completion,
+				);
+				if (drew) continue;
+			}
+			if (
+				completion.textValue &&
+				(completion.valueKind === "auto" ||
+					completion.valueKind === "text" ||
+					completion.valueKind === "checkbox")
+			) {
+				const text =
+					completion.valueKind === "checkbox"
+						? completion.textValue === "true"
+							? "✓"
+							: ""
+						: completion.textValue;
+				if (text) {
+					const size = Math.min(10, Math.max(7, rh * 0.35));
+					page.drawText(text, {
+						x: x + 4,
+						y: yPdf + rh / 2 - size / 3,
+						size,
+						font,
+						color: rgb(0.1, 0.1, 0.11),
+					});
+					continue;
+				}
+			}
+		}
 
 		const recipientKey = f.assignedRecipientEmail.trim().toLowerCase();
 		const signerRow = signersByRecipient.get(recipientKey);
@@ -311,6 +410,7 @@ export async function buildDocumentPlusCompliancePdf(
 				out,
 				options.bundle.placementManifest,
 				options.bundle.signers,
+				options.bundle.fieldCompletions,
 			);
 		} catch {
 			throw new Error(
@@ -333,6 +433,7 @@ export async function buildDocumentPlusCompliancePdf(
 			out,
 			options.bundle.placementManifest,
 			options.bundle.signers,
+			options.bundle.fieldCompletions,
 		);
 	}
 

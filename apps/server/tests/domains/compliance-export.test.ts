@@ -32,6 +32,33 @@ describe("isComplianceExportAllowed", () => {
 			}),
 		).toBe(false);
 	});
+
+	test("allows when chain completedAt is set but DB is null", () => {
+		expect(
+			isComplianceExportAllowed(
+				{ completedAt: null, revokedBeforeCompletedAt: null },
+				{ completedAt: 1_700_000_000, revokedBeforeCompletedAt: null },
+			),
+		).toBe(true);
+	});
+
+	test("allows when chain revokedBeforeCompletedAt is set but DB is null", () => {
+		expect(
+			isComplianceExportAllowed(
+				{ completedAt: null, revokedBeforeCompletedAt: null },
+				{ completedAt: null, revokedBeforeCompletedAt: 1_700_000_000 },
+			),
+		).toBe(true);
+	});
+
+	test("denies in-flight envelope when DB and chain are unset", () => {
+		expect(
+			isComplianceExportAllowed(
+				{ completedAt: null, revokedBeforeCompletedAt: null },
+				{ completedAt: null, revokedBeforeCompletedAt: null },
+			),
+		).toBe(false);
+	});
 });
 
 describe("assertExportDocumentSha256Matches", () => {

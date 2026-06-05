@@ -15,6 +15,7 @@ import {
 import type { Address, Hex } from "viem";
 import { getAddress, isHex } from "viem";
 import config from "@/config";
+import { listPieceFieldCompletions } from "@/lib/domains/files/utils/field-completions";
 import { sha256HexOfHexBytes } from "./hash";
 import type { ComplianceLoadContext } from "./load-context";
 import { receiptMeta } from "./receipt-meta";
@@ -375,6 +376,8 @@ export async function assembleComplianceBundle(
 		}),
 	);
 
+	const fieldCompletions = await listPieceFieldCompletions(pieceCid);
+
 	return {
 		version: 1,
 		pieceCid,
@@ -400,5 +403,6 @@ export async function assembleComplianceBundle(
 			coldInviteClaims,
 			payoutRecipientAcknowledgements,
 		},
+		fieldCompletions,
 	};
 }

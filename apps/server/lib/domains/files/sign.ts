@@ -25,6 +25,7 @@ import {
 	assertSettlementRecipientAckProvided,
 	recordSettlementRecipientAck,
 } from "@/lib/domains/settlement-access/utils/recipient-ack";
+import { copyArtifactToEnvelopeSnapshot } from "@/lib/domains/users/signatures";
 import {
 	SERVER_ANALYTICS_EVENTS,
 	trackServerEvent,
@@ -42,19 +43,43 @@ import { primaryEmailForWallet } from "./invites";
 import { isSignerReplacementPendingOnChain } from "./signer-replacement";
 import { buildEnvelopeCompletedEmailOutboxRows } from "./utils/completion-email";
 import {
+	parseFieldCompletionMap,
+	validateFieldCompletionsForSigner,
+} from "./utils/field-completions";
+import {
 	isEnvelopeRoutingCompleteOnChain,
 	requireCanSign,
 } from "./utils/piece-helpers";
 import { resolveSignRoutingCalldata } from "./utils/routing-calldata";
 
-const { files, fileParticipants, fileSignatures, fileSignerDrafts, users } =
-	db.schema;
+const {
+	files,
+	fileParticipants,
+	fileSignatures,
+	fileSignerDrafts,
+	fileFieldCompletions,
+	userSignatures,
+	users,
+} = db.schema;
 
 export const zPieceSignBody = z.object({
 	signature: zHexString(),
 	timestamp: z.number({ error: "timestamp must be a number" }),
 	dl3Signature: zHexString(),
 	completedFieldIds: z.array(z.string()),
+	fieldCompletions: z
+		.record(
+			z.string(),
+			z.object({
+				fieldId: z.string(),
+				valueKind: z.enum(["visual", "text", "checkbox", "auto"]),
+				sourceArtifactId: z.uuid().nullable(),
+				storageKey: z.string().nullable(),
+				contentSha256: z.string().nullable(),
+				textValue: z.string().nullable(),
+			}),
+		)
+		.optional(),
 	settlementRecipientAck: z
 		.object({
 			termsVersion: z.string().min(1),
@@ -79,8 +104,14 @@ export async function pieceSign(args: {
 	if (parsedBody.error) {
 		throwZodBadRequest(parsedBody.error);
 	}
-	const { signature, timestamp, dl3Signature, completedFieldIds } =
-		parsedBody.data;
+	const {
+		signature,
+		timestamp,
+		dl3Signature,
+		completedFieldIds,
+		fieldCompletions: fieldCompletionsRaw,
+	} = parsedBody.data;
+	const fieldCompletions = parseFieldCompletionMap(fieldCompletionsRaw ?? {});
 
 	await assertSettlementRecipientAckProvided({
 		pieceCid,
@@ -244,6 +275,12 @@ export async function pieceSign(args: {
 		}
 	}
 
+	validateFieldCompletionsForSigner({
+		assignedFields: assignedForSigner,
+		completedFieldIds: fieldIds,
+		fieldCompletions,
+	});
+
 	if (fieldIds.length === 0) {
 		throwZodBadRequest(
 			new z.ZodError([
@@ -341,7 +378,7 @@ export async function pieceSign(args: {
 	const simulateRes = await tryCatch(
 		registry.simulate.registerEnvelopeSignature(registerSignatureArgs, {
 			account: evmClient.account,
-		}),
+		}) as Promise<unknown>,
 	);
 	if (simulateRes.error) {
 		throwAppError("SIGNING.SIGNATURE_INVALID");
@@ -365,6 +402,56 @@ export async function pieceSign(args: {
 		requestUserAgent: args.requestUserAgent ?? null,
 		createdAt: new Date(timestamp * 1000),
 	});
+
+	const now = new Date();
+	const snapshotRows: (typeof fileFieldCompletions.$inferInsert)[] = [];
+
+	for (const fieldId of completedFieldIdsStored) {
+		const completion = fieldCompletions[fieldId];
+		if (!completion) continue;
+
+		let storageKey = completion.storageKey;
+		let contentSha256 = completion.contentSha256;
+		let sourceArtifactId = completion.sourceArtifactId;
+
+		if (completion.valueKind === "visual" && completion.sourceArtifactId) {
+			const [artifact] = await db
+				.select()
+				.from(userSignatures)
+				.where(eq(userSignatures.id, completion.sourceArtifactId));
+
+			if (artifact) {
+				const snap = await copyArtifactToEnvelopeSnapshot({
+					pieceCid,
+					fieldId,
+					artifact,
+				});
+				storageKey = snap.storageKey;
+				contentSha256 = snap.contentSha256;
+				sourceArtifactId = artifact.id;
+			}
+		}
+
+		snapshotRows.push({
+			filePieceCid: pieceCid,
+			fieldId,
+			signer: signerWallet,
+			valueKind: completion.valueKind,
+			sourceArtifactId,
+			storageKey,
+			contentSha256,
+			textValue: completion.textValue,
+			createdAt: now,
+			updatedAt: now,
+		});
+	}
+
+	if (snapshotRows.length > 0) {
+		await db
+			.insert(fileFieldCompletions)
+			.values(snapshotRows)
+			.onConflictDoNothing();
+	}
 
 	const recipientAck = parsedBody.data.settlementRecipientAck;
 	if (recipientAck) {

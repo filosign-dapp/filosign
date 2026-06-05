@@ -34,6 +34,35 @@ describe("files", () => {
 				);
 				expect(src).toContain("registryAddress: zHexString()");
 			});
+
+			test("pieceDetail exposes organizationId to sender for org recall", () => {
+				const src = readFileSync(
+					join(repoRoot, "apps/server/lib/domains/files/detail.ts"),
+					"utf8",
+				);
+				expect(src).toContain("canReadOrg || isSender");
+				expect(src).not.toMatch(
+					/organizationId:\s*canReadOrg\s*\?\s*fileRecord\.organizationId/,
+				);
+			});
+
+			test("pieceDetail exposes sender-org comment flags", () => {
+				const detailSrc = readFileSync(
+					join(repoRoot, "apps/server/lib/domains/files/detail.ts"),
+					"utf8",
+				);
+				expect(detailSrc).toContain("senderEntitlementCtx");
+				expect(detailSrc).toContain('"features.comments"');
+				expect(detailSrc).toContain("commentsFeatureEnabled,");
+				expect(detailSrc).toContain("hasSenderComments,");
+
+				const schemaSrc = readFileSync(
+					join(repoRoot, "apps/server/api/orpc/schemas/files-piece-output.ts"),
+					"utf8",
+				);
+				expect(schemaSrc).toContain("commentsFeatureEnabled: z.boolean()");
+				expect(schemaSrc).toContain("hasSenderComments: z.boolean()");
+			});
 		});
 
 		describe("sign and ack EIP-712 verifyingContract", () => {
@@ -53,6 +82,25 @@ describe("files", () => {
 				);
 				expect(src).toContain("envelopeRegistryAt(contracts, registryAddress)");
 				expect(src).toContain("verifyingContract: registry.address");
+			});
+
+			test("useRecallEnvelope signs against envelopeRegistryAt(registryAddress)", () => {
+				const hookSrc = readFileSync(
+					join(
+						repoRoot,
+						"packages/react-sdk/src/hooks/files/useRecallEnvelope.ts",
+					),
+					"utf8",
+				);
+				expect(hookSrc).toContain("fileResponse.registryAddress");
+				const sigSrc = readFileSync(
+					join(repoRoot, "packages/react-sdk/src/lib/signatures.ts"),
+					"utf8",
+				);
+				expect(sigSrc).toContain(
+					"envelopeRegistryAt(args.contracts, args.registryAddress)",
+				);
+				expect(sigSrc).toContain("verifyingContract: registry.address");
 			});
 
 			test("eip712signature supports per-registry verifyingContract override", () => {

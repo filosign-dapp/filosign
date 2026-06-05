@@ -1,5 +1,6 @@
 import z from "zod";
 import { zEvmAddress, zHexString } from "../helpers/zod";
+import { zFieldCompletionWireRow } from "./field-completion";
 import { zPlacementManifest } from "./placement";
 import {
 	settlementReleaseTypes,
@@ -169,6 +170,7 @@ export const zComplianceBundle = z.object({
 	signers: z.array(zSignerComplianceRow),
 	settlements: z.array(zSettlementComplianceRow),
 	offChainEvidence: zOffChainEvidence,
+	fieldCompletions: z.array(zFieldCompletionWireRow).optional(),
 });
 
 export type ComplianceBundle = z.infer<typeof zComplianceBundle>;

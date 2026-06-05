@@ -1,0 +1,99 @@
+---
+title: Gated file release
+description: Send extra files that unlock only for selected recipients after signing conditions are met.
+---
+
+Use gated files when a recipient should receive sensitive documents only after the right signatures are complete. This is useful for source code, final deliverables, investor packets, grant attachments, and handoff files.
+
+In the app, these appear as **Extra files** while you compose and **Supplementary files** before send.
+
+## When to use this
+
+* **Client Handovers**: An agency wants to release source code or final deliverables only after client sign-off.
+* **Supporting Materials**: A grant team wants to share supporting documents or files after milestone approval.
+* **Investor Updates**: A founder wants to share sensitive investor packets with selected recipients after they sign an NDA.
+* **Contractor Delivery**: A contractor wants to attach handoff files to the same agreement workflow.
+
+## How it works
+
+1. Add PDFs as an extra file packet.
+2. Choose which recipient emails can access that packet.
+3. Choose whether it opens right after send or after signing conditions are met.
+4. Filosign encrypts the files before upload.
+5. Selected recipients can download them when the unlock rule allows it.
+
+## Limits
+
+| Limit | Value |
+|-------|-------|
+| Packets per envelope | 3 |
+| PDFs per packet | 3 |
+| Max size per PDF | 5 MB |
+| File type | PDF only |
+
+## Example workflow
+
+A dev studio sends a final acceptance document to a client. The studio attaches source code handoff notes and final PDFs as gated files. The client signs the acceptance, the release condition is met, and the selected client recipient can download the files.
+
+## How to do it in the app
+
+1. Open the envelope composer.
+2. Scroll to the **Extra files** section and click **Add files**.
+3. Upload your PDFs.
+4. Optionally name the packet (the default is **File packet**).
+5. Choose **Who can access** from the list of recipients.
+6. Choose **Unlock when** (either **Right after send** or **Conditions are met**).
+
+### Unlock options
+
+| Option | When recipients can open the files |
+|---|---|
+| **Right after send** | As soon as the envelope is sent out |
+| **Conditions are met** | When the [release condition](/docs/workflows/release-conditions/) you pick is satisfied |
+
+### Who can access
+
+Pick which recipient emails on the envelope may receive the packet. Files are encrypted so only those people can open them.
+
+## What recipients see
+
+Recipients see **Extra files** in the sign page sidebar.
+
+| What they see | What it means |
+|---|---|
+| A locked message (e.g., **Unlocks when: Everyone has signed**) | Wait until the condition is met |
+| **Unlock your wallet keys to download** | Unlock keys, then try again |
+| **Ready to download** | Select **Download extra files** |
+
+Filosign downloads the encrypted copy, decrypts it in the browser, and saves the PDFs to the recipient device.
+
+## Automatic unlock
+
+For conditional packets, nobody has to manually unlock the files.
+
+After each signature, Filosign checks whether your condition is satisfied. When it is, the packet unlocks for the recipients you chose. If unlock is delayed, the sign page may refresh until the files are ready. A daily check also retries packets that should have unlocked already.
+
+## Sender controls
+
+Before any required signer signs, you can remove the unlock rule on a conditional packet. Recipients will no longer see it.
+
+## What to watch out for
+
+* Only PDFs are supported today.
+* Recipients must be selected before they can access a packet.
+* If you choose **Right after send**, the files are available immediately after the envelope goes out.
+* Do not use gated files as a substitute for legal advice, data-room controls, or jurisdiction-specific compliance.
+
+## Privacy
+
+* PDFs are encrypted before they leave your browser.
+* Storage holds encrypted copies.
+* Only recipients you picked can decrypt a packet.
+
+How we handle document data is described in our [Privacy Policy](/privacy) and [Security](/security) pages.
+
+## Related guides
+
+* [Release conditions](/docs/workflows/release-conditions/)
+* [Payout packets](/docs/workflows/payouts/) use the same condition model
+* [Document privacy](/docs/security/encrypted-workflows/)

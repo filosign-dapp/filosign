@@ -1,0 +1,63 @@
+---
+title: Release conditions
+description: When payout packets move and when gated files unlock.
+---
+
+Release conditions answer one question: **when should this happen?**
+
+* For payout packets, you set **Pay out when**.
+* For gated files (when unlock is **Conditions are met**), you set **Unlock when**.
+
+Payout packets and gated files share the same list of release condition options.
+
+## What happens when the condition is met
+
+You do not press a button. Filosign handles it.
+
+| Feature | What Filosign does |
+|---|---|
+| **Payout packets** | Moves approved USDC from the payer wallet to each recipient in that payout packet. See [Payout packets](/docs/workflows/payouts/). |
+| **Gated files** | Unlocks the file packet so chosen recipients can download. See [Gated file release](/docs/workflows/attached-files/). |
+
+This runs after signatures, as signing progress updates. If something fails, the sign page may show **Pay now** (payouts only) so you can retry.
+
+**Right after send** file packets ignore release conditions. They unlock as soon as the envelope is sent.
+
+## All release options
+
+| Option in the app | What has to happen |
+|---|---|
+| **Everyone has signed** | The envelope is fully complete under its signing order |
+| **A specific person signs** | One signer you pick has signed |
+| **Enough people sign** | At least **N** people on the envelope have signed (you enter **N**) |
+| **Everyone required has signed** | Every required signer has signed |
+| **Everyone (including optional) has signed** | Required and optional signers have all signed |
+| **Envelope minimum signatures are met** | The envelope hits its minimum signature count (you enter **N** if needed) |
+| **Enough people from your chosen group sign** | At least **N** people from the roster have signed |
+| **Enough people from the full roster sign** | At least **N** people from the full signer list have signed |
+| **Everyone on your list signs** | Every signer on the roster has signed |
+
+## Extra fields you may see
+
+**Which signer triggers payout** appears when you pick **A specific person signs** for a payout packet. Choose one person from the envelope.
+
+**How many signatures are needed** appears for the options that use a number. Enter how many signatures count.
+
+**Cutoff date (optional)** appears when you attach a payout packet. After that date and time, the payout cannot run. You cannot change the cutoff later from **Change payout amounts**.
+
+Gated file packets do not offer a cutoff date in the compose dialog today.
+
+## Tips
+
+**Some options sound different but fire at the same milestone.** A few choices describe different intents (for example, "everyone required" vs "everyone including optional") but may unlock or pay at the same point depending on who is on the envelope. Pick the label that best matches what you mean.
+
+**Group options use the full signer list.** For **Enough people sign** and similar options, Filosign uses everyone on the envelope roster. You cannot pick a custom subgroup in the UI today.
+
+## Related guides
+
+* [Payout packets](/docs/workflows/payouts/)
+* [Gated file release](/docs/workflows/attached-files/)
+
+## Policies
+
+Release conditions for payout packets are part of the [Payout attachment](/legal/non-custodial-settlement) model in our [Terms of Service](/terms). Signing evidence is described in [E-signature evidence](/legal/e-signature-validity).

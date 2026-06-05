@@ -1,0 +1,91 @@
+---
+title: Payout packets
+description: Attach optional USDC payout packets to envelopes. They send automatically when your release conditions are met.
+---
+
+**Payout packets** let you attach optional USDC payments to an envelope and pre-authorize them from your wallet. You pick who gets paid, how much, and when. Funds stay in your wallet until that condition is met, then Filosign sends payment automatically. This is [not escrow](/legal/non-custodial-settlement): we never hold your money, and you can revoke approval or cancel unpaid payouts before they go out.
+
+## What you need
+
+- **USDC on Base** in the wallet that will pay (usually yours, or a linked team wallet).
+- Enough **wallet approval** for Filosign to move that USDC when the condition is met.
+
+## Attach a payout
+
+Add a payout when you send an envelope, or later from the document page.
+
+1. Open **Add a payout** (or **Attach payout** after send).
+2. Pick the **recipient** and **amount** in USDC.
+3. Choose **Pay out when**. See [Release conditions](/docs/workflows/release-conditions/) for every option.
+4. Optionally set a **Cutoff date** after which the payout cannot run.
+5. Approve the total amount in your wallet, then confirm.
+
+You can attach **more than one payout** to the same envelope.
+
+### Pay several people from one payout
+
+While composing, you can check **One rule for N recipients** to group multiple recipients into a single payout. Each person is still paid in a separate transfer. If only some have been paid, you will see progress like **2/3 recipients paid**.
+
+**Attach payout** after send adds one recipient at a time.
+
+## What happens automatically
+
+When the release condition is met, **you do not need to click anything**.
+
+After **each signature** on the envelope, Filosign checks your attached payouts. For any payout that is ready, we send USDC from your wallet to each recipient who has not been paid yet.
+
+If something fails (not enough USDC, approval removed, or a network error), the payout section shows the problem and offers retry buttons.
+
+Once a day, Filosign also refreshes payout status so the app stays in sync if a transfer completed outside the app.
+
+### Status messages in the app
+
+| What you see | What it means |
+|--------------|---------------|
+| Waiting for signatures | The release condition is not met yet |
+| Ready to pay out | The condition is met; payment should send or retry soon |
+| Partly paid | Some recipients were paid; others are still waiting |
+| Paid | Everyone in that payout was paid |
+| Not enough USDC or approval | We could not pull funds from your wallet |
+| We couldn't send the transfer | Sending failed; try the buttons below |
+
+## If payment did not go through
+
+On the sign or document page:
+
+- **Pay now**: Filosign tries again to send any unpaid amounts for that payout.
+- **Pay from my wallet**: You submit the transfer yourself from your wallet if the automatic send is unavailable.
+
+You need enough USDC and a valid approval. See [Troubleshooting](/docs/troubleshooting/) if the error continues.
+
+## If you are signing
+
+You may need to accept a short disclosure: payment is between you and the sender, not Filosign. Signing is separate from getting paid.
+
+Payouts send automatically when conditions are met. You do not need to click **Pay now** to receive USDC. Use **Pay now** or **Pay from my wallet** only if you are the payer or retrying a failed send.
+
+## Change or cancel after send
+
+Senders who can manage payouts can do this from the document page:
+
+- **Change payout amounts**: Edit USDC amounts only. You cannot change who gets paid, the release condition, or the cutoff date from this screen.
+- **Remove payout**: Stops any amounts that have not gone out yet. Money already sent cannot be taken back. If some recipients were already paid, only the rest are cancelled.
+- You cannot change payout terms after the first required signer signs, or after anyone has been paid.
+
+## Revoke payout approval
+
+**Revoke payout approval** in your wallet stops future automatic sends. Amounts already paid stay paid.
+
+## Good to know
+
+- Amounts are in **USDC on Base**.
+- **Network fees** apply to wallet transfers.
+- Tax, compliance, and disputes are between you and your counterparty.
+
+## Policies
+
+Payouts are covered in our [Terms of Service](/terms), [Payout attachment](/legal/non-custodial-settlement) overview, and [Payout feature addendum](/legal/settlement-feature-addendum). General use of Filosign is governed by our [Acceptable Use Policy](/acceptable-use). This guide is product help, not legal advice.
+
+## Need help?
+
+Search [Troubleshooting](/docs/troubleshooting/) for the message you see in the app, or email [support@filosign.xyz](mailto:support@filosign.xyz).

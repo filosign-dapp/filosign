@@ -1,0 +1,50 @@
+---
+title: Void or change a sent envelope
+description: Cancel before completion, replace a signer, or adjust payout packets and gated files after send.
+---
+
+## Can I cancel after I hit Send?
+
+**Yes, before everyone required has signed.** Workspace **owners** and **admins** can **void** (recall) the envelope. Senders can too in many cases. You cannot void after the envelope is **fully complete** (or after your minimum signature rule is satisfied).
+
+Voiding:
+
+* Stops outstanding invites.
+* Marks the workflow as voided in your records.
+* Still lets you download a [proof packet](/docs/proof/completion-packet/) showing what happened.
+
+Signatures that already occurred may still appear in the verification record. See [Verification records](/docs/security/on-chain-record/).
+
+Open **Void envelope** from the document page.
+
+## The wrong person is listed as a signer
+
+If they **have not signed yet**, owners and admins can **amend** the roster: replace them with someone else. New invites go out automatically.
+
+If they **already signed**, you need a different workflow (new envelope). Filosign does not silently swap completed signatures.
+
+## Can I change payout packets or gated files after send?
+
+Often **yes**, on eligible plans:
+
+* **Payout packets**: attach, update, or cancel rules that have not executed yet.
+* **Gated files**: attach or cancel packets on Teams Pro before they unlock.
+
+Treasury payouts still need your **team wallet** to approve funds. See [Payout packets](/docs/workflows/payouts/).
+
+## Who is allowed to do this?
+
+| Role | Void / amend | Send envelopes |
+|------|:------------:|:--------------:|
+| Owner, Admin | Yes | Yes |
+| Sender | Send only; cannot override admin void rules | Yes |
+| Viewer | No | No |
+
+## Coordinate with your team
+
+Use [Comments](/docs/workflows/comments/) on the envelope to agree on a void or signer change before you act.
+
+## Related
+
+* [Signing and routing](/docs/workflows/signing-and-routing/)
+* [Verification records](/docs/security/on-chain-record/)

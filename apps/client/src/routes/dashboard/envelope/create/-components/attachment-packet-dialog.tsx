@@ -29,6 +29,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/src/lib/components/ui/select";
+import { DocsLink } from "@/src/lib/docs/docs-link";
+import { DOCS_LINKS } from "@/src/lib/docs/links";
 import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
 import { SettlementReleaseFields } from "@/src/lib/domains/settlements/settlement-release-fields";
 import { createClientId } from "@/src/lib/utils/id";
@@ -246,7 +248,10 @@ export function AttachmentPacketDialog({
 						{existingDraft ? "Edit extra files" : "Add extra files"}
 					</DialogTitle>
 					<DialogDescription>
-						Recipients unlock these based on the rules you set below.
+						Recipients unlock these based on the rules you set below.{" "}
+						<DocsLink href={DOCS_LINKS.attachedFiles()}>
+							Read the attached files guide
+						</DocsLink>
 					</DialogDescription>
 				</DialogHeader>
 

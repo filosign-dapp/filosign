@@ -141,7 +141,8 @@ export function AttachSettlementDialog({
 					<DialogTitle>Add a payout</DialogTitle>
 					<DialogDescription>
 						Send USDC to someone on this document once the conditions you pick
-						are met. Funds stay in your wallet until then—we never hold them.
+						are met. Filosign sends it automatically when those conditions are
+						satisfied. Funds stay in your wallet until then. We never hold them.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4 py-1">

@@ -9,6 +9,8 @@ import {
 } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
+import { DocsLink } from "@/src/lib/docs/docs-link";
+import { DOCS_LINKS } from "@/src/lib/docs/links";
 import {
 	hydrateAttachmentPacketDrafts,
 	saveAttachmentPacketDrafts,
@@ -92,7 +94,10 @@ export function ComposeSupplementaryFilesSection() {
 					<h2 className="text-sm font-semibold">Extra files</h2>
 					<p className="text-xs text-muted-foreground">
 						Optional files sent with the envelope. You choose who gets them and
-						when.
+						when.{" "}
+						<DocsLink href={DOCS_LINKS.attachedFiles()}>
+							Read the attached files guide
+						</DocsLink>
 					</p>
 				</div>
 				<Button

@@ -17,6 +17,8 @@ import {
 } from "@/src/lib/components/ui/dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { DocsLink } from "@/src/lib/docs/docs-link";
+import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { handleBasicPayoutGateBlock } from "@/src/lib/domains/settlements/basic-payout-gate";
 import {
 	expiresAtFromDatetimeLocal,
@@ -132,8 +134,12 @@ export function RecipientSettlementDialog({
 					<DialogTitle>Add a payout</DialogTitle>
 					<DialogDescription>
 						Optional USDC payout for <strong>{payeeLabel}</strong> when the
-						conditions you pick are met—separate from envelope signing options.
-						Money stays in your wallet until then; we never hold it.
+						conditions you pick are met. Filosign sends it automatically once
+						those conditions are satisfied. Separate from envelope signing
+						options. Money stays in your wallet until then; we never hold it.{" "}
+						<DocsLink href={DOCS_LINKS.payouts()}>
+							Read the payouts guide
+						</DocsLink>
 					</DialogDescription>
 				</DialogHeader>
 

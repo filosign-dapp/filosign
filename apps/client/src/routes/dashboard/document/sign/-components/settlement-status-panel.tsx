@@ -14,6 +14,8 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import { defaultChain, SUPPORTED_TOKENS } from "@/src/constants";
 import { Button } from "@/src/lib/components/ui/button";
+import { DocsLink } from "@/src/lib/docs/docs-link";
+import { DOCS_LINKS } from "@/src/lib/docs/links";
 import {
 	formatSettlementAmountLine,
 	formatSettlementRecipientLine,
@@ -117,15 +119,23 @@ export function SettlementStatusPanel({
 				</h4>
 				{isSender ? (
 					<p className="text-xs text-muted-foreground">
-						USDC stays in your wallet until each payout runs. We can send it for
-						you once conditions are met, using only what you&apos;ve approved.
-						Revoke approval below to stop any unpaid payouts.
+						USDC stays in your wallet until each payout runs. We send it
+						automatically when conditions are met, using only what you&apos;ve
+						approved. Use Pay now below only if a payment did not go through.
+						Revoke approval below to stop any unpaid payouts.{" "}
+						<DocsLink href={DOCS_LINKS.payouts()}>
+							Read the payouts guide
+						</DocsLink>
 					</p>
 				) : (
 					<p className="text-xs text-muted-foreground">
-						When conditions are met, the sender&apos;s wallet can send USDC. Use
-						Pay now to retry, or Pay from my wallet if you&apos;re the
-						recipient. Signing this document does not guarantee payment.
+						Payouts run automatically when conditions are met. Use Pay now to
+						retry a failed transfer, or Pay from my wallet if you are paying
+						from your own wallet. Signing this document does not guarantee
+						payment.{" "}
+						<DocsLink href={DOCS_LINKS.payouts()}>
+							Read the payouts guide
+						</DocsLink>
 					</p>
 				)}
 			</div>

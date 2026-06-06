@@ -1,6 +1,6 @@
-import { SupportCenterPanel } from "@filosign/errors/client";
 import { createFileRoute } from "@tanstack/react-router";
 import { env } from "@/src/env";
+import { SupportCenterPanel } from "./-components/support-center-panel";
 
 export const Route = createFileRoute("/dashboard/_shell/support/")({
 	component: SupportCenterPage,

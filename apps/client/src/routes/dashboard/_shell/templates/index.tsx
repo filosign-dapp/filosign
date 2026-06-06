@@ -22,6 +22,7 @@ import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
+import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Dialog,
@@ -294,27 +295,22 @@ function TemplatesIndexPage() {
 					transition={{ duration: 0.2, delay: 0.1 }}
 				>
 					{templates.length === 0 ? (
-						<div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center py-20">
-							<div className="size-32 mx-auto mb-6 flex items-center justify-center text-muted-foreground/45 bg-muted/10 rounded-full border border-border/40">
-								<FileTextIcon className="size-16" weight="light" />
-							</div>
-							<h2 className="font-semibold text-foreground text-base">
-								No templates found
-							</h2>
-							<p className="max-w-md px-4 mt-1 text-sm text-muted-foreground">
-								Create reusable starting points for your team envelopes. Click
-								below to save an existing draft as a template.
-							</p>
+						<AppEmptyState
+							preset="page"
+							icon={FileTextIcon}
+							title="No templates found"
+							description="Create reusable starting points for your team envelopes. Save an existing draft as a template to get started."
+						>
 							<Button
 								type="button"
 								variant="primary"
-								className="mt-6 gap-1.5"
+								className="gap-1.5"
 								onClick={() => setCreateOpen(true)}
 							>
 								<PlusIcon className="size-4" weight="bold" />
 								Create Template
 							</Button>
-						</div>
+						</AppEmptyState>
 					) : (
 						<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 							{templates.map((t) => {

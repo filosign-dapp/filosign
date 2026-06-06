@@ -77,6 +77,4 @@ if (errorCount > 0) {
 		console.log("Warning-only mode: Proceeding with exit code 0.");
 		process.exit(0);
 	}
-} else {
-	console.log("Error audit passed successfully!");
 }

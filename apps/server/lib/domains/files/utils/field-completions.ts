@@ -5,28 +5,27 @@ import {
 	type FieldCompletion,
 	type FieldCompletionMap,
 	type FieldCompletionWireRow,
+	fieldCompletionMapFromInput,
 	type PlacementField,
 	TEXT_FIELD_TYPES,
 	VISUAL_FIELD_TYPES,
-	zFieldCompletion,
-	zFieldCompletionMap,
+	zFieldCompletionInputMap,
 } from "@filosign/shared";
 import { eq } from "drizzle-orm";
-import { z } from "zod";
 import db from "@/lib/platform/db";
-import { bucket } from "@/lib/platform/s3/client";
+import { presignObjectPreviewGet } from "@/lib/platform/s3/presign-preview";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
+
+export { enrichFieldCompletionMapPreviews } from "./enrich-field-completion-previews";
 
 const { fileFieldCompletions } = db.schema;
 
-const PREVIEW_TTL_SECONDS = 60 * 15;
-
-export function parseFieldCompletionMap(raw: unknown): FieldCompletionMap {
-	const parsed = zFieldCompletionMap.safeParse(raw ?? {});
+export function parseFieldCompletionInputMap(raw: unknown): FieldCompletionMap {
+	const parsed = zFieldCompletionInputMap.safeParse(raw ?? {});
 	if (!parsed.success) {
 		throwZodBadRequest(parsed.error);
 	}
-	return parsed.data;
+	return fieldCompletionMapFromInput(parsed.data);
 }
 
 export function fieldCompletionForManifestField(
@@ -81,25 +80,7 @@ export function validateFieldCompletionsForSigner(args: {
 	}
 }
 
-export const zPieceSignFieldCompletionsBody = z.record(
-	z.string(),
-	zFieldCompletion.omit({ previewUrl: true }),
-);
-
-async function presignCompletionPreview(
-	storageKey: string | null | undefined,
-): Promise<string | null> {
-	if (!storageKey) return null;
-	try {
-		return bucket.presign(storageKey, {
-			method: "GET",
-			expiresIn: PREVIEW_TTL_SECONDS,
-		});
-	} catch {
-		return null;
-	}
-}
-
+/** Presign visual completion previews for read responses (draft GET, signed file detail). */
 export async function listPieceFieldCompletions(
 	pieceCid: string,
 ): Promise<FieldCompletionWireRow[]> {
@@ -117,7 +98,7 @@ export async function listPieceFieldCompletions(
 			storageKey: row.storageKey,
 			contentSha256: row.contentSha256,
 			textValue: row.textValue,
-			previewUrl: await presignCompletionPreview(row.storageKey),
+			previewUrl: await presignObjectPreviewGet(row.storageKey),
 		})),
 	);
 }

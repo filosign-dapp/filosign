@@ -22,6 +22,19 @@ interface SidebarState {
 	lastClickedMenu?: string;
 }
 
+interface ActivationUiState {
+	checklistDismissed: boolean;
+	checklistCollapsed: boolean;
+	/** Completion next-steps card dismissed after basic onboarding. */
+	nextStepsDismissed: boolean;
+	dismissedHintIds: string[];
+	lastSeenCatalogVersion: number;
+	/** Advanced checklist step ids the user has already been shown. */
+	seenAdvancedStepIds: string[];
+	/** Last billing plan used to diff newly unlocked advanced steps. */
+	lastSeenBillingPlanId: string | null;
+}
+
 interface StorePersist {
 	createForm: CreateForm | null;
 	setCreateForm: (form: CreateForm) => void;
@@ -37,7 +50,20 @@ interface StorePersist {
 
 	sidebar: SidebarState;
 	setSidebar: (sidebar: Partial<SidebarState>) => void;
+
+	activationUi: ActivationUiState;
+	setActivationUi: (updates: Partial<ActivationUiState>) => void;
 }
+
+const defaultActivationUi: ActivationUiState = {
+	checklistDismissed: false,
+	checklistCollapsed: false,
+	nextStepsDismissed: false,
+	dismissedHintIds: [],
+	lastSeenCatalogVersion: 0,
+	seenAdvancedStepIds: [],
+	lastSeenBillingPlanId: null,
+};
 
 export const useStorePersist = create<StorePersist>()(
 	persist(
@@ -85,12 +111,19 @@ export const useStorePersist = create<StorePersist>()(
 				set((state) => ({
 					sidebar: { ...state.sidebar, ...updates },
 				})),
+
+			activationUi: defaultActivationUi,
+			setActivationUi: (updates: Partial<ActivationUiState>) =>
+				set((state) => ({
+					activationUi: { ...state.activationUi, ...updates },
+				})),
 		}),
 		{
 			name: "filosign-client",
-			version: 1,
+			version: 2,
 			partialize: (state) => ({
 				activeOrgId: state.activeOrgId,
+				activationUi: state.activationUi,
 				createForm: shouldPersistCreateFormToDisk()
 					? stripCreateFormForPersist(state.createForm)
 					: null,

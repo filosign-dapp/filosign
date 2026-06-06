@@ -35,12 +35,3 @@ export async function connectFilosignInAppWalletWithEmailOtp(args: {
 	});
 	return filosignInAppWallet;
 }
-
-export async function connectFilosignInAppWalletWithGoogle() {
-	await filosignInAppWallet.connect({
-		client: thirdwebClient,
-		chain: defaultThirdwebChain,
-		strategy: "google",
-	});
-	return filosignInAppWallet;
-}

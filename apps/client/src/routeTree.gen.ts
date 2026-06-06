@@ -27,8 +27,10 @@ import { Route as DashboardShellDraftsIndexRouteImport } from "./routes/dashboar
 import { Route as DashboardShellConnectionsIndexRouteImport } from "./routes/dashboard/_shell/connections/index"
 import { Route as DashboardShellAdminIndexRouteImport } from "./routes/dashboard/_shell/admin/index"
 import { Route as DashboardEnvelopeCreateAddSignIndexRouteImport } from "./routes/dashboard/envelope/create/add-sign/index"
+import { Route as DashboardShellSupportTutorialsIndexRouteImport } from "./routes/dashboard/_shell/support/tutorials/index"
 import { Route as DashboardShellSettingsWorkspaceIndexRouteImport } from "./routes/dashboard/_shell/settings/workspace/index"
 import { Route as DashboardShellSettingsProfileIndexRouteImport } from "./routes/dashboard/_shell/settings/profile/index"
+import { Route as DashboardShellSettingsBillingIndexRouteImport } from "./routes/dashboard/_shell/settings/billing/index"
 import { Route as DashboardShellDocumentAllIndexRouteImport } from "./routes/dashboard/_shell/document/all/index"
 
 const OnboardingRouteRoute = OnboardingRouteRouteImport.update({
@@ -130,6 +132,12 @@ const DashboardEnvelopeCreateAddSignIndexRoute =
     path: "/envelope/create/add-sign/",
     getParentRoute: () => DashboardRouteRoute,
   } as any)
+const DashboardShellSupportTutorialsIndexRoute =
+  DashboardShellSupportTutorialsIndexRouteImport.update({
+    id: "/support/tutorials/",
+    path: "/support/tutorials/",
+    getParentRoute: () => DashboardShellRouteRoute,
+  } as any)
 const DashboardShellSettingsWorkspaceIndexRoute =
   DashboardShellSettingsWorkspaceIndexRouteImport.update({
     id: "/settings/workspace/",
@@ -140,6 +148,12 @@ const DashboardShellSettingsProfileIndexRoute =
   DashboardShellSettingsProfileIndexRouteImport.update({
     id: "/settings/profile/",
     path: "/settings/profile/",
+    getParentRoute: () => DashboardShellRouteRoute,
+  } as any)
+const DashboardShellSettingsBillingIndexRoute =
+  DashboardShellSettingsBillingIndexRouteImport.update({
+    id: "/settings/billing/",
+    path: "/settings/billing/",
     getParentRoute: () => DashboardShellRouteRoute,
   } as any)
 const DashboardShellDocumentAllIndexRoute =
@@ -167,8 +181,10 @@ export interface FileRoutesByFullPath {
   "/dashboard/envelope/create/": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create/": typeof DashboardSignatureCreateIndexRoute
   "/dashboard/document/all/": typeof DashboardShellDocumentAllIndexRoute
+  "/dashboard/settings/billing/": typeof DashboardShellSettingsBillingIndexRoute
   "/dashboard/settings/profile/": typeof DashboardShellSettingsProfileIndexRoute
   "/dashboard/settings/workspace/": typeof DashboardShellSettingsWorkspaceIndexRoute
+  "/dashboard/support/tutorials/": typeof DashboardShellSupportTutorialsIndexRoute
   "/dashboard/envelope/create/add-sign/": typeof DashboardEnvelopeCreateAddSignIndexRoute
 }
 export interface FileRoutesByTo {
@@ -187,8 +203,10 @@ export interface FileRoutesByTo {
   "/dashboard/envelope/create": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create": typeof DashboardSignatureCreateIndexRoute
   "/dashboard/document/all": typeof DashboardShellDocumentAllIndexRoute
+  "/dashboard/settings/billing": typeof DashboardShellSettingsBillingIndexRoute
   "/dashboard/settings/profile": typeof DashboardShellSettingsProfileIndexRoute
   "/dashboard/settings/workspace": typeof DashboardShellSettingsWorkspaceIndexRoute
+  "/dashboard/support/tutorials": typeof DashboardShellSupportTutorialsIndexRoute
   "/dashboard/envelope/create/add-sign": typeof DashboardEnvelopeCreateAddSignIndexRoute
 }
 export interface FileRoutesById {
@@ -211,8 +229,10 @@ export interface FileRoutesById {
   "/dashboard/envelope/create/": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create/": typeof DashboardSignatureCreateIndexRoute
   "/dashboard/_shell/document/all/": typeof DashboardShellDocumentAllIndexRoute
+  "/dashboard/_shell/settings/billing/": typeof DashboardShellSettingsBillingIndexRoute
   "/dashboard/_shell/settings/profile/": typeof DashboardShellSettingsProfileIndexRoute
   "/dashboard/_shell/settings/workspace/": typeof DashboardShellSettingsWorkspaceIndexRoute
+  "/dashboard/_shell/support/tutorials/": typeof DashboardShellSupportTutorialsIndexRoute
   "/dashboard/envelope/create/add-sign/": typeof DashboardEnvelopeCreateAddSignIndexRoute
 }
 export interface FileRouteTypes {
@@ -235,8 +255,10 @@ export interface FileRouteTypes {
     | "/dashboard/envelope/create/"
     | "/dashboard/signature/create/"
     | "/dashboard/document/all/"
+    | "/dashboard/settings/billing/"
     | "/dashboard/settings/profile/"
     | "/dashboard/settings/workspace/"
+    | "/dashboard/support/tutorials/"
     | "/dashboard/envelope/create/add-sign/"
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -255,8 +277,10 @@ export interface FileRouteTypes {
     | "/dashboard/envelope/create"
     | "/dashboard/signature/create"
     | "/dashboard/document/all"
+    | "/dashboard/settings/billing"
     | "/dashboard/settings/profile"
     | "/dashboard/settings/workspace"
+    | "/dashboard/support/tutorials"
     | "/dashboard/envelope/create/add-sign"
   id:
     | "__root__"
@@ -278,8 +302,10 @@ export interface FileRouteTypes {
     | "/dashboard/envelope/create/"
     | "/dashboard/signature/create/"
     | "/dashboard/_shell/document/all/"
+    | "/dashboard/_shell/settings/billing/"
     | "/dashboard/_shell/settings/profile/"
     | "/dashboard/_shell/settings/workspace/"
+    | "/dashboard/_shell/support/tutorials/"
     | "/dashboard/envelope/create/add-sign/"
   fileRoutesById: FileRoutesById
 }
@@ -419,6 +445,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardEnvelopeCreateAddSignIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    "/dashboard/_shell/support/tutorials/": {
+      id: "/dashboard/_shell/support/tutorials/"
+      path: "/support/tutorials"
+      fullPath: "/dashboard/support/tutorials/"
+      preLoaderRoute: typeof DashboardShellSupportTutorialsIndexRouteImport
+      parentRoute: typeof DashboardShellRouteRoute
+    }
     "/dashboard/_shell/settings/workspace/": {
       id: "/dashboard/_shell/settings/workspace/"
       path: "/settings/workspace"
@@ -431,6 +464,13 @@ declare module "@tanstack/react-router" {
       path: "/settings/profile"
       fullPath: "/dashboard/settings/profile/"
       preLoaderRoute: typeof DashboardShellSettingsProfileIndexRouteImport
+      parentRoute: typeof DashboardShellRouteRoute
+    }
+    "/dashboard/_shell/settings/billing/": {
+      id: "/dashboard/_shell/settings/billing/"
+      path: "/settings/billing"
+      fullPath: "/dashboard/settings/billing/"
+      preLoaderRoute: typeof DashboardShellSettingsBillingIndexRouteImport
       parentRoute: typeof DashboardShellRouteRoute
     }
     "/dashboard/_shell/document/all/": {
@@ -450,8 +490,10 @@ interface DashboardShellRouteRouteChildren {
   DashboardShellSupportIndexRoute: typeof DashboardShellSupportIndexRoute
   DashboardShellTemplatesIndexRoute: typeof DashboardShellTemplatesIndexRoute
   DashboardShellDocumentAllIndexRoute: typeof DashboardShellDocumentAllIndexRoute
+  DashboardShellSettingsBillingIndexRoute: typeof DashboardShellSettingsBillingIndexRoute
   DashboardShellSettingsProfileIndexRoute: typeof DashboardShellSettingsProfileIndexRoute
   DashboardShellSettingsWorkspaceIndexRoute: typeof DashboardShellSettingsWorkspaceIndexRoute
+  DashboardShellSupportTutorialsIndexRoute: typeof DashboardShellSupportTutorialsIndexRoute
 }
 
 const DashboardShellRouteRouteChildren: DashboardShellRouteRouteChildren = {
@@ -461,10 +503,14 @@ const DashboardShellRouteRouteChildren: DashboardShellRouteRouteChildren = {
   DashboardShellSupportIndexRoute: DashboardShellSupportIndexRoute,
   DashboardShellTemplatesIndexRoute: DashboardShellTemplatesIndexRoute,
   DashboardShellDocumentAllIndexRoute: DashboardShellDocumentAllIndexRoute,
+  DashboardShellSettingsBillingIndexRoute:
+    DashboardShellSettingsBillingIndexRoute,
   DashboardShellSettingsProfileIndexRoute:
     DashboardShellSettingsProfileIndexRoute,
   DashboardShellSettingsWorkspaceIndexRoute:
     DashboardShellSettingsWorkspaceIndexRoute,
+  DashboardShellSupportTutorialsIndexRoute:
+    DashboardShellSupportTutorialsIndexRoute,
 }
 
 const DashboardShellRouteRouteWithChildren =

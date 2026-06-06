@@ -2,7 +2,6 @@ import { SpinnerIcon } from "@phosphor-icons/react";
 import env from "@/src/env";
 import Logo from "@/src/lib/components/app/chrome/logo";
 import { Button } from "@/src/lib/components/ui/button";
-import { SignInCardWithDevGoogle } from "@/src/routes/-components/sign-in-dev-google-button";
 import { SignInOtpDialog } from "@/src/routes/-components/sign-in-otp-dialog";
 import { useSignIn } from "@/src/routes/-lib/context/sign-in-context";
 import { ColdInviteNotForYouCallout } from "@/src/routes/onboarding/-components/ColdInviteNotForYouCallout";
@@ -127,11 +126,10 @@ export function SignInContent() {
 		showColdInviteMismatch,
 		coldInviteWarning,
 		continueAnywayColdSearch,
-		switchAccountPending,
 		buttonLoading,
 		isRegistered,
-		handleSwitchAccountFromSignIn,
-		goToOnboarding,
+		autoRegisterError,
+		retryAutoRegister,
 		login,
 		signInGate,
 	} = useSignIn();
@@ -149,22 +147,60 @@ export function SignInContent() {
 					iconDelay={0}
 				/>
 
-				{view === "registration-failed" ? (
+				{view === "registration-failed" || view === "bootstrap-failed" ? (
 					<div className="flex flex-col items-center gap-4 py-8 text-center">
 						<p className="font-medium text-foreground">
-							Could not verify your account
+							{view === "bootstrap-failed"
+								? "Could not finish setting up your account"
+								: "Could not verify your account"}
 						</p>
 						<p className="text-sm text-muted-foreground">
-							Check your connection and that contracts are deployed for this
-							network, then try again.
+							{autoRegisterError ??
+								"Check your connection and that contracts are deployed for this network, then try again."}
 						</p>
 						<Button
 							type="button"
 							variant="outline"
-							onClick={() => void isRegistered.refetch()}
+							onClick={() => {
+								if (retryAutoRegister) {
+									void retryAutoRegister();
+									return;
+								}
+								void isRegistered.refetch();
+							}}
 						>
 							Retry
 						</Button>
+					</div>
+				) : view === "auto-registering" ? (
+					<div className="flex flex-col items-center gap-4 py-8 text-center">
+						{showColdInviteMismatch ? (
+							<>
+								<ColdInviteNotForYouCallout
+									className="w-full max-w-md text-left"
+									recipientEmails={coldInviteWarning.recipientEmails}
+									signedInEmailForUi={coldInviteWarning.signedInEmailForUi}
+								/>
+								<OnboardingSwitchAccountLink
+									className="w-full max-w-md"
+									coldInviteMismatch={showColdInviteMismatch}
+									continueAnywayColdSearch={continueAnywayColdSearch}
+								/>
+							</>
+						) : null}
+						<SpinnerIcon
+							className="size-10 animate-spin text-muted-foreground"
+							aria-hidden
+						/>
+						<div className="space-y-1">
+							<p className="font-medium text-foreground">
+								Setting up your account…
+							</p>
+							<p className="text-sm text-muted-foreground">
+								Creating your Filosign keys and workspace. This usually takes a
+								few seconds.
+							</p>
+						</div>
 					</div>
 				) : view === "signing-in" ? (
 					<div className="flex flex-col items-center gap-4 py-8 text-center">
@@ -192,66 +228,6 @@ export function SignInContent() {
 								Connecting your wallet and checking your Filosign account.
 							</p>
 						</div>
-					</div>
-				) : view === "needs-setup" ? (
-					<div>
-						<div className="space-y-2">
-							<h1 className="font-manrope text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-								Almost there
-							</h1>
-							<p className="text-muted-foreground">
-								{coldReturn
-									? "Finish onboarding to sign the document."
-									: "Finish onboarding so you can send and sign envelopes."}
-							</p>
-						</div>
-						<div className="mt-8 flex flex-col gap-4 rounded-2xl border bg-card p-6 shadow-xs">
-							{showColdInviteMismatch ? (
-								<ColdInviteNotForYouCallout
-									embedded
-									className="border-b border-border pb-4"
-									recipientEmails={coldInviteWarning.recipientEmails}
-									signedInEmailForUi={coldInviteWarning.signedInEmailForUi}
-								/>
-							) : (
-								<div className="border-b border-border pb-4 text-left">
-									<p className="font-manrope font-semibold tracking-tight text-foreground">
-										Finish setting up your account
-									</p>
-									<p className="mt-2 text-sm leading-relaxed text-pretty text-muted-foreground">
-										Setting up your account will take less than a minute.
-									</p>
-								</div>
-							)}
-							<Button
-								type="button"
-								variant="default"
-								size="lg"
-								className="w-full"
-								disabled={showColdInviteMismatch ? switchAccountPending : false}
-								isLoading={
-									showColdInviteMismatch ? switchAccountPending : false
-								}
-								onClick={() =>
-									showColdInviteMismatch
-										? void handleSwitchAccountFromSignIn()
-										: goToOnboarding()
-								}
-							>
-								{showColdInviteMismatch
-									? "Switch account"
-									: "Continue to onboarding"}
-							</Button>
-						</div>
-						{showColdInviteMismatch ? (
-							<OnboardingSwitchAccountLink
-								className="mt-6"
-								coldInviteMismatch
-								continueAnywayColdSearch={continueAnywayColdSearch}
-							/>
-						) : (
-							<OnboardingSwitchAccountLink />
-						)}
 					</div>
 				) : (
 					<div className="space-y-8">
@@ -300,134 +276,15 @@ export function SignInContent() {
 									<SignInTermsFooter />
 								</div>
 							) : signInGate.gateState.status === "blocked" ? (
-								<SignInCardWithDevGoogle
-									disabled={signInGate.authPending}
-									isLoading={signInGate.authPending}
-									onGoogleSignIn={() => void signInGate.beginGoogleAuth()}
-								>
-									<div className="flex flex-col gap-4 rounded-2xl border bg-card p-6 shadow-xs">
-										<div className="border-b border-border pb-4 text-left">
-											<p className="font-manrope font-semibold tracking-tight text-foreground">
-												Finish setting up Filosign
-											</p>
-											<p className="mt-2 text-sm leading-relaxed text-pretty text-muted-foreground">
-												We are still confirming your payment. Check your email
-												for setup instructions. It is sent automatically once
-												payment clears.
-											</p>
-										</div>
-										<Button
-											type="button"
-											variant="default"
-											size="lg"
-											className="w-full"
-											disabled={signInGate.authPending}
-											isLoading={signInGate.authPending}
-											onClick={() => void signInGate.refetchGate()}
-										>
-											Try again
-										</Button>
-										<SignInTermsFooter />
-									</div>
-								</SignInCardWithDevGoogle>
-							) : signInGate.showLoginHome ? (
-								<SignInCardWithDevGoogle
-									disabled={signInGate.authPending}
-									isLoading={signInGate.authPending}
-									onGoogleSignIn={() => void signInGate.beginGoogleAuth()}
-								>
-									<div className="flex flex-col gap-4 rounded-2xl border bg-card p-6 shadow-xs">
-										<div className="border-b border-border pb-4 text-left">
-											<p className="font-manrope font-semibold tracking-tight text-foreground">
-												Sign in to Filosign
-											</p>
-											<p className="mt-2 text-sm leading-relaxed text-pretty text-muted-foreground">
-												Sign in with the email on your account.
-											</p>
-										</div>
-										<Button
-											type="button"
-											variant="default"
-											size="lg"
-											className="w-full"
-											disabled={signInGate.authPending}
-											isLoading={signInGate.authPending}
-											onClick={() => signInGate.beginLogin()}
-										>
-											Login
-										</Button>
-										<p className="text-center text-xs text-muted-foreground">
-											New user?{" "}
-											<a
-												href={pricingUrl}
-												target="_blank"
-												rel="noopener noreferrer"
-												className="font-medium text-primary underline-offset-4 hover:underline"
-											>
-												Browse our plans here
-											</a>
-										</p>
-										<SignInTermsFooter />
-									</div>
-								</SignInCardWithDevGoogle>
-							) : (
-								<SignInCardWithDevGoogle
-									disabled={signInGate.authPending}
-									isLoading={signInGate.authPending}
-									onGoogleSignIn={() => void signInGate.beginGoogleAuth()}
-								>
-									<div className="flex flex-col gap-4 rounded-2xl border bg-card p-6 shadow-xs">
-										<div className="border-b border-border pb-4 text-left">
-											<p className="font-manrope font-semibold tracking-tight text-foreground">
-												{signInGate.isReturningUser
-													? "Sign in to Filosign"
-													: "Complete sign up"}
-											</p>
-											<p className="mt-2 text-sm leading-relaxed text-pretty text-muted-foreground">
-												{gatedCardSubtitle({
-													isReturningUser: signInGate.isReturningUser,
-													isAdminBootstrap: signInGate.isAdminBootstrap,
-													isPaidSetup:
-														signInGate.gateState.status === "ready" &&
-														signInGate.gateState.gate === "paid_setup",
-													planLabel: signInGate.gateState.planLabel,
-													effectiveEmail: signInGate.effectiveEmail,
-													needsEmailInput: signInGate.gateState.needsEmailInput,
-												})}
-											</p>
-										</div>
-										<Button
-											type="button"
-											variant="default"
-											size="lg"
-											className="w-full"
-											disabled={signInGate.authPending}
-											isLoading={signInGate.authPending}
-											onClick={() => void signInGate.beginEmailAuth()}
-										>
-											{signInGate.isReturningUser
-												? "Sign in"
-												: signInGate.isAdminBootstrap
-													? "Continue"
-													: "Complete Sign up"}
-										</Button>
-										<SignInTermsFooter />
-									</div>
-								</SignInCardWithDevGoogle>
-							)
-						) : (
-							<SignInCardWithDevGoogle
-								disabled={buttonLoading}
-								isLoading={buttonLoading}
-								onGoogleSignIn={() => void signInGate.beginGoogleAuth()}
-							>
 								<div className="flex flex-col gap-4 rounded-2xl border bg-card p-6 shadow-xs">
 									<div className="border-b border-border pb-4 text-left">
 										<p className="font-manrope font-semibold tracking-tight text-foreground">
-											Login to Filosign
+											Finish setting up Filosign
 										</p>
 										<p className="mt-2 text-sm leading-relaxed text-pretty text-muted-foreground">
-											Continue with your email or social account.
+											We are still confirming your payment. Check your email for
+											setup instructions. It is sent automatically once payment
+											clears.
 										</p>
 									</div>
 									<Button
@@ -435,15 +292,110 @@ export function SignInContent() {
 										variant="default"
 										size="lg"
 										className="w-full"
-										disabled={buttonLoading}
-										isLoading={buttonLoading}
-										onClick={() => void login()}
+										disabled={signInGate.authPending}
+										isLoading={signInGate.authPending}
+										onClick={() => void signInGate.refetchGate()}
 									>
-										Sign in
+										Try again
 									</Button>
 									<SignInTermsFooter />
 								</div>
-							</SignInCardWithDevGoogle>
+							) : signInGate.showLoginHome ? (
+								<div className="flex flex-col gap-4 rounded-2xl border bg-card p-6 shadow-xs">
+									<div className="border-b border-border pb-4 text-left">
+										<p className="font-manrope font-semibold tracking-tight text-foreground">
+											Sign in to Filosign
+										</p>
+										<p className="mt-2 text-sm leading-relaxed text-pretty text-muted-foreground">
+											Sign in with the email on your account.
+										</p>
+									</div>
+									<Button
+										type="button"
+										variant="default"
+										size="lg"
+										className="w-full"
+										disabled={signInGate.authPending}
+										isLoading={signInGate.authPending}
+										onClick={() => signInGate.beginLogin()}
+									>
+										Login
+									</Button>
+									<p className="text-center text-xs text-muted-foreground">
+										New user?{" "}
+										<a
+											href={pricingUrl}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="font-medium text-primary underline-offset-4 hover:underline"
+										>
+											Browse our plans here
+										</a>
+									</p>
+									<SignInTermsFooter />
+								</div>
+							) : (
+								<div className="flex flex-col gap-4 rounded-2xl border bg-card p-6 shadow-xs">
+									<div className="border-b border-border pb-4 text-left">
+										<p className="font-manrope font-semibold tracking-tight text-foreground">
+											{signInGate.isReturningUser
+												? "Sign in to Filosign"
+												: "Complete sign up"}
+										</p>
+										<p className="mt-2 text-sm leading-relaxed text-pretty text-muted-foreground">
+											{gatedCardSubtitle({
+												isReturningUser: signInGate.isReturningUser,
+												isAdminBootstrap: signInGate.isAdminBootstrap,
+												isPaidSetup:
+													signInGate.gateState.status === "ready" &&
+													signInGate.gateState.gate === "paid_setup",
+												planLabel: signInGate.gateState.planLabel,
+												effectiveEmail: signInGate.effectiveEmail,
+												needsEmailInput: signInGate.gateState.needsEmailInput,
+											})}
+										</p>
+									</div>
+									<Button
+										type="button"
+										variant="default"
+										size="lg"
+										className="w-full"
+										disabled={signInGate.authPending}
+										isLoading={signInGate.authPending}
+										onClick={() => void signInGate.beginEmailAuth()}
+									>
+										{signInGate.isReturningUser
+											? "Sign in"
+											: signInGate.isAdminBootstrap
+												? "Continue"
+												: "Complete Sign up"}
+									</Button>
+									<SignInTermsFooter />
+								</div>
+							)
+						) : (
+							<div className="flex flex-col gap-4 rounded-2xl border bg-card p-6 shadow-xs">
+								<div className="border-b border-border pb-4 text-left">
+									<p className="font-manrope font-semibold tracking-tight text-foreground">
+										Login to Filosign
+									</p>
+									<p className="mt-2 text-sm leading-relaxed text-pretty text-muted-foreground">
+										Continue with your email or social account.
+									</p>
+								</div>
+								<Button
+									type="button"
+									variant="default"
+									size="lg"
+									className="w-full"
+									disabled={buttonLoading}
+									isLoading={buttonLoading}
+									onClick={() => void login()}
+								>
+									Sign in
+								</Button>
+								<SignInTermsFooter />
+							</div>
 						)}
 
 						{signInGate.gated ? (

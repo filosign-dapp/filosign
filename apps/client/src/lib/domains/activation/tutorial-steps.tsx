@@ -1,5 +1,5 @@
 import type { EvaluatedActivationStep } from "@filosign/shared";
-import { ActivationStepRow } from "@/src/lib/domains/activation/step-row";
+import { ActivationStepRow } from "@/src/lib/domains/activation/steps/row";
 import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
 import { cn } from "@/src/lib/utils";
 

@@ -1,7 +1,7 @@
 import type { EvaluatedActivationStep } from "@filosign/shared";
 import { CheckCircleIcon, CircleIcon } from "@phosphor-icons/react";
 import { Badge } from "@/src/lib/components/ui/badge";
-import { ActivationStepAction } from "@/src/lib/domains/activation/step-action";
+import { ActivationStepAction } from "@/src/lib/domains/activation/steps/action";
 import { cn } from "@/src/lib/utils";
 
 type ActivationStepRowProps = {

@@ -34,6 +34,7 @@ import {
 } from "../../lib/attachment-packets";
 import { latestChainTimestamp } from "../../lib/chain-time";
 import { invalidateEntitlements } from "../../lib/invalidate-entitlements";
+import { invalidateActivationProgress } from "../../lib/invalidate-queries";
 import {
 	type AttachmentRuleDraft,
 	registerAttachmentRulesOnChain,
@@ -91,6 +92,8 @@ export function useSendFile() {
 			settlementRules?: SettlementRuleDraft[];
 			/** Advanced registry routing (sequential/parallel + quorum). */
 			routing?: RegisterRoutingInput;
+			/** Tutorial envelope — excluded from send quota on server. */
+			isPractice?: boolean;
 		}) => {
 			const {
 				signers,
@@ -106,6 +109,7 @@ export function useSendFile() {
 				orgEncryptionPublicKey,
 				settlementRules = [],
 				routing,
+				isPractice,
 			} = args;
 
 			if (!contracts || !wallet || !user || !isAuthed) {
@@ -247,6 +251,7 @@ export function useSendFile() {
 
 			const uploadStartRaw = await rpcQuery.files.uploadStart.call({
 				pieceCid: pieceCid.toString(),
+				...(isPractice ? { isPractice: true } : {}),
 			});
 			const uploadStartResponse = z
 				.object({ uploadUrl: z.string() })
@@ -473,6 +478,7 @@ export function useSendFile() {
 				displayName: metadata.name,
 				mimeType: "application/pdf",
 				ciphertextByteLength: encryptedData.byteLength,
+				...(isPractice ? { isPractice: true } : {}),
 			});
 
 			const conditionalDrafts = attachmentPacketDrafts.filter(
@@ -548,7 +554,11 @@ export function useSendFile() {
 					queryKey: rpcQuery.files.list.org.key(),
 				});
 			}
-			void invalidateEntitlements(queryClient, rpcQuery);
+			if (isPractice) {
+				void invalidateActivationProgress(queryClient, rpcQuery);
+			} else {
+				void invalidateEntitlements(queryClient, rpcQuery);
+			}
 
 			return {
 				success: true as const,

@@ -14,10 +14,10 @@ import { useDraftCommentCount, useDraftSaveUi } from "@/src/lib/domains/drafts";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { ShareDraftDialog } from "@/src/routes/dashboard/envelope/create/-components/share-draft-dialog";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
-import { DraftCommentsSheet } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft-comments-sheet";
-import { DraftCryptoRecoveryDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft-crypto-recovery-dialog";
-import { DraftSaveButton } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft-save-button";
-import { DraftTemplateDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft-template-dialog";
+import { DraftCommentsSheet } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft/comments-sheet";
+import { DraftCryptoRecoveryDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft/crypto-recovery-dialog";
+import { DraftSaveButton } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft/save-button";
+import { DraftTemplateDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft/template-dialog";
 
 const addSignRouteApi = getRouteApi("/dashboard/envelope/create/add-sign/");
 

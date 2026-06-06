@@ -26,6 +26,8 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/src/lib/components/ui/select";
+import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
 import { handleBasicPayoutGateBlock } from "@/src/lib/domains/settlements/basic-payout-gate";
 import { buildReleaseParamsFromSignerEmails } from "@/src/lib/domains/settlements/build-release-params";
 import {
@@ -33,9 +35,7 @@ import {
 	SettlementExpiresAtField,
 } from "@/src/lib/domains/settlements/settlement-expires-at-field";
 import { SettlementReleaseFields } from "@/src/lib/domains/settlements/settlement-release-fields";
-import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
-import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
-import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
+import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 
 type PayeeOption = {
 	wallet: `0x${string}`;

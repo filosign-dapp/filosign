@@ -1,5 +1,10 @@
 import { useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState, type ComponentPropsWithoutRef } from "react";
+import {
+	type ComponentPropsWithoutRef,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 
 type MotionAwareVideoProps = ComponentPropsWithoutRef<"video"> & {
 	/** Shown before video loads and when user prefers reduced motion */

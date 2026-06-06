@@ -12,7 +12,6 @@ import { clientSignupPolicyIsGated } from "@/src/lib/deployment";
 import type { ColdInviteEntrySearch } from "@/src/lib/domains/invites/cold-invite-search";
 import {
 	connectFilosignInAppWalletWithEmailOtp,
-	connectFilosignInAppWalletWithGoogle,
 	sendThirdwebEmailOtp,
 } from "@/src/lib/web3/gated-email-auth";
 import {
@@ -335,38 +334,6 @@ export function useSignInGate(search: ColdInviteEntrySearch) {
 		search,
 	]);
 
-	const beginGoogleAuth = useCallback(async () => {
-		setAuthError(null);
-		setAuthPending(true);
-		try {
-			const wallet = await registerThirdwebWallet(async () =>
-				connectFilosignInAppWalletWithGoogle(),
-			);
-			const account = wallet?.getAccount();
-			if (!account?.address) {
-				setAuthError("Google sign-in did not complete.");
-				return null;
-			}
-			captureAppEvent(CLIENT_ANALYTICS_EVENTS.walletSignup, {});
-			identifyAnalyticsWallet(account.address);
-			storeAccessGate(accessGateFromSearch(search));
-			return account;
-		} catch (err) {
-			const message =
-				err instanceof Error ? err.message : "Google sign-in failed";
-			setAuthError(message);
-			toast.error(message);
-			return null;
-		} finally {
-			setAuthPending(false);
-		}
-	}, [
-		captureAppEvent,
-		identifyAnalyticsWallet,
-		registerThirdwebWallet,
-		search,
-	]);
-
 	return {
 		gated,
 		hasSetupToken,
@@ -390,7 +357,6 @@ export function useSignInGate(search: ColdInviteEntrySearch) {
 		beginEmailAuth,
 		submitEmailAndSendOtp,
 		closeOtpDialog,
-		beginGoogleAuth,
 		sendOtp,
 		verifyOtp,
 		refetchGate: previewQuery.refetch,

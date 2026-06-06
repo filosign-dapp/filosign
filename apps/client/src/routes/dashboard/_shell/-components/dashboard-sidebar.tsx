@@ -8,10 +8,12 @@ import {
 	useOrganizations,
 } from "@filosign/react/orgs";
 import {
+	BookOpenIcon,
 	BuildingsIcon,
 	CaretRightIcon,
 	CaretUpDownIcon,
 	CheckIcon,
+	CreditCardIcon,
 	EnvelopeSimpleIcon,
 	FileTextIcon,
 	GearIcon,
@@ -63,6 +65,7 @@ import {
 	SidebarRail,
 	useSidebar,
 } from "@/src/lib/components/ui/sidebar";
+import { BILLING_SETTINGS_PATH } from "@/src/lib/domains/billing/settings-path";
 import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
 import {
 	UpgradePlanDialog,
@@ -153,8 +156,18 @@ const groups: { label: string; items: NavItem[] }[] = [
 				title: "Support Center",
 				url: "/dashboard/support/",
 				icon: QuestionIcon,
-				match: (p) => matchPrefix(p, "/dashboard/support"),
+				match: (p) => {
+					const n = p.endsWith("/") ? p.slice(0, -1) : p;
+					return n === "/dashboard/support";
+				},
 				tooltip: "Support Center",
+			},
+			{
+				title: "Tutorials",
+				url: "/dashboard/support/tutorials",
+				icon: BookOpenIcon,
+				match: (p) => matchPrefix(p, "/dashboard/support/tutorials"),
+				tooltip: "Tutorials and guides",
 			},
 		],
 	},
@@ -167,6 +180,13 @@ const groups: { label: string; items: NavItem[] }[] = [
 				icon: UserCircleIcon,
 				match: (p) => matchPrefix(p, "/dashboard/settings/profile"),
 				tooltip: "Profile",
+			},
+			{
+				title: "Billing",
+				url: BILLING_SETTINGS_PATH,
+				icon: CreditCardIcon,
+				match: (p) => matchPrefix(p, BILLING_SETTINGS_PATH),
+				tooltip: "Billing",
 			},
 			{
 				title: "Workspace",

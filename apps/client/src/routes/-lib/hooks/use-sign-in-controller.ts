@@ -1,7 +1,10 @@
 import { useFilosignContext } from "@filosign/react";
 import { useIsRegistered, useLogout } from "@filosign/react/auth";
+import { useUserProfile } from "@filosign/react/users";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { isPersonalizationComplete } from "@/src/lib/auth/account-defaults";
+import { useAutoRegisterOptional } from "@/src/lib/auth/auto-register-provider";
 import {
 	hasColdReturn,
 	signDocumentSearchFromColdEntry,
@@ -15,7 +18,8 @@ import { executeSwitchAccountLogout } from "@/src/routes/onboarding/-components/
 export type SignInView =
 	| "registration-failed"
 	| "signing-in"
-	| "needs-setup"
+	| "auto-registering"
+	| "bootstrap-failed"
 	| "guest";
 
 export function useSignInController() {
@@ -24,6 +28,10 @@ export function useSignInController() {
 	const logoutFilosign = useLogout();
 	const clearOnboardingForm = useStorePersist((s) => s.clearOnboardingForm);
 	const isRegistered = useIsRegistered();
+	const { data: userProfile, isPending: profilePending } = useUserProfile({
+		enabled: authenticated && isRegistered.data === true,
+	});
+	const autoRegister = useAutoRegisterOptional();
 	const navigate = useNavigate();
 	const [switchAccountPending, setSwitchAccountPending] = useState(false);
 	const coldSearch = useSearch({ from: "/" });
@@ -50,14 +58,32 @@ export function useSignInController() {
 	const showColdInviteMismatch =
 		authenticated && coldReturn && coldInviteWarning.showWarning;
 
+	const autoRegisterStatus = autoRegister?.status.status ?? "idle";
+	const autoRegisterReady = autoRegisterStatus === "completed";
+	const autoRegisterFailed = autoRegisterStatus === "failed";
+	const autoRegisterBlocking = autoRegister?.isBlocking ?? false;
+
 	useEffect(() => {
 		if (!ready || !authenticated) return;
 		if (isRegistered.isPending) return;
 		if (isRegistered.data !== true) return;
+		if (!autoRegisterReady) return;
 		if (signSearch) {
 			void navigate({
 				to: "/dashboard/document/sign",
 				search: signSearch,
+				replace: true,
+			});
+			return;
+		}
+		if (profilePending) return;
+		if (!isPersonalizationComplete(userProfile)) {
+			void navigate({
+				to: "/onboarding",
+				search: {
+					upgrade: coldSearch.upgrade,
+					interval: coldSearch.interval,
+				},
 				replace: true,
 			});
 			return;
@@ -75,8 +101,11 @@ export function useSignInController() {
 		authenticated,
 		isRegistered.isPending,
 		isRegistered.data,
+		autoRegisterReady,
 		navigate,
 		signSearch,
+		profilePending,
+		userProfile,
 		coldSearch.upgrade,
 		coldSearch.interval,
 	]);
@@ -85,24 +114,29 @@ export function useSignInController() {
 	const walletReady = Boolean(walletAddress);
 	const checkingRegistration = walletReady && isRegistered.isLoading;
 
-	const needsAccountSetup =
+	const signingIn =
+		authenticated &&
+		(!walletReady || checkingRegistration || autoRegisterBlocking);
+	const registrationCheckFailed =
 		authenticated &&
 		walletReady &&
-		isRegistered.data === false &&
-		!checkingRegistration;
-
-	const signingIn = authenticated && (!walletReady || checkingRegistration);
-	const registrationCheckFailed =
-		authenticated && walletReady && isRegistered.isError;
+		(isRegistered.isError ||
+			(autoRegisterFailed && autoRegister?.status.status === "failed"));
+	const bootstrapFailed =
+		autoRegisterFailed &&
+		autoRegister?.status.status === "failed" &&
+		autoRegister.status.phase === "bootstrap";
 	const buttonLoading = !ready;
 
 	const view: SignInView = registrationCheckFailed
-		? "registration-failed"
+		? bootstrapFailed
+			? "bootstrap-failed"
+			: "registration-failed"
 		: signingIn
-			? "signing-in"
-			: needsAccountSetup
-				? "needs-setup"
-				: "guest";
+			? autoRegisterBlocking
+				? "auto-registering"
+				: "signing-in"
+			: "guest";
 
 	const handleSwitchAccountFromSignIn = async () => {
 		setSwitchAccountPending(true);
@@ -120,19 +154,6 @@ export function useSignInController() {
 		}
 	};
 
-	const goToOnboarding = () => {
-		void navigate({
-			to: "/onboarding",
-			search: {
-				coldPieceCid: coldSearch.coldPieceCid,
-				coldInvite: coldSearch.coldInvite,
-				skipColdSign: coldSearch.skipColdSign,
-				upgrade: coldSearch.upgrade,
-				interval: coldSearch.interval,
-			},
-		});
-	};
-
 	return {
 		view,
 		coldReturn,
@@ -143,8 +164,12 @@ export function useSignInController() {
 		switchAccountPending,
 		buttonLoading,
 		isRegistered,
+		autoRegisterError:
+			autoRegister?.status.status === "failed"
+				? autoRegister.status.error
+				: null,
+		retryAutoRegister: autoRegister?.retry,
 		handleSwitchAccountFromSignIn,
-		goToOnboarding,
 		login,
 		signInGate,
 	};

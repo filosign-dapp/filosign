@@ -8,6 +8,7 @@ import { DeploymentBanner } from "@/src/lib/components/app/deployment-banner";
 import { Loader } from "@/src/lib/components/ui/loader";
 import { SidebarInset, SidebarProvider } from "@/src/lib/components/ui/sidebar";
 import { TooltipProvider } from "@/src/lib/components/ui/tooltip";
+import { StartHereFloating } from "@/src/lib/domains/activation/start-here-floating";
 import { SupportNavigationProvider } from "@/src/lib/errors/support-navigation-provider";
 import DashboardNav from "./dashboard-nav";
 import { DashboardSidebar } from "./dashboard-sidebar";
@@ -76,6 +77,7 @@ export default function DashboardLayout({
 						>
 							{children}
 						</section>
+						<StartHereFloating />
 					</SidebarInset>
 				</SidebarProvider>
 			</SupportNavigationProvider>

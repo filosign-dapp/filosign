@@ -4,6 +4,7 @@ import {
 	CheckCircleIcon,
 	FileTextIcon,
 } from "@phosphor-icons/react";
+import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -99,13 +100,14 @@ export function NotificationsPopover() {
 					)}
 
 					{n.notificationCount === 0 && !n.isLoading && (
-						<div className="p-8 text-center">
-							<CheckCircleIcon className="h-12 w-12 text-chart-2 mx-auto mb-3" />
-							<h4 className="text-sm font-medium mb-1">All caught up!</h4>
-							<p className="text-xs text-muted-foreground">
-								No new documents at this time.
-							</p>
-						</div>
+						<AppEmptyState
+							preset="inline"
+							variant="muted"
+							icon={CheckCircleIcon}
+							title="All caught up!"
+							description="No new documents at this time."
+							className="border-transparent py-8"
+						/>
 					)}
 				</div>
 			</PopoverContent>

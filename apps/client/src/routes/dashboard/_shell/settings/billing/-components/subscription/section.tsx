@@ -1,8 +1,8 @@
 import { CreditCardIcon } from "@phosphor-icons/react";
 import { SettingsSection } from "@/src/lib/components/settings/section";
 import { BillingChangePreviewDialog } from "../change-preview-dialog";
-import { SubscriptionSectionBody } from "./section-body";
-import { useSubscriptionSection } from "./use-subscription-section";
+import { SubscriptionSectionBody } from "./body";
+import { useSubscriptionSection } from "./use-section";
 
 export function BillingSection() {
 	const state = useSubscriptionSection();

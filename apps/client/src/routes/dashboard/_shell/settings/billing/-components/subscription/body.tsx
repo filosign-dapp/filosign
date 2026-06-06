@@ -7,7 +7,7 @@ import {
 import { BILLING_SYNC_COPY } from "../change-preview-dialog";
 import { SubscriptionCheckoutForm } from "./checkout-form";
 import { SubscriptionPaidControls } from "./paid-controls";
-import type { useSubscriptionSection } from "./use-subscription-section";
+import type { useSubscriptionSection } from "./use-section";
 
 type SectionState = ReturnType<typeof useSubscriptionSection>;
 

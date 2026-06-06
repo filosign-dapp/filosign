@@ -60,13 +60,6 @@
 	--sl-color-hairline-shade: var(--fs-border);
 	--sl-color-backdrop-overlay: oklch(0.141 0.005 285.823 / 0.45);
 
-	--fs-support-muted: var(--fs-muted-foreground);
-	--fs-support-border: var(--fs-border);
-	--fs-support-card: var(--fs-card);
-	--fs-support-card-open: var(--fs-background);
-	--fs-support-input-bg: var(--fs-background);
-	--fs-support-ring: var(--fs-ring);
-
 	color-scheme: light;
 }
 
@@ -127,13 +120,6 @@
 	--sl-color-hairline: var(--fs-border);
 	--sl-color-hairline-shade: var(--fs-background);
 	--sl-color-backdrop-overlay: oklch(0.145 0 0 / 0.72);
-
-	--fs-support-muted: var(--fs-muted-foreground);
-	--fs-support-border: var(--fs-border);
-	--fs-support-card: var(--fs-card);
-	--fs-support-card-open: var(--fs-muted);
-	--fs-support-input-bg: var(--fs-background);
-	--fs-support-ring: var(--fs-ring);
 
 	color-scheme: dark;
 }

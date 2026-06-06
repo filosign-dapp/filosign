@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
+@import "@fontsource-variable/manrope";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -56,9 +57,16 @@
 	--white: hsl(0, 0%, 100%);
 	--off-white: hsl(90, 55%, 98%);
 
-	--radius: 0.5rem;
+	/* PDF canvas field overlays — stable on document pages (not flipped in .dark) */
+	--placement-chrome: oklch(0.21 0.006 285.885);
+	--placement-chrome-foreground: oklch(0.985 0 0);
+	--placement-chrome-border: oklch(1 0 0 / 0.22);
+	--placement-chrome-muted-foreground: oklch(1 0 0 / 0.62);
+	--placement-fill: oklch(1 0 0);
+	--placement-fill-foreground: oklch(0.141 0.005 285.823);
 
-	/* Sidebar - same base as page + header (bg-background); borders match global border */
+	--radius: 0.6rem;
+
 	--sidebar: var(--background);
 	--sidebar-foreground: hsl(210 7% 22%);
 	--sidebar-primary: hsl(210 8% 12%);
@@ -110,18 +118,6 @@
 	--font-inter: "Inter Variable", sans-serif;
 	--font-manrope: "Manrope", sans-serif;
 
-	/* Handwritten signature fonts */
-	--font-allura: "Allura", cursive;
-	--font-great-vibes: "Great Vibes", cursive;
-	--font-dancing-script: "Dancing Script", cursive;
-	--font-pacifico: "Pacifico", cursive;
-	--font-brush-script: "Brush Script MT", cursive;
-	--font-lucida-handwriting: "Lucida Handwriting", cursive;
-	--font-kalam: "Kalam", cursive;
-	--font-caveat: "Caveat", cursive;
-	--font-kaushan-script: "Kaushan Script", cursive;
-	--font-satisfy: "Satisfy", cursive;
-
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
@@ -157,6 +153,15 @@
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
+
+	--color-placement-chrome: var(--placement-chrome);
+	--color-placement-chrome-foreground: var(--placement-chrome-foreground);
+	--color-placement-chrome-border: var(--placement-chrome-border);
+	--color-placement-chrome-muted-foreground: var(
+		--placement-chrome-muted-foreground
+	);
+	--color-placement-fill: var(--placement-fill);
+	--color-placement-fill-foreground: var(--placement-fill-foreground);
 
 	--radius-sm: calc(var(--radius) * 0.6);
 	--radius-md: calc(var(--radius) * 0.8);
@@ -266,27 +271,52 @@
 	}
 }
 
-/* Handwritten Signature Font Classes */
-.font-caveat {
-	font-family: "Caveat", cursive;
+/* PDF / document placement field overlays (sign page + add-sign canvas) */
+@utility placement-field-chrome {
+	@apply flex h-full w-full items-center gap-1.5 rounded-sm border px-1.5 shadow-md touch-manipulation;
+	@apply transition-[background-color,filter,box-shadow] duration-150;
+	@apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1;
+	background-color: var(--placement-chrome);
+	color: var(--placement-chrome-foreground);
+	border-color: var(--placement-chrome-border);
 }
 
-.font-gloria-hallelujah {
-	font-family: "Gloria Hallelujah", cursive;
+@utility placement-field-chrome-interactive {
+	@apply placement-field-chrome hover:brightness-110 active:brightness-95;
 }
 
-.font-homemade-apple {
-	font-family: "Homemade Apple", cursive;
+@utility placement-field-chrome-muted {
+	@apply flex h-full w-full items-center gap-1.5 rounded-sm border px-1.5 shadow-sm touch-manipulation;
+	background-color: color-mix(
+		in oklab,
+		var(--placement-chrome) 84%,
+		transparent
+	);
+	color: var(--placement-chrome-foreground);
+	border-color: color-mix(
+		in oklab,
+		var(--placement-chrome-border) 70%,
+		transparent
+	);
 }
 
-.font-nothing-you-could-do {
-	font-family: "Nothing You Could Do", cursive;
+@utility placement-field-label {
+	@apply min-w-0 flex-1 truncate text-xs font-medium leading-tight;
 }
 
-.font-reenie-beanie {
-	font-family: "Reenie Beanie", cursive;
+@utility placement-field-subtle {
+	@apply truncate text-[10px] leading-none;
+	color: var(--placement-chrome-muted-foreground);
 }
 
-.font-mr-dafoe {
-	font-family: "Mr Dafoe", cursive;
+@utility placement-field-applied-shell {
+	@apply overflow-hidden rounded-sm border p-0.5 shadow-md touch-manipulation;
+	@apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1;
+	background-color: var(--placement-chrome);
+	border-color: var(--placement-chrome-border);
+}
+
+@utility placement-field-applied-fill {
+	@apply flex h-full w-full items-center justify-center overflow-hidden rounded-sm px-1 text-xs text-placement-fill-foreground;
+	background-color: var(--placement-fill);
 }

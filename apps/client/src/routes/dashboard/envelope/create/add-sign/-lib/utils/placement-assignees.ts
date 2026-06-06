@@ -1,7 +1,7 @@
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
+import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 import { createClientId } from "@/src/lib/utils/id";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
-import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
 import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 import { recipientResolvedSignerAddress } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 

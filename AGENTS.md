@@ -4,7 +4,10 @@ Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-pack
 
 ## IMPORTANT
 
-Pre-production (solo dev, no users): skip backward-compat and migration shims. Fix root causes; replace legacy code, unused dependencies, comments, and modules—don’t layer around them. Writing minimal code to implement a plan is ideal, followed by a refactor sweep to rebalance and reorganise codebase, aiming for code maintainablity and readability. a balance between number of files vs LOC = sweet spot.
+Pre-production (solo dev, no users): skip backward-compat and migration shims. Fix root causes; replace legacy code, unused dependencies, comments, and modules—don’t layer around them. Writing minimal code to implement a plan is ideal, followed by a refactor sweep to rebalance and reorganise codebase, aiming for code maintainablity and readability. a balance between number of files vs LOC = sweet spot.  
+
+
+- NEVER use em dashes (—) in any content.
 
 ## Read for context
 
@@ -97,13 +100,13 @@ Monorepo uses **Zod 4** (`catalog`). [v4 changelog](https://zod.dev/v4/changelog
 - Top-level formats: `z.email()`, `z.url()`, `z.uuid()`, `z.iso.datetime()` — not `z.string().email()` / `.url()` / `.uuid()` / `.datetime()`.
 - Validation messages: `{ error: "…" }` on `.min()` / refinements — not a positional string, `invalid_type_error`, `required_error`, or `errorMap`.
 - `z.record(keySchema, valueSchema)` — always two arguments.
-- Server parse errors: [`zodSafeParseMessage`](apps/server/lib/platform/utils/zodHttp.ts) (`z.treeifyError`) — not `.flatten()` / `.format()` on `ZodError`.
+- Server parse errors: `[zodSafeParseMessage](apps/server/lib/platform/utils/zodHttp.ts)` (`z.treeifyError`) — not `.flatten()` / `.format()` on `ZodError`.
 
 **Where schemas live:**
 
 - **Shared wire shapes:** `@filosign/shared` (e.g. `zPlacementManifest`, `zDraftPlacementManifest`, `zSettlementReleaseParams`, `zUserKeygenDataJson`, `zAttachmentPacketSendInput`) — extend here when client + server agree.
-- **Domain/handlers:** `export` Zod next to the `safeParse` that uses it (`lib/domains/*`, `api/handlers/*`).
-- **oRPC contract:** concrete `.input` / `.output` in [`apps/server/api/orpc/schemas/`](apps/server/api/orpc/schemas/) — wire router from [`procedure-inputs.ts`](apps/server/api/orpc/schemas/procedure-inputs.ts) or schema re-exports; never `z.unknown()`, `z.any()`, `.passthrough()`, or `.loose()` on procedure I/O.
+- **Domain/handlers:** `export` Zod next to the `safeParse` that uses it (`lib/domains/`*, `api/handlers/*`).
+- **oRPC contract:** concrete `.input` / `.output` in `[apps/server/api/orpc/schemas/](apps/server/api/orpc/schemas/)` — wire router from `[procedure-inputs.ts](apps/server/api/orpc/schemas/procedure-inputs.ts)` or schema re-exports; never `z.unknown()`, `z.any()`, `.passthrough()`, or `.loose()` on procedure I/O.
 - **DB jsonb:** Drizzle `$type<…>` must match the same Zod shape you parse at runtime.
 
 **TypeScript (no parallel type systems):**
@@ -134,9 +137,9 @@ Strict mode everywhere. [TS handbook — Do's and Don'ts](https://www.typescript
 
 **Wire parsers (`@filosign/shared`):** `parseEvmAddress` / `parseHexString` at crypto and wallet boundaries when inference is still `string`.
 
-**Server relay writes:** `relayContractWrite<T>(contract.write)` in [`lib/platform/evm/contract-write.ts`](apps/server/lib/platform/evm/contract-write.ts) — one documented bridge for viem typings that omit registry/release methods.
+**Server relay writes:** `relayContractWrite<T>(contract.write)` in `[lib/platform/evm/contract-write.ts](apps/server/lib/platform/evm/contract-write.ts)` — one documented bridge for viem typings that omit registry/release methods.
 
-**SDK wallet:** `walletAccountAddress(account)` from [`packages/react-sdk/src/utils/evm.ts`](packages/react-sdk/src/utils/evm.ts).
+**SDK wallet:** `walletAccountAddress(account)` from `[packages/react-sdk/src/utils/evm.ts](packages/react-sdk/src/utils/evm.ts)`.
 
 **Legitimate casts (keep narrow):** generated `definitions/` index, dynamic WASM `import()`, test mocks in `apps/server/tests/support/`, literal `0x…` constants with `satisfies Hex`.
 
@@ -169,7 +172,9 @@ When refactoring an over-split domain: merge related modules into one `utils/` f
 
 > [!IMPORTANT]
 > **NO REDUNDANT PREFIXES:** Do not prefix files with their parent directory or package name. Leverage the directory hierarchy to keep filenames short and clean.
+>
 > - **Wrong:** `<parent>/<parent>-<submodule>.ts` (e.g., `billing/billing-plans.ts`, `hooks/users/useSyncThirdwebEmail.ts`)
 > - **Right:** `<parent>/<submodule>.ts` or `<parent>/utils/<submodule>.ts` (e.g., `billing/utils/plans.ts`, `hooks/users/useSyncEmail.ts`)
-> 
+>
 > **GROUPING & NESTING:** Group related sub-modules logically. Use subfolders (e.g. `utils/`) rather than flat, cluttered naming conventions. Keep the root of any package or domain directory clean, exposing only primary facades/indices and entry points.
+

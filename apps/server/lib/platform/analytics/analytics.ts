@@ -20,6 +20,7 @@ export const SERVER_ANALYTICS_EVENTS = {
 	documentViewed: "document_viewed",
 	pieceSigned: "piece_signed",
 	envelopeFullySigned: "envelope_fully_signed",
+	activationMilestoneRecorded: "activation_milestone_recorded",
 } as const;
 
 export type ServerAnalyticsEvent =

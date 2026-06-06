@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { PlanId } from "@filosign/entitlements";
+import { getPlanName, type PlanId } from "@filosign/entitlements";
 import type db from "@/lib/platform/db";
 
 export type PlatformAccessTx = Parameters<
@@ -19,18 +19,7 @@ export function normalizeEmail(email: string): string {
 }
 
 export function planLabel(planId: PlanId): string {
-	switch (planId) {
-		case "teams_pro":
-			return "Teams Pro";
-		case "teams":
-			return "Teams";
-		case "individual":
-			return "Individual";
-		case "enterprise":
-			return "Enterprise";
-		default:
-			return "Free";
-	}
+	return getPlanName(planId);
 }
 
 export type PlatformGatePreview =

@@ -167,7 +167,10 @@ export function useViewFile() {
 				})),
 				sender: parsedData.sender,
 				timestamp: parsedData.timestamp,
-				metadata: parsedData.metadata,
+				metadata: {
+					...parsedData.metadata,
+					mimeType: primary.mimeType,
+				},
 				placementManifest: parsedData.placementManifest,
 			};
 		},

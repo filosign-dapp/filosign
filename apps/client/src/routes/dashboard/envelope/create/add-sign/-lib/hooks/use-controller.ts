@@ -50,23 +50,23 @@ import {
 } from "@/src/lib/domains/files/validate-attachment-packets";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
+import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import {
 	useStorePersist,
 	useStorePersistHydrated,
 } from "@/src/lib/filosign/use-store";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
-import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
-import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
-import {
-	buildActiveAssignees,
-	resolveActiveAssignee,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-components/active-assignee-strip";
 import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
 import { useAddSignFields } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-fields";
 import { usePlacementHistory } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-history";
 import { usePlacementMode } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-mode";
 import type { Document } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+import {
+	buildActiveAssignees,
+	resolveActiveAssignee,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/active-assignees";
 import { buildSettlementRulesForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/build-settlement-rules";
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
 import {

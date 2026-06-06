@@ -5,8 +5,8 @@ import {
 	type PlacementViewport,
 	pxRectToNormalized,
 } from "@/src/lib/domains/files/placement-viewport";
-import type { ActiveAssignee } from "@/src/routes/dashboard/envelope/create/add-sign/-components/active-assignee-strip";
 import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+import type { ActiveAssignee } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/active-assignees";
 
 export function useAddSignFields(
 	commitFields: (fields: SignatureField[], recordHistory?: boolean) => void,

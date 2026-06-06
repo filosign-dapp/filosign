@@ -1,8 +1,8 @@
 import type * as React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { defaultPlacementFieldRect } from "@/src/lib/domains/files/field-box";
-import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-canvas-context";
 import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
+import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
 import type {
 	ClickCoordinates,
 	Document,

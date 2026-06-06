@@ -10,7 +10,7 @@ This document outlines entitlements per tier: **Existing Features** (in catalog 
 
 | Tier | Plan ID | Monthly / Annual | Doc limit | Key entitlements (shipped) |
 | :--- | :--- | :---: | :---: | :--- |
-| **Free** | `free` | \$0 | 3 / mo, 1 recipient | E2EE + PQC, basic fields |
+| **Free** | `free` | \$0 | 3 lifetime, 1 recipient | E2EE + PQC, basic fields |
 | **Solo** | `individual` | \$20 / \$15 | 10 / mo, 3 recipients | + draft review links, extended archival, proof export |
 | **Teams** | `teams` | \$35 / \$29 per seat | 15 / seat / mo (pooled), 10 recipients | + team templates/drafts, **`settlement.basic`** |
 | **Teams Pro** | `teams_pro` | \$59 / \$49 per seat | 25 / seat / mo (pooled), 15 recipients | + **`settlement.advanced`**, **`routing.advanced`**, bulk send, webhooks, branding, … |
@@ -26,7 +26,7 @@ This document outlines entitlements per tier: **Existing Features** (in catalog 
 *Designed as a zero-barrier entry point for testing the E2EE signing flow.*
 
 *   **Existing Features:**
-    *   3 documents lifetime limit (Invite-Only).
+    *   3 documents lifetime (invite-only trial).
     *   Maximum 1 recipient per document.
     *   Client-side End-to-End Encryption (E2EE) using local WASM keys.
     *   *Note:* Post-Quantum Cryptography (PQC) is active by default. Web3 payments/escrow settlements are disabled.
@@ -76,7 +76,7 @@ This document outlines entitlements per tier: **Existing Features** (in catalog 
     *   **Shared Template Libraries (Team Key-Sharing):** Team members need to share encrypted templates.
         *   *Why E2EE Templates:* Storing templates in plaintext compromises our "Zero-Knowledge" claim (since templates contain 90% of proprietary contract text, IP terms, and pricing). It also keeps codebase rendering pipelines unified.
         *   *E2EE Architecture:* Templates are encrypted with a symmetric *Team Key*. This Team Key is encrypted for each member using their public key, allowing them to decrypt the templates on login.
-    *   **Sequential signing / routing** — **shipped on-chain (Teams Pro):** parallel/sequential routing and quorum via `FSEnvelopeRegistry` + client routing UI (optional signers not supported on-chain in v1).
+    *   **Sequential signing / routing** — shipped on **Teams Pro** (`features.routing.advanced`); see Teams Pro § Existing Features.
     *   **Basic Webhook Integrations:** Outgoing webhooks to push basic status changes to external URLs (e.g., notifying a Discord/Slack channel on signature).
     *   **Encrypted Shared Contacts & Team Address Book:** A central workspace directory where members can save frequently used signer details and pre-fetched public encryption keys to streamline signing workflows.
     *   **Automated Reminder Rules & Expiration Scheduler:** Senders can configure automated expiration limits and custom reminder schedules (e.g., daily/weekly follow-ups) for envelopes.
@@ -88,13 +88,14 @@ This document outlines entitlements per tier: **Existing Features** (in catalog 
 
 *   **Existing Features:**
     *   25 documents per user/mo (pooled across team members).
-    *   Custom smart-contract payout rules (multi-sig releases, multi-chain payouts).
+    *   **`features.settlement.advanced`** — multi-leg USDC payout rules (on-chain + server relay).
+    *   **`features.routing.advanced`** — parallel/sequential routing and quorum via `FSEnvelopeRegistry` + client routing UI (optional signers not supported on-chain in v1).
+    *   **`features.comments`** / **`features.draft_comments`** — E2EE envelope and draft threads.
     *   Workspace team permissions.
 *   **Suggested Features to Build:**
     *   **Seat Quota Allocation / Redistribution:** An admin panel interface allowing workspace owners to set custom document caps per user or reallocate seat quotas within the team's pooled limit.
     *   **Bulk Send (Client-Side Loop):** Senders can upload a CSV list of names/emails and send a unique envelope to each recipient.
         *   *E2EE Architecture:* The browser must run a loop, encrypting the document uniquely for each recipient's key, and batch-upload the encrypted files.
-    *   **E2EE Collaborative Comments:** A sidebar allowing signers and senders to chat about the contract. Comments must be encrypted using the envelope key, keeping comments zero-knowledge to our servers.
     *   **Conditional Field Logic & Calculations:** Dynamic fields (e.g., hiding/showing fields based on checkboxes, or summing up contract line items automatically).
     *   **Custom Branding:** Teams can upload their organization logo, customize signature page colors, and tailor email templates for a consistent, professional brand experience.
     *   **Custom Subdomains:** Allow organizations to host signing pages on their own custom domain (e.g., `sign.yourcompany.com`) using wildcard DNS routing at zero marginal hosting cost.
@@ -110,7 +111,7 @@ This document outlines entitlements per tier: **Existing Features** (in catalog 
 *   **Existing Features:**
     *   100 documents per month (then \$0.50 per document overage).
     *   Access to the PQC signing API.
-    *   Webhook event delivery.
+    *   Webhook event delivery. *(Catalog v1: product webhooks are `features.webhooks` on Teams Pro; Platform tier TBD.)*
 *   **Suggested Features to Build:**
     *   **API Key Management Dashboard:** Secure creation, rotation, and revocation of API credentials.
     *   **Cryptographically Signed Webhooks:** To prevent spoofing, webhooks must include a signature header (e.g., `X-Filosign-Signature` generated via a SHA256 HMAC secret), allowing developer servers to verify that the webhook came from Filosign.

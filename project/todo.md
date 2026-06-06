@@ -38,7 +38,7 @@ Source of truth: [`packages/entitlements/src/features.ts`](../packages/entitleme
 
 | Key | Notes |
 |-----|--------|
-| `documents.sent.monthly` | Quota enforced on register / list-upload |
+| `documents.sent.monthly` | Quota enforced on register / list-upload (free = 3 lifetime; paid = calendar month) |
 | `envelope.recipients.max` | Max signers enforced at register |
 | `features.shared_templates` | Org template CRUD; `assertEntitlement` in connections-templates |
 | `features.team_drafts` | Org envelope drafts (`envelope_drafts`); org permission gated (no separate entitlement assert) |
@@ -46,7 +46,7 @@ Source of truth: [`packages/entitlements/src/features.ts`](../packages/entitleme
 | `features.draft_comments` | E2EE comments on compose drafts; `assertEntitlement` in drafts/share |
 | `features.comments` | Post-send E2EE envelope threads; `assertEntitlement` in files/comments |
 | `features.envelope.team_visibility` | Org members read org envelopes via `canReadOrg` (no separate entitlement assert) |
-| `features.routing.advanced` | Sequential order + quorum at register; `assertEntitlement` in files/register |
+| `features.routing.advanced` | On-chain sequential/quorum + register assert; `canSignByRouting` sign UX |
 | `features.settlement.basic` | USDC payout packets; `assertEntitlement` in settlements utils |
 | `features.settlement.advanced` | Multi-recipient / advanced release rules; settlements utils |
 | `features.supplementary_attachments` | Gated file packets; `assertEntitlement` in attachments/register |
@@ -56,7 +56,7 @@ Source of truth: [`packages/entitlements/src/features.ts`](../packages/entitleme
 
 **Pricing matrix:** supplementary attachment rows live in `apps/astro/src/lib/pricing-comparison.ts`.
 
-### Catalog only — not shipped (keep in entitlements; hidden on pricing page until built)
+### Catalog only — not shipped (`teams_pro` + `enterprise`; no `assertEntitlement` yet; hidden on pricing page until built)
 
 | Key | Planned work |
 |-----|----------------|
@@ -68,7 +68,7 @@ Source of truth: [`packages/entitlements/src/features.ts`](../packages/entitleme
 | `features.webhooks` | Outbound webhooks |
 | `features.metadata.tags` | Envelope metadata tags |
 
-**Related gaps (not separate catalog flags):** rich placement field value types beyond current set; `files.remindSigners` reminder automation; **optional signers** (blocked on-chain — `OptionalSignersNotSupported` in v1; use sequential routing + quorum only).
+**Related gaps (not separate catalog flags):** CSV export; **optional signers** (blocked on-chain — `OptionalSignersNotSupported` in v1; use sequential routing + quorum only).
 
 ---
 

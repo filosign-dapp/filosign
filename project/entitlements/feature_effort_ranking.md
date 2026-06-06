@@ -18,8 +18,8 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 
 | Feature | Tier | Why so low | How to build |
 | ------- | ---- | ---------- | ------------ |
-| **Standard form fields** | Free | **Done:** 7 placement types in [`field-types.ts`](../../apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types.ts); manifest + send path exists | Entitlement gates per tier; sign flow still tracks `completedFieldIds` only (not rich field values) |
-| **Basic audit trail** | Free | **Done:** compliance PDF (bundle **v1**, [`compliance-pdf/`](../../apps/client/src/lib/domains/files/compliance-pdf/)) | Add signer IP capture on register/sign in [`lib/domains/files/`](../../apps/server/lib/domains/files/); include in compliance bundle |
+| **Standard form fields** | Free | **Done:** 7 placement types in [`field-types.ts`](../../apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types.ts); manifest + send path exists | Entitlement gates per tier; field snapshots at sign (`file_field_completions`) |
+| **Basic audit trail** | Free | **Done:** compliance PDF (bundle **v1**, [`compliance-pdf/`](../../apps/client/src/lib/domains/files/compliance-pdf/)); `requestIp` on sign in bundle | Show signer IP in compliance PDF ([`summary.ts`](../../apps/client/src/lib/domains/files/compliance-pdf/utils/summary.ts)) |
 | **Mobile-responsive signing UI** | Free | **Partial:** sticky header, responsive sign layout | Polish breakpoints, touch targets, field overlays on small screens |
 | **Embedded signing sandbox (testnet)** | Platform Starter | **Partial:** `VITE_CHAIN=testnet`, Base Sepolia | Document sandbox for API consumers; optional testnet-only API base URL / keys |
 
@@ -50,12 +50,10 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | ------- | ---- | --- | ------------ |
 | **Basic webhook integrations** | Team | No outbound product webhooks today | `webhook_endpoints` per org; emit on sign/register/complete; queue + retries |
 | **Automated reminder rules & expiration** | Team | Invite TTL cron partial | Envelope `expires_at` + `reminder_schedule`; cron → email |
-| **Sequential signing workflows** | Team | Order passed but not enforced | Server gate: no invite/sign until prior signer done; optional delayed emails |
 | **Encrypted shared contacts & team address book** | Team | Connections graph partial | Org-scoped contacts; optional encrypted notes |
 | **Local CSV data export** | Solo | No CSV; decrypt path exists | Client: fetch blobs → decrypt → flatten manifest + fields → CSV |
 | **Custom branding** | Team Pro | Not in app UI | Org logo/colors; email template vars on sign + emails |
 | **Bulk send (client-side loop)** | Team Pro | Single send pipeline done | CSV → loop `useSendFile`; progress UI; rate limits |
-| **E2EE collaborative comments** | Team Pro | **Shipped** (`features.comments` on sent envelopes; `features.draft_comments` on drafts) | Piece/draft DEK; oRPC append/list; sign + file viewer UI |
 | **Team activity logs** | Enterprise | `auth_audit_events` only | Workspace audit table; emit from handlers |
 | **Audit log streaming (SIEM)** | Enterprise | Extension of activity logs | HTTP/syslog sink per org |
 | **Document assembly API (anchor text)** | Platform Pro | Manual PDF placement only | PDF text search → coordinates → manifest; API anchor strings |
@@ -68,7 +66,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | ------- | ---- | --- | ------------ |
 | **Encrypted signer attachments** | Solo | Doc encryption done; no signer upload fields | Attachment field type; encrypt at sign; presigned PUT; sender decrypt |
 | **Shared template libraries (team key-sharing)** | Team | Org templates + member keys partial | Per-org team symmetric key; wrap per member; re-encrypt templates |
-| **Conditional field logic & calculations** | Team Pro | Static manifest only | Rules in manifest; evaluator on sign; **needs field value capture first** |
+| **Conditional field logic & calculations** | Team Pro | Static manifest only | Rules in manifest; evaluator on sign; needs CSV export path + remaining field types |
 | **Server-side WASM SDKs (Node/Go/Python)** | Platform Pro | Internal node WASM only | Public package, semver, docs; Go/Python via FFI or sidecar |
 
 ---
@@ -87,10 +85,10 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 
 ## Summary: easiest → hardest
 
-1. **XS:** Standard fields (gate), basic audit (+ IP), mobile polish, testnet sandbox docs  
+1. **XS:** Standard fields (gate), basic audit (IP in PDF), mobile polish, testnet sandbox docs  
 2. **S:** Manual reminders, signed webhooks, metadata passthrough, API keys, template folders, tags/filters, seat quota UI, advanced audit export, advanced field types, `postMessage`, custom SMTP  
-3. **M:** Product webhooks, auto-reminders/expiration, sequential signing, team contacts, CSV export, branding, bulk send, E2EE comments, activity logs, SIEM streaming, anchor-text assembly  
-4. **L:** Signer attachments, team template keys, conditional fields (+ values prerequisite), public server WASM SDKs  
+3. **M:** Product webhooks, auto-reminders/expiration, team contacts, CSV export, branding, bulk send, activity logs, SIEM streaming, anchor-text assembly  
+4. **L:** Signer attachments, team template keys, conditional fields, public server WASM SDKs  
 5. **XL:** Custom subdomains, SSO, LDAP, BYOK, QES/eWitness  
 
 ---
@@ -99,7 +97,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 
 | Prerequisite | Unlocks |
 | ------------ | ------- |
-| **Field value capture** (beyond `completedFieldIds`) | CSV export, conditional logic, calculations |
+| **Field value capture** (partial — sign snapshots in `file_field_completions`) | CSV export, conditional logic, calculations |
 | **Product webhook infrastructure** | Signed webhooks, metadata in events, Platform Starter |
 | **Per-org settings store** | Branding, SMTP, webhooks, subdomains |
 | **Team symmetric key design** | Shared template libraries (beyond current org templates) |
@@ -111,7 +109,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 
 - **Free Trial “standard fields”** — largely **already built**; tier work is gating + sign UX.  
 - **“Shared templates” (Team)** — org templates exist; **team key-sharing** is the **L** row above.  
-- **`features.routing.advanced`** is in the catalog but **sequential signing is not implemented**.  
+- **`features.routing.advanced`** — **shipped:** on-chain sequential/quorum, register assert, `canSignByRouting` sign UX.  
 - **Settlements / USDC** are implemented (on-chain rules + server `trySettle` relay + manual confirm + daily sync) but were outside the suggested-feature list in the report.
 
 ---
@@ -122,12 +120,12 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | ---- | -------- | --------- |
 | Form fields / placement | **done** (values partial) | `add-sign/`, `placement-manifest.ts` |
 | Email / reminders | **partial** | `lib/platform/email/`, `packages/emails/` |
-| Audit / compliance PDF | **done** | `compliance-pdf/`, `compliance-bundle.ts` |
+| Audit / compliance PDF | **done** (IP in PDF pending) | `compliance-pdf/`, `compliance-bundle.ts` |
 | Mobile sign UI | **partial** | `document/sign/-components/` |
 | Signer attachments | **none** | — |
 | CSV export | **none** | — |
 | Templates / org keys | **done–partial** | `orgs/connections-templates.ts`, `invites-keys.ts` |
-| Sequential signing | **partial** (order not enforced) | `send-envelope.ts` |
+| Sequential signing | **done** | `FSEnvelopeRegistry`, `piece-helpers.ts`, envelope create routing UI |
 | Product webhooks | **none** | — |
 | Contacts | **partial** | `connections/-lib/utils/contacts.ts` |
 | Reminders / expiration | **partial** | `expire-invites.ts` |

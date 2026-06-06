@@ -24,7 +24,7 @@ The table below outlines the current pricing, limits, and primary value proposit
 | **Documenso** | **Free** <br> **Individual** <br> **Teams** <br> **Platform** | \$0.00 <br> \$30.00 / mo <br> \$40.00 / mo <br> \$250.00 / mo | \$0.00 <br> N/A <br> N/A <br> N/A | 5 / month <br> Unlimited <br> Unlimited <br> Unlimited | No <br> No <br> No <br> No | **Open-Source & Developer-First:** <br> Allows self-hosting. SaaS provides unlimited documents on paid plans. Lacks built-in payment features and post-quantum encryption. |
 | **DocuSeal** | **Free** <br> **Pro** | \$0.00 <br> \$20.00 / user/mo | \$0.00 <br> \$15.00 / user/mo | 10 requests/mo <br> Unlimited | No <br> No | **Simple SaaS & Self-Hosted:** <br> Clean UI, unlimited documents/templates. Focuses on straightforward UX but no native payments or cryptographic E2EE. |
 | **OpenSign** | **Free** <br> **Professional** <br> **Teams** <br> **Enterprise** | \$0.00 <br> \$29.99 / mo <br> \$39.99 / user/mo <br> Custom | \$0.00 <br> \$15.00 / mo <br> \$20.00 / user/mo <br> Custom | Unlimited (Self-sign) <br> Unlimited <br> Unlimited <br> Unlimited | No <br> No <br> No <br> No | **Document-Heavy Alternative:** <br> Generous free tier for self-signing. Professional adds webhooks; Teams adds shared templates. No native payment workflows. |
-| **Filosign** *(catalog v1)* | **Free** · **Solo** · **Teams** · **Teams Pro** · *(future: Enterprise, Platform Starter, Platform Pro)* | **\$0** · **\$20** / mo · **\$35** / user/mo · **\$59** / user/mo · Custom · TBD · TBD | **\$0** · **\$15** / mo · **\$29** / user/mo · **\$49** / user/mo · Custom · TBD · TBD | 3 / mo · 10 / mo · 15 / seat · 25 / seat · Custom · TBD · TBD | No · No · **Yes** (USDC basic) · **Yes** (advanced splits + rule CRUD) · TBD · TBD · TBD | **E2EE + PQC signing;** Teams+ attached USDC payouts; Teams Pro advanced routing and settlement. See catalog v1 table above. |
+| **Filosign** *(catalog v1)* | **Free** · **Solo** · **Teams** · **Teams Pro** · *(future: Enterprise, Platform Starter, Platform Pro)* | **\$0** · **\$20** / mo · **\$35** / user/mo · **\$59** / user/mo · Custom · TBD · TBD | **\$0** · **\$15** / mo · **\$29** / user/mo · **\$49** / user/mo · Custom · TBD · TBD | 3 lifetime · 10 / mo · 15 / seat · 25 / seat · Custom · TBD · TBD | No · No · **Yes** (USDC basic) · **Yes** (advanced splits + rule CRUD) · TBD · TBD · TBD | **E2EE + PQC signing;** Teams+ attached USDC payouts; Teams Pro advanced routing and settlement. See catalog v1 table above. |
 
 
 ---
@@ -60,7 +60,7 @@ graph TD
 
 #### 1. Free
 * **Price:** \$0.00
-* **Offering:** 3 documents/month, 1 recipient, E2EE + PQC. No settlement.
+* **Offering:** 3 documents lifetime, 1 recipient, E2EE + PQC. No settlement.
 * **Strategic Role:** Entry tier; upgrade path to Solo for volume and proof exports.
 
 #### 2. Solo (`individual`)

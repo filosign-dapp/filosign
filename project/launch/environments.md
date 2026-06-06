@@ -46,7 +46,7 @@ Runtime oRPC `runtime.deployment` and `runtime.signupPolicy` expose server tier 
 | **Registration** (`assertRegistrationComplete` on authenticated RPC) | User finished onboarding (`users` row exists) | Same on gated tiers |
 | **Entitlements** (`assertEntitlement`, catalog `free` plan) | Feature limits **after** login | Enforced on prod/staging/local; skipped on sandbox demo |
 
-Expired partner trials (`expirePartnerTrials` → subscription `canceled`) **keep dashboard access**. `effectivePlanIdFromStatus` maps them to catalog **`free`** (3 docs/month, 1 recipient per envelope in `catalog/v1`). That is intentional: retention + export paths stay available while paid features drop off.
+Expired partner trials (`expirePartnerTrials` → subscription `canceled`) **keep dashboard access**. `effectivePlanIdFromStatus` maps them to catalog **`free`** (3 documents lifetime, 1 recipient per envelope in `catalog/v1`). That is intentional: retention + export paths stay available while paid features drop off.
 
 The **`free` plan in the catalog** is the long-term self-serve tier. Production signup stays gated until GA; when opened, the same catalog limits apply without changing the post-trial downgrade path.
 

@@ -2,15 +2,15 @@ import { useBasicPayoutAttachGate } from "@filosign/react/files";
 import { useUserProfileByQuery } from "@filosign/react/users";
 import { useEffect, useRef, useState } from "react";
 import { getAddress, isAddress } from "viem";
-import { useDebouncedSearch } from "@/src/lib/utils/use-debounced-search";
-import { RECIPIENT_LOOKUP_DEBOUNCE_MS } from "@/src/routes/dashboard/envelope/create/-lib/constants/recipient-card";
-import { useRecipientsContext } from "@/src/routes/dashboard/envelope/create/-lib/context/recipients-context";
-import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
-import { filosignProfileDisplayName } from "@/src/routes/dashboard/envelope/create/-lib/utils/filosign-profile";
 import {
 	isValidRecipientEmail,
 	recipientLookupEmail,
-} from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
+} from "@/src/lib/domains/invites/recipient-email";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
+import { useDebouncedSearch } from "@/src/lib/utils/use-debounced-search";
+import { RECIPIENT_LOOKUP_DEBOUNCE_MS } from "@/src/routes/dashboard/envelope/create/-lib/constants/recipient-card";
+import { useRecipientsContext } from "@/src/routes/dashboard/envelope/create/-lib/context/recipients-context";
+import { filosignProfileDisplayName } from "@/src/routes/dashboard/envelope/create/-lib/utils/filosign-profile";
 import {
 	getDraftForRecipient,
 	removeDraftForRecipient,

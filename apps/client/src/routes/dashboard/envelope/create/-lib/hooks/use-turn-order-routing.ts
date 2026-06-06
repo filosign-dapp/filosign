@@ -3,7 +3,7 @@ import { canUseAdvancedRouting } from "@filosign/react/files";
 import type { RegisterRoutingInput } from "@filosign/shared";
 import { useCallback } from "react";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
-import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
+import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import {
 	defaultRoutingOrderFromRecipients,

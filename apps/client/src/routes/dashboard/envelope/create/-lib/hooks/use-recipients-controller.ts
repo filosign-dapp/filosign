@@ -7,7 +7,7 @@ import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { createClientId } from "@/src/lib/utils/id";
 import { useCreateEnvelope } from "@/src/routes/dashboard/envelope/create/-lib/context/create-envelope-context";
-import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
+import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 import { useTurnOrderRouting } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-turn-order-routing";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { removeDraftForRecipient } from "@/src/routes/dashboard/envelope/create/-lib/utils/settlement-drafts";

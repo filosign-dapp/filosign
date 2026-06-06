@@ -1,5 +1,6 @@
+import { EnvelopeSimpleIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import { Input } from "@/src/lib/components/ui/input";
-import { EmptyHint } from "@/src/routes/dashboard/_shell/connections/-components/empty-hint";
 import { useConnectionsContext } from "@/src/routes/dashboard/_shell/connections/-lib/context/context";
 
 function formatDate(value: string | Date) {
@@ -14,6 +15,7 @@ function formatDate(value: string | Date) {
 export function InvitesTab() {
 	const { filteredInvites, loadingInvites, search, setSearch } =
 		useConnectionsContext();
+	const hasSearch = search.trim().length > 0;
 
 	if (loadingInvites) {
 		return (
@@ -33,7 +35,23 @@ export function InvitesTab() {
 			/>
 
 			{filteredInvites.length === 0 ? (
-				<EmptyHint title="No email invites yet. Use Add recipient to send one." />
+				hasSearch ? (
+					<AppEmptyState
+						preset="section"
+						variant="outline"
+						icon={MagnifyingGlassIcon}
+						title="No invites match your search"
+						description="Try a different email address or clear the search field."
+					/>
+				) : (
+					<AppEmptyState
+						preset="section"
+						variant="outline"
+						icon={EnvelopeSimpleIcon}
+						title="No email invites yet"
+						description="Use Add recipient to send someone an invite to join Filosign."
+					/>
+				)
 			) : (
 				<ul className="divide-y divide-border rounded-lg border border-border">
 					{filteredInvites.map((inv) => (

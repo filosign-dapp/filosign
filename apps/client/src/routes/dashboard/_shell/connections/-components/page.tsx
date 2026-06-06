@@ -2,13 +2,9 @@ import { PlusIcon } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
 import AddRecipientDialog from "@/src/lib/domains/sharing/add-recipient-dialog";
 import { InvitesTab } from "@/src/routes/dashboard/_shell/connections/-components/invites-tab";
-import {
-	ConnectionsProvider,
-	useConnectionsContext,
-} from "@/src/routes/dashboard/_shell/connections/-lib/context/context";
-import type { ConnectionsController } from "@/src/routes/dashboard/_shell/connections/-lib/hooks/use-connections-controller";
+import { useConnectionsContext } from "@/src/routes/dashboard/_shell/connections/-lib/context/context";
 
-function ConnectionsPageContent() {
+export function ConnectionsPageContent() {
 	const { onRequestCompleted } = useConnectionsContext();
 
 	return (
@@ -38,17 +34,5 @@ function ConnectionsPageContent() {
 				<InvitesTab />
 			</div>
 		</div>
-	);
-}
-
-export function ConnectionsPage({
-	controller,
-}: {
-	controller: ConnectionsController;
-}) {
-	return (
-		<ConnectionsProvider value={controller}>
-			<ConnectionsPageContent />
-		</ConnectionsProvider>
 	);
 }

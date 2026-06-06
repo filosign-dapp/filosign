@@ -15,7 +15,7 @@ import {
 	SignDocumentPdfPreviewView,
 	SignDocumentTextPreview,
 	SignDocumentUnsupportedPreview,
-} from "@/src/routes/dashboard/document/sign/-components/file-content-views";
+} from "@/src/routes/dashboard/document/sign/-components/file-content/views";
 import {
 	useSignCompliance,
 	useSignFile,
@@ -23,7 +23,7 @@ import {
 	useSignSigning,
 	useSignViewer,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
-import { PlacementFieldOverlay } from "./placement-field-overlay";
+import { PlacementFieldOverlay } from "../placement-field-overlay";
 
 export function SignDocumentFileContent() {
 	const { pieceCid, file, fileQuery, acknowledge } = useSignFile();

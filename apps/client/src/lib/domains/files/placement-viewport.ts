@@ -95,6 +95,23 @@ export function normalizedRectToPx(
 	};
 }
 
+/** Percentage box for overlays on a page-sized container (add-sign px rect round-trip). */
+export function normalizedRectToCssPercentStyle(
+	rect: PlacementRectNormalized,
+): {
+	left: string;
+	top: string;
+	width: string;
+	height: string;
+} {
+	return {
+		left: `${rect.x * 100}%`,
+		top: `${rect.y * 100}%`,
+		width: `${rect.width * 100}%`,
+		height: `${rect.height * 100}%`,
+	};
+}
+
 /** Normalized rect (0–1) with x+width and y+height clamped inside the page. */
 export function placementManifestRect(args: {
 	x: number;

@@ -3,56 +3,67 @@ import {
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
 import { useAuthedApi } from "@filosign/react/auth";
-import { useCreateOrganization } from "@filosign/react/orgs";
+import {
+	useActiveOrgId,
+	useOrganizations,
+	useUpdateOrganization,
+} from "@filosign/react/orgs";
 import { useUpdateUserProfile } from "@filosign/react/users";
 import { useNavigate } from "@tanstack/react-router";
+import {
+	defaultWorkspaceName,
+	personalizedWorkspaceName,
+} from "@/src/lib/auth/account-defaults";
 import type { ColdInviteEntrySearch } from "@/src/lib/domains/invites/cold-invite-search";
 import { signDocumentSearchFromColdEntry } from "@/src/lib/domains/invites/cold-invite-search";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
-import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { logger } from "@/src/lib/utils/logger";
+import type { OnboardingNamePayload } from "@/src/routes/onboarding/-components/OnboardingNameForm";
 
-/** Profile sync, analytics, and post-registration navigation after key registration. */
+/** Profile sync, workspace rename, and post-personalization navigation. */
 export function useOnboardingComplete() {
 	const captureAppEvent = useCaptureAppEvent();
 	const updateUserProfile = useUpdateUserProfile();
-	const createOrg = useCreateOrganization();
-	const setActiveOrg = useSetPersistedActiveOrganizationId();
+	const updateOrganization = useUpdateOrganization();
+	const { data: orgsData } = useOrganizations();
+	const activeOrgId = useActiveOrgId();
 	const { onboardingForm, setOnboardingForm } = useStorePersist();
 	const { data: auth } = useAuthedApi();
 	const navigate = useNavigate();
 
-	return async (search: ColdInviteEntrySearch) => {
+	return async (
+		search: ColdInviteEntrySearch,
+		names: OnboardingNamePayload,
+	) => {
 		const coldPieceCid = search.coldPieceCid?.trim();
 		captureAppEvent(CLIENT_ANALYTICS_EVENTS.onboardingCompleted, {
 			...(coldPieceCid ? { piece_cid: coldPieceCid } : {}),
 		});
 
-		if (onboardingForm?.firstName) {
-			const firstName = onboardingForm.firstName;
-			const lastName = onboardingForm.lastName;
-
+		const firstName = names.firstName.trim();
+		const lastName = names.lastName.trim();
+		if (firstName) {
 			await updateUserProfile.mutateAsync({
 				firstName,
 				lastName: lastName ? lastName : undefined,
 			});
 
-			try {
-				const orgName = `${firstName}'s Workspace`;
-				const created = await createOrg.mutateAsync(
-					{ name: orgName },
-					suppressGlobalErrorToast(),
-				);
-				if (created?.organization?.id) {
-					setActiveOrg(created.organization.id);
-				} else {
-					throw new Error("No organization ID returned from server.");
+			const activeOrg = orgsData?.organizations?.find(
+				(org) => org.id === activeOrgId,
+			);
+			const defaultName = defaultWorkspaceName();
+			if (activeOrg?.name === defaultName) {
+				try {
+					await updateOrganization.mutateAsync(
+						{ name: personalizedWorkspaceName(firstName) },
+						suppressGlobalErrorToast(),
+					);
+				} catch (error) {
+					logger.error("Failed to rename default workspace:", error);
+					showAppErrorToast(error);
+					return;
 				}
-			} catch (error) {
-				logger.error("Failed to automate default workspace creation:", error);
-				showAppErrorToast(error);
-				return;
 			}
 
 			setOnboardingForm({

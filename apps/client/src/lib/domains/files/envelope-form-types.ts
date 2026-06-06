@@ -19,7 +19,7 @@ export type UploadedFile = {
 };
 
 import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
-import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
 
 export type EnvelopeForm = {
 	recipients: Recipient[];

@@ -1,6 +1,7 @@
 import { zPlacementManifest } from "@filosign/shared";
 import { DownloadIcon, FileIcon } from "@phosphor-icons/react";
 import { useMemo } from "react";
+import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import {
 	LazyBoundary,
 	LazyPdfJsPreview,
@@ -50,18 +51,27 @@ export function FileViewerContent() {
 
 	if (!fileData) {
 		return (
-			<div className="flex items-center justify-center w-full h-full text-sm text-muted-foreground p-4 text-center">
-				<div className="flex flex-col items-center gap-3 md:gap-4">
-					<FileIcon className="size-12 md:size-16 text-muted-foreground/50" />
-					<div className="text-xs md:text-sm">No file preview available</div>
-				</div>
+			<div className="flex size-full items-center justify-center p-4">
+				<AppEmptyState
+					preset="inline"
+					variant="muted"
+					icon={FileIcon}
+					title="No file preview available"
+					className="border-transparent"
+				/>
 			</div>
 		);
 	}
 
 	const { fileBytes, metadata } = fileData;
-	const mimeType = metadata.mimeType;
-	const fileName = metadata.name;
+	const primaryDoc = fileData.documents[0];
+	const mimeType = metadata.mimeType ?? primaryDoc?.mimeType;
+	const fileName = metadata.name ?? primaryDoc?.name;
+	const isPdfPreview =
+		Boolean(previewPdfBytes) ||
+		mimeType === "application/pdf" ||
+		primaryDoc?.mimeType === "application/pdf" ||
+		fileName?.toLowerCase().endsWith(".pdf");
 
 	const placementFields = useMemo(() => {
 		const manifest = fileInfo?.placementManifest ?? fileData.placementManifest;
@@ -110,10 +120,7 @@ export function FileViewerContent() {
 		);
 	}
 
-	if (
-		mimeType === "application/pdf" ||
-		fileName?.toLowerCase().endsWith(".pdf")
-	) {
+	if (isPdfPreview) {
 		if (!previewPdfBytes) {
 			return (
 				<div className="flex items-center justify-center w-full h-full p-4 text-sm text-muted-foreground">

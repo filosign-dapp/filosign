@@ -6,6 +6,7 @@ import {
 	assertEntitlement,
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
+import { shouldEnforceSendQuota } from "@/lib/domains/users/activation-quota";
 import db from "@/lib/platform/db";
 
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
@@ -14,9 +15,14 @@ const { files, fileParticipants, fileSignatures } = db.schema;
 
 export const zUploadStartBody = z.object({
 	pieceCid: z.string().min(1),
+	isPractice: z.boolean().optional(),
 });
 
-async function assertCanStartEnvelopeUpload(sender: Address): Promise<void> {
+async function assertCanStartEnvelopeUpload(
+	sender: Address,
+	isPractice?: boolean,
+): Promise<void> {
+	if (!shouldEnforceSendQuota(isPractice)) return;
 	const entitlementCtx = await resolveEntitlementContext(
 		getAddress(sender),
 		null,
@@ -28,7 +34,7 @@ export async function filesUploadStart(
 	sender: Address,
 	input: z.infer<typeof zUploadStartBody>,
 ) {
-	await assertCanStartEnvelopeUpload(sender);
+	await assertCanStartEnvelopeUpload(sender, input.isPractice);
 
 	const pieceCid = input.pieceCid.trim();
 	if (!pieceCid) {

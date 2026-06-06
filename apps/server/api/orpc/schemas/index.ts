@@ -79,6 +79,7 @@ import {
 	rpcOrgsTemplateOutputSchema,
 	rpcOrgsTemplatesCloneOutputSchema,
 	rpcOrgsTemplatesListOutputSchema,
+	rpcOrgsUnlinkWalletOutputSchema,
 	rpcOrgsUpdateOutputSchema,
 } from "./orgs-output";
 import {
@@ -107,6 +108,8 @@ import {
 import { rpcStoragePresignPutOutputSchema } from "./storage-output";
 import { rpcTxProcessIndexerHashOutputSchema } from "./tx-output";
 import {
+	rpcUserActivationGetOutputSchema,
+	rpcUserActivationMarkOutputSchema,
 	rpcUserEraseAccountOutputSchema,
 	rpcUserExportAccountDataOutputSchema,
 	rpcUserPrivacyRequestCreateOutputSchema,
@@ -202,6 +205,7 @@ export const rpcOut = {
 		listMine: rpcOrgsListMineOutputSchema,
 		get: rpcOrgsGetOutputSchema,
 		linkWallet: rpcOrgsLinkWalletOutputSchema,
+		unlinkWallet: rpcOrgsUnlinkWalletOutputSchema,
 		update: rpcOrgsUpdateOutputSchema,
 		member: rpcOrgsMemberOutputSchema,
 		inviteCreate: rpcOrgsInviteCreateOutputSchema,
@@ -273,6 +277,8 @@ export const rpcOut = {
 		signaturesGet: rpcUserSignaturesGetOutputSchema,
 		signaturesSetDefault: rpcUserSignaturesSetDefaultOutputSchema,
 		signaturesDelete: rpcUserSignaturesDeleteOutputSchema,
+		activationGet: rpcUserActivationGetOutputSchema,
+		activationMark: rpcUserActivationMarkOutputSchema,
 	},
 } as const;
 

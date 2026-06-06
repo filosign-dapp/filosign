@@ -122,6 +122,7 @@ import {
 	zOrgsMembersRemoveBody,
 	zOrgsMembersSetRoleBody,
 	zOrgsTemplateCreateBody,
+	zOrgsUnlinkWalletBody,
 	zOrgsUpdateBody,
 	zSharingRequestInviteBody,
 	zUserProfilePutBody,
@@ -941,6 +942,21 @@ export const appRouter = {
 					input,
 				);
 			}),
+		unlinkWallet: authenticatedProcedure
+			.input(zOrgsUnlinkWalletBody)
+			.output(out.orgs.unlinkWallet)
+			.handler(({ context, input }) => {
+				if (!context.activeOrg) {
+					throw new ORPCError("BAD_REQUEST", {
+						message: "X-Org-Id header required",
+					});
+				}
+				return orgsHandlers.orgsUnlinkOrgWallet(
+					context.userWallet,
+					context.activeOrg,
+					input,
+				);
+			}),
 		settlementFeatureAccess: {
 			get: authenticatedProcedure
 				.input(z.object({ organizationId: z.uuid() }))
@@ -1201,6 +1217,19 @@ export const appRouter = {
 			.input(z.object({ walletAddress: z.string() }))
 			.output(out.users.registrationSnapshot)
 			.handler(({ input }) => userHandlers.userRegistrationSnapshot(input)),
+		activation: {
+			get: authenticatedProcedure
+				.output(out.users.activationGet)
+				.handler(({ context }) =>
+					userHandlers.userActivationGet(context.userWallet),
+				),
+			mark: authenticatedProcedure
+				.input(userHandlers.zUserActivationMarkBody)
+				.output(out.users.activationMark)
+				.handler(({ context, input }) =>
+					userHandlers.userActivationMark(context.userWallet, input),
+				),
+		},
 		eraseAccount: authenticatedProcedure
 			.output(out.users.eraseAccount)
 			.handler(({ context }) =>

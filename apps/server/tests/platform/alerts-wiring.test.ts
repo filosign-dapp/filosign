@@ -293,7 +293,7 @@ describe("settlement payout platform alerts", () => {
 
 	test("mapExecuteErrorToStatus maps insufficient funds to failed_insufficient", async () => {
 		const { mapExecuteErrorToStatus } = await import(
-			"@/lib/domains/settlements/utils/execute-payout-alerts"
+			"@/lib/domains/settlements/utils/execute/alerts"
 		);
 		expect(mapExecuteErrorToStatus("insufficient balance")).toBe(
 			"failed_insufficient",
@@ -303,7 +303,7 @@ describe("settlement payout platform alerts", () => {
 
 	test("alertSettlementRelayPayoutFailed emits settlements.relay_payout_failed", async () => {
 		const { alertSettlementRelayPayoutFailed } = await import(
-			"@/lib/domains/settlements/utils/execute-payout-alerts"
+			"@/lib/domains/settlements/utils/execute/alerts"
 		);
 		alertSettlementRelayPayoutFailed({
 			onChainRuleId: 42n,

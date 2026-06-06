@@ -28,7 +28,7 @@ afterAll(() => {
 describe("resolveAllowedSettlementPayers", () => {
 	test("includes sender and linked org treasury", async () => {
 		const { resolveAllowedSettlementPayers } = await import(
-			"@/lib/domains/settlements/utils/verify-rules-on-chain"
+			"@/lib/domains/settlements/utils/verify/rules-on-chain"
 		);
 
 		const allowed = await resolveAllowedSettlementPayers(sender, orgId);
@@ -41,7 +41,7 @@ describe("resolveAllowedSettlementPayers", () => {
 
 	test("sender only when organizationId omitted", async () => {
 		const { resolveAllowedSettlementPayers } = await import(
-			"@/lib/domains/settlements/utils/verify-rules-on-chain"
+			"@/lib/domains/settlements/utils/verify/rules-on-chain"
 		);
 
 		const allowed = await resolveAllowedSettlementPayers(sender, null);

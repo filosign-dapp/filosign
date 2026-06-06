@@ -22,7 +22,10 @@ function siteOrigin(): string {
 }
 
 function shouldSkip(origin: string): string | null {
-	if (process.env.INDEXNOW_SKIP === "1" || process.env.INDEXNOW_SKIP === "true") {
+	if (
+		process.env.INDEXNOW_SKIP === "1" ||
+		process.env.INDEXNOW_SKIP === "true"
+	) {
 		return "INDEXNOW_SKIP set";
 	}
 

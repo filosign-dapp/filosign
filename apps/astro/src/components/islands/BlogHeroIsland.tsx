@@ -51,9 +51,9 @@ export default function BlogHeroIsland({
 						</MarketingStagger>
 
 						<MarketingStagger pace="page">
-							<div className="relative rounded-3xl overflow-hidden aspect-4/3 lg:aspect-5/4">
+							<div className="relative rounded-3xl overflow-hidden aspect-video">
 								<img
-									src="/images/stock_12.webp"
+									src="banner.webp"
 									alt=""
 									width={1280}
 									height={720}

@@ -1,12 +1,8 @@
-import { motion } from "motion/react";
 import { aboutMedia } from "../../config/about-media";
 import { cn } from "../../lib/cn";
 import { marketingSectionShellClass } from "../../lib/marketing-layout";
 import { MarketingInViewStagger } from "./MarketingStagger";
 import { MotionProvider } from "./MotionProvider";
-
-const badgeClass =
-	"inline-flex items-center gap-1.5 rounded-full border border-transparent bg-muted px-3 py-1.5 text-sm font-medium text-secondary-foreground";
 
 type StoryBeatProps = {
 	title: string;

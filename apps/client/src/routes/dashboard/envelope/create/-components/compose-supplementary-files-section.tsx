@@ -21,7 +21,7 @@ import {
 } from "@/src/lib/domains/files/attachment-packet-compose";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { AttachmentPacketDialog } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-dialog";
-import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
+import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 
 export function ComposeSupplementaryFilesSection() {
 	const createForm = useStorePersist((s) => s.createForm);

@@ -14,10 +14,10 @@ import { Label } from "@/src/lib/components/ui/label";
 import { Switch } from "@/src/lib/components/ui/switch";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
+import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 import { handleBasicPayoutGateBlock } from "@/src/lib/domains/settlements/basic-payout-gate";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
-import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
-import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
+import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 
 function signerEmailOptions(
 	recipients: {

@@ -32,16 +32,16 @@ import {
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
+import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 import { SettlementReleaseFields } from "@/src/lib/domains/settlements/settlement-release-fields";
 import { createClientId } from "@/src/lib/utils/id";
-import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
+import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import {
 	ACCEPTED_FILE_EXTENSIONS,
 	ACCEPTED_FILE_MIME_SET,
 	type AllowedFileMime,
 } from "@/src/routes/dashboard/envelope/create/-lib/types";
-import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
 
 type Props = {
 	open: boolean;

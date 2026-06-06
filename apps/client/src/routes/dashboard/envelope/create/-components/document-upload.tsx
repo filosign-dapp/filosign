@@ -15,8 +15,8 @@ import {
 } from "@/src/lib/components/ui/collapsible";
 import { createClientId } from "@/src/lib/utils/id";
 import { cn } from "@/src/lib/utils/utils";
-import { usePromptPlanUpgrade } from "../-lib/context/entitlement-upgrade-context";
 import { useComposeDocuments } from "../-lib/hooks/use-compose-documents";
+import { usePromptPlanUpgrade } from "../-lib/hooks/use-prompt-plan-upgrade";
 import type { AllowedFileMime, UploadedFile } from "../-lib/types";
 import {
 	ACCEPTED_FILE_EXTENSIONS,

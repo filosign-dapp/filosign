@@ -54,9 +54,8 @@ export function SignDocumentFileContent() {
 		visiblePlacementFields,
 		fieldCompletions,
 		completedFieldIds,
-		applyPlacementField,
+		togglePlacementField,
 		handleTextChange,
-		handleCheckboxToggle,
 		isMyPlacementFieldDone,
 	} = useSignPlacement();
 	const { alreadySigned, canSign } = useSignSigning();
@@ -91,11 +90,9 @@ export function SignDocumentFileContent() {
 					pageIndex={pageIndex}
 					fields={myPlacementFields}
 					fieldCompletions={fieldCompletions}
-					completedFieldIds={completedFieldIds}
 					alreadySigned={alreadySigned}
-					onApplyField={applyPlacementField}
+					onToggleField={(field) => void togglePlacementField(field)}
 					onTextChange={handleTextChange}
-					onCheckboxToggle={handleCheckboxToggle}
 				/>
 			</>
 		),
@@ -106,9 +103,8 @@ export function SignDocumentFileContent() {
 			fieldCompletions,
 			completedFieldIds,
 			alreadySigned,
-			applyPlacementField,
+			togglePlacementField,
 			handleTextChange,
-			handleCheckboxToggle,
 		],
 	);
 
@@ -166,8 +162,14 @@ export function SignDocumentFileContent() {
 	}
 
 	const { fileBytes, metadata } = fileData;
-	const mimeType = metadata.mimeType;
-	const fileName = metadata.name;
+	const primaryDoc = fileData.documents[0];
+	const mimeType = metadata.mimeType ?? primaryDoc?.mimeType;
+	const fileName = metadata.name ?? primaryDoc?.name;
+	const isPdfPreview =
+		Boolean(previewPdfBytes) ||
+		mimeType === "application/pdf" ||
+		primaryDoc?.mimeType === "application/pdf" ||
+		fileName?.toLowerCase().endsWith(".pdf");
 
 	if (
 		mimeType?.startsWith("image/") ||
@@ -201,10 +203,7 @@ export function SignDocumentFileContent() {
 		);
 	}
 
-	if (
-		mimeType === "application/pdf" ||
-		fileName?.toLowerCase().endsWith(".pdf")
-	) {
+	if (isPdfPreview) {
 		if (!previewPdfBytes) {
 			return (
 				<div className="flex items-center justify-center w-full h-full p-4 text-sm text-muted-foreground">
@@ -307,7 +306,7 @@ export function SignDocumentFileContent() {
 									variant={done ? "secondary" : "outline"}
 									className="h-auto justify-start py-2 text-left text-xs"
 									disabled={alreadySigned}
-									onClick={() => applyPlacementField(field)}
+									onClick={() => void togglePlacementField(field)}
 								>
 									p.{field.pageIndex + 1} · {field.type}
 									{field.required ? " · required" : ""}

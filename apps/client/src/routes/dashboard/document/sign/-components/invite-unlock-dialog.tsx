@@ -39,14 +39,14 @@ export function SignInviteUnlockDialog({
 				<DialogContent className="sm:max-w-md" showCloseButton={false}>
 					{unlock.wizardPanel === "signingIn" ||
 					unlock.wizardPanel === "busy" ||
-					unlock.wizardPanel === "redirecting" ||
+					unlock.wizardPanel === "settingUpAccount" ||
 					unlock.wizardPanel === "unlocking" ? (
 						<>
 							<DialogHeader>
 								<DialogTitle>
 									{unlock.wizardPanel === "signingIn"
 										? "Signing you in…"
-										: unlock.wizardPanel === "redirecting"
+										: unlock.wizardPanel === "settingUpAccount"
 											? "Setting up your account"
 											: unlock.wizardPanel === "unlocking"
 												? "Unlocking with your wallet"
@@ -55,8 +55,8 @@ export function SignInviteUnlockDialog({
 								<DialogDescription>
 									{unlock.wizardPanel === "signingIn"
 										? "Continue in the window if prompted."
-										: unlock.wizardPanel === "redirecting"
-											? "Taking you to registration…"
+										: unlock.wizardPanel === "settingUpAccount"
+											? "Creating your Filosign keys and workspace. This usually takes a few seconds."
 											: unlock.wizardPanel === "unlocking"
 												? "Confirm in your wallet if prompted. If automatic unlock fails, use your 24-word recovery phrase."
 												: "Loading your session…"}
@@ -66,13 +66,31 @@ export function SignInviteUnlockDialog({
 								<InlineLoader size="md" />
 							</div>
 						</>
+					) : unlock.wizardPanel === "setupFailed" ? (
+						<>
+							<DialogHeader>
+								<DialogTitle>Could not set up your account</DialogTitle>
+								<DialogDescription>
+									{unlock.autoRegisterError ??
+										"Check your connection and try again."}
+								</DialogDescription>
+							</DialogHeader>
+							<Button
+								type="button"
+								variant="primary"
+								className="w-full"
+								onClick={() => unlock.retryAutoRegister?.()}
+							>
+								Retry
+							</Button>
+						</>
 					) : unlock.wizardPanel === "filosignRecovery" ? (
 						<>
 							<DialogHeader>
 								<DialogTitle>Recovery phrase</DialogTitle>
 								<DialogDescription>
 									Your wallet could not unlock this session. Enter your 24-word
-									Filosign recovery phrase (from onboarding).
+									Filosign recovery phrase (from Profile settings).
 								</DialogDescription>
 							</DialogHeader>
 							<div className="space-y-2">

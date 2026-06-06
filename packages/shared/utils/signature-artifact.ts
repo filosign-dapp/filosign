@@ -49,11 +49,6 @@ export const zUserSignatureCreateInput = z.object({
 	intrinsicAspectRatio: z.number().positive().optional(),
 });
 
-export const zUserSignatureSetDefaultInput = z.object({
-	id: z.uuid(),
-	role: zUserSignatureRole,
-});
-
 export type UserSignatureKind = z.infer<typeof zUserSignatureKind>;
 export type UserSignatureRole = z.infer<typeof zUserSignatureRole>;
 export type TypedSignatureMeta = z.infer<typeof zTypedSignatureMeta>;
@@ -61,6 +56,23 @@ export type UserSignatureArtifact = z.infer<typeof zUserSignatureArtifact>;
 export type UserSignatureCreateInput = z.infer<
 	typeof zUserSignatureCreateInput
 >;
+
+export function resolveDefaultSignatureArtifact(
+	signatures: UserSignatureArtifact[],
+	role: UserSignatureRole,
+	defaultId: string | null | undefined,
+): UserSignatureArtifact | undefined {
+	if (defaultId) {
+		const match = signatures.find(
+			(artifact) => artifact.id === defaultId && artifact.role === role,
+		);
+		if (match) return match;
+	}
+
+	return signatures
+		.filter((artifact) => artifact.role === role)
+		.sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+}
 
 export async function contentSha256Hex(bytes: Uint8Array): Promise<string> {
 	const buf = bytes.buffer.slice(

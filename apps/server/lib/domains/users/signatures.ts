@@ -15,11 +15,11 @@ import {
 } from "@/lib/domains/files/utils/signature-storage";
 import db from "@/lib/platform/db";
 import { bucket } from "@/lib/platform/s3/client";
+import { presignObjectPreviewGet } from "@/lib/platform/s3/presign-preview";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
+import { userActivationOnSignatureReady } from "./activation";
 
 const { userSignatures, users, fileFieldCompletions } = db.schema;
-
-const PREVIEW_TTL_SECONDS = 60 * 15;
 
 function rowToArtifact(
 	row: typeof userSignatures.$inferSelect,
@@ -42,14 +42,7 @@ function rowToArtifact(
 }
 
 async function presignPreview(storageKey: string): Promise<string | null> {
-	try {
-		return bucket.presign(storageKey, {
-			method: "GET",
-			expiresIn: PREVIEW_TTL_SECONDS,
-		});
-	} catch {
-		return null;
-	}
+	return presignObjectPreviewGet(storageKey);
 }
 
 function assertStorageKeyForWallet(
@@ -213,6 +206,10 @@ export async function userSignatureSetDefault(wallet: Address, body: unknown) {
 		.update(users)
 		.set({ [column]: parsed.data.id, updatedAt: new Date() })
 		.where(eq(users.walletAddress, wallet));
+
+	if (parsed.data.role === "signature") {
+		await userActivationOnSignatureReady(wallet);
+	}
 
 	return {};
 }

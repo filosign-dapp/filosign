@@ -33,8 +33,10 @@ type RpcQuery = {
 	};
 };
 
+export type RpcQueryForUserSignatureUpload = RpcQuery;
+
 export async function uploadUserSignatureArtifact(args: {
-	rpcQuery: RpcQuery;
+	rpcQuery: RpcQueryForUserSignatureUpload;
 	bytes: Uint8Array;
 	contentType: string;
 	role: UserSignatureRole;
@@ -85,16 +87,26 @@ export async function dataUrlToBytes(dataUrl: string): Promise<{
 	bytes: Uint8Array;
 	contentType: string;
 }> {
-	const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
-	if (!match?.[1] || !match[2]) {
+	const commaIndex = dataUrl.indexOf(",");
+	if (commaIndex === -1 || !dataUrl.startsWith("data:")) {
 		throw new Error("Invalid data URL");
 	}
-	const contentType = match[1];
-	const binary = atob(match[2]);
-	const bytes = new Uint8Array(binary.length);
-	for (let i = 0; i < binary.length; i++) {
-		bytes[i] = binary.charCodeAt(i);
+
+	const meta = dataUrl.slice("data:".length, commaIndex);
+	const payload = dataUrl.slice(commaIndex + 1);
+	const contentType = meta.split(";")[0]?.trim() || "application/octet-stream";
+
+	let bytes: Uint8Array;
+	if (meta.includes(";base64")) {
+		const binary = atob(payload);
+		bytes = new Uint8Array(binary.length);
+		for (let i = 0; i < binary.length; i++) {
+			bytes[i] = binary.charCodeAt(i);
+		}
+	} else {
+		bytes = new TextEncoder().encode(decodeURIComponent(payload));
 	}
+
 	return { bytes, contentType };
 }
 

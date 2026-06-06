@@ -6,8 +6,8 @@ import {
 } from "@filosign/shared";
 import type { Hex } from "viem";
 import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
-import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
-import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
+import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
 
 function signerCommitmentsFromEmails(emails: string[]): Hex[] {
 	return emails

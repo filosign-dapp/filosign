@@ -6,6 +6,7 @@ import {
 import { useEffect, useState } from "react";
 import { useAuthToken } from "thirdweb/react";
 import env from "@/src/env";
+import { AutoRegisterProvider } from "@/src/lib/auth/auto-register-provider";
 import { CryptoUnlockProvider } from "@/src/lib/auth/crypto-unlock-provider";
 import { PersistedActiveOrganizationSync } from "@/src/lib/filosign/persisted-active-org";
 import { dilithiumLoadPromise } from "@/src/lib/filosign/preload-dilithium";
@@ -69,10 +70,12 @@ export function FilosignProvider({ children }: { children: React.ReactNode }) {
 			thirdwebAuthToken={thirdwebAuthToken ?? null}
 			loader={Loader}
 		>
-			<CryptoUnlockProvider>
-				<PersistedActiveOrganizationSync />
-				{children}
-			</CryptoUnlockProvider>
+			<AutoRegisterProvider>
+				<CryptoUnlockProvider>
+					<PersistedActiveOrganizationSync />
+					{children}
+				</CryptoUnlockProvider>
+			</AutoRegisterProvider>
 		</FilosignProviderBase>
 	);
 }

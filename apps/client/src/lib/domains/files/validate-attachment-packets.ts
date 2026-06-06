@@ -110,7 +110,7 @@ export function validateAttachmentPacketComposeDrafts(args: {
 			if (byteLength === 0) {
 				issues.push({
 					code: "FILE_BYTES_MISSING",
-					message: `${file.name} is still loading — wait a moment and try again`,
+					message: `${file.name} is still loading. Wait a moment and try again`,
 				});
 				continue;
 			}

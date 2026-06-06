@@ -21,7 +21,7 @@ export function localMutationErrorOptions<T extends Record<string, unknown>>(
 export function formatInlineAppError(error: unknown): string {
 	const presented = presentAppError(error);
 	if (presented.description) {
-		return `${presented.title} — ${presented.description}`;
+		return `${presented.title}: ${presented.description}`;
 	}
 	return presented.title;
 }

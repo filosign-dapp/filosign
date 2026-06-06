@@ -99,8 +99,11 @@ export function useDecryptedFileView(options: {
 				setFileData({
 					...result,
 					metadata: {
-						name: result.metadata.name,
-						mimeType: result.metadata.mimeType ?? "application/octet-stream",
+						name: result.metadata.name ?? result.documents[0]?.name ?? "",
+						mimeType:
+							result.metadata.mimeType ??
+							result.documents[0]?.mimeType ??
+							"application/octet-stream",
 					},
 				});
 				if (file.participantAccess?.acknowledged) {

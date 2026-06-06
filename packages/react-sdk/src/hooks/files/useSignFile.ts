@@ -8,6 +8,7 @@ import {
 import {
 	completionsMerkleRootV1,
 	type FieldCompletionMap,
+	fieldCompletionInputMapFromStored,
 	hashNormalizedSignerEmail,
 	LEAF_SCHEMA_VERSION_V1,
 	SETTLEMENT_FEATURE_TERMS_VERSION,
@@ -226,19 +227,8 @@ export function useSignFile() {
 						completedFieldIds,
 						...(fieldCompletions && Object.keys(fieldCompletions).length > 0
 							? {
-									fieldCompletions: Object.fromEntries(
-										Object.entries(fieldCompletions).map(([id, c]) => [
-											id,
-											{
-												fieldId: c.fieldId,
-												valueKind: c.valueKind,
-												sourceArtifactId: c.sourceArtifactId,
-												storageKey: c.storageKey,
-												contentSha256: c.contentSha256,
-												textValue: c.textValue,
-											},
-										]),
-									),
+									fieldCompletions:
+										fieldCompletionInputMapFromStored(fieldCompletions),
 								}
 							: {}),
 						...(needsPayoutAck ? { settlementRecipientAck } : {}),

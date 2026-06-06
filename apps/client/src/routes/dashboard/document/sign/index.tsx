@@ -3,9 +3,9 @@ import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { z } from "zod";
 import { RoutePendingFallback } from "@/src/lib/components/app/suspense";
 import { EntitlementUpgradeProvider } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
+import { SignInviteUnlockRoutePage } from "./-components/invite-unlock-page";
 import { SignDocumentPage } from "./-components/page";
-import { SignInviteUnlockRoutePage } from "./-components/sign-invite-unlock-page";
-import { SignPieceFileProvider } from "./-lib/context/sign-piece-file-context";
+import { SignPieceFileProvider } from "./-lib/context/piece-file-context";
 
 function SignDocumentRoutePage() {
 	const search = useSearch({ from: "/dashboard/document/sign/" });

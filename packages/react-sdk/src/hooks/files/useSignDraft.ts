@@ -1,4 +1,5 @@
 import type { FieldCompletionMap } from "@filosign/shared";
+import { fieldCompletionInputMapFromStored } from "@filosign/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 
@@ -32,7 +33,14 @@ export function useUpdateSignDraft() {
 				pieceCid: args.pieceCid,
 				body: {
 					completedFieldIds: args.completedFieldIds,
-					fieldCompletions: args.fieldCompletions,
+					...(args.fieldCompletions &&
+					Object.keys(args.fieldCompletions).length > 0
+						? {
+								fieldCompletions: fieldCompletionInputMapFromStored(
+									args.fieldCompletions,
+								),
+							}
+						: {}),
 				},
 			});
 		},

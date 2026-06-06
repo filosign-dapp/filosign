@@ -11,7 +11,7 @@ import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { assertSettlementLegRecipientAllowlisted } from "./utils/assert-recipient-leg";
 import { assertSettlementRulesUsdcToken } from "./utils/assert-settlement-token";
 import { assertSettlementRuleEntitlements } from "./utils/entitlements";
-import { assertSettlementRulesVerifiedOnChain } from "./utils/verify-rules-on-chain";
+import { assertSettlementRulesVerifiedOnChain } from "./utils/verify/rules-on-chain";
 
 const { fileSettlementRules, files, fileParticipants, organizations } =
 	db.schema;

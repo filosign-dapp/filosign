@@ -1,7 +1,7 @@
 import { Worker } from "bullmq";
 import { processDodoWebhookJob } from "@/lib/domains/billing";
 import { runFocTransitionForPiece } from "@/lib/domains/foc";
-import { tryExecuteSettlementRulesForPiece } from "@/lib/domains/settlements/utils/execute-payout";
+import { tryExecuteSettlementRulesForPiece } from "@/lib/domains/settlements/utils/execute/payout";
 import { processTransaction } from "@/lib/platform/indexer/process";
 import type {
 	BillingWebhookQueueJobData,

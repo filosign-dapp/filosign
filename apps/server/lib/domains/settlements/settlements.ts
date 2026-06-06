@@ -10,7 +10,7 @@ import db from "@/lib/platform/db";
 import { fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
-import { tryExecuteSettlementPayout } from "./utils/execute-payout";
+import { tryExecuteSettlementPayout } from "./utils/execute/payout";
 import { selectSettlementRule } from "./utils/rule-lookup";
 import { syncSettlementPayoutFromChain } from "./utils/sync-from-chain";
 
@@ -23,7 +23,7 @@ export {
 export {
 	tryExecuteSettlementPayout,
 	tryExecuteSettlementRulesForPiece,
-} from "./utils/execute-payout";
+} from "./utils/execute/payout";
 
 async function assertCanSettleSettlementRule(
 	userWallet: `0x${string}`,

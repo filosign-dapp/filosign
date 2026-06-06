@@ -24,7 +24,7 @@ import {
 	assertSettlementUpdateEntitlements,
 } from "./utils/entitlements";
 import { selectSettlementRule } from "./utils/rule-lookup";
-import { assertSettlementRuleUpdateOnChain } from "./utils/verify-rules-on-chain";
+import { assertSettlementRuleUpdateOnChain } from "./utils/verify/rules-on-chain";
 
 const { files, fileParticipants } = db.schema;
 

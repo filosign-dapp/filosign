@@ -55,7 +55,7 @@ describe("settlements", () => {
 				const preflightSrc = readFileSync(
 					join(
 						import.meta.dir,
-						"../../lib/domains/settlements/utils/execute-payout-preflight.ts",
+						"../../lib/domains/settlements/utils/execute/payout-preflight.ts",
 					),
 					"utf8",
 				);
@@ -71,7 +71,7 @@ describe("settlements", () => {
 				const legSrc = readFileSync(
 					join(
 						import.meta.dir,
-						"../../lib/domains/settlements/utils/execute-payout-leg.ts",
+						"../../lib/domains/settlements/utils/execute/payout-leg.ts",
 					),
 					"utf8",
 				);
@@ -91,7 +91,7 @@ describe("settlements", () => {
 				const src = readFileSync(
 					join(
 						import.meta.dir,
-						"../../lib/domains/settlements/utils/verify-rules-on-chain.ts",
+						"../../lib/domains/settlements/utils/verify/rules-on-chain.ts",
 					),
 					"utf8",
 				);
@@ -244,7 +244,7 @@ describe("settlements", () => {
 		describe("resolveAllowedSettlementPayers", () => {
 			test("includes sender and linked org treasury", async () => {
 				const { resolveAllowedSettlementPayers } = await import(
-					"@/lib/domains/settlements/utils/verify-rules-on-chain"
+					"@/lib/domains/settlements/utils/verify/rules-on-chain"
 				);
 
 				const allowed = await resolveAllowedSettlementPayers(sender, orgId);
@@ -257,7 +257,7 @@ describe("settlements", () => {
 
 			test("sender only when organizationId omitted", async () => {
 				const { resolveAllowedSettlementPayers } = await import(
-					"@/lib/domains/settlements/utils/verify-rules-on-chain"
+					"@/lib/domains/settlements/utils/verify/rules-on-chain"
 				);
 
 				const allowed = await resolveAllowedSettlementPayers(sender, null);

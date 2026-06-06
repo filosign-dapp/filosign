@@ -1,10 +1,11 @@
 // @ts-check
+
+import { unified } from "@astrojs/markdown-remark";
 import mdx from "@astrojs/mdx";
 import react from "@astrojs/react";
 import sitemap from "@astrojs/sitemap";
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
-import remarkGfm from "remark-gfm";
 
 const site =
 	(typeof process !== "undefined" && process.env.PUBLIC_ASTRO_URL) ||
@@ -13,8 +14,14 @@ const site =
 // https://astro.build/config
 export default defineConfig({
 	site,
+	markdown: {
+		processor: unified({
+			gfm: true,
+		}),
+	},
 	redirects: {
 		"/docs/stablecoin-payouts": "/docs/workflows/payouts",
+		"/docs/troubleshooting": "/help",
 	},
 	integrations: [
 		starlight({
@@ -125,13 +132,10 @@ export default defineConfig({
 						{ label: "Roadmap", link: "/docs/plans/roadmap/" },
 					],
 				},
-				{ label: "Troubleshooting", link: "/docs/troubleshooting/" },
 			],
 		}),
 		react(),
-		mdx({
-			remarkPlugins: [remarkGfm],
-		}),
+		mdx({ gfm: true }),
 		sitemap({
 			filter: (page) => !page.includes("/open-graph/"),
 		}),

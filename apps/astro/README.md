@@ -50,7 +50,7 @@ All marketing pages migrated from the React app:
 | `/blog` | Blog index — lists posts; hero uses `featured: true` or newest post |
 | `/blog/[slug]` | MDX articles under `src/content/blog/` (e.g. `/blog/introduction`) |
 | `/changelog` | What's new — feature updates and releases |
-| `/docs` | Product docs (Starlight): guides + public troubleshooting |
+| `/docs` | Product docs (Starlight): guides |
 | `/docs/workflows` | Agreement workflows overview |
 | `/docs/workflows/payouts` | Payout packets user guide |
 | `/docs/workflows/attached-files` | Gated file release |
@@ -67,14 +67,15 @@ All marketing pages migrated from the React app:
 | `/docs/storage/how-retention-works` | Hot storage, Filecoin backup, archival |
 | `/docs/plans` | Plans and limits |
 | `/docs/plans/roadmap` | Catalog features not shipped yet |
-| `/docs/troubleshooting` | Error catalog search (mirrors dashboard Support Center) |
+| `/help` | Redirect to in-app Support Center (`PUBLIC_CLIENT_URL/dashboard/support`) |
+| `/help/errors/[slug]` | Legacy error help URLs → Support Center topic hash |
 
 ### Docs authoring (Starlight)
 
 - Content lives under `src/content/docs/docs/` (Starlight subpath → `/docs/*`).
 - Workflow guides live under `src/content/docs/docs/workflows/`; register in `astro.config.mjs` sidebar when adding pages.
 - `/docs/stablecoin-payouts` redirects to `/docs/workflows/payouts`.
-- Troubleshooting embeds `DocsTroubleshootingIsland` (`SupportCenterPanel` from `@filosign/errors/client`).
+- `/docs/troubleshooting` redirects to `/help` (Support Center lives in the client app).
 
 ### Blog authoring (MDX + content collections)
 
@@ -82,7 +83,7 @@ All marketing pages migrated from the React app:
 - **`featured: true`** picks the `/blog` hero (fallback: newest `publishedISO`).
 - **`draft: true`** hides the post from build output and listings.
 - Add an Open Graph line in `src/content/og-marketing.ts` with key `blog-{slug}` (e.g. `blog-future-of-digital-agreements`) so `/open-graph/blog-{slug}.png` matches meta.
-- Article typography: `src/styles/blog-content.css`. **GFM** (tables, etc.) via `remark-gfm` on `@astrojs/mdx`.
+- Article typography: `src/styles/blog-content.css`. **GFM** (tables, etc.) via `gfm: true` on `markdown.processor` and `@astrojs/mdx`.
 
 ## CTAs / App Integration
 

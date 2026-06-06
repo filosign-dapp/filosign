@@ -69,10 +69,10 @@ What is encrypted client-side, what operators can see, on-chain verification rec
 
 Workspace roles, billing/seats, treasury wallet, payout access, connections, plan limits, public roadmap of not-yet-shipped catalog items.
 
-### Troubleshooting
+### Support
 
-- https://filosign.xyz/docs/troubleshooting/ — Searchable error catalog (mirrors in-app Support Center).
-- https://filosign.xyz/help/ — Public help pages for common signing and plan errors.
+- https://filosign.xyz/help/ — Redirect to in-app Support Center (searchable error catalog in the client app).
+- Legacy `/help/errors/*` URLs redirect to a specific Support Center topic.
 
 ## Legal and compliance (public pages)
 

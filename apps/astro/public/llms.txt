@@ -56,8 +56,7 @@ Sitemap: https://filosign.xyz/sitemap-index.xml
 - https://filosign.xyz/docs/workspace/connections/ — Sender/recipient connections
 - https://filosign.xyz/docs/plans/ — Plans and limits
 - https://filosign.xyz/docs/plans/roadmap/ — Planned features not shipped yet
-- https://filosign.xyz/docs/troubleshooting/ — Error catalog and support center
-- https://filosign.xyz/help/ — Public help hub (signing and plan errors)
+- https://filosign.xyz/help/ — Redirect to in-app Support Center (error catalog)
 
 ## Legal and trust
 

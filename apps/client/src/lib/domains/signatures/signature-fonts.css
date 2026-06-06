@@ -1,0 +1,11 @@
+@import "@fontsource/dancing-script/400.css";
+@import "@fontsource/great-vibes/400.css";
+@import "@fontsource/caveat/400.css";
+@import "@fontsource/satisfy/400.css";
+@import "@fontsource/kalam/400.css";
+@import "@fontsource/alex-brush/400.css";
+
+.signature-font-preview {
+	font-synthesis: none;
+	text-rendering: optimizeLegibility;
+}

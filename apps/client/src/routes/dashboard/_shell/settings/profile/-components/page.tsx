@@ -3,7 +3,7 @@ import { Form } from "@/src/lib/components/ui/form";
 import { useProfileSettingsContext } from "../-lib/context/context";
 // import { LinkedAccountsSection } from "./LinkedAccountsSection";
 import { PersonalInfoSection } from "./PersonalInfoSection";
-import { ProfileBillingSection } from "./profile-billing-section";
+import { RecoveryPhraseSection } from "./recovery-phrase-section";
 import { SignatureLibrarySection } from "./signature-library-section";
 import { ThemeSection } from "./ThemeSection";
 import { WalletUsdcBalanceCard } from "./WalletUsdcBalanceCard";
@@ -20,8 +20,8 @@ export function ProfileSettingsPage() {
 					</h1>
 				</div>
 				<p className="mt-3 text-pretty text-sm text-muted-foreground">
-					Manage your personal details, connected authentication profiles,
-					visual appearance, and wallet balance.
+					Manage your personal details, signatures, appearance, and signing
+					wallet balance.
 				</p>
 			</header>
 
@@ -35,8 +35,8 @@ export function ProfileSettingsPage() {
 						className="space-y-6 w-full"
 					>
 						<WalletUsdcBalanceCard />
-						<ProfileBillingSection />
 						<PersonalInfoSection />
+						<RecoveryPhraseSection />
 						<SignatureLibrarySection />
 						{/* <LinkedAccountsSection /> */}
 						<ThemeSection />

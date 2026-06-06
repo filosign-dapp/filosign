@@ -5,6 +5,7 @@ import {
 	UserMinusIcon,
 	UsersIcon,
 } from "@phosphor-icons/react";
+import { Link } from "@tanstack/react-router";
 import { Avatar, AvatarFallback } from "@/src/lib/components/ui/avatar";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -18,6 +19,7 @@ import {
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
+import { BILLING_SETTINGS_PATH } from "@/src/lib/domains/billing/settings-path";
 import { cn } from "@/src/lib/utils/index";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
 import { WorkspaceSection } from "./workspace-section";
@@ -54,7 +56,19 @@ export function MembersSection(props: { onInviteClick?: () => void }) {
 		<WorkspaceSection
 			icon={<UsersIcon className="size-4" aria-hidden="true" />}
 			title={`Team Members`}
-			description="Everyone with access to this workspace. Pending invites count toward your paid seat limit until they are rejected or revoked."
+			description={
+				<>
+					Everyone with access to this workspace. Pending invites count toward
+					your paid seat limit until they are rejected or revoked.{" "}
+					<Link
+						to={BILLING_SETTINGS_PATH}
+						className="font-medium text-primary underline-offset-4 hover:underline"
+					>
+						Manage seats in Billing
+					</Link>
+					.
+				</>
+			}
 			headerAside={
 				canInviteMembers && props.onInviteClick ? (
 					<Button

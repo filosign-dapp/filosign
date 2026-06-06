@@ -28,12 +28,10 @@ import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-d
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
-import { ArchivalSection } from "./archival-section";
-import { BillingSection } from "./billing-section";
 import { MembersSection } from "./members-section";
-import { OrgGovernanceSection } from "./org-governance-section";
 import { OrgWalletSection } from "./org-wallet-section";
 import { PayoutFeatureAccessSection } from "./payout-feature-access-section";
+import { WorkspacePlanSummary } from "./workspace-plan-summary";
 import { WorkspaceSection } from "./workspace-section";
 
 function CreateWorkspaceDialog(props: {
@@ -69,7 +67,7 @@ function CreateWorkspaceDialog(props: {
 				<DialogHeader>
 					<DialogTitle>Create workspace</DialogTitle>
 					<DialogDescription>
-						A workspace holds your team, billing, drafts, and shared templates.
+						A workspace holds your team, drafts, and shared templates.
 					</DialogDescription>
 				</DialogHeader>
 				<form onSubmit={handleSubmit} className="space-y-4 pt-2">
@@ -245,6 +243,10 @@ function WorkspaceDetailsSection() {
 						: "Only owners and admins can rename this workspace."}
 				</p>
 			</form>
+
+			<div className="mt-6 border-t border-border/60 pt-6">
+				<WorkspacePlanSummary canManageBilling={canManage} />
+			</div>
 		</WorkspaceSection>
 	);
 }
@@ -301,8 +303,8 @@ export function WorkspaceSettingsPage() {
 					</div>
 				</div>
 				<p className="mt-3 text-pretty text-sm text-muted-foreground">
-					Manage subscriptions, seats, and teammate permissions for your
-					workspace.
+					Manage workspace details, teammates, treasury, and payout access for
+					the active workspace.
 				</p>
 				<DocsLink href={DOCS_LINKS.workspace()} className="mt-2">
 					Workspace guides
@@ -312,10 +314,7 @@ export function WorkspaceSettingsPage() {
 			{activeOrgId ? (
 				<div className="space-y-6">
 					<WorkspaceDetailsSection />
-					<OrgGovernanceSection />
 					<OrgWalletSection />
-					<BillingSection />
-					<ArchivalSection />
 					<MembersSection onInviteClick={handleInviteClick} />
 					<PayoutFeatureAccessSection />
 				</div>
@@ -333,7 +332,7 @@ export function WorkspaceSettingsPage() {
 						</h2>
 						<p className="text-pretty text-sm text-muted-foreground">
 							Create a workspace or switch to one from the sidebar to manage
-							billing and teammates.
+							teammates and workspace settings.
 						</p>
 					</div>
 					<Button

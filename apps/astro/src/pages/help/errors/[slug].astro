@@ -1,7 +1,8 @@
 ---
 import { getCollection } from "astro:content";
+import { env } from "../../../env";
 
-/** Legacy toast URLs → docs troubleshooting with hash anchor. */
+/** Legacy toast URLs → in-app Support Center with hash anchor. */
 export async function getStaticPaths() {
 	const articles = await getCollection("helpErrors");
 	return articles.map((article) => ({
@@ -10,7 +11,8 @@ export async function getStaticPaths() {
 }
 
 const { slug } = Astro.params;
-const target = `/docs/troubleshooting#${slug}`;
+const clientBase = env.PUBLIC_CLIENT_URL.replace(/\/$/, "");
+const target = `${clientBase}/dashboard/support#${slug}`;
 ---
 
 <!doctype html>
@@ -18,7 +20,7 @@ const target = `/docs/troubleshooting#${slug}`;
 	<head>
 		<meta charset="utf-8" />
 		<meta http-equiv="refresh" content={`0;url=${target}`} />
-		<link rel="canonical" href={new URL(target, Astro.site).href} />
+		<link rel="canonical" href={target} />
 		<title>Redirecting…</title>
 		<script is:inline define:vars={{ target }}>
 			location.replace(target);
@@ -26,7 +28,7 @@ const target = `/docs/troubleshooting#${slug}`;
 	</head>
 	<body>
 		<p>
-			<a href={target}>Continue to Troubleshooting</a>
+			<a href={target}>Continue to Support Center</a>
 		</p>
 	</body>
 </html>

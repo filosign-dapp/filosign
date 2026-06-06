@@ -1,5 +1,8 @@
 ---
-const target = "/docs/troubleshooting";
+import { env } from "../../env";
+
+const clientBase = env.PUBLIC_CLIENT_URL.replace(/\/$/, "");
+const target = `${clientBase}/dashboard/support`;
 ---
 
 <!doctype html>
@@ -7,7 +10,7 @@ const target = "/docs/troubleshooting";
 	<head>
 		<meta charset="utf-8" />
 		<meta http-equiv="refresh" content={`0;url=${target}`} />
-		<link rel="canonical" href={new URL(target, Astro.site).href} />
+		<link rel="canonical" href={target} />
 		<title>Redirecting…</title>
 		<script is:inline define:vars={{ target }}>
 			location.replace(target);
@@ -15,7 +18,7 @@ const target = "/docs/troubleshooting";
 	</head>
 	<body>
 		<p>
-			<a href={target}>Continue to Troubleshooting</a>
+			<a href={target}>Continue to Support Center</a>
 		</p>
 	</body>
 </html>

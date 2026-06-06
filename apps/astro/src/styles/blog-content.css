@@ -155,7 +155,59 @@
 	border-bottom-width: 0;
 }
 
-.blog-mdx pre {
+/* Inline code (not inside pre) — before block code rules for ascending specificity. */
+.blog-mdx :not(pre) > code {
+	background-color: color-mix(in oklab, var(--muted) 50%, transparent);
+	padding: 0.125rem 0.375rem;
+	border-radius: var(--radius-md);
+	font-size: 0.875rem;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	color: var(--foreground);
+}
+
+/* Starlight's Expressive Code drives fenced MDX blocks. Marketing pages stay light, but
+   token colors follow OS theme while our generic `pre` rules flatten the panel — fix both. */
+.blog-mdx .expressive-code {
+	--ec-codeBg: #23262f;
+	--ec-codeFg: #d6deeb;
+	--ec-brdCol: color-mix(in oklab, var(--border) 55%, transparent);
+	margin-top: 2rem;
+	margin-bottom: 2rem;
+}
+
+.blog-mdx .expressive-code .ec-line :where(span[style^="--"]:not([class])) {
+	color: var(--0, inherit);
+	background-color: var(--0bg, transparent);
+	font-style: var(--0fs, inherit);
+	font-weight: var(--0fw, inherit);
+	text-decoration: var(--0td, inherit);
+}
+
+.blog-mdx .expressive-code pre {
+	margin-top: 0;
+	margin-bottom: 0;
+	border-radius: var(--radius-xl);
+	overflow: hidden;
+	border-width: 1px;
+	border-style: solid;
+	border-color: color-mix(in oklab, var(--border) 50%, transparent);
+	box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+	background-color: var(--ec-codeBg);
+}
+
+.blog-mdx .expressive-code pre code {
+	display: block;
+	padding: 1rem;
+	font-size: 0.875rem;
+	line-height: 1.6;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+	overflow-x: auto;
+	background: transparent;
+	color: var(--ec-codeFg);
+}
+
+/* Plain pre (non–Expressive Code) fallback */
+.blog-mdx pre:not(:has(.ec-line)) {
 	margin-top: 2rem;
 	margin-bottom: 2rem;
 	border-radius: var(--radius-xl);
@@ -164,10 +216,10 @@
 	border-style: solid;
 	border-color: color-mix(in oklab, var(--border) 50%, transparent);
 	box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
-	background-color: color-mix(in oklab, var(--muted) 20%, transparent);
+	background-color: #23262f;
 }
 
-.blog-mdx pre code {
+.blog-mdx pre:not(:has(.ec-line)) code {
 	display: block;
 	padding: 1rem;
 	font-size: 0.875rem;
@@ -175,13 +227,5 @@
 	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 	overflow-x: auto;
 	background: transparent;
-}
-
-.blog-mdx :not(pre) > code {
-	background-color: color-mix(in oklab, var(--muted) 50%, transparent);
-	padding: 0.125rem 0.375rem;
-	border-radius: var(--radius-md);
-	font-size: 0.875rem;
-	font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-	color: var(--foreground);
+	color: #d6deeb;
 }

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
+import { useAutoRegisterOptional } from "@/src/lib/auth/auto-register-provider";
 import { logger } from "@/src/lib/utils/logger";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
@@ -18,7 +19,8 @@ export type InviteView =
 	| "success"
 	| "claiming"
 	| "checking-account"
-	| "finish-setup"
+	| "setting-up"
+	| "setup-failed"
 	| "auto-claiming"
 	| "signup";
 
@@ -35,6 +37,7 @@ export function useInviteController() {
 	const { data: auth } = useAuthedApi();
 	const navigate = useNavigate();
 	const isRegistered = useIsRegistered();
+	const autoRegister = useAutoRegisterOptional();
 
 	const [isClaiming, setIsClaiming] = useState(false);
 	const [claimSuccess, setClaimSuccess] = useState(false);
@@ -66,12 +69,18 @@ export function useInviteController() {
 		}
 	}, [inviteQuery.isError, inviteQuery.error]);
 
+	const autoRegisterStatus = autoRegister?.status.status ?? "idle";
+	const autoRegisterReady = autoRegisterStatus === "completed";
+	const autoRegisterFailed = autoRegisterStatus === "failed";
+	const autoRegisterBlocking = autoRegister?.isBlocking ?? false;
+
 	useEffect(() => {
 		const claimInvite = async () => {
 			if (
 				!ready ||
 				!authenticated ||
 				!isRegistered.data ||
+				!autoRegisterReady ||
 				!auth ||
 				!inviteId ||
 				claimSuccess
@@ -100,6 +109,7 @@ export function useInviteController() {
 		ready,
 		authenticated,
 		isRegistered.data,
+		autoRegisterReady,
 		auth,
 		inviteId,
 		navigate,
@@ -113,18 +123,26 @@ export function useInviteController() {
 		await login();
 	};
 
-	const goToOnboarding = () => {
-		void navigate({ to: "/onboarding" });
-	};
-
 	const isLoading = inviteQuery.isLoading || !ready;
 
 	const view: InviteView = (() => {
 		if (isLoading) return "boot";
 		if (claimSuccess) return "success";
 		if (isClaiming) return "claiming";
+		if (authenticated && (isRegistered.isPending || autoRegisterBlocking)) {
+			return "setting-up";
+		}
+		if (authenticated && autoRegisterFailed) return "setup-failed";
 		if (authenticated && isRegistered.isPending) return "checking-account";
-		if (authenticated && isRegistered.data === false) return "finish-setup";
+		if (authenticated && isRegistered.data === false) return "setting-up";
+		if (
+			authenticated &&
+			isRegistered.data === true &&
+			!autoRegisterReady &&
+			!autoRegisterFailed
+		) {
+			return "setting-up";
+		}
 		if (authenticated && isRegistered.data === true && !claimSuccess) {
 			return "auto-claiming";
 		}
@@ -135,7 +153,11 @@ export function useInviteController() {
 		inviteData,
 		view,
 		handleSignUp,
-		goToOnboarding,
+		retryAutoRegister: autoRegister?.retry,
+		autoRegisterError:
+			autoRegister?.status.status === "failed"
+				? autoRegister.status.error
+				: null,
 	};
 }
 

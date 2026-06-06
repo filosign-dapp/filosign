@@ -1,4 +1,4 @@
-import type { PlanId } from "@filosign/entitlements";
+import { getPlanName, type PlanId } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
 import { ORPCError } from "@orpc/server";
 import { and, eq, gt } from "drizzle-orm";
@@ -39,17 +39,8 @@ function normalizeEmail(email: string): string {
 	return email.trim().toLowerCase();
 }
 
-function planLabel(planId: PlanId): string {
-	switch (planId) {
-		case "teams_pro":
-			return "Teams Pro";
-		case "teams":
-			return "Teams";
-		case "individual":
-			return "Individual";
-		default:
-			return planId;
-	}
+function checkoutPlanLabel(planId: PlanId): string {
+	return getPlanName(planId);
 }
 
 function createCheckoutDodoClient() {
@@ -168,7 +159,7 @@ export async function requestCheckoutLink(args: {
 	await sendCheckoutContinueEmail({
 		to: email,
 		continueUrl,
-		planLabel: planLabel(args.planId),
+		planLabel: checkoutPlanLabel(args.planId),
 	});
 
 	return { ok: true };
@@ -261,7 +252,7 @@ export async function resendPaidSetupLink(args: {
 	await sendPaidSetupEmail({
 		to: email,
 		setupUrl,
-		planLabel: planLabel(pending.planId as PlanId),
+		planLabel: checkoutPlanLabel(pending.planId as PlanId),
 	});
 
 	return { ok: true };
@@ -278,4 +269,4 @@ export async function markCheckoutIntentCompleted(args: {
 		.where(eq(checkoutIntents.id, args.checkoutIntentId));
 }
 
-export { CHECKOUT_PLAN_IDS, planLabel as checkoutPlanLabel };
+export { CHECKOUT_PLAN_IDS, checkoutPlanLabel };

@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo } from "react";
-import type { SignDocumentController } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-controller";
+import type { SignDocumentController } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-document";
 
 export type SignDocumentContextValue = {
 	sign: SignDocumentController;
@@ -111,4 +111,48 @@ export function useSignNavigation() {
 export function useSignSettlements() {
 	const { sign } = useSignDocumentContext();
 	return sign.settlements;
+}
+
+export function useSignPlacementSlice() {
+	return useSignPlacement();
+}
+
+export function useSignViewerSlice() {
+	return useSignViewer();
+}
+
+export function useSignIdentitySlice() {
+	return useSignIdentity();
+}
+
+export function useSignMetaSlice() {
+	return useSignMeta();
+}
+
+export function useSignSigningSlice() {
+	return useSignSigning();
+}
+
+export function useSignFileSlice() {
+	return useSignFile();
+}
+
+export function useSignSettlementsSlice() {
+	return useSignSettlements();
+}
+
+export function useSignComplianceSlice() {
+	return useSignCompliance();
+}
+
+export function useSignNavigationSlice() {
+	return useSignNavigation();
+}
+
+export function useSignColdShareSlice() {
+	return useSignColdShare();
+}
+
+export function useSignRefsSlice() {
+	return useSignRefs();
 }

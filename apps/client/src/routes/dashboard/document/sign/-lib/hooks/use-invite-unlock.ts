@@ -22,6 +22,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getAddress, type Hex } from "viem";
+import { useAutoRegisterOptional } from "@/src/lib/auth/auto-register-provider";
 import { useCryptoRequired } from "@/src/lib/auth/use-crypto-required";
 import { coldInviteRecipientMatchesIdentity } from "@/src/lib/domains/invites/cold-invite-search";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
@@ -46,6 +47,7 @@ export function useSignInviteUnlock(args: {
 	const logoutFilosign = useLogout();
 	const clearOnboardingForm = useStorePersist((s) => s.clearOnboardingForm);
 	const isRegistered = useIsRegistered();
+	const autoRegister = useAutoRegisterOptional();
 	const apiSession = useIsLoggedIn();
 	const cryptoUnlocked = useCryptoUnlocked();
 	const {
@@ -73,6 +75,10 @@ export function useSignInviteUnlock(args: {
 	const tryingWalletUnlock = cryptoRequired.tryingWalletUnlock;
 	const filosignRecoveryPhrase = cryptoRequired.recoveryPhrase;
 	const setFilosignRecoveryPhrase = cryptoRequired.setRecoveryPhrase;
+
+	const autoRegisterStatus = autoRegister?.status.status ?? "idle";
+	const autoRegisterBlocking = autoRegister?.isBlocking ?? false;
+	const autoRegisterFailed = autoRegisterStatus === "failed";
 
 	const resetWizardAfterSwitchAccount = useCallback(() => {
 		setPhrase("");
@@ -142,42 +148,21 @@ export function useSignInviteUnlock(args: {
 		!claimSucceeded &&
 		!inviteMatchesCurrentUser;
 
-	useEffect(() => {
-		if (!active || !authenticated || !invite || claimSucceeded) return;
-		if (isRegistered.isPending) return;
-		if (isRegistered.data === false) {
-			navigate({
-				to: "/onboarding",
-				search: {
-					coldPieceCid: pieceCid,
-					coldInvite: inviteToken,
-				},
-				replace: true,
-			});
-		}
-	}, [
-		active,
-		authenticated,
-		invite,
-		claimSucceeded,
-		isRegistered.data,
-		isRegistered.isPending,
-		pieceCid,
-		inviteToken,
-		navigate,
-	]);
-
 	const wizardPanel = useMemo(() => {
 		if (!active || !invite) return null;
 		if (!authenticated) return "signingIn" as const;
+		if (autoRegisterFailed) return "setupFailed" as const;
 		if (
+			autoRegisterBlocking ||
 			isRegistered.isPending ||
-			apiSession.isPending ||
-			cryptoUnlocked.isPending
+			autoRegisterStatus !== "completed"
 		) {
+			return "settingUpAccount" as const;
+		}
+		if (apiSession.isPending || cryptoUnlocked.isPending) {
 			return "busy" as const;
 		}
-		if (isRegistered.data === false) return "redirecting" as const;
+		if (isRegistered.data === false) return "settingUpAccount" as const;
 		if (!apiSession.data) return "busy" as const;
 		if (!cryptoUnlocked.data && showFilosignRecovery)
 			return "filosignRecovery" as const;
@@ -188,6 +173,9 @@ export function useSignInviteUnlock(args: {
 		active,
 		invite,
 		authenticated,
+		autoRegisterFailed,
+		autoRegisterBlocking,
+		autoRegisterStatus,
 		isRegistered.isPending,
 		isRegistered.data,
 		apiSession.isPending,
@@ -246,8 +234,11 @@ export function useSignInviteUnlock(args: {
 			await login();
 			throw new Error("AUTH_LOGIN_STARTED");
 		}
+		if (autoRegisterBlocking || autoRegisterStatus !== "completed") {
+			throw new Error("ACCOUNT_SETUP_IN_PROGRESS");
+		}
 		if (isRegistered.data === false) {
-			throw new Error("REDIRECTING_TO_ONBOARDING");
+			throw new Error("ACCOUNT_SETUP_IN_PROGRESS");
 		}
 		if (!apiSession.data) {
 			throw new Error("Wait for your wallet session to connect to Filosign.");
@@ -260,6 +251,8 @@ export function useSignInviteUnlock(args: {
 	}, [
 		authenticated,
 		login,
+		autoRegisterBlocking,
+		autoRegisterStatus,
 		isRegistered.data,
 		apiSession.data,
 		cryptoUnlocked.data,
@@ -337,7 +330,7 @@ export function useSignInviteUnlock(args: {
 			});
 		} catch (e) {
 			if (e instanceof Error && e.message === "AUTH_LOGIN_STARTED") return;
-			if (e instanceof Error && e.message === "REDIRECTING_TO_ONBOARDING")
+			if (e instanceof Error && e.message === "ACCOUNT_SETUP_IN_PROGRESS")
 				return;
 			const msg =
 				e instanceof Error ? e.message : "Could not unlock this document";
@@ -379,6 +372,11 @@ export function useSignInviteUnlock(args: {
 		handleUnlockDocument,
 		runSwitchAccount,
 		resetWizardAfterSwitchAccount,
+		retryAutoRegister: autoRegister?.retry,
+		autoRegisterError:
+			autoRegister?.status.status === "failed"
+				? autoRegister.status.error
+				: null,
 		coldDecrypt,
 		claimColdInvite,
 	};

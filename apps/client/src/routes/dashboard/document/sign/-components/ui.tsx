@@ -19,8 +19,8 @@ import {
 import { SignDocumentBody } from "./body";
 import { SignDocumentShell } from "./shell";
 import { SignDocumentSidebar } from "./sidebar";
-import { SignSuccessDialog } from "./sign-success-dialog";
 import { SignDocumentStickyHeader } from "./sticky-header";
+import { SignSuccessDialog } from "./success-dialog";
 
 function SignRoot({
 	value,

@@ -2,7 +2,7 @@ import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useServerDraftActions } from "@/src/lib/domains/drafts/drafts-server";
+import { useServerDraftActions } from "@/src/lib/domains/drafts/server";
 import {
 	clearPersistedCreateFormFromDisk,
 	type DraftSyncMode,

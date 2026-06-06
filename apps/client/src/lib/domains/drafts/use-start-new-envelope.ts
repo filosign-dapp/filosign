@@ -1,5 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback } from "react";
+import { useMarkFirstEnvelopeStarted } from "@/src/lib/domains/activation/use-mark-first-envelope-started";
 import { clearPersistedCreateFormFromDisk } from "@/src/lib/domains/drafts/utils/draft-form-state";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 
@@ -13,10 +14,12 @@ export function resetEnvelopeComposer(): void {
 export function useStartNewEnvelope() {
 	const navigate = useNavigate();
 	const clearCreateForm = useStorePersist((s) => s.clearCreateForm);
+	const markStarted = useMarkFirstEnvelopeStarted();
 
 	return useCallback(() => {
 		clearCreateForm();
 		clearPersistedCreateFormFromDisk();
+		markStarted();
 		void navigate({ to: "/dashboard/envelope/create" });
-	}, [clearCreateForm, navigate]);
+	}, [clearCreateForm, markStarted, navigate]);
 }

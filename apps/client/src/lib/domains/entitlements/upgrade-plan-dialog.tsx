@@ -26,6 +26,10 @@ import {
 } from "@/src/lib/components/ui/dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import {
+	BILLING_SETTINGS_PATH,
+	billingSettingsReturnUrl,
+} from "@/src/lib/domains/billing/settings-path";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { cn } from "@/src/lib/utils/index";
 
@@ -142,7 +146,7 @@ export function UpgradePlanDialog({
 
 		if (selectedOffering.cta === "workspace_billing") {
 			onOpenChange(false);
-			void navigate({ to: "/dashboard/settings/workspace" });
+			void navigate({ to: BILLING_SETTINGS_PATH });
 			return;
 		}
 		if (
@@ -160,7 +164,7 @@ export function UpgradePlanDialog({
 			return;
 		}
 
-		const returnUrl = `${window.location.origin}/dashboard`;
+		const returnUrl = billingSettingsReturnUrl(window.location.origin);
 		try {
 			if (selectedPlan) {
 				const result = await orgCheckout.mutateAsync(

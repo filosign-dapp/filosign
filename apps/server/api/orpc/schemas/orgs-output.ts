@@ -35,6 +35,11 @@ export const rpcOrgsLinkWalletOutputSchema = z.object({
 	orgWalletLinkedAt: zDateWire,
 });
 
+export const rpcOrgsUnlinkWalletOutputSchema = z.object({
+	orgWalletAddress: z.null(),
+	orgWalletLinkedAt: z.null(),
+});
+
 export const rpcOrgMemberSchema = z.object({
 	walletAddress: zEvmAddress(),
 	role: zOrgMemberRole,

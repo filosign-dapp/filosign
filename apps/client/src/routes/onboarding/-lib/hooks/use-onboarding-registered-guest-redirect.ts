@@ -1,20 +1,19 @@
-import { useIsRegistered } from "@filosign/react/auth";
+import { useUserProfile } from "@filosign/react/users";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { isPersonalizationComplete } from "@/src/lib/auth/account-defaults";
 import {
 	coldInviteEntrySearchSchema,
 	signDocumentSearchFromColdEntry,
 } from "@/src/lib/domains/invites/cold-invite-search";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
-export function useOnboardingRegisteredGuestRedirect(args: {
-	registrationStarted: boolean;
-	recoveryPhrase: string | null;
-}) {
-	const { registrationStarted, recoveryPhrase } = args;
+export function useOnboardingRegisteredGuestRedirect() {
 	const navigate = useNavigate();
-	const { ready } = useThirdweb();
-	const isRegistered = useIsRegistered();
+	const { ready, authenticated } = useThirdweb();
+	const { data: profile, isPending: profilePending } = useUserProfile({
+		enabled: ready && authenticated,
+	});
 	const coldSignSearch = useRouterState({
 		select: (s) => {
 			const p = coldInviteEntrySearchSchema.safeParse(s.location.search);
@@ -23,9 +22,8 @@ export function useOnboardingRegisteredGuestRedirect(args: {
 	});
 
 	useEffect(() => {
-		if (!ready || isRegistered.isPending) return;
-		if (!isRegistered.data) return;
-		if (registrationStarted || recoveryPhrase) return;
+		if (!ready || !authenticated || profilePending) return;
+		if (!isPersonalizationComplete(profile)) return;
 
 		const parsedSearch = coldInviteEntrySearchSchema.safeParse(
 			window.location.search,
@@ -53,13 +51,5 @@ export function useOnboardingRegisteredGuestRedirect(args: {
 				interval: billingSearch?.interval,
 			},
 		});
-	}, [
-		ready,
-		isRegistered.data,
-		isRegistered.isPending,
-		registrationStarted,
-		recoveryPhrase,
-		coldSignSearch,
-		navigate,
-	]);
+	}, [ready, authenticated, profile, profilePending, coldSignSearch, navigate]);
 }

@@ -60,6 +60,7 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 	const isPersonal = resolveIsPersonalForNewOrganization(ownedBefore);
 	const slugBase = parsed.data.slug ?? slugifyOrgName(parsed.data.name);
 	const slug = `${slugBase}-${randomBytes(3).toString("hex")}`;
+	const linkedAt = new Date();
 
 	const result = await tryCatch(
 		db.transaction(async (tx) => {
@@ -71,6 +72,8 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 					encryptionPublicKey: parsed.data.encryptionPublicKey,
 					createdByWallet: creator,
 					isPersonal,
+					orgWalletAddress: creator,
+					orgWalletLinkedAt: linkedAt,
 				})
 				.returning();
 
@@ -483,5 +486,54 @@ export async function orgsLinkOrgWallet(
 	return {
 		orgWalletAddress: org.orgWalletAddress,
 		orgWalletLinkedAt: org.orgWalletLinkedAt,
+	};
+}
+
+export const zOrgsUnlinkWalletBody = z.object({
+	organizationId: z.uuid(),
+});
+
+export async function orgsUnlinkOrgWallet(
+	_wallet: Address,
+	activeOrg: ActiveOrgContext,
+	body: unknown,
+) {
+	assertOrgPermission(activeOrg, "org:manage");
+	const parsed = zOrgsUnlinkWalletBody.safeParse(body);
+	if (!parsed.success) {
+		throwZodBadRequest(parsed.error);
+	}
+	if (parsed.data.organizationId !== activeOrg.organizationId) {
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
+	}
+
+	const clearedAt = new Date();
+	const [org] = await db
+		.update(organizations)
+		.set({
+			orgWalletAddress: null,
+			orgWalletLinkedAt: null,
+			updatedAt: clearedAt,
+		})
+		.where(eq(organizations.id, activeOrg.organizationId))
+		.returning({
+			orgWalletAddress: organizations.orgWalletAddress,
+			orgWalletLinkedAt: organizations.orgWalletLinkedAt,
+		});
+
+	if (!org) {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
+			message: "Failed to unlink org wallet",
+		});
+	}
+
+	await invalidateOrgEntitlements(activeOrg.organizationId);
+
+	return {
+		orgWalletAddress: null,
+		orgWalletLinkedAt: null,
+	} satisfies {
+		orgWalletAddress: null;
+		orgWalletLinkedAt: null;
 	};
 }

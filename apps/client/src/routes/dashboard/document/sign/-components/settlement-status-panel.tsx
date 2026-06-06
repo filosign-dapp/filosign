@@ -3,8 +3,8 @@ import type { Address } from "viem";
 import { defaultChain, SUPPORTED_TOKENS } from "@/src/constants";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
+import { SettlementRuleRowView } from "@/src/routes/dashboard/document/sign/-components/settlement/rule-row";
 import { SettlementRevokeAllowanceButton } from "@/src/routes/dashboard/document/sign/-components/settlement-revoke-allowance-button";
-import { SettlementRuleRowView } from "@/src/routes/dashboard/document/sign/-components/settlement-rule-row";
 
 type Props = {
 	rules: SettlementRuleRow[];

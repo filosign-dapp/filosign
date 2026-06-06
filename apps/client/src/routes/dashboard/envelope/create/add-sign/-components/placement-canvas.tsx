@@ -13,8 +13,8 @@ import {
 } from "react-zoom-pan-pinch";
 import { Button } from "@/src/lib/components/ui/button";
 import { cn } from "@/src/lib/utils/utils";
+import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
 import { PLACEMENT_FIELD_OVERLAY_CLASS } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
-import { usePlacementCanvas } from "./placement-canvas-context";
 
 const PAN_EXCLUDED_SELECTORS = [PLACEMENT_FIELD_OVERLAY_CLASS] as const;
 

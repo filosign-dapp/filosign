@@ -1,16 +1,16 @@
 import type { ReactNode } from "react";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
-import { PlacementCanvasProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-canvas-context";
-import { PlacementDndProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-dnd-provider";
+import { AddSignHeader } from "@/src/routes/dashboard/envelope/create/add-sign/-components/header";
 import {
 	AddSignProvider,
 	useAddSignChrome,
 	useAddSignShell,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
+import { PlacementCanvasProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-canvas-context";
+import { PlacementDndProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-dnd-context";
 import type { AddSignController } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-controller";
 import FieldsSidebar from "./fields-sidebar";
-import Header from "./header";
 import MobileToolbar from "./mobile-toolbar";
 import { DocumentThumbnailsSidebar } from "./thumbnails";
 import DocumentViewer from "./viewer";
@@ -36,7 +36,7 @@ function AddSignPageShell({ children }: { children: ReactNode }) {
 }
 
 function AddSignHeaderRow() {
-	return <Header />;
+	return <AddSignHeader />;
 }
 
 function AddSignWorkspace({ children }: { children: ReactNode }) {

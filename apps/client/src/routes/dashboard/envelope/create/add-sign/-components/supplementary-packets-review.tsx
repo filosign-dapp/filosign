@@ -23,9 +23,9 @@ import {
 	validateAttachmentPacketComposeDrafts,
 	validateAttachmentPacketDraftsForSend,
 } from "@/src/lib/domains/files/validate-attachment-packets";
+import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { AttachmentPacketDialog } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-dialog";
-import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
 
 export function SupplementaryPacketsReview() {
 	const createForm = useStorePersist((s) => s.createForm);

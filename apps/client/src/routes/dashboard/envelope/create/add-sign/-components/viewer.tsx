@@ -3,16 +3,16 @@ import { memo, useCallback, useEffect } from "react";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { cn } from "@/src/lib/utils/utils";
 import { PlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-canvas";
-import { PLACEMENT_CANVAS_DROPPABLE_ID } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-dnd-provider";
 import {
 	useAddSignShell,
 	useAddSignViewer,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
+import { PLACEMENT_CANVAS_DROPPABLE_ID } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-dnd-context";
+import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
 import { useDocumentViewerInteraction } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-viewer-interaction";
 import { focusPagePointInCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
 import { SignatureFieldOverlays } from "./field-overlays";
 import { DocumentPageContent } from "./page-content";
-import { usePlacementCanvas } from "./placement-canvas-context";
 import { DocumentViewerToolbar } from "./viewer-toolbar";
 
 function DocumentViewer() {

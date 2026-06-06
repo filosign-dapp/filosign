@@ -22,7 +22,7 @@ import {
 	useStorePersist,
 	useStorePersistHydrated,
 } from "@/src/lib/filosign/use-store";
-import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
+import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 import type { EnvelopeForm } from "@/src/routes/dashboard/envelope/create/-lib/types";
 
 const PERSIST_DEBOUNCE_MS = 400;

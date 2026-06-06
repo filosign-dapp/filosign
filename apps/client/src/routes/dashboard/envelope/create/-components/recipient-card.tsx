@@ -25,7 +25,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/src/lib/components/ui/select";
-import { initialsFromName } from "@/src/routes/dashboard/_shell/connections/-components/contact-utils";
+import { initialsFromName } from "@/src/routes/dashboard/_shell/connections/-lib/utils/contact-display";
 import { RecipientSettlementDialog } from "@/src/routes/dashboard/envelope/create/-components/recipient-settlement-dialog";
 import {
 	RECIPIENT_FIELD_LABEL_CLASS,

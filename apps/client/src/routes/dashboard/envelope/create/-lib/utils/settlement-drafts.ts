@@ -1,6 +1,6 @@
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
-import type { SettlementAttachmentDraft } from "@/src/routes/dashboard/envelope/create/-lib/types/settlement-attachment";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
 
 export function getDraftForRecipient(
 	drafts: SettlementAttachmentDraft[],

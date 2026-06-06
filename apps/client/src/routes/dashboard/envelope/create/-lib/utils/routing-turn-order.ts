@@ -1,7 +1,7 @@
 import type { RegisterRoutingInput } from "@filosign/shared";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
+import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
-import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
 
 export type IndexedRecipient = {
 	recipient: Recipient;

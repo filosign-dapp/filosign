@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isValidRecipientEmail } from "@/src/routes/dashboard/envelope/create/-lib/utils/recipient-email";
+import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 
 const uploadedFileSchema = z.object({
 	id: z.string(),

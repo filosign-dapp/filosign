@@ -4,9 +4,9 @@ import { Button } from "@/src/lib/components/ui/button";
 import { cn } from "@/src/lib/utils/utils";
 import { ComposeSettlementOptionsField } from "@/src/routes/dashboard/envelope/create/-components/compose-routing-field";
 import { ActiveAssigneeStrip } from "@/src/routes/dashboard/envelope/create/add-sign/-components/active-assignee-strip";
-import { paletteDraggableId } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-dnd-provider";
 import { SupplementaryPacketsReview } from "@/src/routes/dashboard/envelope/create/add-sign/-components/supplementary-packets-review";
 import { useAddSignPlacement } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
+import { paletteDraggableId } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-dnd-context";
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
 
 function DraggablePaletteItem({

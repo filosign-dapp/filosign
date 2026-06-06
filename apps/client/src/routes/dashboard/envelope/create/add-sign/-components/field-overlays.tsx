@@ -14,12 +14,13 @@ import {
 	defaultPlacementFieldRect,
 	signerAccentColor,
 } from "@/src/lib/domains/files/field-box";
-import { cn } from "@/src/lib/utils/utils";
-import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 import {
 	SignatureFieldTypeIcon,
 	signatureFieldTypeLabel,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-display";
+} from "@/src/lib/domains/files/placement-field-display";
+import { cn } from "@/src/lib/utils/utils";
+import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
+import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 import {
 	dragTransformInPageSpace,
 	fieldDraggableId,
@@ -28,7 +29,6 @@ import {
 	pageScale,
 	placementRectFromField,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
-import { usePlacementCanvas } from "./placement-canvas-context";
 
 type DraggableFieldOverlayProps = {
 	field: SignatureField;
@@ -213,8 +213,8 @@ function DraggableFieldOverlay({
 		>
 			<div
 				className={cn(
-					"flex h-full w-full items-center gap-1.5 rounded-sm border border-white/20 bg-black px-1.5 text-white shadow-md",
-					isSelected && "ring-2 ring-white/60",
+					"placement-field-chrome h-full w-full",
+					isSelected && "ring-2 ring-ring/60",
 				)}
 			>
 				{!isPlacingField ? (
@@ -223,14 +223,14 @@ function DraggableFieldOverlay({
 						weight="bold"
 					/>
 				) : null}
-				<span className="shrink-0 text-white">
+				<span className="shrink-0 text-placement-chrome-foreground">
 					<SignatureFieldTypeIcon type={field.type} isMobile={isMobile} />
 				</span>
 				<div className="min-w-0 flex-1 leading-none">
-					<div className="truncate text-[10px] sm:text-xs">
+					<div className="truncate placement-field-label">
 						{field.assignedSignerEmail}
 					</div>
-					<div className="truncate text-[9px] opacity-65">
+					<div className="truncate placement-field-subtle">
 						{field.type === "signature" || field.type === "initial"
 							? `placeholder preview · ${signatureFieldTypeLabel(field.type)}`
 							: signatureFieldTypeLabel(field.type)}
@@ -249,7 +249,7 @@ function DraggableFieldOverlay({
 						{showRepeat ? (
 							<button
 								type="button"
-								className="rounded p-0.5 hover:bg-white/20"
+								className="rounded p-0.5 hover:bg-placement-chrome-foreground/15"
 								onClick={(e) => {
 									e.stopPropagation();
 									onRepeatOnAllPages(field.id);
@@ -262,7 +262,7 @@ function DraggableFieldOverlay({
 						) : null}
 						<button
 							type="button"
-							className="rounded p-0.5 hover:bg-white/20"
+							className="rounded p-0.5 hover:bg-placement-chrome-foreground/15"
 							onClick={(e) => {
 								e.stopPropagation();
 								onFieldDuplicate(field.id);
@@ -273,7 +273,7 @@ function DraggableFieldOverlay({
 						</button>
 						<button
 							type="button"
-							className="rounded p-0.5 hover:bg-white/20"
+							className="rounded p-0.5 hover:bg-placement-chrome-foreground/15"
 							onClick={(e) => {
 								e.stopPropagation();
 								onFieldRemove(field.id);
@@ -288,7 +288,7 @@ function DraggableFieldOverlay({
 			{isPrimarySelected && !isPlacingField ? (
 				<button
 					type="button"
-					className="absolute -bottom-1 -right-1 size-3 cursor-se-resize rounded-sm border border-white/40 bg-black touch-none"
+					className="absolute -bottom-1 -right-1 size-3 cursor-se-resize rounded-sm border border-placement-chrome-border bg-placement-chrome touch-none"
 					aria-label="Resize field"
 					onPointerDown={handleResizePointerDown}
 				/>

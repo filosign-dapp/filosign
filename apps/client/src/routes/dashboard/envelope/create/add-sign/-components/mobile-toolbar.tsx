@@ -1,8 +1,8 @@
 import { useDraggable } from "@dnd-kit/core";
 import { motion } from "motion/react";
 import { cn } from "@/src/lib/utils/utils";
-import { paletteDraggableId } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-dnd-provider";
 import { useAddSignPlacement } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
+import { paletteDraggableId } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-dnd-context";
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
 
 function DraggableMobilePaletteButton({

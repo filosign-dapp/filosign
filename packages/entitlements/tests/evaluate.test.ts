@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { catalogV1 } from "../src/catalog";
+import { CATALOG_VERSION, catalogV1 } from "../src/catalog";
 import { check, getLimit, getQuotaScope } from "../src/evaluate";
 import type { FeatureKey } from "../src/features";
 import { FEATURE_KEYS } from "../src/features";
@@ -40,11 +40,23 @@ function orgCtx(
 }
 
 describe("catalog v1", () => {
+	test("catalog version bumps when quota semantics change", () => {
+		expect(CATALOG_VERSION).toBe(3);
+	});
+
 	test("every plan defines every feature key", () => {
 		for (const planId of PLAN_IDS) {
 			for (const key of FEATURE_KEYS) {
 				expect(catalogV1[planId][key]).toBeDefined();
 			}
+		}
+	});
+	test("free plan uses lifetime document quota", () => {
+		const def = catalogV1.free["documents.sent.monthly"];
+		expect(def.kind).toBe("quota");
+		if (def.kind === "quota") {
+			expect(def.period).toBe("lifetime");
+			expect(def.limit).toBe(3);
 		}
 	});
 });

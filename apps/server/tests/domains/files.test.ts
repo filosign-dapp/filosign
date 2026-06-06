@@ -15,9 +15,9 @@ import {
 } from "@/lib/domains/files/utils/piece-helpers";
 
 describe("files", () => {
-	describe("files-registry-routing", () => {
-		const repoRoot = join(import.meta.dir, "../../../..");
+	const repoRoot = join(import.meta.dir, "../../../..");
 
+	describe("files-registry-routing", () => {
 		describe("files.piece.detail registry routing", () => {
 			test("selects registryAddress from the files row", () => {
 				const src = readFileSync(
@@ -54,7 +54,7 @@ describe("files", () => {
 				expect(detailSrc).toContain("senderEntitlementCtx");
 				expect(detailSrc).toContain('"features.comments"');
 				expect(detailSrc).toContain("commentsFeatureEnabled,");
-				expect(detailSrc).toContain("hasSenderComments,");
+				expect(detailSrc).toContain("hasSenderComments:");
 
 				const schemaSrc = readFileSync(
 					join(repoRoot, "apps/server/api/orpc/schemas/files-piece-output.ts"),
@@ -68,19 +68,23 @@ describe("files", () => {
 		describe("sign and ack EIP-712 verifyingContract", () => {
 			test("useSignFile signs against envelopeRegistryAt(registryAddress)", () => {
 				const src = readFileSync(
-					join(repoRoot, "packages/react-sdk/src/hooks/files/useSignFile.ts"),
+					join(repoRoot, "packages/react-sdk/src/lib/sign-file/sign-file.ts"),
 					"utf8",
 				);
-				expect(src).toContain("envelopeRegistryAt(contracts, registryAddress)");
+				expect(src).toContain(
+					"envelopeRegistryAt(deps.contracts, registryAddress)",
+				);
 				expect(src).toContain("verifyingContract: registry.address");
 			});
 
 			test("useAckFile signs against envelopeRegistryAt(registryAddress)", () => {
 				const src = readFileSync(
-					join(repoRoot, "packages/react-sdk/src/hooks/files/useAckFile.ts"),
+					join(repoRoot, "packages/react-sdk/src/lib/ack-file/ack-file.ts"),
 					"utf8",
 				);
-				expect(src).toContain("envelopeRegistryAt(contracts, registryAddress)");
+				expect(src).toContain(
+					"envelopeRegistryAt(deps.contracts, registryAddress)",
+				);
 				expect(src).toContain("verifyingContract: registry.address");
 			});
 
@@ -259,6 +263,35 @@ describe("files", () => {
 				);
 				expect(sender).not.toBe(recipient);
 			});
+		});
+	});
+
+	describe("files.remindSigners", () => {
+		test("zRemindSignersBody requires pieceCid", async () => {
+			const { zRemindSignersBody } = await import("@/lib/domains/files/remind");
+			expect(zRemindSignersBody.safeParse({}).success).toBe(false);
+			expect(
+				zRemindSignersBody.safeParse({ pieceCid: "bafytest" }).success,
+			).toBe(true);
+		});
+
+		test("remind module uses daily idempotency keys for warm and cold signers", () => {
+			const src = readFileSync(
+				join(repoRoot, "apps/server/lib/domains/files/remind.ts"),
+				"utf8",
+			);
+			expect(src).toContain('"sign-reminder"');
+			expect(src).toContain('kind: "doc_received"');
+			expect(src).toContain('kind: "cold_doc_invite"');
+			expect(src).toContain("utcDayBucket");
+		});
+
+		test("router exposes files.remindSigners procedure", () => {
+			const src = readFileSync(
+				join(repoRoot, "apps/server/api/orpc/router.ts"),
+				"utf8",
+			);
+			expect(src).toContain("remindSigners: authenticatedProcedure");
 		});
 	});
 });

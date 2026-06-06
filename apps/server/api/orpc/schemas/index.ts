@@ -52,6 +52,7 @@ import {
 	rpcFilesProposeSignerReplacementOutputSchema,
 	rpcFilesRecallEnvelopeOutputSchema,
 	rpcFilesRegisterOutputSchema,
+	rpcFilesRemindSignersOutputSchema,
 	rpcFilesUploadStartOutputSchema,
 } from "./files-output";
 import {
@@ -63,6 +64,9 @@ import {
 	rpcPieceSignDraftFieldIdsOutputSchema,
 	rpcPieceSignOutputSchema,
 } from "./files-piece-output";
+
+export type { RpcPieceDetailOutput } from "./files-piece-output";
+
 import {
 	rpcMetricsInvitesSummaryOutputSchema,
 	rpcMetricsSenderUsageOutputSchema,
@@ -147,6 +151,7 @@ export const rpcOut = {
 		executeSignerReplacement: rpcFilesExecuteSignerReplacementOutputSchema,
 		cancelSignerReplacement: rpcFilesCancelSignerReplacementOutputSchema,
 		recallEnvelope: rpcFilesRecallEnvelopeOutputSchema,
+		remindSigners: rpcFilesRemindSignersOutputSchema,
 		comments: {
 			list: rpcFilesCommentsListOutputSchema,
 			append: rpcFilesCommentsAppendOutputSchema,

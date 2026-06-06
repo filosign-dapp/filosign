@@ -30,7 +30,7 @@ import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persiste
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
 import { MembersSection } from "./members-section";
 import { OrgWalletSection } from "./org-wallet-section";
-import { PayoutFeatureAccessSection } from "./payout-feature-access-section";
+import { PayoutFeatureAccessSection } from "./payout/feature-access-section";
 import { WorkspacePlanSummary } from "./workspace-plan-summary";
 import { WorkspaceSection } from "./workspace-section";
 

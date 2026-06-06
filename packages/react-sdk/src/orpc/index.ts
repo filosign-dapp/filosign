@@ -1,4 +1,4 @@
-export type { InferClientOutputs } from "@orpc/client";
+export type { InferClientInputs, InferClientOutputs } from "@orpc/client";
 export type { AppRouter, AppRouterClient } from "./app-router-types";
 export {
 	createFilosignOrpcClient,

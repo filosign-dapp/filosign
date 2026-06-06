@@ -1,91 +1,39 @@
-import { useFilosignContext } from "@filosign/react";
-import {
-	CLIENT_ANALYTICS_EVENTS,
-	useCaptureAppEvent,
-} from "@filosign/react/analytics";
 import { useCryptoUnlocked } from "@filosign/react/auth";
-import { useEntitlements } from "@filosign/react/billing";
-import { useMarkDraftSent } from "@filosign/react/drafts";
-import {
-	canSelectSupplementaryRecipients,
-	canUseAdvancedSettlements,
-	canUseConditionalAttachmentRelease,
-	canUseSupplementaryAttachments,
-	formatSettlementSimError,
-	useSendFile,
-	useSignFile,
-} from "@filosign/react/files";
-import { useActiveOrganization } from "@filosign/react/orgs";
-import {
-	type ProfileByAddress,
-	useProfilesByAddresses,
-	useUserProfile,
-} from "@filosign/react/users";
-import {
-	normalizePlacementRecipientEmail,
-	validateRegisterRoutingForSend,
-} from "@filosign/shared";
+import { useUserProfile } from "@filosign/react/users";
+import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { type Address, BaseError } from "viem";
 import {
 	draftSyncModeFromSearch,
-	hydrateAttachmentPacketDrafts,
 	pruneSignatureFields,
 	useDraftDocumentPreview,
 	useServerDraftHydrate,
 } from "@/src/lib/domains/drafts";
-import { toAttachmentPacketDraftsForSend } from "@/src/lib/domains/files/attachment-packet-compose";
-import { buildPlacementManifestForEnvelope } from "@/src/lib/domains/files/build-placement-manifest";
-import { buildRegisterRoutingFromForm } from "@/src/lib/domains/files/build-register-routing-from-form";
 import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
 import {
 	defaultPlacementFieldRect,
 	normalizeSignatureFieldsList,
 } from "@/src/lib/domains/files/field-box";
-import {
-	validateAttachmentPacketComposeDrafts,
-	validateAttachmentPacketDraftsForSend,
-} from "@/src/lib/domains/files/validate-attachment-packets";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
-import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
-import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
-import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
-import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import {
 	useStorePersist,
 	useStorePersistHydrated,
 } from "@/src/lib/filosign/use-store";
-import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
 import { useAddSignFields } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-fields";
 import { usePlacementHistory } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-history";
 import { usePlacementMode } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-mode";
+import { useSendEnvelope } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-send-envelope";
 import type { Document } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 import {
 	buildActiveAssignees,
 	resolveActiveAssignee,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/active-assignees";
-import { buildSettlementRulesForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/build-settlement-rules";
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
-import {
-	fieldsWithUnknownSignerEmails,
-	resolveSelfSignerOnRoster,
-	selfAssignedFieldIds,
-	signerEmailsForPlacementManifest,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
+import { resolveSelfSignerOnRoster } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
 import { SELF_ASSIGNEE_ID } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
-import { resolveSettlementDraftsForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/resolve-settlement-drafts";
-import {
-	buildSignersAndViewersForDocument,
-	isColdRecipient,
-	loadDocumentFileBytes,
-	type RecipientWithEncryptionProfile,
-	recipientResolvedSignerAddress,
-	SendEnvelopeError,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
-import { collectViewerEmails } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/viewer-emails";
+import { recipientResolvedSignerAddress } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 
 const addSignRouteApi = getRouteApi("/dashboard/envelope/create/add-sign/");
 
@@ -112,42 +60,6 @@ export function useAddSignController() {
 		draftSyncMode,
 		serverDraftLoadState,
 	});
-	const captureAppEvent = useCaptureAppEvent();
-	const sendFile = useSendFile();
-	const signFile = useSignFile();
-	const markDraftSent = useMarkDraftSent();
-	const { data: entitlements } = useEntitlements();
-	const { rpcQuery } = useFilosignContext();
-	const activeOrg = useActiveOrganization();
-
-	const recipientAddresses = useMemo(
-		() =>
-			(createForm?.recipients ?? [])
-				.map((r) => recipientResolvedSignerAddress(r))
-				.filter((a): a is Address => a !== null),
-		[createForm?.recipients],
-	);
-	const { data: recipientProfilesMap, isLoading: recipientProfilesLoading } =
-		useProfilesByAddresses(
-			recipientAddresses.length > 0 ? recipientAddresses : undefined,
-		);
-
-	const recipientProfilesMapWithRecipient = useMemo(() => {
-		const map = new Map<
-			Address,
-			{ recipient: Recipient; profile: ProfileByAddress }
-		>();
-		createForm?.recipients?.forEach((recipient) => {
-			const addr = recipientResolvedSignerAddress(recipient);
-			if (!addr) return;
-			const profile = recipientProfilesMap?.get(addr);
-			if (profile) {
-				map.set(addr, { recipient, profile });
-			}
-		});
-		return map;
-	}, [createForm?.recipients, recipientProfilesMap]);
-
 	const {
 		width: docWidth,
 		height: docHeight,
@@ -176,7 +88,6 @@ export function useAddSignController() {
 	const [postSendShare, setPostSendShare] = useState<ColdSharePackage | null>(
 		null,
 	);
-	const isSendingRef = useRef(false);
 
 	const suppressEmptyDraftRedirect =
 		sendStatus === "loading" ||
@@ -573,425 +484,17 @@ export function useAddSignController() {
 		(doc) => doc.id === currentDocumentId,
 	);
 
-	const handleSend = useCallback(async () => {
-		if (isSendingRef.current) {
-			return;
-		}
-
-		if (!createForm?.documents.length) {
-			setSendStatus("error");
-			setTimeout(() => setSendStatus("idle"), 3000);
-			return;
-		}
-
-		if (!createForm.recipients || createForm.recipients.length === 0) {
-			setSendStatus("error");
-			setTimeout(() => setSendStatus("idle"), 3000);
-			return;
-		}
-
-		const signerRecipients = createForm.recipients.filter(
-			(r) => r.role === "signer",
-		);
-		if (signerRecipients.length === 0) {
-			setSendStatus("error");
-			setTimeout(() => setSendStatus("idle"), 3000);
-			return;
-		}
-
-		const unresolvedSignerEmails = signerRecipients.filter(
-			(r) => !r.email?.trim(),
-		);
-		if (unresolvedSignerEmails.length > 0) {
-			setSendStatus("error");
-			setTimeout(() => setSendStatus("idle"), 3000);
-			return;
-		}
-
-		const coldRecipients = createForm.recipients.filter(isColdRecipient);
-		const requiredSignerRecipients = signerRecipients.filter(
-			(s) => s.role === "signer",
-		);
-		if (requiredSignerRecipients.length === 0) {
-			setSendStatus("error");
-			setTimeout(() => setSendStatus("idle"), 3000);
-			return;
-		}
-
-		const orphanFields = fieldsWithUnknownSignerEmails({
-			signatureFields: createForm.signatureFields ?? [],
-			signerRecipients,
-		});
-		if (orphanFields.length > 0) {
-			const orphanEmail = normalizePlacementRecipientEmail(
-				orphanFields[0]?.assignedSignerEmail ?? "",
-			);
-			toast.error(
-				`Fields assigned to ${orphanEmail} are not on this envelope's signer list. Add yourself as a signer on the form page, or reassign those fields.`,
-			);
-			setSendStatus("error");
-			setTimeout(() => setSendStatus("idle"), 3000);
-			return;
-		}
-
-		for (const signer of signerRecipients) {
-			const signerEmail = normalizePlacementRecipientEmail(
-				signer.email?.trim() ?? "",
-			);
-			const signerFields = signatureFields.filter(
-				(f) =>
-					normalizePlacementRecipientEmail(f.assignedSignerEmail) ===
-					signerEmail,
-			);
-			if (signerFields.length === 0) {
-				toast.error(
-					`Add at least one field for required signer ${signerEmail}.`,
-				);
-				setSendStatus("error");
-				setTimeout(() => setSendStatus("idle"), 3000);
-				return;
-			}
-			if (!signerFields.some((f) => f.required)) {
-				setSendStatus("error");
-				setTimeout(() => setSendStatus("idle"), 3000);
-				return;
-			}
-		}
-
-		if (recipientProfilesLoading) {
-			return;
-		}
-
-		const missingProfiles = createForm.recipients.filter((r) => {
-			const addr = recipientResolvedSignerAddress(r);
-			if (!addr) return false;
-			return !recipientProfilesMapWithRecipient.has(addr);
-		});
-		if (missingProfiles.length > 0) {
-			setSendStatus("error");
-			setTimeout(() => setSendStatus("idle"), 3000);
-			return;
-		}
-
-		let attachmentComposeDrafts = createForm.attachmentPacketDrafts ?? [];
-		if (attachmentComposeDrafts.length > 0) {
-			try {
-				attachmentComposeDrafts = await hydrateAttachmentPacketDrafts(
-					createForm.draftId,
-					attachmentComposeDrafts,
-				);
-				setCreateForm({
-					...createForm,
-					attachmentPacketDrafts: attachmentComposeDrafts,
-				});
-			} catch (error) {
-				toast.error(
-					error instanceof Error
-						? error.message
-						: "Could not load supplementary files for send",
-				);
-				setSendStatus("error");
-				setTimeout(() => setSendStatus("idle"), 3000);
-				return;
-			}
-		}
-		if (attachmentComposeDrafts.length > 0) {
-			const rosterEmails = createForm.recipients
-				.map((r) => r.email?.trim())
-				.filter((email): email is string =>
-					Boolean(email && isValidRecipientEmail(email)),
-				)
-				.map((email) => normalizePlacementRecipientEmail(email));
-			const attachmentIssues = [
-				...validateAttachmentPacketDraftsForSend({
-					supplementaryAttachments:
-						canUseSupplementaryAttachments(entitlements),
-					recipientSelect: canSelectSupplementaryRecipients(entitlements),
-					conditionalRelease: canUseConditionalAttachmentRelease(entitlements),
-					drafts: attachmentComposeDrafts,
-					rosterEmails,
-				}),
-				...validateAttachmentPacketComposeDrafts({
-					drafts: attachmentComposeDrafts,
-				}),
-			];
-			if (attachmentIssues.length > 0) {
-				toast.error(
-					attachmentIssues[0]?.message ?? "Invalid supplementary files",
-				);
-				setSendStatus("error");
-				setTimeout(() => setSendStatus("idle"), 3000);
-				return;
-			}
-		}
-
-		captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopeSendClicked, {
-			recipient_count: createForm.recipients?.length ?? 0,
-		});
-
-		isSendingRef.current = true;
-		setSendStatus("loading");
-
-		try {
-			const pageCountForDocument = (docId: string) => {
-				const pages = signatureFields
-					.filter((f) => f.documentId === docId)
-					.map((f) => f.page);
-				return Math.max(1, ...pages);
-			};
-
-			const docPayloads = await Promise.all(
-				createForm.documents.map(async (doc) => {
-					const bytes = await loadDocumentFileBytes(createForm.draftId, doc);
-					return {
-						id: doc.id,
-						name: doc.name,
-						mimeType: doc.type,
-						bytes,
-						pageCount: pageCountForDocument(doc.id),
-					};
-				}),
-			);
-
-			const { signers, viewers } = buildSignersAndViewersForDocument({
-				recipients: createForm.recipients,
-				recipientMap: recipientProfilesMapWithRecipient as Map<
-					Address,
-					RecipientWithEncryptionProfile
-				>,
-			});
-
-			const coldInvitePayload =
-				coldRecipients.length > 0
-					? coldRecipients.map((r) => ({
-							email: r.email.trim(),
-							isSigner: r.role === "signer",
-						}))
-					: undefined;
-
-			const viewerEmails = collectViewerEmails({
-				recipients: createForm.recipients ?? [],
-				coldInvites: coldInvitePayload,
-			});
-
-			const placementManifest = await buildPlacementManifestForEnvelope({
-				documents: docPayloads,
-				signerEmailsInOrder: signerEmailsForPlacementManifest({
-					signerRecipients,
-					signatureFields,
-				}),
-				signatureFields,
-				docLayouts: new Map(
-					createForm.documents.map((doc) => [
-						doc.id,
-						{
-							docWidth,
-							docHeight: placementDocHeight,
-							fieldBox: fieldBoxCss,
-						},
-					]),
-				),
-			});
-
-			const warmRecipientsByEmail = (createForm.recipients ?? [])
-				.map((recipient) => {
-					const addr = recipientResolvedSignerAddress(recipient);
-					if (!addr) return null;
-					const profile = recipientProfilesMapWithRecipient.get(addr)?.profile;
-					if (!profile?.encryptionPublicKey || !recipient.email?.trim()) {
-						return null;
-					}
-					return {
-						email: recipient.email.trim(),
-						address: addr,
-						encryptionPublicKey: profile.encryptionPublicKey,
-					};
-				})
-				.filter((x): x is NonNullable<typeof x> => x !== null);
-
-			let resolvedSettlementDrafts: SettlementAttachmentDraft[];
-			try {
-				resolvedSettlementDrafts = await resolveSettlementDraftsForSend({
-					drafts: createForm.settlementDrafts ?? [],
-					recipients: createForm.recipients,
-					lookupProfile: async (email) => {
-						try {
-							const profile = await rpcQuery.users.profile.lookup.call({
-								query: email,
-							});
-							return { walletAddress: profile.walletAddress };
-						} catch {
-							return null;
-						}
-					},
-				});
-			} catch (err) {
-				console.error(err);
-				setSendStatus("error");
-				isSendingRef.current = false;
-				setTimeout(() => setSendStatus("idle"), 3000);
-				return;
-			}
-
-			const settlementRules = buildSettlementRulesForSend({
-				drafts: resolvedSettlementDrafts,
-				recipients: createForm.recipients,
-				combineLegs: createForm.combineSettlementLegs,
-				canUseAdvancedSettlements: canUseAdvancedSettlements(entitlements),
-			});
-
-			const routing = buildRegisterRoutingFromForm({
-				recipients: createForm.recipients,
-				routing: createForm.registerRouting,
-			});
-
-			const routingValidationError = validateRegisterRoutingForSend({
-				placementManifest,
-				...(routing ? { routing } : {}),
-			});
-			if (routingValidationError) {
-				toast.error(routingValidationError);
-				setSendStatus("error");
-				isSendingRef.current = false;
-				setTimeout(() => setSendStatus("idle"), 3000);
-				return;
-			}
-
-			const attachmentPacketDrafts =
-				attachmentComposeDrafts.length > 0
-					? toAttachmentPacketDraftsForSend(
-							attachmentComposeDrafts,
-							createForm.recipients,
-						)
-					: [];
-
-			const result = await sendFile.mutateAsync(
-				{
-					signers,
-					viewers,
-					documents: docPayloads.map(
-						({ pageCount: _pageCount, ...doc }) => doc,
-					),
-					metadata: {
-						name:
-							docPayloads.length === 1
-								? (docPayloads[0]?.name ?? "Document")
-								: `${docPayloads[0]?.name ?? "Envelope"} (+${docPayloads.length - 1} more)`,
-					},
-					placementManifest,
-					warmRecipientsByEmail,
-					viewerEmails,
-					...(coldInvitePayload ? { coldInvites: coldInvitePayload } : {}),
-					...(settlementRules.length > 0 ? { settlementRules } : {}),
-					...(routing ? { routing } : {}),
-					...(attachmentPacketDrafts.length > 0
-						? { attachmentPacketDrafts }
-						: {}),
-					...(activeOrg
-						? {
-								organizationId: activeOrg.id,
-								orgEncryptionPublicKey: activeOrg.encryptionPublicKey,
-							}
-						: {}),
-				},
-				suppressGlobalErrorToast(),
-			);
-
-			const selfOnRoster = resolveSelfSignerOnRoster(
-				createForm.recipients ?? [],
-				selfProfile,
-			);
-			const selfFieldIds =
-				result.success && result.pieceCid && selfOnRoster
-					? selfAssignedFieldIds(signatureFields, selfOnRoster.email)
-					: [];
-
-			if (selfFieldIds.length > 0 && result.pieceCid) {
-				setSendStatus("signing");
-				try {
-					await signFile.mutateAsync(
-						{
-							pieceCid: result.pieceCid,
-							completedFieldIds: selfFieldIds,
-						},
-						suppressGlobalErrorToast(),
-					);
-				} catch (signErr) {
-					console.error("Self-sign at send failed:", signErr);
-					toast.error(
-						"Document sent, but signing your fields failed. Open the document from your dashboard to finish signing.",
-					);
-				}
-			}
-
-			setSendStatus("success");
-
-			if (createForm.serverDraftId && result.success && result.pieceCid) {
-				void markDraftSent.mutateAsync({
-					draftId: createForm.serverDraftId,
-					pieceCid: result.pieceCid,
-				});
-			}
-
-			captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopeSendSucceeded, {
-				had_cold_recipients: coldRecipients.length > 0,
-				...(result.success && result.pieceCid
-					? { piece_cid: result.pieceCid }
-					: {}),
-			});
-
-			const shareCode =
-				"coldInviteShareCode" in result && result.coldInviteShareCode
-					? {
-							emails: result.coldInviteShareCode.emails,
-							phrase: result.coldInviteShareCode.phrase,
-							magicLink: buildColdInviteMagicLink(window.location.origin, {
-								pieceCid: result.pieceCid,
-								inviteToken: result.coldInviteShareCode.inviteToken,
-								email: result.coldInviteShareCode.emails[0],
-							}),
-						}
-					: null;
-
-			setPostSendShare(shareCode);
-			setPostSendDialogOpen(true);
-		} catch (error) {
-			setSendStatus("error");
-			if (
-				error instanceof Error &&
-				error.message === SendEnvelopeError.MISSING_DRAFT_DOCUMENT
-			) {
-				setTimeout(() => setSendStatus("idle"), 3000);
-				return;
-			}
-			if (error instanceof BaseError) {
-				toast.error(formatSettlementSimError(error));
-			} else {
-				showAppErrorToast(error);
-			}
-			console.error("Failed to send documents:", error);
-			setTimeout(() => setSendStatus("idle"), 3000);
-		} finally {
-			isSendingRef.current = false;
-		}
-	}, [
-		activeOrg,
-		captureAppEvent,
-		clearCreateForm,
+	const { handleSend } = useSendEnvelope({
 		createForm,
+		signatureFields,
 		placementDocHeight,
 		docWidth,
 		fieldBoxCss,
-		navigate,
-		recipientProfilesLoading,
-		recipientProfilesMapWithRecipient,
-		sendFile,
-		signFile,
-		selfProfile,
-		signatureFields,
-		entitlements,
-		markDraftSent,
-	]);
+		sendStatus,
+		setSendStatus,
+		setPostSendDialogOpen,
+		setPostSendShare,
+	});
 
 	const currentPageFields = useMemo(
 		() =>

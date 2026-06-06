@@ -11,4 +11,7 @@ export {
 	buildDocumentPlusCompliancePdf,
 	downloadPdfBytes,
 } from "./utils/build";
-export { buildCompliancePdfSummaryFromBundle } from "./utils/summary";
+export {
+	buildCompliancePdfSummaryFromBundle,
+	COMPLIANCE_PDF_APPENDIX_SECTION_TITLE,
+} from "./utils/summary/assemble";

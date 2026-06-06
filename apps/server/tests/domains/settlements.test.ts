@@ -52,33 +52,33 @@ describe("settlements", () => {
 
 		describe("tryExecuteSettlementPayout", () => {
 			test("loads settlement rules by validatorAddress and onChainRuleId", () => {
-				const src = readFileSync(
+				const preflightSrc = readFileSync(
 					join(
 						import.meta.dir,
-						"../../lib/domains/settlements/utils/execute-payout.ts",
+						"../../lib/domains/settlements/utils/execute-payout-preflight.ts",
 					),
 					"utf8",
 				);
-				expect(src).toContain(
+				expect(preflightSrc).toContain(
 					"selectSettlementRule(onChainRuleId, validatorAddress)",
 				);
-				expect(src).not.toMatch(
+				expect(preflightSrc).not.toMatch(
 					/eq\(fileSettlementRules\.onChainRuleId,\s*onChainRuleId\)[\s\S]*?\.limit\(1\)/,
 				);
 			});
 
 			test("simulates executePayoutLeg before broadcasting write", () => {
-				const src = readFileSync(
+				const legSrc = readFileSync(
 					join(
 						import.meta.dir,
-						"../../lib/domains/settlements/utils/execute-payout.ts",
+						"../../lib/domains/settlements/utils/execute-payout-leg.ts",
 					),
 					"utf8",
 				);
-				expect(src).toContain("validator.simulate.executePayoutLeg");
-				expect(src).toContain("writeValidator.executePayoutLeg");
-				const simIdx = src.indexOf("validator.simulate.executePayoutLeg");
-				const writeIdx = src.indexOf("writeValidator.executePayoutLeg");
+				expect(legSrc).toContain("validator.simulate.executePayoutLeg");
+				expect(legSrc).toContain("writeValidator.executePayoutLeg");
+				const simIdx = legSrc.indexOf("validator.simulate.executePayoutLeg");
+				const writeIdx = legSrc.indexOf("writeValidator.executePayoutLeg");
 				expect(simIdx).toBeGreaterThan(-1);
 				expect(writeIdx).toBeGreaterThan(simIdx);
 			});
@@ -345,7 +345,7 @@ describe("settlements", () => {
 		describe("attachment release execution", () => {
 			test("post-sign hook calls tryExecuteAttachmentReleasesForPiece", () => {
 				const src = readFileSync(
-					join(serverRoot, "lib/domains/files/sign.ts"),
+					join(serverRoot, "lib/domains/files/utils/sign/post-actions.ts"),
 					"utf8",
 				);
 				expect(src).toContain("tryExecuteAttachmentReleasesForPiece");

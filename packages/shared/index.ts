@@ -5,6 +5,7 @@ export * from "./utils/crypto";
 export * from "./utils/deployment";
 export * from "./utils/document-merkle";
 export * from "./utils/draft";
+export * from "./utils/envelope-metadata";
 export * from "./utils/evm-wire";
 export * from "./utils/field-completion";
 export * from "./utils/file-data";

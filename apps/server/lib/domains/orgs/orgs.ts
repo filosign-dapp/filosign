@@ -1,6 +1,6 @@
 import { throwAppError } from "@filosign/errors/server";
 import { and, desc, eq, sql } from "drizzle-orm";
-import type { Address } from "viem";
+import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
 import {
 	CACHE_TTL,
@@ -88,7 +88,7 @@ const ROLE_PERMISSIONS: Record<OrgMemberRole, ReadonlySet<OrgPermission>> = {
 export type ActiveOrgContext = {
 	organizationId: string;
 	role: OrgMemberRole;
-	encryptionPublicKey: string;
+	encryptionPublicKey: Hex;
 	signingMode: "acting_member" | "org_safe";
 };
 
@@ -96,7 +96,7 @@ export type UserOrgRow = {
 	id: string;
 	name: string;
 	slug: string;
-	encryptionPublicKey: string;
+	encryptionPublicKey: Hex;
 	orgWalletAddress: string | null;
 	role: OrgMemberRole;
 	status: OrgMemberStatus;

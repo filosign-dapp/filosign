@@ -1,3 +1,4 @@
+import { zEnvelopeMetadata } from "@filosign/shared";
 import { and, desc, eq, ne, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -96,10 +97,16 @@ export async function filesListSent(userWallet: Address) {
 			mimeType: files.mimeType,
 			ciphertextByteLength: files.ciphertextByteLength,
 			createdAt: files.createdAt,
+			metadataJson: files.metadataJson,
 		})
 		.from(files)
 		.where(eq(files.sender, userWallet));
-	return { files: sentFiles };
+	return {
+		files: sentFiles.map(({ metadataJson, ...row }) => ({
+			...row,
+			metadata: parseFileMetadata(metadataJson),
+		})),
+	};
 }
 
 export async function filesListReceived(userWallet: Address) {
@@ -138,6 +145,12 @@ export async function filesListReceived(userWallet: Address) {
 	return { files: receivedFiles };
 }
 
+function parseFileMetadata(value: unknown) {
+	if (!value || typeof value !== "object") return null;
+	const parsed = zEnvelopeMetadata.safeParse(value);
+	return parsed.success ? parsed.data : null;
+}
+
 export async function filesListOrg(organizationId: string) {
 	const orgFiles = await db
 		.select({
@@ -149,10 +162,22 @@ export async function filesListOrg(organizationId: string) {
 			mimeType: files.mimeType,
 			ciphertextByteLength: files.ciphertextByteLength,
 			createdAt: files.createdAt,
+			metadataJson: files.metadataJson,
 		})
 		.from(files)
 		.where(eq(files.organizationId, organizationId))
 		.orderBy(desc(files.createdAt));
 
-	return { files: orgFiles };
+	return {
+		files: orgFiles.map((row) => ({
+			pieceCid: row.pieceCid,
+			sender: row.sender,
+			status: row.status,
+			displayName: row.displayName,
+			mimeType: row.mimeType,
+			ciphertextByteLength: row.ciphertextByteLength,
+			createdAt: row.createdAt,
+			metadata: parseFileMetadata(row.metadataJson),
+		})),
+	};
 }

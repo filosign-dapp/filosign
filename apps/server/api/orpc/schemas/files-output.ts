@@ -1,4 +1,4 @@
-import { zPlacementManifest } from "@filosign/shared";
+import { zEnvelopeMetadata, zPlacementManifest } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { z } from "zod";
 import { rpcEmptyOutputSchema, zDateWire } from "./rpc-wire";
@@ -13,6 +13,7 @@ const rpcFileListDisplaySchema = z.object({
 	mimeType: z.string().nullable(),
 	ciphertextByteLength: z.number().int().nullable(),
 	createdAt: z.coerce.date().optional(),
+	metadata: zEnvelopeMetadata.nullable().optional(),
 });
 
 const rpcFileRowSentSchema = rpcFileListDisplaySchema.extend({
@@ -65,6 +66,11 @@ export const rpcColdInviteRegenerateOutputSchema = z.object({
 	inviteToken: z.string(),
 	recipientEmails: z.array(z.string()),
 	expiresAt: z.string(),
+});
+
+export const rpcFilesRemindSignersOutputSchema = z.object({
+	remindedCount: z.number().int().min(0),
+	skippedCount: z.number().int().min(0),
 });
 
 export const rpcFilesRegisterOutputSchema = rpcEmptyOutputSchema;

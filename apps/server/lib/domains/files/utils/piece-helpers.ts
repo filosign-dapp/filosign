@@ -1,7 +1,6 @@
 import { computeCidIdentifier } from "@filosign/contracts";
 import { throwAppError } from "@filosign/errors/server";
 import {
-	hashNormalizedSignerEmail,
 	isValidAckSignature,
 	type PlacementManifest,
 	type RegisterRoutingInput,
@@ -16,6 +15,10 @@ import {
 } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { primaryEmailForWallet } from "../invites";
+import {
+	applySequentialCanSignGate,
+	applySequentialNextSigner,
+} from "./envelope-registry-sequential";
 
 const {
 	fileAcknowledgements,
@@ -309,41 +312,23 @@ export async function readEnvelopeRegistryProgress(args: {
 	};
 
 	const routing = args.registerRouting;
-	if (routing?.routingMode === 1 && routing.routingOrderEmails?.length) {
-		for (const email of routing.routingOrderEmails) {
-			const commitment = hashNormalizedSignerEmail(email);
-			const signedRes = await tryCatch(
-				registry.read.hasSigned([cidId, commitment]),
-			);
-			if (!signedRes.error && !signedRes.data) {
-				progress.nextSignerEmail = email;
-				break;
-			}
-		}
+	if (routing) {
+		await applySequentialNextSigner({
+			registry,
+			cidId,
+			routing,
+			progress,
+		});
 	}
 
-	if (
-		args.signerEmail &&
-		routing?.routingMode === 1 &&
-		routing.routingOrderEmails?.length
-	) {
-		const normalized = args.signerEmail.trim().toLowerCase();
-		const order = routing.routingOrderEmails.map((e) => e.trim().toLowerCase());
-		const idx = order.indexOf(normalized);
-		if (idx > 0) {
-			for (let j = 0; j < idx; j++) {
-				const prior = order[j];
-				if (!prior) continue;
-				const commitment = hashNormalizedSignerEmail(prior);
-				const signedRes = await tryCatch(
-					registry.read.hasSigned([cidId, commitment]),
-				);
-				if (signedRes.error || !signedRes.data) {
-					progress.canSignByRouting = false;
-					break;
-				}
-			}
-		}
+	if (args.signerEmail && routing) {
+		await applySequentialCanSignGate({
+			registry,
+			cidId,
+			routing,
+			signerEmail: args.signerEmail,
+			progress,
+		});
 	}
 
 	return progress;

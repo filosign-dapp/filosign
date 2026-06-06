@@ -1,5 +1,6 @@
 export { captureClientException } from "./client-exception";
 export {
+	type CaptureAppEvent,
 	useCaptureAppEvent,
 	useCaptureClientException,
 	useIdentifyAnalyticsWallet,

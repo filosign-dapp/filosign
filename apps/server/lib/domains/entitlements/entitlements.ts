@@ -1,5 +1,6 @@
 import {
 	type CheckOptions,
+	catalogEntitlement,
 	check,
 	DEFAULT_PLAN_ID,
 	type EntitlementContext,
@@ -28,10 +29,6 @@ import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import { files } from "@/lib/platform/db/schema/file";
 import { organizationSubscriptions } from "@/lib/platform/db/schema/organization";
 
-// ==========================================
-// 1. calendarMonthPeriod
-// ==========================================
-/** UTC calendar month window for quota metering. */
 export function calendarMonthPeriod(now = new Date()): {
 	periodStart: Date;
 	periodEnd: Date;
@@ -45,9 +42,6 @@ export function calendarMonthPeriod(now = new Date()): {
 	return { periodStart, periodEnd };
 }
 
-// ==========================================
-// 2. effectivePlanIdFromStatus
-// ==========================================
 export type SubscriptionAccessInput = {
 	planId: PlanId;
 	status: string;
@@ -81,10 +75,6 @@ export function effectivePlanIdFromStatus(
 	return DEFAULT_PLAN_ID;
 }
 
-// ==========================================
-// 3. recipientSlotCounts
-// ==========================================
-/** Billable recipient slots for envelope.recipients.max (excludes sender). */
 export function recipientSlotCounts(args: {
 	participants: { isSigner?: boolean | undefined }[];
 	coldInvites: { isSigner: boolean }[];
@@ -104,9 +94,6 @@ export function recipientSlotCounts(args: {
 	};
 }
 
-// ==========================================
-// 4. assertEntitlement
-// ==========================================
 const ENTITLEMENT_REASON_TO_CODE: Record<string, AppErrorCode> = {
 	FEATURE_DISABLED: "ENTITLEMENT.FEATURE_DISABLED",
 	QUOTA_EXCEEDED: "ENTITLEMENT.QUOTA_EXCEEDED",
@@ -140,9 +127,6 @@ export function assertEntitlement(
 	throwAppError(appCode);
 }
 
-// ==========================================
-// 5. snapshot
-// ==========================================
 const METERED_KEYS = [
 	"documents.sent.monthly",
 	"envelope.recipients.max",
@@ -193,9 +177,6 @@ export function buildEntitlementsSnapshot(ctx: EntitlementContext): {
 	};
 }
 
-// ==========================================
-// 6. resolve-context
-// ==========================================
 type StoredEntitlementContext = Omit<EntitlementContext, "periodStart"> & {
 	periodStart: string;
 };
@@ -237,8 +218,6 @@ export async function fetchEntitlementContext(
 ): Promise<EntitlementContext> {
 	const walletNorm = getAddress(wallet);
 	const { periodStart, periodEnd } = calendarMonthPeriod();
-
-	// 1. Fetch user's subscription
 	const [sub] = await db
 		.select({
 			planId: userSubscriptions.planId,
@@ -272,7 +251,6 @@ export async function fetchEntitlementContext(
 		wallet: walletNorm,
 	};
 
-	// 2. Fetch organization's subscription if organizationId is present
 	let seatCount: number | undefined;
 	if (organizationId) {
 		const [orgSub] = await db
@@ -320,24 +298,26 @@ export async function fetchEntitlementContext(
 		};
 	}
 
-	// 3. Count documents sent (exclude practice tutorial envelopes)
+	const docQuotaDef = catalogEntitlement(planId, "documents.sent.monthly");
+	const lifetimeDocQuota =
+		docQuotaDef.kind === "quota" && docQuotaDef.period === "lifetime";
+	const periodFilters = lifetimeDocQuota
+		? []
+		: [gte(files.createdAt, periodStart), lt(files.createdAt, periodEnd)];
+
 	const [{ count }] = await db
 		.select({ count: sql<number>`count(*)::int` })
 		.from(files)
 		.where(
-			organizationId
-				? and(
-						eq(files.organizationId, organizationId),
-						eq(files.isPractice, false),
-						gte(files.createdAt, periodStart),
-						lt(files.createdAt, periodEnd),
-					)
-				: and(
-						eq(files.sender, walletNorm),
-						eq(files.isPractice, false),
-						gte(files.createdAt, periodStart),
-						lt(files.createdAt, periodEnd),
-					),
+			and(
+				organizationId
+					? and(
+							eq(files.organizationId, organizationId),
+							eq(files.isPractice, false),
+						)
+					: and(eq(files.sender, walletNorm), eq(files.isPractice, false)),
+				...periodFilters,
+			),
 		);
 
 	const usage: Partial<Record<FeatureKey, number>> = {

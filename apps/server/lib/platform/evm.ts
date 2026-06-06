@@ -3,7 +3,6 @@ import {
 	createWalletClient,
 	getAddress,
 	getContract,
-	type http,
 	publicActions,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -32,7 +31,7 @@ console.log("chain rpc:", {
 });
 
 /** Cast keeps viem contract typings; runtime transport may be `fallback` in production. */
-const evmTransport = chainRpcTransport as ReturnType<typeof http>;
+const evmTransport = chainRpcTransport;
 
 export const evmClient = createWalletClient({
 	chain: config.runtimeChain,

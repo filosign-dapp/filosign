@@ -6,7 +6,6 @@ import {
 } from "@filosign/react/analytics";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
 import { useConnect } from "thirdweb/react";
 import { clientSignupPolicyIsGated } from "@/src/lib/deployment";
 import type { ColdInviteEntrySearch } from "@/src/lib/domains/invites/cold-invite-search";

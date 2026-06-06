@@ -1,29 +1,10 @@
 import type { SettlementRuleRow } from "@filosign/react/files";
-import type { SettlementRuleStatus } from "@filosign/shared";
-import {
-	settlementReleaseTypeLabel,
-	settlementStatusLabel,
-} from "@filosign/shared";
-import {
-	ArrowSquareOutIcon,
-	CheckIcon,
-	ClockIcon,
-	WarningIcon,
-} from "@phosphor-icons/react";
 import type { Address } from "viem";
-import { getAddress } from "viem";
 import { defaultChain, SUPPORTED_TOKENS } from "@/src/constants";
-import { Button } from "@/src/lib/components/ui/button";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
-import {
-	formatSettlementAmountLine,
-	formatSettlementRecipientLine,
-	isSettlementRecipient,
-} from "@/src/lib/domains/settlements/settlement-display";
-import { cn } from "@/src/lib/utils";
-import { SettlementManageActions } from "@/src/routes/dashboard/document/sign/-components/settlement-manage-actions";
 import { SettlementRevokeAllowanceButton } from "@/src/routes/dashboard/document/sign/-components/settlement-revoke-allowance-button";
+import { SettlementRuleRowView } from "@/src/routes/dashboard/document/sign/-components/settlement-rule-row";
 
 type Props = {
 	rules: SettlementRuleRow[];
@@ -58,33 +39,6 @@ function explorerTxUrl(hash: string) {
 	const base = defaultChain.blockExplorers?.default?.url;
 	if (!base) return null;
 	return `${base}/tx/${hash}`;
-}
-
-function StatusIcon({ status }: { status: SettlementRuleStatus }) {
-	if (status === "executed") {
-		return (
-			<CheckIcon className="size-4 text-secondary-foreground" weight="bold" />
-		);
-	}
-	if (status === "partial") {
-		return (
-			<CheckIcon className="size-4 text-secondary-foreground" weight="bold" />
-		);
-	}
-	if (status.startsWith("failed_")) {
-		return <WarningIcon className="size-4 text-amber-700" weight="fill" />;
-	}
-	return <ClockIcon className="size-4 text-muted-foreground" />;
-}
-
-function canActOnRule(
-	rule: SettlementRuleRow,
-	walletAddress: `0x${string}` | undefined,
-	isSender: boolean,
-): boolean {
-	if (!walletAddress) return false;
-	if (isSender) return true;
-	return isSettlementRecipient(rule, walletAddress);
 }
 
 export function SettlementStatusPanel({
@@ -140,159 +94,28 @@ export function SettlementStatusPanel({
 				)}
 			</div>
 			<div className="space-y-2">
-				{rules.map((rule) => {
-					const paid = rule.status === "executed";
-					const partial = rule.status === "partial";
-					const cancelled = rule.status === "cancelled";
-					const failed = rule.status.startsWith("failed_");
-					const payoutUrl = rule.payoutTxHash
-						? explorerTxUrl(rule.payoutTxHash)
-						: null;
-					const isSettling =
-						settlePending && settlingRuleId === rule.onChainRuleId;
-					const isTrying =
-						trySettlePending && settlingRuleId === rule.onChainRuleId;
-					const canSettle =
-						!paid &&
-						!cancelled &&
-						canSettleByRuleId.get(rule.onChainRuleId) === true &&
-						canActOnRule(rule, walletAddress, isSender);
-					const legCount = rule.legs?.length ?? 1;
-					const paidLegCount =
-						rule.legs?.filter((leg) => leg.paid === true).length ?? 0;
-
-					return (
-						<div
-							key={rule.id}
-							className={cn(
-								"flex items-start gap-3 p-3 rounded-lg border",
-								paid || partial
-									? "bg-secondary/10 border-secondary/30"
-									: failed
-										? "bg-amber-500/10 border-amber-500/30"
-										: cancelled
-											? "bg-muted/20 border-border/80"
-											: "bg-muted/30 border-border",
-							)}
-						>
-							<div
-								className={cn(
-									"size-8 rounded-full flex items-center justify-center shrink-0",
-									paid
-										? "bg-secondary"
-										: partial
-											? "bg-secondary/40"
-											: failed
-												? "bg-amber-100 dark:bg-amber-950"
-												: "bg-muted",
-								)}
-							>
-								<StatusIcon status={rule.status} />
-							</div>
-							<div className="flex-1 min-w-0 space-y-0.5">
-								<p className="text-sm font-medium truncate">
-									{formatSettlementRecipientLine(rule, formatAddress)}
-								</p>
-								<p className="text-xs text-muted-foreground">
-									{formatSettlementAmountLine(rule, decimals)}
-									{legCount > 1
-										? partial
-											? ` · ${paidLegCount}/${legCount} recipients paid`
-											: ` · ${legCount} recipients`
-										: ""}{" "}
-									· {settlementReleaseTypeLabel(rule.releaseType)}
-								</p>
-								<p
-									className={cn(
-										"text-xs",
-										paid || partial
-											? "text-secondary-foreground"
-											: failed
-												? "text-amber-800 dark:text-amber-200"
-												: "text-muted-foreground",
-									)}
-								>
-									{settlementStatusLabel(rule.status)}
-									{rule.lastError && failed ? `: ${rule.lastError}` : null}
-								</p>
-								{canSettle ? (
-									<div className="flex flex-wrap gap-2 mt-2">
-										<Button
-											type="button"
-											variant="default"
-											size="sm"
-											className="h-7 text-xs"
-											disabled={settlePending}
-											onClick={() =>
-												onTrySettleRule({
-													onChainRuleId: rule.onChainRuleId,
-													validatorAddress: getAddress(rule.validatorAddress),
-												})
-											}
-										>
-											{isTrying ? "Sending…" : "Pay now"}
-										</Button>
-										<Button
-											type="button"
-											variant="outline"
-											size="sm"
-											className="h-7 text-xs"
-											disabled={settlePending}
-											onClick={() =>
-												onManualSettleRule({
-													onChainRuleId: rule.onChainRuleId,
-													validatorAddress: getAddress(rule.validatorAddress),
-												})
-											}
-										>
-											{isSettling && !isTrying
-												? "Sending…"
-												: "Pay from my wallet"}
-										</Button>
-									</div>
-								) : null}
-								{canManageSettlements &&
-								isSender &&
-								!paid &&
-								!cancelled &&
-								onCancelRule &&
-								onUpdateRule ? (
-									<div className="mt-2 space-y-2">
-										{partial ? (
-											<p className="text-[11px] text-muted-foreground text-pretty">
-												Cancelling stops only unpaid amounts. Money already sent
-												cannot be taken back.
-											</p>
-										) : null}
-										<SettlementManageActions
-											rule={rule}
-											onCancel={() =>
-												onCancelRule({
-													onChainRuleId: rule.onChainRuleId,
-													validatorAddress: getAddress(rule.validatorAddress),
-												})
-											}
-											onUpdate={() => onUpdateRule(rule)}
-											cancelPending={cancelPending}
-											updatePending={updatePending}
-										/>
-									</div>
-								) : null}
-							</div>
-							{payoutUrl ? (
-								<a
-									href={payoutUrl}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="text-muted-foreground hover:text-foreground shrink-0"
-									title="View payout on explorer"
-								>
-									<ArrowSquareOutIcon className="size-4" />
-								</a>
-							) : null}
-						</div>
-					);
-				})}
+				{rules.map((rule) => (
+					<SettlementRuleRowView
+						key={rule.id}
+						rule={rule}
+						decimals={decimals}
+						formatAddress={formatAddress}
+						isSender={isSender}
+						walletAddress={walletAddress}
+						canSettleByRuleId={canSettleByRuleId}
+						trySettlePending={trySettlePending}
+						manualSettlePending={manualSettlePending}
+						settlingRuleId={settlingRuleId}
+						explorerTxUrl={explorerTxUrl}
+						onTrySettleRule={onTrySettleRule}
+						onManualSettleRule={onManualSettleRule}
+						canManageSettlements={canManageSettlements}
+						onCancelRule={onCancelRule}
+						onUpdateRule={onUpdateRule}
+						cancelPending={cancelPending}
+						updatePending={updatePending}
+					/>
+				))}
 			</div>
 			<SettlementRevokeAllowanceButton
 				rules={rules}

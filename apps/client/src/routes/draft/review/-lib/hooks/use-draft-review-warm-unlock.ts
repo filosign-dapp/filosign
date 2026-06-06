@@ -24,6 +24,10 @@ import {
 	useThirdweb,
 	useThirdwebLoginAction,
 } from "@/src/lib/web3/use-thirdweb";
+import {
+	resolveDraftReviewWarmPanel,
+	warmPanelStatusMessage,
+} from "@/src/routes/draft/review/-lib/hooks/resolve-warm-panel";
 import { executeSwitchAccountLogout } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
 
 export type DraftReviewWarmPanel =
@@ -220,70 +224,52 @@ export function useDraftReviewWarmUnlock(token: string) {
 		runDecrypt,
 	]);
 
-	const warmPanel = useMemo((): DraftReviewWarmPanel => {
-		if (!active || !isWarm) return null;
-		if (shouldSwitchAccount) return "wrongAccount";
-		if (!authenticated) return "signingIn";
-		if (
-			payload.isLoading ||
-			isRegistered.isPending ||
-			apiSession.isPending ||
-			cryptoUnlocked.isPending
-		) {
-			return "busy";
-		}
-		if (isRegistered.data === false) return "needsRegistration";
-		if (!apiSession.data) return "busy";
-		if (
-			!cryptoUnlocked.data &&
-			(cryptoRequired.needsRecovery || missingSeedHint)
-		) {
-			return "recovery";
-		}
-		if (!cryptoUnlocked.data && cryptoRequired.tryingWalletUnlock) {
-			return "unlocking";
-		}
-		if (!cryptoUnlocked.data) return "busy";
-		if (decryptWarm.isPending) return "decrypting";
-		if (pdfBytes) return "ready";
-		if (decryptError) return "decryptFailed";
-		return "decrypting";
-	}, [
-		active,
-		isWarm,
-		shouldSwitchAccount,
-		authenticated,
-		payload.isLoading,
-		isRegistered.isPending,
-		isRegistered.data,
-		apiSession.isPending,
-		apiSession.data,
-		cryptoUnlocked.isPending,
-		cryptoUnlocked.data,
-		cryptoRequired.needsRecovery,
-		cryptoRequired.tryingWalletUnlock,
-		missingSeedHint,
-		decryptWarm.isPending,
-		pdfBytes,
-		decryptError,
-	]);
+	const warmPanel = useMemo(
+		(): DraftReviewWarmPanel =>
+			resolveDraftReviewWarmPanel({
+				active,
+				isWarm,
+				shouldSwitchAccount,
+				authenticated,
+				payloadLoading: payload.isLoading,
+				isRegisteredPending: isRegistered.isPending,
+				isRegisteredData: isRegistered.data,
+				apiSessionPending: apiSession.isPending,
+				apiSessionData: apiSession.data,
+				cryptoUnlockedPending: cryptoUnlocked.isPending,
+				cryptoUnlockedData: cryptoUnlocked.data,
+				needsRecovery: cryptoRequired.needsRecovery,
+				tryingWalletUnlock: cryptoRequired.tryingWalletUnlock,
+				missingSeedHint,
+				decryptPending: decryptWarm.isPending,
+				pdfBytes,
+				decryptError,
+			}),
+		[
+			active,
+			isWarm,
+			shouldSwitchAccount,
+			authenticated,
+			payload.isLoading,
+			isRegistered.isPending,
+			isRegistered.data,
+			apiSession.isPending,
+			apiSession.data,
+			cryptoUnlocked.isPending,
+			cryptoUnlocked.data,
+			cryptoRequired.needsRecovery,
+			cryptoRequired.tryingWalletUnlock,
+			missingSeedHint,
+			decryptWarm.isPending,
+			pdfBytes,
+			decryptError,
+		],
+	);
 
-	const warmStatusMessage = useMemo(() => {
-		switch (warmPanel) {
-			case "signingIn":
-				return "Signing in…";
-			case "busy":
-				return "Connecting your session…";
-			case "unlocking":
-				return "Unlocking encryption keys…";
-			case "decrypting":
-				return "Opening draft…";
-			case "needsRegistration":
-				return "This invite requires a Filosign account.";
-			default:
-				return null;
-		}
-	}, [warmPanel]);
+	const warmStatusMessage = useMemo(
+		() => warmPanelStatusMessage(warmPanel),
+		[warmPanel],
+	);
 
 	return {
 		active,

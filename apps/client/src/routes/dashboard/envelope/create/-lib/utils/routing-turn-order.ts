@@ -108,75 +108,7 @@ export function reorderSignersInRecipients(
 	};
 }
 
-export function syncRoutingOrderOnRecipientChange(
-	prev: Recipient[],
-	next: Recipient[],
-	currentOrder: string[],
-): string[] {
-	let order = [...currentOrder];
-	const prevById = new Map(
-		prev.filter((r) => r.clientRowId).map((r) => [r.clientRowId as string, r]),
-	);
-	const nextIds = new Set(
-		next.map((r) => r.clientRowId).filter(Boolean) as string[],
-	);
-
-	for (const nextRecipient of next) {
-		const id = nextRecipient.clientRowId;
-		if (!id) continue;
-		const prevRecipient = prevById.get(id);
-
-		if (!prevRecipient) {
-			if (nextRecipient.role === "signer") {
-				const email = recipientSignerEmail(nextRecipient);
-				if (email && !order.includes(email)) order.push(email);
-			}
-			continue;
-		}
-
-		const prevEmail = recipientSignerEmail(prevRecipient);
-		const nextEmail = recipientSignerEmail(nextRecipient);
-
-		if (prevRecipient.role === "signer" && nextRecipient.role === "viewer") {
-			if (prevEmail) {
-				order = order.filter((email) => email !== prevEmail);
-			}
-		}
-
-		if (prevRecipient.role === "viewer" && nextRecipient.role === "signer") {
-			if (nextEmail && !order.includes(nextEmail)) order.push(nextEmail);
-		}
-
-		if (
-			prevRecipient.role === "signer" &&
-			nextRecipient.role === "signer" &&
-			prevEmail &&
-			nextEmail &&
-			prevEmail !== nextEmail
-		) {
-			order = order.map((email) => (email === prevEmail ? nextEmail : email));
-		}
-	}
-
-	for (const prevRecipient of prev) {
-		if (
-			prevRecipient.clientRowId &&
-			!nextIds.has(prevRecipient.clientRowId) &&
-			prevRecipient.role === "signer"
-		) {
-			const email = recipientSignerEmail(prevRecipient);
-			if (email) order = order.filter((e) => e !== email);
-		}
-	}
-
-	const validSignerEmails = new Set(signerEmailsFromRecipients(next));
-	order = order.filter((email) => validSignerEmails.has(email));
-	for (const email of signerEmailsFromRecipients(next)) {
-		if (!order.includes(email)) order.push(email);
-	}
-
-	return order;
-}
+export { syncRoutingOrderOnRecipientChange } from "@/src/routes/dashboard/envelope/create/-lib/utils/sync-routing-order";
 
 export function isTurnOrderEnabled(
 	routing: RegisterRoutingInput | undefined,

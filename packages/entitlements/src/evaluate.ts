@@ -65,6 +65,12 @@ export function getQuotaScope(ctx: EntitlementContext, key: FeatureKey) {
 	return def.scope ?? "account";
 }
 
+export function getQuotaPeriod(ctx: EntitlementContext, key: FeatureKey) {
+	const def = resolveDef(ctx, key);
+	if (def.kind !== "quota") return undefined;
+	return def.period;
+}
+
 function effectiveQuotaLimit(
 	ctx: EntitlementContext,
 	def: Extract<EntitlementDef, { kind: "quota" }>,

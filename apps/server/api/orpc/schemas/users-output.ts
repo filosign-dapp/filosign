@@ -4,7 +4,6 @@ import {
 	zUserKeygenDataJson,
 	zUserSignatureArtifact,
 	zUserSignatureCreateInput,
-	zUserSignatureRole,
 } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { z } from "zod";

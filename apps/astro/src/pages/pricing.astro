@@ -1,6 +1,8 @@
 ---
 import PricingHeroIsland from "../components/islands/PricingHeroIsland";
-import PricingPlansIsland from "../components/islands/PricingPlansIsland";
+import PricingPlansIsland, {
+	type PricingPlan,
+} from "../components/islands/PricingPlansIsland";
 import MarketingPageShell from "../components/MarketingPageShell.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 
@@ -79,7 +81,7 @@ const plans = [
 		highlight: false,
 		planId: "teams_pro",
 	},
-];
+] satisfies PricingPlan[];
 
 const enterpriseBanner = {
 	headline: "Are you an enterprise?",

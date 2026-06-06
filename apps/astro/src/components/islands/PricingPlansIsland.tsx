@@ -4,6 +4,7 @@ import {
 	Pressable,
 	SPRING_TOKENS,
 } from "@filosign/motion";
+import type { AppRouterClient, InferClientInputs } from "@filosign/react/orpc";
 import { CheckIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { cn } from "../../lib/cn";
@@ -38,6 +39,9 @@ import PricingFaqIsland from "./PricingFaqIsland";
 
 const PRICING_HERO_TOP_COUNT = 3;
 
+type CheckoutPlanId =
+	InferClientInputs<AppRouterClient>["billing"]["previewMarketingCheckout"]["planId"];
+
 export type PricingPlan = {
 	name: string;
 	description: string;
@@ -47,7 +51,7 @@ export type PricingPlan = {
 	cta: string;
 	highlight: boolean;
 	badge?: string;
-	planId?: string;
+	planId?: CheckoutPlanId;
 	/** Testnet sandbox — links out to PUBLIC_SANDBOX_CLIENT_URL; excluded from comparison. */
 	sandbox?: boolean;
 };
@@ -474,7 +478,7 @@ function PricingPlansContent({
 					open
 					onClose={() => setCheckoutPlan(null)}
 					planName={checkoutPlan.name}
-					planId={checkoutPlan.planId as "individual" | "teams" | "teams_pro"}
+					planId={checkoutPlan.planId}
 					billingInterval={billingInterval}
 				/>
 			) : null}

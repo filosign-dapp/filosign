@@ -1,5 +1,5 @@
-import { SignInContent } from "@/src/routes/-components/sign-in-content";
-import { SignInHeroPanel } from "@/src/routes/-components/sign-in-hero-panel";
+import { SignInContent } from "./content";
+import { SignInHeroPanel } from "./hero-panel";
 
 export function SignInPage() {
 	return (

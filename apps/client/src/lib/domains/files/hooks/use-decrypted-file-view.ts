@@ -9,6 +9,12 @@ import type { DocumentViewSource } from "@filosign/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useCryptoRequired } from "@/src/lib/auth/use-crypto-required";
+import {
+	decryptFileForView,
+	mapDecryptViewError,
+	normalizeViewFileResult,
+	recordDocumentViewAfterDecrypt,
+} from "@/src/lib/domains/files/hooks/decrypt-file-for-view";
 import { mergedPdfBytesForView } from "@/src/lib/domains/files/signable-documents";
 
 export type DecryptableFileRecord = {
@@ -73,65 +79,29 @@ export function useDecryptedFileView(options: {
 
 		try {
 			setViewError(null);
-			let result: ViewFileResult | undefined;
-
-			if (file.kemCiphertext && file.encryptedEncryptionKey) {
-				result = await viewFile.mutateAsync({
-					pieceCid: file.pieceCid,
-					kemCiphertext: file.kemCiphertext,
-					encryptedEncryptionKey: file.encryptedEncryptionKey,
-				});
-			} else if (
-				file.organizationId &&
-				file.orgKemCiphertext &&
-				file.orgEncryptedEncryptionKey
-			) {
-				result = await viewFile.mutateAsync({
-					variant: "org",
-					pieceCid: file.pieceCid,
-					organizationId: file.organizationId,
-					orgKemCiphertext: file.orgKemCiphertext,
-					orgEncryptedEncryptionKey: file.orgEncryptedEncryptionKey,
-				});
-			}
+			const result = await decryptFileForView({ file, viewFile });
 
 			if (result) {
-				setFileData({
-					...result,
-					metadata: {
-						name: result.metadata.name ?? result.documents[0]?.name ?? "",
-						mimeType:
-							result.metadata.mimeType ??
-							result.documents[0]?.mimeType ??
-							"application/octet-stream",
-					},
-				});
-				if (file.participantAccess?.acknowledged) {
-					try {
-						await recordView.mutateAsync({
-							pieceCid: file.pieceCid,
-							source: viewSource,
-						});
+				setFileData(normalizeViewFileResult(result));
+				await recordDocumentViewAfterDecrypt({
+					file,
+					viewSource,
+					recordView,
+					invalidateDetail: () => {
 						void queryClient.invalidateQueries({
 							queryKey: rpcQuery.files.piece.detail.key({
 								input: { pieceCid: file.pieceCid },
 							}),
 						});
-					} catch (err) {
-						console.warn("[document-view] recordView failed", err);
-					}
-				}
+					},
+				});
 			}
 		} catch (error) {
 			const message =
 				error instanceof Error
 					? error.message
 					: "Failed to load file for viewing";
-			setViewError(
-				message === "No unlocked key seed found"
-					? "Unlock encryption keys with your wallet or recovery phrase."
-					: message,
-			);
+			setViewError(mapDecryptViewError(message));
 		}
 	}, [
 		file,
@@ -141,7 +111,7 @@ export function useDecryptedFileView(options: {
 		recordView,
 		viewSource,
 		queryClient,
-		file?.pieceCid,
+		rpcQuery.files.piece.detail,
 	]);
 
 	useEffect(() => {

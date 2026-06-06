@@ -6,6 +6,7 @@ import type {
 import {
 	documentsMerkleProofsV1,
 	merkleRootFromLeafAndSiblings,
+	parseHexString,
 	verifyDocumentMerkleProofV1,
 } from "@filosign/shared";
 import { zipSync } from "fflate";
@@ -110,7 +111,7 @@ export async function warnDocumentMerkleMismatch(args: {
 		const ok = await verifyDocumentMerkleProofV1({
 			leafBytes: doc.bytes,
 			siblings: proof.siblings,
-			expectedRoot: args.expectedRoot as `0x${string}`,
+			expectedRoot: parseHexString(args.expectedRoot),
 		});
 		if (!ok) {
 			toast.warning(`Merkle proof failed for ${doc.name}`, {

@@ -36,7 +36,7 @@ export type EntitlementSubject =
 
 export type QuotaScope = "account" | "per_seat";
 
-export type QuotaPeriod = "calendar_month";
+export type QuotaPeriod = "calendar_month" | "lifetime";
 
 export type QuotaEntitlementDef = {
 	kind: "quota";

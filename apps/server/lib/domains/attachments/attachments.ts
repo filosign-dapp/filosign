@@ -1,19 +1,17 @@
 import { throwAppError } from "@filosign/errors/server";
-import {
-	normalizePlacementRecipientEmail,
-	supplementaryPacketUnlockSummary,
-} from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
+import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import { z } from "zod";
 import { primaryEmailForWallet } from "@/lib/domains/files";
 import db from "@/lib/platform/db";
-import { fsAttachmentReleaseAt } from "@/lib/platform/evm";
-import { bucket } from "@/lib/platform/s3/client";
-import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
+import {
+	assertConditionalPacketReleased,
+	buildParticipantPacketAccessResponse,
+	buildSenderPacketAccessResponse,
+} from "./utils/packet-access";
 
 const {
 	files,
@@ -66,131 +64,7 @@ export async function selectAttachmentReleaseRule(
 	return row;
 }
 
-export async function listSupplementaryPacketsForParticipant(args: {
-	userWallet: Address;
-	pieceCid: string;
-	signerEmails: readonly string[];
-}): Promise<SupplementaryPacketForParticipant[]> {
-	const pieceCid = args.pieceCid.trim();
-	if (!pieceCid) {
-		throw throwZodBadRequest(
-			new z.ZodError([
-				{
-					code: "custom",
-					path: ["pieceCid"],
-					message: "Invalid pieceCid",
-				},
-			]),
-		);
-	}
-
-	const userWallet = getAddress(args.userWallet);
-	const profileEmail = await primaryEmailForWallet(userWallet);
-	if (!profileEmail) {
-		return [];
-	}
-	const emailKey = normalizePlacementRecipientEmail(profileEmail);
-
-	const [file] = await db
-		.select({ sender: files.sender })
-		.from(files)
-		.where(eq(files.pieceCid, pieceCid))
-		.limit(1);
-	if (!file) {
-		return [];
-	}
-
-	const isSender = getAddress(file.sender) === userWallet;
-	const [participant] = await db
-		.select({ wallet: fileParticipants.wallet })
-		.from(fileParticipants)
-		.where(
-			and(
-				eq(fileParticipants.filePieceCid, pieceCid),
-				eq(fileParticipants.wallet, userWallet),
-			),
-		)
-		.limit(1);
-
-	if (!isSender && !participant) {
-		return [];
-	}
-
-	const rows = await db
-		.select({
-			packetId: envelopeAttachmentPackets.packetId,
-			label: envelopeAttachmentPackets.label,
-			releaseMode: envelopeAttachmentPackets.releaseMode,
-			releaseType: envelopeAttachmentPackets.releaseType,
-			releaseParams: envelopeAttachmentPackets.releaseParams,
-			onChainRuleId: envelopeAttachmentPackets.onChainRuleId,
-			releaseContractAddress: envelopeAttachmentPackets.releaseContractAddress,
-			kemCiphertext: envelopeAttachmentPacketRecipients.kemCiphertext,
-			encryptedPacketDek: envelopeAttachmentPacketRecipients.encryptedPacketDek,
-		})
-		.from(envelopeAttachmentPacketRecipients)
-		.innerJoin(
-			envelopeAttachmentPackets,
-			eq(
-				envelopeAttachmentPacketRecipients.packetRowId,
-				envelopeAttachmentPackets.id,
-			),
-		)
-		.where(
-			and(
-				eq(envelopeAttachmentPackets.filePieceCid, pieceCid),
-				eq(envelopeAttachmentPacketRecipients.email, emailKey),
-			),
-		);
-
-	if (rows.length === 0) {
-		return [];
-	}
-
-	const out: SupplementaryPacketForParticipant[] = [];
-
-	for (const row of rows) {
-		const unlockConditionLabel = supplementaryPacketUnlockSummary({
-			releaseMode: row.releaseMode,
-			releaseType: row.releaseType,
-			releaseParams: row.releaseParams ?? undefined,
-			signerEmails: args.signerEmails,
-		});
-
-		let unlocked = row.releaseMode === "review";
-		let cancelled = false;
-
-		if (row.releaseMode === "conditional") {
-			if (row.onChainRuleId != null && row.releaseContractAddress) {
-				const release = fsAttachmentReleaseAt(row.releaseContractAddress);
-				if (release) {
-					const ruleRes = await tryCatch(
-						release.read.rules([row.onChainRuleId]),
-					);
-					const released = !ruleRes.error && ruleRes.data[8];
-					cancelled = !ruleRes.error && ruleRes.data[9];
-					unlocked = Boolean(released) && !cancelled;
-				}
-			}
-		}
-
-		if (cancelled) {
-			continue;
-		}
-
-		out.push({
-			packetId: row.packetId,
-			label: row.label,
-			releaseMode: row.releaseMode,
-			unlocked,
-			cancelled,
-			unlockConditionLabel,
-			canDecrypt: Boolean(row.kemCiphertext && row.encryptedPacketDek),
-		});
-	}
-
-	return out;
-}
+export { listSupplementaryPacketsForParticipant } from "./list-supplementary";
 
 export async function attachmentsPacketAccess(args: {
 	userWallet: Address;
@@ -232,15 +106,55 @@ export async function attachmentsPacketAccess(args: {
 		throw throwAppError("ATTACHMENTS.PACKET_NOT_FOUND");
 	}
 
+	const access = await resolvePacketParticipantAccess({
+		userWallet,
+		pieceCid,
+		packetRowId: packet.id,
+		emailKey,
+	});
+
+	if (access.isSender) {
+		return buildSenderPacketAccessResponse({
+			packetId: packet.packetId,
+			packetCid: packet.packetCid,
+			label: packet.label,
+			releaseMode: packet.releaseMode,
+		});
+	}
+
+	if (packet.releaseMode === "conditional") {
+		if (packet.onChainRuleId == null || !packet.releaseContractAddress) {
+			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+				params: { reason: "Conditional packet missing on-chain rule" },
+			});
+		}
+		await assertConditionalPacketReleased({
+			onChainRuleId: packet.onChainRuleId,
+			releaseContractAddress: packet.releaseContractAddress,
+		});
+	}
+
+	return buildParticipantPacketAccessResponse({
+		packetId: packet.packetId,
+		packetCid: packet.packetCid,
+		label: packet.label,
+		releaseMode: packet.releaseMode,
+		recipientRow: access.recipientRow,
+	});
+}
+
+async function resolvePacketParticipantAccess(args: {
+	userWallet: Address;
+	pieceCid: string;
+	packetRowId: string;
+	emailKey: string;
+}) {
+	const userWallet = getAddress(args.userWallet);
+
 	const [file] = await db
-		.select({
-			sender: files.sender,
-			organizationId: files.organizationId,
-			orgKemCiphertext: files.orgKemCiphertext,
-			orgEncryptedEncryptionKey: files.orgEncryptedEncryptionKey,
-		})
+		.select({ sender: files.sender })
 		.from(files)
-		.where(eq(files.pieceCid, pieceCid))
+		.where(eq(files.pieceCid, args.pieceCid))
 		.limit(1);
 	if (!file) {
 		throw throwAppError("FILES.NOT_FOUND");
@@ -252,7 +166,7 @@ export async function attachmentsPacketAccess(args: {
 		.from(fileParticipants)
 		.where(
 			and(
-				eq(fileParticipants.filePieceCid, pieceCid),
+				eq(fileParticipants.filePieceCid, args.pieceCid),
 				eq(fileParticipants.wallet, userWallet),
 			),
 		)
@@ -267,8 +181,8 @@ export async function attachmentsPacketAccess(args: {
 		.from(envelopeAttachmentPacketRecipients)
 		.where(
 			and(
-				eq(envelopeAttachmentPacketRecipients.packetRowId, packet.id),
-				eq(envelopeAttachmentPacketRecipients.email, emailKey),
+				eq(envelopeAttachmentPacketRecipients.packetRowId, args.packetRowId),
+				eq(envelopeAttachmentPacketRecipients.email, args.emailKey),
 			),
 		)
 		.limit(1);
@@ -277,66 +191,5 @@ export async function attachmentsPacketAccess(args: {
 		throw throwAppError("ATTACHMENTS.FORBIDDEN");
 	}
 
-	if (isSender) {
-		const storageKey = `uploads/attachments/${packet.packetCid}`;
-		if (!(await bucket.exists(storageKey))) {
-			throw throwAppError("ATTACHMENTS.PACKET_NOT_FOUND");
-		}
-		return {
-			packetId: packet.packetId,
-			packetCid: packet.packetCid,
-			label: packet.label,
-			releaseMode: packet.releaseMode,
-			downloadUrl: bucket.presign(storageKey, {
-				method: "GET",
-				expiresIn: 60 * 5,
-			}),
-		};
-	}
-
-	if (packet.releaseMode === "conditional") {
-		if (packet.onChainRuleId == null || !packet.releaseContractAddress) {
-			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-				params: {
-					reason: "Conditional packet missing on-chain rule",
-				},
-			});
-		}
-		const release = fsAttachmentReleaseAt(packet.releaseContractAddress);
-		if (!release) {
-			throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
-				message: "Attachment release contract unavailable",
-			});
-		}
-		const rulesRes = await tryCatch(release.read.rules([packet.onChainRuleId]));
-		const released = !rulesRes.error && rulesRes.data[8];
-		const cancelled = !rulesRes.error && rulesRes.data[9];
-		if (cancelled || !released) {
-			throw throwAppError("ATTACHMENTS.FORBIDDEN");
-		}
-	}
-
-	const storageKey = `uploads/attachments/${packet.packetCid}`;
-	if (!(await bucket.exists(storageKey))) {
-		throw throwAppError("ATTACHMENTS.PACKET_NOT_FOUND");
-	}
-
-	const downloadUrl = bucket.presign(storageKey, {
-		method: "GET",
-		expiresIn: 60 * 5,
-	});
-
-	return {
-		packetId: packet.packetId,
-		packetCid: packet.packetCid,
-		label: packet.label,
-		releaseMode: packet.releaseMode,
-		downloadUrl,
-		...(recipientRow?.kemCiphertext && recipientRow.encryptedPacketDek
-			? {
-					kemCiphertext: recipientRow.kemCiphertext,
-					encryptedPacketDek: recipientRow.encryptedPacketDek,
-				}
-			: {}),
-	};
+	return { isSender, recipientRow };
 }

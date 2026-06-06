@@ -8,6 +8,7 @@ import { resolveEntitlementContext } from "@/lib/domains/entitlements";
 import db from "@/lib/platform/db";
 import { fsContracts } from "@/lib/platform/evm";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
+import { assertSettlementLegRecipientAllowlisted } from "./utils/assert-recipient-leg";
 import { assertSettlementRulesUsdcToken } from "./utils/assert-settlement-token";
 import { assertSettlementRuleEntitlements } from "./utils/entitlements";
 import { assertSettlementRulesVerifiedOnChain } from "./utils/verify-rules-on-chain";
@@ -91,41 +92,12 @@ export async function assertSettlementRecipientsAllowlisted(args: {
 
 	for (const rule of args.rules) {
 		for (const leg of rule.legs) {
-			const recipient = norm(leg.recipientWallet);
-
-			if (!allowed.has(recipient)) {
-				throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-					params: {
-						reason:
-							"Settlement recipient must be an envelope participant or the organization payout wallet",
-					},
-				});
-			}
-
-			if (leg.recipientSource === "org_wallet") {
-				if (!orgWallet || recipient !== norm(orgWallet)) {
-					throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-						params: {
-							reason:
-								"Organization payout wallet is not linked or does not match",
-						},
-					});
-				}
-				continue;
-			}
-
-			if (
-				leg.recipientSource === "signer" ||
-				leg.recipientSource === "viewer"
-			) {
-				if (!args.participantWallets.some((w) => norm(w) === recipient)) {
-					throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-						params: {
-							reason: "Settlement recipient must be on this envelope",
-						},
-					});
-				}
-			}
+			assertSettlementLegRecipientAllowlisted({
+				leg,
+				allowed,
+				orgWallet,
+				participantWallets: args.participantWallets,
+			});
 		}
 	}
 }

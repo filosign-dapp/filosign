@@ -44,7 +44,7 @@ const {
 export const zOrgsCreateBody = z.object({
 	name: z.string().min(1).max(120),
 	slug: z.string().min(1).max(64).optional(),
-	encryptionPublicKey: z.string().min(1),
+	encryptionPublicKey: zHexString(),
 	wrappedOmkForCreator: zHexString(),
 	creatorWrapKemCiphertext: zHexString(),
 });

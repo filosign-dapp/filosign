@@ -16,8 +16,7 @@ import {
 } from "@/lib/platform/db/schema/file";
 import { fileSettlementRules } from "@/lib/platform/db/schema/settlements";
 import { users } from "@/lib/platform/db/schema/user";
-import { fsEnvelopeRegistryAt } from "@/lib/platform/evm";
-import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { loadOnchainRegistration } from "./load-onchain-registration";
 import type { ParticipantRow } from "./types";
 
 export type ComplianceLoadContext = {
@@ -237,85 +236,10 @@ export async function loadComplianceContext(args: {
 
 	const exportedAtIso = new Date().toISOString();
 	const senderNorm = getAddress(fileRecord.sender);
-	const registry = fsEnvelopeRegistryAt(fileRecord.registryAddress);
-
-	let onchainRegistration: ComplianceLoadContext["onchainRegistration"] = null;
-	const cidRes = await tryCatch(registry.read.cidIdentifier([pieceCid]));
-	if (cidRes.data) {
-		const cidId = cidRes.data as Hex;
-		const regRes = await tryCatch(registry.read.envelopeRegistrations([cidId]));
-		const reg = regRes.data as
-			| {
-					sender: Address;
-					signersCommitment: Hex;
-					viewersCommitment: Hex;
-					placementCommitment: Hex;
-					documentSha256: Hex;
-					senderEmailCommitment: Hex;
-					senderAuthSubjectCommitment: Hex;
-					orgIdCommitment: Hex;
-					requiredSignersCount: number | bigint;
-					requiredSignaturesCount: number | bigint;
-					signaturesCount: number | bigint;
-					quorumN: number | bigint;
-					routingMode: number | bigint;
-					completedAt: number | bigint;
-					revokedBeforeCompletedAt: number | bigint;
-					revokedBy: Address;
-					timestamp: bigint;
-			  }
-			| undefined;
-		if (reg && reg.timestamp > 0n) {
-			let rosterSignedCount = Number(reg.signaturesCount);
-			const rosterRes = await tryCatch(
-				(
-					registry.read as typeof registry.read & {
-						rosterSignedCount: (
-							args: readonly [Hex],
-						) => Promise<number | bigint>;
-					}
-				).rosterSignedCount([cidId]),
-			);
-			if (!rosterRes.error && rosterRes.data != null) {
-				rosterSignedCount = Number(rosterRes.data);
-			}
-			const completedAtChain =
-				reg.completedAt != null && Number(reg.completedAt) > 0
-					? String(reg.completedAt)
-					: null;
-			const revokedBeforeCompletedAtChain =
-				reg.revokedBeforeCompletedAt != null &&
-				Number(reg.revokedBeforeCompletedAt) > 0
-					? String(reg.revokedBeforeCompletedAt)
-					: null;
-			onchainRegistration = {
-				cidIdentifier: cidId,
-				sender: getAddress(reg.sender),
-				signersCommitment: reg.signersCommitment as Hex,
-				viewersCommitment: reg.viewersCommitment as Hex,
-				placementCommitment: reg.placementCommitment as Hex,
-				documentSha256: reg.documentSha256 as Hex,
-				senderEmailCommitment: reg.senderEmailCommitment as Hex,
-				senderAuthSubjectCommitment: reg.senderAuthSubjectCommitment as Hex,
-				requiredSignersCount: Number(reg.requiredSignersCount),
-				requiredSignaturesCount: Number(reg.requiredSignaturesCount),
-				signaturesCount: Number(reg.signaturesCount),
-				quorumN: Number(reg.quorumN),
-				routingMode: Number(reg.routingMode),
-				completedAt: completedAtChain,
-				revokedBeforeCompletedAt: revokedBeforeCompletedAtChain,
-				revokedBy:
-					reg.revokedBy &&
-					getAddress(reg.revokedBy) !==
-						"0x0000000000000000000000000000000000000000"
-						? getAddress(reg.revokedBy)
-						: null,
-				rosterSignedCount,
-				timestamp: reg.timestamp.toString(),
-				orgIdCommitment: reg.orgIdCommitment as Hex,
-			};
-		}
-	}
+	const onchainRegistration = await loadOnchainRegistration({
+		pieceCid,
+		registryAddress: fileRecord.registryAddress,
+	});
 
 	const settlementRowsRaw = await database
 		.select({

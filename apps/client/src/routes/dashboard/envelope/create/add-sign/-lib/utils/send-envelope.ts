@@ -1,4 +1,6 @@
-import { type Address, getAddress, isAddress } from "viem";
+import type { ProfileByAddress } from "@filosign/react/users";
+import { parseHexString } from "@filosign/shared";
+import { type Address, getAddress, type Hex, isAddress } from "viem";
 import { loadDocumentBytes } from "@/src/lib/domains/drafts";
 import { buildPlacementManifestForDocument } from "@/src/lib/domains/files/build-placement-manifest";
 import type { Recipient, StoredDocument } from "../../../-lib/types";
@@ -28,17 +30,17 @@ export const SendEnvelopeError = {
 
 export type RecipientWithEncryptionProfile = {
 	recipient: Recipient;
-	profile: { encryptionPublicKey: string; [key: string]: unknown };
+	profile: ProfileByAddress;
 };
 
 export type EnvelopeSigner = {
 	address: Address;
-	encryptionPublicKey: `0x${string}`;
+	encryptionPublicKey: Hex;
 };
 
 export type EnvelopeViewer = {
 	address: Address;
-	encryptionPublicKey: string;
+	encryptionPublicKey: Hex;
 };
 
 export { buildPlacementManifestForDocument };
@@ -67,7 +69,7 @@ export function buildSignersAndViewersForDocument(args: {
 		if (!recipientData) continue;
 
 		const { profile } = recipientData;
-		const encryptionPublicKey = profile.encryptionPublicKey as `0x${string}`;
+		const encryptionPublicKey = parseHexString(profile.encryptionPublicKey);
 
 		if (recipient.role === "signer") {
 			signers.push({

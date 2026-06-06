@@ -189,7 +189,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 		"documents.sent.monthly": {
 			kind: "quota",
 			limit: 3,
-			period: "calendar_month",
+			period: "lifetime",
 			scope: "account",
 		},
 		"envelope.recipients.max": { kind: "max", limit: 1 },
@@ -257,7 +257,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 	},
 };
 
-export const CATALOG_VERSION = 2 as const;
+export const CATALOG_VERSION = 3 as const;
 
 export function catalogEntitlement(
 	planId: PlanId,

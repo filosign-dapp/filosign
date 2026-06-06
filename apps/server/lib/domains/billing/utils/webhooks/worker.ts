@@ -1,6 +1,5 @@
 import type { PlanId } from "@filosign/entitlements";
-import { and, eq } from "drizzle-orm";
-import type { Address } from "viem";
+import { eq } from "drizzle-orm";
 import { getAddress } from "viem";
 import {
 	createEntitlementCacheInvalidation,
@@ -11,31 +10,16 @@ import db from "@/lib/platform/db";
 import {
 	type BillingWebhookEventStatus,
 	billingWebhookEvents,
-	userSubscriptions,
 } from "@/lib/platform/db/schema/billing";
 import { organizationSubscriptions } from "@/lib/platform/db/schema/organization";
 import { sendPaidSetupEmail } from "@/lib/platform/email";
 import { isBillingWebhookProcessed } from "@/lib/platform/jobs";
 import { logger } from "@/lib/platform/pino";
-import {
-	isWorkspaceBillingPlanId,
-	resolveIntervalFromProductId,
-	resolvePlanIdFromProductId,
-} from "../policy";
 import { tryProcessArchivalDodoWebhook } from "./archival";
 import {
-	isCheckoutFirstWithoutOrg,
-	prepareCheckoutFirstPaidAccessInTx,
-} from "./checkout";
-import {
-	mapDodoSubscriptionStatus,
-	resolveSubscriptionQuantity,
-	resolveWebhookOrgSync,
-	resolveWebhookUserPlanId,
-	syncOrgSubscription,
-	syncUserSubscription,
-	webhookAllowsMissingProductId,
-} from "./sync";
+	dispatchWebhookSubscriptionSync,
+	type WebhookPayloadContext,
+} from "./dispatch";
 
 type DodoWebhookEvent = {
 	type?: string;
@@ -183,11 +167,21 @@ export async function processDodoWebhookJob(webhookId: string): Promise<void> {
 	);
 	const metadataPlanId = extractPlanIdFromMetadata(payloadData.metadata);
 	const customerEmail = payloadData.customer?.email ?? null;
-	const mappedPlan = resolvePlanIdFromProductId(payloadData.product_id);
-	const billingInterval = resolveIntervalFromProductId(payloadData.product_id);
 	const cancelAtNextBillingDate = Boolean(
 		payloadData.cancel_at_next_billing_date,
 	);
+
+	const webhookCtx: WebhookPayloadContext = {
+		eventType,
+		payloadData,
+		metadataOrgId,
+		metadataWallet,
+		metadataSetupToken,
+		metadataCheckoutIntentId,
+		metadataPlanId,
+		customerEmail,
+		cancelAtNextBillingDate,
+	};
 
 	const ackOrgId = await resolveOrgIdForWebhookAck({
 		metadataOrgId,
@@ -228,220 +222,14 @@ export async function processDodoWebhookJob(webhookId: string): Promise<void> {
 		} = { payload: null };
 		const entitlementInvalidation = createEntitlementCacheInvalidation();
 
-		await db.transaction(async (tx) => {
-			let organizationId = metadataOrgId;
-			let existingOrgSub:
-				| {
-						planId: string;
-						seatCount: number;
-				  }
-				| undefined;
-
-			if (organizationId) {
-				const [row] = await tx
-					.select({
-						planId: organizationSubscriptions.planId,
-						seatCount: organizationSubscriptions.seatCount,
-					})
-					.from(organizationSubscriptions)
-					.where(eq(organizationSubscriptions.organizationId, organizationId))
-					.limit(1);
-				existingOrgSub = row;
-			}
-
-			if (!organizationId && dodoSubscriptionId) {
-				const [subByDodo] = await tx
-					.select({
-						organizationId: organizationSubscriptions.organizationId,
-						planId: organizationSubscriptions.planId,
-						seatCount: organizationSubscriptions.seatCount,
-					})
-					.from(organizationSubscriptions)
-					.where(
-						eq(
-							organizationSubscriptions.dodoSubscriptionId,
-							dodoSubscriptionId,
-						),
-					)
-					.limit(1);
-				organizationId = subByDodo?.organizationId ?? null;
-				if (subByDodo) {
-					existingOrgSub = {
-						planId: subByDodo.planId,
-						seatCount: subByDodo.seatCount,
-					};
-				}
-			}
-
-			const orgCandidate =
-				organizationId &&
-				(mappedPlan == null ||
-					isWorkspaceBillingPlanId(mappedPlan) ||
-					existingOrgSub?.planId === "individual" ||
-					existingOrgSub?.planId === "teams" ||
-					existingOrgSub?.planId === "teams_pro" ||
-					webhookAllowsMissingProductId(eventType));
-
-			if (orgCandidate && organizationId) {
-				const orgSyncPreview = resolveWebhookOrgSync({
-					eventType,
-					mappedPlan,
-					cancelAtNextBillingDate,
-					quantity: undefined,
-					existingPlanId: existingOrgSub?.planId as
-						| "teams"
-						| "teams_pro"
-						| "free"
-						| undefined,
-					existingSeatCount: existingOrgSub?.seatCount,
-				});
-
-				const quantity = await resolveSubscriptionQuantity({
-					subscriptionId: dodoSubscriptionId,
-					payloadQuantity: payloadData.quantity,
-					required: orgSyncPreview.requireQuantity,
-				});
-
-				const orgSync = resolveWebhookOrgSync({
-					eventType,
-					mappedPlan,
-					cancelAtNextBillingDate,
-					quantity,
-					existingPlanId: existingOrgSub?.planId as
-						| "teams"
-						| "teams_pro"
-						| "free"
-						| undefined,
-					existingSeatCount: existingOrgSub?.seatCount,
-				});
-
-				const status = mapDodoSubscriptionStatus(
-					payloadData.status,
-					eventType,
-					cancelAtNextBillingDate,
-				);
-
-				await syncOrgSubscription(tx, {
-					organizationId,
-					planId: orgSync.planId as
-						| "free"
-						| "individual"
-						| "teams"
-						| "teams_pro",
-					seatCount: orgSync.seatCount ?? 1,
-					status,
-					billingInterval: orgSync.planId === "free" ? null : billingInterval,
-					payloadData,
-					dodoCustomerId,
-					dodoSubscriptionId,
-				});
-				entitlementInvalidation.orgIds.add(organizationId);
-				return;
-			}
-
-			let existingUserPlan: "free" | "individual" | undefined;
-			if (dodoCustomerId) {
-				const [subByCustomer] = await tx
-					.select({ planId: userSubscriptions.planId })
-					.from(userSubscriptions)
-					.where(
-						and(
-							eq(userSubscriptions.provider, "dodo"),
-							eq(userSubscriptions.dodoCustomerId, dodoCustomerId),
-						),
-					)
-					.limit(1);
-				if (
-					subByCustomer?.planId === "individual" ||
-					subByCustomer?.planId === "free"
-				) {
-					existingUserPlan = subByCustomer.planId;
-				}
-			}
-
-			const userPlanId = resolveWebhookUserPlanId({
-				eventType,
-				mappedPlan,
-				cancelAtNextBillingDate,
-				existingPlanId: existingUserPlan,
-			});
-
-			const checkoutFirstWithoutOrg = await isCheckoutFirstWithoutOrg(tx, {
-				metadataSetupToken,
-				dodoSubscriptionId,
-				organizationId,
-			});
-
-			if (checkoutFirstWithoutOrg) {
-				if (eventType === "subscription.active") {
-					checkoutFirstEmail.payload = await prepareCheckoutFirstPaidAccessInTx(
-						tx,
-						{
-							eventType,
-							setupToken: metadataSetupToken,
-							checkoutIntentId: metadataCheckoutIntentId,
-							dodoSubscriptionId,
-							dodoCustomerId,
-							metadataPlanId,
-							mappedPlan,
-							customerEmail,
-							metadata: payloadData.metadata,
-							productId: payloadData.product_id,
-							payloadQuantity: payloadData.quantity,
-						},
-					);
-				}
-				return;
-			}
-
-			if (
-				mappedPlan &&
-				isWorkspaceBillingPlanId(mappedPlan) &&
-				!organizationId
-			) {
-				throw new Error(
-					"Unable to route workspace plan webhook without organization",
-				);
-			}
-
-			let walletAddress: `0x${string}` | null = null;
-			if (dodoCustomerId) {
-				const [subByCustomer] = await tx
-					.select({ walletAddress: userSubscriptions.walletAddress })
-					.from(userSubscriptions)
-					.where(
-						and(
-							eq(userSubscriptions.provider, "dodo"),
-							eq(userSubscriptions.dodoCustomerId, dodoCustomerId),
-						),
-					)
-					.limit(1);
-				walletAddress = subByCustomer?.walletAddress ?? null;
-			}
-			if (!walletAddress && metadataWallet) {
-				walletAddress = metadataWallet;
-			}
-
-			if (!walletAddress) {
-				throw new Error("Unable to resolve wallet for webhook");
-			}
-
-			const status = mapDodoSubscriptionStatus(
-				payloadData.status,
-				eventType,
-				cancelAtNextBillingDate,
-			);
-
-			await syncUserSubscription(tx, {
-				walletAddress,
-				planId: userPlanId,
-				status,
-				payloadData,
-				dodoCustomerId,
-				dodoSubscriptionId,
-			});
-			entitlementInvalidation.wallets.add(walletAddress as Address);
-		});
+		const dispatchResult = await db.transaction(async (tx) =>
+			dispatchWebhookSubscriptionSync({
+				tx,
+				ctx: webhookCtx,
+				entitlementInvalidation,
+			}),
+		);
+		checkoutFirstEmail.payload = dispatchResult.checkoutFirstEmail ?? null;
 
 		await flushEntitlementCacheInvalidation(entitlementInvalidation);
 

@@ -1,4 +1,10 @@
 import type { FieldCompletion, FieldCompletionMap } from "./field-completion";
+import {
+	displayModeComplete,
+	draftModeComplete,
+	lazyProvisionModeComplete,
+	submitModeComplete,
+} from "./field-completion-by-mode";
 import type { PlacementField } from "./placement";
 import { zPlacementManifest } from "./placement";
 import type { UserSignatureArtifact } from "./signature-artifact";
@@ -49,27 +55,6 @@ export function parsePlacementManifestFields(
 	return parsed.success ? parsed.data.fields : [];
 }
 
-function visualHasStorage(completion: FieldCompletion | undefined): boolean {
-	return Boolean(completion?.storageKey?.trim());
-}
-
-function visualHasDisplayPreview(
-	completion: FieldCompletion | undefined,
-): boolean {
-	if (!completion || completion.valueKind !== "visual") return false;
-	return Boolean(completion.previewUrl || completion.storageKey);
-}
-
-function textValuePresent(completion: FieldCompletion | undefined): boolean {
-	return Boolean(completion?.textValue?.trim());
-}
-
-function checkboxChecked(completion: FieldCompletion | undefined): boolean {
-	return (
-		completion?.valueKind === "checkbox" && completion.textValue === "true"
-	);
-}
-
 export function fieldCompletionStatus(
 	field: PlacementField,
 	completion: FieldCompletion | undefined,
@@ -80,63 +65,13 @@ export function fieldCompletionStatus(
 
 	switch (mode) {
 		case "display":
-			if (!completion) return false;
-			if (completion.valueKind === "visual") {
-				return visualHasDisplayPreview(completion);
-			}
-			if (completion.valueKind === "checkbox")
-				return checkboxChecked(completion);
-			return textValuePresent(completion);
-
+			return displayModeComplete(completion);
 		case "draft":
-			if (!inCompletedSet || !completion) return false;
-			if (completion.valueKind === "visual")
-				return visualHasStorage(completion);
-			if (completion.valueKind === "checkbox")
-				return checkboxChecked(completion);
-			return textValuePresent(completion);
-
+			return draftModeComplete(field, completion, inCompletedSet);
 		case "submit":
-			if (!inCompletedSet || !completion || completion.fieldId !== field.id) {
-				return false;
-			}
-			if (field.type === "signature" || field.type === "initial") {
-				return (
-					completion.valueKind === "visual" && visualHasStorage(completion)
-				);
-			}
-			if (field.type === "checkbox") {
-				return completion.valueKind === "checkbox";
-			}
-			if (field.type === "text") {
-				return completion.valueKind === "text" && textValuePresent(completion);
-			}
-			if (
-				field.type === "date" ||
-				field.type === "name" ||
-				field.type === "email"
-			) {
-				return completion.valueKind === "auto" && textValuePresent(completion);
-			}
-			return false;
-
-		case "lazyProvision": {
-			if (inCompletedSet && completion) {
-				return fieldCompletionStatus(
-					field,
-					completion,
-					completedFieldIds,
-					"draft",
-				);
-			}
-			if (
-				field.required &&
-				(field.type === "signature" || field.type === "initial")
-			) {
-				return true;
-			}
-			return false;
-		}
+			return submitModeComplete(field, completion, inCompletedSet);
+		case "lazyProvision":
+			return lazyProvisionModeComplete(field, completion, inCompletedSet);
 	}
 }
 

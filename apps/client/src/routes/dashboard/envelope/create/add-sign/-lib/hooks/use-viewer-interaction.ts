@@ -1,5 +1,6 @@
 import type * as React from "react";
 import { useCallback, useEffect, useState } from "react";
+import { isPdfDocument } from "@/src/lib/domains/files/document-kind";
 import { defaultPlacementFieldRect } from "@/src/lib/domains/files/field-box";
 import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
 import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
@@ -8,7 +9,6 @@ import type {
 	Document,
 	SignatureField,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
-import { isPdfDocument } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/document-kind";
 import {
 	clampFieldAtPoint,
 	clientPointToPageCoords,

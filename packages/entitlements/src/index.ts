@@ -9,6 +9,7 @@ export {
 	DEFAULT_PLAN_ID,
 	defaultPlanContext,
 	getLimit,
+	getQuotaPeriod,
 	getQuotaScope,
 } from "./evaluate";
 export type {

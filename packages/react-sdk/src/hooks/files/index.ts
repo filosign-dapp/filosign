@@ -18,6 +18,7 @@ export {
 } from "../../lib/entitlements";
 export { buildValidatedRegisterRouting } from "../../lib/register-routing";
 export type { PieceFileDekSource } from "../../lib/resolve-piece-file-dek";
+export type { SendFileArgs, SendFileResult } from "../../lib/send-file/types";
 export {
 	formatSettlementSimError,
 	paymentValidatorAt,
@@ -35,6 +36,7 @@ export {
 	updateSettlementRuleOnChain,
 } from "../../lib/settlement-rules.ts";
 export type { SettlementRuleRow } from "../../lib/settlement-types.ts";
+export type { SignFileArgs } from "../../lib/sign-file/sign-file";
 export * from "./useAckFile";
 export * from "./useAttachSettlementForFile";
 export { useBasicPayoutAttachGate } from "./useBasicPayoutAttachGate";
@@ -71,6 +73,7 @@ export * from "./useRecallEnvelope";
 export * from "./useReceivedFiles";
 export * from "./useRecordDocumentView";
 export * from "./useRegenerateColdInvite";
+export * from "./useRemindSigners";
 export * from "./useRevokeSettlementAllowance";
 export * from "./useSendFile";
 export * from "./useSentFiles";

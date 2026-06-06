@@ -7,6 +7,7 @@ import {
 	normalizePlacementRecipientEmail,
 	usesAdvancedRegisterRouting,
 	zAttachmentPacketSendInput,
+	zEnvelopeMetadata,
 	zPlacementManifest,
 	zRegisterRoutingInput,
 } from "@filosign/shared";
@@ -91,6 +92,7 @@ export const zFileRegisterBody = z.object({
 	routing: zRegisterRoutingInput.optional(),
 	attachmentPackets: z.array(zAttachmentPacketSendInput).max(3).optional(),
 	isPractice: z.boolean().optional(),
+	metadata: zEnvelopeMetadata.optional(),
 });
 
 export async function filesRegister(
@@ -123,6 +125,7 @@ export async function filesRegister(
 		routing,
 		attachmentPackets = [],
 		isPractice = false,
+		metadata,
 	} = parsedBody.data;
 
 	assertOrgPermission(activeOrg, "documents:send");
@@ -328,6 +331,7 @@ export async function filesRegister(
 		senderEncryptedEncryptionKey,
 		coldInvites,
 		isPractice,
+		metadata,
 	};
 
 	const participantWallets = [

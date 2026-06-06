@@ -39,7 +39,7 @@ export const organizations = t.pgTable(
 		id: t.uuid().primaryKey().$defaultFn(randomUuidV7),
 		name: t.text().notNull(),
 		slug: t.text().notNull().unique(),
-		encryptionPublicKey: t.text().notNull(),
+		encryptionPublicKey: tHex().notNull(),
 		createdByWallet: tEvmAddress()
 			.notNull()
 			.references(() => users.walletAddress),

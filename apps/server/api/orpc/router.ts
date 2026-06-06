@@ -598,6 +598,12 @@ export const appRouter = {
 					context.activeOrg ?? null,
 				),
 			),
+		remindSigners: authenticatedProcedure
+			.input(fileHandlers.zRemindSignersBody)
+			.output(out.files.remindSigners)
+			.handler(({ context, input }) =>
+				fileHandlers.filesRemindSigners(context.userWallet, input),
+			),
 		list: {
 			sent: authenticatedProcedure
 				.output(out.files.list.sent)

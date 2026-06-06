@@ -1,4 +1,5 @@
 import { Image } from "@/src/lib/components/app/media/image";
+import { isPdfDocument } from "@/src/lib/domains/files/document-kind";
 import { PdfJsPreview } from "@/src/lib/domains/files/pdf/pdf-js-preview";
 import { PlacementCaptureLayer } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-layer";
 import type {
@@ -6,7 +7,6 @@ import type {
 	Document,
 	SignatureField,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
-import { isPdfDocument } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/document-kind";
 
 type DocumentPageContentProps = {
 	document: Document;

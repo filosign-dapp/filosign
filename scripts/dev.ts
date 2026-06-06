@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 /** Dev stack orchestrator. See `bun run dev -- --help` for all stacks and flags. */
 import { die, runMain, scriptArgv, wantsHelp } from "./lib/cli.ts";
+import { parseDevArgv } from "./lib/dev/parse-argv.ts";
 import { runLocalBootstrap } from "./lib/localnode.ts";
 import { repoRoot } from "./lib/root.ts";
 import { packageRunCmd } from "./lib/run.ts";
@@ -36,43 +37,6 @@ Local bootstrap (default \`dev\` with server): \`db purge local\`, compile, depl
 
 Presets (--serloc, --web, --emails) cannot be combined with each other or with --client / --server / --astro.
 `.trim();
-
-function parseArgv(argv: string[]) {
-	const flags = new Set<string>();
-	let profile: Profile | undefined;
-	let withDeps = true;
-
-	for (const arg of argv) {
-		if (arg === "--help" || arg === "-h") {
-			return { help: true as const, flags, profile, withDeps };
-		}
-		if (arg === "--local") profile = "local";
-		if (arg === "--staging") profile = "staging";
-		if (arg === "--sandbox") profile = "sandbox";
-		if (arg === "--testnet") {
-			die(
-				"Removed --testnet; use --staging (internal QA) or --sandbox (public demo)",
-			);
-		}
-		if (arg === "--full") {
-			die("Removed --full; astro is included in the default bun run dev stack");
-		}
-		if (arg === "--deps") flags.add("deps");
-		if (arg === "--no-deps") withDeps = false;
-		if (arg === "--serloc") flags.add("serloc");
-		if (arg === "--web") flags.add("web");
-		if (arg === "--emails") flags.add("emails");
-		if (arg === "--astro") flags.add("astro");
-		if (arg === "--client") flags.add("client");
-		if (arg === "--server") flags.add("server");
-	}
-
-	if (profile === undefined) {
-		profile = "local";
-	}
-
-	return { help: false as const, flags, profile, withDeps };
-}
 
 function isDepsOnly(flags: Set<string>): boolean {
 	if (!flags.has("deps")) return false;
@@ -203,7 +167,7 @@ function tasksIncludeServer(tasks: SpawnTask[]): boolean {
 
 runMain(async () => {
 	const argv = scriptArgv();
-	const parsed = parseArgv(argv);
+	const parsed = parseDevArgv(argv);
 
 	if (parsed.help || wantsHelp(argv)) {
 		console.log(HELP);

@@ -48,9 +48,13 @@ export function planMarketingLines(planId: PlanId): PlanMarketingLine[] {
 		if (def.kind === "quota" && def.limit !== null) {
 			const scope =
 				def.scope === "per_seat" ? " per user (pooled team quota)" : "";
+			const period =
+				def.period === "lifetime"
+					? " documents lifetime"
+					: " documents per month";
 			lines.push({
 				featureKey,
-				label: `${def.limit} documents per month${scope}`,
+				label: `${def.limit}${period}${scope}`,
 			});
 			continue;
 		}

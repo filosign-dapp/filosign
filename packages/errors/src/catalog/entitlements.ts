@@ -18,10 +18,10 @@ export const entitlementErrors = {
 	"ENTITLEMENT.QUOTA_EXCEEDED": {
 		title: "Plan usage limit reached",
 		description:
-			"You have used {{used}} of {{limit}} allowed this billing period.",
+			"You have used {{used}} of {{limit}} documents allowed on your plan.",
 		steps: [
 			"Open Workspace → Billing & Plans to review usage.",
-			"Wait for your quota to reset, or upgrade your plan.",
+			"Upgrade your plan to send more envelopes.",
 		],
 		supportSlug: "plan-quota-exceeded",
 		audience: "user",

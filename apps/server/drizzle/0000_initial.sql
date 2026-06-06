@@ -250,6 +250,7 @@ CREATE TABLE "files" (
 	"document_sha256" text NOT NULL,
 	"placement_manifest_json" jsonb NOT NULL,
 	"register_routing_json" jsonb,
+	"metadata_json" jsonb,
 	"warm_participant_count" integer DEFAULT 0 NOT NULL,
 	"cold_invite_count" integer DEFAULT 0 NOT NULL,
 	"signer_slot_count" integer DEFAULT 0 NOT NULL,

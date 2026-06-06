@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { beforeAll, describe, expect, mock, test } from "bun:test";
 import {
 	buildUpgradeOfferings,
 	resolveMarketingCheckoutPreview,
@@ -292,6 +292,69 @@ describe("billing", () => {
 					}),
 				).toBe("free");
 			});
+		});
+	});
+
+	describe("dispatchWebhookSubscriptionSync", () => {
+		const checkoutFirstEmail = {
+			to: "buyer@example.com",
+			setupUrl: "https://app.example.com/setup/token",
+			planLabel: "Teams",
+		};
+		const prepareCheckoutFirstPaidAccessInTx = mock(() =>
+			Promise.resolve(checkoutFirstEmail),
+		);
+		const isCheckoutFirstWithoutOrg = mock(() => Promise.resolve(true));
+		let dispatchWebhookSubscriptionSync: typeof import("@/lib/domains/billing/utils/webhooks/dispatch").dispatchWebhookSubscriptionSync;
+
+		function createFakeTx() {
+			const queryChain = {
+				from: () => queryChain,
+				where: () => queryChain,
+				limit: async () => [] as unknown[],
+			};
+			return {
+				select: () => queryChain,
+			};
+		}
+
+		beforeAll(async () => {
+			mock.module("@/lib/domains/billing/utils/webhooks/checkout", () => ({
+				resolveCheckoutFirstSeatCount,
+				resolveCheckoutFirstBillingInterval,
+				isCheckoutFirstWithoutOrg,
+				prepareCheckoutFirstPaidAccessInTx,
+			}));
+			({ dispatchWebhookSubscriptionSync } = await import(
+				"@/lib/domains/billing/utils/webhooks/dispatch"
+			));
+		});
+
+		test("propagates checkoutFirstEmail when checkout-first handler stops", async () => {
+			const result = await dispatchWebhookSubscriptionSync({
+				tx: createFakeTx() as never,
+				ctx: {
+					eventType: "subscription.active",
+					payloadData: {
+						subscription_id: "sub_test",
+						product_id: "pdt_test",
+					},
+					metadataOrgId: null,
+					metadataWallet: null,
+					metadataSetupToken: "setup-token",
+					metadataCheckoutIntentId: "intent-1",
+					metadataPlanId: "teams",
+					customerEmail: "buyer@example.com",
+					cancelAtNextBillingDate: false,
+				},
+				entitlementInvalidation: {
+					orgIds: new Set(),
+					wallets: new Set(),
+				},
+			});
+
+			expect(result.checkoutFirstEmail).toEqual(checkoutFirstEmail);
+			expect(prepareCheckoutFirstPaidAccessInTx).toHaveBeenCalled();
 		});
 	});
 });

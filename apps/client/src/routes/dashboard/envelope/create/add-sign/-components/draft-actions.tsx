@@ -1,13 +1,8 @@
-import { useFilosignContext } from "@filosign/react";
 import { useEntitlements } from "@filosign/react/billing";
-import { useCreateOrgTemplate } from "@filosign/react/orgs";
 import {
 	ArrowSquareOutIcon,
 	ChatCircleIcon,
-	CheckIcon,
 	FileTextIcon,
-	FloppyDiskIcon,
-	SpinnerGapIcon,
 } from "@phosphor-icons/react";
 import { getRouteApi } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
@@ -15,22 +10,14 @@ import { toast } from "sonner";
 import { useCryptoRequired } from "@/src/lib/auth/use-crypto-required";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/src/lib/components/ui/dialog";
-import { Input } from "@/src/lib/components/ui/input";
-import { Label } from "@/src/lib/components/ui/label";
-import { Textarea } from "@/src/lib/components/ui/textarea";
 import { useDraftCommentCount, useDraftSaveUi } from "@/src/lib/domains/drafts";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { ShareDraftDialog } from "@/src/routes/dashboard/envelope/create/-components/share-draft-dialog";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 import { DraftCommentsSheet } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft-comments-sheet";
+import { DraftCryptoRecoveryDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft-crypto-recovery-dialog";
+import { DraftSaveButton } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft-save-button";
+import { DraftTemplateDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft-template-dialog";
 
 const addSignRouteApi = getRouteApi("/dashboard/envelope/create/add-sign/");
 
@@ -40,17 +27,44 @@ function formatCommentBadgeCount(count: number) {
 	return String(count);
 }
 
+function draftActionDisabled(args: {
+	planId: string | undefined;
+	serverDraftId: string | undefined;
+	isSaving: boolean;
+	hasChanges: boolean;
+	needsDraftCrypto: boolean;
+	cryptoReady: boolean;
+}) {
+	if (args.planId === "free") return false;
+	return (
+		!args.serverDraftId ||
+		args.isSaving ||
+		args.hasChanges ||
+		(args.needsDraftCrypto && !args.cryptoReady)
+	);
+}
+
+function draftActionTitle(args: {
+	isSaving: boolean;
+	hasChanges: boolean;
+	needsDraftCrypto: boolean;
+	cryptoReady: boolean;
+}) {
+	if (args.isSaving) return "Wait for save to finish before sharing.";
+	if (args.hasChanges) return "Save your changes before sharing.";
+	if (args.needsDraftCrypto && !args.cryptoReady) {
+		return "Unlock encryption keys before sharing.";
+	}
+	return undefined;
+}
+
 export function AddSignDraftActions() {
 	const { serverDraftId: urlServerDraftId } = addSignRouteApi.useSearch();
 	const createForm = useStorePersist((s) => s.createForm);
 	const { data: entitlements } = useEntitlements();
-	const { rpc } = useFilosignContext();
-	const createTemplate = useCreateOrgTemplate();
 	const [shareOpen, setShareOpen] = useState(false);
 	const [commentsOpen, setCommentsOpen] = useState(false);
 	const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
-	const [templateName, setTemplateName] = useState("");
-	const [templateSaving, setTemplateSaving] = useState(false);
 	const [showCryptoRecoveryDialog, setShowCryptoRecoveryDialog] =
 		useState(false);
 	const promptPlanUpgrade = usePromptPlanUpgrade();
@@ -82,6 +96,14 @@ export function AddSignDraftActions() {
 	const showComments = Boolean(
 		entitlements?.features["features.draft_comments"]?.enabled,
 	);
+	const shareDisabled = draftActionDisabled({
+		planId,
+		serverDraftId,
+		isSaving,
+		hasChanges,
+		needsDraftCrypto,
+		cryptoReady: cryptoRequired.isReady,
+	});
 
 	useEffect(() => {
 		if (needsDraftCrypto && cryptoRequired.needsRecovery) {
@@ -99,55 +121,31 @@ export function AddSignDraftActions() {
 		}
 	}, [cryptoRequired]);
 
+	const handleShareClick = () => {
+		if (planId === "free") {
+			promptPlanUpgrade("documents.sent.monthly");
+			return;
+		}
+		setShareOpen(true);
+	};
+
 	return (
 		<>
 			<div className="flex items-center gap-2">
-				<Button
-					type="button"
-					variant="outline"
-					size="sm"
-					disabled={
-						planId !== "free" &&
-						(isSaving ||
-							(needsDraftCrypto && !cryptoRequired.isReady) ||
-							(isSavedToServer && !hasChanges) ||
-							(createForm?.documents.length ?? 0) === 0)
-					}
-					title={
-						needsDraftCrypto && !cryptoRequired.isReady
-							? cryptoRequired.needsRecovery
-								? "Unlock encryption keys with recovery phrase to save."
-								: "Unlocking encryption keys..."
-							: hasChanges
-								? "Unsaved changes"
-								: undefined
-					}
-					onClick={() => {
-						if (planId === "free") {
-							promptPlanUpgrade("documents.sent.monthly");
-							return;
-						}
-						handleSaveDraft();
-					}}
-					className="gap-1.5"
-				>
-					{isSaving ? (
-						<>
-							<SpinnerGapIcon className="size-4 animate-spin" />
-							<span>Saving…</span>
-						</>
-					) : showSavedState ? (
-						<>
-							<CheckIcon className="size-4 text-green-500" weight="bold" />
-							<span className="text-muted-foreground">{savedLabel}</span>
-						</>
-					) : (
-						<>
-							<FloppyDiskIcon className="size-4 text-primary" />
-							<span>Save draft</span>
-						</>
-					)}
-				</Button>
+				<DraftSaveButton
+					planId={planId}
+					isSaving={isSaving}
+					showSavedState={showSavedState}
+					savedLabel={savedLabel}
+					hasChanges={hasChanges}
+					isSavedToServer={isSavedToServer}
+					needsDraftCrypto={needsDraftCrypto}
+					cryptoReady={cryptoRequired.isReady}
+					needsRecovery={cryptoRequired.needsRecovery}
+					documentCount={createForm?.documents.length ?? 0}
+					onSave={handleSaveDraft}
+					onPromptUpgrade={() => promptPlanUpgrade("documents.sent.monthly")}
+				/>
 				{needsDraftCrypto && cryptoRequired.needsRecovery ? (
 					<Button
 						type="button"
@@ -162,29 +160,14 @@ export function AddSignDraftActions() {
 					type="button"
 					variant="outline"
 					size="sm"
-					disabled={
-						planId !== "free" &&
-						(!serverDraftId ||
-							isSaving ||
-							hasChanges ||
-							(needsDraftCrypto && !cryptoRequired.isReady))
-					}
-					title={
-						isSaving
-							? "Wait for save to finish before sharing."
-							: hasChanges
-								? "Save your changes before sharing."
-								: needsDraftCrypto && !cryptoRequired.isReady
-									? "Unlock encryption keys before sharing."
-									: undefined
-					}
-					onClick={() => {
-						if (planId === "free") {
-							promptPlanUpgrade("documents.sent.monthly");
-							return;
-						}
-						setShareOpen(true);
-					}}
+					disabled={shareDisabled}
+					title={draftActionTitle({
+						isSaving,
+						hasChanges,
+						needsDraftCrypto,
+						cryptoReady: cryptoRequired.isReady,
+					})}
+					onClick={handleShareClick}
 					className="gap-1.5"
 				>
 					<ArrowSquareOutIcon className="size-4" />
@@ -201,10 +184,7 @@ export function AddSignDraftActions() {
 								? "Save this draft as a reusable template"
 								: "Save draft first to save as template"
 						}
-						onClick={() => {
-							setTemplateName(createForm?.emailSubject || "");
-							setTemplateDialogOpen(true);
-						}}
+						onClick={() => setTemplateDialogOpen(true)}
 						className="gap-1.5"
 					>
 						<FileTextIcon className="size-4 text-secondary" weight="bold" />
@@ -264,148 +244,18 @@ export function AddSignDraftActions() {
 					/>
 				</>
 			) : null}
-			<Dialog open={templateDialogOpen} onOpenChange={setTemplateDialogOpen}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>Save as Template</DialogTitle>
-						<DialogDescription>
-							Create a reusable template for your workspace from this draft.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 pt-2">
-						<div className="space-y-2">
-							<Label htmlFor="designer-template-name">Template Name</Label>
-							<Input
-								id="designer-template-name"
-								placeholder="E.g. Standard NDA"
-								value={templateName}
-								onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-									setTemplateName(e.target.value)
-								}
-								maxLength={120}
-								autoFocus
-							/>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => setTemplateDialogOpen(false)}
-							disabled={templateSaving}
-						>
-							Cancel
-						</Button>
-						<Button
-							type="button"
-							variant="primary"
-							onClick={async () => {
-								if (!templateName.trim()) {
-									toast.error("Please enter a template name");
-									return;
-								}
-								setTemplateSaving(true);
-								try {
-									const draftDetails = await rpc.drafts.get({
-										draftId: serverDraftId || "",
-									});
-									if (
-										!draftDetails.documents ||
-										draftDetails.documents.length === 0
-									) {
-										throw new Error("This draft has no PDF document uploaded.");
-									}
-									if (!draftDetails.headDekWrappedOmk) {
-										throw new Error(
-											"Please save the draft first to generate encryption keys.",
-										);
-									}
-									const primaryDoc = draftDetails.documents[0];
-									const placementManifest = {
-										version: 1 as const,
-										documents: [],
-										fields: [],
-									};
-
-									await createTemplate.mutateAsync({
-										name: templateName.trim(),
-										s3Key: primaryDoc.s3Key,
-										dekWrappedOmk: draftDetails.headDekWrappedOmk || "",
-										placementManifest,
-									});
-									toast.success("Saved as template!");
-									setTemplateDialogOpen(false);
-									setTemplateName("");
-								} catch (err) {
-									toast.error(
-										err instanceof Error
-											? err.message
-											: "Failed to save template",
-									);
-								} finally {
-									setTemplateSaving(false);
-								}
-							}}
-							disabled={templateSaving || !templateName.trim()}
-						>
-							{templateSaving ? "Saving..." : "Save Template"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
-			<Dialog
+			<DraftTemplateDialog
+				open={templateDialogOpen}
+				onOpenChange={setTemplateDialogOpen}
+				serverDraftId={serverDraftId}
+				initialName={createForm?.emailSubject || ""}
+			/>
+			<DraftCryptoRecoveryDialog
 				open={showCryptoRecoveryDialog}
 				onOpenChange={setShowCryptoRecoveryDialog}
-			>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>Unlock encryption keys</DialogTitle>
-						<DialogDescription>
-							Your wallet could not unlock this session automatically. Enter
-							your 24-word recovery phrase to continue saving this draft.
-						</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-2">
-						<Label htmlFor="add-sign-recovery-phrase">Recovery phrase</Label>
-						<Textarea
-							id="add-sign-recovery-phrase"
-							rows={5}
-							value={cryptoRequired.recoveryPhrase}
-							onChange={(event) =>
-								cryptoRequired.setRecoveryPhrase(event.target.value)
-							}
-							placeholder="24-word recovery phrase"
-							spellCheck={false}
-						/>
-					</div>
-					{cryptoRequired.recoveryError ? (
-						<p className="text-sm text-destructive">
-							{cryptoRequired.recoveryError}
-						</p>
-					) : null}
-					<div className="flex justify-end gap-2">
-						<Button
-							type="button"
-							variant="ghost"
-							onClick={() => setShowCryptoRecoveryDialog(false)}
-							disabled={cryptoRequired.recoveryPending}
-						>
-							Close
-						</Button>
-						<Button
-							type="button"
-							variant="primary"
-							onClick={() => void handleSubmitRecovery()}
-							disabled={
-								cryptoRequired.recoveryPending ||
-								!cryptoRequired.recoveryPhrase.trim()
-							}
-						>
-							{cryptoRequired.recoveryPending ? "Unlocking…" : "Unlock"}
-						</Button>
-					</div>
-				</DialogContent>
-			</Dialog>
+				cryptoRequired={cryptoRequired}
+				onSubmitRecovery={handleSubmitRecovery}
+			/>
 		</>
 	);
 }

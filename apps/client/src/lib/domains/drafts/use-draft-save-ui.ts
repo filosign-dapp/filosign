@@ -92,9 +92,9 @@ export function useDraftSaveUi(args: {
 	const showSavedState = showSavedFlash || (isSavedToServer && !isSaving);
 
 	const savedLabel =
-		draftSyncMode === "server" &&
-		createForm?.serverDraftRevision != null &&
-		`Saved`;
+		draftSyncMode === "server" && createForm?.serverDraftRevision != null
+			? "Saved"
+			: "";
 
 	useEffect(() => {
 		if (draftSyncMode !== "server" || !hasChanges) return;

@@ -3,379 +3,90 @@ import type {
 	SettlementReleaseType,
 	SettlementRuleStatus,
 } from "@filosign/shared";
-import {
-	completionsMerkleProofsV1,
-	fieldIdsForRecipientEmail,
-	hashAuthSubjectCommitment,
-	hashNormalizedSignerEmail,
-	isValidAckSignature,
-	normalizePlacementRecipientEmail,
-	requiredFieldIdsForRecipientEmail,
-} from "@filosign/shared";
-import type { Address, Hex } from "viem";
-import { getAddress, isHex } from "viem";
+import { getAddress } from "viem";
 import config from "@/config";
 import { listPieceFieldCompletions } from "@/lib/domains/files/utils/field-completions";
-import { sha256HexOfHexBytes } from "./hash";
+import { buildComplianceOffChainEvidence } from "./build/off-chain-evidence";
+import { buildComplianceParties } from "./build/parties";
+import {
+	applyBlockTimestampsToSigners,
+	buildComplianceSigners,
+} from "./build/signers";
+import {
+	buildComplianceReceiptCache,
+	buildComplianceTxDrafts,
+} from "./build/transactions";
 import type { ComplianceLoadContext } from "./load-context";
-import { receiptMeta } from "./receipt-meta";
-import { displayNameFromUser, roleOrder, type TxDraft } from "./types";
+
+function buildComplianceSettlements(
+	ctx: ComplianceLoadContext,
+): ComplianceBundle["settlements"] {
+	return ctx.settlementRows.map((pay) => ({
+		onChainRuleId: pay.onChainRuleId.toString(),
+		legs: pay.legs.map((leg) => ({
+			recipientWallet: getAddress(leg.recipientWallet),
+			amount: leg.amount,
+		})),
+		tokenAddress: getAddress(pay.tokenAddress),
+		releaseType: pay.releaseType as SettlementReleaseType,
+		status: pay.status as SettlementRuleStatus,
+		registerRuleTxHash: pay.registerRuleTxHash,
+		approveTxHash: pay.approveTxHash,
+		payoutTxHash: pay.payoutTxHash,
+		executedAtIso: pay.executedAt?.toISOString() ?? null,
+		lastError: pay.lastError,
+	}));
+}
 
 export async function assembleComplianceBundle(
 	ctx: ComplianceLoadContext,
 ): Promise<ComplianceBundle> {
-	const {
-		pieceCid,
-		participantRows,
-		fileRecord,
-		manifest,
-		sigRows,
-		draftByWallet,
-		sigByWallet,
-		ackRowsRaw,
-		viewRowsRaw,
-		coldInviteClaimRows,
-		onchainRegistration,
-		executionStatus,
-		exportedAtIso,
-		senderNorm,
-		settlementRows,
-		amendmentRows,
-		settlementRecipientAckRows,
-	} = ctx;
+	const { pieceCid, fileRecord, exportedAtIso, senderNorm, executionStatus } =
+		ctx;
 
-	const signerParticipants = participantRows.filter((p) => p.role === "signer");
-
-	const sortedParticipants = [...participantRows].sort((a, b) => {
-		const ro = roleOrder(a.role) - roleOrder(b.role);
-		if (ro !== 0) return ro;
-		return getAddress(a.wallet).localeCompare(getAddress(b.wallet));
-	});
-
-	const parties: ComplianceBundle["parties"] = sortedParticipants.map((p) => {
-		const wallet = getAddress(p.wallet);
-		const emailRaw = p.email?.trim();
-		if (!emailRaw) {
-			throw new Error(
-				`Participant ${wallet} missing email for compliance export`,
-			);
-		}
-		const email = normalizePlacementRecipientEmail(emailRaw);
-		const emailCommitment = hashNormalizedSignerEmail(email);
-		const authSubjectCommitment = p.authProviderId?.trim()
-			? hashAuthSubjectCommitment(p.authProviderId.trim())
-			: null;
-		return {
-			role: p.role,
-			wallet,
-			email,
-			displayName: displayNameFromUser(p),
-			emailCommitment,
-			authSubjectCommitment,
-		};
-	});
-
-	const ackByWallet = new Map(
-		ackRowsRaw
-			.filter((r) => isValidAckSignature(r.ack))
-			.map((r) => [getAddress(r.wallet).toLowerCase(), r]),
-	);
-	const viewByWallet = new Map(
-		viewRowsRaw.map((r) => [getAddress(r.wallet).toLowerCase(), r]),
-	);
-
-	const timelineForWallet = (wallet: Address) => {
-		const key = wallet.toLowerCase();
-		const ack = ackByWallet.get(key);
-		const view = viewByWallet.get(key);
-		return {
-			acknowledgedAtIso: ack?.acknowledgedAt.toISOString() ?? null,
-			firstViewedAtIso: view?.firstViewedAt.toISOString() ?? null,
-		};
-	};
-
-	const signers: ComplianceBundle["signers"] = signerParticipants.map((p) => {
-		const wallet = getAddress(p.wallet);
-		const walletKey = wallet.toLowerCase();
-		const displayName = displayNameFromUser(p);
-
-		const emailNorm = p.email?.trim()
-			? normalizePlacementRecipientEmail(p.email)
-			: "";
-		const assigned = emailNorm
-			? fieldIdsForRecipientEmail(manifest, emailNorm)
-			: [];
-		const assignedFieldIds = assigned.map((f) => f.id);
-		const reqIds = emailNorm
-			? requiredFieldIdsForRecipientEmail(manifest, emailNorm)
-			: [];
-		const reqSet = new Set(reqIds);
-		const optionalFieldIds = assignedFieldIds.filter((id) => !reqSet.has(id));
-
-		const sig = sigByWallet.get(walletKey);
-		const draftIds = draftByWallet.get(walletKey) ?? [];
-		const timeline = timelineForWallet(wallet);
-
-		if (sig) {
-			const completedFieldIds = sig.completedFieldIds;
-			const merkleProofs = completionsMerkleProofsV1({
-				fieldIds: completedFieldIds,
-				placementCommitment: fileRecord.placementCommitment,
-				pieceCid,
-				signer: wallet,
-			}).map((pr) => ({
-				fieldId: pr.fieldId,
-				leafHash: pr.leafHash,
-				leafIndex: pr.leafIndex,
-				siblings: pr.siblings,
-			}));
-
-			const signedAtIso = sig.createdAt.toISOString();
-			return {
-				wallet,
-				displayName,
-				email: p.email,
-				signed: true,
-				assignedFieldIds,
-				requiredFieldIds: reqIds,
-				optionalFieldIds,
-				onchainTxHash: sig.onchainTxHash as `0x${string}`,
-				signedAtIso,
-				messageTimestampIso: signedAtIso,
-				blockTimestampFromTx: null as number | null,
-				completedFieldIds,
-				completionsRoot: sig.completionsRoot,
-				leafSchemaVersion: sig.leafSchemaVersion,
-				merkleProofs,
-				draftCompletedFieldIds: [] as string[],
-				acknowledgedAtIso: timeline.acknowledgedAtIso,
-				firstViewedAtIso: timeline.firstViewedAtIso,
-				requestIp: sig.requestIp ?? null,
-				requestUserAgent: sig.requestUserAgent ?? null,
-			};
-		}
-
-		return {
-			wallet,
-			displayName,
-			email: p.email,
-			signed: false,
-			assignedFieldIds,
-			requiredFieldIds: reqIds,
-			optionalFieldIds,
-			onchainTxHash: null,
-			signedAtIso: null,
-			messageTimestampIso: null,
-			blockTimestampFromTx: null,
-			completedFieldIds: [] as string[],
-			completionsRoot: null,
-			leafSchemaVersion: null,
-			merkleProofs: [] as ComplianceBundle["signers"][number]["merkleProofs"],
-			draftCompletedFieldIds: draftIds.filter((id) =>
-				assignedFieldIds.includes(id),
-			),
-			acknowledgedAtIso: timeline.acknowledgedAtIso,
-			firstViewedAtIso: timeline.firstViewedAtIso,
-		};
-	});
-
-	const regAddr = getAddress(fileRecord.registryAddress);
+	const parties = buildComplianceParties(ctx);
+	const signers = buildComplianceSigners(ctx);
+	const txDrafts = buildComplianceTxDrafts(ctx);
+	const receiptCache = await buildComplianceReceiptCache(txDrafts);
 	const chainId = config.runtimeChain.id;
-	const fetchedAtIso = exportedAtIso;
 
-	const txDrafts: TxDraft[] = [];
-	txDrafts.push({
-		kind: "file_registered",
-		txHash: fileRecord.onchainTxHash,
-		contractAddress: regAddr,
-		summary:
-			"registerEnvelope — file placement and sender commitments recorded on-chain",
-		relatedAddresses: [senderNorm],
-	});
-
-	for (const s of sigRows) {
-		const w = getAddress(s.signer);
-		txDrafts.push({
-			kind: "file_signed",
-			txHash: s.onchainTxHash,
-			contractAddress: regAddr,
-			summary: `registerEnvelopeSignature — signer ${w}`,
-			relatedAddresses: [senderNorm, w],
+	const transactions: ComplianceBundle["transactions"] = txDrafts
+		.map((d) => {
+			const meta = receiptCache.get(d.txHash.toLowerCase()) ?? {
+				blockNumber: null,
+				timestamp: null,
+			};
+			return {
+				kind: d.kind,
+				txHash: d.txHash,
+				chainId,
+				contractAddress: d.contractAddress,
+				summary: d.summary,
+				relatedAddresses: d.relatedAddresses,
+				blockNumber: meta.blockNumber,
+				timestamp: meta.timestamp,
+				fetchedAtIso: exportedAtIso,
+			};
+		})
+		.sort((a, b) => {
+			if (a.blockNumber != null && b.blockNumber != null) {
+				if (a.blockNumber !== b.blockNumber)
+					return a.blockNumber - b.blockNumber;
+			} else if (a.blockNumber != null) return -1;
+			else if (b.blockNumber != null) return 1;
+			return a.txHash.localeCompare(b.txHash);
 		});
-	}
 
-	for (const amend of amendmentRows) {
-		txDrafts.push({
-			kind: "signer_amended",
-			txHash: amend.proposeTxHash,
-			contractAddress: regAddr,
-			summary: `proposeSignerReplacement (${amend.status}) — ${amend.oldCommitment} → ${amend.newCommitment}`,
-			relatedAddresses: [senderNorm],
-		});
-		if (amend.executeTxHash) {
-			txDrafts.push({
-				kind: "signer_amended",
-				txHash: amend.executeTxHash,
-				contractAddress: regAddr,
-				summary: `executeSignerReplacement — ${amend.oldCommitment} → ${amend.newCommitment}`,
-				relatedAddresses: [senderNorm],
-			});
-		}
-		if (amend.cancelTxHash) {
-			txDrafts.push({
-				kind: "signer_amended",
-				txHash: amend.cancelTxHash,
-				contractAddress: regAddr,
-				summary: `cancelSignerReplacement — ${amend.oldCommitment} → ${amend.newCommitment}`,
-				relatedAddresses: [senderNorm],
-			});
-		}
-	}
-
-	if (fileRecord.revokeOnchainTxHash) {
-		txDrafts.push({
-			kind: "envelope_revoked_before_complete",
-			txHash: fileRecord.revokeOnchainTxHash,
-			contractAddress: regAddr,
-			summary:
-				"recallEnvelope — envelope voided on-chain before completion (partial signatures may remain)",
-			relatedAddresses: [
-				senderNorm,
-				...(fileRecord.revokedBy ? [getAddress(fileRecord.revokedBy)] : []),
-			],
-		});
-	}
-
-	for (const pay of settlementRows) {
-		if (!pay.payoutTxHash) continue;
-		const payValidatorAddr = getAddress(pay.validatorAddress);
-		const recipients = [
-			...new Set(
-				pay.legs.map((leg) => getAddress(leg.recipientWallet).toLowerCase()),
-			),
-		].map((addr) => getAddress(addr));
-		const recipientSummary = recipients.join(", ");
-		txDrafts.push({
-			kind: "payout_executed",
-			txHash: pay.payoutTxHash,
-			contractAddress: payValidatorAddr,
-			summary: `executePayout — rule ${pay.onChainRuleId.toString()} to ${recipientSummary}`,
-			relatedAddresses: [senderNorm, ...recipients],
-		});
-	}
-
-	const uniqueHashes = [
-		...new Set(txDrafts.map((t) => t.txHash.toLowerCase())),
-	].map((h) => h as Hex);
-	const receiptEntries = await Promise.all(
-		uniqueHashes.map(async (h) => {
-			const meta = await receiptMeta(h);
-			return [h.toLowerCase(), meta] as const;
-		}),
-	);
-	const receiptCache = new Map<string, Awaited<ReturnType<typeof receiptMeta>>>(
-		receiptEntries,
+	applyBlockTimestampsToSigners(
+		signers,
+		receiptCache as Map<
+			string,
+			{ blockNumber: number | null; timestamp: number | null }
+		>,
 	);
 
-	const transactions: ComplianceBundle["transactions"] = txDrafts.map((d) => {
-		const meta = receiptCache.get(d.txHash.toLowerCase()) ?? {
-			blockNumber: null,
-			timestamp: null,
-		};
-		return {
-			kind: d.kind,
-			txHash: d.txHash,
-			chainId,
-			contractAddress: d.contractAddress,
-			summary: d.summary,
-			relatedAddresses: d.relatedAddresses,
-			blockNumber: meta.blockNumber,
-			timestamp: meta.timestamp,
-			fetchedAtIso,
-		};
-	});
-
-	transactions.sort((a, b) => {
-		if (a.blockNumber != null && b.blockNumber != null) {
-			if (a.blockNumber !== b.blockNumber) return a.blockNumber - b.blockNumber;
-		} else if (a.blockNumber != null) return -1;
-		else if (b.blockNumber != null) return 1;
-		return a.txHash.localeCompare(b.txHash);
-	});
-
-	for (const s of signers) {
-		if (!s.signed || !s.onchainTxHash) continue;
-		const meta = receiptCache.get(s.onchainTxHash.toLowerCase());
-		if (meta?.timestamp != null) {
-			s.blockTimestampFromTx = meta.timestamp;
-		}
-	}
-
-	const acknowledgements: ComplianceBundle["offChainEvidence"]["acknowledgements"] =
-		[];
-	for (const row of ackRowsRaw) {
-		if (!isValidAckSignature(row.ack)) continue;
-		const w = getAddress(row.wallet);
-		const emailRaw = row.email?.trim();
-		if (!emailRaw) continue;
-		const email = normalizePlacementRecipientEmail(emailRaw);
-		const emailCommitment = hashNormalizedSignerEmail(email);
-		const authSubjectCommitment = row.authProviderId?.trim()
-			? hashAuthSubjectCommitment(row.authProviderId.trim())
-			: null;
-		const ackHex = row.ack as Hex;
-		const ackSha256 = isHex(ackHex) ? sha256HexOfHexBytes(ackHex) : null;
-		acknowledgements.push({
-			wallet: w,
-			createdAtIso: row.ackCreatedAt.toISOString(),
-			acknowledgedAtIso: row.acknowledgedAt.toISOString(),
-			intentVersion: row.intentVersion,
-			emailCommitment,
-			authSubjectCommitment,
-			ackSha256,
-		});
-	}
-
-	const documentViews: ComplianceBundle["offChainEvidence"]["documentViews"] =
-		viewRowsRaw.map((row) => ({
-			wallet: getAddress(row.wallet),
-			firstViewedAtIso: row.firstViewedAt.toISOString(),
-			source: row.source,
-		}));
-
-	const coldInviteClaims: ComplianceBundle["offChainEvidence"]["coldInviteClaims"] =
-		coldInviteClaimRows.map((row) => ({
-			email: row.email,
-			wallet: row.wallet,
-			claimedAtIso: row.claimedAt.toISOString(),
-			isSigner: row.isSigner,
-		}));
-
-	const payoutRecipientAcknowledgements: ComplianceBundle["offChainEvidence"]["payoutRecipientAcknowledgements"] =
-		settlementRecipientAckRows.map((row) => ({
-			signerWallet: getAddress(row.signerWallet),
-			termsVersion: row.termsVersion,
-			acknowledgedAtIso: row.acknowledgedAt.toISOString(),
-		}));
-
-	const settlements: ComplianceBundle["settlements"] = settlementRows.map(
-		(pay) => ({
-			onChainRuleId: pay.onChainRuleId.toString(),
-			legs: pay.legs.map((leg) => ({
-				recipientWallet: getAddress(leg.recipientWallet),
-				amount: leg.amount,
-			})),
-			tokenAddress: getAddress(pay.tokenAddress),
-			releaseType: pay.releaseType as SettlementReleaseType,
-			status: pay.status as SettlementRuleStatus,
-			registerRuleTxHash: pay.registerRuleTxHash,
-			approveTxHash: pay.approveTxHash,
-			payoutTxHash: pay.payoutTxHash,
-			executedAtIso: pay.executedAt?.toISOString() ?? null,
-			lastError: pay.lastError,
-		}),
-	);
-
+	const settlements = buildComplianceSettlements(ctx);
+	const offChainEvidence = buildComplianceOffChainEvidence(ctx);
 	const fieldCompletions = await listPieceFieldCompletions(pieceCid);
 
 	return {
@@ -385,7 +96,7 @@ export async function assembleComplianceBundle(
 		exportedAtIso,
 		executionStatus,
 		placementCommitment: fileRecord.placementCommitment,
-		placementManifest: manifest,
+		placementManifest: ctx.manifest,
 		registration: {
 			sender: senderNorm,
 			registrationTxHash: fileRecord.onchainTxHash,
@@ -393,16 +104,11 @@ export async function assembleComplianceBundle(
 			registerDocumentSha256: fileRecord.documentSha256,
 		},
 		parties,
-		onchainRegistration,
+		onchainRegistration: ctx.onchainRegistration,
 		transactions,
 		signers,
 		settlements,
-		offChainEvidence: {
-			acknowledgements,
-			documentViews,
-			coldInviteClaims,
-			payoutRecipientAcknowledgements,
-		},
+		offChainEvidence,
 		fieldCompletions,
 	};
 }

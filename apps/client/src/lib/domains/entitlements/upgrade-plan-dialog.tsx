@@ -40,9 +40,9 @@ const COPY: Record<
 	{ title: string; description: string }
 > = {
 	"documents.sent.monthly": {
-		title: "Monthly document limit reached",
+		title: "Document limit reached",
 		description:
-			"You've exhausted your document quota for this month. Upgrade to continue sending envelopes.",
+			"You've exhausted your document quota. Upgrade to continue sending envelopes.",
 	},
 	"envelope.recipients.max": {
 		title: "Recipient limit reached",

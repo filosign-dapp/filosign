@@ -39,10 +39,11 @@ function quotaCell(
 ): ComparisonCellValue {
 	const def = catalogV1[planId][featureKey];
 	if (def.kind !== "quota" || def.limit === null) return null;
+	if (def.period === "lifetime") return `${def.limit} lifetime`;
 	if (def.scope === "per_seat") {
 		return `${def.limit} per user (pooled)`;
 	}
-	return String(def.limit);
+	return `${def.limit}/mo`;
 }
 
 function maxCell(
@@ -97,7 +98,7 @@ function section(label: string): ComparisonRow {
 export function buildPricingComparisonRows(): ComparisonRow[] {
 	return [
 		section("Sending limits"),
-		staticRow("documents.sent.monthly", "Documents per month", {
+		staticRow("documents.sent.monthly", "Document send limit", {
 			free: quotaCell("free", "documents.sent.monthly"),
 			individual: quotaCell("individual", "documents.sent.monthly"),
 			teams: quotaCell("teams", "documents.sent.monthly"),

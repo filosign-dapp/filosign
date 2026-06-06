@@ -1,6 +1,14 @@
 import type { Deployment } from "../utils/deployment";
+import {
+	activationHintPassesDeploymentFilter,
+	activationHintPassesPlanFilter,
+	activationHintPassesPracticePieceFilter,
+	activationHintPassesProfileFilter,
+	activationHintProfileContext,
+	milestonesSatisfied,
+	pathnameMatches,
+} from "./hint-filters";
 import type { ActivationMilestoneId } from "./milestones";
-import { resolveActivationProfile, resolveProfileBasePlan } from "./profiles";
 import type { ActivationProfileId, BillingPlanId } from "./types";
 
 export const ACTIVATION_HINT_IDS = [
@@ -81,63 +89,30 @@ export const ACTIVATION_HINTS: Record<ActivationHintId, ActivationHintDef> = {
 /** Default public sandbox client URL (production marketing default). */
 export const DEFAULT_SANDBOX_CLIENT_URL = "https://sandbox.filosign.xyz";
 
-function pathnameMatches(prefix: string, pathname: string): boolean {
-	return pathname === prefix || pathname.startsWith(`${prefix}/`);
-}
-
-function milestonesSatisfied(
-	required: readonly ActivationMilestoneId[] | undefined,
-	milestones: ReadonlySet<ActivationMilestoneId>,
-): boolean {
-	if (!required || required.length === 0) return true;
-	return required.every((m) => milestones.has(m));
-}
-
 export function evaluateActivationHints(
 	args: EvaluateActivationHintsArgs,
 ): EvaluatedActivationHint[] {
-	const profileId = resolveActivationProfile({
-		deployment: args.deployment,
-		billingPlanId: args.billingPlanId,
-	});
-	const basePlan = resolveProfileBasePlan(profileId);
+	const { profileId, planForFilter } = activationHintProfileContext(args);
 	const hints: EvaluatedActivationHint[] = [];
 
 	for (const def of Object.values(ACTIVATION_HINTS)) {
 		if (args.dismissedHintIds.has(def.id)) continue;
 		if (!pathnameMatches(def.routePrefix, args.pathname)) continue;
-
-		if (
-			def.requiresDeployments &&
-			!def.requiresDeployments.includes(args.deployment)
-		) {
-			continue;
-		}
-
-		const planForFilter =
-			profileId === "sandbox" ? basePlan : (profileId as BillingPlanId);
-		if (def.requiresPlans && !def.requiresPlans.includes(planForFilter)) {
-			continue;
-		}
-
-		if (def.requiresProfileIds && !def.requiresProfileIds.includes(profileId)) {
-			continue;
-		}
-
-		if (!milestonesSatisfied(def.requiresMilestones, args.milestones)) {
-			continue;
-		}
-
+		if (!activationHintPassesDeploymentFilter(def, args.deployment)) continue;
+		if (!activationHintPassesPlanFilter(def, planForFilter)) continue;
+		if (!activationHintPassesProfileFilter(def, profileId)) continue;
+		if (!milestonesSatisfied(def.requiresMilestones, args.milestones)) continue;
 		if (def.hideWhenMilestone && args.milestones.has(def.hideWhenMilestone)) {
 			continue;
 		}
-
-		if (def.requiresPracticePiece) {
-			const practiceCid = args.practicePieceCid?.trim();
-			const currentCid = args.currentPieceCid?.trim();
-			if (!practiceCid || !currentCid || practiceCid !== currentCid) {
-				continue;
-			}
+		if (
+			!activationHintPassesPracticePieceFilter(
+				def,
+				args.practicePieceCid,
+				args.currentPieceCid,
+			)
+		) {
+			continue;
 		}
 
 		hints.push({

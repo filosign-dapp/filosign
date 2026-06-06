@@ -18,7 +18,7 @@ import { embedComplianceLogo } from "./images";
 import {
 	buildCompliancePdfSummaryFromBundle,
 	COMPLIANCE_PDF_APPENDIX_SECTION_TITLE,
-} from "./summary";
+} from "./summary/assemble";
 import { lineHeightAt, wrapLines } from "./text";
 
 const PDF_BRAND = {

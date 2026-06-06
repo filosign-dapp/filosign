@@ -1,30 +1,22 @@
 import { AnimatePresence, motion, SPRING_TOKENS } from "@filosign/motion";
-import { CheckIcon, MinusIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
+import type { AppRouterClient, InferClientOutputs } from "@filosign/react/orpc";
+import { XIcon } from "@phosphor-icons/react";
 import { type SubmitEvent, useEffect, useId, useRef, useState } from "react";
 import { checkoutDialogImageForPlan } from "../../config/pricing-media";
 import { cn } from "../../lib/cn";
 import { useFilosignRpc } from "../../lib/filosign-rpc";
-import {
-	marketingButtonFocus,
-	marketingGhostLgClass,
-	marketingPrimaryLgClass,
-	marketingPrimaryMdClass,
-} from "../../lib/marketing-button";
-import {
-	marketingFieldClass,
-	marketingFieldHintClass,
-	marketingFieldLabelClass,
-	marketingStepperButtonClass,
-} from "../../lib/marketing-form";
+import { marketingButtonFocus } from "../../lib/marketing-button";
 import { YEARLY_DISCOUNT_RATE } from "../../lib/pricing-display";
+import {
+	CheckoutBlockedContent,
+	CheckoutFormContent,
+	CheckoutSentContent,
+} from "./checkout-dialog-content";
 
 type BillingInterval = "monthly" | "yearly";
 
-type PreviewResult = Awaited<
-	ReturnType<
-		ReturnType<typeof useFilosignRpc>["billing"]["previewMarketingCheckout"]
-	>
->;
+type PreviewResult =
+	InferClientOutputs<AppRouterClient>["billing"]["previewMarketingCheckout"];
 
 interface PricingCheckoutDialogProps {
 	open: boolean;
@@ -86,66 +78,6 @@ function BillingContextChip({
 				</>
 			) : null}
 		</p>
-	);
-}
-
-function SeatStepper({
-	id,
-	value,
-	onChange,
-	disabled,
-}: {
-	id: string;
-	value: number;
-	onChange: (next: number) => void;
-	disabled?: boolean;
-}) {
-	const decrement = () => onChange(Math.max(1, value - 1));
-	const increment = () => onChange(value + 1);
-
-	return (
-		<div className="space-y-2">
-			<span id={`${id}-label`} className={marketingFieldLabelClass}>
-				Team size
-			</span>
-			<div
-				className={cn(
-					marketingFieldClass,
-					"flex items-center justify-between gap-2 p-1.5",
-				)}
-				role="group"
-				aria-labelledby={`${id}-label`}
-			>
-				<button
-					type="button"
-					className={marketingStepperButtonClass}
-					onClick={decrement}
-					disabled={disabled || value <= 1}
-					aria-label="Decrease seats"
-				>
-					<MinusIcon className="size-4" weight="bold" aria-hidden />
-				</button>
-				<span
-					className="min-w-12 text-center text-lg font-medium tabular-nums text-foreground font-manrope"
-					aria-live="polite"
-					aria-atomic="true"
-				>
-					{value}
-				</span>
-				<button
-					type="button"
-					className={marketingStepperButtonClass}
-					onClick={increment}
-					disabled={disabled}
-					aria-label="Increase seats"
-				>
-					<PlusIcon className="size-4" weight="bold" aria-hidden />
-				</button>
-			</div>
-			<p className={marketingFieldHintClass}>
-				Billed per seat after your trial.
-			</p>
-		</div>
 	);
 }
 
@@ -290,137 +222,23 @@ export default function PricingCheckoutDialog({
 								</div>
 
 								{status === "sent" ? (
-									<div className="space-y-6">
-										<div className="flex flex-col items-start gap-4">
-											<div className="flex size-12 items-center justify-center rounded-full bg-secondary/20 text-secondary-foreground">
-												<CheckIcon
-													className="size-6"
-													weight="bold"
-													aria-hidden
-												/>
-											</div>
-											<p className="text-sm leading-relaxed text-foreground font-manrope">
-												Check your inbox at{" "}
-												<strong className="font-semibold">
-													{email.trim()}
-												</strong>
-												.
-											</p>
-										</div>
-										<button
-											type="button"
-											className={cn(marketingPrimaryLgClass, "w-full")}
-											onClick={onClose}
-										>
-											Close
-										</button>
-									</div>
+									<CheckoutSentContent email={email} onClose={onClose} />
 								) : status === "blocked" && blocked ? (
-									<div className="space-y-6">
-										<p className="text-sm leading-relaxed text-foreground font-manrope">
-											{blocked.action === "already_subscribed"
-												? blocked.message
-												: blocked.action === "sign_in"
-													? blocked.message
-													: blocked.action === "use_in_app"
-														? blocked.message
-														: ""}
-										</p>
-										<div className="flex flex-col gap-3">
-											<a
-												href="/pricing"
-												className={cn(
-													marketingGhostLgClass,
-													"w-full text-center",
-												)}
-											>
-												Compare plans
-											</a>
-											{(blocked.action === "sign_in" ||
-												blocked.action === "already_subscribed" ||
-												blocked.action === "use_in_app") && (
-												<a
-													href={blocked.clientUrl}
-													className={cn(
-														marketingPrimaryMdClass,
-														"w-full text-center",
-													)}
-												>
-													Sign in to manage billing
-												</a>
-											)}
-											<button
-												type="button"
-												className={cn(marketingGhostLgClass, "w-full")}
-												onClick={onClose}
-											>
-												Close
-											</button>
-										</div>
-									</div>
+									<CheckoutBlockedContent blocked={blocked} onClose={onClose} />
 								) : (
-									<form
-										className="space-y-5 @md/checkout-form:space-y-6"
+									<CheckoutFormContent
+										emailInputId={emailInputId}
+										seatStepperId={seatStepperId}
+										email={email}
+										onEmailChange={setEmail}
+										isTeamPlan={isTeamPlan}
+										seatCount={seatCount}
+										onSeatCountChange={setSeatCount}
+										error={error}
+										isLoading={isLoading}
 										onSubmit={handleSubmit}
-										aria-busy={isLoading}
-									>
-										<div className="space-y-2">
-											<label
-												htmlFor={emailInputId}
-												className={marketingFieldLabelClass}
-											>
-												Work email
-											</label>
-											<input
-												id={emailInputId}
-												type="email"
-												required
-												autoComplete="email"
-												value={email}
-												onChange={(event) => setEmail(event.target.value)}
-												className={marketingFieldClass}
-												placeholder="you@company.com"
-												disabled={isLoading}
-											/>
-										</div>
-
-										{isTeamPlan ? (
-											<SeatStepper
-												id={seatStepperId}
-												value={seatCount}
-												onChange={setSeatCount}
-												disabled={isLoading}
-											/>
-										) : null}
-
-										{error ? (
-											<p
-												className="text-sm text-destructive font-manrope"
-												role="alert"
-											>
-												{error}
-											</p>
-										) : null}
-
-										<div className="flex flex-col gap-3 pt-1">
-											<button
-												type="submit"
-												disabled={isLoading}
-												className={cn(marketingPrimaryLgClass, "w-full")}
-												aria-busy={isLoading}
-											>
-												{isLoading ? "Sending link…" : "Start 7-day free trial"}
-											</button>
-											<button
-												type="button"
-												className={cn(marketingGhostLgClass, "w-full")}
-												onClick={onClose}
-												disabled={isLoading}
-											>
-												Cancel
-											</button>
-										</div>
-									</form>
+										onClose={onClose}
+									/>
 								)}
 							</div>
 						</div>

@@ -1,7 +1,7 @@
 import { FilePdfIcon } from "@phosphor-icons/react";
+import { isPdfDocument } from "@/src/lib/domains/files/document-kind";
 import { cn } from "@/src/lib/utils/utils";
 import type { Document } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
-import { isPdfDocument } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/document-kind";
 
 type DocumentThumbnailsSidebarProps = {
 	documents: Document[];

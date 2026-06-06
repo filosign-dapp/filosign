@@ -29,9 +29,9 @@ const FAQ_ITEMS = [
 	},
 	{
 		id: "document-quota",
-		question: "What counts toward my monthly document limit?",
+		question: "What counts toward my document limit?",
 		answer:
-			"Each envelope you send counts once toward your quota for that calendar month. Drafts and review links do not count until the envelope is sent. Solo limits apply to your account; Teams and Teams Pro limits are pooled across the workspace.",
+			"Each envelope you send counts once. Drafts and review links do not count until the envelope is sent. Free includes 3 documents lifetime. Paid Solo limits reset each calendar month. Teams and Teams Pro limits are pooled across the workspace and reset monthly.",
 	},
 	{
 		id: "pooled-quota",

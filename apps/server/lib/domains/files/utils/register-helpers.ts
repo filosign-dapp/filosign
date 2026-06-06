@@ -57,6 +57,7 @@ export type PersistRegisteredFileArgs = {
 		isSigner: boolean;
 	}[];
 	isPractice?: boolean;
+	metadata?: Record<string, string>;
 };
 
 export type RegisterPersistTx = Parameters<
@@ -164,6 +165,7 @@ export async function persistRegisteredFileInTx(
 			documentSha256: args.documentSha256,
 			placementManifestJson: args.placementManifest,
 			registerRoutingJson: args.registerRouting ?? null,
+			metadataJson: args.metadata ?? null,
 			warmParticipantCount: args.warmParticipantCount,
 			coldInviteCount: args.coldInviteCount,
 			signerSlotCount: args.signerSlotCount,

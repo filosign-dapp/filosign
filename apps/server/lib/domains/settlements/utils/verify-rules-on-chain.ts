@@ -1,7 +1,6 @@
 import { computeCidIdentifier } from "@filosign/contracts";
 import { throwAppError } from "@filosign/errors/server";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
-import { SETTLEMENT_RELEASE_TYPE_UINT } from "@filosign/shared";
 import { eq } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
@@ -12,7 +11,9 @@ import {
 	fsPaymentValidatorAt,
 } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
-import { assertSettlementUsdcToken } from "./assert-settlement-token";
+import { readOnChainRuleHeader } from "./verify-rule-header";
+import { assertOnChainRuleLegsMatch } from "./verify-rule-legs";
+import { assertOnChainReleaseParamsMatch } from "./verify-rule-release-params";
 
 const { organizations } = db.schema;
 
@@ -52,213 +53,21 @@ async function assertEnvelopeRegisteredOnChain(
 	}
 }
 
-function normHex(a: string) {
-	return a.toLowerCase();
-}
-
 async function assertRuleMatchesOnChain(args: {
 	validator: ReturnType<typeof fsPaymentValidatorAt>;
 	expectedCid: Hex;
 	rule: SettlementRuleRegistrationInput;
 }) {
-	const { validator, expectedCid, rule } = args;
-
-	assertSettlementUsdcToken(rule.tokenAddress);
-
-	if (rule.cidIdentifier.toLowerCase() !== expectedCid.toLowerCase()) {
-		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-			params: {
-				reason: "Settlement rule cidIdentifier does not match document",
-			},
-		});
-	}
-
-	const ruleId = BigInt(rule.onChainRuleId);
-	const readRes = await tryCatch(validator.read.rules([ruleId]));
-	if (readRes.error || !readRes.data) {
-		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-			params: {
-				reason: `Settlement rule ${rule.onChainRuleId} not found on-chain`,
-			},
-		});
-	}
-
-	const [
-		_payer,
-		token,
-		cidId,
-		releaseType,
-		specificCommitment,
-		thresholdN,
-		expiresAtOnChain,
-		executed,
-		cancelled,
-	] = readRes.data;
-
-	if (executed || cancelled) {
-		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-			params: {
-				reason: `Settlement rule ${rule.onChainRuleId} is not active on-chain`,
-			},
-		});
-	}
-	if (getAddress(token) !== getAddress(rule.tokenAddress)) {
-		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-			params: {
-				reason: "On-chain token does not match submitted settlement rule",
-			},
-		});
-	}
-	if (cidId.toLowerCase() !== expectedCid.toLowerCase()) {
-		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-			params: {
-				reason: "On-chain cidId does not match document",
-			},
-		});
-	}
-	if (Number(releaseType) !== SETTLEMENT_RELEASE_TYPE_UINT[rule.releaseType]) {
-		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-			params: {
-				reason:
-					"On-chain release type does not match submitted settlement rule",
-			},
-		});
-	}
-
-	const expectedExpires = rule.expiresAt ? BigInt(rule.expiresAt) : 0n;
-	if (expiresAtOnChain !== expectedExpires) {
-		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-			params: {
-				reason: "On-chain expiresAt does not match submitted settlement rule",
-			},
-		});
-	}
-
-	const legsRes = await tryCatch(validator.read.ruleLegs([ruleId]));
-	if (legsRes.error || !legsRes.data?.length) {
-		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-			params: {
-				reason: "On-chain payout legs missing for settlement rule",
-			},
-		});
-	}
-	if (legsRes.data.length !== rule.legs.length) {
-		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-			params: {
-				reason: "On-chain leg count does not match submitted settlement rule",
-			},
-		});
-	}
-	for (let i = 0; i < rule.legs.length; i++) {
-		const submitted = rule.legs[i];
-		const onChain = legsRes.data[i];
-		if (
-			getAddress(onChain.recipient) !== getAddress(submitted.recipientWallet)
-		) {
-			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-				params: {
-					reason: "On-chain payout recipient does not match submitted leg",
-				},
-			});
-		}
-		if (onChain.amount !== BigInt(submitted.amount)) {
-			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-				params: {
-					reason: "On-chain payout amount does not match submitted leg",
-				},
-			});
-		}
-	}
-
-	if (
-		rule.releaseType === "specific_signer" &&
-		rule.releaseParams.releaseType === "specific_signer"
-	) {
-		if (
-			normHex(specificCommitment) !==
-			normHex(rule.releaseParams.signerEmailCommitment)
-		) {
-			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-				params: {
-					reason: "On-chain signer commitment does not match settlement rule",
-				},
-			});
-		}
-	}
-
-	const needsCommitments =
-		rule.releaseType === "at_least_n" ||
-		rule.releaseType === "quorum_set" ||
-		rule.releaseType === "all_of_set";
-	if (needsCommitments) {
-		const commitmentsRes = await tryCatch(
-			validator.read.signerCommitments([ruleId]),
-		);
-		if (commitmentsRes.error || !commitmentsRes.data) {
-			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-				params: {
-					reason: "On-chain signer commitments missing for settlement rule",
-				},
-			});
-		}
-		const onChain = commitmentsRes.data.map(normHex).sort();
-		const submitted =
-			rule.releaseParams.releaseType === "at_least_n" ||
-			rule.releaseParams.releaseType === "quorum_set" ||
-			rule.releaseParams.releaseType === "all_of_set"
-				? [...rule.releaseParams.signerEmailCommitments].map(normHex).sort()
-				: [];
-		if (
-			onChain.length !== submitted.length ||
-			onChain.some((c, i) => c !== submitted[i])
-		) {
-			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-				params: {
-					reason:
-						"On-chain signer commitments do not match submitted settlement rule",
-				},
-			});
-		}
-	}
-
-	if (
-		rule.releaseType === "at_least_n" &&
-		rule.releaseParams.releaseType === "at_least_n"
-	) {
-		if (Number(thresholdN) !== rule.releaseParams.thresholdN) {
-			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-				params: {
-					reason: "On-chain threshold does not match settlement rule",
-				},
-			});
-		}
-	}
-	if (
-		rule.releaseType === "quorum_set" &&
-		rule.releaseParams.releaseType === "quorum_set"
-	) {
-		if (Number(thresholdN) !== rule.releaseParams.thresholdN) {
-			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-				params: {
-					reason: "On-chain quorum threshold does not match settlement rule",
-				},
-			});
-		}
-	}
-	if (
-		(rule.releaseType === "quorum_required" &&
-			rule.releaseParams.releaseType === "quorum_required") ||
-		(rule.releaseType === "quorum_all" &&
-			rule.releaseParams.releaseType === "quorum_all")
-	) {
-		if (Number(thresholdN) !== rule.releaseParams.thresholdN) {
-			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-				params: {
-					reason: "On-chain threshold does not match settlement rule",
-				},
-			});
-		}
-	}
+	const header = await readOnChainRuleHeader(args);
+	await assertOnChainRuleLegsMatch({
+		validator: args.validator,
+		rule: args.rule,
+	});
+	await assertOnChainReleaseParamsMatch({
+		validator: args.validator,
+		rule: args.rule,
+		header,
+	});
 }
 
 /** Ensures indexed settlement rules exist on-chain for this sender and document. */

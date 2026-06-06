@@ -1,4 +1,5 @@
 import type {
+	EnvelopeMetadata,
 	FieldCompletionMap,
 	FieldValueKind,
 	PlacementManifest,
@@ -24,6 +25,9 @@ export const coldInviteStatuses = [
 ] as const;
 
 export type ColdInviteStatus = (typeof coldInviteStatuses)[number];
+
+export const fileParticipantRoles = ["sender", "viewer", "signer"] as const;
+export type FileParticipantRole = (typeof fileParticipantRoles)[number];
 
 export const files = t.pgTable(
 	"files",
@@ -55,6 +59,8 @@ export const files = t.pgTable(
 		placementManifestJson: t.jsonb().$type<PlacementManifest>().notNull(),
 		/** Snapshot of register routing for sign UX (sequential order, quorum). */
 		registerRoutingJson: t.jsonb().$type<RegisterRoutingInput>(),
+		/** Sender-defined opaque metadata (tags, external ids) — not encrypted. */
+		metadataJson: t.jsonb().$type<EnvelopeMetadata>(),
 
 		warmParticipantCount: t.integer().notNull().default(0),
 		coldInviteCount: t.integer().notNull().default(0),
@@ -94,7 +100,7 @@ export const fileParticipants = t.pgTable(
 			.notNull()
 			.references(() => users.walletAddress),
 
-		role: t.text({ enum: ["sender", "viewer", "signer"] }).notNull(),
+		role: t.text({ enum: fileParticipantRoles }).notNull(),
 
 		emailCommitment: tBytes32(),
 
@@ -311,7 +317,7 @@ export const fileSignatures = t.pgTable(
 		signer: tEvmAddress().notNull(),
 		evmSignature: tHex().notNull(),
 		dl3Signature: tHex().notNull(),
-		onchainTxHash: t.text().notNull(),
+		onchainTxHash: tHex().notNull(),
 		/** Field IDs included in this signature’s completions Merkle tree (sorted in-tree). */
 		completedFieldIds: t.jsonb().$type<string[]>().notNull(),
 		completionsRoot: tBytes32().notNull(),

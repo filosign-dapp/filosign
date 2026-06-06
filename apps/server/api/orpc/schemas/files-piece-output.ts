@@ -1,5 +1,6 @@
 import {
 	zComplianceBundle,
+	zEnvelopeMetadata,
 	zFieldCompletionMap,
 	zFieldCompletionWireRow,
 	zPlacementManifest,
@@ -113,10 +114,11 @@ export const rpcPieceDetailOutputSchema = z.object({
 		.optional(),
 	commentsFeatureEnabled: z.boolean(),
 	hasSenderComments: z.boolean(),
+	metadata: zEnvelopeMetadata.nullable().optional(),
 	fieldCompletions: z.array(zFieldCompletionWireRow).optional(),
 });
 
-export type RpcPieceDetailOutput = z.output<typeof rpcPieceDetailOutputSchema>;
+export type RpcPieceDetailOutput = z.infer<typeof rpcPieceDetailOutputSchema>;
 
 export const rpcPieceAckOutputSchema = z.object({});
 

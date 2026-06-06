@@ -1,14 +1,14 @@
 import { check } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
-import { zPlacementManifest } from "@filosign/shared";
+import { zEnvelopeMetadata, zPlacementManifest } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import { z } from "zod";
+import type { RpcPieceDetailOutput } from "@/api/orpc/schemas/files-piece-output";
 import { listSupplementaryPacketsForParticipant } from "@/lib/domains/attachments";
 import { resolveEntitlementContext } from "@/lib/domains/entitlements";
-import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs";
 import {
 	buildComplianceBundleAndHash,
 	insertComplianceExportLog,
@@ -24,6 +24,19 @@ import {
 	isComplianceExportAllowed,
 } from "./utils/compliance-export";
 import { listPieceFieldCompletions } from "./utils/field-completions";
+import {
+	resolvePieceDetailAccess,
+	rosterPerson,
+} from "./utils/piece-detail/access";
+import {
+	buildPieceDetailResponse,
+	computePieceDetailPermissions,
+} from "./utils/piece-detail/permissions";
+import {
+	buildPieceDetailSigners,
+	resolveSenderEmailForManifest,
+	senderHasManifestFields,
+} from "./utils/piece-detail/signers";
 import {
 	backfillFileFinalizationFromChain,
 	getDocumentView,
@@ -57,6 +70,7 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 			placementCommitment: files.placementCommitment,
 			placementManifestJson: files.placementManifestJson,
 			registerRoutingJson: files.registerRoutingJson,
+			metadataJson: files.metadataJson,
 		})
 		.from(files)
 		.where(eq(files.pieceCid, pieceCid));
@@ -79,22 +93,14 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 	if (!fileRecord) {
 		throwAppError("FILES.NOT_FOUND");
 	}
-	const userWalletNorm = getAddress(userWallet);
-	const participantUser = participants.find(
-		(p) => getAddress(p.wallet) === userWalletNorm,
-	);
 
-	const orgRead =
-		!participantUser &&
-		fileRecord.organizationId &&
-		(await getOrgMemberWithDocumentRead(
-			userWalletNorm,
-			fileRecord.organizationId,
-		));
-
-	if (!participantUser && !orgRead) {
-		throwAppError("FILES.FORBIDDEN");
-	}
+	const { participantUser, orgRead, isSender, userWalletNorm } =
+		await resolvePieceDetailAccess({
+			userWallet,
+			participants,
+			organizationId: fileRecord.organizationId,
+			sender: fileRecord.sender,
+		});
 
 	const fileSignaturesRecord = await db
 		.select({
@@ -105,35 +111,12 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		.from(fileSignatures)
 		.where(eq(fileSignatures.filePieceCid, pieceCid));
 
-	const rosterPerson = (p: (typeof participants)[number]) => ({
-		wallet: getAddress(p.wallet),
-		name:
-			[p.firstName, p.lastName].filter(Boolean).join(" ") || p.username || null,
-		email: p.email || null,
-	});
-
-	const signerParticipants = participants.filter((p) => p.role === "signer");
-
-	const viewers = participants
-		.filter((p) => p.role === "viewer")
-		.map((p) => ({
-			wallet: getAddress(p.wallet),
-			name:
-				[p.firstName, p.lastName].filter(Boolean).join(" ") ||
-				p.username ||
-				null,
-			email: p.email || null,
-		}))
-		.sort((a, b) => a.wallet.localeCompare(b.wallet));
-
-	const isSender = getAddress(fileRecord.sender) === userWalletNorm;
 	const validAck = participantUser
 		? await getValidAck(userWalletNorm, pieceCid)
 		: null;
 	const documentView = participantUser
 		? await getDocumentView(userWalletNorm, pieceCid)
 		: null;
-
 	const mySignature = fileSignaturesRecord.find(
 		(s) => getAddress(s.signer) === userWalletNorm,
 	);
@@ -148,50 +131,23 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 	const senderParticipant = participants.find(
 		(p) => getAddress(p.wallet) === senderWallet,
 	);
-	let senderEmailForManifest: string | null =
-		senderParticipant?.email ?? senderEmail;
-	if (
-		!senderEmailForManifest &&
-		manifestParsed.success &&
-		manifestParsed.data.fields.length > 0
-	) {
-		senderEmailForManifest = await primaryEmailForWallet(senderWallet);
-	}
-	const senderHasAssignedFields = Boolean(
-		senderEmailForManifest &&
-			manifestParsed.success &&
-			manifestParsed.data.fields.some(
-				(f) => f.assignedRecipientEmail === senderEmailForManifest,
-			),
-	);
+	const senderEmailForManifest = await resolveSenderEmailForManifest({
+		sender: fileRecord.sender,
+		senderParticipant,
+		senderEmail,
+		manifestParsed,
+	});
+	const senderHasAssignedFields = senderHasManifestFields({
+		manifestParsed,
+		senderEmailForManifest,
+	});
 
-	const signers = [
-		...signerParticipants.map(rosterPerson),
-		...(senderHasAssignedFields &&
-		!signerParticipants.some((p) => getAddress(p.wallet) === senderWallet)
-			? [
-					senderParticipant
-						? rosterPerson(senderParticipant)
-						: {
-								wallet: senderWallet,
-								name: null,
-								email: senderEmailForManifest,
-							},
-				]
-			: []),
-	].sort((a, b) => a.wallet.localeCompare(b.wallet));
-
-	const isSigner =
-		(participantUser?.role === "signer" && !isSender && !mySignature) ||
-		(isSender && senderHasAssignedFields && !mySignature);
-
-	const canDecryptParticipant =
-		Boolean(participantUser) && (isSender || Boolean(validAck));
-	const canReadOrg = Boolean(orgRead);
-
-	const acknowledged = Boolean(validAck);
-	const acknowledgedAt = validAck?.acknowledgedAt.toISOString() ?? null;
-	const firstViewedAt = documentView?.firstViewedAt.toISOString() ?? null;
+	const signers = await buildPieceDetailSigners({
+		participants,
+		sender: fileRecord.sender,
+		manifestParsed,
+		senderEmail,
+	});
 
 	const signerEmailForRouting =
 		isSender && senderEmailForManifest
@@ -199,7 +155,6 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 			: (participantUser?.email ?? null);
 	const pendingSignerReplacement =
 		await readPendingSignerReplacementForPiece(pieceCid);
-
 	const envelopeProgress = await readEnvelopeRegistryProgress({
 		pieceCid,
 		registryAddress: fileRecord.registryAddress,
@@ -207,22 +162,22 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		signerEmail: signerEmailForRouting,
 	});
 
-	const canSignByRouting = envelopeProgress?.canSignByRouting ?? true;
-	const signerReplacementBlocksSign = Boolean(pendingSignerReplacement);
-	const canSign = Boolean(
-		isSigner &&
-			(isSender || (acknowledged && firstViewedAt)) &&
-			!mySignature &&
-			canSignByRouting &&
-			!signerReplacementBlocksSign,
-	);
+	const permissions = computePieceDetailPermissions({
+		participantUser,
+		isSender,
+		mySignature,
+		senderHasAssignedFields,
+		validAck,
+		documentView,
+		envelopeProgress,
+		pendingSignerReplacement,
+		orgRead,
+	});
 
-	const manifestUnlocked =
-		isSender ||
-		canReadOrg ||
-		(participantUser?.role === "signer"
-			? acknowledged && Boolean(firstViewedAt)
-			: acknowledged);
+	const viewers = participants
+		.filter((p) => p.role === "viewer")
+		.map(rosterPerson)
+		.sort((a, b) => a.wallet.localeCompare(b.wallet));
 
 	const conditionalAttachmentPackets = isSender
 		? await listConditionalAttachmentPacketsForSender(pieceCid)
@@ -283,95 +238,55 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 			),
 		)
 		.limit(1);
-	const hasSenderComments = Boolean(senderCommentRow);
 
 	const fieldCompletions =
-		manifestUnlocked || canReadOrg
+		permissions.manifestUnlocked || permissions.canReadOrg
 			? await listPieceFieldCompletions(pieceCid)
 			: undefined;
 
-	return {
-		pieceCid: fileRecord.pieceCid,
-		registryAddress: fileRecord.registryAddress,
-		sender: fileRecord.sender,
-		status: fileRecord.status,
-		onchainTxHash: fileRecord.onchainTxHash,
-		createdAt: fileRecord.createdAt,
-		placementCommitment: fileRecord.placementCommitment,
-		placementManifest: manifestUnlocked
-			? fileRecord.placementManifestJson
-			: null,
+	const response = buildPieceDetailResponse({
+		fileRecord,
+		participantUser: participantUser
+			? {
+					kemCiphertext: participantUser.kemCiphertext,
+					encryptedEncryptionKey: participantUser.encryptedEncryptionKey,
+				}
+			: undefined,
+		permissions,
 		signers,
 		viewers,
-		signatures: fileSignaturesRecord,
-		participantAccess: {
-			acknowledged,
-			acknowledgedAt,
-			firstViewedAt,
-			canDecrypt:
-				canDecryptParticipant ||
-				canReadOrg ||
-				(isSender && Boolean(participantUser)),
-			canSign,
-			canSignByRouting,
-		},
-		envelopeProgress: envelopeProgress
-			? {
-					routingMode: envelopeProgress.routingMode,
-					requiredSignersCount: envelopeProgress.requiredSignersCount,
-					requiredSignaturesCount: envelopeProgress.requiredSignaturesCount,
-					quorumN: envelopeProgress.quorumN,
-					completedAt: envelopeProgress.completedAt,
-					revokedBeforeCompletedAt: envelopeProgress.revokedBeforeCompletedAt,
-					revokedBy: envelopeProgress.revokedBy,
-					nextSignerEmail: envelopeProgress.nextSignerEmail,
-					signerReplacementPending: signerReplacementBlocksSign,
-				}
-			: null,
-		pendingSignerReplacement: pendingSignerReplacement
-			? {
-					oldCommitment: pendingSignerReplacement.oldCommitment,
-					newCommitment: pendingSignerReplacement.newCommitment,
-					proposeTxHash: pendingSignerReplacement.proposeTxHash,
-					createdAt: pendingSignerReplacement.createdAt,
-				}
-			: null,
-		...(conditionalAttachmentPackets ? { conditionalAttachmentPackets } : {}),
-		...(mySupplementaryPackets.length > 0 ? { mySupplementaryPackets } : {}),
-
-		kemCiphertext:
-			canDecryptParticipant && participantUser
-				? participantUser.kemCiphertext
-				: null,
-		encryptedEncryptionKey:
-			canDecryptParticipant && participantUser
-				? participantUser.encryptedEncryptionKey
-				: null,
-		orgKemCiphertext: canReadOrg ? fileRecord.orgKemCiphertext : null,
-		orgEncryptedEncryptionKey: canReadOrg
-			? fileRecord.orgEncryptedEncryptionKey
-			: null,
-		organizationId: canReadOrg || isSender ? fileRecord.organizationId : null,
-		focStatus: focRow
-			? {
-					lifecycle: focRow.lifecycle,
-					replicateStatus: focRow.replicateStatus,
-					retentionUntil: focRow.retentionUntil.toISOString(),
-					focVerifiedAt: focRow.focVerifiedAt?.toISOString() ?? null,
-					dealId: focRow.dealId,
-				}
-			: null,
-		latestComplianceExport: latestExport
-			? {
-					exportKind: latestExport.exportKind,
-					createdAt: latestExport.createdAt.toISOString(),
-					documentSha256: latestExport.documentSha256,
-				}
-			: null,
+		fileSignaturesRecord,
+		envelopeProgress,
+		pendingSignerReplacement,
+		conditionalAttachmentPackets,
+		mySupplementaryPackets,
+		focRow,
+		latestExport:
+			latestExport?.documentSha256 != null &&
+			(latestExport.exportKind === "zip" ||
+				latestExport.exportKind === "pdf" ||
+				latestExport.exportKind === "json")
+				? {
+						exportKind: latestExport.exportKind,
+						createdAt: latestExport.createdAt,
+						documentSha256: latestExport.documentSha256,
+					}
+				: undefined,
 		commentsFeatureEnabled,
-		hasSenderComments,
-		...(fieldCompletions ? { fieldCompletions } : {}),
-	};
+		hasSenderComments: Boolean(senderCommentRow),
+		fieldCompletions,
+		isSender,
+	});
+
+	return {
+		...response,
+		metadata:
+			permissions.canReadOrg || isSender
+				? fileRecord.metadataJson
+					? zEnvelopeMetadata.parse(fileRecord.metadataJson)
+					: null
+				: undefined,
+	} satisfies RpcPieceDetailOutput;
 }
 
 export async function pieceComplianceBundle(args: {
@@ -460,7 +375,7 @@ export async function pieceComplianceBundle(args: {
 
 	const participantRows = participants.map((p) => ({
 		wallet: getAddress(p.wallet),
-		role: p.role as "sender" | "viewer" | "signer",
+		role: p.role,
 		firstName: p.firstName,
 		lastName: p.lastName,
 		email: p.email,

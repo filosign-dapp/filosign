@@ -1,20 +1,16 @@
-import { throwAppError } from "@filosign/errors/server";
 import {
-	AUTO_FIELD_TYPES,
-	CHECKBOX_FIELD_TYPES,
 	type FieldCompletion,
 	type FieldCompletionMap,
 	type FieldCompletionWireRow,
 	fieldCompletionMapFromInput,
 	type PlacementField,
-	TEXT_FIELD_TYPES,
-	VISUAL_FIELD_TYPES,
 	zFieldCompletionInputMap,
 } from "@filosign/shared";
 import { eq } from "drizzle-orm";
 import db from "@/lib/platform/db";
 import { presignObjectPreviewGet } from "@/lib/platform/s3/presign-preview";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
+import { validateSingleFieldCompletion } from "./field-completion-validate";
 
 export { enrichFieldCompletionMapPreviews } from "./enrich-field-completion-previews";
 
@@ -45,38 +41,7 @@ export function validateFieldCompletionsForSigner(args: {
 
 	for (const field of assignedFields) {
 		if (!completedSet.has(field.id)) continue;
-
-		const completion = fieldCompletions[field.id];
-		if (!completion || completion.fieldId !== field.id) {
-			throw throwAppError("SIGNING.FIELD_COMPLETION_MISSING");
-		}
-
-		if ((VISUAL_FIELD_TYPES as readonly string[]).includes(field.type)) {
-			if (completion.valueKind !== "visual" || !completion.storageKey) {
-				throw throwAppError("SIGNING.FIELD_VISUAL_REQUIRED");
-			}
-			continue;
-		}
-
-		if ((AUTO_FIELD_TYPES as readonly string[]).includes(field.type)) {
-			if (completion.valueKind !== "auto" || !completion.textValue?.trim()) {
-				throw throwAppError("SIGNING.FIELD_AUTO_REQUIRED");
-			}
-			continue;
-		}
-
-		if ((TEXT_FIELD_TYPES as readonly string[]).includes(field.type)) {
-			if (completion.valueKind !== "text" || !completion.textValue?.trim()) {
-				throw throwAppError("SIGNING.FIELD_TEXT_REQUIRED");
-			}
-			continue;
-		}
-
-		if ((CHECKBOX_FIELD_TYPES as readonly string[]).includes(field.type)) {
-			if (completion.valueKind !== "checkbox") {
-				throw throwAppError("SIGNING.FIELD_CHECKBOX_REQUIRED");
-			}
-		}
+		validateSingleFieldCompletion(field, fieldCompletions[field.id]);
 	}
 }
 

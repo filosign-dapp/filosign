@@ -8,18 +8,13 @@ export type FileRow = {
 	displayName?: string | null;
 	mimeType?: string | null;
 	ciphertextByteLength?: number | null;
-	metadata?: {
-		fileName?: string;
-		fileSize?: number;
-	};
 	createdAt?: Date;
 	[key: string]: unknown;
 };
 
 export function mapFileToDocumentCardProps(file: FileRow) {
-	const title =
-		file.displayName?.trim() || file.metadata?.fileName || "Unknown File";
-	const sizeBytes = file.ciphertextByteLength ?? file.metadata?.fileSize ?? 0;
+	const title = file.displayName?.trim() || "Unknown File";
+	const sizeBytes = file.ciphertextByteLength ?? 0;
 	const date = file.createdAt ? new Date(file.createdAt) : new Date();
 	return {
 		title,

@@ -114,6 +114,8 @@ export function usePostHogAnalyticsBridge(): AnalyticsContextValue {
 	);
 }
 
+export type CaptureAppEvent = CaptureFn;
+
 export function useCaptureAppEvent(): CaptureFn {
 	return useAnalyticsContext().capture;
 }

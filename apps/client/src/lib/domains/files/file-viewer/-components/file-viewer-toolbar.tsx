@@ -16,6 +16,7 @@ import {
 	pieceDetailToDekSource,
 } from "@/src/lib/domains/files/envelope-comments-block";
 import { EnvelopeOpsStatus } from "@/src/lib/domains/files/envelope-ops-status";
+import { RemindSignersButton } from "@/src/lib/domains/files/file-viewer/-components/remind-signers-button";
 import { useFileViewer } from "@/src/lib/domains/files/file-viewer/-lib/context/context";
 
 const toolbarIconClass = "size-6 @md:size-7";
@@ -27,6 +28,7 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 		file,
 		fileInfo,
 		fileData,
+		isSender,
 		zoom,
 		handleZoomIn,
 		handleZoomOut,
@@ -67,6 +69,13 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 								pieceCid={fileInfo.pieceCid}
 								dekSource={pieceDetailToDekSource(fileInfo)}
 								commentsFeatureEnabled={fileInfo.commentsFeatureEnabled}
+							/>
+						) : null}
+						{file?.pieceCid ? (
+							<RemindSignersButton
+								pieceCid={file.pieceCid}
+								fileInfo={fileInfo}
+								isSender={isSender}
 							/>
 						) : null}
 						<Button

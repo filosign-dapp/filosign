@@ -19,6 +19,7 @@ export {
 } from "./piece";
 export { filesRecallEnvelope, zRecallEnvelopeBody } from "./recall";
 export { filesRegister, zFileRegisterBody } from "./register";
+export { filesRemindSigners, zRemindSignersBody } from "./remind";
 export { pieceSign } from "./sign";
 export {
 	filesCancelSignerReplacement,

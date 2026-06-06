@@ -46,7 +46,7 @@ export function OnboardingNameForm({
 			<CardHeader>
 				<CardTitle>Welcome aboard!</CardTitle>
 				<CardDescription>
-					Enter your name, then confirm in your wallet to register your keys.
+					Enter your name to personalize your profile and workspace.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
@@ -78,7 +78,7 @@ export function OnboardingNameForm({
 					className="w-full group"
 					variant="primary"
 				>
-					{disabled ? "Registering…" : "Continue"}
+					{disabled ? "Saving…" : "Continue"}
 					{!disabled ? (
 						<CaretRightIcon
 							className="transition-transform duration-200 size-4 group-hover:translate-x-1"

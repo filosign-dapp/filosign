@@ -7,7 +7,7 @@ import {
 import Logo from "@/src/lib/components/app/chrome/logo";
 import { Button } from "@/src/lib/components/ui/button";
 import { cn } from "@/src/lib/utils/utils";
-import { AddSignDraftActions } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft-actions";
+import { AddSignDraftActions } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft/actions";
 import { useAddSignChrome } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 
 export function AddSignHeader() {

@@ -12,9 +12,7 @@ export function useLinkOrgWallet() {
 	return useMutation({
 		mutationFn: async (organizationId: string) => {
 			if (!wallet?.account || !contracts) {
-				throw new Error(
-					"Connect your wallet to link the workspace controller.",
-				);
+				throw new Error("Connect your wallet to link the workspace treasury.");
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 

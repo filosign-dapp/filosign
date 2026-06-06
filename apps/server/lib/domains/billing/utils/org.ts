@@ -30,7 +30,7 @@ function createBillingDodoClient() {
 }
 
 function defaultOrgPortalReturnUrl() {
-	return `${env.CLIENT_URL.replace(/\/$/, "")}/dashboard/settings/workspace`;
+	return `${env.CLIENT_URL.replace(/\/$/, "")}/dashboard/settings/billing`;
 }
 
 function assertAllowedReturnUrl(url: string) {

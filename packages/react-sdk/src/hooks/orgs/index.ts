@@ -14,4 +14,5 @@ export * from "./useRevokeOrgConnection";
 export * from "./useSetOrgMemberRole";
 export * from "./useSettlementFeatureAccessGet";
 export * from "./useSubmitSettlementFeatureAccessRequest";
+export * from "./useUnlinkOrgWallet";
 export * from "./useUpdateOrganization";

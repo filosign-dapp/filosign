@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { compressPng } from "@/src/lib/utils/compress-image";
 import { useSignatureCreate } from "@/src/routes/dashboard/signature/create/-lib/context/context";
+import { SignatureRoleSaveButton } from "./signature-role-save-button";
 import { SignatureUploadCropDialog } from "./signature-upload-crop-dialog";
 
 const ACCEPTED_FILE_TYPES = [
@@ -20,6 +21,7 @@ interface UploadAreaProps {
 	uploadedFile: string | null;
 	onFileUpload: (dataUrl: string) => void;
 	onFileClear: () => void;
+	label: string;
 }
 
 function UploadArea({
@@ -28,50 +30,48 @@ function UploadArea({
 	uploadedFile,
 	onFileUpload,
 	onFileClear,
+	label,
 }: UploadAreaProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [pendingCropImage, setPendingCropImage] = useState<string | null>(null);
 	const [cropDialogOpen, setCropDialogOpen] = useState(false);
 
-	const handleFileSelect = useCallback(
-		async (file: File | null) => {
-			if (!file) return;
+	const handleFileSelect = useCallback(async (file: File | null) => {
+		if (!file) return;
 
-			setError(null);
+		setError(null);
 
-			if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
-				setError("Unsupported file format.");
-				return;
-			}
+		if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
+			setError("Unsupported file format.");
+			return;
+		}
 
-			if (file.size > MAX_FILE_SIZE) {
-				setError("File is too large (max 2MB).");
-				return;
-			}
+		if (file.size > MAX_FILE_SIZE) {
+			setError("File is too large (max 2MB).");
+			return;
+		}
 
-			const readAsDataUrl = (input: File) =>
-				new Promise<string>((resolve, reject) => {
-					const reader = new FileReader();
-					reader.onload = () => resolve(String(reader.result ?? ""));
-					reader.onerror = () =>
-						reject(new Error("Failed to read selected file"));
-					reader.readAsDataURL(input);
-				});
+		const readAsDataUrl = (input: File) =>
+			new Promise<string>((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onload = () => resolve(String(reader.result ?? ""));
+				reader.onerror = () =>
+					reject(new Error("Failed to read selected file"));
+				reader.readAsDataURL(input);
+			});
 
-			try {
-				const compressedFile = await compressPng(file);
-				const dataUrl = await readAsDataUrl(compressedFile);
-				setPendingCropImage(dataUrl);
-				setCropDialogOpen(true);
-			} catch {
-				const dataUrl = await readAsDataUrl(file);
-				setPendingCropImage(dataUrl);
-				setCropDialogOpen(true);
-			}
-		},
-		[onFileUpload],
-	);
+		try {
+			const compressedFile = await compressPng(file);
+			const dataUrl = await readAsDataUrl(compressedFile);
+			setPendingCropImage(dataUrl);
+			setCropDialogOpen(true);
+		} catch {
+			const dataUrl = await readAsDataUrl(file);
+			setPendingCropImage(dataUrl);
+			setCropDialogOpen(true);
+		}
+	}, []);
 
 	const handleFileInputChange = (
 		event: React.ChangeEvent<HTMLInputElement>,
@@ -88,6 +88,7 @@ function UploadArea({
 
 	return (
 		<div className="space-y-3">
+			<p className="text-xs text-muted-foreground">{label}</p>
 			<input
 				ref={fileInputRef}
 				type="file"
@@ -136,6 +137,10 @@ function UploadArea({
 				)}
 			</button>
 			{error && <p className="text-sm text-center text-destructive">{error}</p>}
+			<SignatureRoleSaveButton
+				signatureRole={signatureRole}
+				disabled={!uploadedFile}
+			/>
 			<SignatureUploadCropDialog
 				isOpen={cropDialogOpen}
 				imageDataUrl={pendingCropImage}
@@ -162,8 +167,6 @@ export function SignatureUpload() {
 		handleInitialsUpload,
 		handleClearSignature,
 		handleClearInitials,
-		handleCreateSignature,
-		isUploadDisabled,
 	} = useSignatureCreate();
 
 	return (
@@ -176,6 +179,7 @@ export function SignatureUpload() {
 					uploadedFile={signatureData}
 					onFileUpload={handleSignatureUpload}
 					onFileClear={handleClearSignature}
+					label="Signature"
 				/>
 				<UploadArea
 					icon={<TextAaIcon className="size-16 text-muted-foreground" />}
@@ -183,24 +187,12 @@ export function SignatureUpload() {
 					uploadedFile={initialsData}
 					onFileUpload={handleInitialsUpload}
 					onFileClear={handleClearInitials}
+					label="Initials (optional)"
 				/>
 			</div>
 			<p className="text-sm text-muted-foreground">
 				Accepted File Formats: GIF, JPG, PNG, BMP. Max file size 2MB.
 			</p>
-			<div className="flex gap-4 justify-end mx-auto w-full max-w-6xl">
-				<Button variant="ghost" size="lg">
-					<p className="hidden sm:block">Cancel</p>
-				</Button>
-				<Button
-					variant="primary"
-					size="lg"
-					onClick={handleCreateSignature}
-					disabled={isUploadDisabled}
-				>
-					Save
-				</Button>
-			</div>
 		</div>
 	);
 }

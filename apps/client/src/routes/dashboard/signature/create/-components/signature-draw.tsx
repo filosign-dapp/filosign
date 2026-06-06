@@ -1,6 +1,7 @@
 import { SignatureIcon, TextAaIcon, TrashIcon } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
 import { useSignatureCreate } from "@/src/routes/dashboard/signature/create/-lib/context/context";
+import { SignatureRoleSaveButton } from "./signature-role-save-button";
 
 export function SignatureDraw() {
 	const {
@@ -10,8 +11,6 @@ export function SignatureDraw() {
 		setIsInitialsDialogOpen,
 		handleClearSignature,
 		handleClearInitials,
-		handleCreateSignature,
-		isDrawDisabled,
 	} = useSignatureCreate();
 
 	return (
@@ -19,6 +18,7 @@ export function SignatureDraw() {
 			<h4 className="text-muted-foreground">Draw Signature</h4>
 			<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 				<div className="space-y-3">
+					<p className="text-xs text-muted-foreground">Signature</p>
 					<button
 						type="button"
 						className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center min-h-64 flex flex-col items-center justify-center bg-card w-full"
@@ -54,8 +54,13 @@ export function SignatureDraw() {
 							</div>
 						)}
 					</button>
+					<SignatureRoleSaveButton
+						signatureRole="signature"
+						disabled={!signatureData}
+					/>
 				</div>
 				<div className="space-y-3">
+					<p className="text-xs text-muted-foreground">Initials (optional)</p>
 					<button
 						type="button"
 						className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center min-h-64 flex flex-col items-center justify-center w-full bg-card"
@@ -91,23 +96,11 @@ export function SignatureDraw() {
 							</div>
 						)}
 					</button>
+					<SignatureRoleSaveButton
+						signatureRole="initial"
+						disabled={!initialsData}
+					/>
 				</div>
-			</div>
-
-			<p className="text-sm text-muted-foreground">SVG</p>
-
-			<div className="flex gap-4 justify-end mx-auto w-full max-w-6xl">
-				<Button variant="ghost" size="lg">
-					<p className="hidden sm:block">Cancel</p>
-				</Button>
-				<Button
-					variant="primary"
-					size="lg"
-					onClick={handleCreateSignature}
-					disabled={isDrawDisabled}
-				>
-					Save
-				</Button>
 			</div>
 		</div>
 	);

@@ -20,12 +20,14 @@ import {
 	TabsTrigger,
 } from "@/src/lib/components/ui/tabs";
 import { OnboardingSwitchAccountLink } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
+import "@/src/lib/domains/signatures/signature-fonts.css";
 import {
 	SignatureCreateProvider,
 	useSignatureCreate,
 } from "../-lib/context/context";
 import { useSignatureCreateController } from "../-lib/hooks/use-signature-create-controller";
 import { SignatureChoose } from "./signature-choose";
+import { SignatureCurrentSection } from "./signature-current-section";
 import { SignatureDialogs } from "./signature-dialogs";
 import { SignatureDraw } from "./signature-draw";
 import { SignatureUpload } from "./signature-upload";
@@ -81,7 +83,7 @@ export function SignatureCreatePage() {
 				</motion.div>
 
 				<motion.div
-					className="w-full"
+					className="w-full space-y-8"
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{
@@ -91,38 +93,43 @@ export function SignatureCreatePage() {
 						delay: 0.4,
 					}}
 				>
-					<Tabs
-						defaultValue="choose"
-						onValueChange={handleTabChange}
-						className="w-full min-h-128"
-					>
-						<TabsList className="grid w-full grid-cols-3">
-							<TabsTrigger value="choose">
-								<TextAaIcon className="size-5" weight="bold" />
-								<p>Choose</p>
-							</TabsTrigger>
-							<TabsTrigger value="draw">
-								<PaintBrushIcon className="size-5" weight="bold" />
-								<p>Draw</p>
-							</TabsTrigger>
-							<TabsTrigger value="upload">
-								<UploadIcon className="size-5" weight="bold" />
-								<p>Upload</p>
-							</TabsTrigger>
-						</TabsList>
+					{!onboarding ? <SignatureCurrentSection /> : null}
 
-						<TabsContent value="choose" className="mt-6">
-							<SignatureChoose />
-						</TabsContent>
+					<div className="space-y-6">
+						<h4 className="text-muted-foreground">Choose a new signature</h4>
+						<Tabs
+							defaultValue="choose"
+							onValueChange={handleTabChange}
+							className="w-full min-h-128"
+						>
+							<TabsList className="grid w-full grid-cols-3">
+								<TabsTrigger value="choose">
+									<TextAaIcon className="size-5" weight="bold" />
+									<p>Choose</p>
+								</TabsTrigger>
+								<TabsTrigger value="draw">
+									<PaintBrushIcon className="size-5" weight="bold" />
+									<p>Draw</p>
+								</TabsTrigger>
+								<TabsTrigger value="upload">
+									<UploadIcon className="size-5" weight="bold" />
+									<p>Upload</p>
+								</TabsTrigger>
+							</TabsList>
 
-						<TabsContent value="draw" className="mt-6">
-							<SignatureDraw />
-						</TabsContent>
+							<TabsContent value="choose" className="mt-6">
+								<SignatureChoose />
+							</TabsContent>
 
-						<TabsContent value="upload" className="mt-6">
-							<SignatureUpload />
-						</TabsContent>
-					</Tabs>
+							<TabsContent value="draw" className="mt-6">
+								<SignatureDraw />
+							</TabsContent>
+
+							<TabsContent value="upload" className="mt-6">
+								<SignatureUpload />
+							</TabsContent>
+						</Tabs>
+					</div>
 				</motion.div>
 				{onboarding ? <OnboardingSwitchAccountLink className="pb-8" /> : null}
 			</FullBleedMain>

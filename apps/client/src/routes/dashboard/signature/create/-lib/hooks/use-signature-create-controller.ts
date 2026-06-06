@@ -1,31 +1,73 @@
+import { useFilosignContext } from "@filosign/react";
 import {
 	CLIENT_ANALYTICS_EVENTS,
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
+import { invalidateActivationProgress } from "@filosign/react/invalidate-queries";
 import {
 	dataUrlToBytes,
+	deriveSignatureInitials,
 	intrinsicAspectRatioFromBytes,
-	renderTypedSignatureSvg,
-	svgStringToBytes,
+	rasterizeTypedSignature,
+	resolveSignatureFontId,
 	useCreateUserSignature,
+	useUserProfile,
 } from "@filosign/react/users";
+import type { UserSignatureRole } from "@filosign/shared";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { safeAsync } from "@/src/lib/utils/safe";
+
+const PROFILE_SETTINGS_HREF = "/dashboard/settings/profile";
 
 export function useSignatureCreateController(options?: {
 	onboarding?: boolean;
 }) {
 	const onboarding = options?.onboarding ?? false;
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
+	const { rpcQuery } = useFilosignContext();
 	const captureAppEvent = useCaptureAppEvent();
 	const createSignature = useCreateUserSignature();
 	const { onboardingForm, setOnboardingForm } = useStorePersist();
-	const [firstName, setFirstName] = useState(onboardingForm?.firstName || "");
-	const [lastName, setLastName] = useState(onboardingForm?.lastName || "");
-	const [initials, setInitials] = useState("");
+	const { data: profile } = useUserProfile({ enabled: !onboarding });
+
+	const { firstName, lastName, fullName, initials, hasSignableName } =
+		useMemo(() => {
+			const resolvedFirst = (
+				onboarding
+					? (onboardingForm?.firstName ?? "")
+					: (profile?.firstName ?? "")
+			).trim();
+			const resolvedLast = (
+				onboarding
+					? (onboardingForm?.lastName ?? "")
+					: (profile?.lastName ?? "")
+			).trim();
+			const resolvedFull = `${resolvedFirst} ${resolvedLast}`.trim();
+			const resolvedInitials = deriveSignatureInitials(
+				resolvedFirst,
+				resolvedLast,
+			);
+
+			return {
+				firstName: resolvedFirst,
+				lastName: resolvedLast,
+				fullName: resolvedFull,
+				initials: resolvedInitials,
+				hasSignableName: resolvedFirst.length > 0,
+			};
+		}, [
+			onboarding,
+			onboardingForm?.firstName,
+			onboardingForm?.lastName,
+			profile?.firstName,
+			profile?.lastName,
+		]);
+
 	const [activeTab, setActiveTab] = useState("choose");
 	const [isSignatureDialogOpen, setIsSignatureDialogOpen] = useState(false);
 	const [isInitialsDialogOpen, setIsInitialsDialogOpen] = useState(false);
@@ -34,31 +76,8 @@ export function useSignatureCreateController(options?: {
 	const [selectedSignatureId, setSelectedSignatureId] = useState<string | null>(
 		null,
 	);
-	const [isSaving, setIsSaving] = useState(false);
-
-	useEffect(() => {
-		if (onboardingForm?.firstName && !firstName) {
-			setFirstName(onboardingForm.firstName);
-		}
-		if (onboardingForm?.lastName && !lastName) {
-			setLastName(onboardingForm.lastName);
-		}
-	}, [
-		onboardingForm?.firstName,
-		onboardingForm?.lastName,
-		firstName,
-		lastName,
-	]);
-
-	useEffect(() => {
-		if (firstName.trim() && lastName.trim()) {
-			const generatedInitials =
-				`${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
-			setInitials(generatedInitials);
-		} else {
-			setInitials("");
-		}
-	}, [firstName, lastName]);
+	const [isSavingChoose, setIsSavingChoose] = useState(false);
+	const [savingRole, setSavingRole] = useState<UserSignatureRole | null>(null);
 
 	const handleSignatureSave = (data: string) => {
 		setSignatureData(data);
@@ -99,106 +118,48 @@ export function useSignatureCreateController(options?: {
 	};
 
 	const isChooseDisabled =
-		!selectedSignatureId ||
-		!firstName.trim() ||
-		!lastName.trim() ||
-		!initials.trim();
-	const isDrawDisabled = !signatureData || !initialsData;
-	const isUploadDisabled = !signatureData || !initialsData;
+		!selectedSignatureId || !hasSignableName || !initials.trim();
 
-	const uploadTypedPair = async () => {
-		const fullName = `${firstName} ${lastName}`.trim();
-		const fontId = selectedSignatureId ?? "typed";
-
-		const sigSvg = renderTypedSignatureSvg({ text: fullName, fontId });
-		const initSvg = renderTypedSignatureSvg({
-			text: initials,
-			fontId,
-			width: 200,
-			height: 80,
-		});
-
-		const sigBytes = svgStringToBytes(sigSvg);
-		const initBytes = svgStringToBytes(initSvg);
-
-		await Promise.all([
-			createSignature.mutateAsync({
-				bytes: sigBytes,
-				contentType: "image/svg+xml",
-				role: "signature",
-				kind: "typed",
-				typedMeta: { text: fullName, fontId },
-				intrinsicAspectRatio: intrinsicAspectRatioFromBytes(
-					sigBytes,
-					"image/svg+xml",
-					"signature",
-				),
-			}),
-			createSignature.mutateAsync({
-				bytes: initBytes,
-				contentType: "image/svg+xml",
-				role: "initial",
-				kind: "typed",
-				typedMeta: { text: initials, fontId },
-				intrinsicAspectRatio: intrinsicAspectRatioFromBytes(
-					initBytes,
-					"image/svg+xml",
-					"initial",
-				),
-			}),
-		]);
-	};
-
-	const uploadDrawOrUploadPair = async () => {
-		if (!signatureData || !initialsData) {
-			throw new Error("Signature and initials are required");
+	const uploadDrawOrUploadRole = async (role: UserSignatureRole) => {
+		const data = role === "signature" ? signatureData : initialsData;
+		if (!data) {
+			throw new Error(
+				role === "signature"
+					? "Draw or upload a signature first"
+					: "Draw or upload initials first",
+			);
 		}
 
-		const [sigParsed, initParsed] = await Promise.all([
-			dataUrlToBytes(signatureData),
-			dataUrlToBytes(initialsData),
-		]);
-
+		const parsed = await dataUrlToBytes(data);
 		const kind = activeTab === "draw" ? "drawn" : "uploaded";
 
-		await Promise.all([
-			createSignature.mutateAsync({
-				bytes: sigParsed.bytes,
-				contentType: sigParsed.contentType,
-				role: "signature",
-				kind,
-				intrinsicAspectRatio: intrinsicAspectRatioFromBytes(
-					sigParsed.bytes,
-					sigParsed.contentType,
-					"signature",
-				),
-			}),
-			createSignature.mutateAsync({
-				bytes: initParsed.bytes,
-				contentType: initParsed.contentType,
-				role: "initial",
-				kind,
-				intrinsicAspectRatio: intrinsicAspectRatioFromBytes(
-					initParsed.bytes,
-					initParsed.contentType,
-					"initial",
-				),
-			}),
-		]);
+		await createSignature.mutateAsync({
+			bytes: parsed.bytes,
+			contentType: parsed.contentType,
+			role,
+			kind,
+			intrinsicAspectRatio: intrinsicAspectRatioFromBytes(
+				parsed.bytes,
+				parsed.contentType,
+				role,
+			),
+		});
+
+		if (role === "signature") {
+			setSignatureData(null);
+		} else {
+			setInitialsData(null);
+		}
 	};
 
 	const handleCreateSignature = () => {
-		if (isSaving) return;
-		setIsSaving(true);
+		if (isSavingChoose) return;
+		setIsSavingChoose(true);
 
 		void safeAsync(async () => {
-			if (activeTab === "choose") {
-				await uploadTypedPair();
-			} else {
-				await uploadDrawOrUploadPair();
-			}
+			await uploadTypedPair();
 			captureAppEvent(CLIENT_ANALYTICS_EVENTS.signatureCreated, {
-				source: activeTab,
+				source: "choose",
 			});
 
 			if (onboarding && onboardingForm) {
@@ -212,16 +173,96 @@ export function useSignatureCreateController(options?: {
 				return;
 			}
 
+			await invalidateActivationProgress(queryClient, rpcQuery);
 			toast.success("Signature saved");
 			await navigate({ to: "/dashboard" });
 		}).then(([, err]) => {
-			setIsSaving(false);
+			setIsSavingChoose(false);
 			if (err) {
 				toast.error(
 					err instanceof Error ? err.message : "Failed to save signature",
 				);
 			}
 		});
+	};
+
+	const handleSaveDrawOrUploadRole = (role: UserSignatureRole) => {
+		if (savingRole) return;
+		setSavingRole(role);
+
+		void safeAsync(async () => {
+			await uploadDrawOrUploadRole(role);
+			captureAppEvent(CLIENT_ANALYTICS_EVENTS.signatureCreated, {
+				source: activeTab,
+				role,
+			});
+
+			if (onboarding && onboardingForm && role === "signature") {
+				setOnboardingForm({
+					...onboardingForm,
+					firstName,
+					lastName,
+					hasOnboarded: true,
+				});
+				await navigate({ to: "/onboarding" });
+				return;
+			}
+
+			toast.success(
+				role === "signature" ? "Signature saved" : "Initials saved",
+			);
+		}).then(([, err]) => {
+			setSavingRole(null);
+			if (err) {
+				toast.error(
+					err instanceof Error ? err.message : "Failed to save signature",
+				);
+			}
+		});
+	};
+
+	const uploadTypedPair = async () => {
+		const fontId = resolveSignatureFontId(selectedSignatureId ?? "typed");
+
+		const [sigBytes, initBytes] = await Promise.all([
+			rasterizeTypedSignature({
+				text: fullName,
+				fontId,
+				role: "signature",
+			}),
+			rasterizeTypedSignature({
+				text: initials,
+				fontId,
+				role: "initial",
+			}),
+		]);
+
+		await Promise.all([
+			createSignature.mutateAsync({
+				bytes: sigBytes,
+				contentType: "image/png",
+				role: "signature",
+				kind: "typed",
+				typedMeta: { text: fullName, fontId },
+				intrinsicAspectRatio: intrinsicAspectRatioFromBytes(
+					sigBytes,
+					"image/png",
+					"signature",
+				),
+			}),
+			createSignature.mutateAsync({
+				bytes: initBytes,
+				contentType: "image/png",
+				role: "initial",
+				kind: "typed",
+				typedMeta: { text: initials, fontId },
+				intrinsicAspectRatio: intrinsicAspectRatioFromBytes(
+					initBytes,
+					"image/png",
+					"initial",
+				),
+			}),
+		]);
 	};
 
 	const handleTabChange = (value: string) => {
@@ -234,10 +275,11 @@ export function useSignatureCreateController(options?: {
 	return {
 		onboarding,
 		firstName,
-		setFirstName,
 		lastName,
-		setLastName,
+		fullName,
 		initials,
+		hasSignableName,
+		profileSettingsHref: PROFILE_SETTINGS_HREF,
 		selectedSignatureId,
 		signatureData,
 		initialsData,
@@ -253,11 +295,11 @@ export function useSignatureCreateController(options?: {
 		handleInitialsUpload,
 		handleSignatureSelection,
 		isChooseDisabled,
-		isDrawDisabled,
-		isUploadDisabled,
 		handleCreateSignature,
+		handleSaveDrawOrUploadRole,
 		handleTabChange,
-		isSaving,
+		isSavingChoose,
+		savingRole,
 	};
 }
 

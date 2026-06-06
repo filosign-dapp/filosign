@@ -77,6 +77,16 @@ export function invalidateInboxQueries(
 	});
 }
 
+/** Activation milestones + practice pieceCid (checklist, floating card). */
+export function invalidateActivationProgress(
+	queryClient: QueryClient,
+	rpcQuery: FilosignRpcQueryUtils,
+) {
+	return queryClient.invalidateQueries({
+		queryKey: rpcQuery.users.activation.get.key(),
+	});
+}
+
 /** Email invite queries under sharing. */
 export function invalidateSharingQueries(
 	queryClient: QueryClient,

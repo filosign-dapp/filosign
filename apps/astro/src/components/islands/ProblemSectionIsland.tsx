@@ -113,8 +113,9 @@ export default function ProblemSectionIsland() {
 						<img
 							src={landingMedia.problemArch}
 							alt=""
-							width={960}
-							height={1200}
+							width={760}
+							height={950}
+							sizes="(min-width: 1024px) 50vw, 100vw"
 							loading="lazy"
 							decoding="async"
 							className="h-full w-full object-cover"

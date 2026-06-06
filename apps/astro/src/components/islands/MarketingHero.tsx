@@ -109,6 +109,7 @@ export default function MarketingHero() {
 					<MotionAwareVideo
 						width={1200}
 						height={600}
+						poster={landingMedia.demoVideoPoster}
 						className="w-full h-auto aspect-video rounded-large relative z-10 shadow-sm object-cover"
 					>
 						<source src={landingMedia.demoVideo} type="video/webm" />

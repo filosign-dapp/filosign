@@ -44,10 +44,10 @@ export default function MarketingLogo({
 					}}
 				>
 					<img
-						src="/logo.webp"
+						src="/logo-64.webp"
 						alt="Filosign Logo"
-						width={64}
-						height={64}
+						width={32}
+						height={32}
 						className={cn(
 							"size-8 text-foreground transition-all duration-150 group-hover/logo:-rotate-180",
 							iconClassName,

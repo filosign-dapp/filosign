@@ -149,6 +149,7 @@ Every page includes:
 - `public/robots.txt` — points crawlers at `sitemap-index.xml` (edit the `Sitemap:` URL if the deploy origin is not `filosign.xyz`)
 - `public/llms.txt` — short URL index for AI assistants; `public/llms-full.txt` — extended summaries
 - **IndexNow** — `postbuild` runs `scripts/indexnow-ping.ts` (submits sitemap URLs to Bing/Yandex partners). Skips localhost; set `INDEXNOW_SKIP=1` to disable. Key file: `public/8f3c2a1b-4d5e-6f70-8a9b-0c1d2e3f4a5b.txt` (must stay hosted at `/{key}.txt` on the live domain).
+- **Performance (landing)** — hero/trust videos defer with `preload="none"` + viewport load (`MotionAwareVideo`); poster at `public/media/demo-poster.webp`; optimized assets `logo-64.webp`, `images/stock_14-760.webp`; Manrope preloaded in `BaseLayout`; cache hints in `public/_headers`.
 
 Direct dependency **`canvaskit-wasm`** is required for OG generation (see astro-og-canvas README).
 

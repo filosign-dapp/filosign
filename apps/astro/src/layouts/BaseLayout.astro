@@ -1,6 +1,7 @@
 ---
 import "@fontsource-variable/inter/index.css";
 import "@fontsource-variable/manrope/index.css";
+import manropeLatinWoff2 from "@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2?url";
 import "../styles/global.css";
 import {
 	defaultDescription,
@@ -164,6 +165,14 @@ const isArticle = schemaVariant === "article" && article;
 
 		<link rel="canonical" href={canonical} />
 
+		<link
+			rel="preload"
+			href={manropeLatinWoff2}
+			as="font"
+			type="font/woff2"
+			crossorigin
+		/>
+
 		<link rel="icon" href={logo.webp} type="image/webp" sizes="512x512" />
 		<link rel="apple-touch-icon" href={logo.webp} />
 		<link rel="manifest" href="/site.webmanifest" />
@@ -207,9 +216,6 @@ const isArticle = schemaVariant === "article" && article;
 			is:inline
 			set:html={JSON.stringify(jsonLd)}
 		/>
-
-		<link rel="preconnect" href="https://fonts.googleapis.com" />
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 	</head>
 	<body class="min-h-dvh antialiased bg-background text-foreground">
 		<slot />

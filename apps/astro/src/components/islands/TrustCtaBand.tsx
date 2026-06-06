@@ -42,7 +42,6 @@ export default function TrustCtaBand() {
 							<MotionAwareVideo
 								width={960}
 								height={720}
-								preload="auto"
 								className="absolute inset-0 h-full w-full object-cover"
 							>
 								<source

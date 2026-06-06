@@ -1,31 +1,25 @@
 import { motion, PresenceSwap, SPRING_TOKENS } from "@filosign/motion";
-import { useIsRegistered } from "@filosign/react/auth";
 import { SignOutIcon } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/src/lib/components/ui/button";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
-type ConnectButtonState = "loading" | "signin" | "get-started" | "dashboard";
+type ConnectButtonState = "loading" | "signin" | "dashboard";
 
 export default function ConnectButton() {
 	const { ready, authenticated, logout, login } = useThirdweb();
-	const isRegistered = useIsRegistered();
 
 	const buttonState: ConnectButtonState = !ready
 		? "loading"
-		: !authenticated || isRegistered.isPending
+		: !authenticated
 			? "signin"
-			: !isRegistered.data
-				? "get-started"
-				: "dashboard";
+			: "dashboard";
 
 	const isLoading = buttonState === "loading";
 	const primaryCta =
 		buttonState === "dashboard"
 			? { label: "Dashboard", to: "/dashboard" as const }
-			: buttonState === "get-started"
-				? { label: "Get started", to: "/onboarding" as const }
-				: null;
+			: null;
 
 	return (
 		<motion.div

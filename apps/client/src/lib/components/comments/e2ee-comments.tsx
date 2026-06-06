@@ -1,5 +1,7 @@
+import { ChatCircleIcon } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { Label } from "@/src/lib/components/ui/label";
@@ -74,9 +76,13 @@ export function E2eeCommentsThread(props: {
 					<p className="text-pretty">{errorMessage}</p>
 				</div>
 			) : sorted.length === 0 ? (
-				<div className="px-1 py-6 text-center text-sm text-muted-foreground">
-					<p className="text-pretty">{props.emptyMessage}</p>
-				</div>
+				<AppEmptyState
+					preset="inline"
+					variant="muted"
+					icon={ChatCircleIcon}
+					description={props.emptyMessage}
+					className="border-transparent py-6"
+				/>
 			) : (
 				<ul className="space-y-3">
 					{sorted.map((c) => (

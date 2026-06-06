@@ -1,7 +1,12 @@
 import { env } from "@/src/env";
+import { SUPPORT_BASE_PATH } from "@/src/lib/errors/support-navigation";
 
 function docsBase(): string {
 	return `${env.VITE_ASTRO_URL.replace(/\/$/, "")}/docs`;
+}
+
+function supportBase(): string {
+	return `${env.VITE_CLIENT_URL.replace(/\/$/, "")}${SUPPORT_BASE_PATH}`;
 }
 
 export const DOCS_LINKS = {
@@ -15,8 +20,6 @@ export const DOCS_LINKS = {
 	releaseConditions: () => `${docsBase()}/workflows/release-conditions`,
 	drafts: () => `${docsBase()}/workflows/drafts`,
 	templates: () => `${docsBase()}/workflows/templates`,
-	/** @deprecated Use `payouts()` */
-	stablecoinPayouts: () => `${docsBase()}/workflows/payouts`,
 	workspace: () => `${docsBase()}/workspace`,
 	membersAndRoles: () => `${docsBase()}/workspace/members-and-roles`,
 	billingAndSeats: () => `${docsBase()}/workspace/billing-and-seats`,
@@ -36,7 +39,5 @@ export const DOCS_LINKS = {
 	plans: () => `${docsBase()}/plans`,
 	roadmap: () => `${docsBase()}/plans/roadmap`,
 	troubleshooting: (slug?: string) =>
-		slug
-			? `${docsBase()}/troubleshooting#${slug}`
-			: `${docsBase()}/troubleshooting`,
+		slug ? `${supportBase()}#${slug}` : supportBase(),
 } as const;

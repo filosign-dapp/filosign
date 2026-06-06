@@ -19,11 +19,6 @@ export function clientSignupPolicyIsGated(): boolean {
 	return signupPolicyIsGated(env.VITE_DEPLOYMENT);
 }
 
-/** Sign-in page Google shortcut: every deployment except production. */
-export function clientDevGoogleSignInEnabled(): boolean {
-	return env.VITE_DEPLOYMENT !== "production";
-}
-
 /** Cookie consent banner + opt-in analytics: production only. */
 export function clientAnalyticsConsentRequired(): boolean {
 	return env.VITE_DEPLOYMENT === "production";

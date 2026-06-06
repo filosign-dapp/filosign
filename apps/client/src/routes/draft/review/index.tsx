@@ -12,7 +12,7 @@ import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { Textarea } from "@/src/lib/components/ui/textarea";
-import { useDraftReviewWarmUnlock } from "@/src/routes/draft/review/-lib/use-draft-review-warm-unlock";
+import { useDraftReviewWarmUnlock } from "@/src/routes/draft/review/-lib/hooks/use-draft-review-warm-unlock";
 
 export const Route = createFileRoute("/draft/review/")({
 	validateSearch: (search: Record<string, unknown>) => ({

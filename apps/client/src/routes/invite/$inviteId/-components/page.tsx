@@ -17,7 +17,13 @@ function InviteCenteredLoader({ message }: { message: string }) {
 }
 
 export function InvitePage() {
-	const { inviteData, view, handleSignUp, goToOnboarding } = useInvite();
+	const {
+		inviteData,
+		view,
+		handleSignUp,
+		retryAutoRegister,
+		autoRegisterError,
+	} = useInvite();
 
 	if (view === "boot") {
 		return <Loader />;
@@ -42,26 +48,24 @@ export function InvitePage() {
 						</div>
 					) : view === "claiming" || view === "auto-claiming" ? (
 						<InviteCenteredLoader message="Accepting invite…" />
-					) : view === "checking-account" ? (
-						<InviteCenteredLoader message="Checking your account…" />
-					) : view === "finish-setup" ? (
+					) : view === "checking-account" || view === "setting-up" ? (
+						<InviteCenteredLoader message="Setting up your account…" />
+					) : view === "setup-failed" ? (
 						<div className="space-y-6">
 							<InviteDetailsCard inviteData={inviteData} />
 							<div className="space-y-4 text-center">
 								<h1 className="text-2xl font-semibold">
-									Finish creating your account
+									Could not finish account setup
 								</h1>
 								<p className="text-muted-foreground">
-									You&apos;re signed in. Continue setup to accept this
-									invitation, or switch accounts if you logged in with the wrong
-									one.
+									{autoRegisterError ?? "Check your connection and try again."}
 								</p>
 								<Button
-									onClick={goToOnboarding}
+									onClick={() => retryAutoRegister?.()}
 									variant="primary"
 									className="w-full"
 								>
-									Continue account setup
+									Retry
 								</Button>
 							</div>
 							<OnboardingSwitchAccountLink />

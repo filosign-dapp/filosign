@@ -11,9 +11,9 @@ import {
 	fsPaymentValidatorAt,
 } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
-import { readOnChainRuleHeader } from "./verify-rule-header";
-import { assertOnChainRuleLegsMatch } from "./verify-rule-legs";
-import { assertOnChainReleaseParamsMatch } from "./verify-rule-release-params";
+import { readOnChainRuleHeader } from "./rule-header";
+import { assertOnChainRuleLegsMatch } from "./rule-legs";
+import { assertOnChainReleaseParamsMatch } from "./rule-release-params";
 
 const { organizations } = db.schema;
 

@@ -5,7 +5,7 @@ import type { Hex } from "viem";
 import { getAddress } from "viem";
 import type { fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
-import { assertSettlementUsdcToken } from "./assert-settlement-token";
+import { assertSettlementUsdcToken } from "../assert-settlement-token";
 
 export type OnChainRuleHeader = readonly [
 	unknown,

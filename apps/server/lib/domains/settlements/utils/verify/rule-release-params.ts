@@ -2,7 +2,7 @@ import { throwAppError } from "@filosign/errors/server";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import type { fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
-import type { OnChainRuleHeader } from "./verify-rule-header";
+import type { OnChainRuleHeader } from "./rule-header";
 
 function normHex(a: string) {
 	return a.toLowerCase();

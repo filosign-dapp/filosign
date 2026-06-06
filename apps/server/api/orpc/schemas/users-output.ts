@@ -1,4 +1,6 @@
 import {
+	DEPLOYMENTS,
+	zActivationMilestoneId,
 	zUserKeygenDataJson,
 	zUserSignatureArtifact,
 	zUserSignatureCreateInput,
@@ -248,9 +250,13 @@ export const rpcUserSignaturesSetDefaultOutputSchema = rpcEmptyOutputSchema;
 
 export const rpcUserSignaturesDeleteOutputSchema = rpcEmptyOutputSchema;
 
-export const rpcUserSignaturesSetDefaultInputSchema = z.object({
-	id: z.uuid(),
-	role: zUserSignatureRole,
+export const rpcUserActivationGetOutputSchema = z.object({
+	deployment: z.enum(DEPLOYMENTS),
+	catalogVersion: z.number().int(),
+	milestones: z.array(zActivationMilestoneId),
+	practicePieceCid: z.string().nullable(),
 });
+
+export const rpcUserActivationMarkOutputSchema = rpcEmptyOutputSchema;
 
 export { zUserSignatureCreateInput as rpcUserSignaturesCreateInputSchema };

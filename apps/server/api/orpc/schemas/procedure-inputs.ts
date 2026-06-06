@@ -10,6 +10,7 @@ export {
 	zOrgsLinkWalletBody,
 	zOrgsMembersRemoveBody,
 	zOrgsMembersSetRoleBody,
+	zOrgsUnlinkWalletBody,
 	zOrgsUpdateBody,
 } from "@/api/handlers/orgs/core";
 export {

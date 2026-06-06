@@ -320,7 +320,7 @@ export async function fetchEntitlementContext(
 		};
 	}
 
-	// 3. Count documents sent
+	// 3. Count documents sent (exclude practice tutorial envelopes)
 	const [{ count }] = await db
 		.select({ count: sql<number>`count(*)::int` })
 		.from(files)
@@ -328,11 +328,13 @@ export async function fetchEntitlementContext(
 			organizationId
 				? and(
 						eq(files.organizationId, organizationId),
+						eq(files.isPractice, false),
 						gte(files.createdAt, periodStart),
 						lt(files.createdAt, periodEnd),
 					)
 				: and(
 						eq(files.sender, walletNorm),
+						eq(files.isPractice, false),
 						gte(files.createdAt, periodStart),
 						lt(files.createdAt, periodEnd),
 					),

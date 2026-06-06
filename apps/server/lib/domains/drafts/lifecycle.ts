@@ -10,6 +10,7 @@ import {
 	assertOrgPermission,
 	orgRoleHasPermission,
 } from "@/lib/domains/orgs";
+import { userActivationOnEnvelopeStarted } from "@/lib/domains/users/activation";
 import db from "@/lib/platform/db";
 import { randomUuidV7 } from "@/lib/platform/db/random-uuid-v7";
 import { bucket } from "@/lib/platform/s3/client";
@@ -155,6 +156,8 @@ export async function draftsCreate(
 		expiresIn: 60 * 15,
 		type: "application/octet-stream",
 	});
+
+	void userActivationOnEnvelopeStarted(wallet);
 
 	return {
 		draft: {

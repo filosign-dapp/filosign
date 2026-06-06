@@ -56,6 +56,7 @@ export type PersistRegisteredFileArgs = {
 		wrappedEncryptionKey: `0x${string}`;
 		isSigner: boolean;
 	}[];
+	isPractice?: boolean;
 };
 
 export type RegisterPersistTx = Parameters<
@@ -171,6 +172,7 @@ export async function persistRegisteredFileInTx(
 			mimeType: args.mimeType,
 			ciphertextByteLength: args.ciphertextByteLength,
 			createdAt: new Date(args.timestamp * 1000),
+			isPractice: args.isPractice ?? false,
 		})
 		.returning();
 

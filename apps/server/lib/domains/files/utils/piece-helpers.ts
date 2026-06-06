@@ -3,6 +3,7 @@ import { throwAppError } from "@filosign/errors/server";
 import {
 	hashNormalizedSignerEmail,
 	isValidAckSignature,
+	type PlacementManifest,
 	type RegisterRoutingInput,
 } from "@filosign/shared";
 import { and, eq } from "drizzle-orm";
@@ -14,6 +15,7 @@ import {
 	fsEnvelopeRegistryAt,
 } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { primaryEmailForWallet } from "../invites";
 
 const {
 	fileAcknowledgements,
@@ -96,6 +98,48 @@ export async function requireAckForParticipantAccess(
 		throwAppError("SIGNING.ACK_REQUIRED");
 	}
 	return ack;
+}
+
+/** Sender-as-signer envelopes store one participant row (role sender); mirror pieceSign. */
+export async function resolveSignerWalletForFieldDraft(args: {
+	userWallet: Address;
+	pieceCid: string;
+	sender: Address;
+	placementManifest: PlacementManifest;
+}): Promise<Address> {
+	const walletNorm = getAddress(args.userWallet);
+
+	const [participantRecord] = await db
+		.select({ wallet: fileParticipants.wallet })
+		.from(fileParticipants)
+		.where(
+			and(
+				eq(fileParticipants.filePieceCid, args.pieceCid),
+				eq(fileParticipants.role, "signer"),
+				eq(fileParticipants.wallet, walletNorm),
+			),
+		);
+	if (participantRecord) {
+		return getAddress(participantRecord.wallet);
+	}
+
+	if (getAddress(args.sender) !== walletNorm) {
+		throwAppError("SIGNING.NOT_REQUIRED");
+	}
+
+	const senderEmail = await primaryEmailForWallet(walletNorm);
+	if (!senderEmail) {
+		throwAppError("SIGNING.EMAIL_REQUIRED");
+	}
+
+	const hasAssignedFields = args.placementManifest.fields.some(
+		(f) => f.assignedRecipientEmail === senderEmail,
+	);
+	if (!hasAssignedFields) {
+		throwAppError("SIGNING.NOT_REQUIRED");
+	}
+
+	return walletNorm;
 }
 
 export function assertSignOrdering(

@@ -1,49 +1,41 @@
 import { throwAppError } from "@filosign/errors/server";
-import { zFieldCompletionMap, zPlacementManifest } from "@filosign/shared";
+import { zFieldCompletionInputMap, zPlacementManifest } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
+import { getAddress } from "viem";
 import z from "zod";
 import db from "@/lib/platform/db";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { primaryEmailForWallet } from "./invites";
-import { parseFieldCompletionMap } from "./utils/field-completions";
-import { requireAckForParticipantAccess } from "./utils/piece-helpers";
+import {
+	enrichFieldCompletionMapPreviews,
+	parseFieldCompletionInputMap,
+} from "./utils/field-completions";
+import {
+	requireAckForParticipantAccess,
+	resolveSignerWalletForFieldDraft,
+} from "./utils/piece-helpers";
 
-const { files, fileParticipants, fileSignerDrafts } = db.schema;
+const { files, fileSignerDrafts } = db.schema;
 
 export const zPieceSignDraftPutBody = z.object({
 	completedFieldIds: z.array(z.string()),
-	fieldCompletions: zFieldCompletionMap.optional(),
+	fieldCompletions: zFieldCompletionInputMap.optional(),
 });
 
 export async function pieceSignDraftGet(userWallet: Address, pieceCid: string) {
 	const [fileRecord] = await db
 		.select({
+			sender: files.sender,
 			placementManifestJson: files.placementManifestJson,
 		})
 		.from(files)
 		.where(eq(files.pieceCid, pieceCid));
 
-	const [participantRecord] = await db
-		.select({ wallet: fileParticipants.wallet })
-		.from(fileParticipants)
-		.where(
-			and(
-				eq(fileParticipants.filePieceCid, pieceCid),
-				eq(fileParticipants.role, "signer"),
-				eq(fileParticipants.wallet, userWallet),
-			),
-		);
-
 	if (!fileRecord) {
 		throwAppError("FILES.NOT_FOUND");
 	}
-	if (!participantRecord) {
-		throwAppError("SIGNING.NOT_REQUIRED");
-	}
-
-	await requireAckForParticipantAccess(userWallet, pieceCid);
 
 	const manifestParsed = zPlacementManifest.safeParse(
 		fileRecord.placementManifestJson,
@@ -54,7 +46,19 @@ export async function pieceSignDraftGet(userWallet: Address, pieceCid: string) {
 		});
 	}
 
-	const signerEmail = await primaryEmailForWallet(participantRecord.wallet);
+	const signerWallet = await resolveSignerWalletForFieldDraft({
+		userWallet,
+		pieceCid,
+		sender: fileRecord.sender,
+		placementManifest: manifestParsed.data,
+	});
+
+	// Sender self-sign (e.g. practice envelope): same as pieceSign / detail.canSign.
+	if (getAddress(fileRecord.sender) !== getAddress(userWallet)) {
+		await requireAckForParticipantAccess(userWallet, pieceCid);
+	}
+
+	const signerEmail = await primaryEmailForWallet(signerWallet);
 	if (!signerEmail) {
 		throwAppError("SIGNING.EMAIL_REQUIRED");
 	}
@@ -73,18 +77,24 @@ export async function pieceSignDraftGet(userWallet: Address, pieceCid: string) {
 		.where(
 			and(
 				eq(fileSignerDrafts.filePieceCid, pieceCid),
-				eq(fileSignerDrafts.wallet, participantRecord.wallet),
+				eq(fileSignerDrafts.wallet, signerWallet),
 			),
 		);
 
 	const stored = draft?.completedFieldIds ?? [];
 	const completedFieldIds = stored.filter((id) => allowedIds.has(id));
 	const fieldCompletionsRaw = draft?.fieldCompletions ?? {};
-	const fieldCompletions = Object.fromEntries(
-		Object.entries(fieldCompletionsRaw).filter(([id]) => allowedIds.has(id)),
+	const fieldCompletions = parseFieldCompletionInputMap(fieldCompletionsRaw);
+	const filteredFieldCompletions = Object.fromEntries(
+		Object.entries(fieldCompletions).filter(([id]) => allowedIds.has(id)),
 	);
 
-	return { completedFieldIds, fieldCompletions };
+	return {
+		completedFieldIds,
+		fieldCompletions: await enrichFieldCompletionMapPreviews(
+			filteredFieldCompletions,
+		),
+	};
 }
 
 export async function pieceSignDraftPut(args: {
@@ -101,31 +111,16 @@ export async function pieceSignDraftPut(args: {
 	const pieceCid = args.pieceCid;
 	const userWallet = args.userWallet;
 
-	await requireAckForParticipantAccess(userWallet, pieceCid);
-
 	const [fileRecord] = await db
 		.select({
+			sender: files.sender,
 			placementManifestJson: files.placementManifestJson,
 		})
 		.from(files)
 		.where(eq(files.pieceCid, pieceCid));
 
-	const [participantRecord] = await db
-		.select({ wallet: fileParticipants.wallet })
-		.from(fileParticipants)
-		.where(
-			and(
-				eq(fileParticipants.filePieceCid, pieceCid),
-				eq(fileParticipants.role, "signer"),
-				eq(fileParticipants.wallet, userWallet),
-			),
-		);
-
 	if (!fileRecord) {
 		throwAppError("FILES.NOT_FOUND");
-	}
-	if (!participantRecord) {
-		throwAppError("SIGNING.NOT_REQUIRED");
 	}
 
 	const manifestParsed = zPlacementManifest.safeParse(
@@ -137,7 +132,18 @@ export async function pieceSignDraftPut(args: {
 		});
 	}
 
-	const signerEmail = await primaryEmailForWallet(participantRecord.wallet);
+	const signerWallet = await resolveSignerWalletForFieldDraft({
+		userWallet,
+		pieceCid,
+		sender: fileRecord.sender,
+		placementManifest: manifestParsed.data,
+	});
+
+	if (getAddress(fileRecord.sender) !== getAddress(userWallet)) {
+		await requireAckForParticipantAccess(userWallet, pieceCid);
+	}
+
+	const signerEmail = await primaryEmailForWallet(signerWallet);
 	if (!signerEmail) {
 		throwAppError("SIGNING.EMAIL_REQUIRED");
 	}
@@ -162,7 +168,7 @@ export async function pieceSignDraftPut(args: {
 	}
 
 	const fieldCompletions = bodyCompletions
-		? parseFieldCompletionMap(bodyCompletions)
+		? parseFieldCompletionInputMap(bodyCompletions)
 		: {};
 	for (const id of Object.keys(fieldCompletions)) {
 		if (!allowedIds.has(id)) {
@@ -186,7 +192,7 @@ export async function pieceSignDraftPut(args: {
 		.insert(fileSignerDrafts)
 		.values({
 			filePieceCid: pieceCid,
-			wallet: participantRecord.wallet,
+			wallet: signerWallet,
 			completedFieldIds,
 			fieldCompletions,
 			createdAt: now,
@@ -201,5 +207,8 @@ export async function pieceSignDraftPut(args: {
 			},
 		});
 
-	return { completedFieldIds, fieldCompletions };
+	return {
+		completedFieldIds,
+		fieldCompletions: await enrichFieldCompletionMapPreviews(fieldCompletions),
+	};
 }

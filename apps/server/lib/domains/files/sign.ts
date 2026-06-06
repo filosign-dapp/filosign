@@ -11,6 +11,7 @@ import {
 	hashNormalizedSignerEmail,
 	LEAF_SCHEMA_VERSION_V1,
 	requiredFieldIdsForRecipientEmail,
+	zFieldCompletionInputMap,
 	zPlacementManifest,
 	zRegisterRoutingInput,
 } from "@filosign/shared";
@@ -43,7 +44,7 @@ import { primaryEmailForWallet } from "./invites";
 import { isSignerReplacementPendingOnChain } from "./signer-replacement";
 import { buildEnvelopeCompletedEmailOutboxRows } from "./utils/completion-email";
 import {
-	parseFieldCompletionMap,
+	parseFieldCompletionInputMap,
 	validateFieldCompletionsForSigner,
 } from "./utils/field-completions";
 import {
@@ -67,19 +68,7 @@ export const zPieceSignBody = z.object({
 	timestamp: z.number({ error: "timestamp must be a number" }),
 	dl3Signature: zHexString(),
 	completedFieldIds: z.array(z.string()),
-	fieldCompletions: z
-		.record(
-			z.string(),
-			z.object({
-				fieldId: z.string(),
-				valueKind: z.enum(["visual", "text", "checkbox", "auto"]),
-				sourceArtifactId: z.uuid().nullable(),
-				storageKey: z.string().nullable(),
-				contentSha256: z.string().nullable(),
-				textValue: z.string().nullable(),
-			}),
-		)
-		.optional(),
+	fieldCompletions: zFieldCompletionInputMap.optional(),
 	settlementRecipientAck: z
 		.object({
 			termsVersion: z.string().min(1),
@@ -111,7 +100,7 @@ export async function pieceSign(args: {
 		completedFieldIds,
 		fieldCompletions: fieldCompletionsRaw,
 	} = parsedBody.data;
-	const fieldCompletions = parseFieldCompletionMap(fieldCompletionsRaw ?? {});
+	const fieldCompletions = parseFieldCompletionInputMap(fieldCompletionsRaw);
 
 	await assertSettlementRecipientAckProvided({
 		pieceCid,
@@ -128,6 +117,7 @@ export async function pieceSign(args: {
 			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
 			completedAt: files.completedAt,
 			registerRoutingJson: files.registerRoutingJson,
+			isPractice: files.isPractice,
 			placementCommitment: files.placementCommitment,
 			placementManifestJson: files.placementManifestJson,
 		})
@@ -482,6 +472,13 @@ export async function pieceSign(args: {
 			field_count: completedFieldIdsStored.length,
 		},
 	});
+
+	if (fileRecord.isPractice) {
+		const { userActivationOnPracticeSigned } = await import(
+			"@/lib/domains/users/activation"
+		);
+		await userActivationOnPracticeSigned(signerWallet);
+	}
 
 	const routingComplete = await isEnvelopeRoutingCompleteOnChain(pieceCid, {
 		registryAddress: getAddress(fileRecord.registryAddress),

@@ -24,6 +24,11 @@ import {
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
+import {
+	shouldEnforceSendQuota,
+	userActivationOnRealEnvelopeSent,
+	userActivationRecordPracticePiece,
+} from "@/lib/domains/users";
 import { invalidateEntitlementsForFileSend } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { fsContracts } from "@/lib/platform/evm";
@@ -85,6 +90,7 @@ export const zFileRegisterBody = z.object({
 	ciphertextByteLength: z.number().int().positive(),
 	routing: zRegisterRoutingInput.optional(),
 	attachmentPackets: z.array(zAttachmentPacketSendInput).max(3).optional(),
+	isPractice: z.boolean().optional(),
 });
 
 export async function filesRegister(
@@ -116,6 +122,7 @@ export async function filesRegister(
 		ciphertextByteLength,
 		routing,
 		attachmentPackets = [],
+		isPractice = false,
 	} = parsedBody.data;
 
 	assertOrgPermission(activeOrg, "documents:send");
@@ -261,7 +268,9 @@ export async function filesRegister(
 		getAddress(sender),
 		organizationId ?? null,
 	);
-	assertEntitlement(entitlementCtx, "documents.sent.monthly");
+	if (shouldEnforceSendQuota(isPractice)) {
+		assertEntitlement(entitlementCtx, "documents.sent.monthly");
+	}
 	assertEntitlement(entitlementCtx, "envelope.recipients.max", {
 		requested: slotCounts.recipientSlotCount,
 	});
@@ -318,6 +327,7 @@ export async function filesRegister(
 		senderKemCiphertext,
 		senderEncryptedEncryptionKey,
 		coldInvites,
+		isPractice,
 	};
 
 	const participantWallets = [
@@ -326,6 +336,9 @@ export async function filesRegister(
 
 	const outboxRows = await db.transaction(async (tx) => {
 		await persistRegisteredFileInTx(tx, persistArgs);
+		if (isPractice) {
+			return [];
+		}
 		const inserts = await buildRegisterEmailOutboxRows(tx, {
 			sender,
 			pieceCid,
@@ -335,9 +348,13 @@ export async function filesRegister(
 		return insertJobOutboxRows(tx, inserts);
 	});
 
-	await invalidateEntitlementsForFileSend({ sender, organizationId });
+	if (!isPractice) {
+		await invalidateEntitlementsForFileSend({ sender, organizationId });
+	}
 
-	await enqueueOutboxByIds(outboxRows.map((row) => row.id));
+	if (outboxRows.length > 0) {
+		await enqueueOutboxByIds(outboxRows.map((row) => row.id));
+	}
 
 	await insertAttachmentPacketsForFile({
 		pieceCid,
@@ -347,7 +364,12 @@ export async function filesRegister(
 		coldInviteToken: coldInvites[0]?.inviteToken,
 	});
 
-	trackRegisterAnalytics({ sender, pieceCid, slotCounts });
+	if (isPractice) {
+		await userActivationRecordPracticePiece(sender, pieceCid);
+	} else {
+		await userActivationOnRealEnvelopeSent(sender);
+		trackRegisterAnalytics({ sender, pieceCid, slotCounts });
+	}
 
 	return {};
 }

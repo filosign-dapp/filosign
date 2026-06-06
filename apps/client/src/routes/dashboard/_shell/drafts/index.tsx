@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useMemo } from "react";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
+import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { DocsLink } from "@/src/lib/docs/docs-link";
@@ -70,28 +71,24 @@ function DraftsIndexPage() {
 							<p className="text-sm text-muted-foreground">Loading drafts…</p>
 						</div>
 					) : drafts.length === 0 ? (
-						<div className="flex min-h-0 flex-1 flex-col items-center justify-center">
-							<motion.div
-								initial={{ opacity: 0, y: 20 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{ duration: 0.2, delay: 0.4 }}
-								className="space-y-4 text-center"
+						<motion.div
+							initial={{ opacity: 0, y: 20 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{ duration: 0.2, delay: 0.4 }}
+							className="flex min-h-0 flex-1"
+						>
+							<AppEmptyState
+								preset="page"
+								icon={FileTextIcon}
+								title="No drafts"
+								description={
+									<>
+										You haven&apos;t saved a draft yet. Start an envelope, place
+										fields, and hit{" "}
+										<span className="font-medium">Save draft</span>.
+									</>
+								}
 							>
-								<div className="size-40 mx-auto mb-6">
-									<FileTextIcon
-										className="size-full text-muted-foreground/50"
-										weight="light"
-									/>
-								</div>
-								<h2 className="font-semibold text-foreground">No drafts</h2>
-								<p className="max-w-md px-4 text-muted-foreground">
-									You haven’t saved a draft yet. Start an envelope, place
-									fields, and hit{" "}
-									<span className="font-medium">Save draft</span>.{" "}
-									<DocsLink href={DOCS_LINKS.drafts()}>
-										Read the drafts guide
-									</DocsLink>
-								</p>
 								<Button
 									type="button"
 									variant="primary"
@@ -101,8 +98,11 @@ function DraftsIndexPage() {
 									<PlusIcon className="size-4" weight="bold" />
 									Create Draft
 								</Button>
-							</motion.div>
-						</div>
+								<DocsLink href={DOCS_LINKS.drafts()}>
+									Read the drafts guide
+								</DocsLink>
+							</AppEmptyState>
+						</motion.div>
 					) : (
 						<div className="space-y-2">
 							{drafts.map((draft) => {

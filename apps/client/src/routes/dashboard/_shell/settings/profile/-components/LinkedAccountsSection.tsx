@@ -16,6 +16,7 @@ import {
 } from "thirdweb/react";
 import type { Profile } from "thirdweb/wallets";
 import { useReconcileThirdwebEmail } from "@/src/lib/auth/reconcile-thirdweb-email";
+import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	DropdownMenu,
@@ -192,7 +193,14 @@ export function LinkedAccountsSection() {
 				}
 			>
 				{connections.length === 0 ? (
-					<p className="text-sm text-muted-foreground/80">None linked yet.</p>
+					<AppEmptyState
+						preset="inline"
+						variant="outline"
+						icon={EnvelopeSimpleIcon}
+						title="None linked yet"
+						description="Link Google or add an email login from the menu above."
+						className="py-6"
+					/>
 				) : (
 					<ul className="divide-y divide-border/50">
 						{connections.map((row) => {

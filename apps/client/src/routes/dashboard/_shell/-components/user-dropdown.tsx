@@ -2,7 +2,12 @@ import { SPRING_TOKENS } from "@filosign/motion";
 import { useLogout } from "@filosign/react/auth";
 import { useActiveOrgId, useOrganizations } from "@filosign/react/orgs";
 import { useUserProfile } from "@filosign/react/users";
-import { BuildingsIcon, SignOutIcon, UserIcon } from "@phosphor-icons/react";
+import {
+	BuildingsIcon,
+	CreditCardIcon,
+	SignOutIcon,
+	UserIcon,
+} from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import * as React from "react";
@@ -17,6 +22,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
+import { BILLING_SETTINGS_PATH } from "@/src/lib/domains/billing/settings-path";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
@@ -132,6 +138,13 @@ export function UserDropdown() {
 							label: "Manage Profile",
 							action: () => {
 								navigate({ to: "/dashboard/settings/profile" });
+							},
+						},
+						{
+							icon: CreditCardIcon,
+							label: "Billing",
+							action: () => {
+								navigate({ to: BILLING_SETTINGS_PATH });
 							},
 						},
 						{

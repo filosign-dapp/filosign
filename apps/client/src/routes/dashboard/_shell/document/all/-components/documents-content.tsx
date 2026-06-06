@@ -1,6 +1,7 @@
 import { MotionReveal, Pressable } from "@filosign/motion";
-import { PlusIcon } from "@phosphor-icons/react";
+import { FileTextIcon, PlusIcon } from "@phosphor-icons/react";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
+import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { Tabs, TabsList, TabsTrigger } from "@/src/lib/components/ui/tabs";
@@ -12,7 +13,36 @@ import { mapFileToDocumentCardProps } from "@/src/lib/domains/documents/map-file
 import { useDraftDelete } from "@/src/lib/domains/documents/use-draft-delete";
 import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
 import { useDocuments } from "@/src/routes/dashboard/_shell/document/all/-lib/context/context";
+import type { DocumentTab } from "@/src/routes/dashboard/_shell/document/all/-lib/hooks/use-documents-controller";
 import { parseDocumentTab } from "@/src/routes/dashboard/_shell/document/all/-lib/hooks/use-documents-controller";
+
+function filterEmptyCopy(tab: DocumentTab): {
+	title: string;
+	description: string;
+} {
+	switch (tab) {
+		case "sent":
+			return {
+				title: "No sent documents yet",
+				description: "Documents you send will appear here.",
+			};
+		case "received":
+			return {
+				title: "No received documents yet",
+				description: "Documents others send you will appear here.",
+			};
+		case "drafts":
+			return {
+				title: "No drafts yet",
+				description: "Saved envelope drafts will appear here.",
+			};
+		default:
+			return {
+				title: "No items found",
+				description: "Try another filter or view all documents.",
+			};
+	}
+}
 
 export function DocumentsContent() {
 	const startNewEnvelope = useStartNewEnvelope();
@@ -68,17 +98,17 @@ export function DocumentsContent() {
 						<p className="text-sm text-muted-foreground">Loading documents…</p>
 					</div>
 				) : !hasAnyContent ? (
-					<div className="flex min-h-0 flex-1 flex-col items-center justify-center">
-						<MotionReveal
-							preset="smooth"
-							delay={0.4}
-							className="space-y-4 text-center"
+					<MotionReveal
+						preset="smooth"
+						delay={0.4}
+						className="flex min-h-0 flex-1"
+					>
+						<AppEmptyState
+							preset="page"
+							icon={FileTextIcon}
+							title="No documents"
+							description="You have not yet created or received any documents. Get started by creating a new document."
 						>
-							<h2 className="font-semibold text-foreground">No documents</h2>
-							<p className="max-w-md px-4 text-muted-foreground">
-								You have not yet created or received any documents. Get started
-								by creating a new document.
-							</p>
 							<Pressable preset="snappy">
 								<Button
 									type="button"
@@ -90,17 +120,26 @@ export function DocumentsContent() {
 									Create New Document
 								</Button>
 							</Pressable>
-						</MotionReveal>
-					</div>
+						</AppEmptyState>
+					</MotionReveal>
 				) : filteredItems.length === 0 ? (
-					<div className="flex min-h-0 flex-1 flex-col items-center justify-center text-center py-20 space-y-2">
-						<p className="font-medium text-foreground text-sm">
-							No items found
-						</p>
-						<p className="text-xs text-muted-foreground">
-							There are no items under the "{activeTab}" filter.
-						</p>
-					</div>
+					<AppEmptyState
+						preset="page"
+						variant="outline"
+						title={filterEmptyCopy(activeTab).title}
+						description={filterEmptyCopy(activeTab).description}
+					>
+						{activeTab !== "all" ? (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								onClick={() => setActiveTab("all")}
+							>
+								View all
+							</Button>
+						) : null}
+					</AppEmptyState>
 				) : (
 					<div className="space-y-4">
 						{viewMode === "list" ? (

@@ -15,6 +15,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
 import env from "@/src/env";
 import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
+import { AdminSectionEmpty } from "@/src/lib/components/app/empty-state";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 import { Input } from "@/src/lib/components/ui/input";
@@ -397,11 +398,7 @@ function AdminPage() {
 					{invitesQuery.isPending ? (
 						<p className="text-sm text-muted-foreground">Loading…</p>
 					) : invites.length === 0 ? (
-						<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed rounded-lg border-border/80 bg-muted/5">
-							<p className="text-sm text-muted-foreground">
-								No invites created yet.
-							</p>
-						</div>
+						<AdminSectionEmpty title="No invites created yet." />
 					) : (
 						<ul className="space-y-3">
 							{invites.map((invite) => {
@@ -490,11 +487,7 @@ function AdminPage() {
 					{accessRequestsQuery.isPending ? (
 						<p className="text-sm text-muted-foreground">Loading…</p>
 					) : accessRequests.length === 0 ? (
-						<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed rounded-lg border-border/80 bg-muted/5">
-							<p className="text-sm text-muted-foreground">
-								No requests received yet.
-							</p>
-						</div>
+						<AdminSectionEmpty title="No requests received yet." />
 					) : (
 						<ul className="space-y-3">
 							{accessRequests.map((request) => {
@@ -580,11 +573,7 @@ function AdminPage() {
 					{settlementAccessQuery.isPending ? (
 						<p className="text-sm text-muted-foreground">Loading…</p>
 					) : settlementAccessRequests.length === 0 ? (
-						<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed rounded-lg border-border/80 bg-muted/5">
-							<p className="text-sm text-muted-foreground">
-								No workspace payout requests yet.
-							</p>
-						</div>
+						<AdminSectionEmpty title="No workspace payout requests yet." />
 					) : (
 						<ul className="space-y-3">
 							{settlementAccessRequests.map((row) => {
@@ -665,11 +654,7 @@ function AdminPage() {
 					{usersQuery.isPending ? (
 						<p className="text-sm text-muted-foreground">Loading…</p>
 					) : users.length === 0 ? (
-						<div className="flex flex-col items-center justify-center p-8 text-center border border-dashed rounded-lg border-border/80 bg-muted/5">
-							<p className="text-sm text-muted-foreground">
-								No users registered.
-							</p>
-						</div>
+						<AdminSectionEmpty title="No users registered." />
 					) : (
 						<ul className="divide-y divide-border/50">
 							{users.map((user) => {

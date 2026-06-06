@@ -14,6 +14,10 @@ import {
 	SignatureIcon,
 	TrashIcon,
 } from "@phosphor-icons/react";
+import { SignatureArtifactPreview } from "@/src/lib/domains/signatures/preview";
+import "@/src/lib/domains/signatures/signature-fonts.css";
+import { Link } from "@tanstack/react-router";
+import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import { Button } from "@/src/lib/components/ui/button";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
@@ -34,8 +38,9 @@ function SignatureCard(props: {
 			: props.artifact.kind === "drawn"
 				? "Drawn"
 				: "Uploaded";
+
 	return (
-		<div className="rounded-lg border border-border/70 bg-background/60 p-3 space-y-3">
+		<div className="space-y-3 rounded-lg border border-border/70 bg-background/60 p-3">
 			<div className="flex items-center justify-between gap-2">
 				<div className="text-xs text-muted-foreground">
 					{roleLabel} · {kindLabel}
@@ -49,21 +54,15 @@ function SignatureCard(props: {
 			</div>
 			<div
 				className={cn(
-					"rounded-md border border-border/50 bg-white p-2",
+					"flex items-center justify-center rounded-md border border-border/50 bg-background p-2",
 					props.artifact.role === "initial" ? "aspect-80/28" : "aspect-200/28",
 				)}
 			>
-				{props.artifact.previewUrl ? (
-					<img
-						src={props.artifact.previewUrl}
-						alt={roleLabel}
-						className="h-full w-full object-contain"
-					/>
-				) : (
-					<div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-						Preview unavailable
-					</div>
-				)}
+				<SignatureArtifactPreview
+					artifact={props.artifact}
+					alt={roleLabel}
+					imgClassName="h-full w-full"
+				/>
 			</div>
 			<div className="flex items-center justify-end gap-2">
 				<Button
@@ -109,9 +108,22 @@ export function SignatureLibrarySection() {
 				Signature library guide
 			</DocsLink>
 			{signatures.length === 0 ? (
-				<p className="text-sm text-muted-foreground">
-					No signatures saved yet. Create one from the signature setup flow.
-				</p>
+				<AppEmptyState
+					preset="section"
+					variant="outline"
+					icon={SignatureIcon}
+					title="No signatures saved yet"
+					description="Create a typed, drawn, or uploaded signature for field auto-fill."
+				>
+					<Button
+						type="button"
+						variant="secondary"
+						size="sm"
+						render={<Link to="/dashboard/signature/create" />}
+					>
+						Create signature
+					</Button>
+				</AppEmptyState>
 			) : (
 				<div className="grid grid-cols-1 gap-3 md:grid-cols-2">
 					{signatures.map((artifact) => {

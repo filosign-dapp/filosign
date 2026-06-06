@@ -1,4 +1,15 @@
 export {
+	userActivationGet,
+	userActivationMark,
+	userActivationOnEnvelopeStarted,
+	userActivationOnPracticeSigned,
+	userActivationOnRealEnvelopeSent,
+	userActivationOnSignatureReady,
+	userActivationRecordPracticePiece,
+	zUserActivationMarkBody,
+} from "./activation";
+export { shouldEnforceSendQuota } from "./activation-quota";
+export {
 	userEraseAccount,
 	userExportAccountData,
 	userPrivacyRequestCreate,

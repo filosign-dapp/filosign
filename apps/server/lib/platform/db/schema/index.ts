@@ -1,3 +1,4 @@
+import * as activation from "./activation";
 import * as attachmentPackets from "./attachment-packets";
 import * as audit from "./audit";
 import * as billing from "./billing";
@@ -14,6 +15,7 @@ import * as user from "./user";
 
 const schema = {
 	...user,
+	...activation,
 	...audit,
 	...file,
 	...foc,
@@ -28,6 +30,7 @@ const schema = {
 	...jobOutbox,
 };
 
+export * from "./activation";
 export * from "./attachment-packets";
 export * from "./audit";
 export * from "./billing";

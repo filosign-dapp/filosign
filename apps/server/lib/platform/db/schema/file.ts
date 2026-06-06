@@ -70,6 +70,8 @@ export const files = t.pgTable(
 		/** Set when envelope routing completes on-chain (completedAt). */
 		completedAt: t.timestamp({ withTimezone: true }),
 		revokeOnchainTxHash: tBytes32(),
+		/** Practice/tutorial envelope — excluded from send quota and first-send metrics. */
+		isPractice: t.boolean().notNull().default(false),
 
 		...timestamps,
 	},

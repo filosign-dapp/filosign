@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, mock, test } from "bun:test";
+import { beforeAll, describe, expect, test } from "bun:test";
 import { getAddress } from "viem";
 import {
 	flushEntitlementCacheInvalidation,
@@ -8,13 +8,11 @@ import { cacheKeys } from "@/lib/platform/cache/keys";
 import { createMockRedis, mockSessionCacheRedis } from "../support/mock-redis";
 
 const { client, store } = createMockRedis();
-mockSessionCacheRedis(client);
-
-afterAll(() => {
-	mock.restore();
-});
 
 describe("entitlement cache invalidation", () => {
+	beforeAll(() => {
+		mockSessionCacheRedis(client);
+	});
 	test("flushEntitlementCacheInvalidation deletes org and user keys", async () => {
 		store.clear();
 		const orgId = "00000000-0000-7000-8000-000000000099";

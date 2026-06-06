@@ -6,9 +6,9 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/src/lib/components/ui/dialog";
-import { renderInviteUnlockWizardPanel } from "@/src/routes/dashboard/document/sign/-components/invite-unlock-panels";
 import type { SignInviteUnlockController } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-invite-unlock";
 import { ColdInviteNotForYouCallout } from "@/src/routes/onboarding/-components/ColdInviteNotForYouCallout";
+import { renderInviteUnlockWizardPanel } from "./panels";
 
 type InvitePayload = NonNullable<SignInviteUnlockController["invite"]>;
 

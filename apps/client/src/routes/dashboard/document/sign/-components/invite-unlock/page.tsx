@@ -4,10 +4,10 @@ import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { useSignPieceFileContext } from "@/src/routes/dashboard/document/sign/-lib/context/piece-file-context";
 import { useSignInviteUnlock } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-invite-unlock";
-import { SignInviteUnlockDialog } from "./invite-unlock-dialog";
-import { SignDocumentPage } from "./page";
-import { SignDocumentShell } from "./shell";
-import { SignDocumentShellHeader } from "./shell-header";
+import { SignDocumentPage } from "../page";
+import { SignDocumentShell } from "../shell";
+import { SignDocumentShellHeader } from "../shell-header";
+import { SignInviteUnlockDialog } from "./dialog";
 
 /**
  * Cold-invite unlock flow only - avoids mounting the full sign document controller.

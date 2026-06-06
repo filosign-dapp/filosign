@@ -108,12 +108,12 @@ export const workspaceErrors = {
 		defaultOrpcCode: "FORBIDDEN",
 	},
 	"WORKSPACE.WALLET_CONTROLLER_MISMATCH": {
-		title: "Wallet address mismatch",
+		title: "Connect as the treasury wallet",
 		description:
-			"Your connected wallet address does not match the organization controller address.",
+			"Your connected wallet must match the treasury address you are linking. Switch to that wallet in your browser or WalletConnect, then try again.",
 		steps: [
-			"Ensure you are using the correct wallet in your browser extension.",
-			"Check the controller address configured for this organization.",
+			"Open the wallet picker and connect the treasury address (EOA or Safe).",
+			"Sign the link prompt from that same address.",
 		],
 		audience: "user",
 		severity: "error",

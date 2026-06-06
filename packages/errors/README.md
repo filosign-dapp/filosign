@@ -5,7 +5,7 @@ User-facing error catalog for Filosign (toasts + dashboard Support Center).
 ## Add a user-facing error
 
 1. Add entry to `src/catalog/*.ts` with `audience: "user"` and `supportSlug`.
-2. Add `apps/astro/src/content/help-errors/{supportSlug}.mdx` (authoring copy + MDX sync tests; dashboard + `/docs/troubleshooting` read the catalog via `listSupportCenterEntries()`). Toast Help links use `/dashboard/support#{supportSlug}`.
+2. Add `apps/astro/src/content/help-errors/{supportSlug}.mdx` (authoring copy + MDX sync tests). Dashboard Support Center UI lives in `apps/client/src/routes/dashboard/_shell/support/`; the catalog is read via `listSupportCenterEntries()`. Toast Help links use `/dashboard/support#{supportSlug}`.
 
 Help steps must match real UI and server checks in the repo (no assumed flows like page-by-page scroll unless the product implements them).
 3. Server: `throwAppError("YOUR.CODE", { params? })` from `@filosign/errors/server`.
@@ -15,7 +15,7 @@ Help steps must match real UI and server checks in the repo (no assumed flows li
 
 - `@filosign/errors` — catalog, `presentError`, `isValidationOrpcError`
 - `@filosign/errors/server` — `throwAppError`
-- `@filosign/errors/client` — `showErrorToast` (requires `sonner`), `SupportCenterPanel` (catalog troubleshooting UI for dashboard + Astro docs)
+- `@filosign/errors/client` — `showErrorToast` (requires `sonner`), `useSupportCenterPanel`, `renderSupportStepHtml` (catalog data + hash/deep-link state; UI lives in `apps/client` and Astro docs island)
 
 Internal failures: do not add user MDX; client shows `GENERIC.UNKNOWN`.
 

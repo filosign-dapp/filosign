@@ -4,6 +4,21 @@ FiloSign is a wallet-native document signing platform for encrypted agreements, 
 
 It lets users send documents, invite recipients, collect signatures, and export proof records while keeping document contents encrypted client-side. The repository is a Bun monorepo containing the web app, API server, React SDK, cryptography utilities, shared schemas, and Solidity contracts.
 
+## Links
+
+| | URL |
+| --- | --- |
+| **Website** | [filosign.xyz](https://filosign.xyz/) |
+| **Try Filosign (sandbox)** | [sandbox.filosign.xyz](https://sandbox.filosign.xyz/) |
+| **Web app** | [app.filosign.xyz](https://app.filosign.xyz/) |
+| **Docs** | [filosign.xyz/docs](https://filosign.xyz/docs/) |
+| **Blog** | [filosign.xyz/blog](https://filosign.xyz/blog/) |
+| **Pricing** | [filosign.xyz/pricing](https://filosign.xyz/pricing/) |
+| **AI summary (`llms.txt`)** | [filosign.xyz/llms.txt](https://filosign.xyz/llms.txt) |
+| **X** | [@filosign](https://x.com/filosign) |
+
+**Discoverability:** After deploy, submit [sitemap-index.xml](https://filosign.xyz/sitemap-index.xml) to [Google Search Console](https://search.google.com/search-console) and [Bing Webmaster Tools](https://www.bing.com/webmasters). Add the website URL to your X bio and any directory listings (e.g. Product Hunt when you launch).
+
 ## What FiloSign Does
 
 - Creates encrypted document envelopes for signing workflows.

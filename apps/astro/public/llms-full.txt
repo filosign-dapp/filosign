@@ -1,0 +1,89 @@
+# Filosign — extended summary for AI assistants
+
+> Use this file when you need more context than https://filosign.xyz/llms.txt . All URLs use the production marketing origin unless noted.
+
+## What Filosign is
+
+Filosign is a wallet-native document signing platform for encrypted agreements, verifiable signing records, and permissioned document sharing. Users send documents, collect signatures, export proof packets, and optionally attach USDC payout rules or gated file releases that execute when signing conditions are met. The server never holds plaintext document keys or custodies settlement funds.
+
+Core properties:
+
+- **End-to-end encryption** — Documents are encrypted in the browser before upload. Filosign stores ciphertext and encrypted key envelopes, not readable file contents.
+- **Wallet-backed identity** — Embedded wallet (thirdweb) plus app-level post-quantum signing keys derived client-side.
+- **On-chain proof on Base** — `FSEnvelopeRegistry` records registration, routing, quorum, and signer state. Compliance bundles combine Merkle placement manifests with chain attestations.
+- **Non-custodial settlements** — Optional USDC payout legs via `FSPaymentValidator`; funds move payer to recipient wallets when release conditions pass, without Filosign custody.
+- **Decentralized storage** — Hot object storage with Filecoin backup and archival paths documented on-site.
+
+Public beta. Marketing site: https://filosign.xyz . Try demo: https://sandbox.filosign.xyz . App: https://app.filosign.xyz .
+
+## Primary user journeys
+
+1. Connect wallet, complete onboarding, derive local encryption/signing keys (PIN-protected seed).
+2. Request permission to send documents to a recipient wallet; recipient approves connection.
+3. Create envelope, place signature/date/text/checkbox fields, encrypt document, upload, register on-chain.
+4. Recipients acknowledge, decrypt locally, sign; routing order and quorum rules apply.
+5. On completion, export a completion/proof ZIP; attached payout or file release may execute automatically.
+
+## Marketing pages (summary)
+
+| URL | Summary |
+| --- | --- |
+| https://filosign.xyz/ | Landing: agreements that unlock the next step — private docs, signatures, conditional payouts/file release. |
+| https://filosign.xyz/about/ | Company story, mission, team. |
+| https://filosign.xyz/pricing/ | Free, Solo, Teams, Teams Pro, Enterprise tiers with feature comparison. |
+| https://filosign.xyz/changelog/ | Shipped features and release notes. |
+| https://filosign.xyz/security/ | Security practices, vulnerability reporting (security@filosign.xyz). |
+
+## Blog posts (summary)
+
+| URL | Summary |
+| --- | --- |
+| https://filosign.xyz/blog/introduction/ | Product launch narrative: E2EE, verifiable records on Base, attached payouts, why platform risk matters. |
+| https://filosign.xyz/blog/future-of-digital-agreements/ | Centralized e-sign vendor lock-in vs Filosign's encrypted workflows and independent proof. |
+| https://filosign.xyz/blog/placement-based-signing-infrastructure/ | Technical deep dive: placement manifests, Merkle proofs, compliance bundles, `FSEnvelopeRegistry`, ESIGN/eIDAS-oriented evidence design. |
+| https://filosign.xyz/blog/unlocking-filosign-after-privy/ | Architecture: OAuth/wallet identity separate from PQ signing keys; wallet-derived unlock path vs PIN fallback. |
+
+## Documentation hubs
+
+### Agreement workflows (`/docs/workflows/`)
+
+Guides for sending envelopes, signing order, void/amend flows, encrypted comments, USDC payout packets, gated attachments, release conditions, drafts, and org templates.
+
+Key pages:
+
+- **Signing and routing** — Sign page UX, turn order, quorum, required acknowledgements.
+- **Envelope governance** — Void envelopes, propose/execute signer replacement, post-send changes.
+- **Payouts** — Attach optional USDC legs; auto-release when conditions met; non-custodial.
+- **Attached files** — Release encrypted attachments after signing conditions.
+- **Release conditions** — Configure when payouts or file unlocks fire.
+
+### Proof and evidence (`/docs/proof/`)
+
+Completion packet ZIP structure, how to read compliance PDFs, e-signature evidence framing, saved signature library.
+
+### Security and privacy (`/docs/security/`, `/docs/storage/`)
+
+What is encrypted client-side, what operators can see, on-chain verification records, retention (hot + Filecoin), export before archival, in-app storage status.
+
+### Teams and plans (`/docs/workspace/`, `/docs/plans/`)
+
+Workspace roles, billing/seats, treasury wallet, payout access, connections, plan limits, public roadmap of not-yet-shipped catalog items.
+
+### Troubleshooting
+
+- https://filosign.xyz/docs/troubleshooting/ — Searchable error catalog (mirrors in-app Support Center).
+- https://filosign.xyz/help/ — Public help pages for common signing and plan errors.
+
+## Legal and compliance (public pages)
+
+Privacy Policy, Terms, Acceptable Use, Subprocessors (Resend, Hetzner, Cloudflare R2, thirdweb, PostHog, Dodo MoR, etc.), DPA, e-signature validity explainer, non-custodial settlement explainer, settlement addendum. Contact: support@filosign.xyz, privacy@filosign.xyz, security@filosign.xyz.
+
+## Technical stack (for integrators)
+
+Monorepo: https://github.com/filosign-dapp/filosign — React client, Hono API, Solidity contracts (`FSEnvelopeRegistry`, `FSPaymentValidator`), `@filosign/react` SDK, shared Zod schemas, crypto-utils (ML-KEM/Kyber, Dilithium, AES-GCM).
+
+## Discovery metadata
+
+- Sitemap: https://filosign.xyz/sitemap-index.xml
+- Short AI index: https://filosign.xyz/llms.txt
+- Social: https://x.com/filosign

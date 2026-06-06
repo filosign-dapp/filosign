@@ -51,20 +51,21 @@ export function buildCompliancePdfSummaryFromBundle(
 
 	const execPlain =
 		bundle.executionStatus === "fully_executed"
-			? "Fully executed - every required signer has an on-chain signature recorded as of this export."
-			: "Partially executed - at least one signer has not yet recorded an on-chain signature. This record reflects status at export time only.";
+			? "Complete - every required signer had a recorded signature when this report was exported."
+			: "Incomplete - at least one required signer had not recorded a signature when this report was exported.";
 
 	const fields: CompliancePdfSummary["fields"] = [
+		{
+			label: "Workflow status",
+			value:
+				bundle.executionStatus === "fully_executed" ? "Complete" : "Incomplete",
+		},
+		{ label: "Generated", value: bundle.exportedAtIso },
+		{ label: "Sender wallet", value: bundle.registration.sender },
+		{ label: "Network", value: `${chainName} (${bundle.chainId})` },
 		{ label: "Export ID", value: exportId },
-		{ label: "Bundle hash (SHA-256)", value: bundleHash },
-		{ label: "Generated (UTC)", value: bundle.exportedAtIso },
-		{ label: "Chain ID", value: String(bundle.chainId) },
-		{ label: "Chain", value: chainName },
-		{ label: "Piece CID", value: bundle.pieceCid },
-		{ label: "Execution (system)", value: bundle.executionStatus },
-		{ label: "Placement commitment", value: bundle.placementCommitment },
-		{ label: "Sender", value: bundle.registration.sender },
-		{ label: "Registered", value: bundle.registration.createdAtIso },
+		{ label: "Proof export hash", value: bundleHash },
+		{ label: "Document storage ID", value: bundle.pieceCid },
 		{
 			label: "Registration tx",
 			value: bundle.registration.registrationTxHash,
@@ -75,13 +76,13 @@ export function buildCompliancePdfSummaryFromBundle(
 		bundle.registration.registerDocumentSha256 ?? documentSha256;
 	if (registerHash) {
 		fields.push({
-			label: "Register document Merkle root",
+			label: "Document verification root",
 			value: registerHash,
 		});
 		fields.push({
-			label: "Document hash scheme",
+			label: "Document verification method",
 			value:
-				"Merkle root over SHA-256(raw file bytes) per signable document; leaves sorted by document id. See completion packet proofs for per-file verification.",
+				"Root over document hashes. Technical reviewers can use the proof packet JSON to verify individual files.",
 		});
 	}
 
@@ -95,8 +96,8 @@ export function buildCompliancePdfSummaryFromBundle(
 
 	const hasExplorerLinks = Boolean(explorerBaseUrl);
 	const explorerNote = hasExplorerLinks
-		? "Registration, signature, and settlement transaction links appear in the transaction index below."
-		: "No blockchain explorer configured for this network - verify transactions manually using the chain ID and transaction hashes provided.";
+		? "Transaction links appear in the technical verification section for reviewers who need them."
+		: "No block explorer is configured for this network. Technical reviewers can still use the network ID and transaction hashes provided later in this report.";
 
 	const aboutLines: CompliancePdfLine[] = [
 		...buildAboutThisRecordLines(bundle, explorerNote, execPlain),
@@ -106,12 +107,12 @@ export function buildCompliancePdfSummaryFromBundle(
 
 	const partiesLines: CompliancePdfLine[] = [
 		{
-			text: "Each row is a participant on this file. Wallet addresses are checksummed. Commitments are one-way fingerprints of email or login subject (see appendix); they allow Filosign to correlate events without storing raw identifiers in the bundle.",
+			text: "These are the people and wallets connected to this workflow. Use this section to confirm the sender, signers, and viewers that Filosign recorded for the document.",
 			textStyle: "lead",
 		},
 		{ text: "" },
 		{
-			text: "Parties on this file (sender, signers, viewers):",
+			text: "Participants on this workflow:",
 			textStyle: "listHeading",
 		},
 		{ text: "" },
@@ -122,14 +123,6 @@ export function buildCompliancePdfSummaryFromBundle(
 		partiesLines.push({
 			text: `${i + 1}. [${p.role}] ${name} / ${p.email} / ${p.wallet}`,
 		});
-		partiesLines.push({
-			text: `   emailCommitment: ${p.emailCommitment}`,
-		});
-		if (p.authSubjectCommitment) {
-			partiesLines.push({
-				text: `   authSubjectCommitment: ${p.authSubjectCommitment}`,
-			});
-		}
 		if (i < bundle.parties.length - 1) partiesLines.push({ text: "" });
 	}
 
@@ -200,12 +193,12 @@ export function buildCompliancePdfSummaryFromBundle(
 
 	const signerMatrix: CompliancePdfLine[] = [
 		{
-			text: "Human-oriented view of each signer row: identity, signature status, message times, and links to on-chain transactions when present. Cross-reference the transaction index for full contract context.",
+			text: "Use this section to confirm who signed and when each signature was recorded. Transaction details are available later for technical review.",
 			textStyle: "lead",
 		},
 		{ text: "" },
 		{
-			text: "Each required participant and their on-chain status:",
+			text: "Required signers:",
 			textStyle: "listHeading",
 		},
 		{ text: "" },
@@ -229,12 +222,12 @@ export function buildCompliancePdfSummaryFromBundle(
 			signerMatrix.push({ text: `   Status: ${statusLabel}` });
 			if (s.signedAtIso) {
 				signerMatrix.push({
-					text: `   Signed at (EIP-712 message time, UTC): ${s.signedAtIso}`,
+					text: `   Signed at: ${s.signedAtIso}`,
 				});
 			}
 			if (s.blockTimestampFromTx != null) {
 				signerMatrix.push({
-					text: `   Block time from sign tx receipt (UTC): ${new Date(s.blockTimestampFromTx * 1000).toISOString()}`,
+					text: `   Public record time: ${new Date(s.blockTimestampFromTx * 1000).toISOString()}`,
 				});
 			}
 			if (s.completionsRoot) {
@@ -266,12 +259,12 @@ export function buildCompliancePdfSummaryFromBundle(
 	const docMetaLines: CompliancePdfLine[] = decryptedDocumentMeta
 		? [
 				{
-					text: "Optional file facts from the session that produced this export. They do not replace the document hash when one is present.",
+					text: "These are the file details available when this report was created. Keep them with the proof packet if you need to match this report back to the downloaded document.",
 					textStyle: "lead",
 				},
 				{ text: "" },
 				{
-					text: "Decrypted document snapshot (this export only):",
+					text: "Document included in this export:",
 					textStyle: "listHeading",
 				},
 				{ text: "" },
@@ -279,25 +272,25 @@ export function buildCompliancePdfSummaryFromBundle(
 					text: `Name: ${decryptedDocumentMeta.name ?? "(unnamed)"} / ${decryptedDocumentMeta.mimeType ?? "-"} / ${String(decryptedDocumentMeta.sizeBytes)} bytes`,
 				},
 				{
-					text: "Note: Raw bytes are not embedded; document hash binds the viewed content.",
+					text: "Note: The proof packet ZIP includes the original file when you download the full packet.",
 					textStyle: "emphasis",
 				},
 			]
 		: [
 				{
-					text: "Document bytes were not available in this session. The bundle still reflects on-chain placement and signatures.",
+					text: "Document bytes were not available in this session. The proof report still reflects the recorded workflow status and verification anchors.",
 					textStyle: "emphasis",
 				},
 			];
 
 	const placementRef: CompliancePdfLine[] = [
 		{
-			text: "Normalized coordinates (0–1) locate each field on the PDF page; page numbers are 1-based. Status reflects signer progress against the manifest at export time.",
+			text: "This section lists the fields placed on the document and whether each field was signed, pending, or only saved as a draft when the report was exported.",
 			textStyle: "lead",
 		},
 		{ text: "" },
 		{
-			text: "Field placements (coordinates normalized 0-1; page numbers are 1-based):",
+			text: "Fields on the document:",
 			textStyle: "listHeading",
 		},
 		{ text: "" },
@@ -479,7 +472,7 @@ export function buildCompliancePdfSummaryFromBundle(
 		) {
 			const ack = bundle.offChainEvidence.payoutRecipientAcknowledgements[i];
 			payoutAckLines.push({
-				text: `${i + 1}. ${ack.signerWallet} · version ${ack.termsVersion} · ${ack.acknowledgedAtIso}`,
+				text: `${i + 1}. ${ack.signerWallet} - version ${ack.termsVersion} - ${ack.acknowledgedAtIso}`,
 			});
 			if (
 				i <
@@ -495,7 +488,7 @@ export function buildCompliancePdfSummaryFromBundle(
 		const decimals = SUPPORTED_TOKENS[0]?.decimals ?? 6;
 		settlementLines.push(
 			{
-				text: "USDC payout rules registered on FSPaymentValidator. Status reflects Filosign records at export; verify payout txs in the transaction index.",
+				text: "These payout packets were attached to the workflow. Status reflects Filosign records at export. Filosign does not guarantee payment, and users remain responsible for payout legality, taxes, invoices, and wallet correctness.",
 				textStyle: "lead",
 			},
 			{ text: "" },
@@ -512,7 +505,7 @@ export function buildCompliancePdfSummaryFromBundle(
 				text: `${i + 1}. ${legSummary}`,
 			});
 			settlementLines.push({
-				text: `   Release: ${settlementReleaseTypeLabel(p.releaseType)} · Status: ${settlementStatusLabel(p.status)}`,
+				text: `   Release: ${settlementReleaseTypeLabel(p.releaseType)} - Status: ${settlementStatusLabel(p.status)}`,
 			});
 			settlementLines.push({ text: `   Rule id: ${p.onChainRuleId}` });
 			settlementLines.push({
@@ -537,7 +530,7 @@ export function buildCompliancePdfSummaryFromBundle(
 	if (bundle.offChainEvidence.documentViews.length > 0) {
 		viewLines.push(
 			{
-				text: "Server-recorded document open events (decrypt/view), distinct from acknowledgement.",
+				text: "These are recorded document open events. They show view activity separately from signatures or acknowledgements.",
 				textStyle: "lead",
 			},
 			{ text: "" },
@@ -560,12 +553,10 @@ export function buildCompliancePdfSummaryFromBundle(
 		fields,
 		sections: [
 			{ title: "About this record", lines: aboutLines },
+			{ title: "Who signed", lines: signerMatrix },
 			{ title: "Parties", lines: partiesLines },
-			{ title: "On-chain registration snapshot", lines: onchainLines },
-			{ title: "On-chain transactions (index)", lines: txIndexLines },
-			{ title: "Signer matrix", lines: signerMatrix },
 			...(settlementLines.length > 0
-				? [{ title: "Attached payout records", lines: settlementLines }]
+				? [{ title: "Payout packets", lines: settlementLines }]
 				: []),
 			...(payoutAckLines.length > 0
 				? [
@@ -575,11 +566,16 @@ export function buildCompliancePdfSummaryFromBundle(
 						},
 					]
 				: []),
-			{ title: "Document content metadata", lines: docMetaLines },
-			{ title: "Field placements", lines: placementRef },
-			{ title: "Placement manifest (JSON)", lines: manifestLines },
+			{ title: "Document details", lines: docMetaLines },
+			{ title: "Fields on the document", lines: placementRef },
 			{
-				title: "Cryptographic completion proofs (Merkle trees)",
+				title: "Technical verification: public registration",
+				lines: onchainLines,
+			},
+			{ title: "Technical verification: transactions", lines: txIndexLines },
+			{ title: "Technical verification: placement JSON", lines: manifestLines },
+			{
+				title: "Technical verification: field proofs",
 				lines: cryptoDetail,
 			},
 			...(ackLines.length > 0

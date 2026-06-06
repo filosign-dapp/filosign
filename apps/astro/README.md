@@ -146,8 +146,9 @@ Every page includes:
 - JSON-LD (`WebSite`, `Organization`, plus `SoftwareApplication` or `BlogPosting` on blog posts)
 - Preconnect hints for external fonts
 - `@astrojs/sitemap` (marketing HTML routes only; `/open-graph/*` PNGs are excluded)
-- `public/robots.txt` — points crawlers at `sitemap-index.xml` (edit the `Sitemap:` URL if the deploy origin is not `filosign.io`)
-- `public/llms.txt` — short site summary for AI crawlers (optional convention)
+- `public/robots.txt` — points crawlers at `sitemap-index.xml` (edit the `Sitemap:` URL if the deploy origin is not `filosign.xyz`)
+- `public/llms.txt` — short URL index for AI assistants; `public/llms-full.txt` — extended summaries
+- **IndexNow** — `postbuild` runs `scripts/indexnow-ping.ts` (submits sitemap URLs to Bing/Yandex partners). Skips localhost; set `INDEXNOW_SKIP=1` to disable. Key file: `public/8f3c2a1b-4d5e-6f70-8a9b-0c1d2e3f4a5b.txt` (must stay hosted at `/{key}.txt` on the live domain).
 
 Direct dependency **`canvaskit-wasm`** is required for OG generation (see astro-og-canvas README).
 

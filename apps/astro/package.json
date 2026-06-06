@@ -11,6 +11,7 @@
 		"dev": "astro dev",
 		"dev:local": "astro dev",
 		"build": "astro build",
+		"postbuild": "bun run scripts/indexnow-ping.ts",
 		"preview": "astro preview",
 		"astro": "astro",
 		"check-types": "astro check"

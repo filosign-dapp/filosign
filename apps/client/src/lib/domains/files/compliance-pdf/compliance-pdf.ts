@@ -72,7 +72,7 @@ export function useCompliancePdfExports(options: {
 					: null,
 			});
 			const safe = file.pieceCid.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 48);
-			downloadPdfBytes(bytes, `filosign-file-record-${safe}`);
+			downloadPdfBytes(bytes, `filosign-proof-report-${safe}`);
 		} catch (e) {
 			console.error(e);
 			toast.error("Proof report export failed");
@@ -108,7 +108,7 @@ export function useCompliancePdfExports(options: {
 				documentSha256,
 			});
 			const safe = file.pieceCid.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 48);
-			downloadPdfBytes(bytes, `filosign-document-with-record-${safe}`);
+			downloadPdfBytes(bytes, `filosign-document-with-proof-${safe}`);
 		} catch (e) {
 			console.error(e);
 			toast.error("Proof report export failed");

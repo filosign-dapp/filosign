@@ -425,7 +425,7 @@ export async function buildDocumentPlusCompliancePdf(
 		);
 		if (!resolved) {
 			throw new Error(
-				"Bundled PDF export supports PDF and image documents. Download the file and compliance appendix separately.",
+				"Bundled PDF export supports PDF and image documents. Download the file and proof report separately.",
 			);
 		}
 		await embedImagePage(out, documentBytes, resolved);

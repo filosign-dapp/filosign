@@ -282,7 +282,7 @@ function openContinuationPage(ctx: Ctx): void {
 	});
 	const bandTop = ctx.ph - PDF_M.margin;
 	const contSize = 8;
-	const contStr = "filosign · compliance record (continued)";
+	const contStr = "filosign - proof report (continued)";
 	const contFont = ctx.fontBrand;
 	const contLh = lineHeightAt(contFont, contSize);
 	const textToLineGap = 6;
@@ -462,7 +462,7 @@ function drawPdfFooters(
 	for (let i = 0; i < n; i++) {
 		const page = pages[i];
 		const pw = page.getWidth();
-		const text = `Filosign compliance record · Page ${i + 1} of ${n}`;
+		const text = `Filosign proof report - Page ${i + 1} of ${n}`;
 		const tw = font.widthOfTextAtSize(text, size);
 		page.drawText(text, {
 			x: (pw - tw) / 2,
@@ -493,7 +493,7 @@ export async function drawComplianceReport(
 		oblique: helveticaOblique,
 	};
 
-	doc.setTitle("Filosign Compliance Record");
+	doc.setTitle("Filosign Proof Report");
 	doc.setSubject(`Export ${options.exportId}`);
 	doc.setCreator("Filosign");
 
@@ -577,7 +577,7 @@ export async function drawComplianceReport(
 	);
 	ctx.y = headerBandBottom - dropToTitleBaseline;
 
-	ctx.page.drawText("Filosign Compliance Record", {
+	ctx.page.drawText("Filosign Proof Report", {
 		x: PDF_M.margin,
 		y: ctx.y,
 		size: titleSize,
@@ -592,7 +592,7 @@ export async function drawComplianceReport(
 		`chain id ${options.bundle.chainId}`,
 		`exported ${options.bundle.exportedAtIso}`,
 	];
-	ctx.page.drawText(subParts.join(" · "), {
+	ctx.page.drawText(subParts.join(" - "), {
 		x: PDF_M.margin,
 		y: ctx.y,
 		size: 9,
@@ -630,7 +630,7 @@ export async function drawComplianceReport(
 	});
 	ctx.y -= PDF_M.gap + 6;
 
-	ctx.page.drawText("Key identifiers and anchors", {
+	ctx.page.drawText("Quick summary", {
 		x: PDF_M.margin,
 		y: ctx.y,
 		size: PDF_M.sectionTitleSize + 1,

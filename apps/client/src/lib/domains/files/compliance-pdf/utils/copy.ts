@@ -44,40 +44,40 @@ export function buildAboutThisRecordLines(
 ): ComplianceCopyLine[] {
 	const scope =
 		bundle.executionStatus === "fully_executed"
-			? "This PDF is an export of a Filosign compliance bundle. It describes who participated, what was committed on-chain at export time, and the transactions Filosign associates with this file. The export reflects a single moment in time; it is not a live dashboard."
-			: "This PDF is an export of a Filosign compliance bundle. It describes who participated, what was committed on-chain at export time, and the transactions Filosign associates with this file. Execution was not complete when the bundle was generated: at least one required signer had not yet recorded an on-chain signature. Treat status as historical, not current.";
+			? "This proof report summarizes a completed Filosign workflow. It records who participated, what document was signed, when signatures were recorded, and whether payout packets or file-release events were attached."
+			: "This proof report summarizes a Filosign workflow that was not complete when exported. Some required signatures may be missing. Use the status section before relying on this record.";
 
 	return [
 		{ text: scope, textStyle: "lead" },
 		{ text: "" },
-		{ text: "How to use this record", textStyle: "listHeading" },
+		{ text: "How to use this report", textStyle: "listHeading" },
 		{
-			text: "1. Bundle hash: Treat the bundle hash (in the key identifiers table) as the fingerprint of the canonical JSON snapshot. Any change to the JSON changes the hash.",
+			text: "1. Keep it with the signed agreement. This report gives finance, legal, grant, or internal reviewers a clear record of what happened.",
 			textStyle: "body",
 		},
 		{
-			text: "2. Transactions: Use the transaction index to locate each transaction hash on a block explorer for this chain. Compare block numbers, timestamps, and contract addresses to your own records.",
+			text: "2. Share the document-with-proof PDF when someone needs the signed document and the proof record in one file.",
 			textStyle: "body",
 		},
 		{
-			text: "3. Registration snapshot: When present, the on-chain registration snapshot was read from FSEnvelopeRegistry at export time. You may reconcile those fields against the registration transaction and the same registry view on an archive node or explorer.",
+			text: "3. Use the technical verification sections only when a reviewer needs to inspect hashes, transactions, or public verification records.",
 			textStyle: "body",
 		},
 		{
-			text: "4. Placements and Merkle data: Field placements and the placement manifest JSON underpin the placement commitment. The Merkle section lists per-signer completion roots and inclusion proofs so an independent party can recompute leaf hashes (see @filosign/shared) and verify roots.",
+			text: "4. This report is evidence of a workflow. It is not legal advice and does not decide whether a document is valid for your jurisdiction or use case.",
 			textStyle: "body",
 		},
-		{ text: "" },
-		{ text: explorerNote, textStyle: "emphasis" },
 		{ text: "" },
 		{ text: execPlain, textStyle: "lead" },
+		{ text: "" },
+		{ text: explorerNote, textStyle: "emphasis" },
 	];
 }
 
 export function buildTimestampExplainerLines(): ComplianceCopyLine[] {
 	return [
 		{
-			text: "Timestamps in this record: Registration time on-chain follows the signed registration message. The block timestamp on a signature transaction reflects when that transaction was included. “Signed at” in the signer matrix matches the EIP-712 message time stored when the signature was submitted; it may differ slightly from block time.",
+			text: "Timestamps in this report: Signed at is the time stored with the signing message. Transaction block times show when the related public record was included on the network. These times may differ slightly.",
 			textStyle: "emphasis",
 		},
 	];
@@ -99,12 +99,12 @@ const TX_KIND_GLOSSARY: Record<ChainTxKind, string> = {
 export function buildAppendixLines(): ComplianceCopyLine[] {
 	const lines: ComplianceCopyLine[] = [
 		{
-			text: "Appendix A - Glossary (terms and verification)",
+			text: "Appendix A - Technical glossary",
 			textStyle: "subheading",
 		},
 		{ text: "" },
 		{
-			text: "Each entry states what the term means in Filosign and how a reviewer can use it. Technical values in the body of this PDF are authoritative; this appendix explains them.",
+			text: "These terms are for technical or legal reviewers who need to inspect the verification data behind the proof report. Most users do not need this section for day-to-day review.",
 			textStyle: "lead",
 		},
 		{ text: "" },
@@ -196,7 +196,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 		},
 		{ text: "" },
 		{
-			text: "Each path is relative to the root compliance bundle object. Values are reproduced in the body of this PDF.",
+			text: "Each path is relative to the root proof export object. Values are reproduced in the body of this PDF for technical review.",
 			textStyle: "lead",
 		},
 		{ text: "" },
@@ -280,7 +280,7 @@ export function buildAppendixLines(): ComplianceCopyLine[] {
 		["transactions[ ].blockNumber", "Block number when known."],
 		["transactions[ ].timestamp", "Block timestamp (unix seconds) when known."],
 		["transactions[ ].fetchedAtIso", "When Filosign fetched receipt metadata."],
-		["signers[ ]", "Per-signer compliance row aligned to the manifest."],
+		["signers[ ]", "Per-signer proof row aligned to the manifest."],
 		["signers[ ].wallet", "Signer address."],
 		["signers[ ].displayName", "Display name when known."],
 		["signers[ ].email", "Signer email when known."],

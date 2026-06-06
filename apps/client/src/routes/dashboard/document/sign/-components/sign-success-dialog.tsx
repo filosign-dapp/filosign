@@ -40,7 +40,7 @@ export function SignSuccessDialog({
 					</DialogTitle>
 					<DialogDescription>
 						{exportsAllowed
-							? "Your envelope is fully executed. Download the proof packet below."
+							? "Your workflow is complete. Download the proof packet for your records."
 							: "Your signature was recorded. Proof exports unlock when every required party has signed."}
 					</DialogDescription>
 				</DialogHeader>
@@ -57,7 +57,8 @@ export function SignSuccessDialog({
 							<span className="text-left">
 								<span className="block font-medium">Proof packet (ZIP)</span>
 								<span className="block text-xs text-muted-foreground font-normal">
-									Original file(s), proof report, merged PDF, README
+									Full archive with the document, proof report, README, and
+									verification data
 								</span>
 							</span>
 						</Button>
@@ -73,7 +74,7 @@ export function SignSuccessDialog({
 						<span className="text-left">
 							<span className="block font-medium">Proof report only</span>
 							<span className="block text-xs text-muted-foreground font-normal">
-								On-chain record and audit metadata
+								Best for legal, finance, grant, or internal review
 							</span>
 						</span>
 					</Button>
@@ -90,7 +91,7 @@ export function SignSuccessDialog({
 								Document with proof appendix
 							</span>
 							<span className="block text-xs text-muted-foreground font-normal">
-								Original file plus proof section
+								Best when you want the signed document and proof in one PDF
 							</span>
 						</span>
 					</Button>

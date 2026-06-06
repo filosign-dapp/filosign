@@ -1,4 +1,5 @@
-# Canonical origin: https://filosign.xyz (override Sitemap if PUBLIC_ASTRO_URL differs in staging)
+# Canonical origin: https://filosign.xyz
+# AI summaries: /llms.txt (short), /llms-full.txt (extended)
 User-agent: *
 Allow: /
 

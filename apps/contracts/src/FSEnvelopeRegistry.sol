@@ -114,8 +114,15 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
     );
     event EnvelopeCompleted(bytes32 indexed cidIdentifier, uint48 completedAt);
     event OrgControllersSet(bytes32 indexed orgIdCommitment, address[] wallets);
+    event SignerWalletBound(
+        bytes32 indexed cidIdentifier,
+        bytes32 indexed emailCommitment,
+        address indexed wallet
+    );
 
     mapping(bytes32 => EnvelopeRegistration) private _envelopeRegistrations;
+    mapping(bytes32 cidId => mapping(bytes32 emailCommitment => address))
+        private _boundSignerWallet;
     mapping(bytes32 orgIdCommitment => mapping(address => bool))
         private _isOrgController;
     mapping(bytes32 orgIdCommitment => address[]) private _orgControllerList;
@@ -142,7 +149,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
 
     constructor(
         address server_
-    ) EIP712("FSEnvelopeRegistry", "1") Ownable(msg.sender) {
+    ) EIP712("FSEnvelopeRegistry", "2") Ownable(msg.sender) {
         if (server_ == address(0)) revert ZeroAddress();
         server = server_;
     }
@@ -223,7 +230,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         );
     bytes32 private constant ACK_ENVELOPE_TYPEHASH =
         keccak256(
-            "AckEnvelope(bytes32 cidIdentifier,address sender,address viewerWallet,bytes32 viewerEmailCommitment,bytes32 authSubjectCommitment,uint256 timestamp)"
+            "AckEnvelope(bytes32 cidIdentifier,address sender,address viewerWallet,bytes32 viewerEmailCommitment,bytes32 authSubjectCommitment,bytes20 signersCommitment,uint256 timestamp)"
         );
     bytes32 private constant SIGN_ENVELOPE_TYPEHASH =
         keccak256(
@@ -597,6 +604,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         if (_rosterSignedCount(file) == 0) {
             _applySignerSubstitution(
                 file,
+                cidId,
                 oldCommitment_,
                 newCommitment_,
                 routingOrderAfter_,
@@ -712,9 +720,11 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes20 signersCommitmentAfter = pending.signersCommitmentAfter;
 
         uint8 cleared = _clearAllEnvelopeSignatures(file);
+        _clearAllBoundSignerWallets(file, cidId);
 
         _applySignerSubstitution(
             file,
+            cidId,
             oldCommitment,
             newCommitment,
             routingOrderAfter_,
@@ -817,6 +827,8 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes32 signerEmailCommitment_,
         bytes32 authSubjectCommitment_,
         bytes20 dl3SignatureCommitment_,
+        uint256 bindTimestamp_,
+        bytes calldata bindSignature_,
         uint256 timestamp_,
         bytes calldata signature_,
         bytes32 completionsRoot_,
@@ -833,6 +845,30 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         _assertNoPendingReplacement(cidId);
         if (file.signatures[signerEmailCommitment_].length != 0)
             revert AlreadySigned();
+
+        address bound = _boundSignerWallet[cidId][signerEmailCommitment_];
+        if (bound == address(0)) {
+            if (
+                !_validateEnvelopeAckSignature(
+                    file,
+                    cidId,
+                    sender_,
+                    signerWallet_,
+                    signerEmailCommitment_,
+                    authSubjectCommitment_,
+                    bindTimestamp_,
+                    bindSignature_
+                )
+            ) revert InvalidSignature();
+            _boundSignerWallet[cidId][signerEmailCommitment_] = signerWallet_;
+            emit SignerWalletBound(
+                cidId,
+                signerEmailCommitment_,
+                signerWallet_
+            );
+        } else if (bound != signerWallet_) {
+            revert SignerWalletMismatch();
+        }
 
         if (
             !validateEnvelopeSigningSignature(
@@ -876,6 +912,57 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         );
 
         _markCompleteIfNeeded(file, cidId, quorumSet_);
+    }
+
+    function registerEnvelopeAck(
+        string calldata pieceCid_,
+        address sender_,
+        address viewerWallet_,
+        bytes32 viewerEmailCommitment_,
+        bytes32 authSubjectCommitment_,
+        uint256 timestamp_,
+        bytes calldata signature_
+    ) external onlyServer {
+        bytes32 cidId = FSCommitmentLib.cidIdentifier(pieceCid_);
+        EnvelopeRegistration storage file = _envelopeRegistrations[cidId];
+        if (file.timestamp == 0) revert FileNotRegistered();
+        _assertNotRevoked(file);
+        _assertNotComplete(file);
+        _assertNoPendingReplacement(cidId);
+
+        if (
+            !_validateEnvelopeAckSignature(
+                file,
+                cidId,
+                sender_,
+                viewerWallet_,
+                viewerEmailCommitment_,
+                authSubjectCommitment_,
+                timestamp_,
+                signature_
+            )
+        ) revert InvalidSignature();
+
+        if (file.isRequiredSigner[viewerEmailCommitment_]) {
+            address bound = _boundSignerWallet[cidId][viewerEmailCommitment_];
+            if (bound == address(0)) {
+                _boundSignerWallet[cidId][viewerEmailCommitment_] = viewerWallet_;
+                emit SignerWalletBound(
+                    cidId,
+                    viewerEmailCommitment_,
+                    viewerWallet_
+                );
+            } else if (bound != viewerWallet_) {
+                revert SignerWalletMismatch();
+            }
+        }
+    }
+
+    function boundSignerWallet(
+        bytes32 cidId,
+        bytes32 emailCommitment_
+    ) external view returns (address) {
+        return _boundSignerWallet[cidId][emailCommitment_];
     }
 
     function isSigner(
@@ -1000,32 +1087,22 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         uint256 timestamp_,
         bytes calldata signature_
     ) public view returns (bool) {
-        _assertSignatureTimestamp(timestamp_);
         EnvelopeRegistration storage file = _envelopeRegistrations[
             FSCommitmentLib.cidIdentifier(pieceCid_)
         ];
-        if (
-            !file.viewerEmailRegistered[viewerEmailCommitment_] &&
-            !file.isRequiredSigner[viewerEmailCommitment_]
-        ) revert InvalidSigner();
-        if (file.sender != sender_) revert InvalidSender();
-        _assertNotRevoked(file);
-        _assertNotComplete(file);
-
+        if (file.timestamp == 0) return false;
         bytes32 cidId = FSCommitmentLib.cidIdentifier(pieceCid_);
-        bytes32 structHash = keccak256(
-            abi.encode(
-                ACK_ENVELOPE_TYPEHASH,
+        return
+            _validateEnvelopeAckSignature(
+                file,
                 cidId,
                 sender_,
                 viewerWallet_,
                 viewerEmailCommitment_,
                 authSubjectCommitment_,
-                timestamp_
-            )
-        );
-        bytes32 digest = _hashTypedDataV4(structHash);
-        return FSSignatureValidation.isValid(viewerWallet_, digest, signature_);
+                timestamp_,
+                signature_
+            );
     }
 
     function cidIdentifier(
@@ -1109,11 +1186,14 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
 
     function _applySignerSubstitution(
         EnvelopeRegistration storage file,
+        bytes32 cidId,
         bytes32 oldCommitment_,
         bytes32 newCommitment_,
         bytes32[] calldata routingOrderAfter_,
         bytes32[] calldata quorumSetAfter_
     ) private {
+        delete _boundSignerWallet[cidId][oldCommitment_];
+
         file.isRequiredSigner[oldCommitment_] = false;
         file.isRequiredSigner[newCommitment_] = true;
 
@@ -1284,5 +1364,52 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
             }
         }
         revert InvalidSigner();
+    }
+
+    function _validateEnvelopeAckSignature(
+        EnvelopeRegistration storage file,
+        bytes32 cidId,
+        address sender_,
+        address viewerWallet_,
+        bytes32 viewerEmailCommitment_,
+        bytes32 authSubjectCommitment_,
+        uint256 timestamp_,
+        bytes calldata signature_
+    ) private view returns (bool) {
+        _assertSignatureTimestamp(timestamp_);
+        if (
+            !file.viewerEmailRegistered[viewerEmailCommitment_] &&
+            !file.isRequiredSigner[viewerEmailCommitment_]
+        ) revert InvalidSigner();
+        if (file.sender != sender_) revert InvalidSender();
+        _assertNotRevoked(file);
+        _assertNotComplete(file);
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                ACK_ENVELOPE_TYPEHASH,
+                cidId,
+                sender_,
+                viewerWallet_,
+                viewerEmailCommitment_,
+                authSubjectCommitment_,
+                file.signersCommitment,
+                timestamp_
+            )
+        );
+        bytes32 digest = _hashTypedDataV4(structHash);
+        return FSSignatureValidation.isValid(viewerWallet_, digest, signature_);
+    }
+
+    function _clearAllBoundSignerWallets(
+        EnvelopeRegistration storage file,
+        bytes32 cidId
+    ) private {
+        for (uint256 i = 0; i < file.signerRoster.length; ) {
+            delete _boundSignerWallet[cidId][file.signerRoster[i]];
+            unchecked {
+                ++i;
+            }
+        }
     }
 }

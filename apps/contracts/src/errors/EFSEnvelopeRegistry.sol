@@ -35,3 +35,5 @@ error DuplicateOrgController(address wallet);
 error SignerReplacementPending();
 error NoSignerReplacementPending();
 error ZeroDocumentSha256();
+error SignerNotBound();
+error SignerWalletMismatch();

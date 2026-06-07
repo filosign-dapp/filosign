@@ -3,6 +3,7 @@ import type { Account, Address, Hex, PublicClient, WalletClient } from "viem";
 import { keccak256, toBytes } from "viem";
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
 import {
+	signEnvelopeAck,
 	signRegisterEnvelope,
 	signRegisterEnvelopeSignature,
 	signRegisterKeygen,
@@ -301,6 +302,18 @@ export async function registerEnvelopeSignatureStep(args: {
 	const quorumSet = args.quorumSet ?? [];
 	const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
 	const reg = await ctx.envelopeRegistry.read.envelopeRegistrations([cidId]);
+	const bindTs = await latestBlockTimestamp(ctx.publicClient);
+	const bindSig = await signEnvelopeAck({
+		wallet: signerWallet,
+		envelopeRegistryAddress: ctx.envelopeRegistry.address,
+		chainId: ctx.chainId,
+		pieceCid,
+		sender: senderAddr,
+		viewerEmailCommitment: signerEmailCommitment,
+		authSubjectCommitment: signDefaults.auth,
+		signersCommitment: reg.signersCommitment,
+		timestamp: bindTs,
+	});
 	const signTs = await latestBlockTimestamp(ctx.publicClient);
 	const signSig = await signRegisterEnvelopeSignature({
 		wallet: signerWallet,
@@ -324,6 +337,8 @@ export async function registerEnvelopeSignatureStep(args: {
 			signerEmailCommitment,
 			signDefaults.auth,
 			signDefaults.dl3,
+			bindTs,
+			bindSig,
 			signTs,
 			signSig,
 			signDefaults.root,

@@ -65,6 +65,7 @@ interface IFSEnvelopeRegistry {
     event EnvelopeRevokedBeforeComplete();
     event EnvelopeCompleted();
     event OrgControllersSet();
+    event SignerWalletBound();
     struct PendingSignerReplacement {
         bytes32 oldCommitment;
         bytes32 newCommitment;
@@ -146,7 +147,9 @@ interface IFSEnvelopeRegistry {
     function executeSignerReplacement(string calldata pieceCid_, address recaller_, bytes32[] calldata routingOrderAfter_, bytes32[] calldata quorumSetAfter_) external;
     function cancelSignerReplacement(string calldata pieceCid_, address recaller_, uint256 timestamp_, bytes calldata signature_) external;
     function recallEnvelope(string calldata pieceCid_, address recaller_, uint256 timestamp_, bytes calldata signature_) external;
-    function registerEnvelopeSignature(string calldata pieceCid_, address sender_, address signerWallet_, bytes32 signerEmailCommitment_, bytes32 authSubjectCommitment_, bytes20 dl3SignatureCommitment_, uint256 timestamp_, bytes calldata signature_, bytes32 completionsRoot_, uint8 leafSchemaVersion_, bytes32[] calldata routingOrder_, bytes32[] calldata quorumSet_) external;
+    function registerEnvelopeSignature(string calldata pieceCid_, address sender_, address signerWallet_, bytes32 signerEmailCommitment_, bytes32 authSubjectCommitment_, bytes20 dl3SignatureCommitment_, uint256 bindTimestamp_, bytes calldata bindSignature_, uint256 timestamp_, bytes calldata signature_, bytes32 completionsRoot_, uint8 leafSchemaVersion_, bytes32[] calldata routingOrder_, bytes32[] calldata quorumSet_) external;
+    function registerEnvelopeAck(string calldata pieceCid_, address sender_, address viewerWallet_, bytes32 viewerEmailCommitment_, bytes32 authSubjectCommitment_, uint256 timestamp_, bytes calldata signature_) external;
+    function boundSignerWallet(bytes32 cidId, bytes32 emailCommitment_) external view returns (address);
     function isSigner(bytes32 cidId, bytes32 signerEmailCommitment_) external view returns (bool);
     function hasSigned(bytes32 cidId, bytes32 signerEmailCommitment_) external view returns (bool);
     function rosterSignedCount(bytes32 cidId) external view returns (uint8);

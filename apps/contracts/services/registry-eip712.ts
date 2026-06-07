@@ -8,7 +8,7 @@ import {
 import type { FilosignContracts } from "./contracts";
 
 /** Fallback when on-chain `eip712Domain()` is unavailable (tests). */
-export const REGISTRY_EIP712_VERSION = "1" as const;
+export const REGISTRY_EIP712_VERSION = "2" as const;
 
 type RegistryEip712Domain = {
 	name: string;

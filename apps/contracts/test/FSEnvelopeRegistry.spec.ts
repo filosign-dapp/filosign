@@ -152,6 +152,7 @@ describe("FSEnvelopeRegistry", () => {
 		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
 		const reg = await ctx.envelopeRegistry.read.envelopeRegistrations([cidId]);
 		const ts = await latestBlockTimestamp(ctx.publicClient);
+		const bindSig = `0x${"ab".repeat(65)}` as Hex;
 		const signSig = await signRegisterEnvelopeSignature({
 			wallet: ctx.payout,
 			envelopeRegistryAddress: ctx.envelopeRegistry.address,
@@ -175,6 +176,54 @@ describe("FSEnvelopeRegistry", () => {
 					notOnFile,
 					defaultSenderAuth,
 					`0x${"88".repeat(20)}`,
+					ts,
+					bindSig,
+					ts,
+					signSig,
+					defaultPlacement,
+					1,
+					[],
+					[],
+				],
+				{ account: walletAccount(ctx.server) },
+			),
+		);
+	});
+
+	it("registerEnvelopeSignature reverts SignerNotBound without prior ack bind", async () => {
+		const ctx = await deployFullSystem();
+		const c = `0x${"e0".repeat(32)}` as Hex;
+		const pieceCid = "unbound-signer";
+		await registerEnvelopeOnly(ctx, pieceCid, [c]);
+		const cidId = await ctx.envelopeRegistry.read.cidIdentifier([pieceCid]);
+		const reg = await ctx.envelopeRegistry.read.envelopeRegistrations([cidId]);
+		const ts = await latestBlockTimestamp(ctx.publicClient);
+		const bindSig = `0x${"ab".repeat(65)}` as Hex;
+		const signSig = await signRegisterEnvelopeSignature({
+			wallet: ctx.payout,
+			envelopeRegistryAddress: ctx.envelopeRegistry.address,
+			chainId: ctx.chainId,
+			pieceCid,
+			sender: walletAccount(ctx.sender).address,
+			signerEmailCommitment: c,
+			authSubjectCommitment: defaultSenderAuth,
+			dl3SignatureCommitment: `0x${"88".repeat(20)}` as Hex,
+			completionsRoot: defaultPlacement,
+			leafSchemaVersion: 1,
+			signersCommitment: reg.signersCommitment,
+			timestamp: ts,
+		});
+		await assert.rejects(
+			ctx.envelopeRegistry.write.registerEnvelopeSignature(
+				[
+					pieceCid,
+					walletAccount(ctx.sender).address,
+					walletAccount(ctx.payout).address,
+					c,
+					defaultSenderAuth,
+					`0x${"88".repeat(20)}`,
+					ts,
+					bindSig,
 					ts,
 					signSig,
 					defaultPlacement,

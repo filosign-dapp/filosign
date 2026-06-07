@@ -3,7 +3,7 @@ import { encodePacked, keccak256, toBytes } from "viem";
 
 const ZERO_BYTES20 = "0x0000000000000000000000000000000000000000" as const;
 /** FSEnvelopeRegistry EIP-712 domain version — must match constructor. */
-export const REGISTRY_EIP712_VERSION = "1" as const;
+export const REGISTRY_EIP712_VERSION = "2" as const;
 
 export const SALT_PIN = `0x${"01".repeat(16)}` as Hex;
 export const SALT_SEED = `0x${"02".repeat(16)}` as Hex;
@@ -256,6 +256,52 @@ export async function signRecallEnvelope(args: {
 			cidIdentifier: cidId,
 			recaller,
 			orgIdCommitment: args.orgIdCommitment,
+			timestamp: args.timestamp,
+		},
+	});
+}
+
+export async function signEnvelopeAck(args: {
+	wallet: WalletClient;
+	envelopeRegistryAddress: Address;
+	chainId: number;
+	pieceCid: string;
+	sender: Address;
+	viewerEmailCommitment: Hex;
+	authSubjectCommitment: Hex;
+	signersCommitment: Hex;
+	timestamp: bigint;
+}): Promise<Hex> {
+	const account = args.wallet.account as Account;
+	const cidId = keccak256(toBytes(args.pieceCid));
+
+	return args.wallet.signTypedData({
+		account,
+		domain: {
+			name: "FSEnvelopeRegistry",
+			version: REGISTRY_EIP712_VERSION,
+			chainId: args.chainId,
+			verifyingContract: args.envelopeRegistryAddress,
+		},
+		types: {
+			AckEnvelope: [
+				{ name: "cidIdentifier", type: "bytes32" },
+				{ name: "sender", type: "address" },
+				{ name: "viewerWallet", type: "address" },
+				{ name: "viewerEmailCommitment", type: "bytes32" },
+				{ name: "authSubjectCommitment", type: "bytes32" },
+				{ name: "signersCommitment", type: "bytes20" },
+				{ name: "timestamp", type: "uint256" },
+			],
+		},
+		primaryType: "AckEnvelope",
+		message: {
+			cidIdentifier: cidId,
+			sender: args.sender,
+			viewerWallet: account.address,
+			viewerEmailCommitment: args.viewerEmailCommitment,
+			authSubjectCommitment: args.authSubjectCommitment,
+			signersCommitment: args.signersCommitment,
 			timestamp: args.timestamp,
 		},
 	});

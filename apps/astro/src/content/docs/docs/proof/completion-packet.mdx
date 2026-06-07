@@ -18,7 +18,8 @@ A proof packet is the record you keep when someone later asks what happened: who
 1. Signers complete the envelope (or the sender voids it before everyone finishes).
 2. Filosign unlocks proof downloads on the document page.
 3. You choose a download format: full ZIP, proof report only, or document with proof appended.
-4. The ZIP puts **one merged PDF at the top level** for sharing. Verification files live in a `.filosign-proof/` folder inside the ZIP.
+4. The ZIP puts **one merged PDF at the top level** for sharing. Verification files live in a `_proofs/` folder inside the ZIP.
+5. To check the packet against the public ledger, use the [independent verifier](https://verify.filosign.xyz): download the ZIP, open the site, and drop the file on the page.
 
 While people are still signing, exports stay off.
 
@@ -30,7 +31,7 @@ A founder closes an NDA with an investor. After both parties sign, the founder d
 
 * Proof downloads unlock only after the envelope is **fully signed** or **voided** before completion.
 * Even if you buy [archival storage](/docs/storage/how-retention-works/), keep your own packet for critical agreements.
-* The README inside `.filosign-proof/` is for counsel or IT; everyday readers can use the top-level document + proof PDF.
+* The README inside `_proofs/` lists technical IDs and verification steps for experts; everyday readers can use the top-level PDFs and the [independent verifier](https://verify.filosign.xyz).
 * Filosign does not decide whether a document is legally valid in your jurisdiction. See [E-signature evidence](/docs/proof/e-signature-evidence/).
 
 ## How to do it in the app
@@ -48,10 +49,10 @@ On the document page, use the header buttons:
 | Item | What it is for |
 |---|---|
 | **Document + proof PDF** (top level) | One file to open, share, or email |
-| **`.filosign-proof/` folder** | Verification files for tools and technical reviewers (not needed for everyday reading) |
-| **Proof report** (inside `.filosign-proof/reports/`) | Readable summary: parties, dates, fields, payouts, and file releases when applicable |
-| **Original documents** (inside `.filosign-proof/documents/original/`) | Signed files used for cryptographic verification |
-| **README** (inside `.filosign-proof/`) | Short index of IDs and how an expert can verify details |
+| **`_proofs/` folder** | Verification files for tools and technical reviewers (not needed for everyday reading) |
+| **Proof report** (inside `_proofs/reports/`) | Readable summary: parties, dates, fields, payouts, and file releases when applicable |
+| **Original documents** (inside `_proofs/documents/original/`) | Signed files used for cryptographic verification |
+| **README** (inside `_proofs/`) | Index of IDs, verifier steps, and `_proofs/` layout |
 
 ### Who should save a copy
 

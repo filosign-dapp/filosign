@@ -9,6 +9,9 @@ function supportBase(): string {
 	return `${env.VITE_CLIENT_URL.replace(/\/$/, "")}${SUPPORT_BASE_PATH}`;
 }
 
+export const VERIFY_WEB_URL =
+	env.VITE_VERIFY_WEB_URL ?? "https://verify.filosign.xyz";
+
 export const DOCS_LINKS = {
 	home: () => docsBase(),
 	workflows: () => `${docsBase()}/workflows`,
@@ -32,6 +35,7 @@ export const DOCS_LINKS = {
 	eSignatureEvidence: () => `${docsBase()}/proof/e-signature-evidence`,
 	completionPacket: () => `${docsBase()}/proof/completion-packet`,
 	readComplianceReport: () => `${docsBase()}/proof/read-compliance-report`,
+	verifyProofPacket: () => VERIFY_WEB_URL,
 	signatureLibrary: () => `${docsBase()}/proof/signature-library`,
 	storageRetention: () => `${docsBase()}/storage/how-retention-works`,
 	exportBeforeArchival: () => `${docsBase()}/storage/export-before-archival`,

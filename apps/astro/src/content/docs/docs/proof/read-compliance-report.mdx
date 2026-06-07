@@ -3,7 +3,7 @@ title: How to read the proof report
 description: Understand the proof report PDF without technical background.
 ---
 
-The **proof report** is a readable summary of one signing workflow. Download it alone or inside the [proof packet](/docs/proof/completion-packet/). Use it when someone asks: "Who signed this, when, and what did they complete?"
+The **proof report** is a completion certificate for one signing workflow: who participated, what was signed, when signatures were recorded, and whether payout or file-release events were attached. Download it alone or inside the [proof packet](/docs/proof/completion-packet/).
 
 ## When to use this
 
@@ -16,13 +16,14 @@ The **proof report** is a readable summary of one signing workflow. Download it 
 
 The proof report summarizes one envelope in plain language:
 
-1. **Parties**: sender and signer list
-2. **Signer matrix**: who signed and when
-3. **Field placements**: signature, date, and text fields completed
-4. **Status**: completed or voided
-5. Optional sections for payout packets, gated files, and verification references
+1. **About this record** and quick summary on the cover
+2. **Who signed** and **parties**
+3. **Signing timeline**
+4. **Field placements**: signature, date, and text fields completed
+5. Optional sections for payout packets and gated files
+6. **How to verify independently** with a link to the public verifier
 
-Most readers only need the first four sections.
+Most readers only need the first five sections. Cryptographic and chain details live in the proof packet ZIP and are checked through the [independent verifier](https://verify.filosign.xyz), not in the PDF body.
 
 ## Example workflow
 
@@ -30,7 +31,7 @@ A bookkeeper receives a signed services agreement. They download the proof repor
 
 ## What to watch out for
 
-* **Transaction links** and the **appendix** are for technical reviewers. Ignore them unless audit or counsel asks.
+* Use the [independent verifier](https://verify.filosign.xyz) when you need cryptographic or on-chain checks. Drop the proof packet ZIP on the page; you do not need to read `_proofs/` files yourself.
 * Payout and gated-file sections appear only when the sender added those features.
 * The proof report is evidence, not a legal opinion on enforceability. See [E-signature evidence](/docs/proof/e-signature-evidence/).
 

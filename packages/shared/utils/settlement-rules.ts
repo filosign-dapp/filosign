@@ -42,6 +42,17 @@ export function isAdvancedSettlementReleaseType(
 	return !BASIC_RELEASE_TYPES.has(releaseType);
 }
 
+/** Expiry compares envelope completion time, not execute wall clock. */
+export function isCompletionGatedSettlementExpiry(
+	releaseType: SettlementReleaseType,
+): boolean {
+	return (
+		releaseType === "all_signed" ||
+		releaseType === "all_required_signed" ||
+		releaseType === "all_signed_complete"
+	);
+}
+
 export const settlementRecipientSources = [
 	"signer",
 	"viewer",

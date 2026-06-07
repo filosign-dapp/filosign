@@ -42,6 +42,19 @@ export const zAttachmentPacketSendInput = z
 				}),
 			)
 			.optional(),
+		senderWrap: z
+			.object({
+				email: z.email(),
+				kemCiphertext: z.string(),
+				encryptedPacketDek: z.string(),
+			})
+			.optional(),
+		orgWrap: z
+			.object({
+				kemCiphertext: z.string(),
+				encryptedPacketDek: z.string(),
+			})
+			.optional(),
 		/** Phrase wraps for cold roster emails on this packet. */
 		coldWraps: z
 			.array(

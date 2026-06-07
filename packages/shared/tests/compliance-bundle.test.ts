@@ -108,6 +108,7 @@ describe("ComplianceBundle", () => {
 				},
 			],
 			settlements: [],
+			attachments: [],
 			offChainEvidence: {
 				acknowledgements: [],
 				documentViews: [],

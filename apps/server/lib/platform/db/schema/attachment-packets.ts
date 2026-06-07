@@ -38,6 +38,8 @@ export const envelopeAttachmentPackets = t.pgTable(
 		onChainRuleId: t.bigint({ mode: "bigint" }),
 		releaseContractAddress: tEvmAddress(),
 		registerRuleTxHash: tBytes32(),
+		orgKemCiphertext: tHex(),
+		orgEncryptedPacketDek: tHex(),
 		...timestamps,
 	},
 	(table) => [

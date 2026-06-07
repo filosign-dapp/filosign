@@ -5,6 +5,7 @@ import { zPlacementManifest } from "./placement";
 import {
 	settlementReleaseTypes,
 	settlementRuleStatuses,
+	zSettlementReleaseParams,
 } from "./settlement-rules";
 
 // --- From compliance-bundle.ts ---
@@ -97,6 +98,22 @@ export const zSettlementComplianceRow = z.object({
 	lastError: z.string().nullable(),
 });
 
+export const zAttachmentComplianceRow = z.object({
+	packetId: z.string(),
+	packetCid: z.string(),
+	label: z.string().nullable(),
+	releaseMode: z.enum(["review", "conditional"]),
+	releaseType: z.enum(settlementReleaseTypes).nullable(),
+	releaseParams: zSettlementReleaseParams.nullable(),
+	recipientsCommitment: zHexString().nullable(),
+	onChainRuleId: z.string().nullable(),
+	releaseContractAddress: zEvmAddress().nullable(),
+	registerRuleTxHash: zHexString().nullable(),
+	recipientCount: z.number().int().nonnegative(),
+	unlocked: z.boolean(),
+	cancelled: z.boolean(),
+});
+
 export const COMPLIANCE_CHAIN_TX_KINDS = zChainTxKind.options;
 
 export const zChainTxRef = z.object({
@@ -169,12 +186,14 @@ export const zComplianceBundle = z.object({
 	transactions: z.array(zChainTxRef),
 	signers: z.array(zSignerComplianceRow),
 	settlements: z.array(zSettlementComplianceRow),
+	attachments: z.array(zAttachmentComplianceRow),
 	offChainEvidence: zOffChainEvidence,
 	fieldCompletions: z.array(zFieldCompletionWireRow).optional(),
 });
 
 export type ComplianceBundle = z.infer<typeof zComplianceBundle>;
 export type SettlementComplianceRow = z.infer<typeof zSettlementComplianceRow>;
+export type AttachmentComplianceRow = z.infer<typeof zAttachmentComplianceRow>;
 export type SignerComplianceRow = z.infer<typeof zSignerComplianceRow>;
 export type MerkleLeafProof = z.infer<typeof zMerkleLeafProof>;
 export type PartyRow = z.infer<typeof zPartyRow>;

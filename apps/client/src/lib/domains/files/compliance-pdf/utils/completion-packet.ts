@@ -29,14 +29,35 @@ function proofPacketPath(relative: string): string {
 	return `${paths.proofFolder}/${relative}`;
 }
 
-export function buildCompletionPacketReadme(args: {
+function sanitizeDownloadBasename(name: string): string {
+	const stem = name.replace(/\.[^./\\]+$/, "").trim();
+	const safe = stem
+		.replace(/[/\\?%*:|"<>]/g, "_")
+		.replace(/\s+/g, " ")
+		.trim();
+	return safe.slice(0, 80) || "document";
+}
+
+/** e.g. `NDA-proof-2026-06-07-bafyTEST12` */
+export function buildProofPacketZipFilename(args: {
+	documentName: string;
+	pieceCid: string;
+	exportedAtIso: string;
+}): string {
+	const base = sanitizeDownloadBasename(args.documentName);
+	const date = args.exportedAtIso.slice(0, 10);
+	const shortId = args.pieceCid.replace(/[^a-zA-Z0-9]/g, "").slice(0, 12);
+	return `${base}-proof-${date}-${shortId}`;
+}
+
+export function buildProofPacketReadme(args: {
 	bundle: ComplianceBundle;
 	bundleHash: `0x${string}`;
 	exportId: string;
 	chainName: string;
 	explorerBaseUrl: string | null;
+	verifyWebUrl: string;
 	registerDocumentMerkleRoot: string;
-	proofs: DocumentMerkleLeafProofV1[];
 }): string {
 	const lines = [
 		"Filosign proof packet",
@@ -52,28 +73,39 @@ export function buildCompletionPacketReadme(args: {
 		"What to open first",
 		"------------------",
 		"  document-with-proof.pdf  (at the top level of this ZIP)",
-		"    The signed document plus proof appendix. Open this file to share with a",
+		"    The signed document plus proof appendix. Best for sharing with a",
 		"    counterparty, grant reviewer, finance team, or internal reviewer.",
+		"",
+		`  ${paths.proofFolder}/reports/proof-report.pdf`,
+		"    The proof record only, without the signed document attached. Best for",
+		"    legal, finance, grant, or internal review.",
+		"",
+		`  ${paths.proofFolder}/documents/original/`,
+		"    Original decrypted document file(s) included in this export.",
+		"",
+		"How to verify independently",
+		"---------------------------",
+		"Filosign provides an independent verifier for this proof packet.",
+		"",
+		"  1. Keep this ZIP file.",
+		`  2. Open ${args.verifyWebUrl}`,
+		"  3. Drop the ZIP file on the page.",
+		"",
+		"The verifier checks the export against the public ledger and document bytes.",
+		"You do not need to open the verification folder for everyday use.",
 		"",
 		"Verification folder",
 		"-------------------",
-		"  .filosign-proof/",
-		"    Supporting files for independent verification tools. You do not need to",
-		"    open this folder for everyday reading.",
+		`  ${paths.proofFolder}/`,
+		"    Supporting files for independent verification tools and manual review.",
 		"",
-		"  .filosign-proof/reports/proof-report.pdf",
-		"    The proof record only, without the signed document attached.",
+		`  ${paths.proofFolder}/bundle/`,
+		"    Machine-readable proof export (bundle.json + bundle.sha256).",
 		"",
-		"  .filosign-proof/documents/original/",
-		"    Original decrypted document file(s) used for cryptographic verification.",
-		"",
-		"  .filosign-proof/bundle/",
-		"    Machine-readable compliance export (bundle.json + bundle.sha256).",
-		"",
-		"  .filosign-proof/documents/merkle-proofs.json",
+		`  ${paths.proofFolder}/documents/merkle-proofs.json`,
 		"    Document Merkle proofs for on-chain verification.",
 		"",
-		"  .filosign-proof/verify-manifest.json",
+		`  ${paths.proofFolder}/verify-manifest.json`,
 		"    Index for verification tools (schema version, paths, chain, registry).",
 		"",
 		"Important note",
@@ -90,15 +122,7 @@ export function buildCompletionPacketReadme(args: {
 		`Document verification root: ${args.registerDocumentMerkleRoot}`,
 		`Proof export hash: ${args.bundleHash}`,
 		`Registration transaction: ${args.bundle.registration.registrationTxHash}`,
-		"",
-		"Per-document technical proof summary",
-		"------------------------------------",
 	];
-	for (const p of args.proofs) {
-		lines.push(
-			`  Document ${p.id}: leaf=${p.leafHash} index=${p.leafIndex} siblings=${p.siblings.length}`,
-		);
-	}
 	if (args.explorerBaseUrl) {
 		lines.push(
 			"",
@@ -107,6 +131,9 @@ export function buildCompletionPacketReadme(args: {
 	}
 	return lines.join("\n");
 }
+
+/** @deprecated Use {@link buildProofPacketReadme} */
+export const buildCompletionPacketReadme = buildProofPacketReadme;
 
 function registryAddressFromBundle(
 	bundle: ComplianceBundle,
@@ -187,6 +214,7 @@ export async function downloadCompletionPacketZip(args: {
 	mergedPdfBytes: Uint8Array;
 	chainName: string;
 	explorerBaseUrl: string | null;
+	verifyWebUrl: string;
 	pieceCid: string;
 }): Promise<void> {
 	const registerRoot =
@@ -205,14 +233,14 @@ export async function downloadCompletionPacketZip(args: {
 		proofs,
 	});
 
-	const readme = buildCompletionPacketReadme({
+	const readme = buildProofPacketReadme({
 		bundle: args.bundle,
 		bundleHash: args.bundleHash,
 		exportId: args.exportId,
 		chainName: args.chainName,
 		explorerBaseUrl: args.explorerBaseUrl,
+		verifyWebUrl: args.verifyWebUrl,
 		registerDocumentMerkleRoot: registerRoot,
-		proofs,
 	});
 
 	const bundleJson = canonicalComplianceBundleJson(args.bundle);
@@ -255,11 +283,13 @@ export async function downloadCompletionPacketZip(args: {
 	}
 
 	const zipped = zipSync(zipEntries, { level: 6 });
-	const safe = args.pieceCid.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 48);
-	downloadBlobBytes(
-		zipped,
-		`filosign-proof-packet-${safe}`,
-		"application/zip",
-		"zip",
-	);
+	const zipName = buildProofPacketZipFilename({
+		documentName:
+			args.fileData.metadata.name ??
+			args.fileData.documents[0]?.name ??
+			"document",
+		pieceCid: args.pieceCid,
+		exportedAtIso: args.bundle.exportedAtIso,
+	});
+	downloadBlobBytes(zipped, zipName, "application/zip", "zip");
 }

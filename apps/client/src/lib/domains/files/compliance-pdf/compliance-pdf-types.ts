@@ -13,6 +13,8 @@ export type CompliancePdfBundleOptions = {
 	exportId: string;
 	chainName: string;
 	explorerBaseUrl: string | null;
+	/** Independent verifier URL printed in the proof report and ZIP README. */
+	verifyWebUrl: string;
 	/** Client-computed digest of decrypted bytes, if available (sent to export logging). */
 	documentSha256?: string;
 	/** When the document was decrypted for bundling, include basic file facts in the appendix. */

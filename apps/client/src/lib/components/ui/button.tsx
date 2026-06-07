@@ -1,6 +1,7 @@
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 
+import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { cn } from "@/src/lib/utils/index";
 
 const buttonVariants = cva(
@@ -69,8 +70,10 @@ function Button({
 		>
 			{isLoading ? (
 				<>
-					<span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-					{children}
+					<InlineLoader size="sm" className="shrink-0 text-current" />
+					<span className="inline-flex items-center gap-[inherit] [&>svg:first-of-type]:hidden">
+						{children}
+					</span>
 				</>
 			) : (
 				children

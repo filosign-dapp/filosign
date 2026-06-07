@@ -1,4 +1,5 @@
 export { useCompliancePdfExports } from "./compliance-pdf";
+export { ProofDownloadButtonGroup } from "./proof-download-button-group";
 export type {
 	CompliancePdfBundleOptions,
 	CompliancePdfLine,
@@ -13,5 +14,4 @@ export {
 } from "./utils/build";
 export {
 	buildCompliancePdfSummaryFromBundle,
-	COMPLIANCE_PDF_APPENDIX_SECTION_TITLE,
 } from "./utils/summary/assemble";

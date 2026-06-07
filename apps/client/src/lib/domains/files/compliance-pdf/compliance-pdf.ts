@@ -3,6 +3,7 @@ import { useComplianceBundle } from "@filosign/react/files";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { defaultChain } from "@/src/constants";
+import { VERIFY_WEB_URL } from "@/src/lib/docs/links";
 
 type ComplianceFileRef = {
 	pieceCid: string;
@@ -62,6 +63,7 @@ export function useCompliancePdfExports(options: {
 				exportId,
 				chainName: defaultChain.name,
 				explorerBaseUrl: explorerBase,
+				verifyWebUrl: VERIFY_WEB_URL,
 				documentSha256,
 				decryptedDocumentMeta: fileData
 					? {
@@ -105,6 +107,7 @@ export function useCompliancePdfExports(options: {
 				fileData,
 				chainName: defaultChain.name,
 				explorerBaseUrl: explorerBase,
+				verifyWebUrl: VERIFY_WEB_URL,
 				documentSha256,
 			});
 			const safe = file.pieceCid.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 48);
@@ -140,6 +143,7 @@ export function useCompliancePdfExports(options: {
 				exportId,
 				chainName: defaultChain.name,
 				explorerBaseUrl: explorerBase,
+				verifyWebUrl: VERIFY_WEB_URL,
 				documentSha256,
 				decryptedDocumentMeta: {
 					name: fileData.metadata.name,
@@ -154,6 +158,7 @@ export function useCompliancePdfExports(options: {
 				fileData,
 				chainName: defaultChain.name,
 				explorerBaseUrl: explorerBase,
+				verifyWebUrl: VERIFY_WEB_URL,
 				documentSha256,
 			});
 			await downloadCompletionPacketZip({
@@ -165,6 +170,7 @@ export function useCompliancePdfExports(options: {
 				mergedPdfBytes,
 				chainName: defaultChain.name,
 				explorerBaseUrl: explorerBase,
+				verifyWebUrl: VERIFY_WEB_URL,
 				pieceCid: file.pieceCid,
 			});
 		} catch (e) {

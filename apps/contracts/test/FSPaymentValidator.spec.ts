@@ -333,6 +333,10 @@ describe("FSPaymentValidator", () => {
 		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
 			account: walletAccount(ctx.sender),
 		});
+		await ctx.paymentValidator.write.cancelPayoutRule([ruleId], {
+			account: walletAccount(ctx.sender),
+		});
+
 		await registerEnvelopeSignatureStep({
 			ctx,
 			pieceCid: piece,
@@ -341,9 +345,6 @@ describe("FSPaymentValidator", () => {
 			signerEmailCommitment: signerCommitment,
 		});
 
-		await ctx.paymentValidator.write.cancelPayoutRule([ruleId], {
-			account: walletAccount(ctx.sender),
-		});
 		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.false;
 	});
 
@@ -788,11 +789,52 @@ describe("FSPaymentValidator", () => {
 		expect(await ctx.mockUsdc.read.balanceOf([recipientAddr])).to.equal(amount);
 	});
 
-	it("expiresAt blocks execute after deadline", async () => {
+	it("expiresAt blocks execute after deadline for signer-specific rules", async () => {
 		const ctx = await deployFullSystem();
 		const senderAddr = walletAccount(ctx.sender).address;
 		const recipientAddr = walletAccount(ctx.payout).address;
 		const piece = "expiring-rule";
+		const id = cidId(piece);
+		const now = await latestBlockTimestamp(ctx.publicClient);
+		const expiresAt = now + 3600n;
+
+		await registerEnvelopeOnly(ctx, piece, [signerCommitment]);
+		await ctx.mockUsdc.write.mint([senderAddr, amount]);
+		const ruleId = await registerPaymentRule(ctx, {
+			payer: senderAddr,
+			token: ctx.mockUsdc.address,
+			cidId: id,
+			releaseType: 1,
+			specificSignerCommitment: signerCommitment,
+			expiresAt,
+			legs: [{ recipient: recipientAddr, amount }],
+		});
+		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
+			account: walletAccount(ctx.sender),
+		});
+		await registerEnvelopeSignatureStep({
+			ctx,
+			pieceCid: piece,
+			senderAddr,
+			signerWallet: ctx.sender,
+			signerEmailCommitment: signerCommitment,
+		});
+
+		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.true;
+		await advanceBlockTime(ctx.publicClient, 3601);
+		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.false;
+		await assert.rejects(
+			ctx.paymentValidator.write.executePayout([ruleId], {
+				account: walletAccount(ctx.payout),
+			}),
+		);
+	});
+
+	it("completion-gated expiry allows execute after wall clock if envelope completed on time", async () => {
+		const ctx = await deployFullSystem();
+		const senderAddr = walletAccount(ctx.sender).address;
+		const recipientAddr = walletAccount(ctx.payout).address;
+		const piece = "completion-expiry-rule";
 		const id = cidId(piece);
 		const now = await latestBlockTimestamp(ctx.publicClient);
 		const expiresAt = now + 3600n;
@@ -820,12 +862,11 @@ describe("FSPaymentValidator", () => {
 
 		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.true;
 		await advanceBlockTime(ctx.publicClient, 3601);
-		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.false;
-		await assert.rejects(
-			ctx.paymentValidator.write.executePayout([ruleId], {
-				account: walletAccount(ctx.payout),
-			}),
-		);
+		expect(await ctx.paymentValidator.read.canExecute([ruleId])).to.be.true;
+		await ctx.paymentValidator.write.executePayout([ruleId], {
+			account: walletAccount(ctx.payout),
+		});
+		expect(await ctx.mockUsdc.read.balanceOf([recipientAddr])).to.equal(amount);
 	});
 
 	it("reverts executePayout for fee-on-transfer tokens", async () => {
@@ -931,15 +972,15 @@ describe("FSPaymentValidator", () => {
 		await ctx.mockUsdc.write.approve([ctx.paymentValidator.address, amount], {
 			account: walletAccount(ctx.sender),
 		});
+		await ctx.paymentValidator.write.cancelPayoutRule([ruleId], {
+			account: walletAccount(ctx.sender),
+		});
 		await registerEnvelopeSignatureStep({
 			ctx,
 			pieceCid: piece,
 			senderAddr,
 			signerWallet: ctx.sender,
 			signerEmailCommitment: signerCommitment,
-		});
-		await ctx.paymentValidator.write.cancelPayoutRule([ruleId], {
-			account: walletAccount(ctx.sender),
 		});
 
 		await assert.rejects(
@@ -1244,11 +1285,11 @@ describe("FSPaymentValidator", () => {
 		);
 	});
 
-	it("cancelPayoutRule still allowed after required signer signs (SEC-13)", async () => {
+	it("cancelPayoutRule reverts after required signer signs", async () => {
 		const ctx = await deployFullSystem();
 		const senderAddr = walletAccount(ctx.sender).address;
 		const recipientAddr = walletAccount(ctx.payout).address;
-		const piece = "sec13-cancel-after-sign";
+		const piece = "cancel-after-sign";
 		const id = cidId(piece);
 
 		await registerEnvelopeOnly(ctx, piece, [signerCommitment]);
@@ -1271,11 +1312,11 @@ describe("FSPaymentValidator", () => {
 			signerEmailCommitment: signerCommitment,
 		});
 
-		await ctx.paymentValidator.write.cancelPayoutRule([ruleId], {
-			account: walletAccount(ctx.sender),
-		});
-		const ruleAfterCancel = await ctx.paymentValidator.read.rules([ruleId]);
-		expect(ruleAfterCancel[8]).to.equal(true);
+		await assert.rejects(
+			ctx.paymentValidator.write.cancelPayoutRule([ruleId], {
+				account: walletAccount(ctx.sender),
+			}),
+		);
 	});
 
 	it("updatePayoutRule allowed before any required signature", async () => {
@@ -1322,12 +1363,12 @@ describe("FSPaymentValidator", () => {
 		);
 	});
 
-	it("cancelPayoutRule allowed after partial leg paid (SEC-13)", async () => {
+	it("cancelPayoutRule reverts after partial leg paid", async () => {
 		const ctx = await deployFullSystem();
 		const senderAddr = walletAccount(ctx.sender).address;
 		const recipientAddr = walletAccount(ctx.payout).address;
 		const altRecipient = walletAccount(ctx.coSigner).address;
-		const piece = "sec13-cancel-partial";
+		const piece = "cancel-partial-paid";
 		const id = cidId(piece);
 		const half = amount / 2n;
 
@@ -1357,16 +1398,9 @@ describe("FSPaymentValidator", () => {
 			account: walletAccount(ctx.payout),
 		});
 
-		await ctx.paymentValidator.write.cancelPayoutRule([ruleId], {
-			account: walletAccount(ctx.sender),
-		});
-		const ruleAfterPartialCancel = await ctx.paymentValidator.read.rules([
-			ruleId,
-		]);
-		expect(ruleAfterPartialCancel[8]).to.equal(true);
 		await assert.rejects(
-			ctx.paymentValidator.write.executePayoutLeg([ruleId, 1n], {
-				account: walletAccount(ctx.payout),
+			ctx.paymentValidator.write.cancelPayoutRule([ruleId], {
+				account: walletAccount(ctx.sender),
 			}),
 		);
 	});

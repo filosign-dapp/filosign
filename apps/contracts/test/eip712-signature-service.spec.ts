@@ -4,7 +4,6 @@ import { keccak256, toBytes } from "viem";
 import {
 	clearRegistryEip712DomainCache,
 	eip712signature,
-	getContracts,
 	readRegistryEip712Domain,
 } from "../exports.js";
 import {
@@ -13,6 +12,7 @@ import {
 	defaultSenderAuth,
 	defaultSenderEmail,
 	deployFullSystem,
+	filosignContractsFromFixture,
 	zeroOrg,
 } from "./fixtures.js";
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
@@ -30,7 +30,7 @@ describe("eip712signature service", () => {
 		expect(name).to.equal("FSEnvelopeRegistry");
 		expect(version).to.equal("2");
 
-		const contracts = getContracts({ client: ctx.sender, chainKey: "local" });
+		const contracts = filosignContractsFromFixture(ctx);
 		const domain = await readRegistryEip712Domain(
 			contracts,
 			ctx.envelopeRegistry.address,
@@ -43,7 +43,7 @@ describe("eip712signature service", () => {
 
 	it("signs RegisterEnvelope via eip712signature and validates on-chain", async () => {
 		const ctx = await deployFullSystem();
-		const contracts = getContracts({ client: ctx.sender, chainKey: "local" });
+		const contracts = filosignContractsFromFixture(ctx);
 		const pieceCid = "filosign-eip712-service-test";
 		const cidIdentifier = keccak256(toBytes(pieceCid));
 		const requiredCommitments = [`0x${"aa".repeat(32)}` as Hex];

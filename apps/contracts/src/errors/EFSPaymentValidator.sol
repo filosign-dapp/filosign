@@ -19,3 +19,6 @@ error PayerCannotBeRecipient();
 error RecipientCannotBeValidator();
 error RecipientCannotBeToken();
 error RequiredSigningStarted();
+error UnauthorizedRegistry();
+error ExceedsMaxRulesPerCid();
+error InsufficientAllowance();

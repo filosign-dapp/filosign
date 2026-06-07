@@ -64,6 +64,15 @@ contract FSAttachmentRelease is ReentrancyGuard {
         bytes32 packetContentHash
     );
 
+    event AttachmentRuleUpdated(uint256 indexed ruleId, bytes32 indexed cidId);
+
+    event SignerCommitmentRemapped(
+        uint256 indexed ruleId,
+        bytes32 indexed cidId,
+        bytes32 indexed oldCommitment,
+        bytes32 newCommitment
+    );
+
     constructor(address envelopeRegistry_, uint256 deploymentChainId_) {
         if (envelopeRegistry_ == address(0)) {
             revert InvalidReleaseConfig();
@@ -153,6 +162,121 @@ contract FSAttachmentRelease is ReentrancyGuard {
         );
     }
 
+    function updateAttachmentRule(
+        uint256 ruleId,
+        bytes32 packetContentHash_,
+        ReleaseType releaseType_,
+        bytes32 specificSignerCommitment_,
+        uint8 thresholdN_,
+        uint64 expiresAt_,
+        bytes32[] calldata signerCommitments_,
+        bytes32[] calldata recipientEmailCommitments_
+    ) external nonReentrant {
+        AttachmentRule storage rule = rules[ruleId];
+        if (rule.sender == address(0)) revert InvalidPayer();
+        IFSEnvelopeRegistry.EnvelopeRegistrationView memory reg = envelopeRegistry
+            .envelopeRegistrations(rule.cidId);
+        if (
+            msg.sender != rule.sender &&
+            !envelopeRegistry.isOrgController(reg.orgIdCommitment, msg.sender)
+        ) revert UnauthorizedRuleRegistration();
+        if (rule.released) revert RuleAlreadyExecuted();
+        if (rule.cancelled) revert RuleAlreadyCancelled();
+        _assertRequiredSigningNotStarted(rule.cidId);
+        if (envelopeRegistry.isRevokedBeforeComplete(rule.cidId))
+            revert EnvelopeRecalled();
+        if (packetContentHash_ == bytes32(0)) revert InvalidReleaseConfig();
+        if (
+            recipientEmailCommitments_.length == 0 ||
+            recipientEmailCommitments_.length > MAX_ATTACHMENT_RECIPIENTS
+        ) revert InvalidReleaseConfig();
+
+        _validateReleaseConfig(
+            releaseType_,
+            specificSignerCommitment_,
+            thresholdN_,
+            signerCommitments_
+        );
+        if (releaseType_ == ReleaseType.QuorumRequired) {
+            _validateQuorumRequiredThreshold(rule.cidId, thresholdN_);
+        }
+        if (releaseType_ == ReleaseType.QuorumAll) {
+            _validateQuorumAllThreshold(rule.cidId, thresholdN_);
+        }
+        _validateExpiresAt(expiresAt_);
+        _validateRecipientCommitments(recipientEmailCommitments_);
+
+        bytes20 recipientsCommitment = envelopeRegistry.computeEmailSignerCommitment(
+            recipientEmailCommitments_
+        );
+
+        rule.packetContentHash = packetContentHash_;
+        rule.recipientsCommitment = recipientsCommitment;
+        rule.releaseType = releaseType_;
+        rule.specificSignerCommitment = specificSignerCommitment_;
+        rule.thresholdN = thresholdN_;
+        rule.expiresAt = expiresAt_;
+
+        delete _ruleSignerCommitments[ruleId];
+        if (_needsCommitmentList(releaseType_)) {
+            _storeSignerCommitments(ruleId, signerCommitments_);
+        }
+
+        emit AttachmentRuleUpdated(ruleId, rule.cidId);
+    }
+
+    function remapSignerCommitment(
+        bytes32 cidId_,
+        bytes32 oldCommitment_,
+        bytes32 newCommitment_
+    ) external {
+        if (msg.sender != address(envelopeRegistry)) revert UnauthorizedRegistry();
+        uint256[] storage ruleIds = _ruleIdsByCid[cidId_];
+        uint256 len = ruleIds.length;
+        for (uint256 i = 0; i < len; ) {
+            uint256 ruleId = ruleIds[i];
+            AttachmentRule storage rule = rules[ruleId];
+            if (rule.sender == address(0) || rule.cancelled || rule.released) {
+                unchecked {
+                    ++i;
+                }
+                continue;
+            }
+            if (
+                rule.releaseType == ReleaseType.SpecificSigner &&
+                rule.specificSignerCommitment == oldCommitment_
+            ) {
+                rule.specificSignerCommitment = newCommitment_;
+                emit SignerCommitmentRemapped(
+                    ruleId,
+                    cidId_,
+                    oldCommitment_,
+                    newCommitment_
+                );
+            }
+            if (_needsCommitmentList(rule.releaseType)) {
+                bytes32[] storage commitments = _ruleSignerCommitments[ruleId];
+                for (uint256 j = 0; j < commitments.length; ) {
+                    if (commitments[j] == oldCommitment_) {
+                        commitments[j] = newCommitment_;
+                        emit SignerCommitmentRemapped(
+                            ruleId,
+                            cidId_,
+                            oldCommitment_,
+                            newCommitment_
+                        );
+                    }
+                    unchecked {
+                        ++j;
+                    }
+                }
+            }
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
     function cancelAttachmentRule(uint256 ruleId) external nonReentrant {
         AttachmentRule storage rule = rules[ruleId];
         if (rule.sender == address(0)) revert InvalidPayer();
@@ -164,6 +288,8 @@ contract FSAttachmentRelease is ReentrancyGuard {
         ) revert UnauthorizedRuleCancellation();
         if (rule.released) revert RuleAlreadyExecuted();
         if (rule.cancelled) revert RuleAlreadyCancelled();
+        if (envelopeRegistry.isRevokedBeforeComplete(rule.cidId))
+            revert EnvelopeRecalled();
         _assertRequiredSigningNotStarted(rule.cidId);
         rule.cancelled = true;
         emit AttachmentRuleCancelled(ruleId, rule.cidId);
@@ -177,7 +303,7 @@ contract FSAttachmentRelease is ReentrancyGuard {
         if (envelopeRegistry.isRevokedBeforeComplete(rule.cidId))
             revert EnvelopeRecalled();
         if (!_releaseConditionsMet(ruleId, rule)) revert RuleNotExecutable();
-        if (rule.expiresAt != 0 && block.timestamp > rule.expiresAt) {
+        if (_isRuleExpired(rule)) {
             revert RuleNotExecutable();
         }
         rule.released = true;
@@ -194,7 +320,7 @@ contract FSAttachmentRelease is ReentrancyGuard {
         if (rule.released || rule.cancelled || rule.sender == address(0)) {
             return false;
         }
-        if (rule.expiresAt != 0 && block.timestamp > rule.expiresAt) {
+        if (_isRuleExpired(rule)) {
             return false;
         }
         if (envelopeRegistry.isRevokedBeforeComplete(rule.cidId)) return false;
@@ -230,6 +356,41 @@ contract FSAttachmentRelease is ReentrancyGuard {
         if (expiresAt_ != 0 && expiresAt_ <= block.timestamp) {
             revert InvalidReleaseConfig();
         }
+    }
+
+    function _usesCompletionGatedExpiry(
+        ReleaseType rt,
+        bytes32 cidId_
+    ) private view returns (bool) {
+        if (
+            rt == ReleaseType.AllSigned ||
+            rt == ReleaseType.AllRequiredSigned ||
+            rt == ReleaseType.AllSignedComplete
+        ) {
+            return true;
+        }
+        if (rt == ReleaseType.QuorumRequired) {
+            IFSEnvelopeRegistry.EnvelopeRegistrationView memory reg = envelopeRegistry
+                .envelopeRegistrations(cidId_);
+            return reg.quorumN > 0;
+        }
+        return false;
+    }
+
+    function _isRuleExpired(
+        AttachmentRule storage rule
+    ) private view returns (bool) {
+        if (rule.expiresAt == 0) return false;
+        if (_usesCompletionGatedExpiry(rule.releaseType, rule.cidId)) {
+            if (!envelopeRegistry.isEnvelopeComplete(rule.cidId)) {
+                return block.timestamp > rule.expiresAt;
+            }
+            uint48 completedAt = envelopeRegistry
+                .envelopeRegistrations(rule.cidId)
+                .completedAt;
+            return completedAt > rule.expiresAt;
+        }
+        return block.timestamp > rule.expiresAt;
     }
 
     function _storeSignerCommitments(

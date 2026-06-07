@@ -261,6 +261,42 @@ export async function signRecallEnvelope(args: {
 	});
 }
 
+export async function signClearEnvelopeSignatures(args: {
+	wallet: WalletClient;
+	envelopeRegistryAddress: Address;
+	chainId: number;
+	pieceCid: string;
+	timestamp: bigint;
+	recaller?: Address;
+}): Promise<Hex> {
+	const account = args.wallet.account as Account;
+	const cidId = keccak256(toBytes(args.pieceCid));
+	const recaller = args.recaller ?? account.address;
+
+	return args.wallet.signTypedData({
+		account,
+		domain: {
+			name: "FSEnvelopeRegistry",
+			version: REGISTRY_EIP712_VERSION,
+			chainId: args.chainId,
+			verifyingContract: args.envelopeRegistryAddress,
+		},
+		types: {
+			ClearEnvelopeSignatures: [
+				{ name: "cidIdentifier", type: "bytes32" },
+				{ name: "recaller", type: "address" },
+				{ name: "timestamp", type: "uint256" },
+			],
+		},
+		primaryType: "ClearEnvelopeSignatures",
+		message: {
+			cidIdentifier: cidId,
+			recaller,
+			timestamp: args.timestamp,
+		},
+	});
+}
+
 export async function signEnvelopeAck(args: {
 	wallet: WalletClient;
 	envelopeRegistryAddress: Address;

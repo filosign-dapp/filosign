@@ -1,6 +1,7 @@
 import hre from "hardhat";
 import type { Account, Address, Hex, PublicClient, WalletClient } from "viem";
 import { keccak256, toBytes } from "viem";
+import type { FilosignContracts } from "../services/contracts.js";
 import { latestBlockTimestamp } from "./helpers/chainTime.js";
 import {
 	signEnvelopeAck,
@@ -42,6 +43,18 @@ export const testOrgIdCommitment = keccak256(
 	toBytes("filosign-test-org"),
 ) as Hex;
 
+/** Map a Hardhat fixture to `FilosignContracts` without persisted definitions. */
+export function filosignContractsFromFixture(
+	ctx: FullSystemFixture,
+): FilosignContracts {
+	return {
+		FSEnvelopeRegistry: ctx.envelopeRegistry,
+		FSPaymentValidator: ctx.paymentValidator,
+		$client: ctx.sender,
+		$chainKey: "local",
+	} as FilosignContracts;
+}
+
 export async function setOrgControllersForTest(
 	ctx: FullSystemFixture,
 	orgIdCommitment: Hex,
@@ -59,6 +72,29 @@ export async function deployAttachmentRelease(ctx: FullSystemFixture) {
 		[ctx.envelopeRegistry.address, BigInt(ctx.chainId)],
 		{ client: { wallet: ctx.deployer } },
 	);
+}
+
+export async function wireSatelliteContracts(
+	ctx: FullSystemFixture,
+	attachmentReleaseAddress: `0x${string}`,
+) {
+	await ctx.envelopeRegistry.write.setSatelliteContracts(
+		[ctx.paymentValidator.address, attachmentReleaseAddress],
+		{ account: walletAccount(ctx.deployer) },
+	);
+}
+
+export async function deployFullSystemWithSatellites(): Promise<
+	FullSystemFixture & {
+		attachmentRelease: Awaited<
+			ReturnType<typeof hre.viem.deployContract<"FSAttachmentRelease">>
+		>;
+	}
+> {
+	const ctx = await deployFullSystem();
+	const attachmentRelease = await deployAttachmentRelease(ctx);
+	await wireSatelliteContracts(ctx, attachmentRelease.address);
+	return { ...ctx, attachmentRelease };
 }
 
 /** Stand-in for Safe / ERC-1271 contract wallets in signature tests. */

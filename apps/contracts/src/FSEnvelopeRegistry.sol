@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 import "./errors/EFSCommon.sol";
 import "./errors/EFSEnvelopeRegistry.sol";
+import "./interfaces/IFSPaymentValidatorRegistry.sol";
+import "./interfaces/IFSAttachmentReleaseRegistry.sol";
 import "./libraries/FSCommitmentLib.sol";
 import "./libraries/FSEnvelopeRoutingLib.sol";
 import "./libraries/FSSignatureValidation.sol";
@@ -119,6 +121,15 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes32 indexed emailCommitment,
         address indexed wallet
     );
+    event SatelliteContractsConfigured(
+        address indexed paymentValidator,
+        address indexed attachmentRelease
+    );
+    event EnvelopeSignaturesCleared(
+        bytes32 indexed cidIdentifier,
+        address indexed recaller,
+        uint8 signaturesClearedCount
+    );
 
     mapping(bytes32 => EnvelopeRegistration) private _envelopeRegistrations;
     mapping(bytes32 cidId => mapping(bytes32 emailCommitment => address))
@@ -141,6 +152,8 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
     mapping(bytes32 => PendingSignerReplacement) private _pendingReplacement;
 
     address public server;
+    address public paymentValidator;
+    address public attachmentRelease;
 
     modifier onlyServer() {
         if (msg.sender != server) revert OnlyServer();
@@ -161,6 +174,21 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         address previousServer = server;
         server = newServer_;
         emit ServerUpdated(previousServer, newServer_, msg.sender);
+    }
+
+    function setSatelliteContracts(
+        address paymentValidator_,
+        address attachmentRelease_
+    ) external onlyOwner {
+        if (paymentValidator != address(0) || attachmentRelease != address(0)) {
+            revert SatelliteAlreadyConfigured();
+        }
+        if (paymentValidator_ == address(0) || attachmentRelease_ == address(0)) {
+            revert ZeroAddress();
+        }
+        paymentValidator = paymentValidator_;
+        attachmentRelease = attachmentRelease_;
+        emit SatelliteContractsConfigured(paymentValidator_, attachmentRelease_);
     }
 
     function isOrgController(
@@ -227,6 +255,10 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
     bytes32 private constant RECALL_ENVELOPE_TYPEHASH =
         keccak256(
             "RecallEnvelope(bytes32 cidIdentifier,address recaller,bytes32 orgIdCommitment,uint256 timestamp)"
+        );
+    bytes32 private constant CLEAR_ENVELOPE_SIGNATURES_TYPEHASH =
+        keccak256(
+            "ClearEnvelopeSignatures(bytes32 cidIdentifier,address recaller,uint256 timestamp)"
         );
     bytes32 private constant ACK_ENVELOPE_TYPEHASH =
         keccak256(
@@ -719,8 +751,9 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes32 newCommitment = pending.newCommitment;
         bytes20 signersCommitmentAfter = pending.signersCommitmentAfter;
 
-        uint8 cleared = _clearAllEnvelopeSignatures(file);
-        _clearAllBoundSignerWallets(file, cidId);
+        _assertNoPaidLegsIfConfigured(cidId);
+
+        uint8 cleared = _resetEnvelopeSigningProgress(file, cidId);
 
         _applySignerSubstitution(
             file,
@@ -818,6 +851,44 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
             recaller_,
             file.revokedBeforeCompletedAt
         );
+    }
+
+    function clearEnvelopeSignatures(
+        string calldata pieceCid_,
+        address recaller_,
+        uint256 timestamp_,
+        bytes calldata signature_
+    ) external onlyServer {
+        bytes32 cidId = FSCommitmentLib.cidIdentifier(pieceCid_);
+        EnvelopeRegistration storage file = _envelopeRegistrations[cidId];
+        if (file.timestamp == 0) revert FileNotRegistered();
+        _assertNotRevoked(file);
+        _assertNotComplete(file);
+
+        _assertRecallerAuthorized(file, recaller_);
+        _assertSignatureTimestamp(timestamp_);
+
+        bytes32 structHash = keccak256(
+            abi.encode(
+                CLEAR_ENVELOPE_SIGNATURES_TYPEHASH,
+                cidId,
+                recaller_,
+                timestamp_
+            )
+        );
+        bytes32 digest = _hashTypedDataV4(structHash);
+        if (!FSSignatureValidation.isValid(recaller_, digest, signature_))
+            revert InvalidSignature();
+
+        _assertNoPaidLegsIfConfigured(cidId);
+
+        if (_pendingReplacement[cidId].active) {
+            delete _pendingReplacement[cidId];
+        }
+
+        uint8 cleared = _resetEnvelopeSigningProgress(file, cidId);
+
+        emit EnvelopeSignaturesCleared(cidId, recaller_, cleared);
     }
 
     function registerEnvelopeSignature(
@@ -1219,6 +1290,51 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
 
         file.routingOrderHash = hashCommitments(routingOrderAfter_);
         file.quorumSetHash = hashCommitments(quorumSetAfter_);
+
+        _remapSignerCommitmentsIfConfigured(
+            cidId,
+            oldCommitment_,
+            newCommitment_
+        );
+    }
+
+    function _resetEnvelopeSigningProgress(
+        EnvelopeRegistration storage file,
+        bytes32 cidId
+    ) private returns (uint8 cleared) {
+        cleared = _clearAllEnvelopeSignatures(file);
+        _clearAllBoundSignerWallets(file, cidId);
+    }
+
+    function _assertNoPaidLegsIfConfigured(bytes32 cidId) private view {
+        address validator = paymentValidator;
+        if (validator == address(0)) return;
+        if (IFSPaymentValidatorRegistry(validator).hasAnyPaidLegForCid(cidId)) {
+            revert PaymentLegsAlreadyPaid();
+        }
+    }
+
+    function _remapSignerCommitmentsIfConfigured(
+        bytes32 cidId,
+        bytes32 oldCommitment,
+        bytes32 newCommitment
+    ) private {
+        address validator = paymentValidator;
+        if (validator != address(0)) {
+            IFSPaymentValidatorRegistry(validator).remapSignerCommitment(
+                cidId,
+                oldCommitment,
+                newCommitment
+            );
+        }
+        address attachment = attachmentRelease;
+        if (attachment != address(0)) {
+            IFSAttachmentReleaseRegistry(attachment).remapSignerCommitment(
+                cidId,
+                oldCommitment,
+                newCommitment
+            );
+        }
     }
 
     function _clearAllEnvelopeSignatures(

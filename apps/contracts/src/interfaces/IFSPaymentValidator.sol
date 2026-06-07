@@ -35,9 +35,12 @@ interface IFSPaymentValidator {
     event PaymentRuleCancelled();
     event PayoutExecuted();
     event PayoutLegExecuted();
+    event SignerCommitmentRemapped();
     function registerRule(address payer_, address token_, bytes32 cidId_, ReleaseType releaseType_, bytes32 specificSignerCommitment_, uint8 thresholdN_, uint64 expiresAt_, bytes32[] calldata signerCommitments_, PayoutLeg[] calldata legs_) external returns (uint256 ruleId);
     function updatePayoutRule(uint256 ruleId, ReleaseType releaseType_, bytes32 specificSignerCommitment_, uint8 thresholdN_, uint64 expiresAt_, bytes32[] calldata signerCommitments_, PayoutLeg[] calldata legs_) external;
     function cancelPayoutRule(uint256 ruleId) external;
+    function hasAnyPaidLegForCid(bytes32 cidId_) external view returns (bool);
+    function remapSignerCommitment(bytes32 cidId_, bytes32 oldCommitment_, bytes32 newCommitment_) external;
     function executePayoutLeg(uint256 ruleId, uint256 legIndex) external;
     function executePayout(uint256 ruleId) external;
     function canExecute(uint256 ruleId) external view returns (bool);

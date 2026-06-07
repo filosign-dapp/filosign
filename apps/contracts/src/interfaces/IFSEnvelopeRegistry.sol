@@ -66,6 +66,8 @@ interface IFSEnvelopeRegistry {
     event EnvelopeCompleted();
     event OrgControllersSet();
     event SignerWalletBound();
+    event SatelliteContractsConfigured();
+    event EnvelopeSignaturesCleared();
     struct PendingSignerReplacement {
         bytes32 oldCommitment;
         bytes32 newCommitment;
@@ -78,7 +80,10 @@ interface IFSEnvelopeRegistry {
     }
 
     function server() external view returns (address);
+    function paymentValidator() external view returns (address);
+    function attachmentRelease() external view returns (address);
     function setServer(address newServer_) external;
+    function setSatelliteContracts(address paymentValidator_, address attachmentRelease_) external;
     function isOrgController(bytes32 orgIdCommitment_, address wallet_) external view returns (bool);
     function getOrgControllers(bytes32 orgIdCommitment_) external view returns (address[] memory);
     function setOrgControllers(bytes32 orgIdCommitment_, address[] calldata wallets_) external;
@@ -147,6 +152,7 @@ interface IFSEnvelopeRegistry {
     function executeSignerReplacement(string calldata pieceCid_, address recaller_, bytes32[] calldata routingOrderAfter_, bytes32[] calldata quorumSetAfter_) external;
     function cancelSignerReplacement(string calldata pieceCid_, address recaller_, uint256 timestamp_, bytes calldata signature_) external;
     function recallEnvelope(string calldata pieceCid_, address recaller_, uint256 timestamp_, bytes calldata signature_) external;
+    function clearEnvelopeSignatures(string calldata pieceCid_, address recaller_, uint256 timestamp_, bytes calldata signature_) external;
     function registerEnvelopeSignature(string calldata pieceCid_, address sender_, address signerWallet_, bytes32 signerEmailCommitment_, bytes32 authSubjectCommitment_, bytes20 dl3SignatureCommitment_, uint256 bindTimestamp_, bytes calldata bindSignature_, uint256 timestamp_, bytes calldata signature_, bytes32 completionsRoot_, uint8 leafSchemaVersion_, bytes32[] calldata routingOrder_, bytes32[] calldata quorumSet_) external;
     function registerEnvelopeAck(string calldata pieceCid_, address sender_, address viewerWallet_, bytes32 viewerEmailCommitment_, bytes32 authSubjectCommitment_, uint256 timestamp_, bytes calldata signature_) external;
     function boundSignerWallet(bytes32 cidId, bytes32 emailCommitment_) external view returns (address);

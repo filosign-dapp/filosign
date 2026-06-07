@@ -37,3 +37,5 @@ error NoSignerReplacementPending();
 error ZeroDocumentSha256();
 error SignerNotBound();
 error SignerWalletMismatch();
+error SatelliteAlreadyConfigured();
+error PaymentLegsAlreadyPaid();

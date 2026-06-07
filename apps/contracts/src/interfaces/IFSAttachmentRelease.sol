@@ -28,7 +28,11 @@ interface IFSAttachmentRelease {
     event AttachmentRuleRegistered();
     event AttachmentRuleCancelled();
     event AttachmentReleased();
+    event AttachmentRuleUpdated();
+    event SignerCommitmentRemapped();
     function registerAttachmentRule(bytes32 cidId_, bytes32 packetContentHash_, ReleaseType releaseType_, bytes32 specificSignerCommitment_, uint8 thresholdN_, uint64 expiresAt_, bytes32[] calldata signerCommitments_, bytes32[] calldata recipientEmailCommitments_) external returns (uint256 ruleId);
+    function updateAttachmentRule(uint256 ruleId, bytes32 packetContentHash_, ReleaseType releaseType_, bytes32 specificSignerCommitment_, uint8 thresholdN_, uint64 expiresAt_, bytes32[] calldata signerCommitments_, bytes32[] calldata recipientEmailCommitments_) external;
+    function remapSignerCommitment(bytes32 cidId_, bytes32 oldCommitment_, bytes32 newCommitment_) external;
     function cancelAttachmentRule(uint256 ruleId) external;
     function executeAttachmentRelease(uint256 ruleId) external;
     function canRelease(uint256 ruleId) external view returns (bool);

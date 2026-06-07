@@ -14,6 +14,7 @@ contract FSPaymentValidator is ReentrancyGuard {
 
     uint8 internal constant MAX_PAYOUT_LEGS = 32;
     uint8 internal constant MAX_RULE_COMMITMENTS = 128;
+    uint8 internal constant MAX_RULES_PER_CID = 128;
 
     enum ReleaseType {
         AllSigned,
@@ -80,6 +81,13 @@ contract FSPaymentValidator is ReentrancyGuard {
         uint256 amount
     );
 
+    event SignerCommitmentRemapped(
+        uint256 indexed ruleId,
+        bytes32 indexed cidId,
+        bytes32 indexed oldCommitment,
+        bytes32 newCommitment
+    );
+
     constructor(address envelopeRegistry_, uint256 deploymentChainId_) {
         if (envelopeRegistry_ == address(0)) {
             revert InvalidReleaseConfig();
@@ -118,6 +126,10 @@ contract FSPaymentValidator is ReentrancyGuard {
             _validateQuorumAllThreshold(cidId_, thresholdN_);
         }
         _validateExpiresAt(expiresAt_);
+
+        if (_ruleIdsByCid[cidId_].length >= MAX_RULES_PER_CID) {
+            revert ExceedsMaxRulesPerCid();
+        }
 
         ruleId = nextRuleId++;
         PaymentRule storage rule = rules[ruleId];
@@ -177,6 +189,19 @@ contract FSPaymentValidator is ReentrancyGuard {
         }
         _validateExpiresAt(expiresAt_);
 
+        uint256 totalAmount;
+        for (uint256 i = 0; i < legs_.length; ) {
+            unchecked {
+                totalAmount += legs_[i].amount;
+                ++i;
+            }
+        }
+        if (
+            IERC20(rule.token).allowance(rule.payer, address(this)) < totalAmount
+        ) {
+            revert InsufficientAllowance();
+        }
+
         rule.releaseType = releaseType_;
         rule.specificSignerCommitment = specificSignerCommitment_;
         rule.thresholdN = thresholdN_;
@@ -199,8 +224,83 @@ contract FSPaymentValidator is ReentrancyGuard {
         if (msg.sender != rule.payer) revert UnauthorizedRuleRegistration();
         if (rule.executed) revert RuleAlreadyExecuted();
         if (rule.cancelled) revert RuleAlreadyCancelled();
+        if (legPaidBitmap[ruleId] != 0) revert RuleAlreadyExecuted();
+        _assertRequiredSigningNotStarted(rule.cidId);
+        _assertNotRevoked(rule.cidId);
         rule.cancelled = true;
         emit PaymentRuleCancelled(ruleId, rule.cidId);
+    }
+
+    function hasAnyPaidLegForCid(
+        bytes32 cidId_
+    ) external view returns (bool) {
+        uint256[] storage ruleIds = _ruleIdsByCid[cidId_];
+        uint256 len = ruleIds.length;
+        for (uint256 i = 0; i < len; ) {
+            if (legPaidBitmap[ruleIds[i]] != 0) return true;
+            unchecked {
+                ++i;
+            }
+        }
+        return false;
+    }
+
+    function remapSignerCommitment(
+        bytes32 cidId_,
+        bytes32 oldCommitment_,
+        bytes32 newCommitment_
+    ) external {
+        if (msg.sender != address(envelopeRegistry)) revert UnauthorizedRegistry();
+        uint256[] storage ruleIds = _ruleIdsByCid[cidId_];
+        uint256 len = ruleIds.length;
+        for (uint256 i = 0; i < len; ) {
+            uint256 ruleId = ruleIds[i];
+            PaymentRule storage rule = rules[ruleId];
+            if (rule.payer == address(0) || rule.cancelled || rule.executed) {
+                unchecked {
+                    ++i;
+                }
+                continue;
+            }
+            if (legPaidBitmap[ruleId] != 0) {
+                unchecked {
+                    ++i;
+                }
+                continue;
+            }
+            if (
+                rule.releaseType == ReleaseType.SpecificSigner &&
+                rule.specificSignerCommitment == oldCommitment_
+            ) {
+                rule.specificSignerCommitment = newCommitment_;
+                emit SignerCommitmentRemapped(
+                    ruleId,
+                    cidId_,
+                    oldCommitment_,
+                    newCommitment_
+                );
+            }
+            if (_needsCommitmentList(rule.releaseType)) {
+                bytes32[] storage commitments = _ruleSignerCommitments[ruleId];
+                for (uint256 j = 0; j < commitments.length; ) {
+                    if (commitments[j] == oldCommitment_) {
+                        commitments[j] = newCommitment_;
+                        emit SignerCommitmentRemapped(
+                            ruleId,
+                            cidId_,
+                            oldCommitment_,
+                            newCommitment_
+                        );
+                    }
+                    unchecked {
+                        ++j;
+                    }
+                }
+            }
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     function executePayoutLeg(
@@ -307,8 +407,7 @@ contract FSPaymentValidator is ReentrancyGuard {
         PaymentRule storage rule = rules[ruleId];
         if (rule.executed || rule.cancelled || rule.payer == address(0))
             revert RuleNotExecutable();
-        if (rule.expiresAt != 0 && block.timestamp > rule.expiresAt)
-            revert RuleNotExecutable();
+        if (_isRuleExpired(rule)) revert RuleNotExecutable();
         if (envelopeRegistry.isRevokedBeforeComplete(rule.cidId))
             revert EnvelopeRecalled();
         if (!_releaseConditionsMet(ruleId, rule)) revert RuleNotExecutable();
@@ -318,8 +417,7 @@ contract FSPaymentValidator is ReentrancyGuard {
         PaymentRule storage rule = rules[ruleId];
         if (rule.executed || rule.cancelled || rule.payer == address(0))
             return false;
-        if (rule.expiresAt != 0 && block.timestamp > rule.expiresAt)
-            return false;
+        if (_isRuleExpired(rule)) return false;
         if (envelopeRegistry.isRevokedBeforeComplete(rule.cidId)) return false;
         if (!_releaseConditionsMet(ruleId, rule)) return false;
         return _unpaidLegCount(ruleId) > 0;
@@ -386,6 +484,41 @@ contract FSPaymentValidator is ReentrancyGuard {
     function _validateExpiresAt(uint64 expiresAt_) private view {
         if (expiresAt_ != 0 && expiresAt_ <= block.timestamp)
             revert InvalidReleaseConfig();
+    }
+
+    function _usesCompletionGatedExpiry(
+        ReleaseType rt,
+        bytes32 cidId_
+    ) private view returns (bool) {
+        if (
+            rt == ReleaseType.AllSigned ||
+            rt == ReleaseType.AllRequiredSigned ||
+            rt == ReleaseType.AllSignedComplete
+        ) {
+            return true;
+        }
+        if (rt == ReleaseType.QuorumRequired) {
+            IFSEnvelopeRegistry.EnvelopeRegistrationView memory reg = envelopeRegistry
+                .envelopeRegistrations(cidId_);
+            return reg.quorumN > 0;
+        }
+        return false;
+    }
+
+    function _isRuleExpired(
+        PaymentRule storage rule
+    ) private view returns (bool) {
+        if (rule.expiresAt == 0) return false;
+        if (_usesCompletionGatedExpiry(rule.releaseType, rule.cidId)) {
+            if (!envelopeRegistry.isEnvelopeComplete(rule.cidId)) {
+                return block.timestamp > rule.expiresAt;
+            }
+            uint48 completedAt = envelopeRegistry
+                .envelopeRegistrations(rule.cidId)
+                .completedAt;
+            return completedAt > rule.expiresAt;
+        }
+        return block.timestamp > rule.expiresAt;
     }
 
     function _storeLegs(uint256 ruleId, PayoutLeg[] calldata legs_) private {

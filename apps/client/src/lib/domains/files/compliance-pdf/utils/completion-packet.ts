@@ -1,9 +1,15 @@
+import {
+	PROOF_PACKET_SCHEMA_V1,
+	PROOF_PACKET_V1_DEFAULT_PATHS,
+	VERIFY_MANIFEST_FORMAT_V1,
+} from "@filosign/oss/proof-packet";
 import type { ViewFileResult } from "@filosign/react/files";
 import type {
 	ComplianceBundle,
 	DocumentMerkleLeafProofV1,
 } from "@filosign/shared";
 import {
+	canonicalComplianceBundleJson,
 	documentsMerkleProofsV1,
 	merkleRootFromLeafAndSiblings,
 	parseHexString,
@@ -13,8 +19,14 @@ import { zipSync } from "fflate";
 import { toast } from "sonner";
 import { downloadBlobBytes } from "./build";
 
+const paths = PROOF_PACKET_V1_DEFAULT_PATHS;
+
 function sanitizeZipSegment(name: string): string {
 	return name.replace(/[/\\]/g, "_").slice(0, 200) || "document";
+}
+
+function proofPacketPath(relative: string): string {
+	return `${paths.proofFolder}/${relative}`;
 }
 
 export function buildCompletionPacketReadme(args: {
@@ -39,19 +51,30 @@ export function buildCompletionPacketReadme(args: {
 		"",
 		"What to open first",
 		"------------------",
-		"  document-with-proof.pdf",
-		"    The signed document plus proof appendix. Best for sharing with a",
+		"  document-with-proof.pdf  (at the top level of this ZIP)",
+		"    The signed document plus proof appendix. Open this file to share with a",
 		"    counterparty, grant reviewer, finance team, or internal reviewer.",
 		"",
-		"  proof-report.pdf",
-		"    The proof record only. Best when someone needs the signing record without",
-		"    the original document attached.",
+		"Verification folder",
+		"-------------------",
+		"  .filosign-proof/",
+		"    Supporting files for independent verification tools. You do not need to",
+		"    open this folder for everyday reading.",
 		"",
-		"  original/",
-		"    The original decrypted document file(s) included in this export.",
+		"  .filosign-proof/reports/proof-report.pdf",
+		"    The proof record only, without the signed document attached.",
 		"",
-		"  document-merkle-proofs.json",
-		"    Technical verification data. Most users do not need this file.",
+		"  .filosign-proof/documents/original/",
+		"    Original decrypted document file(s) used for cryptographic verification.",
+		"",
+		"  .filosign-proof/bundle/",
+		"    Machine-readable compliance export (bundle.json + bundle.sha256).",
+		"",
+		"  .filosign-proof/documents/merkle-proofs.json",
+		"    Document Merkle proofs for on-chain verification.",
+		"",
+		"  .filosign-proof/verify-manifest.json",
+		"    Index for verification tools (schema version, paths, chain, registry).",
 		"",
 		"Important note",
 		"--------------",
@@ -83,6 +106,40 @@ export function buildCompletionPacketReadme(args: {
 		);
 	}
 	return lines.join("\n");
+}
+
+function registryAddressFromBundle(
+	bundle: ComplianceBundle,
+): `0x${string}` | null {
+	const registrationTx = bundle.transactions.find(
+		(transaction) => transaction.kind === "file_registered",
+	);
+	return registrationTx?.contractAddress ?? null;
+}
+
+function buildVerifyManifest(args: {
+	bundle: ComplianceBundle;
+	bundleHash: `0x${string}`;
+}): Record<string, unknown> {
+	const registryAddress = registryAddressFromBundle(args.bundle);
+	if (!registryAddress) {
+		throw new Error(
+			"Cannot build verify-manifest.json: missing file_registered transaction",
+		);
+	}
+	return {
+		format: VERIFY_MANIFEST_FORMAT_V1,
+		packetSchema: PROOF_PACKET_SCHEMA_V1,
+		consumerDocumentPath: paths.consumerDocumentFromProofFolder,
+		bundlePath: paths.bundle,
+		bundleHashPath: paths.bundleHash,
+		bundleSha256: args.bundleHash,
+		chainId: args.bundle.chainId,
+		pieceCid: args.bundle.pieceCid,
+		registryAddress,
+		documentMerklePath: paths.documentMerkle,
+		originalDocumentsPrefix: paths.originalPrefix,
+	};
 }
 
 export async function warnDocumentMerkleMismatch(args: {
@@ -158,31 +215,43 @@ export async function downloadCompletionPacketZip(args: {
 		proofs,
 	});
 
+	const bundleJson = canonicalComplianceBundleJson(args.bundle);
+	const verifyManifest = buildVerifyManifest({
+		bundle: args.bundle,
+		bundleHash: args.bundleHash,
+	});
+
+	const merkleProofsJson = JSON.stringify(
+		{
+			registerDocumentMerkleRoot: registerRoot,
+			proofs: proofs.map((p) => ({
+				...p,
+				recomputedRoot: merkleRootFromLeafAndSiblings(p.leafHash, p.siblings),
+			})),
+		},
+		null,
+		2,
+	);
+
 	const zipEntries: Record<string, Uint8Array> = {
-		"README.txt": new TextEncoder().encode(readme),
-		"document-merkle-proofs.json": new TextEncoder().encode(
-			JSON.stringify(
-				{
-					registerDocumentMerkleRoot: registerRoot,
-					proofs: proofs.map((p) => ({
-						...p,
-						recomputedRoot: merkleRootFromLeafAndSiblings(
-							p.leafHash,
-							p.siblings,
-						),
-					})),
-				},
-				null,
-				2,
-			),
+		[paths.consumerDocument]: args.mergedPdfBytes,
+		[proofPacketPath(paths.readme)]: new TextEncoder().encode(readme),
+		[proofPacketPath(paths.manifest)]: new TextEncoder().encode(
+			JSON.stringify(verifyManifest, null, 2),
 		),
-		"proof-report.pdf": args.compliancePdfBytes,
-		"document-with-proof.pdf": args.mergedPdfBytes,
+		[proofPacketPath(paths.bundle)]: new TextEncoder().encode(bundleJson),
+		[proofPacketPath(paths.bundleHash)]: new TextEncoder().encode(
+			`${args.bundleHash}\n`,
+		),
+		[proofPacketPath(paths.documentMerkle)]: new TextEncoder().encode(
+			merkleProofsJson,
+		),
+		[proofPacketPath(paths.proofReport)]: args.compliancePdfBytes,
 	};
 
 	for (const doc of args.fileData.documents) {
 		const name = sanitizeZipSegment(doc.name);
-		zipEntries[`original/${name}`] = doc.bytes;
+		zipEntries[proofPacketPath(`${paths.originalPrefix}${name}`)] = doc.bytes;
 	}
 
 	const zipped = zipSync(zipEntries, { level: 6 });

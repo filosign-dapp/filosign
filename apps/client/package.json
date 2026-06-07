@@ -26,6 +26,7 @@
 		"@filosign/entitlements": "workspace:*",
 		"@filosign/errors": "workspace:*",
 		"@filosign/motion": "workspace:*",
+		"@filosign/oss": "workspace:*",
 		"@filosign/react": "workspace:*",
 		"@filosign/shared": "workspace:*",
 		"@fontsource-variable/inter": "catalog:",

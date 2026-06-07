@@ -20,6 +20,7 @@ Pre-production (solo dev, no users): skip backward-compat and migration shims. F
 | `apps/astro`            | [README](apps/astro/README.md)                                            | Marketing — landing mocks in `src/components/marketing-mocks/` |
 | `packages/react-sdk`    | [README](packages/react-sdk/README.md)                                    | `FilosignProvider`, typed `rpc`, `rpcQuery`, hooks             |
 | `packages/shared`       | [AGENTS.md](packages/shared/AGENTS.md)                                    | Types, Zod, manifests (browser+server)                         |
+| `packages/oss`          | [README](packages/oss/README.md)                                          | `file:` bridge to `oss/packages/protocol` (proof packet schema) |
 | `packages/entitlements` | —                                                                         | Plan catalog + pure evaluator (no DB; server wires later)      |
 | `packages/errors`       | [README](packages/errors/README.md)                                       | User-facing error catalog, `throwAppError`, `presentError`     |
 | `packages/crypto-utils` | [README](packages/crypto-utils/README.md)                                 | KEM, WASM-adjacent crypto                                      |

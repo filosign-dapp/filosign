@@ -73,7 +73,9 @@ export function SettlementStatusPanel({
 	return (
 		<div
 			className={
-				hideSectionHeader ? "space-y-3" : "space-y-3 border-t border-border pt-4"
+				hideSectionHeader
+					? "space-y-3"
+					: "space-y-3 border-t border-border pt-4"
 			}
 		>
 			<div className="space-y-1">

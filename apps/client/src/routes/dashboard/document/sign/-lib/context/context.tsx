@@ -88,6 +88,11 @@ export function useSignCompliance() {
 	return sign.compliance;
 }
 
+export function useSignSuccess() {
+	const { sign } = useSignDocumentContext();
+	return sign.signSuccess;
+}
+
 export function useSignColdShare() {
 	const { sign } = useSignDocumentContext();
 	return sign.coldShare;

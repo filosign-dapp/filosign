@@ -167,6 +167,7 @@ describe("compliance", () => {
 				},
 			],
 			settlements: [],
+			attachments: [],
 			offChainEvidence: {
 				acknowledgements: [],
 				documentViews: [],

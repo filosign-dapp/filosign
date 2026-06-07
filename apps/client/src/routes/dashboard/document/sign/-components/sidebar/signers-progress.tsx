@@ -21,7 +21,9 @@ function SignersProgressBar({
 				<span>
 					{signedCount} of {totalSigners} signers
 				</span>
-				<span className="tabular-nums text-muted-foreground/80">{percent}%</span>
+				<span className="tabular-nums text-muted-foreground/80">
+					{percent}%
+				</span>
 			</div>
 			<div
 				className="h-1.5 overflow-hidden rounded-full bg-muted"

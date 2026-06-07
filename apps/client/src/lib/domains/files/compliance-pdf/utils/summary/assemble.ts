@@ -10,10 +10,7 @@ import {
 	buildTimestampExplainerLines,
 } from "../copy";
 import { signersByNormalizedRecipientEmail } from "../placement";
-import {
-	buildPayoutAckLines,
-	buildSigningTimelineLines,
-} from "./evidence";
+import { buildPayoutAckLines, buildSigningTimelineLines } from "./evidence";
 import {
 	buildDocumentMetaLines,
 	buildExecPlain,

@@ -15,9 +15,7 @@ import type {
 import { A4 } from "../compliance-pdf-types";
 import type { ComplianceGlossaryEntry } from "./copy";
 import { embedComplianceLogo } from "./images";
-import {
-	buildCompliancePdfSummaryFromBundle,
-} from "./summary/assemble";
+import { buildCompliancePdfSummaryFromBundle } from "./summary/assemble";
 import { lineHeightAt, wrapLines } from "./text";
 
 const PDF_BRAND = {
@@ -586,7 +584,10 @@ export async function drawComplianceReport(
 	// Tight leading to subtitle (not full body line-height - keeps meta line close to title)
 	ctx.y -= titleFont.heightAtSize(titleSize) * 0.92 + 2;
 
-	const subParts = [options.chainName, `exported ${options.bundle.exportedAtIso}`];
+	const subParts = [
+		options.chainName,
+		`exported ${options.bundle.exportedAtIso}`,
+	];
 	ctx.page.drawText(subParts.join(" - "), {
 		x: PDF_M.margin,
 		y: ctx.y,

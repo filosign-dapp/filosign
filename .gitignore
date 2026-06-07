@@ -143,3 +143,6 @@ dist/
 packages/client/db/filosign.db-shm
 packages/client/db/filosign.db-wal
 .cursor/plans
+
+# Independent OSS repo (separate git root inside oss/; do not commit to private history)
+oss/

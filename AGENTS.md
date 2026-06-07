@@ -25,6 +25,7 @@ Pre-production (solo dev, no users): skip backward-compat and migration shims. F
 | `packages/crypto-utils` | [README](packages/crypto-utils/README.md)                                 | KEM, WASM-adjacent crypto                                      |
 | `packages/motion`       | [README](packages/motion/README.md)                                       | Shared spring physics presets, tweens, and UI layout motion    |
 | `packages/test`         | [README](packages/test/README.md)                                         | Dev harness                                                    |
+| `oss/`                  | [README](oss/README.md) · [AGENTS](oss/AGENTS.md)                         | Independent OSS git repo (ignored by private root; `cd oss && git …`) |
 | Scripts / CI            | [SCRIPTS.md](SCRIPTS.md)                                                  | `dev`, `check`, `sanity`, `test`, `build`, `db`, `contracts`   |
 | Testing                 | [TESTING.md](TESTING.md)                                                  | `tests/` layout, `tests/support/`, grouping rules              |
 | Unsure                  | [README.md](README.md)                                                    | Product + repo map                                             |

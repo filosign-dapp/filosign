@@ -19,6 +19,7 @@
 | Format + types (writes files) | `bun run check` |
 | CI / pre-push verify (no writes) | `bun run sanity` |
 | Match sanity check step only | `bun run check -- --ci --types` |
+| OSS segment (standalone `/oss`) | `cd oss && bun install && bun test` (separate git repo; ignored by private root) |
 | Autofix + unit tests | `bun run check && bun run test` |
 | Skip Hardhat in sanity | `bun run sanity -- --fast` |
 | All tests | `bun run test` |

@@ -32,6 +32,7 @@ export async function processEmailFromOutbox(
 			senderWallet: parsed.senderWallet,
 			pieceCid: parsed.pieceCid,
 			senderName: parsed.senderName,
+			intent: parsed.intent,
 		});
 		return;
 	}
@@ -61,6 +62,7 @@ export async function processEmailFromOutbox(
 		pieceCid: parsed.pieceCid,
 		inviteToken: parsed.inviteToken,
 		senderName: parsed.senderName,
+		intent: parsed.intent,
 	});
 }
 

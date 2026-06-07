@@ -1,4 +1,11 @@
-import { renderDocumentShared } from "@filosign/emails";
+import {
+	documentSharedSubject,
+	renderAccessRequestApproved,
+	renderCheckoutContinue,
+	renderDocumentShared,
+	renderEnvelopeCompleted,
+	renderPaidSetup,
+} from "@filosign/emails";
 import type { Address } from "viem";
 import env from "@/env";
 import { deliverOutboundEmail } from "./email";
@@ -25,6 +32,7 @@ type SendDocumentEmailBaseArgs = {
 	senderWallet: Address;
 	pieceCid: string;
 	senderName?: string | null;
+	intent?: "initial" | "reminder";
 };
 
 type SendColdDocumentInviteEmailArgs = SendDocumentEmailBaseArgs & {
@@ -60,39 +68,43 @@ export async function sendDocumentSharedEmail(args: {
 	ctaHref: string;
 	idempotencyPrefix: string;
 	idempotencyExtra?: string[];
+	intent?: "initial" | "reminder";
+	context?: "sign" | "draft_review";
+	documentTitle?: string | null;
 }) {
 	if (shouldSkipEmail()) return;
 
 	const senderLabel =
 		args.senderName?.trim() || formatAddress(args.senderWallet);
 	const escapedSenderLabel = escapeHtml(senderLabel);
-	const subject = `${senderLabel} sent you a document`;
+	const intent = args.intent ?? "initial";
+	const context = args.context ?? "sign";
+	const escapedDocumentTitle = args.documentTitle?.trim()
+		? escapeHtml(args.documentTitle.trim())
+		: undefined;
 
-	const { html, text: renderedText } = await renderDocumentShared({
+	const subject = documentSharedSubject({
+		senderLabel: escapedSenderLabel,
+		senderLabelRaw: senderLabel,
+		variant: args.variant,
+		intent,
+		context,
+		documentTitle: escapedDocumentTitle,
+	});
+
+	const { html, text } = await renderDocumentShared({
 		senderLabel: escapedSenderLabel,
 		ctaHref: args.ctaHref,
 		variant: args.variant,
+		intent,
+		context,
+		documentTitle: escapedDocumentTitle,
 	});
-
-	const text =
-		args.variant === "cold"
-			? [
-					`${senderLabel} shared a document with you on Filosign.`,
-					"",
-					"Open the link to view or sign. They should give you a six-word passphrase separately (not in this email):",
-					args.ctaHref,
-				].join("\n")
-			: [
-					`${senderLabel} sent you a document on Filosign.`,
-					"",
-					"Sign in to view, sign, or download:",
-					args.ctaHref,
-				].join("\n");
 
 	await deliverEmail({
 		to: args.to,
 		subject,
-		text: renderedText.trim() ? renderedText : text,
+		text,
 		html,
 		idempotencySegments: [
 			args.idempotencyPrefix,
@@ -122,6 +134,7 @@ export async function sendColdDocumentInviteEmail(
 		ctaHref: signUrl.toString(),
 		idempotencyPrefix: "cold-doc-invite",
 		idempotencyExtra: [args.inviteToken],
+		intent: args.intent,
 	});
 }
 
@@ -139,6 +152,7 @@ export async function sendDocumentReceivedEmail(
 		variant: "warm",
 		ctaHref: documentUrl,
 		idempotencyPrefix: "doc-received",
+		intent: args.intent,
 	});
 }
 
@@ -153,21 +167,13 @@ export async function sendEnvelopeCompletedEmail(args: {
 
 	const appUrl = getClientUrl();
 	const downloadUrl = `${appUrl}/dashboard/document/sign?pieceCid=${encodeURIComponent(args.pieceCid)}`;
-	const senderLabel =
-		args.senderName?.trim() || formatAddress(args.senderWallet);
+	const escapedEnvelopeName = escapeHtml(args.envelopeName);
 	const subject = `Completed: ${args.envelopeName}`;
-	const text = [
-		`"${args.envelopeName}" is fully executed on Filosign.`,
-		`${senderLabel} and all required parties have finished signing.`,
-		"",
-		"Download the completion packet (ZIP with the original file, compliance report, and audit record):",
-		downloadUrl,
-	].join("\n");
-	const html = [
-		`<p><strong>${escapeHtml(args.envelopeName)}</strong> is fully executed on Filosign.</p>`,
-		`<p>Download the completion packet (original file, compliance report, and audit record):</p>`,
-		`<p><a href="${escapeHtml(downloadUrl)}">Open in Filosign</a></p>`,
-	].join("");
+
+	const { html, text } = await renderEnvelopeCompleted({
+		envelopeName: escapedEnvelopeName,
+		ctaHref: downloadUrl,
+	});
 
 	await deliverEmail({
 		to: args.to,
@@ -189,19 +195,13 @@ export async function sendCheckoutContinueEmail(args: {
 }) {
 	if (shouldSkipEmail()) return;
 
+	const escapedPlanLabel = escapeHtml(args.planLabel);
 	const subject = `Complete your Filosign ${args.planLabel} purchase`;
-	const text = [
-		`Continue your Filosign ${args.planLabel} purchase:`,
-		args.continueUrl,
-		"",
-		"This link expires in 24 hours.",
-	].join("\n");
 
-	const html = [
-		`<p>Continue your Filosign ${escapeHtml(args.planLabel)} purchase:</p>`,
-		`<p><a href="${escapeHtml(args.continueUrl)}">Continue to checkout</a></p>`,
-		`<p style="color:#666;font-size:14px;">This link expires in 24 hours.</p>`,
-	].join("");
+	const { html, text } = await renderCheckoutContinue({
+		planLabel: escapedPlanLabel,
+		ctaHref: args.continueUrl,
+	});
 
 	await deliverEmail({
 		to: args.to,
@@ -223,20 +223,13 @@ export async function sendPaidSetupEmail(args: {
 }) {
 	if (shouldSkipEmail()) return;
 
+	const escapedPlanLabel = escapeHtml(args.planLabel);
 	const subject = "Finish setting up Filosign";
-	const text = [
-		`Your ${args.planLabel} subscription is active.`,
-		"",
-		"Create your Filosign wallet to finish setup:",
-		args.setupUrl,
-		"",
-		"If you already completed setup, you can sign in at the same link.",
-	].join("\n");
 
-	const html = [
-		`<p>Your ${escapeHtml(args.planLabel)} subscription is active.</p>`,
-		`<p><a href="${escapeHtml(args.setupUrl)}">Finish Filosign setup</a></p>`,
-	].join("");
+	const { html, text } = await renderPaidSetup({
+		planLabel: escapedPlanLabel,
+		ctaHref: args.setupUrl,
+	});
 
 	await deliverEmail({
 		to: args.to,
@@ -259,19 +252,14 @@ export async function sendAccessRequestApprovedEmail(args: {
 }) {
 	if (shouldSkipEmail()) return;
 
+	const escapedPlanLabel = escapeHtml(args.planLabel);
 	const subject = "Your Filosign access request was approved";
-	const text = [
-		"Your request for Filosign access was approved.",
-		"",
-		`Open the link below to start your ${args.trialDays}-day ${args.planLabel} trial:`,
-		args.inviteUrl,
-	].join("\n");
 
-	const html = [
-		"<p>Your request for Filosign access was approved.</p>",
-		`<p><a href="${escapeHtml(args.inviteUrl)}">Start your Filosign trial</a></p>`,
-		`<p style="color:#666;font-size:14px;">${escapeHtml(args.planLabel)} · ${args.trialDays}-day trial</p>`,
-	].join("");
+	const { html, text } = await renderAccessRequestApproved({
+		planLabel: escapedPlanLabel,
+		trialDays: args.trialDays,
+		ctaHref: args.inviteUrl,
+	});
 
 	await deliverEmail({
 		to: args.to,
@@ -308,5 +296,7 @@ export async function sendDraftReviewInviteEmail(args: {
 		ctaHref: reviewUrl.toString(),
 		idempotencyPrefix: "draft-review-invite",
 		idempotencyExtra: [args.inviteToken, args.accessKind],
+		context: "draft_review",
+		documentTitle: args.draftTitle,
 	});
 }

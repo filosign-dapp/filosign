@@ -140,6 +140,7 @@ export async function filesRemindSigners(
 				senderWallet: senderNorm,
 				pieceCid,
 				senderName,
+				intent: "reminder",
 			},
 			idempotencyKey: buildEmailIdempotencyKey([
 				"sign-reminder",
@@ -164,6 +165,7 @@ export async function filesRemindSigners(
 				pieceCid,
 				inviteToken: token,
 				senderName,
+				intent: "reminder",
 			},
 			idempotencyKey: buildEmailIdempotencyKey([
 				"sign-reminder",

@@ -16,11 +16,14 @@ export type JobOutboxPayload = Record<string, unknown>;
 
 const zAddress = z.string().transform((v) => getAddress(v as Address));
 
+const zEmailIntent = z.enum(["initial", "reminder"]).default("initial");
+
 export const zDocReceivedOutboxPayload = z.object({
 	to: z.email(),
 	senderWallet: zAddress,
 	pieceCid: z.string().min(1),
 	senderName: z.string().optional(),
+	intent: zEmailIntent,
 });
 
 export const zColdDocInviteOutboxPayload = z.object({
@@ -29,6 +32,7 @@ export const zColdDocInviteOutboxPayload = z.object({
 	pieceCid: z.string().min(1),
 	inviteToken: z.string().min(16),
 	senderName: z.string().optional(),
+	intent: zEmailIntent,
 });
 
 export const zEnvelopeCompletedOutboxPayload = z.object({
@@ -49,6 +53,18 @@ export type EnvelopeCompletedOutboxPayload = z.infer<
 	typeof zEnvelopeCompletedOutboxPayload
 >;
 
+export function parseOutboxPayload(
+	kind: "doc_received",
+	payload: Record<string, unknown>,
+): DocReceivedOutboxPayload;
+export function parseOutboxPayload(
+	kind: "cold_doc_invite",
+	payload: Record<string, unknown>,
+): ColdDocInviteOutboxPayload;
+export function parseOutboxPayload(
+	kind: "envelope_completed",
+	payload: Record<string, unknown>,
+): EnvelopeCompletedOutboxPayload;
 export function parseOutboxPayload(
 	kind: JobOutboxKind,
 	payload: Record<string, unknown>,

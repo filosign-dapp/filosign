@@ -21,12 +21,21 @@ import {
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { resolveSignRoutingCalldata } from "../routing-calldata";
 
+type EnvelopeRegistrySignSimulate = {
+	registerEnvelopeSignature: (
+		args: readonly unknown[],
+		options: { account: typeof evmClient.account },
+	) => Promise<unknown>;
+};
+
 export async function verifyAndRelayPieceSignature(args: {
 	pieceCid: string;
 	sender: Address;
 	signerWallet: Address;
 	signerEmail: string;
 	authProviderId: string;
+	bindTimestamp: number;
+	bindSignature: `0x${string}`;
 	timestamp: number;
 	signature: `0x${string}`;
 	dl3Signature: `0x${string}`;
@@ -80,6 +89,8 @@ export async function verifyAndRelayPieceSignature(args: {
 		signerEmailCommitment,
 		authSubjectCommitment,
 		dl3SignatureCommitment,
+		BigInt(args.bindTimestamp),
+		args.bindSignature,
 		BigInt(args.timestamp),
 		args.signature,
 		args.completionsRoot,
@@ -90,9 +101,11 @@ export async function verifyAndRelayPieceSignature(args: {
 	const registry = fsEnvelopeRegistryAt(args.registryAddress);
 
 	const simulateRes = await tryCatch(
-		registry.simulate.registerEnvelopeSignature(registerSignatureArgs, {
+		(
+			registry.simulate as unknown as EnvelopeRegistrySignSimulate
+		).registerEnvelopeSignature(registerSignatureArgs, {
 			account: evmClient.account,
-		}) as Promise<unknown>,
+		}),
 	);
 	if (simulateRes.error) {
 		throwAppError("SIGNING.SIGNATURE_INVALID");

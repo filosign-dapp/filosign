@@ -24,6 +24,7 @@ import {
 	getValidAck,
 	requireAckForParticipantAccess,
 } from "./utils/piece-helpers";
+import { relayBoundSignerAckIfNeeded } from "./utils/sign/onchain-bind";
 
 const {
 	files,
@@ -133,6 +134,18 @@ export async function pieceAck(args: {
 		throwAppError("SIGNING.SIGNATURE_INVALID");
 	}
 	const walletNorm = getAddress(participantRecord.wallet);
+
+	await relayBoundSignerAckIfNeeded({
+		pieceCid: args.pieceCid,
+		sender: fileRecord.sender,
+		signerWallet: walletNorm,
+		signerEmailCommitment: viewerEmailCommitment,
+		authSubjectCommitment,
+		ackTimestamp: timestamp,
+		ackSignature: signature,
+		registryAddress: fileRecord.registryAddress,
+	});
+
 	const acknowledgedAt = new Date(timestamp * 1000);
 	const now = new Date();
 

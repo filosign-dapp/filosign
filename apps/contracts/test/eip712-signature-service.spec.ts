@@ -24,18 +24,18 @@ describe("eip712signature service", () => {
 		clearRegistryEip712DomainCache();
 	});
 
-	it("reads on-chain EIP-712 domain version 1 from deployed registry", async () => {
+	it("reads on-chain EIP-712 domain version 2 from deployed registry", async () => {
 		const ctx = await deployFullSystem();
 		const [, name, version] = await ctx.envelopeRegistry.read.eip712Domain();
 		expect(name).to.equal("FSEnvelopeRegistry");
-		expect(version).to.equal("1");
+		expect(version).to.equal("2");
 
 		const contracts = getContracts({ client: ctx.sender, chainKey: "local" });
 		const domain = await readRegistryEip712Domain(
 			contracts,
 			ctx.envelopeRegistry.address,
 		);
-		expect(domain.version).to.equal("1");
+		expect(domain.version).to.equal("2");
 		expect(domain.verifyingContract.toLowerCase()).to.equal(
 			ctx.envelopeRegistry.address.toLowerCase(),
 		);

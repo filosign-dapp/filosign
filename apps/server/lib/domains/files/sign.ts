@@ -17,6 +17,7 @@ import {
 	parseFieldCompletionInputMap,
 	validateFieldCompletionsForSigner,
 } from "./utils/field-completions";
+import { getValidAck } from "./utils/piece-helpers";
 import { verifyAndRelayPieceSignature } from "./utils/sign/onchain";
 import { persistPieceSignRecords } from "./utils/sign/persist";
 import { runPostPieceSignSideEffects } from "./utils/sign/post-actions";
@@ -149,12 +150,19 @@ export async function pieceSign(args: {
 		.from(users)
 		.where(eq(users.walletAddress, signerWallet));
 
+	const ackRow = await getValidAck(signerWallet, pieceCid);
+	if (!ackRow) {
+		throwAppError("SIGNING.ACK_REQUIRED");
+	}
+
 	const txHash = await verifyAndRelayPieceSignature({
 		pieceCid,
 		sender: fileRecord.sender,
 		signerWallet,
 		signerEmail,
 		authProviderId,
+		bindTimestamp: Math.floor(ackRow.acknowledgedAt.getTime() / 1000),
+		bindSignature: ackRow.ack as `0x${string}`,
 		timestamp,
 		signature,
 		dl3Signature,

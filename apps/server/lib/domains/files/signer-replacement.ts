@@ -51,6 +51,8 @@ const {
 	fileSignatures,
 	fileSignerDrafts,
 	fileSignerAmendments,
+	fileAcknowledgements,
+	fileSettlementRecipientAcks,
 	users,
 } = db.schema;
 
@@ -326,7 +328,7 @@ async function applyParticipantSwapInTx(
 	return { placementManifest, registerRouting };
 }
 
-async function clearSignaturesAfterExecute(
+async function clearEnvelopeProgressInDb(
 	tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
 	pieceCid: string,
 ): Promise<void> {
@@ -336,6 +338,25 @@ async function clearSignaturesAfterExecute(
 	await tx
 		.delete(fileSignerDrafts)
 		.where(eq(fileSignerDrafts.filePieceCid, pieceCid));
+	await tx
+		.delete(fileAcknowledgements)
+		.where(eq(fileAcknowledgements.filePieceCid, pieceCid));
+	await tx
+		.delete(fileSettlementRecipientAcks)
+		.where(eq(fileSettlementRecipientAcks.filePieceCid, pieceCid));
+	await cancelPendingSignerAmendmentsForPiece(tx, pieceCid);
+	await tx
+		.update(files)
+		.set({ completedAt: null, updatedAt: new Date() })
+		.where(eq(files.pieceCid, pieceCid));
+}
+
+/** Clears on-chain signature progress mirrored in Postgres (signatures, acks, drafts). */
+export async function wipeEnvelopeSigningProgressForPiece(
+	tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+	pieceCid: string,
+): Promise<void> {
+	await clearEnvelopeProgressInDb(tx, pieceCid);
 }
 
 export async function filesProposeSignerReplacement(
@@ -534,7 +555,7 @@ export async function filesExecuteSignerReplacement(
 	}
 
 	await db.transaction(async (tx) => {
-		await clearSignaturesAfterExecute(tx, pieceCid);
+		await wipeEnvelopeSigningProgressForPiece(tx, pieceCid);
 		await applyParticipantSwapInTx(tx, {
 			pieceCid,
 			oldCommitment: pendingRow.oldCommitment,

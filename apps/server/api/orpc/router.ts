@@ -598,6 +598,16 @@ export const appRouter = {
 					context.activeOrg ?? null,
 				),
 			),
+		clearEnvelopeSignatures: authenticatedProcedure
+			.input(fileHandlers.zClearEnvelopeSignaturesBody)
+			.output(out.files.clearEnvelopeSignatures)
+			.handler(({ context, input }) =>
+				fileHandlers.filesClearEnvelopeSignatures(
+					context.userWallet,
+					input,
+					context.activeOrg ?? null,
+				),
+			),
 		remindSigners: authenticatedProcedure
 			.input(fileHandlers.zRemindSignersBody)
 			.output(out.files.remindSigners)

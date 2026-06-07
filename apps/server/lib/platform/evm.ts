@@ -1,8 +1,10 @@
 import { getContracts, getHistoricalAbi } from "@filosign/contracts";
 import {
+	type Address,
 	createWalletClient,
 	getAddress,
 	getContract,
+	type Hex,
 	publicActions,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -95,6 +97,7 @@ type EnvelopeRegistryRelayWrite = {
 	) => Promise<`0x${string}`>;
 	cancelSignerReplacement: (args: readonly unknown[]) => Promise<`0x${string}`>;
 	recallEnvelope: (args: readonly unknown[]) => Promise<`0x${string}`>;
+	clearEnvelopeSignatures: (args: readonly unknown[]) => Promise<`0x${string}`>;
 };
 
 function envelopeRegistryRelayWrite(
@@ -174,6 +177,60 @@ export async function relayRecallEnvelope(
 			envelopeRegistryRelayWrite(registry).recallEnvelope(args),
 		),
 	);
+}
+
+export async function relayClearEnvelopeSignatures(
+	registry: EnvelopeRegistryContract,
+	args: readonly unknown[],
+): Promise<`0x${string}`> {
+	const recaller = getAddress(args[1] as `0x${string}`);
+	return withRelayerLock(() =>
+		withRegistryWalletLock(recaller, () =>
+			envelopeRegistryRelayWrite(registry).clearEnvelopeSignatures(args),
+		),
+	);
+}
+
+const registryPaymentValidatorAbi = [
+	{
+		type: "function",
+		name: "paymentValidator",
+		stateMutability: "view",
+		inputs: [],
+		outputs: [{ type: "address" }],
+	},
+] as const;
+
+const paymentValidatorHasPaidLegAbi = [
+	{
+		type: "function",
+		name: "hasAnyPaidLegForCid",
+		stateMutability: "view",
+		inputs: [{ name: "cidId_", type: "bytes32" }],
+		outputs: [{ type: "bool" }],
+	},
+] as const;
+
+export async function readRegistryPaymentValidatorAddress(
+	registryAddress: Address,
+): Promise<Address> {
+	return evmClient.readContract({
+		address: registryAddress,
+		abi: registryPaymentValidatorAbi,
+		functionName: "paymentValidator",
+	});
+}
+
+export async function readHasAnyPaidLegForCid(
+	validatorAddress: Address,
+	cidId: Hex,
+): Promise<boolean> {
+	return evmClient.readContract({
+		address: validatorAddress,
+		abi: paymentValidatorHasPaidLegAbi,
+		functionName: "hasAnyPaidLegForCid",
+		args: [cidId],
+	});
 }
 
 export function fsAttachmentReleaseAt(address?: string | null) {

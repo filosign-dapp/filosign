@@ -13,8 +13,15 @@ import {
 	assertEntitlement,
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
+import {
+	assertCommitmentsOnEnvelopeRoster,
+	collectOnChainReleaseSignerCommitments,
+} from "@/lib/domains/files/utils/assert-roster-commitments";
 import db from "@/lib/platform/db";
-import { fsAttachmentReleaseAt } from "@/lib/platform/evm";
+import {
+	fsAttachmentReleaseAt,
+	fsEnvelopeRegistryAt,
+} from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import {
@@ -47,6 +54,65 @@ function attachmentReleaseRuleWhere(args: {
 		),
 		eq(attachmentReleaseRules.onChainRuleId, args.onChainRuleId),
 	);
+}
+
+async function assertAttachmentRuleSignersOnRoster(args: {
+	pieceCid: string;
+	registryAddress: `0x${string}` | null | undefined;
+	releaseContractAddress: Address;
+	onChainRuleId: bigint;
+}) {
+	const registry = fsEnvelopeRegistryAt(args.registryAddress ?? null);
+	const release = fsAttachmentReleaseAt(args.releaseContractAddress);
+	if (!registry || !release) {
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "Could not verify attachment rule against envelope roster",
+			},
+		});
+	}
+
+	const cidId = computeCidIdentifier(args.pieceCid);
+	const ruleRes = await tryCatch(release.read.rules([args.onChainRuleId]));
+	if (ruleRes.error || !ruleRes.data) {
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "Could not verify on-chain attachment rule",
+			},
+		});
+	}
+
+	const onChainCidId = ruleRes.data[0] as Hex;
+	if (onChainCidId !== cidId) {
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "On-chain attachment rule does not match this document",
+			},
+		});
+	}
+
+	const releaseTypeUint = Number(ruleRes.data[4]);
+	const specificSignerCommitment = ruleRes.data[5] as Hex;
+	const commitmentsRes = await tryCatch(
+		release.read.signerCommitments([args.onChainRuleId]),
+	);
+	if (commitmentsRes.error || !commitmentsRes.data) {
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: "Could not read on-chain attachment rule signer commitments",
+			},
+		});
+	}
+
+	await assertCommitmentsOnEnvelopeRoster({
+		registry,
+		cidId,
+		commitments: collectOnChainReleaseSignerCommitments({
+			releaseTypeUint,
+			specificSignerCommitment,
+			signerCommitments: commitmentsRes.data as Hex[],
+		}),
+	});
 }
 
 export async function insertAttachmentPacketsForFile(args: {
@@ -101,7 +167,7 @@ export async function linkAttachmentPacketOnChainRule(
 	const input = parsed.data;
 
 	const [file] = await db
-		.select({ sender: files.sender })
+		.select({ sender: files.sender, registryAddress: files.registryAddress })
 		.from(files)
 		.where(eq(files.pieceCid, input.pieceCid))
 		.limit(1);
@@ -129,6 +195,24 @@ export async function linkAttachmentPacketOnChainRule(
 		releaseContractAddress,
 		onChainRuleId,
 	});
+
+	const [existingRuleBeforeTx] = await db
+		.select({ packetRowId: attachmentReleaseRules.packetRowId })
+		.from(attachmentReleaseRules)
+		.where(ruleWhere)
+		.limit(1);
+
+	const linkingExistingRuleToSamePacket =
+		existingRuleBeforeTx?.packetRowId === packet.id;
+
+	if (!linkingExistingRuleToSamePacket) {
+		await assertAttachmentRuleSignersOnRoster({
+			pieceCid: input.pieceCid,
+			registryAddress: file.registryAddress,
+			releaseContractAddress,
+			onChainRuleId,
+		});
+	}
 
 	await db.transaction(async (tx) => {
 		await tx

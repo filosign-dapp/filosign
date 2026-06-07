@@ -94,6 +94,12 @@ export const rpcFilesRecallEnvelopeOutputSchema = z.object({
 	revokedBy: zEvmAddress(),
 });
 
+export const rpcFilesClearEnvelopeSignaturesOutputSchema = z.object({
+	txHash: zHexString(),
+	clearedBy: zEvmAddress(),
+	clearedAt: z.string(),
+});
+
 export const rpcFileCommentRowSchema = z.object({
 	id: z.uuid(),
 	authorWallet: zEvmAddress(),

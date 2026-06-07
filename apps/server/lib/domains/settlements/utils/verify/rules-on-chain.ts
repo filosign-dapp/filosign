@@ -4,6 +4,10 @@ import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import { eq } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
+import {
+	assertCommitmentsOnEnvelopeRoster,
+	collectSettlementReleaseSignerCommitments,
+} from "@/lib/domains/files/utils/assert-roster-commitments";
 import db from "@/lib/platform/db";
 import {
 	evmClient,
@@ -44,7 +48,8 @@ async function assertEnvelopeRegisteredOnChain(
 	const regRes = await tryCatch(
 		registry.read.envelopeRegistrations([cidRes.data as Hex]),
 	);
-	if (regRes.error || !regRes.data || regRes.data.timestamp === 0n) {
+	const registration = regRes.data as { timestamp: bigint } | undefined;
+	if (regRes.error || !registration || registration.timestamp === 0n) {
 		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
 			params: {
 				reason: "Document is not registered on-chain",
@@ -112,6 +117,7 @@ export async function assertSettlementRulesVerifiedOnChain(
 	await assertEnvelopeRegisteredOnChain(pieceCid, registryAddress);
 
 	const expectedCid = computeCidIdentifier(pieceCid);
+	const registry = fsEnvelopeRegistryAt(registryAddress ?? null);
 
 	for (const rule of rules) {
 		await assertRuleMatchesOnChain({
@@ -119,6 +125,13 @@ export async function assertSettlementRulesVerifiedOnChain(
 			expectedCid,
 			rule,
 		});
+		if (registry) {
+			await assertCommitmentsOnEnvelopeRoster({
+				registry,
+				cidId: expectedCid,
+				commitments: collectSettlementReleaseSignerCommitments(rule),
+			});
+		}
 		await assertTxSucceeded(rule.registerRuleTxHash, "registerRule");
 		await assertTxSucceeded(rule.approveTxHash, "approve");
 	}
@@ -131,12 +144,22 @@ export async function assertSettlementRuleUpdateOnChain(
 	rule: SettlementRuleRegistrationInput,
 	updateRuleTxHash: Hex,
 	validatorAddress: `0x${string}`,
+	registryAddress?: `0x${string}` | null,
 ) {
 	const validator = fsPaymentValidatorAt(validatorAddress);
+	const expectedCid = computeCidIdentifier(pieceCid);
 	await assertTxSucceeded(updateRuleTxHash, "updateRule");
 	await assertRuleMatchesOnChain({
 		validator,
-		expectedCid: computeCidIdentifier(pieceCid),
+		expectedCid,
 		rule,
 	});
+	const registry = fsEnvelopeRegistryAt(registryAddress ?? null);
+	if (registry) {
+		await assertCommitmentsOnEnvelopeRoster({
+			registry,
+			cidId: expectedCid,
+			commitments: collectSettlementReleaseSignerCommitments(rule),
+		});
+	}
 }

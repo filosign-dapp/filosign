@@ -1,4 +1,4 @@
-import { getAddress } from "viem";
+import { type Address, getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import env from "@/env";
 import {
@@ -33,7 +33,7 @@ export function validateRelayerWallet(): void {
 export async function validateRegistryServer(): Promise<void> {
 	const { fsContracts } = await import("@/lib/platform/evm");
 	const onChainServer = getAddress(
-		await fsContracts.FSEnvelopeRegistry.read.server(),
+		(await fsContracts.FSEnvelopeRegistry.read.server()) as Address,
 	);
 	const configured = getAddress(env.FC_SERVER_ADDRESS);
 	if (onChainServer !== configured) {

@@ -44,6 +44,7 @@ import {
 	rpcColdInviteClaimOutputSchema,
 	rpcColdInviteRegenerateOutputSchema,
 	rpcFilesCancelSignerReplacementOutputSchema,
+	rpcFilesClearEnvelopeSignaturesOutputSchema,
 	rpcFilesCommentsAppendOutputSchema,
 	rpcFilesCommentsListOutputSchema,
 	rpcFilesExecuteSignerReplacementOutputSchema,
@@ -151,6 +152,7 @@ export const rpcOut = {
 		executeSignerReplacement: rpcFilesExecuteSignerReplacementOutputSchema,
 		cancelSignerReplacement: rpcFilesCancelSignerReplacementOutputSchema,
 		recallEnvelope: rpcFilesRecallEnvelopeOutputSchema,
+		clearEnvelopeSignatures: rpcFilesClearEnvelopeSignaturesOutputSchema,
 		remindSigners: rpcFilesRemindSignersOutputSchema,
 		comments: {
 			list: rpcFilesCommentsListOutputSchema,

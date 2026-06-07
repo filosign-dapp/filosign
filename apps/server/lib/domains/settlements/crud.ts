@@ -63,7 +63,10 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 	}
 
 	const [file] = await db
-		.select({ organizationId: files.organizationId })
+		.select({
+			organizationId: files.organizationId,
+			registryAddress: files.registryAddress,
+		})
 		.from(files)
 		.where(eq(files.pieceCid, rule.pieceCid))
 		.limit(1);
@@ -111,6 +114,7 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 		registrationRule,
 		input.updateRuleTxHash,
 		getAddress(rule.validatorAddress),
+		file?.registryAddress,
 	);
 
 	if (settlementRuleTotalAmount(input.legs) <= 0n) {

@@ -1,4 +1,8 @@
 export {
+	filesClearEnvelopeSignatures,
+	zClearEnvelopeSignaturesBody,
+} from "./clear-signatures";
+export {
 	fileCommentsAppend,
 	fileCommentsList,
 	zFileCommentAppendBody,

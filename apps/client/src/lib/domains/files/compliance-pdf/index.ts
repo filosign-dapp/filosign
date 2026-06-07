@@ -1,5 +1,4 @@
 export { useCompliancePdfExports } from "./compliance-pdf";
-export { ProofDownloadButtonGroup } from "./proof-download-button-group";
 export type {
 	CompliancePdfBundleOptions,
 	CompliancePdfLine,
@@ -7,11 +6,10 @@ export type {
 	CompliancePdfSummary,
 	CompliancePdfTextStyle,
 } from "./compliance-pdf-types";
+export { ProofDownloadButtonGroup } from "./proof-download-button-group";
 export {
 	buildCompliancePdfOnly,
 	buildDocumentPlusCompliancePdf,
 	downloadPdfBytes,
 } from "./utils/build";
-export {
-	buildCompliancePdfSummaryFromBundle,
-} from "./utils/summary/assemble";
+export { buildCompliancePdfSummaryFromBundle } from "./utils/summary/assemble";

@@ -2,15 +2,14 @@ import {
 	CLIENT_ANALYTICS_EVENTS,
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
-import {
-	CheckCircleIcon,
-	EnvelopeSimpleIcon,
-	PaperPlaneTiltIcon,
-	WhatsappLogoIcon,
-} from "@phosphor-icons/react";
+import { CheckCircleIcon } from "@phosphor-icons/react";
 import { useEffect } from "react";
 import env from "@/src/env";
 import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
+import {
+	buildChannelShareLinks,
+	ShareViaButtons,
+} from "@/src/lib/components/app/share-via-buttons";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Dialog,
@@ -34,13 +33,14 @@ function buildFullUrl(share: ColdSharePackage): string {
 
 function shareLinks(share: ColdSharePackage) {
 	const fullUrl = buildFullUrl(share);
-	const msg = `You received a secure Filosign document.\n\nAccess link: ${fullUrl}\n\nFilosign also sends this magic link by email.`;
-	const mailTo = share.emails.join(",");
-	return {
-		mailto: `mailto:${encodeURIComponent(mailTo)}?subject=${encodeURIComponent("Secure document waiting for you")}&body=${encodeURIComponent(msg)}`,
-		whatsapp: `https://wa.me/?text=${encodeURIComponent(msg)}`,
-		telegram: `https://t.me/share/url?url=${encodeURIComponent(fullUrl)}&text=${encodeURIComponent("Secure document")}`,
-	};
+	const message = `You received a secure Filosign document.\n\nAccess link: ${fullUrl}\n\nFilosign also sends this magic link by email.`;
+	return buildChannelShareLinks({
+		message,
+		url: fullUrl,
+		emailTo: share.emails,
+		subject: "Secure document waiting for you",
+		telegramText: "Secure document",
+	});
 }
 
 export function ColdShareDialog(props: {
@@ -121,53 +121,7 @@ export function ColdShareDialog(props: {
 									<p className="mr-1 text-xs text-muted-foreground">
 										Share via
 									</p>
-									<Button
-										type="button"
-										variant="outline"
-										size="icon"
-										className="size-8"
-										onClick={() =>
-											window.open(links.mailto, "_blank", "noopener,noreferrer")
-										}
-										aria-label="Share via email"
-										title="Share via email"
-									>
-										<EnvelopeSimpleIcon className="size-4" />
-									</Button>
-									<Button
-										type="button"
-										variant="outline"
-										size="icon"
-										className="size-8"
-										onClick={() =>
-											window.open(
-												links.whatsapp,
-												"_blank",
-												"noopener,noreferrer",
-											)
-										}
-										aria-label="Share via WhatsApp"
-										title="Share via WhatsApp"
-									>
-										<WhatsappLogoIcon className="size-4" />
-									</Button>
-									<Button
-										type="button"
-										variant="outline"
-										size="icon"
-										className="size-8"
-										onClick={() =>
-											window.open(
-												links.telegram,
-												"_blank",
-												"noopener,noreferrer",
-											)
-										}
-										aria-label="Share via Telegram"
-										title="Share via Telegram"
-									>
-										<PaperPlaneTiltIcon className="size-4" />
-									</Button>
+									<ShareViaButtons links={links} />
 								</div>
 							) : null}
 

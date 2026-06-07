@@ -1,7 +1,7 @@
 import {
 	CaretDownIcon,
-	DownloadSimpleIcon,
 	FileArrowDownIcon,
+	PackageIcon,
 	ScrollIcon,
 } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
@@ -22,6 +22,8 @@ type ProofDownloadButtonGroupProps = {
 	handleDownload: () => void;
 	handleDownloadCompletionPacket: () => void | Promise<void>;
 	handleDownloadCompliancePdf: () => void | Promise<void>;
+	/** When set, the main proof button opens this flow instead of downloading immediately. */
+	onMainProofClick?: () => void;
 	density?: "default" | "compact" | "toolbar";
 	className?: string;
 };
@@ -33,6 +35,7 @@ export function ProofDownloadButtonGroup({
 	handleDownload,
 	handleDownloadCompletionPacket,
 	handleDownloadCompliancePdf,
+	onMainProofClick,
 	density = "default",
 	className,
 }: ProofDownloadButtonGroupProps) {
@@ -78,13 +81,17 @@ export function ProofDownloadButtonGroup({
 				type="button"
 				variant="outline"
 				size={density === "compact" ? "sm" : "default"}
-				onClick={() => void handleDownloadCompletionPacket()}
+				onClick={() =>
+					onMainProofClick
+						? onMainProofClick()
+						: void handleDownloadCompletionPacket()
+				}
 				disabled={proofDisabled}
 				title="Download proof packet (ZIP)"
 				className={mainButtonClass}
 				isLoading={pdfExportBusy}
 			>
-				<DownloadSimpleIcon className="size-4" />
+				<PackageIcon className="size-4" />
 				{density !== "toolbar" ? (
 					<span>{density === "compact" ? "Proof" : "Download proof"}</span>
 				) : (
@@ -100,9 +107,7 @@ export function ProofDownloadButtonGroup({
 							size={density === "compact" ? "icon-sm" : "icon"}
 							aria-label="More download options"
 							disabled={proofDisabled}
-							className={
-								density === "toolbar" ? "rounded-l-none" : undefined
-							}
+							className={density === "toolbar" ? "rounded-l-none" : undefined}
 						/>
 					}
 				>

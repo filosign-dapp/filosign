@@ -1,13 +1,31 @@
 import { Text } from "@react-email/components";
-import { FilosignLayout } from "./_components/FilosignLayout";
+import {
+	type DocumentSharedContext,
+	type DocumentSharedIntent,
+	type DocumentSharedVariant,
+	documentSharedCopy,
+} from "../src/copy/document-shared";
+import {
+	documentSharedBodyClassName,
+	resolveDocumentSharedTheme,
+	resolveDocumentSharedThemeId,
+} from "./_themes/resolve-document-shared-theme";
 
-export type DocumentSharedVariant = "warm" | "cold";
+export type {
+	DocumentSharedContext,
+	DocumentSharedIntent,
+	DocumentSharedVariant,
+} from "../src/copy/document-shared";
 
 export type DocumentSharedEmailProps = {
 	/** Pre-escaped sender display name */
 	senderLabel: string;
 	ctaHref: string;
 	variant: DocumentSharedVariant;
+	intent?: DocumentSharedIntent;
+	context?: DocumentSharedContext;
+	/** Pre-escaped draft title for draft_review context */
+	documentTitle?: string;
 };
 
 const disclaimer = (
@@ -18,57 +36,36 @@ const disclaimer = (
 	</>
 );
 
-function copyForVariant(variant: DocumentSharedVariant, senderLabel: string) {
-	const title = "You have a new document";
-	const body = (
-		<>
-			<strong>{senderLabel}</strong> sent you a document on Filosign. Click the
-			button below to review it.
-		</>
-	);
-
-	if (variant === "cold") {
-		return {
-			title,
-			preheader: `${senderLabel} sent you a document on Filosign. This document is password protected.`,
-			body: (
-				<>
-					{body}
-					<br />
-					<br />
-					This document is password protected. You'll need the secret code from
-					the sender to open it.
-				</>
-			),
-		};
-	}
-
-	return {
-		title,
-		preheader: `${senderLabel} sent you a document on Filosign. Sign in with this email to open it.`,
-		body,
-	};
-}
-
 export default function DocumentSharedEmail({
 	senderLabel,
 	ctaHref,
 	variant,
+	intent = "initial",
+	context = "sign",
+	documentTitle,
 }: DocumentSharedEmailProps) {
-	const copy = copyForVariant(variant, senderLabel);
+	const copy = documentSharedCopy({
+		senderLabel,
+		variant,
+		intent,
+		context,
+		documentTitle,
+	});
+
+	const themeId = resolveDocumentSharedThemeId({ variant, intent, context });
+	const Layout = resolveDocumentSharedTheme({ variant, intent, context });
+	const bodyClassName = documentSharedBodyClassName(themeId);
 
 	return (
-		<FilosignLayout
+		<Layout
 			title={copy.title}
 			preheader={copy.preheader}
 			ctaHref={ctaHref}
-			ctaLabel="Open document"
+			ctaLabel={copy.ctaLabel}
 			disclaimer={disclaimer}
 		>
-			<Text className="font-16 text-fg-2 mx-auto mt-0 mb-8 max-w-[380px] text-center font-sans">
-				{copy.body}
-			</Text>
-		</FilosignLayout>
+			<Text className={bodyClassName}>{copy.body}</Text>
+		</Layout>
 	);
 }
 
@@ -76,4 +73,6 @@ DocumentSharedEmail.PreviewProps = {
 	senderLabel: "Alex Chen",
 	ctaHref: "https://app.filosign.com/dashboard/document/sign?pieceCid=example",
 	variant: "warm",
+	intent: "initial",
+	context: "sign",
 } satisfies DocumentSharedEmailProps;

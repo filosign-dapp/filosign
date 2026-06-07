@@ -5,7 +5,10 @@ export const OUT_DIR = path.join(SRC_DIR, "interfaces");
 export const SPDX_HEADER = "// SPDX-License-Identifier: MIT"; // change latr
 
 /** Manual interfaces in src/interfaces/ preserved during generation (not auto-generated from contracts) */
-export const PRESERVED_INTERFACES = new Set<string>();
+export const PRESERVED_INTERFACES = new Set<string>([
+	"IFSPaymentValidatorRegistry.sol",
+	"IFSAttachmentReleaseRegistry.sol",
+]);
 
 export interface PragmaDirective {
 	type: string;

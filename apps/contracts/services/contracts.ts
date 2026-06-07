@@ -1,7 +1,6 @@
 import {
 	type Abi,
 	type Account,
-	type Address,
 	type Client,
 	createPublicClient,
 	type GetContractReturnType,
@@ -13,11 +12,25 @@ import {
 } from "viem";
 import { base, baseSepolia, hardhat } from "viem/chains";
 import {
+	attachmentReleaseAbi,
+	envelopeRegistryAbi,
+	type FSAttachmentReleaseAbi,
+	type FSEnvelopeRegistryAbi,
+	type FSPaymentValidatorAbi,
+	paymentValidatorAbi,
+} from "../definitions/generated/abi-types.js";
+import {
 	type ChainDefinitionsEntry,
 	type ChainKey,
 	getDefinitionsEntry,
+	toViemAbi,
 } from "../definitions/index";
 
+export type {
+	FSAttachmentReleaseAbi,
+	FSEnvelopeRegistryAbi,
+	FSPaymentValidatorAbi,
+} from "../definitions/generated/abi-types.js";
 export type { ChainDefinitionsEntry, ChainKey } from "../definitions/index";
 
 export type FilosignContractName = keyof ChainDefinitionsEntry & string;
@@ -26,12 +39,16 @@ export function getContractAbi(
 	name: FilosignContractName,
 	chainKey: ChainKey = "local",
 ): Abi {
+	if (name === "FSEnvelopeRegistry") return envelopeRegistryAbi;
+	if (name === "FSPaymentValidator") return paymentValidatorAbi;
+	if (name === "FSAttachmentRelease") return attachmentReleaseAbi;
+
 	const entry = getDefinitionsEntry(chainKey);
 	const contract = entry[name as keyof ChainDefinitionsEntry];
 	if (!contract || typeof contract !== "object" || !("abi" in contract)) {
 		throw new Error(`${name} not in definitions for ${chainKey}`);
 	}
-	return contract.abi as Abi;
+	return toViemAbi(contract.abi);
 }
 
 const VIEM_CHAIN_BY_KEY = {
@@ -47,32 +64,30 @@ type FilosignKeyedContractClient = {
 	wallet: WalletClient<Transport, ViemChain, Account>;
 };
 
-type CoreDefinitionContracts = Pick<
-	ChainDefinitionsEntry,
-	"FSEnvelopeRegistry" | "FSPaymentValidator"
->;
+type CoreFilosignContracts<_T extends Wallet> = {
+	FSEnvelopeRegistry: GetContractReturnType<
+		FSEnvelopeRegistryAbi,
+		FilosignKeyedContractClient,
+		ChainDefinitionsEntry["FSEnvelopeRegistry"]["address"]
+	>;
+	FSPaymentValidator: GetContractReturnType<
+		FSPaymentValidatorAbi,
+		FilosignKeyedContractClient,
+		ChainDefinitionsEntry["FSPaymentValidator"]["address"]
+	>;
+};
 
 type AttachmentReleaseDefinition = Exclude<
 	ChainDefinitionsEntry["FSAttachmentRelease"],
 	undefined
 >;
 
-type CoreFilosignContracts<_T extends Wallet> = {
-	[K in keyof CoreDefinitionContracts]: GetContractReturnType<
-		CoreDefinitionContracts[K]["abi"],
-		FilosignKeyedContractClient,
-		CoreDefinitionContracts[K]["address"] extends Address
-			? CoreDefinitionContracts[K]["address"]
-			: Address
-	>;
-};
-
 type OptionalAttachmentReleaseContract<_T extends Wallet> =
 	AttachmentReleaseDefinition extends never
 		? Record<string, never>
 		: {
 				FSAttachmentRelease?: GetContractReturnType<
-					AttachmentReleaseDefinition["abi"],
+					FSAttachmentReleaseAbi,
 					FilosignKeyedContractClient,
 					AttachmentReleaseDefinition["address"]
 				>;
@@ -109,27 +124,25 @@ export function getContracts<T extends Wallet>(options: {
 	const { client, chainKey } = options;
 	const contractDefinitions = getDefinitionsEntry(chainKey);
 	const bundledClient = getKeyedClient(client, chainKey);
-
-	const attachmentRelease = (
-		contractDefinitions as ChainDefinitionsEntry & {
-			FSAttachmentRelease?: { abi: Abi; address: Address };
-		}
-	).FSAttachmentRelease;
+	const attachmentRelease = contractDefinitions.FSAttachmentRelease;
 
 	return {
 		FSEnvelopeRegistry: getContract({
 			client: bundledClient,
-			...contractDefinitions.FSEnvelopeRegistry,
+			address: contractDefinitions.FSEnvelopeRegistry.address,
+			abi: envelopeRegistryAbi,
 		}),
 		FSPaymentValidator: getContract({
 			client: bundledClient,
-			...contractDefinitions.FSPaymentValidator,
+			address: contractDefinitions.FSPaymentValidator.address,
+			abi: paymentValidatorAbi,
 		}),
 		...(attachmentRelease
 			? {
 					FSAttachmentRelease: getContract({
 						client: bundledClient,
-						...attachmentRelease,
+						address: attachmentRelease.address,
+						abi: attachmentReleaseAbi,
 					}),
 				}
 			: {}),

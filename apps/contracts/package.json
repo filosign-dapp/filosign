@@ -13,9 +13,10 @@
 	},
 	"scripts": {
 		"node": "bunx --bun hardhat node",
-		"compile": "bun gen:interfaces; bunx --bun hardhat compile",
+		"compile": "bun gen:interfaces; bunx --bun hardhat compile; bun gen:definitions",
 		"test": "bun compile; bun --bun hardhat test",
 		"gen:interfaces": "bun run scripts/interfaces.ts",
+		"gen:definitions": "bun run scripts/gen-definitions.ts",
 		"deploy:local": "bun run --env-file=.env.local -- bunx --bun hardhat run scripts/deploy.ts --network localhost",
 		"deploy:testnet": "bun run --env-file=.env.staging -- bunx --bun hardhat run scripts/deploy.ts --network baseSepolia",
 		"deploy:mainnet": "bun run --env-file=.env.production -- bunx --bun hardhat run scripts/deploy.ts --network base",

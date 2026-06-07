@@ -59,10 +59,11 @@ export async function readRegistryEip712Domain(
 	const cached = domainByRegistry.get(cacheKey);
 	if (cached) return cached;
 
-	const result = await registryContractAt(
-		contracts,
-		address,
-	).read.eip712Domain();
+	const registry = registryContractAt(contracts, address);
+	if (!registry.read?.eip712Domain) {
+		throw new Error("FSEnvelopeRegistry EIP-712 read unavailable");
+	}
+	const result = await registry.read.eip712Domain();
 
 	const [, name, version, chainId, contractAddress] = result as readonly [
 		string,

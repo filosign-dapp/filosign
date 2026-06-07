@@ -2,8 +2,13 @@ import { $ } from "bun";
 import hre from "hardhat";
 import { getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import type { ChainKey } from "../definitions/index.js";
+import type { ChainKey } from "../definitions/chain-key.js";
+import type { ContractName } from "../definitions/schema.js";
 import env from "../env";
+import {
+	type DeployedContractBundle,
+	persistDeployment,
+} from "./lib/definitions/persist-deployment.js";
 import {
 	deployAndFundLocalMockUsd,
 	fundLocalMockUsdcRecipientForGas,
@@ -13,9 +18,6 @@ import {
 	viemChainOverride,
 	writeMockUsdAddressFile,
 } from "./local-dev";
-
-const DEFINITIONS_FILE_PREFIX = "export const definitions = ";
-const DEFINITIONS_FILE_SUFFIX = " as const;";
 
 const CHAIN_ID = {
 	local: 31337,
@@ -67,14 +69,6 @@ function resolveOwnerAddress(
 	const owner = getAddress(raw);
 	if (owner === deployerAddress) return null;
 	return owner;
-}
-
-function definitionsFileBody(singleChainDefinitions: unknown) {
-	return (
-		DEFINITIONS_FILE_PREFIX +
-		JSON.stringify(singleChainDefinitions, null, 2) +
-		DEFINITIONS_FILE_SUFFIX
-	);
 }
 
 function abiFromContract(c: { address: string; abi: unknown }) {
@@ -234,6 +228,23 @@ async function main() {
 		chainId,
 	);
 
+	const setSatellitesTx = await envelopeRegistry.write.setSatelliteContracts(
+		[paymentValidator.address, attachmentRelease.address],
+		{ account: deployer.account },
+	);
+	const setSatellitesReceipt = await publicClient.waitForTransactionReceipt({
+		hash: setSatellitesTx,
+	});
+	if (setSatellitesReceipt.status !== "success") {
+		console.error("setSatelliteContracts failed:", setSatellitesTx);
+		process.exit(1);
+	}
+	console.log("Satellite contracts configured on FSEnvelopeRegistry:", {
+		paymentValidator: paymentValidator.address,
+		attachmentRelease: attachmentRelease.address,
+		txHash: setSatellitesTx,
+	});
+
 	let mockUsd: LocalMockUsdBundle | undefined;
 	if (chainId === CHAIN_ID.local) {
 		await fundLocalServer(deployer, publicClient, serverAddress);
@@ -247,64 +258,34 @@ async function main() {
 	}
 
 	const chainKey = chainKeyFromId(chainId);
-	const jsonPath = `definitions/${chainKey}.json`;
-	const tsPath = `definitions/${chainKey}.ts`;
 
-	// Load existing JSON definitions
-	let existingJson = {
-		latest: {} as Record<string, unknown>,
-		byAddress: {} as Record<string, unknown>,
-	};
-	try {
-		const file = Bun.file(jsonPath);
-		if (await file.exists()) {
-			existingJson = await file.json();
-		}
-	} catch (error) {
-		console.warn(
-			`Failed to read existing JSON definitions at ${jsonPath}:`,
-			error,
-		);
-	}
-
-	// Make sure fields exist
-	if (!existingJson.latest) existingJson.latest = {};
-	if (!existingJson.byAddress) existingJson.byAddress = {};
-
-	const latestEntry = {
-		FSEnvelopeRegistry: abiFromContract(envelopeRegistry),
-		FSPaymentValidator: abiFromContract(paymentValidator),
-		FSAttachmentRelease: abiFromContract(attachmentRelease),
-		...(chainId === CHAIN_ID.local && mockUsd ? { MockUSDC: mockUsd } : {}),
-	};
-
-	// Update latest
-	existingJson.latest = latestEntry;
-
-	// Append deployed contracts to byAddress
-	const contractsToRegister = [
-		{ name: "FSEnvelopeRegistry", ...latestEntry.FSEnvelopeRegistry },
-		{ name: "FSPaymentValidator", ...latestEntry.FSPaymentValidator },
-		{ name: "FSAttachmentRelease", ...latestEntry.FSAttachmentRelease },
+	const bundles: DeployedContractBundle[] = [
+		{
+			name: "FSEnvelopeRegistry" satisfies ContractName,
+			...abiFromContract(envelopeRegistry),
+		},
+		{
+			name: "FSPaymentValidator" satisfies ContractName,
+			...abiFromContract(paymentValidator),
+		},
+		{
+			name: "FSAttachmentRelease" satisfies ContractName,
+			...abiFromContract(attachmentRelease),
+		},
 		...(chainId === CHAIN_ID.local && mockUsd
-			? [{ name: "MockUSDC", ...mockUsd }]
+			? [{ name: "MockUSDC" satisfies ContractName, ...mockUsd }]
 			: []),
 	];
 
-	for (const item of contractsToRegister) {
-		existingJson.byAddress[item.address.toLowerCase()] = {
-			name: item.name,
-			abi: item.abi,
-		};
-	}
+	const { deploymentId } = await persistDeployment({
+		chainKey,
+		chainId,
+		contracts: bundles,
+		transactions: { setSatelliteContracts: setSatellitesTx },
+	});
+	console.log(`Deployment persisted: ${deploymentId}`);
 
-	// Write JSON back
-	await Bun.write(jsonPath, JSON.stringify(existingJson, null, 2));
-	console.log(`Definitions JSON written to ${jsonPath}`);
-
-	// Write TS back
-	await Bun.write(tsPath, definitionsFileBody(existingJson));
-	console.log(`Definitions TS written to ${tsPath}`);
+	await $`bun run scripts/gen-definitions.ts`;
 
 	await verifyOnBaseExplorerIfApplicable({
 		networkName: hre.network.name,

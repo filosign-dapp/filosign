@@ -132,10 +132,12 @@ Teams/basic app flows use `AllSigned`, `SpecificSigner`, and `AtLeastN`. Advance
 
 | Op | Function | Notes |
 | -- | -------- | ----- |
-| Create | `registerRule` | `msg.sender == payer`; file must be registered |
-| Update | `updatePayoutRule` | Payer; `!executed && !cancelled`; legs, expiry, release params |
-| Cancel | `cancelPayoutRule` | Payer; `!executed` → `cancelled`, `canExecute` false |
-| Execute | `executePayout` | Anyone when `canExecute`; `nonReentrant`; sets `executed` after successful transfers |
+| Create | `registerRule` | `msg.sender == payer`; file must be registered; max **128** rules per `cidId` |
+| Update | `updatePayoutRule` | Payer; `requiredSignaturesCount == 0`; `!executed && !cancelled`; `legPaidBitmap == 0`; sum(new legs) ≤ current allowance |
+| Cancel | `cancelPayoutRule` | Same signing lock as update; sets `cancelled` |
+| Execute | `executePayout` / `executePayoutLeg` | Anyone when `canExecute`; `nonReentrant` |
+
+After the first required signature, update and cancel revert until **`clearEnvelopeSignatures`** (registry) clears on-chain progress, or the sender/org controller **`recallEnvelope`** (void). Paid legs block clear and signer swap (`hasAnyPaidLegForCid`).
 
 Revoking **`approve(validator, 0)`** off-chain also blocks execution even if the rule is active.
 
@@ -170,7 +172,18 @@ See [`apps/server/README.md`](../server/README.md) and [`project/settlements/arc
 
 ## FSAttachmentRelease
 
-Supplementary packet rules (Teams Pro). **`registerAttachmentRule`** and **`cancelAttachmentRule`** allow the envelope **sender** or an **`isOrgController`** for the file’s `orgIdCommitment`. Reverts: `UnauthorizedRuleRegistration` (register), `UnauthorizedRuleCancellation` (cancel), `EnvelopeRecalled`, `FileNotRegistered`.
+Supplementary packet rules (Teams Pro). **`registerAttachmentRule`**, **`updateAttachmentRule`**, and **`cancelAttachmentRule`** allow the envelope **sender** or an **`isOrgController`** for the file’s `orgIdCommitment`. Update and cancel require `requiredSignaturesCount == 0` (same escape hatches as payout rules). Reverts: `UnauthorizedRuleRegistration`, `EnvelopeRecalled`, `FileNotRegistered`, `RequiredSigningStarted`.
+
+## Registry satellite wiring
+
+After deploy, **`setSatelliteContracts(paymentValidator, attachmentRelease)`** on `FSEnvelopeRegistry` is **write-once** (owner-only, non-zero addresses). The deploy script calls it immediately after satellite deploy. The registry invokes **`remapSignerCommitment`** on both satellites at the end of signer substitution, and **`hasAnyPaidLegForCid`** before **`clearEnvelopeSignatures`** / **`executeSignerReplacement`** when the validator is configured.
+
+### Registry destructive actions
+
+| Action | Auth | Effect |
+| ------ | ---- | ------ |
+| `recallEnvelope` | Sender or org controller (EIP-712) | Void envelope; terminal |
+| `clearEnvelopeSignatures` | Same | Clears signatures and bound wallets; reopens satellite update/cancel; signers must re-ack/sign |
 
 ## Trust model
 
@@ -240,10 +253,13 @@ Triage real high/medium findings: reentrancy (mitigated by `nonReentrant` + CEI)
 | `src/Mock*.sol` | Hardhat test doubles only |
 | `test/*.spec.ts` | Hardhat + viem tests (~57 cases) |
 | `test/fixtures.ts` | Deploy helpers, EIP-712 register/sign flows |
-| `scripts/deploy.ts` | Deploy registry + validator; write `definitions/` |
+| `scripts/deploy.ts` | Deploy registry + satellites; persist `definitions/chains/` + `abis/`; run `gen:definitions` |
+| `scripts/gen-definitions.ts` | Per-chain glue from manifests; `abi-types.ts` from compile artifacts |
 | `ARCHITECTURE.md` | Roles, deploy order, owner runbook |
 | `TESTING.md` | Test conventions and Slither |
-| `definitions/` | Generated addresses and ABIs (**do not hand-edit**) |
+| `definitions/chains/` | Per-deploy manifests + `latest.json` (**empty until `migrate`**) |
+| `definitions/abis/` | Content-addressed ABI store (**written on deploy**) |
+| `definitions/generated/` | Auto-generated glue + compile-time `abi-types.ts` (**do not hand-edit**) |
 | `services/contracts.ts` | `getContracts()` for server and SDK |
 
 ## Testing

@@ -1,73 +1,72 @@
-import type { Address } from "viem";
-import { definitions as local } from "./local.js";
-import { definitions as mainnet } from "./mainnet.js";
-import { definitions as testnet } from "./testnet.js";
+import type { Abi } from "viem";
+import type {
+	ChainDefinitionsBundle,
+	LatestContracts,
+} from "./bundle-types.js";
+import type { ChainKey } from "./chain-key.js";
+import { definitions as local } from "./generated/local.js";
+import { definitions as mainnet } from "./generated/mainnet.js";
+import { definitions as testnet } from "./generated/testnet.js";
+import type { AbiJson, ContractName } from "./schema.js";
 
-export type ChainDefinitionsEntry = {
-	readonly FSEnvelopeRegistry: {
-		readonly address: Address;
-		readonly abi: typeof local.latest.FSEnvelopeRegistry.abi;
-	};
-	readonly FSPaymentValidator: {
-		readonly address: Address;
-		readonly abi: typeof local.latest.FSPaymentValidator.abi;
-	};
-	readonly FSAttachmentRelease?: {
-		readonly address: Address;
-		readonly abi: typeof local.latest.FSAttachmentRelease.abi;
-	};
-	readonly MockUSDC?: {
-		readonly address: Address;
-		readonly abi: typeof local.latest.MockUSDC.abi;
-	};
-};
+export type ChainDefinitionsEntry = LatestContracts;
 
 export type HistoricalContractEntry = {
-	readonly name: string;
-	readonly abi: readonly unknown[];
+	readonly name: ContractName;
+	readonly abi: AbiJson;
 };
 
-export type ChainDefinitions = {
-	readonly latest: ChainDefinitionsEntry;
-	readonly byAddress: {
-		readonly [address: string]: HistoricalContractEntry;
-	};
-};
-
-export type ChainKey = "local" | "testnet" | "mainnet";
+export type { ChainDefinitionsBundle } from "./bundle-types.js";
+export { CHAIN_KEYS, type ChainKey } from "./chain-key.js";
 
 export { LOCAL_MOCK_USDC_ADDRESS } from "./mock-usdc.js";
 
-export const CHAIN_KEYS: readonly ChainKey[] = [
-	"local",
-	"testnet",
-	"mainnet",
-] as const;
+function chainModule(chainKey: ChainKey): ChainDefinitionsBundle {
+	switch (chainKey) {
+		case "local":
+			return local;
+		case "testnet":
+			return testnet;
+		case "mainnet":
+			return mainnet;
+	}
+}
 
-const BY_CHAIN: Record<ChainKey, ChainDefinitions> = {
-	local,
-	testnet,
-	mainnet,
-};
+function latestEntry(chainKey: ChainKey): LatestContracts | null {
+	return chainModule(chainKey).latest;
+}
 
 export function getDefinitionsEntry(chainKey: ChainKey): ChainDefinitionsEntry {
-	const defs = BY_CHAIN[chainKey];
-	if (!defs?.latest) {
+	const entry = latestEntry(chainKey);
+	if (!entry?.FSEnvelopeRegistry) {
 		throw new Error(`No definitions for chain: ${chainKey}`);
 	}
-	return defs.latest;
+	return entry;
+}
+
+export function toViemAbi(abi: AbiJson): Abi {
+	return abi as unknown as Abi;
 }
 
 export function getHistoricalAbi(
 	contractName: string,
 	address: string,
 	chainKey: ChainKey,
-): readonly unknown[] | null {
-	const defs = BY_CHAIN[chainKey];
-	if (!defs?.byAddress) return null;
-	const entry = defs.byAddress[address.toLowerCase()];
-	if (entry && entry.name === contractName) {
-		return entry.abi;
+): Abi | null {
+	const defs = chainModule(chainKey);
+	const normalized = address.toLowerCase();
+
+	const historical = defs.historicalByAddress[normalized];
+	if (historical && historical.name === contractName) {
+		return toViemAbi(historical.abi);
+	}
+
+	const latest = latestEntry(chainKey);
+	if (!latest) return null;
+
+	const contract = latest[contractName as keyof LatestContracts];
+	if (contract && typeof contract === "object" && "abi" in contract) {
+		return toViemAbi(contract.abi);
 	}
 	return null;
 }

@@ -3,10 +3,14 @@ import DocumentSharedEmail, {
 	type DocumentSharedEmailProps,
 } from "../emails/document-shared";
 
-export type {
-	DocumentSharedEmailProps,
-	DocumentSharedVariant,
-} from "../emails/document-shared";
+export type { DocumentSharedEmailProps } from "../emails/document-shared";
+export {
+	type DocumentSharedContext,
+	type DocumentSharedIntent,
+	type DocumentSharedVariant,
+	documentSharedCopy,
+	documentSharedSubject,
+} from "./copy/document-shared";
 
 export async function renderDocumentShared(
 	props: DocumentSharedEmailProps,

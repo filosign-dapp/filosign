@@ -13,6 +13,8 @@ const parsedEnv = createEnv({
 		VITE_SERVER_URL: z.url(),
 		VITE_ASTRO_URL: z.url(),
 		VITE_CLIENT_URL: z.url(),
+		/** Independent proof packet verifier (drop-ZIP UI). Defaults in app code when unset. */
+		VITE_VERIFY_WEB_URL: z.url().optional(),
 		VITE_POSTHOG_KEY: z.string().min(1).optional(),
 		VITE_POSTHOG_HOST: z.url(),
 		VITE_POSTHOG_ENABLED: z

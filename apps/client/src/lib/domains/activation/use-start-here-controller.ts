@@ -21,8 +21,11 @@ export function useStartHereController() {
 	const { evaluated, isLoading, activationQuery, entitlementsQuery } =
 		useActivationProgress();
 	const markMilestone = useMarkActivationMilestone();
-	const { provision, isPending: isProvisioning } =
-		useProvisionPracticeEnvelope();
+	const {
+		provision,
+		ensureAcknowledged,
+		isPending: isProvisioning,
+	} = useProvisionPracticeEnvelope();
 	const {
 		trackStepClick,
 		trackDismiss,
@@ -190,8 +193,20 @@ export function useStartHereController() {
 
 	const openSignPractice = useCallback(async () => {
 		trackStepNavigation("sign_practice_agreement");
-		let pieceCid = activationQuery.data?.practicePieceCid ?? null;
-		if (!pieceCid) {
+		const existingPracticePieceCid =
+			activationQuery.data?.practicePieceCid ?? null;
+		let pieceCid: string;
+
+		if (existingPracticePieceCid) {
+			const [, ackError] = await safeAsync(() =>
+				ensureAcknowledged(existingPracticePieceCid),
+			);
+			if (ackError) {
+				toast.error("Could not accept your practice document. Try again.");
+				return;
+			}
+			pieceCid = existingPracticePieceCid;
+		} else {
 			const [provisioned, error] = await safeAsync(provision());
 			if (error || !provisioned) {
 				toast.error("Could not prepare your practice document. Try again.");
@@ -206,6 +221,7 @@ export function useStartHereController() {
 		});
 	}, [
 		activationQuery.data?.practicePieceCid,
+		ensureAcknowledged,
 		navigate,
 		provision,
 		trackStepNavigation,

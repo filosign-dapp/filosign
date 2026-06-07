@@ -14,6 +14,7 @@ import {
 	useSignNavigation,
 	useSignPlacement,
 	useSignSigning,
+	useSignSuccess,
 	useSignViewer,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
 
@@ -38,6 +39,7 @@ export function SignHeaderMobile() {
 		handleDownloadCompliancePdf,
 		handleDownloadCompletionPacket,
 	} = useSignCompliance();
+	const { setSignSuccessDialogOpen } = useSignSuccess();
 
 	return (
 		<div className="md:hidden">
@@ -83,6 +85,7 @@ export function SignHeaderMobile() {
 						handleDownload={handleDownload}
 						handleDownloadCompletionPacket={handleDownloadCompletionPacket}
 						handleDownloadCompliancePdf={handleDownloadCompliancePdf}
+						onMainProofClick={() => setSignSuccessDialogOpen(true)}
 					/>
 					<SignHeaderRotateInviteButton variant="compact" />
 					<SignHeaderSignButton label="Sign" density="compact" />

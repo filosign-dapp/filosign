@@ -13,6 +13,7 @@ import {
 	useSignFile,
 	useSignMeta,
 	useSignNavigation,
+	useSignSuccess,
 	useSignViewer,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
 
@@ -28,6 +29,7 @@ export function SignHeaderDesktop() {
 		handleDownloadCompliancePdf,
 		handleDownloadCompletionPacket,
 	} = useSignCompliance();
+	const { setSignSuccessDialogOpen } = useSignSuccess();
 
 	return (
 		<div className="hidden md:flex items-center justify-between w-full px-6 py-3">
@@ -74,6 +76,7 @@ export function SignHeaderDesktop() {
 						handleDownload={handleDownload}
 						handleDownloadCompletionPacket={handleDownloadCompletionPacket}
 						handleDownloadCompliancePdf={handleDownloadCompliancePdf}
+						onMainProofClick={() => setSignSuccessDialogOpen(true)}
 					/>
 					<SignHeaderRotateInviteButton variant="comfortable" />
 				</div>

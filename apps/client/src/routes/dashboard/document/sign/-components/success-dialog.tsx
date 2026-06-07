@@ -1,4 +1,5 @@
-import { PackageIcon } from "@phosphor-icons/react";
+import { ArrowSquareOutIcon, PackageIcon } from "@phosphor-icons/react";
+import { ShareViaButtons } from "@/src/lib/components/app/share-via-buttons";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Dialog,
@@ -10,8 +11,10 @@ import {
 } from "@/src/lib/components/ui/dialog";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
+import { buildProofPacketShareLinks } from "@/src/lib/domains/files/compliance-pdf/proof-share-links";
 import {
 	useSignCompliance,
+	useSignDocumentContext,
 	useSignViewer,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
 
@@ -22,12 +25,14 @@ export function SignSuccessDialog({
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }) {
+	const { pieceCid } = useSignDocumentContext();
 	const { fileData } = useSignViewer();
-	const {
-		pdfExportBusy,
-		exportsAllowed,
-		handleDownloadCompletionPacket,
-	} = useSignCompliance();
+	const { pdfExportBusy, exportsAllowed, handleDownloadCompletionPacket } =
+		useSignCompliance();
+	const shareLinks = exportsAllowed
+		? buildProofPacketShareLinks(pieceCid)
+		: null;
+	const verifyUrl = DOCS_LINKS.verifyProofPacket();
 
 	return (
 		<Dialog
@@ -68,6 +73,16 @@ export function SignSuccessDialog({
 								</span>
 							</span>
 						</Button>
+						<div className="mt-4 space-y-3">
+							{shareLinks ? (
+								<div className="flex items-center gap-2">
+									<p className="mr-1 text-xs text-muted-foreground">
+										Share via
+									</p>
+									<ShareViaButtons links={shareLinks} />
+								</div>
+							) : null}
+						</div>
 						<div className="mt-3 flex flex-col gap-2 text-sm">
 							<DocsLink href={DOCS_LINKS.completionPacket()}>
 								What is in the proof packet?
@@ -76,9 +91,10 @@ export function SignSuccessDialog({
 								href={DOCS_LINKS.verifyProofPacket()}
 								target="_blank"
 								rel="noopener noreferrer"
-								className="text-primary underline-offset-4 hover:underline"
+								className="text-primary underline-offset-4 hover:underline flex gap-1 items-center"
 							>
 								Verify a proof packet independently
+								<ArrowSquareOutIcon className="size-3.5" />
 							</a>
 						</div>
 					</div>

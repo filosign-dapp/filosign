@@ -1,7 +1,7 @@
 {
-	"deploymentId": "20260607T053528Z",
+	"deploymentId": "20260607T061559Z",
 	"chainId": 31337,
-	"deployedAt": "2026-06-07T05:35:28.135Z",
+	"deployedAt": "2026-06-07T06:15:59.557Z",
 	"contracts": {
 		"FSEnvelopeRegistry": {
 			"address": "0x73511669fd4dE447feD18BB79bAFeAC93aB7F31f",

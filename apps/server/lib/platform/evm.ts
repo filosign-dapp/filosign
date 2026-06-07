@@ -83,6 +83,7 @@ export function fsPaymentValidatorAt(address?: string | null) {
 type EnvelopeRegistryContract = ReturnType<typeof fsEnvelopeRegistryAt>;
 
 type EnvelopeRegistryRelayWrite = {
+	registerEnvelopeAck: (args: readonly unknown[]) => Promise<`0x${string}`>;
 	registerEnvelopeSignature: (
 		args: readonly unknown[],
 	) => Promise<`0x${string}`>;
@@ -103,6 +104,18 @@ function envelopeRegistryRelayWrite(
 }
 
 /** Relay server-signed registry writes when viem contract typings omit methods. */
+export async function relayRegisterEnvelopeAck(
+	registry: EnvelopeRegistryContract,
+	args: readonly unknown[],
+): Promise<`0x${string}`> {
+	const viewerWallet = getAddress(args[2] as `0x${string}`);
+	return withRelayerLock(() =>
+		withRegistryWalletLock(viewerWallet, () =>
+			envelopeRegistryRelayWrite(registry).registerEnvelopeAck(args),
+		),
+	);
+}
+
 export async function relayRegisterEnvelopeSignature(
 	registry: EnvelopeRegistryContract,
 	args: readonly unknown[],

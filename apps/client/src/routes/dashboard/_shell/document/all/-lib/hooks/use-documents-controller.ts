@@ -1,4 +1,3 @@
-import { type DraftSummaryRow, useDraftsList } from "@filosign/react/drafts";
 import type { OrgFileRow } from "@filosign/react/files";
 import {
 	useOrgFiles,
@@ -8,10 +7,9 @@ import {
 import { useActiveOrgId } from "@filosign/react/orgs";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useState } from "react";
-import { useOpenDraft } from "@/src/lib/domains/drafts";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
-export const DOCUMENT_TABS = ["all", "sent", "received", "drafts"] as const;
+export const DOCUMENT_TABS = ["all", "sent", "received"] as const;
 export type DocumentTab = (typeof DOCUMENT_TABS)[number];
 
 export function parseDocumentTab(val: string): DocumentTab | null {
@@ -25,34 +23,19 @@ export type OrgFileRowView = OrgFileRow & {
 	createdAt: Date;
 };
 
-export type DraftRowView = Pick<DraftSummaryRow, "id" | "title"> & {
-	updatedAt: Date;
+export type DocumentItem = {
+	id: string;
+	title: string;
+	date: Date;
+	type: "sent" | "received";
+	fileRow: OrgFileRowView;
 };
-
-export type UnifiedItem =
-	| {
-			id: string;
-			title: string;
-			date: Date;
-			type: "sent" | "received";
-			isDraft: false;
-			fileRow: OrgFileRowView;
-	  }
-	| {
-			id: string;
-			title: string;
-			date: Date;
-			type: "draft";
-			isDraft: true;
-			draftRow: DraftRowView;
-	  };
 
 export function useDocumentsController() {
 	const [viewMode, setViewMode] = useState<"list" | "grid">("list");
 	const [activeTab, setActiveTab] = useState<DocumentTab>("all");
 	const navigate = useNavigate();
 	const activeOrgId = useActiveOrgId();
-	const { openDraft } = useOpenDraft();
 	const { user } = useThirdweb();
 
 	const userWallet = user?.wallet?.address;
@@ -61,7 +44,6 @@ export function useDocumentsController() {
 	const orgFiles = useOrgFiles();
 	const sentFiles = useSentFiles();
 	const receivedFiles = useReceivedFiles();
-	const draftsList = useDraftsList();
 
 	const allFilesData = useMemo((): OrgFileRowView[] => {
 		const mergedMap = new Map<string, OrgFileRowView>();
@@ -89,60 +71,31 @@ export function useDocumentsController() {
 		return Array.from(mergedMap.values());
 	}, [orgFiles.data, sentFiles.data, receivedFiles.data, walletNorm]);
 
-	const draftsData = useMemo(
-		(): DraftRowView[] =>
-			(draftsList.data?.drafts ?? []).map((draft) => ({
-				id: draft.id,
-				title: draft.title,
-				updatedAt: new Date(draft.updatedAt),
-			})),
-		[draftsList.data?.drafts],
-	);
-
-	const unifiedItems = useMemo((): UnifiedItem[] => {
-		const mappedFiles = allFilesData.map((f) => ({
-			id: f.pieceCid,
-			title: f.displayName || "Untitled Document",
-			date: f.createdAt,
-			type: f.type,
-			isDraft: false as const,
-			fileRow: f,
-		}));
-
-		const mappedDrafts = draftsData.map((d) => ({
-			id: d.id,
-			title: d.title || "Untitled Draft",
-			date: d.updatedAt,
-			type: "draft" as const,
-			isDraft: true as const,
-			draftRow: d,
-		}));
-
-		return [...mappedFiles, ...mappedDrafts].sort(
-			(a, b) => b.date.getTime() - a.date.getTime(),
-		);
-	}, [allFilesData, draftsData]);
+	const items = useMemo((): DocumentItem[] => {
+		return allFilesData
+			.map((file) => ({
+				id: file.pieceCid,
+				title: file.displayName || "Untitled Document",
+				date: file.createdAt,
+				type: file.type,
+				fileRow: file,
+			}))
+			.sort((a, b) => b.date.getTime() - a.date.getTime());
+	}, [allFilesData]);
 
 	const filteredItems = useMemo(() => {
-		if (activeTab === "all")
-			return unifiedItems.filter((item) => !item.isDraft);
-		if (activeTab === "sent")
-			return unifiedItems.filter(
-				(item) => !item.isDraft && item.type === "sent",
-			);
-		if (activeTab === "received")
-			return unifiedItems.filter(
-				(item) => !item.isDraft && item.type === "received",
-			);
-		if (activeTab === "drafts")
-			return unifiedItems.filter((item) => item.isDraft);
-		return unifiedItems;
-	}, [unifiedItems, activeTab]);
+		if (activeTab === "sent") {
+			return items.filter((item) => item.type === "sent");
+		}
+		if (activeTab === "received") {
+			return items.filter((item) => item.type === "received");
+		}
+		return items;
+	}, [items, activeTab]);
 
-	const hasAnyContent = unifiedItems.length > 0;
+	const hasAnyContent = items.length > 0;
 
 	const isLoading =
-		draftsList.isLoading ||
 		Boolean(activeOrgId && orgFiles.isLoading) ||
 		sentFiles.isLoading ||
 		receivedFiles.isLoading;
@@ -161,8 +114,6 @@ export function useDocumentsController() {
 		[navigate],
 	);
 
-	const handleDraftClick = openDraft;
-
 	return useMemo(
 		() => ({
 			viewMode,
@@ -170,28 +121,24 @@ export function useDocumentsController() {
 			setActiveTab,
 			activeOrgId,
 			orgFilesData: allFilesData,
-			draftsData,
-			unifiedItems,
+			items,
 			filteredItems,
 			hasAnyContent,
 			isLoading,
 			handleViewModeChange,
 			handleItemClick,
-			handleDraftClick,
 		}),
 		[
 			viewMode,
 			activeTab,
 			activeOrgId,
 			allFilesData,
-			draftsData,
-			unifiedItems,
+			items,
 			filteredItems,
 			hasAnyContent,
 			isLoading,
 			handleViewModeChange,
 			handleItemClick,
-			handleDraftClick,
 		],
 	);
 }

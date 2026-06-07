@@ -1,16 +1,11 @@
 import { MotionReveal, Pressable } from "@filosign/motion";
 import { FileTextIcon, PlusIcon } from "@phosphor-icons/react";
-import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { Tabs, TabsList, TabsTrigger } from "@/src/lib/components/ui/tabs";
-import {
-	DocumentCard,
-	formatDocumentCardDate,
-} from "@/src/lib/domains/documents/document-card";
+import { DocumentCard } from "@/src/lib/domains/documents/document-card";
 import { mapFileToDocumentCardProps } from "@/src/lib/domains/documents/map-file-to-card-props";
-import { useDraftDelete } from "@/src/lib/domains/documents/use-draft-delete";
 import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
 import { useDocuments } from "@/src/routes/dashboard/_shell/document/all/-lib/context/context";
 import type { DocumentTab } from "@/src/routes/dashboard/_shell/document/all/-lib/hooks/use-documents-controller";
@@ -31,11 +26,6 @@ function filterEmptyCopy(tab: DocumentTab): {
 				title: "No received documents yet",
 				description: "Documents others send you will appear here.",
 			};
-		case "drafts":
-			return {
-				title: "No drafts yet",
-				description: "Saved envelope drafts will appear here.",
-			};
 		default:
 			return {
 				title: "No items found",
@@ -54,16 +44,7 @@ export function DocumentsContent() {
 		hasAnyContent,
 		isLoading,
 		handleItemClick,
-		handleDraftClick,
 	} = useDocuments();
-
-	const {
-		requestDelete,
-		deleteOpen,
-		closeDelete,
-		confirmDelete,
-		deletePending,
-	} = useDraftDelete();
 
 	return (
 		<Tabs
@@ -80,7 +61,6 @@ export function DocumentsContent() {
 						<TabsTrigger value="all">All</TabsTrigger>
 						<TabsTrigger value="sent">Sent</TabsTrigger>
 						<TabsTrigger value="received">Received</TabsTrigger>
-						<TabsTrigger value="drafts">Drafts</TabsTrigger>
 					</TabsList>
 				</div>
 			</div>
@@ -145,22 +125,6 @@ export function DocumentsContent() {
 						{viewMode === "list" ? (
 							<div className="space-y-2">
 								{filteredItems.map((item) => {
-									if (item.isDraft) {
-										const draft = item.draftRow;
-										return (
-											<DocumentCard
-												key={draft.id}
-												kind="draft"
-												variant="list"
-												title={draft.title}
-												subtitle={`Updated ${formatDocumentCardDate(draft.updatedAt)}`}
-												draftId={draft.id}
-												onOpen={() => handleDraftClick(draft.id)}
-												onDeleteDraft={requestDelete}
-												deleteDisabled={deletePending}
-											/>
-										);
-									}
 									const file = item.fileRow;
 									const { title, subtitle } = mapFileToDocumentCardProps(file);
 									return (
@@ -178,22 +142,6 @@ export function DocumentsContent() {
 						) : (
 							<div className="grid grid-cols-2 @md:grid-cols-3 @xl:grid-cols-4 @2xl:grid-cols-5 @3xl:grid-cols-6 @5xl:grid-cols-8 gap-3">
 								{filteredItems.map((item) => {
-									if (item.isDraft) {
-										const draft = item.draftRow;
-										return (
-											<DocumentCard
-												key={draft.id}
-												kind="draft"
-												variant="grid"
-												title={draft.title}
-												subtitle={formatDocumentCardDate(draft.updatedAt)}
-												draftId={draft.id}
-												onOpen={() => handleDraftClick(draft.id)}
-												onDeleteDraft={requestDelete}
-												deleteDisabled={deletePending}
-											/>
-										);
-									}
 									const file = item.fileRow;
 									const { title, subtitle } = mapFileToDocumentCardProps(file);
 									return (
@@ -212,17 +160,6 @@ export function DocumentsContent() {
 					</div>
 				)}
 			</MotionReveal>
-
-			<ConfirmAlertDialog
-				open={deleteOpen}
-				onOpenChange={closeDelete}
-				title="Delete draft?"
-				description="This removes the draft from your list. You cannot undo this action."
-				confirmLabel="Delete Draft"
-				destructive
-				pending={deletePending}
-				onConfirm={confirmDelete}
-			/>
 		</Tabs>
 	);
 }

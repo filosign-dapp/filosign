@@ -63,6 +63,8 @@ export async function ackFile(
 
 	const cidIdentifier = computeCidIdentifier(pieceCid);
 	const timestamp = await latestChainTimestamp(deps.contracts);
+	const reg = await registry.read.envelopeRegistrations([cidIdentifier]);
+	const signersCommitment = reg.signersCommitment;
 
 	const addr = getAddress(deps.wallet.account.address);
 	const rawEmail = resolveRosterEmail({
@@ -85,6 +87,7 @@ export async function ackFile(
 					{ name: "viewerWallet", type: "address" },
 					{ name: "viewerEmailCommitment", type: "bytes32" },
 					{ name: "authSubjectCommitment", type: "bytes32" },
+					{ name: "signersCommitment", type: "bytes20" },
 					{ name: "timestamp", type: "uint256" },
 				],
 			},
@@ -95,6 +98,7 @@ export async function ackFile(
 				viewerWallet: deps.wallet.account.address,
 				viewerEmailCommitment,
 				authSubjectCommitment: deps.authSubjectCommitment,
+				signersCommitment,
 				timestamp: BigInt(timestamp),
 			},
 		},

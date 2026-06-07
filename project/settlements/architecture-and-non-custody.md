@@ -87,26 +87,34 @@ Arbitrary external addresses are not supported in the UI or server registration 
 
 ## Cancelling a payout packet
 
-Before all legs are paid, the payer can:
-
-1. **`cancelPayoutRule(ruleId)`** — payer-only on-chain cancel (Teams Pro in app). Allowed even after **partial** leg execution; only **remaining** unpaid legs are blocked. Paid legs cannot be reversed on-chain.
-2. **Revoke allowance** — `token.approve(FSPaymentValidator, 0)` from the payer wallet; the sign UI exposes this for senders.
+Before all legs are paid, the payer can **`cancelPayoutRule`** only while **`requiredSignaturesCount == 0`** on the envelope (same lock as **`updatePayoutRule`**). After signing starts, use **`clearEnvelopeSignatures`** to reopen cancel/update, or **`recallEnvelope`** to void the envelope. Revoke allowance separately: `token.approve(FSPaymentValidator, 0)` from the payer wallet; the sign UI exposes this for senders.
 
 Either blocks further `executePayoutLeg`. Revocation cannot reverse legs already paid on-chain.
 
-## Rule changes after signing starts (SEC-03)
+## Rule changes after signing starts
 
 After the first **required** signer signs on-chain (`requiredSignaturesCount > 0`):
 
-- **`updatePayoutRule`** reverts — payer cannot change recipients, amounts, or release terms.
-- **`cancelPayoutRule`** remains available until the packet is fully executed or already cancelled.
-- Optional-only signatures do **not** trigger the update lock.
+- **`updatePayoutRule`** and **`cancelPayoutRule`** revert.
+- **`updateAttachmentRule`** and **`cancelAttachmentRule`** revert on supplementary packets.
+- Optional-only signatures do **not** trigger the lock.
 
-`cancelAttachmentRule` on supplementary packets uses the same required-signer lock.
+**Escape hatches (destructive or terminal):**
+
+1. **`clearEnvelopeSignatures`** (sender or org controller, server relay) — clears on-chain signatures and bound wallets; reopens update and cancel on both satellites; blocked if any payout leg was paid.
+2. **`recallEnvelope` (void)** — terminal; no further signing or rule edits on the active envelope.
 
 ## Recipient expectations
 
 Signing a document does **not** guarantee USDC payment. Execution depends on release conditions, payer balance, token approval, and whether the payer cancels or revokes before remaining legs run.
+
+## Rule expiry (`expiresAt`)
+
+`expiresAt = 0` means no cutoff (default in the app when omitted).
+
+For **completion-gated** release types (`AllSigned`, `AllRequiredSigned`, `AllSignedComplete`, and `QuorumRequired` when the envelope uses quorum routing), expiry compares **`completedAt`** on the registry, not the wall clock at execute time. Signers who finish before the cutoff can still receive payout if relay or wallet execution happens later.
+
+For **signer-specific** and partial-progress release types, expiry is checked at execute time (deadline to meet the condition and release).
 
 ## Wallet screening
 

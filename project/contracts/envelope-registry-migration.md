@@ -26,12 +26,12 @@ Runtime contract addresses come from **definitions + `CHAIN`**, not per-contract
 
 After redeploy:
 
-1. Run tests + deploy (writes `definitions/<profile>.ts`):
+1. Run tests + deploy (writes `definitions/chains/<profile>/`, deduped `definitions/abis/`, and `definitions/generated/<profile>.ts` via `gen:definitions`):
    - Local: `bun run contracts -- --migrate --local` (localhost node) or `bunx hardhat run scripts/deploy.ts --network hardhat` for in-process Hardhat only
    - Testnet: `bun run contracts -- --migrate --testnet`
    - Mainnet: `bun run contracts -- --migrate --mainnet`
 2. Ensure **`FC_SERVER_ADDRESS`** matches `FSEnvelopeRegistry.server()` on the deployed registry (bootstrap validates this).
-3. Set server **`CHAIN`** to `local` | `testnet` | `mainnet` for the target definitions file.
+3. Set server **`CHAIN`** to `local` | `testnet` | `mainnet` for the target chain definitions.
 4. **Discard in-flight EIP-712** signatures from the old domain/types.
 
 No client `VITE_*` registry address is required when using the bundled definitions for that chain.

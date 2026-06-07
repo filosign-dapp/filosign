@@ -34,7 +34,7 @@ slither . --exclude-dependencies            # triage per apps/contracts/README.m
 bun run --cwd apps/contracts migrate:mainnet
 ```
 
-This runs tests then deploys; regenerates `apps/contracts/definitions/mainnet.ts` (never hand-edit).
+This runs tests then deploys; regenerates `definitions/chains/mainnet/`, `definitions/abis/`, and `definitions/generated/mainnet.ts` (never hand-edit generated output).
 
 **Verify on Base scan:**
 
@@ -42,8 +42,9 @@ This runs tests then deploys; regenerates `apps/contracts/definitions/mainnet.ts
 - [ ] Pending owner → cold wallet calls `acceptOwnership()`
 - [ ] `FSEnvelopeRegistry.server()` === `FC_SERVER_ADDRESS` in Infisical prod
 - [ ] `FSPaymentValidator` constructor args: correct registry address + `chainId` (8453)
+- [ ] `FSEnvelopeRegistry.setSatelliteContracts(paymentValidator, attachmentRelease)` called once in deploy script (write-once; verify `paymentValidator()` and `attachmentRelease()` non-zero)
 
-**Post-deploy:** commit updated `definitions/mainnet.ts` if addresses changed.
+**Post-deploy:** commit updated `definitions/chains/**`, `definitions/abis/**`, and `definitions/generated/**` if addresses or ABIs changed.
 
 ---
 
@@ -112,4 +113,5 @@ See [`project/todo.md`](../todo.md) P0 section. Minimum before paid traffic:
 - [ ] Support channel (email + status page)
 - [ ] Monitoring + DB/R2 backups
 - [ ] Counsel review: e-sign claims, non-custodial USDC wording, GDPR if EU
+- [ ] Terms disclose registry **`onlyServer`** relay for register/sign/void/clear/amend (Filosign relayer executes after user EIP-712 authorization)
 - [ ] Dodo merchant terms aligned with pricing page (refunds, countries)

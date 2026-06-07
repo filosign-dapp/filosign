@@ -11,7 +11,7 @@ Single `main` branch; four **deployments** differentiated by `DEPLOYMENT` + Infi
 | `sandbox` | `sandbox` | `testnet` | Public demo | **Open** | No-op (open) | Test mode |
 | `production` | `prod` | `mainnet` | Paying users | **Invite or paid** | Full enforce | Live mode |
 
-Staging and sandbox share **testnet contract addresses** (`definitions/testnet.ts`). Isolation is Postgres, S3, Dragonfly, URLs, and policy.
+Staging and sandbox share **testnet contract addresses** (`definitions/generated/testnet.ts` / `definitions/chains/testnet/`). Isolation is Postgres, S3, Dragonfly, URLs, and policy.
 
 ## Example URLs
 

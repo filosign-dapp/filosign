@@ -2,4 +2,4 @@
 alwaysApply: true
 ---
 
-- don't manually edit files in the `definitions` directory in apps/contracts. It is auto-generated during deployment.
+- don't manually edit files under `apps/contracts/definitions/` except `schema.ts`, `chain-key.ts`, and `bundle-types.ts`. Deployment output (`chains/`, `abis/`, `generated/`) is written by `scripts/deploy.ts` and `scripts/gen-definitions.ts`.

@@ -17,7 +17,7 @@ type Props = {
 	pending?: boolean;
 };
 
-export function RecallEnvelopeDialog({
+export function ClearEnvelopeSignaturesDialog({
 	open,
 	onOpenChange,
 	onConfirm,
@@ -27,13 +27,12 @@ export function RecallEnvelopeDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent showCloseButton className="sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>Void envelope</DialogTitle>
+					<DialogTitle>Clear signatures</DialogTitle>
 					<DialogDescription>
-						Voids this send on-chain before the envelope is complete. Partial
-						signatures may remain in the audit trail. Pending invites are
-						revoked. You cannot void after all required signers (or quorum) have
-						finished. To reopen payout or attachment edits without voiding, use
-						Clear signatures instead (when no payout leg has been paid).
+						Removes all on-chain signatures for this envelope without voiding
+						it. Signers must acknowledge and sign again. This reopens payout and
+						attachment rule edits that were locked after the first required
+						signature. Blocked if any payout leg has already been paid.
 					</DialogDescription>
 				</DialogHeader>
 				<DocsLink href={DOCS_LINKS.envelopeGovernance()} className="px-6 -mt-1">
@@ -57,7 +56,7 @@ export function RecallEnvelopeDialog({
 							onOpenChange(false);
 						}}
 					>
-						{pending ? "Voiding…" : "Void envelope"}
+						{pending ? "Clearing…" : "Clear signatures"}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

@@ -178,6 +178,7 @@ export function RecipientSettlementDialog({
 							id="recipient-settlement-expires"
 							value={expiresAtLocal}
 							onChange={setExpiresAtLocal}
+							releaseType={releaseType}
 						/>
 
 						<p className="text-xs text-muted-foreground">

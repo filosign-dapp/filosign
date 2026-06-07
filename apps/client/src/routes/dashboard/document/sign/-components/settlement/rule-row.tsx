@@ -67,6 +67,7 @@ type Props = {
 	onUpdateRule?: (rule: SettlementRuleRow) => void;
 	cancelPending?: boolean;
 	updatePending?: boolean;
+	signingStarted?: boolean;
 };
 
 export function SettlementRuleRowView({
@@ -87,6 +88,7 @@ export function SettlementRuleRowView({
 	onUpdateRule,
 	cancelPending,
 	updatePending,
+	signingStarted = false,
 }: Props) {
 	const state = buildSettlementRuleRowState({
 		rule,
@@ -175,24 +177,33 @@ export function SettlementRuleRowView({
 				onCancelRule &&
 				onUpdateRule ? (
 					<div className="mt-2 space-y-2">
+						{signingStarted ? (
+							<p className="text-[11px] text-muted-foreground text-pretty">
+								Payout edits are locked after the first required signature. Use
+								Clear signatures in More details to reopen edits without voiding
+								the envelope.
+							</p>
+						) : null}
 						{state.partial ? (
 							<p className="text-[11px] text-muted-foreground text-pretty">
 								Cancelling stops only unpaid amounts. Money already sent cannot
 								be taken back.
 							</p>
 						) : null}
-						<SettlementManageActions
-							rule={rule}
-							onCancel={() =>
-								onCancelRule({
-									onChainRuleId: rule.onChainRuleId,
-									validatorAddress: getAddress(rule.validatorAddress),
-								})
-							}
-							onUpdate={() => onUpdateRule(rule)}
-							cancelPending={cancelPending}
-							updatePending={updatePending}
-						/>
+						{!signingStarted ? (
+							<SettlementManageActions
+								rule={rule}
+								onCancel={() =>
+									onCancelRule({
+										onChainRuleId: rule.onChainRuleId,
+										validatorAddress: getAddress(rule.validatorAddress),
+									})
+								}
+								onUpdate={() => onUpdateRule(rule)}
+								cancelPending={cancelPending}
+								updatePending={updatePending}
+							/>
+						) : null}
 					</div>
 				) : null}
 			</div>

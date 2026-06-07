@@ -34,7 +34,10 @@ export function SignDocumentSidebar() {
 	const canSignByRouting = file?.participantAccess?.canSignByRouting;
 	const isRevoked = Boolean(envelopeProgress?.revokedBeforeCompletedAt);
 	const isComplete = Boolean(envelopeProgress?.completedAt);
+	const signingStarted = (envelopeProgress?.requiredSignaturesCount ?? 0) > 0;
 	const canRecall = isSender && !isRevoked && !isComplete;
+	const canClearSignatures =
+		isSender && !isRevoked && !isComplete && signingStarted;
 
 	const fieldsChecklistProps = {
 		fields: myPlacementFields,
@@ -104,7 +107,18 @@ export function SignDocumentSidebar() {
 								className="h-8 text-xs text-destructive hover:text-destructive"
 								onClick={() => settlements.setRecallDialogOpen(true)}
 							>
-								Recall envelope
+								Void envelope
+							</Button>
+						) : null}
+						{canClearSignatures ? (
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="h-8 text-xs text-destructive hover:text-destructive"
+								onClick={() => settlements.setClearSignaturesDialogOpen(true)}
+							>
+								Clear signatures
 							</Button>
 						) : null}
 						{settlements.canAttachSettlement ? (
@@ -135,6 +149,7 @@ export function SignDocumentSidebar() {
 				{isSender ? (
 					<ConditionalAttachmentsPanel
 						packets={file?.conditionalAttachmentPackets}
+						signingStarted={signingStarted}
 					/>
 				) : null}
 
@@ -158,6 +173,7 @@ export function SignDocumentSidebar() {
 					onUpdateRule={settlements.onUpdateRule}
 					cancelPending={settlements.cancelPending}
 					updatePending={settlements.updatePending}
+					signingStarted={signingStarted}
 				/>
 
 				{file?.viewers && file.viewers.length > 0 ? (

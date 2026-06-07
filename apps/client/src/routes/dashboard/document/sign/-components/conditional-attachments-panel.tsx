@@ -14,10 +14,15 @@ type Packet = {
 
 type Props = {
 	packets: Packet[] | undefined;
+	signingStarted?: boolean;
 	onCancelled?: () => void;
 };
 
-export function ConditionalAttachmentsPanel({ packets, onCancelled }: Props) {
+export function ConditionalAttachmentsPanel({
+	packets,
+	signingStarted = false,
+	onCancelled,
+}: Props) {
 	const cancelRule = useCancelAttachmentRule();
 
 	if (!packets?.length) return null;
@@ -32,6 +37,9 @@ export function ConditionalAttachmentsPanel({ packets, onCancelled }: Props) {
 				<p className="text-xs text-muted-foreground">
 					Recipients can open these only after the signing rules you set are
 					met.
+					{signingStarted
+						? " Rule edits are locked until you clear signatures or void the envelope."
+						: null}
 				</p>
 			</div>
 			<ul className="space-y-2">
@@ -48,7 +56,7 @@ export function ConditionalAttachmentsPanel({ packets, onCancelled }: Props) {
 							variant="outline"
 							size="sm"
 							className="shrink-0 h-7 text-xs"
-							disabled={cancelRule.isPending}
+							disabled={cancelRule.isPending || signingStarted}
 							onClick={() => {
 								void (async () => {
 									const [, err] = await safeAsync(() =>

@@ -191,6 +191,7 @@ export function AttachSettlementDialog({
 						id="attach-settlement-expires"
 						value={expiresAtLocal}
 						onChange={setExpiresAtLocal}
+						releaseType={releaseType}
 					/>
 				</div>
 				<DialogFooter>

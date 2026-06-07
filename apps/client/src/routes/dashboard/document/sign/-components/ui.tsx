@@ -6,6 +6,7 @@ import {
 	signerOptionsFromFile,
 } from "@/src/routes/dashboard/document/sign/-components/amend-signer-dialog";
 import { AttachSettlementDialog } from "@/src/routes/dashboard/document/sign/-components/attach-settlement-dialog";
+import { ClearEnvelopeSignaturesDialog } from "@/src/routes/dashboard/document/sign/-components/clear-envelope-signatures-dialog";
 import { RecallEnvelopeDialog } from "@/src/routes/dashboard/document/sign/-components/recall-envelope-dialog";
 import { SettlementUpdateDialog } from "@/src/routes/dashboard/document/sign/-components/settlement-update-dialog";
 import {
@@ -142,6 +143,16 @@ function SignSettlementDialogs() {
 					settlements.onConfirmRecallEnvelope(file?.organizationId)
 				}
 				pending={settlements.recallPending}
+			/>
+			<ClearEnvelopeSignaturesDialog
+				open={settlements.clearSignaturesDialogOpen}
+				onOpenChange={settlements.setClearSignaturesDialogOpen}
+				onConfirm={() =>
+					settlements.onConfirmClearEnvelopeSignatures(
+						file?.registryAddress as `0x${string}` | undefined,
+					)
+				}
+				pending={settlements.clearSignaturesPending}
 			/>
 			<AttachSettlementDialog
 				open={settlements.attachDialogOpen}

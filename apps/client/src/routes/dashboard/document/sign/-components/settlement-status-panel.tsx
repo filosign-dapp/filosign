@@ -33,6 +33,7 @@ type Props = {
 	onUpdateRule?: (rule: SettlementRuleRow) => void;
 	cancelPending?: boolean;
 	updatePending?: boolean;
+	signingStarted?: boolean;
 };
 
 function explorerTxUrl(hash: string) {
@@ -59,6 +60,7 @@ export function SettlementStatusPanel({
 	onUpdateRule,
 	cancelPending,
 	updatePending,
+	signingStarted = false,
 }: Props) {
 	if (rules.length === 0) return null;
 
@@ -114,6 +116,7 @@ export function SettlementStatusPanel({
 						onUpdateRule={onUpdateRule}
 						cancelPending={cancelPending}
 						updatePending={updatePending}
+						signingStarted={signingStarted}
 					/>
 				))}
 			</div>

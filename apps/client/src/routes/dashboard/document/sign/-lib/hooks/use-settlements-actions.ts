@@ -7,6 +7,7 @@ import {
 	useBasicPayoutAttachGate,
 	useCancelSettlementRule,
 	useCancelSignerReplacement,
+	useClearEnvelopeSignatures,
 	useExecuteSignerReplacement,
 	useManualSettlementPayout,
 	useProposeSignerReplacement,
@@ -61,6 +62,7 @@ export function useSignSettlementsActions(
 	const executeSignerReplacement = useExecuteSignerReplacement(pieceCid);
 	const cancelSignerReplacement = useCancelSignerReplacement(pieceCid);
 	const recallEnvelope = useRecallEnvelope(pieceCid);
+	const clearEnvelopeSignatures = useClearEnvelopeSignatures(pieceCid);
 	const attachSettlementRules = useAttachSettlementForFile(pieceCid);
 	const { data: entitlements } = useEntitlements();
 	const { canAttach: canAttachSettlement } = useBasicPayoutAttachGate();
@@ -71,6 +73,8 @@ export function useSignSettlementsActions(
 	const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
 	const [amendDialogOpen, setAmendDialogOpen] = useState(false);
 	const [recallDialogOpen, setRecallDialogOpen] = useState(false);
+	const [clearSignaturesDialogOpen, setClearSignaturesDialogOpen] =
+		useState(false);
 	const [attachDialogOpen, setAttachDialogOpen] = useState(false);
 
 	const settlementRules = settlementsQuery.data ?? [];
@@ -157,6 +161,18 @@ export function useSignSettlementsActions(
 			} catch {}
 		},
 		[updateRuleTarget, updateSettlementRule],
+	);
+
+	const onConfirmClearEnvelopeSignatures = useCallback(
+		async (registryAddress?: `0x${string}` | null) => {
+			try {
+				await clearEnvelopeSignatures.mutateAsync({ registryAddress });
+				toast.success(
+					"Signatures cleared. Signers must acknowledge and sign again.",
+				);
+			} catch {}
+		},
+		[clearEnvelopeSignatures],
 	);
 
 	const onConfirmRecallEnvelope = useCallback(
@@ -297,6 +313,10 @@ export function useSignSettlementsActions(
 		setRecallDialogOpen,
 		onConfirmRecallEnvelope,
 		recallPending: recallEnvelope.isPending,
+		clearSignaturesDialogOpen,
+		setClearSignaturesDialogOpen,
+		onConfirmClearEnvelopeSignatures,
+		clearSignaturesPending: clearEnvelopeSignatures.isPending,
 		attachDialogOpen,
 		setAttachDialogOpen,
 		onConfirmAttachSettlement,

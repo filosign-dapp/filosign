@@ -111,6 +111,42 @@ export async function signRecallEnvelope(args: {
 	);
 }
 
+export async function signClearEnvelopeSignatures(args: {
+	wallet: FilosignWallet;
+	contracts: FilosignContracts;
+	pieceCid: string;
+	timestamp: number;
+	registryAddress?: Address | string | null;
+	recaller?: `0x${string}`;
+}): Promise<Hex> {
+	const recaller = args.recaller ?? args.wallet.account.address;
+	const cidIdentifier = computeCidIdentifier(args.pieceCid);
+	const registry = envelopeRegistryAt(args.contracts, args.registryAddress);
+
+	return withRegistryWalletActionLock(recaller, () =>
+		eip712signature(
+			args.contracts,
+			"FSEnvelopeRegistry",
+			{
+				types: {
+					ClearEnvelopeSignatures: [
+						{ name: "cidIdentifier", type: "bytes32" },
+						{ name: "recaller", type: "address" },
+						{ name: "timestamp", type: "uint256" },
+					],
+				},
+				primaryType: "ClearEnvelopeSignatures",
+				message: {
+					cidIdentifier,
+					recaller,
+					timestamp: BigInt(args.timestamp),
+				},
+			},
+			{ verifyingContract: registry.address },
+		),
+	);
+}
+
 export async function signLinkOrgWallet(args: {
 	wallet: FilosignWallet;
 	contracts: FilosignContracts;

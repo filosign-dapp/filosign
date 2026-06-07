@@ -1,16 +1,13 @@
 import {
 	ArrowClockwiseIcon,
 	ArrowCounterClockwiseIcon,
-	DownloadIcon,
 	MagnifyingGlassIcon,
 	MagnifyingGlassMinusIcon,
 	MagnifyingGlassPlusIcon,
-	PackageIcon,
-	ScrollIcon,
-	StackIcon,
 	XIcon,
 } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
+import { ProofDownloadButtonGroup } from "@/src/lib/domains/files/compliance-pdf";
 import {
 	EnvelopeCommentsBlock,
 	pieceDetailToDekSource,
@@ -36,7 +33,6 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 		handleDownload,
 		exportsAllowed,
 		handleDownloadCompliancePdf,
-		handleDownloadDocumentWithCompliancePdf,
 		handleDownloadCompletionPacket,
 	} = useFileViewer();
 
@@ -136,56 +132,15 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 					</div>
 
 					<div className="relative z-10 flex min-w-0 flex-1 items-center justify-end gap-1 @md:gap-2">
-						<Button
-							variant="ghost"
-							size="sm"
-							type="button"
-							onClick={handleDownload}
-							disabled={!fileData}
-							title="Download file"
-							className={toolbarBtnClass}
-						>
-							<DownloadIcon className={toolbarIconClass} />
-						</Button>
-						<Button
-							variant="ghost"
-							size="sm"
-							type="button"
-							onClick={() => void handleDownloadCompletionPacket()}
-							disabled={!fileData || !exportsAllowed || pdfExportBusy}
-							title={
-								exportsAllowed
-									? "Download proof packet (ZIP)"
-									: "Available when the envelope is fully executed"
-							}
-							className={toolbarBtnClass}
-						>
-							<PackageIcon className={toolbarIconClass} />
-						</Button>
-						<Button
-							variant="ghost"
-							size="sm"
-							type="button"
-							onClick={handleDownloadCompliancePdf}
-							disabled={!fileInfo || !exportsAllowed || pdfExportBusy}
-							title="Download proof report (PDF)"
-							className={toolbarBtnClass}
-						>
-							<ScrollIcon className={toolbarIconClass} />
-						</Button>
-						<Button
-							variant="ghost"
-							size="sm"
-							type="button"
-							onClick={handleDownloadDocumentWithCompliancePdf}
-							disabled={
-								!fileData || !fileInfo || !exportsAllowed || pdfExportBusy
-							}
-							title="Download document + proof appendix (PDF)"
-							className={toolbarBtnClass}
-						>
-							<StackIcon className={toolbarIconClass} />
-						</Button>
+						<ProofDownloadButtonGroup
+							density="toolbar"
+							exportsAllowed={exportsAllowed}
+							pdfExportBusy={pdfExportBusy}
+							fileDataReady={Boolean(fileData)}
+							handleDownload={handleDownload}
+							handleDownloadCompletionPacket={handleDownloadCompletionPacket}
+							handleDownloadCompliancePdf={handleDownloadCompliancePdf}
+						/>
 						<Button
 							variant="ghost"
 							size="sm"

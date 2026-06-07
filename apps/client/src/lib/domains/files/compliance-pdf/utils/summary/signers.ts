@@ -18,23 +18,12 @@ function buildSignedSignerDetailLines(
 			text: `   Public record time: ${new Date(s.blockTimestampFromTx * 1000).toISOString()}`,
 		});
 	}
-	if (s.completionsRoot) {
+	if (s.onchainTxHash && explorerBaseUrl) {
+		const txLink = explorerTxUrl(explorerBaseUrl, s.onchainTxHash);
 		lines.push({
-			text: `   Root: ${s.completionsRoot}`,
+			text: "   Recorded on public ledger",
+			linkUri: txLink,
 		});
-	}
-	if (s.onchainTxHash) {
-		lines.push({ text: `   Tx: ${s.onchainTxHash}` });
-		if (explorerBaseUrl) {
-			const txLink = explorerTxUrl(explorerBaseUrl, s.onchainTxHash);
-			lines.push({ text: `   Link: ${txLink}`, linkUri: txLink });
-		}
-	}
-	if (s.requestIp) {
-		lines.push({ text: `   IP: ${s.requestIp}` });
-	}
-	if (s.requestUserAgent) {
-		lines.push({ text: `   User agent: ${s.requestUserAgent}` });
 	}
 	return lines;
 }
@@ -57,8 +46,7 @@ function buildSignerIdentityLine(
 	const parts: string[] = [];
 	if (s.displayName) parts.push(s.displayName);
 	if (s.email) parts.push(s.email);
-	parts.push(s.wallet);
-	return parts.join(" / ");
+	return parts.join(" / ") || s.wallet;
 }
 
 export function buildSignerMatrixLines(
@@ -67,7 +55,7 @@ export function buildSignerMatrixLines(
 ): CompliancePdfLine[] {
 	const signerMatrix: CompliancePdfLine[] = [
 		{
-			text: "Use this section to confirm who signed and when each signature was recorded. Transaction details are available later for technical review.",
+			text: "Use this section to confirm who signed and when each signature was recorded.",
 			textStyle: "lead",
 		},
 		{ text: "" },

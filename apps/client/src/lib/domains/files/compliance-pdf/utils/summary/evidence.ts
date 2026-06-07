@@ -1,44 +1,6 @@
 import type { ComplianceBundle } from "@filosign/shared";
 import type { CompliancePdfLine } from "../../compliance-pdf-types";
 
-export function buildAckLines(bundle: ComplianceBundle): CompliancePdfLine[] {
-	const ackLines: CompliancePdfLine[] = [];
-	if (bundle.offChainEvidence.acknowledgements.length > 0) {
-		ackLines.push(
-			{
-				text: "These entries were signed with EIP-712 off-chain; they are not implied by a transaction hash alone. Verify signatures against the wallets and commitments shown.",
-				textStyle: "lead",
-			},
-			{ text: "" },
-			{
-				text: "Off-chain acknowledgements (EIP-712 validated; no chain tx):",
-				textStyle: "listHeading",
-			},
-			{ text: "" },
-		);
-		for (let i = 0; i < bundle.offChainEvidence.acknowledgements.length; i++) {
-			const a = bundle.offChainEvidence.acknowledgements[i];
-			ackLines.push({
-				text: `${i + 1}. Wallet ${a.wallet} acknowledged at ${a.acknowledgedAtIso}`,
-			});
-			ackLines.push({ text: `   intentVersion: ${a.intentVersion}` });
-			ackLines.push({ text: `   emailCommitment: ${a.emailCommitment}` });
-			if (a.authSubjectCommitment) {
-				ackLines.push({
-					text: `   authSubjectCommitment: ${a.authSubjectCommitment}`,
-				});
-			}
-			if (a.ackSha256) {
-				ackLines.push({ text: `   ackSha256: ${a.ackSha256}` });
-			}
-			if (i < bundle.offChainEvidence.acknowledgements.length - 1) {
-				ackLines.push({ text: "" });
-			}
-		}
-	}
-	return ackLines;
-}
-
 export function buildPayoutAckLines(
 	bundle: ComplianceBundle,
 ): CompliancePdfLine[] {
@@ -71,25 +33,59 @@ export function buildPayoutAckLines(
 	return payoutAckLines;
 }
 
-export function buildViewLines(bundle: ComplianceBundle): CompliancePdfLine[] {
-	const viewLines: CompliancePdfLine[] = [];
-	if (bundle.offChainEvidence.documentViews.length > 0) {
-		viewLines.push(
-			{
-				text: "These are recorded document open events. They show view activity separately from signatures or acknowledgements.",
-				textStyle: "lead",
-			},
-			{ text: "" },
-		);
-		for (let i = 0; i < bundle.offChainEvidence.documentViews.length; i++) {
-			const v = bundle.offChainEvidence.documentViews[i];
-			viewLines.push({
-				text: `${i + 1}. Wallet ${v.wallet} first opened ${v.firstViewedAtIso} (${v.source})`,
+function signerLabel(s: ComplianceBundle["signers"][number]): string {
+	return s.displayName?.trim() || s.email?.trim() || s.wallet;
+}
+
+export function buildSigningTimelineLines(
+	bundle: ComplianceBundle,
+): CompliancePdfLine[] {
+	type TimelineEvent = { at: string; text: string };
+	const events: TimelineEvent[] = [];
+
+	for (const signer of bundle.signers) {
+		const who = signerLabel(signer);
+		if (signer.acknowledgedAtIso) {
+			events.push({
+				at: signer.acknowledgedAtIso,
+				text: `${who} acknowledged the envelope`,
 			});
-			if (i < bundle.offChainEvidence.documentViews.length - 1) {
-				viewLines.push({ text: "" });
-			}
+		}
+		if (signer.firstViewedAtIso) {
+			events.push({
+				at: signer.firstViewedAtIso,
+				text: `${who} first viewed the document`,
+			});
+		}
+		if (signer.signed && signer.signedAtIso) {
+			events.push({
+				at: signer.signedAtIso,
+				text: `${who} signed`,
+			});
 		}
 	}
-	return viewLines;
+
+	if (events.length === 0) {
+		return [
+			{
+				text: "No timeline events were recorded in this export.",
+				textStyle: "emphasis",
+			},
+		];
+	}
+
+	events.sort((a, b) => a.at.localeCompare(b.at));
+
+	const lines: CompliancePdfLine[] = [
+		{
+			text: "Key moments in this workflow, in chronological order.",
+			textStyle: "lead",
+		},
+		{ text: "" },
+	];
+	for (let i = 0; i < events.length; i++) {
+		const event = events[i];
+		lines.push({ text: `${i + 1}. ${event.at} — ${event.text}` });
+	}
+	return lines;
 }

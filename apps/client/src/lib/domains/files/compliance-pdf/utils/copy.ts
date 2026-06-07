@@ -39,12 +39,12 @@ export function appendixGlossaryLine(
 
 export function buildAboutThisRecordLines(
 	bundle: ComplianceBundle,
-	explorerNote: string,
+	verifyWebUrl: string,
 	execPlain: string,
 ): ComplianceCopyLine[] {
 	const scope =
 		bundle.executionStatus === "fully_executed"
-			? "This proof report summarizes a completed Filosign workflow. It records who participated, what document was signed, when signatures were recorded, and whether payout packets or file-release events were attached."
+			? "This proof report summarizes a completed Filosign agreement workflow. It records who participated, what document was signed, when signatures were recorded, and whether payout packets or file-release events were attached."
 			: "This proof report summarizes a Filosign workflow that was not complete when exported. Some required signatures may be missing. Use the status section before relying on this record.";
 
 	return [
@@ -60,17 +60,56 @@ export function buildAboutThisRecordLines(
 			textStyle: "body",
 		},
 		{
-			text: "3. Use the technical verification sections only when a reviewer needs to inspect hashes, transactions, or public verification records.",
+			text: "3. Share this proof report alone when a reviewer only needs the signing record.",
 			textStyle: "body",
 		},
 		{
-			text: "4. This report is evidence of a workflow. It is not legal advice and does not decide whether a document is valid for your jurisdiction or use case.",
+			text: `4. To verify cryptographically, download the proof packet ZIP and use Filosign's independent verifier at ${verifyWebUrl}.`,
+			textStyle: "body",
+			linkUri: verifyWebUrl,
+		},
+		{
+			text: "5. This report is evidence of a workflow. It is not legal advice and does not decide whether a document is valid for your jurisdiction or use case.",
 			textStyle: "body",
 		},
 		{ text: "" },
 		{ text: execPlain, textStyle: "lead" },
+	];
+}
+
+export function buildIndependentVerificationLines(
+	verifyWebUrl: string,
+): ComplianceCopyLine[] {
+	return [
+		{
+			text: "Filosign provides an independent verifier for proof packets. You do not need to read technical files in the ZIP to check that the export matches the public ledger and your document bytes.",
+			textStyle: "lead",
+		},
 		{ text: "" },
-		{ text: explorerNote, textStyle: "emphasis" },
+		{ text: "Steps:", textStyle: "listHeading" },
+		{ text: "" },
+		{
+			text: "1. Keep your downloaded proof packet ZIP.",
+			textStyle: "body",
+		},
+		{
+			text: `2. Open ${verifyWebUrl}`,
+			textStyle: "body",
+			linkUri: verifyWebUrl,
+		},
+		{
+			text: "3. Drop the ZIP file on the page.",
+			textStyle: "body",
+		},
+		{ text: "" },
+		{
+			text: "The verifier checks export integrity, on-chain registration and signatures, and document bytes against the proof data in the packet.",
+			textStyle: "body",
+		},
+		{
+			text: "Technical verification files remain in the _proofs/ folder if you want to inspect them manually.",
+			textStyle: "emphasis",
+		},
 	];
 }
 

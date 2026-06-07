@@ -17,7 +17,6 @@ import type { ComplianceGlossaryEntry } from "./copy";
 import { embedComplianceLogo } from "./images";
 import {
 	buildCompliancePdfSummaryFromBundle,
-	COMPLIANCE_PDF_APPENDIX_SECTION_TITLE,
 } from "./summary/assemble";
 import { lineHeightAt, wrapLines } from "./text";
 
@@ -587,11 +586,7 @@ export async function drawComplianceReport(
 	// Tight leading to subtitle (not full body line-height - keeps meta line close to title)
 	ctx.y -= titleFont.heightAtSize(titleSize) * 0.92 + 2;
 
-	const subParts = [
-		options.chainName,
-		`chain id ${options.bundle.chainId}`,
-		`exported ${options.bundle.exportedAtIso}`,
-	];
+	const subParts = [options.chainName, `exported ${options.bundle.exportedAtIso}`];
 	ctx.page.drawText(subParts.join(" - "), {
 		x: PDF_M.margin,
 		y: ctx.y,
@@ -600,27 +595,6 @@ export async function drawComplianceReport(
 		color: PDF_BRAND.muted,
 	});
 	ctx.y -= lineHeightAt(ctx.fontBody, 9) + 10;
-
-	if (summary.explorerBaseUrl) {
-		const subText = `Block explorer: ${summary.explorerBaseUrl}`;
-		ctx.page.drawText(subText, {
-			x: PDF_M.margin,
-			y: ctx.y,
-			size: 9,
-			font: ctx.fontBody,
-			color: PDF_BRAND.link,
-		});
-		addUriLink(
-			ctx.page,
-			PDF_M.margin,
-			ctx.y,
-			subText,
-			9,
-			ctx.fontBody,
-			summary.explorerBaseUrl,
-		);
-		ctx.y -= lineHeightAt(ctx.fontBody, 9) + 8;
-	}
 
 	ctx.page.drawLine({
 		start: { x: PDF_M.margin, y: ctx.y },
@@ -710,18 +684,10 @@ export async function drawComplianceReport(
 
 	const proseSectionTitles = new Set([
 		"About this record",
-		COMPLIANCE_PDF_APPENDIX_SECTION_TITLE,
+		"How to verify independently",
 	]);
 
 	for (const section of summary.sections) {
-		// Appendix always begins after a page break unless we already sit just under the top margin
-		// (avoids an empty page when the prior section ended on a fresh continuation page).
-		if (
-			section.title === COMPLIANCE_PDF_APPENDIX_SECTION_TITLE &&
-			ctx.y < ctx.ph - PDF_M.margin - 40
-		) {
-			openContinuationPage(ctx);
-		}
 		const proseMode = proseSectionTitles.has(section.title);
 		const sectionTitleH = lineHeightAt(
 			ctx.fontSectionTitle,

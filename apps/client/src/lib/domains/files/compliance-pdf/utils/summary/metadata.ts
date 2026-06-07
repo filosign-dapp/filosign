@@ -17,82 +17,63 @@ export function buildExecPlain(
 		: "Incomplete - at least one required signer had not recorded a signature when this report was exported.";
 }
 
-export function buildExplorerNote(explorerBaseUrl: string | null): string {
-	const hasExplorerLinks = Boolean(explorerBaseUrl);
-	return hasExplorerLinks
-		? "Transaction links appear in the technical verification section for reviewers who need them."
-		: "No block explorer is configured for this network. Technical reviewers can still use the network ID and transaction hashes provided later in this report.";
-}
-
 type SummaryFieldsInput = {
 	bundle: ComplianceBundle;
-	bundleHash: `0x${string}`;
-	exportId: string;
 	chainName: string;
-	explorerBaseUrl: string | null;
-	documentSha256?: string;
+	decryptedDocumentMeta?: CompliancePdfBundleOptions["decryptedDocumentMeta"];
 };
 
+function formatSenderLabel(bundle: ComplianceBundle): string {
+	const senderParty = bundle.parties.find((party) => party.role === "sender");
+	if (!senderParty) {
+		return bundle.registration.sender;
+	}
+	const name = senderParty.displayName?.trim();
+	if (name && senderParty.email) {
+		return `${name} (${senderParty.email})`;
+	}
+	return senderParty.email || senderParty.wallet;
+}
+
+function formatDocumentNames(
+	decryptedDocumentMeta: CompliancePdfBundleOptions["decryptedDocumentMeta"],
+): string {
+	if (!decryptedDocumentMeta?.name?.trim()) {
+		return "(unnamed document)";
+	}
+	return decryptedDocumentMeta.name.trim();
+}
+
+function formatSignersSigned(bundle: ComplianceBundle): string {
+	const total = bundle.signers.length;
+	const signed = bundle.signers.filter((signer) => signer.signed).length;
+	return `${signed} of ${total}`;
+}
+
 export function buildSummaryFields(input: SummaryFieldsInput) {
-	const {
-		bundle,
-		bundleHash,
-		exportId,
-		chainName,
-		explorerBaseUrl,
-		documentSha256,
-	} = input;
+	const { bundle, chainName, decryptedDocumentMeta } = input;
 
-	const regTxLink =
-		explorerBaseUrl && bundle.registration.registrationTxHash
-			? explorerTxUrl(explorerBaseUrl, bundle.registration.registrationTxHash)
-			: null;
-
-	const fields: Array<{
-		label: string;
-		value: string;
-		linkUri?: string | null;
-	}> = [
+	return [
 		{
 			label: "Workflow status",
 			value:
 				bundle.executionStatus === "fully_executed" ? "Complete" : "Incomplete",
 		},
 		{ label: "Generated", value: bundle.exportedAtIso },
-		{ label: "Sender wallet", value: bundle.registration.sender },
-		{ label: "Network", value: `${chainName} (${bundle.chainId})` },
-		{ label: "Export ID", value: exportId },
-		{ label: "Proof export hash", value: bundleHash },
-		{ label: "Document storage ID", value: bundle.pieceCid },
 		{
-			label: "Registration tx",
-			value: bundle.registration.registrationTxHash,
+			label: "Document",
+			value: formatDocumentNames(decryptedDocumentMeta),
 		},
+		{
+			label: "Sender",
+			value: formatSenderLabel(bundle),
+		},
+		{
+			label: "Required signers signed",
+			value: formatSignersSigned(bundle),
+		},
+		{ label: "Network", value: chainName },
 	];
-
-	const registerHash =
-		bundle.registration.registerDocumentSha256 ?? documentSha256;
-	if (registerHash) {
-		fields.push({
-			label: "Document verification root",
-			value: registerHash,
-		});
-		fields.push({
-			label: "Document verification method",
-			value:
-				"Root over document hashes. Technical reviewers can use the proof packet JSON to verify individual files.",
-		});
-	}
-
-	if (regTxLink) {
-		fields.push({
-			label: "Registration explorer link",
-			value: regTxLink,
-			linkUri: regTxLink,
-		});
-	}
-
-	return fields;
 }
 
 export function buildDocumentMetaLines(
@@ -120,7 +101,7 @@ export function buildDocumentMetaLines(
 			]
 		: [
 				{
-					text: "Document bytes were not available in this session. The proof report still reflects the recorded workflow status and verification anchors.",
+					text: "Document bytes were not available in this session. The proof report still reflects the recorded workflow status.",
 					textStyle: "emphasis",
 				},
 			];

@@ -16,6 +16,7 @@
 		"test": "bun run scripts/test.ts",
 		"check": "bun run scripts/check.ts",
 		"sanity": "bun run scripts/sanity.ts",
+		"sync:email-assets": "bun run scripts/sync-email-assets.ts",
 		"purge": "./scripts/shell/purge.sh",
 		"prepare": "husky"
 	},
@@ -78,6 +79,7 @@
 		"@biomejs/biome": "catalog:",
 		"@types/bun": "catalog:",
 		"@types/node": "catalog:",
+		"esbuild-9780dd1354b6ff29": "npm:esbuild@0.28.0",
 		"husky": "9.1.7",
 		"prettier": "catalog:",
 		"turbo": "2.9.14",

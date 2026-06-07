@@ -52,6 +52,7 @@
 | `db` | `db.ts` | Drizzle purge/push via server |
 | `contracts` | `contracts.ts` | Hardhat + deploy/migrate |
 | `purge` | `shell/purge.sh` | rm all `node_modules` + `bun.lock` |
+| `sync:email-assets` | `sync-email-assets.ts` | Vendor react-email demo decorative assets into `apps/astro/public/emails/` (6 whitelisted files) |
 
 **Env profiles:** `local` → `.env.local` · server `staging`/`sandbox`/`production` → Infisical · client staging/sandbox → `.env.staging` / `.env.sandbox` · contracts testnet/mainnet → `apps/contracts/.env.staging` / `.env.production`. See [`project/launch/environments.md`](project/launch/environments.md) and [`apps/server/SECRETS.md`](apps/server/SECRETS.md).
 

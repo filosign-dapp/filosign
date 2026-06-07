@@ -1,14 +1,19 @@
 import {
 	documentSharedSubject,
+	type FilosignTransactionalEmailKind,
+	partnerInviteSubject,
 	renderAccessRequestApproved,
 	renderCheckoutContinue,
 	renderDocumentShared,
 	renderEnvelopeCompleted,
 	renderPaidSetup,
+	renderPartnerInvite,
+	replyToForTransactionalEmail,
 } from "@filosign/emails";
 import type { Address } from "viem";
 import env from "@/env";
 import { deliverOutboundEmail } from "./email";
+import { recipientDisplayNameFromEmail } from "./recipient-name";
 import { buildEmailIdempotencyKey, escapeHtml, getClientUrl } from "./utils";
 
 /**
@@ -47,6 +52,7 @@ async function deliverEmail(args: {
 	text: string;
 	html: string;
 	idempotencySegments: string[];
+	kind: FilosignTransactionalEmailKind;
 }) {
 	await deliverOutboundEmail({
 		from: env.RESEND_FROM_EMAIL,
@@ -54,7 +60,7 @@ async function deliverEmail(args: {
 		subject: args.subject,
 		text: args.text,
 		html: args.html,
-		replyTo: env.RESEND_FROM_EMAIL,
+		replyTo: replyToForTransactionalEmail(args.kind),
 		idempotencyKey: buildEmailIdempotencyKey(args.idempotencySegments),
 	});
 }
@@ -106,6 +112,7 @@ export async function sendDocumentSharedEmail(args: {
 		subject,
 		text,
 		html,
+		kind: "document",
 		idempotencySegments: [
 			args.idempotencyPrefix,
 			args.to.trim().toLowerCase(),
@@ -180,6 +187,7 @@ export async function sendEnvelopeCompletedEmail(args: {
 		subject,
 		text,
 		html,
+		kind: "envelope_completed",
 		idempotencySegments: [
 			"envelope-completed",
 			args.to.trim().toLowerCase(),
@@ -208,6 +216,7 @@ export async function sendCheckoutContinueEmail(args: {
 		subject,
 		text,
 		html,
+		kind: "checkout_continue",
 		idempotencySegments: [
 			"checkout-continue",
 			args.to.trim().toLowerCase(),
@@ -236,10 +245,53 @@ export async function sendPaidSetupEmail(args: {
 		subject,
 		text,
 		html,
+		kind: "paid_setup",
 		idempotencySegments: [
 			"paid-setup",
 			args.to.trim().toLowerCase(),
 			args.setupUrl,
+		],
+	});
+}
+
+export async function sendPartnerInviteEmail(args: {
+	to: string;
+	inviteUrl: string;
+	planLabel: string;
+	trialDays: number;
+	workflowLabel?: string | null;
+}) {
+	if (shouldSkipEmail()) return;
+
+	const email = args.to.trim().toLowerCase();
+	const recipientNameRaw = recipientDisplayNameFromEmail(email);
+	const escapedRecipientName = escapeHtml(recipientNameRaw);
+	const escapedPlanLabel = escapeHtml(args.planLabel);
+	const escapedWorkflowLabel = args.workflowLabel?.trim()
+		? escapeHtml(args.workflowLabel.trim())
+		: undefined;
+
+	const subject = partnerInviteSubject(recipientNameRaw);
+
+	const { html, text } = await renderPartnerInvite({
+		recipientName: escapedRecipientName,
+		planLabel: escapedPlanLabel,
+		trialDays: args.trialDays,
+		ctaHref: args.inviteUrl,
+		workflowLabel: escapedWorkflowLabel,
+	});
+
+	await deliverEmail({
+		to: email,
+		subject,
+		text,
+		html,
+		kind: "partner_invite",
+		idempotencySegments: [
+			"partner-invite",
+			email,
+			args.inviteUrl,
+			escapedWorkflowLabel ?? "",
 		],
 	});
 }
@@ -266,6 +318,7 @@ export async function sendAccessRequestApprovedEmail(args: {
 		subject,
 		text,
 		html,
+		kind: "access_approved",
 		idempotencySegments: [
 			"access-approved",
 			args.to.trim().toLowerCase(),

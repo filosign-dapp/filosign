@@ -5,11 +5,7 @@ import {
 	type DocumentSharedVariant,
 	documentSharedCopy,
 } from "../src/copy/document-shared";
-import {
-	documentSharedBodyClassName,
-	resolveDocumentSharedTheme,
-	resolveDocumentSharedThemeId,
-} from "./_themes/resolve-document-shared-theme";
+import { ActivationLayout } from "./_themes/barebone/activation-layout";
 
 export type {
 	DocumentSharedContext,
@@ -36,6 +32,9 @@ const disclaimer = (
 	</>
 );
 
+const bodyClassName =
+	"font-16 text-fg-2 mx-auto mt-0 mb-8 max-w-[380px] text-center font-sans";
+
 export default function DocumentSharedEmail({
 	senderLabel,
 	ctaHref,
@@ -52,12 +51,8 @@ export default function DocumentSharedEmail({
 		documentTitle,
 	});
 
-	const themeId = resolveDocumentSharedThemeId({ variant, intent, context });
-	const Layout = resolveDocumentSharedTheme({ variant, intent, context });
-	const bodyClassName = documentSharedBodyClassName(themeId);
-
 	return (
-		<Layout
+		<ActivationLayout
 			title={copy.title}
 			preheader={copy.preheader}
 			ctaHref={ctaHref}
@@ -65,7 +60,7 @@ export default function DocumentSharedEmail({
 			disclaimer={disclaimer}
 		>
 			<Text className={bodyClassName}>{copy.body}</Text>
-		</Layout>
+		</ActivationLayout>
 	);
 }
 

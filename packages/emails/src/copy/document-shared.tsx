@@ -20,10 +20,10 @@ export type DocumentSharedCopy = {
 	ctaLabel: string;
 };
 
-const coldPassphraseNote = (
+const coldAccessCodeNote = (
 	<>
-		This document is passphrase protected. Open the link below, then enter the
-		six-word code they share with you separately (not in this email).
+		This document requires a secure access code. Open the link below, then enter
+		the code the sender shares with you separately (not in this email).
 	</>
 );
 
@@ -50,7 +50,7 @@ function draftReviewBody(
 				<>
 					<br />
 					<br />
-					{coldPassphraseNote}
+					{coldAccessCodeNote}
 				</>
 			) : null}
 		</>
@@ -95,8 +95,8 @@ function signColdBody(
 
 	return (
 		<>
-			{intro} This document is passphrase protected. Open the link below, then
-			enter the six-word code they share with you separately (not in this
+			{intro} This document requires a secure access code. Open the link below,
+			then enter the code the sender shares with you separately (not in this
 			email).
 		</>
 	);
@@ -132,7 +132,7 @@ export function documentSharedCopy(
 			title: "Review a draft",
 			preheader:
 				variant === "cold"
-					? "Passphrase protected draft. Open the link, then enter the code from the sender."
+					? "Secure access required. Open the link, then enter the code from the sender."
 					: "Review and comment before the document is sent for signature.",
 			body: draftReviewBody(senderLabel, documentTitle, variant),
 			ctaLabel: "Review draft",
@@ -148,8 +148,8 @@ export function documentSharedCopy(
 					: "You have a new document",
 			preheader:
 				intent === "reminder"
-					? "Your signature is still needed. You will need the passphrase from the sender."
-					: "Passphrase protected. Open the link, then enter the code from the sender.",
+					? "Your signature is still needed. You will need the access code from the sender."
+					: "Secure access required. Open the link, then enter the code from the sender.",
 			body: signColdBody(senderLabel, intent),
 			ctaLabel: "Open document",
 		};

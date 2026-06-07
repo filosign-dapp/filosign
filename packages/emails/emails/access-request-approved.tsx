@@ -1,5 +1,5 @@
 import { Text } from "@react-email/components";
-import { StudioLayout } from "./_themes/studio/layout";
+import { ActivationLayout } from "./_themes/barebone/activation-layout";
 
 export type AccessRequestApprovedEmailProps = {
 	/** Pre-escaped plan label */
@@ -14,17 +14,18 @@ export default function AccessRequestApprovedEmail({
 	ctaHref,
 }: AccessRequestApprovedEmailProps) {
 	return (
-		<StudioLayout
+		<ActivationLayout
 			title="Access approved"
-			preheader={`Start your ${trialDays}-day ${planLabel} trial on Filosign.`}
+			preheader={`Your ${trialDays}-day ${planLabel} trial is ready. Set up your account to get started.`}
 			ctaHref={ctaHref}
-			ctaLabel="Start your trial"
+			ctaLabel="Set up your account"
+			contactChannel="hello"
 		>
-			<Text className="font-14 text-fg-2 m-0 max-w-[480px] font-sans leading-6">
-				Your request for Filosign access was approved. Open the link below to
-				start your {trialDays}-day <strong>{planLabel}</strong> trial.
+			<Text className="font-16 text-fg-2 mx-auto mt-0 mb-8 max-w-[380px] text-center font-sans">
+				Your request for Filosign access was approved. Set up your account below
+				to start your {trialDays}-day <strong>{planLabel}</strong> trial.
 			</Text>
-		</StudioLayout>
+		</ActivationLayout>
 	);
 }
 

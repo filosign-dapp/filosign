@@ -1,5 +1,6 @@
 import { Text } from "@react-email/components";
-import { BareboneLayout } from "./_themes/barebone/layout";
+import { filosignEmailAssets } from "../src/email-assets";
+import { WelcomeLayout } from "./_themes/barebone/welcome-layout";
 
 export type PaidSetupEmailProps = {
 	/** Pre-escaped plan label */
@@ -12,18 +13,19 @@ export default function PaidSetupEmail({
 	ctaHref,
 }: PaidSetupEmailProps) {
 	return (
-		<BareboneLayout
+		<WelcomeLayout
 			title="Finish setting up Filosign"
-			preheader={`Your ${planLabel} subscription is active. Create your wallet to get started.`}
+			preheader={`Your ${planLabel} subscription is active. Finish setting up your account to get started.`}
 			ctaHref={ctaHref}
-			ctaLabel="Finish setup"
+			ctaLabel="Finish account setup"
+			contactChannel="hello"
+			heroImage={filosignEmailAssets.barebone.paidSetupHero}
 		>
-			<Text className="font-16 text-fg-2 mx-auto mt-0 mb-8 max-w-[480px] text-center font-sans leading-7">
-				Your <strong>{planLabel}</strong> subscription is active. Create your
-				Filosign wallet to start sending and signing documents. If you already
-				completed setup, use the same link to sign in.
+			<Text className="font-16 text-fg-2 m-0 font-sans">
+				Your <strong>{planLabel}</strong> subscription is active. Finish setting
+				up your Filosign account to start sending and signing documents.
 			</Text>
-		</BareboneLayout>
+		</WelcomeLayout>
 	);
 }
 

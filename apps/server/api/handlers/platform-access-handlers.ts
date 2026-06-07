@@ -2,6 +2,7 @@ import type { PlanId } from "@filosign/entitlements";
 import { PLAN_IDS } from "@filosign/entitlements";
 import type { Address } from "viem";
 import { z } from "zod";
+import env from "@/env";
 import {
 	approveAccessRequest,
 	canStartEmailAuth,
@@ -9,6 +10,8 @@ import {
 	listAccessRequestsForAdmin,
 	listPlatformInvites,
 	listPlatformUsersForAdmin,
+	normalizeEmail,
+	planLabel,
 	previewColdRecipientGate,
 	previewPaidSetup,
 	previewPlatformInvite,
@@ -23,6 +26,7 @@ import {
 	assertPlatformAdmin,
 	isPlatformAdminForWallet,
 } from "@/lib/platform/admin";
+import { sendPartnerInviteEmail } from "@/lib/platform/email";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 export const zGatePreviewOutput = z.object({
@@ -166,6 +170,17 @@ export async function platformAdminInvitesCreate(
 		note: parsed.data.note,
 	});
 
+	if (invite.kind === "partner_trial" && invite.email) {
+		const inviteUrl = `${env.CLIENT_URL.replace(/\/$/, "")}/?platformInvite=${encodeURIComponent(invite.token)}`;
+		await sendPartnerInviteEmail({
+			to: normalizeEmail(invite.email),
+			inviteUrl,
+			planLabel: planLabel(invite.planId as PlanId),
+			trialDays: invite.trialDays,
+			workflowLabel: invite.note,
+		});
+	}
+
 	return {
 		id: invite.id,
 		token: invite.token,
@@ -203,6 +218,18 @@ export async function platformAdminInvitesRebook(
 		adminWallet,
 		inviteId: parsedId.data,
 	});
+
+	if (invite.kind === "partner_trial" && invite.email) {
+		const inviteUrl = `${env.CLIENT_URL.replace(/\/$/, "")}/?platformInvite=${encodeURIComponent(invite.token)}`;
+		await sendPartnerInviteEmail({
+			to: normalizeEmail(invite.email),
+			inviteUrl,
+			planLabel: planLabel(invite.planId as PlanId),
+			trialDays: invite.trialDays,
+			workflowLabel: invite.note,
+		});
+	}
+
 	return {
 		id: invite.id,
 		token: invite.token,

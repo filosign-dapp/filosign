@@ -27,35 +27,22 @@ export const filosignEmailAssets = {
 		get email() {
 			return emailAssetUrl("/icons/mail.svg");
 		},
+		get x() {
+			return emailAssetUrl("/icons/x.svg");
+		},
 		get website() {
 			return emailAssetUrl("/icons/globe.svg");
 		},
 	},
-	collage: {
-		get hero1() {
-			return themeAssetUrl("collage/collage-image-1.png");
+	barebone: {
+		get hero() {
+			return themeAssetUrl("barebones/barebones-image.png");
 		},
-	},
-	dither: {
-		get hero1() {
-			return themeAssetUrl("dither/dither-image-1.png");
+		get paidSetupHero() {
+			return emailAssetUrl("/images/stock_12.webp");
 		},
-	},
-	skin: {
-		get hero1() {
-			return themeAssetUrl("skin/skin-image-1.png");
-		},
-	},
-	tech: {
-		get hero1() {
-			return themeAssetUrl("tech/tech-image.png");
-		},
-	},
-	shared: {
-		socialX(dark: boolean) {
-			return themeAssetUrl(
-				dark ? "shared/social-x-black.png" : "shared/social-x-white.png",
-			);
+		get partnerInviteHero() {
+			return emailAssetUrl("/images/stock_11.webp");
 		},
 	},
 };

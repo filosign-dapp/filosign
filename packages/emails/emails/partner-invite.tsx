@@ -1,5 +1,7 @@
 import { Text } from "@react-email/components";
-import { ArcaneLayout } from "./_themes/arcane/layout";
+import { partnerInviteCopy } from "../src/copy/partner-invite";
+import { filosignEmailAssets } from "../src/email-assets";
+import { WelcomeLayout } from "./_themes/barebone/welcome-layout";
 
 export type PartnerInviteEmailProps = {
 	/** Pre-escaped recipient display name */
@@ -8,7 +10,9 @@ export type PartnerInviteEmailProps = {
 	planLabel: string;
 	trialDays: number;
 	ctaHref: string;
-	/** Pre-escaped optional personal message from the Filosign team */
+	/** Pre-escaped pilot workflow name (e.g. from platform_invites.note) */
+	workflowLabel?: string;
+	/** Pre-escaped optional founder note shown below the body */
 	personalMessage?: string;
 };
 
@@ -17,38 +21,36 @@ export default function PartnerInviteEmail({
 	planLabel,
 	trialDays,
 	ctaHref,
+	workflowLabel,
 	personalMessage,
 }: PartnerInviteEmailProps) {
-	const title = "You're invited to Filosign";
-	const preheader = `Start your ${trialDays}-day ${planLabel} trial.`;
+	const copy = partnerInviteCopy({
+		recipientName,
+		planLabel,
+		trialDays,
+		workflowLabel,
+	});
 
 	return (
-		<ArcaneLayout
-			title={title}
-			preheader={preheader}
+		<WelcomeLayout
+			title={copy.title}
+			preheader={copy.preheader}
 			ctaHref={ctaHref}
-			ctaLabel="Start your trial"
-			disclaimer={
-				<>
-					If you weren&apos;t expecting this invite,
-					<br />
-					you can ignore this email.
-				</>
-			}
+			ctaLabel={copy.ctaLabel}
+			footnote={copy.footnote}
+			contactChannel="founder"
+			heroImage={filosignEmailAssets.barebone.partnerInviteHero}
 		>
-			<Text className="font-14 text-fg-2 m-0 max-w-[480px] font-sans leading-6">
-				Hi <strong>{recipientName}</strong>, you&apos;ve been invited to try
-				Filosign on <strong>{planLabel}</strong> for {trialDays} days.
-			</Text>
+			<Text className="font-16 text-fg-2 m-0 font-sans">{copy.body}</Text>
 			{personalMessage ? (
-				<Text className="font-14 text-fg-2 border-stroke m-0 mt-6 max-w-[480px] border-l-2 pl-4 font-serif leading-7 italic">
+				<Text className="font-16 text-fg-2 border-stroke mx-auto mt-6 mb-0 max-w-[380px] border-l-2 pl-4 text-left font-sans leading-6 italic">
 					{personalMessage}
 				</Text>
 			) : null}
-			<Text className="font-14 text-fg-3 m-0 mt-6 max-w-[480px] font-sans leading-6">
-				Use the link below to create your account and open your workspace.
+			<Text className="font-16 text-fg-2 mt-6 mb-0 font-sans">
+				{copy.signOff}
 			</Text>
-		</ArcaneLayout>
+		</WelcomeLayout>
 	);
 }
 
@@ -57,6 +59,6 @@ PartnerInviteEmail.PreviewProps = {
 	planLabel: "Teams Pro",
 	trialDays: 30,
 	ctaHref: "https://app.filosign.com/?platformInvite=example",
-	personalMessage:
-		"We loved your application and would like you to try Filosign.",
+	workflowLabel: "milestone approval before contributor release",
+	personalMessage: "",
 } satisfies PartnerInviteEmailProps;

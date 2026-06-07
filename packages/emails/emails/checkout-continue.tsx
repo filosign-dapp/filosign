@@ -1,5 +1,5 @@
-import { Section, Text } from "@react-email/components";
-import { MatteLayout } from "./_themes/matte/layout";
+import { Text } from "@react-email/components";
+import { SubscriptionConfirmationLayout } from "./_themes/barebone/subscription-confirmation-layout";
 
 export type CheckoutContinueEmailProps = {
 	/** Pre-escaped plan label */
@@ -12,12 +12,23 @@ export default function CheckoutContinueEmail({
 	ctaHref,
 }: CheckoutContinueEmailProps) {
 	return (
-		<MatteLayout
+		<SubscriptionConfirmationLayout
 			title="Complete your purchase"
 			preheader="Your checkout link is ready. It expires in 24 hours."
 			ctaHref={ctaHref}
 			ctaLabel="Continue to checkout"
+			contactChannel="hello"
 			footnote="This link expires in 24 hours."
+			summaryRow={
+				<>
+					<Text className="font-13 text-fg-3 m-0 font-sans uppercase tracking-wide">
+						Plan
+					</Text>
+					<Text className="font-24 text-fg m-0 mt-1 font-sans">
+						{planLabel}
+					</Text>
+				</>
+			}
 			disclaimer={
 				<>
 					If you did not request this,
@@ -26,18 +37,11 @@ export default function CheckoutContinueEmail({
 				</>
 			}
 		>
-			<Text className="font-14 text-fg-2 m-0 max-w-[480px] font-sans leading-6">
+			<Text className="font-16 text-fg-2 mx-auto mt-0 mb-8 max-w-[380px] text-center font-sans">
 				You started a Filosign subscription. Use the button below to finish
 				checkout.
 			</Text>
-
-			<Section className="border-stroke mt-6 border-t pt-6">
-				<Text className="font-11 text-fg-3 m-0 font-sans uppercase tracking-wide">
-					Plan
-				</Text>
-				<Text className="font-20 text-fg m-0 mt-1 font-sans">{planLabel}</Text>
-			</Section>
-		</MatteLayout>
+		</SubscriptionConfirmationLayout>
 	);
 }
 

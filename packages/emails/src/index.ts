@@ -1,7 +1,22 @@
 export {
 	FILOSIGN_FOOTER_LINKS,
 	FILOSIGN_FOOTER_TAGLINE,
+	filosignFooterLinks,
 } from "./constants";
+export {
+	FILOSIGN_CONTACT_EMAILS,
+	FILOSIGN_TRANSACTIONAL_EMAIL_CHANNELS,
+	type FilosignContactEmail,
+	type FilosignTransactionalEmailKind,
+	filosignContactEmail,
+	filosignMailto,
+	replyToForTransactionalEmail,
+} from "./contact-emails";
+export {
+	type PartnerInviteCopyInput,
+	partnerInviteCopy,
+	partnerInviteSubject,
+} from "./copy/partner-invite";
 export {
 	emailAssetUrl,
 	filosignEmailAssets,

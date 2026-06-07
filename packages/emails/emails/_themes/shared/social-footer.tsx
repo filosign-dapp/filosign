@@ -1,24 +1,23 @@
 import { Column, Img, Link, Row, Section, Text } from "@react-email/components";
 import {
-	FILOSIGN_FOOTER_LINKS,
 	FILOSIGN_FOOTER_TAGLINE,
+	filosignFooterLinks,
 } from "../../../src/constants";
+import type { FilosignContactEmail } from "../../../src/contact-emails";
 import { filosignEmailAssets } from "../../../src/email-assets";
 
 type SocialFooterProps = {
-	/** Use white icons on dark backgrounds */
-	lightIcons?: boolean;
 	className?: string;
 	taglineClassName?: string;
+	contactChannel?: FilosignContactEmail;
 };
 
 export function SocialFooter({
-	lightIcons = false,
 	className = "bg-bg",
 	taglineClassName = "font-13 text-fg-3 mx-auto mt-0 mb-8 max-w-[320px] text-center font-sans",
+	contactChannel = "contract",
 }: SocialFooterProps) {
-	const xIcon = filosignEmailAssets.shared.socialX(!lightIcons);
-
+	const footerLinks = filosignFooterLinks(contactChannel);
 	return (
 		<Section className={className}>
 			<Row>
@@ -28,7 +27,7 @@ export function SocialFooter({
 						<Row align="center">
 							<Column align="center" className="w-1/3">
 								<Link
-									href={FILOSIGN_FOOTER_LINKS.email.href}
+									href={footerLinks.email.href}
 									className="inline-block no-underline"
 								>
 									<Img
@@ -42,11 +41,11 @@ export function SocialFooter({
 							</Column>
 							<Column align="center" className="w-1/3">
 								<Link
-									href={FILOSIGN_FOOTER_LINKS.x.href}
+									href={footerLinks.x.href}
 									className="inline-block no-underline"
 								>
 									<Img
-										src={xIcon}
+										src={filosignEmailAssets.icons.x}
 										alt=""
 										width={18}
 										height={18}
@@ -56,7 +55,7 @@ export function SocialFooter({
 							</Column>
 							<Column align="center" className="w-1/3">
 								<Link
-									href={FILOSIGN_FOOTER_LINKS.website.href}
+									href={footerLinks.website.href}
 									className="inline-block no-underline"
 								>
 									<Img

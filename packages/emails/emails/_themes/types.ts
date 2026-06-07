@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { FilosignContactEmail } from "../../src/contact-emails";
 
 export type EmailLayoutProps = {
 	preheader: string;
@@ -8,12 +9,16 @@ export type EmailLayoutProps = {
 	title?: ReactNode;
 	footnote?: ReactNode;
 	disclaimer?: ReactNode;
-	heroImage?: string;
+	/** Footer mail icon + implied reply routing */
+	contactChannel?: FilosignContactEmail;
 };
 
-export type EmailThemeId =
-	| "barebone"
-	| "matte"
-	| "protocol"
-	| "arcane"
-	| "studio";
+export type WelcomeLayoutProps = EmailLayoutProps & {
+	eyebrow?: ReactNode;
+	heroImage?: string;
+	secondarySections?: ReactNode;
+};
+
+export type SubscriptionLayoutProps = EmailLayoutProps & {
+	summaryRow?: ReactNode;
+};

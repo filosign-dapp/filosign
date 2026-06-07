@@ -15,7 +15,9 @@ export {
 	sendDraftReviewInviteEmail,
 	sendEnvelopeCompletedEmail,
 	sendPaidSetupEmail,
+	sendPartnerInviteEmail,
 } from "./invites";
+export { recipientDisplayNameFromEmail } from "./recipient-name";
 export {
 	buildEmailIdempotencyKey,
 	type EmailDeliveryProvider,

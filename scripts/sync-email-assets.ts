@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 /**
- * Sync React Email demo decorative assets into apps/astro/public/emails/.
+ * Sync React Email 01-Barebone decorative assets into apps/astro/public/emails/.
  *
- * Source: https://github.com/resend/react-email (MIT) apps/demo/emails/static
+ * Source: https://github.com/resend/react-email (MIT) apps/demo/emails/static/barebones
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -11,15 +11,8 @@ const REPO = "resend/react-email";
 const BRANCH = "canary";
 const STATIC_PREFIX = "apps/demo/emails/static";
 
-/** Only assets referenced by production email templates. */
-const WHITELIST = [
-	"collage/collage-image-1.png",
-	"dither/dither-image-1.png",
-	"skin/skin-image-1.png",
-	"tech/tech-image.png",
-	"shared/social-x-white.png",
-	"shared/social-x-black.png",
-] as const;
+/** Barebones hero used by welcome-layout. */
+const WHITELIST = ["barebones/barebones-image.png"] as const;
 
 const ROOT = join(import.meta.dir, "..");
 const TARGET = join(ROOT, "apps/astro/public/emails");
@@ -38,7 +31,7 @@ async function downloadFile(relativePath: string): Promise<void> {
 
 async function main(): Promise<void> {
 	console.info(
-		`Downloading ${WHITELIST.length} react-email demo assets to apps/astro/public/emails/…`,
+		`Downloading ${WHITELIST.length} barebones asset(s) to apps/astro/public/emails/…`,
 	);
 	for (const file of WHITELIST) {
 		await downloadFile(file);

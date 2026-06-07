@@ -34,6 +34,8 @@ type Props = {
 	cancelPending?: boolean;
 	updatePending?: boolean;
 	signingStarted?: boolean;
+	/** Omit duplicate heading when wrapped in SignSidebar.Section. */
+	hideSectionHeader?: boolean;
 };
 
 function explorerTxUrl(hash: string) {
@@ -61,6 +63,7 @@ export function SettlementStatusPanel({
 	cancelPending,
 	updatePending,
 	signingStarted = false,
+	hideSectionHeader = false,
 }: Props) {
 	if (rules.length === 0) return null;
 
@@ -68,11 +71,17 @@ export function SettlementStatusPanel({
 	const settlePending = trySettlePending || manualSettlePending;
 
 	return (
-		<div className="pt-4 border-t border-border space-y-3">
+		<div
+			className={
+				hideSectionHeader ? "space-y-3" : "space-y-3 border-t border-border pt-4"
+			}
+		>
 			<div className="space-y-1">
-				<h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-					Attached payouts ({rules.length})
-				</h4>
+				{hideSectionHeader ? null : (
+					<h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+						Attached payouts ({rules.length})
+					</h4>
+				)}
 				{isSender ? (
 					<p className="text-xs text-muted-foreground">
 						USDC stays in your wallet until each payout runs. We send it

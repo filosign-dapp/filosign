@@ -20,7 +20,7 @@ export function SignHeaderSignedStatus() {
 				<CheckCircleIcon className="size-3.5 text-chart-2" weight="fill" />
 				Signed
 			</Badge>
-			{signedTxExplorerUrl ? (
+			{signedTxExplorerUrl && (
 				<a
 					href={signedTxExplorerUrl}
 					target="_blank"
@@ -30,10 +30,6 @@ export function SignHeaderSignedStatus() {
 					{explorerLabel}
 					<ArrowSquareOutIcon className="size-3.5" />
 				</a>
-			) : (
-				<span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-					On-chain proof recorded
-				</span>
 			)}
 		</>
 	);

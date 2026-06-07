@@ -1,13 +1,8 @@
-import {
-	ArrowLeftIcon,
-	DownloadIcon,
-	FileArrowDownIcon,
-	PackageIcon,
-	ScrollIcon,
-} from "@phosphor-icons/react";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
 import { Button } from "@/src/lib/components/ui/button";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
+import { ProofDownloadButtonGroup } from "@/src/lib/domains/files/compliance-pdf";
 import { SignPageEnvelopeCommentsBlock } from "@/src/lib/domains/files/envelope-comments-block";
 import { SignHeaderRotateInviteButton } from "@/src/routes/dashboard/document/sign/-components/header/rotate-invite-button";
 import { SignHeaderSettlementStrip } from "@/src/routes/dashboard/document/sign/-components/header/settlement-strip";
@@ -31,7 +26,6 @@ export function SignHeaderDesktop() {
 		exportsAllowed,
 		handleDownload,
 		handleDownloadCompliancePdf,
-		handleDownloadDocumentWithCompliancePdf,
 		handleDownloadCompletionPacket,
 	} = useSignCompliance();
 
@@ -73,52 +67,14 @@ export function SignHeaderDesktop() {
 
 				<div className="flex items-center gap-3">
 					<SignPageEnvelopeCommentsBlock file={file} />
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={handleDownload}
-						disabled={!fileData}
-						className="text-muted-foreground hover:text-foreground hover:bg-accent/50 h-8 w-8 p-0"
-						title="Download file"
-					>
-						<FileArrowDownIcon className="size-5" />
-					</Button>
-					{exportsAllowed ? (
-						<Button
-							variant="ghost"
-							size="sm"
-							onClick={() => void handleDownloadCompletionPacket()}
-							disabled={!fileData || pdfExportBusy}
-							className="text-muted-foreground hover:text-foreground hover:bg-accent/50 h-8 w-8 p-0"
-							title="Download proof packet (ZIP)"
-						>
-							<PackageIcon className="size-5" />
-						</Button>
-					) : null}
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={handleDownloadCompliancePdf}
-						disabled={!exportsAllowed || pdfExportBusy}
-						className="text-muted-foreground hover:text-foreground hover:bg-accent/50 h-8 w-8 p-0"
-						title={
-							exportsAllowed
-								? "Download proof report"
-								: "Available when fully executed"
-						}
-					>
-						<ScrollIcon className="size-5" />
-					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={handleDownloadDocumentWithCompliancePdf}
-						disabled={!fileData || !exportsAllowed || pdfExportBusy}
-						className="text-muted-foreground hover:text-foreground hover:bg-accent/50 h-8 w-8 p-0"
-						title="Download document with proof appendix"
-					>
-						<DownloadIcon className="size-5" />
-					</Button>
+					<ProofDownloadButtonGroup
+						exportsAllowed={exportsAllowed}
+						pdfExportBusy={pdfExportBusy}
+						fileDataReady={Boolean(fileData)}
+						handleDownload={handleDownload}
+						handleDownloadCompletionPacket={handleDownloadCompletionPacket}
+						handleDownloadCompliancePdf={handleDownloadCompliancePdf}
+					/>
 					<SignHeaderRotateInviteButton variant="comfortable" />
 				</div>
 

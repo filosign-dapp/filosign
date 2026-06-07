@@ -1,6 +1,7 @@
-import { ArrowLeftIcon, DownloadIcon } from "@phosphor-icons/react";
+import { ArrowLeftIcon } from "@phosphor-icons/react";
 import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
 import { Button } from "@/src/lib/components/ui/button";
+import { ProofDownloadButtonGroup } from "@/src/lib/domains/files/compliance-pdf";
 import { SignPageEnvelopeCommentsBlock } from "@/src/lib/domains/files/envelope-comments-block";
 import { SignHeaderRotateInviteButton } from "@/src/routes/dashboard/document/sign/-components/header/rotate-invite-button";
 import { SignHeaderSettlementStrip } from "@/src/routes/dashboard/document/sign/-components/header/settlement-strip";
@@ -30,8 +31,13 @@ export function SignHeaderMobile() {
 		clearPlacementField,
 		isFieldComplete,
 	} = useSignPlacement();
-	const { pdfExportBusy, handleDownloadDocumentWithCompliancePdf } =
-		useSignCompliance();
+	const {
+		pdfExportBusy,
+		exportsAllowed,
+		handleDownload,
+		handleDownloadCompliancePdf,
+		handleDownloadCompletionPacket,
+	} = useSignCompliance();
 
 	return (
 		<div className="md:hidden">
@@ -69,16 +75,15 @@ export function SignHeaderMobile() {
 						onClearField={clearPlacementField}
 					/>
 					<SignPageEnvelopeCommentsBlock file={file} />
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={handleDownloadDocumentWithCompliancePdf}
-						disabled={!fileData || pdfExportBusy}
-						className="text-muted-foreground hover:text-foreground hover:bg-accent/50 h-8 w-8 p-0"
-						title="Download document with proof appendix"
-					>
-						<DownloadIcon className="size-5" />
-					</Button>
+					<ProofDownloadButtonGroup
+						density="compact"
+						exportsAllowed={exportsAllowed}
+						pdfExportBusy={pdfExportBusy}
+						fileDataReady={Boolean(fileData)}
+						handleDownload={handleDownload}
+						handleDownloadCompletionPacket={handleDownloadCompletionPacket}
+						handleDownloadCompliancePdf={handleDownloadCompliancePdf}
+					/>
 					<SignHeaderRotateInviteButton variant="compact" />
 					<SignHeaderSignButton label="Sign" density="compact" />
 				</div>

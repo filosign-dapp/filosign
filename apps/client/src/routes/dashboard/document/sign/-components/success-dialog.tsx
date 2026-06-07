@@ -1,4 +1,4 @@
-import { DownloadIcon, ScrollIcon } from "@phosphor-icons/react";
+import { PackageIcon } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Dialog,
@@ -27,16 +27,18 @@ export function SignSuccessDialog({
 		pdfExportBusy,
 		exportsAllowed,
 		handleDownloadCompletionPacket,
-		handleDownloadCompliancePdf,
-		handleDownloadDocumentWithCompliancePdf,
 	} = useSignCompliance();
 
-	const downloadButtonClass =
-		"h-auto w-full shrink whitespace-normal justify-start gap-3 py-3";
-
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="sm:max-w-md">
+		<Dialog
+			open={open}
+			onOpenChange={(next) => {
+				if (next) {
+					onOpenChange(true);
+				}
+			}}
+		>
+			<DialogContent className="sm:max-w-md" showCloseButton={false}>
 				<DialogHeader>
 					<DialogTitle className="flex items-center gap-2">
 						Document signed
@@ -47,62 +49,39 @@ export function SignSuccessDialog({
 							: "Your signature was recorded. Proof exports unlock when every required party has signed."}
 					</DialogDescription>
 				</DialogHeader>
-				<div className="flex flex-col gap-2 py-2">
-					{exportsAllowed ? (
+				{exportsAllowed ? (
+					<div className="py-2">
 						<Button
 							type="button"
-							variant="outline"
-							className={downloadButtonClass}
+							variant="primary"
+							className="h-auto w-full shrink whitespace-normal justify-start gap-3 py-3"
 							onClick={() => void handleDownloadCompletionPacket()}
-							disabled={pdfExportBusy}
+							disabled={!fileData || pdfExportBusy}
+							isLoading={pdfExportBusy}
 						>
-							<DownloadIcon className="size-5 shrink-0" />
+							<PackageIcon className="size-5 shrink-0" />
 							<span className="min-w-0 text-left">
-								<span className="block font-medium">Proof packet (ZIP)</span>
-								<span className="block text-xs text-muted-foreground font-normal">
+								<span className="block font-medium">Download proof packet</span>
+								<span className="block text-xs font-normal opacity-90">
 									Full archive with the document, proof report, README, and
 									verification data
 								</span>
 							</span>
 						</Button>
-					) : null}
-					<Button
-						type="button"
-						variant="outline"
-						className={downloadButtonClass}
-						onClick={() => void handleDownloadCompliancePdf()}
-						disabled={!exportsAllowed || pdfExportBusy}
-					>
-						<ScrollIcon className="size-5 shrink-0" />
-						<span className="min-w-0 text-left">
-							<span className="block font-medium">Proof report only</span>
-							<span className="block text-xs text-muted-foreground font-normal">
-								Best for legal, finance, grant, or internal review
-							</span>
-						</span>
-					</Button>
-					<Button
-						type="button"
-						variant="outline"
-						className={downloadButtonClass}
-						onClick={() => void handleDownloadDocumentWithCompliancePdf()}
-						disabled={!fileData || !exportsAllowed || pdfExportBusy}
-					>
-						<DownloadIcon className="size-5 shrink-0" />
-						<span className="min-w-0 text-left">
-							<span className="block font-medium">
-								Document with proof appendix
-							</span>
-							<span className="block text-xs text-muted-foreground font-normal">
-								Best when you want the signed document and proof in one PDF
-							</span>
-						</span>
-					</Button>
-				</div>
-				{exportsAllowed ? (
-					<DocsLink href={DOCS_LINKS.completionPacket()}>
-						What is in the proof packet?
-					</DocsLink>
+						<div className="mt-3 flex flex-col gap-2 text-sm">
+							<DocsLink href={DOCS_LINKS.completionPacket()}>
+								What is in the proof packet?
+							</DocsLink>
+							<a
+								href={DOCS_LINKS.verifyProofPacket()}
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-primary underline-offset-4 hover:underline"
+							>
+								Verify a proof packet independently
+							</a>
+						</div>
+					</div>
 				) : null}
 				<DialogFooter>
 					<Button

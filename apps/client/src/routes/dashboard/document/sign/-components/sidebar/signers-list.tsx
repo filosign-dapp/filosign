@@ -7,6 +7,8 @@ import {
 import { defaultChain } from "@/src/constants";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
 import { cn } from "@/src/lib/utils";
+import { SignSidebarSignersProgress } from "@/src/routes/dashboard/document/sign/-components/sidebar/signers-progress";
+import type { EnvelopeProgressLike } from "@/src/routes/dashboard/document/sign/-lib/utils/envelope-progress-display";
 
 type SignerRow =
 	| string
@@ -23,6 +25,8 @@ export function SignSidebarSignersList({
 	signerAddress,
 	formatAddress,
 	loading,
+	envelopeProgress,
+	canSignByRouting,
 }: {
 	signers: SignerRow[];
 	signatures:
@@ -32,9 +36,19 @@ export function SignSidebarSignersList({
 	signerAddress: string | null | undefined;
 	formatAddress: (address: string) => string;
 	loading?: boolean;
+	envelopeProgress?: EnvelopeProgressLike | null;
+	canSignByRouting?: boolean;
 }) {
+	const showProgress = signers.length > 0;
+
 	return (
 		<div className="space-y-4">
+			{showProgress ? (
+				<SignSidebarSignersProgress
+					progress={envelopeProgress}
+					canSignByRouting={canSignByRouting}
+				/>
+			) : null}
 			<div className="space-y-2">
 				{loading
 					? Array.from({ length: 2 }).map((_, i) => (

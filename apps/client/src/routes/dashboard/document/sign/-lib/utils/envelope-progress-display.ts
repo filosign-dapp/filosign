@@ -28,42 +28,27 @@ export function envelopeProgressPercent(
 	return Math.min(100, Math.round((signedCount / totalSigners) * 100));
 }
 
-export function buildEnvelopeProgressLines(
+/** Context lines for the signers card (counts live on the bar and signer rows). */
+export function buildEnvelopeProgressContextLines(
 	progress: EnvelopeProgressLike,
 	canSignByRouting?: boolean,
 ): string[] {
-	const {
-		routingMode,
-		requiredSignaturesCount,
-		requiredSignersCount,
-		quorumN,
-		nextSignerEmail,
-	} = progress;
+	const { routingMode, requiredSignersCount, quorumN, nextSignerEmail } =
+		progress;
 
 	const lines: string[] = [];
-	if (progress.revokedBeforeCompletedAt) {
-		lines.push("This envelope was voided on-chain before completion.");
-		return lines;
-	}
 	if (progress.completedAt) {
 		lines.push("This envelope is complete on-chain.");
 		return lines;
 	}
 
-	if (requiredSignersCount > 0) {
-		const countLine = `${requiredSignaturesCount} of ${requiredSignersCount} signers have signed.`;
-		if (routingMode === 1) {
-			if (canSignByRouting === false) {
-				lines.push(
-					`${countLine} You'll sign after everyone ahead of you in the signing order.`,
-				);
-			} else if (nextSignerEmail) {
-				lines.push(`${countLine} ${nextSignerEmail} is next.`);
-			} else {
-				lines.push(countLine);
-			}
-		} else {
-			lines.push(countLine);
+	if (requiredSignersCount > 0 && routingMode === 1) {
+		if (canSignByRouting === false) {
+			lines.push(
+				"You'll sign after everyone ahead of you in the signing order.",
+			);
+		} else if (nextSignerEmail) {
+			lines.push(`${nextSignerEmail} is next.`);
 		}
 	}
 

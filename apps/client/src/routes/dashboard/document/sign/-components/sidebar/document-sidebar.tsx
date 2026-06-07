@@ -66,15 +66,7 @@ export function SignDocumentSidebar() {
 				<SignSidebar.FieldsChecklist {...fieldsChecklistProps} />
 			</SignSidebar.Section>
 
-			<SignSidebar.EnvelopeProgress
-				progress={envelopeProgress}
-				canSignByRouting={canSignByRouting}
-			/>
-
-			<SignSidebar.Section
-				title="Signers"
-				description="Envelope signing status."
-			>
+			<SignSidebar.Section title="Signers">
 				<SignSidebar.SignersList
 					signers={signers}
 					signatures={file?.signatures}
@@ -82,6 +74,8 @@ export function SignDocumentSidebar() {
 					signerAddress={signerAddress}
 					formatAddress={formatAddress}
 					loading={!file}
+					envelopeProgress={envelopeProgress}
+					canSignByRouting={canSignByRouting}
 				/>
 			</SignSidebar.Section>
 
@@ -90,6 +84,34 @@ export function SignDocumentSidebar() {
 					This envelope was voided on-chain and can no longer be signed.
 				</p>
 			) : null}
+
+			{settlements.rules.length > 0 ? (
+				<SignSidebar.Section title="Attached payouts">
+					<SettlementStatusPanel
+						rules={settlements.rules}
+						formatAddress={formatAddress}
+						isSender={isSender}
+						walletAddress={settlements.walletAddress}
+						canSettleByRuleId={settlements.canSettleByRuleId}
+						trySettlePending={settlements.trySettlePending}
+						manualSettlePending={settlements.manualSettlePending}
+						settlingRuleId={settlements.settlingRuleId}
+						onTrySettleRule={settlements.onTrySettleRule}
+						onManualSettleRule={settlements.onManualSettleRule}
+						revokePending={settlements.revokePending}
+						onRevokeAllowance={settlements.onRevokeAllowance}
+						canManageSettlements={settlements.canManageSettlements}
+						onCancelRule={settlements.onCancelRule}
+						onUpdateRule={settlements.onUpdateRule}
+						cancelPending={settlements.cancelPending}
+						updatePending={settlements.updatePending}
+						signingStarted={signingStarted}
+						hideSectionHeader
+					/>
+				</SignSidebar.Section>
+			) : null}
+
+			<SupplementaryPacketsSignPanel />
 
 			<SignSidebar.CollapsibleSection
 				title="More details"
@@ -152,29 +174,6 @@ export function SignDocumentSidebar() {
 						signingStarted={signingStarted}
 					/>
 				) : null}
-
-				<SupplementaryPacketsSignPanel />
-
-				<SettlementStatusPanel
-					rules={settlements.rules}
-					formatAddress={formatAddress}
-					isSender={isSender}
-					walletAddress={settlements.walletAddress}
-					canSettleByRuleId={settlements.canSettleByRuleId}
-					trySettlePending={settlements.trySettlePending}
-					manualSettlePending={settlements.manualSettlePending}
-					settlingRuleId={settlements.settlingRuleId}
-					onTrySettleRule={settlements.onTrySettleRule}
-					onManualSettleRule={settlements.onManualSettleRule}
-					revokePending={settlements.revokePending}
-					onRevokeAllowance={settlements.onRevokeAllowance}
-					canManageSettlements={settlements.canManageSettlements}
-					onCancelRule={settlements.onCancelRule}
-					onUpdateRule={settlements.onUpdateRule}
-					cancelPending={settlements.cancelPending}
-					updatePending={settlements.updatePending}
-					signingStarted={signingStarted}
-				/>
 
 				{file?.viewers && file.viewers.length > 0 ? (
 					<SignSidebar.SignersList

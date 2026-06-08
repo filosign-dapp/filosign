@@ -9,6 +9,7 @@ export const CACHE_TTL = {
 	orgMember: 10 * 60,
 	userExists: 10 * 60,
 	orgTemplates: 5 * 60,
+	notificationsInbox: 30,
 } as const;
 
 export const cacheKeys = {
@@ -20,4 +21,6 @@ export const cacheKeys = {
 		`fs:org:member:${orgId}:${getAddress(wallet)}`,
 	userExists: (wallet: Address) => `fs:user:exists:${getAddress(wallet)}`,
 	orgTemplates: (orgId: string) => `fs:org-templates:${orgId}`,
+	notificationsInbox: (wallet: Address, limit: number) =>
+		`fs:notifications:inbox:${getAddress(wallet)}:${limit}`,
 } as const;

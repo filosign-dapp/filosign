@@ -13,6 +13,7 @@ import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
 import { inviteExpiresAt } from "@/lib/domains/invites";
 import type { ActiveOrgContext } from "@/lib/domains/orgs";
+import { invalidateNotificationsInbox } from "@/lib/platform/cache/invalidate";
 import db from "@/lib/platform/db";
 import type { PendingNewSignerJson } from "@/lib/platform/db/schema/file";
 import {
@@ -474,6 +475,10 @@ export async function filesProposeSignerReplacement(
 		});
 	});
 
+	if (newSignerE2ee.kind === "warm") {
+		await invalidateNotificationsInbox(newSignerE2ee.wallet);
+	}
+
 	return {
 		txHash: txHash.data,
 		pending: chainPending,
@@ -573,6 +578,10 @@ export async function filesExecuteSignerReplacement(
 			})
 			.where(eq(fileSignerAmendments.id, pendingRow.id));
 	});
+
+	if (pendingE2ee.kind === "warm") {
+		await invalidateNotificationsInbox(pendingE2ee.wallet);
+	}
 
 	return { txHash: txHash.data };
 }

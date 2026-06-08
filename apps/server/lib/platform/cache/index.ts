@@ -11,6 +11,7 @@ export {
 	type EntitlementCacheInvalidation,
 	flushEntitlementCacheInvalidation,
 	invalidateEntitlementsForFileSend,
+	invalidateNotificationsInbox,
 	invalidateOnMembershipChange,
 	invalidateOrgEntitlements,
 	invalidateOrgMember,

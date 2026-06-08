@@ -3,6 +3,7 @@ import { LEAF_SCHEMA_VERSION_V1 } from "@filosign/shared";
 import { eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { copyArtifactToEnvelopeSnapshot } from "@/lib/domains/users/signatures";
+import { invalidateNotificationsInbox } from "@/lib/platform/cache/invalidate";
 import db from "@/lib/platform/db";
 
 const { fileFieldCompletions, fileSignatures, userSignatures } = db.schema;
@@ -83,4 +84,6 @@ export async function persistPieceSignRecords(args: {
 			.values(snapshotRows)
 			.onConflictDoNothing();
 	}
+
+	await invalidateNotificationsInbox(args.signerWallet);
 }

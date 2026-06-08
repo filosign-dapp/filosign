@@ -5,6 +5,7 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import type { ActiveOrgContext } from "@/lib/domains/orgs";
+import { invalidateNotificationsInbox } from "@/lib/platform/cache/invalidate";
 import db from "@/lib/platform/db";
 import { fsEnvelopeRegistryAt, relayRecallEnvelope } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
@@ -12,7 +13,7 @@ import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { assertRecallerMayRelay } from "./recall-auth";
 import { cancelPendingSignerAmendmentsForPiece } from "./signer-replacement";
 
-const { files, fileColdInvites } = db.schema;
+const { files, fileColdInvites, fileParticipants } = db.schema;
 
 export { assertRecallerMayRelay } from "./recall-auth";
 
@@ -114,6 +115,14 @@ export async function filesRecallEnvelope(
 
 		await cancelPendingSignerAmendmentsForPiece(tx, pieceCid);
 	});
+
+	const participants = await db
+		.select({ wallet: fileParticipants.wallet })
+		.from(fileParticipants)
+		.where(eq(fileParticipants.filePieceCid, pieceCid));
+	await Promise.all(
+		participants.map((row) => invalidateNotificationsInbox(row.wallet)),
+	);
 
 	return {
 		txHash: txRes.data,

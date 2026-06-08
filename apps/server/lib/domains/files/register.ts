@@ -30,7 +30,10 @@ import {
 	userActivationOnRealEnvelopeSent,
 	userActivationRecordPracticePiece,
 } from "@/lib/domains/users";
-import { invalidateEntitlementsForFileSend } from "@/lib/platform/cache";
+import {
+	invalidateEntitlementsForFileSend,
+	invalidateNotificationsInbox,
+} from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { fsContracts } from "@/lib/platform/evm";
 import { withRegistryWalletLock } from "@/lib/platform/evm/registry-wallet-lock";
@@ -354,6 +357,12 @@ export async function filesRegister(
 
 	if (!isPractice) {
 		await invalidateEntitlementsForFileSend({ sender, organizationId });
+		const senderNorm = getAddress(sender);
+		await Promise.all(
+			participantWallets
+				.filter((w) => getAddress(w).toLowerCase() !== senderNorm.toLowerCase())
+				.map((w) => invalidateNotificationsInbox(w)),
+		);
 	}
 
 	if (outboxRows.length > 0) {

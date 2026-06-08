@@ -10,6 +10,11 @@ export function useClaimColdInvite() {
 			inviteToken: string;
 			kemCiphertext: `0x${string}`;
 			encryptedEncryptionKey: `0x${string}`;
+			attachmentWraps?: {
+				packetId: string;
+				kemCiphertext: `0x${string}`;
+				encryptedPacketDek: `0x${string}`;
+			}[];
 		}) => {
 			if (!isAuthed) throw new Error("Not authenticated");
 
@@ -20,6 +25,15 @@ export function useClaimColdInvite() {
 					encryptedEncryptionKey: zHexString().parse(
 						args.encryptedEncryptionKey,
 					),
+					...(args.attachmentWraps
+						? {
+								attachmentWraps: args.attachmentWraps.map((w) => ({
+									packetId: w.packetId,
+									kemCiphertext: zHexString().parse(w.kemCiphertext),
+									encryptedPacketDek: zHexString().parse(w.encryptedPacketDek),
+								})),
+							}
+						: {}),
 				},
 			});
 		},

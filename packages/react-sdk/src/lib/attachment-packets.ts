@@ -6,12 +6,15 @@ import {
 	randomBytes,
 	toBytes,
 	toHex,
+	unwrapPassphraseDek,
 	wrapPassphraseDek,
 } from "@filosign/crypto-utils";
 import {
 	type AttachmentPacketSendInput,
 	base64ToUint8,
+	inferSupplementaryAttachmentMimeType,
 	normalizePlacementRecipientEmail,
+	sanitizeSupplementaryAttachmentFileName,
 	sha256PlaintextHex,
 	zAttachmentPacketPlaintext,
 } from "@filosign/shared";
@@ -47,13 +50,17 @@ export async function encryptAttachmentPacket(args: {
 	packetDek: Uint8Array;
 }> {
 	const files = await Promise.all(
-		args.packet.files.map(async (f) => ({
-			id: f.id,
-			name: f.name,
-			mimeType: f.mimeType,
-			sha256Plaintext: await sha256PlaintextHex(f.bytes),
-			bytesB64: uint8ToBase64(f.bytes),
-		})),
+		args.packet.files.map(async (f) => {
+			const name = sanitizeSupplementaryAttachmentFileName(f.name);
+			const mimeType = inferSupplementaryAttachmentMimeType(f.mimeType);
+			return {
+				id: f.id,
+				name,
+				mimeType,
+				sha256Plaintext: await sha256PlaintextHex(f.bytes),
+				bytesB64: uint8ToBase64(f.bytes),
+			};
+		}),
 	);
 	const plaintextObj = zAttachmentPacketPlaintext.parse({
 		version: 1,
@@ -161,4 +168,16 @@ export async function wrapAttachmentPacketDekForCold(args: {
 			info: attachmentPacketDekWrapInfo(args.packetId),
 		}),
 	);
+}
+
+export async function unwrapAttachmentPacketDekForCold(args: {
+	packetId: string;
+	wrappedPacketDek: Hex;
+	phrase: string;
+}): Promise<Uint8Array> {
+	return unwrapPassphraseDek({
+		wrappedEncryptionKey: toBytes(args.wrappedPacketDek),
+		phrase: args.phrase,
+		info: attachmentPacketDekWrapInfo(args.packetId),
+	});
 }

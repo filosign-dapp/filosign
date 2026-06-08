@@ -124,6 +124,6 @@ describe("ComplianceBundle", () => {
 	});
 
 	it("COMPLIANCE_CHAIN_TX_KINDS covers all lifecycle labels", () => {
-		expect(COMPLIANCE_CHAIN_TX_KINDS.length).toBe(5);
+		expect(COMPLIANCE_CHAIN_TX_KINDS.length).toBe(9);
 	});
 });

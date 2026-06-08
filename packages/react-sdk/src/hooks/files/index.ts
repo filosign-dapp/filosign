@@ -3,7 +3,11 @@ export type {
 	SettlementRuleCancelInput,
 	SettlementRuleUpdateInput,
 } from "@filosign/shared";
-export type { AttachmentPacketDraft } from "../../lib/attachment-packets";
+export {
+	type AttachmentPacketDraft,
+	decryptAttachmentPacketAccess,
+	unwrapAttachmentPacketDekForCold,
+} from "../../lib/attachment-packets";
 export {
 	type BasicPayoutGate,
 	type BasicPayoutGateReason,

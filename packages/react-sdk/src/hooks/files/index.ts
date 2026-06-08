@@ -17,6 +17,7 @@ export {
 	canUseAdvancedSettlements,
 	canUseBasicSettlements,
 	canUseConditionalAttachmentRelease,
+	canUseMetadataTags,
 	canUseSupplementaryAttachments,
 	resolveBasicPayoutGate,
 } from "../../lib/entitlements";
@@ -72,16 +73,13 @@ export type {
 } from "./useFileInfo";
 export * from "./useFileInfo";
 export * from "./useManualSettlementPayout";
-export * from "./useOrgFiles";
 export * from "./useProposeSignerReplacement";
 export * from "./useRecallEnvelope";
-export * from "./useReceivedFiles";
 export * from "./useRecordDocumentView";
 export * from "./useRegenerateColdInvite";
 export * from "./useRemindSigners";
 export * from "./useRevokeSettlementAllowance";
 export * from "./useSendFile";
-export * from "./useSentFiles";
 export * from "./useSettlementsListByFile";
 export * from "./useSignDraft";
 export * from "./useSignFile";

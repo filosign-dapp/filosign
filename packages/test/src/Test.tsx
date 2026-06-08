@@ -5,12 +5,11 @@ import {
 	useLogin,
 	useLogout,
 } from "@filosign/react/auth";
+import { useDocumentsList } from "@filosign/react/documents";
 import {
 	useAckFile,
 	useFileInfo,
-	useReceivedFiles,
 	useSendFile,
-	useSentFiles,
 	useSignFile,
 	useViewFile,
 } from "@filosign/react/files";
@@ -501,16 +500,19 @@ function TestFileSend(props: { notify: NotifierFn }) {
 }
 
 function ShowReceivedFiles() {
-	const receivedFiles = useReceivedFiles();
+	const receivedFiles = useDocumentsList({ tab: "received" });
 
 	const fileList = useMemo(() => {
-		if (!receivedFiles.data?.length) return null;
-		return receivedFiles.data.map((file) => (
-			<li key={file.pieceCid.toString()}>
-				<ReceivedFileItem pieceCid={file.pieceCid} />
-			</li>
-		));
-	}, [receivedFiles.data]);
+		const rows = receivedFiles.data?.items ?? [];
+		if (rows.length === 0) return null;
+		return rows
+			.filter((row) => row.kind === "envelope")
+			.map((file) => (
+				<li key={file.id}>
+					<ReceivedFileItem pieceCid={file.id} />
+				</li>
+			));
+	}, [receivedFiles.data?.items]);
 
 	return (
 		<section
@@ -545,7 +547,7 @@ function ShowReceivedFiles() {
 				</p>
 			)}
 
-			{receivedFiles.data && receivedFiles.data.length === 0 && (
+			{receivedFiles.data && receivedFiles.data.items.length === 0 && (
 				<p className="text-muted-foreground italic">No received files.</p>
 			)}
 
@@ -725,16 +727,19 @@ const ReceivedFileItem = memo(function ReceivedFileItem(props: {
 });
 
 function ShowSentFiles() {
-	const sentFiles = useSentFiles();
+	const sentFiles = useDocumentsList({ tab: "sent" });
 
 	const fileList = useMemo(() => {
-		if (!sentFiles.data?.length) return null;
-		return sentFiles.data.map((file) => (
-			<li key={file.pieceCid.toString()}>
-				<SentFileItem pieceCid={file.pieceCid} />
-			</li>
-		));
-	}, [sentFiles.data]);
+		const rows = sentFiles.data?.items ?? [];
+		if (rows.length === 0) return null;
+		return rows
+			.filter((row) => row.kind === "envelope")
+			.map((file) => (
+				<li key={file.id}>
+					<SentFileItem pieceCid={file.id} />
+				</li>
+			));
+	}, [sentFiles.data?.items]);
 
 	return (
 		<section
@@ -769,7 +774,7 @@ function ShowSentFiles() {
 				</p>
 			)}
 
-			{sentFiles.data && sentFiles.data.length === 0 && (
+			{sentFiles.data && sentFiles.data.items.length === 0 && (
 				<p className="text-muted-foreground italic">No sent files.</p>
 			)}
 

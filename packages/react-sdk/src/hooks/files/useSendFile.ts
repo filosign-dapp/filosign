@@ -1,7 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { invalidateEntitlements } from "../../lib/invalidate-entitlements";
-import { invalidateActivationProgress } from "../../lib/invalidate-queries";
+import {
+	invalidateActivationProgress,
+	invalidateDocumentsList,
+} from "../../lib/invalidate-queries";
 import { sendFile } from "../../lib/send-file/send-file";
 import type { SendFileArgs } from "../../lib/send-file/types";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
@@ -42,14 +45,7 @@ export function useSendFile() {
 				args,
 			);
 
-			void queryClient.invalidateQueries({
-				queryKey: rpcQuery.files.list.sent.key(),
-			});
-			if (args.organizationId) {
-				void queryClient.invalidateQueries({
-					queryKey: rpcQuery.files.list.org.key(),
-				});
-			}
+			void invalidateDocumentsList(queryClient, rpcQuery);
 			if (args.isPractice) {
 				void invalidateActivationProgress(queryClient, rpcQuery);
 			} else {

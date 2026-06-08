@@ -2,6 +2,7 @@ import { hashOrgIdCommitment, ZERO_ORG_ID_COMMITMENT } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { latestChainTimestamp } from "../../lib/chain-time";
+import { invalidateDocumentsAndNotifications } from "../../lib/invalidate-queries";
 import { signRecallEnvelope } from "../../lib/signatures";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 
@@ -54,6 +55,7 @@ export function useRecallEnvelope(pieceCid: string | undefined) {
 			});
 		},
 		onSuccess: () => {
+			void invalidateDocumentsAndNotifications(queryClient, rpcQuery);
 			void queryClient.invalidateQueries({
 				queryKey: rpcQuery.files.key(),
 			});

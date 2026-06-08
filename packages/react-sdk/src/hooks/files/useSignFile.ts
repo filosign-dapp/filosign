@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { latestChainTimestamp } from "../../lib/chain-time";
-import { invalidateInboxQueries } from "../../lib/invalidate-queries";
+import { invalidateDocumentsAndNotifications } from "../../lib/invalidate-queries";
 import {
 	type SignFileArgs,
 	signFileWithSeed,
@@ -48,7 +48,7 @@ export function useSignFile() {
 			return success;
 		},
 		onSuccess: (_data, variables) => {
-			void invalidateInboxQueries(queryClient, rpcQuery);
+			void invalidateDocumentsAndNotifications(queryClient, rpcQuery);
 			if (variables.pieceCid) {
 				void queryClient.invalidateQueries({
 					queryKey: rpcQuery.files.piece.detail.key({

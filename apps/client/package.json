@@ -43,6 +43,7 @@
 		"@tanstack/react-form": "1.29.1",
 		"@tanstack/react-query": "catalog:",
 		"@tanstack/react-router": "1.169.2",
+		"@tanstack/react-virtual": "catalog:",
 		"browser-image-compression": "catalog:",
 		"buffer": "^6.0.3",
 		"class-variance-authority": "0.7.1",

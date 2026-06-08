@@ -35,7 +35,11 @@ export function useDraftDelete() {
 			if (isActiveDraft) {
 				clearCreateForm();
 				if (window.location.pathname.includes("/envelope/create/add-sign")) {
-					void navigate({ to: "/dashboard/drafts", replace: true });
+					void navigate({
+						to: "/dashboard/document/all",
+						search: { tab: "drafts" },
+						replace: true,
+					});
 				}
 			}
 			toast.success("Draft deleted");

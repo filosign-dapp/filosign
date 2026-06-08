@@ -1,25 +1,112 @@
-import { ChatCircleIcon } from "@phosphor-icons/react";
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import {
+	ChatCircleIcon,
+	PaperPlaneRightIcon,
+	PencilSimpleIcon,
+	TrashIcon,
+} from "@phosphor-icons/react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppEmptyState } from "@/src/lib/components/app/empty-state";
-import { Button } from "@/src/lib/components/ui/button";
+import {
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuTrigger,
+} from "@/src/lib/components/ui/context-menu";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
-import { Label } from "@/src/lib/components/ui/label";
-import { Textarea } from "@/src/lib/components/ui/textarea";
-import { showAppErrorToast } from "@/src/lib/errors";
-import { cn, truncateAddress } from "@/src/lib/utils/utils";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupButton,
+	InputGroupTextarea,
+} from "@/src/lib/components/ui/input-group";
+import { cn } from "@/src/lib/utils/utils";
 
-const commentTimeFormatter = new Intl.DateTimeFormat(undefined, {
-	month: "short",
-	day: "numeric",
+const COMMENT_GROUP_MS = 5 * 60 * 1000;
+
+const commentClockFormatter = new Intl.DateTimeFormat(undefined, {
 	hour: "numeric",
 	minute: "2-digit",
 });
+
+function commentDayOrdinal(day: number): string {
+	if (day % 10 === 1 && day !== 11) return `${day}st`;
+	if (day % 10 === 2 && day !== 12) return `${day}nd`;
+	if (day % 10 === 3 && day !== 13) return `${day}rd`;
+	return `${day}th`;
+}
+
+function formatCommentDayLabel(date: Date): string {
+	const weekday = new Intl.DateTimeFormat(undefined, {
+		weekday: "long",
+	}).format(date);
+	const month = new Intl.DateTimeFormat(undefined, { month: "long" }).format(
+		date,
+	);
+	return `${weekday}, ${month} ${commentDayOrdinal(date.getDate())}`;
+}
+
+function commentDayKey(iso: string): string {
+	return new Date(iso).toDateString();
+}
+
+function isSameCommentAuthor(a: E2eeCommentRow, b: E2eeCommentRow): boolean {
+	if (a.authorWallet && b.authorWallet) {
+		return a.authorWallet.toLowerCase() === b.authorWallet.toLowerCase();
+	}
+	return commentAuthorLabel(a) === commentAuthorLabel(b);
+}
+
+function isCompactCommentGroup(
+	prev: E2eeCommentRow,
+	current: E2eeCommentRow,
+): boolean {
+	if (!isSameCommentAuthor(prev, current)) return false;
+	const elapsed =
+		new Date(current.createdAt).getTime() - new Date(prev.createdAt).getTime();
+	return elapsed >= 0 && elapsed <= COMMENT_GROUP_MS;
+}
+
+type CommentThreadItem =
+	| { kind: "date"; id: string; label: string }
+	| { kind: "message"; id: string; comment: E2eeCommentRow; compact: boolean };
+
+function buildCommentThreadItems(
+	comments: E2eeCommentRow[],
+): CommentThreadItem[] {
+	const items: CommentThreadItem[] = [];
+	let previous: E2eeCommentRow | undefined;
+	let previousDayKey = "";
+
+	for (const comment of comments) {
+		const dayKey = commentDayKey(comment.createdAt);
+		if (dayKey !== previousDayKey) {
+			items.push({
+				kind: "date",
+				id: `date-${dayKey}`,
+				label: formatCommentDayLabel(new Date(comment.createdAt)),
+			});
+			previousDayKey = dayKey;
+			previous = undefined;
+		}
+
+		items.push({
+			kind: "message",
+			id: comment.id,
+			comment,
+			compact: previous ? isCompactCommentGroup(previous, comment) : false,
+		});
+		previous = comment;
+	}
+
+	return items;
+}
 
 export type E2eeCommentRow = {
 	id: string;
 	body: string;
 	authorWallet: string | null | undefined;
+	authorDisplayName?: string;
+	authorEmail?: string;
 	createdAt: string;
 };
 
@@ -27,6 +114,28 @@ function sortCommentsOldestFirst(items: E2eeCommentRow[]) {
 	return [...items].sort(
 		(a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
 	);
+}
+
+function commentAuthorLabel(row: E2eeCommentRow): string {
+	const name = row.authorDisplayName?.trim();
+	if (name) return name;
+	const email = row.authorEmail?.trim();
+	if (email) return email;
+	return "Team member";
+}
+
+function commentAuthorInitials(row: E2eeCommentRow): string {
+	const name = row.authorDisplayName?.trim();
+	if (name) {
+		const parts = name.split(/\s+/).filter(Boolean);
+		if (parts.length >= 2) {
+			return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase();
+		}
+		return name.slice(0, 2).toUpperCase();
+	}
+	const email = row.authorEmail?.trim();
+	if (email) return email.slice(0, 2).toUpperCase();
+	return "TM";
 }
 
 export type E2eeCommentsQuery = {
@@ -37,15 +146,97 @@ export type E2eeCommentsQuery = {
 	error: unknown;
 };
 
+export type E2eeCommentThreadActions = {
+	canManageComment?: (row: E2eeCommentRow) => boolean;
+	onEditComment?: (row: E2eeCommentRow) => void;
+	onDeleteComment?: (row: E2eeCommentRow) => void;
+};
+
+function E2eeCommentMessageRow(props: {
+	comment: E2eeCommentRow;
+	compact: boolean;
+	actions?: E2eeCommentThreadActions;
+}) {
+	const c = props.comment;
+	const label = commentAuthorLabel(c);
+	const timestamp = commentClockFormatter.format(new Date(c.createdAt));
+	const canManage = props.actions?.canManageComment?.(c) ?? false;
+
+	const row = (
+		<div
+			className={cn(
+				"flex w-full gap-2.5 px-0.5 hover:bg-muted/40",
+				props.compact ? "py-0.5" : "py-2",
+			)}
+		>
+			{props.compact ? (
+				<div className="size-9 shrink-0" aria-hidden />
+			) : (
+				<div
+					className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground"
+					aria-hidden
+				>
+					{commentAuthorInitials(c)}
+				</div>
+			)}
+			<div className="min-w-0 flex-1 pt-0.5">
+				{props.compact ? null : (
+					<div className="mb-0.5 flex min-w-0 items-baseline gap-2">
+						<p className="text-sm font-bold text-foreground">{label}</p>
+						<time
+							className="text-xs tabular-nums text-muted-foreground"
+							dateTime={c.createdAt}
+						>
+							{timestamp}
+						</time>
+					</div>
+				)}
+				<p className="text-sm leading-relaxed whitespace-pre-wrap wrap-break-word text-foreground">
+					{c.body}
+				</p>
+			</div>
+		</div>
+	);
+
+	if (!canManage) {
+		return row;
+	}
+
+	return (
+		<ContextMenu>
+			<ContextMenuTrigger className="block w-full">{row}</ContextMenuTrigger>
+			<ContextMenuContent>
+				<ContextMenuItem
+					className="gap-2"
+					onClick={() => props.actions?.onEditComment?.(c)}
+				>
+					<PencilSimpleIcon className="size-4" aria-hidden />
+					Edit
+				</ContextMenuItem>
+				<ContextMenuItem
+					variant="destructive"
+					className="gap-2"
+					onClick={() => props.actions?.onDeleteComment?.(c)}
+				>
+					<TrashIcon className="size-4" aria-hidden />
+					Delete
+				</ContextMenuItem>
+			</ContextMenuContent>
+		</ContextMenu>
+	);
+}
+
 export function E2eeCommentsThread(props: {
 	comments: E2eeCommentsQuery;
 	className?: string;
 	emptyMessage: string;
+	actions?: E2eeCommentThreadActions;
 }) {
 	const sorted = useMemo(
 		() => sortCommentsOldestFirst(props.comments.data ?? []),
 		[props.comments.data],
 	);
+	const threadItems = useMemo(() => buildCommentThreadItems(sorted), [sorted]);
 
 	const showLoading =
 		props.comments.isLoading ||
@@ -84,30 +275,34 @@ export function E2eeCommentsThread(props: {
 					className="border-transparent py-6"
 				/>
 			) : (
-				<ul className="space-y-3">
-					{sorted.map((c) => (
-						<li
-							key={c.id}
-							className="rounded-md border border-border/50 bg-muted/30 px-3 py-2.5"
-						>
-							<div className="mb-1.5 flex min-w-0 items-baseline justify-between gap-2">
-								<span className="truncate text-xs font-medium text-foreground">
-									{c.authorWallet
-										? truncateAddress(c.authorWallet)
-										: "Participant"}
-								</span>
-								<time
-									className="shrink-0 text-xs tabular-nums text-muted-foreground"
-									dateTime={c.createdAt}
+				<ul>
+					{threadItems.map((item) => {
+						if (item.kind === "date") {
+							return (
+								<li
+									key={item.id}
+									className="relative flex items-center py-4"
+									aria-label={item.label}
 								>
-									{commentTimeFormatter.format(new Date(c.createdAt))}
-								</time>
-							</div>
-							<p className="min-w-0 text-sm wrap-break-word text-foreground">
-								{c.body}
-							</p>
-						</li>
-					))}
+									<div className="h-px flex-1 bg-border" aria-hidden />
+									<span className="mx-3 shrink-0 rounded-full border border-border bg-background px-3 py-0.5 text-xs font-medium text-muted-foreground">
+										{item.label}
+									</span>
+									<div className="h-px flex-1 bg-border" aria-hidden />
+								</li>
+							);
+						}
+
+						return (
+							<li key={item.id}>
+								<E2eeCommentMessageRow
+									comment={item.comment}
+									compact={item.compact}
+									actions={props.actions}
+								/>
+							</li>
+						);
+					})}
 				</ul>
 			)}
 		</div>
@@ -119,45 +314,98 @@ export function E2eeCommentsComposer(props: {
 	placeholder: string;
 	isPending: boolean;
 	onPost: (body: string) => Promise<void>;
+	onUpdate?: (body: string) => Promise<void>;
+	editingComment?: { id: string; body: string } | null;
+	onCancelEdit?: () => void;
 	onPosted?: () => void;
 	className?: string;
 }) {
 	const [body, setBody] = useState("");
+	const isEditing = Boolean(props.editingComment);
+
+	useEffect(() => {
+		if (props.editingComment) {
+			setBody(props.editingComment.body);
+		}
+	}, [props.editingComment]);
+
+	const handleSubmit = useCallback(() => {
+		const trimmed = body.trim();
+		if (!trimmed || props.isPending) return;
+		const submit = isEditing ? props.onUpdate : props.onPost;
+		if (!submit) return;
+		void submit(trimmed)
+			.then(() => {
+				setBody("");
+				props.onCancelEdit?.();
+				props.onPosted?.();
+			})
+			.catch(() => undefined);
+	}, [
+		body,
+		isEditing,
+		props.isPending,
+		props.onPost,
+		props.onUpdate,
+		props.onCancelEdit,
+		props.onPosted,
+	]);
+
+	const canSubmit = Boolean(body.trim()) && !props.isPending;
 
 	return (
-		<div className={cn("space-y-3", props.className)}>
-			<div className="space-y-2">
-				<Label htmlFor={props.textareaId}>New comment</Label>
-				<Textarea
+		<div className={cn("space-y-1.5", props.className)}>
+			{isEditing ? (
+				<div className="flex items-center justify-between gap-2">
+					<p className="text-xs font-medium text-foreground">Editing comment</p>
+					<button
+						type="button"
+						className="text-xs text-muted-foreground hover:text-foreground"
+						onClick={() => {
+							setBody("");
+							props.onCancelEdit?.();
+						}}
+					>
+						Cancel
+					</button>
+				</div>
+			) : null}
+			<InputGroup className="min-h-20 has-[>textarea]:min-h-20">
+				<InputGroupTextarea
 					id={props.textareaId}
 					value={body}
 					onChange={(e) => setBody(e.target.value)}
+					onKeyDown={(e) => {
+						if (e.key !== "Enter" || (!e.metaKey && !e.ctrlKey)) return;
+						e.preventDefault();
+						handleSubmit();
+					}}
 					placeholder={props.placeholder}
 					rows={3}
-					className="resize-none"
+					className="field-sizing-fixed min-h-16"
 				/>
-			</div>
-			<Button
-				type="button"
-				variant="primary"
-				size="sm"
-				className="w-full sm:w-auto"
-				disabled={props.isPending || !body.trim()}
-				onClick={() => {
-					const trimmed = body.trim();
-					if (!trimmed) return;
-					void props
-						.onPost(trimmed)
-						.then(() => {
-							setBody("");
-							props.onPosted?.();
-							toast.success("Comment added");
-						})
-						.catch((err) => showAppErrorToast(err));
-				}}
-			>
-				{props.isPending ? "Posting…" : "Post Comment"}
-			</Button>
+				<InputGroupAddon
+					align="block-end"
+					className="justify-end pb-1.5 pr-1.5"
+				>
+					<InputGroupButton
+						size="icon-xs"
+						variant={canSubmit ? "secondary" : "ghost"}
+						disabled={!canSubmit}
+						onClick={handleSubmit}
+						aria-label={isEditing ? "Save comment" : "Send comment"}
+					>
+						{props.isPending ? (
+							<InlineLoader size="sm" />
+						) : (
+							<PaperPlaneRightIcon className="size-4" weight="fill" />
+						)}
+					</InputGroupButton>
+				</InputGroupAddon>
+			</InputGroup>
+			<p className="text-xs text-muted-foreground">
+				Enter for a new line. ⌘ or Ctrl+Enter to {isEditing ? "save" : "send"}.
+			</p>
 		</div>
 	);
 }
@@ -166,15 +414,17 @@ export function E2eeCommentsPanel(props: {
 	comments: E2eeCommentsQuery;
 	className?: string;
 	emptyMessage: string;
+	actions?: E2eeCommentThreadActions;
 }) {
 	return (
 		<div
-			className={cn("flex min-h-0 flex-1 flex-col px-4 py-3", props.className)}
+			className={cn("flex min-h-0 flex-1 flex-col px-4 pb-3", props.className)}
 		>
 			<E2eeCommentsThread
 				comments={props.comments}
 				className="flex-1"
 				emptyMessage={props.emptyMessage}
+				actions={props.actions}
 			/>
 		</div>
 	);

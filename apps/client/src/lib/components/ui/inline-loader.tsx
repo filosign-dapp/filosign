@@ -13,9 +13,6 @@ export type InlineLoaderProps = {
 	className?: string;
 };
 
-/**
- * Minimal spinner for panels, tables, and inline gaps. No fixed viewport height.
- */
 export function InlineLoader({ size = "md", className }: InlineLoaderProps) {
 	return (
 		<span

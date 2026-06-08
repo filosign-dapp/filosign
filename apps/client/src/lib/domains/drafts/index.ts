@@ -32,10 +32,7 @@ export {
 	useServerDraftActions,
 	useServerDraftHydrate,
 } from "./server";
-export {
-	placementManifestFromCreateForm,
-	useDraftSaveUi,
-} from "./use-draft-save-ui";
+export { useDraftSaveUi } from "./use-draft-save-ui";
 export { useHydrateAttachmentPacketDrafts } from "./use-hydrate-attachment-packet-drafts";
 export { useOpenDraft } from "./use-open-draft";
 export {
@@ -50,5 +47,7 @@ export {
 	draftSyncModeFromSearch,
 	isCreateFormDirty,
 	isServerDraftSyncFromUrl,
+	placementManifestFromCreateForm,
+	resolveCreateFormSnapshotDigest,
 	shouldPersistCreateFormToDisk,
 } from "./utils/draft-form-state";

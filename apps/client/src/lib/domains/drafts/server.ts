@@ -19,6 +19,7 @@ import {
 	buildDraftSnapshotFromForm,
 	clearPersistedCreateFormFromDisk,
 	type DraftSyncMode,
+	resolveCreateFormSnapshotDigest,
 } from "@/src/lib/domains/drafts/utils/draft-form-state";
 import {
 	setHydratedDraftPreviewPdfBytes,
@@ -92,8 +93,9 @@ export async function applyServerDraftToCreateForm(args: {
 	);
 	createForm.serverDraftId = args.draftId;
 	createForm.serverDraftRevision = args.revision;
-	createForm.lastSavedSnapshotDigest = digestDraftSnapshot(
-		args.decrypted.snapshot,
+	createForm.lastSavedSnapshotDigest = resolveCreateFormSnapshotDigest(
+		createForm,
+		args.decrypted.snapshot.placementManifest,
 	);
 	return createForm;
 }
@@ -355,7 +357,11 @@ export function useServerDraftHydrate(args: {
 						? err.message
 						: "Failed to open draft",
 				);
-				void navigate({ to: "/dashboard/drafts", replace: true });
+				void navigate({
+					to: "/dashboard/document/all",
+					search: { tab: "drafts" },
+					replace: true,
+				});
 			});
 
 		return () => {

@@ -7,9 +7,6 @@ interface LoaderProps extends Pick<InlineLoaderProps, "size"> {
 	className?: string;
 }
 
-/**
- * Full-viewport loading shell (bootstrap, route guards). Prefer {@link InlineLoader} inside sections.
- */
 export function Loader({ text, size = "md", className }: LoaderProps) {
 	return (
 		<div

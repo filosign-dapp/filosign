@@ -15,7 +15,7 @@ export function useSignDocumentController() {
 	const { file, filePending, fileError } = useSignFileMeta(pieceCid);
 	const identity = useSignIdentity(file);
 	const signingMeta = useSignSigningMeta(file, identity.signerAddress);
-	const viewer = useSignViewer(file, pieceCid);
+	const viewer = useSignViewer(file);
 
 	const placementParsed = useMemo(
 		() =>
@@ -41,9 +41,6 @@ export function useSignDocumentController() {
 		fieldCompletions: fieldSession.fieldCompletions,
 		canSign: signingMeta.canSign,
 	});
-
-	const signPdfTotalDisplay =
-		viewer.signPdfNumPages ?? placement.signPdfPageCountHint;
 
 	const compliance = useCompliancePdfExports({
 		file: file
@@ -108,10 +105,7 @@ export function useSignDocumentController() {
 			signerPlacementEmail: identity.signerPlacementEmail,
 			requiredFields: placementParsed.requiredFields,
 		},
-		viewer: {
-			...viewer,
-			signPdfTotalDisplay,
-		},
+		viewer,
 		signing: {
 			canSign: signingMeta.canSign,
 			alreadySigned: signingMeta.alreadySigned,
@@ -141,10 +135,6 @@ export function useSignDocumentController() {
 			setColdShare: actions.setColdShare,
 			executeRotateInvite: actions.executeRotateInvite,
 			regenerateColdInvite: actions.regenerateColdInvite,
-		},
-		refs: {
-			containerRef: viewer.containerRef,
-			documentRef: viewer.documentRef,
 		},
 		acknowledge: { handleAcknowledge: actions.handleAcknowledge },
 		settlements: {

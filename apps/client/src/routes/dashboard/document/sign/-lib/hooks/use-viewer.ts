@@ -1,6 +1,16 @@
 import type { ViewFileResult } from "@filosign/react/files";
-import { useEffect, useRef, useState } from "react";
-import { usePdfDocumentViewer } from "@/src/lib/domains/files/hooks/use-pdf-document-viewer";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+	usePageLayout,
+	useViewportDimensions,
+	type ViewportDocument,
+} from "@/src/lib/domains/files/document-viewport";
+import { useDecryptedFileView } from "@/src/lib/domains/files/hooks/use-decrypted-file-view";
+import { PLACEMENT_VIEWPORT_WIDTH } from "@/src/lib/domains/files/placement-viewport";
+import {
+	signableDocumentsFromView,
+	viewBytesForDocument,
+} from "@/src/lib/domains/files/signable-documents";
 
 type SignFileRecord = {
 	pieceCid: string;
@@ -12,42 +22,121 @@ type SignFileRecord = {
 	orgEncryptedEncryptionKey?: string | null;
 };
 
-export function useSignViewer(
-	file: SignFileRecord | undefined,
-	pieceCid: string | undefined,
-) {
-	const decrypt = usePdfDocumentViewer({
+export function useSignViewer(file: SignFileRecord | undefined) {
+	const { height: fallbackPageHeight, isMobile } = useViewportDimensions();
+	const decrypt = useDecryptedFileView({
 		file: file ?? null,
 		enabled: Boolean(file),
 		acknowledgeHint: true,
-		initialZoom: 100,
 	});
-	const [signPdfPage, setSignPdfPage] = useState(1);
-	const [signPdfNumPages, setSignPdfNumPages] = useState<number | null>(null);
-	const containerRef = useRef<HTMLDivElement>(null);
-	const documentRef = useRef<HTMLDivElement>(null);
+	const {
+		recordPdfPageLayout,
+		getPageHeight,
+		setPdfNumPages,
+		pdfNumPages,
+		resetPageLayout,
+	} = usePageLayout(fallbackPageHeight);
+	const [currentDocumentId, setCurrentDocumentId] = useState("");
+	const [documentPdfBytes, setDocumentPdfBytes] = useState<
+		Map<string, Uint8Array>
+	>(new Map());
+	const [fieldFocusRequestId, setFieldFocusRequestId] = useState<string | null>(
+		null,
+	);
 
-	const isSigningPdf = Boolean(decrypt.previewPdfBytes);
+	const fileData = decrypt.fileData as ViewFileResult | null;
+
+	const documents = useMemo((): ViewportDocument[] => {
+		if (!fileData) return [];
+		return fileData.documents.map((doc) => ({
+			id: doc.id,
+			name: doc.name,
+			mimeType: doc.mimeType,
+			pdfBytes: documentPdfBytes.get(doc.id),
+			pages: 1,
+		}));
+	}, [fileData, documentPdfBytes]);
+
+	const currentDocument = useMemo(
+		() => documents.find((d) => d.id === currentDocumentId) ?? documents[0],
+		[documents, currentDocumentId],
+	);
 
 	useEffect(() => {
-		setSignPdfPage(1);
-		setSignPdfNumPages(null);
-	}, [pieceCid, decrypt.previewPdfBytes]);
+		if (!fileData) {
+			setDocumentPdfBytes(new Map());
+			setCurrentDocumentId("");
+			resetPageLayout();
+			return;
+		}
+		let cancelled = false;
+		void (async () => {
+			const map = new Map<string, Uint8Array>();
+			for (const doc of signableDocumentsFromView(fileData)) {
+				const bytes = await viewBytesForDocument(doc);
+				if (bytes) {
+					map.set(doc.id ?? doc.name, bytes);
+				}
+			}
+			if (!cancelled) {
+				setDocumentPdfBytes(map);
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [fileData, resetPageLayout]);
+
+	useEffect(() => {
+		if (documents.length > 0 && !currentDocumentId) {
+			const firstDoc = documents[0];
+			if (firstDoc) {
+				setCurrentDocumentId(firstDoc.id);
+			}
+		}
+	}, [documents, currentDocumentId]);
+
+	useEffect(() => {
+		resetPageLayout();
+	}, [currentDocumentId, resetPageLayout]);
+
+	const requestFieldFocus = useCallback((fieldId: string) => {
+		setFieldFocusRequestId(fieldId);
+	}, []);
+
+	const clearFieldFocusRequest = useCallback(() => {
+		setFieldFocusRequestId(null);
+	}, []);
+
+	const isPdfDocument = Boolean(currentDocument?.pdfBytes);
 
 	return {
-		...decrypt,
-		fileData: decrypt.fileData as ViewFileResult | null,
-		zoom: decrypt.zoom,
-		setZoom: decrypt.setZoom,
-		documentDimensions: decrypt.documentDimensions,
-		handleZoomIn: decrypt.handleZoomIn,
-		handleZoomOut: decrypt.handleZoomOut,
-		signPdfPage,
-		setSignPdfPage,
-		signPdfNumPages,
-		setSignPdfNumPages,
-		isSigningPdf,
-		containerRef,
-		documentRef,
+		fileData,
+		viewError: decrypt.viewError,
+		viewFile: decrypt.viewFile,
+		handleViewFile: decrypt.handleViewFile,
+		docCanvasBusy: decrypt.docCanvasBusy,
+		showRecoveryInCanvas: decrypt.showRecoveryInCanvas,
+		recoveryPhrase: decrypt.recoveryPhrase,
+		setRecoveryPhrase: decrypt.setRecoveryPhrase,
+		recoveryError: decrypt.recoveryError,
+		submitRecovery: decrypt.submitRecovery,
+		recoveryPending: decrypt.recoveryPending,
+		currentDocumentId,
+		setCurrentDocumentId,
+		currentDocument,
+		documents,
+		documentWidth: PLACEMENT_VIEWPORT_WIDTH,
+		isMobile,
+		isPdfDocument,
+		signPdfNumPages: pdfNumPages,
+		setSignPdfNumPages: setPdfNumPages,
+		recordPdfPageLayout,
+		getPageHeight,
+		fieldFocusRequestId,
+		requestFieldFocus,
+		clearFieldFocusRequest,
 	};
 }
+
+export type SignViewerState = ReturnType<typeof useSignViewer>;

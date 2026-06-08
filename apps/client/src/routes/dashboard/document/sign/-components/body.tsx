@@ -1,24 +1,31 @@
-import { ActivationRouteHints } from "@/src/lib/domains/activation/route-hints";
-import {
-	useSignFile,
-	useSignRefs,
-} from "@/src/routes/dashboard/document/sign/-lib/context/context";
-import { SignDocumentFileContent } from "./file-content";
+import type { ReactNode } from "react";
+import { SignHeaderDialogs } from "@/src/routes/dashboard/document/sign/-components/header";
+import { SignChromeHeader } from "@/src/routes/dashboard/document/sign/-components/header/sign-chrome";
+import { SignDocumentWorkspace } from "@/src/routes/dashboard/document/sign/-components/workspace";
+import { SignHeaderUiProvider } from "@/src/routes/dashboard/document/sign/-lib/context/header-ui-context";
+import { SignDocumentShell } from "./shell";
 
 export function SignDocumentBody() {
-	const { containerRef, documentRef } = useSignRefs();
-	const { pieceCid } = useSignFile();
+	return <SignDocumentWorkspace />;
+}
 
+export function SignDocumentStickyHeader() {
 	return (
-		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-			<div className="shrink-0 px-4 pt-3">
-				<ActivationRouteHints currentPieceCid={pieceCid} />
-			</div>
-			<div ref={containerRef} className="min-h-0 flex-1 overflow-auto">
-				<div ref={documentRef} className="relative h-full w-full bg-background">
-					<SignDocumentFileContent />
-				</div>
-			</div>
-		</div>
+		<>
+			<SignChromeHeader />
+			<SignHeaderDialogs />
+		</>
+	);
+}
+
+export function SignShellLayout({ children }: { children?: ReactNode }) {
+	return (
+		<SignHeaderUiProvider>
+			<SignDocumentShell>
+				<SignDocumentStickyHeader />
+				<SignDocumentBody />
+				{children}
+			</SignDocumentShell>
+		</SignHeaderUiProvider>
 	);
 }

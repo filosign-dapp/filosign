@@ -1,0 +1,283 @@
+import {
+	FILE_ACK_INTENT_LABELS,
+	FILE_ACK_INTENT_VERSION_V1,
+} from "@filosign/shared";
+import { useCallback, useEffect, useMemo } from "react";
+import { Button } from "@/src/lib/components/ui/button";
+import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { DocCanvasPanel } from "@/src/lib/domains/files/components/doc-canvas-panel";
+import {
+	DocumentPageContent,
+	DocumentSurface,
+	focusNormalizedFieldInViewport,
+	PanZoomCanvas,
+	useDocumentViewportCanvas,
+} from "@/src/lib/domains/files/document-viewport";
+import { FileViewerFieldOverlay } from "@/src/lib/domains/files/file-viewer/-components/field-overlay";
+import { cn } from "@/src/lib/utils";
+import { PlacementFieldOverlay } from "@/src/routes/dashboard/document/sign/-components/placement-field-overlay";
+import {
+	useSignFile,
+	useSignPlacement,
+	useSignSigning,
+	useSignViewer,
+} from "@/src/routes/dashboard/document/sign/-lib/context/context";
+
+export function SignViewer() {
+	const { file, fileQuery, acknowledge } = useSignFile();
+	const { filePending, fileError, acknowledgeFile } = fileQuery;
+	const { handleAcknowledge } = acknowledge;
+	const {
+		fileData,
+		viewError,
+		handleViewFile,
+		viewFile,
+		docCanvasBusy,
+		showRecoveryInCanvas,
+		recoveryPhrase,
+		setRecoveryPhrase,
+		recoveryError,
+		submitRecovery,
+		recoveryPending,
+		currentDocument,
+		currentDocumentId,
+		documentWidth,
+		isPdfDocument,
+		recordPdfPageLayout,
+		getPageHeight,
+		setSignPdfNumPages,
+		signPdfNumPages,
+		fieldFocusRequestId,
+		clearFieldFocusRequest,
+	} = useSignViewer();
+	const {
+		myPlacementFields,
+		visiblePlacementFields,
+		fieldCompletions,
+		togglePlacementField,
+		handleTextChange,
+	} = useSignPlacement();
+	const { alreadySigned } = useSignSigning();
+	const {
+		panPinchRef,
+		wrapperRef,
+		setPageElForPage,
+		clearPageEls,
+		stripScrollBridge,
+	} = useDocumentViewportCanvas();
+
+	const needsAck =
+		file?.participantAccess && !file.participantAccess.canDecrypt;
+
+	const myPlacementFieldIds = useMemo(
+		() => new Set(myPlacementFields.map((f) => f.id)),
+		[myPlacementFields],
+	);
+
+	const documentFields = useMemo(
+		() =>
+			visiblePlacementFields.filter((f) => f.documentId === currentDocumentId),
+		[visiblePlacementFields, currentDocumentId],
+	);
+
+	const myDocumentFields = useMemo(
+		() => myPlacementFields.filter((f) => f.documentId === currentDocumentId),
+		[myPlacementFields, currentDocumentId],
+	);
+
+	const otherVisibleFields = useMemo(
+		() => documentFields.filter((f) => !myPlacementFieldIds.has(f.id)),
+		[documentFields, myPlacementFieldIds],
+	);
+
+	const envelopeFieldCompletions = useMemo(
+		() => file?.fieldCompletions ?? [],
+		[file?.fieldCompletions],
+	);
+
+	const onPdfPageLayoutLoaded = useCallback(
+		(layout: { width: number; height: number }, pageNumber?: number) => {
+			if (pageNumber != null) {
+				recordPdfPageLayout(pageNumber, layout.height);
+			}
+		},
+		[recordPdfPageLayout],
+	);
+
+	useEffect(() => {
+		clearPageEls();
+	}, [currentDocumentId, clearPageEls]);
+
+	const fieldsById = useMemo(
+		() => new Map(documentFields.map((field) => [field.id, field])),
+		[documentFields],
+	);
+
+	useEffect(() => {
+		if (!fieldFocusRequestId) return;
+		const field = fieldsById.get(fieldFocusRequestId);
+		if (!field) {
+			clearFieldFocusRequest();
+			return;
+		}
+		requestAnimationFrame(() => {
+			focusNormalizedFieldInViewport({
+				panPinchRef: panPinchRef.current,
+				wrapperEl: wrapperRef.current,
+				field,
+				getPageHeight,
+				pageWidth: documentWidth,
+			});
+			clearFieldFocusRequest();
+		});
+	}, [
+		fieldFocusRequestId,
+		fieldsById,
+		panPinchRef,
+		wrapperRef,
+		getPageHeight,
+		documentWidth,
+		clearFieldFocusRequest,
+	]);
+
+	const renderPageOverlay = useCallback(
+		(pageIndex: number) => (
+			<>
+				<FileViewerFieldOverlay
+					pageIndex={pageIndex}
+					fields={otherVisibleFields}
+					completions={envelopeFieldCompletions}
+					showPlaceholders
+					overlayClassName="z-[5]"
+				/>
+				<PlacementFieldOverlay
+					pageIndex={pageIndex}
+					fields={myDocumentFields}
+					fieldCompletions={fieldCompletions}
+					alreadySigned={alreadySigned}
+					onToggleField={(field) => void togglePlacementField(field)}
+					onTextChange={handleTextChange}
+				/>
+			</>
+		),
+		[
+			otherVisibleFields,
+			envelopeFieldCompletions,
+			myDocumentFields,
+			fieldCompletions,
+			alreadySigned,
+			togglePlacementField,
+			handleTextChange,
+		],
+	);
+
+	if (filePending && !file) {
+		return (
+			<div className="flex h-full min-h-0 flex-1 flex-col">
+				<DocCanvasPanel busy />
+			</div>
+		);
+	}
+
+	if (fileError || (!filePending && !file)) {
+		return (
+			<div className="flex h-full min-h-0 flex-1 flex-col">
+				<DocCanvasPanel
+					error={
+						fileError instanceof Error ? fileError.message : "File not found"
+					}
+				/>
+			</div>
+		);
+	}
+
+	if (needsAck) {
+		return (
+			<div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+				<p className="max-w-md text-sm text-muted-foreground">
+					{FILE_ACK_INTENT_LABELS[FILE_ACK_INTENT_VERSION_V1]}
+				</p>
+				<Button
+					variant="primary"
+					onClick={() => void handleAcknowledge()}
+					disabled={acknowledgeFile.isPending}
+				>
+					{acknowledgeFile.isPending ? "Accepting…" : "Accept file"}
+				</Button>
+			</div>
+		);
+	}
+
+	if (docCanvasBusy || showRecoveryInCanvas || viewError || !fileData) {
+		return (
+			<div className="flex h-full min-h-0 flex-1 flex-col">
+				<DocCanvasPanel
+					busy={docCanvasBusy}
+					showRecovery={showRecoveryInCanvas}
+					recoveryPhrase={recoveryPhrase}
+					onRecoveryPhraseChange={setRecoveryPhrase}
+					recoveryError={recoveryError}
+					onRecoverySubmit={() => void submitRecovery()}
+					recoveryPending={recoveryPending}
+					error={viewError}
+					onRetry={() => void handleViewFile()}
+					retryPending={viewFile.isPending}
+				/>
+			</div>
+		);
+	}
+
+	if (!currentDocument?.pdfBytes) {
+		return (
+			<div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center p-4 text-sm text-muted-foreground">
+				<InlineLoader size="lg" />
+			</div>
+		);
+	}
+
+	const useStripLayout =
+		isPdfDocument && (signPdfNumPages ?? currentDocument.pages ?? 1) > 1;
+
+	return (
+		<div className="flex h-full min-h-0 flex-1 flex-col">
+			<PanZoomCanvas className="h-full min-h-0 flex-1">
+				<DocumentSurface layout={useStripLayout ? "strip" : "single"}>
+					<div
+						ref={(el) => {
+							if (!useStripLayout) {
+								setPageElForPage(1, el);
+							}
+						}}
+						className={cn(
+							"relative",
+							useStripLayout ? "bg-transparent" : "bg-white p-1",
+						)}
+						style={
+							!useStripLayout
+								? {
+										width: documentWidth,
+										minHeight: getPageHeight(1),
+									}
+								: undefined
+						}
+					>
+						<DocumentPageContent
+							document={currentDocument}
+							documentWidth={documentWidth}
+							documentHeight={getPageHeight(1)}
+							layout={useStripLayout ? "strip" : "single"}
+							isPdfDocument={isPdfDocument}
+							onPdfNumPagesLoaded={setSignPdfNumPages}
+							onPdfPageLayoutLoaded={onPdfPageLayoutLoaded}
+							setPageRef={setPageElForPage}
+							renderPageOverlay={useStripLayout ? renderPageOverlay : undefined}
+							stripScrollBridge={useStripLayout ? stripScrollBridge : undefined}
+						/>
+
+						{!useStripLayout ? renderPageOverlay(0) : null}
+					</div>
+				</DocumentSurface>
+			</PanZoomCanvas>
+		</div>
+	);
+}

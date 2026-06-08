@@ -77,8 +77,11 @@ import { cn } from "@/src/lib/utils/index";
 type NavItem = {
 	title: string;
 	url: string;
+	search?: Record<string, string | undefined>;
 	icon: typeof HouseIcon;
 	match: (pathname: string) => boolean;
+	/** When set, item is active only if search matches (e.g. documents tab). */
+	matchSearch?: (search: Record<string, unknown>) => boolean;
 	tooltip: string;
 	/** Clear open envelope draft before navigating (new envelope, not resume). */
 	resetComposer?: boolean;
@@ -99,13 +102,16 @@ const groups: { label: string; items: NavItem[] }[] = [
 				url: "/dashboard/document/all/",
 				icon: HouseIcon,
 				match: (p) => matchPrefix(p, "/dashboard/document/all"),
+				matchSearch: (search) => search.tab !== "drafts",
 				tooltip: "Home",
 			},
 			{
 				title: "Drafts",
-				url: "/dashboard/drafts/",
+				url: "/dashboard/document/all/",
+				search: { tab: "drafts" },
 				icon: EnvelopeSimpleIcon,
-				match: (p) => matchPrefix(p, "/dashboard/drafts"),
+				match: (p) => matchPrefix(p, "/dashboard/document/all"),
+				matchSearch: (search) => search.tab === "drafts",
 				tooltip: "Your drafts",
 			},
 			{
@@ -332,6 +338,9 @@ export function DashboardSidebar() {
 	const pathname = useRouterState({
 		select: (s) => s.location.pathname,
 	});
+	const locationSearch = useRouterState({
+		select: (s) => s.location.search as Record<string, unknown>,
+	});
 	const { state } = useSidebar();
 
 	const adminAccessQuery = useQuery({
@@ -394,7 +403,11 @@ export function DashboardSidebar() {
 									<SidebarMenu className="gap-0.5">
 										{items.map((item) => {
 											const Icon = item.icon;
-											const active = item.match(pathname);
+											const active =
+												item.match(pathname) &&
+												(item.matchSearch
+													? item.matchSearch(locationSearch)
+													: true);
 											return (
 												<SidebarMenuItem key={item.url}>
 													<SidebarMenuButton
@@ -413,7 +426,7 @@ export function DashboardSidebar() {
 																	onClick={startNewEnvelope}
 																/>
 															) : (
-																<Link to={item.url} />
+																<Link to={item.url} search={item.search} />
 															)
 														}
 													>

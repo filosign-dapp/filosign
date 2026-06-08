@@ -7,6 +7,7 @@ import { useDocumentsController } from "./-lib/hooks/use-documents-controller";
 const billingSearchSchema = z.object({
 	upgrade: z.string().optional(),
 	interval: z.string().optional(),
+	tab: z.enum(["all", "sent", "received", "drafts"]).optional(),
 });
 
 function DocumentAllRoutePage() {

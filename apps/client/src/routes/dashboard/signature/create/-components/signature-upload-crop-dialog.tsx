@@ -96,7 +96,7 @@ export function SignatureUploadCropDialog({
 						Crop {role === "initial" ? "initials" : "signature"}
 					</DialogTitle>
 				</DialogHeader>
-				<div className="relative h-[360px] w-full overflow-hidden rounded-md border border-border/60 bg-black/80">
+				<div className="relative h-90 w-full overflow-hidden rounded-md border border-border/60 bg-black/80">
 					{imageDataUrl ? (
 						<Cropper
 							image={imageDataUrl}

@@ -48,6 +48,7 @@ import {
 	validateEnvelopeDocuments,
 	validateEnvelopeRecipients,
 	validateRecipientProfiles,
+	validateSettlementPayoutBalance,
 	validateSignerPlacementFields,
 } from "./validate";
 
@@ -97,6 +98,8 @@ export type RunEnvelopeSendArgs = EnvelopeSendDeps & {
 	placementDocHeight: number;
 	docWidth: number;
 	fieldBoxCss: PlacementFieldRect;
+	walletAddress: `0x${string}` | undefined;
+	walletUsdcBalance: bigint;
 };
 
 function scheduleSendIdle(setSendStatus: RunEnvelopeSendArgs["setSendStatus"]) {
@@ -143,6 +146,8 @@ export async function runEnvelopeSend(
 		placementDocHeight,
 		docWidth,
 		fieldBoxCss,
+		walletAddress,
+		walletUsdcBalance,
 		activeOrg,
 		selfProfile,
 		sendFile,
@@ -206,6 +211,17 @@ export async function runEnvelopeSend(
 	});
 	if (attachmentFailure) {
 		reportEnvelopeSendValidationFailure(attachmentFailure);
+		failSend(setSendStatus);
+		return;
+	}
+
+	const payoutBalanceFailure = validateSettlementPayoutBalance({
+		settlementDrafts: createForm.settlementDrafts,
+		walletAddress,
+		walletBalance: walletUsdcBalance,
+	});
+	if (payoutBalanceFailure) {
+		reportEnvelopeSendValidationFailure(payoutBalanceFailure);
 		failSend(setSendStatus);
 		return;
 	}

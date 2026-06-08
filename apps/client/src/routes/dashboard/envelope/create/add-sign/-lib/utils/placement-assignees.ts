@@ -2,6 +2,7 @@ import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 import { createClientId } from "@/src/lib/utils/id";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
+import { signerEmailsFromRecipients } from "@/src/routes/dashboard/envelope/create/-lib/utils/routing-turn-order";
 import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 import { recipientResolvedSignerAddress } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 
@@ -12,19 +13,29 @@ export type SelfProfileForRoster = {
 	lastName?: string | null;
 };
 
-export function signerEmailsFromRecipients(recipients: Recipient[]): string[] {
-	const seen = new Set<string>();
-	const out: string[] = [];
-	for (const recipient of recipients) {
-		if (recipient.role !== "signer") continue;
-		const raw = recipient.email?.trim();
-		if (!raw || !isValidRecipientEmail(raw)) continue;
+/** Recipient row matches the signed-in user (email or wallet). */
+export function recipientMatchesSelfProfile(
+	recipient: Recipient,
+	selfProfile: SelfProfileForRoster | null | undefined,
+): boolean {
+	if (!selfProfile) return false;
+
+	const selfEmail = selfProfile.email?.trim()
+		? normalizePlacementRecipientEmail(selfProfile.email)
+		: null;
+	const selfWallet = selfProfile.walletAddress?.trim()?.toLowerCase() ?? null;
+
+	const raw = recipient.email?.trim();
+	if (raw && isValidRecipientEmail(raw)) {
 		const email = normalizePlacementRecipientEmail(raw);
-		if (seen.has(email)) continue;
-		seen.add(email);
-		out.push(email);
+		if (selfEmail && email === selfEmail) return true;
 	}
-	return out;
+
+	const wallet =
+		recipientResolvedSignerAddress(recipient)?.toLowerCase() ?? null;
+	if (selfWallet && wallet === selfWallet) return true;
+
+	return false;
 }
 
 /** Self as a signer on the envelope roster (email or wallet match). */

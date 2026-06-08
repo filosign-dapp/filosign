@@ -201,7 +201,6 @@ export async function buildEnvelopeSendPayload(args: {
 	const settlementRules = buildSettlementRulesForSend({
 		drafts: resolvedSettlementDrafts,
 		recipients: createForm.recipients,
-		combineLegs: createForm.combineSettlementLegs,
 		canUseAdvancedSettlements: canUseAdvancedSettlements(entitlements),
 	});
 

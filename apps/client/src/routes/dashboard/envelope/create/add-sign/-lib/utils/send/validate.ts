@@ -14,6 +14,9 @@ import {
 	validateAttachmentPacketDraftsForSend,
 } from "@/src/lib/domains/files/validate-attachment-packets";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
+import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements/payout-copy";
+import { settlementPayoutExceedsBalance } from "@/src/lib/domains/settlements/payout-totals";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { fieldsWithUnknownSignerEmails } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
 import {
@@ -117,6 +120,27 @@ export function validateRecipientProfiles(args: {
 	return null;
 }
 
+export function validateSettlementPayoutBalance(args: {
+	settlementDrafts: SettlementAttachmentDraft[] | undefined;
+	walletAddress: `0x${string}` | undefined;
+	walletBalance: bigint;
+}): EnvelopeSendValidationFailure | null {
+	if (
+		!settlementPayoutExceedsBalance({
+			drafts: args.settlementDrafts ?? [],
+			walletAddress: args.walletAddress,
+			walletBalance: args.walletBalance,
+		})
+	) {
+		return null;
+	}
+
+	return {
+		kind: "toast",
+		message: PAYOUT_EXCEEDS_BALANCE_MESSAGE,
+	};
+}
+
 export function validateAttachmentPacketsForSend(args: {
 	entitlements: EntitlementsSnapshot | undefined;
 	attachmentComposeDrafts: AttachmentPacketComposeDraft[];
@@ -161,10 +185,15 @@ export function collectColdRecipients(recipients: Recipient[]): Recipient[] {
 }
 
 export function rosterEmailsFromRecipients(recipients: Recipient[]): string[] {
-	return recipients
-		.map((r) => r.email?.trim())
-		.filter((email): email is string =>
-			Boolean(email && isValidRecipientEmail(email)),
-		)
-		.map((email) => normalizePlacementRecipientEmail(email));
+	const seen = new Set<string>();
+	const out: string[] = [];
+	for (const recipient of recipients) {
+		const raw = recipient.email?.trim();
+		if (!raw || !isValidRecipientEmail(raw)) continue;
+		const email = normalizePlacementRecipientEmail(raw);
+		if (seen.has(email)) continue;
+		seen.add(email);
+		out.push(email);
+	}
+	return out;
 }

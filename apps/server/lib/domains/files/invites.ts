@@ -1,9 +1,12 @@
 import { throwAppError } from "@filosign/errors/server";
-import { normalizePlacementRecipientEmail } from "@filosign/shared";
+import {
+	hashNormalizedSignerEmail,
+	normalizePlacementRecipientEmail,
+} from "@filosign/shared";
 import { zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
 import { and, eq, inArray } from "drizzle-orm";
-import type { Address } from "viem";
+import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import {
@@ -25,11 +28,21 @@ const {
 	users,
 	envelopeAttachmentPackets,
 	envelopeAttachmentPacketColdWraps,
+	envelopeAttachmentPacketRecipients,
 } = db.schema;
 
 export const zColdInviteClaimBody = z.object({
 	kemCiphertext: zHexString(),
 	encryptedEncryptionKey: zHexString(),
+	attachmentWraps: z
+		.array(
+			z.object({
+				packetId: z.string(),
+				kemCiphertext: zHexString(),
+				encryptedPacketDek: zHexString(),
+			}),
+		)
+		.optional(),
 });
 
 export const zColdInviteRegenerateBody = z.object({
@@ -304,6 +317,62 @@ export async function filesColdInviteClaim(args: {
 			.update(fileColdInvites)
 			.set(redactColdInviteRow(userWallet))
 			.where(eq(fileColdInvites.id, invite.id));
+
+		if (parsedBody.data.attachmentWraps?.length) {
+			const emailCommitment =
+				invite.emailCommitment ?? hashNormalizedSignerEmail(invite.email);
+			for (const wrap of parsedBody.data.attachmentWraps) {
+				const [packet] = await tx
+					.select({ id: envelopeAttachmentPackets.id })
+					.from(envelopeAttachmentPackets)
+					.where(
+						and(
+							eq(envelopeAttachmentPackets.filePieceCid, invite.filePieceCid),
+							eq(envelopeAttachmentPackets.packetId, wrap.packetId),
+						),
+					)
+					.limit(1);
+
+				if (packet) {
+					await tx
+						.insert(envelopeAttachmentPacketRecipients)
+						.values({
+							packetRowId: packet.id,
+							email: invite.email.trim().toLowerCase(),
+							emailCommitment,
+							deliveryKind: "cold_claimed" as const,
+							kemCiphertext: wrap.kemCiphertext as Hex,
+							encryptedPacketDek: wrap.encryptedPacketDek as Hex,
+							createdAt: now,
+							updatedAt: now,
+						})
+						.onConflictDoUpdate({
+							target: [
+								envelopeAttachmentPacketRecipients.packetRowId,
+								envelopeAttachmentPacketRecipients.email,
+							],
+							set: {
+								deliveryKind: "cold_claimed" as const,
+								kemCiphertext: wrap.kemCiphertext as Hex,
+								encryptedPacketDek: wrap.encryptedPacketDek as Hex,
+								updatedAt: now,
+							},
+						});
+
+					await tx
+						.delete(envelopeAttachmentPacketColdWraps)
+						.where(
+							and(
+								eq(envelopeAttachmentPacketColdWraps.packetRowId, packet.id),
+								eq(
+									envelopeAttachmentPacketColdWraps.email,
+									invite.email.trim().toLowerCase(),
+								),
+							),
+						);
+				}
+			}
+		}
 	});
 
 	trackServerEvent({

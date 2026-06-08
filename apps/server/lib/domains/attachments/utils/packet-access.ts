@@ -1,5 +1,4 @@
 import { throwAppError } from "@filosign/errors/server";
-import type { AttachmentPacketReleaseMode } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import type { Address } from "viem";
 import { fsAttachmentReleaseAt } from "@/lib/platform/evm";
@@ -41,46 +40,4 @@ export async function assertConditionalPacketReleased(args: {
 	if (cancelled || !released) {
 		throw throwAppError("ATTACHMENTS.FORBIDDEN");
 	}
-}
-
-export async function buildSenderPacketAccessResponse(args: {
-	packetId: string;
-	packetCid: string;
-	label: string | null;
-	releaseMode: AttachmentPacketReleaseMode;
-}) {
-	const storageKey = await assertAttachmentObjectExists(args.packetCid);
-	return {
-		packetId: args.packetId,
-		packetCid: args.packetCid,
-		label: args.label,
-		releaseMode: args.releaseMode,
-		downloadUrl: presignAttachmentDownload(storageKey),
-	};
-}
-
-export async function buildParticipantPacketAccessResponse(args: {
-	packetId: string;
-	packetCid: string;
-	label: string | null;
-	releaseMode: AttachmentPacketReleaseMode;
-	recipientRow?: {
-		kemCiphertext: string | null;
-		encryptedPacketDek: string | null;
-	} | null;
-}) {
-	const storageKey = await assertAttachmentObjectExists(args.packetCid);
-	return {
-		packetId: args.packetId,
-		packetCid: args.packetCid,
-		label: args.label,
-		releaseMode: args.releaseMode,
-		downloadUrl: presignAttachmentDownload(storageKey),
-		...(args.recipientRow?.kemCiphertext && args.recipientRow.encryptedPacketDek
-			? {
-					kemCiphertext: args.recipientRow.kemCiphertext,
-					encryptedPacketDek: args.recipientRow.encryptedPacketDek,
-				}
-			: {}),
-	};
 }

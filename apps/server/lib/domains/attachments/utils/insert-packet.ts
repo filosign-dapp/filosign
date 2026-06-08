@@ -60,6 +60,12 @@ export async function insertSingleAttachmentPacket(
 				: null,
 			registerRuleTxHash:
 				(packet.registerRuleTxHash as Hex | undefined) ?? null,
+			orgKemCiphertext: packet.orgWrap?.kemCiphertext
+				? (packet.orgWrap.kemCiphertext as Hex)
+				: null,
+			orgEncryptedPacketDek: packet.orgWrap?.encryptedPacketDek
+				? (packet.orgWrap.encryptedPacketDek as Hex)
+				: null,
 		})
 		.returning({ id: envelopeAttachmentPackets.id });
 
@@ -97,6 +103,19 @@ async function insertPacketRecipients(
 	},
 ): Promise<void> {
 	const wrappedEmails = new Set<string>();
+
+	if (args.packet.senderWrap) {
+		const sender = args.packet.senderWrap;
+		wrappedEmails.add(sender.email.trim().toLowerCase());
+		await tx.insert(envelopeAttachmentPacketRecipients).values({
+			packetRowId: args.packetRowId,
+			email: sender.email.trim().toLowerCase(),
+			emailCommitment: hashNormalizedSignerEmail(sender.email),
+			deliveryKind: "warm" as const,
+			kemCiphertext: sender.kemCiphertext as Hex,
+			encryptedPacketDek: sender.encryptedPacketDek as Hex,
+		});
+	}
 
 	if (args.packet.warmWraps?.length) {
 		for (const w of args.packet.warmWraps) {

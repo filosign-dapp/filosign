@@ -47,6 +47,22 @@ export async function tryExecuteAttachmentRelease(args: {
 		return { released: false, skipped: "relay_failed" };
 	}
 
+	await db
+		.update(attachmentReleaseRules)
+		.set({
+			releaseTxHash: txRes.data,
+			updatedAt: new Date(),
+		})
+		.where(
+			and(
+				eq(
+					attachmentReleaseRules.releaseContractAddress,
+					args.releaseContractAddress,
+				),
+				eq(attachmentReleaseRules.onChainRuleId, args.onChainRuleId),
+			),
+		);
+
 	return { released: true, txHash: txRes.data };
 }
 

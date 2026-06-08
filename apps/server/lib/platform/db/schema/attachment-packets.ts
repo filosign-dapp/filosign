@@ -122,6 +122,7 @@ export const attachmentReleaseRules = t.pgTable(
 		onChainRuleId: t.bigint({ mode: "bigint" }).notNull(),
 		releaseContractAddress: tEvmAddress().notNull(),
 		packetContentHash: tBytes32().notNull(),
+		releaseTxHash: tBytes32(),
 		...timestamps,
 	},
 	(table) => [

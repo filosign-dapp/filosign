@@ -5,12 +5,13 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import { z } from "zod";
 import { primaryEmailForWallet } from "@/lib/domains/files";
+import { getOrgMemberWithDocumentRead } from "@/lib/domains/orgs";
 import db from "@/lib/platform/db";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import {
+	assertAttachmentObjectExists,
 	assertConditionalPacketReleased,
-	buildParticipantPacketAccessResponse,
-	buildSenderPacketAccessResponse,
+	presignAttachmentDownload,
 } from "./utils/packet-access";
 
 const {
@@ -113,16 +114,11 @@ export async function attachmentsPacketAccess(args: {
 		emailKey,
 	});
 
-	if (access.isSender) {
-		return buildSenderPacketAccessResponse({
-			packetId: packet.packetId,
-			packetCid: packet.packetCid,
-			label: packet.label,
-			releaseMode: packet.releaseMode,
-		});
-	}
-
-	if (packet.releaseMode === "conditional") {
+	if (
+		packet.releaseMode === "conditional" &&
+		!access.isSender &&
+		!access.isOrgMember
+	) {
 		if (packet.onChainRuleId == null || !packet.releaseContractAddress) {
 			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
 				params: { reason: "Conditional packet missing on-chain rule" },
@@ -134,13 +130,31 @@ export async function attachmentsPacketAccess(args: {
 		});
 	}
 
-	return buildParticipantPacketAccessResponse({
+	let kemCiphertext: string | null = null;
+	let encryptedPacketDek: string | null = null;
+
+	if (access.isSender || access.recipientRow) {
+		kemCiphertext = access.recipientRow?.kemCiphertext ?? null;
+		encryptedPacketDek = access.recipientRow?.encryptedPacketDek ?? null;
+	} else if (access.isOrgMember) {
+		kemCiphertext = packet.orgKemCiphertext;
+		encryptedPacketDek = packet.orgEncryptedPacketDek;
+	}
+
+	const storageKey = await assertAttachmentObjectExists(packet.packetCid);
+	return {
 		packetId: packet.packetId,
 		packetCid: packet.packetCid,
 		label: packet.label,
 		releaseMode: packet.releaseMode,
-		recipientRow: access.recipientRow,
-	});
+		downloadUrl: presignAttachmentDownload(storageKey),
+		...(kemCiphertext && encryptedPacketDek
+			? {
+					kemCiphertext,
+					encryptedPacketDek,
+				}
+			: {}),
+	};
 }
 
 async function resolvePacketParticipantAccess(args: {
@@ -152,7 +166,10 @@ async function resolvePacketParticipantAccess(args: {
 	const userWallet = getAddress(args.userWallet);
 
 	const [file] = await db
-		.select({ sender: files.sender })
+		.select({
+			sender: files.sender,
+			organizationId: files.organizationId,
+		})
 		.from(files)
 		.where(eq(files.pieceCid, args.pieceCid))
 		.limit(1);
@@ -162,7 +179,10 @@ async function resolvePacketParticipantAccess(args: {
 
 	const isSender = getAddress(file.sender) === userWallet;
 	const [participant] = await db
-		.select({ wallet: fileParticipants.wallet })
+		.select({
+			wallet: fileParticipants.wallet,
+			emailCommitment: fileParticipants.emailCommitment,
+		})
 		.from(fileParticipants)
 		.where(
 			and(
@@ -172,24 +192,54 @@ async function resolvePacketParticipantAccess(args: {
 		)
 		.limit(1);
 
-	if (!isSender && !participant) {
+	let isOrgMember = false;
+	if (file.organizationId) {
+		const orgRead = await getOrgMemberWithDocumentRead(
+			userWallet,
+			file.organizationId,
+		);
+		isOrgMember = Boolean(orgRead);
+	}
+
+	if (!isSender && !participant && !isOrgMember) {
 		throw throwAppError("ATTACHMENTS.FORBIDDEN");
 	}
 
-	const [recipientRow] = await db
-		.select()
-		.from(envelopeAttachmentPacketRecipients)
-		.where(
-			and(
-				eq(envelopeAttachmentPacketRecipients.packetRowId, args.packetRowId),
-				eq(envelopeAttachmentPacketRecipients.email, args.emailKey),
-			),
-		)
-		.limit(1);
+	let recipientRow:
+		| typeof envelopeAttachmentPacketRecipients.$inferSelect
+		| undefined;
+	if (participant?.emailCommitment) {
+		[recipientRow] = await db
+			.select()
+			.from(envelopeAttachmentPacketRecipients)
+			.where(
+				and(
+					eq(envelopeAttachmentPacketRecipients.packetRowId, args.packetRowId),
+					eq(
+						envelopeAttachmentPacketRecipients.emailCommitment,
+						participant.emailCommitment,
+					),
+				),
+			)
+			.limit(1);
+	}
 
-	if (!recipientRow && !isSender) {
+	if (!recipientRow) {
+		[recipientRow] = await db
+			.select()
+			.from(envelopeAttachmentPacketRecipients)
+			.where(
+				and(
+					eq(envelopeAttachmentPacketRecipients.packetRowId, args.packetRowId),
+					eq(envelopeAttachmentPacketRecipients.email, args.emailKey),
+				),
+			)
+			.limit(1);
+	}
+
+	if (!recipientRow && !isSender && !isOrgMember) {
 		throw throwAppError("ATTACHMENTS.FORBIDDEN");
 	}
 
-	return { isSender, recipientRow };
+	return { isSender, isOrgMember, recipientRow };
 }

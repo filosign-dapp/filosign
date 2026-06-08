@@ -13,9 +13,14 @@ export type Recipient = {
 export type UploadedFile = {
 	id: string;
 	file: File;
+	/** Display name (original upload filename). */
 	name: string;
 	size: number;
+	/** Canonical signable bytes MIME (application/pdf after normalize). */
 	type: string;
+	/** MIME before PDF normalization (e.g. image/png). */
+	sourceMimeType?: string;
+	pageCount?: number;
 };
 
 import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
@@ -31,6 +36,10 @@ export type EnvelopeForm = {
 
 export const ALLOWED_FILE_TYPES = [
 	{ mime: "application/pdf", extensions: [".pdf"] },
+	{ mime: "image/png", extensions: [".png"] },
+	{ mime: "image/jpeg", extensions: [".jpg", ".jpeg"] },
+	{ mime: "image/webp", extensions: [".webp"] },
+	{ mime: "image/gif", extensions: [".gif"] },
 ] as const;
 
 export type AllowedFileMime = (typeof ALLOWED_FILE_TYPES)[number]["mime"];
@@ -49,6 +58,8 @@ export type StoredDocument = {
 	name: string;
 	size: number;
 	type: string;
+	sourceMimeType?: string;
+	pageCount?: number;
 };
 
 export type SignatureField = {

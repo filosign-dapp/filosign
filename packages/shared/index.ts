@@ -16,6 +16,7 @@ export * from "./utils/routing";
 export * from "./utils/settlement-legal";
 export * from "./utils/settlement-rules";
 export * from "./utils/sign-field-session";
+export * from "./utils/signable-document-upload";
 export * from "./utils/signature-artifact";
 export * from "./utils/signature-font-catalog";
 export * from "./utils/supplementary-attachment-upload";

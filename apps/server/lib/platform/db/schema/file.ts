@@ -86,6 +86,7 @@ export const files = t.pgTable(
 		t.index("idx_files_sender_created").on(table.sender, table.createdAt),
 		t.index("idx_files_organization").on(table.organizationId),
 		t.index("idx_files_registry_address").on(table.registryAddress),
+		t.index("idx_files_updated_piece").on(table.updatedAt, table.pieceCid),
 	],
 );
 

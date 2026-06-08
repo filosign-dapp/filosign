@@ -175,7 +175,7 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 
 - GDPR / retention policy
 - Second Dragonfly instance
-- `files.list` pagination
+- `documents.list` tab=all SQL union (in-memory merge pagination ships in app)
 - PgBouncer / multi-replica API
 
 ---

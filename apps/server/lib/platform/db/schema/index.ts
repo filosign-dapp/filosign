@@ -6,6 +6,7 @@ import * as drafts from "./drafts";
 import * as file from "./file";
 import * as foc from "./foc";
 import * as jobOutbox from "./job-outbox";
+import * as notifications from "./notifications";
 import * as organization from "./organization";
 import * as platformAccess from "./platform-access";
 import * as privacy from "./privacy";
@@ -28,6 +29,7 @@ const schema = {
 	...platformAccess,
 	...privacy,
 	...jobOutbox,
+	...notifications,
 };
 
 export * from "./activation";
@@ -38,6 +40,7 @@ export * from "./drafts";
 export * from "./file";
 export * from "./foc";
 export * from "./job-outbox";
+export * from "./notifications";
 export * from "./organization";
 export * from "./platform-access";
 export * from "./privacy";

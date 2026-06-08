@@ -38,6 +38,7 @@ export const envelopeDrafts = t.pgTable(
 		t
 			.index("idx_envelope_drafts_org_status")
 			.on(table.organizationId, table.status),
+		t.index("idx_envelope_drafts_updated_id").on(table.updatedAt, table.id),
 	],
 );
 

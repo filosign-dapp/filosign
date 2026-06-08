@@ -1,7 +1,7 @@
 import { useFilosignContext } from "@filosign/react";
 import {
+	invalidateDocumentsAndNotifications,
 	invalidateEntitlements,
-	invalidateInboxQueries,
 	invalidateOrgsQueries,
 	invalidateSharingQueries,
 } from "@filosign/react/invalidate-queries";
@@ -49,7 +49,7 @@ export function useSetPersistedActiveOrganizationId() {
 		useStorePersist.setState({ activeOrgId: v });
 		void Promise.all([
 			invalidateOrgsQueries(queryClient, rpcQuery),
-			invalidateInboxQueries(queryClient, rpcQuery),
+			invalidateDocumentsAndNotifications(queryClient, rpcQuery),
 			invalidateSharingQueries(queryClient, rpcQuery),
 			invalidateEntitlements(queryClient, rpcQuery),
 			queryClient.invalidateQueries({ queryKey: rpcQuery.files.key() }),

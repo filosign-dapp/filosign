@@ -22,6 +22,8 @@ interface SidebarState {
 	lastClickedMenu?: string;
 }
 
+export type DocumentsViewMode = "list" | "grid";
+
 interface ActivationUiState {
 	checklistDismissed: boolean;
 	checklistCollapsed: boolean;
@@ -53,6 +55,10 @@ interface StorePersist {
 
 	activationUi: ActivationUiState;
 	setActivationUi: (updates: Partial<ActivationUiState>) => void;
+
+	/** All Documents page: list vs grid layout. */
+	documentsViewMode: DocumentsViewMode;
+	setDocumentsViewMode: (mode: DocumentsViewMode) => void;
 }
 
 const defaultActivationUi: ActivationUiState = {
@@ -117,13 +123,27 @@ export const useStorePersist = create<StorePersist>()(
 				set((state) => ({
 					activationUi: { ...state.activationUi, ...updates },
 				})),
+
+			documentsViewMode: "list",
+			setDocumentsViewMode: (mode: DocumentsViewMode) =>
+				set({ documentsViewMode: mode }),
 		}),
 		{
 			name: "filosign-client",
-			version: 2,
+			version: 3,
+			migrate: (persistedState, version) => {
+				if (version < 3) {
+					return {
+						...(persistedState as object),
+						documentsViewMode: "list" as const,
+					};
+				}
+				return persistedState;
+			},
 			partialize: (state) => ({
 				activeOrgId: state.activeOrgId,
 				activationUi: state.activationUi,
+				documentsViewMode: state.documentsViewMode,
 				createForm: shouldPersistCreateFormToDisk()
 					? stripCreateFormForPersist(state.createForm)
 					: null,

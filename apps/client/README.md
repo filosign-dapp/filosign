@@ -112,7 +112,7 @@ lib/
   web3/                # config, providers, use-thirdweb (thirdweb + viemAdapter)
   filosign/            # filosign-provider, query-client, persisted-active-org, use-store
   auth/                # dashboard-protector, session gate, wallet unlock, connect
-  query/               # client re-exports: query-keys, invalidate-inbox
+  query/               # client re-exports: query-keys
   domains/             # cross-route product UX
     activation/        # onboarding hints, start-here, step hrefs
     billing/           # plan tiles, billing settings path
@@ -203,18 +203,18 @@ Keys come from **`useFilosignContext().rpcQuery`**, prefix `["filosign", <domain
 const { rpcQuery, isAuthed } = useFilosignRpc(); // apps: use domain hooks; SDK internals only
 
 useQuery({
-  ...rpcQuery.files.list.received.queryOptions(),
+  ...rpcQuery.documents.list.queryOptions({ tab: "received" }),
   enabled: isAuthed,
-  select: (data) => data.files,
+  select: (data) => data.items,
 });
 ```
 
 - **Fetch:** spread `queryOptions()` from the procedure helper.
-- **Invalidate one procedure:** `rpcQuery.files.list.received.key()`
+- **Invalidate one procedure:** `rpcQuery.documents.list.key({ tab: "received" })`
 - **Invalidate a domain:** `rpcQuery.sharing.key()` (prefix match - all procedures under sharing)
 - **Optional `enabled`:** pass `{ enabled: open }` on SDK hooks when data is not needed on mount (e.g. notifications popover).
 
-Multiple observers with the same `queryKey` share one request (React Query dedupes). Documents and notifications both use `useReceivedFiles()` → same key → one network call when both are enabled.
+Multiple observers with the same `queryKey` share one request (React Query dedupes).
 
 ### 2. Non-oRPC and derived client data
 
@@ -254,11 +254,13 @@ predicate: (q) =>
 
 ### Invalidation
 
-Prefer grouped helpers from [`@filosign/react/invalidate-queries`](../../packages/react-sdk/src/lib/invalidate-queries.ts). Client re-export for inbox: [`src/lib/query/invalidate-inbox.ts`](src/lib/query/invalidate-inbox.ts).
+Prefer grouped helpers from [`@filosign/react/invalidate-queries`](../../packages/react-sdk/src/lib/invalidate-queries.ts).
 
 | Helper | When |
 |--------|------|
-| `invalidateInboxQueries(qc, rpcQuery)` | Notifications: received files + share requests |
+| `invalidateDocumentsList(qc, rpcQuery)` | Unified documents list (`documents.list`) |
+| `invalidateNotificationsInbox(qc, rpcQuery)` | Bell notification feed (`notifications.inbox`) |
+| `invalidateDocumentsAndNotifications(qc, rpcQuery)` | Documents browser + bell after sign, send, dismiss |
 | `invalidateSharingQueries(qc, rpcQuery)` | Connections / sharing domain |
 | `invalidateOrgsQueries(qc, rpcQuery)` | Org membership / settings mutations |
 | `invalidateAuthQueries(qc, address)` | After login or recovery |
@@ -270,14 +272,13 @@ All helpers take `(queryClient, rpcQuery)` when touching oRPC - get `rpcQuery` f
 
 ### Batching
 
-- [`useFileInfosByPieceCids`](src/lib/domains/files/hooks/use-file-infos-by-piece-cids.ts) - piece detail per CID, deduped
 - SDK `useProfilesByAddresses` - profile lookup per address (cached; used on add-sign when wallets are set)
 
 Do not mount per-row `useQuery` in lists; batch at the controller.
 
 ### Deferred fetch
 
-Gate expensive lists until the UI needs them: `useReceivedFiles({ enabled: open })`, empty `pieceCids` when disabled. Route-level lists (e.g. Documents) stay `enabled: true` by default; cache is shared when the shell loads the same procedure later.
+Gate expensive lists until the UI needs them: `useNotificationsInbox({ enabled: open })`. Route-level lists (e.g. Documents) stay `enabled: true` by default; cache is shared when the shell loads the same procedure later.
 
 ---
 

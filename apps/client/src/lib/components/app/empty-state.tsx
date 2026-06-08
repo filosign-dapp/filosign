@@ -31,8 +31,8 @@ const presetClassName: Record<AppEmptyStatePreset, string> = {
 
 const variantClassName: Record<AppEmptyStateVariant, string> = {
 	default: "border-transparent",
-	outline: "border-border/80 bg-muted/5",
-	muted: "border-transparent bg-muted/30",
+	outline: "border-border/80",
+	muted: "border-transparent",
 };
 
 export function AppEmptyState({

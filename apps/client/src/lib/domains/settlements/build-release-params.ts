@@ -2,6 +2,7 @@ import type { SettlementRuleDraft } from "@filosign/react/files";
 import {
 	hashNormalizedSignerEmail,
 	normalizePlacementRecipientEmail,
+	normalizeSettlementReleaseType,
 	type SettlementReleaseType,
 } from "@filosign/shared";
 import type { Hex } from "viem";
@@ -45,7 +46,9 @@ export function buildReleaseParamsFromDraft(
 	draft: SettlementAttachmentDraft,
 	recipients: Recipient[],
 ): SettlementRuleDraft["releaseParams"] {
-	const releaseType = draft.releaseType satisfies SettlementReleaseType;
+	const releaseType = normalizeSettlementReleaseType(
+		draft.releaseType,
+	) satisfies SettlementReleaseType;
 	const signerCommitments = signerCommitmentsFromRecipients(recipients);
 
 	switch (releaseType) {

@@ -93,8 +93,6 @@ export type CreateForm = {
 	signatureFields: SignatureField[];
 	/** Teams Pro: sequential routing and quorum (no optional signers on-chain). */
 	registerRouting?: RegisterRoutingInput;
-	/** Teams Pro: merge recipient payouts into one multi-leg rule. */
-	combineSettlementLegs?: boolean;
 	/** Teams+: encrypted supplementary file packets sent with the envelope. */
 	attachmentPacketDrafts?: AttachmentPacketComposeDraft[];
 };

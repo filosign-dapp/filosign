@@ -1,6 +1,7 @@
 import {
 	type AttachmentPacketSendInput,
 	SUPPLEMENTARY_ATTACHMENT_LIMITS,
+	validateSupplementaryAttachmentFile,
 } from "@filosign/shared";
 import { attachmentFileByteLength } from "@/src/lib/domains/drafts/envelope-local-draft";
 
@@ -118,6 +119,17 @@ export function validateAttachmentPacketComposeDrafts(args: {
 				issues.push({
 					code: "FILE_TOO_LARGE",
 					message: `${file.name} exceeds the ${Math.round(SUPPLEMENTARY_ATTACHMENT_LIMITS.maxBytesPerFile / (1024 * 1024))}MB limit`,
+				});
+				continue;
+			}
+			const validated = validateSupplementaryAttachmentFile({
+				name: file.name,
+				sizeBytes: byteLength,
+			});
+			if (!validated.ok) {
+				issues.push({
+					code: validated.code,
+					message: validated.message,
 				});
 			}
 		}

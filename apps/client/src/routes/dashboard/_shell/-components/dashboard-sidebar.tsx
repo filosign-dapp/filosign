@@ -106,15 +106,6 @@ const groups: { label: string; items: NavItem[] }[] = [
 				tooltip: "Home",
 			},
 			{
-				title: "Drafts",
-				url: "/dashboard/document/all/",
-				search: { tab: "drafts" },
-				icon: EnvelopeSimpleIcon,
-				match: (p) => matchPrefix(p, "/dashboard/document/all"),
-				matchSearch: (search) => search.tab === "drafts",
-				tooltip: "Your drafts",
-			},
-			{
 				title: "Templates",
 				url: "/dashboard/templates/",
 				icon: FileTextIcon,
@@ -551,9 +542,6 @@ export function DashboardSidebar() {
 							</DropdownMenuGroup>
 						</DropdownMenuContent>
 					</DropdownMenu>
-					<p className="truncate px-2 text-[10px] leading-relaxed text-muted-foreground/55 group-data-[collapsible=icon]:hidden">
-						Private document signing
-					</p>
 				</SidebarFooter>
 				<SidebarRail />
 			</Sidebar>

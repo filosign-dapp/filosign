@@ -13,7 +13,7 @@ import {
 	PopoverTrigger,
 } from "@/src/lib/components/ui/popover";
 import { useNotificationsController } from "@/src/routes/dashboard/_shell/-lib/hooks/use-notifications-controller";
-import { ReceivedFileNotification } from "./received-file-notification";
+import { NotificationItem } from "./notification-item";
 
 export function NotificationsPopover() {
 	const n = useNotificationsController();
@@ -74,25 +74,22 @@ export function NotificationsPopover() {
 						</div>
 					)}
 
-					{n.visibleReceivedFiles.length > 0 && (
+					{n.items.length > 0 && (
 						<div className="p-4">
 							<div className="flex items-center gap-2 mb-4">
 								<FileTextIcon className="h-4 w-4 text-primary" />
 								<h4 className="text-sm font-semibold">Received Files</h4>
 								<Badge variant="secondary" className="text-xs">
-									{n.visibleReceivedFiles.length}
+									{n.items.length}
 								</Badge>
 							</div>
 
 							<div className="space-y-3">
-								{n.visibleReceivedFiles.map((file) => (
-									<ReceivedFileNotification
-										key={file.pieceCid}
-										pieceCid={file.pieceCid}
-										sender={file.sender}
-										file={n.fileInfoByPieceCid.get(file.pieceCid)}
+								{n.items.map((item) => (
+									<NotificationItem
+										key={item.id}
+										item={item}
 										setOpen={n.setOpen}
-										formatAddress={n.formatAddress}
 									/>
 								))}
 							</div>

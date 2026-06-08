@@ -2,17 +2,21 @@ import type { ReactNode } from "react";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 
+interface NotificationAction {
+	label: string;
+	onClick: () => void;
+	loading?: boolean;
+	variant?: "default" | "outline" | "destructive";
+}
+
 interface NotificationItemCardProps {
 	icon: ReactNode;
 	title: string;
 	subtitle?: string;
 	badge?: string;
-	actionButton?: {
-		label: string;
-		onClick: () => void;
-		loading?: boolean;
-		variant?: "default" | "outline" | "destructive";
-	};
+	actionButton?: NotificationAction;
+	primaryAction?: NotificationAction;
+	secondaryAction?: NotificationAction;
 	variant?: "default" | "warning" | "info";
 	className?: string;
 }
@@ -23,9 +27,13 @@ export function NotificationItemCard({
 	subtitle,
 	badge,
 	actionButton,
+	primaryAction,
+	secondaryAction,
 	variant = "default",
 	className = "",
 }: NotificationItemCardProps) {
+	const resolvedPrimary = primaryAction ?? actionButton;
+	const resolvedSecondary = secondaryAction;
 	const variantStyles = {
 		default: "bg-card border-border",
 		warning:
@@ -58,16 +66,31 @@ export function NotificationItemCard({
 						)}
 					</div>
 				</div>
-				{actionButton && (
-					<Button
-						size="sm"
-						variant={actionButton.variant || "default"}
-						onClick={actionButton.onClick}
-						disabled={actionButton.loading}
-						className="shrink-0 text-xs px-3 py-1 h-7"
-					>
-						{actionButton.loading ? "..." : actionButton.label}
-					</Button>
+				{(resolvedPrimary || resolvedSecondary) && (
+					<div className="flex shrink-0 items-center gap-1">
+						{resolvedSecondary ? (
+							<Button
+								size="sm"
+								variant={resolvedSecondary.variant || "outline"}
+								onClick={resolvedSecondary.onClick}
+								disabled={resolvedSecondary.loading}
+								className="text-xs px-3 py-1 h-7"
+							>
+								{resolvedSecondary.loading ? "..." : resolvedSecondary.label}
+							</Button>
+						) : null}
+						{resolvedPrimary ? (
+							<Button
+								size="sm"
+								variant={resolvedPrimary.variant || "default"}
+								onClick={resolvedPrimary.onClick}
+								disabled={resolvedPrimary.loading}
+								className="text-xs px-3 py-1 h-7"
+							>
+								{resolvedPrimary.loading ? "..." : resolvedPrimary.label}
+							</Button>
+						) : null}
+					</div>
 				)}
 			</div>
 		</div>

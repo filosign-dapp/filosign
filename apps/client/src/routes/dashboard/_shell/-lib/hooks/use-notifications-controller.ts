@@ -1,48 +1,35 @@
 import { useFilosignContext } from "@filosign/react";
-import { useReceivedFiles } from "@filosign/react/files";
+import { invalidateNotificationsInbox } from "@filosign/react/invalidate-queries";
+import {
+	type NotificationInboxItem,
+	useNotificationsInbox,
+} from "@filosign/react/notifications";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import { useFileInfosByPieceCids } from "@/src/lib/domains/files/hooks/use-file-infos-by-piece-cids";
-import { invalidateInboxQueries } from "@/src/lib/query/invalidate-inbox";
+import { useEffect, useMemo, useState } from "react";
 
 export function useNotificationsController() {
 	const [open, setOpen] = useState(false);
 
 	const queryClient = useQueryClient();
 	const { rpcQuery } = useFilosignContext();
-	const receivedFiles = useReceivedFiles();
+	const inbox = useNotificationsInbox();
 
-	const allReceivedFiles = useMemo(
-		() =>
-			receivedFiles.data && Array.isArray(receivedFiles.data)
-				? receivedFiles.data
-				: [],
-		[receivedFiles.data],
+	useEffect(() => {
+		if (open) void inbox.refetch();
+	}, [open]);
+
+	const items = useMemo(
+		(): NotificationInboxItem[] => inbox.data?.items ?? [],
+		[inbox.data?.items],
 	);
 
-	const visibleReceivedFiles = useMemo(
-		() => allReceivedFiles.filter((row) => !row.signedByMe),
-		[allReceivedFiles],
-	);
-
-	const pieceCids = useMemo(
-		() => visibleReceivedFiles.map((f) => f.pieceCid),
-		[visibleReceivedFiles],
-	);
-
-	const fileInfos = useFileInfosByPieceCids(open ? pieceCids : []);
-
-	const notificationCount = visibleReceivedFiles.length;
-
-	const isLoading = receivedFiles.isLoading;
-	const isFetching = receivedFiles.isFetching;
-
-	const formatAddress = (address: string) =>
-		`${address.slice(0, 6)}...${address.slice(-4)}`;
+	const notificationCount = inbox.data?.unreadCount ?? 0;
+	const isLoading = inbox.isLoading;
+	const isFetching = inbox.isFetching;
 
 	const refetchInbox = () => {
-		void receivedFiles.refetch();
-		void invalidateInboxQueries(queryClient, rpcQuery);
+		void inbox.refetch();
+		void invalidateNotificationsInbox(queryClient, rpcQuery);
 	};
 
 	return {
@@ -51,10 +38,7 @@ export function useNotificationsController() {
 		notificationCount,
 		isLoading,
 		isFetching,
-		allReceivedFiles,
-		visibleReceivedFiles,
-		fileInfoByPieceCid: fileInfos.byPieceCid,
-		formatAddress,
+		items,
 		refetchInbox,
 	};
 }

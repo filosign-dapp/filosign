@@ -7,6 +7,7 @@ export {
 	type AttachmentPacketDraft,
 	decryptAttachmentPacketAccess,
 	unwrapAttachmentPacketDekForCold,
+	wrapAttachmentPacketDekForWarm,
 } from "../../lib/attachment-packets";
 export {
 	type BasicPayoutGate,

@@ -127,6 +127,61 @@ describe("attachment packet E2EE", () => {
 		}
 	});
 
+	it("roundtrips post-cold-claim warm rewrap through decryptAttachmentPacketAccess", async () => {
+		const recipientSeed = randomBytes(64);
+		const recipientWallet = getAddress(`0x${"ab".repeat(20)}` as `0x${string}`);
+		const { publicKey: recipientEncryptionPublicKey } = await KEM.keyGen({
+			seed: recipientSeed,
+		});
+
+		const encryptedPacket = await encryptAttachmentPacket({
+			packet: {
+				packetId: "packet-cold",
+				releaseMode: "review",
+				recipientEmails: ["cold@example.com"],
+				files: [
+					{
+						id: "f1",
+						name: "review-only.pdf",
+						mimeType: "application/pdf",
+						bytes: new TextEncoder().encode("review packet"),
+					},
+				],
+			},
+		});
+
+		const warmWrap = await wrapAttachmentPacketDekForWarm({
+			packetCid: encryptedPacket.packetCid,
+			packetId: "packet-cold",
+			packetDek: encryptedPacket.packetDek,
+			recipient: {
+				email: "cold@example.com",
+				encryptionPublicKey: toHex(recipientEncryptionPublicKey),
+			},
+		});
+
+		const originalFetch = globalThis.fetch;
+		globalThis.fetch = (async () =>
+			new Response(new Uint8Array(encryptedPacket.ciphertext), {
+				status: 200,
+			})) as unknown as typeof fetch;
+
+		try {
+			setSessionSeed(recipientWallet, recipientSeed);
+			const files = await decryptAttachmentPacketAccess({
+				packetCid: encryptedPacket.packetCid,
+				recipientEmail: "cold@example.com",
+				downloadUrl: "https://example.test/packet",
+				kemCiphertext: warmWrap.kemCiphertext,
+				encryptedPacketDek: warmWrap.encryptedPacketDek,
+				keySeed: recipientSeed,
+			});
+			expect(files[0]?.name).toBe("review-only.pdf");
+		} finally {
+			globalThis.fetch = originalFetch;
+		}
+	});
+
 	it("encryptAttachmentPacket exposes stable packetContentHash", async () => {
 		const first = await encryptAttachmentPacket({
 			packet: {

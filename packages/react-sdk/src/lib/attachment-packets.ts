@@ -118,6 +118,25 @@ export async function decryptAttachmentPacketAccess(args: {
 }): Promise<DecryptedAttachmentPacketFile[]> {
 	const email = normalizePlacementRecipientEmail(args.recipientEmail);
 
+	const packetDek = await unwrapWarmAttachmentPacketDek({
+		kemCiphertext: args.kemCiphertext,
+		encryptedPacketDek: args.encryptedPacketDek,
+		keySeed: args.keySeed,
+		dekInfo: `${args.packetCid}:${email}`,
+	});
+
+	return fetchAndDecryptAttachmentPacketFiles({
+		packetDek,
+		downloadUrl: args.downloadUrl,
+	});
+}
+
+async function unwrapWarmAttachmentPacketDek(args: {
+	kemCiphertext: Hex;
+	encryptedPacketDek: Hex;
+	keySeed: Uint8Array;
+	dekInfo: string;
+}): Promise<Uint8Array> {
 	const { privateKey: userKemPrivate } = await KEM.keyGen({
 		seed: args.keySeed,
 	});
@@ -125,12 +144,17 @@ export async function decryptAttachmentPacketAccess(args: {
 		ciphertext: toBytes(args.kemCiphertext),
 		privateKeySelf: userKemPrivate,
 	});
-	const packetDek = await encryption.decrypt({
+	return encryption.decrypt({
 		ciphertext: toBytes(args.encryptedPacketDek),
 		secretKey: sharedSecret,
-		info: `${args.packetCid}:${email}`,
+		info: args.dekInfo,
 	});
+}
 
+async function fetchAndDecryptAttachmentPacketFiles(args: {
+	packetDek: Uint8Array;
+	downloadUrl: string;
+}): Promise<DecryptedAttachmentPacketFile[]> {
 	const downloadResponse = await fetch(args.downloadUrl, { method: "GET" });
 	if (!downloadResponse.ok) {
 		throw new Error(
@@ -140,7 +164,7 @@ export async function decryptAttachmentPacketAccess(args: {
 	const ciphertext = new Uint8Array(await downloadResponse.arrayBuffer());
 	const plaintext = await encryption.decrypt({
 		ciphertext,
-		secretKey: packetDek,
+		secretKey: args.packetDek,
 		info: ATTACHMENT_PACKET_ENCRYPTION_INFO,
 	});
 

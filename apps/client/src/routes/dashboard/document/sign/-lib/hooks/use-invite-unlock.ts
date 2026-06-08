@@ -11,6 +11,7 @@ import {
 	useClaimColdInvite,
 	useColdInviteDecrypt,
 	useColdInvitePayload,
+	wrapAttachmentPacketDekForWarm,
 } from "@filosign/react/files";
 import { invalidateUserProfile } from "@filosign/react/invalidate-queries";
 import {
@@ -19,6 +20,7 @@ import {
 } from "@filosign/react/query-keys";
 import { fetchUserProfile, useUserProfile } from "@filosign/react/users";
 import { buildClaimKemPayload } from "@filosign/react/utils";
+import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -191,8 +193,10 @@ export function useSignInviteUnlock(args: {
 		async (
 			dek: Uint8Array,
 			recipientEncryptionPk: Hex,
+			recipientEmail: string,
 			entitledPackets?: Array<{
 				packetId: string;
+				packetCid: string;
 				wrappedPacketDek: Hex | null;
 			}>,
 			phraseWord?: string,
@@ -217,6 +221,8 @@ export function useSignInviteUnlock(args: {
 			}> = [];
 
 			if (entitledPackets && phraseWord) {
+				const normalizedRecipientEmail =
+					normalizePlacementRecipientEmail(recipientEmail);
 				for (const packet of entitledPackets) {
 					if (packet.wrappedPacketDek) {
 						try {
@@ -225,16 +231,19 @@ export function useSignInviteUnlock(args: {
 								wrappedPacketDek: packet.wrappedPacketDek,
 								phrase: phraseWord,
 							});
-							const wrap = await buildClaimKemPayload({
-								dek: packetDek,
-								recipientEncryptionPk,
-								pieceCid,
-								recipientWalletAddress: recipientWallet,
+							const wrap = await wrapAttachmentPacketDekForWarm({
+								packetCid: packet.packetCid,
+								packetId: packet.packetId,
+								packetDek,
+								recipient: {
+									email: normalizedRecipientEmail,
+									encryptionPublicKey: recipientEncryptionPk,
+								},
 							});
 							attachmentWraps.push({
 								packetId: packet.packetId,
 								kemCiphertext: wrap.kemCiphertext,
-								encryptedPacketDek: wrap.encryptedEncryptionKey,
+								encryptedPacketDek: wrap.encryptedPacketDek,
 							});
 						} catch (err) {
 							console.error(
@@ -360,14 +369,21 @@ export function useSignInviteUnlock(args: {
 			});
 
 			// Cast entitledPackets to the type accepted by claimWithWalletWrap
+			const inviteRecipientEmail = invite.recipientEmails[0]?.trim();
+			if (!inviteRecipientEmail) {
+				throw new Error("Missing invite recipient email");
+			}
+
 			const entitledPacketsCast = invite.entitledPackets?.map((p) => ({
 				packetId: p.packetId,
+				packetCid: p.packetCid,
 				wrappedPacketDek: p.wrappedPacketDek as `0x${string}` | null,
 			}));
 
 			await claimWithWalletWrap(
 				result.encryptionKey,
 				recipientEncryptionPk,
+				inviteRecipientEmail,
 				entitledPacketsCast,
 				normalizedPhrase,
 			);

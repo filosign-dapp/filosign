@@ -1,6 +1,9 @@
 /** Canonical width for placement manifest coordinates (add-sign + sign). */
 export const PLACEMENT_VIEWPORT_WIDTH = 600;
 
+/** Horizontal gap between pages in add-sign strip layout (Tailwind `gap-6`). */
+export const PLACEMENT_PAGE_STRIP_GAP_PX = 24;
+
 export type PlacementRectPx = {
 	x: number;
 	y: number;

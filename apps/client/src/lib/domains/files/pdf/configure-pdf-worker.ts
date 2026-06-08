@@ -4,7 +4,7 @@ import { pdfjs } from "react-pdf";
 
 let configured = false;
 
-/** Idempotent - safe to call from every `PdfJsPreview` mount. */
+/** Idempotent - call once at app startup (`main.tsx`). */
 export function configurePdfWorker(): void {
 	if (configured) return;
 	configured = true;

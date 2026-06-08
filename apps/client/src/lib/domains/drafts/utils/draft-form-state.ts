@@ -1,3 +1,4 @@
+import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import type { DraftSnapshot } from "@filosign/shared";
 import { digestDraftSnapshot } from "@filosign/shared";
 import type {
@@ -5,6 +6,8 @@ import type {
 	EnvelopeForm,
 	SignatureField,
 } from "@/src/lib/domains/files/envelope-form-types";
+import { buildPlacementManifestForDocument } from "@/src/lib/domains/files/build-placement-manifest";
+import { defaultPlacementFieldRect } from "@/src/lib/domains/files/field-box";
 
 const PERSIST_STORAGE_KEY = "filosign-client";
 
@@ -42,6 +45,35 @@ export function clearPersistedCreateFormFromDisk(): void {
 	} catch {
 		// ignore corrupt storage
 	}
+}
+
+/** Rebuild placement manifest the same way draft save does (for digest parity). */
+export function placementManifestFromCreateForm(
+	form: CreateForm,
+): DraftSnapshot["placementManifest"] | null {
+	const doc = form.documents[0];
+	if (!doc) return null;
+	return buildPlacementManifestForDocument({
+		docId: doc.id,
+		signerEmailsInOrder: form.recipients
+			.filter((r) => r.role === "signer")
+			.map((r) => normalizePlacementRecipientEmail(r.email.trim())),
+		signatureFields: form.signatureFields ?? [],
+		docWidth: 612,
+		docHeight: 792,
+		fieldBox: defaultPlacementFieldRect("signature", false),
+		strict: false,
+	});
+}
+
+export function resolveCreateFormSnapshotDigest(
+	form: CreateForm,
+	fallbackPlacementManifest?: DraftSnapshot["placementManifest"],
+): string {
+	const placementManifest =
+		placementManifestFromCreateForm(form) ?? fallbackPlacementManifest;
+	if (!placementManifest) return "";
+	return digestCreateFormSnapshot(form, placementManifest);
 }
 
 export function buildDraftSnapshotFromForm(args: {

@@ -121,6 +121,14 @@ export async function sendFile(
 		warmRecipientsByEmail,
 		coldInvites,
 		coldPhrase: coldInvitesPrepared.phrase,
+		sender: deps.user.email
+			? {
+					email: deps.user.email,
+					encryptionPublicKey: deps.user.encryptionPublicKey,
+				}
+			: null,
+		organizationId,
+		orgEncryptionPublicKey,
 	});
 
 	if (

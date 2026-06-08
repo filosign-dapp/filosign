@@ -48,7 +48,7 @@ export async function registerConditionalAttachments(args: {
 					`Missing packet hash for conditional packet ${draft.packetId}`,
 				);
 			}
-			const releaseType = draft.releaseType ?? "all_required_signed";
+			const releaseType = draft.releaseType ?? "all_signed";
 			return {
 				packetId: draft.packetId,
 				packetContentHash: parseHexString(packet.packetContentHash),

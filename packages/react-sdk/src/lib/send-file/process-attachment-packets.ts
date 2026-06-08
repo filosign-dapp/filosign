@@ -1,3 +1,4 @@
+import { encryption, KEM, toBytes, toHex } from "@filosign/crypto-utils";
 import type { AttachmentPacketSendInput } from "@filosign/shared";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import type { AppRouterClient } from "../../orpc/app-router-types";
@@ -84,6 +85,9 @@ export async function processAttachmentPackets(args: {
 	warmRecipientsByEmail: SendFileWarmRecipient[];
 	coldInvites?: { email: string }[];
 	coldPhrase?: string;
+	sender?: { email: string; encryptionPublicKey: `0x${string}` } | null;
+	organizationId?: string | null;
+	orgEncryptionPublicKey?: `0x${string}` | null;
 }): Promise<AttachmentPacketSendInput[]> {
 	const warmByEmail = new Map(
 		args.warmRecipientsByEmail.map((r) => [
@@ -111,6 +115,40 @@ export async function processAttachmentPackets(args: {
 			coldPhrase: args.coldPhrase,
 		});
 
+		let senderWrap: AttachmentPacketSendInput["senderWrap"];
+		if (args.sender?.email && args.sender?.encryptionPublicKey) {
+			const wrap = await wrapAttachmentPacketDekForWarm({
+				packetCid: encryptedPacket.packetCid,
+				packetId: draft.packetId,
+				packetDek: encryptedPacket.packetDek,
+				recipient: {
+					email: normalizePlacementRecipientEmail(args.sender.email),
+					encryptionPublicKey: args.sender.encryptionPublicKey,
+				},
+			});
+			senderWrap = {
+				email: normalizePlacementRecipientEmail(args.sender.email),
+				kemCiphertext: wrap.kemCiphertext,
+				encryptedPacketDek: wrap.encryptedPacketDek,
+			};
+		}
+
+		let orgWrap: AttachmentPacketSendInput["orgWrap"];
+		if (args.orgEncryptionPublicKey && args.organizationId) {
+			const { ciphertext, sharedSecret } = await KEM.encapsulate({
+				publicKeyOther: toBytes(args.orgEncryptionPublicKey),
+			});
+			const encryptedPacketDek = await encryption.encrypt({
+				message: encryptedPacket.packetDek,
+				secretKey: sharedSecret,
+				info: `${encryptedPacket.packetCid}:org:${args.organizationId}`,
+			});
+			orgWrap = {
+				kemCiphertext: toHex(ciphertext),
+				encryptedPacketDek: toHex(encryptedPacketDek),
+			};
+		}
+
 		attachmentPackets.push({
 			packetId: draft.packetId,
 			label: draft.label,
@@ -124,6 +162,8 @@ export async function processAttachmentPackets(args: {
 			packetContentHash: encryptedPacket.packetContentHash,
 			warmWraps: warmWraps.length > 0 ? warmWraps : undefined,
 			coldWraps: coldWraps.length > 0 ? coldWraps : undefined,
+			senderWrap,
+			orgWrap,
 		});
 	}
 

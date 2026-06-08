@@ -29,6 +29,8 @@ export async function decryptDraftCommentsList(args: {
 		id: string;
 		ciphertext: string;
 		authorWallet?: string | null;
+		authorDisplayName?: string;
+		authorEmail?: string;
 		createdAt: string | Date;
 	}[];
 }): Promise<
@@ -36,6 +38,8 @@ export async function decryptDraftCommentsList(args: {
 		id: string;
 		body: string;
 		authorWallet: string | null | undefined;
+		authorDisplayName?: string;
+		authorEmail?: string;
 		createdAt: string;
 	}[]
 > {
@@ -43,6 +47,8 @@ export async function decryptDraftCommentsList(args: {
 		id: string;
 		body: string;
 		authorWallet: string | null | undefined;
+		authorDisplayName?: string;
+		authorEmail?: string;
 		createdAt: string;
 	}[] = [];
 
@@ -58,6 +64,8 @@ export async function decryptDraftCommentsList(args: {
 				id: row.id,
 				body,
 				authorWallet: row.authorWallet,
+				authorDisplayName: row.authorDisplayName,
+				authorEmail: row.authorEmail,
 				createdAt:
 					typeof row.createdAt === "string"
 						? row.createdAt
@@ -78,3 +86,5 @@ export async function decryptDraftCommentsList(args: {
 }
 
 export { useDraftCommentAppend } from "./useDraftCommentAppend";
+export { useDraftCommentDelete } from "./useDraftCommentDelete";
+export { useDraftCommentUpdate } from "./useDraftCommentUpdate";

@@ -5,7 +5,9 @@ export { useDecryptDraft } from "./useDecryptDraft";
 export {
 	decryptDraftCommentsList,
 	useDraftCommentAppend,
+	useDraftCommentDelete,
 	useDraftCommentsList,
+	useDraftCommentUpdate,
 } from "./useDraftComments";
 export { useDraftCommentsDecrypted } from "./useDraftCommentsDecrypted";
 export { useDraftGet } from "./useDraftGet";

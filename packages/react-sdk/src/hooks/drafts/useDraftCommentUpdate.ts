@@ -10,7 +10,7 @@ import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import { walletAccountAddress } from "../../utils/evm";
 import { invalidateDraftCommentQueries } from "./invalidate-draft-comments";
 
-export function useDraftCommentAppend() {
+export function useDraftCommentUpdate() {
 	const { wallet } = useFilosignContext();
 	const { rpc, rpcQuery, isAuthed } = useFilosignRpc();
 	const queryClient = useQueryClient();
@@ -18,10 +18,8 @@ export function useDraftCommentAppend() {
 	return useMutation({
 		mutationFn: async (args: {
 			draftId: string;
+			commentId: string;
 			body: string;
-			organizationId?: string | null;
-			inviteToken?: string;
-			/** When set (external review), decrypt DEK via warm/cold grant instead of org/user head. */
 			reviewDek?: Uint8Array;
 		}) => {
 			if (!wallet?.account || !isAuthed) {
@@ -50,19 +48,17 @@ export function useDraftCommentAppend() {
 				});
 			}
 
-			const commentId = crypto.randomUUID();
 			const ciphertext = await encryptDraftComment({
 				dek,
 				draftId: args.draftId,
-				commentId,
+				commentId: args.commentId,
 				body: trimmed,
 			});
 
-			return rpc.drafts.comments.append({
+			return rpc.drafts.comments.update({
 				draftId: args.draftId,
-				commentId,
+				commentId: args.commentId,
 				ciphertext: toHex(ciphertext),
-				inviteToken: args.inviteToken,
 			});
 		},
 		onSuccess: async (_data, variables) => {

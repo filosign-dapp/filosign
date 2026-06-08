@@ -224,9 +224,7 @@ function DraggableFieldOverlay({
 						{field.assignedSignerEmail}
 					</div>
 					<div className="truncate placement-field-subtle">
-						{field.type === "signature" || field.type === "initial"
-							? `${signatureFieldTypeLabel(field.type)}`
-							: signatureFieldTypeLabel(field.type)}
+						{signatureFieldTypeLabel(field.type)}
 					</div>
 				</div>
 				{field.required ? (

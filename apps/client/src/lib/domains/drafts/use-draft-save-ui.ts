@@ -87,7 +87,7 @@ export function useDraftSaveUi(args: {
 	const needsDraftNaming = !serverDraftId;
 
 	const persistDraftWithTitle = useCallback(
-		(title: string) => {
+		(title?: string) => {
 			if (!createForm || !placementManifest) return Promise.reject();
 			const doc = createForm.documents[0];
 			if (!doc) {
@@ -102,7 +102,10 @@ export function useDraftSaveUi(args: {
 				);
 				return Promise.reject();
 			}
-			const resolvedTitle = title.trim() || "Untitled draft";
+			const hasServerDraft = Boolean(createForm.serverDraftId?.trim());
+			const resolvedTitle = hasServerDraft
+				? title?.trim() || undefined
+				: title?.trim() || defaultDraftTitle.trim() || "Untitled draft";
 			if (import.meta.env.DEV) {
 				console.info("[draft-save]", "ui.click", {
 					serverDraftId: createForm.serverDraftId,
@@ -166,14 +169,15 @@ export function useDraftSaveUi(args: {
 			urlServerDraftId,
 			navigate,
 			hasChanges,
+			defaultDraftTitle,
 		],
 	);
 
 	const handleSaveDraft = useCallback(
 		(title?: string) => {
-			void persistDraftWithTitle(title ?? defaultDraftTitle);
+			void persistDraftWithTitle(title);
 		},
-		[persistDraftWithTitle, defaultDraftTitle],
+		[persistDraftWithTitle],
 	);
 
 	return {

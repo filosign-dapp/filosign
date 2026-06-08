@@ -1,12 +1,14 @@
-import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import type { DraftSnapshot } from "@filosign/shared";
-import { digestDraftSnapshot } from "@filosign/shared";
+import {
+	digestDraftSnapshot,
+	normalizePlacementRecipientEmail,
+} from "@filosign/shared";
+import { buildPlacementManifestForDocument } from "@/src/lib/domains/files/build-placement-manifest";
 import type {
 	CreateForm,
 	EnvelopeForm,
 	SignatureField,
 } from "@/src/lib/domains/files/envelope-form-types";
-import { buildPlacementManifestForDocument } from "@/src/lib/domains/files/build-placement-manifest";
 import { defaultPlacementFieldRect } from "@/src/lib/domains/files/field-box";
 
 const PERSIST_STORAGE_KEY = "filosign-client";

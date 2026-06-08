@@ -3,6 +3,7 @@ import {
 	FilePdfIcon,
 	FileTextIcon,
 	FolderOpenIcon,
+	PencilSimpleIcon,
 	TrashIcon,
 } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
@@ -33,8 +34,12 @@ export type DocumentCardProps = {
 	busy?: boolean;
 	draftId?: string;
 	onOpen: () => void;
+	onRenameDraft?: (draftId: string, currentTitle: string) => void;
+	renameDisabled?: boolean;
 	onDeleteDraft?: (draftId: string) => void;
 	deleteDisabled?: boolean;
+	/** Hide overlay / row action buttons; use context menu instead. */
+	hideInlineActions?: boolean;
 };
 
 function CardIcon({ kind }: { kind: DocumentCardKind }) {
@@ -206,14 +211,16 @@ function DocumentCardList(props: DocumentCardProps) {
 				<p className="truncate font-medium">{props.title}</p>
 				<p className="text-sm text-muted-foreground">{props.subtitle}</p>
 			</div>
-			<CardActions
-				kind={props.kind}
-				draftId={props.draftId}
-				busy={props.busy}
-				onOpen={handleOpen}
-				onDeleteDraft={props.onDeleteDraft}
-				deleteDisabled={props.deleteDisabled}
-			/>
+			{props.hideInlineActions ? null : (
+				<CardActions
+					kind={props.kind}
+					draftId={props.draftId}
+					busy={props.busy}
+					onOpen={handleOpen}
+					onDeleteDraft={props.onDeleteDraft}
+					deleteDisabled={props.deleteDisabled}
+				/>
+			)}
 		</DocumentCardShell>
 	);
 }
@@ -235,16 +242,18 @@ function DocumentCardGrid(props: DocumentCardProps) {
 					: "cursor-pointer hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
 			)}
 		>
-			<div className="absolute top-1.5 right-1.5 z-10">
-				<CardActions
-					kind={props.kind}
-					draftId={props.draftId}
-					busy={props.busy}
-					onOpen={handleOpen}
-					onDeleteDraft={props.onDeleteDraft}
-					deleteDisabled={props.deleteDisabled}
-				/>
-			</div>
+			{props.hideInlineActions ? null : (
+				<div className="absolute top-1.5 right-1.5 z-10">
+					<CardActions
+						kind={props.kind}
+						draftId={props.draftId}
+						busy={props.busy}
+						onOpen={handleOpen}
+						onDeleteDraft={props.onDeleteDraft}
+						deleteDisabled={props.deleteDisabled}
+					/>
+				</div>
+			)}
 			<div className="mb-2 flex aspect-4/3 items-center justify-center rounded-md bg-muted">
 				{props.busy ? (
 					<InlineLoader size="sm" />
@@ -262,6 +271,41 @@ function DocumentCardGrid(props: DocumentCardProps) {
 	);
 }
 
+function DraftContextMenuItems(props: {
+	draftId: string;
+	title: string;
+	onRenameDraft?: (draftId: string, currentTitle: string) => void;
+	renameDisabled?: boolean;
+	onDeleteDraft?: (draftId: string) => void;
+	deleteDisabled?: boolean;
+}) {
+	return (
+		<>
+			{props.onRenameDraft ? (
+				<ContextMenuItem
+					className="gap-2"
+					disabled={props.renameDisabled}
+					onClick={() => props.onRenameDraft?.(props.draftId, props.title)}
+				>
+					<PencilSimpleIcon className="size-4" aria-hidden />
+					Rename
+				</ContextMenuItem>
+			) : null}
+			{props.onDeleteDraft ? (
+				<ContextMenuItem
+					variant="destructive"
+					className="gap-2"
+					disabled={props.deleteDisabled}
+					onClick={() => props.onDeleteDraft?.(props.draftId)}
+				>
+					<TrashIcon className="size-4" aria-hidden />
+					Delete
+				</ContextMenuItem>
+			) : null}
+		</>
+	);
+}
+
 export function DocumentCard(props: DocumentCardProps) {
 	const handleOpen = () => {
 		if (props.busy) return;
@@ -275,6 +319,10 @@ export function DocumentCard(props: DocumentCardProps) {
 			<DocumentCardList {...props} />
 		);
 
+	const draftId = props.kind === "draft" ? props.draftId : undefined;
+	const showDraftContextActions =
+		draftId && (props.onRenameDraft || props.onDeleteDraft);
+
 	return (
 		<ContextMenu>
 			<ContextMenuTrigger className="block w-full">{card}</ContextMenuTrigger>
@@ -284,6 +332,16 @@ export function DocumentCard(props: DocumentCardProps) {
 					onOpen={handleOpen}
 					disabled={props.busy}
 				/>
+				{showDraftContextActions && draftId ? (
+					<DraftContextMenuItems
+						draftId={draftId}
+						title={props.title}
+						onRenameDraft={props.onRenameDraft}
+						renameDisabled={props.renameDisabled}
+						onDeleteDraft={props.onDeleteDraft}
+						deleteDisabled={props.deleteDisabled}
+					/>
+				) : null}
 			</ContextMenuContent>
 		</ContextMenu>
 	);

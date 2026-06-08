@@ -18,6 +18,7 @@ import type {
 import type { PlacementFieldRect } from "@/src/lib/domains/files/field-box";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
+import { useWalletUsdcBalance } from "@/src/lib/web3/use-wallet-usdc-balance";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { runEnvelopeSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/run";
 import { recipientResolvedSignerAddress } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
@@ -56,6 +57,8 @@ export function useSendEnvelope(args: {
 	const { data: selfProfile } = useUserProfile();
 	const setCreateForm = useStorePersist((s) => s.setCreateForm);
 	const isSendingRef = useRef(false);
+	const { address: walletAddress, balance: walletUsdcBalance } =
+		useWalletUsdcBalance();
 
 	const recipientAddresses = useMemo(
 		() =>
@@ -97,6 +100,8 @@ export function useSendEnvelope(args: {
 			placementDocHeight,
 			docWidth,
 			fieldBoxCss,
+			walletAddress,
+			walletUsdcBalance,
 			activeOrg,
 			selfProfile,
 			sendFile,
@@ -119,6 +124,8 @@ export function useSendEnvelope(args: {
 		placementDocHeight,
 		docWidth,
 		fieldBoxCss,
+		walletAddress,
+		walletUsdcBalance,
 		activeOrg,
 		selfProfile,
 		sendFile,

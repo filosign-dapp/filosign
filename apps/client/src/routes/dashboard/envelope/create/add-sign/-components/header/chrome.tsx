@@ -6,13 +6,25 @@ import {
 } from "@phosphor-icons/react";
 import Logo from "@/src/lib/components/app/chrome/logo";
 import { Button } from "@/src/lib/components/ui/button";
+import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
+import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements/payout-copy";
+import { useAttachedPayoutBalance } from "@/src/lib/domains/settlements/use-attached-payout-balance";
+import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn } from "@/src/lib/utils/utils";
 import { AddSignDraftActions } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft/actions";
 import { useAddSignChrome } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 
 export function AddSignHeader() {
 	const { sendStatus, handleSend } = useAddSignChrome();
+	const createForm = useStorePersist((s) => s.createForm);
+	const { exceedsBalance } = useAttachedPayoutBalance(
+		createForm?.settlementDrafts,
+	);
 	const isLoading = sendStatus === "loading" || sendStatus === "signing";
+	const sendBlocked = isLoading || exceedsBalance;
+	const sendReason = exceedsBalance
+		? PAYOUT_EXCEEDS_BALANCE_MESSAGE
+		: undefined;
 	const isSigning = sendStatus === "signing";
 	const isSuccess = sendStatus === "success";
 	const isError = sendStatus === "error";
@@ -68,18 +80,20 @@ export function AddSignHeader() {
 
 				<div className="flex items-center gap-3">
 					<AddSignDraftActions />
-					<Button
-						variant="primary"
-						onClick={handleSend}
-						disabled={isLoading}
-						className={cn(
-							"gap-2 transition-colors duration-300",
-							isSuccess && "bg-green-600 hover:bg-green-700",
-							isError && "bg-destructive hover:bg-destructive/90",
-						)}
-					>
-						{getButtonContent()}
-					</Button>
+					<DisabledTooltip disabled={sendBlocked} reason={sendReason}>
+						<Button
+							variant="primary"
+							onClick={handleSend}
+							disabled={sendBlocked}
+							className={cn(
+								"gap-2 transition-colors duration-300",
+								isSuccess && "bg-secondary hover:bg-secondary/90",
+								isError && "bg-destructive hover:bg-destructive/90",
+							)}
+						>
+							{getButtonContent()}
+						</Button>
+					</DisabledTooltip>
 				</div>
 			</div>
 		</header>

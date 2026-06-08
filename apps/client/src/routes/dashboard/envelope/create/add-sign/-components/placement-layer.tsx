@@ -41,7 +41,7 @@ export function PlacementCaptureLayer({
 				aria-label={`Click to place ${pendingFieldType} field`}
 			/>
 			<div className="pointer-events-none absolute inset-0 z-20 border-2 border-dashed border-secondary/50 bg-secondary/20">
-				<div className="absolute left-2 top-2 max-w-[min(100%,18rem)] rounded bg-secondary px-2 py-1 text-xs text-primary">
+				<div className="absolute left-2 top-2 max-w-min(100%,72) rounded bg-secondary px-2 py-1 text-xs text-primary">
 					Click the page to place {pendingFieldType}
 				</div>
 			</div>

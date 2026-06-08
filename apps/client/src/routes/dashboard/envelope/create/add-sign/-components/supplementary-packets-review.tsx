@@ -4,8 +4,7 @@ import {
 	canUseConditionalAttachmentRelease,
 	canUseSupplementaryAttachments,
 } from "@filosign/react/files";
-import { normalizePlacementRecipientEmail } from "@filosign/shared";
-import { PaperclipIcon, PencilSimpleIcon } from "@phosphor-icons/react";
+import { PencilSimpleIcon } from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
@@ -17,15 +16,17 @@ import {
 } from "@/src/lib/domains/drafts";
 import {
 	type AttachmentPacketComposeDraft,
-	attachmentPacketSummaryLabel,
+	removePacketById,
+	upsertPacketDraft,
 } from "@/src/lib/domains/files/attachment-packet-compose";
 import {
 	validateAttachmentPacketComposeDrafts,
 	validateAttachmentPacketDraftsForSend,
 } from "@/src/lib/domains/files/validate-attachment-packets";
-import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { AttachmentPacketDialog } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-dialog";
+import { AttachmentPacketSummaryCard } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-summary-card";
+import { rosterEmailsFromRecipients } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/validate";
 
 export function SupplementaryPacketsReview() {
 	const createForm = useStorePersist((s) => s.createForm);
@@ -49,19 +50,10 @@ export function SupplementaryPacketsReview() {
 		[drafts, editingId],
 	);
 
-	const rosterEmails = useMemo(() => {
-		const seen = new Set<string>();
-		const out: string[] = [];
-		for (const r of createForm?.recipients ?? []) {
-			const raw = r.email?.trim();
-			if (!raw || !isValidRecipientEmail(raw)) continue;
-			const email = normalizePlacementRecipientEmail(raw);
-			if (seen.has(email)) continue;
-			seen.add(email);
-			out.push(email);
-		}
-		return out;
-	}, [createForm?.recipients]);
+	const rosterEmails = useMemo(
+		() => rosterEmailsFromRecipients(createForm?.recipients ?? []),
+		[createForm?.recipients],
+	);
 
 	const validationIssues = useMemo(() => {
 		if (drafts.length === 0 || hydrating) return [];
@@ -91,22 +83,32 @@ export function SupplementaryPacketsReview() {
 	};
 
 	const handleSave = async (draft: AttachmentPacketComposeDraft) => {
-		const next = editingId
-			? drafts.map((d) => (d.packetId === editingId ? draft : d))
-			: [...drafts, draft];
+		const next = upsertPacketDraft(drafts, draft);
 		await saveAttachmentPacketDrafts(createForm.draftId, next);
 		setCreateForm({
 			...createForm,
 			attachmentPacketDrafts: next,
 		});
 		setEditingId(null);
+		setEditingDraft(undefined);
+	};
+
+	const handleRemove = async (packetId: string) => {
+		const next = removePacketById(drafts, packetId);
+		await saveAttachmentPacketDrafts(createForm.draftId, next);
+		setCreateForm({
+			...createForm,
+			attachmentPacketDrafts: next,
+		});
+		setEditingId(null);
+		setEditingDraft(undefined);
 	};
 
 	return (
 		<section className="space-y-3 rounded-xl border border-border/60 bg-muted/5 p-4">
 			<div className="flex items-start justify-between gap-2">
 				<div className="space-y-1">
-					<h3 className="text-sm font-semibold">Supplementary files</h3>
+					<h3 className="text-sm font-semibold">Attached file packets</h3>
 					<p className="text-xs text-muted-foreground">
 						{drafts.length} packet{drafts.length !== 1 ? "s" : ""} will be sent
 						with this envelope.
@@ -126,7 +128,7 @@ export function SupplementaryPacketsReview() {
 			{hydrating ? (
 				<p className="flex items-center gap-2 text-xs text-muted-foreground">
 					<InlineLoader className="size-3.5" />
-					Loading supplementary files…
+					Loading file packets…
 				</p>
 			) : null}
 
@@ -136,36 +138,24 @@ export function SupplementaryPacketsReview() {
 
 			<ul className="space-y-2">
 				{drafts.map((draft) => (
-					<li
+					<AttachmentPacketSummaryCard
 						key={draft.packetId}
-						className="flex items-start justify-between gap-2 rounded-md border border-border/40 px-2 py-1.5 text-xs"
-					>
-						<span className="flex min-w-0 items-start gap-2">
-							<PaperclipIcon
-								className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
-								weight="regular"
-							/>
-							<span className="min-w-0">
-								<span className="font-medium">
-									{draft.label?.trim() || "Supplementary packet"}
-								</span>
-								<span className="block text-muted-foreground">
-									{draft.files.length} file
-									{draft.files.length !== 1 ? "s" : ""} ·{" "}
-									{attachmentPacketSummaryLabel(draft, "After send")}
-								</span>
-							</span>
-						</span>
-						<Button
-							type="button"
-							variant="ghost"
-							size="icon-sm"
-							disabled={hydrating}
-							onClick={() => void openEdit(draft.packetId)}
-						>
-							<PencilSimpleIcon className="size-3.5" weight="regular" />
-						</Button>
-					</li>
+						draft={draft}
+						reviewLabel="After send"
+						compact
+						actions={
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								disabled={hydrating}
+								onClick={() => void openEdit(draft.packetId)}
+								aria-label="Edit file packet"
+							>
+								<PencilSimpleIcon className="size-3.5" weight="regular" />
+							</Button>
+						}
+					/>
 				))}
 			</ul>
 
@@ -179,12 +169,21 @@ export function SupplementaryPacketsReview() {
 
 			{dialogOpen ? (
 				<AttachmentPacketDialog
-					key={editingId ?? "new"}
 					open={dialogOpen}
-					onOpenChange={setDialogOpen}
+					onOpenChange={(open) => {
+						setDialogOpen(open);
+						if (!open) {
+							setEditingId(null);
+							setEditingDraft(undefined);
+						}
+					}}
 					recipients={createForm.recipients}
+					existingPacketId={editingId}
 					existingDraft={editingDraft ?? editingDraftFromStore}
 					onSave={(draft) => void handleSave(draft)}
+					onRemove={() => {
+						if (editingId) void handleRemove(editingId);
+					}}
 				/>
 			) : null}
 		</section>

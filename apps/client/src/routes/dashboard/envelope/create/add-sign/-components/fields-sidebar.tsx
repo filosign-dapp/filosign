@@ -2,7 +2,6 @@ import { useDraggable } from "@dnd-kit/core";
 import { motion } from "motion/react";
 import { Button } from "@/src/lib/components/ui/button";
 import { cn } from "@/src/lib/utils/utils";
-import { ComposeSettlementOptionsField } from "@/src/routes/dashboard/envelope/create/-components/compose-routing-field";
 import { ActiveAssigneeStrip } from "@/src/routes/dashboard/envelope/create/add-sign/-components/active-assignee-strip";
 import { SupplementaryPacketsReview } from "@/src/routes/dashboard/envelope/create/add-sign/-components/supplementary-packets-review";
 import { useAddSignPlacement } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
@@ -161,7 +160,6 @@ export default function SignatureFieldsSidebar() {
 
 			<div className="flex shrink-0 flex-col gap-4 border-t border-border p-4">
 				<SupplementaryPacketsReview />
-				<ComposeSettlementOptionsField />
 			</div>
 		</div>
 	);

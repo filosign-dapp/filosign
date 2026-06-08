@@ -8,6 +8,7 @@ import {
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
+import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
 import { Input } from "@/src/lib/components/ui/input";
 
 type DocumentViewerToolbarProps = {
@@ -72,40 +73,49 @@ export function DocumentViewerToolbar({
 				<PencilSimpleIcon className="size-5" />
 			</Button>
 			<div className="mx-0.5 hidden h-6 w-px bg-border sm:block" />
-			<Button
-				variant="ghost"
-				size="sm"
-				onClick={onUndo}
-				disabled={!canUndo}
-				className="text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-				title={canUndo ? "Undo" : "Nothing to undo"}
-			>
-				<ArrowCounterClockwiseIcon className="size-5" />
-			</Button>
-			<Button
-				variant="ghost"
-				size="sm"
-				onClick={onRedo}
-				disabled={!canRedo}
-				className="text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-				title={canRedo ? "Redo" : "Nothing to redo"}
-			>
-				<ArrowClockwiseIcon className="size-5" />
-			</Button>
+			<DisabledTooltip disabled={!canUndo} reason="Nothing to undo">
+				<Button
+					variant="ghost"
+					size="sm"
+					onClick={onUndo}
+					disabled={!canUndo}
+					className="text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+					title={canUndo ? "Undo" : undefined}
+				>
+					<ArrowCounterClockwiseIcon className="size-5" />
+				</Button>
+			</DisabledTooltip>
+			<DisabledTooltip disabled={!canRedo} reason="Nothing to redo">
+				<Button
+					variant="ghost"
+					size="sm"
+					onClick={onRedo}
+					disabled={!canRedo}
+					className="text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+					title={canRedo ? "Redo" : undefined}
+				>
+					<ArrowClockwiseIcon className="size-5" />
+				</Button>
+			</DisabledTooltip>
 			{isPdfDocument ? (
 				<>
 					<div className="mx-0.5 hidden h-6 w-px bg-border sm:block" />
-					<Button
-						variant="ghost"
-						size="sm"
-						type="button"
-						onClick={onPreviousPage}
+					<DisabledTooltip
 						disabled={pdfPageNumber <= 1}
-						className="text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-						title="Previous page"
+						reason="Already on first page"
 					>
-						<CaretLeftIcon className="size-5" />
-					</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							type="button"
+							onClick={onPreviousPage}
+							disabled={pdfPageNumber <= 1}
+							className="text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+							title={pdfPageNumber > 1 ? "Previous page" : undefined}
+						>
+							<CaretLeftIcon className="size-5" />
+						</Button>
+					</DisabledTooltip>
 					<div className="flex items-center gap-1 text-xs text-muted-foreground sm:text-sm">
 						<Input
 							className="h-8 w-12 px-1 text-center tabular-nums"
@@ -122,17 +132,26 @@ export function DocumentViewerToolbar({
 							/ {pdfNumPages == null ? "…" : pdfNumPages}
 						</span>
 					</div>
-					<Button
-						variant="ghost"
-						size="sm"
-						type="button"
-						onClick={onNextPage}
+					<DisabledTooltip
 						disabled={pdfNumPages != null && pdfPageNumber >= pdfNumPages}
-						className="text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-						title="Next page"
+						reason="Already on last page"
 					>
-						<CaretRightIcon className="size-5" />
-					</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							type="button"
+							onClick={onNextPage}
+							disabled={pdfNumPages != null && pdfPageNumber >= pdfNumPages}
+							className="text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+							title={
+								pdfNumPages == null || pdfPageNumber < pdfNumPages
+									? "Next page"
+									: undefined
+							}
+						>
+							<CaretRightIcon className="size-5" />
+						</Button>
+					</DisabledTooltip>
 				</>
 			) : null}
 		</div>

@@ -30,7 +30,9 @@ export function DraftsPanel() {
 					type="button"
 					variant="outline"
 					size="sm"
-					render={<Link to="/dashboard/drafts" />}
+					render={
+						<Link to="/dashboard/document/all" search={{ tab: "drafts" }} />
+					}
 				>
 					View all drafts
 				</Button>

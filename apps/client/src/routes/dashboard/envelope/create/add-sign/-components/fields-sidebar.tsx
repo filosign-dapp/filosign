@@ -11,7 +11,6 @@ import {
 import { cn } from "@/src/lib/utils/utils";
 import { ActiveAssigneeStrip } from "@/src/routes/dashboard/envelope/create/add-sign/-components/active-assignee-strip";
 import { PlacedFieldsSheet } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placed-fields-sheet";
-import { SupplementaryPacketsReview } from "@/src/routes/dashboard/envelope/create/add-sign/-components/supplementary-packets-review";
 import { useAddSignPlacement } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 import { paletteDraggableId } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-dnd-context";
 import { countFieldsByAssignee } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/active-assignees";
@@ -122,7 +121,9 @@ export default function SignatureFieldsSidebar() {
 					</CollapsibleTrigger>
 					<CollapsibleContent className="mt-3 space-y-4">
 						<p className="text-xs text-muted-foreground">
-							Pick a signer, then drag a field onto the page.
+							Pick a signer, then drag a field onto the page. Use Shift or
+							⌘/Ctrl+click to multi-select; ⌘/Ctrl+drag on empty canvas to
+							select several fields.
 						</p>
 
 						<ActiveAssigneeStrip
@@ -151,14 +152,10 @@ export default function SignatureFieldsSidebar() {
 						) : null}
 					</CollapsibleContent>
 				</Collapsible>
-
-				<div className="hidden lg:block">
-					<PlacedFieldsSheet variant="sidebar" />
-				</div>
 			</div>
 
-			<div className="flex shrink-0 flex-col gap-4 border-t border-border p-4">
-				<SupplementaryPacketsReview />
+			<div className="hidden shrink-0 border-t border-border p-3 lg:block">
+				<PlacedFieldsSheet variant="sidebar" />
 			</div>
 		</div>
 	);

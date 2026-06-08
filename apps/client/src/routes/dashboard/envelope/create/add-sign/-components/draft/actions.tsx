@@ -2,22 +2,36 @@ import { useEntitlements } from "@filosign/react/billing";
 import {
 	ArrowSquareOutIcon,
 	ChatCircleIcon,
+	DotsThreeIcon,
 	FileTextIcon,
+	FloppyDiskIcon,
+	KeyIcon,
+	SpinnerGapIcon,
 } from "@phosphor-icons/react";
 import { getRouteApi } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useCryptoRequired } from "@/src/lib/auth/use-crypto-required";
-import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
-import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
+import {
+	ButtonGroup,
+	ButtonGroupText,
+} from "@/src/lib/components/ui/button-group";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/src/lib/components/ui/dropdown-menu";
 import { useDraftCommentCount, useDraftSaveUi } from "@/src/lib/domains/drafts";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
+import { cn } from "@/src/lib/utils/utils";
 import { ShareDraftDialog } from "@/src/routes/dashboard/envelope/create/-components/share-draft-dialog";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 import { DraftCommentsSheet } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft/comments-sheet";
 import { DraftCryptoRecoveryDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft/crypto-recovery-dialog";
-import { DraftSaveButton } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft/save-button";
+import { DraftSaveDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft/save-dialog";
 import { DraftTemplateDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft/template-dialog";
 
 const addSignRouteApi = getRouteApi("/dashboard/envelope/create/add-sign/");
@@ -59,6 +73,28 @@ function draftActionTitle(args: {
 	return undefined;
 }
 
+function draftStatusLabel(args: {
+	isSaving: boolean;
+	hasChanges: boolean;
+	isSavedToServer: boolean;
+	showSavedState: boolean;
+	hasServerDraft: boolean;
+}) {
+	if (args.isSaving) {
+		return { label: "Saving", dotClass: "bg-muted-foreground animate-pulse" };
+	}
+	if (args.showSavedState || args.isSavedToServer) {
+		return { label: "Saved", dotClass: "bg-emerald-500" };
+	}
+	if (args.hasChanges) {
+		return { label: "Unsaved", dotClass: "bg-amber-500" };
+	}
+	if (args.hasServerDraft) {
+		return { label: "Saved", dotClass: "bg-emerald-500" };
+	}
+	return { label: "Unsaved", dotClass: "bg-amber-500" };
+}
+
 export function AddSignDraftActions() {
 	const { serverDraftId: urlServerDraftId } = addSignRouteApi.useSearch();
 	const createForm = useStorePersist((s) => s.createForm);
@@ -66,10 +102,12 @@ export function AddSignDraftActions() {
 	const [shareOpen, setShareOpen] = useState(false);
 	const [commentsOpen, setCommentsOpen] = useState(false);
 	const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
+	const [saveDialogOpen, setSaveDialogOpen] = useState(false);
 	const [showCryptoRecoveryDialog, setShowCryptoRecoveryDialog] =
 		useState(false);
 	const promptPlanUpgrade = usePromptPlanUpgrade();
 
+	const planId = entitlements?.planId;
 	const needsDraftCrypto =
 		Boolean(createForm?.serverDraftId) &&
 		(createForm?.serverDraftRevision ?? 0) > 0;
@@ -81,8 +119,10 @@ export function AddSignDraftActions() {
 		hasChanges,
 		isSavedToServer,
 		showSavedState,
-		savedLabel,
 		handleSaveDraft,
+		persistDraftWithTitle,
+		needsDraftNaming,
+		defaultDraftTitle,
 	} = useDraftSaveUi({
 		urlServerDraftId,
 		createForm,
@@ -93,10 +133,13 @@ export function AddSignDraftActions() {
 	const commentCount = useDraftCommentCount(serverDraftId);
 	const badgeLabel = formatCommentBadgeCount(commentCount);
 
-	const planId = entitlements?.planId;
 	const showComments = Boolean(
 		entitlements?.features["features.draft_comments"]?.enabled,
 	);
+	const showTemplates = Boolean(
+		entitlements?.features["features.shared_templates"]?.enabled,
+	);
+
 	const shareDisabled = draftActionDisabled({
 		planId,
 		serverDraftId,
@@ -111,6 +154,13 @@ export function AddSignDraftActions() {
 		needsDraftCrypto,
 		cryptoReady: cryptoRequired.isReady,
 	});
+
+	const saveDisabled =
+		planId !== "free" &&
+		(isSaving ||
+			(needsDraftCrypto && !cryptoRequired.isReady) ||
+			(isSavedToServer && !hasChanges) ||
+			(createForm?.documents.length ?? 0) === 0);
 
 	useEffect(() => {
 		if (needsDraftCrypto && cryptoRequired.needsRecovery) {
@@ -128,109 +178,149 @@ export function AddSignDraftActions() {
 		}
 	}, [cryptoRequired]);
 
+	const runSave = useCallback(
+		(title?: string) => {
+			if (planId === "free") {
+				promptPlanUpgrade("documents.sent.monthly");
+				return;
+			}
+			handleSaveDraft(title);
+		},
+		[planId, promptPlanUpgrade, handleSaveDraft],
+	);
+
+	const handleSaveClick = useCallback(() => {
+		if (needsDraftNaming) {
+			setSaveDialogOpen(true);
+			return;
+		}
+		runSave();
+	}, [needsDraftNaming, runSave]);
+
 	const handleShareClick = () => {
 		if (planId === "free") {
 			promptPlanUpgrade("documents.sent.monthly");
 			return;
 		}
+		if (shareDisabled) return;
 		setShareOpen(true);
 	};
 
+	const status = draftStatusLabel({
+		isSaving,
+		hasChanges,
+		isSavedToServer,
+		showSavedState,
+		hasServerDraft: Boolean(serverDraftId),
+	});
+
 	return (
 		<>
-			<div className="flex items-center gap-2">
-				<DraftSaveButton
-					planId={planId}
-					isSaving={isSaving}
-					showSavedState={showSavedState}
-					savedLabel={savedLabel}
-					hasChanges={hasChanges}
-					isSavedToServer={isSavedToServer}
-					needsDraftCrypto={needsDraftCrypto}
-					cryptoReady={cryptoRequired.isReady}
-					needsRecovery={cryptoRequired.needsRecovery}
-					documentCount={createForm?.documents.length ?? 0}
-					onSave={handleSaveDraft}
-					onPromptUpgrade={() => promptPlanUpgrade("documents.sent.monthly")}
-				/>
-				{needsDraftCrypto && cryptoRequired.needsRecovery ? (
+			<ButtonGroup aria-label="Draft actions">
+				<ButtonGroupText
+					className={cn(
+						"hidden h-10 gap-2 border-border/60 bg-muted/30 px-2.5 text-xs font-normal text-muted-foreground shadow-none sm:flex",
+					)}
+				>
+					{isSaving ? (
+						<SpinnerGapIcon className="size-3 animate-spin" aria-hidden />
+					) : (
+						<span
+							className={cn("size-2 rounded-full", status.dotClass)}
+							aria-hidden
+						/>
+					)}
+					<span>{status.label}</span>
+				</ButtonGroupText>
+				<Button
+					type="button"
+					variant="outline"
+					size="lg"
+					className="gap-1.5"
+					disabled={saveDisabled}
+					isLoading={isSaving}
+					onClick={handleSaveClick}
+				>
+					<FloppyDiskIcon className="size-4" />
+					<span className="hidden sm:inline">Save draft</span>
+				</Button>
+				{showComments ? (
 					<Button
 						type="button"
 						variant="outline"
-						size="sm"
-						onClick={() => setShowCryptoRecoveryDialog(true)}
+						size="icon-lg"
+						className="relative"
+						disabled={!serverDraftId}
+						aria-label={
+							badgeLabel ? `Comments, ${badgeLabel} total` : "Comments"
+						}
+						onClick={() => setCommentsOpen(true)}
 					>
-						Unlock keys
+						<ChatCircleIcon className="size-4" />
+						{badgeLabel ? (
+							<span className="absolute -top-1 -right-1 flex size-4 min-w-4 items-center justify-center rounded-full bg-secondary px-0.5 text-[10px] font-medium leading-none text-secondary-foreground">
+								{badgeLabel}
+							</span>
+						) : null}
 					</Button>
 				) : null}
-				<DisabledTooltip disabled={shareDisabled} reason={shareDisabledReason}>
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						disabled={shareDisabled}
-						onClick={handleShareClick}
-						className="gap-1.5"
-					>
-						<ArrowSquareOutIcon className="size-4" />
-						<span>Share draft</span>
-					</Button>
-				</DisabledTooltip>
-				{entitlements?.features["features.shared_templates"]?.enabled && (
-					<DisabledTooltip
-						disabled={!serverDraftId}
-						reason="Save draft first to save as template"
-					>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							disabled={!serverDraftId}
-							onClick={() => setTemplateDialogOpen(true)}
-							className="gap-1.5"
-						>
-							<FileTextIcon className="size-4 text-secondary" weight="bold" />
-							<span>Save as Template</span>
-						</Button>
-					</DisabledTooltip>
-				)}
-				{showComments ? (
-					<>
-						<DisabledTooltip
-							disabled={!serverDraftId}
-							reason="Save draft first to enable comments"
-						>
+				<DropdownMenu>
+					<DropdownMenuTrigger
+						render={
 							<Button
 								type="button"
 								variant="outline"
-								size="sm"
+								size="icon-lg"
+								aria-label="More draft options"
+							/>
+						}
+					>
+						<DotsThreeIcon className="size-4" weight="bold" />
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end" className="w-52">
+						<DropdownMenuItem
+							disabled={shareDisabled}
+							onClick={handleShareClick}
+							title={shareDisabled ? shareDisabledReason : undefined}
+						>
+							<ArrowSquareOutIcon className="size-4" />
+							Share draft
+						</DropdownMenuItem>
+						{showTemplates ? (
+							<DropdownMenuItem
 								disabled={!serverDraftId}
-								aria-describedby={
-									serverDraftId ? undefined : "add-sign-comments-hint"
-								}
-								className="relative gap-1.5"
-								onClick={() => setCommentsOpen(true)}
+								onClick={() => setTemplateDialogOpen(true)}
 							>
-								<ChatCircleIcon className="size-4 shrink-0" aria-hidden />
-								<span className="hidden sm:inline">Comments</span>
-								{badgeLabel ? (
-									<Badge
-										variant="secondary"
-										className="h-4 min-w-4 px-1 py-0 text-[10px] sm:ml-0.5"
-									>
-										{badgeLabel}
-									</Badge>
-								) : null}
-							</Button>
-						</DisabledTooltip>
-						{!serverDraftId ? (
-							<span id="add-sign-comments-hint" className="sr-only">
-								Save draft first to enable comments
-							</span>
+								<FileTextIcon className="size-4" />
+								Save as template
+							</DropdownMenuItem>
 						) : null}
-					</>
-				) : null}
-			</div>
+						{needsDraftCrypto && cryptoRequired.needsRecovery ? (
+							<>
+								<DropdownMenuSeparator />
+								<DropdownMenuItem
+									onClick={() => setShowCryptoRecoveryDialog(true)}
+								>
+									<KeyIcon className="size-4" />
+									Unlock keys
+								</DropdownMenuItem>
+							</>
+						) : null}
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</ButtonGroup>
+
+			<DraftSaveDialog
+				open={saveDialogOpen}
+				onOpenChange={setSaveDialogOpen}
+				defaultTitle={defaultDraftTitle}
+				isSaving={isSaving}
+				onConfirm={(title) => {
+					setSaveDialogOpen(false);
+					void persistDraftWithTitle(title);
+				}}
+			/>
+
 			{serverDraftId ? (
 				<>
 					{showComments ? (

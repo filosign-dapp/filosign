@@ -5,7 +5,6 @@ import {
 	CircleIcon,
 	CopyIcon,
 	DotsSixVerticalIcon,
-	StackIcon,
 	TrashIcon,
 } from "@phosphor-icons/react";
 import { memo, useCallback, useRef } from "react";
@@ -39,12 +38,10 @@ type DraggableFieldOverlayProps = {
 	margin: number;
 	isMobile: boolean;
 	isPlacingField: boolean;
-	pdfNumPages: number | null;
 	onFieldClick: (fieldId: string, event: React.MouseEvent) => void;
 	onFieldRemove: (fieldId: string) => void;
 	onFieldUpdate: (fieldId: string, updates: Partial<SignatureField>) => void;
 	onFieldDuplicate: (fieldId: string) => void;
-	onRepeatOnAllPages: (fieldId: string) => void;
 	onResizeStart: () => void;
 	onResizeEnd: () => void;
 };
@@ -58,20 +55,18 @@ function DraggableFieldOverlay({
 	margin,
 	isMobile,
 	isPlacingField,
-	pdfNumPages,
 	onFieldClick,
 	onFieldRemove,
 	onFieldUpdate,
 	onFieldDuplicate,
-	onRepeatOnAllPages,
 	onResizeStart,
 	onResizeEnd,
 }: DraggableFieldOverlayProps) {
-	const { pageRef } = usePlacementCanvas();
+	const { getPageEl } = usePlacementCanvas();
+	const pageEl = getPageEl(field.page);
 	const resizeStartRef = useRef<{ width: number; startX: number } | null>(null);
 	const isSelected = selectedFieldIds.has(field.id);
-	const isPrimarySelected =
-		isSelected && selectedFieldIds.size === 1 && selectedFieldIds.has(field.id);
+	const isPrimarySelected = isSelected && selectedFieldIds.size === 1;
 
 	const { attributes, listeners, setNodeRef, transform, isDragging } =
 		useDraggable({
@@ -118,7 +113,7 @@ function DraggableFieldOverlay({
 			const onMove = (ev: PointerEvent) => {
 				const start = resizeStartRef.current;
 				if (!start) return;
-				const pageEl = pageRef.current;
+				const pageEl = getPageEl(field.page);
 				const scale =
 					pageEl && pageEl.offsetWidth > 0
 						? pageEl.getBoundingClientRect().width / pageEl.offsetWidth
@@ -169,7 +164,7 @@ function DraggableFieldOverlay({
 			onFieldUpdate,
 			onResizeEnd,
 			onResizeStart,
-			pageRef,
+			getPageEl,
 			viewport,
 			defaults.aspectRatio,
 			otherRects,
@@ -179,24 +174,22 @@ function DraggableFieldOverlay({
 	const dragStyle = transform
 		? {
 				transform: CSS.Translate.toString(
-					dragTransformInPageSpace(transform, pageScale(pageRef.current)),
+					dragTransformInPageSpace(transform, pageScale(pageEl)),
 				),
 			}
 		: undefined;
-
-	const showRepeat =
-		isPrimarySelected && pdfNumPages != null && pdfNumPages > 1;
 
 	return (
 		// biome-ignore lint/a11y/noStaticElementInteractions: field placement overlay click is handled on canvas container
 		// biome-ignore lint/a11y/useKeyWithClickEvents: canvas keyboard support is out of scope for field placement
 		<div
 			ref={setNodeRef}
+			data-field-id={field.id}
 			className={cn(
 				PLACEMENT_FIELD_OVERLAY_CLASS,
 				"absolute box-border select-none group z-30 touch-none",
-				isPlacingField ? "cursor-default" : "cursor-move",
-				isDragging && "opacity-40",
+				isPlacingField ? "pointer-events-none cursor-default" : "cursor-move",
+				isDragging && "z-40 opacity-90 shadow-lg",
 			)}
 			style={{
 				left: rect.x,
@@ -246,20 +239,6 @@ function DraggableFieldOverlay({
 				)}
 				{isPrimarySelected ? (
 					<div className="flex shrink-0 items-center gap-0.5">
-						{showRepeat ? (
-							<button
-								type="button"
-								className="rounded p-0.5 hover:bg-placement-chrome-foreground/15"
-								onClick={(e) => {
-									e.stopPropagation();
-									onRepeatOnAllPages(field.id);
-								}}
-								aria-label="Repeat on all pages"
-								title="Repeat on all pages"
-							>
-								<StackIcon className="size-3" />
-							</button>
-						) : null}
 						<button
 							type="button"
 							className="rounded p-0.5 hover:bg-placement-chrome-foreground/15"
@@ -305,12 +284,10 @@ type SignatureFieldOverlaysProps = {
 	margin: number;
 	isMobile: boolean;
 	isPlacingField: boolean;
-	pdfNumPages: number | null;
 	onFieldClick: (fieldId: string, event: React.MouseEvent) => void;
 	onFieldRemove: (fieldId: string) => void;
 	onFieldUpdate: (fieldId: string, updates: Partial<SignatureField>) => void;
 	onFieldDuplicate: (fieldId: string) => void;
-	onRepeatOnAllPages: (fieldId: string) => void;
 	onResizeStart: () => void;
 	onResizeEnd: () => void;
 };
@@ -323,12 +300,10 @@ export const SignatureFieldOverlays = memo(function SignatureFieldOverlays({
 	margin,
 	isMobile,
 	isPlacingField,
-	pdfNumPages,
 	onFieldClick,
 	onFieldRemove,
 	onFieldUpdate,
 	onFieldDuplicate,
-	onRepeatOnAllPages,
 	onResizeStart,
 	onResizeEnd,
 }: SignatureFieldOverlaysProps) {
@@ -345,12 +320,10 @@ export const SignatureFieldOverlays = memo(function SignatureFieldOverlays({
 					margin={margin}
 					isMobile={isMobile}
 					isPlacingField={isPlacingField}
-					pdfNumPages={pdfNumPages}
 					onFieldClick={onFieldClick}
 					onFieldRemove={onFieldRemove}
 					onFieldUpdate={onFieldUpdate}
 					onFieldDuplicate={onFieldDuplicate}
-					onRepeatOnAllPages={onRepeatOnAllPages}
 					onResizeStart={onResizeStart}
 					onResizeEnd={onResizeEnd}
 				/>

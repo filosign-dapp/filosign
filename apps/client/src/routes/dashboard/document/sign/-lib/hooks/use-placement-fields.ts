@@ -38,11 +38,6 @@ export function useSignPlacementFields(options: {
 	const myPlacementFields = parsed.myFields;
 	const visiblePlacementFields = parsed.allFields;
 
-	const signPdfPageCountHint = useMemo(() => {
-		if (visiblePlacementFields.length === 0) return null;
-		return Math.max(...visiblePlacementFields.map((f) => f.pageIndex)) + 1;
-	}, [visiblePlacementFields]);
-
 	const requiredPlacementFields = parsed.requiredFields;
 
 	const canSubmitPlacementSignValue = useMemo(
@@ -66,7 +61,6 @@ export function useSignPlacementFields(options: {
 	return {
 		myPlacementFields,
 		visiblePlacementFields,
-		signPdfPageCountHint,
 		canSubmitPlacementSign: canSubmitPlacementSignValue,
 	};
 }

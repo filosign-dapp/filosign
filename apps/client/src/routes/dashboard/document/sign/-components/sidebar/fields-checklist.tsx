@@ -19,6 +19,7 @@ export type SignSidebarFieldsChecklistProps = {
 	isFieldComplete: (field: PlacementField) => boolean;
 	onToggleField: (field: PlacementField) => void;
 	onClearField: (fieldId: string) => void;
+	onFocusField?: (field: PlacementField) => void;
 };
 
 export function SignSidebarFieldsChecklist({
@@ -31,6 +32,7 @@ export function SignSidebarFieldsChecklist({
 	isFieldComplete,
 	onToggleField,
 	onClearField,
+	onFocusField,
 }: SignSidebarFieldsChecklistProps) {
 	if (fields.length === 0) return null;
 	if (!canSign && !alreadySigned) return null;
@@ -84,7 +86,10 @@ export function SignSidebarFieldsChecklist({
 								type="button"
 								disabled={alreadySigned}
 								className="flex min-w-0 flex-1 items-center gap-2.5 text-left disabled:cursor-default"
-								onClick={() => onToggleField(field)}
+								onClick={() => {
+									onFocusField?.(field);
+									if (!alreadySigned) onToggleField(field);
+								}}
 								aria-label={`${label}, page ${field.pageIndex + 1}`}
 							>
 								<PresenceSwap customKey={done ? "done" : "pending"}>

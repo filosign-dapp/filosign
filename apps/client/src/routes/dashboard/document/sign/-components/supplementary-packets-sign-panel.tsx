@@ -14,5 +14,9 @@ export function SupplementaryPacketsSignPanel() {
 		return null;
 	}
 
-	return <SupplementaryPacketsSignList pieceCid={pieceCid} packets={packets} />;
+	return (
+		<section className="mt-6 border-t border-border pt-4">
+			<SupplementaryPacketsSignList pieceCid={pieceCid} packets={packets} />
+		</section>
+	);
 }

@@ -24,7 +24,7 @@ type ProofDownloadButtonGroupProps = {
 	handleDownloadCompliancePdf: () => void | Promise<void>;
 	/** When set, the main proof button opens this flow instead of downloading immediately. */
 	onMainProofClick?: () => void;
-	density?: "default" | "compact" | "toolbar";
+	density?: "default" | "compact" | "toolbar" | "header";
 	className?: string;
 };
 
@@ -45,13 +45,21 @@ export function ProofDownloadButtonGroup({
 		return (
 			<Button
 				type="button"
-				variant={density === "toolbar" ? "ghost" : "outline"}
+				variant={
+					density === "toolbar"
+						? "ghost"
+						: density === "header"
+							? "outline"
+							: "outline"
+				}
 				size={
 					density === "compact"
 						? "sm"
 						: density === "toolbar"
 							? "sm"
-							: "default"
+							: density === "header"
+								? "lg"
+								: "default"
 				}
 				onClick={handleDownload}
 				disabled={!fileDataReady}
@@ -73,14 +81,20 @@ export function ProofDownloadButtonGroup({
 	}
 
 	const mainButtonClass =
-		density === "toolbar" ? "rounded-r-none px-3" : undefined;
+		density === "toolbar"
+			? "rounded-r-none px-3"
+			: density === "header"
+				? "gap-1.5"
+				: undefined;
 
 	return (
 		<ButtonGroup aria-label="Download proof" className={cn(className)}>
 			<Button
 				type="button"
 				variant="outline"
-				size={density === "compact" ? "sm" : "default"}
+				size={
+					density === "compact" ? "sm" : density === "header" ? "lg" : "default"
+				}
 				onClick={() =>
 					onMainProofClick
 						? onMainProofClick()
@@ -92,10 +106,12 @@ export function ProofDownloadButtonGroup({
 				isLoading={pdfExportBusy}
 			>
 				<PackageIcon className="size-4" />
-				{density !== "toolbar" ? (
-					<span>{density === "compact" ? "Proof" : "Download proof"}</span>
-				) : (
+				{density === "toolbar" ? (
 					<span className="hidden @lg:inline">Download proof</span>
+				) : density === "header" ? (
+					<span className="hidden sm:inline">Download proof</span>
+				) : (
+					<span>{density === "compact" ? "Proof" : "Download proof"}</span>
 				)}
 			</Button>
 			<DropdownMenu>
@@ -104,7 +120,13 @@ export function ProofDownloadButtonGroup({
 						<Button
 							type="button"
 							variant="outline"
-							size={density === "compact" ? "icon-sm" : "icon"}
+							size={
+								density === "compact"
+									? "icon-sm"
+									: density === "header"
+										? "icon-lg"
+										: "icon"
+							}
 							aria-label="More download options"
 							disabled={proofDisabled}
 							className={density === "toolbar" ? "rounded-l-none" : undefined}

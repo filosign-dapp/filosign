@@ -7,7 +7,7 @@ import {
 import { useSignHeaderUi } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-header-ui";
 
 type SignHeaderRotateInviteButtonProps = {
-	variant: "compact" | "comfortable";
+	variant: "compact" | "comfortable" | "header-icon";
 };
 
 export function SignHeaderRotateInviteButton({
@@ -18,6 +18,22 @@ export function SignHeaderRotateInviteButton({
 	const { setRotateInviteOpen } = useSignHeaderUi();
 
 	if (!isSender) return null;
+
+	if (variant === "header-icon") {
+		return (
+			<Button
+				type="button"
+				variant="outline"
+				size="icon-lg"
+				onClick={() => setRotateInviteOpen(true)}
+				disabled={regenerateColdInvite.isPending}
+				aria-label="Rotate invite"
+				title="Rotate invite"
+			>
+				<ArrowClockwiseIcon className="size-4" />
+			</Button>
+		);
+	}
 
 	if (variant === "compact") {
 		return (

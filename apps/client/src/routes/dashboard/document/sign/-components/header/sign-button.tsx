@@ -1,4 +1,4 @@
-import { SpinnerIcon } from "@phosphor-icons/react";
+import { PenNibIcon, SpinnerGapIcon } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	useSignIdentity,
@@ -21,7 +21,31 @@ export function SignHeaderSignButton({
 
 	if (!canSign || !signerAddress) return null;
 
-	const button = (
+	if (density === "comfortable") {
+		return (
+			<Button
+				variant="primary"
+				size="lg"
+				className="hidden gap-2 lg:inline-flex"
+				onClick={() => setSignConfirmOpen(true)}
+				disabled={signFile.isPending || !canSubmitSign}
+			>
+				{signFile.isPending ? (
+					<>
+						<SpinnerGapIcon className="size-4 animate-spin" />
+						<span className="hidden sm:inline">Signing…</span>
+					</>
+				) : (
+					<>
+						<PenNibIcon className="size-4" weight="bold" />
+						<span className="hidden sm:inline">{label}</span>
+					</>
+				)}
+			</Button>
+		);
+	}
+
+	return (
 		<Button
 			variant="primary"
 			size="sm"
@@ -30,7 +54,7 @@ export function SignHeaderSignButton({
 		>
 			{signFile.isPending ? (
 				<>
-					<SpinnerIcon className="size-4 animate-spin" />
+					<SpinnerGapIcon className="size-4 animate-spin" />
 					Signing…
 				</>
 			) : (
@@ -38,15 +62,4 @@ export function SignHeaderSignButton({
 			)}
 		</Button>
 	);
-
-	if (density === "comfortable") {
-		return (
-			<>
-				<div className="w-px h-6 bg-border mx-2" />
-				{button}
-			</>
-		);
-	}
-
-	return button;
 }

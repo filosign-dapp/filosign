@@ -5,7 +5,6 @@ import {
 	canUseSupplementaryAttachments,
 } from "@filosign/react/files";
 import { PencilSimpleIcon } from "@phosphor-icons/react";
-import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
@@ -25,14 +24,13 @@ import {
 } from "@/src/lib/domains/files/validate-attachment-packets";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { AttachmentPacketDialog } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-dialog";
-import { AttachmentPacketSummaryCard } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-summary-card";
+import { AttachmentPacketSummaryBody } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-summary-card";
 import { rosterEmailsFromRecipients } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/validate";
 
-export function SupplementaryPacketsReview() {
+export function SupplementaryPacketsSidebar() {
 	const createForm = useStorePersist((s) => s.createForm);
 	const setCreateForm = useStorePersist((s) => s.setCreateForm);
 	const { data: entitlements } = useEntitlements();
-	const navigate = useNavigate();
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editingId, setEditingId] = useState<string | null>(null);
 	const [editingDraft, setEditingDraft] = useState<
@@ -105,62 +103,56 @@ export function SupplementaryPacketsReview() {
 	};
 
 	return (
-		<section className="space-y-3 rounded-xl border border-border/60 bg-muted/5 p-4">
-			<div className="flex items-start justify-between gap-2">
-				<div className="space-y-1">
-					<h3 className="text-sm font-semibold">Attached file packets</h3>
-					<p className="text-xs text-muted-foreground">
-						{drafts.length} packet{drafts.length !== 1 ? "s" : ""} will be sent
-						with this envelope.
-					</p>
-				</div>
-				<Button
-					type="button"
-					variant="ghost"
-					size="sm"
-					className="h-8 shrink-0 text-xs"
-					onClick={() => navigate({ to: "/dashboard/envelope/create" })}
-				>
-					Edit
-				</Button>
+		<section className="mt-6 border-t border-border pt-4">
+			<div className="mb-3 px-1">
+				<p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+					File packets
+				</p>
+				<p className="mt-1 text-[11px] text-muted-foreground">
+					{drafts.length} packet{drafts.length !== 1 ? "s" : ""} attached
+				</p>
 			</div>
 
 			{hydrating ? (
-				<p className="flex items-center gap-2 text-xs text-muted-foreground">
+				<p className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
 					<InlineLoader className="size-3.5" />
-					Loading file packets…
+					Loading…
 				</p>
 			) : null}
 
 			{hydrateError ? (
-				<p className="text-xs text-destructive">{hydrateError}</p>
+				<p className="px-1 text-xs text-destructive">{hydrateError}</p>
 			) : null}
 
-			<ul className="space-y-2">
+			<ul className="space-y-1">
 				{drafts.map((draft) => (
-					<AttachmentPacketSummaryCard
-						key={draft.packetId}
-						draft={draft}
-						reviewLabel="After send"
-						compact
-						actions={
+					<li key={draft.packetId}>
+						<div className="group flex items-start gap-2 rounded-md px-1.5 py-2 transition-colors hover:bg-muted/40">
+							<div className="min-w-0 flex-1 space-y-0.5">
+								<AttachmentPacketSummaryBody
+									draft={draft}
+									reviewLabel="After send"
+									compact
+								/>
+							</div>
 							<Button
 								type="button"
 								variant="ghost"
 								size="icon-sm"
+								className="shrink-0 opacity-70 transition-opacity group-hover:opacity-100"
 								disabled={hydrating}
 								onClick={() => void openEdit(draft.packetId)}
 								aria-label="Edit file packet"
 							>
 								<PencilSimpleIcon className="size-3.5" weight="regular" />
 							</Button>
-						}
-					/>
+						</div>
+					</li>
 				))}
 			</ul>
 
 			{validationIssues.length > 0 ? (
-				<div className="rounded-md border border-destructive/25 bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
+				<div className="mt-2 rounded-md border border-destructive/25 bg-destructive/5 px-2 py-1.5 text-[11px] text-destructive">
 					{validationIssues.map((issue) => (
 						<p key={`${issue.code}-${issue.message}`}>{issue.message}</p>
 					))}

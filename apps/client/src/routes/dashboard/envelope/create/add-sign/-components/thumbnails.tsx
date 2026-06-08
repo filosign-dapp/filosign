@@ -1,77 +1,83 @@
 import { FilePdfIcon } from "@phosphor-icons/react";
-import { isPdfDocument } from "@/src/lib/domains/files/document-kind";
+import { useMemo } from "react";
 import { cn } from "@/src/lib/utils/utils";
-import type { Document } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+import { SupplementaryPacketsSidebar } from "@/src/routes/dashboard/envelope/create/add-sign/-components/supplementary-packets-review";
+import type {
+	Document,
+	SignatureField,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 
 type DocumentThumbnailsSidebarProps = {
 	documents: Document[];
 	currentDocumentId: string;
+	signatureFields: SignatureField[];
 	onDocumentSelect: (documentId: string) => void;
 };
 
 export function DocumentThumbnailsSidebar({
 	documents,
 	currentDocumentId,
+	signatureFields,
 	onDocumentSelect,
 }: DocumentThumbnailsSidebarProps) {
-	return (
-		<aside className="z-20 hidden h-full w-48 shrink-0 border-l border-border bg-background p-4 lg:block">
-			<div className="space-y-4">
-				<p className="font-medium text-muted-foreground">Documents</p>
-				<div className="space-y-2">
-					{documents.map((doc) => (
-						<div
-							key={doc.id}
-							className={cn(
-								"relative aspect-3/4 cursor-pointer rounded border-2 bg-muted transition-colors",
-								currentDocumentId === doc.id
-									? "border-primary bg-primary/5"
-									: "border-border hover:border-muted-foreground/50",
-							)}
-							onClick={() => onDocumentSelect(doc.id)}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" || e.key === " ") {
-									onDocumentSelect(doc.id);
-								}
-							}}
-							role="button"
-							tabIndex={0}
-						>
-							{doc.url || doc.pdfBytes ? (
-								isPdfDocument({
-									type: doc.mimeType,
-									name: doc.name,
-									pdfBytes: doc.pdfBytes,
-								}) ? (
-									<div className="absolute inset-0 flex items-center justify-center bg-muted/30">
-										<FilePdfIcon
-											className="size-10 text-destructive/80"
-											weight="duotone"
-										/>
-									</div>
-								) : (
-									<img
-										src={doc.url}
-										alt={doc.name}
-										className="absolute inset-0 h-full w-full rounded object-cover"
-									/>
-								)
-							) : (
-								<div className="absolute inset-0 flex items-center justify-center">
-									<div className="text-xs text-muted-foreground">
-										No preview
-									</div>
-								</div>
-							)}
+	const fieldCountByDoc = useMemo(() => {
+		const counts = new Map<string, number>();
+		for (const field of signatureFields) {
+			counts.set(field.documentId, (counts.get(field.documentId) ?? 0) + 1);
+		}
+		return counts;
+	}, [signatureFields]);
 
-							<div className="absolute inset-x-0 bottom-0 rounded-b bg-black/70 p-2 text-white">
-								<div className="truncate text-xs" title={doc.name}>
-									{doc.name}
-								</div>
-							</div>
-						</div>
-					))}
-				</div>
+	return (
+		<aside className="z-20 hidden h-full w-52 shrink-0 flex-col border-l border-border bg-background lg:flex">
+			<div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
+				<section>
+					<p className="mb-3 px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+						Documents
+					</p>
+					<ul className="space-y-1">
+						{documents.map((doc) => {
+							const isActive = currentDocumentId === doc.id;
+							const fieldCount = fieldCountByDoc.get(doc.id) ?? 0;
+							return (
+								<li key={doc.id}>
+									<button
+										type="button"
+										className={cn(
+											"flex w-full items-center gap-2.5 rounded-md border-l-2 px-2 py-2 text-left transition-colors",
+											isActive
+												? "border-l-primary bg-primary/5"
+												: "border-l-transparent hover:bg-muted/40",
+										)}
+										onClick={() => onDocumentSelect(doc.id)}
+									>
+										<FilePdfIcon
+											className={cn(
+												"size-4 shrink-0",
+												isActive ? "text-primary" : "text-destructive/70",
+											)}
+											weight="duotone"
+											aria-hidden
+										/>
+										<span className="min-w-0 flex-1">
+											<span
+												className="block truncate text-sm font-medium text-foreground"
+												title={doc.name}
+											>
+												{doc.name}
+											</span>
+											<span className="block text-[11px] text-muted-foreground">
+												{fieldCount} field{fieldCount === 1 ? "" : "s"}
+											</span>
+										</span>
+									</button>
+								</li>
+							);
+						})}
+					</ul>
+				</section>
+
+				<SupplementaryPacketsSidebar />
 			</div>
 		</aside>
 	);

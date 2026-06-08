@@ -1,0 +1,110 @@
+import { DragOverlay } from "@dnd-kit/core";
+import { signerAccentColor } from "@/src/lib/domains/files/field-box";
+import {
+	SignatureFieldTypeIcon,
+	signatureFieldTypeLabel,
+} from "@/src/lib/domains/files/placement-field-display";
+import { useIsMobile } from "@/src/lib/utils/use-mobile";
+import { useAddSignDnd } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
+import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
+import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+import {
+	parsePaletteDraggableId,
+	resolveDragPageScale,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
+import type { PlacementFieldSize } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-field-presets";
+
+export type PlacementActiveDrag = {
+	kind: "palette";
+	fieldType: SignatureField["type"];
+};
+
+export function resolvePlacementActiveDrag(
+	activeId: string | number,
+): PlacementActiveDrag | null {
+	const paletteType = parsePaletteDraggableId(activeId);
+	if (!paletteType) return null;
+	return {
+		kind: "palette",
+		fieldType: paletteType as SignatureField["type"],
+	};
+}
+
+type PaletteDragPreviewProps = {
+	fieldType: SignatureField["type"];
+	screenScale: number;
+	isMobile: boolean;
+	size: PlacementFieldSize;
+};
+
+/** Sidebar palette ghost — matches on-canvas field chrome at current zoom. */
+function PaletteDragPreview({
+	fieldType,
+	screenScale,
+	isMobile,
+	size,
+}: PaletteDragPreviewProps) {
+	const safeScale = screenScale > 0 ? screenScale : 1;
+	const accent = signerAccentColor("palette-preview@filosign.local");
+
+	return (
+		<div
+			className="cursor-grabbing"
+			style={{
+				width: size.width * safeScale,
+				height: size.height * safeScale,
+			}}
+		>
+			<div
+				className="placement-field-chrome box-border"
+				style={{
+					width: size.width,
+					height: size.height,
+					borderLeftWidth: 3,
+					borderLeftColor: accent,
+					transform: `scale(${safeScale})`,
+					transformOrigin: "top left",
+				}}
+			>
+				<span className="shrink-0">
+					<SignatureFieldTypeIcon type={fieldType} isMobile={isMobile} />
+				</span>
+				<div className="min-w-0 flex-1 leading-none">
+					<div className="truncate placement-field-label">New field</div>
+					<div className="truncate placement-field-subtle">
+						{signatureFieldTypeLabel(fieldType)}
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+type PlacementDndDragOverlayProps = {
+	activeDrag: PlacementActiveDrag | null;
+};
+
+export function PlacementDndDragOverlay({
+	activeDrag,
+}: PlacementDndDragOverlayProps) {
+	const isMobile = useIsMobile();
+	const { resolvePlacementFieldSize } = useAddSignDnd();
+	const { pageRefs, getPageEl } = usePlacementCanvas();
+
+	const screenScale = activeDrag
+		? resolveDragPageScale(pageRefs.current, getPageEl, 1)
+		: 1;
+
+	return (
+		<DragOverlay adjustScale={false} dropAnimation={null}>
+			{activeDrag?.kind === "palette" ? (
+				<PaletteDragPreview
+					fieldType={activeDrag.fieldType}
+					screenScale={screenScale}
+					isMobile={isMobile}
+					size={resolvePlacementFieldSize(activeDrag.fieldType)}
+				/>
+			) : null}
+		</DragOverlay>
+	);
+}

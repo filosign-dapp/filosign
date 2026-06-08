@@ -71,6 +71,8 @@ type PlacementCanvasProps = {
 	children: ReactNode;
 	isPlacingField: boolean;
 	isInteractingField: boolean;
+	isMarqueeModifierHeld: boolean;
+	placementCapture?: ReactNode;
 	className?: string;
 };
 
@@ -78,9 +80,12 @@ export function PlacementCanvas({
 	children,
 	isPlacingField,
 	isInteractingField,
+	isMarqueeModifierHeld,
+	placementCapture,
 	className,
 }: PlacementCanvasProps) {
-	const { panPinchRef, setWrapperEl } = usePlacementCanvas();
+	const { panPinchRef, setWrapperEl, setPanZoomTransform } =
+		usePlacementCanvas();
 	const viewportRef = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
@@ -105,16 +110,37 @@ export function PlacementCanvas({
 				limitToBounds={false}
 				wheel={{ step: 0.002 }}
 				panning={{
-					disabled: isPlacingField || isInteractingField,
+					disabled:
+						isPlacingField || isInteractingField || isMarqueeModifierHeld,
 					excluded: [...PAN_EXCLUDED_SELECTORS],
 				}}
 				doubleClick={{ disabled: true }}
+				onInit={(ref) => {
+					setPanZoomTransform({
+						positionX: ref.state.positionX,
+						scale: ref.state.scale,
+					});
+				}}
+				onTransform={(_ref, state) => {
+					setPanZoomTransform({
+						positionX: state.positionX,
+						scale: state.scale,
+					});
+				}}
 			>
 				<PlacementZoomControls />
 				<TransformComponent
 					wrapperClass="!flex-1 !h-full !w-full !overflow-hidden !bg-muted/10"
-					contentClass="!flex !min-h-full !min-w-full !items-start !justify-center !p-8"
+					contentClass={cn(
+						"!relative !flex !min-h-full !min-w-full !items-start !justify-center !p-8",
+						isPlacingField && "!cursor-crosshair",
+					)}
 				>
+					{isPlacingField && placementCapture ? (
+						<div className="pointer-events-auto absolute inset-0 z-40 cursor-crosshair">
+							{placementCapture}
+						</div>
+					) : null}
 					{children}
 				</TransformComponent>
 			</TransformWrapper>

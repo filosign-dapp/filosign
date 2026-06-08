@@ -30,6 +30,12 @@
 		"./drafts": {
 			"default": "./src/hooks/drafts/index.ts"
 		},
+		"./documents": {
+			"default": "./src/hooks/documents/index.ts"
+		},
+		"./notifications": {
+			"default": "./src/hooks/notifications/index.ts"
+		},
 		"./analytics": {
 			"default": "./src/analytics/index.ts"
 		},

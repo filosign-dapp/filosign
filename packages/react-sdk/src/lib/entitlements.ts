@@ -92,3 +92,9 @@ export function canUseConditionalAttachmentRelease(
 		"features.supplementary_attachments.conditional_release",
 	);
 }
+
+export function canUseMetadataTags(
+	entitlements: EntitlementsSnapshot | undefined,
+): boolean {
+	return featureEnabled(entitlements, "features.metadata.tags");
+}

@@ -67,14 +67,35 @@ export function invalidateBillingAndEntitlements(
 	]);
 }
 
-/** Inbox lists used by notifications (received files). */
-export function invalidateInboxQueries(
+/** Unified documents list (All Documents, drafts panel, templates). */
+export function invalidateDocumentsList(
 	queryClient: QueryClient,
 	rpcQuery: FilosignRpcQueryUtils,
 ) {
 	return queryClient.invalidateQueries({
-		queryKey: rpcQuery.files.list.received.key(),
+		queryKey: rpcQuery.documents.list.key(),
 	});
+}
+
+/** Bell notification feed. */
+export function invalidateNotificationsInbox(
+	queryClient: QueryClient,
+	rpcQuery: FilosignRpcQueryUtils,
+) {
+	return queryClient.invalidateQueries({
+		queryKey: rpcQuery.notifications.inbox.key(),
+	});
+}
+
+/** Documents browser + bell feed after sign, send, dismiss, org switch. */
+export function invalidateDocumentsAndNotifications(
+	queryClient: QueryClient,
+	rpcQuery: FilosignRpcQueryUtils,
+) {
+	return Promise.all([
+		invalidateDocumentsList(queryClient, rpcQuery),
+		invalidateNotificationsInbox(queryClient, rpcQuery),
+	]);
 }
 
 /** Activation milestones + practice pieceCid (checklist, floating card). */

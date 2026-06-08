@@ -39,23 +39,21 @@ export function settlementReleaseTypeLabel(
 ): string {
 	switch (releaseType) {
 		case "all_signed":
+		case "all_required_signed":
+		case "all_signed_complete":
 			return "Everyone has signed";
 		case "specific_signer":
-			return "A specific person signs";
+			return "When a specific signer signs";
 		case "at_least_n":
-			return "Enough people sign";
-		case "all_required_signed":
-			return "Everyone required has signed";
-		case "all_signed_complete":
-			return "Everyone (including optional) has signed";
+			return "When at least N signers sign";
 		case "quorum_required":
-			return "Envelope minimum signatures are met";
+			return "When envelope quorum is met";
 		case "quorum_set":
-			return "Enough people from your chosen group sign";
+			return "When at least N from a chosen group sign";
 		case "quorum_all":
-			return "Enough people from the full roster sign";
+			return "When at least N from the roster sign";
 		case "all_of_set":
-			return "Everyone on your list signs";
+			return "When everyone on a chosen list signs";
 		default:
 			return releaseType;
 	}

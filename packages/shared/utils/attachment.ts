@@ -3,6 +3,12 @@ import {
 	settlementReleaseTypes,
 	zSettlementReleaseParams,
 } from "./settlement-rules";
+import { isSafeSupplementaryAttachmentFileName } from "./supplementary-attachment-upload";
+
+export const ATTACHMENT_DOWNLOAD_DISCLAIMER_TITLE = "Download attached files?";
+
+export const ATTACHMENT_DOWNLOAD_DISCLAIMER_DESCRIPTION =
+	"These files were attached by the sender. Filosign encrypts them end-to-end and does not inspect or scan their contents. You are responsible for scanning downloads on your device before opening them. Filosign is not liable for sender-provided file content.";
 
 export const attachmentPacketReleaseModes = ["review", "conditional"] as const;
 export type AttachmentPacketReleaseMode =
@@ -10,7 +16,13 @@ export type AttachmentPacketReleaseMode =
 
 export const zAttachmentPacketFile = z.object({
 	id: z.string().min(1),
-	name: z.string().min(1),
+	name: z
+		.string()
+		.min(1)
+		.max(255)
+		.refine(isSafeSupplementaryAttachmentFileName, {
+			error: "Invalid attachment file name",
+		}),
 	mimeType: z.string().min(1),
 	sha256Plaintext: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
 	bytesB64: z.string().min(1),

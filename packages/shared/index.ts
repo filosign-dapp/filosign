@@ -18,6 +18,7 @@ export * from "./utils/settlement-rules";
 export * from "./utils/sign-field-session";
 export * from "./utils/signature-artifact";
 export * from "./utils/signature-font-catalog";
+export * from "./utils/supplementary-attachment-upload";
 export * from "./utils/supplementary-packet-unlock";
 
 export function base64ToUint8(base64: string): Uint8Array {

@@ -41,8 +41,9 @@ const zSignatureField = z.object({
 /** Matches client `SettlementAttachmentDraft` persisted in draft snapshots. */
 const zSettlementDraft = z.object({
 	id: z.string(),
-	recipientClientRowId: z.string(),
-	recipientEmail: z.email(),
+	ruleId: z.string().optional(),
+	recipientClientRowId: z.string().optional(),
+	recipientEmail: z.email().optional(),
 	recipientSource: z.enum(settlementRecipientSources),
 	recipientLabel: z.string(),
 	recipientWallet: z.string().optional(),

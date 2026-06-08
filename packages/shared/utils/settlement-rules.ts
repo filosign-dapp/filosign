@@ -36,6 +36,35 @@ const BASIC_RELEASE_TYPES = new Set<SettlementReleaseType>([
 	"specific_signer",
 ]);
 
+/** Shown in compose / attach payout selectors (basic tier). */
+export const settlementReleaseTypesForComposeBasic = [
+	"all_signed",
+	"specific_signer",
+] as const satisfies readonly SettlementReleaseType[];
+
+/** Shown in compose / attach payout selectors (Teams Pro+). */
+export const settlementReleaseTypesForComposeAdvanced = [
+	"at_least_n",
+	"quorum_required",
+	"quorum_set",
+	"quorum_all",
+	"all_of_set",
+] as const satisfies readonly SettlementReleaseType[];
+
+/** On-chain aliases for `all_signed` (`isEnvelopeComplete`). Not offered in UI. */
+const LEGACY_COMPLETION_RELEASE_TYPES = new Set<SettlementReleaseType>([
+	"all_required_signed",
+	"all_signed_complete",
+]);
+
+export function normalizeSettlementReleaseType(
+	releaseType: SettlementReleaseType,
+): SettlementReleaseType {
+	return LEGACY_COMPLETION_RELEASE_TYPES.has(releaseType)
+		? "all_signed"
+		: releaseType;
+}
+
 export function isAdvancedSettlementReleaseType(
 	releaseType: SettlementReleaseType,
 ): boolean {

@@ -78,6 +78,10 @@ export const zChainTxKind = z.enum([
 	"signer_amended",
 	"envelope_revoked_before_complete",
 	"payout_executed",
+	"settlement_rule_registered",
+	"settlement_approved",
+	"attachment_rule_registered",
+	"attachment_released",
 ]);
 
 export const zSettlementComplianceRow = z.object({
@@ -89,6 +93,7 @@ export const zSettlementComplianceRow = z.object({
 		}),
 	),
 	tokenAddress: zEvmAddress(),
+	validatorAddress: zEvmAddress(),
 	releaseType: z.enum(settlementReleaseTypes),
 	status: z.enum(settlementRuleStatuses),
 	registerRuleTxHash: zHexString(),
@@ -109,6 +114,8 @@ export const zAttachmentComplianceRow = z.object({
 	onChainRuleId: z.string().nullable(),
 	releaseContractAddress: zEvmAddress().nullable(),
 	registerRuleTxHash: zHexString().nullable(),
+	packetContentHash: zHexString().nullable(),
+	releaseTxHash: zHexString().nullable(),
 	recipientCount: z.number().int().nonnegative(),
 	unlocked: z.boolean(),
 	cancelled: z.boolean(),

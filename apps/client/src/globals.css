@@ -42,7 +42,7 @@
 	--ring: hsl(90, 56%, 71%);
 
 	--chart-1: hsl(38, 92%, 50%);
-	--chart-2: hsl(160, 84%, 37%);
+	--chart-2: var(--secondary);
 	--chart-3: hsl(217, 91%, 60%);
 	--chart-4: hsl(262, 83%, 58%);
 	--chart-5: hsl(0, 84%, 58%);
@@ -97,7 +97,7 @@
 	--input: oklch(1 0 0 / 15%);
 	--ring: oklch(0.556 0 0);
 	--chart-1: oklch(0.897 0.196 126.665);
-	--chart-2: oklch(0.768 0.233 130.85);
+	--chart-2: var(--secondary);
 	--chart-3: oklch(0.648 0.2 131.684);
 	--chart-4: oklch(0.532 0.157 131.589);
 	--chart-5: oklch(0.453 0.124 130.933);

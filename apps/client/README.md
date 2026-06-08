@@ -42,10 +42,10 @@ From repo root (see [SCRIPTS.md](../../SCRIPTS.md)):
 
 Envelope create (`/dashboard/envelope/create`):
 
-- **`ComposeRoutingField`** - parallel/sequential signing and quorum N (**Teams Pro**, `features.routing.advanced`). Optional signers are not supported on-chain in v1.
-- **`RecipientSettlementDialog`** - per-recipient USDC payout + release type (basic types on **Teams**, advanced on **Teams Pro**).
-- **`ComposeSettlementOptionsField`** - combine recipient drafts into one multi-leg rule (**Teams Pro**).
-- Send step passes routing + settlement drafts via `useSendFile`.
+- **`ComposeRoutingField`** - minimum signatures (quorum) (**Teams Pro**, `features.routing.advanced`). Optional signers are not supported on-chain in v1.
+- **`ComposePayoutsSection`** + **`PayoutRuleDialog`** - rule-first attached USDC payouts; one release rule, multiple Filosign recipient legs (**Teams Pro** for advanced release types).
+- **`ComposeSupplementaryFilesSection`** + **`AttachmentPacketDialog`** - rule-first encrypted file packets; any file type within size limits, client filename sanitization, unlock timing, then uploads (**Teams+** / **Teams Pro** for conditional release). Sign page shows a download disclaimer before decrypt.
+- Send step passes routing, settlement drafts, and attachment packets via `useSendFile`.
 
 Sign page (`/dashboard/document/sign`):
 

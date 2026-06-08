@@ -2,34 +2,34 @@
 
 Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-package conventions:** README/AGENTS in table below. **Rules:** [.cursor/rules/](.cursor/rules/) (narrow rule wins on conflict).
 
-## IMPORTANT
+## Must follow:
 
-Pre-production (solo dev, no users): skip backward-compat and migration shims. Fix root causes; replace legacy code, unused dependencies, comments, and modules—don’t layer around them. Writing minimal code to implement a plan is ideal, followed by a refactor sweep to rebalance and reorganise codebase, aiming for code maintainablity and readability. a balance between number of files vs LOC = sweet spot.  
-
-
-- NEVER use em dashes (—) in any content.
+- Pre-production (solo dev, no users): skip backward-compat and migration shims. 
+- Fix root causes; replace legacy code, unused dependencies, comments, and modules—don’t layer around them. 
+- Writing minimal code to implement a plan is ideal, followed by a cleanup and refactor sweep to rebalance and reorganise codebase, aiming for code maintainablity and readability. 
+- NEVER use em dashes (—) in anywhere.
 
 ## Read for context
 
 
-| Path                    | Docs                                                                      | Role                                                           |
-| ----------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `apps/client`           | [README](apps/client/README.md)                                           | Thin Vite UI → `@filosign/react`                               |
-| `apps/server`           | [README](apps/server/README.md)                                           | Hono, Drizzle, `/api/rpc`, `rpc.runtime`                       |
-| `apps/contracts`        | [README](apps/contracts/README.md) · [TESTING](apps/contracts/TESTING.md) | Solidity, `definitions/`, EIP-712; tests in `test/`            |
-| `apps/astro`            | [README](apps/astro/README.md)                                            | Marketing — landing mocks in `src/components/marketing-mocks/` |
-| `packages/react-sdk`    | [README](packages/react-sdk/README.md)                                    | `FilosignProvider`, typed `rpc`, `rpcQuery`, hooks             |
-| `packages/shared`       | [AGENTS.md](packages/shared/AGENTS.md)                                    | Types, Zod, manifests (browser+server)                         |
-| `packages/oss`          | [README](packages/oss/README.md)                                          | `file:` bridge to `oss/packages/protocol` (proof packet schema) |
-| `packages/entitlements` | —                                                                         | Plan catalog + pure evaluator (no DB; server wires later)      |
-| `packages/errors`       | [README](packages/errors/README.md)                                       | User-facing error catalog, `throwAppError`, `presentError`     |
-| `packages/crypto-utils` | [README](packages/crypto-utils/README.md)                                 | KEM, WASM-adjacent crypto                                      |
-| `packages/motion`       | [README](packages/motion/README.md)                                       | Shared spring physics presets, tweens, and UI layout motion    |
-| `packages/test`         | [README](packages/test/README.md)                                         | Dev harness                                                    |
+| Path                    | Docs                                                                      | Role                                                                  |
+| ----------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `apps/client`           | [README](apps/client/README.md)                                           | Thin Vite UI → `@filosign/react`                                      |
+| `apps/server`           | [README](apps/server/README.md)                                           | Hono, Drizzle, `/api/rpc`, `rpc.runtime`                              |
+| `apps/contracts`        | [README](apps/contracts/README.md) · [TESTING](apps/contracts/TESTING.md) | Solidity, `definitions/`, EIP-712; tests in `test/`                   |
+| `apps/astro`            | [README](apps/astro/README.md)                                            | Marketing — landing mocks in `src/components/marketing-mocks/`        |
+| `packages/react-sdk`    | [README](packages/react-sdk/README.md)                                    | `FilosignProvider`, typed `rpc`, `rpcQuery`, hooks                    |
+| `packages/shared`       | [AGENTS.md](packages/shared/AGENTS.md)                                    | Types, Zod, manifests (browser+server)                                |
+| `packages/oss`          | [README](packages/oss/README.md)                                          | `file:` bridge to `oss/packages/protocol` (proof packet schema)       |
+| `packages/entitlements` | —                                                                         | Plan catalog + pure evaluator (no DB; server wires later)             |
+| `packages/errors`       | [README](packages/errors/README.md)                                       | User-facing error catalog, `throwAppError`, `presentError`            |
+| `packages/crypto-utils` | [README](packages/crypto-utils/README.md)                                 | KEM, WASM-adjacent crypto                                             |
+| `packages/motion`       | [README](packages/motion/README.md)                                       | Shared spring physics presets, tweens, and UI layout motion           |
+| `packages/test`         | [README](packages/test/README.md)                                         | Dev harness                                                           |
 | `oss/`                  | [README](oss/README.md) · [AGENTS](oss/AGENTS.md)                         | Independent OSS git repo (ignored by private root; `cd oss && git …`) |
-| Scripts / CI            | [SCRIPTS.md](SCRIPTS.md)                                                  | `dev`, `check`, `sanity`, `test`, `build`, `db`, `contracts`   |
-| Testing                 | [TESTING.md](TESTING.md)                                                  | `tests/` layout, `tests/support/`, grouping rules              |
-| Unsure                  | [README.md](README.md)                                                    | Product + repo map                                             |
+| Scripts / CI            | [SCRIPTS.md](SCRIPTS.md)                                                  | `dev`, `check`, `sanity`, `test`, `build`, `db`, `contracts`          |
+| Testing                 | [TESTING.md](TESTING.md)                                                  | `tests/` layout, `tests/support/`, grouping rules                     |
+| Unsure                  | [README.md](README.md)                                                    | Product + repo map                                                    |
 
 
 Multi-package work: read every relevant row, then [Vertical slice](#vertical-slice).
@@ -107,7 +107,7 @@ Monorepo uses **Zod 4** (`catalog`). [v4 changelog](https://zod.dev/v4/changelog
 **Where schemas live:**
 
 - **Shared wire shapes:** `@filosign/shared` (e.g. `zPlacementManifest`, `zDraftPlacementManifest`, `zSettlementReleaseParams`, `zUserKeygenDataJson`, `zAttachmentPacketSendInput`) — extend here when client + server agree.
-- **Domain/handlers:** `export` Zod next to the `safeParse` that uses it (`lib/domains/`*, `api/handlers/*`).
+- **Domain/handlers:** `export` Zod next to the `safeParse` that uses it (`lib/domains/`*, `api/handlers/`*).
 - **oRPC contract:** concrete `.input` / `.output` in `[apps/server/api/orpc/schemas/](apps/server/api/orpc/schemas/)` — wire router from `[procedure-inputs.ts](apps/server/api/orpc/schemas/procedure-inputs.ts)` or schema re-exports; never `z.unknown()`, `z.any()`, `.passthrough()`, or `.loose()` on procedure I/O.
 - **DB jsonb:** Drizzle `$type<…>` must match the same Zod shape you parse at runtime.
 

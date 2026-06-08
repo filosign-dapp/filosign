@@ -4,9 +4,14 @@ import {
 	useDownloadSupplementaryPacket,
 } from "@filosign/react/files";
 import { useUserProfile } from "@filosign/react/users";
+import {
+	ATTACHMENT_DOWNLOAD_DISCLAIMER_DESCRIPTION,
+	ATTACHMENT_DOWNLOAD_DISCLAIMER_TITLE,
+} from "@filosign/shared";
 import { PaperclipIcon } from "@phosphor-icons/react";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { safeAsync } from "@/src/lib/utils/safe";
 import { SupplementaryPacketSignRow } from "@/src/routes/dashboard/document/sign/-components/supplementary-packet-sign-row";
 
@@ -24,12 +29,12 @@ export function SupplementaryPacketsSignList({
 	const [downloadingPacketId, setDownloadingPacketId] = useState<string | null>(
 		null,
 	);
+	const [pendingPacket, setPendingPacket] =
+		useState<MySupplementaryPacketRow | null>(null);
 
-	const handleDownload = useCallback(
+	const executeDownload = useCallback(
 		async (packet: MySupplementaryPacketRow) => {
-			if (!packet.unlocked) {
-				return;
-			}
+			if (!packet.unlocked) return;
 			if (!packet.canDecrypt) {
 				toast.error(
 					"Unlock your wallet keys to download these files. If you opened this from a cold invite, use the same unlock flow as the main document.",
@@ -39,7 +44,7 @@ export function SupplementaryPacketsSignList({
 
 			const profileEmail = profile?.email?.trim();
 			if (!profileEmail) {
-				toast.error("Add an email to your profile to download extra files.");
+				toast.error("Add an email to your profile to download attached files.");
 				return;
 			}
 
@@ -55,7 +60,9 @@ export function SupplementaryPacketsSignList({
 
 			if (err) {
 				toast.error(
-					err instanceof Error ? err.message : "Could not download extra files",
+					err instanceof Error
+						? err.message
+						: "Could not download attached files",
 				);
 				return;
 			}
@@ -72,12 +79,17 @@ export function SupplementaryPacketsSignList({
 		[downloadPacket, pieceCid, profile?.email],
 	);
 
+	const requestDownload = useCallback((packet: MySupplementaryPacketRow) => {
+		if (!packet.unlocked) return;
+		setPendingPacket(packet);
+	}, []);
+
 	return (
 		<div className="space-y-2 rounded-lg border border-border/60 p-3">
 			<div className="space-y-1">
 				<p className="flex items-center gap-1.5 text-xs font-medium">
 					<PaperclipIcon className="size-3.5" weight="regular" />
-					Extra files
+					Attached file packets
 				</p>
 				<p className="text-[11px] leading-snug text-muted-foreground">
 					Only you can see packets shared with your email on this envelope.
@@ -89,10 +101,26 @@ export function SupplementaryPacketsSignList({
 						key={packet.packetId}
 						packet={packet}
 						isDownloading={downloadingPacketId === packet.packetId}
-						onDownload={handleDownload}
+						onDownload={requestDownload}
 					/>
 				))}
 			</ul>
+			<ConfirmAlertDialog
+				open={pendingPacket !== null}
+				onOpenChange={(open) => {
+					if (!open) setPendingPacket(null);
+				}}
+				title={ATTACHMENT_DOWNLOAD_DISCLAIMER_TITLE}
+				description={ATTACHMENT_DOWNLOAD_DISCLAIMER_DESCRIPTION}
+				confirmLabel="Download"
+				pending={downloadPacket.isPending}
+				onConfirm={async () => {
+					if (!pendingPacket) return;
+					const packet = pendingPacket;
+					setPendingPacket(null);
+					await executeDownload(packet);
+				}}
+			/>
 		</div>
 	);
 }

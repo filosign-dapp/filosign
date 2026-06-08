@@ -67,9 +67,8 @@ export function AttachSettlementDialog({
 
 	const [payeeWallet, setPayeeWallet] = useState("");
 	const [amountUsdc, setAmountUsdc] = useState("");
-	const [releaseType, setReleaseType] = useState<SettlementReleaseType>(
-		"all_required_signed",
-	);
+	const [releaseType, setReleaseType] =
+		useState<SettlementReleaseType>("all_signed");
 	const [specificSignerEmail, setSpecificSignerEmail] = useState("");
 	const [thresholdN, setThresholdN] = useState("2");
 	const [expiresAtLocal, setExpiresAtLocal] = useState("");

@@ -32,7 +32,6 @@ export function SignSuccessDialog({
 	const shareLinks = exportsAllowed
 		? buildProofPacketShareLinks(pieceCid)
 		: null;
-	const verifyUrl = DOCS_LINKS.verifyProofPacket();
 
 	return (
 		<Dialog

@@ -7,6 +7,7 @@ import {
 	useLogout,
 } from "@filosign/react/auth";
 import {
+	unwrapAttachmentPacketDekForCold,
 	useClaimColdInvite,
 	useColdInviteDecrypt,
 	useColdInvitePayload,
@@ -187,7 +188,15 @@ export function useSignInviteUnlock(args: {
 	]);
 
 	const claimWithWalletWrap = useCallback(
-		async (dek: Uint8Array, recipientEncryptionPk: Hex) => {
+		async (
+			dek: Uint8Array,
+			recipientEncryptionPk: Hex,
+			entitledPackets?: Array<{
+				packetId: string;
+				wrappedPacketDek: Hex | null;
+			}>,
+			phraseWord?: string,
+		) => {
 			if (!wallet?.account?.address) {
 				throw new Error("Missing recipient wallet");
 			}
@@ -201,10 +210,47 @@ export function useSignInviteUnlock(args: {
 					recipientWalletAddress: recipientWallet,
 				});
 
+			const attachmentWraps: Array<{
+				packetId: string;
+				kemCiphertext: `0x${string}`;
+				encryptedPacketDek: `0x${string}`;
+			}> = [];
+
+			if (entitledPackets && phraseWord) {
+				for (const packet of entitledPackets) {
+					if (packet.wrappedPacketDek) {
+						try {
+							const packetDek = await unwrapAttachmentPacketDekForCold({
+								packetId: packet.packetId,
+								wrappedPacketDek: packet.wrappedPacketDek,
+								phrase: phraseWord,
+							});
+							const wrap = await buildClaimKemPayload({
+								dek: packetDek,
+								recipientEncryptionPk,
+								pieceCid,
+								recipientWalletAddress: recipientWallet,
+							});
+							attachmentWraps.push({
+								packetId: packet.packetId,
+								kemCiphertext: wrap.kemCiphertext,
+								encryptedPacketDek: wrap.encryptedEncryptionKey,
+							});
+						} catch (err) {
+							console.error(
+								`Failed to decrypt cold packet wrap for ${packet.packetId}:`,
+								err,
+							);
+						}
+					}
+				}
+			}
+
 			await claimColdInvite.mutateAsync({
 				inviteToken,
 				kemCiphertext,
 				encryptedEncryptionKey,
+				attachmentWraps,
 			});
 		},
 		[wallet?.account?.address, pieceCid, claimColdInvite, inviteToken],
@@ -313,7 +359,18 @@ export function useSignInviteUnlock(args: {
 				downloadUrl: invite.downloadUrl,
 			});
 
-			await claimWithWalletWrap(result.encryptionKey, recipientEncryptionPk);
+			// Cast entitledPackets to the type accepted by claimWithWalletWrap
+			const entitledPacketsCast = invite.entitledPackets?.map((p) => ({
+				packetId: p.packetId,
+				wrappedPacketDek: p.wrappedPacketDek as `0x${string}` | null,
+			}));
+
+			await claimWithWalletWrap(
+				result.encryptionKey,
+				recipientEncryptionPk,
+				entitledPacketsCast,
+				normalizedPhrase,
+			);
 			setClaimSucceeded(true);
 
 			void invalidateUserProfile(queryClient, rpcQuery);

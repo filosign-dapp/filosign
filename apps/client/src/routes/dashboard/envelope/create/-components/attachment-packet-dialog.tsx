@@ -4,12 +4,21 @@ import {
 	canUseAdvancedSettlements,
 	canUseConditionalAttachmentRelease,
 } from "@filosign/react/files";
+import type { SettlementReleaseType } from "@filosign/shared";
 import {
 	normalizePlacementRecipientEmail,
+	normalizeSettlementReleaseType,
 	SUPPLEMENTARY_ATTACHMENT_LIMITS,
+	validateSupplementaryAttachmentFile,
 } from "@filosign/shared";
 import { PaperclipIcon, TrashIcon, UploadIcon } from "@phosphor-icons/react";
-import { useMemo, useRef, useState } from "react";
+import {
+	type KeyboardEvent,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { Checkbox } from "@/src/lib/components/ui/checkbox";
 import {
@@ -31,24 +40,30 @@ import {
 } from "@/src/lib/components/ui/select";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
-import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
+import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
+import type {
+	AttachmentPacketComposeDraft,
+	AttachmentPacketComposeFile,
+} from "@/src/lib/domains/files/attachment-packet-compose";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 import { SettlementReleaseFields } from "@/src/lib/domains/settlements/settlement-release-fields";
 import { createClientId } from "@/src/lib/utils/id";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
-import {
-	ACCEPTED_FILE_EXTENSIONS,
-	ACCEPTED_FILE_MIME_SET,
-	type AllowedFileMime,
-} from "@/src/routes/dashboard/envelope/create/-lib/types";
+
+const DEFAULT_RELEASE_TYPE: SettlementReleaseType = "all_signed";
+const maxMb = Math.round(
+	SUPPLEMENTARY_ATTACHMENT_LIMITS.maxBytesPerFile / (1024 * 1024),
+);
 
 type Props = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	recipients: Recipient[];
+	existingPacketId: string | null;
 	existingDraft: AttachmentPacketComposeDraft | undefined;
 	onSave: (draft: AttachmentPacketComposeDraft) => void;
+	onRemove: () => void;
 };
 
 function rosterRecipientOptions(recipients: Recipient[]) {
@@ -78,34 +93,41 @@ function signerOptionsFromRecipients(recipients: Recipient[]) {
 		.filter((x): x is NonNullable<typeof x> => x !== null);
 }
 
-function initialAttachmentPacketDialogState(
-	existingDraft: AttachmentPacketComposeDraft | undefined,
-	recipients: Recipient[],
-) {
-	const rosterOptions = rosterRecipientOptions(recipients);
-	const allRosterEmails = rosterOptions.map((r) => r.email);
-	const signerOptions = signerOptionsFromRecipients(recipients);
-
-	return {
-		label: existingDraft?.label ?? "",
-		releaseMode: existingDraft?.releaseMode ?? ("review" as const),
-		releaseType: existingDraft?.releaseType ?? ("all_required_signed" as const),
-		specificSignerEmail:
-			existingDraft?.specificSignerEmail ?? signerOptions[0]?.email ?? "",
-		thresholdN: String(existingDraft?.thresholdN ?? 2),
-		selectedRecipients: existingDraft?.recipientEmails?.length
-			? existingDraft.recipientEmails
-			: allRosterEmails,
-		files: existingDraft?.files ?? [],
-	};
+function AttachmentPacketRecipientRow({
+	option,
+	checked,
+	onCheckedChange,
+}: {
+	option: { email: string; label: string };
+	checked: boolean;
+	onCheckedChange: (checked: boolean) => void;
+}) {
+	return (
+		<div className="flex items-start gap-3 rounded-lg border border-border/50 bg-background/50 p-3">
+			<Checkbox
+				id={`attachment-recipient-${option.email}`}
+				checked={checked}
+				onCheckedChange={(next) => onCheckedChange(next === true)}
+				className="mt-0.5"
+			/>
+			<label
+				htmlFor={`attachment-recipient-${option.email}`}
+				className="min-w-0 flex-1 cursor-pointer text-sm font-medium"
+			>
+				{option.label}
+			</label>
+		</div>
+	);
 }
 
 export function AttachmentPacketDialog({
 	open,
 	onOpenChange,
 	recipients,
+	existingPacketId,
 	existingDraft,
 	onSave,
+	onRemove,
 }: Props) {
 	const { data: entitlements } = useEntitlements();
 	const promptPlanUpgrade = usePromptPlanUpgrade();
@@ -127,19 +149,52 @@ export function AttachmentPacketDialog({
 		[recipients],
 	);
 
-	const initial = initialAttachmentPacketDialogState(existingDraft, recipients);
-	const [label, setLabel] = useState(initial.label);
-	const [releaseMode, setReleaseMode] = useState(initial.releaseMode);
-	const [releaseType, setReleaseType] = useState(initial.releaseType);
-	const [specificSignerEmail, setSpecificSignerEmail] = useState(
-		initial.specificSignerEmail,
+	const [label, setLabel] = useState("");
+	const [releaseMode, setReleaseMode] = useState<"review" | "conditional">(
+		"review",
 	);
-	const [thresholdN, setThresholdN] = useState(initial.thresholdN);
-	const [selectedRecipients, setSelectedRecipients] = useState(
-		initial.selectedRecipients,
-	);
-	const [files, setFiles] = useState(initial.files);
+	const [releaseType, setReleaseType] =
+		useState<SettlementReleaseType>(DEFAULT_RELEASE_TYPE);
+	const [specificSignerEmail, setSpecificSignerEmail] = useState("");
+	const [thresholdN, setThresholdN] = useState("2");
+	const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+	const [files, setFiles] = useState<AttachmentPacketComposeFile[]>([]);
 	const [fileError, setFileError] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (!open) return;
+		setLabel(existingDraft?.label ?? "");
+		setReleaseMode(existingDraft?.releaseMode ?? "review");
+		setReleaseType(
+			normalizeSettlementReleaseType(
+				existingDraft?.releaseType ?? DEFAULT_RELEASE_TYPE,
+			),
+		);
+		setSpecificSignerEmail(
+			existingDraft?.specificSignerEmail ?? signerOptions[0]?.email ?? "",
+		);
+		setThresholdN(String(existingDraft?.thresholdN ?? 2));
+		setSelectedRecipients(
+			existingDraft?.recipientEmails?.length
+				? existingDraft.recipientEmails
+				: allRosterEmails,
+		);
+		setFiles(existingDraft?.files ?? []);
+		setFileError(null);
+	}, [open, existingDraft, signerOptions, allRosterEmails]);
+
+	const recipientEmails = canSelectRecipients
+		? selectedRecipients
+		: allRosterEmails;
+
+	const canSave =
+		files.length > 0 &&
+		recipientEmails.length > 0 &&
+		!(
+			releaseMode === "conditional" &&
+			releaseType === "specific_signer" &&
+			(!specificSignerEmail || signerOptions.length === 0)
+		);
 
 	const handleFileSelect = async (fileList: FileList | null) => {
 		if (!fileList) return;
@@ -155,33 +210,30 @@ export function AttachmentPacketDialog({
 
 		const incoming = Array.from(fileList).slice(0, remaining);
 		let nextError: string | null = null;
-		const accepted: File[] = [];
+		const readFiles: AttachmentPacketComposeFile[] = [];
 
 		for (const file of incoming) {
-			if (!ACCEPTED_FILE_MIME_SET.has(file.type as AllowedFileMime)) {
-				nextError = `${file.name} must be a PDF`;
+			const validated = validateSupplementaryAttachmentFile({
+				name: file.name,
+				sizeBytes: file.size,
+				browserMime: file.type,
+			});
+			if (!validated.ok) {
+				nextError = validated.message;
 				continue;
 			}
-			if (file.size > SUPPLEMENTARY_ATTACHMENT_LIMITS.maxBytesPerFile) {
-				nextError = `${file.name} exceeds ${Math.round(SUPPLEMENTARY_ATTACHMENT_LIMITS.maxBytesPerFile / (1024 * 1024))}MB`;
-				continue;
-			}
-			accepted.push(file);
+			readFiles.push({
+				id: createClientId(),
+				name: validated.sanitizedName,
+				mimeType: validated.mimeType,
+				bytes: new Uint8Array(await file.arrayBuffer()),
+			});
 		}
 
-		if (accepted.length === 0) {
+		if (readFiles.length === 0) {
 			if (nextError) setFileError(nextError);
 			return;
 		}
-
-		const readFiles = await Promise.all(
-			accepted.map(async (file) => ({
-				id: createClientId(),
-				name: file.name,
-				mimeType: file.type,
-				bytes: new Uint8Array(await file.arrayBuffer()),
-			})),
-		);
 
 		setFiles((prev) => [...prev, ...readFiles]);
 		if (nextError) setFileError(nextError);
@@ -199,15 +251,8 @@ export function AttachmentPacketDialog({
 	};
 
 	const handleSave = () => {
-		if (files.length === 0) {
-			setFileError("Add at least one file");
-			return;
-		}
-		const recipientEmails = canSelectRecipients
-			? selectedRecipients
-			: allRosterEmails;
-		if (recipientEmails.length === 0) {
-			setFileError("Add recipients with valid emails first");
+		if (!canSave) {
+			if (files.length === 0) setFileError("Add at least one file");
 			return;
 		}
 		if (releaseMode === "conditional" && !canConditional) {
@@ -218,7 +263,7 @@ export function AttachmentPacketDialog({
 		}
 
 		onSave({
-			packetId: existingDraft?.packetId ?? createClientId(),
+			packetId: existingPacketId ?? createClientId(),
 			label: label.trim() || undefined,
 			releaseMode,
 			releaseType,
@@ -240,26 +285,125 @@ export function AttachmentPacketDialog({
 		onOpenChange(false);
 	};
 
+	const handleRemove = () => {
+		onRemove();
+		onOpenChange(false);
+	};
+
+	const handleDialogKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+		if (event.key !== "Enter" || event.defaultPrevented) return;
+		if (event.target instanceof HTMLButtonElement) return;
+		event.preventDefault();
+		if (canSave) handleSave();
+	};
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent showCloseButton className="sm:max-w-lg">
+			<DialogContent
+				showCloseButton
+				className="sm:max-w-lg"
+				onKeyDown={handleDialogKeyDown}
+			>
 				<DialogHeader>
 					<DialogTitle>
-						{existingDraft ? "Edit extra files" : "Add extra files"}
+						{existingPacketId ? "Edit file packet" : "Add file packet"}
 					</DialogTitle>
 					<DialogDescription>
-						Recipients unlock these based on the rules you set below.{" "}
+						Set when recipients can unlock files, who gets access, then upload
+						files.{" "}
 						<DocsLink href={DOCS_LINKS.attachedFiles()}>
-							Read the attached files guide
+							Attached files guide
 						</DocsLink>
 					</DialogDescription>
 				</DialogHeader>
 
-				<div className="grid gap-4 py-1 max-h-[60vh] overflow-y-auto">
+				<div className="grid max-h-[60vh] gap-4 overflow-y-auto py-1">
+					<div className="grid gap-2">
+						<Label htmlFor="attachment-release-mode">Unlock when</Label>
+						<Select
+							value={releaseMode}
+							onValueChange={(value) => {
+								if (value === "conditional" && !canConditional) {
+									promptPlanUpgrade(
+										"features.supplementary_attachments.conditional_release",
+									);
+									return;
+								}
+								if (value === "review" || value === "conditional") {
+									setReleaseMode(value);
+								}
+							}}
+						>
+							<SelectTrigger id="attachment-release-mode">
+								<SelectValue>
+									<span className="inline-flex items-center gap-2">
+										{releaseMode === "review"
+											? "Right after send"
+											: "Signing conditions are met"}
+										{releaseMode === "conditional" ? (
+											<ProFeatureMark size="xs" />
+										) : null}
+									</span>
+								</SelectValue>
+							</SelectTrigger>
+							<SelectContent className="min-w-xs">
+								<SelectItem value="review">Right after Send</SelectItem>
+								<SelectItem value="conditional">
+									<span className="inline-flex items-center gap-2">
+										Signing conditions are met
+										<ProFeatureMark size="xs" />
+									</span>
+								</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+
+					{releaseMode === "conditional" ? (
+						<SettlementReleaseFields
+							releaseSelectId="attachment-release-type"
+							releaseWhenLabel="Unlock when"
+							specificSignerLabel="Which signer unlocks files"
+							releaseType={releaseType}
+							onReleaseTypeChange={setReleaseType}
+							canAdvanced={canAdvancedSettlements}
+							onRequireAdvanced={() =>
+								promptPlanUpgrade("features.settlement.advanced")
+							}
+							specificSignerEmail={specificSignerEmail}
+							onSpecificSignerEmailChange={setSpecificSignerEmail}
+							signerOptions={signerOptions}
+							thresholdN={thresholdN}
+							onThresholdNChange={setThresholdN}
+						/>
+					) : null}
+
+					<div className="grid gap-2">
+						<Label>Recipients</Label>
+						{canSelectRecipients ? (
+							<div className="space-y-2">
+								{rosterOptions.map((option) => (
+									<AttachmentPacketRecipientRow
+										key={option.email}
+										option={option}
+										checked={selectedRecipients.includes(option.email)}
+										onCheckedChange={(checked) =>
+											toggleRecipient(option.email, checked)
+										}
+									/>
+								))}
+							</div>
+						) : (
+							<p className="rounded-lg border border-border/50 bg-background/50 p-3 text-xs text-muted-foreground">
+								All recipients with valid emails can access this packet.
+							</p>
+						)}
+					</div>
+
 					<div className="grid gap-2">
 						<Label htmlFor="attachment-packet-label">Label (optional)</Label>
 						<Input
 							id="attachment-packet-label"
+							variant="field"
 							value={label}
 							onChange={(e) => setLabel(e.target.value)}
 							placeholder="e.g. Exhibits"
@@ -271,7 +415,6 @@ export function AttachmentPacketDialog({
 						<input
 							ref={fileInputRef}
 							type="file"
-							accept={ACCEPTED_FILE_EXTENSIONS.join(",")}
 							multiple
 							className="hidden"
 							onChange={(e) => {
@@ -291,14 +434,14 @@ export function AttachmentPacketDialog({
 							}
 						>
 							<UploadIcon className="size-4" weight="regular" />
-							Upload PDF
+							Upload files
 						</Button>
 						{files.length > 0 ? (
-							<ul className="space-y-1">
+							<ul className="space-y-2">
 								{files.map((file) => (
 									<li
 										key={file.id}
-										className="flex items-center justify-between gap-2 rounded-md border border-border/50 px-2 py-1.5 text-sm"
+										className="flex items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/50 px-3 py-2 text-sm"
 									>
 										<span className="flex min-w-0 items-center gap-2 truncate">
 											<PaperclipIcon
@@ -314,6 +457,7 @@ export function AttachmentPacketDialog({
 											onClick={() =>
 												setFiles((prev) => prev.filter((f) => f.id !== file.id))
 											}
+											aria-label={`Remove ${file.name}`}
 										>
 											<TrashIcon className="size-4" weight="regular" />
 										</Button>
@@ -322,12 +466,8 @@ export function AttachmentPacketDialog({
 							</ul>
 						) : (
 							<p className="text-xs text-muted-foreground">
-								Up to {SUPPLEMENTARY_ATTACHMENT_LIMITS.maxFilesPerPacket} PDFs,{" "}
-								{Math.round(
-									SUPPLEMENTARY_ATTACHMENT_LIMITS.maxBytesPerFile /
-										(1024 * 1024),
-								)}
-								MB each.
+								Up to {SUPPLEMENTARY_ATTACHMENT_LIMITS.maxFilesPerPacket} files,{" "}
+								{maxMb}MB each.
 							</p>
 						)}
 						{fileError ? (
@@ -335,93 +475,37 @@ export function AttachmentPacketDialog({
 						) : null}
 					</div>
 
-					<div className="grid gap-2">
-						<Label>Who can access</Label>
-						{canSelectRecipients ? (
-							<div className="space-y-2 rounded-lg border border-border/50 p-3">
-								{rosterOptions.map((option) => (
-									<label
-										key={option.email}
-										htmlFor={`attachment-recipient-${option.email}`}
-										className="flex items-center gap-2 text-sm"
-									>
-										<Checkbox
-											id={`attachment-recipient-${option.email}`}
-											checked={selectedRecipients.includes(option.email)}
-											onCheckedChange={(next) =>
-												toggleRecipient(option.email, next === true)
-											}
-										/>
-										<span>{option.label}</span>
-									</label>
-								))}
-							</div>
-						) : (
-							<p className="text-xs text-muted-foreground">
-								All recipients can access this packet.
-							</p>
-						)}
-					</div>
-
-					<div className="grid gap-2">
-						<Label htmlFor="attachment-release-mode">Unlock when</Label>
-						<Select
-							value={releaseMode}
-							onValueChange={(value) => {
-								if (value === "conditional" && !canConditional) {
-									promptPlanUpgrade(
-										"features.supplementary_attachments.conditional_release",
-									);
-									return;
-								}
-								if (value === "review" || value === "conditional") {
-									setReleaseMode(value);
-								}
-							}}
-						>
-							<SelectTrigger id="attachment-release-mode">
-								<SelectValue>
-									{releaseMode === "review"
-										? "Right after send"
-										: "Conditions are met"}
-								</SelectValue>
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="review">Right after send</SelectItem>
-								<SelectItem value="conditional">Conditions are met</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
-
-					{releaseMode === "conditional" ? (
-						<SettlementReleaseFields
-							releaseType={releaseType}
-							onReleaseTypeChange={setReleaseType}
-							canAdvanced={canAdvancedSettlements}
-							onRequireAdvanced={() =>
-								promptPlanUpgrade("features.settlement.advanced")
-							}
-							specificSignerEmail={specificSignerEmail}
-							onSpecificSignerEmailChange={setSpecificSignerEmail}
-							signerOptions={signerOptions}
-							thresholdN={thresholdN}
-							onThresholdNChange={setThresholdN}
-							releaseSelectId="attachment-release-type"
-						/>
-					) : null}
+					<p className="text-xs text-muted-foreground">
+						Files are encrypted for selected recipients before upload.
+						Recipients confirm before download on the sign page.
+					</p>
 				</div>
 
-				<DialogFooter>
-					<Button
-						type="button"
-						variant="outline"
-						onClick={() => onOpenChange(false)}
-					>
-						Cancel
-					</Button>
-					<Button type="button" onClick={handleSave}>
-						Save
-					</Button>
+				<DialogFooter className="gap-2 sm:justify-between">
+					{existingPacketId ? (
+						<Button
+							type="button"
+							variant="ghost"
+							className="text-destructive sm:mr-auto"
+							onClick={handleRemove}
+						>
+							Remove packet
+						</Button>
+					) : (
+						<span className="hidden sm:block sm:mr-auto" />
+					)}
+					<div className="flex gap-2 sm:justify-end">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => onOpenChange(false)}
+						>
+							Cancel
+						</Button>
+						<Button type="button" disabled={!canSave} onClick={handleSave}>
+							Save
+						</Button>
+					</div>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

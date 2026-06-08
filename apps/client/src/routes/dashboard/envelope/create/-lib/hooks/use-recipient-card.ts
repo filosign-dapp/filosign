@@ -1,20 +1,11 @@
-import { useBasicPayoutAttachGate } from "@filosign/react/files";
-import { useUserProfileByQuery } from "@filosign/react/users";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { getAddress, isAddress } from "viem";
-import {
-	isValidRecipientEmail,
-	recipientLookupEmail,
-} from "@/src/lib/domains/invites/recipient-email";
-import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
-import { useDebouncedSearch } from "@/src/lib/utils/use-debounced-search";
-import { RECIPIENT_LOOKUP_DEBOUNCE_MS } from "@/src/routes/dashboard/envelope/create/-lib/constants/recipient-card";
 import { useRecipientsContext } from "@/src/routes/dashboard/envelope/create/-lib/context/recipients-context";
+import { useRecipientPayoutEligibility } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-recipient-payout-eligibility";
 import { filosignProfileDisplayName } from "@/src/routes/dashboard/envelope/create/-lib/utils/filosign-profile";
 import {
 	getDraftForRecipient,
 	removeDraftForRecipient,
-	upsertRecipientDraft,
 } from "@/src/routes/dashboard/envelope/create/-lib/utils/settlement-drafts";
 
 export function useRecipientCard(index: number) {
@@ -25,9 +16,6 @@ export function useRecipientCard(index: number) {
 		settlementDrafts,
 		onSettlementDraftsChange,
 	} = useRecipientsContext();
-	const { canAttach: settlementBasicAllowed } = useBasicPayoutAttachGate();
-	const allRecipients = recipients ?? [];
-	const [settlementDialogOpen, setSettlementDialogOpen] = useState(false);
 
 	const recipient = recipients?.[index];
 	const clientRowId = recipient?.clientRowId;
@@ -36,30 +24,20 @@ export function useRecipientCard(index: number) {
 		: undefined;
 
 	const emailTrimmed = recipient?.email.trim() ?? "";
-	const emailValid =
-		emailTrimmed.length > 0 && isValidRecipientEmail(emailTrimmed);
-	const lookupEmail = recipientLookupEmail(emailTrimmed);
 
-	const { debouncedSearch: debouncedLookupEmail, isSettled: lookupSettled } =
-		useDebouncedSearch(lookupEmail, RECIPIENT_LOOKUP_DEBOUNCE_MS);
-
-	const profileQuery = useUserProfileByQuery({ email: debouncedLookupEmail });
-	const profile = profileQuery.data;
-	const isFilosignRecipient =
-		lookupSettled && profileQuery.isSuccess && !!profile;
-
-	const canAttachFunds =
-		settlementBasicAllowed &&
-		isFilosignRecipient &&
-		!!profile?.walletAddress &&
-		isAddress(profile.walletAddress);
+	const {
+		emailValid,
+		debouncedLookupEmail,
+		lookupSettled: debouncedLookupSettled,
+		isFilosignRecipient,
+		isSelfRecipient,
+		canAttachPayout,
+		profile,
+		profileQuery,
+	} = useRecipientPayoutEligibility(recipient);
 
 	const invalidEmailSyntax = emailTrimmed.length > 0 && !emailValid;
 	const autofillKeyRef = useRef<string | null>(null);
-
-	useEffect(() => {
-		if (!canAttachFunds) setSettlementDialogOpen(false);
-	}, [canAttachFunds]);
 
 	useEffect(() => {
 		if (!clientRowId || !attachedDraft) return;
@@ -69,8 +47,8 @@ export function useRecipientCard(index: number) {
 			);
 			return;
 		}
-		if (!lookupSettled || profileQuery.isFetching) return;
-		if (!canAttachFunds) {
+		if (!debouncedLookupSettled || profileQuery.isFetching) return;
+		if (!canAttachPayout) {
 			onSettlementDraftsChange(
 				removeDraftForRecipient(settlementDrafts, clientRowId),
 			);
@@ -79,8 +57,8 @@ export function useRecipientCard(index: number) {
 		clientRowId,
 		attachedDraft,
 		emailValid,
-		canAttachFunds,
-		lookupSettled,
+		canAttachPayout,
+		debouncedLookupSettled,
 		profileQuery.isFetching,
 		onSettlementDraftsChange,
 		settlementDrafts,
@@ -129,34 +107,22 @@ export function useRecipientCard(index: number) {
 	]);
 
 	useEffect(() => {
-		if (!lookupSettled) autofillKeyRef.current = null;
-	}, [lookupSettled]);
+		if (!debouncedLookupSettled) autofillKeyRef.current = null;
+	}, [debouncedLookupSettled]);
 
-	const saveSettlementDraft = (draft: SettlementAttachmentDraft) => {
-		onSettlementDraftsChange(upsertRecipientDraft(settlementDrafts, draft));
-	};
-
-	const removeSettlementDraft = () => {
-		if (!clientRowId) return;
-		onSettlementDraftsChange(
-			removeDraftForRecipient(settlementDrafts, clientRowId),
-		);
-	};
+	useEffect(() => {
+		if (!recipient || !isSelfRecipient || recipient.role !== "viewer") return;
+		updateRecipient(index, { role: "signer" });
+	}, [recipient, isSelfRecipient, index, updateRecipient]);
 
 	return {
 		recipient,
-		allRecipients: allRecipients ?? [],
 		index,
 		updateRecipient,
 		removeRecipient,
-		attachedDraft,
-		clientRowId,
 		invalidEmailSyntax,
 		isFilosignRecipient,
-		canAttachFunds,
-		settlementDialogOpen,
-		setSettlementDialogOpen,
-		saveSettlementDraft,
-		removeSettlementDraft,
+		isSelfRecipient,
+		profile,
 	};
 }

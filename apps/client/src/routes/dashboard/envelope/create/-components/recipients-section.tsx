@@ -9,6 +9,7 @@ import {
 } from "@/src/lib/components/ui/collapsible";
 import { Label } from "@/src/lib/components/ui/label";
 import { Switch } from "@/src/lib/components/ui/switch";
+import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { cn } from "@/src/lib/utils/utils";
 import {
 	RecipientsProvider,
@@ -95,9 +96,10 @@ function RecipientsSectionContent() {
 										/>
 										<Label
 											htmlFor="turn-order-enabled-recipients"
-											className="cursor-pointer text-sm font-medium"
+											className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium"
 										>
 											Ordered Signing
+											<ProFeatureMark size="xs" />
 										</Label>
 									</div>
 								) : null}

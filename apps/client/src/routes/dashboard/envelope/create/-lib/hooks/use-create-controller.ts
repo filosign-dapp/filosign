@@ -10,6 +10,7 @@ import {
 import { useForm, useStore } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
 	buildCreateForm,
 	EMPTY_ENVELOPE_FORM,
@@ -18,10 +19,14 @@ import {
 	hydrateAttachmentPacketDrafts,
 	saveAttachmentPacketDrafts,
 } from "@/src/lib/domains/drafts";
+import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements/payout-copy";
+import { settlementPayoutExceedsBalance } from "@/src/lib/domains/settlements/payout-totals";
+import { useAttachedPayoutBalance } from "@/src/lib/domains/settlements/use-attached-payout-balance";
 import {
 	useStorePersist,
 	useStorePersistHydrated,
 } from "@/src/lib/filosign/use-store";
+import { useWalletUsdcBalance } from "@/src/lib/web3/use-wallet-usdc-balance";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 import type { EnvelopeForm } from "@/src/routes/dashboard/envelope/create/-lib/types";
 
@@ -40,6 +45,9 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 	const { isWithinRecipientLimit } = useEnvelopeRecipientLimit();
 	const { isMonthlyQuotaExhausted } = useMonthlyDocumentQuota();
 	const [isAdvancing, setIsAdvancing] = useState(false);
+	const walletUsdc = useWalletUsdcBalance();
+	const walletUsdcRef = useRef(walletUsdc);
+	walletUsdcRef.current = walletUsdc;
 
 	const form = useForm({
 		defaultValues: initialValues,
@@ -69,6 +77,18 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 
 				if (!isWithinRecipientLimit(value.recipients.length)) {
 					promptPlanUpgrade("envelope.recipients.max");
+					return;
+				}
+
+				const { address, balance } = walletUsdcRef.current;
+				if (
+					settlementPayoutExceedsBalance({
+						drafts: value.settlementDrafts ?? [],
+						walletAddress: address,
+						walletBalance: balance,
+					})
+				) {
+					toast.error(PAYOUT_EXCEEDS_BALANCE_MESSAGE);
 					return;
 				}
 
@@ -105,6 +125,12 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 		},
 	});
 
+	const settlementDrafts = useStore(
+		form.store,
+		(state) => state.values.settlementDrafts ?? [],
+	);
+	const payoutBalance = useAttachedPayoutBalance(settlementDrafts);
+
 	const showValidationErrors = useStore(
 		form.store,
 		(state) => state.submissionAttempts > 0,
@@ -126,8 +152,16 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 			isAdvancing,
 			hasContent,
 			clearForm,
+			payoutBalance,
 		}),
-		[form, showValidationErrors, isAdvancing, hasContent, clearForm],
+		[
+			form,
+			showValidationErrors,
+			isAdvancing,
+			hasContent,
+			clearForm,
+			payoutBalance,
+		],
 	);
 }
 

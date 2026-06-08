@@ -1,47 +1,19 @@
 import { WalletIcon } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
-import { getContract } from "thirdweb";
-import {
-	useActiveAccount,
-	useReadContract,
-	useWalletDetailsModal,
-} from "thirdweb/react";
-import { formatUnits } from "viem";
+import { useActiveAccount, useWalletDetailsModal } from "thirdweb/react";
 import { defaultChain, SUPPORTED_TOKENS } from "@/src/constants";
 import env from "@/src/env";
 import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
 import { Image } from "@/src/lib/components/app/media/image";
 import { Button } from "@/src/lib/components/ui/button";
 import { useTheme } from "@/src/lib/components/ui/theme-provider";
-import {
-	defaultThirdwebChain,
-	thirdwebClient,
-	thirdwebWalletModalOptions,
-} from "@/src/lib/web3/config";
+import { thirdwebWalletModalOptions } from "@/src/lib/web3/config";
+import { formatUsdcAmountParts } from "@/src/lib/web3/format-usdc";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
+import { useWalletUsdcBalance } from "@/src/lib/web3/use-wallet-usdc-balance";
 import { ProfileSection } from "./profile-section";
 
 const usdc = SUPPORTED_TOKENS[0];
-
-function formatUsdcAmountParts(
-	value: bigint,
-	decimals: number,
-): { whole: string; fraction: string } {
-	const n = Number(formatUnits(value, decimals));
-	const safe = Number.isFinite(n) ? n : 0;
-	const parts = new Intl.NumberFormat(undefined, {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-	}).formatToParts(safe);
-
-	let whole = "";
-	let fraction = "";
-	for (const p of parts) {
-		if (p.type === "integer" || p.type === "group") whole += p.value;
-		else if (p.type === "fraction") fraction = p.value;
-	}
-	return { whole: whole || "0", fraction: fraction || "00" };
-}
 
 export function WalletUsdcBalanceCard() {
 	const account = useActiveAccount();
@@ -51,36 +23,15 @@ export function WalletUsdcBalanceCard() {
 	const [topUpLoading, setTopUpLoading] = useState(false);
 
 	const address = account?.address;
-	const checksummed = address as `0x${string}` | undefined;
-
-	const usdcContract = useMemo(
-		() =>
-			getContract({
-				client: thirdwebClient,
-				address: usdc.address,
-				chain: defaultThirdwebChain,
-			}),
-		[],
-	);
-
-	const balanceParams = checksummed
-		? ([checksummed] as const)
-		: (["0x0000000000000000000000000000000000000000"] as const);
-
-	const { data, isPending, isError, refetch } = useReadContract({
-		contract: usdcContract,
-		method: "function balanceOf(address account) view returns (uint256)",
-		params: balanceParams,
-		queryOptions: { enabled: Boolean(checksummed) },
-	});
+	const { balance, isPending, isError, refetch } = useWalletUsdcBalance();
 
 	const onrampEnabled = env.VITE_CHAIN === "mainnet";
 	const faucetUrl = usdc.faucets[0]?.url;
 
-	const parts = useMemo(() => {
-		const value = typeof data === "bigint" ? data : 0n;
-		return formatUsdcAmountParts(value, usdc.decimals);
-	}, [data]);
+	const parts = useMemo(
+		() => formatUsdcAmountParts(balance, usdc.decimals),
+		[balance],
+	);
 
 	const handleTopUp = async () => {
 		if (!address) return;

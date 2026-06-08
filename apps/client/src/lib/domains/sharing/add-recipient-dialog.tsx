@@ -34,7 +34,7 @@ const fieldClass =
 	"h-9 border-border/60 bg-muted/5 text-sm text-foreground/90 placeholder:text-muted-foreground/45 shadow-none";
 
 const textareaClass =
-	"min-h-[4.5rem] resize-none border-border/60 bg-muted/5 py-2.5 text-sm text-foreground/90 placeholder:text-muted-foreground/45 shadow-none";
+	"min-h-18 resize-none border-border/60 bg-muted/5 py-2.5 text-sm text-foreground/90 placeholder:text-muted-foreground/45 shadow-none";
 
 function isValidEmail(email: string) {
 	return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);

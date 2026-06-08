@@ -669,7 +669,7 @@ function AdminPage() {
 									>
 										<div className="min-w-0 space-y-1">
 											<div className="flex flex-wrap items-center gap-2">
-												<span className="font-medium text-foreground truncate max-w-[200px] md:max-w-none">
+												<span className="font-medium text-foreground truncate max-w-50 md:max-w-none">
 													{String(user.email ?? "–")}
 												</span>
 												<Badge variant="outline">
@@ -683,7 +683,7 @@ function AdminPage() {
 												</Badge>
 											</div>
 											<div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-												<span className="truncate max-w-[220px] sm:max-w-none">
+												<span className="truncate max-w-55 sm:max-w-none">
 													{wallet}
 												</span>
 												<CopyButton

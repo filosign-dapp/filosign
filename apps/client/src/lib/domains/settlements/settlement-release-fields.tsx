@@ -1,7 +1,10 @@
 import type { SettlementReleaseType } from "@filosign/shared";
 import {
 	isAdvancedSettlementReleaseType,
+	normalizeSettlementReleaseType,
 	settlementReleaseTypeLabel,
+	settlementReleaseTypesForComposeAdvanced,
+	settlementReleaseTypesForComposeBasic,
 } from "@filosign/shared";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
@@ -12,21 +15,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/src/lib/components/ui/select";
-
-const BASIC_RELEASE_TYPES: SettlementReleaseType[] = [
-	"all_signed",
-	"specific_signer",
-];
-
-const ADVANCED_RELEASE_TYPES: SettlementReleaseType[] = [
-	"all_required_signed",
-	"all_signed_complete",
-	"at_least_n",
-	"quorum_required",
-	"quorum_set",
-	"quorum_all",
-	"all_of_set",
-];
+import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 
 export type SignerOption = { email: string; label: string };
 
@@ -41,6 +30,8 @@ type Props = {
 	thresholdN: string;
 	onThresholdNChange: (value: string) => void;
 	releaseSelectId?: string;
+	releaseWhenLabel?: string;
+	specificSignerLabel?: string;
 };
 
 export function SettlementReleaseFields({
@@ -54,14 +45,19 @@ export function SettlementReleaseFields({
 	thresholdN,
 	onThresholdNChange,
 	releaseSelectId = "settlement-release-type",
+	releaseWhenLabel = "Pay out when",
+	specificSignerLabel = "Which signer triggers payout",
 }: Props) {
+	const displayReleaseType = normalizeSettlementReleaseType(releaseType);
+	const selectedIsPro = isAdvancedSettlementReleaseType(displayReleaseType);
+
 	const releaseOptions = [
-		...BASIC_RELEASE_TYPES.map((value) => ({
+		...settlementReleaseTypesForComposeBasic.map((value) => ({
 			value,
 			label: settlementReleaseTypeLabel(value),
 			advanced: false,
 		})),
-		...ADVANCED_RELEASE_TYPES.map((value) => ({
+		...settlementReleaseTypesForComposeAdvanced.map((value) => ({
 			value,
 			label: settlementReleaseTypeLabel(value),
 			advanced: true,
@@ -69,10 +65,10 @@ export function SettlementReleaseFields({
 	];
 
 	const needsThreshold =
-		releaseType === "at_least_n" ||
-		releaseType === "quorum_required" ||
-		releaseType === "quorum_set" ||
-		releaseType === "quorum_all";
+		displayReleaseType === "at_least_n" ||
+		displayReleaseType === "quorum_required" ||
+		displayReleaseType === "quorum_set" ||
+		displayReleaseType === "quorum_all";
 
 	const handleReleaseChange = (value: SettlementReleaseType) => {
 		if (isAdvancedSettlementReleaseType(value) && !canAdvanced) {
@@ -85,29 +81,36 @@ export function SettlementReleaseFields({
 	return (
 		<>
 			<div className="grid gap-2 w-full">
-				<Label htmlFor={releaseSelectId}>Pay out when</Label>
+				<Label htmlFor={releaseSelectId}>{releaseWhenLabel}</Label>
 				<Select
-					value={releaseType}
+					value={displayReleaseType}
 					onValueChange={(v) => handleReleaseChange(v as SettlementReleaseType)}
 				>
-					<SelectTrigger id={releaseSelectId} className="">
-						<SelectValue />
+					<SelectTrigger id={releaseSelectId}>
+						<SelectValue>
+							<span className="inline-flex items-center gap-2">
+								{settlementReleaseTypeLabel(displayReleaseType)}
+								{selectedIsPro ? <ProFeatureMark size="xs" /> : null}
+							</span>
+						</SelectValue>
 					</SelectTrigger>
 					<SelectContent className="min-w-lg">
 						{releaseOptions.map((option) => (
 							<SelectItem key={option.value} value={option.value}>
-								{option.label}
-								{option.advanced ? " · Teams Pro" : ""}
+								<span className="inline-flex items-center gap-2">
+									{option.label}
+									{option.advanced ? <ProFeatureMark size="xs" /> : null}
+								</span>
 							</SelectItem>
 						))}
 					</SelectContent>
 				</Select>
 			</div>
 
-			{releaseType === "specific_signer" ? (
+			{displayReleaseType === "specific_signer" ? (
 				<div className="grid gap-2">
 					<Label htmlFor={`${releaseSelectId}-signer`}>
-						Which signer triggers payout
+						{specificSignerLabel}
 					</Label>
 					{signerOptions.length === 0 ? (
 						<p className="text-xs text-muted-foreground">
@@ -121,7 +124,10 @@ export function SettlementReleaseFields({
 							}}
 						>
 							<SelectTrigger id={`${releaseSelectId}-signer`}>
-								<SelectValue placeholder="Select signer" />
+								<SelectValue placeholder="Select signer">
+									{signerOptions.find((s) => s.email === specificSignerEmail)
+										?.label ?? "Select signer"}
+								</SelectValue>
 							</SelectTrigger>
 							<SelectContent>
 								{signerOptions.map((s) => (
@@ -142,6 +148,7 @@ export function SettlementReleaseFields({
 					</Label>
 					<Input
 						id={`${releaseSelectId}-threshold`}
+						variant="field"
 						inputMode="numeric"
 						value={thresholdN}
 						onChange={(e) => onThresholdNChange(e.target.value)}

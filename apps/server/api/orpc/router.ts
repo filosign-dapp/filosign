@@ -36,12 +36,14 @@ import {
 	billingResendSetupLink,
 	billingUpdateOrgSeats,
 } from "@/api/handlers/billing-handlers";
+import * as documentHandlers from "@/api/handlers/documents";
 import * as draftHandlers from "@/api/handlers/drafts";
 import * as fileHandlers from "@/api/handlers/files";
 import {
 	metricsInvitesSummary,
 	metricsSenderUsage,
 } from "@/api/handlers/metrics-handlers";
+import * as notificationHandlers from "@/api/handlers/notifications";
 import * as orgsHandlers from "@/api/handlers/orgs";
 import {
 	platformAccessPreviewGate,
@@ -103,6 +105,9 @@ import {
 } from "./procedures";
 import {
 	rpcOut as out,
+	zDocumentsListInputSchema,
+	zNotificationsDismissInputSchema,
+	zNotificationsInboxInputSchema,
 	zPlatformAdminInviteCreateInput,
 	zPlatformAdminSetFeatureOverridesInput,
 	zPlatformAdminSetPlanInput,
@@ -311,11 +316,6 @@ export const appRouter = {
 			.handler(({ context, input }) =>
 				draftHandlers.draftsSave(context.userWallet, context.activeOrg, input),
 			),
-		list: orgProcedure
-			.output(out.drafts.list)
-			.handler(({ context }) =>
-				draftHandlers.draftsList(context.userWallet, context.activeOrg),
-			),
 		get: orgProcedure
 			.input(z.object({ draftId: z.uuid() }))
 			.output(out.drafts.get)
@@ -421,6 +421,21 @@ export const appRouter = {
 					input,
 				),
 			),
+		rename: orgProcedure
+			.input(
+				z.object({
+					draftId: z.uuid(),
+					title: z.string().min(1).max(200),
+				}),
+			)
+			.output(out.drafts.rename)
+			.handler(({ context, input }) =>
+				draftHandlers.draftsRename(
+					context.userWallet,
+					context.activeOrg,
+					input,
+				),
+			),
 		comments: {
 			list: orgProcedure
 				.input(z.object({ draftId: z.uuid() }))
@@ -463,6 +478,38 @@ export const appRouter = {
 					),
 				),
 		},
+	},
+	documents: {
+		list: authenticatedProcedure
+			.input(zDocumentsListInputSchema)
+			.output(out.documents.list)
+			.handler(({ context, input }) =>
+				documentHandlers.documentsListHandler(
+					context.userWallet,
+					context.activeOrg,
+					input,
+				),
+			),
+	},
+	notifications: {
+		inbox: authenticatedProcedure
+			.input(zNotificationsInboxInputSchema)
+			.output(out.notifications.inbox)
+			.handler(({ context, input }) =>
+				notificationHandlers.notificationsInboxHandler(
+					context.userWallet,
+					input,
+				),
+			),
+		dismiss: authenticatedProcedure
+			.input(zNotificationsDismissInputSchema)
+			.output(out.notifications.dismiss)
+			.handler(({ context, input }) =>
+				notificationHandlers.notificationsDismissHandler(
+					context.userWallet,
+					input,
+				),
+			),
 	},
 	attachments: {
 		uploadStart: authenticatedProcedure
@@ -638,28 +685,6 @@ export const appRouter = {
 			.handler(({ context, input }) =>
 				fileHandlers.filesRemindSigners(context.userWallet, input),
 			),
-		list: {
-			sent: authenticatedProcedure
-				.output(out.files.list.sent)
-				.handler(({ context }) =>
-					fileHandlers.filesListSent(context.userWallet),
-				),
-			received: authenticatedProcedure
-				.output(out.files.list.received)
-				.handler(({ context }) =>
-					fileHandlers.filesListReceived(context.userWallet),
-				),
-			org: authenticatedProcedure
-				.output(out.files.list.org)
-				.handler(({ context }) => {
-					if (!context.activeOrg) {
-						throw new ORPCError("BAD_REQUEST", {
-							message: "X-Org-Id header required",
-						});
-					}
-					return fileHandlers.filesListOrg(context.activeOrg.organizationId);
-				}),
-		},
 		coldInvite: {
 			inviteByToken: publicProcedure
 				.input(z.object({ inviteToken: z.string().min(1) }))

@@ -12,6 +12,7 @@ export {
 	draftsPrepareSave,
 	draftsPresignDocuments,
 	draftsPresignSnapshot,
+	draftsRename,
 	draftsReviewByToken,
 	draftsReviewForWallet,
 	draftsRevokeExternalShare,

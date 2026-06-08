@@ -7,6 +7,7 @@ export {
 	draftsGet,
 	draftsList,
 	draftsMarkSent,
+	draftsRename,
 	listDraftsForWallet,
 	loadDraftOrThrow,
 } from "./lifecycle";

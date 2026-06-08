@@ -113,6 +113,11 @@ const zArchiveBody = z.object({
 	draftId: z.uuid(),
 });
 
+const zRenameDraftBody = z.object({
+	draftId: z.uuid(),
+	title: z.string().min(1).max(200),
+});
+
 export async function draftsCreate(
 	wallet: Address,
 	activeOrg: ActiveOrgContext,
@@ -333,4 +338,41 @@ export async function draftsArchive(
 		.where(eq(envelopeDrafts.id, draft.id));
 
 	return { ok: true as const };
+}
+
+export async function draftsRename(
+	wallet: Address,
+	activeOrg: ActiveOrgContext,
+	body: unknown,
+) {
+	const parsed = zRenameDraftBody.safeParse(body);
+	if (!parsed.success) {
+		throwZodBadRequest(parsed.error);
+	}
+
+	assertOrgPermission(activeOrg, "drafts:write");
+	const draft = await loadDraftOrThrow(parsed.data.draftId);
+	if (draft.organizationId !== activeOrg.organizationId) {
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
+	}
+	await assertDraftCreator(wallet, draft);
+
+	if (draft.status !== "active") {
+		throwAppError("DRAFTS.NOT_EDITABLE");
+	}
+
+	const title = parsed.data.title.trim();
+	const nextRevision = draft.revision + 1;
+	const now = new Date();
+
+	await db
+		.update(envelopeDrafts)
+		.set({
+			title,
+			revision: nextRevision,
+			updatedAt: now,
+		})
+		.where(eq(envelopeDrafts.id, draft.id));
+
+	return { ok: true as const, title, revision: nextRevision };
 }

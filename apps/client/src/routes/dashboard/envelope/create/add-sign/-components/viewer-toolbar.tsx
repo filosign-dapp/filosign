@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
 import { Input } from "@/src/lib/components/ui/input";
+import { PlacedFieldsSheet } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placed-fields-sheet";
 
 type DocumentViewerToolbarProps = {
 	isPdfDocument: boolean;
@@ -97,6 +98,9 @@ export function DocumentViewerToolbar({
 					<ArrowClockwiseIcon className="size-5" />
 				</Button>
 			</DisabledTooltip>
+			<div className="lg:hidden">
+				<PlacedFieldsSheet variant="toolbar" />
+			</div>
 			{isPdfDocument ? (
 				<>
 					<div className="mx-0.5 hidden h-6 w-px bg-border sm:block" />

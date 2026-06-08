@@ -40,6 +40,8 @@ type BlobRow = {
 	name: string;
 	size: number;
 	type: string;
+	sourceMimeType?: string;
+	pageCount?: number;
 };
 
 function docKey(draftId: string, docId: string) {
@@ -322,6 +324,8 @@ export async function saveDraftDocuments(
 			name: doc.name,
 			size: doc.size,
 			type: doc.type,
+			sourceMimeType: doc.sourceMimeType,
+			pageCount: doc.pageCount,
 		} satisfies BlobRow);
 	}
 
@@ -354,8 +358,10 @@ export async function loadDraftDocuments(
 			id: doc.id,
 			file,
 			name: doc.name,
-			size: doc.size,
-			type: doc.type,
+			size: row.size,
+			type: row.type,
+			sourceMimeType: row.sourceMimeType ?? doc.sourceMimeType,
+			pageCount: row.pageCount ?? doc.pageCount,
 		});
 	}
 
@@ -416,6 +422,8 @@ export async function buildCreateForm(
 		name: doc.name,
 		size: doc.size,
 		type: doc.type,
+		sourceMimeType: doc.sourceMimeType,
+		pageCount: doc.pageCount,
 	}));
 
 	const signatureFields = fingerprintChanged

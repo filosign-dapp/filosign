@@ -1,4 +1,5 @@
 import { useMonthlyDocumentQuota } from "@filosign/react/billing";
+import { isAcceptedSignableDocumentUpload } from "@filosign/shared";
 import {
 	CaretDownIcon,
 	PaperPlaneTiltIcon,
@@ -6,6 +7,7 @@ import {
 } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import { useCallback, useRef, useState } from "react";
+import { toast } from "sonner";
 import { ListGridViewToggle } from "@/src/lib/components/app/view/list-grid-view-toggle";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -13,16 +15,20 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/src/lib/components/ui/collapsible";
+import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import {
+	normalizeSignableDocumentToPdf,
+	SignableDocumentNormalizeError,
+} from "@/src/lib/domains/files/normalize-signable-document";
 import { createClientId } from "@/src/lib/utils/id";
 import { cn } from "@/src/lib/utils/utils";
 import { useComposeDocuments } from "../-lib/hooks/use-compose-documents";
 import { usePromptPlanUpgrade } from "../-lib/hooks/use-prompt-plan-upgrade";
-import type { AllowedFileMime, UploadedFile } from "../-lib/types";
-import {
-	ACCEPTED_FILE_EXTENSIONS,
-	ACCEPTED_FILE_MIME_SET,
-} from "../-lib/types";
+import type { UploadedFile } from "../-lib/types";
+import { ACCEPTED_FILE_EXTENSIONS } from "../-lib/types";
 import FileCard from "./file-card";
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 export default function DocumentsSection() {
 	const { documents, onChange, error, showError } = useComposeDocuments();
@@ -35,11 +41,10 @@ export default function DocumentsSection() {
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [unsupportedFiles, setUnsupportedFiles] = useState<string[]>([]);
 	const [oversizedFiles, setOversizedFiles] = useState<string[]>([]);
-
-	const MAX_FILE_SIZE = 10 * 1024 * 1024;
+	const [preparingFiles, setPreparingFiles] = useState(false);
 
 	const handleFileSelect = useCallback(
-		(files: FileList | null) => {
+		async (files: FileList | null) => {
 			if (!files) return;
 			if (isMonthlyQuotaExhausted) {
 				promptPlanUpgrade("documents.sent.monthly");
@@ -49,7 +54,12 @@ export default function DocumentsSection() {
 			const incoming = Array.from(files);
 			const rejected = incoming
 				.filter(
-					(file) => !ACCEPTED_FILE_MIME_SET.has(file.type as AllowedFileMime),
+					(file) =>
+						!isAcceptedSignableDocumentUpload(file.name, file.type) ||
+						file.size > MAX_FILE_SIZE,
+				)
+				.filter(
+					(file) => !isAcceptedSignableDocumentUpload(file.name, file.type),
 				)
 				.map((file) => file.name);
 
@@ -57,32 +67,59 @@ export default function DocumentsSection() {
 				.filter((file) => file.size > MAX_FILE_SIZE)
 				.map((file) => file.name);
 
-			const newFiles: UploadedFile[] = incoming
-				.filter(
-					(file) =>
-						ACCEPTED_FILE_MIME_SET.has(file.type as AllowedFileMime) &&
-						file.size <= MAX_FILE_SIZE,
-				)
-				.map((file) => ({
-					id: createClientId(),
-					file,
-					name: file.name,
-					size: file.size,
-					type: file.type,
-				}))
-				.filter((newFile) => {
-					return !documents?.some(
+			const candidates = incoming.filter(
+				(file) =>
+					isAcceptedSignableDocumentUpload(file.name, file.type) &&
+					file.size > 0 &&
+					file.size <= MAX_FILE_SIZE,
+			);
+
+			if (candidates.length === 0) {
+				setUnsupportedFiles(rejected);
+				setOversizedFiles(oversized);
+				return;
+			}
+
+			setPreparingFiles(true);
+			const newFiles: UploadedFile[] = [];
+
+			try {
+				for (const file of candidates) {
+					const duplicate = documents?.some(
 						(existingFile) =>
-							existingFile.name === newFile.name &&
-							existingFile.size === newFile.size,
+							existingFile.name === file.name &&
+							existingFile.size === file.size,
 					);
-				});
+					if (duplicate) continue;
 
-			const updatedDocs = [...(documents || []), ...newFiles];
-			onChange(updatedDocs);
+					try {
+						const normalized = await normalizeSignableDocumentToPdf(file);
+						newFiles.push({
+							id: createClientId(),
+							file: normalized.pdfFile,
+							name: normalized.displayName,
+							size: normalized.pdfFile.size,
+							type: "application/pdf",
+							sourceMimeType: normalized.sourceMimeType,
+							pageCount: normalized.pageCount,
+						});
+					} catch (error) {
+						const message =
+							error instanceof SignableDocumentNormalizeError
+								? error.message
+								: `${file.name} could not be prepared for signing`;
+						toast.error(message);
+					}
+				}
 
-			setUnsupportedFiles(rejected);
-			setOversizedFiles(oversized);
+				if (newFiles.length > 0) {
+					onChange([...(documents || []), ...newFiles]);
+				}
+			} finally {
+				setPreparingFiles(false);
+				setUnsupportedFiles(rejected);
+				setOversizedFiles(oversized);
+			}
 		},
 		[documents, onChange, isMonthlyQuotaExhausted, promptPlanUpgrade],
 	);
@@ -90,8 +127,7 @@ export default function DocumentsSection() {
 	const handleFileInputChange = (
 		event: React.ChangeEvent<HTMLInputElement>,
 	) => {
-		handleFileSelect(event.target.files);
-		// Reset the input value so the same file can be selected again
+		void handleFileSelect(event.target.files);
 		if (fileInputRef.current) {
 			fileInputRef.current.value = "";
 		}
@@ -122,7 +158,7 @@ export default function DocumentsSection() {
 			promptPlanUpgrade("documents.sent.monthly");
 			return;
 		}
-		handleFileSelect(event.dataTransfer.files);
+		void handleFileSelect(event.dataTransfer.files);
 	};
 
 	const removeFile = (fileId: string) => {
@@ -134,7 +170,6 @@ export default function DocumentsSection() {
 		if (newViewMode !== viewMode) {
 			setIsViewSwitching(true);
 			setViewMode(newViewMode);
-			// Reset the switching state after animation completes
 			setTimeout(() => {
 				setIsViewSwitching(false);
 			}, 300);
@@ -181,7 +216,6 @@ export default function DocumentsSection() {
 				</CollapsibleTrigger>
 
 				<CollapsibleContent className="mt-6">
-					{/* Hidden file input */}
 					<input
 						ref={fileInputRef}
 						type="file"
@@ -252,7 +286,10 @@ export default function DocumentsSection() {
 								}}
 							>
 								<p className="text-muted-foreground">
-									Drop PDFs here, or click Upload
+									Drop PDFs or images here, or click Upload
+								</p>
+								<p className="text-xs text-muted-foreground">
+									Files are prepared as PDF for signing.
 								</p>
 								<Button
 									type="button"
@@ -260,28 +297,33 @@ export default function DocumentsSection() {
 									size="lg"
 									className="gap-2 px-6 py-3"
 									onClick={handleUploadClick}
+									disabled={preparingFiles}
 								>
-									Upload
+									{preparingFiles ? (
+										<>
+											<InlineLoader className="size-4" />
+											Preparing…
+										</>
+									) : (
+										"Upload"
+									)}
 								</Button>
 							</motion.div>
 						</motion.div>
 					</motion.div>
 
-					{/* Unsupported files error */}
 					{unsupportedFiles.length > 0 && (
 						<p className="mt-2 text-sm text-destructive font-medium">
 							Unsupported files: {unsupportedFiles.join(", ")}
 						</p>
 					)}
 
-					{/* Oversized files error */}
 					{oversizedFiles.length > 0 && (
 						<p className="mt-2 text-sm text-destructive font-medium">
 							Files too large (max 10MB): {oversizedFiles.join(", ")}
 						</p>
 					)}
 
-					{/* Validation error */}
 					{error && showError && (
 						<motion.p
 							initial={{ opacity: 0, y: -10 }}
@@ -292,7 +334,6 @@ export default function DocumentsSection() {
 						</motion.p>
 					)}
 
-					{/* Uploaded Files Display */}
 					{documents && documents.length > 0 && (
 						<motion.div
 							className="mt-4 space-y-4"
@@ -305,7 +346,6 @@ export default function DocumentsSection() {
 								delay: 0.1,
 							}}
 						>
-							{/* Header with view mode toggle */}
 							<div className="flex items-center justify-between">
 								<h5 className="text-sm font-medium text-muted-foreground">
 									Files ({documents.length})
@@ -316,7 +356,6 @@ export default function DocumentsSection() {
 								/>
 							</div>
 
-							{/* Files display */}
 							{viewMode === "list" ? (
 								<div className="space-y-2">
 									{documents.map((file) => (

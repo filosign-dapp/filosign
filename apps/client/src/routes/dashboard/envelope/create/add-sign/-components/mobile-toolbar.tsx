@@ -66,7 +66,7 @@ export default function MobileSignatureToolbar() {
 
 	return (
 		<motion.div
-			className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 lg:hidden w-full max-w-md px-4"
+			className="fixed bottom-6 left-1/2 z-50 w-full max-w-md -translate-x-1/2 px-4 lg:hidden"
 			initial={{ opacity: 0, y: 100 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{
@@ -76,7 +76,7 @@ export default function MobileSignatureToolbar() {
 				mass: 1.0,
 			}}
 		>
-			<div className="glass bg-background/95 border border-border rounded-large p-4 shadow-lg backdrop-blur-sm">
+			<div className="glass rounded-large border border-border bg-background/95 p-4 shadow-lg backdrop-blur-sm">
 				<p className="mb-2 text-center text-[10px] text-muted-foreground">
 					Drag onto the page
 				</p>

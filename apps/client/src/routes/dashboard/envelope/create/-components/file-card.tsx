@@ -10,16 +10,9 @@ import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
+import type { UploadedFile } from "@/src/lib/domains/files/envelope-form-types";
 import { cn } from "@/src/lib/utils/utils";
 import { useObjectUrl } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-object-url";
-
-type UploadedFile = {
-	id: string;
-	file: File;
-	name: string;
-	size: number;
-	type: string;
-};
 
 interface FileCardProps {
 	file: UploadedFile;
@@ -62,8 +55,9 @@ export default function FileCard({
 	const [imageError, setImageError] = useState(false);
 	const [showPreview, setShowPreview] = useState(!delayPreview);
 	const [isLoading, setIsLoading] = useState(delayPreview);
-	const FileIconComponent = getFileIcon(file.type);
-	const iconColor = getFileTypeColor(file.type);
+	const displayMimeType = file.sourceMimeType ?? file.type;
+	const FileIconComponent = getFileIcon(displayMimeType);
+	const iconColor = getFileTypeColor(displayMimeType);
 
 	// Delay preview loading to avoid interfering with animations
 	useEffect(() => {
@@ -90,10 +84,10 @@ export default function FileCard({
 		return `${parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
 	};
 
-	const isImage = file.type.includes("image");
-	const previewUrl = useObjectUrl(isImage ? file.file : null);
+	const isImagePreviewable = file.type.includes("image");
+	const previewUrl = useObjectUrl(isImagePreviewable ? file.file : null);
 	const shouldShowPreview =
-		isImage && !imageError && showPreview && previewUrl != null;
+		isImagePreviewable && !imageError && showPreview && previewUrl != null;
 
 	// Grid variant
 	if (variant === "grid") {
@@ -132,7 +126,7 @@ export default function FileCard({
 						/>
 					) : (
 						<div className="flex items-center justify-center w-full h-full">
-							{isLoading && isImage ? (
+							{isLoading && isImagePreviewable ? (
 								<Skeleton className="w-full h-full rounded-lg" />
 							) : (
 								<FileIconComponent className={cn("h-12 w-12", iconColor)} />
@@ -167,7 +161,7 @@ export default function FileCard({
 					/>
 				) : (
 					<div className="flex items-center justify-center">
-						{isLoading && isImage ? (
+						{isLoading && isImagePreviewable ? (
 							<Skeleton className="size-10 rounded" />
 						) : (
 							<FileIconComponent

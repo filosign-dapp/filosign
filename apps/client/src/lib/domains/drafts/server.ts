@@ -24,7 +24,6 @@ import {
 	setHydratedDraftPreviewPdfBytes,
 	takeHydratedDraftPreviewPdfBytes,
 } from "@/src/lib/domains/drafts/utils/draft-hydrate-preview";
-import { isPdfDocument } from "@/src/lib/domains/files/document-kind";
 import type {
 	CreateForm,
 	EnvelopeForm,
@@ -52,9 +51,7 @@ function pdfBytesFromDecryptedDocuments(
 ): Record<string, Uint8Array> {
 	const pdfBytes: Record<string, Uint8Array> = {};
 	for (const doc of documents) {
-		if (isPdfDocument({ type: doc.type, name: doc.name })) {
-			pdfBytes[doc.id] = doc.bytes;
-		}
+		pdfBytes[doc.id] = doc.bytes;
 	}
 	return pdfBytes;
 }
@@ -431,18 +428,13 @@ export function useDraftDocumentPreview(args: {
 			if (!docs.length) return;
 			if (cancelled) return;
 
-			const urls: Record<string, string> = {};
 			const pdfBytes: Record<string, Uint8Array> = {};
 			for (const doc of docs) {
-				if (isPdfDocument({ type: doc.type, name: doc.name })) {
-					const buffer = await doc.file.arrayBuffer();
-					pdfBytes[doc.id] = new Uint8Array(buffer);
-				} else {
-					urls[doc.id] = URL.createObjectURL(doc.file);
-				}
+				const buffer = await doc.file.arrayBuffer();
+				pdfBytes[doc.id] = new Uint8Array(buffer);
 			}
 			if (cancelled) return;
-			setDocumentUrls(urls);
+			setDocumentUrls({});
 			setDocumentPdfBytes(pdfBytes);
 		})().catch((error) =>
 			console.error("Failed to load draft preview:", error),

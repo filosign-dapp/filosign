@@ -1,6 +1,34 @@
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
 import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
+export type PayoutRuleGroup = {
+	ruleId: string;
+	legs: SettlementAttachmentDraft[];
+};
+
+export function ruleIdForDraft(draft: SettlementAttachmentDraft): string {
+	return draft.ruleId ?? draft.id;
+}
+
+export function getRuleGroups(
+	drafts: SettlementAttachmentDraft[],
+): PayoutRuleGroup[] {
+	const map = new Map<string, SettlementAttachmentDraft[]>();
+	for (const draft of drafts.filter((d) => d.recipientClientRowId)) {
+		const key = ruleIdForDraft(draft);
+		const group = map.get(key) ?? [];
+		group.push(draft);
+		map.set(key, group);
+	}
+	return Array.from(map.entries()).map(([ruleId, legs]) => ({ ruleId, legs }));
+}
+
+export function getDraftsByRuleId(
+	drafts: SettlementAttachmentDraft[],
+	ruleId: string,
+): SettlementAttachmentDraft[] {
+	return drafts.filter((d) => ruleIdForDraft(d) === ruleId);
+}
 
 export function getDraftForRecipient(
 	drafts: SettlementAttachmentDraft[],
@@ -9,14 +37,13 @@ export function getDraftForRecipient(
 	return drafts.find((d) => d.recipientClientRowId === clientRowId);
 }
 
-export function upsertRecipientDraft(
+export function upsertRuleDrafts(
 	drafts: SettlementAttachmentDraft[],
-	draft: SettlementAttachmentDraft,
+	ruleId: string,
+	nextLegs: SettlementAttachmentDraft[],
 ): SettlementAttachmentDraft[] {
-	const without = drafts.filter(
-		(d) => d.recipientClientRowId !== draft.recipientClientRowId,
-	);
-	return [...without, draft];
+	const withoutRule = drafts.filter((d) => ruleIdForDraft(d) !== ruleId);
+	return [...withoutRule, ...nextLegs];
 }
 
 export function removeDraftForRecipient(
@@ -26,14 +53,11 @@ export function removeDraftForRecipient(
 	return drafts.filter((d) => d.recipientClientRowId !== clientRowId);
 }
 
-export function removeDraftsForRemovedRecipients(
+export function removeDraftsByRuleId(
 	drafts: SettlementAttachmentDraft[],
-	recipients: Recipient[],
+	ruleId: string,
 ): SettlementAttachmentDraft[] {
-	const ids = new Set(
-		recipients.map((r) => r.clientRowId).filter((id): id is string => !!id),
-	);
-	return drafts.filter((d) => ids.has(d.recipientClientRowId));
+	return drafts.filter((d) => ruleIdForDraft(d) !== ruleId);
 }
 
 export function recipientSettlementLabel(recipient: Recipient): string {
@@ -43,32 +67,33 @@ export function recipientSettlementLabel(recipient: Recipient): string {
 	return name || email || "Recipient";
 }
 
-export function buildDraftFromRecipient(
+export function buildLegDraftFromRecipient(
 	recipient: Recipient,
-	patch: Omit<
-		SettlementAttachmentDraft,
-		| "id"
-		| "recipientClientRowId"
-		| "recipientEmail"
-		| "recipientSource"
-		| "recipientLabel"
-	> & { id?: string },
+	args: {
+		ruleId: string;
+		amountUsdc: string;
+		releaseType: SettlementAttachmentDraft["releaseType"];
+		specificSignerEmail?: string;
+		thresholdN?: number;
+		expiresAtUnix?: number;
+		id?: string;
+	},
 ): SettlementAttachmentDraft | null {
 	const clientRowId = recipient.clientRowId;
 	const rawEmail = recipient.email?.trim();
 	if (!clientRowId || !rawEmail) return null;
 
 	return {
-		id: patch.id ?? crypto.randomUUID(),
+		id: args.id ?? crypto.randomUUID(),
+		ruleId: args.ruleId,
 		recipientClientRowId: clientRowId,
 		recipientEmail: normalizePlacementRecipientEmail(rawEmail),
 		recipientSource: recipient.role === "viewer" ? "viewer" : "signer",
 		recipientLabel: recipientSettlementLabel(recipient),
-		amountUsdc: patch.amountUsdc,
-		releaseType: patch.releaseType,
-		specificSignerEmail: patch.specificSignerEmail,
-		thresholdN: patch.thresholdN,
-		recipientWallet: patch.recipientWallet,
-		expiresAtUnix: patch.expiresAtUnix,
+		amountUsdc: args.amountUsdc,
+		releaseType: args.releaseType,
+		specificSignerEmail: args.specificSignerEmail,
+		thresholdN: args.thresholdN,
+		expiresAtUnix: args.expiresAtUnix,
 	};
 }

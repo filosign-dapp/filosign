@@ -7,12 +7,3 @@ export function filosignProfileDisplayName(profile: {
 		.join(" ")
 		.trim();
 }
-
-export function formatAttachedUsdcAmount(amountUsdc: string) {
-	const n = Number(amountUsdc);
-	if (Number.isNaN(n)) return amountUsdc;
-	return n.toLocaleString(undefined, {
-		minimumFractionDigits: 0,
-		maximumFractionDigits: 2,
-	});
-}

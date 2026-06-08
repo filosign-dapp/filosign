@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useCryptoRequired } from "@/src/lib/auth/use-crypto-required";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
+import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
 import { useDraftCommentCount, useDraftSaveUi } from "@/src/lib/domains/drafts";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { ShareDraftDialog } from "@/src/routes/dashboard/envelope/create/-components/share-draft-dialog";
@@ -104,6 +105,12 @@ export function AddSignDraftActions() {
 		needsDraftCrypto,
 		cryptoReady: cryptoRequired.isReady,
 	});
+	const shareDisabledReason = draftActionTitle({
+		isSaving,
+		hasChanges,
+		needsDraftCrypto,
+		cryptoReady: cryptoRequired.isReady,
+	});
 
 	useEffect(() => {
 		if (needsDraftCrypto && cryptoRequired.needsRecovery) {
@@ -156,70 +163,66 @@ export function AddSignDraftActions() {
 						Unlock keys
 					</Button>
 				) : null}
-				<Button
-					type="button"
-					variant="outline"
-					size="sm"
-					disabled={shareDisabled}
-					title={draftActionTitle({
-						isSaving,
-						hasChanges,
-						needsDraftCrypto,
-						cryptoReady: cryptoRequired.isReady,
-					})}
-					onClick={handleShareClick}
-					className="gap-1.5"
-				>
-					<ArrowSquareOutIcon className="size-4" />
-					<span>Share draft</span>
-				</Button>
-				{entitlements?.features["features.shared_templates"]?.enabled && (
+				<DisabledTooltip disabled={shareDisabled} reason={shareDisabledReason}>
 					<Button
 						type="button"
 						variant="outline"
 						size="sm"
-						disabled={!serverDraftId}
-						title={
-							serverDraftId
-								? "Save this draft as a reusable template"
-								: "Save draft first to save as template"
-						}
-						onClick={() => setTemplateDialogOpen(true)}
+						disabled={shareDisabled}
+						onClick={handleShareClick}
 						className="gap-1.5"
 					>
-						<FileTextIcon className="size-4 text-secondary" weight="bold" />
-						<span>Save as Template</span>
+						<ArrowSquareOutIcon className="size-4" />
+						<span>Share draft</span>
 					</Button>
-				)}
-				{showComments ? (
-					<>
+				</DisabledTooltip>
+				{entitlements?.features["features.shared_templates"]?.enabled && (
+					<DisabledTooltip
+						disabled={!serverDraftId}
+						reason="Save draft first to save as template"
+					>
 						<Button
 							type="button"
 							variant="outline"
 							size="sm"
 							disabled={!serverDraftId}
-							title={
-								serverDraftId
-									? "Open draft comments"
-									: "Save draft first to enable comments"
-							}
-							aria-describedby={
-								serverDraftId ? undefined : "add-sign-comments-hint"
-							}
-							className="relative gap-1.5"
-							onClick={() => setCommentsOpen(true)}
+							onClick={() => setTemplateDialogOpen(true)}
+							className="gap-1.5"
 						>
-							<ChatCircleIcon className="size-4 shrink-0" aria-hidden />
-							<span className="hidden sm:inline">Comments</span>
-							{badgeLabel ? (
-								<Badge
-									variant="secondary"
-									className="h-4 min-w-4 px-1 py-0 text-[10px] sm:ml-0.5"
-								>
-									{badgeLabel}
-								</Badge>
-							) : null}
+							<FileTextIcon className="size-4 text-secondary" weight="bold" />
+							<span>Save as Template</span>
 						</Button>
+					</DisabledTooltip>
+				)}
+				{showComments ? (
+					<>
+						<DisabledTooltip
+							disabled={!serverDraftId}
+							reason="Save draft first to enable comments"
+						>
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								disabled={!serverDraftId}
+								aria-describedby={
+									serverDraftId ? undefined : "add-sign-comments-hint"
+								}
+								className="relative gap-1.5"
+								onClick={() => setCommentsOpen(true)}
+							>
+								<ChatCircleIcon className="size-4 shrink-0" aria-hidden />
+								<span className="hidden sm:inline">Comments</span>
+								{badgeLabel ? (
+									<Badge
+										variant="secondary"
+										className="h-4 min-w-4 px-1 py-0 text-[10px] sm:ml-0.5"
+									>
+										{badgeLabel}
+									</Badge>
+								) : null}
+							</Button>
+						</DisabledTooltip>
 						{!serverDraftId ? (
 							<span id="add-sign-comments-hint" className="sr-only">
 								Save draft first to enable comments

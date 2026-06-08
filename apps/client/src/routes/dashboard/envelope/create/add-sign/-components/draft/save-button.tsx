@@ -4,6 +4,7 @@ import {
 	SpinnerGapIcon,
 } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
+import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
 
 type Props = {
 	planId: string | undefined;
@@ -34,52 +35,53 @@ export function DraftSaveButton({
 	onSave,
 	onPromptUpgrade,
 }: Props) {
+	const saveDisabled =
+		planId !== "free" &&
+		(isSaving ||
+			(needsDraftCrypto && !cryptoReady) ||
+			(isSavedToServer && !hasChanges) ||
+			documentCount === 0);
+	const saveDisabledReason =
+		needsDraftCrypto && !cryptoReady
+			? needsRecovery
+				? "Unlock encryption keys with recovery phrase to save."
+				: "Unlocking encryption keys..."
+			: undefined;
+
 	return (
-		<Button
-			type="button"
-			variant="outline"
-			size="sm"
-			disabled={
-				planId !== "free" &&
-				(isSaving ||
-					(needsDraftCrypto && !cryptoReady) ||
-					(isSavedToServer && !hasChanges) ||
-					documentCount === 0)
-			}
-			title={
-				needsDraftCrypto && !cryptoReady
-					? needsRecovery
-						? "Unlock encryption keys with recovery phrase to save."
-						: "Unlocking encryption keys..."
-					: hasChanges
-						? "Unsaved changes"
-						: undefined
-			}
-			onClick={() => {
-				if (planId === "free") {
-					onPromptUpgrade();
-					return;
-				}
-				onSave();
-			}}
-			className="gap-1.5"
-		>
-			{isSaving ? (
-				<>
-					<SpinnerGapIcon className="size-4 animate-spin" />
-					<span>Saving…</span>
-				</>
-			) : showSavedState ? (
-				<>
-					<CheckIcon className="size-4 text-green-500" weight="bold" />
-					<span className="text-muted-foreground">{savedLabel}</span>
-				</>
-			) : (
-				<>
-					<FloppyDiskIcon className="size-4 text-primary" />
-					<span>Save draft</span>
-				</>
-			)}
-		</Button>
+		<DisabledTooltip disabled={saveDisabled} reason={saveDisabledReason}>
+			<Button
+				type="button"
+				variant="outline"
+				size="sm"
+				disabled={saveDisabled}
+				title={hasChanges && !saveDisabled ? "Unsaved changes" : undefined}
+				onClick={() => {
+					if (planId === "free") {
+						onPromptUpgrade();
+						return;
+					}
+					onSave();
+				}}
+				className="gap-1.5"
+			>
+				{isSaving ? (
+					<>
+						<SpinnerGapIcon className="size-4 animate-spin" />
+						<span>Saving…</span>
+					</>
+				) : showSavedState ? (
+					<>
+						<CheckIcon className="size-4 text-green-500" weight="bold" />
+						<span className="text-muted-foreground">{savedLabel}</span>
+					</>
+				) : (
+					<>
+						<FloppyDiskIcon className="size-4 text-primary" />
+						<span>Save draft</span>
+					</>
+				)}
+			</Button>
+		</DisabledTooltip>
 	);
 }

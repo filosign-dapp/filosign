@@ -75,7 +75,7 @@ export function ActiveAssigneeStrip({
 							{count > 0 ? (
 								<span
 									className={cn(
-										"inline-flex min-w-[1.125rem] items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none",
+										"inline-flex min-w-4.5 items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none",
 										activeAssigneeId === assignee.id
 											? "bg-primary/20 text-primary"
 											: "bg-muted text-muted-foreground",

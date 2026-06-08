@@ -1,7 +1,6 @@
 import type * as React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { isPdfDocument } from "@/src/lib/domains/files/document-kind";
-import { defaultPlacementFieldRect } from "@/src/lib/domains/files/field-box";
 import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
 import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
 import type {
@@ -12,36 +11,34 @@ import type {
 import {
 	clampFieldAtPoint,
 	clientPointToPageCoords,
+	findPageAtClientPoint,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
+import type { PlacementFieldSize } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-field-presets";
 
 type UseDocumentViewerInteractionArgs = {
 	document: Document | null;
-	documentPage: number;
 	isPlacingField: boolean;
 	pendingFieldType: SignatureField["type"] | null;
 	onPlaceAtCoords: (coords: { x: number; y: number; page: number }) => void;
-	onPdfPageChange?: (page: number) => void;
 	onFieldSelect: (fieldId: string, options?: { additive?: boolean }) => void;
 	onCanvasDeselect: () => void;
-	placementDocHeight?: number;
-	onPdfPageLayoutLoaded?: (layout: { width: number; height: number }) => void;
+	getPageHeight?: (page: number) => number;
+	resolvePlacementFieldSize: (
+		type: SignatureField["type"],
+	) => PlacementFieldSize;
 };
 
 export function useDocumentViewerInteraction({
 	document,
-	documentPage,
 	isPlacingField,
 	pendingFieldType,
 	onPlaceAtCoords,
-	onPdfPageChange,
 	onFieldSelect,
 	onCanvasDeselect,
-	placementDocHeight,
-	onPdfPageLayoutLoaded,
+	getPageHeight,
+	resolvePlacementFieldSize,
 }: UseDocumentViewerInteractionArgs) {
-	const [pdfPageNumber, setPdfPageNumber] = useState(1);
-	const [pdfNumPages, setPdfNumPages] = useState<number | null>(null);
-	const { setPageEl, pageRef } = usePlacementCanvas();
+	const { pageRefs } = usePlacementCanvas();
 
 	const {
 		width: documentWidth,
@@ -49,7 +46,7 @@ export function useDocumentViewerInteraction({
 		margin,
 		isMobile,
 	} = useDocumentDimensions();
-	const effectiveDocHeight = placementDocHeight ?? documentHeight;
+	const fallbackDocHeight = documentHeight;
 
 	const isPdf = Boolean(
 		document &&
@@ -60,19 +57,6 @@ export function useDocumentViewerInteraction({
 			}),
 	);
 
-	useEffect(() => {
-		setPdfPageNumber(1);
-		const hint =
-			document?.pages != null && document.pages > 0 ? document.pages : null;
-		setPdfNumPages(hint);
-		onPdfPageChange?.(1);
-	}, [document?.id, document?.pdfBytes, document?.url, onPdfPageChange]);
-
-	useEffect(() => {
-		if (!isPdf) return;
-		setPdfPageNumber((prev) => (prev === documentPage ? prev : documentPage));
-	}, [documentPage, isPdf]);
-
 	const handleDocumentClick = useCallback(
 		(event: ClickCoordinates) => {
 			if (!isPlacingField || !pendingFieldType) {
@@ -80,24 +64,31 @@ export function useDocumentViewerInteraction({
 				return;
 			}
 
-			const defaults = defaultPlacementFieldRect(pendingFieldType, isMobile);
+			const size = resolvePlacementFieldSize(pendingFieldType);
+			const hit = findPageAtClientPoint(
+				pageRefs.current,
+				event.clientX,
+				event.clientY,
+			);
+			if (!hit) return;
+
 			const raw = clientPointToPageCoords(
 				event.clientX,
 				event.clientY,
-				pageRef.current,
-				defaults,
+				hit.el,
+				size,
 				{ anchor: "top-left" },
 			);
 			if (!raw) return;
 
+			const pageHeight = getPageHeight?.(hit.page) ?? fallbackDocHeight;
 			const viewport = {
 				docWidth: documentWidth,
-				docHeight: effectiveDocHeight,
+				docHeight: pageHeight,
 				margin,
 			};
-			const { x, y } = clampFieldAtPoint(raw.x, raw.y, defaults, viewport);
-			const page = isPdf ? pdfPageNumber : documentPage;
-			onPlaceAtCoords({ x, y, page });
+			const { x, y } = clampFieldAtPoint(raw.x, raw.y, size, viewport);
+			onPlaceAtCoords({ x, y, page: hit.page });
 		},
 		[
 			isPlacingField,
@@ -105,71 +96,29 @@ export function useDocumentViewerInteraction({
 			onPlaceAtCoords,
 			onCanvasDeselect,
 			documentWidth,
-			effectiveDocHeight,
+			fallbackDocHeight,
+			getPageHeight,
 			margin,
-			isMobile,
-			isPdf,
-			pdfPageNumber,
-			documentPage,
-			pageRef,
+			pageRefs,
+			resolvePlacementFieldSize,
 		],
 	);
 
 	const handleFieldClick = useCallback(
 		(fieldId: string, event: React.MouseEvent) => {
 			event.stopPropagation();
-			onFieldSelect(fieldId, { additive: event.shiftKey });
+			onFieldSelect(fieldId, {
+				additive: event.shiftKey || event.metaKey || event.ctrlKey,
+			});
 		},
 		[onFieldSelect],
 	);
 
-	const goToPreviousPdfPage = useCallback(() => {
-		setPdfPageNumber((p) => {
-			const n = Math.max(1, p - 1);
-			onPdfPageChange?.(n);
-			return n;
-		});
-	}, [onPdfPageChange]);
-
-	const goToNextPdfPage = useCallback(() => {
-		setPdfPageNumber((p) => {
-			const n = pdfNumPages == null ? p + 1 : Math.min(pdfNumPages, p + 1);
-			onPdfPageChange?.(n);
-			return n;
-		});
-	}, [onPdfPageChange, pdfNumPages]);
-
-	const setPdfPage = useCallback(
-		(page: number) => {
-			const n =
-				pdfNumPages == null
-					? Math.max(1, page)
-					: Math.min(Math.max(1, page), pdfNumPages);
-			setPdfPageNumber(n);
-			onPdfPageChange?.(n);
-		},
-		[onPdfPageChange, pdfNumPages],
-	);
-
-	const handlePdfNumPagesLoaded = useCallback((n: number) => {
-		setPdfNumPages(n);
-		setPdfPageNumber((prev) => Math.min(prev, n));
-	}, []);
-
 	return {
-		setPageEl,
 		documentWidth,
-		documentHeight: effectiveDocHeight,
-		onPdfPageLayoutLoaded,
 		margin,
 		isMobile,
 		isPdfDocument: isPdf,
-		pdfPageNumber,
-		pdfNumPages,
-		goToPreviousPdfPage,
-		goToNextPdfPage,
-		setPdfPage,
-		handlePdfNumPagesLoaded,
 		handleDocumentClick,
 		handleFieldClick,
 	};

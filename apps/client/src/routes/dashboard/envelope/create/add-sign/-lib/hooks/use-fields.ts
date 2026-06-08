@@ -1,16 +1,13 @@
 import { useCallback } from "react";
-import { defaultPlacementFieldRect } from "@/src/lib/domains/files/field-box";
-import {
-	normalizedRectToPx,
-	type PlacementViewport,
-	pxRectToNormalized,
-} from "@/src/lib/domains/files/placement-viewport";
+import type { PlacementFieldType } from "@/src/lib/domains/files/field-box";
 import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
 import type { ActiveAssignee } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/active-assignees";
+import type { PlacementFieldSize } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-field-presets";
 
 export function useAddSignFields(
 	commitFields: (fields: SignatureField[], recordHistory?: boolean) => void,
 	signatureFields: SignatureField[],
+	resolveFieldSize: (type: PlacementFieldType) => PlacementFieldSize,
 ) {
 	const handleSignatureFieldsChange = useCallback(
 		(fields: SignatureField[], recordHistory = true) => {
@@ -27,16 +24,15 @@ export function useAddSignFields(
 			documentId: string;
 			page: number;
 			assignee: ActiveAssignee;
-			isMobile: boolean;
 		}) => {
-			const defaults = defaultPlacementFieldRect(args.type, args.isMobile);
+			const size = resolveFieldSize(args.type);
 			const newField: SignatureField = {
 				id: crypto.randomUUID(),
 				type: args.type,
 				x: args.x,
 				y: args.y,
-				width: defaults.width,
-				height: defaults.height,
+				width: size.width,
+				height: size.height,
 				page: args.page,
 				documentId: args.documentId,
 				assignedSignerWallet: args.assignee.walletAddress,
@@ -47,7 +43,7 @@ export function useAddSignFields(
 			handleSignatureFieldsChange([...signatureFields, newField]);
 			return newField.id;
 		},
-		[handleSignatureFieldsChange, signatureFields],
+		[handleSignatureFieldsChange, signatureFields, resolveFieldSize],
 	);
 
 	const handleFieldUpdate = useCallback(
@@ -112,50 +108,6 @@ export function useAddSignFields(
 		[handleSignatureFieldsChange, signatureFields],
 	);
 
-	const repeatFieldOnAllPages = useCallback(
-		(args: {
-			fieldId: string;
-			numPages: number;
-			sourceViewport: PlacementViewport;
-			pageHeightFor: (page: number) => number;
-		}) => {
-			const source = signatureFields.find((f) => f.id === args.fieldId);
-			if (!source || args.numPages <= 1) return;
-
-			const normalized = pxRectToNormalized(
-				{
-					x: source.x,
-					y: source.y,
-					width: source.width,
-					height: source.height,
-				},
-				args.sourceViewport,
-			);
-
-			const copies: SignatureField[] = [];
-			for (let page = 2; page <= args.numPages; page += 1) {
-				const pageHeight = args.pageHeightFor(page);
-				const px = normalizedRectToPx(normalized, {
-					docWidth: args.sourceViewport.docWidth,
-					docHeight: pageHeight,
-				});
-				copies.push({
-					...source,
-					id: crypto.randomUUID(),
-					page,
-					x: px.x,
-					y: px.y,
-					width: px.width,
-					height: px.height,
-				});
-			}
-
-			if (copies.length === 0) return;
-			handleSignatureFieldsChange([...signatureFields, ...copies]);
-		},
-		[handleSignatureFieldsChange, signatureFields],
-	);
-
 	const applyFieldPatches = useCallback(
 		(patches: Map<string, Partial<SignatureField>>) => {
 			handleSignatureFieldsChange(
@@ -169,8 +121,6 @@ export function useAddSignFields(
 	);
 
 	return {
-		signatureFields,
-		handleSignatureFieldsChange,
 		placeField,
 		handleFieldUpdate,
 		handleBulkFieldUpdate,
@@ -178,6 +128,5 @@ export function useAddSignFields(
 		handleFieldRemove,
 		handleBulkFieldRemove,
 		handleFieldDuplicate,
-		repeatFieldOnAllPages,
 	};
 }

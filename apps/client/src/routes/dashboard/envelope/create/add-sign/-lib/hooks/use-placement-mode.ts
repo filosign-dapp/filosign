@@ -45,6 +45,17 @@ export function usePlacementMode() {
 		);
 	}, []);
 
+	const selectFields = useCallback((fieldIds: string[], additive = false) => {
+		setSelectedFieldIds((prev) => {
+			if (additive) {
+				const next = new Set(prev);
+				for (const id of fieldIds) next.add(id);
+				return next;
+			}
+			return new Set(fieldIds);
+		});
+	}, []);
+
 	const clearFieldSelection = useCallback(() => {
 		setSelectedFieldIds(new Set());
 	}, []);
@@ -59,6 +70,7 @@ export function usePlacementMode() {
 		setSelectedField,
 		setSelectedFieldIds,
 		selectField,
+		selectFields,
 		clearFieldSelection,
 		isPlacingField,
 		pendingFieldType,

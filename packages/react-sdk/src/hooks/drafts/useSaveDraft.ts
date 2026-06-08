@@ -72,24 +72,35 @@ export function useSaveDraft() {
 				};
 			});
 
+			const trimmedTitle = variables.title?.trim();
 			queryClient.setQueryData(
-				rpcQuery.drafts.list.key(),
+				rpcQuery.documents.list.key(),
 				(
 					prev:
-						| { drafts: { id: string; revision: number; title: string }[] }
+						| {
+								items: Array<{
+									kind: string;
+									id: string;
+									title?: string;
+									updatedAt?: Date | string;
+								}>;
+								nextCursor: string | null;
+						  }
 						| undefined,
 				) => {
-					if (!prev?.drafts) return prev;
+					if (!prev?.items) return prev;
 					return {
-						drafts: prev.drafts.map((d) =>
-							d.id === variables.draftId
-								? {
-										...d,
-										revision: data.revision,
-										title: variables.title?.trim() ?? d.title,
-									}
-								: d,
-						),
+						...prev,
+						items: prev.items.map((row) => {
+							if (row.kind !== "draft" || row.id !== variables.draftId) {
+								return row;
+							}
+							return {
+								...row,
+								...(trimmedTitle ? { title: trimmedTitle } : {}),
+								updatedAt: new Date(),
+							};
+						}),
 					};
 				},
 			);

@@ -12,7 +12,7 @@ export function useCreateDraft() {
 		},
 		onSuccess: async () => {
 			await queryClient.invalidateQueries({
-				queryKey: rpcQuery.drafts.list.key(),
+				queryKey: rpcQuery.documents.list.key(),
 			});
 		},
 	});

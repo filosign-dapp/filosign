@@ -12,7 +12,7 @@ export function useArchiveDraft() {
 		},
 		onSuccess: async (_data, variables) => {
 			await queryClient.invalidateQueries({
-				queryKey: rpcQuery.drafts.list.key(),
+				queryKey: rpcQuery.documents.list.key(),
 			});
 			await queryClient.invalidateQueries({
 				queryKey: rpcQuery.drafts.get.key({

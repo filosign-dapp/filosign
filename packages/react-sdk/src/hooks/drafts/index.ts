@@ -18,8 +18,8 @@ export {
 	useDecryptDraftReviewWarm,
 	useDraftReviewByToken,
 } from "./useDraftReview";
-export { type DraftSummaryRow, useDraftsList } from "./useDraftsList";
 export { useMarkDraftSent } from "./useMarkDraftSent";
+export { useRenameDraft } from "./useRenameDraft";
 export {
 	type SaveDraftDocumentInput,
 	type SaveDraftInput,

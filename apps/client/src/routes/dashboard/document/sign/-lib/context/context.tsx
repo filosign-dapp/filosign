@@ -98,11 +98,6 @@ export function useSignColdShare() {
 	return sign.coldShare;
 }
 
-export function useSignRefs() {
-	const { sign } = useSignDocumentContext();
-	return sign.refs;
-}
-
 export function useSignIdentity() {
 	const { sign } = useSignDocumentContext();
 	return sign.identity;
@@ -116,48 +111,4 @@ export function useSignNavigation() {
 export function useSignSettlements() {
 	const { sign } = useSignDocumentContext();
 	return sign.settlements;
-}
-
-export function useSignPlacementSlice() {
-	return useSignPlacement();
-}
-
-export function useSignViewerSlice() {
-	return useSignViewer();
-}
-
-export function useSignIdentitySlice() {
-	return useSignIdentity();
-}
-
-export function useSignMetaSlice() {
-	return useSignMeta();
-}
-
-export function useSignSigningSlice() {
-	return useSignSigning();
-}
-
-export function useSignFileSlice() {
-	return useSignFile();
-}
-
-export function useSignSettlementsSlice() {
-	return useSignSettlements();
-}
-
-export function useSignComplianceSlice() {
-	return useSignCompliance();
-}
-
-export function useSignNavigationSlice() {
-	return useSignNavigation();
-}
-
-export function useSignColdShareSlice() {
-	return useSignColdShare();
-}
-
-export function useSignRefsSlice() {
-	return useSignRefs();
 }

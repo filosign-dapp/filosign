@@ -27,7 +27,7 @@ function AddSignRoot({
 
 function AddSignPageShell({ children }: { children: ReactNode }) {
 	return (
-		<div className="flex min-h-screen flex-col bg-background">
+		<div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
 			<PlacementCanvasProvider>
 				<PlacementDndProvider>{children}</PlacementDndProvider>
 			</PlacementCanvasProvider>
@@ -40,7 +40,7 @@ function AddSignHeaderRow() {
 }
 
 function AddSignWorkspace({ children }: { children: ReactNode }) {
-	return <div className="flex min-h-0 flex-1">{children}</div>;
+	return <div className="flex min-h-0 flex-1 overflow-hidden">{children}</div>;
 }
 
 function AddSignFieldsSidebarSlot() {
@@ -61,7 +61,7 @@ function AddSignViewerSlot() {
 	const showViewer =
 		persistHydrated && (draftReady || suppressEmptyDraftRedirect);
 	return (
-		<main className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
+		<main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
 			{!showViewer ? (
 				<div className="flex flex-1 items-center justify-center">
 					<InlineLoader size="lg" />
@@ -78,12 +78,17 @@ function AddSignViewerSlot() {
 }
 
 function AddSignThumbnailsSlot() {
-	const { documents, currentDocumentId, handleDocumentSelect } =
-		useAddSignChrome();
+	const {
+		documents,
+		currentDocumentId,
+		handleDocumentSelect,
+		signatureFields,
+	} = useAddSignChrome();
 	return (
 		<DocumentThumbnailsSidebar
 			documents={documents}
 			currentDocumentId={currentDocumentId}
+			signatureFields={signatureFields}
 			onDocumentSelect={handleDocumentSelect}
 		/>
 	);

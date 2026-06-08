@@ -14,37 +14,27 @@ type AddSignShellContextValue = Pick<
 type AddSignViewerContextValue = Pick<
 	AddSignController,
 	| "currentDocument"
-	| "currentPage"
-	| "currentPageFields"
 	| "signatureFields"
-	| "setCurrentPage"
-	| "selectedField"
 	| "selectedFieldIds"
 	| "isPlacingField"
 	| "pendingFieldType"
 	| "handlePlaceAtCoords"
 	| "handleFieldSelect"
+	| "handleMarqueeSelect"
 	| "handleCanvasDeselect"
 	| "handleFieldRemove"
 	| "handleFieldUpdate"
 	| "handleFieldDuplicate"
-	| "handleRepeatFieldOnAllPages"
-	| "handleBack"
-	| "handleEditForm"
-	| "setPdfLayoutHeight"
 	| "recordPdfPageLayout"
 	| "setPdfNumPages"
 	| "pdfNumPages"
-	| "placementDocHeight"
+	| "getPageHeight"
 	| "documentLoadingMessage"
 	| "isInteractingField"
 	| "setIsInteractingField"
 	| "fieldFocusRequestId"
 	| "clearFieldFocusRequest"
-	| "undo"
-	| "redo"
-	| "canUndo"
-	| "canRedo"
+	| "resolvePlacementFieldSize"
 >;
 
 type AddSignPlacementContextValue = Pick<
@@ -56,17 +46,12 @@ type AddSignPlacementContextValue = Pick<
 	| "activeAssigneeId"
 	| "setActiveAssigneeId"
 	| "assignees"
-	| "currentPageFields"
 	| "currentDocumentFields"
 	| "currentDocument"
-	| "selectedField"
 	| "selectedFieldIds"
-	| "handleFieldSelect"
 	| "focusFieldOnCanvas"
-	| "handleRepeatFieldOnAllPages"
-	| "pdfNumPages"
+	| "handleClearAllFields"
 	| "signatureFields"
-	| "currentDocumentId"
 	| "currentPage"
 >;
 
@@ -74,16 +59,16 @@ type AddSignDndContextValue = Pick<
 	AddSignController,
 	| "signatureFields"
 	| "documentWidth"
-	| "documentHeight"
 	| "margin"
 	| "currentDocumentId"
-	| "currentPage"
+	| "getPageHeight"
 	| "selectedFieldIds"
 	| "placeField"
 	| "applyFieldPatches"
 	| "handleFieldUpdate"
 	| "setSelectedField"
 	| "setIsInteractingField"
+	| "resolvePlacementFieldSize"
 >;
 
 type AddSignChromeContextValue = Pick<
@@ -93,9 +78,14 @@ type AddSignChromeContextValue = Pick<
 	| "documents"
 	| "currentDocumentId"
 	| "handleDocumentSelect"
+	| "signatureFields"
 	| "postSendDialogOpen"
 	| "postSendShare"
 	| "handlePostSendDone"
+	| "undo"
+	| "redo"
+	| "canUndo"
+	| "canRedo"
 >;
 
 const AddSignShellContext = createContext<AddSignShellContextValue | null>(
@@ -140,39 +130,52 @@ export function AddSignProvider({
 	const viewerValue = useMemo(
 		(): AddSignViewerContextValue => ({
 			currentDocument: controller.currentDocument,
-			currentPage: controller.currentPage,
-			currentPageFields: controller.currentPageFields,
 			signatureFields: controller.signatureFields,
-			setCurrentPage: controller.setCurrentPage,
-			selectedField: controller.selectedField,
 			selectedFieldIds: controller.selectedFieldIds,
 			isPlacingField: controller.isPlacingField,
 			pendingFieldType: controller.pendingFieldType,
 			handlePlaceAtCoords: controller.handlePlaceAtCoords,
 			handleFieldSelect: controller.handleFieldSelect,
+			handleMarqueeSelect: controller.handleMarqueeSelect,
 			handleCanvasDeselect: controller.handleCanvasDeselect,
 			handleFieldRemove: controller.handleFieldRemove,
 			handleFieldUpdate: controller.handleFieldUpdate,
 			handleFieldDuplicate: controller.handleFieldDuplicate,
-			handleRepeatFieldOnAllPages: controller.handleRepeatFieldOnAllPages,
-			handleBack: controller.handleBack,
-			handleEditForm: controller.handleEditForm,
-			setPdfLayoutHeight: controller.setPdfLayoutHeight,
 			recordPdfPageLayout: controller.recordPdfPageLayout,
 			setPdfNumPages: controller.setPdfNumPages,
 			pdfNumPages: controller.pdfNumPages,
-			placementDocHeight: controller.placementDocHeight,
+			getPageHeight: controller.getPageHeight,
 			documentLoadingMessage: controller.documentLoadingMessage,
 			isInteractingField: controller.isInteractingField,
 			setIsInteractingField: controller.setIsInteractingField,
 			fieldFocusRequestId: controller.fieldFocusRequestId,
 			clearFieldFocusRequest: controller.clearFieldFocusRequest,
-			undo: controller.undo,
-			redo: controller.redo,
-			canUndo: controller.canUndo,
-			canRedo: controller.canRedo,
+			resolvePlacementFieldSize: controller.resolvePlacementFieldSize,
 		}),
-		[controller],
+		[
+			controller.currentDocument,
+			controller.signatureFields,
+			controller.selectedFieldIds,
+			controller.isPlacingField,
+			controller.pendingFieldType,
+			controller.handlePlaceAtCoords,
+			controller.handleFieldSelect,
+			controller.handleMarqueeSelect,
+			controller.handleCanvasDeselect,
+			controller.handleFieldRemove,
+			controller.handleFieldUpdate,
+			controller.handleFieldDuplicate,
+			controller.recordPdfPageLayout,
+			controller.setPdfNumPages,
+			controller.pdfNumPages,
+			controller.getPageHeight,
+			controller.documentLoadingMessage,
+			controller.isInteractingField,
+			controller.setIsInteractingField,
+			controller.fieldFocusRequestId,
+			controller.clearFieldFocusRequest,
+			controller.resolvePlacementFieldSize,
+		],
 	);
 
 	const placementValue = useMemo(
@@ -184,38 +187,61 @@ export function AddSignProvider({
 			activeAssigneeId: controller.activeAssigneeId,
 			setActiveAssigneeId: controller.setActiveAssigneeId,
 			assignees: controller.assignees,
-			currentPageFields: controller.currentPageFields,
 			currentDocumentFields: controller.currentDocumentFields,
 			currentDocument: controller.currentDocument,
-			selectedField: controller.selectedField,
 			selectedFieldIds: controller.selectedFieldIds,
-			handleFieldSelect: controller.handleFieldSelect,
 			focusFieldOnCanvas: controller.focusFieldOnCanvas,
-			handleRepeatFieldOnAllPages: controller.handleRepeatFieldOnAllPages,
-			pdfNumPages: controller.pdfNumPages,
+			handleClearAllFields: controller.handleClearAllFields,
 			signatureFields: controller.signatureFields,
-			currentDocumentId: controller.currentDocumentId,
 			currentPage: controller.currentPage,
 		}),
-		[controller],
+		[
+			controller.handleAddField,
+			controller.isPlacingField,
+			controller.pendingFieldType,
+			controller.placementFieldTypeLabel,
+			controller.activeAssigneeId,
+			controller.setActiveAssigneeId,
+			controller.assignees,
+			controller.currentDocumentFields,
+			controller.currentDocument,
+			controller.selectedFieldIds,
+			controller.focusFieldOnCanvas,
+			controller.handleClearAllFields,
+			controller.signatureFields,
+			controller.currentPage,
+		],
 	);
 
 	const dndValue = useMemo(
 		(): AddSignDndContextValue => ({
 			signatureFields: controller.signatureFields,
 			documentWidth: controller.documentWidth,
-			documentHeight: controller.documentHeight,
 			margin: controller.margin,
 			currentDocumentId: controller.currentDocumentId,
-			currentPage: controller.currentPage,
+			getPageHeight: controller.getPageHeight,
 			selectedFieldIds: controller.selectedFieldIds,
 			placeField: controller.placeField,
 			applyFieldPatches: controller.applyFieldPatches,
 			handleFieldUpdate: controller.handleFieldUpdate,
 			setSelectedField: controller.setSelectedField,
 			setIsInteractingField: controller.setIsInteractingField,
+			resolvePlacementFieldSize: controller.resolvePlacementFieldSize,
 		}),
-		[controller],
+		[
+			controller.signatureFields,
+			controller.documentWidth,
+			controller.margin,
+			controller.currentDocumentId,
+			controller.getPageHeight,
+			controller.selectedFieldIds,
+			controller.placeField,
+			controller.applyFieldPatches,
+			controller.handleFieldUpdate,
+			controller.setSelectedField,
+			controller.setIsInteractingField,
+			controller.resolvePlacementFieldSize,
+		],
 	);
 
 	const chromeValue = useMemo(
@@ -225,11 +251,30 @@ export function AddSignProvider({
 			documents: controller.documents,
 			currentDocumentId: controller.currentDocumentId,
 			handleDocumentSelect: controller.handleDocumentSelect,
+			signatureFields: controller.signatureFields,
 			postSendDialogOpen: controller.postSendDialogOpen,
 			postSendShare: controller.postSendShare,
 			handlePostSendDone: controller.handlePostSendDone,
+			undo: controller.undo,
+			redo: controller.redo,
+			canUndo: controller.canUndo,
+			canRedo: controller.canRedo,
 		}),
-		[controller],
+		[
+			controller.sendStatus,
+			controller.handleSend,
+			controller.documents,
+			controller.currentDocumentId,
+			controller.handleDocumentSelect,
+			controller.signatureFields,
+			controller.postSendDialogOpen,
+			controller.postSendShare,
+			controller.handlePostSendDone,
+			controller.undo,
+			controller.redo,
+			controller.canUndo,
+			controller.canRedo,
+		],
 	);
 
 	return (
@@ -304,10 +349,5 @@ export function useAddSignShell() {
 }
 
 export function useAddSignDnd() {
-	return useAddSignDndContext();
-}
-
-/** Combined context for DnD + viewer wiring. */
-export function useAddSignContext() {
 	return useAddSignDndContext();
 }

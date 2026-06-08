@@ -31,9 +31,15 @@ import {
 	resolveActiveAssignee,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/active-assignees";
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
-import { resolveSelfSignerOnRoster } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
 import { sortPlacedFields } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placed-fields";
+import { resolveSelfSignerOnRoster } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
 import { SELF_ASSIGNEE_ID } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
+import {
+	type PlacementFieldPresetStore,
+	rememberPlacementFieldSize,
+	resolvePlacementFieldSize,
+	seedPlacementFieldPresetsFromFields,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-field-presets";
 import { recipientResolvedSignerAddress } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 
 const addSignRouteApi = getRouteApi("/dashboard/envelope/create/add-sign/");
@@ -71,6 +77,7 @@ export function useAddSignController() {
 	const [pdfLayoutHeight, setPdfLayoutHeight] = useState<number | null>(null);
 	const [pdfNumPages, setPdfNumPages] = useState<number | null>(null);
 	const pageHeightsRef = useRef<Map<number, number>>(new Map());
+	const fieldSizePresetsRef = useRef<PlacementFieldPresetStore>(new Map());
 	const [fieldFocusRequestId, setFieldFocusRequestId] = useState<string | null>(
 		null,
 	);
@@ -124,6 +131,16 @@ export function useAddSignController() {
 		handleSignatureFieldsChange,
 	);
 
+	const resolveFieldSize = useCallback(
+		(type: SignatureField["type"]) =>
+			resolvePlacementFieldSize({
+				type,
+				isMobile,
+				presets: fieldSizePresetsRef.current,
+			}),
+		[isMobile],
+	);
+
 	const {
 		placeField: placeFieldRaw,
 		handleFieldUpdate: handleFieldUpdateRaw,
@@ -131,9 +148,15 @@ export function useAddSignController() {
 		handleBulkFieldUpdate,
 		handleBulkFieldRemove,
 		handleFieldDuplicate,
-		repeatFieldOnAllPages,
 		applyFieldPatches,
-	} = useAddSignFields(commitFields, signatureFields);
+	} = useAddSignFields(commitFields, signatureFields, resolveFieldSize);
+
+	const rememberFieldSize = useCallback(
+		(type: SignatureField["type"], size: { width: number; height: number }) => {
+			rememberPlacementFieldSize(fieldSizePresetsRef.current, type, size);
+		},
+		[],
+	);
 
 	const {
 		selectedFieldIds,
@@ -143,6 +166,7 @@ export function useAddSignController() {
 		setSelectedField,
 		setSelectedFieldIds,
 		selectField,
+		selectFields,
 		clearFieldSelection,
 		handleAddField,
 		cancelPlacement,
@@ -239,7 +263,6 @@ export function useAddSignController() {
 				documentId: currentDocumentId,
 				page: args.page ?? currentPage,
 				assignee,
-				isMobile,
 			});
 			if (id && isPlacingField && pendingFieldType === args.type) {
 				finishPlacement(id);
@@ -251,7 +274,6 @@ export function useAddSignController() {
 			activeAssigneeId,
 			currentDocumentId,
 			currentPage,
-			isMobile,
 			isPlacingField,
 			pendingFieldType,
 			placeFieldRaw,
@@ -261,9 +283,16 @@ export function useAddSignController() {
 
 	const handleFieldUpdate = useCallback(
 		(fieldId: string, updates: Partial<SignatureField>) => {
+			const field = signatureFields.find((f) => f.id === fieldId);
 			handleFieldUpdateRaw(fieldId, updates);
+			if (!field) return;
+			if (updates.width === undefined && updates.height === undefined) return;
+			rememberFieldSize(field.type, {
+				width: updates.width ?? field.width,
+				height: updates.height ?? field.height,
+			});
 		},
-		[handleFieldUpdateRaw],
+		[handleFieldUpdateRaw, signatureFields, rememberFieldSize],
 	);
 
 	const handleFieldRemove = useCallback(
@@ -339,9 +368,21 @@ export function useAddSignController() {
 	const handleFieldSelect = useCallback(
 		(fieldId: string, options?: { additive?: boolean }) => {
 			cancelPlacement();
+			const field = signatureFields.find((f) => f.id === fieldId);
+			if (field?.page) {
+				setCurrentPage(field.page);
+			}
 			selectField(fieldId, options?.additive ?? false);
 		},
-		[cancelPlacement, selectField],
+		[cancelPlacement, selectField, signatureFields],
+	);
+
+	const handleMarqueeSelect = useCallback(
+		(fieldIds: string[], additive: boolean) => {
+			cancelPlacement();
+			selectFields(fieldIds, additive);
+		},
+		[cancelPlacement, selectFields],
 	);
 
 	const focusFieldOnCanvas = useCallback(
@@ -364,47 +405,26 @@ export function useAddSignController() {
 		setFieldFocusRequestId(null);
 	}, []);
 
-	const handleRepeatFieldOnAllPages = useCallback(
-		(fieldId: string) => {
-			const numPages = pdfNumPages ?? 1;
-			if (numPages <= 1) return;
-			if (numPages > 10) {
-				const ok = window.confirm(
-					`Copy this field to ${numPages - 1} other pages?`,
-				);
-				if (!ok) return;
-			}
-			repeatFieldOnAllPages({
-				fieldId,
-				numPages,
-				sourceViewport: {
-					docWidth: docWidth,
-					docHeight: placementDocHeight,
-					margin,
-				},
-				pageHeightFor: (page) =>
-					pageHeightsRef.current.get(page) ?? placementDocHeight,
-			});
-		},
-		[pdfNumPages, repeatFieldOnAllPages, docWidth, placementDocHeight, margin],
-	);
+	const handleClearAllFields = useCallback(() => {
+		if (signatureFields.length === 0) return;
+		commitFields([]);
+		clearFieldSelection();
+	}, [signatureFields.length, commitFields, clearFieldSelection]);
 
 	const recordPdfPageLayout = useCallback((page: number, height: number) => {
 		pageHeightsRef.current.set(page, height);
-		setPdfLayoutHeight(height);
+		const maxHeight = Math.max(...pageHeightsRef.current.values(), height);
+		setPdfLayoutHeight(maxHeight);
 	}, []);
+
+	const getPageHeight = useCallback(
+		(page: number) => pageHeightsRef.current.get(page) ?? placementDocHeight,
+		[placementDocHeight],
+	);
 
 	const handleCanvasDeselect = useCallback(() => {
 		clearFieldSelection();
 	}, [clearFieldSelection]);
-
-	const handleEditForm = useCallback(() => {
-		navigate({ to: "/dashboard/envelope/create" });
-	}, [navigate]);
-
-	const handleBack = useCallback(() => {
-		navigate({ to: "/dashboard/envelope/create" });
-	}, [navigate]);
 
 	useEffect(() => {
 		const onKeyDown = (e: KeyboardEvent) => {
@@ -481,6 +501,13 @@ export function useAddSignController() {
 		setDocRendering(true);
 	}, [currentDocumentId]);
 
+	useEffect(() => {
+		seedPlacementFieldPresetsFromFields(
+			fieldSizePresetsRef.current,
+			signatureFields,
+		);
+	}, [signatureFields]);
+
 	const currentDocument: Document | undefined = documents.find(
 		(doc) => doc.id === currentDocumentId,
 	);
@@ -496,15 +523,6 @@ export function useAddSignController() {
 		setPostSendDialogOpen,
 		setPostSendShare,
 	});
-
-	const currentPageFields = useMemo(
-		() =>
-			signatureFields.filter(
-				(field) =>
-					field.documentId === currentDocumentId && field.page === currentPage,
-			),
-		[signatureFields, currentDocumentId, currentPage],
-	);
 
 	const currentDocumentFields = useMemo(
 		() =>
@@ -539,7 +557,6 @@ export function useAddSignController() {
 		currentDocument,
 		currentDocumentId,
 		currentPage,
-		currentPageFields,
 		currentDocumentFields,
 		signatureFields,
 		setCurrentPage,
@@ -565,33 +582,31 @@ export function useAddSignController() {
 		pdfNumPages,
 		setPdfNumPages,
 		recordPdfPageLayout,
+		getPageHeight,
 		fieldFocusRequestId,
 		clearFieldFocusRequest,
 		focusFieldOnCanvas,
-		handleRepeatFieldOnAllPages,
-		handleBulkFieldUpdate,
+		handleClearAllFields,
 		applyFieldPatches,
 		handleAddField,
 		placeField,
 		handlePlaceAtCoords,
 		handleFieldSelect,
+		handleMarqueeSelect,
 		handleCanvasDeselect,
 		handleFieldRemove,
 		handleFieldUpdate,
 		handleFieldDuplicate,
-		handleBack,
-		handleEditForm,
 		handleSend,
 		handleDocumentSelect,
 		handlePostSendDone,
-		setPdfLayoutHeight,
-		placementDocHeight,
 		documentLoadingMessage,
 		undo,
 		redo,
 		canUndo,
 		canRedo,
 		setSelectedField,
+		resolvePlacementFieldSize: resolveFieldSize,
 	};
 }
 

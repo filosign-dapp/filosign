@@ -8,9 +8,12 @@ import {
 	useSensors,
 } from "@dnd-kit/core";
 import type { ReactNode } from "react";
-import { useCallback, useMemo, useRef } from "react";
-import { defaultPlacementFieldRect } from "@/src/lib/domains/files/field-box";
-import { useIsMobile } from "@/src/lib/utils/use-mobile";
+import { useCallback, useMemo, useRef, useState } from "react";
+import {
+	type PlacementActiveDrag,
+	PlacementDndDragOverlay,
+	resolvePlacementActiveDrag,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-dnd-overlay";
 import { useAddSignDnd } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
 import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
@@ -21,7 +24,7 @@ import {
 	dragEndClientPoint,
 	type FieldDragContext,
 	finalizePlacementRectAfterMove,
-	isClientPointInsidePage,
+	findPageAtClientPoint,
 	parseFieldDraggableId,
 	parsePaletteDraggableId,
 	placementRectFromField,
@@ -29,7 +32,6 @@ import {
 
 export {
 	fieldDraggableId,
-	PLACEMENT_CANVAS_DROPPABLE_ID,
 	paletteDraggableId,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
 
@@ -38,35 +40,44 @@ type PlacementDndProviderProps = {
 };
 
 export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
-	const isMobile = useIsMobile();
-	const { pageRef } = usePlacementCanvas();
+	const { pageRefs, getPageEl } = usePlacementCanvas();
 	const {
 		signatureFields,
 		documentWidth,
-		documentHeight,
 		margin,
 		currentDocumentId,
-		currentPage,
+		getPageHeight,
 		selectedFieldIds,
 		placeField,
 		applyFieldPatches,
 		setSelectedField,
 		setIsInteractingField,
+		resolvePlacementFieldSize,
 	} = useAddSignDnd();
 
 	const dragContextRef = useRef<FieldDragContext | null>(null);
+	const [activeDrag, setActiveDrag] = useState<PlacementActiveDrag | null>(
+		null,
+	);
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
 	);
 
-	const viewport = useMemo(
+	const baseViewport = useMemo(
 		() => ({
 			docWidth: documentWidth,
-			docHeight: documentHeight,
 			margin,
 		}),
-		[documentWidth, documentHeight, margin],
+		[documentWidth, margin],
+	);
+
+	const viewportForPage = useCallback(
+		(page: number) => ({
+			...baseViewport,
+			docHeight: getPageHeight(page),
+		}),
+		[baseViewport, getPageHeight],
 	);
 
 	const restrictToPageModifier = useMemo(
@@ -74,42 +85,38 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 		[],
 	);
 
-	const fieldsOnCurrentPage = useMemo(
-		() =>
-			signatureFields.filter(
-				(f) => f.documentId === currentDocumentId && f.page === currentPage,
-			),
-		[signatureFields, currentDocumentId, currentPage],
-	);
-
 	const dropFieldAtClientPoint = useCallback(
 		(type: SignatureField["type"], clientX: number, clientY: number) => {
-			if (!isClientPointInsidePage(clientX, clientY, pageRef.current)) {
-				return;
-			}
-			const defaults = defaultPlacementFieldRect(type, isMobile);
-			const raw = clientPointToPageCoords(
-				clientX,
-				clientY,
-				pageRef.current,
-				defaults,
-			);
+			const hit = findPageAtClientPoint(pageRefs.current, clientX, clientY);
+			if (!hit) return;
+
+			const size = resolvePlacementFieldSize(type);
+			const raw = clientPointToPageCoords(clientX, clientY, hit.el, size);
 			if (!raw) return;
-			const { x, y } = clampFieldAtPoint(raw.x, raw.y, defaults, viewport);
-			const id = placeField({ type, x, y });
+			const pageViewport = viewportForPage(hit.page);
+			const { x, y } = clampFieldAtPoint(raw.x, raw.y, size, pageViewport);
+			const id = placeField({ type, x, y, page: hit.page });
 			if (id) setSelectedField(id);
 		},
-		[isMobile, pageRef, placeField, setSelectedField, viewport],
+		[
+			pageRefs,
+			placeField,
+			setSelectedField,
+			viewportForPage,
+			resolvePlacementFieldSize,
+		],
 	);
 
 	const onDragStart = useCallback(
 		(event: DragStartEvent) => {
 			setIsInteractingField(true);
+			setActiveDrag(resolvePlacementActiveDrag(event.active.id));
 
 			const fieldId = parseFieldDraggableId(String(event.active.id));
 			if (!fieldId) return;
 			const existing = signatureFields.find((f) => f.id === fieldId);
 			if (!existing) return;
+			const pageViewport = viewportForPage(existing.page);
 			dragContextRef.current = {
 				initialRect: placementRectFromField(
 					{
@@ -118,17 +125,18 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 						width: existing.width,
 						height: existing.height,
 					},
-					viewport,
+					pageViewport,
 				),
-				viewport,
-				pageEl: pageRef.current,
+				viewport: pageViewport,
+				pageEl: getPageEl(existing.page),
 			};
 		},
-		[signatureFields, pageRef, viewport, setIsInteractingField],
+		[signatureFields, getPageEl, viewportForPage, setIsInteractingField],
 	);
 
 	const finishDrag = useCallback(() => {
 		dragContextRef.current = null;
+		setActiveDrag(null);
 		setIsInteractingField(false);
 	}, [setIsInteractingField]);
 
@@ -165,13 +173,10 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 			for (const id of moveIds) {
 				const existing = signatureFields.find((f) => f.id === id);
 				if (!existing) continue;
-				if (
-					existing.documentId !== currentDocumentId ||
-					existing.page !== currentPage
-				) {
-					continue;
-				}
+				if (existing.documentId !== currentDocumentId) continue;
 
+				const pageEl = getPageEl(existing.page);
+				const pageViewport = viewportForPage(existing.page);
 				const initial = placementRectFromField(
 					{
 						x: existing.x,
@@ -179,10 +184,15 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 						width: existing.width,
 						height: existing.height,
 					},
-					viewport,
+					pageViewport,
 				);
-				const othersOnPage = fieldsOnCurrentPage
-					.filter((f) => !moveIds.has(f.id))
+				const othersOnPage = signatureFields
+					.filter(
+						(f) =>
+							f.documentId === currentDocumentId &&
+							f.page === existing.page &&
+							!moveIds.has(f.id),
+					)
 					.map((f) =>
 						placementRectFromField(
 							{
@@ -191,7 +201,7 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 								width: f.width,
 								height: f.height,
 							},
-							viewport,
+							pageViewport,
 						),
 					);
 
@@ -199,8 +209,8 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 					initial,
 					deltaX: delta.x,
 					deltaY: delta.y,
-					pageEl: pageRef.current,
-					viewport,
+					pageEl,
+					viewport: pageViewport,
 					otherFieldsOnPage: othersOnPage,
 				});
 				patches.set(id, {
@@ -218,13 +228,11 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 		[
 			signatureFields,
 			selectedFieldIds,
-			fieldsOnCurrentPage,
 			currentDocumentId,
-			currentPage,
 			dropFieldAtClientPoint,
 			applyFieldPatches,
-			pageRef,
-			viewport,
+			getPageEl,
+			viewportForPage,
 			finishDrag,
 		],
 	);
@@ -245,6 +253,7 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 			onDragCancel={onDragCancel}
 		>
 			{children}
+			<PlacementDndDragOverlay activeDrag={activeDrag} />
 		</DndContext>
 	);
 }

@@ -1,6 +1,6 @@
 import { useFilosignContext } from "@filosign/react";
 import { useEntitlements } from "@filosign/react/billing";
-import { useDraftsList } from "@filosign/react/drafts";
+import { useDocumentsList } from "@filosign/react/documents";
 import {
 	type OrgsTemplatesCloneOutput,
 	useActiveOrgId,
@@ -58,7 +58,9 @@ function TemplatesIndexPage() {
 	const { data: orgDetail, isLoading: orgLoading } = useOrganizationGet(
 		activeOrgId ?? undefined,
 	);
-	const { data: draftsData, isLoading: draftsLoading } = useDraftsList();
+	const { data: draftsData, isLoading: draftsLoading } = useDocumentsList({
+		tab: "drafts",
+	});
 
 	// Mutations
 	const cloneTemplate = useCloneOrgTemplateToEnvelope();
@@ -76,7 +78,7 @@ function TemplatesIndexPage() {
 
 	const templates = useMemo(() => orgDetail?.templates ?? [], [orgDetail]);
 	const activeDrafts = useMemo(() => {
-		return (draftsData?.drafts ?? []).filter((d) => d.status === "active");
+		return (draftsData?.items ?? []).filter((row) => row.kind === "draft");
 	}, [draftsData]);
 
 	const isTemplatesEnabled = Boolean(

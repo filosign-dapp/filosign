@@ -1,15 +1,14 @@
-import { useDraftsList, type DraftSummaryRow } from "@filosign/react/drafts";
-import type { OrgFileRow } from "@filosign/react/files";
 import {
-	useOrgFiles,
-	useReceivedFiles,
-	useSentFiles,
-} from "@filosign/react/files";
-import { useActiveOrgId } from "@filosign/react/orgs";
+	type DocumentListRow,
+	flattenDocumentsListPages,
+	useDocumentsList,
+	useDocumentsListInfinite,
+} from "@filosign/react/documents";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOpenDraft } from "@/src/lib/domains/drafts";
-import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
+import { useStorePersist } from "@/src/lib/filosign/use-store";
+import { useDebouncedSearch } from "@/src/lib/utils/use-debounced-search";
 
 const documentAllRouteApi = getRouteApi("/dashboard/_shell/document/all/");
 
@@ -22,34 +21,40 @@ export function parseDocumentTab(val: string): DocumentTab | null {
 		: null;
 }
 
-export type OrgFileRowView = OrgFileRow & {
-	type: "sent" | "received";
-	createdAt: Date;
-};
+export type { DocumentListRow };
 
-export type DocumentListItem =
-	| {
-			kind: "file";
-			id: string;
-			title: string;
-			date: Date;
-			type: "sent" | "received";
-			fileRow: OrgFileRowView;
-	  }
-	| {
-			kind: "draft";
-			id: string;
-			title: string;
-			date: Date;
-			draftRow: DraftSummaryRow;
-	  };
+const SEARCH_DEBOUNCE_MS = 300;
 
 export function useDocumentsController() {
-	const [viewMode, setViewMode] = useState<"list" | "grid">("list");
-	const { tab: tabSearch } = documentAllRouteApi.useSearch();
+	const viewMode = useStorePersist((s) => s.documentsViewMode);
+	const setDocumentsViewMode = useStorePersist((s) => s.setDocumentsViewMode);
+	const { tab: tabSearch, q: qSearch } = documentAllRouteApi.useSearch();
 	const activeTab = parseDocumentTab(tabSearch ?? "") ?? "all";
 	const navigate = useNavigate();
 	const { openDraft } = useOpenDraft();
+
+	const [searchInput, setSearchInput] = useState(qSearch ?? "");
+	const { debouncedSearch: debouncedQuery } = useDebouncedSearch(
+		searchInput.trim() || undefined,
+		SEARCH_DEBOUNCE_MS,
+	);
+
+	useEffect(() => {
+		setSearchInput(qSearch ?? "");
+	}, [qSearch]);
+
+	useEffect(() => {
+		const nextQ = debouncedQuery?.trim() || undefined;
+		if ((qSearch ?? undefined) === nextQ) return;
+		void navigate({
+			to: "/dashboard/document/all",
+			search: (prev) => ({
+				...prev,
+				q: nextQ,
+			}),
+			replace: true,
+		});
+	}, [debouncedQuery, navigate, qSearch]);
 
 	const setActiveTab = useCallback(
 		(tab: DocumentTab) => {
@@ -64,109 +69,37 @@ export function useDocumentsController() {
 		},
 		[navigate],
 	);
-	const activeOrgId = useActiveOrgId();
-	const { user } = useThirdweb();
 
-	const userWallet = user?.wallet?.address;
-	const walletNorm = useMemo(() => userWallet?.toLowerCase(), [userWallet]);
+	const listQuery = useDocumentsListInfinite({
+		tab: activeTab,
+		q: debouncedQuery,
+	});
+	const presenceQuery = useDocumentsList({ tab: "all", limit: 1 });
 
-	const orgFiles = useOrgFiles();
-	const sentFiles = useSentFiles();
-	const receivedFiles = useReceivedFiles();
-	const draftsList = useDraftsList();
+	const items = useMemo(
+		(): DocumentListRow[] =>
+			flattenDocumentsListPages<DocumentListRow>(listQuery.data?.pages),
+		[listQuery.data?.pages],
+	);
 
-	const allFilesData = useMemo((): OrgFileRowView[] => {
-		const mergedMap = new Map<string, OrgFileRowView>();
+	const hasAnyContent = (presenceQuery.data?.items.length ?? 0) > 0;
+	const isLoading = listQuery.isLoading || presenceQuery.isLoading;
+	const hasSearchQuery = Boolean(debouncedQuery?.trim());
 
-		const processFile = (file: OrgFileRow) => {
-			if (!file.pieceCid) return;
-			const isSent = walletNorm && file.sender?.toLowerCase() === walletNorm;
-			mergedMap.set(file.pieceCid, {
-				...file,
-				type: isSent ? "sent" : "received",
-				createdAt: file.createdAt ? new Date(file.createdAt) : new Date(),
-			});
-		};
-
-		for (const file of orgFiles.data ?? []) {
-			processFile(file);
-		}
-		for (const file of sentFiles.data ?? []) {
-			processFile(file);
-		}
-		for (const file of receivedFiles.data ?? []) {
-			processFile(file);
-		}
-
-		return Array.from(mergedMap.values());
-	}, [orgFiles.data, sentFiles.data, receivedFiles.data, walletNorm]);
-
-	const fileItems = useMemo((): DocumentListItem[] => {
-		return allFilesData.map((file) => ({
-			kind: "file",
-			id: file.pieceCid,
-			title: file.displayName || "Untitled Document",
-			date: file.createdAt,
-			type: file.type,
-			fileRow: file,
-		}));
-	}, [allFilesData]);
-
-	const draftItems = useMemo((): DocumentListItem[] => {
-		return (draftsList.data?.drafts ?? []).map((draft) => ({
-			kind: "draft",
-			id: draft.id,
-			title: draft.title,
-			date: new Date(draft.updatedAt),
-			draftRow: draft,
-		}));
-	}, [draftsList.data?.drafts]);
-
-	const items = useMemo((): DocumentListItem[] => {
-		return [...fileItems, ...draftItems].sort(
-			(a, b) => b.date.getTime() - a.date.getTime(),
-		);
-	}, [fileItems, draftItems]);
-
-	const filteredItems = useMemo(() => {
-		if (activeTab === "sent") {
-			return items.filter(
-				(item): item is Extract<DocumentListItem, { kind: "file" }> =>
-					item.kind === "file" && item.type === "sent",
-			);
-		}
-		if (activeTab === "received") {
-			return items.filter(
-				(item): item is Extract<DocumentListItem, { kind: "file" }> =>
-					item.kind === "file" && item.type === "received",
-			);
-		}
-		if (activeTab === "drafts") {
-			return items.filter(
-				(item): item is Extract<DocumentListItem, { kind: "draft" }> =>
-					item.kind === "draft",
-			);
-		}
-		return items;
-	}, [items, activeTab]);
-
-	const hasAnyContent = items.length > 0;
-
-	const isLoading =
-		Boolean(activeOrgId && orgFiles.isLoading) ||
-		sentFiles.isLoading ||
-		receivedFiles.isLoading ||
-		draftsList.isLoading;
-
-	const handleViewModeChange = useCallback((newViewMode: "list" | "grid") => {
-		setViewMode((prev) => (newViewMode !== prev ? newViewMode : prev));
-	}, []);
+	const handleViewModeChange = useCallback(
+		(newViewMode: "list" | "grid") => {
+			if (newViewMode !== viewMode) {
+				setDocumentsViewMode(newViewMode);
+			}
+		},
+		[viewMode, setDocumentsViewMode],
+	);
 
 	const handleFileClick = useCallback(
-		(file: OrgFileRow) => {
+		(pieceCid: string) => {
 			void navigate({
 				to: "/dashboard/document/sign",
-				search: { pieceCid: file.pieceCid },
+				search: { pieceCid },
 			});
 		},
 		[navigate],
@@ -184,12 +117,15 @@ export function useDocumentsController() {
 			viewMode,
 			activeTab,
 			setActiveTab,
-			activeOrgId,
-			orgFilesData: allFilesData,
 			items,
-			filteredItems,
 			hasAnyContent,
 			isLoading,
+			searchInput,
+			setSearchInput,
+			hasSearchQuery,
+			fetchNextPage: listQuery.fetchNextPage,
+			hasNextPage: listQuery.hasNextPage ?? false,
+			isFetchingNextPage: listQuery.isFetchingNextPage,
 			handleViewModeChange,
 			handleFileClick,
 			handleDraftClick,
@@ -198,12 +134,14 @@ export function useDocumentsController() {
 			viewMode,
 			activeTab,
 			setActiveTab,
-			activeOrgId,
-			allFilesData,
 			items,
-			filteredItems,
 			hasAnyContent,
 			isLoading,
+			searchInput,
+			hasSearchQuery,
+			listQuery.fetchNextPage,
+			listQuery.hasNextPage,
+			listQuery.isFetchingNextPage,
 			handleViewModeChange,
 			handleFileClick,
 			handleDraftClick,

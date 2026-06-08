@@ -1,24 +1,28 @@
 import { MotionReveal, Pressable } from "@filosign/motion";
-import { FileTextIcon, PlusIcon } from "@phosphor-icons/react";
+import {
+	FileTextIcon,
+	MagnifyingGlassIcon,
+	PlusIcon,
+} from "@phosphor-icons/react";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { Input } from "@/src/lib/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/src/lib/components/ui/tabs";
 import {
 	DocumentCard,
 	formatDocumentCardDate,
 } from "@/src/lib/domains/documents/document-card";
+import { documentRowGridSubtitle } from "@/src/lib/domains/documents/document-list-format";
+import { DraftRenameDialog } from "@/src/lib/domains/documents/draft-rename-dialog";
 import { useDraftDelete } from "@/src/lib/domains/documents/use-draft-delete";
-import { mapFileToDocumentCardProps } from "@/src/lib/domains/documents/map-file-to-card-props";
+import { useDraftRename } from "@/src/lib/domains/documents/use-draft-rename";
 import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
 import { useDocuments } from "@/src/routes/dashboard/_shell/document/all/-lib/context/context";
-import type {
-	DocumentListItem,
-	DocumentTab,
-	OrgFileRowView,
-} from "@/src/routes/dashboard/_shell/document/all/-lib/hooks/use-documents-controller";
+import type { DocumentTab } from "@/src/routes/dashboard/_shell/document/all/-lib/hooks/use-documents-controller";
 import { parseDocumentTab } from "@/src/routes/dashboard/_shell/document/all/-lib/hooks/use-documents-controller";
+import { DocumentsTable } from "./documents-table";
 
 function filterEmptyCopy(tab: DocumentTab): {
 	title: string;
@@ -48,53 +52,21 @@ function filterEmptyCopy(tab: DocumentTab): {
 	}
 }
 
-function DocumentListCard(props: {
-	item: DocumentListItem;
-	variant: "list" | "grid";
-	onOpenFile: (fileRow: OrgFileRowView) => void;
-	onOpenDraft: (draftId: string) => void;
-	onDeleteDraft?: (draftId: string) => void;
-	deleteDisabled?: boolean;
-}) {
-	if (props.item.kind === "draft") {
-		return (
-			<DocumentCard
-				key={props.item.id}
-				kind="draft"
-				variant={props.variant}
-				title={props.item.title}
-				subtitle={`Updated ${formatDocumentCardDate(props.item.date)}`}
-				draftId={props.item.id}
-				onOpen={() => props.onOpenDraft(props.item.id)}
-				onDeleteDraft={props.onDeleteDraft}
-				deleteDisabled={props.deleteDisabled}
-			/>
-		);
-	}
-
-	const fileItem = props.item;
-	const { title, subtitle } = mapFileToDocumentCardProps(fileItem.fileRow);
-	return (
-		<DocumentCard
-			key={fileItem.id}
-			kind={fileItem.type}
-			variant={props.variant}
-			title={title}
-			subtitle={subtitle}
-			onOpen={() => props.onOpenFile(fileItem.fileRow)}
-		/>
-	);
-}
-
 export function DocumentsContent() {
 	const startNewEnvelope = useStartNewEnvelope();
 	const {
 		viewMode,
 		activeTab,
 		setActiveTab,
-		filteredItems,
+		items,
 		hasAnyContent,
 		isLoading,
+		hasSearchQuery,
+		searchInput,
+		setSearchInput,
+		fetchNextPage,
+		hasNextPage,
+		isFetchingNextPage,
 		handleFileClick,
 		handleDraftClick,
 	} = useDocuments();
@@ -105,6 +77,14 @@ export function DocumentsContent() {
 		confirmDelete,
 		deletePending,
 	} = useDraftDelete();
+	const {
+		requestRename,
+		renameOpen,
+		renameTarget,
+		closeRename,
+		confirmRename,
+		renamePending,
+	} = useDraftRename();
 
 	return (
 		<Tabs
@@ -116,6 +96,16 @@ export function DocumentsContent() {
 			className="flex flex-col flex-1 min-h-0"
 		>
 			<div className="flex flex-col border-b border-border bg-background/50 backdrop-blur-sm">
+				<div className="px-6 pb-3 sm:hidden">
+					<Input
+						type="search"
+						placeholder="Search by title…"
+						value={searchInput}
+						onChange={(e) => setSearchInput(e.target.value)}
+						maxLength={100}
+						aria-label="Search documents by title"
+					/>
+				</div>
 				<div className="px-6">
 					<TabsList variant="line" className="h-10">
 						<TabsTrigger value="all">All</TabsTrigger>
@@ -163,55 +153,94 @@ export function DocumentsContent() {
 							</Pressable>
 						</AppEmptyState>
 					</MotionReveal>
-				) : filteredItems.length === 0 ? (
-					<AppEmptyState
-						preset="page"
-						variant="outline"
-						title={filterEmptyCopy(activeTab).title}
-						description={filterEmptyCopy(activeTab).description}
-					>
-						{activeTab !== "all" ? (
+				) : items.length === 0 ? (
+					hasSearchQuery ? (
+						<AppEmptyState
+							preset="page"
+							variant="outline"
+							icon={MagnifyingGlassIcon}
+							title="No documents match your search"
+							description="Try a different title or clear the search field."
+						>
 							<Button
 								type="button"
 								variant="outline"
 								size="sm"
-								onClick={() => setActiveTab("all")}
+								onClick={() => setSearchInput("")}
 							>
-								View all
+								Clear search
 							</Button>
-						) : null}
-					</AppEmptyState>
+						</AppEmptyState>
+					) : (
+						<AppEmptyState
+							preset="page"
+							variant="outline"
+							title={filterEmptyCopy(activeTab).title}
+							description={filterEmptyCopy(activeTab).description}
+						>
+							{activeTab !== "all" ? (
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={() => setActiveTab("all")}
+								>
+									View all
+								</Button>
+							) : null}
+						</AppEmptyState>
+					)
 				) : (
 					<div className="space-y-4">
 						{viewMode === "list" ? (
-							<div className="space-y-2">
-								{filteredItems.map((item) => (
-									<DocumentListCard
-										key={item.id}
-										item={item}
-										variant="list"
-										onOpenFile={handleFileClick}
-										onOpenDraft={handleDraftClick}
-										onDeleteDraft={requestDelete}
-										deleteDisabled={deletePending}
-									/>
-								))}
-							</div>
+							<DocumentsTable
+								items={items}
+								onOpenEnvelope={handleFileClick}
+								onOpenDraft={handleDraftClick}
+								onRenameDraft={requestRename}
+								onDeleteDraft={requestDelete}
+								renameDisabled={renamePending}
+								deleteDisabled={deletePending}
+							/>
 						) : (
 							<div className="grid grid-cols-2 @md:grid-cols-3 @xl:grid-cols-4 @2xl:grid-cols-5 @3xl:grid-cols-6 @5xl:grid-cols-8 gap-3">
-								{filteredItems.map((item) => (
-									<DocumentListCard
-										key={item.id}
-										item={item}
-										variant="grid"
-										onOpenFile={handleFileClick}
-										onOpenDraft={handleDraftClick}
-										onDeleteDraft={requestDelete}
-										deleteDisabled={deletePending}
-									/>
-								))}
+								{items.map((item) =>
+									item.kind === "draft" ? (
+										<DocumentCard
+											key={item.id}
+											kind="draft"
+											variant="grid"
+											hideInlineActions
+											title={item.title}
+											subtitle={`Updated ${formatDocumentCardDate(new Date(item.updatedAt))}`}
+											draftId={item.id}
+											onOpen={() => handleDraftClick(item.id)}
+											onRenameDraft={requestRename}
+											renameDisabled={renamePending}
+											onDeleteDraft={requestDelete}
+											deleteDisabled={deletePending}
+										/>
+									) : (
+										<DocumentCard
+											key={item.id}
+											kind={item.direction}
+											variant="grid"
+											hideInlineActions
+											title={item.title}
+											subtitle={documentRowGridSubtitle(item)}
+											onOpen={() => handleFileClick(item.id)}
+										/>
+									),
+								)}
 							</div>
 						)}
+						<DraftRenameDialog
+							open={renameOpen}
+							onOpenChange={closeRename}
+							defaultTitle={renameTarget?.title ?? ""}
+							onConfirm={confirmRename}
+							pending={renamePending}
+						/>
 						<ConfirmAlertDialog
 							open={deleteOpen}
 							onOpenChange={closeDelete}
@@ -222,6 +251,19 @@ export function DocumentsContent() {
 							pending={deletePending}
 							onConfirm={confirmDelete}
 						/>
+						{hasNextPage ? (
+							<div className="flex justify-center pt-2">
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									disabled={isFetchingNextPage}
+									onClick={() => void fetchNextPage()}
+								>
+									{isFetchingNextPage ? "Loading…" : "Load more"}
+								</Button>
+							</div>
+						) : null}
 					</div>
 				)}
 			</MotionReveal>

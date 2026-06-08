@@ -4,7 +4,6 @@ import {
 	useDraftCommentDelete,
 	useDraftCommentUpdate,
 } from "@filosign/react/drafts";
-import { getAddress } from "viem";
 import {
 	createContext,
 	type ReactNode,
@@ -13,12 +12,13 @@ import {
 	useMemo,
 	useState,
 } from "react";
+import { getAddress } from "viem";
 import {
-	E2eeCommentsComposer,
 	type E2eeCommentRow,
-	type E2eeCommentThreadActions,
+	E2eeCommentsComposer,
 	E2eeCommentsPanel,
 	E2eeCommentsThread,
+	type E2eeCommentThreadActions,
 } from "@/src/lib/components/comments/e2ee-comments";
 import { useDraftCommentsContext } from "@/src/lib/domains/drafts";
 import { suppressGlobalErrorToast } from "@/src/lib/errors";
@@ -49,7 +49,6 @@ function useDraftCommentsEditContext() {
 export function DraftCommentsEditProvider(props: { children: ReactNode }) {
 	const { draftId } = useDraftCommentsContext();
 	const { wallet } = useFilosignContext();
-	const activeOrgId = useStorePersist((s) => s.activeOrgId);
 	const [editingComment, setEditingComment] = useState<EditingComment>(null);
 	const append = useDraftCommentAppend();
 	const update = useDraftCommentUpdate();
@@ -91,8 +90,7 @@ export function DraftCommentsEditProvider(props: { children: ReactNode }) {
 			editingComment,
 			setEditingComment,
 			threadActions,
-			isMutating:
-				append.isPending || update.isPending || remove.isPending,
+			isMutating: append.isPending || update.isPending || remove.isPending,
 		}),
 		[
 			editingComment,

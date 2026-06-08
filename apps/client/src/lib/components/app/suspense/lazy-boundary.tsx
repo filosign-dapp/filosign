@@ -13,7 +13,7 @@ type LazyBoundaryProps = {
 };
 
 const defaultFallbackClass =
-	"flex items-center justify-center bg-white min-h-[240px]";
+	"flex items-center justify-center bg-white min-h-60";
 
 /**
  * Standard Suspense shell for lazy chunks (PDF.js, heavy dialogs).
@@ -23,7 +23,7 @@ export function LazyBoundary({
 	children,
 	fallback,
 	fallbackClassName,
-	minHeight = "min-h-[240px]",
+	minHeight = "min-h-60",
 	loaderSize = "md",
 }: LazyBoundaryProps) {
 	const resolvedFallback = fallback ?? (

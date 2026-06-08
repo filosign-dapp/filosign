@@ -56,6 +56,7 @@ function buildCtx(args: {
 		exportedAtIso: "2026-01-01T00:00:00.000Z",
 		senderNorm: "0x2222222222222222222222222222222222222222" as Address,
 		settlementRows: [],
+		attachmentRows: [],
 		amendmentRows: [],
 		settlementRecipientAckRows: [],
 	};

@@ -6,6 +6,8 @@ import type {
 import { getAddress } from "viem";
 import config from "@/config";
 import { listPieceFieldCompletions } from "@/lib/domains/files/utils/field-completions";
+import { fsAttachmentReleaseAt } from "@/lib/platform/evm";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { buildComplianceOffChainEvidence } from "./build/off-chain-evidence";
 import { buildComplianceParties } from "./build/parties";
 import {
@@ -28,6 +30,7 @@ function buildComplianceSettlements(
 			amount: leg.amount,
 		})),
 		tokenAddress: getAddress(pay.tokenAddress),
+		validatorAddress: getAddress(pay.validatorAddress),
 		releaseType: pay.releaseType as SettlementReleaseType,
 		status: pay.status as SettlementRuleStatus,
 		registerRuleTxHash: pay.registerRuleTxHash,
@@ -36,6 +39,51 @@ function buildComplianceSettlements(
 		executedAtIso: pay.executedAt?.toISOString() ?? null,
 		lastError: pay.lastError,
 	}));
+}
+
+async function buildComplianceAttachments(
+	ctx: ComplianceLoadContext,
+): Promise<ComplianceBundle["attachments"]> {
+	const attachments: ComplianceBundle["attachments"] = [];
+	for (const row of ctx.attachmentRows) {
+		let unlocked = row.releaseMode === "review";
+		let cancelled = false;
+
+		if (row.releaseMode === "conditional") {
+			if (row.onChainRuleId != null && row.releaseContractAddress) {
+				const release = fsAttachmentReleaseAt(row.releaseContractAddress);
+				if (release) {
+					const ruleRes = await tryCatch(
+						release.read.rules([BigInt(row.onChainRuleId)]),
+					);
+					const released = !ruleRes.error && ruleRes.data[8];
+					cancelled = !ruleRes.error && ruleRes.data[9];
+					unlocked = Boolean(released) && !cancelled;
+				}
+			}
+		}
+
+		attachments.push({
+			packetId: row.packetId,
+			packetCid: row.packetCid,
+			label: row.label,
+			releaseMode: row.releaseMode,
+			releaseType: row.releaseType as SettlementReleaseType | null,
+			releaseParams: row.releaseParams as
+				| import("@filosign/shared").SettlementReleaseParams
+				| null,
+			recipientsCommitment: row.recipientsCommitment,
+			onChainRuleId: row.onChainRuleId,
+			releaseContractAddress: row.releaseContractAddress,
+			registerRuleTxHash: row.registerRuleTxHash,
+			packetContentHash: row.packetContentHash,
+			releaseTxHash: row.releaseTxHash,
+			recipientCount: row.recipientCount,
+			unlocked,
+			cancelled,
+		});
+	}
+	return attachments;
 }
 
 export async function assembleComplianceBundle(
@@ -86,6 +134,7 @@ export async function assembleComplianceBundle(
 	);
 
 	const settlements = buildComplianceSettlements(ctx);
+	const attachments = await buildComplianceAttachments(ctx);
 	const offChainEvidence = buildComplianceOffChainEvidence(ctx);
 	const fieldCompletions = await listPieceFieldCompletions(pieceCid);
 
@@ -108,6 +157,7 @@ export async function assembleComplianceBundle(
 		transactions,
 		signers,
 		settlements,
+		attachments,
 		offChainEvidence,
 		fieldCompletions,
 	};

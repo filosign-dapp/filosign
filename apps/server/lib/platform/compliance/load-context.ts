@@ -1,10 +1,15 @@
 import type { PlacementManifest } from "@filosign/shared";
 import { zPlacementManifest } from "@filosign/shared";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
 import { loadSettlementRecipientAcksForPiece } from "@/lib/domains/settlement-access/utils/recipient-ack";
 import type db from "@/lib/platform/db";
+import {
+	attachmentReleaseRules,
+	envelopeAttachmentPacketRecipients,
+	envelopeAttachmentPackets,
+} from "@/lib/platform/db/schema/attachment-packets";
 import {
 	fileAcknowledgements,
 	fileColdInvites,
@@ -98,6 +103,21 @@ export type ComplianceLoadContext = {
 		signerWallet: Address;
 		termsVersion: string;
 		acknowledgedAt: Date;
+	}[];
+	attachmentRows: {
+		packetId: string;
+		packetCid: string;
+		label: string | null;
+		releaseMode: "review" | "conditional";
+		releaseType: string | null;
+		releaseParams: import("@filosign/shared").SettlementReleaseParams | null;
+		recipientsCommitment: Hex | null;
+		onChainRuleId: string | null;
+		releaseContractAddress: Address | null;
+		registerRuleTxHash: Hex | null;
+		packetContentHash: Hex | null;
+		releaseTxHash: Hex | null;
+		recipientCount: number;
 	}[];
 };
 
@@ -303,6 +323,63 @@ export async function loadComplianceContext(args: {
 		acknowledgedAt: r.acknowledgedAt,
 	}));
 
+	const attachmentRowsRaw = await database
+		.select({
+			id: envelopeAttachmentPackets.id,
+			packetId: envelopeAttachmentPackets.packetId,
+			packetCid: envelopeAttachmentPackets.packetCid,
+			label: envelopeAttachmentPackets.label,
+			releaseMode: envelopeAttachmentPackets.releaseMode,
+			releaseType: envelopeAttachmentPackets.releaseType,
+			releaseParams: envelopeAttachmentPackets.releaseParams,
+			recipientsCommitment: envelopeAttachmentPackets.recipientsCommitment,
+			onChainRuleId: envelopeAttachmentPackets.onChainRuleId,
+			releaseContractAddress: envelopeAttachmentPackets.releaseContractAddress,
+			registerRuleTxHash: envelopeAttachmentPackets.registerRuleTxHash,
+			packetContentHash: attachmentReleaseRules.packetContentHash,
+			releaseTxHash: attachmentReleaseRules.releaseTxHash,
+		})
+		.from(envelopeAttachmentPackets)
+		.leftJoin(
+			attachmentReleaseRules,
+			eq(envelopeAttachmentPackets.id, attachmentReleaseRules.packetRowId),
+		)
+		.where(eq(envelopeAttachmentPackets.filePieceCid, pieceCid));
+
+	const attachmentRows = [];
+	for (const row of attachmentRowsRaw) {
+		const [countRow] = await database
+			.select({
+				count: sql<number>`count(*)::int`,
+			})
+			.from(envelopeAttachmentPacketRecipients)
+			.where(eq(envelopeAttachmentPacketRecipients.packetRowId, row.id));
+
+		attachmentRows.push({
+			packetId: row.packetId,
+			packetCid: row.packetCid,
+			label: row.label,
+			releaseMode: row.releaseMode,
+			releaseType: row.releaseType,
+			releaseParams: row.releaseParams,
+			recipientsCommitment: row.recipientsCommitment
+				? (row.recipientsCommitment as Hex)
+				: null,
+			onChainRuleId: row.onChainRuleId?.toString() ?? null,
+			releaseContractAddress: row.releaseContractAddress
+				? getAddress(row.releaseContractAddress)
+				: null,
+			registerRuleTxHash: row.registerRuleTxHash
+				? (row.registerRuleTxHash as Hex)
+				: null,
+			packetContentHash: row.packetContentHash
+				? (row.packetContentHash as Hex)
+				: null,
+			releaseTxHash: row.releaseTxHash ? (row.releaseTxHash as Hex) : null,
+			recipientCount: countRow?.count ?? 0,
+		});
+	}
+
 	return {
 		pieceCid,
 		participantRows,
@@ -338,5 +415,6 @@ export async function loadComplianceContext(args: {
 		settlementRows,
 		amendmentRows,
 		settlementRecipientAckRows,
+		attachmentRows,
 	};
 }

@@ -95,6 +95,7 @@ const bundleFixture = zComplianceBundle.parse({
 		},
 	],
 	settlements: [],
+	attachments: [],
 	offChainEvidence: {
 		acknowledgements: [],
 		documentViews: [],

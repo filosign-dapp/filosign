@@ -88,7 +88,11 @@ import {
 	CHECKOUT_PLAN_IDS,
 	UPGRADE_LIMIT_REASONS,
 } from "@/lib/domains/billing";
-import { zDraftCommentAppendBody } from "@/lib/domains/drafts";
+import {
+	zDraftCommentAppendBody,
+	zDraftCommentDeleteBody,
+	zDraftCommentUpdateBody,
+} from "@/lib/domains/drafts";
 import { zFileCommentAppendBody, zFileRegisterBody } from "@/lib/domains/files";
 import { loadPlatformRuntime } from "@/lib/domains/runtime";
 import { zIndexerTxBody } from "@/lib/platform/validation/tx-registration";
@@ -433,6 +437,26 @@ export const appRouter = {
 				.output(out.drafts.commentsAppend)
 				.handler(({ context, input }) =>
 					draftHandlers.draftsCommentsAppend(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					),
+				),
+			update: orgProcedure
+				.input(zDraftCommentUpdateBody)
+				.output(out.drafts.commentsUpdate)
+				.handler(({ context, input }) =>
+					draftHandlers.draftsCommentsUpdate(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					),
+				),
+			delete: orgProcedure
+				.input(zDraftCommentDeleteBody)
+				.output(out.drafts.commentsDelete)
+				.handler(({ context, input }) =>
+					draftHandlers.draftsCommentsDelete(
 						context.userWallet,
 						context.activeOrg,
 						input,

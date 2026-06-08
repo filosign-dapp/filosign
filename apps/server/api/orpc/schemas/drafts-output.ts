@@ -175,6 +175,8 @@ export const rpcDraftsArchiveOutputSchema = z.object({
 export const rpcDraftCommentSchema = z.object({
 	id: z.uuid(),
 	authorWallet: z.string().nullable().optional(),
+	authorDisplayName: z.string().optional(),
+	authorEmail: z.string().optional(),
 	inviteToken: z.string().nullable().optional(),
 	ciphertext: zHexString(),
 	createdAt: zDateWire,
@@ -189,4 +191,14 @@ export const rpcDraftsCommentsAppendOutputSchema = z.object({
 		id: z.uuid(),
 		createdAt: zDateWire,
 	}),
+});
+
+export const rpcDraftsCommentsUpdateOutputSchema = z.object({
+	comment: z.object({
+		id: z.uuid(),
+	}),
+});
+
+export const rpcDraftsCommentsDeleteOutputSchema = z.object({
+	deleted: z.literal(true),
 });

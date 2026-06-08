@@ -24,7 +24,9 @@ import {
 import {
 	rpcDraftsArchiveOutputSchema,
 	rpcDraftsCommentsAppendOutputSchema,
+	rpcDraftsCommentsDeleteOutputSchema,
 	rpcDraftsCommentsListOutputSchema,
+	rpcDraftsCommentsUpdateOutputSchema,
 	rpcDraftsCreateOutputSchema,
 	rpcDraftsGetOutputSchema,
 	rpcDraftsListExternalSharesOutputSchema,
@@ -262,6 +264,8 @@ export const rpcOut = {
 		archive: rpcDraftsArchiveOutputSchema,
 		commentsList: rpcDraftsCommentsListOutputSchema,
 		commentsAppend: rpcDraftsCommentsAppendOutputSchema,
+		commentsUpdate: rpcDraftsCommentsUpdateOutputSchema,
+		commentsDelete: rpcDraftsCommentsDeleteOutputSchema,
 	},
 	users: {
 		register: rpcUserRegisterOutputSchema,
@@ -290,6 +294,8 @@ export const rpcOut = {
 } as const;
 
 export { zDraftCommentAppendBody as zDraftCommentAppendInput } from "@/lib/domains/drafts";
+export { zDraftCommentDeleteBody as zDraftCommentDeleteInput } from "@/lib/domains/drafts";
+export { zDraftCommentUpdateBody as zDraftCommentUpdateInput } from "@/lib/domains/drafts";
 export { zFileCommentAppendBody as zFilesCommentAppendInput } from "@/lib/domains/files";
 export {
 	zPlatformAdminInviteCreateInput,

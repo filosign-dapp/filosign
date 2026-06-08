@@ -71,7 +71,46 @@ export const zDraftCommentAppendBody = z.object({
 	inviteToken: z.string().min(8).optional(),
 });
 
+export const zDraftCommentUpdateBody = z.object({
+	draftId: z.uuid(),
+	commentId: z.uuid(),
+	ciphertext: zHexString(),
+});
+
+export const zDraftCommentDeleteBody = z.object({
+	draftId: z.uuid(),
+	commentId: z.uuid(),
+});
+
 export type DraftCommentAppendBody = z.infer<typeof zDraftCommentAppendBody>;
+export type DraftCommentUpdateBody = z.infer<typeof zDraftCommentUpdateBody>;
+export type DraftCommentDeleteBody = z.infer<typeof zDraftCommentDeleteBody>;
+
+async function assertDraftCommentAuthorOrThrow(args: {
+	draftId: string;
+	commentId: string;
+	wallet: Address;
+}) {
+	const [row] = await db
+		.select({ authorWallet: draftComments.authorWallet })
+		.from(draftComments)
+		.where(
+			and(
+				eq(draftComments.id, args.commentId),
+				eq(draftComments.draftId, args.draftId),
+			),
+		)
+		.limit(1);
+	if (!row) {
+		throwAppError("DRAFTS.NOT_FOUND");
+	}
+	if (
+		!row.authorWallet ||
+		getAddress(row.authorWallet) !== getAddress(args.wallet)
+	) {
+		throwAppError("DRAFTS.FORBIDDEN");
+	}
+}
 
 export async function draftsShareExternal(
 	wallet: Address,
@@ -450,12 +489,35 @@ export async function draftsCommentsList(
 			inviteToken: draftComments.inviteToken,
 			ciphertext: draftComments.ciphertext,
 			createdAt: draftComments.createdAt,
+			authorEmail: users.email,
+			authorFirstName: users.firstName,
+			authorLastName: users.lastName,
 		})
 		.from(draftComments)
+		.leftJoin(users, eq(draftComments.authorWallet, users.walletAddress))
 		.where(eq(draftComments.draftId, draft.id))
 		.orderBy(draftComments.createdAt);
 
-	return { comments };
+	return {
+		comments: comments.map((row) => {
+			const nameParts = [row.authorFirstName, row.authorLastName].filter(
+				Boolean,
+			);
+			const authorDisplayName =
+				nameParts.length > 0
+					? nameParts.join(" ")
+					: row.authorEmail?.trim() || undefined;
+			return {
+				id: row.id,
+				authorWallet: row.authorWallet,
+				inviteToken: row.inviteToken,
+				ciphertext: row.ciphertext,
+				createdAt: row.createdAt,
+				authorDisplayName,
+				authorEmail: row.authorEmail ?? undefined,
+			};
+		}),
+	};
 }
 
 export async function draftsCommentsAppend(
@@ -495,4 +557,90 @@ export async function draftsCommentsAppend(
 		});
 
 	return { comment: row };
+}
+
+export async function draftsCommentsUpdate(
+	wallet: Address,
+	activeOrg: ActiveOrgContext,
+	body: unknown,
+) {
+	const parsed = zDraftCommentUpdateBody.safeParse(body);
+	if (!parsed.success) {
+		throwZodBadRequest(parsed.error);
+	}
+
+	const draft = await loadDraftOrThrow(parsed.data.draftId);
+	if (draft.organizationId !== activeOrg.organizationId) {
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
+	}
+	await assertCanReadDraft({ wallet, draft, activeOrg });
+
+	const entitlementCtx = await resolveEntitlementContext(
+		getAddress(wallet),
+		draft.organizationId,
+	);
+	assertEntitlement(entitlementCtx, "features.draft_comments");
+
+	await assertDraftCommentAuthorOrThrow({
+		draftId: draft.id,
+		commentId: parsed.data.commentId,
+		wallet,
+	});
+
+	const [row] = await db
+		.update(draftComments)
+		.set({ ciphertext: parsed.data.ciphertext })
+		.where(
+			and(
+				eq(draftComments.id, parsed.data.commentId),
+				eq(draftComments.draftId, draft.id),
+			),
+		)
+		.returning({ id: draftComments.id });
+
+	if (!row) {
+		throwAppError("DRAFTS.NOT_FOUND");
+	}
+
+	return { comment: row };
+}
+
+export async function draftsCommentsDelete(
+	wallet: Address,
+	activeOrg: ActiveOrgContext,
+	body: unknown,
+) {
+	const parsed = zDraftCommentDeleteBody.safeParse(body);
+	if (!parsed.success) {
+		throwZodBadRequest(parsed.error);
+	}
+
+	const draft = await loadDraftOrThrow(parsed.data.draftId);
+	if (draft.organizationId !== activeOrg.organizationId) {
+		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
+	}
+	await assertCanReadDraft({ wallet, draft, activeOrg });
+
+	const entitlementCtx = await resolveEntitlementContext(
+		getAddress(wallet),
+		draft.organizationId,
+	);
+	assertEntitlement(entitlementCtx, "features.draft_comments");
+
+	await assertDraftCommentAuthorOrThrow({
+		draftId: draft.id,
+		commentId: parsed.data.commentId,
+		wallet,
+	});
+
+	await db
+		.delete(draftComments)
+		.where(
+			and(
+				eq(draftComments.id, parsed.data.commentId),
+				eq(draftComments.draftId, draft.id),
+			),
+		);
+
+	return { deleted: true as const };
 }

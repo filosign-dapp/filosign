@@ -20,11 +20,15 @@ export {
 
 export {
 	draftsCommentsAppend,
+	draftsCommentsDelete,
 	draftsCommentsList,
+	draftsCommentsUpdate,
 	draftsListExternalShares,
 	draftsReviewByToken,
 	draftsReviewForWallet,
 	draftsRevokeExternalShare,
 	draftsShareExternal,
 	zDraftCommentAppendBody,
+	zDraftCommentDeleteBody,
+	zDraftCommentUpdateBody,
 } from "./share";

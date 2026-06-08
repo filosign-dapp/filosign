@@ -34,6 +34,8 @@ export {
 } from "@/lib/domains/drafts/save";
 export {
 	zDraftCommentAppendBody,
+	zDraftCommentDeleteBody,
+	zDraftCommentUpdateBody,
 	zDraftRevokeExternalShareBody,
 	zDraftShareExternalBody,
 } from "@/lib/domains/drafts/share";

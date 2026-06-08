@@ -2,6 +2,7 @@ import type { Modifier } from "@dnd-kit/core";
 import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
 import {
 	clampRectToViewport,
+	PLACEMENT_PAGE_STRIP_GAP_PX,
 	type PlacementRectPx,
 	type PlacementViewport,
 	snapPlacementRect,
@@ -24,6 +25,16 @@ export function pageScale(pageEl: HTMLElement | null): number {
 	if (!pageEl || pageEl.offsetWidth <= 0) return 1;
 	const rect = pageEl.getBoundingClientRect();
 	return rect.width / pageEl.offsetWidth;
+}
+
+/** Screen scale for drag previews (layout px → canvas px, includes pan/zoom). */
+export function resolveDragPageScale(
+	pageRefs: Map<number, HTMLDivElement>,
+	getPageEl: (page: number) => HTMLDivElement | null,
+	page = 1,
+): number {
+	const pageEl = getPageEl(page) ?? pageRefs.values().next().value ?? null;
+	return pageScale(pageEl);
 }
 
 /** dnd-kit reports screen-space deltas; overlays live in page-local (unscaled) space. */
@@ -141,6 +152,48 @@ export function finalizePlacementRectAfterResize(args: {
 	);
 	return snapPlacementRect(resized, args.viewport, args.otherFieldsOnPage, {
 		threshold: args.snapThreshold ?? 8,
+	});
+}
+
+export function pageStripOffsetX(
+	page: number,
+	pageWidth: number,
+	gap = PLACEMENT_PAGE_STRIP_GAP_PX,
+): number {
+	return Math.max(0, page - 1) * (pageWidth + gap);
+}
+
+export function findPageAtClientPoint(
+	pageEls: Map<number, HTMLDivElement>,
+	clientX: number,
+	clientY: number,
+): { page: number; el: HTMLDivElement } | null {
+	for (const [page, el] of pageEls) {
+		if (isClientPointInsidePage(clientX, clientY, el)) {
+			return { page, el };
+		}
+	}
+	return null;
+}
+
+/** Pan/zoom the strip canvas so a page-local point is centered in the wrapper. */
+export function focusPagePointInStripCanvas(args: {
+	panPinchRef: ReactZoomPanPinchRef | null;
+	wrapperEl: HTMLElement | null;
+	page: number;
+	pageX: number;
+	pageY: number;
+	pageWidth: number;
+	gap?: number;
+	animationMs?: number;
+}): void {
+	const gap = args.gap ?? PLACEMENT_PAGE_STRIP_GAP_PX;
+	focusPagePointInCanvas({
+		panPinchRef: args.panPinchRef,
+		wrapperEl: args.wrapperEl,
+		pageX: pageStripOffsetX(args.page, args.pageWidth, gap) + args.pageX,
+		pageY: args.pageY,
+		animationMs: args.animationMs,
 	});
 }
 

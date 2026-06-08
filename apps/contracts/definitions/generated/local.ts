@@ -6,7 +6,7 @@ import abi_77be5f07a2c0 from "../abis/77be5f07a2c0458cde3a847eb4ea83cf0f6686a738
 import abi_584ca02aea7f from "../abis/584ca02aea7faacfe17d2edd0078210f747b4f3e85375124d093665ebd969cc3.json";
 import abi_bc37a8c681af from "../abis/bc37a8c681af0849ace7cde4b7005b58679dff2abe8276aaedbdeb31e77ee0e9.json";
 import type { ChainDefinitionsBundle } from "../bundle-types.js";
-import manifest from "../chains/local/deployments/20260607T220146Z/manifest.json";
+import manifest from "../chains/local/deployments/20260608T013756Z/manifest.json";
 
 export const definitions = {
 	latest: {

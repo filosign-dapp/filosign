@@ -32,6 +32,7 @@ import {
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/active-assignees";
 import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
 import { resolveSelfSignerOnRoster } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
+import { sortPlacedFields } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placed-fields";
 import { SELF_ASSIGNEE_ID } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
 import { recipientResolvedSignerAddress } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 
@@ -452,7 +453,7 @@ export function useAddSignController() {
 				mimeType: doc.type,
 				url: documentUrls[doc.id] ?? "",
 				pdfBytes: documentPdfBytes[doc.id],
-				pages: 1,
+				pages: doc.pageCount ?? 1,
 			})),
 		[createForm?.documents, documentUrls, documentPdfBytes],
 	);
@@ -505,6 +506,16 @@ export function useAddSignController() {
 		[signatureFields, currentDocumentId, currentPage],
 	);
 
+	const currentDocumentFields = useMemo(
+		() =>
+			sortPlacedFields(
+				signatureFields.filter(
+					(field) => field.documentId === currentDocumentId,
+				),
+			),
+		[signatureFields, currentDocumentId],
+	);
+
 	const handleDocumentSelect = useCallback(
 		(documentId: string) => {
 			setCurrentDocumentId(documentId);
@@ -529,6 +540,7 @@ export function useAddSignController() {
 		currentDocumentId,
 		currentPage,
 		currentPageFields,
+		currentDocumentFields,
 		signatureFields,
 		setCurrentPage,
 		sendStatus,

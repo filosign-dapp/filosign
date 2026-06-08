@@ -1,5 +1,3 @@
-import { Image } from "@/src/lib/components/app/media/image";
-import { isPdfDocument } from "@/src/lib/domains/files/document-kind";
 import { PdfJsPreview } from "@/src/lib/domains/files/pdf/pdf-js-preview";
 import { PlacementCaptureLayer } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-layer";
 import type {
@@ -39,55 +37,25 @@ export function DocumentPageContent({
 			? document.url
 			: undefined);
 
-	if (
-		isPdfDocument({
-			type: document.mimeType,
-			name: document.name,
-			pdfBytes: document.pdfBytes,
-		})
-	) {
-		if (!pdfFile) {
-			return (
-				<div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground px-6 text-center">
-					{loadingMessage ?? "Loading document…"}
-				</div>
-			);
-		}
-		return (
-			<>
-				<PdfJsPreview
-					file={pdfFile}
-					documentKey={document.id}
-					pageNumber={pdfPageNumber}
-					width={documentWidth}
-					maxHeight={documentHeight}
-					className="absolute inset-0 z-10"
-					onNumPagesLoaded={onPdfNumPagesLoaded}
-					onPageLayoutLoaded={onPdfPageLayoutLoaded}
-				/>
-				<PlacementCaptureLayer
-					isPlacingField={isPlacingField}
-					pendingFieldType={pendingFieldType}
-					onDocumentClick={onDocumentClick}
-				/>
-			</>
-		);
-	}
-
-	if (!document.url) {
+	if (!pdfFile) {
 		return (
 			<div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground px-6 text-center">
-				No document preview available
+				{loadingMessage ?? "Loading document…"}
 			</div>
 		);
 	}
 
 	return (
 		<>
-			<Image
-				src={document.url}
-				alt={document.name}
-				className="absolute inset-0 w-full h-full object-contain bg-white z-10"
+			<PdfJsPreview
+				file={pdfFile}
+				documentKey={document.id}
+				pageNumber={pdfPageNumber}
+				width={documentWidth}
+				maxHeight={documentHeight}
+				className="absolute inset-0 z-10"
+				onNumPagesLoaded={onPdfNumPagesLoaded}
+				onPageLayoutLoaded={onPdfPageLayoutLoaded}
 			/>
 			<PlacementCaptureLayer
 				isPlacingField={isPlacingField}

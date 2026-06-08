@@ -57,6 +57,8 @@ type AddSignPlacementContextValue = Pick<
 	| "setActiveAssigneeId"
 	| "assignees"
 	| "currentPageFields"
+	| "currentDocumentFields"
+	| "currentDocument"
 	| "selectedField"
 	| "selectedFieldIds"
 	| "handleFieldSelect"
@@ -183,6 +185,8 @@ export function AddSignProvider({
 			setActiveAssigneeId: controller.setActiveAssigneeId,
 			assignees: controller.assignees,
 			currentPageFields: controller.currentPageFields,
+			currentDocumentFields: controller.currentDocumentFields,
+			currentDocument: controller.currentDocument,
 			selectedField: controller.selectedField,
 			selectedFieldIds: controller.selectedFieldIds,
 			handleFieldSelect: controller.handleFieldSelect,

@@ -19,6 +19,7 @@ import type {
 	SignatureField,
 } from "@/src/lib/domains/files/envelope-form-types";
 import type { PlacementFieldRect } from "@/src/lib/domains/files/field-box";
+import { countStoredSignablePdfPages } from "@/src/lib/domains/files/normalize-signable-document";
 import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { buildSettlementRulesForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/build-settlement-rules";
@@ -56,14 +57,30 @@ type DocPayload = {
 	pageCount: number;
 };
 
-function pageCountForDocument(
+function pageCountFromFields(
 	signatureFields: SignatureField[],
 	docId: string,
 ): number {
 	const pages = signatureFields
 		.filter((f) => f.documentId === docId)
 		.map((f) => f.page);
+	if (pages.length === 0) return 1;
 	return Math.max(1, ...pages);
+}
+
+async function resolveDocumentPageCount(args: {
+	doc: CreateForm["documents"][number];
+	bytes: Uint8Array;
+	signatureFields: SignatureField[];
+}): Promise<number> {
+	if (args.doc.pageCount && args.doc.pageCount > 0) {
+		return args.doc.pageCount;
+	}
+	try {
+		return await countStoredSignablePdfPages(args.bytes);
+	} catch {
+		return pageCountFromFields(args.signatureFields, args.doc.id);
+	}
 }
 
 export async function loadDocumentPayloads(
@@ -73,12 +90,17 @@ export async function loadDocumentPayloads(
 	return Promise.all(
 		createForm.documents.map(async (doc) => {
 			const bytes = await loadDocumentFileBytes(createForm.draftId, doc);
+			const pageCount = await resolveDocumentPageCount({
+				doc,
+				bytes,
+				signatureFields,
+			});
 			return {
 				id: doc.id,
 				name: doc.name,
 				mimeType: doc.type,
 				bytes,
-				pageCount: pageCountForDocument(signatureFields, doc.id),
+				pageCount,
 			};
 		}),
 	);

@@ -68,6 +68,11 @@ export function useDocumentViewerInteraction({
 		onPdfPageChange?.(1);
 	}, [document?.id, document?.pdfBytes, document?.url, onPdfPageChange]);
 
+	useEffect(() => {
+		if (!isPdf) return;
+		setPdfPageNumber((prev) => (prev === documentPage ? prev : documentPage));
+	}, [documentPage, isPdf]);
+
 	const handleDocumentClick = useCallback(
 		(event: ClickCoordinates) => {
 			if (!isPlacingField || !pendingFieldType) {

@@ -5,7 +5,9 @@ import type {
 } from "@filosign/shared";
 import { Input } from "@/src/lib/components/ui/input";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
-import { SignatureFieldTypeIcon } from "@/src/lib/domains/files/placement-field-display";
+import { signerAccentColor } from "@/src/lib/domains/files/field-box";
+import { PlacementFieldChrome } from "@/src/lib/domains/files/placement-field-chrome";
+import { signatureFieldTypeLabel } from "@/src/lib/domains/files/placement-field-display";
 import { normalizedRectToCssPercentStyle } from "@/src/lib/domains/files/placement-viewport";
 import { cn } from "@/src/lib/utils";
 import type {
@@ -31,68 +33,8 @@ function VisualPreviewContent({
 	return <Skeleton className="h-full w-full rounded-sm bg-muted/60" />;
 }
 
-function TapFieldOverlay({
-	field,
-	label,
-	onClick,
-	disabled,
-}: {
-	field: PlacementField;
-	label: string;
-	onClick: () => void;
-	disabled?: boolean;
-}) {
-	return (
-		<button
-			type="button"
-			disabled={disabled}
-			className={cn(
-				"placement-field-chrome-interactive pointer-events-auto absolute z-10 justify-center",
-				disabled && "opacity-70",
-				"flex-1",
-			)}
-			style={normalizedRectToCssPercentStyle(field.rect)}
-			onClick={onClick}
-			aria-label={`${label}, page ${field.pageIndex + 1}`}
-		>
-			<span className="shrink-0" aria-hidden="true">
-				<SignatureFieldTypeIcon type={field.type} isMobile />
-			</span>
-			<span className="placement-field-label">{label}</span>
-		</button>
-	);
-}
-
-function MutedPlaceholderField({
-	field,
-	typeLabel,
-	overlayClassName,
-}: {
-	field: PlacementField;
-	typeLabel: string;
-	overlayClassName: string;
-}) {
-	const style = normalizedRectToCssPercentStyle(field.rect);
-	return (
-		<div
-			className={cn(
-				"placement-field-chrome-muted pointer-events-none absolute",
-				overlayClassName,
-			)}
-			style={style}
-			title={field.assignedRecipientEmail ?? undefined}
-		>
-			<span className="shrink-0" aria-hidden="true">
-				<SignatureFieldTypeIcon type={field.type} isMobile />
-			</span>
-			<div className="min-w-0 flex-1 leading-none">
-				<div className="placement-field-label">{typeLabel}</div>
-				<div className="placement-field-subtle">
-					{field.assignedRecipientEmail ?? "Assignee"}
-				</div>
-			</div>
-		</div>
-	);
+function fieldAccent(field: PlacementField): string {
+	return signerAccentColor(field.assignedRecipientEmail ?? "");
 }
 
 type PlacementFieldOverlayItemProps = {
@@ -117,29 +59,46 @@ export function PlacementFieldOverlayItem({
 	onTextChange,
 }: PlacementFieldOverlayItemProps) {
 	const style = normalizedRectToCssPercentStyle(field.rect);
+	const accent = fieldAccent(field);
 
 	switch (plan.kind) {
 		case "placeholder":
 			return (
-				<MutedPlaceholderField
-					field={field}
-					typeLabel={typeLabel}
-					overlayClassName={overlayClassName}
-				/>
+				<div
+					className={cn(
+						"placement-field-overlay pointer-events-none absolute",
+						overlayClassName,
+					)}
+					style={style}
+				>
+					<PlacementFieldChrome
+						type={field.type}
+						primaryLabel={typeLabel}
+						assigneeEmail={field.assignedRecipientEmail}
+						required={field.required}
+						accentColor={accent}
+						variant="muted"
+					/>
+				</div>
 			);
 
 		case "readonly-visual":
 			return (
 				<div
 					className={cn(
-						"placement-field-applied-shell pointer-events-none absolute",
+						"placement-field-overlay pointer-events-none absolute",
 						overlayClassName,
 					)}
 					style={style}
 				>
-					<div className="placement-field-applied-fill">
+					<PlacementFieldChrome
+						type={field.type}
+						primaryLabel={typeLabel}
+						accentColor={accent}
+						variant="applied"
+					>
 						<VisualPreviewContent completion={plan.completion} />
-					</div>
+					</PlacementFieldChrome>
 				</div>
 			);
 
@@ -147,25 +106,41 @@ export function PlacementFieldOverlayItem({
 			return (
 				<div
 					className={cn(
-						"placement-field-applied-shell pointer-events-none absolute",
+						"placement-field-overlay pointer-events-none absolute",
 						overlayClassName,
 					)}
 					style={style}
 				>
-					<div className="placement-field-applied-fill">
+					<PlacementFieldChrome
+						type={field.type}
+						primaryLabel={typeLabel}
+						accentColor={accent}
+						variant="applied"
+					>
 						<span className="truncate">{plan.text}</span>
-					</div>
+					</PlacementFieldChrome>
 				</div>
 			);
 
 		case "readonly-empty-placeholder":
 		case "readonly-missing-placeholder":
 			return (
-				<MutedPlaceholderField
-					field={field}
-					typeLabel={typeLabel}
-					overlayClassName={overlayClassName}
-				/>
+				<div
+					className={cn(
+						"placement-field-overlay pointer-events-none absolute",
+						overlayClassName,
+					)}
+					style={style}
+				>
+					<PlacementFieldChrome
+						type={field.type}
+						primaryLabel={typeLabel}
+						assigneeEmail={field.assignedRecipientEmail}
+						required={field.required}
+						accentColor={accent}
+						variant="muted"
+					/>
+				</div>
 			);
 
 		case "readonly-empty-hidden":
@@ -174,30 +149,59 @@ export function PlacementFieldOverlayItem({
 
 		case "interactive-text":
 			return (
-				<div className="pointer-events-auto absolute z-10" style={style}>
-					<Input
-						value={completion?.textValue ?? ""}
-						onChange={(e) => onTextChange?.(field.id, e.target.value)}
-						placeholder={field.required ? "Required…" : "Optional…"}
-						name={`placement-field-${field.id}`}
-						autoComplete="off"
-						spellCheck={false}
-						className={cn(
-							"placement-field-chrome h-full w-full border-placement-chrome-border bg-placement-chrome text-xs text-placement-chrome-foreground placeholder:text-placement-chrome-muted-foreground",
-						)}
-						aria-label={`${typeLabel}, page ${field.pageIndex + 1}`}
-					/>
+				<div
+					className={cn(
+						"placement-field-overlay pointer-events-auto absolute z-10",
+						overlayClassName,
+					)}
+					style={style}
+				>
+					<PlacementFieldChrome
+						type={field.type}
+						primaryLabel={typeLabel}
+						accentColor={accent}
+						variant="pending"
+						className="p-0 shadow-md"
+					>
+						<Input
+							value={completion?.textValue ?? ""}
+							onChange={(e) => onTextChange?.(field.id, e.target.value)}
+							placeholder={field.required ? "Required…" : "Optional…"}
+							name={`placement-field-${field.id}`}
+							autoComplete="off"
+							spellCheck={false}
+							className="h-full w-full border-0 bg-transparent text-xs text-placement-chrome-foreground shadow-none placeholder:text-placement-chrome-muted-foreground focus-visible:ring-0"
+							aria-label={`${typeLabel}, page ${field.pageIndex + 1}`}
+						/>
+					</PlacementFieldChrome>
 				</div>
 			);
 
 		case "interactive-checkbox":
 			return (
-				<TapFieldOverlay
-					field={field}
+				<button
+					type="button"
 					disabled={alreadySigned}
-					label={plan.checked ? "Checked (tap to clear)" : "Tap to check"}
+					className={cn(
+						"placement-field-overlay pointer-events-auto absolute z-10",
+						overlayClassName,
+						alreadySigned && "opacity-70",
+					)}
+					style={style}
 					onClick={() => onToggleField?.(field)}
-				/>
+					aria-label={`${typeLabel}, page ${field.pageIndex + 1}`}
+				>
+					<PlacementFieldChrome
+						type={field.type}
+						primaryLabel={typeLabel}
+						secondaryLabel={
+							plan.checked ? "Checked (tap to clear)" : "Tap to check"
+						}
+						required={field.required}
+						accentColor={accent}
+						variant="pending"
+					/>
+				</button>
 			);
 
 		case "interactive-visual":
@@ -206,9 +210,10 @@ export function PlacementFieldOverlayItem({
 					type="button"
 					disabled={alreadySigned}
 					className={cn(
-						"placement-field-applied-shell absolute z-10",
+						"placement-field-overlay absolute z-10",
 						!alreadySigned &&
 							"pointer-events-auto cursor-pointer hover:brightness-110",
+						overlayClassName,
 					)}
 					style={style}
 					onClick={() => onToggleField?.(field)}
@@ -218,9 +223,14 @@ export function PlacementFieldOverlayItem({
 							: `Clear ${typeLabel}, page ${field.pageIndex + 1}`
 					}
 				>
-					<div className="placement-field-applied-fill">
+					<PlacementFieldChrome
+						type={field.type}
+						primaryLabel={typeLabel}
+						accentColor={accent}
+						variant="applied"
+					>
 						<VisualPreviewContent completion={plan.completion} />
-					</div>
+					</PlacementFieldChrome>
 				</button>
 			);
 
@@ -230,9 +240,10 @@ export function PlacementFieldOverlayItem({
 					type="button"
 					disabled={alreadySigned}
 					className={cn(
-						"placement-field-applied-shell absolute z-10",
+						"placement-field-overlay absolute z-10",
 						!alreadySigned &&
 							"pointer-events-auto cursor-pointer hover:brightness-110",
+						overlayClassName,
 					)}
 					style={style}
 					onClick={() => onToggleField?.(field)}
@@ -242,31 +253,56 @@ export function PlacementFieldOverlayItem({
 							: `Clear ${typeLabel}, page ${field.pageIndex + 1}`
 					}
 				>
-					<div className="placement-field-applied-fill">
+					<PlacementFieldChrome
+						type={field.type}
+						primaryLabel={typeLabel}
+						accentColor={accent}
+						variant="applied"
+					>
 						<span className="truncate">{plan.text}</span>
-					</div>
+					</PlacementFieldChrome>
 				</button>
 			);
 
 		case "interactive-signed-readonly":
 			return (
 				<div
-					className="placement-field-applied-shell absolute z-10 opacity-80"
+					className={cn(
+						"placement-field-overlay absolute z-10",
+						overlayClassName,
+					)}
 					style={style}
 				>
-					<div className="placement-field-applied-fill text-muted-foreground">
-						<span className="truncate">{plan.typeLabel}</span>
-					</div>
+					<PlacementFieldChrome
+						type={field.type}
+						primaryLabel={plan.typeLabel}
+						accentColor={accent}
+						variant="complete"
+					/>
 				</div>
 			);
 
 		case "interactive-tap":
 			return (
-				<TapFieldOverlay
-					field={field}
-					label={plan.label}
+				<button
+					type="button"
+					className={cn(
+						"placement-field-overlay pointer-events-auto absolute z-10",
+						overlayClassName,
+					)}
+					style={style}
 					onClick={() => onToggleField?.(field)}
-				/>
+					aria-label={`${plan.label}, page ${field.pageIndex + 1}`}
+				>
+					<PlacementFieldChrome
+						type={field.type}
+						primaryLabel={signatureFieldTypeLabel(field.type)}
+						secondaryLabel={plan.label}
+						required={field.required}
+						accentColor={accent}
+						variant="pending"
+					/>
+				</button>
 			);
 	}
 }

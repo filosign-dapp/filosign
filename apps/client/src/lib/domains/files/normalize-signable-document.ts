@@ -49,6 +49,13 @@ async function embedRasterImage(
 	return await doc.embedPng(await bytesToPngBytes(bytes, mime));
 }
 
+export async function rasterBytesToPdfBytes(
+	bytes: Uint8Array,
+	mime: string,
+): Promise<Uint8Array> {
+	return imageBytesToPdf(bytes, mime);
+}
+
 async function imageBytesToPdf(
 	bytes: Uint8Array,
 	mime: string,

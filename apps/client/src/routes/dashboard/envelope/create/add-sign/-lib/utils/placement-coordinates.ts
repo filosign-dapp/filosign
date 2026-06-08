@@ -1,5 +1,14 @@
 import type { Modifier } from "@dnd-kit/core";
-import type { ReactZoomPanPinchRef } from "react-zoom-pan-pinch";
+import {
+	focusPagePointInCanvas,
+	focusPagePointInStripCanvas,
+	isClientPointInsidePage,
+	type PageTransformState,
+	PLACEMENT_FIELD_OVERLAY_CLASS,
+	pageScale,
+	pageStripOffsetX,
+	transformStateFromRef,
+} from "@/src/lib/domains/files/document-viewport";
 import {
 	clampRectToViewport,
 	PLACEMENT_PAGE_STRIP_GAP_PX,
@@ -8,24 +17,20 @@ import {
 	snapPlacementRect,
 } from "@/src/lib/domains/files/placement-viewport";
 
-export type PageTransformState = {
-	scale: number;
-	positionX: number;
-	positionY: number;
+export type { PageTransformState };
+export {
+	focusPagePointInCanvas,
+	focusPagePointInStripCanvas,
+	isClientPointInsidePage,
+	PLACEMENT_FIELD_OVERLAY_CLASS,
+	pageScale,
+	pageStripOffsetX,
+	transformStateFromRef,
 };
 
 export const PLACEMENT_CANVAS_DROPPABLE_ID = "placement-canvas" as const;
 
-/** Class used to exclude field overlays from react-zoom-pan-pinch panning. */
-export const PLACEMENT_FIELD_OVERLAY_CLASS = "placement-field-overlay" as const;
-
 export const SELF_ASSIGNEE_ID = "__self__" as const;
-
-export function pageScale(pageEl: HTMLElement | null): number {
-	if (!pageEl || pageEl.offsetWidth <= 0) return 1;
-	const rect = pageEl.getBoundingClientRect();
-	return rect.width / pageEl.offsetWidth;
-}
 
 /** Screen scale for drag previews (layout px → canvas px, includes pan/zoom). */
 export function resolveDragPageScale(
@@ -49,21 +54,6 @@ export function dragTransformInPageSpace(
 		scaleX: transform.scaleX ?? 1,
 		scaleY: transform.scaleY ?? 1,
 	};
-}
-
-export function isClientPointInsidePage(
-	clientX: number,
-	clientY: number,
-	pageEl: HTMLElement | null,
-): boolean {
-	if (!pageEl) return false;
-	const pageRect = pageEl.getBoundingClientRect();
-	return (
-		clientX >= pageRect.left &&
-		clientX <= pageRect.right &&
-		clientY >= pageRect.top &&
-		clientY <= pageRect.bottom
-	);
 }
 
 export function clampDragTransformToPage(args: {
@@ -155,14 +145,6 @@ export function finalizePlacementRectAfterResize(args: {
 	});
 }
 
-export function pageStripOffsetX(
-	page: number,
-	pageWidth: number,
-	gap = PLACEMENT_PAGE_STRIP_GAP_PX,
-): number {
-	return Math.max(0, page - 1) * (pageWidth + gap);
-}
-
 export function findPageAtClientPoint(
 	pageEls: Map<number, HTMLDivElement>,
 	clientX: number,
@@ -176,49 +158,6 @@ export function findPageAtClientPoint(
 	return null;
 }
 
-/** Pan/zoom the strip canvas so a page-local point is centered in the wrapper. */
-export function focusPagePointInStripCanvas(args: {
-	panPinchRef: ReactZoomPanPinchRef | null;
-	wrapperEl: HTMLElement | null;
-	page: number;
-	pageX: number;
-	pageY: number;
-	pageWidth: number;
-	gap?: number;
-	animationMs?: number;
-}): void {
-	const gap = args.gap ?? PLACEMENT_PAGE_STRIP_GAP_PX;
-	focusPagePointInCanvas({
-		panPinchRef: args.panPinchRef,
-		wrapperEl: args.wrapperEl,
-		pageX: pageStripOffsetX(args.page, args.pageWidth, gap) + args.pageX,
-		pageY: args.pageY,
-		animationMs: args.animationMs,
-	});
-}
-
-/** Pan/zoom the placement canvas so a page-local point is centered in the wrapper. */
-export function focusPagePointInCanvas(args: {
-	panPinchRef: ReactZoomPanPinchRef | null;
-	wrapperEl: HTMLElement | null;
-	pageX: number;
-	pageY: number;
-	animationMs?: number;
-}): void {
-	const { panPinchRef, wrapperEl, pageX, pageY, animationMs = 250 } = args;
-	if (!panPinchRef || !wrapperEl) return;
-
-	const { scale } = transformStateFromRef(panPinchRef);
-	const wrapperWidth = wrapperEl.clientWidth;
-	const wrapperHeight = wrapperEl.clientHeight;
-	const newPositionX = wrapperWidth / 2 - pageX * scale;
-	const newPositionY = wrapperHeight / 2 - pageY * scale;
-	panPinchRef.setTransform(newPositionX, newPositionY, scale, animationMs);
-}
-
-/**
- * Map screen pointer to page-local coordinates (unscaled PDF layout space).
- */
 export function clientPointToPageCoords(
 	clientX: number,
 	clientY: number,
@@ -299,19 +238,6 @@ export function placementRectAfterResize(
 	);
 }
 
-export function transformStateFromRef(
-	ref: ReactZoomPanPinchRef | null,
-): PageTransformState {
-	if (!ref?.state) {
-		return { scale: 1, positionX: 0, positionY: 0 };
-	}
-	return {
-		scale: ref.state.scale,
-		positionX: ref.state.positionX,
-		positionY: ref.state.positionY,
-	};
-}
-
 export function paletteDraggableId(
 	type: string,
 	surface: "sidebar" | "mobile" = "sidebar",
@@ -363,3 +289,5 @@ export function dragEndClientPoint(event: {
 	}
 	return null;
 }
+
+export { PLACEMENT_PAGE_STRIP_GAP_PX };

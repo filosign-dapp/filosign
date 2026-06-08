@@ -21,6 +21,8 @@ import {
 	rpcBillingUserSummaryOutputSchema,
 	rpcBillingWorkspaceContextOutputSchema,
 } from "./billing-output";
+import { zDocumentsListInputSchema } from "./documents-input";
+import { rpcDocumentsListOutputSchema } from "./documents-output";
 import {
 	rpcDraftsArchiveOutputSchema,
 	rpcDraftsCommentsAppendOutputSchema,
@@ -30,11 +32,11 @@ import {
 	rpcDraftsCreateOutputSchema,
 	rpcDraftsGetOutputSchema,
 	rpcDraftsListExternalSharesOutputSchema,
-	rpcDraftsListOutputSchema,
 	rpcDraftsMarkSentOutputSchema,
 	rpcDraftsPrepareSaveOutputSchema,
 	rpcDraftsPresignDocumentsOutputSchema,
 	rpcDraftsPresignSnapshotOutputSchema,
+	rpcDraftsRenameOutputSchema,
 	rpcDraftsReviewByTokenOutputSchema,
 	rpcDraftsReviewForWalletOutputSchema,
 	rpcDraftsRevokeExternalShareOutputSchema,
@@ -50,8 +52,6 @@ import {
 	rpcFilesCommentsAppendOutputSchema,
 	rpcFilesCommentsListOutputSchema,
 	rpcFilesExecuteSignerReplacementOutputSchema,
-	rpcFilesListReceivedOutputSchema,
-	rpcFilesListSentOutputSchema,
 	rpcFilesProposeSignerReplacementOutputSchema,
 	rpcFilesRecallEnvelopeOutputSchema,
 	rpcFilesRegisterOutputSchema,
@@ -67,6 +67,14 @@ import {
 	rpcPieceSignDraftFieldIdsOutputSchema,
 	rpcPieceSignOutputSchema,
 } from "./files-piece-output";
+import {
+	zNotificationsDismissInputSchema,
+	zNotificationsInboxInputSchema,
+} from "./notifications-input";
+import {
+	rpcNotificationsDismissOutputSchema,
+	rpcNotificationsInboxOutputSchema,
+} from "./notifications-output";
 
 export type { RpcPieceDetailOutput } from "./files-piece-output";
 
@@ -160,11 +168,6 @@ export const rpcOut = {
 			list: rpcFilesCommentsListOutputSchema,
 			append: rpcFilesCommentsAppendOutputSchema,
 		},
-		list: {
-			sent: rpcFilesListSentOutputSchema,
-			received: rpcFilesListReceivedOutputSchema,
-			org: rpcFilesListSentOutputSchema,
-		},
 		coldInvite: {
 			inviteByToken: rpcColdInviteByTokenOutputSchema,
 			claim: rpcColdInviteClaimOutputSchema,
@@ -247,10 +250,16 @@ export const rpcOut = {
 		settlementAccessDecision:
 			rpcPlatformAdminSettlementAccessDecisionOutputSchema,
 	},
+	documents: {
+		list: rpcDocumentsListOutputSchema,
+	},
+	notifications: {
+		inbox: rpcNotificationsInboxOutputSchema,
+		dismiss: rpcNotificationsDismissOutputSchema,
+	},
 	drafts: {
 		create: rpcDraftsCreateOutputSchema,
 		save: rpcDraftsSaveOutputSchema,
-		list: rpcDraftsListOutputSchema,
 		get: rpcDraftsGetOutputSchema,
 		presignSnapshot: rpcDraftsPresignSnapshotOutputSchema,
 		prepareSave: rpcDraftsPrepareSaveOutputSchema,
@@ -262,6 +271,7 @@ export const rpcOut = {
 		reviewForWallet: rpcDraftsReviewForWalletOutputSchema,
 		markSent: rpcDraftsMarkSentOutputSchema,
 		archive: rpcDraftsArchiveOutputSchema,
+		rename: rpcDraftsRenameOutputSchema,
 		commentsList: rpcDraftsCommentsListOutputSchema,
 		commentsAppend: rpcDraftsCommentsAppendOutputSchema,
 		commentsUpdate: rpcDraftsCommentsUpdateOutputSchema,
@@ -293,12 +303,19 @@ export const rpcOut = {
 	},
 } as const;
 
-export { zDraftCommentAppendBody as zDraftCommentAppendInput } from "@/lib/domains/drafts";
-export { zDraftCommentDeleteBody as zDraftCommentDeleteInput } from "@/lib/domains/drafts";
-export { zDraftCommentUpdateBody as zDraftCommentUpdateInput } from "@/lib/domains/drafts";
+export {
+	zDraftCommentAppendBody as zDraftCommentAppendInput,
+	zDraftCommentDeleteBody as zDraftCommentDeleteInput,
+	zDraftCommentUpdateBody as zDraftCommentUpdateInput,
+} from "@/lib/domains/drafts";
 export { zFileCommentAppendBody as zFilesCommentAppendInput } from "@/lib/domains/files";
 export {
 	zPlatformAdminInviteCreateInput,
 	zPlatformAdminSetFeatureOverridesInput,
 	zPlatformAdminSetPlanInput,
 } from "./platform-admin-output";
+export {
+	zDocumentsListInputSchema,
+	zNotificationsDismissInputSchema,
+	zNotificationsInboxInputSchema,
+};

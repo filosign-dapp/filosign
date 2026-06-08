@@ -29,10 +29,6 @@ export const rpcDraftsSaveOutputSchema = z.object({
 	revision: z.number().int(),
 });
 
-export const rpcDraftsListOutputSchema = z.object({
-	drafts: z.array(rpcDraftSummarySchema),
-});
-
 export const rpcDraftDocumentDownloadSchema = z.object({
 	docId: z.string(),
 	s3Key: z.string(),
@@ -170,6 +166,12 @@ export const rpcDraftsMarkSentOutputSchema = z.object({
 
 export const rpcDraftsArchiveOutputSchema = z.object({
 	ok: z.literal(true),
+});
+
+export const rpcDraftsRenameOutputSchema = z.object({
+	ok: z.literal(true),
+	title: z.string(),
+	revision: z.number().int().nonnegative(),
 });
 
 export const rpcDraftCommentSchema = z.object({

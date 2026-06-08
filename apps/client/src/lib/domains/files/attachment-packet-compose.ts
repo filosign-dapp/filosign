@@ -88,3 +88,19 @@ export function attachmentPacketSummaryLabel(
 	}
 	return settlementReleaseTypeLabel(draft.releaseType);
 }
+
+export function upsertPacketDraft(
+	drafts: AttachmentPacketComposeDraft[],
+	draft: AttachmentPacketComposeDraft,
+): AttachmentPacketComposeDraft[] {
+	const index = drafts.findIndex((row) => row.packetId === draft.packetId);
+	if (index === -1) return [...drafts, draft];
+	return drafts.map((row, i) => (i === index ? draft : row));
+}
+
+export function removePacketById(
+	drafts: AttachmentPacketComposeDraft[],
+	packetId: string,
+): AttachmentPacketComposeDraft[] {
+	return drafts.filter((draft) => draft.packetId !== packetId);
+}

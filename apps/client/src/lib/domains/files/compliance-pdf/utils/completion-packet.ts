@@ -3,7 +3,11 @@ import {
 	PROOF_PACKET_V1_DEFAULT_PATHS,
 	VERIFY_MANIFEST_FORMAT_V1,
 } from "@filosign/oss/proof-packet";
-import type { ViewFileResult } from "@filosign/react/files";
+import type { FilosignRpcQueryUtils } from "@filosign/react";
+import {
+	decryptAttachmentPacketAccess,
+	type ViewFileResult,
+} from "@filosign/react/files";
 import type {
 	ComplianceBundle,
 	DocumentMerkleLeafProofV1,
@@ -13,8 +17,10 @@ import {
 	documentsMerkleProofsV1,
 	merkleRootFromLeafAndSiblings,
 	parseHexString,
+	sha256PlaintextHex,
 	verifyDocumentMerkleProofV1,
 } from "@filosign/shared";
+import { zHexString } from "@filosign/shared/zod";
 import { zipSync } from "fflate";
 import { toast } from "sonner";
 import { downloadBlobBytes } from "./build";
@@ -83,6 +89,13 @@ export function buildProofPacketReadme(args: {
 		`  ${paths.proofFolder}/documents/original/`,
 		"    Original decrypted document file(s) included in this export.",
 		"",
+		`  ${paths.attachedFilesPrefix}`,
+		"    Supplementary attachment files included when you had access at export.",
+		"    Organized by packet label or id.",
+		"",
+		`  ${paths.proofFolder}/${paths.attachmentsManifest}`,
+		"    Canonical attachment manifest (packet ids, file hashes, paths).",
+		"",
 		"How to verify independently",
 		"---------------------------",
 		"Filosign provides an independent verifier for this proof packet.",
@@ -132,9 +145,6 @@ export function buildProofPacketReadme(args: {
 	return lines.join("\n");
 }
 
-/** @deprecated Use {@link buildProofPacketReadme} */
-export const buildCompletionPacketReadme = buildProofPacketReadme;
-
 function registryAddressFromBundle(
 	bundle: ComplianceBundle,
 ): `0x${string}` | null {
@@ -154,7 +164,7 @@ function buildVerifyManifest(args: {
 			"Cannot build verify-manifest.json: missing file_registered transaction",
 		);
 	}
-	return {
+	const manifest: Record<string, unknown> = {
 		format: VERIFY_MANIFEST_FORMAT_V1,
 		packetSchema: PROOF_PACKET_SCHEMA_V1,
 		consumerDocumentPath: paths.consumerDocumentFromProofFolder,
@@ -167,6 +177,11 @@ function buildVerifyManifest(args: {
 		documentMerklePath: paths.documentMerkle,
 		originalDocumentsPrefix: paths.originalPrefix,
 	};
+	if (args.bundle.attachments.length > 0) {
+		manifest.attachmentsManifestPath = paths.attachmentsManifest;
+		manifest.attachedFilesPrefix = paths.attachedFilesPrefix;
+	}
+	return manifest;
 }
 
 export async function warnDocumentMerkleMismatch(args: {
@@ -216,6 +231,9 @@ export async function downloadCompletionPacketZip(args: {
 	explorerBaseUrl: string | null;
 	verifyWebUrl: string;
 	pieceCid: string;
+	rpcQuery?: FilosignRpcQueryUtils;
+	keySeed?: Uint8Array | null;
+	userEmail?: string | null;
 }): Promise<void> {
 	const registerRoot =
 		args.bundle.registration.registerDocumentSha256 ??
@@ -280,6 +298,137 @@ export async function downloadCompletionPacketZip(args: {
 	for (const doc of args.fileData.documents) {
 		const name = sanitizeZipSegment(doc.name);
 		zipEntries[proofPacketPath(`${paths.originalPrefix}${name}`)] = doc.bytes;
+	}
+
+	const attachmentsList: Array<{
+		packetId: string;
+		packetCid: string;
+		label: string | null;
+		releaseMode: "review" | "conditional";
+		unlocked: boolean;
+		packetContentHash: string | null;
+		files: Array<{
+			id: string;
+			name: string;
+			mimeType: string;
+			sha256: string;
+		}>;
+	}> = [];
+	const attachmentExportErrors: string[] = [];
+
+	const canDecryptAttachments = Boolean(
+		args.bundle.attachments.length > 0 &&
+			args.rpcQuery &&
+			args.keySeed &&
+			args.userEmail,
+	);
+
+	if (!canDecryptAttachments && args.bundle.attachments.length > 0) {
+		attachmentExportErrors.push(
+			"Sign in with your profile email to include decrypted attachment files.",
+		);
+	}
+
+	if (
+		canDecryptAttachments &&
+		args.rpcQuery &&
+		args.keySeed &&
+		args.userEmail
+	) {
+		const { rpcQuery, keySeed, userEmail } = args;
+		for (const a of args.bundle.attachments) {
+			if (a.releaseMode === "conditional" && !a.unlocked) {
+				continue;
+			}
+
+			try {
+				const access = await rpcQuery.attachments.packetAccess.call({
+					pieceCid: args.pieceCid,
+					packetId: a.packetId,
+				});
+
+				const kemParsed = zHexString().safeParse(access.kemCiphertext);
+				const dekParsed = zHexString().safeParse(access.encryptedPacketDek);
+
+				if (!kemParsed.success || !dekParsed.success) {
+					attachmentExportErrors.push(
+						`${a.label ?? a.packetId}: no decryption keys for your account`,
+					);
+					continue;
+				}
+
+				const decryptedFiles = await decryptAttachmentPacketAccess({
+					packetCid: access.packetCid,
+					recipientEmail: userEmail,
+					downloadUrl: access.downloadUrl,
+					kemCiphertext: kemParsed.data,
+					encryptedPacketDek: dekParsed.data,
+					keySeed,
+				});
+
+				const filesMeta: Array<{
+					id: string;
+					name: string;
+					mimeType: string;
+					sha256: string;
+				}> = [];
+
+				for (const file of decryptedFiles) {
+					const safeName = sanitizeZipSegment(file.name);
+					const folderName = a.label ? sanitizeZipSegment(a.label) : a.packetId;
+
+					zipEntries[`${paths.attachedFilesPrefix}${folderName}/${safeName}`] =
+						file.bytes;
+					zipEntries[
+						proofPacketPath(
+							`${paths.attachmentsOriginalPrefix}${a.packetId}/${safeName}`,
+						)
+					] = file.bytes;
+
+					const sha256 = await sha256PlaintextHex(file.bytes);
+					filesMeta.push({
+						id: file.id,
+						name: file.name,
+						mimeType: file.mimeType,
+						sha256,
+					});
+				}
+
+				attachmentsList.push({
+					packetId: a.packetId,
+					packetCid: a.packetCid,
+					label: a.label,
+					releaseMode: a.releaseMode,
+					unlocked: a.unlocked,
+					packetContentHash: a.packetContentHash,
+					files: filesMeta,
+				});
+			} catch (e) {
+				const detail = e instanceof Error ? e.message : String(e);
+				attachmentExportErrors.push(`${a.label ?? a.packetId}: ${detail}`);
+			}
+		}
+	}
+
+	if (args.bundle.attachments.length > 0) {
+		const attachmentsManifestJson = JSON.stringify(
+			{ attachments: attachmentsList },
+			null,
+			2,
+		);
+		zipEntries[proofPacketPath(paths.attachmentsManifest)] =
+			new TextEncoder().encode(attachmentsManifestJson);
+	}
+
+	if (attachmentExportErrors.length > 0) {
+		const preview = attachmentExportErrors.slice(0, 3).join("; ");
+		const suffix =
+			attachmentExportErrors.length > 3
+				? ` (+${attachmentExportErrors.length - 3} more)`
+				: "";
+		toast.warning("Some attachment files were not included", {
+			description: `${preview}${suffix}`,
+		});
 	}
 
 	const zipped = zipSync(zipEntries, { level: 6 });

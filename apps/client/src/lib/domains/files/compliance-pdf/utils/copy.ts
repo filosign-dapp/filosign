@@ -107,7 +107,7 @@ export function buildIndependentVerificationLines(
 			textStyle: "body",
 		},
 		{
-			text: "Technical verification files remain in the _proofs/ folder if you want to inspect them manually.",
+			text: "Technical verification files remain in the proofs/ folder if you want to inspect them manually.",
 			textStyle: "emphasis",
 		},
 	];
@@ -133,6 +133,14 @@ const TX_KIND_GLOSSARY: Record<ChainTxKind, string> = {
 		"Sender or workspace controller voided the envelope on-chain before completion (`recallEnvelope` on FSEnvelopeRegistry). Partial signatures may remain in the audit trail.",
 	payout_executed:
 		"FSPaymentValidator `executePayout`: USDC transferFrom sender to recipient when release conditions were met.",
+	settlement_rule_registered:
+		"Payer registered a payout rule on FSPaymentValidator with release conditions and recipient legs.",
+	settlement_approved:
+		"Payer approved ERC20 token allowance to FSPaymentValidator for the settlement rule.",
+	attachment_rule_registered:
+		"Sender registered a signature-conditional supplementary packet release rule on FSAttachmentRelease.",
+	attachment_released:
+		"FSAttachmentRelease executeAttachmentRelease: supplementary packet release triggered when conditions were met.",
 };
 
 export function buildAppendixLines(): ComplianceCopyLine[] {

@@ -1,5 +1,8 @@
+import { useFilosignContext } from "@filosign/react";
+import { getSessionSeed } from "@filosign/react/auth";
 import type { ViewFileResult } from "@filosign/react/files";
 import { useComplianceBundle } from "@filosign/react/files";
+import { useUserProfile } from "@filosign/react/users";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { defaultChain } from "@/src/constants";
@@ -17,6 +20,8 @@ export function useCompliancePdfExports(options: {
 	fileData: ViewFileResult | null;
 }) {
 	const { file, fileData } = options;
+	const { rpcQuery, wallet } = useFilosignContext();
+	const { data: userProfile } = useUserProfile();
 	const complianceBundle = useComplianceBundle();
 	const [pdfExportBusy, setPdfExportBusy] = useState(false);
 
@@ -161,6 +166,9 @@ export function useCompliancePdfExports(options: {
 				verifyWebUrl: VERIFY_WEB_URL,
 				documentSha256,
 			});
+			const keySeed = wallet ? getSessionSeed(wallet.account.address) : null;
+			const userEmail = userProfile?.email?.trim() ?? null;
+
 			await downloadCompletionPacketZip({
 				bundle,
 				bundleHash,
@@ -172,6 +180,9 @@ export function useCompliancePdfExports(options: {
 				explorerBaseUrl: explorerBase,
 				verifyWebUrl: VERIFY_WEB_URL,
 				pieceCid: file.pieceCid,
+				rpcQuery,
+				keySeed,
+				userEmail,
 			});
 		} catch (e) {
 			console.error(e);
@@ -179,7 +190,15 @@ export function useCompliancePdfExports(options: {
 		} finally {
 			setPdfExportBusy(false);
 		}
-	}, [complianceBundle, exportsAllowed, file, fileData]);
+	}, [
+		complianceBundle,
+		exportsAllowed,
+		file,
+		fileData,
+		rpcQuery,
+		userProfile?.email,
+		wallet,
+	]);
 
 	return {
 		complianceBundle,

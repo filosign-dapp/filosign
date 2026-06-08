@@ -10,6 +10,7 @@ import {
 	buildTimestampExplainerLines,
 } from "../copy";
 import { signersByNormalizedRecipientEmail } from "../placement";
+import { buildAttachmentLines } from "./attachments";
 import { buildPayoutAckLines, buildSigningTimelineLines } from "./evidence";
 import {
 	buildDocumentMetaLines,
@@ -83,6 +84,7 @@ export function assembleCompliancePdfSummary(
 	const placementRef = buildPlacementRefLines(bundle, signersByRecipient);
 	const payoutAckLines = buildPayoutAckLines(bundle);
 	const settlementLines = buildSettlementLines(bundle, explorerBaseUrl);
+	const attachmentLines = buildAttachmentLines(bundle, explorerBaseUrl);
 	const verifyLines = buildIndependentVerificationLines(verifyWebUrl);
 
 	return {
@@ -95,6 +97,9 @@ export function assembleCompliancePdfSummary(
 			{ title: "Signing timeline", lines: timelineLines },
 			...(settlementLines.length > 0
 				? [{ title: "Payout packets", lines: settlementLines }]
+				: []),
+			...(attachmentLines.length > 0
+				? [{ title: "Attached files", lines: attachmentLines }]
 				: []),
 			...(payoutAckLines.length > 0
 				? [

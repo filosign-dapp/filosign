@@ -20,7 +20,7 @@ export function DocsLink({
 			target="_blank"
 			rel="noopener noreferrer"
 			className={cn(
-				"inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline font-manrope",
+				"inline-flex items-center gap-1 text-xs font-medium text-primary underline-offset-4 hover:underline font-manrope",
 				className,
 			)}
 		>

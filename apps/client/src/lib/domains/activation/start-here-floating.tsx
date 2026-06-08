@@ -41,7 +41,7 @@ function StartHereCardShell({
 			preset="smooth"
 			delay={0.15}
 			onlyOnce
-			className="pointer-events-none fixed bottom-6 right-6 z-40 w-[min(calc(100vw-2rem),24rem)]"
+			className="pointer-events-none fixed bottom-6 right-6 z-40 w-min(100vw-2rem,96)"
 			id="start-here-floating"
 		>
 			<article
@@ -150,7 +150,7 @@ export function StartHereFloating() {
 					>
 						You&apos;re ready to go
 					</h2>
-					<p className="mx-auto mt-2 max-w-[18rem] text-sm leading-relaxed text-muted-foreground">
+					<p className="mx-auto mt-2 max-w-72 text-sm leading-relaxed text-muted-foreground">
 						{advancedStepCount > 0
 							? `${advancedStepCount} more tutorial${advancedStepCount === 1 ? "" : "s"} cover advanced features for your plan.`
 							: "Explore tutorials to learn advanced workflows when your plan unlocks them."}
@@ -175,7 +175,7 @@ export function StartHereFloating() {
 					) : null}
 
 					{isSandboxDeployment && sandboxNote ? (
-						<p className="mx-auto mt-4 max-w-[18rem] text-xs leading-relaxed text-muted-foreground">
+						<p className="mx-auto mt-4 max-w-72 text-xs leading-relaxed text-muted-foreground">
 							{sandboxNote}
 						</p>
 					) : null}
@@ -237,7 +237,7 @@ export function StartHereFloating() {
 				>
 					Get started with filosign
 				</h2>
-				<p className="mx-auto mt-2 max-w-[18rem] text-sm leading-relaxed text-muted-foreground">
+				<p className="mx-auto mt-2 max-w-72 text-sm leading-relaxed text-muted-foreground">
 					Three quick steps to sign, send, and track your first envelope.
 				</p>
 

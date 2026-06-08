@@ -281,7 +281,6 @@ export function withComposeOnlyFieldsFromPrev(
 	return {
 		...next,
 		registerRouting: prev?.registerRouting,
-		combineSettlementLegs: prev?.combineSettlementLegs,
 		attachmentPacketDrafts: prev?.attachmentPacketDrafts,
 	};
 }

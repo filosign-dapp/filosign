@@ -34,7 +34,7 @@ export function PlanSeatTiles({
 
 	return (
 		<div className="grid gap-4 sm:grid-cols-2">
-			<div className="flex min-h-[96px] flex-col justify-between rounded-xl border border-border bg-card p-4">
+			<div className="flex min-h-24 flex-col justify-between rounded-xl border border-border bg-card p-4">
 				<div>
 					<span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
 						Current plan
@@ -53,7 +53,7 @@ export function PlanSeatTiles({
 			</div>
 
 			{hasSeats ? (
-				<div className="flex min-h-[96px] flex-col justify-between rounded-xl border border-border bg-card p-4">
+				<div className="flex min-h-24 flex-col justify-between rounded-xl border border-border bg-card p-4">
 					<div>
 						<span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
 							Seats utilized
@@ -77,7 +77,7 @@ export function PlanSeatTiles({
 					</div>
 				</div>
 			) : (
-				<div className="flex min-h-[96px] flex-col justify-center rounded-xl border border-border bg-card p-4">
+				<div className="flex min-h-24 flex-col justify-center rounded-xl border border-border bg-card p-4">
 					<span className="text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
 						Seats
 					</span>

@@ -1,9 +1,11 @@
 import {
+	ArrowLeftIcon,
 	CheckCircleIcon,
 	PaperPlaneRightIcon,
 	SpinnerGapIcon,
 	XCircleIcon,
 } from "@phosphor-icons/react";
+import { Link } from "@tanstack/react-router";
 import Logo from "@/src/lib/components/app/chrome/logo";
 import { Button } from "@/src/lib/components/ui/button";
 import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
@@ -12,6 +14,8 @@ import { useAttachedPayoutBalance } from "@/src/lib/domains/settlements/use-atta
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn } from "@/src/lib/utils/utils";
 import { AddSignDraftActions } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft/actions";
+import { PlacementHistoryButtons } from "@/src/routes/dashboard/envelope/create/add-sign/-components/header/placement-history";
+import { PlacedFieldsSheet } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placed-fields-sheet";
 import { useAddSignChrome } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 
 export function AddSignHeader() {
@@ -34,7 +38,7 @@ export function AddSignHeader() {
 			return (
 				<>
 					<SpinnerGapIcon className="size-4 animate-spin" />
-					<p className="hidden sm:block">Signing your fields...</p>
+					<span className="hidden sm:inline">Signing…</span>
 				</>
 			);
 		}
@@ -42,7 +46,7 @@ export function AddSignHeader() {
 			return (
 				<>
 					<SpinnerGapIcon className="size-4 animate-spin" />
-					<p className="hidden sm:block">Sending...</p>
+					<span className="hidden sm:inline">Sending…</span>
 				</>
 			);
 		}
@@ -50,7 +54,7 @@ export function AddSignHeader() {
 			return (
 				<>
 					<CheckCircleIcon className="size-4" weight="fill" />
-					<p className="hidden sm:block">Document Sent</p>
+					<span className="hidden sm:inline">Sent</span>
 				</>
 			);
 		}
@@ -58,43 +62,65 @@ export function AddSignHeader() {
 			return (
 				<>
 					<XCircleIcon className="size-4" weight="fill" />
-					<p className="hidden sm:block">Failed to Send</p>
+					<span className="hidden sm:inline">Failed</span>
 				</>
 			);
 		}
 		return (
 			<>
 				<PaperPlaneRightIcon className="size-4" weight="bold" />
-				<p className="hidden sm:block">Send Envelope</p>
+				<span className="hidden sm:inline">Send</span>
 			</>
 		);
 	};
 
 	return (
-		<header className="glass sticky top-0 z-50 border-b border-border bg-background/95">
-			<div className="flex h-16 items-center justify-between px-6">
-				<div className="flex items-center gap-4">
-					<Logo className="px-0" textClassName="text-foreground" iconOnly />
-					<h3>Place fields</h3>
+		<header className="glass z-50 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-background/50 px-4 md:px-8">
+			<div className="flex min-w-0 items-center gap-3 md:gap-4">
+				<Logo className="px-0" textClassName="text-foreground" iconOnly />
+				<div className="min-w-0">
+					<h3 className="truncate text-base font-semibold text-foreground">
+						Place fields
+					</h3>
+					<Button
+						type="button"
+						variant="link"
+						size="sm"
+						className="h-auto gap-1.5 px-0 text-xs text-muted-foreground"
+						render={
+							<Link
+								to="/dashboard/envelope/create"
+								className="inline-flex items-center gap-1.5"
+							/>
+						}
+					>
+						<ArrowLeftIcon className="size-3.5" weight="bold" />
+						Envelope details
+					</Button>
 				</div>
+			</div>
 
-				<div className="flex items-center gap-3">
-					<AddSignDraftActions />
-					<DisabledTooltip disabled={sendBlocked} reason={sendReason}>
-						<Button
-							variant="primary"
-							onClick={handleSend}
-							disabled={sendBlocked}
-							className={cn(
-								"gap-2 transition-colors duration-300",
-								isSuccess && "bg-secondary hover:bg-secondary/90",
-								isError && "bg-destructive hover:bg-destructive/90",
-							)}
-						>
-							{getButtonContent()}
-						</Button>
-					</DisabledTooltip>
+			<div className="flex shrink-0 items-center gap-2 md:gap-3">
+				<div className="lg:hidden">
+					<PlacedFieldsSheet variant="toolbar" />
 				</div>
+				<PlacementHistoryButtons />
+				<AddSignDraftActions />
+				<DisabledTooltip disabled={sendBlocked} reason={sendReason}>
+					<Button
+						variant="primary"
+						size="lg"
+						onClick={handleSend}
+						disabled={sendBlocked}
+						className={cn(
+							"gap-2",
+							isSuccess && "bg-secondary hover:bg-secondary/90",
+							isError && "bg-destructive hover:bg-destructive/90",
+						)}
+					>
+						{getButtonContent()}
+					</Button>
+				</DisabledTooltip>
 			</div>
 		</header>
 	);

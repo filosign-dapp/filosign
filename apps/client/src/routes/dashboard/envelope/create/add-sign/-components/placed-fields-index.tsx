@@ -1,6 +1,4 @@
 import { Stagger } from "@filosign/motion";
-import { ArrowsOutLineHorizontalIcon } from "@phosphor-icons/react";
-import { Button } from "@/src/lib/components/ui/button";
 import { signerAccentColor } from "@/src/lib/domains/files/field-box";
 import {
 	SignatureFieldTypeIcon,
@@ -13,12 +11,8 @@ import { groupPlacedFieldsByPage } from "@/src/routes/dashboard/envelope/create/
 type PlacedFieldsIndexProps = {
 	fields: SignatureField[];
 	selectedFieldIds: Set<string>;
-	selectedField: string | null;
 	currentPage: number;
-	pdfNumPages: number | null;
-	onSelectField: (fieldId: string) => void;
 	onFocusField: (fieldId: string) => void;
-	onRepeatOnAllPages?: (fieldId: string) => void;
 	emptyMessage?: string;
 };
 
@@ -31,12 +25,8 @@ function signerDisplayName(field: SignatureField): string {
 export function PlacedFieldsIndex({
 	fields,
 	selectedFieldIds,
-	selectedField,
 	currentPage,
-	pdfNumPages,
-	onSelectField,
 	onFocusField,
-	onRepeatOnAllPages,
 	emptyMessage = "No fields placed for this signer yet.",
 }: PlacedFieldsIndexProps) {
 	if (fields.length === 0) {
@@ -48,7 +38,6 @@ export function PlacedFieldsIndex({
 	}
 
 	const groups = groupPlacedFieldsByPage(fields);
-	const canRepeat = pdfNumPages != null && pdfNumPages > 1;
 
 	return (
 		<div className="space-y-3">
@@ -70,66 +59,43 @@ export function PlacedFieldsIndex({
 							const isSelected = selectedFieldIds.has(field.id);
 							const label = signatureFieldTypeLabel(field.type);
 							const accent = signerAccentColor(field.assignedSignerEmail);
-							const showRepeat =
-								canRepeat &&
-								selectedField === field.id &&
-								onRepeatOnAllPages != null;
 
 							return (
-								<div key={field.id} className="space-y-0.5">
-									<button
-										type="button"
-										className={cn(
-											"group flex w-full items-center gap-2.5 rounded-md px-1.5 py-1.5 text-left transition-colors",
-											isSelected ? "bg-accent" : "hover:bg-muted/50",
-										)}
-										onClick={() => {
-											onSelectField(field.id);
-											onFocusField(field.id);
-										}}
-										aria-label={`${label}, page ${field.page}, ${signerDisplayName(field)}`}
-									>
+								<button
+									key={field.id}
+									type="button"
+									className={cn(
+										"group flex w-full items-center gap-2.5 rounded-md px-1.5 py-1.5 text-left transition-colors",
+										isSelected ? "bg-accent" : "hover:bg-muted/50",
+									)}
+									onClick={() => onFocusField(field.id)}
+									aria-label={`${label}, page ${field.page}, ${signerDisplayName(field)}`}
+								>
+									<span
+										className="size-2 shrink-0 rounded-full ring-1 ring-foreground/10"
+										style={{ backgroundColor: accent }}
+										aria-hidden
+									/>
+									<span className="shrink-0" aria-hidden="true">
+										<SignatureFieldTypeIcon type={field.type} isMobile />
+									</span>
+									<span className="min-w-0 flex-1">
 										<span
-											className="size-2 shrink-0 rounded-full ring-1 ring-foreground/10"
-											style={{ backgroundColor: accent }}
-											aria-hidden
-										/>
-										<span className="shrink-0" aria-hidden="true">
-											<SignatureFieldTypeIcon type={field.type} isMobile />
-										</span>
-										<span className="min-w-0 flex-1">
-											<span
-												className={cn(
-													"block truncate text-sm leading-snug",
-													isSelected
-														? "font-medium text-foreground"
-														: "text-foreground",
-												)}
-											>
-												{label}
-											</span>
-											<span className="block truncate text-[11px] text-muted-foreground">
-												{signerDisplayName(field)}
-												{field.required ? " · Required" : ""}
-											</span>
-										</span>
-									</button>
-									{showRepeat ? (
-										<Button
-											type="button"
-											variant="ghost"
-											size="sm"
-											className="h-7 w-full justify-start gap-1.5 px-2 text-[11px] text-muted-foreground"
-											onClick={() => onRepeatOnAllPages(field.id)}
+											className={cn(
+												"block truncate text-sm leading-snug",
+												isSelected
+													? "font-medium text-foreground"
+													: "text-foreground",
+											)}
 										>
-											<ArrowsOutLineHorizontalIcon
-												className="size-3.5"
-												aria-hidden
-											/>
-											Repeat on all pages
-										</Button>
-									) : null}
-								</div>
+											{label}
+										</span>
+										<span className="block truncate text-[11px] text-muted-foreground">
+											{signerDisplayName(field)}
+											{field.required ? " · Required" : ""}
+										</span>
+									</span>
+								</button>
 							);
 						})}
 					</Stagger>

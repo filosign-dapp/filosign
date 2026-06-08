@@ -1,1 +1,1 @@
-export { AddSignHeader } from "./chrome";
+export { AddSignHeader } from "./placement-chrome";

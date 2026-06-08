@@ -1,12 +1,7 @@
 import { useEntitlements } from "@filosign/react/billing";
 import { canUseSupplementaryAttachments } from "@filosign/react/files";
 import { SUPPLEMENTARY_ATTACHMENT_LIMITS } from "@filosign/shared";
-import {
-	PaperclipIcon,
-	PencilSimpleIcon,
-	PlusIcon,
-	TrashIcon,
-} from "@phosphor-icons/react";
+import { PlusIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { DocsLink } from "@/src/lib/docs/docs-link";
@@ -17,10 +12,15 @@ import {
 } from "@/src/lib/domains/drafts";
 import {
 	type AttachmentPacketComposeDraft,
-	attachmentPacketSummaryLabel,
+	removePacketById,
+	upsertPacketDraft,
 } from "@/src/lib/domains/files/attachment-packet-compose";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { AttachmentPacketDialog } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-dialog";
+import {
+	AttachmentPacketEditRemoveActions,
+	AttachmentPacketSummaryCard,
+} from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-summary-card";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 
 export function ComposeSupplementaryFilesSection() {
@@ -31,7 +31,7 @@ export function ComposeSupplementaryFilesSection() {
 	const canUse = canUseSupplementaryAttachments(entitlements);
 
 	const [dialogOpen, setDialogOpen] = useState(false);
-	const [editingId, setEditingId] = useState<string | null>(null);
+	const [editingPacketId, setEditingPacketId] = useState<string | null>(null);
 	const [editingDraft, setEditingDraft] = useState<
 		AttachmentPacketComposeDraft | undefined
 	>();
@@ -51,7 +51,7 @@ export function ComposeSupplementaryFilesSection() {
 			return;
 		}
 		setEditingDraft(undefined);
-		setEditingId(null);
+		setEditingPacketId(null);
 		setDialogOpen(true);
 	};
 
@@ -62,41 +62,43 @@ export function ComposeSupplementaryFilesSection() {
 			draft,
 		]);
 		setEditingDraft(hydrated);
-		setEditingId(packetId);
+		setEditingPacketId(packetId);
 		setDialogOpen(true);
 	};
 
-	const handleSave = async (draft: AttachmentPacketComposeDraft) => {
-		const next = editingId
-			? drafts.map((d) => (d.packetId === editingId ? draft : d))
-			: [...drafts, draft];
+	const persistDrafts = async (next: AttachmentPacketComposeDraft[]) => {
 		await saveAttachmentPacketDrafts(createForm.draftId, next);
 		setCreateForm({
 			...createForm,
 			attachmentPacketDrafts: next,
 		});
-		setEditingId(null);
+	};
+
+	const handleSave = async (draft: AttachmentPacketComposeDraft) => {
+		await persistDrafts(upsertPacketDraft(drafts, draft));
+		setEditingPacketId(null);
+		setEditingDraft(undefined);
 	};
 
 	const handleRemove = async (packetId: string) => {
-		const next = drafts.filter((d) => d.packetId !== packetId);
-		await saveAttachmentPacketDrafts(createForm.draftId, next);
-		setCreateForm({
-			...createForm,
-			attachmentPacketDrafts: next,
-		});
+		await persistDrafts(removePacketById(drafts, packetId));
+		setEditingPacketId(null);
+		setEditingDraft(undefined);
 	};
+
+	const atPacketLimit =
+		drafts.length >= SUPPLEMENTARY_ATTACHMENT_LIMITS.maxPacketsPerEnvelope;
 
 	return (
 		<section className="space-y-3 rounded-xl border border-border/60 bg-muted/5 p-5">
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-				<div>
-					<h2 className="text-sm font-semibold">Extra files</h2>
+			<div className="flex items-start justify-between gap-3">
+				<div className="space-y-1">
+					<h2 className="text-sm font-semibold">Attached file packets</h2>
 					<p className="text-xs text-muted-foreground">
-						Optional files sent with the envelope. You choose who gets them and
-						when.{" "}
+						Send encrypted PDF packets with your envelope. Set unlock rules,
+						choose recipients, then add files.{" "}
 						<DocsLink href={DOCS_LINKS.attachedFiles()}>
-							Read the attached files guide
+							Attached files guide
 						</DocsLink>
 					</p>
 				</div>
@@ -106,67 +108,32 @@ export function ComposeSupplementaryFilesSection() {
 					size="sm"
 					className="shrink-0"
 					onClick={openAdd}
-					disabled={
-						drafts.length >=
-						SUPPLEMENTARY_ATTACHMENT_LIMITS.maxPacketsPerEnvelope
-					}
+					disabled={atPacketLimit}
 				>
 					<PlusIcon className="size-4" weight="regular" />
-					Add files
+					Add packet
 				</Button>
 			</div>
 
 			{drafts.length > 0 ? (
 				<ul className="space-y-2">
 					{drafts.map((draft) => (
-						<li
+						<AttachmentPacketSummaryCard
 							key={draft.packetId}
-							className="flex items-start justify-between gap-3 rounded-lg border border-border/50 bg-background/50 p-3"
-						>
-							<div className="min-w-0 space-y-1">
-								<p className="flex items-center gap-2 text-sm font-medium">
-									<PaperclipIcon
-										className="size-4 shrink-0 text-muted-foreground"
-										weight="regular"
-									/>
-									<span className="truncate">
-										{draft.label?.trim() || "File packet"}
-									</span>
-								</p>
-								<p className="text-xs text-muted-foreground">
-									{draft.files.length} file
-									{draft.files.length !== 1 ? "s" : ""} ·{" "}
-									{attachmentPacketSummaryLabel(draft)} ·{" "}
-									{draft.recipientEmails.length} recipient
-									{draft.recipientEmails.length !== 1 ? "s" : ""}
-								</p>
-							</div>
-							<div className="flex shrink-0 items-center gap-1">
-								<Button
-									type="button"
-									variant="ghost"
-									size="icon-sm"
-									onClick={() => void openEdit(draft.packetId)}
-									aria-label="Edit file packet"
-								>
-									<PencilSimpleIcon className="size-4" weight="regular" />
-								</Button>
-								<Button
-									type="button"
-									variant="ghost"
-									size="icon-sm"
-									onClick={() => void handleRemove(draft.packetId)}
-									aria-label="Remove file packet"
-								>
-									<TrashIcon className="size-4" weight="regular" />
-								</Button>
-							</div>
-						</li>
+							draft={draft}
+							showRecipientCount
+							actions={
+								<AttachmentPacketEditRemoveActions
+									onEdit={() => void openEdit(draft.packetId)}
+									onRemove={() => void handleRemove(draft.packetId)}
+								/>
+							}
+						/>
 					))}
 				</ul>
 			) : (
 				<p className="text-xs text-muted-foreground">
-					None yet. Up to{" "}
+					No file packets yet. Up to{" "}
 					{SUPPLEMENTARY_ATTACHMENT_LIMITS.maxPacketsPerEnvelope} packets per
 					envelope.
 				</p>
@@ -174,12 +141,21 @@ export function ComposeSupplementaryFilesSection() {
 
 			{dialogOpen ? (
 				<AttachmentPacketDialog
-					key={editingId ?? "new"}
 					open={dialogOpen}
-					onOpenChange={setDialogOpen}
+					onOpenChange={(open) => {
+						setDialogOpen(open);
+						if (!open) {
+							setEditingPacketId(null);
+							setEditingDraft(undefined);
+						}
+					}}
 					recipients={createForm.recipients}
+					existingPacketId={editingPacketId}
 					existingDraft={editingDraft}
 					onSave={(draft) => void handleSave(draft)}
+					onRemove={() => {
+						if (editingPacketId) void handleRemove(editingPacketId);
+					}}
 				/>
 			) : null}
 		</section>

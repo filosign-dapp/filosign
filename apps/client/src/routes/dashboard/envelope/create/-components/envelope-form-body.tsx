@@ -5,6 +5,7 @@ import {
 	ComposeDocumentsField,
 	ComposeRecipientsField,
 } from "@/src/routes/dashboard/envelope/create/-components/compose-form-fields";
+import { ComposePayoutsSection } from "@/src/routes/dashboard/envelope/create/-components/compose-payouts-section";
 import { ComposeRoutingField } from "@/src/routes/dashboard/envelope/create/-components/compose-routing-field";
 import { ComposeSupplementaryFilesSection } from "@/src/routes/dashboard/envelope/create/-components/compose-supplementary-files-section";
 
@@ -18,6 +19,7 @@ export function EnvelopeFormBody() {
 			<ComposeDocumentsField />
 			<ComposeRecipientsField />
 			<ComposeRoutingField />
+			<ComposePayoutsSection />
 			<ComposeSupplementaryFilesSection />
 		</main>
 	);

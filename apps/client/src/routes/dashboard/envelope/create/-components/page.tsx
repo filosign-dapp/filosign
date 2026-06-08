@@ -3,13 +3,20 @@ import { motion } from "motion/react";
 import { FullBleedPageHeader } from "@/src/lib/components/app/chrome/full-bleed-page-header";
 import Logo from "@/src/lib/components/app/chrome/logo";
 import { Button } from "@/src/lib/components/ui/button";
+import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
+import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements/payout-copy";
 import { UserDropdown } from "@/src/routes/dashboard/_shell/-components/user-dropdown";
 import { useCreateEnvelope } from "@/src/routes/dashboard/envelope/create/-lib/context/create-envelope-context";
 import { ClearEnvelopeFormButton } from "./clear-envelope-form-button";
 import { EnvelopeFormBody } from "./envelope-form-body";
 
 export function CreateEnvelopePage() {
-	const { form, isAdvancing } = useCreateEnvelope();
+	const { form, isAdvancing, payoutBalance } = useCreateEnvelope();
+	const { exceedsBalance } = payoutBalance;
+	const continueBlocked = isAdvancing || exceedsBalance;
+	const continueReason = exceedsBalance
+		? PAYOUT_EXCEEDS_BALANCE_MESSAGE
+		: undefined;
 
 	return (
 		<div className="min-h-screen bg-background">
@@ -52,15 +59,17 @@ export function CreateEnvelopePage() {
 						>
 							Back
 						</Button>
-						<Button
-							type="submit"
-							variant="primary"
-							size="lg"
-							className="gap-2 group transition-all duration-200"
-							disabled={isAdvancing}
-						>
-							{isAdvancing ? "Continuing…" : "Continue"}
-						</Button>
+						<DisabledTooltip disabled={continueBlocked} reason={continueReason}>
+							<Button
+								type="submit"
+								variant="primary"
+								size="lg"
+								className="gap-2 group transition-all duration-200"
+								disabled={continueBlocked}
+							>
+								{isAdvancing ? "Continuing…" : "Continue"}
+							</Button>
+						</DisabledTooltip>
 					</div>
 				</motion.div>
 			</form>

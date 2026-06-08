@@ -1,21 +1,17 @@
 import { useEntitlements } from "@filosign/react/billing";
-import {
-	canUseAdvancedRouting,
-	canUseAdvancedSettlements,
-	useBasicPayoutAttachGate,
-} from "@filosign/react/files";
+import { canUseAdvancedRouting } from "@filosign/react/files";
 import type { RegisterRoutingInput } from "@filosign/shared";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { AnimatePresence, motion } from "motion/react";
 import { useMemo } from "react";
-import { Checkbox } from "@/src/lib/components/ui/checkbox";
+import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { Switch } from "@/src/lib/components/ui/switch";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
+import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
-import { handleBasicPayoutGateBlock } from "@/src/lib/domains/settlements/basic-payout-gate";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 
@@ -57,6 +53,7 @@ export function ComposeRoutingField() {
 	const routing = createForm.registerRouting ?? {};
 	const quorumEnabled = (routing.quorumN ?? 0) > 0;
 	const signerCount = signerOptions.length;
+	const quorumToggleDisabled = signerCount === 0;
 	const maxQuorum = Math.min(255, signerCount);
 
 	const patchRouting = (patch: Partial<RegisterRoutingInput>) => {
@@ -93,18 +90,28 @@ export function ComposeRoutingField() {
 		<section className="space-y-3 rounded-xl border border-border/60 bg-muted/5 p-5">
 			<div className="flex items-center justify-between gap-4">
 				<div className="min-w-0">
-					<Label htmlFor="quorum-enabled" className="text-sm font-medium">
+					<Label
+						htmlFor="quorum-enabled"
+						className="inline-flex items-center gap-2 text-sm font-medium"
+					>
 						Minimum signatures
+						<ProFeatureMark size="xs" />
 					</Label>
 					<p className="text-xs text-muted-foreground">
 						All signers must sign unless you set a minimum below.
 					</p>
 				</div>
-				<Switch
-					id="quorum-enabled"
-					checked={quorumEnabled}
-					onCheckedChange={setQuorumEnabled}
-				/>
+				<DisabledTooltip
+					disabled={quorumToggleDisabled}
+					reason="Add signers first."
+				>
+					<Switch
+						id="quorum-enabled"
+						checked={quorumEnabled}
+						onCheckedChange={setQuorumEnabled}
+						disabled={quorumToggleDisabled}
+					/>
+				</DisabledTooltip>
 			</div>
 
 			<AnimatePresence initial={false}>
@@ -151,50 +158,6 @@ export function ComposeRoutingField() {
 			<DocsLink href={DOCS_LINKS.signingAndRouting()} className="text-xs">
 				Signing and routing guide
 			</DocsLink>
-		</section>
-	);
-}
-
-export function ComposeSettlementOptionsField() {
-	const createForm = useStorePersist((s) => s.createForm);
-	const setCreateForm = useStorePersist((s) => s.setCreateForm);
-	const { data: entitlements } = useEntitlements();
-	const promptPlanUpgrade = usePromptPlanUpgrade();
-	const advanced = canUseAdvancedSettlements(entitlements);
-	const { gate } = useBasicPayoutAttachGate();
-	const draftCount = createForm?.settlementDrafts?.length ?? 0;
-
-	if (!createForm || draftCount < 2) return null;
-
-	return (
-		<section className="space-y-3 rounded-xl border border-border/60 bg-muted/5 p-5">
-			<div>
-				<h2 className="text-sm font-semibold">Multiple payouts</h2>
-				<p className="text-xs text-muted-foreground">
-					Combine several USDC payouts into one rule.
-				</p>
-			</div>
-			<label
-				htmlFor="combine-settlement-legs"
-				className="flex items-center gap-2 text-sm"
-			>
-				<Checkbox
-					id="combine-settlement-legs"
-					checked={Boolean(createForm.combineSettlementLegs)}
-					onCheckedChange={(next) => {
-						if (next === true && !advanced) {
-							promptPlanUpgrade("features.settlement.advanced");
-							return;
-						}
-						if (handleBasicPayoutGateBlock(gate, promptPlanUpgrade)) return;
-						setCreateForm({
-							...createForm,
-							combineSettlementLegs: next === true,
-						});
-					}}
-				/>
-				<span>One rule for {draftCount} recipients</span>
-			</label>
 		</section>
 	);
 }

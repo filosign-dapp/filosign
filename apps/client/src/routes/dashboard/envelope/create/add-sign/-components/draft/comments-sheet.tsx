@@ -33,8 +33,8 @@ export function DraftCommentsSheet(props: {
 						<SheetHeader>
 							<SheetTitle>Draft Comments</SheetTitle>
 							<SheetDescription className="text-pretty">
-								Encrypted team notes while you prepare this envelope. Only people
-								with draft access can read them.
+								Encrypted team notes while you prepare this envelope. Only
+								people with draft access can read them.
 							</SheetDescription>
 						</SheetHeader>
 

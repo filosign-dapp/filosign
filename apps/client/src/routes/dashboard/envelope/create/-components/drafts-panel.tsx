@@ -1,4 +1,4 @@
-import { useDraftsList } from "@filosign/react/drafts";
+import { useDocumentsList } from "@filosign/react/documents";
 import { Link } from "@tanstack/react-router";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { Button } from "@/src/lib/components/ui/button";
@@ -10,7 +10,7 @@ import { useDraftDelete } from "@/src/lib/domains/documents/use-draft-delete";
 import { useOpenDraft } from "@/src/lib/domains/drafts";
 
 export function DraftsPanel() {
-	const { data, isLoading } = useDraftsList();
+	const { data, isLoading } = useDocumentsList({ tab: "drafts" });
 	const { openDraft } = useOpenDraft();
 	const {
 		requestDelete,
@@ -19,6 +19,8 @@ export function DraftsPanel() {
 		confirmDelete,
 		deletePending,
 	} = useDraftDelete();
+
+	const drafts = (data?.items ?? []).filter((row) => row.kind === "draft");
 
 	return (
 		<section className="mx-auto max-w-4xl px-8 pb-6">
@@ -41,7 +43,7 @@ export function DraftsPanel() {
 				<p className="mt-2 text-sm text-muted-foreground">Loading drafts…</p>
 			) : null}
 			<div className="mt-3 space-y-2">
-				{(data?.drafts ?? []).map((draft) => (
+				{drafts.map((draft) => (
 					<DocumentCard
 						key={draft.id}
 						kind="draft"
@@ -55,7 +57,7 @@ export function DraftsPanel() {
 					/>
 				))}
 			</div>
-			{(data?.drafts?.length ?? 0) === 0 && !isLoading ? (
+			{drafts.length === 0 && !isLoading ? (
 				<p className="mt-2 text-sm text-muted-foreground">
 					No saved drafts yet. Save from the placement step.
 				</p>

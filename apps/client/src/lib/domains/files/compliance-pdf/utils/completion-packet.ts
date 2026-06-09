@@ -2,7 +2,7 @@ import {
 	PROOF_PACKET_SCHEMA_V1,
 	PROOF_PACKET_V1_DEFAULT_PATHS,
 	VERIFY_MANIFEST_FORMAT_V1,
-} from "@filosign/oss/proof-packet";
+} from "@filosign/protocol";
 import type { FilosignRpcQueryUtils } from "@filosign/react";
 import {
 	decryptAttachmentPacketAccess,

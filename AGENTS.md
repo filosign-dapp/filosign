@@ -20,13 +20,12 @@ Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-pack
 | `apps/astro`            | [README](apps/astro/README.md)                                            | Marketing — landing mocks in `src/components/marketing-mocks/`        |
 | `packages/react-sdk`    | [README](packages/react-sdk/README.md)                                    | `FilosignProvider`, typed `rpc`, `rpcQuery`, hooks                    |
 | `packages/shared`       | [AGENTS.md](packages/shared/AGENTS.md)                                    | Types, Zod, manifests (browser+server)                                |
-| `packages/oss`          | [README](packages/oss/README.md)                                          | `file:` bridge to `oss/packages/protocol` (proof packet schema)       |
 | `packages/entitlements` | —                                                                         | Plan catalog + pure evaluator (no DB; server wires later)             |
 | `packages/errors`       | [README](packages/errors/README.md)                                       | User-facing error catalog, `throwAppError`, `presentError`            |
 | `packages/crypto-utils` | [README](packages/crypto-utils/README.md)                                 | KEM, WASM-adjacent crypto                                             |
 | `packages/motion`       | [README](packages/motion/README.md)                                       | Shared spring physics presets, tweens, and UI layout motion           |
 | `packages/test`         | [README](packages/test/README.md)                                         | Dev harness                                                           |
-| `oss/`                  | [README](oss/README.md) · [AGENTS](oss/AGENTS.md)                         | Independent OSS git repo (ignored by private root; `cd oss && git …`) |
+| `oss/`                  | [README](oss/README.md)                                                   | OSS segment in-tree; `@filosign/protocol` in root workspaces; publish via subtree split |
 | Scripts / CI            | [SCRIPTS.md](SCRIPTS.md)                                                  | `dev`, `check`, `sanity`, `test`, `build`, `db`, `contracts`          |
 | Testing                 | [TESTING.md](TESTING.md)                                                  | `tests/` layout, `tests/support/`, grouping rules                     |
 | Unsure                  | [README.md](README.md)                                                    | Product + repo map                                                    |

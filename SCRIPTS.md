@@ -19,7 +19,7 @@
 | Format + types (writes files) | `bun run check` |
 | CI / pre-push verify (no writes) | `bun run sanity` |
 | Match sanity check step only | `bun run check -- --ci --types` |
-| OSS segment (standalone `/oss`) | `cd oss && bun install && bun test` (separate git repo; ignored by private root) |
+| OSS segment (`oss/`) | `cd oss && bun install && bun test` (nested OSS workspaces; filosign root links `oss/packages/protocol` only) |
 | Autofix + unit tests | `bun run check && bun run test` |
 | Skip Hardhat in sanity | `bun run sanity -- --fast` |
 | All tests | `bun run test` |

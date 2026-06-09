@@ -5,7 +5,8 @@
 	"private": true,
 	"workspaces": [
 		"apps/*",
-		"packages/*"
+		"packages/*",
+		"oss/packages/protocol"
 	],
 	"scripts": {
 		"dev": "bun run scripts/dev.ts",

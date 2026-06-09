@@ -11,7 +11,7 @@
 		"build": "vite build",
 		"lint": "bunx biome check .",
 		"check-types": "tsc --noEmit",
-		"test": "bun -e \"console.log('[ @filosign/client ] no bun tests yet'); process.exit(0)\"",
+		"test": "bun test tests/",
 		"shadcn": "bunx --bun shadcn@latest add",
 		"compress": "bun run scripts/compress-assets.ts",
 		"_lines": "bun -e \"for(let i=1;i<=25;i++)console.log(\"line\",i)\""
@@ -26,7 +26,7 @@
 		"@filosign/entitlements": "workspace:*",
 		"@filosign/errors": "workspace:*",
 		"@filosign/motion": "workspace:*",
-		"@filosign/oss": "workspace:*",
+		"@filosign/protocol": "workspace:*",
 		"@filosign/react": "workspace:*",
 		"@filosign/shared": "workspace:*",
 		"@fontsource-variable/inter": "catalog:",

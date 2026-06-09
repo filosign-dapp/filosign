@@ -79,7 +79,8 @@ export function useFieldDraftSync(options: {
 	);
 
 	const isHydrating =
-		draftLoading || (Boolean(pieceCid) && serverDraft === undefined);
+		Boolean(signDraftPieceCid) &&
+		(draftLoading || (Boolean(pieceCid) && serverDraft === undefined));
 
 	return {
 		completedFieldIds,

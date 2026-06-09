@@ -17,19 +17,26 @@ export function useSignDocumentController() {
 	const signingMeta = useSignSigningMeta(file, identity.signerAddress);
 	const viewer = useSignViewer(file);
 
+	const placementManifest =
+		viewer.fileData?.placementManifest ?? file?.placementManifest ?? null;
+
 	const placementParsed = useMemo(
 		() =>
 			parsePlacementManifestForSigner(
-				viewer.fileData?.placementManifest,
+				placementManifest,
 				identity.signerPlacementEmail,
 			),
-		[viewer.fileData?.placementManifest, identity.signerPlacementEmail],
+		[placementManifest, identity.signerPlacementEmail],
 	);
 
 	const fieldSession = useSignFieldSession({
 		pieceCid,
-		canPersistDraft: Boolean(file?.participantAccess?.canDecrypt),
+		canPersistDraft:
+			Boolean(file?.participantAccess?.canDecrypt) &&
+			!signingMeta.alreadySigned,
 		alreadySigned: signingMeta.alreadySigned,
+		signedFieldCompletions: file?.fieldCompletions,
+		signerAddress: identity.signerAddress,
 		myPlacementFields: placementParsed.myFields,
 	});
 

@@ -30,18 +30,21 @@ export function parsePlacementManifestForSigner(
 		myFields: [],
 		requiredFields: [],
 	};
-	if (!manifest || !signerEmail) return empty;
+	if (!manifest) return empty;
 
 	const parsed = zPlacementManifest.safeParse(manifest);
 	if (!parsed.success) return empty;
 
+	const allFields = parsed.data.fields;
+	if (!signerEmail?.trim()) {
+		return { allFields, myFields: [], requiredFields: [] };
+	}
+
 	const email = signerEmail.trim().toLowerCase();
-	const myFields = parsed.data.fields.filter(
-		(f) => f.assignedRecipientEmail === email,
-	);
+	const myFields = allFields.filter((f) => f.assignedRecipientEmail === email);
 
 	return {
-		allFields: parsed.data.fields,
+		allFields,
 		myFields,
 		requiredFields: myFields.filter((f) => f.required),
 	};

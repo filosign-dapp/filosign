@@ -6,9 +6,11 @@ import { useSignDraft } from "@filosign/react/files";
 import type {
 	FieldCompletion,
 	FieldCompletionMap,
+	FieldCompletionWireRow,
 	PlacementField,
 } from "@filosign/shared";
 import {
+	fieldCompletionStateFromWireRows,
 	fieldCompletionStatus,
 	fieldHasCompletionValue,
 } from "@filosign/shared";
@@ -33,10 +35,18 @@ export function useSignFieldSession(options: {
 	pieceCid: string | undefined;
 	canPersistDraft: boolean;
 	alreadySigned: boolean;
+	signedFieldCompletions?: FieldCompletionWireRow[];
+	signerAddress?: `0x${string}`;
 	myPlacementFields: PlacementField[];
 }) {
-	const { pieceCid, canPersistDraft, alreadySigned, myPlacementFields } =
-		options;
+	const {
+		pieceCid,
+		canPersistDraft,
+		alreadySigned,
+		signedFieldCompletions,
+		signerAddress,
+		myPlacementFields,
+	} = options;
 	const signDraftPieceCid = canPersistDraft ? pieceCid : undefined;
 	const captureAppEvent = useCaptureAppEvent();
 
@@ -57,6 +67,34 @@ export function useSignFieldSession(options: {
 		serverDraft,
 		draftLoading,
 	});
+
+	const myFieldIds = useMemo(
+		() => myPlacementFields.map((field) => field.id),
+		[myPlacementFields],
+	);
+
+	useEffect(() => {
+		if (!alreadySigned || !pieceCid || !signerAddress) return;
+		if (!signedFieldCompletions?.length) return;
+
+		const signed = fieldCompletionStateFromWireRows({
+			rows: signedFieldCompletions,
+			signerAddress,
+			fieldIds: myFieldIds,
+		});
+		if (signed.completedFieldIds.length === 0) return;
+
+		setCompletedFieldIds(signed.completedFieldIds);
+		setFieldCompletions(signed.fieldCompletions);
+	}, [
+		alreadySigned,
+		pieceCid,
+		signerAddress,
+		signedFieldCompletions,
+		myFieldIds,
+		setCompletedFieldIds,
+		setFieldCompletions,
+	]);
 
 	const { resolveFieldCompletion } = useFieldProvisioning({
 		signDraftPieceCid,

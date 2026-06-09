@@ -6,6 +6,7 @@ import {
 	canLazyProvisionRequiredVisualFields,
 	canSubmitPlacementSign,
 	fieldCompleteForSubmit,
+	fieldCompletionStateFromWireRows,
 	fieldCompletionStatus,
 	parsePlacementManifestForSigner,
 	requiredFieldCompletionProgress,
@@ -74,6 +75,13 @@ describe("parsePlacementManifestForSigner", () => {
 		expect(
 			parsePlacementManifestForSigner(null, "signer@example.com").myFields,
 		).toHaveLength(0);
+	});
+
+	test("returns all fields when signer email is missing", () => {
+		const parsed = parsePlacementManifestForSigner(manifest, null);
+		expect(parsed.allFields).toHaveLength(2);
+		expect(parsed.myFields).toHaveLength(0);
+		expect(parsed.requiredFields).toHaveLength(0);
 	});
 });
 
@@ -244,6 +252,45 @@ describe("canSubmitPlacementSign", () => {
 				completedFieldIds: ["txt-1"],
 			}),
 		).toBe(true);
+	});
+});
+
+describe("fieldCompletionStateFromWireRows", () => {
+	test("filters by signer and field ids", () => {
+		const rows = [
+			{
+				fieldId: "sig-1",
+				signer: "0xabc",
+				valueKind: "visual" as const,
+				sourceArtifactId: null,
+				storageKey: "snap/sig.png",
+				contentSha256: `0x${"a".repeat(64)}`,
+				textValue: null,
+				previewUrl: "https://example.com/sig.png",
+			},
+			{
+				fieldId: "sig-2",
+				signer: "0xdef",
+				valueKind: "visual" as const,
+				sourceArtifactId: null,
+				storageKey: "snap/other.png",
+				contentSha256: `0x${"b".repeat(64)}`,
+				textValue: null,
+				previewUrl: null,
+			},
+		];
+
+		const mine = fieldCompletionStateFromWireRows({
+			rows,
+			signerAddress: "0xAbC",
+			fieldIds: ["sig-1", "sig-2"],
+		});
+
+		expect(mine.completedFieldIds).toEqual(["sig-1"]);
+		expect(mine.fieldCompletions["sig-1"]?.previewUrl).toBe(
+			"https://example.com/sig.png",
+		);
+		expect(mine.fieldCompletions["sig-2"]).toBeUndefined();
 	});
 });
 

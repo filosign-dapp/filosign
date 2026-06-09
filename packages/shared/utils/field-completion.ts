@@ -129,6 +129,30 @@ export function enrichFieldCompletionMap(
 	return changed ? out : map;
 }
 
+/** Signed piece detail wire rows → session map for one signer (optional field filter). */
+export function fieldCompletionStateFromWireRows(args: {
+	rows: readonly FieldCompletionWireRow[];
+	signerAddress?: string;
+	fieldIds?: readonly string[];
+}): {
+	completedFieldIds: string[];
+	fieldCompletions: FieldCompletionMap;
+} {
+	const signer = args.signerAddress?.toLowerCase();
+	const fieldIdSet = args.fieldIds ? new Set(args.fieldIds) : null;
+	const completedFieldIds: string[] = [];
+	const fieldCompletions: FieldCompletionMap = {};
+
+	for (const row of args.rows) {
+		if (signer && row.signer?.toLowerCase() !== signer) continue;
+		if (fieldIdSet && !fieldIdSet.has(row.fieldId)) continue;
+		fieldCompletions[row.fieldId] = row;
+		completedFieldIds.push(row.fieldId);
+	}
+
+	return { completedFieldIds, fieldCompletions };
+}
+
 export const VISUAL_FIELD_TYPES = ["signature", "initial"] as const;
 export const AUTO_FIELD_TYPES = ["date", "name", "email"] as const;
 export const TEXT_FIELD_TYPES = ["text"] as const;

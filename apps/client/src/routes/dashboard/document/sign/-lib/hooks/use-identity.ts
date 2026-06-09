@@ -14,17 +14,35 @@ export function useSignIdentity(file: SignFile | undefined) {
 	const signerPlacementEmail = useMemo(() => {
 		const fromProfile = userProfile?.email?.trim();
 		if (fromProfile) return normalizePlacementRecipientEmail(fromProfile);
-		const row = file?.signers?.find((s) => {
-			if (typeof s === "string" || !signerAddress) return false;
-			return s.wallet.toLowerCase() === signerAddress.toLowerCase();
-		});
-		if (row && typeof row === "object" && row.email?.trim()) {
+
+		const walletNorm = signerAddress?.toLowerCase();
+		const row = file?.signers?.find(
+			(s) => walletNorm && s.wallet.toLowerCase() === walletNorm,
+		);
+		if (row?.email?.trim()) {
 			return normalizePlacementRecipientEmail(row.email);
 		}
+
+		const senderWallet = file?.sender?.toLowerCase();
+		if (walletNorm && senderWallet === walletNorm) {
+			const senderRow = file?.signers?.find(
+				(s) => s.wallet.toLowerCase() === senderWallet && s.email?.trim(),
+			);
+			if (senderRow?.email) {
+				return normalizePlacementRecipientEmail(senderRow.email);
+			}
+		}
+
 		const walletEmail = user?.email?.address?.trim();
 		if (walletEmail) return normalizePlacementRecipientEmail(walletEmail);
 		return null;
-	}, [userProfile?.email, file?.signers, signerAddress, user?.email?.address]);
+	}, [
+		userProfile?.email,
+		file?.signers,
+		file?.sender,
+		signerAddress,
+		user?.email?.address,
+	]);
 
 	return { user, userProfile, signerAddress, signerPlacementEmail };
 }

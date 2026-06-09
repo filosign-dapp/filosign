@@ -28,6 +28,7 @@ import {
 	resolveDraftReviewWarmPanel,
 	warmPanelStatusMessage,
 } from "@/src/routes/draft/review/-lib/hooks/resolve-warm-panel";
+import type { DecryptedDraftReview } from "@/src/routes/draft/review/-lib/types";
 import { executeSwitchAccountLogout } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
 
 export type DraftReviewWarmPanel =
@@ -78,7 +79,7 @@ export function useDraftReviewWarmUnlock(token: string) {
 			!isRegistered.isPending,
 	});
 
-	const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
+	const [decrypted, setDecrypted] = useState<DecryptedDraftReview | null>(null);
 	const [decryptError, setDecryptError] = useState<string | null>(null);
 	const [missingSeedHint, setMissingSeedHint] = useState(false);
 	const autoWalletLoginRef = useRef(false);
@@ -114,7 +115,7 @@ export function useDraftReviewWarmUnlock(token: string) {
 		!inviteMatchesCurrentUser;
 
 	useEffect(() => {
-		setPdfBytes(null);
+		setDecrypted(null);
 		setDecryptError(null);
 		setMissingSeedHint(false);
 		autoDecryptStartedRef.current = false;
@@ -183,12 +184,15 @@ export function useDraftReviewWarmUnlock(token: string) {
 		setDecryptError(null);
 		try {
 			const res = await decryptWarm.mutateAsync({ inviteToken: token });
-			const doc = res.documents[0];
-			if (doc) {
-				setPdfBytes(doc.bytes);
-			} else {
+			if (res.documents.length === 0) {
 				setDecryptError("No documents found in this draft.");
+				return;
 			}
+			setDecrypted({
+				title: res.title,
+				snapshot: res.snapshot,
+				documents: res.documents,
+			});
 		} catch (e) {
 			if (
 				e instanceof Error &&
@@ -210,7 +214,7 @@ export function useDraftReviewWarmUnlock(token: string) {
 	useEffect(() => {
 		if (!active || !isWarm || shouldSwitchAccount) return;
 		if (!authenticated || !apiSession.data || !cryptoUnlocked.data) return;
-		if (autoDecryptStartedRef.current || pdfBytes) return;
+		if (autoDecryptStartedRef.current || decrypted) return;
 		autoDecryptStartedRef.current = true;
 		void runDecrypt();
 	}, [
@@ -220,7 +224,7 @@ export function useDraftReviewWarmUnlock(token: string) {
 		authenticated,
 		apiSession.data,
 		cryptoUnlocked.data,
-		pdfBytes,
+		decrypted,
 		runDecrypt,
 	]);
 
@@ -242,7 +246,7 @@ export function useDraftReviewWarmUnlock(token: string) {
 				tryingWalletUnlock: cryptoRequired.tryingWalletUnlock,
 				missingSeedHint,
 				decryptPending: decryptWarm.isPending,
-				pdfBytes,
+				decrypted,
 				decryptError,
 			}),
 		[
@@ -261,7 +265,7 @@ export function useDraftReviewWarmUnlock(token: string) {
 			cryptoRequired.tryingWalletUnlock,
 			missingSeedHint,
 			decryptWarm.isPending,
-			pdfBytes,
+			decrypted,
 			decryptError,
 		],
 	);
@@ -277,7 +281,7 @@ export function useDraftReviewWarmUnlock(token: string) {
 		payload,
 		warmPanel,
 		warmStatusMessage,
-		pdfBytes,
+		decrypted,
 		decryptError,
 		shouldSwitchAccount,
 		inviteEmail,

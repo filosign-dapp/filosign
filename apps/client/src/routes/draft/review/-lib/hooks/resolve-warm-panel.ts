@@ -1,4 +1,5 @@
 import type { DraftReviewWarmPanel } from "@/src/routes/draft/review/-lib/hooks/use-draft-review-warm-unlock";
+import type { DecryptedDraftReview } from "@/src/routes/draft/review/-lib/types";
 
 type WarmPanelInput = {
 	active: boolean;
@@ -16,7 +17,7 @@ type WarmPanelInput = {
 	tryingWalletUnlock: boolean;
 	missingSeedHint: boolean;
 	decryptPending: boolean;
-	pdfBytes: Uint8Array | null;
+	decrypted: DecryptedDraftReview | null;
 	decryptError: string | null;
 };
 
@@ -47,7 +48,7 @@ export function resolveDraftReviewWarmPanel(
 	}
 	if (!input.cryptoUnlockedData) return "busy";
 	if (input.decryptPending) return "decrypting";
-	if (input.pdfBytes) return "ready";
+	if (input.decrypted) return "ready";
 	if (input.decryptError) return "decryptFailed";
 	return "decrypting";
 }

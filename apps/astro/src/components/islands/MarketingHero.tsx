@@ -1,5 +1,4 @@
 import { SPRING_TOKENS } from "@filosign/motion";
-import { CircleIcon } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
 import { landingMedia } from "../../config/landing-media";
 import { cn } from "../../lib/cn";
@@ -7,9 +6,6 @@ import { marketingHeroSectionClass } from "../../lib/marketing-layout";
 import MarketingCtaButtons from "./MarketingCtaButtons";
 import MotionAwareVideo from "./MotionAwareVideo";
 import { MotionProvider } from "./MotionProvider";
-
-const badgeClass =
-	"group/badge inline-flex h-fit max-w-full shrink-0 items-center justify-center gap-1 overflow-hidden rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium text-balance bg-primary text-primary-foreground";
 
 export default function MarketingHero() {
 	const reducedMotion = useReducedMotion();
@@ -33,25 +29,6 @@ export default function MarketingHero() {
 						delay: introDelay,
 					}}
 				>
-					<motion.div
-						initial={reducedMotion ? false : { opacity: 0, y: 20 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{
-							...SPRING_TOKENS.soft,
-							delay: itemDelay,
-						}}
-						className="self-start group"
-					>
-						<span className={badgeClass}>
-							<CircleIcon
-								className="size-4 animate-pulse text-secondary"
-								weight="fill"
-								aria-hidden
-							/>{" "}
-							Private launch
-						</span>
-					</motion.div>
-
 					<motion.h1
 						initial={reducedMotion ? false : { opacity: 0, y: 20 }}
 						animate={{ opacity: 1, y: 0 }}

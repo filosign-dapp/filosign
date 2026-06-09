@@ -2,14 +2,7 @@ import {
 	CLIENT_ANALYTICS_EVENTS,
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
-import { CheckCircleIcon } from "@phosphor-icons/react";
 import { useEffect } from "react";
-import env from "@/src/env";
-import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
-import {
-	buildChannelShareLinks,
-	ShareViaButtons,
-} from "@/src/lib/components/app/share-via-buttons";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Dialog,
@@ -19,42 +12,30 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/src/lib/components/ui/dialog";
+import { ColdSharePanel } from "@/src/lib/domains/invites/-components/cold-share-panel";
+import { WarmSharePanel } from "@/src/lib/domains/invites/-components/warm-share-panel";
+import type {
+	ColdSharePackage,
+	WarmShareSummary,
+} from "@/src/lib/domains/invites/types";
 
-export type ColdSharePackage = {
-	emails: string[];
-	phrase: string;
-	magicLink: string;
-};
-
-function buildFullUrl(share: ColdSharePackage): string {
-	const base = share.magicLink;
-	return base;
-}
-
-function shareLinks(share: ColdSharePackage) {
-	const fullUrl = buildFullUrl(share);
-	const message = `You received a secure Filosign document.\n\nAccess link: ${fullUrl}\n\nFilosign also sends this magic link by email.`;
-	return buildChannelShareLinks({
-		message,
-		url: fullUrl,
-		emailTo: share.emails,
-		subject: "Secure document waiting for you",
-		telegramText: "Secure document",
-	});
-}
+export type {
+	ColdSharePackage,
+	WarmShareSummary,
+} from "@/src/lib/domains/invites/types";
 
 export function ColdShareDialog(props: {
 	open: boolean;
-	/** When null while open, shows warm-recipient success (no secret code). */
+	/** Cold invite package when any recipients need a secret code. */
 	share: ColdSharePackage | null;
+	/** Warm roster summary for registered recipients (email-only unlock). */
+	warmSummary?: WarmShareSummary | null;
 	onDone: () => void;
 }) {
 	const captureAppEvent = useCaptureAppEvent();
 	const share = props.share;
+	const warmSummary = props.warmSummary ?? null;
 	const isColdVariant = Boolean(share);
-	const links = share ? shareLinks(share) : null;
-
-	const fullUrl = share ? buildFullUrl(share) : "";
 
 	useEffect(() => {
 		if (!props.open) return;
@@ -65,86 +46,43 @@ export function ColdShareDialog(props: {
 		}
 	}, [props.open, share, captureAppEvent]);
 
+	const title = isColdVariant ? "Share access" : "Envelope sent";
+	const description = isColdVariant
+		? "Deliver the secret code to cold recipients. Warm recipients are notified by email."
+		: "Your envelope is live. Registered recipients can sign from their inbox.";
+
 	return (
 		<Dialog open={props.open}>
-			<DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-xl">
+			<DialogContent
+				className="gap-0 overflow-hidden p-0 sm:max-w-lg"
+				showCloseButton={false}
+			>
 				<div className="border-b border-border/50 bg-muted/20 px-6 py-5">
-					<DialogHeader className="gap-1 space-y-0">
-						<DialogTitle className="text-base font-medium tracking-tight">
-							Share Access
+					<DialogHeader className="gap-1.5 space-y-0 text-left">
+						<DialogTitle className="font-manrope text-lg font-semibold tracking-tight">
+							{title}
 						</DialogTitle>
-						<DialogDescription className="text-xs leading-relaxed">
-							{isColdVariant
-								? "We email recipients the magic link automatically. Share the secret code too, otherwise they cannot open the document."
-								: "Your file has been shared with the recipients."}
+						<DialogDescription className="text-sm leading-relaxed">
+							{description}
 						</DialogDescription>
 					</DialogHeader>
 				</div>
 
-				<div className="space-y-4 px-6 py-5">
+				<div className="overflow-y-auto px-6 py-5">
 					{isColdVariant && share ? (
-						<>
-							<div className="rounded-lg border border-border bg-muted/25 p-3">
-								<p className="text-xs text-muted-foreground">
-									Recipients: {share.emails.join(", ")}
-								</p>
-							</div>
-
-							{env.VITE_CHAIN === "local" && (
-								<div className="space-y-2">
-									<p className="text-xs font-medium text-muted-foreground">
-										Invite link
-									</p>
-									<div className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2">
-										<code className="flex-1 break-all font-mono text-xs text-muted-foreground">
-											{fullUrl}
-										</code>
-										<CopyButton text={fullUrl} className="shrink-0" />
-									</div>
-								</div>
-							)}
-
-							<div className="space-y-2">
-								<p className="text-xs font-medium text-muted-foreground">
-									Secret code
-								</p>
-								<div className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2">
-									<code className="flex-1 break-all font-mono text-sm">
-										{share.phrase}
-									</code>
-									<CopyButton text={share.phrase} className="shrink-0" />
-								</div>
-							</div>
-
-							{links ? (
-								<div className="flex items-center gap-2">
-									<p className="mr-1 text-xs text-muted-foreground">
-										Share via
-									</p>
-									<ShareViaButtons links={links} />
-								</div>
-							) : null}
-
-							<p className="text-xs text-muted-foreground">
-								Without the secret code, recipients cannot access this document.
-							</p>
-						</>
-					) : (
-						<div className="flex flex-col items-center gap-3 py-4 text-center">
-							<CheckCircleIcon
-								className="size-12 text-green-600"
-								weight="fill"
-								aria-hidden
-							/>
-							<p className="text-sm text-muted-foreground">
-								Recipients will be notified by email.
-							</p>
-						</div>
-					)}
+						<ColdSharePanel share={share} warmSummary={warmSummary} />
+					) : warmSummary ? (
+						<WarmSharePanel summary={warmSummary} />
+					) : null}
 				</div>
 
-				<DialogFooter className="border-t border-border/50 px-6 py-4">
-					<Button type="button" variant="primary" onClick={props.onDone}>
+				<DialogFooter className="border-t border-border/50 bg-muted/10 px-6 py-4">
+					<Button
+						type="button"
+						variant="primary"
+						className="w-full sm:w-auto"
+						onClick={props.onDone}
+					>
 						{isColdVariant ? "Done" : "Continue to dashboard"}
 					</Button>
 				</DialogFooter>

@@ -104,6 +104,7 @@ function AddSignDialogs() {
 		<ColdShareDialog
 			open={chrome.postSendDialogOpen}
 			share={chrome.postSendShare}
+			warmSummary={chrome.postSendWarmSummary}
 			onDone={chrome.handlePostSendDone}
 		/>
 	);

@@ -16,7 +16,10 @@ import type {
 	SignatureField,
 } from "@/src/lib/domains/files/envelope-form-types";
 import type { PlacementFieldRect } from "@/src/lib/domains/files/field-box";
-import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
+import type {
+	ColdSharePackage,
+	WarmShareSummary,
+} from "@/src/lib/domains/invites/types";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { useWalletUsdcBalance } from "@/src/lib/web3/use-wallet-usdc-balance";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
@@ -35,6 +38,7 @@ export function useSendEnvelope(args: {
 	setSendStatus: (status: SendStatus) => void;
 	setPostSendDialogOpen: (open: boolean) => void;
 	setPostSendShare: (share: ColdSharePackage | null) => void;
+	setPostSendWarmSummary: (summary: WarmShareSummary | null) => void;
 }) {
 	const {
 		createForm,
@@ -45,6 +49,7 @@ export function useSendEnvelope(args: {
 		setSendStatus,
 		setPostSendDialogOpen,
 		setPostSendShare,
+		setPostSendWarmSummary,
 	} = args;
 
 	const captureAppEvent = useCaptureAppEvent();
@@ -112,6 +117,7 @@ export function useSendEnvelope(args: {
 			setCreateForm,
 			setSendStatus,
 			setPostSendShare,
+			setPostSendWarmSummary,
 			setPostSendDialogOpen,
 			isSendingRef,
 		});
@@ -136,6 +142,7 @@ export function useSendEnvelope(args: {
 		setCreateForm,
 		setSendStatus,
 		setPostSendShare,
+		setPostSendWarmSummary,
 		setPostSendDialogOpen,
 	]);
 

@@ -15,7 +15,10 @@ import {
 	defaultPlacementFieldRect,
 	normalizeSignatureFieldsList,
 } from "@/src/lib/domains/files/field-box";
-import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
+import type {
+	ColdSharePackage,
+	WarmShareSummary,
+} from "@/src/lib/domains/invites/types";
 import {
 	useStorePersist,
 	useStorePersistHydrated,
@@ -96,6 +99,8 @@ export function useAddSignController() {
 	const [postSendShare, setPostSendShare] = useState<ColdSharePackage | null>(
 		null,
 	);
+	const [postSendWarmSummary, setPostSendWarmSummary] =
+		useState<WarmShareSummary | null>(null);
 
 	const suppressEmptyDraftRedirect =
 		sendStatus === "loading" ||
@@ -522,6 +527,7 @@ export function useAddSignController() {
 		setSendStatus,
 		setPostSendDialogOpen,
 		setPostSendShare,
+		setPostSendWarmSummary,
 	});
 
 	const currentDocumentFields = useMemo(
@@ -546,6 +552,7 @@ export function useAddSignController() {
 	const handlePostSendDone = useCallback(() => {
 		setPostSendDialogOpen(false);
 		setPostSendShare(null);
+		setPostSendWarmSummary(null);
 		clearCreateForm();
 		navigate({ to: "/dashboard" });
 	}, [clearCreateForm, navigate]);
@@ -563,6 +570,7 @@ export function useAddSignController() {
 		sendStatus,
 		postSendDialogOpen,
 		postSendShare,
+		postSendWarmSummary,
 		suppressEmptyDraftRedirect,
 		selectedField,
 		selectedFieldIds,

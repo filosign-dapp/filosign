@@ -81,6 +81,7 @@ type AddSignChromeContextValue = Pick<
 	| "signatureFields"
 	| "postSendDialogOpen"
 	| "postSendShare"
+	| "postSendWarmSummary"
 	| "handlePostSendDone"
 	| "undo"
 	| "redo"
@@ -254,6 +255,7 @@ export function AddSignProvider({
 			signatureFields: controller.signatureFields,
 			postSendDialogOpen: controller.postSendDialogOpen,
 			postSendShare: controller.postSendShare,
+			postSendWarmSummary: controller.postSendWarmSummary,
 			handlePostSendDone: controller.handlePostSendDone,
 			undo: controller.undo,
 			redo: controller.redo,
@@ -269,6 +271,7 @@ export function AddSignProvider({
 			controller.signatureFields,
 			controller.postSendDialogOpen,
 			controller.postSendShare,
+			controller.postSendWarmSummary,
 			controller.handlePostSendDone,
 			controller.undo,
 			controller.redo,

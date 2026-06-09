@@ -26,7 +26,10 @@ import type {
 	SignatureField,
 } from "@/src/lib/domains/files/envelope-form-types";
 import type { PlacementFieldRect } from "@/src/lib/domains/files/field-box";
-import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
+import type {
+	ColdSharePackage,
+	WarmShareSummary,
+} from "@/src/lib/domains/invites/types";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { SendEnvelopeError } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
@@ -38,6 +41,7 @@ import {
 } from "./build-payload";
 import {
 	buildPostSendShare,
+	buildPostSendWarmSummary,
 	selfSignAfterSend,
 	trackEnvelopeSendSucceeded,
 } from "./complete";
@@ -82,6 +86,7 @@ export type EnvelopeSendDeps = {
 		status: "idle" | "loading" | "signing" | "success" | "error",
 	) => void;
 	setPostSendShare: (share: ColdSharePackage | null) => void;
+	setPostSendWarmSummary: (summary: WarmShareSummary | null) => void;
 	setPostSendDialogOpen: (open: boolean) => void;
 	isSendingRef: React.MutableRefObject<boolean>;
 };
@@ -158,6 +163,7 @@ export async function runEnvelopeSend(
 		setCreateForm,
 		setSendStatus,
 		setPostSendShare,
+		setPostSendWarmSummary,
 		setPostSendDialogOpen,
 		isSendingRef,
 	} = args;
@@ -299,6 +305,7 @@ export async function runEnvelopeSend(
 		});
 
 		setPostSendShare(buildPostSendShare(result));
+		setPostSendWarmSummary(buildPostSendWarmSummary(result, createForm));
 		setPostSendDialogOpen(true);
 	} catch (error) {
 		setSendStatus("error");

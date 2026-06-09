@@ -9,13 +9,17 @@ import type {
 	CreateForm,
 	SignatureField,
 } from "@/src/lib/domains/files/envelope-form-types";
-import type { ColdSharePackage } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
+import type {
+	ColdSharePackage,
+	WarmShareSummary,
+} from "@/src/lib/domains/invites/types";
 import { suppressGlobalErrorToast } from "@/src/lib/errors";
 import {
 	resolveSelfSignerOnRoster,
 	selfAssignedFieldIds,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
+import { isColdRecipient } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 
 export async function selfSignAfterSend(args: {
 	createForm: CreateForm;
@@ -58,6 +62,35 @@ export async function selfSignAfterSend(args: {
 			"Document sent, but signing your fields failed. Open the document from your dashboard to finish signing.",
 		);
 	}
+}
+
+export function buildPostSendWarmSummary(
+	result: SendFileResult,
+	createForm: CreateForm,
+): WarmShareSummary | null {
+	if (!result.success || !result.pieceCid) return null;
+
+	const warmRecipients = (createForm.recipients ?? [])
+		.filter((recipient) => !isColdRecipient(recipient))
+		.map((recipient) => ({
+			email: recipient.email.trim(),
+			name: recipient.name?.trim() || undefined,
+			role: recipient.role,
+		}));
+
+	if (warmRecipients.length === 0) return null;
+
+	const envelopeName =
+		createForm.documents[0]?.name?.trim() ||
+		createForm.emailSubject?.trim() ||
+		"Envelope";
+
+	return {
+		envelopeName,
+		pieceCid: result.pieceCid,
+		documentCount: createForm.documents.length,
+		recipients: warmRecipients,
+	};
 }
 
 export function buildPostSendShare(

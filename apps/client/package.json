@@ -21,7 +21,7 @@
 		"@dnd-kit/core": "6.3.1",
 		"@dnd-kit/sortable": "10.0.0",
 		"@dnd-kit/utilities": "3.2.2",
-		"@filosign/contracts": "workspace:*",
+		"@filosign/evm": "workspace:*",
 		"@filosign/crypto-utils": "workspace:*",
 		"@filosign/entitlements": "workspace:*",
 		"@filosign/errors": "workspace:*",

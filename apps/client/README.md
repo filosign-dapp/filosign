@@ -29,7 +29,7 @@ From repo root (see [SCRIPTS.md](../../SCRIPTS.md)):
 |----------------------|--------------|
 | Routes, layouts, `-components/`, `-lib/hooks/` controllers | oRPC handlers, DB, indexer (`apps/server`) |
 | `lib/filosign/filosign-provider.tsx` (thirdweb → viem wallet + WASM into SDK provider) | Hook implementations (`packages/react-sdk`) |
-| `lib/domains/*` cross-route UX (PDF viewer, compliance export, invites UI) | Contract source (`apps/contracts`) |
+| `lib/domains/*` cross-route UX (PDF viewer, compliance export, invites UI) | Contract source (`oss/packages/contracts`) |
 | App-only query keys (`filosignKeys.decryptedFileMetadata`, …) via re-export | Session seed, JWT, on-chain reads (SDK `filosignKeys`) |
 
 **HTTP exceptions** (allowed `fetch` outside oRPC):

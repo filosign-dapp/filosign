@@ -1,4 +1,4 @@
-import type { ChainKey } from "@filosign/contracts";
+import type { ChainKey } from "@filosign/evm";
 import {
 	resolveChainRpcHttpUrl,
 	warnIfChainRpcUrlIgnored,

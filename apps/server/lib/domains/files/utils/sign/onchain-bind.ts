@@ -1,5 +1,5 @@
-import { computeCidIdentifier } from "@filosign/contracts";
 import { throwAppError } from "@filosign/errors/server";
+import { computeCidIdentifier } from "@filosign/evm";
 import type { Address } from "viem";
 import { getAddress, zeroAddress } from "viem";
 import {

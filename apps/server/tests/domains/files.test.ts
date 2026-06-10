@@ -109,7 +109,7 @@ describe("files", () => {
 
 			test("eip712signature supports per-registry verifyingContract override", () => {
 				const src = readFileSync(
-					join(repoRoot, "apps/contracts/services/utils.ts"),
+					join(repoRoot, "packages/evm/services/utils.ts"),
 					"utf8",
 				);
 				expect(src).toContain("options?: { verifyingContract?:");

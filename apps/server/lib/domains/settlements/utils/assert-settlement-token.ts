@@ -1,5 +1,5 @@
-import { LOCAL_MOCK_USDC_ADDRESS } from "@filosign/contracts";
 import { throwAppError } from "@filosign/errors/server";
+import { LOCAL_MOCK_USDC_ADDRESS } from "@filosign/evm";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import { getAddress } from "viem";
 import config from "@/config";

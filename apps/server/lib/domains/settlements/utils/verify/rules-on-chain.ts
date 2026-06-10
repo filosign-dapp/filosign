@@ -1,5 +1,5 @@
-import { computeCidIdentifier } from "@filosign/contracts";
 import { throwAppError } from "@filosign/errors/server";
+import { computeCidIdentifier } from "@filosign/evm";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import { eq } from "drizzle-orm";
 import type { Address, Hex } from "viem";

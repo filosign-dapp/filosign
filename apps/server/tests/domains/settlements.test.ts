@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { LOCAL_MOCK_USDC_ADDRESS } from "@filosign/contracts";
 import type { EntitlementContext } from "@filosign/entitlements";
+import { LOCAL_MOCK_USDC_ADDRESS } from "@filosign/evm";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { getAddress } from "viem";

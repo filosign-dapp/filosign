@@ -1,4 +1,4 @@
-import { type ChainKey, getContractAbi } from "@filosign/contracts";
+import { type ChainKey, getContractAbi } from "@filosign/evm";
 import type { Address } from "viem";
 import config from "@/config";
 import { evmClient, fsPaymentValidatorAt } from "@/lib/platform/evm";

@@ -1,11 +1,11 @@
-import type { FilosignContracts } from "@filosign/contracts";
-import { computeCidIdentifier, eip712signature } from "@filosign/contracts";
 import {
 	computeCommitment,
 	jsonStringify,
 	signatures,
 	toHex,
 } from "@filosign/crypto-utils";
+import type { FilosignContracts } from "@filosign/evm";
+import { computeCidIdentifier, eip712signature } from "@filosign/evm";
 import {
 	completionsMerkleRootV1,
 	type FieldCompletionMap,

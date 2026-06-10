@@ -1,5 +1,3 @@
-import type { FilosignContracts } from "@filosign/contracts";
-import { computeCidIdentifier } from "@filosign/contracts";
 import {
 	encryption,
 	generateColdInvitePhrase,
@@ -8,6 +6,8 @@ import {
 	toHex,
 	wrapColdInviteDek,
 } from "@filosign/crypto-utils";
+import type { FilosignContracts } from "@filosign/evm";
+import { computeCidIdentifier } from "@filosign/evm";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import type { Hex } from "viem";
 import { getAddress } from "viem";

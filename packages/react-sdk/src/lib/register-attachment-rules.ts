@@ -1,5 +1,5 @@
-import type { FilosignContracts } from "@filosign/contracts";
-import { computeCidIdentifier } from "@filosign/contracts";
+import type { FilosignContracts } from "@filosign/evm";
+import { computeCidIdentifier } from "@filosign/evm";
 import type { SettlementReleaseType } from "@filosign/shared";
 import {
 	hashNormalizedSignerEmail,

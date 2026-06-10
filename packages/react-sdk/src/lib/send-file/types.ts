@@ -1,4 +1,4 @@
-import type { ChainKey, FilosignContracts } from "@filosign/contracts";
+import type { ChainKey, FilosignContracts } from "@filosign/evm";
 import type { PlacementManifest, RegisterRoutingInput } from "@filosign/shared";
 import type { Address, Hex } from "viem";
 import type { FilosignRpcQueryUtils } from "../../context/FilosignContext";

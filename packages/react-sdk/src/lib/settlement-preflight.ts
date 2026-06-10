@@ -1,4 +1,4 @@
-import type { FilosignContracts } from "@filosign/contracts";
+import type { FilosignContracts } from "@filosign/evm";
 import {
 	type Abi,
 	type AbiStateMutability,

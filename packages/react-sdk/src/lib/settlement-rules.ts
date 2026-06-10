@@ -1,5 +1,5 @@
-import type { FilosignContracts } from "@filosign/contracts";
-import { type ChainKey, getContractAbi } from "@filosign/contracts";
+import type { FilosignContracts } from "@filosign/evm";
+import { type ChainKey, getContractAbi } from "@filosign/evm";
 import type {
 	SettlementRecipientSource,
 	SettlementReleaseType,

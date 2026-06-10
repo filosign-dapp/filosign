@@ -2,7 +2,7 @@
 
 Use after code is green (`bun run sanity`) and before opening `app.filosign.xyz` traffic.
 
-Related: [`environments.md`](environments.md), [`apps/contracts/ARCHITECTURE.md`](../../apps/contracts/ARCHITECTURE.md), [`apps/server/SECRETS.md`](../../apps/server/SECRETS.md).
+Related: [`environments.md`](environments.md), [`oss/packages/contracts/ARCHITECTURE.md`](../../oss/packages/contracts/ARCHITECTURE.md), [`apps/server/SECRETS.md`](../../apps/server/SECRETS.md).
 
 ---
 
@@ -10,8 +10,8 @@ Related: [`environments.md`](environments.md), [`apps/contracts/ARCHITECTURE.md`
 
 ```bash
 bun run sanity                              # full CI (includes Hardhat)
-cd apps/contracts && bun run compile
-slither . --exclude-dependencies            # triage per apps/contracts/README.md
+bun run --cwd oss/packages/contracts compile
+cd oss/packages/contracts && slither . --exclude-dependencies   # triage per oss/packages/contracts/README.md
 ```
 
 **Slither:** `arbitrary-send-erc20` on `executePayout` is expected (pull from `rule.payer`). Document triage in PR/deploy notes.
@@ -31,10 +31,10 @@ slither . --exclude-dependencies            # triage per apps/contracts/README.m
 **Deploy:**
 
 ```bash
-bun run --cwd apps/contracts migrate:mainnet
+bun run contracts -- --migrate --mainnet
 ```
 
-This runs tests then deploys; regenerates `definitions/chains/mainnet/`, `definitions/abis/`, and `definitions/generated/mainnet.ts` (never hand-edit generated output).
+This runs tests then deploys; regenerates `packages/evm/definitions/chains/mainnet/`, `definitions/abis/`, and `definitions/generated/mainnet.ts` (never hand-edit generated output).
 
 **Verify on Base scan:**
 

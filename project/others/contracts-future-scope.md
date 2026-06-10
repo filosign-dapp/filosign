@@ -38,4 +38,4 @@ Server, DB, client, and auth only: fields/placement manifest, **reminders/expira
 
 ## Reference
 
-Implementation and deploy: [`apps/contracts/ARCHITECTURE.md`](../apps/contracts/ARCHITECTURE.md), [`apps/contracts/README.md`](../apps/contracts/README.md).
+Implementation and deploy: [`oss/packages/contracts/ARCHITECTURE.md`](../../oss/packages/contracts/ARCHITECTURE.md), [`oss/packages/contracts/README.md`](../../oss/packages/contracts/README.md), [`packages/evm/README.md`](../../packages/evm/README.md).

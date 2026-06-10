@@ -6,7 +6,7 @@ Ranked **high → low**. Keep bullets actionable; link detail docs in `project/e
 
 ## P0 — Urgent / gate launch
 
-- **Immutable v1 mainnet deploy:** `bun run --cwd apps/contracts migrate:mainnet` → verify `owner()`, `server()`, addresses on Base scan → [`launch/production-checklist.md`](launch/production-checklist.md)
+- **Immutable v1 mainnet deploy:** `bun run contracts -- --migrate --mainnet` → verify `owner()`, `server()`, addresses on Base scan → [`launch/production-checklist.md`](launch/production-checklist.md)
 - **Secrets & key custody:** server relay key (KMS), deployer (KMS), JWT, no keys in client. No .env at all.
 - **Support channel** (email, status page, SLA for paid tiers)!!!
 - **Analytics & consent:** PostHog/opt-in if EU traffic.

@@ -1,9 +1,0 @@
-{
-	"extends": "./tsconfig.json",
-	"compilerOptions": {
-		"types": ["node"],
-		"lib": ["es2020"]
-	},
-	"include": ["exports.ts", "definitions/**/*.ts", "services/**/*.ts"],
-	"exclude": ["test/**", "scripts/deploy.ts", "hardhat.config.ts", "env.ts"]
-}

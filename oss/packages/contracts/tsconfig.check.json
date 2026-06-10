@@ -1,0 +1,9 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"types": ["node", "bun"],
+		"lib": ["es2020"],
+		"noEmit": true
+	},
+	"include": ["scripts/interfaces.ts", "scripts/lib/**/*.ts"]
+}

@@ -16,7 +16,8 @@ Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-pack
 | ----------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | `apps/client`           | [README](apps/client/README.md)                                           | Thin Vite UI → `@filosign/react`                                      |
 | `apps/server`           | [README](apps/server/README.md)                                           | Hono, Drizzle, `/api/rpc`, `rpc.runtime`                              |
-| `apps/contracts`        | [README](apps/contracts/README.md) · [TESTING](apps/contracts/TESTING.md) | Solidity, `definitions/`, EIP-712; tests in `test/`                   |
+| `oss/packages/contracts` | [README](oss/packages/contracts/README.full.md) · [TESTING](oss/packages/contracts/TESTING.md) | Solidity source, Hardhat, tests; public `abis/` + `chains/` for verify |
+| `packages/evm`  | —                                                                         | Private deploy ops, addresses, `getContracts`, EIP-712 (`@filosign/evm`) |
 | `apps/astro`            | [README](apps/astro/README.md)                                            | Marketing — landing mocks in `src/components/marketing-mocks/`        |
 | `packages/react-sdk`    | [README](packages/react-sdk/README.md)                                    | `FilosignProvider`, typed `rpc`, `rpcQuery`, hooks                    |
 | `packages/shared`       | [AGENTS.md](packages/shared/AGENTS.md)                                    | Types, Zod, manifests (browser+server)                                |
@@ -36,7 +37,7 @@ Multi-package work: read every relevant row, then [Vertical slice](#vertical-sli
 
 | Rule                                                                                 | When                                                     |
 | ------------------------------------------------------------------------------------ | -------------------------------------------------------- |
-| [contracts-testing.mdc](.cursor/rules/contracts-testing.mdc)                         | `apps/contracts/test/` or `src/*.sol`                    |
+| [contracts-testing.mdc](.cursor/rules/contracts-testing.mdc)                         | `oss/packages/contracts/test/` or `src/*.sol`            |
 | [preamble.mdc](.cursor/rules/preamble.mdc)                                           | Discipline, verify before done                           |
 | [apps/web/patterns.mdc](.cursor/rules/apps/web/patterns.mdc)                         | `safe`/`tryCatch`, `respond`, Hono `Variables`           |
 | [app.mdc](.cursor/rules/app.mdc)                                                     | Never edit `definitions/` (generated)                    |
@@ -45,20 +46,20 @@ Multi-package work: read every relevant row, then [Vertical slice](#vertical-sli
 | [sprint-implementation-rulebook.md](.cursor/plans/sprint-implementation-rulebook.md) | Server infra Sprints 0–6 — layout, TDD, replace-not-shim |
 
 
-Workspaces: `apps/*`, `packages/*` ([package.json](package.json)).
+Workspaces: `apps/*`, `packages/*`, `oss/packages/contracts`, `oss/packages/protocol` ([package.json](package.json)).
 
 ## Flow
 
-`definitions/` ← deploy ← `.sol` → `getContracts` ([services/contracts.ts](apps/contracts/services/contracts.ts)) → server `[lib/platform/evm.ts](apps/server/lib/platform/evm.ts)` + SDK `[FilosignProvider](packages/react-sdk/src/context/FilosignProvider.tsx)` (`rpc.runtime` → `chainKey` + viem wallet from thirdweb) → hooks → client pages. Typed RPC: `[create-orpc-client.ts](packages/react-sdk/src/orpc/create-orpc-client.ts)` → `{apiBase}/api/rpc`. Client shell: `[filosign-provider.tsx](apps/client/src/lib/filosign/filosign-provider.tsx)` (thirdweb, `viemAdapter`, WASM, `VITE_SERVER_URL`). Client conventions: `[apps/client/README.md](apps/client/README.md)`. `@filosign/shared` → server, SDK, client; `@filosign/crypto-utils` → SDK, contracts.
+`packages/evm/` ← deploy scripts ← `.sol` (`oss/packages/contracts`) → `getContracts` ([services/contracts.ts](packages/evm/services/contracts.ts)) → server `[lib/platform/evm.ts](apps/server/lib/platform/evm.ts)` + SDK `[FilosignProvider](packages/react-sdk/src/context/FilosignProvider.tsx)` (`rpc.runtime` → `chainKey` + viem wallet from thirdweb) → hooks → client pages. Typed RPC: `[create-orpc-client.ts](packages/react-sdk/src/orpc/create-orpc-client.ts)` → `{apiBase}/api/rpc`. Client shell: `[filosign-provider.tsx](apps/client/src/lib/filosign/filosign-provider.tsx)` (thirdweb, `viemAdapter`, WASM, `VITE_SERVER_URL`). Client conventions: `[apps/client/README.md](apps/client/README.md)`. `@filosign/shared` → server, SDK, client; `@filosign/crypto-utils` → SDK, contracts.
 
 ## Boundaries
 
 - **HTTP (client):** `useFilosignContext().rpc` + `@filosign/react` hooks only. No `fetch`/axios to JSON API except: blob/doc bytes ([send-envelope.ts](apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope.ts)), static assets ([compliance-pdf/utils/images.ts](apps/client/src/lib/domains/files/compliance-pdf/utils/images.ts)), **PUT to `storage.presignPut` URLs** (no API body proxy).
 - **Settlements:** Server never custodies USDC. Client `registerRule` + `approve` on-chain; server indexes via `**settlements.registerForFile`**. Sign page Settle payment → `settlements.trySettle` (server relay); fallback Settle from wallet → `settlements.confirmSettlement`. Teams Pro: `updateRule` / `cancelRule` + post-send attach. `**files.proposeSignerReplacement` / `executeSignerReplacement` / `cancelSignerReplacement`** for signer swaps (pending + re-sign when partially signed). Daily cron syncs off-platform `executed` state. See `[lib/domains/settlements/](apps/server/lib/domains/settlements/)` and `[project/settlements/architecture-and-non-custody.md](project/settlements/architecture-and-non-custody.md)`.
 - **Logic:** UI `apps/client` | hooks/SDK `packages/react-sdk` | API/DB/relay `apps/server`.
-- **Imports:** Client uses minimal `@filosign/contracts` ([constants](apps/client/src/constants.ts)); prefer SDK/runtime for new code.
-- **Definitions:** Never hand-edit `apps/contracts/definitions/`. Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy). Redeploy / rebrand ops: `[project/contracts/envelope-registry-migration.md](project/contracts/envelope-registry-migration.md)`.
-- **Contracts v1 (immutable):** `FSEnvelopeRegistry` + `FSPaymentValidator` only; KMS = `FSEnvelopeRegistry.server`; identity/E2EE off-chain. See `[apps/contracts/ARCHITECTURE.md](apps/contracts/ARCHITECTURE.md)` and `[project/contracts-future-scope.md](project/contracts-future-scope.md)`.
+- **Imports:** App runtime uses `@filosign/evm` ([constants](apps/client/src/constants.ts)); OSS verify uses `@filosign/contracts/abis` and `/chains`.
+- **Contract manifests:** Never hand-edit `packages/evm/definitions/` (generated). Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy). Redeploy / rebrand ops: `[project/contracts/envelope-registry-migration.md](project/contracts/envelope-registry-migration.md)`.
+- **Contracts v1 (immutable):** `FSEnvelopeRegistry` + `FSPaymentValidator` only; KMS = `FSEnvelopeRegistry.server`; identity/E2EE off-chain. See `[oss/packages/contracts/ARCHITECTURE.md](oss/packages/contracts/ARCHITECTURE.md)` and `[project/contracts-future-scope.md](project/contracts-future-scope.md)`.
 
 ## API & oRPC
 
@@ -74,7 +75,7 @@ Mount: `[api/orpc/hono-mount.ts](apps/server/api/orpc/hono-mount.ts)` (`apiRoute
 
 ## Vertical slice
 
-1. Contracts `src` → compile → tests ([TESTING.md](apps/contracts/TESTING.md)) aligned in same PR.
+1. Contracts `src` → compile → tests ([TESTING.md](oss/packages/contracts/TESTING.md)) aligned in same PR.
 2. Server: oRPC `api/orpc/` + handlers + `fsContracts`; `file_settlement_rules` (legs jsonb); register routing on `files.register`; `settlements.registerForFile` / update / cancel; `files.proposeSignerReplacement` (+ execute/cancel); post-sign + `trySettle` auto-execute; daily cron backfill; compliance bundle v1.
 3. SDK: hooks + `useFilosignContext()` (`registerSettlementRulesOnChain`, `buildValidatedRegisterRouting`, `useSettlementsListByFile`, `useTrySettleSettlement`, `useManualSettlementPayout`, `useUpdateSettlementRule`, `useCancelSettlementRule`, `useProposeSignerReplacement`, `useExecuteSignerReplacement`, `useCancelSignerReplacement`).
 4. Client: UI only, `@filosign/react` (envelope routing/settlement create, sign-page settle/attach/update/cancel/amend).
@@ -86,7 +87,7 @@ All commands: **[SCRIPTS.md](SCRIPTS.md)** (or `bun run <script> -- --help`). Pr
 
 ## Commits
 
-**Only when the user explicitly asks.** Atomic batches (~≤5 paths or file changes per commit). Subject: `[SPRINT] - SUBFEATURE (<area>): description` — brackets = initiative (not package shorthand), e.g. `[CONTRACT TEST SUITE] - Fixtures (apps/contracts): shared deploy helpers`.
+**Only when the user explicitly asks.** Atomic batches (~≤5 paths or file changes per commit). Subject: `[SPRINT] - SUBFEATURE (<area>): description` — brackets = initiative (not package shorthand), e.g. `[CONTRACT TEST SUITE] - Fixtures (oss/packages/contracts): shared deploy helpers`.
 
 ## Skills
 

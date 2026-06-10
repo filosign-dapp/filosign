@@ -11,7 +11,7 @@ Where tests live, how to run them, and how to add new ones.
 | **`tests/support/`** | Mocks, fixtures, fakes — never imported from production |
 | **`tests/<area>/`** | Optional mirror of product areas (e.g. `tests/domains/`, `tests/platform/`) when structure helps |
 
-**Exception:** [`apps/contracts/test/`](apps/contracts/test/) uses Hardhat’s `test/` + `*.spec.ts` convention.
+**Exception:** [`oss/packages/contracts/test/`](oss/packages/contracts/test/) uses Hardhat’s `test/` + `*.spec.ts` convention.
 
 ## How to group test files
 
@@ -32,7 +32,7 @@ bun run --cwd apps/server test  # server only
 bun run --cwd packages/logger test
 ```
 
-Contract tests: `bun run --cwd apps/contracts test` (Hardhat).
+Contract tests: `bun run contracts -- test` (OSS Hardhat).
 
 Typecheck including tests: each workspace with `tests/` runs `tsc -p tsconfig.tests.json` as part of `check-types`.
 

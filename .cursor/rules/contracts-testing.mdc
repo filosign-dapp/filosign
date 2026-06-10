@@ -1,13 +1,13 @@
 ---
-description: Hardhat/viem contract tests in apps/contracts — read TESTING.md before edits
-globs: apps/contracts/**
+description: Hardhat/viem contract tests in oss/packages/contracts — read TESTING.md before edits
+globs: oss/packages/contracts/**,packages/evm/**
 alwaysApply: false
 ---
 
 # Contracts testing
 
-- Read **[apps/contracts/TESTING.md](apps/contracts/TESTING.md)** before changing `test/` or `src/*.sol` behavior.
+- Read **[oss/packages/contracts/TESTING.md](oss/packages/contracts/TESTING.md)** before changing `test/` or `src/*.sol` behavior.
 - **Chain time:** EIP-712 `timestamp` / permit `deadline` vs `block.timestamp` → `latestBlockTimestamp` in `test/helpers/chainTime.ts`, not wall clock.
 - **Viem reads:** `bytes32[]` arg → `read.fn([array])` so viem does not treat array elements as multiple ABI params.
 - **Hex:** `bytes32` strings must be valid hex (`0-9a-f` only).
-- Never hand-edit `apps/contracts/definitions/` (deploy-generated).
+- Never hand-edit `packages/evm/definitions/` (deploy-generated) except `schema.ts`, `chain-key.ts`, `bundle-types.ts`.

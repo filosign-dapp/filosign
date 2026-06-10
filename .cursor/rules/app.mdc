@@ -2,4 +2,4 @@
 alwaysApply: true
 ---
 
-- don't manually edit files under `apps/contracts/definitions/` except `schema.ts`, `chain-key.ts`, and `bundle-types.ts`. Deployment output (`chains/`, `abis/`, `generated/`) is written by `scripts/deploy.ts` and `scripts/gen-definitions.ts`.
+- don't manually edit files under `packages/evm/definitions/` except `schema.ts`, `chain-key.ts`, and `bundle-types.ts`. Deployment output (`chains/`, `abis/`, `generated/`) is written by `packages/evm/scripts/deploy.ts` and `scripts/gen-definitions.ts`. Public verify ABIs/chains in `oss/packages/contracts/` are updated via `packages/evm/scripts/export-public.ts`.

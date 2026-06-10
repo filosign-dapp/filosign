@@ -177,10 +177,10 @@ Emails preview (`packages/emails/.env.example`): `ASTRO_URL` (same unprefixed na
 
 | Tier | Server | Contracts (deploy) | Client + Astro |
 |------|--------|-------------------|----------------|
-| Local | `apps/server/.env.local` | `apps/contracts/.env.local` | `.env.local` |
-| Staging | Infisical `staging` | `apps/contracts/.env.staging` | [`apps/client/.env.staging.example`](apps/client/.env.staging.example) |
-| Sandbox | Infisical `sandbox` | `apps/contracts/.env.staging` | [`apps/client/.env.sandbox.example`](apps/client/.env.sandbox.example) |
-| Production | Infisical `prod` | `apps/contracts/.env.production` | CF Pages |
+| Local | `apps/server/.env.local` | `packages/evm/.env.local` | `.env.local` |
+| Staging | Infisical `staging` | `packages/evm/.env.staging` | [`apps/client/.env.staging.example`](apps/client/.env.staging.example) |
+| Sandbox | Infisical `sandbox` | `packages/evm/.env.staging` | [`apps/client/.env.sandbox.example`](apps/client/.env.sandbox.example) |
+| Production | Infisical `prod` | `packages/evm/.env.production` | CF Pages |
 
 Rename keys in Infisical / env files when upgrading (no runtime aliases).
 
@@ -214,20 +214,20 @@ bun run contracts -- node
 Compile contracts:
 
 ```bash
-bun run --cwd apps/contracts compile
+bun run contracts -- compile
 ```
 
-Deploy contracts:
+Deploy contracts (local Hardhat):
 
 ```bash
-bun run --cwd apps/contracts migrate
+bun run contracts -- --migrate --local
 ```
 
 Deploy to Base Sepolia or Base:
 
 ```bash
-bun run --cwd apps/contracts migrate:testnet
-bun run --cwd apps/contracts migrate:mainnet
+bun run contracts -- --migrate --testnet
+bun run contracts -- --migrate --mainnet
 ```
 
 ## Security Model

@@ -8,7 +8,7 @@
 
 | Goal | Command |
 | --- | --- |
-| Local dev (compose + bootstrap + server + client + astro) | `bun run dev` or `bun run dev -- --local` (bootstrap: `db purge local`, contracts compile + deploy) |
+| Local dev (compose + bootstrap + server + client + astro) | `bun run dev` or `bun run dev -- --local` (bootstrap: `db purge local`, `contracts --migrate --local`) |
 | Dragonfly only | `bun run dev -- --deps` |
 | Bootstrap + API only | `bun run dev -- --serloc` |
 | Client + marketing + email preview | `bun run dev -- --web` |
@@ -55,7 +55,7 @@
 | `purge` | `shell/purge.sh` | rm all `node_modules` + `bun.lock` |
 | `sync:email-assets` | `sync-email-assets.ts` | Download 01-Barebone hero image into `apps/astro/public/emails/barebones/` |
 
-**Env profiles:** `local` → `.env.local` · server `staging`/`sandbox`/`production` → Infisical · client staging/sandbox → `.env.staging` / `.env.sandbox` · contracts testnet/mainnet → `apps/contracts/.env.staging` / `.env.production`. See [`project/launch/environments.md`](project/launch/environments.md) and [`apps/server/SECRETS.md`](apps/server/SECRETS.md).
+**Env profiles:** `local` → `.env.local` · server `staging`/`sandbox`/`production` → Infisical · client staging/sandbox → `.env.staging` / `.env.sandbox` · contracts testnet/mainnet → `packages/evm/.env.staging` / `.env.production`. See [`project/launch/environments.md`](project/launch/environments.md) and [`apps/server/SECRETS.md`](apps/server/SECRETS.md).
 
 ## `dev`
 
@@ -109,16 +109,24 @@ Backups: [`project/ops/postgres-ops.md`](project/ops/postgres-ops.md) · local d
 
 ## `contracts`
 
-`compile` · `test` (compile + Hardhat) · `node` · `--migrate --local|testnet|mainnet`
+Root orchestrator only (`scripts/contracts.ts` + `scripts/lib/contracts/`). Do not call `deploy:*` / `migrate:*` from package `package.json` (removed).
 
-Local deploy uses `deploy:local` (`--network localhost` + `.env.local`).
+`compile` · `test` (OSS Hardhat) · `node` · `--migrate --local|testnet|mainnet`
 
-| Mode | DB |
+| Command | Steps |
 | --- | --- |
-| deploy | — |
-| migrate | local/testnet: `db purge` (includes migrate) after deploy |
+| `compile` | OSS `compile` → definitions `gen:definitions` |
+| `test` | OSS `test` |
+| `--migrate --local` | OSS `compile` → Hardhat deploy (no test gate; for `bun dev` bootstrap) |
+| `--migrate --testnet\|mainnet` | OSS `test` → Hardhat deploy (`packages/evm/scripts/deploy.ts`, absolute env file) |
 
-Env: `local` / `testnet` / `mainnet` → `apps/contracts/.env.local` / `.env.staging` / `.env.production`. Never hand-edit `definitions/` (deploy only). Test before testnet/mainnet deploy/migrate.
+| Profile | Network | Env file | DB after deploy |
+| --- | --- | --- | --- |
+| `--local` | `localhost` | `packages/evm/.env.local` | — |
+| `--testnet` | `baseSepolia` | `.env.staging` | `db push staging` |
+| `--mainnet` | `base` | `.env.production` | — (run `prod --migrate` separately) |
+
+Solidity + Hardhat cwd: `oss/packages/contracts`. Private deploy outputs: `packages/evm/definitions/`. Public ABIs/chains: `oss/packages/contracts/abis/`, `chains/manifest.json` (via `export:public`). Test before testnet/mainnet migrate.
 
 ## Turbo
 

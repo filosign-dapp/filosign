@@ -9,8 +9,7 @@
 		"check": "bun run --filter '@filosign/*' check && bun run --filter verify-web check",
 		"check-types": "bun run --filter '@filosign/*' check-types && bun run --filter verify-web check-types",
 		"build": "bun run --filter '@filosign/verify' build && bun run --filter verify-web build",
-		"contracts:test": "bun run --cwd packages/contracts test",
-		"contracts:export-abi": "bun run --cwd packages/contracts export-abi"
+		"contracts:test": "bun run --cwd packages/contracts test"
 	},
 	"engines": {
 		"bun": ">=1.3.14",

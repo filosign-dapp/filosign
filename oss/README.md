@@ -4,14 +4,14 @@ Open-source segment for Filosign trust primitives and proof verification.
 
 **Source of truth:** this tree lives at `oss/` in the private Filosign monorepo. Develop here on `main`; publish to the public OSS remote when releasing.
 
-Root workspaces include **`oss/packages/protocol`** only (avoids `@filosign/contracts` name clash with `apps/contracts`). Other OSS packages resolve under `cd oss` via this folder's own `package.json` workspaces.
+Root workspaces include **`oss/packages/contracts`** and **`oss/packages/protocol`**. Private deploy outputs live in **`packages/evm`** (`@filosign/evm`). Other OSS packages (`verify`, `verify-web`) resolve under `cd oss` via this folder's own `package.json` workspaces.
 
 ## Packages
 
 | Package | Role |
 |---------|------|
 | [`@filosign/protocol`](packages/protocol/) | Wire schemas, commitment math, proof packet schema |
-| [`@filosign/contracts`](packages/contracts/) | Solidity, ABIs, public chain manifests |
+| [`@filosign/contracts`](packages/contracts/) | Solidity, tests, public ABIs + chain manifests (no deploy ops) |
 | [`@filosign/verify`](packages/verify/) | Proof packet verification engine |
 | [`verify-web`](apps/verify-web/) | Static browser verifier (drop ZIP) |
 

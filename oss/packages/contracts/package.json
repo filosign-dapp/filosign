@@ -1,7 +1,12 @@
 {
 	"name": "@filosign/contracts",
-	"version": "0.1.0",
-	"description": "Filosign on-chain contracts, ABIs, and public chain manifests",
+	"version": "1.0.0",
+	"description": "Filosign on-chain contracts, public ABIs, and chain manifests for verify",
+	"files": [
+		"abis/**/*",
+		"chains/**/*",
+		"src/**/*"
+	],
 	"exports": {
 		"./abis": {
 			"types": "./abis/index.ts",
@@ -13,28 +18,33 @@
 		}
 	},
 	"scripts": {
-		"compile": "bunx --bun hardhat compile",
-		"test": "bun compile && bunx --bun hardhat test",
-		"export-abi": "bun run scripts/export-abi.ts",
-		"check": "biome check abis chains scripts",
-		"check-types": "tsc --noEmit -p tsconfig.json"
+		"node": "bunx --bun hardhat node",
+		"compile": "bun gen:interfaces; bunx --bun hardhat compile",
+		"test": "bun compile; bun --bun hardhat test",
+		"gen:interfaces": "bun run scripts/interfaces.ts",
+		"check-types": "bunx --bun tsc --noEmit -p tsconfig.check.json"
 	},
 	"devDependencies": {
 		"@nomicfoundation/hardhat-network-helpers": "^1.1.0",
 		"@nomicfoundation/hardhat-toolbox-viem": "^4.1.0",
 		"@nomicfoundation/hardhat-viem": "^2.1.1",
 		"@openzeppelin/contracts": "^5.4.0",
+		"@solidity-parser/parser": "^0.18.0",
 		"@types/bun": "catalog:",
 		"@types/chai": "^4.3.20",
+		"@types/chai-as-promised": "^7.1.8",
 		"@types/mocha": "^10.0.10",
 		"@types/node": "catalog:",
 		"chai": "^4.5.0",
+		"glob": "^11.0.3",
 		"hardhat": "^2.26.3",
 		"mocha": "11.7.4",
-		"typescript": "catalog:",
-		"viem": "catalog:"
+		"typescript": "catalog:"
 	},
 	"peerDependencies": {
 		"viem": "catalog:"
+	},
+	"engines": {
+		"bun": ">=1.3.14"
 	}
 }

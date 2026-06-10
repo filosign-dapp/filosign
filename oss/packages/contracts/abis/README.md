@@ -1,1 +1,1 @@
-Generated ABI JSON. Re-run `bun run export-abi` after Solidity changes.
+Curated ABI JSON for public verify. Updated by `bun run --cwd packages/evm export:public` after testnet/mainnet deploy.

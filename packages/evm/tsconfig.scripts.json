@@ -1,0 +1,15 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"types": ["bun", "node"]
+	},
+	"include": [
+		"env.ts",
+		"scripts/deploy.ts",
+		"scripts/local-dev.ts",
+		"scripts/gen-definitions.ts",
+		"scripts/export-public.ts",
+		"scripts/lib/**/*.ts"
+	],
+	"exclude": ["node_modules"]
+}

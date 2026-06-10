@@ -1,0 +1,26 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["ES2022"],
+		"types": ["bun"],
+		"skipLibCheck": true,
+		"module": "Preserve",
+		"moduleDetection": "force",
+		"moduleResolution": "bundler",
+		"allowImportingTsExtensions": true,
+		"verbatimModuleSyntax": true,
+		"noEmit": true,
+		"strict": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUncheckedIndexedAccess": true
+	},
+	"include": [
+		"index.ts",
+		"definitions/**/*.ts",
+		"services/**/*.ts",
+		"scripts/gen-definitions.ts",
+		"scripts/export-public.ts",
+		"scripts/lib/definitions/**/*.ts"
+	],
+	"exclude": ["node_modules"]
+}

@@ -1,0 +1,53 @@
+{
+	"name": "@filosign/evm",
+	"version": "1.0.0",
+	"private": true,
+	"exports": {
+		".": {
+			"default": "./index.ts"
+		},
+		"./definitions/chain-key": {
+			"default": "./definitions/chain-key.ts"
+		},
+		"./definitions/schema": {
+			"default": "./definitions/schema.ts"
+		},
+		"./definitions/index": {
+			"default": "./definitions/index.ts"
+		},
+		"./definitions/mock-usdc": {
+			"default": "./definitions/mock-usdc.ts"
+		}
+	},
+	"scripts": {
+		"gen:definitions": "bun run scripts/gen-definitions.ts",
+		"export:public": "bun run scripts/export-public.ts",
+		"check-types": "bunx --bun tsc --noEmit -p tsconfig.json && bunx --bun tsc --noEmit -p tsconfig.scripts.json"
+	},
+	"dependencies": {
+		"multiformats": "catalog:"
+	},
+	"peerDependencies": {
+		"viem": "catalog:"
+	},
+	"devDependencies": {
+		"@filosign/contracts": "workspace:*",
+		"@nomicfoundation/hardhat-network-helpers": "^1.1.0",
+		"@nomicfoundation/hardhat-toolbox-viem": "^4.1.0",
+		"@nomicfoundation/hardhat-verify": "^2.1.1",
+		"@nomicfoundation/hardhat-viem": "^2.1.1",
+		"@openzeppelin/contracts": "^5.4.0",
+		"@t3-oss/env-core": "catalog:",
+		"@types/bun": "catalog:",
+		"@types/chai": "^4.3.20",
+		"@types/chai-as-promised": "^7.1.8",
+		"@types/mocha": "^10.0.10",
+		"@types/node": "catalog:",
+		"chai": "^4.5.0",
+		"ethers": "catalog:",
+		"hardhat": "^2.26.3",
+		"mocha": "11.7.4",
+		"typescript": "catalog:",
+		"zod": "catalog:"
+	}
+}

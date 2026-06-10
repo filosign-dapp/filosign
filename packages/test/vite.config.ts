@@ -20,11 +20,7 @@ export default defineConfig({
 	},
 	optimizeDeps: {
 		include: ["dilithium-crystals-js"],
-		exclude: [
-			"@filosign/crypto-utils",
-			"@filosign/react",
-			"@filosign/contracts",
-		],
+		exclude: ["@filosign/crypto-utils", "@filosign/react", "@filosign/evm"],
 	},
 	build: {
 		commonjsOptions: {

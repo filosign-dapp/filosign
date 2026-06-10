@@ -3,12 +3,15 @@ import path from "node:path";
 import { die } from "../cli.ts";
 import type { ProdContext } from "./types.ts";
 
+const appProject = process.env.COMPOSE_PROJECT_APP || "filosign-app";
+const dataProject = process.env.COMPOSE_PROJECT_DATA || "filosign-data";
+
 export const CONTAINERS = {
-	postgres: "filosign-postgres",
-	dragonfly: "filosign-dragonfly",
-	api: "filosign-api",
-	worker: "filosign-worker",
-} as const;
+	postgres: process.env.CONTAINER_POSTGRES || `${dataProject}-postgres-1`,
+	dragonfly: process.env.CONTAINER_DRAGONFLY || `${dataProject}-dragonfly-1`,
+	api: process.env.CONTAINER_API || `${appProject}-api-1`,
+	worker: process.env.CONTAINER_WORKER || `${appProject}-worker-1`,
+};
 
 export const STANZA = "filosign";
 export const PG_USER = "filosign";

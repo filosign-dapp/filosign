@@ -4,7 +4,7 @@ set -euo pipefail
 
 STANZA="${PGBACKREST_STANZA:-filosign}"
 TYPE="${1:-full}"
-CONTAINER="${PGBACKREST_CONTAINER:-filosign-postgres}"
+CONTAINER="${PGBACKREST_CONTAINER:-filosign-data-postgres-1}"
 
 case "$TYPE" in
   full | diff | incr)

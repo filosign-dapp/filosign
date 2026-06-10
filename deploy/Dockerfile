@@ -6,7 +6,7 @@ WORKDIR /app
 # Cache dependency install (workspaces: apps/*, packages/* including packages/test)
 COPY package.json bun.lock ./
 COPY patches ./patches
-COPY --parents apps/*/package.json packages/*/package.json oss/packages/protocol/package.json ./
+COPY --parents apps/*/package.json packages/*/package.json oss/packages/contracts/package.json oss/packages/protocol/package.json ./
 
 # --ignore-scripts: prepare hooks (husky, crypto-utils sync:wasm) need full tree or committed assets
 RUN --mount=type=cache,target=/root/.bun/install/cache \

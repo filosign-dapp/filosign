@@ -5,7 +5,6 @@
 services:
   postgres:
     image: ${POSTGRES_IMAGE:-postgres:18-alpine}
-    container_name: filosign-postgres-dev
     restart: unless-stopped
     environment:
       POSTGRES_USER: filosign
@@ -27,7 +26,6 @@ services:
 
   pgbackrest:
     image: ${PGBACKREST_IMAGE:-percona/percona-pgbackrest:2.58.0-1}
-    container_name: filosign-pgbackrest-dev
     restart: unless-stopped
     command: ["sleep", "infinity"]
     depends_on:
@@ -45,7 +43,6 @@ services:
 
   dragonfly:
     image: ${DRAGONFLY_IMAGE:-docker.dragonflydb.io/dragonflydb/dragonfly:v1.37.2}
-    container_name: filosign-dragonfly-dev
     restart: unless-stopped
     ports:
       - "6379:6379"

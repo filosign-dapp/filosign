@@ -1,4 +1,4 @@
-# Sprint 1 — data stack (Postgres 18 + pgBackRest + Dragonfly). Start before compose.app.yml.
+# Sprint 1 - data stack (Postgres 18 + pgBackRest + Dragonfly). Start before compose.app.yml.
 # pgbackrest.conf: copy from pgbackrest/pgbackrest.conf.example (not committed).
 # Image pins: deploy/.env.example (optional overrides)
 # Dokploy project name: filosign-data
@@ -9,7 +9,6 @@ services:
       context: ./postgres
       dockerfile: Dockerfile
     image: ${POSTGRES_IMAGE:-filosign-postgres-pgbackrest:18}
-    container_name: filosign-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-filosign}
@@ -51,7 +50,6 @@ services:
 
   dragonfly:
     image: ${DRAGONFLY_IMAGE:-docker.dragonflydb.io/dragonflydb/dragonfly:v1.37.2}
-    container_name: filosign-dragonfly
     restart: unless-stopped
     networks:
       - filosign_net

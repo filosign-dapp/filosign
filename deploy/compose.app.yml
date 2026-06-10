@@ -1,4 +1,4 @@
-# Sprint 1 — app stack. Requires filosign-data_filosign_net from compose.data.yml.
+# Sprint 1 - app stack. Requires filosign-data_filosign_net from compose.data.yml.
 # Dokploy project name: filosign-app
 
 x-filosign-image: &filosign-image
@@ -22,7 +22,6 @@ x-app-env: &app-env
 services:
   api:
     <<: *filosign-image
-    container_name: filosign-api
     restart: unless-stopped
     command: ["./server"]
     environment:
@@ -48,7 +47,6 @@ services:
 
   worker:
     <<: *filosign-image
-    container_name: filosign-worker
     restart: unless-stopped
     command: ["./worker"]
     deploy:

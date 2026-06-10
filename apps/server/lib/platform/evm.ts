@@ -1,4 +1,4 @@
-import { getContracts, getHistoricalAbi } from "@filosign/contracts";
+import { getContracts, getHistoricalAbi } from "@filosign/evm";
 import {
 	type Address,
 	createWalletClient,

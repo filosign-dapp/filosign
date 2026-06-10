@@ -1,13 +1,13 @@
 # Secrets (Infisical — server only)
 
-Server secrets for deployed tiers live in [Infisical Cloud](https://app.infisical.com). Local dev uses **`apps/server/.env.local`**. **Contracts** deploy/migrate use **`apps/contracts/.env.local`**, **`.env.staging`**, and **`.env.production`** (gitignored).
+Server secrets for deployed tiers live in [Infisical Cloud](https://app.infisical.com). Local dev uses **`apps/server/.env.local`**. **Contracts** deploy/migrate use **`packages/evm/.env.local`**, **`.env.staging`**, and **`.env.production`** (gitignored).
 
 | `DEPLOYMENT` | Infisical env | Server secrets | Contracts (laptop deploy) |
 |--------------|---------------|----------------|---------------------------|
-| `local` | — | `apps/server/.env.local` | `apps/contracts/.env.local` |
-| `staging` | `staging` | Infisical | `apps/contracts/.env.staging` |
-| `sandbox` | `sandbox` | Infisical | `apps/contracts/.env.staging` (same testnet chain) |
-| `production` | `prod` | Infisical (Dokploy) | `apps/contracts/.env.production` |
+| `local` | — | `apps/server/.env.local` | `packages/evm/.env.local` |
+| `staging` | `staging` | Infisical | `packages/evm/.env.staging` |
+| `sandbox` | `sandbox` | Infisical | `packages/evm/.env.staging` (same testnet chain) |
+| `production` | `prod` | Infisical (Dokploy) | `packages/evm/.env.production` |
 
 **Client** and **Astro** on Cloudflare Pages (`VITE_*` / `PUBLIC_*`). Local client env:
 
@@ -42,7 +42,7 @@ Flow: every send tries Resend first. On retryable Resend errors (429, 5xx, timeo
 
 Verify the same From domain in [Resend](https://resend.com) and [Amazon SES](https://console.aws.amazon.com/ses/) (DKIM/SPF). Leave `SES_ENABLED=false` on local unless you are testing fallback.
 
-Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`, `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY` (see [`apps/contracts/env.ts`](../contracts/env.ts)). On-chain addresses for the app come from [`definitions/`](../../apps/contracts/definitions/) via `CHAIN` — after redeploy, run migrate and align `FC_SERVER_ADDRESS` with `FSEnvelopeRegistry.server()` ([migration note](../../project/contracts/envelope-registry-migration.md)).
+Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`, `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY` (see [`packages/evm/env.ts`](../../packages/evm/env.ts)). On-chain addresses for the app come from [`packages/evm/definitions/`](../../packages/evm/definitions/) via `CHAIN` — after redeploy, run migrate and align `FC_SERVER_ADDRESS` with `FSEnvelopeRegistry.server()` ([migration note](../../project/contracts/envelope-registry-migration.md)).
 
 ### Filecoin / FOC (Synapse)
 
@@ -91,9 +91,9 @@ bun run db -- push staging
 bun run db -- migrate sandbox
 bun run db -- purge sandbox
 
-# Contracts (apps/contracts — no Infisical)
-bun run deploy:testnet
-bun run migrate:testnet
+# Contracts (packages/evm — no Infisical)
+bun run contracts -- --migrate --testnet
+bun run contracts -- --migrate --mainnet
 
 # Full stacks from repo root
 bun run dev -- --staging    # internal QA

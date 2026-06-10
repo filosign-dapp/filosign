@@ -11,7 +11,7 @@ Hono API, Drizzle/Postgres, thirdweb auth verification, S3, and chain/indexer he
 
 Deploy splits **api** (`./server`, HTTP) and **worker** (`./worker`, `Bun.cron` + `fs:worker:heartbeat`) — see [`deploy/compose.app.yml`](../../deploy/compose.app.yml).
 
-Secrets layout: [`SECRETS.md`](SECRETS.md). Local server uses **`--env-file`**; staging/prod server uses **`infisical run`** (contracts keep `apps/contracts/.env.*`).
+Secrets layout: [`SECRETS.md`](SECRETS.md). Local server uses **`--env-file`**; staging/prod server uses **`infisical run`** (contracts keep `packages/evm/.env.*`).
 
 ## Structure
 

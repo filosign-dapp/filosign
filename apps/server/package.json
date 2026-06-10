@@ -35,7 +35,7 @@
 	},
 	"dependencies": {
 		"@aws-sdk/client-sesv2": "^3.888.0",
-		"@filosign/contracts": "workspace:*",
+		"@filosign/evm": "workspace:*",
 		"@filosign/crypto-utils": "workspace:*",
 		"@filosign/emails": "workspace:*",
 		"@filosign/entitlements": "workspace:*",

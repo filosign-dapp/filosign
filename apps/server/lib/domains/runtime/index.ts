@@ -1,4 +1,4 @@
-import type { ChainKey } from "@filosign/contracts";
+import type { ChainKey } from "@filosign/evm";
 import type { Deployment, SignupPolicy } from "@filosign/shared";
 import { signupPolicy } from "@filosign/shared";
 import type { Chain } from "viem";

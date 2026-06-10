@@ -1,4 +1,4 @@
-import { type ChainKey, getDefinitionsEntry } from "@filosign/contracts";
+import { type ChainKey, getDefinitionsEntry } from "@filosign/evm";
 import type { Chain } from "viem/chains";
 import { base, baseSepolia, hardhat } from "viem/chains";
 import env from "@/env";

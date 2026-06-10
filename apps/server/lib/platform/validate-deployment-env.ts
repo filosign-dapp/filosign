@@ -1,4 +1,4 @@
-import type { ChainKey } from "@filosign/contracts";
+import type { ChainKey } from "@filosign/evm";
 import { assertDeploymentChain, type Deployment } from "@filosign/shared";
 
 type ServerEnvSlice = {

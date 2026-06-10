@@ -15,6 +15,13 @@
       "when": 1780630830563,
       "tag": "0001_activation",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781126043549,
+      "tag": "0002_noisy_havok",
+      "breakpoints": true
     }
   ]
 }

@@ -3,15 +3,16 @@ import path from "node:path";
 import { die } from "../cli.ts";
 import type { ProdContext } from "./types.ts";
 
-const appProject = process.env.COMPOSE_PROJECT_APP || "filosign-app";
-const dataProject = process.env.COMPOSE_PROJECT_DATA || "filosign-data";
-
-export const CONTAINERS = {
-	postgres: process.env.CONTAINER_POSTGRES || `${dataProject}-postgres-1`,
-	dragonfly: process.env.CONTAINER_DRAGONFLY || `${dataProject}-dragonfly-1`,
-	api: process.env.CONTAINER_API || `${appProject}-api-1`,
-	worker: process.env.CONTAINER_WORKER || `${appProject}-worker-1`,
-};
+function resolveContainers(): ProdContext["containers"] {
+	const appProject = process.env.COMPOSE_PROJECT_APP || "filosign-app";
+	const dataProject = process.env.COMPOSE_PROJECT_DATA || "filosign-data";
+	return {
+		postgres: process.env.CONTAINER_POSTGRES || `${dataProject}-postgres-1`,
+		dragonfly: process.env.CONTAINER_DRAGONFLY || `${dataProject}-dragonfly-1`,
+		api: process.env.CONTAINER_API || `${appProject}-api-1`,
+		worker: process.env.CONTAINER_WORKER || `${appProject}-worker-1`,
+	};
+}
 
 export const STANZA = "filosign";
 export const PG_USER = "filosign";
@@ -41,6 +42,6 @@ export function createProdContext(root: string): ProdContext {
 		stanza: STANZA,
 		pgUser: PG_USER,
 		pgDb: PG_DB,
-		containers: { ...CONTAINERS },
+		containers: resolveContainers(),
 	};
 }

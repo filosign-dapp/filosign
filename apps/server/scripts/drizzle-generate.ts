@@ -6,10 +6,12 @@ import { loadDrizzleToolingEnv } from "./load-drizzle-tooling-env";
 
 loadDrizzleToolingEnv();
 
-const proc = Bun.spawnSync(["bunx", "--bun", "drizzle-kit", "generate"], {
+const proc = Bun.spawn({
+	cmd: ["bunx", "--bun", "drizzle-kit", "generate"],
 	cwd: `${import.meta.dir}/..`,
 	stdout: "inherit",
 	stderr: "inherit",
+	stdin: "inherit",
 });
 
-process.exit(proc.exitCode ?? 1);
+process.exit((await proc.exited) ?? 1);

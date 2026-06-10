@@ -1,4 +1,3 @@
-import { CONTAINERS } from "./context.ts";
 import { sshCapture } from "./ssh.ts";
 import type { ProdContext } from "./types.ts";
 
@@ -7,11 +6,11 @@ const LOCAL_PG_PORT = 5433;
 export async function postgresContainerIp(ctx: ProdContext): Promise<string> {
 	const r = await sshCapture(
 		ctx,
-		`docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${CONTAINERS.postgres}`,
+		`docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ${ctx.containers.postgres}`,
 	);
 	if (r.code !== 0 || !r.stdout.trim()) {
 		throw new Error(
-			r.stderr || `Could not resolve IP for ${CONTAINERS.postgres}`,
+			r.stderr || `Could not resolve IP for ${ctx.containers.postgres}`,
 		);
 	}
 	return r.stdout.trim();

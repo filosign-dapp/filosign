@@ -4,13 +4,15 @@
  *
  * Usage:
  *   bun run db -- push local|staging
- *   bun run db -- migrate local|staging|sandbox
+ *   bun run db -- generate
+ *   bun run db -- migrate local|staging|sandbox|production
  *   bun run db -- purge local|staging|sandbox
  *   bun run db -- grant-plan local|staging|sandbox
  *   bun run db -- --help
  */
 
 import { die, exitOnHelpOrEmpty, runMain, scriptArgv } from "./lib/cli.ts";
+import { migrateProd } from "./lib/prod/migrate.ts";
 import { repoRoot } from "./lib/root.ts";
 import { packageRunCmd } from "./lib/run.ts";
 import { runInheritExit, runSequentialExit } from "./lib/spawn.ts";
@@ -22,10 +24,11 @@ Filosign database orchestrator (@filosign/server)
 
   bun run db -- push local        drizzle-kit push (.env.local)
   bun run db -- push staging      drizzle-kit push (Infisical staging)
+  bun run db -- generate          drizzle-kit generate — commit apps/server/drizzle/ before migrate
   bun run db -- migrate local     drizzle-kit migrate (.env.local) — optional; dev uses push
   bun run db -- migrate staging   drizzle-kit migrate (Infisical staging) — optional
   bun run db -- migrate sandbox   drizzle-kit migrate (Infisical sandbox)
-  bun run prod -- --migrate       production (SSH tunnel) — see bun run prod -- --help
+  bun run db -- migrate production drizzle-kit migrate (SSH tunnel + Infisical prod)
   bun run db -- purge local       clear schema + push (.env.local)
   bun run db -- purge staging     clear schema + push (Infisical staging)
   bun run db -- purge sandbox     clear schema + migrate (Infisical sandbox)
@@ -33,11 +36,11 @@ Filosign database orchestrator (@filosign/server)
   bun run db -- grant-plan staging Infisical staging
   bun run db -- grant-plan sandbox Infisical sandbox
 
-local / staging: push (or purge → push) — no generate step.
-sandbox: generate → commit apps/server/drizzle/ → migrate (push blocked). Production: bun run prod -- --migrate.
+local / staging: push (or purge → push). Sandbox/production: generate → commit → migrate.
+Production migrate needs FILOSIGN_PROD_SSH + container names in deploy/.env (see deploy/.env.example).
 `.trim();
 
-type Action = "push" | "purge" | "grant-plan" | "migrate";
+type Action = "push" | "purge" | "grant-plan" | "migrate" | "generate";
 type Profile = "local" | "staging" | "sandbox" | "production";
 type PushProfile = "local" | "staging";
 type PurgeProfile = "local" | "staging" | "sandbox";
@@ -73,7 +76,7 @@ function assertProfile(profile: string): Profile {
 function assertPushAllowed(profile: Profile): asserts profile is PushProfile {
 	if (profile === "production") {
 		die(
-			"Direct push to production is blocked. Use bun run prod -- --migrate after db:generate and committing apps/server/drizzle/.",
+			'Direct push to production is blocked. Use "bun run db -- migrate production" after generate and committing apps/server/drizzle/.',
 		);
 	}
 	if (profile === "sandbox") {
@@ -96,16 +99,29 @@ runMain(async () => {
 	exitOnHelpOrEmpty(HELP, argv);
 
 	const action = argv[0] as Action;
-	const profile = assertProfile(argv[1] ?? "");
 
 	if (
 		action !== "push" &&
 		action !== "purge" &&
 		action !== "grant-plan" &&
-		action !== "migrate"
+		action !== "migrate" &&
+		action !== "generate"
 	) {
 		die(`Unknown action: ${action}`);
 	}
+
+	if (action === "generate") {
+		if (argv[1] !== undefined) {
+			die('generate takes no profile — use "bun run db -- generate"');
+		}
+		await runInheritExit(
+			rootDir,
+			packageRunCmd(rootDir, server, "db:generate"),
+		);
+		return;
+	}
+
+	const profile = assertProfile(argv[1] ?? "");
 
 	if (action === "grant-plan") {
 		if (profile === "production") {
@@ -134,7 +150,7 @@ runMain(async () => {
 
 	if (action === "migrate") {
 		if (profile === "production") {
-			die('Use "bun run prod -- --migrate" for production');
+			process.exit(await migrateProd(rootDir));
 		}
 		await runInheritExit(
 			rootDir,

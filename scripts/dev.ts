@@ -33,7 +33,7 @@ Ports:  server :3000   client :3001   astro :3002   emails :30010
 Deps:  default runs \`docker compose -f deploy/compose.dev.yml up -d\` (Dragonfly :6379).  --no-deps to skip.
        --deps alone = compose only (foreground).  --deps with apps = same as default.
 
-Local bootstrap (default \`dev\` with server): \`db purge local\`, compile, deploy contracts to Hardhat.
+Local bootstrap (default \`dev\` with server): \`db purge local\`, then \`contracts --migrate --local\` (compile + deploy).
 
 Presets (--serloc, --web, --emails) cannot be combined with each other or with --client / --server / --astro.
 `.trim();

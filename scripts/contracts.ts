@@ -1,40 +1,42 @@
 #!/usr/bin/env bun
+import { die, exitOnHelpOrEmpty, runMain, scriptArgv } from "./lib/cli.ts";
 /**
- * Contracts orchestrator (@filosign/contracts + DB when migrating).
+ * Contracts orchestrator (@filosign/contracts + @filosign/evm + DB when migrating).
  *
  * Usage:
  *   bun run contracts -- compile | test | node
  *   bun run contracts -- --migrate --local|testnet|mainnet
  *   bun run contracts -- --help
  */
-import { die, exitOnHelpOrEmpty, runMain, scriptArgv } from "./lib/cli.ts";
+import { runDeploy } from "./lib/contracts/deploy.ts";
+import type { DeployProfile } from "./lib/package-paths.ts";
 import { repoRoot } from "./lib/root.ts";
 import { packageRunCmd } from "./lib/run.ts";
-import { runInheritExit, runSequentialExit } from "./lib/spawn.ts";
+import { runInherit, runInheritExit, runSequentialExit } from "./lib/spawn.ts";
 
 const rootDir = repoRoot(import.meta.url);
-const PACKAGE = "@filosign/contracts";
+const CONTRACTS_PKG = "@filosign/contracts";
+const EVM_PKG = "@filosign/evm";
 
-type Profile = "local" | "testnet" | "mainnet";
 /** @filosign/server DB orchestrator profiles (see scripts/db.ts) */
 type DbProfile = "local" | "staging" | "sandbox" | "production";
 
 const HELP = `
 Filosign contracts orchestrator
 
-Utilities (@filosign/contracts):
-  bun run contracts -- compile
-  bun run contracts -- test              compile + Hardhat tests
-  bun run contracts -- node              Hardhat local node
+Utilities:
+  bun run contracts -- compile              OSS compile + private gen:definitions
+  bun run contracts -- test                 OSS Hardhat tests
+  bun run contracts -- node                 Hardhat local node (OSS package)
 
 Migrate (deploy contracts; testnet optionally syncs staging DB via push):
-  bun run contracts -- --migrate --local      (deploy to local Hardhat only)
+  bun run contracts -- --migrate --local      (OSS compile + deploy to Hardhat; no test gate)
   bun run contracts -- --migrate --testnet    (deploys + db push staging)
   bun run contracts -- --migrate --mainnet    (deploy only — run prod --migrate separately)
 
 Local DB: bun run db -- push local  ·  bun run prod -- --migrate  ·  bun run db -- purge local
 
-Profiles: local (.env.local), testnet (.env.staging chain deploy), mainnet (.env.production) in apps/contracts
+Env profiles: local (.env.local), testnet (.env.staging), mainnet (.env.production) in packages/evm
 `.trim();
 
 const UTILITY_COMMANDS = {
@@ -45,24 +47,13 @@ const UTILITY_COMMANDS = {
 
 type UtilityCommand = keyof typeof UTILITY_COMMANDS;
 
-function deployScript(profile: Profile): string {
-	switch (profile) {
-		case "local":
-			return "deploy:local";
-		case "testnet":
-			return "deploy:testnet";
-		case "mainnet":
-			return "deploy:mainnet";
-	}
-}
-
 function dbCmd(action: "push" | "purge", dbProfile: DbProfile): string[] {
 	return ["bun", "run", "db", "--", action, dbProfile];
 }
 
 function parseArgv(argv: string[]) {
 	let migrate = false;
-	let profile: Profile | undefined;
+	let profile: DeployProfile | undefined;
 	let utility: UtilityCommand | undefined;
 
 	for (const arg of argv) {
@@ -76,23 +67,49 @@ function parseArgv(argv: string[]) {
 	return { migrate, profile, utility };
 }
 
-function requireProfile(profile: Profile | undefined): Profile {
+function requireProfile(profile: DeployProfile | undefined): DeployProfile {
 	if (profile === "local" || profile === "testnet" || profile === "mainnet") {
 		return profile;
 	}
 	die("Pass a profile: --local, --testnet, or --mainnet");
 }
 
-async function runMigrate(profile: Profile) {
-	const steps: string[][] = [
-		packageRunCmd(rootDir, PACKAGE, deployScript(profile)),
-	];
+async function runOssCompile(): Promise<number> {
+	return runInherit(rootDir, packageRunCmd(rootDir, CONTRACTS_PKG, "compile"));
+}
 
-	if (profile === "testnet") {
-		steps.push(dbCmd("push", "staging"));
+async function runCompile(): Promise<never> {
+	return runSequentialExit(rootDir, [
+		packageRunCmd(rootDir, CONTRACTS_PKG, "compile"),
+		packageRunCmd(rootDir, EVM_PKG, "gen:definitions"),
+	]);
+}
+
+async function runTest(): Promise<never> {
+	return runInheritExit(
+		rootDir,
+		packageRunCmd(rootDir, CONTRACTS_PKG, "test"),
+	);
+}
+
+async function runMigrate(profile: DeployProfile): Promise<never> {
+	if (profile === "local") {
+		const compileCode = await runOssCompile();
+		if (compileCode !== 0) process.exit(compileCode);
+	} else {
+		const testCode = await runInherit(
+			rootDir,
+			packageRunCmd(rootDir, CONTRACTS_PKG, "test"),
+		);
+		if (testCode !== 0) process.exit(testCode);
 	}
 
-	await runSequentialExit(rootDir, steps);
+	await runDeploy(rootDir, profile);
+
+	if (profile === "testnet") {
+		return runInheritExit(rootDir, dbCmd("push", "staging"));
+	}
+	process.exit(0);
 }
 
 runMain(async () => {
@@ -103,10 +120,19 @@ runMain(async () => {
 
 	if (utility) {
 		if (migrate) die(`Do not combine --migrate with ${utility}`);
+		if (utility === "compile") {
+			await runCompile();
+			return;
+		}
+		if (utility === "test") {
+			await runTest();
+			return;
+		}
 		await runInheritExit(
 			rootDir,
-			packageRunCmd(rootDir, PACKAGE, UTILITY_COMMANDS[utility]),
+			packageRunCmd(rootDir, CONTRACTS_PKG, UTILITY_COMMANDS[utility]),
 		);
+		return;
 	}
 
 	if (!migrate) {

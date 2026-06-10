@@ -1,9 +1,9 @@
-import type { FilosignContracts } from "@filosign/contracts";
 import {
 	deriveDeterministicSeed32,
 	expandDeterministicSeed,
 	seedKeyGen,
 } from "@filosign/crypto-utils";
+import type { FilosignContracts } from "@filosign/evm";
 import type { FilosignContextValue } from "../../context/FilosignContext";
 import type { FilosignWallet } from "../../lib/wallet";
 import type { StoredKeygenData } from "./key-registry-snapshot";

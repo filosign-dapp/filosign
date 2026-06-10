@@ -1,5 +1,5 @@
-import type { ChainKey, FilosignContracts } from "@filosign/contracts";
 import type { signatures } from "@filosign/crypto-utils";
+import type { ChainKey, FilosignContracts } from "@filosign/evm";
 import type { SignupPolicy } from "@filosign/shared";
 import { createContext } from "react";
 import type { FilosignWallet } from "../lib/wallet";

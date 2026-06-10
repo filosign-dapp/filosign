@@ -23,7 +23,7 @@ Deeper context: [`AGENTS.md`](../../AGENTS.md), [api-routes.mdc](../../.cursor/r
 | [`apps/server`](../../apps/server) | API source of truth—[`api/orpc/router.ts`](../../apps/server/api/orpc/router.ts); types via [`app-router-types.ts`](src/orpc/app-router-types.ts) (`AppRouterClient`). Prefer concrete `.output` schemas in `api/orpc/schemas/`. |
 | [`@filosign/shared`](../../packages/shared) | Zod, commitments, pure helpers—not HTTP. |
 | [`@filosign/crypto-utils`](../../packages/crypto-utils) | KEM, Dilithium, encryption inside hooks. |
-| [`@filosign/contracts`](../../apps/contracts) | `getContracts`, EIP-712; on-chain via context `contracts`. |
+| [`@filosign/evm`](../../packages/evm) | `getContracts`, EIP-712; on-chain via context `contracts`. |
 | [`apps/client`](../../apps/client) | Wraps provider ([`filosign-provider.tsx`](../../apps/client/src/lib/filosign/filosign-provider.tsx)): `apiBaseUrl`, viem `wallet` from thirdweb, `wasm.dilithium`. `ready` after `runtime` + `chainKey`. |
 
 **Owns:** browser RPC, React Query hooks, session seed, provider, **client PostHog** (`src/analytics/`). **Not:** Hono/DB, contracts source, page UI.

@@ -1,5 +1,5 @@
-import { type FilosignContracts, getContracts } from "@filosign/contracts";
 import type { signatures } from "@filosign/crypto-utils";
+import { type FilosignContracts, getContracts } from "@filosign/evm";
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { MINUTE } from "../constants";

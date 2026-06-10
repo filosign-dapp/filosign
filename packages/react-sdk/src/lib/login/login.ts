@@ -1,7 +1,7 @@
-import type { FilosignContracts } from "@filosign/contracts";
-import { filosignRegistrationSignature } from "@filosign/contracts";
 import type { signatures } from "@filosign/crypto-utils";
 import { toHex, walletKeyGen } from "@filosign/crypto-utils";
+import type { FilosignContracts } from "@filosign/evm";
+import { filosignRegistrationSignature } from "@filosign/evm";
 import type { QueryClient } from "@tanstack/react-query";
 import type { FilosignRpcQueryUtils } from "../../context/FilosignContext";
 import {

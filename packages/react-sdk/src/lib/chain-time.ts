@@ -1,4 +1,4 @@
-import type { FilosignContracts } from "@filosign/contracts";
+import type { FilosignContracts } from "@filosign/evm";
 import { createPublicClient, http } from "viem";
 
 /** Latest block timestamp for EIP-712 payloads (aligns with on-chain signature window). */

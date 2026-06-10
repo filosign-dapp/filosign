@@ -1,5 +1,5 @@
-import type { FilosignContracts } from "@filosign/contracts";
-import { getHistoricalAbi } from "@filosign/contracts";
+import type { FilosignContracts } from "@filosign/evm";
+import { getHistoricalAbi } from "@filosign/evm";
 import {
 	type Address,
 	createPublicClient,

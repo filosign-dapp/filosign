@@ -1,4 +1,4 @@
-import { computeCidIdentifier } from "@filosign/contracts";
+import { computeCidIdentifier } from "@filosign/evm";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { invalidateEntitlements } from "../../lib/invalidate-entitlements";

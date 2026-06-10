@@ -60,7 +60,7 @@
 		"test": "bun test tests/"
 	},
 	"dependencies": {
-		"@filosign/contracts": "workspace:*",
+		"@filosign/evm": "workspace:*",
 		"@filosign/crypto-utils": "workspace:*",
 		"@filosign/shared": "workspace:*",
 		"@orpc/client": "catalog:",

@@ -15,7 +15,7 @@
 	},
 	"dependencies": {
 		"viem": "catalog:",
-		"@filosign/contracts": "workspace:*",
+		"@filosign/evm": "workspace:*",
 		"@filosign/crypto-utils": "workspace:*",
 		"zod": "catalog:"
 	},

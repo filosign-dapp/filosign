@@ -6,6 +6,7 @@
 	"workspaces": [
 		"apps/*",
 		"packages/*",
+		"oss/packages/contracts",
 		"oss/packages/protocol"
 	],
 	"scripts": {

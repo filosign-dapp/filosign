@@ -67,10 +67,10 @@
         "@dnd-kit/core": "6.3.1",
         "@dnd-kit/sortable": "10.0.0",
         "@dnd-kit/utilities": "3.2.2",
-        "@filosign/contracts": "workspace:*",
         "@filosign/crypto-utils": "workspace:*",
         "@filosign/entitlements": "workspace:*",
         "@filosign/errors": "workspace:*",
+        "@filosign/evm": "workspace:*",
         "@filosign/motion": "workspace:*",
         "@filosign/protocol": "workspace:*",
         "@filosign/react": "workspace:*",
@@ -132,48 +132,15 @@
         "vite": "catalog:",
       },
     },
-    "apps/contracts": {
-      "name": "@filosign/contracts",
-      "version": "1.0.0",
-      "dependencies": {
-        "multiformats": "catalog:",
-      },
-      "devDependencies": {
-        "@filosign/crypto-utils": "workspace:*",
-        "@nomicfoundation/hardhat-network-helpers": "^1.1.0",
-        "@nomicfoundation/hardhat-toolbox-viem": "^4.1.0",
-        "@nomicfoundation/hardhat-verify": "^2.1.1",
-        "@nomicfoundation/hardhat-viem": "^2.1.1",
-        "@openzeppelin/contracts": "^5.4.0",
-        "@solidity-parser/parser": "^0.18.0",
-        "@t3-oss/env-core": "catalog:",
-        "@types/bun": "catalog:",
-        "@types/chai": "^4.3.20",
-        "@types/chai-as-promised": "^7.1.8",
-        "@types/mocha": "^10.0.10",
-        "@types/node": "catalog:",
-        "chai": "^4.5.0",
-        "ethers": "catalog:",
-        "glob": "^11.0.3",
-        "hardhat": "^2.26.3",
-        "mocha": "11.7.4",
-        "ts-node": "^10.9.2",
-        "typescript": "catalog:",
-        "zod": "catalog:",
-      },
-      "peerDependencies": {
-        "viem": "catalog:",
-      },
-    },
     "apps/server": {
       "name": "@filosign/server",
       "dependencies": {
         "@aws-sdk/client-sesv2": "^3.888.0",
-        "@filosign/contracts": "workspace:*",
         "@filosign/crypto-utils": "workspace:*",
         "@filosign/emails": "workspace:*",
         "@filosign/entitlements": "workspace:*",
         "@filosign/errors": "workspace:*",
+        "@filosign/evm": "workspace:*",
         "@filosign/logger": "workspace:*",
         "@filosign/shared": "workspace:*",
         "@filoz/synapse-sdk": "^0.41.0",
@@ -200,6 +167,30 @@
         "@types/pg": "8.15.6",
         "drizzle-kit": "0.31.6",
         "ethers": "catalog:",
+      },
+    },
+    "oss/packages/contracts": {
+      "name": "@filosign/contracts",
+      "version": "1.0.0",
+      "devDependencies": {
+        "@nomicfoundation/hardhat-network-helpers": "^1.1.0",
+        "@nomicfoundation/hardhat-toolbox-viem": "^4.1.0",
+        "@nomicfoundation/hardhat-viem": "^2.1.1",
+        "@openzeppelin/contracts": "^5.4.0",
+        "@solidity-parser/parser": "^0.18.0",
+        "@types/bun": "catalog:",
+        "@types/chai": "^4.3.20",
+        "@types/chai-as-promised": "^7.1.8",
+        "@types/mocha": "^10.0.10",
+        "@types/node": "catalog:",
+        "chai": "^4.5.0",
+        "glob": "^11.0.3",
+        "hardhat": "^2.26.3",
+        "mocha": "11.7.4",
+        "typescript": "catalog:",
+      },
+      "peerDependencies": {
+        "viem": "catalog:",
       },
     },
     "oss/packages/protocol": {
@@ -294,6 +285,36 @@
         "sonner",
       ],
     },
+    "packages/evm": {
+      "name": "@filosign/evm",
+      "version": "1.0.0",
+      "dependencies": {
+        "multiformats": "catalog:",
+      },
+      "devDependencies": {
+        "@filosign/contracts": "workspace:*",
+        "@nomicfoundation/hardhat-network-helpers": "^1.1.0",
+        "@nomicfoundation/hardhat-toolbox-viem": "^4.1.0",
+        "@nomicfoundation/hardhat-verify": "^2.1.1",
+        "@nomicfoundation/hardhat-viem": "^2.1.1",
+        "@openzeppelin/contracts": "^5.4.0",
+        "@t3-oss/env-core": "catalog:",
+        "@types/bun": "catalog:",
+        "@types/chai": "^4.3.20",
+        "@types/chai-as-promised": "^7.1.8",
+        "@types/mocha": "^10.0.10",
+        "@types/node": "catalog:",
+        "chai": "^4.5.0",
+        "ethers": "catalog:",
+        "hardhat": "^2.26.3",
+        "mocha": "11.7.4",
+        "typescript": "catalog:",
+        "zod": "catalog:",
+      },
+      "peerDependencies": {
+        "viem": "catalog:",
+      },
+    },
     "packages/logger": {
       "name": "@filosign/logger",
       "version": "0.1.0",
@@ -325,8 +346,8 @@
       "name": "@filosign/react",
       "version": "0.1.0",
       "dependencies": {
-        "@filosign/contracts": "workspace:*",
         "@filosign/crypto-utils": "workspace:*",
+        "@filosign/evm": "workspace:*",
         "@filosign/shared": "workspace:*",
         "@orpc/client": "catalog:",
         "@orpc/tanstack-query": "catalog:",
@@ -355,8 +376,8 @@
       "name": "@filosign/shared",
       "version": "0.1.0",
       "dependencies": {
-        "@filosign/contracts": "workspace:*",
         "@filosign/crypto-utils": "workspace:*",
+        "@filosign/evm": "workspace:*",
         "viem": "catalog:",
         "zod": "catalog:",
       },
@@ -832,7 +853,7 @@
 
     "@filosign/client": ["@filosign/client@workspace:apps/client"],
 
-    "@filosign/contracts": ["@filosign/contracts@workspace:apps/contracts"],
+    "@filosign/contracts": ["@filosign/contracts@workspace:oss/packages/contracts"],
 
     "@filosign/crypto-utils": ["@filosign/crypto-utils@workspace:packages/crypto-utils"],
 
@@ -841,6 +862,8 @@
     "@filosign/entitlements": ["@filosign/entitlements@workspace:packages/entitlements"],
 
     "@filosign/errors": ["@filosign/errors@workspace:packages/errors"],
+
+    "@filosign/evm": ["@filosign/evm@workspace:packages/evm"],
 
     "@filosign/logger": ["@filosign/logger@workspace:packages/logger"],
 
@@ -986,7 +1009,7 @@
 
     "@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.5.5", "", {}, "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og=="],
 
-    "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.9", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.0.3", "@jridgewell/sourcemap-codec": "^1.4.10" } }, "sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ=="],
+    "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
     "@jsdevtools/ono": ["@jsdevtools/ono@7.1.3", "", {}, "sha512-4JQNk+3mVzK3xh2rqd6RB4J46qUR19azEHBneZyTZM+c456qOrbbM/5xcR8huNCCcbVt7+UmizG6GuUvPvKUYg=="],
 
@@ -2068,7 +2091,7 @@
 
     "aos": ["aos@2.3.4", "", { "dependencies": { "classlist-polyfill": "^1.0.3", "lodash.debounce": "^4.0.6", "lodash.throttle": "^4.0.1" } }, "sha512-zh/ahtR2yME4I51z8IttIt4lC1Nw0ktsFtmeDzID1m9naJnWXhCoARaCgNOGXb5CLy3zm+wqmRAEgMYB5E2HUw=="],
 
-    "arg": ["arg@4.1.3", "", {}, "sha512-58S9QDqG0Xx27YwPSt9fJxivjYl432YCwfDMfZ+71RAqUrZef7LrKQZ3LHLOwCS4FLNBplP533Zx895SeOCHvA=="],
+    "arg": ["arg@5.0.2", "", {}, "sha512-PYjyFOLKQ9y57JvQ6QLo8dAgNqswh8M1RMJYdQduT6xbWSgK36P/Z/v+p888pM69jMMfS8Xd8F6I1kQ/I9HUGg=="],
 
     "argon2": ["argon2@0.44.0", "", { "dependencies": { "@phc/format": "^1.0.0", "cross-env": "^10.0.0", "node-addon-api": "^8.5.0", "node-gyp-build": "^4.8.4" } }, "sha512-zHPGN3S55sihSQo0dBbK0A5qpi2R31z7HZDZnry3ifOyj8bZZnpZND2gpmhnRGO1V/d555RwBqIK5W4Mrmv3ig=="],
 
@@ -4308,8 +4331,6 @@
 
     "@babel/core/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
 
-    "@babel/generator/@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
-
     "@babel/helper-compilation-targets/lru-cache": ["lru-cache@5.1.1", "", { "dependencies": { "yallist": "^3.0.2" } }, "sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w=="],
 
     "@babel/helper-compilation-targets/semver": ["semver@6.3.1", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA=="],
@@ -4339,6 +4360,8 @@
     "@coinbase/wallet-sdk/eventemitter3": ["eventemitter3@5.0.1", "", {}, "sha512-GWkBvjiSZK87ELrYOSESUYeVIc9mvLLf/nXalMOS5dYrgZq9o5OVkbZAVM06CVxYsCwH9BDZFPlQTlPA1j4ahA=="],
 
     "@coinbase/wallet-sdk/preact": ["preact@10.24.2", "", {}, "sha512-1cSoF0aCC8uaARATfrlz4VCBqE8LwZwRfLgkxJOQwAlQt6ayTmi0D9OF7nXid1POI5SZidFuG9CnlXbDfLqY/Q=="],
+
+    "@cspotcode/source-map-support/@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.9", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.0.3", "@jridgewell/sourcemap-codec": "^1.4.10" } }, "sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ=="],
 
     "@dotenvx/dotenvx/commander": ["commander@11.1.0", "", {}, "sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ=="],
 
@@ -4379,10 +4402,6 @@
     "@hey-api/openapi-ts/get-tsconfig": ["get-tsconfig@4.14.0", "", { "dependencies": { "resolve-pkg-maps": "^1.0.0" } }, "sha512-yTb+8DXzDREzgvYmh6s9vHsSVCHeC0G3PI5bEXNBHtmshPnO+S5O7qgLEOn0I5QvMy6kpZN8K1NKGyilLb93wA=="],
 
     "@hey-api/shared/semver": ["semver@7.7.4", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-vFKC2IEtQnVhpT78h1Yp8wzwrf8CM+MzKMHGJZfBtzhZNycRFnXsHk6E5TxIkkMsgNS7mdX3AGB7x2QM2di4lA=="],
-
-    "@jridgewell/gen-mapping/@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
-
-    "@jridgewell/remapping/@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
     "@metamask/eth-json-rpc-provider/@metamask/json-rpc-engine": ["@metamask/json-rpc-engine@7.3.3", "", { "dependencies": { "@metamask/rpc-errors": "^6.2.1", "@metamask/safe-event-emitter": "^3.0.0", "@metamask/utils": "^8.3.0" } }, "sha512-dwZPq8wx9yV3IX2caLi9q9xZBw2XeIoYqdyihDDDpuHVCEiqadJLwqM3zy+uwf6F1QYQ65A8aOMQg1Uw7LMLNg=="],
 
@@ -4996,8 +5015,6 @@
 
     "sitemap/@types/node": ["@types/node@24.13.1", "", { "dependencies": { "undici-types": "~7.18.0" } }, "sha512-RSpUJGmvsJ1ZeBehQZFhIdpsz+bIpES0nIQXko4Ybq+N+kX6XvOq3Jo+iJ82FWLdblFq85AsMikd3m35jgezYg=="],
 
-    "sitemap/arg": ["arg@5.0.2", "", {}, "sha512-PYjyFOLKQ9y57JvQ6QLo8dAgNqswh8M1RMJYdQduT6xbWSgK36P/Z/v+p888pM69jMMfS8Xd8F6I1kQ/I9HUGg=="],
-
     "socket.io-adapter/ws": ["ws@8.20.1", "", { "peerDependencies": { "bufferutil": "^4.0.1", "utf-8-validate": ">=5.0.2" }, "optionalPeers": ["bufferutil", "utf-8-validate"] }, "sha512-It4dO0K5v//JtTXuPkfEOaI3uUN87iYPnqo/ZzqCoG3g8uhA66QUMs/SrM0YK7/NAu+r4LMh/9dq2A7k+rHs+w=="],
 
     "solc/commander": ["commander@8.3.0", "", {}, "sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww=="],
@@ -5047,6 +5064,8 @@
     "thirdweb/zod": ["zod@3.25.75", "", {}, "sha512-OhpzAmVzabPOL6C3A3gpAifqr9MqihV/Msx3gor2b2kviCgcb+HM9SEOpMWwwNp9MRunWnhtAKUoo0AHhjyPPg=="],
 
     "thread-stream/real-require": ["real-require@1.0.0", "", {}, "sha512-P4nbQYQfePJxRSmY+v/KINxVucm4NF3p3s7pJveMTtom52FR4YGltUQLB8idDXwDDWW+eYrWDFbuzUnjoWHF7g=="],
+
+    "ts-node/arg": ["arg@4.1.3", "", {}, "sha512-58S9QDqG0Xx27YwPSt9fJxivjYl432YCwfDMfZ+71RAqUrZef7LrKQZ3LHLOwCS4FLNBplP533Zx895SeOCHvA=="],
 
     "ts-node/diff": ["diff@4.0.4", "", {}, "sha512-X07nttJQkwkfKfvTPG/KSnE2OMdcUCao6+eXF3wmnIQRn2aPAHH3VxDbDOdegkd6JbPsXqShpvEOHfAT+nCNwQ=="],
 

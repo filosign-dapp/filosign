@@ -32,6 +32,7 @@ Actions (one per run):
   --health     Container + deep probe (default when targets only)
   --info       Metrics / status output
   --migrate    Drizzle migrate (SSH tunnel + Infisical prod /app)
+  --quiet, -q  Less output (default is verbose)
 
 Examples:
   bun run prod
@@ -50,9 +51,9 @@ runMain(async () => {
 	const parsed = parseProdArgv(argv);
 
 	if (parsed.kind === "migrate") {
-		process.exit(await migrateProd(root));
+		process.exit(await migrateProd(root, { verbose: parsed.verbose }));
 	}
 
-	const ctx = createProdContext(root);
+	const ctx = createProdContext(root, { verbose: parsed.verbose });
 	process.exit(await runMany(ctx, parsed.targets, parsed.action));
 });

@@ -33,7 +33,7 @@ export function DraftContextRail() {
 	const settlements = snapshot.settlementDrafts ?? [];
 
 	return (
-		<div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-5">
+		<div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-5 pb-4">
 			<SidebarSection title="Overview">
 				<p className="text-sm font-medium text-foreground">{displayTitle}</p>
 				<p className="mt-2 text-xs leading-relaxed text-muted-foreground">

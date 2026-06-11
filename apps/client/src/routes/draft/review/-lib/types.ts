@@ -5,4 +5,5 @@ export type DecryptedDraftReview = {
 	title?: string;
 	snapshot: DraftSnapshot;
 	documents: DecryptedDraftDocument[];
+	reviewDek: Uint8Array;
 };

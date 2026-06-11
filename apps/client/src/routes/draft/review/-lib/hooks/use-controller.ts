@@ -60,6 +60,7 @@ export function useDraftReviewController(token: string) {
 			setColdDecrypted({
 				snapshot: res.snapshot,
 				documents: res.documents,
+				reviewDek: res.reviewDek,
 			});
 			toast.success("Draft decrypted successfully");
 		} catch (err) {

@@ -1,4 +1,9 @@
-import { FilePdfIcon, FileTextIcon, InfoIcon } from "@phosphor-icons/react";
+import {
+	ChatCircleIcon,
+	FilePdfIcon,
+	FileTextIcon,
+	InfoIcon,
+} from "@phosphor-icons/react";
 import { useMemo } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -9,6 +14,7 @@ import {
 	SheetTrigger,
 } from "@/src/lib/components/ui/sheet";
 import { cn } from "@/src/lib/utils";
+import { DraftReviewCommentsPanel } from "@/src/routes/draft/review/-components/right/comments-panel";
 import { DraftContextRail } from "@/src/routes/draft/review/-components/right/context-rail";
 import {
 	useDraftReviewMeta,
@@ -110,6 +116,31 @@ export function DraftReviewMobileToolbar() {
 						</SheetContent>
 					</Sheet>
 				) : null}
+
+				<Sheet>
+					<SheetTrigger
+						render={
+							<Button
+								type="button"
+								variant="outline"
+								size="sm"
+								className="gap-2"
+							/>
+						}
+					>
+						<ChatCircleIcon className="size-4" weight="duotone" />
+						Comments
+					</SheetTrigger>
+					<SheetContent
+						side="bottom"
+						className="max-h-[70vh] overflow-y-auto p-0"
+					>
+						<SheetHeader className="px-5 pt-5">
+							<SheetTitle>Comments</SheetTitle>
+						</SheetHeader>
+						<DraftReviewCommentsPanel />
+					</SheetContent>
+				</Sheet>
 
 				<Sheet>
 					<SheetTrigger

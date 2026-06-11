@@ -192,6 +192,7 @@ export function useDraftReviewWarmUnlock(token: string) {
 				title: res.title,
 				snapshot: res.snapshot,
 				documents: res.documents,
+				reviewDek: res.reviewDek,
 			});
 		} catch (e) {
 			if (

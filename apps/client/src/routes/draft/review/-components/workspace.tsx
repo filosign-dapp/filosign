@@ -1,6 +1,7 @@
 import { DocumentViewportProvider } from "@/src/lib/domains/files/document-viewport";
 import { DraftDocumentsRail } from "@/src/routes/draft/review/-components/left/documents-rail";
 import { DraftReviewMobileToolbar } from "@/src/routes/draft/review/-components/mobile/mobile-toolbar";
+import { DraftReviewCommentsPanel } from "@/src/routes/draft/review/-components/right/comments-panel";
 import { DraftContextRail } from "@/src/routes/draft/review/-components/right/context-rail";
 import { DraftReviewUnlockGate } from "@/src/routes/draft/review/-components/unlock/unlock-gate";
 import { DraftReviewViewer } from "@/src/routes/draft/review/-components/viewer/draft-review-viewer";
@@ -24,8 +25,11 @@ export function DraftReviewWorkspace() {
 						)}
 					</div>
 					{isUnlocked ? (
-						<aside className="hidden h-full min-h-0 w-72 shrink-0 flex-col border-l border-border bg-muted/5 lg:flex">
-							<DraftContextRail />
+						<aside className="hidden h-full min-h-0 w-72 shrink-0 flex-col overflow-hidden border-l border-border bg-muted/5 lg:flex">
+							<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+								<DraftContextRail />
+								<DraftReviewCommentsPanel />
+							</div>
 						</aside>
 					) : null}
 				</div>

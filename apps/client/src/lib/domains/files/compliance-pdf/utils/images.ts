@@ -48,7 +48,9 @@ export function resolveImageMime(
 	return sniffed ?? "application/octet-stream";
 }
 
-async function canvasToPngBytes(canvas: HTMLCanvasElement): Promise<Uint8Array> {
+async function canvasToPngBytes(
+	canvas: HTMLCanvasElement,
+): Promise<Uint8Array> {
 	const pngBlob = await new Promise<Blob>((resolve, reject) => {
 		canvas.toBlob(
 			(b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),

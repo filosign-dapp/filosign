@@ -215,11 +215,6 @@ function DraggableFieldOverlay({
 		<div
 			ref={setNodeRef}
 			data-field-id={field.id}
-			aria-label={
-				field.type === "checkbox"
-					? `${field.assignedSignerEmail}, Checkbox`
-					: undefined
-			}
 			className={cn(
 				PLACEMENT_FIELD_OVERLAY_CLASS,
 				"absolute box-border select-none group z-30 touch-none",

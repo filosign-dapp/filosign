@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
-	pdfPointsToEmbedPixels,
 	PDF_EMBED_DPI,
+	pdfPointsToEmbedPixels,
 } from "../../src/lib/domains/files/compliance-pdf/utils/images";
 
 describe("pdfPointsToEmbedPixels", () => {

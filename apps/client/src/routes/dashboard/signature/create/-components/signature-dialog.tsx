@@ -21,7 +21,7 @@ interface SignatureDialogProps {
 	onClose: () => void;
 	onSave: (signatureData: string) => void;
 	title: string;
-	role: UserSignatureRole;
+	signatureRole: UserSignatureRole;
 }
 
 export default function SignatureDialog({
@@ -29,7 +29,7 @@ export default function SignatureDialog({
 	onClose,
 	onSave,
 	title,
-	role,
+	signatureRole,
 }: SignatureDialogProps) {
 	const editorRef = useRef<Editor | null>(null);
 
@@ -40,7 +40,10 @@ export default function SignatureDialog({
 		}
 
 		try {
-			const svg = await exportSignatureSvgFromEditor(editorRef.current, role);
+			const svg = await exportSignatureSvgFromEditor(
+				editorRef.current,
+				signatureRole,
+			);
 			onSave(svgToDataUrl(svg));
 			onClose();
 		} catch (error) {

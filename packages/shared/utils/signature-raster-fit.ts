@@ -34,8 +34,7 @@ export function fitSignatureRasterFontSize(args: {
 		return preferredFontSize;
 	}
 
-	const widthScale =
-		(boxWidth * SIGNATURE_RASTER_WIDTH_FILL) / measuredWidth;
+	const widthScale = (boxWidth * SIGNATURE_RASTER_WIDTH_FILL) / measuredWidth;
 	const heightScale =
 		(boxHeight * SIGNATURE_RASTER_HEIGHT_FILL) / measuredHeight;
 	const scale = Math.min(widthScale, heightScale);

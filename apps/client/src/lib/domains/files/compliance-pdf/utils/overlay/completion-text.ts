@@ -1,10 +1,7 @@
 import type { FieldCompletionWireRow } from "@filosign/shared";
 import type { PDFDocument, PDFFont } from "pdf-lib";
 import { rgb } from "pdf-lib";
-import {
-	resolveImageMime,
-	supersampleImageBytesForPdfEmbed,
-} from "../images";
+import { resolveImageMime, supersampleImageBytesForPdfEmbed } from "../images";
 import {
 	bodyFontSize,
 	type FieldInnerRect,
@@ -21,10 +18,7 @@ async function fetchCompletionImageBytes(
 		const res = await fetch(completion.previewUrl);
 		if (!res.ok) return null;
 		const bytes = new Uint8Array(await res.arrayBuffer());
-		const mime = resolveImageMime(
-			bytes,
-			res.headers.get("content-type"),
-		);
+		const mime = resolveImageMime(bytes, res.headers.get("content-type"));
 		return { bytes, mime };
 	} catch {
 		return null;

@@ -89,12 +89,7 @@ export async function rasterizeTypedSignature(args: {
 		throw new Error("Canvas is not supported in this browser");
 	}
 
-	const measured = measureCanvasTextBox(
-		probe,
-		args.text,
-		fontSize,
-		cssFamily,
-	);
+	const measured = measureCanvasTextBox(probe, args.text, fontSize, cssFamily);
 	const fittedFontSize = fitSignatureRasterFontSize({
 		measuredWidth: measured.width,
 		measuredHeight: measured.height,

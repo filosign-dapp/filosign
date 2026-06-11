@@ -19,6 +19,7 @@ export * from "./utils/sign-field-session";
 export * from "./utils/signable-document-upload";
 export * from "./utils/signature-artifact";
 export * from "./utils/signature-font-catalog";
+export * from "./utils/signature-raster-fit";
 export * from "./utils/supplementary-attachment-upload";
 export * from "./utils/supplementary-packet-unlock";
 

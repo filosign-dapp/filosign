@@ -11,6 +11,10 @@ import {
 	assertSettlementRuleEntitlements,
 	assertSettlementUpdateEntitlements,
 } from "@/lib/domains/settlements/utils/entitlements";
+import {
+	isRetryablePayoutSkip,
+	SettlementPayoutRetryableError,
+} from "@/lib/domains/settlements/utils/execute/payout-readiness";
 import { dbQueryResult } from "../support/db-query-result";
 
 describe("settlements", () => {
@@ -47,6 +51,66 @@ describe("settlements", () => {
 				expect(src).toContain(
 					"normalizePlacementRecipientEmail(args.recipient.email)",
 				);
+			});
+		});
+
+		describe("payout-readiness", () => {
+			test("isRetryablePayoutSkip marks not_executable and partial as retryable", () => {
+				expect(isRetryablePayoutSkip("not_executable", {})).toBe(true);
+				expect(isRetryablePayoutSkip(undefined, { partial: true })).toBe(true);
+				expect(isRetryablePayoutSkip("failed_relay", {})).toBe(true);
+				expect(isRetryablePayoutSkip("insufficient_funds", {})).toBe(false);
+				expect(isRetryablePayoutSkip("already_executed", {})).toBe(false);
+			});
+
+			test("preflight polls canExecute instead of a single read", () => {
+				const preflightSrc = readFileSync(
+					join(
+						import.meta.dir,
+						"../../lib/domains/settlements/utils/execute/payout-preflight.ts",
+					),
+					"utf8",
+				);
+				expect(preflightSrc).toContain("pollCanExecute");
+				expect(preflightSrc).not.toContain(
+					"validator.read.canExecute([onChainRuleId])",
+				);
+			});
+
+			test("payout-leg resolves executed status via resolveLegPayoutExecuted", () => {
+				const legSrc = readFileSync(
+					join(
+						import.meta.dir,
+						"../../lib/domains/settlements/utils/execute/payout-leg.ts",
+					),
+					"utf8",
+				);
+				expect(legSrc).toContain("resolveLegPayoutExecuted");
+				expect(legSrc).not.toContain("pollUntilRuleExecuted");
+			});
+
+			test("payout-lock polls before writing partial status", () => {
+				const lockSrc = readFileSync(
+					join(
+						import.meta.dir,
+						"../../lib/domains/settlements/utils/execute/payout-lock.ts",
+					),
+					"utf8",
+				);
+				expect(lockSrc).toContain("pollUntilRuleExecuted");
+				const partialIdx = lockSrc.indexOf('status: "partial"');
+				const pollIdx = lockSrc.indexOf("pollUntilRuleExecuted");
+				expect(pollIdx).toBeGreaterThan(-1);
+				expect(pollIdx).toBeLessThan(partialIdx);
+			});
+
+			test("SettlementPayoutRetryableError carries pieceCid for worker retries", () => {
+				const err = new SettlementPayoutRetryableError(
+					"not_executable",
+					"bafyabc",
+				);
+				expect(err.pieceCid).toBe("bafyabc");
+				expect(err.reason).toBe("not_executable");
 			});
 		});
 

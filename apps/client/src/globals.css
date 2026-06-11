@@ -58,12 +58,14 @@
 	--off-white: hsl(90, 55%, 98%);
 
 	/* PDF canvas field overlays — stable on document pages (not flipped in .dark) */
-	--placement-chrome: oklch(0.21 0.006 285.885);
+	--placement-chrome: #0d0d0d;
 	--placement-chrome-foreground: oklch(0.985 0 0);
 	--placement-chrome-border: oklch(1 0 0 / 0.22);
 	--placement-chrome-muted-foreground: oklch(1 0 0 / 0.62);
 	--placement-fill: oklch(1 0 0);
 	--placement-fill-foreground: oklch(0.141 0.005 285.823);
+	--placement-fill-interactive: #0d0d0d;
+	--placement-fill-interactive-foreground: var(--placement-chrome-foreground);
 
 	--radius: 0.6rem;
 
@@ -162,6 +164,10 @@
 	);
 	--color-placement-fill: var(--placement-fill);
 	--color-placement-fill-foreground: var(--placement-fill-foreground);
+	--color-placement-fill-interactive: var(--placement-fill-interactive);
+	--color-placement-fill-interactive-foreground: var(
+		--placement-fill-interactive-foreground
+	);
 
 	--radius-sm: calc(var(--radius) * 0.6);
 	--radius-md: calc(var(--radius) * 0.8);
@@ -319,4 +325,9 @@
 @utility placement-field-applied-fill {
 	@apply flex h-full w-full items-center justify-center overflow-hidden rounded-sm px-1 text-xs text-placement-fill-foreground;
 	background-color: var(--placement-fill);
+}
+
+@utility placement-field-interactive-fill {
+	@apply flex h-full w-full items-center justify-center overflow-hidden rounded-sm px-1 text-xs text-placement-fill-interactive-foreground;
+	background-color: var(--placement-fill-interactive);
 }

@@ -17,7 +17,7 @@ Backend: **`apps/server`**. **`/api`** mounts [`api/integrations/`](apps/server/
 
 ## TanStack Query (React SDK)
 
-- **`rpcQuery`** exposes **`createTanstackQueryUtils` per subtree** — `filosign` root + **`auth`**, **`files`**, **`settlements`**, **`sharing`**, **`storage`**, **`users`**, **`tx`**, plus leaf utils for **`healthCheck`** / **`runtime`** ([`rpc-query-utils.ts`](packages/react-sdk/src/orpc/rpc-query-utils.ts)). Invalidate a subtree with **`rpcQuery.settlements.key()`** (same pattern as **`orgs`**).
+- **`rpcQuery`** exposes **`createTanstackQueryUtils` per subtree** — `filosign` root + **`auth`**, **`files`**, **`settlements`**, **`storage`**, **`users`**, **`tx`**, plus leaf utils for **`healthCheck`** / **`runtime`** ([`rpc-query-utils.ts`](packages/react-sdk/src/orpc/rpc-query-utils.ts)). Invalidate a subtree with **`rpcQuery.settlements.key()`** (same pattern as **`orgs`**).
 
 ## Files (register + amend)
 
@@ -29,8 +29,8 @@ Backend: **`apps/server`**. **`/api`** mounts [`api/integrations/`](apps/server/
 
 - **`settlements.registerForFile`** — index on-chain rules after `registerRule` + `approve`; recipient allowlist + entitlement checks per leg.
 - **`settlements.listByFile`** — list rules for a piece (legacy top-level fields derived from first leg).
-- **`settlements.trySettle`** — primary: server relay `executePayout` + chain sync (sign page **Settle payment**).
-- **`settlements.confirmSettlement`** — manual fallback: wallet tx hash + chain sync (**Settle from wallet**); no receipt RPC.
+- **`settlements.trySettle`** — primary: server relay `executePayoutLeg` + chain sync (sign page **Send payout** / **Retry payout**).
+- **`settlements.confirmSettlement`** — wallet fallback: user submits `executePayoutLeg` from their wallet, then confirms tx hash + chain sync (**Send from my wallet instead**).
 - **`settlements.updateRule`** / **`settlements.cancelRule`** — Teams Pro; sync after on-chain `updatePayoutRule` / `cancelPayoutRule`.
 - Daily cron backfills `executed` from chain for off-platform payouts (up to ~24h dashboard lag; see Terms).
 

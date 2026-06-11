@@ -12,9 +12,6 @@
 		"./files": {
 			"default": "./src/hooks/files/index.ts"
 		},
-		"./sharing": {
-			"default": "./src/hooks/sharing/index.ts"
-		},
 		"./users": {
 			"default": "./src/hooks/users/index.ts"
 		},

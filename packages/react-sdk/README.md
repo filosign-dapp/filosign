@@ -8,7 +8,7 @@ React SDK: **`FilosignProvider`**, typed **oRPC**, TanStack Query hooks, wallet/
 
 1. **API hooks:** `useFilosignRpc()` + `rpcQuery.*.queryOptions()` / `.call()`; `enabled: isAuthed` (or document public procedures).
 2. **Invalidate:** `rpcQuery.<domain>.<procedure>.key()` (or parent `.key()`); grouped helpers in `@filosign/react/invalidate-queries`. **`filosignKeys`** / **`filosignQueryRoots`** (`@filosign/react/query-keys`) for wallet, on-chain, session, and derived client queries—not hand-rolled oRPC strings.
-3. **Apps:** import `@filosign/react/{auth,files,sharing,users}` (+ `/utils`, `/runtime` if needed)—no `/hooks` barrel, no `@filosign/react/src/...`, no `fetch` to `/api/rpc`.
+3. **Apps:** import `@filosign/react/{auth,files,users}` (+ `/utils`, `/runtime` if needed)—no `/hooks` barrel, no `@filosign/react/src/...`, no `fetch` to `/api/rpc`.
 4. **Changes:** server procedure first → hook in matching `src/hooks/<domain>/` → client import → `turbo run check-types --filter=@filosign/client`.
 5. **Never** put `rpc` inside a `queryKey` (proxy + `JSON.stringify` hazard—see root [`AGENTS.md`](../../AGENTS.md)).
 
@@ -39,7 +39,6 @@ Deeper context: [`AGENTS.md`](../../AGENTS.md), [api-routes.mdc](../../.cursor/r
 | `@filosign/react` | `FilosignProvider`, `useFilosignContext` (`rpc`, `rpcQuery`, `session`, `contracts`, `runtime`, `wallet`, `wasm`) |
 | `@filosign/react/auth` | Login, logout, `useAuthedApi`, registration, recovery |
 | `@filosign/react/files` | Documents, cold invite, sign/ack/view/send, register routing (`useSendFile` + `routing`), signer replacement (`useProposeSignerReplacement`, `useExecuteSignerReplacement`, `useCancelSignerReplacement`), settlements (`useSettlementsListByFile`, `useTrySettleSettlement`, `useManualSettlementPayout`, `useUpdateSettlementRule`, `useCancelSettlementRule`) |
-| `@filosign/react/sharing` | Connections, approvals, requests |
 | `@filosign/react/users` | Profile, Thirdweb email, lookup |
 | `@filosign/react/runtime` | `useRuntimeChain` |
 | `@filosign/react/utils` | Piece CID, cold-invite envelope, crypto helpers |
@@ -131,7 +130,7 @@ Non-RPC only: `useAuthedApi`, `useIsLoggedIn`, `useIsRegistered`, `useStoredKeyg
 ## Hook checklist
 
 1. Add/update procedure + Zod output on server.
-2. Hook under `src/hooks/{auth,files,sharing,users}/`; export from domain `index.ts` if apps need it.
+2. Hook under `src/hooks/{auth,files,users}/`; export from domain `index.ts` if apps need it.
 3. `useFilosignRpc` + `rpcQuery`; gate with `isAuthed` unless public.
 4. Invalidate with `rpcQuery.*.key()` or `filosignKeys` as appropriate.
 5. Client: `@filosign/react/<domain>` only.
@@ -186,7 +185,7 @@ index.ts              # Provider + context
 package.json          # domain exports
 src/context/          # FilosignProvider
 src/orpc/             # client, rpc-query-utils, AppRouterClient
-src/hooks/{auth,files,sharing,users}/
+src/hooks/{auth,files,users}/
 src/lib/              # use-filosign-rpc, query-keys, invalidate-queries, invalidate-user-profile
 src/utils/
 src/constants.ts      # DAY, MINUTE

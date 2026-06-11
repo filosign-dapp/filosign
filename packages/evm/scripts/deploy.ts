@@ -1,9 +1,9 @@
 import "@nomicfoundation/hardhat-viem";
 import { $ } from "bun";
 import hre from "hardhat";
-import { base, baseSepolia } from "viem/chains";
 import { createWalletClient, getAddress, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { base, baseSepolia } from "viem/chains";
 import type { ChainKey } from "../definitions/chain-key.js";
 import type { ContractName } from "../definitions/schema.js";
 import env from "../env.js";

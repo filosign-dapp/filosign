@@ -6,6 +6,7 @@ import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 import { selectSettlementRule, settlementRuleWhere } from "../rule-lookup";
 import { alertSettlementRelayPayoutFailed } from "./alerts";
 import { executeSinglePayoutLeg, type LegExecutionResult } from "./payout-leg";
+import { pollUntilRuleExecuted } from "./payout-readiness";
 
 const { fileSettlementRules } = db.schema;
 
@@ -64,6 +65,17 @@ export async function executePayoutLegsUnderLock(args: {
 			if (refreshed?.status === "executed") {
 				return { executed: true, txHash: lastTxHash };
 			}
+
+			const fullyPaid = await pollUntilRuleExecuted({
+				validator: args.validator,
+				onChainRuleId: args.onChainRuleId,
+				validatorAddress: args.validatorAddress,
+				legCount: args.row.legs.length,
+			});
+			if (fullyPaid) {
+				return { executed: true, txHash: lastTxHash };
+			}
+
 			await db
 				.update(fileSettlementRules)
 				.set({

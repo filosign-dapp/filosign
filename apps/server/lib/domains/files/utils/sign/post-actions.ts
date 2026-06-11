@@ -22,6 +22,7 @@ export async function runPostPieceSignSideEffects(args: {
 	registryAddress: `0x${string}`;
 	registerRoutingJson: RegisterRoutingInput | null;
 	fieldCount: number;
+	signTxHash?: `0x${string}`;
 }): Promise<void> {
 	trackServerEvent({
 		distinctId: args.signerWallet,
@@ -49,10 +50,12 @@ export async function runPostPieceSignSideEffects(args: {
 	}
 
 	const { enqueuePayoutForPiece } = await import("@/lib/platform/jobs");
-	void enqueuePayoutForPiece(args.pieceCid).catch((err) => {
+	void enqueuePayoutForPiece(args.pieceCid, {
+		...(args.signTxHash ? { signTxHash: args.signTxHash } : {}),
+	}).catch((err) => {
 		logger.warn(
 			{ err, pieceCid: args.pieceCid },
-			"post-sign settlement enqueue failed; use Settle payment or daily sync",
+			"post-sign settlement enqueue failed; use Send payout or daily sync",
 		);
 	});
 

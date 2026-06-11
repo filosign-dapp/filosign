@@ -4,6 +4,7 @@ import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { selectSettlementRule } from "../rule-lookup";
 import { syncSettlementPayoutFromChain } from "../sync-from-chain";
 import { mapExecuteErrorToStatus } from "./alerts";
+import { resolveLegPayoutExecuted } from "./payout-readiness";
 
 type ExecutePayoutLegWrite = {
 	executePayoutLeg: (args: readonly [bigint, bigint]) => Promise<`0x${string}`>;
@@ -72,13 +73,20 @@ export async function executeSinglePayoutLeg(args: {
 		args.legIndex,
 	);
 
-	const refreshed = await selectSettlementRule(
+	const row = await selectSettlementRule(
 		args.onChainRuleId,
 		args.validatorAddress,
 	);
+	const executed = await resolveLegPayoutExecuted({
+		validator: args.validator,
+		onChainRuleId: args.onChainRuleId,
+		validatorAddress: args.validatorAddress,
+		legCount: row?.legs.length ?? 1,
+	});
+
 	return {
 		kind: "paid",
 		txHash,
-		executed: refreshed?.status === "executed",
+		executed,
 	};
 }

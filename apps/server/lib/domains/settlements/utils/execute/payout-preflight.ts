@@ -8,6 +8,7 @@ import { payerCanFundSettlement } from "../preflight";
 import { selectSettlementRule, settlementRuleWhere } from "../rule-lookup";
 import { syncSettlementPayoutFromChain } from "../sync-from-chain";
 import { listUnpaidSettlementLegIndices } from "../sync-legs-from-chain";
+import { pollCanExecute } from "./payout-readiness";
 
 const { fileSettlementRules } = db.schema;
 
@@ -40,8 +41,8 @@ export async function preflightSettlementPayout(args: {
 		return { skip: "already_executed_on_chain" as const };
 	}
 
-	const canRes = await tryCatch(validator.read.canExecute([onChainRuleId]));
-	if (canRes.error || !canRes.data) {
+	const canExecute = await pollCanExecute({ validator, onChainRuleId });
+	if (!canExecute) {
 		return { skip: "not_executable" as const };
 	}
 

@@ -164,6 +164,7 @@ export async function settlementsTrySettle(
 	const result = await tryExecuteSettlementPayout({
 		onChainRuleId: ruleId,
 		validatorAddress,
+		pieceCid: rule.pieceCid,
 	});
 
 	const [updated] = await db

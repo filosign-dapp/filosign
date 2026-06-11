@@ -77,7 +77,6 @@ import {
 	settlementsUpdateRule,
 	zSettlementRulesRegisterBatch,
 } from "@/api/handlers/settlements";
-import * as sharingHandlers from "@/api/handlers/sharing";
 import {
 	storagePresignPut,
 	zStoragePresignPutInput,
@@ -125,8 +124,6 @@ import {
 	zDraftRevokeExternalShareBody,
 	zDraftSaveBody,
 	zDraftShareExternalBody,
-	zOrgsConnectionAddBody,
-	zOrgsConnectionRevokeBody,
 	zOrgsCreateBody,
 	zOrgsInviteCreateBody,
 	zOrgsKeysPublishWrapBody,
@@ -136,7 +133,6 @@ import {
 	zOrgsTemplateCreateBody,
 	zOrgsUnlinkWalletBody,
 	zOrgsUpdateBody,
-	zSharingRequestInviteBody,
 	zUserProfilePutBody,
 	zUserRegisterBody,
 	zUserSetPrimaryEmailBody,
@@ -951,29 +947,6 @@ export const appRouter = {
 				}),
 			),
 	},
-	sharing: {
-		emailInvites: authenticatedProcedure
-			.output(out.sharing.emailInvites)
-			.handler(({ context }) =>
-				sharingHandlers.sharingEmailInvites(context.userWallet),
-			),
-		inviteById: publicProcedure
-			.input(z.object({ id: z.string().min(1) }))
-			.output(out.sharing.inviteById)
-			.handler(({ input }) => sharingHandlers.sharingInviteById(input.id)),
-		inviteClaim: authenticatedProcedure
-			.input(z.object({ id: z.string().min(1) }))
-			.output(out.sharing.inviteClaim)
-			.handler(({ context, input }) =>
-				sharingHandlers.sharingInviteClaim(context.userWallet, input.id),
-			),
-		requestInvite: authenticatedProcedure
-			.input(zSharingRequestInviteBody)
-			.output(out.sharing.requestInvite)
-			.handler(({ context, input }) =>
-				sharingHandlers.sharingRequestInvite(context.userWallet, input),
-			),
-	},
 	orgs: {
 		create: authenticatedProcedure
 			.input(zOrgsCreateBody)
@@ -1173,51 +1146,6 @@ export const appRouter = {
 				.handler(({ context, input }) =>
 					orgsHandlers.orgsInvitesAccept(context.userWallet, input),
 				),
-		},
-		connections: {
-			add: authenticatedProcedure
-				.input(zOrgsConnectionAddBody)
-				.output(out.orgs.connection)
-				.handler(({ context, input }) => {
-					if (!context.activeOrg) {
-						throw new ORPCError("BAD_REQUEST", {
-							message: "X-Org-Id header required",
-						});
-					}
-					return orgsHandlers.orgsConnectionsAdd(
-						context.userWallet,
-						context.activeOrg,
-						input,
-					);
-				}),
-			list: authenticatedProcedure
-				.output(out.orgs.connectionsList)
-				.handler(({ context }) => {
-					if (!context.activeOrg) {
-						throw new ORPCError("BAD_REQUEST", {
-							message: "X-Org-Id header required",
-						});
-					}
-					return orgsHandlers.orgsConnectionsList(
-						context.userWallet,
-						context.activeOrg,
-					);
-				}),
-			revoke: authenticatedProcedure
-				.input(zOrgsConnectionRevokeBody)
-				.output(out.orgs.connection)
-				.handler(({ context, input }) => {
-					if (!context.activeOrg) {
-						throw new ORPCError("BAD_REQUEST", {
-							message: "X-Org-Id header required",
-						});
-					}
-					return orgsHandlers.orgsConnectionsRevoke(
-						context.userWallet,
-						context.activeOrg,
-						input,
-					);
-				}),
 		},
 		templates: {
 			create: authenticatedProcedure

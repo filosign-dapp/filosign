@@ -5,7 +5,7 @@ import {
 	AvatarBadge,
 	AvatarFallback,
 } from "@/src/lib/components/ui/avatar";
-import { initialsFromName } from "@/src/routes/dashboard/_shell/connections/-lib/utils/contact-display";
+import { initialsFromName } from "@/src/lib/utils/display-name";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { filosignProfileDisplayName } from "@/src/routes/dashboard/envelope/create/-lib/utils/filosign-profile";
 

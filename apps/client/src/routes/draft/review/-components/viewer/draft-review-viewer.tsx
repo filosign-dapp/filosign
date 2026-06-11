@@ -119,11 +119,9 @@ export function DraftReviewViewer() {
 							onPdfNumPagesLoaded={setPdfNumPages}
 							onPdfPageLayoutLoaded={onPdfPageLayoutLoaded}
 							setPageRef={setPageElForPage}
-							renderPageOverlay={useStripLayout ? renderPageOverlay : undefined}
+							renderPageOverlay={renderPageOverlay}
 							stripScrollBridge={useStripLayout ? stripScrollBridge : undefined}
 						/>
-
-						{!useStripLayout ? renderPageOverlay(0) : null}
 					</div>
 				</DocumentSurface>
 			</PanZoomCanvas>

@@ -28,7 +28,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/src/lib/components/ui/select";
-import { initialsFromName } from "@/src/routes/dashboard/_shell/connections/-lib/utils/contact-display";
+import { initialsFromName } from "@/src/lib/utils/display-name";
 import { FilosignRecipientHoverCard } from "@/src/routes/dashboard/envelope/create/-components/filosign-recipient-hover-card";
 import {
 	RECIPIENT_FIELD_LABEL_CLASS,

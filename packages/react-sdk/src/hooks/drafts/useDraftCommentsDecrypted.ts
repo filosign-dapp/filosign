@@ -14,10 +14,14 @@ export function useDraftCommentsDecrypted(args: {
 	workspaceOrgId?: string | null;
 	/** External reviewers pass DEK after unlocking the draft. */
 	reviewDek?: Uint8Array;
+	/** When set, loads comments via public `listByToken` (draft review link). */
+	inviteToken?: string;
 }) {
 	const { wallet } = useFilosignContext();
 	const { rpc, rpcQuery, isAuthed } = useFilosignRpc();
 	const draftId = args.draftId?.trim();
+	const inviteToken = args.inviteToken?.trim();
+	const isExternalReview = Boolean(inviteToken && args.reviewDek);
 
 	return useQuery({
 		queryKey: [
@@ -26,13 +30,23 @@ export function useDraftCommentsDecrypted(args: {
 			"comments-decrypted",
 			draftId ?? "",
 			args.workspaceOrgId ?? "",
+			inviteToken ?? "",
 			Boolean(args.reviewDek),
 		],
-		enabled: Boolean(draftId) && (Boolean(args.reviewDek) || isAuthed),
+		enabled: Boolean(draftId) && (isExternalReview || isAuthed),
 		queryFn: async () => {
 			if (!draftId) throw new Error("draftId required");
 
-			const list = await rpcQuery.drafts.comments.list.call({ draftId });
+			let list: Awaited<ReturnType<typeof rpcQuery.drafts.comments.list.call>>;
+			if (isExternalReview) {
+				if (!inviteToken) throw new Error("inviteToken required");
+				list = await rpc.drafts.comments.listByToken({
+					draftId,
+					inviteToken,
+				});
+			} else {
+				list = await rpcQuery.drafts.comments.list.call({ draftId });
+			}
 			if (list.comments.length === 0) return [];
 
 			let dek = args.reviewDek;

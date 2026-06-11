@@ -126,7 +126,7 @@ export function useDecryptDraftReviewCold() {
 				});
 			}
 
-			return { snapshot, documents } satisfies {
+			return { snapshot, documents, reviewDek: dek } satisfies {
 				snapshot: DraftSnapshot;
 				documents: {
 					id: string;
@@ -134,6 +134,7 @@ export function useDecryptDraftReviewCold() {
 					type: string;
 					bytes: Uint8Array;
 				}[];
+				reviewDek: Uint8Array;
 			};
 		},
 	});
@@ -197,7 +198,7 @@ export function useDecryptDraftReviewWarm() {
 					});
 				}
 
-				return { snapshot, documents, title: head.title };
+				return { snapshot, documents, title: head.title, reviewDek: dek };
 			}),
 	});
 }

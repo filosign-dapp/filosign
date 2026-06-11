@@ -25,4 +25,7 @@ export {
 	type SaveDraftInput,
 	useSaveDraft,
 } from "./useSaveDraft";
-export { useShareDraftExternal } from "./useShareDraftExternal";
+export {
+	type ShareDraftExternalResult,
+	useShareDraftExternal,
+} from "./useShareDraftExternal";

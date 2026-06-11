@@ -24,16 +24,21 @@ export function useDraftCommentAppend() {
 			/** When set (external review), decrypt DEK via warm/cold grant instead of org/user head. */
 			reviewDek?: Uint8Array;
 		}) => {
-			if (!wallet?.account || !isAuthed) {
-				throw new Error("Wallet required");
-			}
 			const trimmed = args.body.trim();
 			if (!trimmed) throw new Error("Comment cannot be empty");
 
-			const walletAddress = walletAccountAddress(wallet.account);
+			const isExternal = Boolean(args.inviteToken?.trim() && args.reviewDek);
+			if (!isExternal && (!wallet?.account || !isAuthed)) {
+				throw new Error("Wallet required");
+			}
+
+			const walletAddress = wallet?.account
+				? walletAccountAddress(wallet.account)
+				: null;
 			let dek = args.reviewDek;
 
 			if (!dek) {
+				if (!walletAddress) throw new Error("Wallet required");
 				const head = await rpc.drafts.get({ draftId: args.draftId });
 				const organizationId = draftOrganizationId(head);
 				const myWrap = await rpcQuery.orgs.keys.wrapForMine.call({
@@ -58,6 +63,17 @@ export function useDraftCommentAppend() {
 				body: trimmed,
 			});
 
+			if (isExternal) {
+				const externalToken = args.inviteToken?.trim();
+				if (!externalToken) throw new Error("inviteToken required");
+				return rpc.drafts.comments.appendByToken({
+					draftId: args.draftId,
+					commentId,
+					ciphertext: toHex(ciphertext),
+					inviteToken: externalToken,
+				});
+			}
+
 			return rpc.drafts.comments.append({
 				draftId: args.draftId,
 				commentId,
@@ -70,6 +86,7 @@ export function useDraftCommentAppend() {
 				queryClient,
 				rpcQuery,
 				variables.draftId,
+				variables.inviteToken,
 			);
 		},
 	});

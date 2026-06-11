@@ -87,8 +87,8 @@ export function SettlementStatusPanel({
 				{isSender ? (
 					<p className="text-xs text-muted-foreground">
 						USDC stays in your wallet until each payout runs. We send it
-						automatically when conditions are met, using only what you&apos;ve
-						approved. Use Pay now below only if a payment did not go through.
+						automatically when signing is complete, using only what you&apos;ve
+						approved. Use Send payout below only if one didn&apos;t go through.
 						Revoke approval below to stop any unpaid payouts.{" "}
 						<DocsLink href={DOCS_LINKS.payouts()}>
 							Read the payouts guide
@@ -96,10 +96,9 @@ export function SettlementStatusPanel({
 					</p>
 				) : (
 					<p className="text-xs text-muted-foreground">
-						Payouts run automatically when conditions are met. Use Pay now to
-						retry a failed transfer, or Pay from my wallet if you are paying
-						from your own wallet. Signing this document does not guarantee
-						payment.{" "}
+						Payouts run automatically after signing is complete. Use Retry
+						payout if a transfer failed. Signing this document does not
+						guarantee payment.{" "}
 						<DocsLink href={DOCS_LINKS.payouts()}>
 							Read the payouts guide
 						</DocsLink>

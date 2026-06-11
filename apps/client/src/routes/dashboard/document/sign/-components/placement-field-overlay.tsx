@@ -8,7 +8,10 @@ type PlacementFieldOverlayProps = {
 	fieldCompletions: FieldCompletionMap;
 	alreadySigned: boolean;
 	onToggleField: (field: PlacementField) => void;
-	onTextChange: (fieldId: string, value: string) => void;
+	getTextFieldValue: (fieldId: string) => string;
+	onTextDraftChange: (fieldId: string, value: string) => void;
+	onTextFocus: (fieldId: string) => void;
+	onTextBlur: (fieldId: string) => void;
 };
 
 export const PlacementFieldOverlay = memo(function PlacementFieldOverlay(
@@ -22,7 +25,10 @@ export const PlacementFieldOverlay = memo(function PlacementFieldOverlay(
 			completions={props.fieldCompletions}
 			alreadySigned={props.alreadySigned}
 			onToggleField={props.onToggleField}
-			onTextChange={props.onTextChange}
+			getTextFieldValue={props.getTextFieldValue}
+			onTextDraftChange={props.onTextDraftChange}
+			onTextFocus={props.onTextFocus}
+			onTextBlur={props.onTextBlur}
 		/>
 	);
 });

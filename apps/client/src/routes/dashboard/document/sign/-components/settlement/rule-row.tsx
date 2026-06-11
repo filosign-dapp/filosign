@@ -135,7 +135,7 @@ export function SettlementRuleRowView({
 					{rule.lastError && state.failed ? `: ${rule.lastError}` : null}
 				</p>
 				{state.canSettle ? (
-					<div className="flex flex-wrap gap-2 mt-2">
+					<div className="mt-2 space-y-1.5">
 						<Button
 							type="button"
 							variant="default"
@@ -149,13 +149,17 @@ export function SettlementRuleRowView({
 								})
 							}
 						>
-							{state.isTrying ? "Sending…" : "Pay now"}
+							{state.isTrying
+								? "Sending…"
+								: state.partial || state.failed
+									? "Retry payout"
+									: "Send payout"}
 						</Button>
-						<Button
+						<button
 							type="button"
-							variant="outline"
-							size="sm"
-							className="h-7 text-xs"
+							className={cn(
+								"text-xs text-muted-foreground underline-offset-4 hover:underline disabled:opacity-50 disabled:pointer-events-none",
+							)}
 							disabled={settlePending}
 							onClick={() =>
 								onManualSettleRule({
@@ -165,9 +169,9 @@ export function SettlementRuleRowView({
 							}
 						>
 							{state.isSettling && !state.isTrying
-								? "Sending…"
-								: "Pay from my wallet"}
-						</Button>
+								? "Sending from wallet…"
+								: "Send from my wallet instead"}
+						</button>
 					</div>
 				) : null}
 				{canManageSettlements &&

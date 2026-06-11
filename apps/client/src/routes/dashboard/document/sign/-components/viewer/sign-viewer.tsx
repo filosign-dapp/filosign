@@ -55,7 +55,10 @@ export function SignViewer() {
 		visiblePlacementFields,
 		fieldCompletions,
 		togglePlacementField,
-		handleTextChange,
+		getTextFieldValue,
+		handleTextDraftChange,
+		handleTextFocus,
+		handleTextBlur,
 	} = useSignPlacement();
 	const { alreadySigned } = useSignSigning();
 	const {
@@ -156,7 +159,10 @@ export function SignViewer() {
 					fieldCompletions={fieldCompletions}
 					alreadySigned={alreadySigned}
 					onToggleField={(field) => void togglePlacementField(field)}
-					onTextChange={handleTextChange}
+					getTextFieldValue={getTextFieldValue}
+					onTextDraftChange={handleTextDraftChange}
+					onTextFocus={handleTextFocus}
+					onTextBlur={handleTextBlur}
 				/>
 			</>
 		),
@@ -167,7 +173,10 @@ export function SignViewer() {
 			fieldCompletions,
 			alreadySigned,
 			togglePlacementField,
-			handleTextChange,
+			getTextFieldValue,
+			handleTextDraftChange,
+			handleTextFocus,
+			handleTextBlur,
 		],
 	);
 

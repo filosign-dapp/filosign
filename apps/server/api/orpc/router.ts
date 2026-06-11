@@ -92,11 +92,14 @@ import {
 } from "@/lib/domains/billing";
 import {
 	zDraftCommentAppendBody,
+	zDraftCommentAppendByTokenBody,
 	zDraftCommentDeleteBody,
+	zDraftCommentListByTokenBody,
 	zDraftCommentUpdateBody,
 } from "@/lib/domains/drafts";
 import { zFileCommentAppendBody, zFileRegisterBody } from "@/lib/domains/files";
 import { loadPlatformRuntime } from "@/lib/domains/runtime";
+import { resolveClientIpFromRequest } from "@/lib/platform/utils/client-ip";
 import { zIndexerTxBody } from "@/lib/platform/validation/tx-registration";
 import {
 	authenticatedProcedure,
@@ -447,6 +450,16 @@ export const appRouter = {
 						input.draftId,
 					),
 				),
+			listByToken: publicProcedure
+				.input(zDraftCommentListByTokenBody)
+				.output(out.drafts.commentsList)
+				.handler(({ context, input }) =>
+					draftHandlers.draftsCommentsListByToken(
+						input.inviteToken,
+						input.draftId,
+						resolveClientIpFromRequest(context.hono.req),
+					),
+				),
 			append: orgProcedure
 				.input(zDraftCommentAppendBody)
 				.output(out.drafts.commentsAppend)
@@ -455,6 +468,15 @@ export const appRouter = {
 						context.userWallet,
 						context.activeOrg,
 						input,
+					),
+				),
+			appendByToken: publicProcedure
+				.input(zDraftCommentAppendByTokenBody)
+				.output(out.drafts.commentsAppend)
+				.handler(({ context, input }) =>
+					draftHandlers.draftsCommentsAppendByToken(
+						input,
+						resolveClientIpFromRequest(context.hono.req),
 					),
 				),
 			update: orgProcedure

@@ -1,8 +1,10 @@
 export {
 	draftsArchive,
 	draftsCommentsAppend,
+	draftsCommentsAppendByToken,
 	draftsCommentsDelete,
 	draftsCommentsList,
+	draftsCommentsListByToken,
 	draftsCommentsUpdate,
 	draftsCreate,
 	draftsGet,

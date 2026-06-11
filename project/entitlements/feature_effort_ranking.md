@@ -127,7 +127,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | Templates / org keys | **done–partial** | `orgs/connections-templates.ts`, `invites-keys.ts` |
 | Sequential signing | **done** | `FSEnvelopeRegistry`, `piece-helpers.ts`, envelope create routing UI |
 | Product webhooks | **none** | — |
-| Contacts | **partial** | `connections/-lib/utils/contacts.ts` |
+| Contacts | **removed** | was partial Connections / user invites; rebuild on request |
 | Reminders / expiration | **partial** | `expire-invites.ts` |
 | Seat / billing | **partial** | `packages/entitlements/`, `billing.ts` |
 | Bulk send | **none** | — |

@@ -17,7 +17,7 @@ Last updated: 2026-06-02
 | Customer export duty | `compliance_export_logs`, completion packet (ZIP) | operational + legal | sender export preferred before FOC during hot window | On-chain `documentSha256` = Merkle root of SHA-256(raw bytes) per signable document (leaves sorted by doc id); ZIP includes per-doc Merkle proofs |
 | Encrypted ciphertext | R2 `uploads/{pieceCid}`, then FOC after replicate+verify | tiered (`r2EvictAfter`, org retention) | delete R2 only after FOC verify | FOC deferred until sender export while `now <= r2EvictAfter`; may proceed after hot window without export |
 | Draft artifacts | `envelope_drafts` (`archived`), `envelope_draft_documents`, draft snapshot/doc objects | 30 days after archive | hard delete (scheduled job) | preserve sent-envelope evidence separately |
-| Invite lifecycle | `file_cold_invites`, `organization_invites`, `user_invites` | expire by status; purge expired unclaimed after 90 days | hard delete for eligible rows | claimed/legal-linked records handled per legal basis |
+| Invite lifecycle | `file_cold_invites`, `organization_invites` | expire by status; purge expired unclaimed after 90 days | hard delete for eligible rows | claimed/legal-linked records handled per legal basis |
 | Platform access queue | `access_requests`, `checkout_intents`, `platform_access_pending` | operational retention + periodic cleanup | redact or delete based on workflow/state | DSAR redaction path required |
 | Billing webhook/event logs | `billing_webhook_events` | billing/legal retention | no early hard delete by default | payload minimization roadmap |
 | Session cache | `fs:session:*` | minutes | automatic TTL expiry | immediate revoke on erase |

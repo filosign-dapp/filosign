@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { die } from "../cli.ts";
+import { createProdLog } from "./log.ts";
 import type { ProdContext } from "./types.ts";
 
 function resolveContainers(): ProdContext["containers"] {
@@ -31,10 +32,16 @@ function loadDeployEnv(root: string): void {
 	}
 }
 
-export function createProdContext(root: string): ProdContext {
+export function createProdContext(
+	root: string,
+	opts?: { verbose?: boolean; log?: ProdContext["log"] },
+): ProdContext {
 	loadDeployEnv(root);
 	const ssh = process.env.FILOSIGN_PROD_SSH?.trim();
 	if (!ssh) die("Set FILOSIGN_PROD_SSH=root@vps in deploy/.env");
+
+	const verbose = opts?.verbose ?? true;
+	const log = opts?.log ?? createProdLog(verbose);
 
 	return {
 		root,
@@ -42,6 +49,8 @@ export function createProdContext(root: string): ProdContext {
 		stanza: STANZA,
 		pgUser: PG_USER,
 		pgDb: PG_DB,
+		verbose,
+		log,
 		containers: resolveContainers(),
 	};
 }

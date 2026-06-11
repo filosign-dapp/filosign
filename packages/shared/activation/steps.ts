@@ -36,14 +36,6 @@ export const ACTIVATION_STEPS: Record<
 		description: "Upload a document and send it to someone who needs to sign.",
 		milestoneId: "first_envelope_sent",
 	},
-	add_connections: {
-		id: "add_connections",
-		section: "advanced",
-		title: "Add connections",
-		description: "Save frequent recipients to send faster next time.",
-		hintOnly: true,
-		requiresPlans: ["teams", "teams_pro", "enterprise"],
-	},
 	gated_file_release: {
 		id: "gated_file_release",
 		section: "advanced",
@@ -142,16 +134,14 @@ export const PLAN_ADVANCED_STEP_IDS: Record<
 > = {
 	free: ["try_sandbox_workflow", "upgrade_premium_plan"],
 	individual: ["gated_file_release"],
-	teams: ["add_connections", "invite_teammates", "gated_file_release"],
+	teams: ["invite_teammates", "gated_file_release"],
 	teams_pro: [
-		"add_connections",
 		"invite_teammates",
 		"gated_file_release",
 		"payout_packet_access",
 		"advanced_settlements",
 	],
 	enterprise: [
-		"add_connections",
 		"invite_teammates",
 		"gated_file_release",
 		"payout_packet_access",

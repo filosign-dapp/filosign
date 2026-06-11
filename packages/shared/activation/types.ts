@@ -21,7 +21,6 @@ export type ActivationStepId =
 	| "sign_practice_agreement"
 	| "learn_proof_packets"
 	| "send_first_envelope"
-	| "add_connections"
 	| "gated_file_release"
 	| "payout_packet_access"
 	| "invite_teammates"

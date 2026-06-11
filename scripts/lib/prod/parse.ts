@@ -19,6 +19,11 @@ const TARGET_FLAGS: Record<string, ServiceId> = {
 };
 
 const ACTION_FLAGS = new Set(["--health", "--info", "--migrate"]);
+const QUIET_FLAGS = new Set(["--quiet", "-q"]);
+
+function isVerbose(argv: string[]): boolean {
+	return !argv.some((a) => QUIET_FLAGS.has(a));
+}
 
 function targetFlagsIn(argv: string[]): string[] {
 	return argv.filter((a) => a in TARGET_FLAGS);
@@ -34,8 +39,15 @@ function collectTargets(argv: string[]): ServiceId[] {
 }
 
 export function parseProdArgv(argv: string[]): ParsedProdArgv {
+	const verbose = isVerbose(argv);
+
 	if (argv.length === 0) {
-		return { kind: "probes", targets: [...ALL_SERVICES], action: "health" };
+		return {
+			kind: "probes",
+			targets: [...ALL_SERVICES],
+			action: "health",
+			verbose,
+		};
 	}
 
 	const hasMigrate = argv.includes("--migrate");
@@ -55,7 +67,7 @@ export function parseProdArgv(argv: string[]): ParsedProdArgv {
 		) {
 			die("--migrate cannot combine with service targets or --health/--info");
 		}
-		return { kind: "migrate" };
+		return { kind: "migrate", verbose };
 	}
 
 	const targets: ServiceId[] = hasAll
@@ -72,5 +84,5 @@ export function parseProdArgv(argv: string[]): ParsedProdArgv {
 	if (argv.includes("--info")) action = "info";
 	else if (argv.includes("--health")) action = "health";
 
-	return { kind: "probes", targets, action };
+	return { kind: "probes", targets, action, verbose };
 }

@@ -18,12 +18,16 @@ export type ProbeResult = {
 	detail?: string;
 };
 
+import type { ProdLog } from "./log.ts";
+
 export type ProdContext = {
 	root: string;
 	ssh: string;
 	stanza: string;
 	pgUser: string;
 	pgDb: string;
+	verbose: boolean;
+	log: ProdLog;
 	containers: {
 		postgres: string;
 		dragonfly: string;
@@ -33,5 +37,5 @@ export type ProdContext = {
 };
 
 export type ParsedProdArgv =
-	| { kind: "migrate" }
-	| { kind: "probes"; targets: ServiceId[]; action: Action };
+	| { kind: "migrate"; verbose: boolean }
+	| { kind: "probes"; targets: ServiceId[]; action: Action; verbose: boolean };

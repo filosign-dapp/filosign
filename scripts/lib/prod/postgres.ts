@@ -1,3 +1,8 @@
+import {
+	formatAppliedMigration,
+	listAppliedMigrations,
+	readMigrationJournal,
+} from "./migrations.ts";
 import { containerHealthOk, dockerExec, dockerState } from "./ssh.ts";
 import type { Action, ProbeResult, ProdContext } from "./types.ts";
 
@@ -66,7 +71,24 @@ SELECT count(*)::int AS migrations FROM drizzle.__drizzle_migrations;
 	]);
 
 	const ok = r.code === 0;
-	const detail = [r.stdout, r.stderr].filter(Boolean).join("\n").trim();
+	const parts = [r.stdout, r.stderr].filter(Boolean);
+	if (ctx.verbose) {
+		try {
+			const journal = readMigrationJournal(ctx.root);
+			const applied = await listAppliedMigrations(ctx);
+			parts.push(
+				"--- migrations ---",
+				`journal: ${journal.length} file(s), applied: ${applied.length}`,
+				...applied.map((row) => formatAppliedMigration(row)),
+			);
+		} catch (error) {
+			parts.push(
+				"--- migrations ---",
+				`could not load migration status: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+	}
+	const detail = parts.join("\n").trim();
 	const summary = ok ? "postgres metrics" : "psql returned errors (see detail)";
 
 	return {

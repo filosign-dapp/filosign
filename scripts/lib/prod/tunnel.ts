@@ -1,3 +1,4 @@
+import { createProdLog, type ProdLog } from "./log.ts";
 import { sshCapture } from "./ssh.ts";
 import type { ProdContext } from "./types.ts";
 
@@ -20,7 +21,13 @@ export async function withPostgresTunnel<T>(
 	ctx: ProdContext,
 	fn: (localPort: number) => Promise<T>,
 ): Promise<T> {
+	const log: ProdLog = ctx.log ?? createProdLog(ctx.verbose);
 	const ip = await postgresContainerIp(ctx);
+	log.info(`opening ssh tunnel via ${ctx.ssh}`);
+	log.detail(
+		`127.0.0.1:${LOCAL_PG_PORT} → ${ip}:5432 (${ctx.containers.postgres})`,
+	);
+
 	const tunnel = Bun.spawn({
 		cmd: ["ssh", "-N", "-L", `${LOCAL_PG_PORT}:${ip}:5432`, ctx.ssh],
 		stdout: "ignore",
@@ -31,5 +38,6 @@ export async function withPostgresTunnel<T>(
 		return await fn(LOCAL_PG_PORT);
 	} finally {
 		tunnel.kill();
+		log.info("closed ssh tunnel");
 	}
 }

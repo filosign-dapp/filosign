@@ -145,21 +145,30 @@ export async function buildDocumentPlusCompliancePdf(
 		documentMime === "application/pdf" ||
 		documentName.toLowerCase().endsWith(".pdf")
 	) {
+		let src: PDFDocument;
 		try {
-			const src = await PDFDocument.load(documentBytes);
-			const copied = await out.copyPages(src, src.getPageIndices());
-			for (const p of copied) {
-				out.addPage(p);
-			}
+			src = await PDFDocument.load(documentBytes, { ignoreEncryption: true });
+		} catch (cause) {
+			console.error("[compliance-pdf] PDFDocument.load failed", cause);
+			throw new Error(
+				"The PDF could not be read. Try downloading the original file separately.",
+			);
+		}
+		const copied = await out.copyPages(src, src.getPageIndices());
+		for (const p of copied) {
+			out.addPage(p);
+		}
+		try {
 			await drawPlacementOverlaysOnDocumentPdf(
 				out,
 				options.bundle.placementManifest,
 				options.bundle.signers,
 				options.bundle.fieldCompletions,
 			);
-		} catch {
+		} catch (cause) {
+			console.error("[compliance-pdf] placement overlay failed", cause);
 			throw new Error(
-				"The PDF could not be read. Try downloading the original file separately.",
+				"Placement fields could not be drawn on the proof PDF. Try the proof report only, or download the original file separately.",
 			);
 		}
 	} else {

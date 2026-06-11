@@ -1,6 +1,7 @@
-import type { PDFDocument, PDFFont } from "pdf-lib";
+import type { PDFDocument, PDFFont, RGB } from "pdf-lib";
 import { rgb } from "pdf-lib";
 import { lineHeightAt } from "../text";
+import { drawRecipientFieldChrome } from "./chrome";
 import {
 	buildOverlaySegments,
 	fitOverlaySegmentsToHeight,
@@ -37,6 +38,7 @@ type DrawPlaceholderOverlayInput = {
 	footerText: string;
 	font: PDFFont;
 	fontBold: PDFFont;
+	accent: RGB;
 };
 
 export function drawPlaceholderOverlay(
@@ -54,17 +56,20 @@ export function drawPlaceholderOverlay(
 		footerText,
 		font,
 		fontBold,
+		accent,
 	} = input;
 
 	const { border, bg } = statusColors(st);
 
+	drawRecipientFieldChrome(page, x, yPdf, rw, rh, accent);
+
 	page.drawRectangle({
-		x,
-		y: yPdf,
-		width: rw,
-		height: rh,
+		x: x + 1,
+		y: yPdf + 1,
+		width: Math.max(0, rw - 2),
+		height: Math.max(0, rh - 2),
 		borderColor: border,
-		borderWidth: 1.5,
+		borderWidth: 1,
 		color: bg,
 		opacity: 0.38,
 	});

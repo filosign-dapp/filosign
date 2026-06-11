@@ -5,14 +5,17 @@ import type {
 } from "@filosign/shared";
 import type { PDFDocument, PDFFont } from "pdf-lib";
 import { StandardFonts } from "pdf-lib";
+import { signerAccentColor } from "@/src/lib/domains/files/field-box";
 import {
 	fieldPlacementStatusFromSignerRow,
 	signersByNormalizedRecipientEmail,
 } from "../placement";
+import { drawRecipientFieldChrome } from "./chrome";
 import {
 	drawCompletionTextOnField,
 	drawFieldCompletionVisual,
 } from "./completion-text";
+import { hexToPdfRgb, innerRectFromField } from "./layout";
 import { drawPlaceholderOverlay } from "./placeholder";
 
 type DrawSingleFieldInput = {
@@ -48,23 +51,27 @@ export async function drawSinglePlacementFieldOverlay(
 	const yTop = f.rect.y * h;
 	const yPdf = h - yTop - rh;
 
+	const accent = hexToPdfRgb(signerAccentColor(f.assignedRecipientEmail));
+	const inner = innerRectFromField(x, yPdf, rw, rh);
+
+	let drewCompletion = false;
 	if (completion) {
+		drawRecipientFieldChrome(page, x, yPdf, rw, rh, accent);
+
 		if (completion.valueKind === "visual") {
-			const drew = await drawFieldCompletionVisual(
+			drewCompletion = await drawFieldCompletionVisual(
 				doc,
 				page,
-				x,
-				yPdf,
-				rw,
-				rh,
+				inner,
 				completion,
 			);
-			if (drew) return;
 		}
-		if (drawCompletionTextOnField(page, x, yPdf, rw, rh, completion, font)) {
-			return;
+		if (!drewCompletion) {
+			drewCompletion = drawCompletionTextOnField(page, inner, completion, font);
 		}
 	}
+
+	if (drewCompletion) return;
 
 	const recipientKey = f.assignedRecipientEmail.trim().toLowerCase();
 	const signerRow = signersByRecipient.get(recipientKey);
@@ -88,6 +95,7 @@ export async function drawSinglePlacementFieldOverlay(
 		footerText,
 		font,
 		fontBold,
+		accent,
 	});
 }
 

@@ -21,8 +21,10 @@ export {
 
 export {
 	draftsCommentsAppend,
+	draftsCommentsAppendByToken,
 	draftsCommentsDelete,
 	draftsCommentsList,
+	draftsCommentsListByToken,
 	draftsCommentsUpdate,
 	draftsListExternalShares,
 	draftsReviewByToken,
@@ -30,6 +32,8 @@ export {
 	draftsRevokeExternalShare,
 	draftsShareExternal,
 	zDraftCommentAppendBody,
+	zDraftCommentAppendByTokenBody,
 	zDraftCommentDeleteBody,
+	zDraftCommentListByTokenBody,
 	zDraftCommentUpdateBody,
 } from "./share";

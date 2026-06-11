@@ -102,6 +102,18 @@ export const filesErrors = {
 		severity: "error",
 		defaultOrpcCode: "NOT_FOUND",
 	},
+	"DRAFTS.RATE_LIMITED": {
+		title: "Too many requests",
+		description:
+			"This draft review link received too many requests. Wait a moment and try again.",
+		steps: [
+			"Wait a minute before retrying.",
+			"If this keeps happening, ask the draft owner for a new link.",
+		],
+		audience: "user",
+		severity: "warning",
+		defaultOrpcCode: "FORBIDDEN",
+	},
 	"FILES.COMPLIANCE_EXPORT_NOT_ALLOWED": {
 		title: "Compliance export not available",
 		description:

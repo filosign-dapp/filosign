@@ -1,6 +1,6 @@
 import { throwAppError } from "@filosign/errors/server";
 import { zHexString } from "@filosign/shared/zod";
-import { and, desc, eq, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
@@ -10,6 +10,7 @@ import {
 } from "@/lib/domains/entitlements";
 import { inviteExpiresAt } from "@/lib/domains/invites";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
+import { assertDraftReviewPublicRateLimit } from "@/lib/platform/cache/draft-review-rate-limit";
 import db from "@/lib/platform/db";
 import { sendDraftReviewInviteEmail } from "@/lib/platform/email";
 import { bucket } from "@/lib/platform/s3/client";
@@ -19,19 +20,18 @@ import {
 	assertDraftCreator,
 	loadDraftOrThrow,
 } from "./lifecycle";
+import {
+	assertActiveDraftShareForToken,
+	assertDraftCommentAuthorOrThrow,
+	assertDraftCommentCiphertextSize,
+	assertDraftCommentCountBelowCeiling,
+	mapDraftCommentResponse,
+	selectDraftCommentsForDraft,
+} from "./utils/comments";
+import { pendingDraftShareFilter } from "./utils/external-share-filters";
 
 const { envelopeDraftDocuments, draftExternalShares, draftComments, users } =
 	db.schema;
-
-function pendingDraftShareFilter() {
-	return and(
-		isNull(draftExternalShares.revokedAt),
-		or(
-			isNull(draftExternalShares.expiresAt),
-			sql`${draftExternalShares.expiresAt} > now()`,
-		),
-	);
-}
 
 export const zDraftShareExternalBody = z.object({
 	draftId: z.uuid(),
@@ -71,6 +71,18 @@ export const zDraftCommentAppendBody = z.object({
 	inviteToken: z.string().min(8).optional(),
 });
 
+export const zDraftCommentListByTokenBody = z.object({
+	draftId: z.uuid(),
+	inviteToken: z.string().min(8),
+});
+
+export const zDraftCommentAppendByTokenBody = z.object({
+	draftId: z.uuid(),
+	commentId: z.uuid(),
+	ciphertext: zHexString(),
+	inviteToken: z.string().min(8),
+});
+
 export const zDraftCommentUpdateBody = z.object({
 	draftId: z.uuid(),
 	commentId: z.uuid(),
@@ -85,32 +97,6 @@ export const zDraftCommentDeleteBody = z.object({
 export type DraftCommentAppendBody = z.infer<typeof zDraftCommentAppendBody>;
 export type DraftCommentUpdateBody = z.infer<typeof zDraftCommentUpdateBody>;
 export type DraftCommentDeleteBody = z.infer<typeof zDraftCommentDeleteBody>;
-
-async function assertDraftCommentAuthorOrThrow(args: {
-	draftId: string;
-	commentId: string;
-	wallet: Address;
-}) {
-	const [row] = await db
-		.select({ authorWallet: draftComments.authorWallet })
-		.from(draftComments)
-		.where(
-			and(
-				eq(draftComments.id, args.commentId),
-				eq(draftComments.draftId, args.draftId),
-			),
-		)
-		.limit(1);
-	if (!row) {
-		throwAppError("DRAFTS.NOT_FOUND");
-	}
-	if (
-		!row.authorWallet ||
-		getAddress(row.authorWallet) !== getAddress(args.wallet)
-	) {
-		throwAppError("DRAFTS.FORBIDDEN");
-	}
-}
 
 export async function draftsShareExternal(
 	wallet: Address,
@@ -482,41 +468,33 @@ export async function draftsCommentsList(
 	);
 	assertEntitlement(entitlementCtx, "features.draft_comments");
 
-	const comments = await db
-		.select({
-			id: draftComments.id,
-			authorWallet: draftComments.authorWallet,
-			inviteToken: draftComments.inviteToken,
-			ciphertext: draftComments.ciphertext,
-			createdAt: draftComments.createdAt,
-			authorEmail: users.email,
-			authorFirstName: users.firstName,
-			authorLastName: users.lastName,
-		})
-		.from(draftComments)
-		.leftJoin(users, eq(draftComments.authorWallet, users.walletAddress))
-		.where(eq(draftComments.draftId, draft.id))
-		.orderBy(draftComments.createdAt);
+	const comments = await selectDraftCommentsForDraft(draft.id);
 
 	return {
-		comments: comments.map((row) => {
-			const nameParts = [row.authorFirstName, row.authorLastName].filter(
-				Boolean,
-			);
-			const authorDisplayName =
-				nameParts.length > 0
-					? nameParts.join(" ")
-					: row.authorEmail?.trim() || undefined;
-			return {
-				id: row.id,
-				authorWallet: row.authorWallet,
-				inviteToken: row.inviteToken,
-				ciphertext: row.ciphertext,
-				createdAt: row.createdAt,
-				authorDisplayName,
-				authorEmail: row.authorEmail ?? undefined,
-			};
-		}),
+		comments: comments.map(mapDraftCommentResponse),
+	};
+}
+
+export async function draftsCommentsListByToken(
+	inviteToken: string,
+	draftId: string,
+	clientIp: string,
+) {
+	await assertDraftReviewPublicRateLimit({
+		action: "list",
+		inviteToken,
+		clientIp,
+	});
+	await assertActiveDraftShareForToken(inviteToken, draftId);
+
+	const draft = await loadDraftOrThrow(draftId);
+	if (draft.status !== "active") {
+		throwAppError("DRAFTS.NOT_FOUND");
+	}
+
+	const comments = await selectDraftCommentsForDraft(draft.id);
+	return {
+		comments: comments.map(mapDraftCommentResponse),
 	};
 }
 
@@ -542,6 +520,9 @@ export async function draftsCommentsAppend(
 	);
 	assertEntitlement(entitlementCtx, "features.draft_comments");
 
+	assertDraftCommentCiphertextSize(parsed.data.ciphertext);
+	await assertDraftCommentCountBelowCeiling(draft.id);
+
 	const [row] = await db
 		.insert(draftComments)
 		.values({
@@ -549,6 +530,50 @@ export async function draftsCommentsAppend(
 			draftId: draft.id,
 			authorWallet: getAddress(wallet),
 			inviteToken: parsed.data.inviteToken ?? null,
+			ciphertext: parsed.data.ciphertext,
+		})
+		.returning({
+			id: draftComments.id,
+			createdAt: draftComments.createdAt,
+		});
+
+	return { comment: row };
+}
+
+export async function draftsCommentsAppendByToken(
+	body: unknown,
+	clientIp: string,
+) {
+	const parsed = zDraftCommentAppendByTokenBody.safeParse(body);
+	if (!parsed.success) {
+		throwZodBadRequest(parsed.error);
+	}
+
+	await assertDraftReviewPublicRateLimit({
+		action: "append",
+		inviteToken: parsed.data.inviteToken,
+		clientIp,
+	});
+	await assertActiveDraftShareForToken(
+		parsed.data.inviteToken,
+		parsed.data.draftId,
+	);
+
+	const draft = await loadDraftOrThrow(parsed.data.draftId);
+	if (draft.status !== "active") {
+		throwAppError("DRAFTS.NOT_FOUND");
+	}
+
+	assertDraftCommentCiphertextSize(parsed.data.ciphertext);
+	await assertDraftCommentCountBelowCeiling(draft.id);
+
+	const [row] = await db
+		.insert(draftComments)
+		.values({
+			id: parsed.data.commentId,
+			draftId: draft.id,
+			authorWallet: null,
+			inviteToken: parsed.data.inviteToken,
 			ciphertext: parsed.data.ciphertext,
 		})
 		.returning({

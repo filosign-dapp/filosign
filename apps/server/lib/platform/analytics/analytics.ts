@@ -15,7 +15,6 @@ export const SERVER_ANALYTICS_EVENTS = {
 	coldInviteCreated: "cold_invite_created",
 	coldInviteClaimed: "cold_invite_claimed",
 	coldInviteExpired: "cold_invite_expired",
-	sharingInviteClaimed: "sharing_invite_claimed",
 	pieceAcknowledged: "piece_acknowledged",
 	documentViewed: "document_viewed",
 	pieceSigned: "piece_signed",

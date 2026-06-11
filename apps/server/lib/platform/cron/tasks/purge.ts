@@ -133,9 +133,8 @@ function inviteRetentionCutoff(): Date {
 export async function runPurgeExpiredInvitesJob(): Promise<{
 	fileCold: number;
 	org: number;
-	user: number;
 }> {
-	const { fileColdInvites, organizationInvites, userInvites } = db.schema;
+	const { fileColdInvites, organizationInvites } = db.schema;
 	const cutoff = inviteRetentionCutoff();
 
 	const fileCold = await db
@@ -160,18 +159,7 @@ export async function runPurgeExpiredInvitesJob(): Promise<{
 		)
 		.returning({ id: organizationInvites.id });
 
-	const user = await db
-		.delete(userInvites)
-		.where(
-			and(
-				eq(userInvites.status, "expired"),
-				isNull(userInvites.claimedAt),
-				lt(userInvites.updatedAt, cutoff),
-			),
-		)
-		.returning({ id: userInvites.id });
-
-	return { fileCold: fileCold.length, org: org.length, user: user.length };
+	return { fileCold: fileCold.length, org: org.length };
 }
 
 export async function runPurgeExpiredInvitesCronTick(): Promise<void> {
@@ -190,7 +178,7 @@ export async function runPurgeExpiredInvitesCronTick(): Promise<void> {
 		});
 		return;
 	}
-	const total = res.data.fileCold + res.data.org + res.data.user;
+	const total = res.data.fileCold + res.data.org;
 	if (total > 0)
 		logger.info({ ...res.data, total }, "cron purge-expired-invites");
 }

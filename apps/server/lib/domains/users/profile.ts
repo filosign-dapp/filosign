@@ -11,7 +11,6 @@ import { isAddress } from "viem";
 import { z } from "zod";
 import { writeAuditEvent } from "@/lib/domains/audit";
 import { userAvatarWebpKey } from "@/lib/domains/files";
-import { materializePendingInvitesForEmail } from "@/lib/domains/sharing";
 import { getRedis } from "@/lib/platform/cache/session";
 import db from "@/lib/platform/db";
 import { bucket } from "@/lib/platform/s3/client";
@@ -25,7 +24,6 @@ import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 const {
 	users,
 	userHistory,
-	userInvites,
 	organizationInvites,
 	envelopeDrafts,
 	envelopeDraftDocuments,
@@ -178,21 +176,6 @@ export async function userProfileUpdate(wallet: Address, body: unknown) {
 		});
 	}
 
-	if (email?.trim()) {
-		const inviteRes = await tryCatch(
-			materializePendingInvitesForEmail({
-				walletAddress: wallet,
-				email: email,
-			}),
-		);
-		if (inviteRes.error) {
-			console.error(
-				"materializePendingInvitesForEmail (profile PUT):",
-				inviteRes.error,
-			);
-		}
-	}
-
 	return {};
 }
 
@@ -341,19 +324,6 @@ export async function userProfileSyncThirdwebEmail(
 		newValue: email,
 	});
 
-	const inviteRes = await tryCatch(
-		materializePendingInvitesForEmail({
-			walletAddress: wallet,
-			email,
-		}),
-	);
-	if (inviteRes.error) {
-		console.error(
-			"materializePendingInvitesForEmail (sync-thirdweb-email):",
-			inviteRes.error,
-		);
-	}
-
 	return { updated: true as const, email };
 }
 
@@ -394,19 +364,6 @@ export async function userProfileSetPrimaryEmail(
 		fieldName: "email",
 		newValue: canonical,
 	});
-
-	const inviteRes = await tryCatch(
-		materializePendingInvitesForEmail({
-			walletAddress: wallet,
-			email: canonical,
-		}),
-	);
-	if (inviteRes.error) {
-		console.error(
-			"materializePendingInvitesForEmail (set-primary-email):",
-			inviteRes.error,
-		);
-	}
 
 	return { email: canonical };
 }
@@ -820,7 +777,6 @@ export async function userExportAccountData(wallet: Address) {
 
 	const [
 		drafts,
-		invitesSent,
 		orgInvites,
 		coldInvitesClaimed,
 		consentReceipts,
@@ -840,16 +796,6 @@ export async function userExportAccountData(wallet: Address) {
 			})
 			.from(envelopeDrafts)
 			.where(eq(envelopeDrafts.createdByWallet, wallet)),
-		db
-			.select({
-				id: userInvites.id,
-				inviteeEmail: userInvites.inviteeEmail,
-				status: userInvites.status,
-				expiresAt: userInvites.expiresAt,
-				createdAt: userInvites.createdAt,
-			})
-			.from(userInvites)
-			.where(eq(userInvites.sender, wallet)),
 		db
 			.select({
 				id: organizationInvites.id,
@@ -959,7 +905,6 @@ export async function userExportAccountData(wallet: Address) {
 		exportedAt: new Date(),
 		profile: user,
 		drafts,
-		invitesSent,
 		orgInvitesSent: orgInvites,
 		coldInvitesClaimed,
 		analyticsConsentReceipts: consentReceipts,

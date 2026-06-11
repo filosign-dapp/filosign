@@ -77,7 +77,6 @@ export const EXPIRE_INVITES_CRON = "0 * * * *";
 export async function runExpireInvitesJob(): Promise<{
 	fileCold: number;
 	org: number;
-	user: number;
 }> {
 	const result = await expireAllPendingInvites();
 
@@ -93,7 +92,6 @@ export async function runExpireInvitesJob(): Promise<{
 	return {
 		fileCold: result.fileCold.expiredCount,
 		org: result.org.expiredCount,
-		user: result.user.expiredCount,
 	};
 }
 
@@ -113,10 +111,10 @@ export async function runExpireInvitesCronTick(): Promise<void> {
 		});
 		return;
 	}
-	const { fileCold, org, user } = res.data;
-	const total = fileCold + org + user;
+	const { fileCold, org } = res.data;
+	const total = fileCold + org;
 	if (total > 0) {
-		logger.info({ fileCold, org, user, total }, "cron expire-invites");
+		logger.info({ fileCold, org, total }, "cron expire-invites");
 	}
 }
 

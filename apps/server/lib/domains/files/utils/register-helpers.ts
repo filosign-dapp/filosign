@@ -246,6 +246,7 @@ export async function buildRegisterEmailOutboxRows(
 	args: {
 		sender: Address;
 		pieceCid: string;
+		documentTitle: string;
 		participantWallets: Address[];
 		coldInvites: { email: string; inviteToken: string }[];
 	},
@@ -303,6 +304,7 @@ export async function buildRegisterEmailOutboxRows(
 				senderWallet: senderNorm,
 				pieceCid: args.pieceCid,
 				senderName,
+				documentTitle: args.documentTitle,
 			},
 			idempotencyKey: buildEmailIdempotencyKey(idempotencySegments),
 		});
@@ -325,6 +327,7 @@ export async function buildRegisterEmailOutboxRows(
 				pieceCid: args.pieceCid,
 				inviteToken: invite.inviteToken,
 				senderName,
+				documentTitle: args.documentTitle,
 			},
 			idempotencyKey: buildEmailIdempotencyKey(idempotencySegments),
 		});

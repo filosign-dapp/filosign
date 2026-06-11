@@ -349,6 +349,7 @@ export async function filesRegister(
 		const inserts = await buildRegisterEmailOutboxRows(tx, {
 			sender,
 			pieceCid,
+			documentTitle: displayName,
 			participantWallets,
 			coldInvites,
 		});

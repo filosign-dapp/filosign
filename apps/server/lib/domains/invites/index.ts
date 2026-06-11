@@ -6,5 +6,4 @@ export {
 	inviteTtlMs,
 	pendingFileColdInviteFilter,
 	pendingOrgInviteFilter,
-	pendingUserInviteFilter,
 } from "./invites";

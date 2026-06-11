@@ -8,7 +8,6 @@ export type ExpireInvitesResult = {
 		rows: { id: string; filePieceCid: string }[];
 	};
 	org: { expiredCount: number; rows: { id: string; organizationId: string }[] };
-	user: { expiredCount: number; rows: { id: string }[] };
 };
 
 export function inviteTtlDays(): number {
@@ -39,15 +38,7 @@ export function pendingOrgInviteFilter(now = new Date()) {
 	);
 }
 
-/** Pending and not past `expiresAt` (user / sharing email invite). */
-export function pendingUserInviteFilter(now = new Date()) {
-	return and(
-		eq(db.schema.userInvites.status, "pending"),
-		gt(db.schema.userInvites.expiresAt, now),
-	);
-}
-
-/** Mark all invite types past `expiresAt` as `expired` (hourly cron). */
+/** Mark document and org invites past `expiresAt` as `expired` (hourly cron). */
 export async function expireAllPendingInvites(): Promise<ExpireInvitesResult> {
 	const now = new Date();
 
@@ -79,20 +70,8 @@ export async function expireAllPendingInvites(): Promise<ExpireInvitesResult> {
 			organizationId: db.schema.organizationInvites.organizationId,
 		});
 
-	const userRows = await db
-		.update(db.schema.userInvites)
-		.set({ status: "expired", updatedAt: now })
-		.where(
-			and(
-				eq(db.schema.userInvites.status, "pending"),
-				sql`${db.schema.userInvites.expiresAt} < ${now}`,
-			),
-		)
-		.returning({ id: db.schema.userInvites.id });
-
 	return {
 		fileCold: { expiredCount: fileColdRows.length, rows: fileColdRows },
 		org: { expiredCount: orgRows.length, rows: orgRows },
-		user: { expiredCount: userRows.length, rows: userRows },
 	};
 }

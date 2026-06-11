@@ -29,9 +29,6 @@ export type OrgPermission =
 	| "drafts:read"
 	| "drafts:write"
 	| "drafts:share"
-	| "connections:manage"
-	| "connections:request"
-	| "connections:view"
 	| "billing:manage";
 
 const ROLE_PERMISSIONS: Record<OrgMemberRole, ReadonlySet<OrgPermission>> = {
@@ -46,9 +43,6 @@ const ROLE_PERMISSIONS: Record<OrgMemberRole, ReadonlySet<OrgPermission>> = {
 		"drafts:read",
 		"drafts:write",
 		"drafts:share",
-		"connections:manage",
-		"connections:request",
-		"connections:view",
 		"billing:manage",
 	]),
 	admin: new Set([
@@ -62,9 +56,6 @@ const ROLE_PERMISSIONS: Record<OrgMemberRole, ReadonlySet<OrgPermission>> = {
 		"drafts:read",
 		"drafts:write",
 		"drafts:share",
-		"connections:manage",
-		"connections:request",
-		"connections:view",
 		"billing:manage",
 	]),
 	sender: new Set([
@@ -74,15 +65,8 @@ const ROLE_PERMISSIONS: Record<OrgMemberRole, ReadonlySet<OrgPermission>> = {
 		"drafts:read",
 		"drafts:write",
 		"drafts:share",
-		"connections:request",
-		"connections:view",
 	]),
-	viewer: new Set([
-		"templates:use",
-		"documents:read:org",
-		"drafts:read",
-		"connections:view",
-	]),
+	viewer: new Set(["templates:use", "documents:read:org", "drafts:read"]),
 };
 
 export type ActiveOrgContext = {

@@ -41,6 +41,7 @@ export async function filesRemindSigners(
 	const [file] = await db
 		.select({
 			sender: files.sender,
+			displayName: files.displayName,
 			completedAt: files.completedAt,
 			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
 			isPractice: files.isPractice,
@@ -125,6 +126,7 @@ export async function filesRemindSigners(
 		undefined;
 
 	const day = utcDayBucket();
+	const documentTitle = file.displayName?.trim() || undefined;
 	const candidateRows: JobOutboxInsert[] = [];
 
 	for (const signer of warmSigners) {
@@ -140,6 +142,7 @@ export async function filesRemindSigners(
 				senderWallet: senderNorm,
 				pieceCid,
 				senderName,
+				documentTitle,
 				intent: "reminder",
 			},
 			idempotencyKey: buildEmailIdempotencyKey([
@@ -165,6 +168,7 @@ export async function filesRemindSigners(
 				pieceCid,
 				inviteToken: token,
 				senderName,
+				documentTitle,
 				intent: "reminder",
 			},
 			idempotencyKey: buildEmailIdempotencyKey([

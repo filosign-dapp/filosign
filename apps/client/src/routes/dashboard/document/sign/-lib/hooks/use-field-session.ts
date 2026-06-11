@@ -14,15 +14,13 @@ import {
 	fieldCompletionStatus,
 	fieldHasCompletionValue,
 } from "@filosign/shared";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
-import {
-	buildCheckboxCompletion,
-	buildTextCompletion,
-} from "../utils/field-completion-builders";
+import { buildCheckboxCompletion } from "../utils/field-completion-builders";
 import { useFieldDraftSync } from "./use-field-draft-sync";
 import { useFieldProvisioning } from "./use-field-provisioning";
+import { useTextFieldDraft } from "./use-text-field-draft";
 
 export type SignFieldSessionStatus =
 	| "idle"
@@ -53,6 +51,8 @@ export function useSignFieldSession(options: {
 	const { data: serverDraft, isLoading: draftLoading } =
 		useSignDraft(signDraftPieceCid);
 
+	const getProtectedFieldIdsRef = useRef<() => readonly string[]>(() => []);
+
 	const {
 		completedFieldIds,
 		setCompletedFieldIds,
@@ -66,7 +66,20 @@ export function useSignFieldSession(options: {
 		signDraftPieceCid,
 		serverDraft,
 		draftLoading,
+		getProtectedFieldIds: () => getProtectedFieldIdsRef.current(),
 	});
+
+	const textFieldDraft = useTextFieldDraft({
+		pieceCid,
+		alreadySigned,
+		myPlacementFields,
+		fieldCompletions,
+		setFieldCompletions,
+		setCompletedFieldIds,
+		persistDraft,
+	});
+
+	getProtectedFieldIdsRef.current = textFieldDraft.getProtectedFieldIds;
 
 	const myFieldIds = useMemo(
 		() => myPlacementFields.map((field) => field.id),
@@ -121,12 +134,6 @@ export function useSignFieldSession(options: {
 		[],
 	);
 
-	const setTextCompletion = useCallback(
-		(fieldId: string, textValue: string) =>
-			buildTextCompletion(fieldId, textValue),
-		[],
-	);
-
 	const toggleCheckboxCompletion = useCallback(
 		(fieldId: string, current?: FieldCompletion) =>
 			buildCheckboxCompletion(fieldId, current),
@@ -138,17 +145,6 @@ export function useSignFieldSession(options: {
 			setCompletedFieldIds((prev) => {
 				if (prev.includes(fieldId)) return prev;
 				const next = [...prev, fieldId];
-				persistDraft(next, completions);
-				return next;
-			});
-		},
-		[persistDraft, setCompletedFieldIds],
-	);
-
-	const unmarkField = useCallback(
-		(fieldId: string, completions: FieldCompletionMap) => {
-			setCompletedFieldIds((prev) => {
-				const next = prev.filter((x) => x !== fieldId);
 				persistDraft(next, completions);
 				return next;
 			});
@@ -309,75 +305,61 @@ export function useSignFieldSession(options: {
 		],
 	);
 
-	const ensureRequiredVisualCompletions = useCallback(async () => {
-		let nextCompletions = { ...fieldCompletions };
-		let nextCompleted = [...completedFieldIds];
+	const ensureRequiredVisualCompletions = useCallback(
+		async (base?: {
+			completions: FieldCompletionMap;
+			completedFieldIds: string[];
+		}) => {
+			let nextCompletions = { ...(base?.completions ?? fieldCompletions) };
+			let nextCompleted = [...(base?.completedFieldIds ?? completedFieldIds)];
 
-		for (const field of myPlacementFields) {
-			if (!field.required) continue;
-			if (field.type !== "signature" && field.type !== "initial") continue;
-			if (fieldHasCompletion(field, nextCompletions)) continue;
+			for (const field of myPlacementFields) {
+				if (!field.required) continue;
+				if (field.type !== "signature" && field.type !== "initial") continue;
+				if (fieldHasCompletion(field, nextCompletions)) continue;
 
-			const completion = await resolveFieldCompletion(field);
-			if (!completion) continue;
+				const completion = await resolveFieldCompletion(field);
+				if (!completion) continue;
 
-			nextCompletions = { ...nextCompletions, [field.id]: completion };
-			if (!nextCompleted.includes(field.id)) {
-				nextCompleted = [...nextCompleted, field.id];
+				nextCompletions = { ...nextCompletions, [field.id]: completion };
+				if (!nextCompleted.includes(field.id)) {
+					nextCompleted = [...nextCompleted, field.id];
+				}
 			}
-		}
 
-		return {
-			completions: nextCompletions,
-			completedFieldIds: nextCompleted,
-		};
-	}, [
-		completedFieldIds,
-		fieldCompletions,
-		fieldHasCompletion,
-		myPlacementFields,
-		resolveFieldCompletion,
-	]);
+			return {
+				completions: nextCompletions,
+				completedFieldIds: nextCompleted,
+			};
+		},
+		[
+			completedFieldIds,
+			fieldCompletions,
+			fieldHasCompletion,
+			myPlacementFields,
+			resolveFieldCompletion,
+		],
+	);
 
 	const prepareForSign = useCallback(async () => {
-		const prepared = await ensureRequiredVisualCompletions();
+		const flushed = textFieldDraft.flushAllTextDrafts(
+			fieldCompletions,
+			completedFieldIds,
+		);
+		const prepared = await ensureRequiredVisualCompletions(flushed);
 		setFieldCompletions(prepared.completions);
 		setCompletedFieldIds(prepared.completedFieldIds);
 		persistDraft(prepared.completedFieldIds, prepared.completions);
 		return prepared;
 	}, [
+		completedFieldIds,
 		ensureRequiredVisualCompletions,
+		fieldCompletions,
 		persistDraft,
 		setCompletedFieldIds,
 		setFieldCompletions,
+		textFieldDraft,
 	]);
-
-	const handleTextChange = useCallback(
-		(fieldId: string, value: string) => {
-			if (alreadySigned) return;
-			setFieldCompletions((prev) => {
-				const next = {
-					...prev,
-					[fieldId]: setTextCompletion(fieldId, value),
-				};
-				const field = myPlacementFields.find((f) => f.id === fieldId);
-				if (field && value.trim()) {
-					markFieldComplete(fieldId, next);
-				} else if (!value.trim()) {
-					unmarkField(fieldId, next);
-				}
-				return next;
-			});
-		},
-		[
-			alreadySigned,
-			myPlacementFields,
-			markFieldComplete,
-			setFieldCompletions,
-			setTextCompletion,
-			unmarkField,
-		],
-	);
 
 	const handleCheckboxToggle = useCallback(
 		(fieldId: string) => {
@@ -398,7 +380,10 @@ export function useSignFieldSession(options: {
 		togglePlacementField,
 		clearPlacementField,
 		prepareForSign,
-		handleTextChange,
+		getTextFieldValue: textFieldDraft.getTextFieldValue,
+		handleTextDraftChange: textFieldDraft.handleTextDraftChange,
+		handleTextFocus: textFieldDraft.handleTextFocus,
+		handleTextBlur: textFieldDraft.handleTextBlur,
 		handleCheckboxToggle,
 	};
 }

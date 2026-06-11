@@ -14,6 +14,7 @@ import {
 	PLACEMENT_PAGE_STRIP_GAP_PX,
 	type PlacementRectPx,
 	type PlacementViewport,
+	placementRectAfterFreeformResize,
 	snapPlacementRect,
 } from "@/src/lib/domains/files/placement-viewport";
 
@@ -138,6 +139,27 @@ export function finalizePlacementRectAfterResize(args: {
 		args.initial,
 		args.newWidth,
 		args.aspectRatio,
+		args.viewport,
+	);
+	return snapPlacementRect(resized, args.viewport, args.otherFieldsOnPage, {
+		threshold: args.snapThreshold ?? 8,
+	});
+}
+
+export { placementRectAfterFreeformResize };
+
+export function finalizePlacementRectAfterFreeformResize(args: {
+	initial: PlacementRectPx;
+	newWidth: number;
+	newHeight: number;
+	viewport: PlacementViewport;
+	otherFieldsOnPage: PlacementRectPx[];
+	snapThreshold?: number;
+}): PlacementRectPx {
+	const resized = placementRectAfterFreeformResize(
+		args.initial,
+		args.newWidth,
+		args.newHeight,
 		args.viewport,
 	);
 	return snapPlacementRect(resized, args.viewport, args.otherFieldsOnPage, {

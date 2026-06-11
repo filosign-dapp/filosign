@@ -9,10 +9,13 @@ import {
 } from "@phosphor-icons/react";
 import { memo, useCallback, useRef } from "react";
 import {
+	clampFieldHeight,
 	clampFieldWidth,
 	defaultPlacementFieldRect,
+	fieldSupportsFreeformResize,
 	signerAccentColor,
 } from "@/src/lib/domains/files/field-box";
+import { PlacementCheckboxField } from "@/src/lib/domains/files/placement-checkbox-field";
 import {
 	SignatureFieldTypeIcon,
 	signatureFieldTypeLabel,
@@ -23,6 +26,7 @@ import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-
 import {
 	dragTransformInPageSpace,
 	fieldDraggableId,
+	finalizePlacementRectAfterFreeformResize,
 	finalizePlacementRectAfterResize,
 	PLACEMENT_FIELD_OVERLAY_CLASS,
 	pageScale,
@@ -64,7 +68,12 @@ function DraggableFieldOverlay({
 }: DraggableFieldOverlayProps) {
 	const { getPageEl } = usePlacementCanvas();
 	const pageEl = getPageEl(field.page);
-	const resizeStartRef = useRef<{ width: number; startX: number } | null>(null);
+	const resizeStartRef = useRef<{
+		width: number;
+		height: number;
+		startX: number;
+		startY: number;
+	} | null>(null);
 	const isSelected = selectedFieldIds.has(field.id);
 	const isPrimarySelected = isSelected && selectedFieldIds.size === 1;
 
@@ -92,6 +101,7 @@ function DraggableFieldOverlay({
 
 	const accent = signerAccentColor(field.assignedSignerEmail);
 	const defaults = defaultPlacementFieldRect(field.type, isMobile);
+	const freeformResize = fieldSupportsFreeformResize(field.type);
 
 	const otherRects = otherFieldsOnPage
 		.filter((f) => f.id !== field.id)
@@ -108,7 +118,12 @@ function DraggableFieldOverlay({
 			e.stopPropagation();
 			e.preventDefault();
 			onResizeStart();
-			resizeStartRef.current = { width: field.width, startX: e.clientX };
+			resizeStartRef.current = {
+				width: field.width,
+				height: field.height,
+				startX: e.clientX,
+				startY: e.clientY,
+			};
 
 			const onMove = (ev: PointerEvent) => {
 				const start = resizeStartRef.current;
@@ -119,26 +134,40 @@ function DraggableFieldOverlay({
 						? pageEl.getBoundingClientRect().width / pageEl.offsetWidth
 						: 1;
 				const deltaX = (ev.clientX - start.startX) / scale;
+				const initial = placementRectFromField(
+					{
+						x: field.x,
+						y: field.y,
+						width: field.width,
+						height: field.height,
+					},
+					viewport,
+				);
 				const newWidth = clampFieldWidth(
 					field.type,
 					start.width + deltaX,
 					isMobile,
 				);
-				const next = finalizePlacementRectAfterResize({
-					initial: placementRectFromField(
-						{
-							x: field.x,
-							y: field.y,
-							width: field.width,
-							height: field.height,
-						},
-						viewport,
-					),
-					newWidth,
-					aspectRatio: defaults.aspectRatio,
-					viewport,
-					otherFieldsOnPage: otherRects,
-				});
+				const deltaY = (ev.clientY - start.startY) / scale;
+				const next = freeformResize
+					? finalizePlacementRectAfterFreeformResize({
+							initial,
+							newWidth,
+							newHeight: clampFieldHeight(
+								field.type,
+								start.height + deltaY,
+								isMobile,
+							),
+							viewport,
+							otherFieldsOnPage: otherRects,
+						})
+					: finalizePlacementRectAfterResize({
+							initial,
+							newWidth,
+							aspectRatio: defaults.aspectRatio,
+							viewport,
+							otherFieldsOnPage: otherRects,
+						});
 				onFieldUpdate(field.id, {
 					x: next.x,
 					y: next.y,
@@ -159,6 +188,8 @@ function DraggableFieldOverlay({
 		},
 		[
 			field,
+			defaults.aspectRatio,
+			freeformResize,
 			isMobile,
 			isPlacingField,
 			onFieldUpdate,
@@ -166,7 +197,6 @@ function DraggableFieldOverlay({
 			onResizeStart,
 			getPageEl,
 			viewport,
-			defaults.aspectRatio,
 			otherRects,
 		],
 	);
@@ -185,6 +215,11 @@ function DraggableFieldOverlay({
 		<div
 			ref={setNodeRef}
 			data-field-id={field.id}
+			aria-label={
+				field.type === "checkbox"
+					? `${field.assignedSignerEmail}, Checkbox`
+					: undefined
+			}
 			className={cn(
 				PLACEMENT_FIELD_OVERLAY_CLASS,
 				"absolute box-border select-none group z-30 touch-none",
@@ -196,72 +231,84 @@ function DraggableFieldOverlay({
 				top: rect.y,
 				width: rect.width,
 				height: rect.height,
-				borderLeftWidth: 3,
-				borderLeftColor: accent,
+				...(field.type !== "checkbox"
+					? { borderLeftWidth: 3, borderLeftColor: accent }
+					: null),
 				...dragStyle,
 			}}
 			onClick={(e) => onFieldClick(field.id, e)}
 			{...(!isPlacingField ? listeners : undefined)}
 			{...(!isPlacingField ? attributes : undefined)}
 		>
-			<div
-				className={cn(
-					"placement-field-chrome h-full w-full",
-					isSelected && "ring-2 ring-ring/60",
-				)}
-			>
-				{!isPlacingField ? (
-					<DotsSixVerticalIcon
-						className="size-3 shrink-0 opacity-60"
-						weight="bold"
-					/>
-				) : null}
-				<span className="shrink-0 text-placement-chrome-foreground">
-					<SignatureFieldTypeIcon type={field.type} isMobile={isMobile} />
-				</span>
-				<div className="min-w-0 flex-1 leading-none">
-					<div className="truncate placement-field-label">
-						{field.assignedSignerEmail}
+			{field.type === "checkbox" ? (
+				<PlacementCheckboxField
+					checked={false}
+					accentColor={accent}
+					className={cn(isSelected && "ring-2 ring-ring/60")}
+				/>
+			) : (
+				<div
+					className={cn(
+						"placement-field-chrome h-full w-full",
+						isSelected && "ring-2 ring-ring/60",
+					)}
+				>
+					{!isPlacingField ? (
+						<DotsSixVerticalIcon
+							className="size-3 shrink-0 opacity-60"
+							weight="bold"
+						/>
+					) : null}
+					<span className="shrink-0 text-placement-chrome-foreground">
+						<SignatureFieldTypeIcon type={field.type} isMobile={isMobile} />
+					</span>
+					<div className="min-w-0 flex-1 leading-none">
+						<div className="truncate placement-field-label">
+							{field.assignedSignerEmail}
+						</div>
+						<div className="truncate placement-field-subtle">
+							{signatureFieldTypeLabel(field.type)}
+						</div>
 					</div>
-					<div className="truncate placement-field-subtle">
-						{signatureFieldTypeLabel(field.type)}
-					</div>
+					{field.required ? (
+						<AsteriskIcon
+							className="size-3 shrink-0 text-amber-400"
+							weight="bold"
+						/>
+					) : (
+						<CircleIcon
+							className="size-3 shrink-0 opacity-50"
+							weight="regular"
+						/>
+					)}
+					{isPrimarySelected ? (
+						<div className="flex shrink-0 items-center gap-0.5">
+							<button
+								type="button"
+								className="rounded p-0.5 hover:bg-placement-chrome-foreground/15"
+								onClick={(e) => {
+									e.stopPropagation();
+									onFieldDuplicate(field.id);
+								}}
+								aria-label="Duplicate field"
+							>
+								<CopyIcon className="size-3" />
+							</button>
+							<button
+								type="button"
+								className="rounded p-0.5 hover:bg-placement-chrome-foreground/15"
+								onClick={(e) => {
+									e.stopPropagation();
+									onFieldRemove(field.id);
+								}}
+								aria-label="Remove field"
+							>
+								<TrashIcon className="size-3" />
+							</button>
+						</div>
+					) : null}
 				</div>
-				{field.required ? (
-					<AsteriskIcon
-						className="size-3 shrink-0 text-amber-400"
-						weight="bold"
-					/>
-				) : (
-					<CircleIcon className="size-3 shrink-0 opacity-50" weight="regular" />
-				)}
-				{isPrimarySelected ? (
-					<div className="flex shrink-0 items-center gap-0.5">
-						<button
-							type="button"
-							className="rounded p-0.5 hover:bg-placement-chrome-foreground/15"
-							onClick={(e) => {
-								e.stopPropagation();
-								onFieldDuplicate(field.id);
-							}}
-							aria-label="Duplicate field"
-						>
-							<CopyIcon className="size-3" />
-						</button>
-						<button
-							type="button"
-							className="rounded p-0.5 hover:bg-placement-chrome-foreground/15"
-							onClick={(e) => {
-								e.stopPropagation();
-								onFieldRemove(field.id);
-							}}
-							aria-label="Remove field"
-						>
-							<TrashIcon className="size-3" />
-						</button>
-					</div>
-				) : null}
-			</div>
+			)}
 			{isPrimarySelected && !isPlacingField ? (
 				<button
 					type="button"

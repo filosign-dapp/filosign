@@ -1,6 +1,7 @@
 import { useUpdateSignDraft } from "@filosign/react/files";
 import type { FieldCompletionMap } from "@filosign/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { mergePersistedFieldCompletions } from "../utils/field-draft-merge";
 
 type SignDraftSnapshot = {
 	completedFieldIds: string[];
@@ -12,8 +13,15 @@ export function useFieldDraftSync(options: {
 	signDraftPieceCid: string | undefined;
 	serverDraft: SignDraftSnapshot | undefined;
 	draftLoading: boolean;
+	getProtectedFieldIds?: () => readonly string[];
 }) {
-	const { pieceCid, signDraftPieceCid, serverDraft, draftLoading } = options;
+	const {
+		pieceCid,
+		signDraftPieceCid,
+		serverDraft,
+		draftLoading,
+		getProtectedFieldIds,
+	} = options;
 	const updateSignDraft = useUpdateSignDraft();
 
 	const [completedFieldIds, setCompletedFieldIds] = useState<string[]>([]);
@@ -59,13 +67,19 @@ export function useFieldDraftSync(options: {
 					fieldCompletions: completions,
 				})
 				.then((data) => {
-					setFieldCompletions(data.fieldCompletions);
+					setFieldCompletions((prev) =>
+						mergePersistedFieldCompletions(
+							prev,
+							data.fieldCompletions,
+							getProtectedFieldIds?.() ?? [],
+						),
+					);
 				})
 				.catch((err: unknown) => {
 					console.warn("[sign-field-session] save failed", err);
 				});
 		},
-		[signDraftPieceCid, updateSignDraft],
+		[getProtectedFieldIds, signDraftPieceCid, updateSignDraft],
 	);
 
 	const persistDraft = useCallback(

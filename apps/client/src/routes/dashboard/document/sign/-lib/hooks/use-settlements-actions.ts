@@ -95,13 +95,23 @@ export function useSignSettlementsActions(
 			try {
 				const result = await trySettleSettlement.mutateAsync(input);
 				if (result.status === "partial") {
-					toast.message(
-						"Part of this payout went through. Tap Pay now again for the rest.",
+					const rule = settlementRules.find(
+						(r) => r.onChainRuleId === input.onChainRuleId,
 					);
+					const legCount = rule?.legs?.length ?? 1;
+					if (legCount <= 1) {
+						toast.message(
+							"Payout is still confirming on-chain. Wait a moment, then tap Retry payout if needed.",
+						);
+					} else {
+						toast.message(
+							"Some recipients were paid. Tap Retry payout for the rest.",
+						);
+					}
 				}
 			} catch {}
 		},
-		[trySettleSettlement],
+		[trySettleSettlement, settlementRules],
 	);
 
 	const onManualSettleRule = useCallback(

@@ -25,6 +25,7 @@ const parsedEnv = createEnv({
 			.enum(["true", "false", "1", "0"])
 			.optional()
 			.transform((v) => v === "true" || v === "1"),
+		VITE_PIMLICO_API_KEY: z.string().min(1).optional(),
 	},
 	runtimeEnv: import.meta.env,
 	emptyStringAsUndefined: true,

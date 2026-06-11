@@ -75,7 +75,18 @@ export const filosignInAppWalletOptions: Record<string, unknown> = {
 	executionMode:
 		env.VITE_CHAIN === "local"
 			? { mode: "EOA" }
-			: { mode: "EIP7702", sponsorGas: true },
+			: {
+					mode: "EIP7702",
+					sponsorGas: true,
+					...(env.VITE_PIMLICO_API_KEY
+						? {
+								overrides: {
+									bundlerUrl: `https://api.pimlico.io/v2/${defaultChain.id}/rpc?apikey=${env.VITE_PIMLICO_API_KEY}`,
+									paymasterUrl: `https://api.pimlico.io/v2/${defaultChain.id}/rpc?apikey=${env.VITE_PIMLICO_API_KEY}`,
+								},
+							}
+						: {}),
+				},
 	hidePrivateKeyExport: true,
 };
 

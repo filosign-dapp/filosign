@@ -28,7 +28,6 @@ export const DOCS_LINKS = {
 	billingAndSeats: () => `${docsBase()}/workspace/billing-and-seats`,
 	treasuryWallet: () => `${docsBase()}/workspace/treasury-wallet`,
 	payoutAccess: () => `${docsBase()}/workspace/payout-access`,
-	connections: () => `${docsBase()}/workspace/connections`,
 	encryptedWorkflows: () => `${docsBase()}/security/encrypted-workflows`,
 	whatWeCanSee: () => `${docsBase()}/security/what-we-can-see`,
 	onChainRecord: () => `${docsBase()}/security/on-chain-record`,

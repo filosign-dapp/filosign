@@ -15,8 +15,6 @@ import {
 	DEFAULT_ACCOUNT_FIRST_NAME,
 	defaultWorkspaceName,
 } from "@/src/lib/auth/account-defaults";
-import { logger } from "@/src/lib/utils/logger";
-
 export type BootstrapNewAccountArgs = {
 	queryClient: QueryClient;
 	rpc: AppRouterClient;
@@ -60,17 +58,6 @@ async function createOrganizationCall(args: {
 		wrappedOmkForCreator: toHex(wrappedOmkForCreator),
 		creatorWrapKemCiphertext: toHex(ciphertext),
 	});
-}
-
-async function claimPendingConnectionInvite(rpc: AppRouterClient) {
-	const pendingInviteId = sessionStorage.getItem("pendingInviteId");
-	if (!pendingInviteId) return;
-	try {
-		await rpc.sharing.inviteClaim({ id: pendingInviteId });
-		sessionStorage.removeItem("pendingInviteId");
-	} catch (error) {
-		logger.error("Failed to claim invite:", error);
-	}
 }
 
 export async function bootstrapNewAccount(
@@ -119,8 +106,6 @@ export async function bootstrapNewAccount(
 		}
 		args.setActiveOrgId(orgId);
 	}
-
-	await claimPendingConnectionInvite(args.rpc);
 
 	await Promise.all([
 		args.queryClient.invalidateQueries({

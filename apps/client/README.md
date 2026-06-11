@@ -147,7 +147,7 @@ Layouts do not fetch; hooks run in route `index.tsx` or `-lib/hooks/`.
 | **Route context + slice hooks** | Several siblings share data without prop drilling |
 | **Compound `ui.tsx` (`AddSign.*`, `Sign.*`)** | Stable PDF/sign layout slots |
 
-**Reference routes:** [`envelope/create/add-sign/`](src/routes/dashboard/envelope/create/add-sign/) · [`document/sign/`](src/routes/dashboard/document/sign/) · dashboard shell (`connections`, `document/all`, `profile`).
+**Reference routes:** [`envelope/create/add-sign/`](src/routes/dashboard/envelope/create/add-sign/) · [`document/sign/`](src/routes/dashboard/document/sign/) · dashboard shell (`document/all`, `profile`).
 
 ---
 
@@ -211,7 +211,6 @@ useQuery({
 
 - **Fetch:** spread `queryOptions()` from the procedure helper.
 - **Invalidate one procedure:** `rpcQuery.documents.list.key({ tab: "received" })`
-- **Invalidate a domain:** `rpcQuery.sharing.key()` (prefix match - all procedures under sharing)
 - **Optional `enabled`:** pass `{ enabled: open }` on SDK hooks when data is not needed on mount (e.g. notifications popover).
 
 Multiple observers with the same `queryKey` share one request (React Query dedupes).
@@ -238,7 +237,7 @@ useQuery({
 | `filosignKeys.isLoggedIn(address)` | Seed matches commitments |
 | `filosignKeys.decryptedFileMetadata(…)` | Document card preview cache |
 
-**Static roots** (no `rpcQuery` in scope): `filosignQueryRoots.sharing`, `.files`, `.users`, `.orgs`, … - aligned with oRPC paths.
+**Static roots** (no `rpcQuery` in scope): `filosignQueryRoots.files`, `.users`, `.orgs`, … - aligned with oRPC paths.
 
 **Predicates** for `refetchQueries`:
 
@@ -261,7 +260,6 @@ Prefer grouped helpers from [`@filosign/react/invalidate-queries`](../../package
 | `invalidateDocumentsList(qc, rpcQuery)` | Unified documents list (`documents.list`) |
 | `invalidateNotificationsInbox(qc, rpcQuery)` | Bell notification feed (`notifications.inbox`) |
 | `invalidateDocumentsAndNotifications(qc, rpcQuery)` | Documents browser + bell after sign, send, dismiss |
-| `invalidateSharingQueries(qc, rpcQuery)` | Connections / sharing domain |
 | `invalidateOrgsQueries(qc, rpcQuery)` | Org membership / settings mutations |
 | `invalidateAuthQueries(qc, address)` | After login or recovery |
 | `invalidateUserProfile(qc, rpcQuery)` | Profile or email changes |

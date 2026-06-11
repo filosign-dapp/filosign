@@ -3,7 +3,6 @@ import {
 	invalidateDocumentsAndNotifications,
 	invalidateEntitlements,
 	invalidateOrgsQueries,
-	invalidateSharingQueries,
 } from "@filosign/react/invalidate-queries";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
@@ -50,7 +49,6 @@ export function useSetPersistedActiveOrganizationId() {
 		void Promise.all([
 			invalidateOrgsQueries(queryClient, rpcQuery),
 			invalidateDocumentsAndNotifications(queryClient, rpcQuery),
-			invalidateSharingQueries(queryClient, rpcQuery),
 			invalidateEntitlements(queryClient, rpcQuery),
 			queryClient.invalidateQueries({ queryKey: rpcQuery.files.key() }),
 			queryClient.invalidateQueries({ queryKey: rpcQuery.metrics.key() }),

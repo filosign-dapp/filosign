@@ -2,7 +2,6 @@ import {
 	CLIENT_ANALYTICS_EVENTS,
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
-import { useAuthedApi } from "@filosign/react/auth";
 import {
 	useActiveOrgId,
 	useOrganizations,
@@ -29,7 +28,6 @@ export function useOnboardingComplete() {
 	const { data: orgsData } = useOrganizations();
 	const activeOrgId = useActiveOrgId();
 	const { onboardingForm, setOnboardingForm } = useStorePersist();
-	const { data: auth } = useAuthedApi();
 	const navigate = useNavigate();
 
 	return async (
@@ -72,18 +70,6 @@ export function useOnboardingComplete() {
 				lastName: "",
 				hasOnboarded: true,
 			});
-		}
-
-		const pendingInviteId = sessionStorage.getItem("pendingInviteId");
-		if (pendingInviteId && auth) {
-			void auth.rpc.sharing
-				.inviteClaim({ id: pendingInviteId })
-				.then(() => {
-					sessionStorage.removeItem("pendingInviteId");
-				})
-				.catch((error) => {
-					logger.error("Failed to claim invite:", error);
-				});
 		}
 
 		const coldSign = signDocumentSearchFromColdEntry(search);

@@ -3,8 +3,8 @@ import {
 	type PlacementManifest,
 	zDraftPlacementManifest,
 } from "@filosign/shared";
-import { zEvmAddress, zHexString } from "@filosign/shared/zod";
-import { and, desc, eq } from "drizzle-orm";
+import { zHexString } from "@filosign/shared/zod";
+import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
@@ -23,101 +23,7 @@ import db from "@/lib/platform/db";
 import { bucket } from "@/lib/platform/s3/client";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
-const { organizationConnections, organizationTemplates } = db.schema;
-
-export const zOrgsConnectionAddBody = z.object({
-	recipientWallet: zEvmAddress(),
-	label: z.string().max(200).optional(),
-});
-
-export async function orgsConnectionsAdd(
-	wallet: Address,
-	activeOrg: ActiveOrgContext,
-	body: unknown,
-) {
-	assertOrgPermission(activeOrg, "connections:request");
-	const parsed = zOrgsConnectionAddBody.safeParse(body);
-	if (!parsed.success) {
-		throwZodBadRequest(parsed.error);
-	}
-
-	const recipient = getAddress(parsed.data.recipientWallet);
-	const anchor = getAddress(wallet);
-
-	const [row] = await db
-		.insert(organizationConnections)
-		.values({
-			organizationId: activeOrg.organizationId,
-			recipientWallet: recipient,
-			label: parsed.data.label ?? null,
-			addedByWallet: anchor,
-			anchorSenderWallet: anchor,
-			status: "active",
-		})
-		.onConflictDoUpdate({
-			target: [
-				organizationConnections.organizationId,
-				organizationConnections.recipientWallet,
-			],
-			set: {
-				label: parsed.data.label ?? null,
-				anchorSenderWallet: anchor,
-				status: "active",
-				updatedAt: new Date(),
-			},
-		})
-		.returning();
-
-	return { connection: row };
-}
-
-export async function orgsConnectionsList(
-	_activeWallet: Address,
-	activeOrg: ActiveOrgContext,
-) {
-	assertOrgPermission(activeOrg, "connections:view");
-	const rows = await db
-		.select()
-		.from(organizationConnections)
-		.where(eq(organizationConnections.organizationId, activeOrg.organizationId))
-		.orderBy(desc(organizationConnections.createdAt));
-
-	return { connections: rows };
-}
-
-export const zOrgsConnectionRevokeBody = z.object({
-	recipientWallet: zEvmAddress(),
-});
-
-export async function orgsConnectionsRevoke(
-	_wallet: Address,
-	activeOrg: ActiveOrgContext,
-	body: unknown,
-) {
-	assertOrgPermission(activeOrg, "connections:manage");
-	const parsed = zOrgsConnectionRevokeBody.safeParse(body);
-	if (!parsed.success) {
-		throwZodBadRequest(parsed.error);
-	}
-	const recipient = getAddress(parsed.data.recipientWallet);
-	const [connection] = await db
-		.update(organizationConnections)
-		.set({
-			status: "inactive",
-			updatedAt: new Date(),
-		})
-		.where(
-			and(
-				eq(organizationConnections.organizationId, activeOrg.organizationId),
-				eq(organizationConnections.recipientWallet, recipient),
-			),
-		)
-		.returning();
-	if (!connection) {
-		throwAppError("WORKSPACE.CONNECTION_NOT_FOUND");
-	}
-	return { connection };
-}
+const { organizationTemplates } = db.schema;
 
 export const zOrgsTemplateCreateBody = z.object({
 	name: z.string().min(1).max(120),

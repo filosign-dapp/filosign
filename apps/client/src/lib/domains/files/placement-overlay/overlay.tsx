@@ -19,7 +19,10 @@ type PlacementOverlayProps = {
 	completions?: FieldCompletionMap | FieldCompletionWireRow[];
 	alreadySigned?: boolean;
 	onToggleField?: (field: PlacementField) => void;
-	onTextChange?: (fieldId: string, value: string) => void;
+	getTextFieldValue?: (fieldId: string) => string;
+	onTextDraftChange?: (fieldId: string, value: string) => void;
+	onTextFocus?: (fieldId: string) => void;
+	onTextBlur?: (fieldId: string) => void;
 	overlayClassName?: string;
 	/** When mode is readonly, render muted placeholders for fields without completions. */
 	showPlaceholders?: boolean;
@@ -32,7 +35,10 @@ export const PlacementOverlay = memo(function PlacementOverlay({
 	completions,
 	alreadySigned = false,
 	onToggleField,
-	onTextChange,
+	getTextFieldValue,
+	onTextDraftChange,
+	onTextFocus,
+	onTextBlur,
 	overlayClassName = "z-10",
 	showPlaceholders = false,
 }: PlacementOverlayProps) {
@@ -63,7 +69,10 @@ export const PlacementOverlay = memo(function PlacementOverlay({
 						overlayClassName={overlayClassName}
 						alreadySigned={alreadySigned}
 						onToggleField={onToggleField}
-						onTextChange={onTextChange}
+						getTextFieldValue={getTextFieldValue}
+						onTextDraftChange={onTextDraftChange}
+						onTextFocus={onTextFocus}
+						onTextBlur={onTextBlur}
 					/>
 				);
 			})}

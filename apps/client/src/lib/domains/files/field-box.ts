@@ -5,6 +5,14 @@ export type PlacementFieldType = SignatureField["type"];
 export const PLACEMENT_FIELD_SCALE_MIN = 0.5;
 export const PLACEMENT_FIELD_SCALE_MAX = 3;
 
+const FIELD_MIN_HEIGHT: Partial<Record<PlacementFieldType, number>> = {
+	text: 28,
+	date: 28,
+	name: 28,
+	email: 28,
+	checkbox: 24,
+};
+
 export type PlacementFieldRect = {
 	width: number;
 	height: number;
@@ -18,10 +26,14 @@ const DESKTOP_RECTS: Record<PlacementFieldType, PlacementFieldRect> = {
 	name: { width: 160, height: 28, aspectRatio: 160 / 28 },
 	email: { width: 180, height: 28, aspectRatio: 180 / 28 },
 	text: { width: 200, height: 28, aspectRatio: 200 / 28 },
-	checkbox: { width: 28, height: 28, aspectRatio: 1 },
+	checkbox: { width: 24, height: 24, aspectRatio: 1 },
 };
 
 const MOBILE_SCALE = 0.85;
+
+export function fieldSupportsFreeformResize(type: PlacementFieldType): boolean {
+	return type === "text";
+}
 
 export function defaultPlacementFieldRect(
 	type: PlacementFieldType,
@@ -47,6 +59,19 @@ export function clampFieldWidth(
 	return Math.max(minW, Math.min(width, maxW));
 }
 
+export function clampFieldHeight(
+	type: PlacementFieldType,
+	height: number,
+	isMobile = false,
+): number {
+	const defaults = defaultPlacementFieldRect(type, isMobile);
+	const minH = defaults.height * PLACEMENT_FIELD_SCALE_MIN;
+	const maxH = defaults.height * PLACEMENT_FIELD_SCALE_MAX;
+	const scaled = Math.max(minH, Math.min(height, maxH));
+	const floor = FIELD_MIN_HEIGHT[type] ?? 0;
+	return Math.max(floor, scaled);
+}
+
 export function fieldRectFromWidth(
 	type: PlacementFieldType,
 	width: number,
@@ -56,7 +81,11 @@ export function fieldRectFromWidth(
 	const { aspectRatio } = defaultPlacementFieldRect(type, isMobile);
 	return {
 		width: clampedW,
-		height: Math.round(clampedW / aspectRatio),
+		height: clampFieldHeight(
+			type,
+			Math.round(clampedW / aspectRatio),
+			isMobile,
+		),
 	};
 }
 
@@ -69,6 +98,15 @@ export function normalizeSignatureFieldDimensions(
 		field.width && field.width > 0
 			? clampFieldWidth(field.type, field.width, isMobile)
 			: defaults.width;
+
+	if (fieldSupportsFreeformResize(field.type)) {
+		const height =
+			field.height && field.height > 0
+				? clampFieldHeight(field.type, field.height, isMobile)
+				: fieldRectFromWidth(field.type, width, isMobile).height;
+		return { ...field, width, height };
+	}
+
 	const { height } = fieldRectFromWidth(field.type, width, isMobile);
 	return { ...field, width, height };
 }

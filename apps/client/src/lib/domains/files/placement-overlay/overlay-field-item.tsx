@@ -6,6 +6,7 @@ import type {
 import { Input } from "@/src/lib/components/ui/input";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
 import { signerAccentColor } from "@/src/lib/domains/files/field-box";
+import { PlacementCheckboxField } from "@/src/lib/domains/files/placement-checkbox-field";
 import { PlacementFieldChrome } from "@/src/lib/domains/files/placement-field-chrome";
 import { signatureFieldTypeLabel } from "@/src/lib/domains/files/placement-field-display";
 import { normalizedRectToCssPercentStyle } from "@/src/lib/domains/files/placement-viewport";
@@ -45,7 +46,10 @@ type PlacementFieldOverlayItemProps = {
 	overlayClassName: string;
 	alreadySigned: boolean;
 	onToggleField?: (field: PlacementField) => void;
-	onTextChange?: (fieldId: string, value: string) => void;
+	getTextFieldValue?: (fieldId: string) => string;
+	onTextDraftChange?: (fieldId: string, value: string) => void;
+	onTextFocus?: (fieldId: string) => void;
+	onTextBlur?: (fieldId: string) => void;
 };
 
 export function PlacementFieldOverlayItem({
@@ -56,7 +60,10 @@ export function PlacementFieldOverlayItem({
 	overlayClassName,
 	alreadySigned,
 	onToggleField,
-	onTextChange,
+	getTextFieldValue,
+	onTextDraftChange,
+	onTextFocus,
+	onTextBlur,
 }: PlacementFieldOverlayItemProps) {
 	const style = normalizedRectToCssPercentStyle(field.rect);
 	const accent = fieldAccent(field);
@@ -96,6 +103,7 @@ export function PlacementFieldOverlayItem({
 						primaryLabel={typeLabel}
 						accentColor={accent}
 						variant="applied"
+						contentFill="preview"
 					>
 						<VisualPreviewContent completion={plan.completion} />
 					</PlacementFieldChrome>
@@ -115,9 +123,12 @@ export function PlacementFieldOverlayItem({
 						type={field.type}
 						primaryLabel={typeLabel}
 						accentColor={accent}
-						variant="applied"
+						variant="pending"
+						contentFill="interactive"
 					>
-						<span className="truncate">{plan.text}</span>
+						<span className="block w-full truncate text-center">
+							{plan.text}
+						</span>
 					</PlacementFieldChrome>
 				</div>
 			);
@@ -164,13 +175,17 @@ export function PlacementFieldOverlayItem({
 						className="p-0 shadow-md"
 					>
 						<Input
-							value={completion?.textValue ?? ""}
-							onChange={(e) => onTextChange?.(field.id, e.target.value)}
+							value={
+								getTextFieldValue?.(field.id) ?? completion?.textValue ?? ""
+							}
+							onChange={(e) => onTextDraftChange?.(field.id, e.target.value)}
+							onFocus={() => onTextFocus?.(field.id)}
+							onBlur={() => onTextBlur?.(field.id)}
 							placeholder={field.required ? "Required…" : "Optional…"}
 							name={`placement-field-${field.id}`}
 							autoComplete="off"
 							spellCheck={false}
-							className="h-full w-full border-0 bg-transparent text-xs text-placement-chrome-foreground shadow-none placeholder:text-placement-chrome-muted-foreground focus-visible:ring-0"
+							className="h-full min-w-0 w-full overflow-x-auto border-0 bg-transparent text-center text-xs text-placement-fill-interactive-foreground shadow-none placeholder:text-placement-chrome-muted-foreground focus-visible:ring-0"
 							aria-label={`${typeLabel}, page ${field.pageIndex + 1}`}
 						/>
 					</PlacementFieldChrome>
@@ -189,18 +204,10 @@ export function PlacementFieldOverlayItem({
 					)}
 					style={style}
 					onClick={() => onToggleField?.(field)}
-					aria-label={`${typeLabel}, page ${field.pageIndex + 1}`}
+					aria-label={`${typeLabel}${plan.checked ? ", checked" : ""}, page ${field.pageIndex + 1}`}
+					aria-pressed={plan.checked}
 				>
-					<PlacementFieldChrome
-						type={field.type}
-						primaryLabel={typeLabel}
-						secondaryLabel={
-							plan.checked ? "Checked (tap to clear)" : "Tap to check"
-						}
-						required={field.required}
-						accentColor={accent}
-						variant="pending"
-					/>
+					<PlacementCheckboxField checked={plan.checked} accentColor={accent} />
 				</button>
 			);
 
@@ -228,6 +235,7 @@ export function PlacementFieldOverlayItem({
 						primaryLabel={typeLabel}
 						accentColor={accent}
 						variant="applied"
+						contentFill="preview"
 					>
 						<VisualPreviewContent completion={plan.completion} />
 					</PlacementFieldChrome>
@@ -257,9 +265,12 @@ export function PlacementFieldOverlayItem({
 						type={field.type}
 						primaryLabel={typeLabel}
 						accentColor={accent}
-						variant="applied"
+						variant="pending"
+						contentFill="interactive"
 					>
-						<span className="truncate">{plan.text}</span>
+						<span className="block w-full truncate text-center">
+							{plan.text}
+						</span>
 					</PlacementFieldChrome>
 				</button>
 			);

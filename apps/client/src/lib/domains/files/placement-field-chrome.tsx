@@ -10,6 +10,14 @@ export type PlacementFieldChromeVariant =
 	| "muted"
 	| "complete";
 
+export type PlacementFieldContentFill = "interactive" | "preview";
+
+function defaultContentFill(
+	type: SignatureField["type"],
+): PlacementFieldContentFill {
+	return type === "signature" || type === "initial" ? "preview" : "interactive";
+}
+
 type PlacementFieldChromeProps = {
 	type: SignatureField["type"];
 	primaryLabel: string;
@@ -18,6 +26,7 @@ type PlacementFieldChromeProps = {
 	required?: boolean;
 	accentColor: string;
 	variant?: PlacementFieldChromeVariant;
+	contentFill?: PlacementFieldContentFill;
 	isMobile?: boolean;
 	focused?: boolean;
 	className?: string;
@@ -32,11 +41,15 @@ export function PlacementFieldChrome({
 	required = false,
 	accentColor,
 	variant = "pending",
+	contentFill,
 	isMobile = false,
 	focused = false,
 	className,
 	children,
 }: PlacementFieldChromeProps) {
+	const resolvedContentFill: PlacementFieldContentFill =
+		contentFill ?? defaultContentFill(type);
+	const usesPreviewFill = resolvedContentFill === "preview";
 	const showAssignee =
 		assigneeEmail && (variant === "muted" || variant === "pending");
 	const displayPrimary = showAssignee ? assigneeEmail : primaryLabel;
@@ -49,7 +62,7 @@ export function PlacementFieldChrome({
 		<div
 			className={cn(
 				"box-border h-full w-full overflow-hidden rounded-sm border shadow-md",
-				variant === "applied" || variant === "complete"
+				usesPreviewFill && (variant === "applied" || variant === "complete")
 					? "placement-field-applied-shell"
 					: variant === "muted"
 						? "placement-field-chrome-muted"
@@ -64,7 +77,14 @@ export function PlacementFieldChrome({
 			}}
 		>
 			{children ? (
-				<div className="placement-field-applied-fill h-full w-full">
+				<div
+					className={cn(
+						"flex h-full w-full items-center justify-center",
+						usesPreviewFill
+							? "placement-field-applied-fill"
+							: "placement-field-interactive-fill",
+					)}
+				>
 					{children}
 				</div>
 			) : (

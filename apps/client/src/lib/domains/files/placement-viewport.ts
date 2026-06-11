@@ -190,3 +190,20 @@ export function snapPlacementRect(
 
 	return clampRectToViewport({ x, y, width, height }, viewport);
 }
+
+export function placementRectAfterFreeformResize(
+	initial: PlacementRectPx,
+	newWidth: number,
+	newHeight: number,
+	viewport: PlacementViewport,
+): PlacementRectPx {
+	return clampRectToViewport(
+		{
+			x: initial.x,
+			y: initial.y,
+			width: newWidth,
+			height: newHeight,
+		},
+		viewport,
+	);
+}

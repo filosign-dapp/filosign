@@ -12,14 +12,28 @@ import type {
 	WarmShareSummary,
 } from "@/src/lib/domains/invites/types";
 
+function buildColdShareRecipientMessage(share: ColdSharePackage): string {
+	return [
+		"You received a secure Filosign document.",
+		"",
+		"To open it:",
+		"1. Open this link in your browser:",
+		share.magicLink,
+		"2. When Filosign asks for a secret code, paste this exactly (keep the hyphens):",
+		share.phrase,
+		"",
+		"The link alone won't open the document without the code.",
+	].join("\n");
+}
+
 function shareLinks(share: ColdSharePackage) {
-	const message = `You received a secure Filosign document.\n\nAccess link: ${share.magicLink}\n\nFilosign also sends this magic link by email.`;
+	const message = buildColdShareRecipientMessage(share);
 	return buildChannelShareLinks({
 		message,
 		url: share.magicLink,
 		emailTo: share.emails,
 		subject: "Secure document waiting for you",
-		telegramText: "Secure document",
+		telegramText: `Paste this secret code after opening the link: ${share.phrase}`,
 	});
 }
 
@@ -40,16 +54,19 @@ export function ColdSharePanel({
 				</div>
 				<div className="min-w-0 space-y-1">
 					<p className="text-sm font-semibold text-foreground">
-						Share the secret code
+						How recipients open the document
 					</p>
+					<ol className="list-decimal space-y-0.5 pl-4 text-xs leading-relaxed text-muted-foreground">
+						<li>Open the link from their Filosign email</li>
+						<li>Paste the secret code when prompted</li>
+					</ol>
 					<p className="text-xs leading-relaxed text-muted-foreground">
-						We email the magic link automatically. Recipients also need this
-						code to decrypt the envelope.
+						Share the code below separately. The email link alone is not enough.
 					</p>
 				</div>
 			</div>
 
-			<SidebarSection title="Cold recipients">
+			<SidebarSection title="First-time recipients">
 				<ul className="space-y-2">
 					{share.emails.map((email) => (
 						<li
@@ -88,8 +105,8 @@ export function ColdSharePanel({
 					<CopyButton text={share.phrase} className="shrink-0" />
 				</div>
 				<p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-					Share this separately from the email. Without it, recipients cannot
-					open the document.
+					Recipients paste this on the unlock screen after opening the link.
+					Copy and send it in a separate message from the email.
 				</p>
 			</SidebarSection>
 
@@ -101,7 +118,7 @@ export function ColdSharePanel({
 			{warmSummary && warmSummary.recipients.length > 0 ? (
 				<SidebarSection
 					title="Also notified by email"
-					description="These registered recipients do not need a secret code."
+					description="They can open the document from email."
 				>
 					<ul className="space-y-2">
 						{warmSummary.recipients.map((recipient) => (

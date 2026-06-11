@@ -26,9 +26,7 @@ export type {
 
 export function ColdShareDialog(props: {
 	open: boolean;
-	/** Cold invite package when any recipients need a secret code. */
 	share: ColdSharePackage | null;
-	/** Warm roster summary for registered recipients (email-only unlock). */
 	warmSummary?: WarmShareSummary | null;
 	onDone: () => void;
 }) {
@@ -48,8 +46,8 @@ export function ColdShareDialog(props: {
 
 	const title = isColdVariant ? "Share access" : "Envelope sent";
 	const description = isColdVariant
-		? "Deliver the secret code to cold recipients. Warm recipients are notified by email."
-		: "Your envelope is live. Registered recipients can sign from their inbox.";
+		? "First-time recipients get the link by email. Share the secret code so they can paste it after opening the link."
+		: "Your envelope is live. Recipients can sign from their inbox.";
 
 	return (
 		<Dialog open={props.open}>

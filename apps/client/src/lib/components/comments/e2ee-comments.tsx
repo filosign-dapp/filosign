@@ -4,7 +4,7 @@ import {
 	PencilSimpleIcon,
 	TrashIcon,
 } from "@phosphor-icons/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import {
 	ContextMenu,
@@ -321,7 +321,10 @@ export function E2eeCommentsComposer(props: {
 	className?: string;
 }) {
 	const [body, setBody] = useState("");
+	const [isSubmitting, setIsSubmitting] = useState(false);
+	const submittingRef = useRef(false);
 	const isEditing = Boolean(props.editingComment);
+	const isBusy = props.isPending || isSubmitting;
 
 	useEffect(() => {
 		if (props.editingComment) {
@@ -331,27 +334,34 @@ export function E2eeCommentsComposer(props: {
 
 	const handleSubmit = useCallback(() => {
 		const trimmed = body.trim();
-		if (!trimmed || props.isPending) return;
+		if (!trimmed || isBusy || submittingRef.current) return;
 		const submit = isEditing ? props.onUpdate : props.onPost;
 		if (!submit) return;
+
+		submittingRef.current = true;
+		setIsSubmitting(true);
 		void submit(trimmed)
 			.then(() => {
 				setBody("");
 				props.onCancelEdit?.();
 				props.onPosted?.();
 			})
-			.catch(() => undefined);
+			.catch(() => undefined)
+			.finally(() => {
+				submittingRef.current = false;
+				setIsSubmitting(false);
+			});
 	}, [
 		body,
+		isBusy,
 		isEditing,
-		props.isPending,
 		props.onPost,
 		props.onUpdate,
 		props.onCancelEdit,
 		props.onPosted,
 	]);
 
-	const canSubmit = Boolean(body.trim()) && !props.isPending;
+	const canSubmit = Boolean(body.trim()) && !isBusy;
 
 	return (
 		<div className={cn("space-y-1.5", props.className)}>
@@ -378,10 +388,11 @@ export function E2eeCommentsComposer(props: {
 					onKeyDown={(e) => {
 						if (e.key !== "Enter" || (!e.metaKey && !e.ctrlKey)) return;
 						e.preventDefault();
-						handleSubmit();
+						if (!isBusy && !submittingRef.current) handleSubmit();
 					}}
 					placeholder={props.placeholder}
 					rows={3}
+					disabled={isBusy}
 					className="field-sizing-fixed min-h-16"
 				/>
 				<InputGroupAddon
@@ -395,7 +406,7 @@ export function E2eeCommentsComposer(props: {
 						onClick={handleSubmit}
 						aria-label={isEditing ? "Save comment" : "Send comment"}
 					>
-						{props.isPending ? (
+						{isBusy ? (
 							<InlineLoader size="sm" />
 						) : (
 							<PaperPlaneRightIcon className="size-4" weight="fill" />

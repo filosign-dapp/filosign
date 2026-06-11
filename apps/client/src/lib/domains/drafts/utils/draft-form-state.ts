@@ -49,23 +49,40 @@ export function clearPersistedCreateFormFromDisk(): void {
 	}
 }
 
+const DEFAULT_DRAFT_DOC_WIDTH = 612;
+const DEFAULT_DRAFT_DOC_HEIGHT = 792;
+
 /** Rebuild placement manifest the same way draft save does (for digest parity). */
 export function placementManifestFromCreateForm(
 	form: CreateForm,
 ): DraftSnapshot["placementManifest"] | null {
-	const doc = form.documents[0];
-	if (!doc) return null;
-	return buildPlacementManifestForDocument({
-		docId: doc.id,
-		signerEmailsInOrder: form.recipients
-			.filter((r) => r.role === "signer")
-			.map((r) => normalizePlacementRecipientEmail(r.email.trim())),
-		signatureFields: form.signatureFields ?? [],
-		docWidth: 612,
-		docHeight: 792,
-		fieldBox: defaultPlacementFieldRect("signature", false),
-		strict: false,
-	});
+	if (form.documents.length === 0) return null;
+
+	const signerEmailsInOrder = form.recipients
+		.filter((r) => r.role === "signer")
+		.map((r) => normalizePlacementRecipientEmail(r.email.trim()));
+	const signatureFields = form.signatureFields ?? [];
+	const fieldBox = defaultPlacementFieldRect("signature", false);
+
+	const allFields: NonNullable<DraftSnapshot["placementManifest"]>["fields"] =
+		[];
+
+	for (const doc of form.documents) {
+		const partial = buildPlacementManifestForDocument({
+			docId: doc.id,
+			signerEmailsInOrder,
+			signatureFields,
+			docWidth: DEFAULT_DRAFT_DOC_WIDTH,
+			docHeight: DEFAULT_DRAFT_DOC_HEIGHT,
+			fieldBox,
+			strict: false,
+		});
+		if (partial.fields.length > 0) {
+			allFields.push(...partial.fields);
+		}
+	}
+
+	return { version: 1, documents: [], fields: allFields };
 }
 
 export function resolveCreateFormSnapshotDigest(

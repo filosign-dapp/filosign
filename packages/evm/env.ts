@@ -13,7 +13,7 @@ export const env = createEnv({
 		ALCHEMY_API_KEY: z.string().min(1),
 		ETHERSCAN_API_KEY: z.string().min(1),
 	},
-	runtimeEnv: Bun.env,
+	runtimeEnv: process.env,
 	emptyStringAsUndefined: true,
 });
 

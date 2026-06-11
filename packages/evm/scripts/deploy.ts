@@ -1,7 +1,8 @@
 import "@nomicfoundation/hardhat-viem";
 import { $ } from "bun";
 import hre from "hardhat";
-import { getAddress } from "viem";
+import { base, baseSepolia } from "viem/chains";
+import { createWalletClient, getAddress, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import type { ChainKey } from "../definitions/chain-key.js";
 import type { ContractName } from "../definitions/schema.js";
@@ -34,6 +35,13 @@ const CHAIN_NUMBER_TO_KEY: Record<number, ChainKey> = {
 };
 
 type WalletDeployed = Awaited<ReturnType<typeof hre.viem.getWalletClient>>;
+
+/** Alchemy free tier chokes on back-to-back sends from the same key. */
+const LIVE_TX_PAUSE_MS = 2_000;
+
+function isLiveChainId(chainId: number): boolean {
+	return chainId === CHAIN_ID.testnet || chainId === CHAIN_ID.mainnet;
+}
 
 function chainKeyFromId(chainId: number): ChainKey {
 	const key = CHAIN_NUMBER_TO_KEY[chainId];
@@ -73,6 +81,43 @@ function resolveOwnerAddress(
 
 function abiFromContract(c: { address: string; abi: unknown }) {
 	return { address: getAddress(c.address), abi: c.abi };
+}
+
+function liveNetworkRpcUrl(chainId: number): string {
+	const key = env.ALCHEMY_API_KEY;
+	if (chainId === CHAIN_ID.testnet) {
+		return `https://base-sepolia.g.alchemy.com/v2/${key}`;
+	}
+	if (chainId === CHAIN_ID.mainnet) {
+		return `https://base-mainnet.g.alchemy.com/v2/${key}`;
+	}
+	throw new Error(`No RPC URL for chainId ${chainId}`);
+}
+
+/**
+ * Hardhat's address-only wallet client routes later txs through
+ * `wallet_sendTransaction`, which Alchemy rejects. Local-account signing uses
+ * `eth_sendRawTransaction` and matches what worked on the first deploy tx.
+ */
+async function getDeployerWallet(chainId: number): Promise<WalletDeployed> {
+	const account = privateKeyToAccount(requireDeployerPrivateKey());
+
+	if (!isLiveChainId(chainId)) {
+		return hre.viem.getWalletClient(account.address, viemChainOverride());
+	}
+
+	const chain = chainId === CHAIN_ID.testnet ? baseSepolia : base;
+	return createWalletClient({
+		account,
+		chain,
+		transport: http(liveNetworkRpcUrl(chainId)),
+	}) as WalletDeployed;
+}
+
+async function pauseBetweenLiveTxs(chainId: number) {
+	if (isLiveChainId(chainId)) {
+		await sleep(LIVE_TX_PAUSE_MS);
+	}
 }
 
 async function deployEnvelopeRegistry(
@@ -200,10 +245,7 @@ async function main() {
 	process.chdir(evmPackageDir());
 
 	const chainId = requireChainId();
-	const deployer = await hre.viem.getWalletClient(
-		privateKeyToAccount(requireDeployerPrivateKey()).address,
-		viemChainOverride(),
-	);
+	const deployer = await getDeployerWallet(chainId);
 	const serverAddress = resolveServerAddress();
 	const ownerAddress = resolveOwnerAddress(deployer.account.address);
 
@@ -219,16 +261,19 @@ async function main() {
 		ownerAddress,
 	);
 	const publicClient = await assertBytecodeLive(envelopeRegistry.address);
+	await pauseBetweenLiveTxs(chainId);
 	const paymentValidator = await deployPaymentValidator(
 		deployer,
 		envelopeRegistry.address,
 		chainId,
 	);
+	await pauseBetweenLiveTxs(chainId);
 	const attachmentRelease = await deployAttachmentRelease(
 		deployer,
 		envelopeRegistry.address,
 		chainId,
 	);
+	await pauseBetweenLiveTxs(chainId);
 
 	const setSatelliteContracts = envelopeRegistry.write.setSatelliteContracts;
 	if (!setSatelliteContracts) {

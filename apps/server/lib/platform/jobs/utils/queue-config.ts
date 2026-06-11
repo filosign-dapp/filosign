@@ -24,6 +24,14 @@ export const DEFAULT_QUEUE_JOB_OPTIONS = {
 	backoff: { type: "exponential" as const, delay: 5000 },
 } as const;
 
+/** Payout jobs: 3 attempts with exponential backoff for canExecute / partial retries. */
+export const PAYOUT_QUEUE_JOB_OPTIONS = {
+	removeOnComplete: { age: 86_400 },
+	removeOnFail: { age: 604_800 },
+	attempts: 3,
+	backoff: { type: "exponential" as const, delay: 5000 },
+} as const;
+
 function jobAttemptsExhausted(job: Job | undefined): boolean {
 	if (!job) return false;
 	const maxAttempts =

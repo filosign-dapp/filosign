@@ -2,7 +2,10 @@ import { Worker } from "bullmq";
 import { processDodoWebhookJob } from "@/lib/domains/billing";
 import { runFocTransitionForPiece } from "@/lib/domains/foc";
 import { tryExecuteSettlementRulesForPiece } from "@/lib/domains/settlements/utils/execute/payout";
+import { SettlementPayoutRetryableError } from "@/lib/domains/settlements/utils/execute/payout-readiness";
+import { evmClient } from "@/lib/platform/evm";
 import { processTransaction } from "@/lib/platform/indexer/process";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import type {
 	BillingWebhookQueueJobData,
 	EmailQueueJobData,
@@ -76,7 +79,21 @@ export function startPayoutWorker(): Worker<PayoutQueueJobData> {
 	payoutWorker = new Worker<PayoutQueueJobData>(
 		PAYOUT_QUEUE_NAME,
 		async (job) => {
-			await tryExecuteSettlementRulesForPiece(job.data.pieceCid);
+			if (job.data.signTxHash) {
+				await tryCatch(
+					evmClient.waitForTransactionReceipt({ hash: job.data.signTxHash }),
+				);
+			}
+
+			const outcome = await tryExecuteSettlementRulesForPiece(
+				job.data.pieceCid,
+			);
+			if (outcome.retryable) {
+				throw new SettlementPayoutRetryableError(
+					outcome.retryReason ?? "retryable",
+					job.data.pieceCid,
+				);
+			}
 		},
 		{
 			...commonWorkerOptions(),

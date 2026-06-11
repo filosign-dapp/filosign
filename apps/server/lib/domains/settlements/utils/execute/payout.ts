@@ -5,6 +5,7 @@ import { fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { executePayoutLegsUnderLock } from "./payout-lock";
 import { preflightSettlementPayout } from "./payout-preflight";
+import { isRetryablePayoutSkip } from "./payout-readiness";
 
 const { fileSettlementRules } = db.schema;
 
@@ -17,15 +18,23 @@ const EXECUTABLE_DB_STATUSES = [
 	"failed_conditions",
 ] as const;
 
-export async function tryExecuteSettlementPayout(args: {
-	onChainRuleId: bigint;
-	validatorAddress: Address;
-}): Promise<{
+type SettlementPayoutResult = {
 	executed: boolean;
 	partial?: boolean;
 	txHash?: string;
 	skipped?: string;
-}> {
+};
+
+type SettlementPiecePayoutOutcome = {
+	retryable: boolean;
+	retryReason?: string;
+};
+
+export async function tryExecuteSettlementPayout(args: {
+	onChainRuleId: bigint;
+	validatorAddress: Address;
+	pieceCid?: string;
+}): Promise<SettlementPayoutResult> {
 	const validator = fsPaymentValidatorAt(args.validatorAddress);
 	const preflight = await preflightSettlementPayout({
 		onChainRuleId: args.onChainRuleId,
@@ -37,6 +46,16 @@ export async function tryExecuteSettlementPayout(args: {
 		const idempotentSuccess =
 			preflight.skip === "already_executed" ||
 			preflight.skip === "already_executed_on_chain";
+		if (!idempotentSuccess && args.pieceCid) {
+			logger.warn(
+				{
+					pieceCid: args.pieceCid,
+					onChainRuleId: args.onChainRuleId.toString(),
+					skip: preflight.skip,
+				},
+				"settlement payout skipped",
+			);
+		}
 		return { executed: idempotentSuccess, skipped: preflight.skip };
 	}
 
@@ -49,7 +68,9 @@ export async function tryExecuteSettlementPayout(args: {
 	});
 }
 
-export async function tryExecuteSettlementRulesForPiece(pieceCid: string) {
+export async function tryExecuteSettlementRulesForPiece(
+	pieceCid: string,
+): Promise<SettlementPiecePayoutOutcome> {
 	const rows = await db
 		.select({
 			onChainRuleId: fileSettlementRules.onChainRuleId,
@@ -63,11 +84,16 @@ export async function tryExecuteSettlementRulesForPiece(pieceCid: string) {
 			),
 		);
 
+	let retryable = false;
+	let retryReason: string | undefined;
+
 	for (const row of rows) {
 		const result = await tryExecuteSettlementPayout({
 			onChainRuleId: row.onChainRuleId,
 			validatorAddress: row.validatorAddress,
+			pieceCid,
 		});
+
 		if ((result.executed || result.partial) && result.txHash) {
 			logger.info(
 				{
@@ -79,5 +105,14 @@ export async function tryExecuteSettlementRulesForPiece(pieceCid: string) {
 				"settlement payout executed after sign",
 			);
 		}
+
+		if (isRetryablePayoutSkip(result.skipped, result)) {
+			retryable = true;
+			retryReason = result.partial
+				? "partial"
+				: (result.skipped ?? "retryable");
+		}
 	}
+
+	return { retryable, retryReason };
 }

@@ -1,4 +1,5 @@
 import { Queue } from "bullmq";
+import type { Hex } from "viem";
 import { getQueueConnection } from "./utils/connection";
 import {
 	billingWebhookJobId,
@@ -15,6 +16,7 @@ import {
 	FOC_TRANSITION_QUEUE_NAME,
 	getBullmqPrefix,
 	INDEXER_QUEUE_NAME,
+	PAYOUT_QUEUE_JOB_OPTIONS,
 	PAYOUT_QUEUE_NAME,
 } from "./utils/queue-config";
 
@@ -24,7 +26,12 @@ export type EmailQueueJobData = {
 	idempotencyKey: string;
 };
 
-export type PayoutQueueJobData = { pieceCid: string };
+export type PayoutQueueJobData = {
+	pieceCid: string;
+	signTxHash?: Hex;
+};
+
+const POST_SIGN_PAYOUT_DELAY_MS = 1500;
 
 export type IndexerQueueJobData = {
 	txHash: `0x${string}`;
@@ -130,11 +137,21 @@ export async function isEmailJobActive(
 	return state === "active" || state === "waiting" || state === "delayed";
 }
 
-export async function enqueuePayoutForPiece(pieceCid: string): Promise<void> {
+export async function enqueuePayoutForPiece(
+	pieceCid: string,
+	options?: { signTxHash?: Hex },
+): Promise<void> {
 	await getPayoutQueue().add(
 		"execute",
-		{ pieceCid },
-		{ jobId: payoutJobId(pieceCid) },
+		{
+			pieceCid,
+			...(options?.signTxHash ? { signTxHash: options.signTxHash } : {}),
+		},
+		{
+			jobId: payoutJobId(pieceCid),
+			...PAYOUT_QUEUE_JOB_OPTIONS,
+			...(options?.signTxHash ? { delay: POST_SIGN_PAYOUT_DELAY_MS } : {}),
+		},
 	);
 }
 

@@ -40,12 +40,6 @@ export function settlementPaidLegCount(paidFlags: readonly boolean[]): number {
 	return paidFlags.filter(Boolean).length;
 }
 
-export function settlementLegCountFromFlags(
-	paidFlags: readonly boolean[],
-): number {
-	return paidFlags.length;
-}
-
 export async function listUnpaidSettlementLegIndices(args: {
 	validatorAddress: Address;
 	onChainRuleId: bigint;

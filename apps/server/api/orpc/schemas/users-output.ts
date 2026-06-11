@@ -158,15 +158,6 @@ export const rpcUserExportAccountDataOutputSchema = z.object({
 			updatedAt: zDateWire,
 		}),
 	),
-	invitesSent: z.array(
-		z.object({
-			id: z.uuid(),
-			inviteeEmail: z.string(),
-			status: z.enum(["pending", "claimed", "expired", "revoked"]),
-			expiresAt: zDateWire,
-			createdAt: zDateWire,
-		}),
-	),
 	orgInvitesSent: z.array(
 		z.object({
 			id: z.uuid(),

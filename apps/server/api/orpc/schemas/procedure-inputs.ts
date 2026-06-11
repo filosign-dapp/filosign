@@ -1,10 +1,6 @@
 /** Router `.input()` schemas — single import surface (sources live in domains/handlers). */
 
-export {
-	zOrgsConnectionAddBody,
-	zOrgsConnectionRevokeBody,
-	zOrgsTemplateCreateBody,
-} from "@/api/handlers/orgs/connections-templates";
+export { zOrgsTemplateCreateBody } from "@/api/handlers/orgs/connections-templates";
 export {
 	zOrgsCreateBody,
 	zOrgsLinkWalletBody,
@@ -17,7 +13,6 @@ export {
 	zOrgsInviteCreateBody,
 	zOrgsKeysPublishWrapBody,
 } from "@/api/handlers/orgs/invites-keys";
-export { zSharingRequestInviteBody } from "@/api/handlers/sharing/invites";
 export { zUserRegisterBody } from "@/api/handlers/users/register";
 export {
 	zUserSignatureCreateBody,

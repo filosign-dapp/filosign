@@ -83,8 +83,6 @@ import {
 	rpcMetricsSenderUsageOutputSchema,
 } from "./metrics-output";
 import {
-	rpcOrgsConnectionOutputSchema,
-	rpcOrgsConnectionsListOutputSchema,
 	rpcOrgsCreateOutputSchema,
 	rpcOrgsGetOutputSchema,
 	rpcOrgsInviteCreateOutputSchema,
@@ -114,12 +112,6 @@ import {
 	rpcSettlementsTrySettleOutputSchema,
 	rpcSettlementsUpdateRuleOutputSchema,
 } from "./settlements-output";
-import {
-	rpcSharingEmailInvitesOutputSchema,
-	rpcSharingInviteByIdOutputSchema,
-	rpcSharingInviteClaimOutputSchema,
-	rpcSharingRequestInviteOutputSchema,
-} from "./sharing-output";
 import { rpcStoragePresignPutOutputSchema } from "./storage-output";
 import { rpcTxProcessIndexerHashOutputSchema } from "./tx-output";
 import {
@@ -206,12 +198,6 @@ export const rpcOut = {
 		invitesSummary: rpcMetricsInvitesSummaryOutputSchema,
 		senderUsage: rpcMetricsSenderUsageOutputSchema,
 	},
-	sharing: {
-		emailInvites: rpcSharingEmailInvitesOutputSchema,
-		inviteById: rpcSharingInviteByIdOutputSchema,
-		inviteClaim: rpcSharingInviteClaimOutputSchema,
-		requestInvite: rpcSharingRequestInviteOutputSchema,
-	},
 	orgs: {
 		create: rpcOrgsCreateOutputSchema,
 		listMine: rpcOrgsListMineOutputSchema,
@@ -221,8 +207,6 @@ export const rpcOut = {
 		update: rpcOrgsUpdateOutputSchema,
 		member: rpcOrgsMemberOutputSchema,
 		inviteCreate: rpcOrgsInviteCreateOutputSchema,
-		connection: rpcOrgsConnectionOutputSchema,
-		connectionsList: rpcOrgsConnectionsListOutputSchema,
 		template: rpcOrgsTemplateOutputSchema,
 		templatesList: rpcOrgsTemplatesListOutputSchema,
 		templatesClone: rpcOrgsTemplatesCloneOutputSchema,

@@ -5,7 +5,6 @@ import { zDateWire } from "./rpc-wire";
 
 const zOrgMemberRole = z.enum(["owner", "admin", "sender", "viewer"]);
 const zOrgMemberStatus = z.enum(["invited", "active", "removed"]);
-const zOrgConnectionStatus = z.enum(["active", "inactive"]);
 const zOrgSigningMode = z.enum(["acting_member", "org_safe"]);
 export const rpcOrgRowSchema = z.object({
 	id: z.uuid(),
@@ -70,17 +69,6 @@ export const rpcOrgTemplateWireSchema = z.object({
 	dekWrappedOmk: z.string(),
 });
 
-export const rpcOrgConnectionSchema = z.object({
-	organizationId: z.uuid(),
-	recipientWallet: z.string(),
-	label: z.string().nullable(),
-	addedByWallet: z.string(),
-	anchorSenderWallet: z.string(),
-	status: zOrgConnectionStatus,
-	createdAt: zDateWire,
-	updatedAt: zDateWire,
-});
-
 export const rpcOrgInviteSchema = z.object({
 	id: z.uuid(),
 	token: z.string().nullable(),
@@ -121,14 +109,6 @@ export const rpcOrgsMemberOutputSchema = z.object({
 
 export const rpcOrgsInviteCreateOutputSchema = z.object({
 	invite: rpcOrgInviteSchema,
-});
-
-export const rpcOrgsConnectionOutputSchema = z.object({
-	connection: rpcOrgConnectionSchema,
-});
-
-export const rpcOrgsConnectionsListOutputSchema = z.object({
-	connections: z.array(rpcOrgConnectionSchema),
 });
 
 export const rpcOrgsTemplatesListOutputSchema = z.object({

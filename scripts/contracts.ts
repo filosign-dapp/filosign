@@ -86,10 +86,7 @@ async function runCompile(): Promise<never> {
 }
 
 async function runTest(): Promise<never> {
-	return runInheritExit(
-		rootDir,
-		packageRunCmd(rootDir, CONTRACTS_PKG, "test"),
-	);
+	return runInheritExit(rootDir, packageRunCmd(rootDir, CONTRACTS_PKG, "test"));
 }
 
 async function runMigrate(profile: DeployProfile): Promise<never> {

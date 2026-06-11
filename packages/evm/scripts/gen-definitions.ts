@@ -59,10 +59,7 @@ function relImport(target: string) {
 		const rel = path.relative(generatedDir, target).replace(/\\/g, "/");
 		return rel.startsWith(".") ? rel : `./${rel}`;
 	}
-	return target.replace(
-		new RegExp(`^${DEFINITIONS_REL_ROOT}/`),
-		"../",
-	);
+	return target.replace(new RegExp(`^${DEFINITIONS_REL_ROOT}/`), "../");
 }
 
 function abiImportVar(abiRef: string) {

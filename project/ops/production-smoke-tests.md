@@ -91,7 +91,7 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 **Steps:**
 
 1. Same piece as scenario 3; enqueue payout (post-sign).
-2. Before payout finishes, invoke **Settle payment** (`settlements.trySettle`) from sign UI or RPC.
+2. Before payout finishes, invoke **Send payout** (`settlements.trySettle`) from sign UI or RPC.
 3. Watch logs for relayer lock and worker ordering.
 
 **Expected:**

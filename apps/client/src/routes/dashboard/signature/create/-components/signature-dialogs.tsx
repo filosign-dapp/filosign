@@ -18,12 +18,14 @@ export function SignatureDialogs() {
 				onClose={() => setIsSignatureDialogOpen(false)}
 				onSave={handleSignatureSave}
 				title="Draw Your Signature"
+				role="signature"
 			/>
 			<SignatureDialog
 				isOpen={isInitialsDialogOpen}
 				onClose={() => setIsInitialsDialogOpen(false)}
 				onSave={handleInitialsSave}
 				title="Draw Your Initials"
+				role="initial"
 			/>
 		</>
 	);

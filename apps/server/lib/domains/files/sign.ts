@@ -217,6 +217,7 @@ export async function pieceSign(args: {
 		registryAddress: fileRecord.registryAddress,
 		registerRoutingJson: fileRecord.registerRoutingJson,
 		fieldCount: completedFieldIdsStored.length,
+		signTxHash: txHash,
 	});
 
 	return { txHash, signature };

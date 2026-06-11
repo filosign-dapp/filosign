@@ -1,3 +1,4 @@
+import type { UserSignatureRole } from "@filosign/shared";
 import { useRef } from "react";
 import { type Editor, Tldraw } from "tldraw";
 import "tldraw/tldraw.css";
@@ -20,6 +21,7 @@ interface SignatureDialogProps {
 	onClose: () => void;
 	onSave: (signatureData: string) => void;
 	title: string;
+	role: UserSignatureRole;
 }
 
 export default function SignatureDialog({
@@ -27,6 +29,7 @@ export default function SignatureDialog({
 	onClose,
 	onSave,
 	title,
+	role,
 }: SignatureDialogProps) {
 	const editorRef = useRef<Editor | null>(null);
 
@@ -37,7 +40,7 @@ export default function SignatureDialog({
 		}
 
 		try {
-			const svg = await exportSignatureSvgFromEditor(editorRef.current);
+			const svg = await exportSignatureSvgFromEditor(editorRef.current, role);
 			onSave(svgToDataUrl(svg));
 			onClose();
 		} catch (error) {

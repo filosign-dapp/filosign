@@ -238,17 +238,6 @@ export const workspaceErrors = {
 		severity: "warning",
 		defaultOrpcCode: "FORBIDDEN",
 	},
-	"WORKSPACE.CONNECTION_NOT_FOUND": {
-		title: "Connection not found",
-		description: "The requested organization connection could not be found.",
-		steps: [
-			"Verify the recipient wallet or connection status.",
-			"Refresh the list and try again.",
-		],
-		audience: "user",
-		severity: "error",
-		defaultOrpcCode: "NOT_FOUND",
-	},
 	"WORKSPACE.TEMPLATE_NOT_FOUND": {
 		title: "Template not found",
 		description: "The organization document template could not be found.",

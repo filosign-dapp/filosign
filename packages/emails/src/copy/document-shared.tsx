@@ -27,19 +27,26 @@ const coldAccessCodeNote = (
 	</>
 );
 
-function draftReviewBody(
-	senderLabel: string,
+function documentTitleFragment(
 	documentTitle: string | undefined,
-	variant: DocumentSharedVariant,
+	fallback: string,
 ): ReactNode {
-	const titleFragment = documentTitle ? (
+	return documentTitle ? (
 		<>
 			{" "}
 			<strong>{documentTitle}</strong>
 		</>
 	) : (
-		" a draft"
+		` ${fallback}`
 	);
+}
+
+function draftReviewBody(
+	senderLabel: string,
+	documentTitle: string | undefined,
+	variant: DocumentSharedVariant,
+): ReactNode {
+	const titleFragment = documentTitleFragment(documentTitle, "a draft");
 
 	return (
 		<>
@@ -60,19 +67,27 @@ function draftReviewBody(
 function signWarmBody(
 	senderLabel: string,
 	intent: DocumentSharedIntent,
+	documentTitle: string | undefined,
 ): ReactNode {
 	if (intent === "reminder") {
 		return (
 			<>
-				<strong>{senderLabel}</strong> is waiting for your signature. Open the
-				document below to review and sign.
+				<strong>{senderLabel}</strong> is waiting for your signature
+				{documentTitle ? (
+					<>
+						{" "}
+						on <strong>{documentTitle}</strong>
+					</>
+				) : null}
+				. Open the document below to review and sign.
 			</>
 		);
 	}
 
 	return (
 		<>
-			<strong>{senderLabel}</strong> shared a document with you on Filosign.
+			<strong>{senderLabel}</strong> shared
+			{documentTitleFragment(documentTitle, "a document")} with you on Filosign.
 			Sign in with this email to review, sign, or download.
 		</>
 	);
@@ -81,15 +96,25 @@ function signWarmBody(
 function signColdBody(
 	senderLabel: string,
 	intent: DocumentSharedIntent,
+	documentTitle: string | undefined,
 ): ReactNode {
 	const intro =
 		intent === "reminder" ? (
 			<>
-				<strong>{senderLabel}</strong> is waiting for your signature.
+				<strong>{senderLabel}</strong> is waiting for your signature
+				{documentTitle ? (
+					<>
+						{" "}
+						on <strong>{documentTitle}</strong>
+					</>
+				) : null}
+				.
 			</>
 		) : (
 			<>
-				<strong>{senderLabel}</strong> shared a document with you on Filosign.
+				<strong>{senderLabel}</strong> shared
+				{documentTitleFragment(documentTitle, "a document")} with you on
+				Filosign.
 			</>
 		);
 
@@ -150,7 +175,7 @@ export function documentSharedCopy(
 				intent === "reminder"
 					? "Your signature is still needed. You will need the access code from the sender."
 					: "Secure access required. Open the link, then enter the code from the sender.",
-			body: signColdBody(senderLabel, intent),
+			body: signColdBody(senderLabel, intent, documentTitle),
 			ctaLabel: "Open document",
 		};
 	}
@@ -163,7 +188,7 @@ export function documentSharedCopy(
 			intent === "reminder"
 				? "Your signature is still needed on a Filosign document."
 				: "Sign in with this email to open it on Filosign.",
-		body: signWarmBody(senderLabel, intent),
+		body: signWarmBody(senderLabel, intent, documentTitle),
 		ctaLabel: "Open document",
 	};
 }

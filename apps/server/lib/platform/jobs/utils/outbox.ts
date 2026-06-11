@@ -23,6 +23,7 @@ export const zDocReceivedOutboxPayload = z.object({
 	senderWallet: zAddress,
 	pieceCid: z.string().min(1),
 	senderName: z.string().optional(),
+	documentTitle: z.string().min(1).optional(),
 	intent: zEmailIntent,
 });
 
@@ -32,6 +33,7 @@ export const zColdDocInviteOutboxPayload = z.object({
 	pieceCid: z.string().min(1),
 	inviteToken: z.string().min(16),
 	senderName: z.string().optional(),
+	documentTitle: z.string().min(1).optional(),
 	intent: zEmailIntent,
 });
 

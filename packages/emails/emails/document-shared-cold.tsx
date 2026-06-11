@@ -9,6 +9,7 @@ export default function DocumentSharedColdPreview() {
 			variant="cold"
 			intent="initial"
 			context="sign"
+			documentTitle="Q3 Vendor Agreement"
 		/>
 	);
 }

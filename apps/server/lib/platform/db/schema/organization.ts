@@ -22,9 +22,6 @@ export type OrgMemberRole = (typeof orgMemberRoles)[number];
 export const orgMemberStatuses = ["invited", "active", "removed"] as const;
 export type OrgMemberStatus = (typeof orgMemberStatuses)[number];
 
-export const orgConnectionStatuses = ["active", "inactive"] as const;
-export type OrgConnectionStatus = (typeof orgConnectionStatuses)[number];
-
 export const orgInviteStatuses = [
 	"pending",
 	"claimed",
@@ -140,37 +137,6 @@ export const organizationInvites = t.pgTable(
 			.uniqueIndex("uidx_org_invites_pending_token")
 			.on(table.token)
 			.where(sql`${table.status} = 'pending'`),
-	],
-);
-
-export const organizationConnections = t.pgTable(
-	"organization_connections",
-	{
-		id: t.uuid().primaryKey().$defaultFn(randomUuidV7),
-		organizationId: t
-			.uuid()
-			.notNull()
-			.references(() => organizations.id, { onDelete: "cascade" }),
-		recipientWallet: tEvmAddress()
-			.notNull()
-			.references(() => users.walletAddress),
-		label: t.text(),
-		addedByWallet: tEvmAddress()
-			.notNull()
-			.references(() => users.walletAddress),
-		anchorSenderWallet: tEvmAddress()
-			.notNull()
-			.references(() => users.walletAddress),
-		status: t.text({ enum: orgConnectionStatuses }).notNull().default("active"),
-		...timestamps,
-	},
-	(table) => [
-		t
-			.uniqueIndex("uidx_org_connections_org_recipient")
-			.on(table.organizationId, table.recipientWallet),
-		t
-			.index("idx_org_connections_org_status")
-			.on(table.organizationId, table.status),
 	],
 );
 

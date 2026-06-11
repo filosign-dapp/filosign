@@ -37,6 +37,7 @@ type SendDocumentEmailBaseArgs = {
 	senderWallet: Address;
 	pieceCid: string;
 	senderName?: string | null;
+	documentTitle?: string | null;
 	intent?: "initial" | "reminder";
 };
 
@@ -137,6 +138,7 @@ export async function sendColdDocumentInviteEmail(
 		senderWallet: args.senderWallet,
 		pieceCid: args.pieceCid,
 		senderName: args.senderName,
+		documentTitle: args.documentTitle,
 		variant: "cold",
 		ctaHref: signUrl.toString(),
 		idempotencyPrefix: "cold-doc-invite",
@@ -156,6 +158,7 @@ export async function sendDocumentReceivedEmail(
 		senderWallet: args.senderWallet,
 		pieceCid: args.pieceCid,
 		senderName: args.senderName,
+		documentTitle: args.documentTitle,
 		variant: "warm",
 		ctaHref: documentUrl,
 		idempotencyPrefix: "doc-received",

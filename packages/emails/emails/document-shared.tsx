@@ -20,7 +20,7 @@ export type DocumentSharedEmailProps = {
 	variant: DocumentSharedVariant;
 	intent?: DocumentSharedIntent;
 	context?: DocumentSharedContext;
-	/** Pre-escaped draft title for draft_review context */
+	/** Pre-escaped document or draft title */
 	documentTitle?: string;
 };
 
@@ -70,4 +70,5 @@ DocumentSharedEmail.PreviewProps = {
 	variant: "warm",
 	intent: "initial",
 	context: "sign",
+	documentTitle: "Q3 Vendor Agreement",
 } satisfies DocumentSharedEmailProps;

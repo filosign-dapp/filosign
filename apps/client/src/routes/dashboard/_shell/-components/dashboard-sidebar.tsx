@@ -24,7 +24,6 @@ import {
 	ShieldCheckIcon,
 	UserCircleIcon,
 	UserPlusIcon,
-	// UsersThreeIcon,
 } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
@@ -134,18 +133,6 @@ const groups: { label: string; items: NavItem[] }[] = [
 			},
 		],
 	},
-	// {
-	// 	label: "People",
-	// 	items: [
-	// 		{
-	// 			title: "Connections",
-	// 			url: "/dashboard/connections",
-	// 			icon: UsersThreeIcon,
-	// 			match: (p) => matchPrefix(p, "/dashboard/connections"),
-	// 			tooltip: "Your Recipients",
-	// 		},
-	// 	],
-	// },
 	{
 		label: "Support",
 		items: [

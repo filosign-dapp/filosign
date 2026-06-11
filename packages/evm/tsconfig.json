@@ -15,6 +15,7 @@
 		"noUncheckedIndexedAccess": true
 	},
 	"include": [
+		"env.ts",
 		"index.ts",
 		"definitions/**/*.ts",
 		"services/**/*.ts",

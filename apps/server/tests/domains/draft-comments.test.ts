@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-	type DraftCommentRow,
-	mapDraftCommentResponse,
-} from "@/lib/domains/drafts/utils/comments";
+import type { DraftCommentRow } from "@/lib/domains/drafts/utils/comments";
 
 function commentRow(overrides: Partial<DraftCommentRow> = {}): DraftCommentRow {
 	return {
@@ -20,7 +17,10 @@ function commentRow(overrides: Partial<DraftCommentRow> = {}): DraftCommentRow {
 }
 
 describe("mapDraftCommentResponse", () => {
-	test("prefers team member name over email", () => {
+	test("prefers team member name over email", async () => {
+		const { mapDraftCommentResponse } = await import(
+			"@/lib/domains/drafts/utils/comments"
+		);
 		const mapped = mapDraftCommentResponse(
 			commentRow({
 				authorWallet: "0x1111111111111111111111111111111111111111",
@@ -34,7 +34,10 @@ describe("mapDraftCommentResponse", () => {
 		expect(mapped.authorEmail).toBe("ada@example.com");
 	});
 
-	test("falls back to external share email for invite-token comments", () => {
+	test("falls back to external share email for invite-token comments", async () => {
+		const { mapDraftCommentResponse } = await import(
+			"@/lib/domains/drafts/utils/comments"
+		);
 		const mapped = mapDraftCommentResponse(
 			commentRow({
 				inviteToken: "invite-token-abcdefghij",
@@ -46,7 +49,10 @@ describe("mapDraftCommentResponse", () => {
 		expect(mapped.authorEmail).toBe("reviewer@example.com");
 	});
 
-	test("leaves author fields undefined when no identity is known", () => {
+	test("leaves author fields undefined when no identity is known", async () => {
+		const { mapDraftCommentResponse } = await import(
+			"@/lib/domains/drafts/utils/comments"
+		);
 		const mapped = mapDraftCommentResponse(commentRow());
 
 		expect(mapped.authorDisplayName).toBeUndefined();

@@ -13,8 +13,7 @@ export const env = createEnv({
 		ALCHEMY_API_KEY: z.string().min(1),
 		ETHERSCAN_API_KEY: z.string().min(1),
 	},
-	// Hardhat loads this file under Node/ts-node — not Bun.
-	runtimeEnv: process.env,
+	runtimeEnv: Bun.env,
 	emptyStringAsUndefined: true,
 });
 

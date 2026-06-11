@@ -188,7 +188,7 @@ export function ShareDraftDialog(props: {
 							className="w-full sm:w-auto"
 							onClick={handleDone}
 						>
-							I have saved it
+							Okay
 						</Button>
 					</DialogFooter>
 				</DialogContent>

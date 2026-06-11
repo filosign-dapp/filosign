@@ -120,11 +120,11 @@ Root orchestrator only (`scripts/contracts.ts` + `scripts/lib/contracts/`). Do n
 | `--migrate --local` | OSS `compile` → Hardhat deploy (no test gate; for `bun dev` bootstrap) |
 | `--migrate --testnet\|mainnet` | OSS `test` → Hardhat deploy (`packages/evm/scripts/deploy.ts`, absolute env file) |
 
-| Profile | Network | Env file | DB after deploy |
-| --- | --- | --- | --- |
-| `--local` | `localhost` | `packages/evm/.env.local` | — |
-| `--testnet` | `baseSepolia` | `.env.staging` | `db push staging` |
-| `--mainnet` | `base` | `.env.production` | — (run `prod --migrate` separately) |
+| Profile | Network | Env file |
+| --- | --- | --- |
+| `--local` | `localhost` | `packages/evm/.env.local` |
+| `--testnet` | `baseSepolia` | `.env.staging` |
+| `--mainnet` | `base` | `.env.production` |
 
 Solidity + Hardhat cwd: `oss/packages/contracts`. Private deploy outputs: `packages/evm/definitions/`. Public ABIs/chains: `oss/packages/contracts/abis/`, `chains/manifest.json` (via `export:public`). Test before testnet/mainnet migrate.
 

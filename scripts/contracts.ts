@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { die, exitOnHelpOrEmpty, runMain, scriptArgv } from "./lib/cli.ts";
 /**
- * Contracts orchestrator (@filosign/contracts + @filosign/evm + DB when migrating).
+ * Contracts orchestrator (@filosign/contracts + @filosign/evm).
  *
  * Usage:
  *   bun run contracts -- compile | test | node
@@ -18,9 +18,6 @@ const rootDir = repoRoot(import.meta.url);
 const CONTRACTS_PKG = "@filosign/contracts";
 const EVM_PKG = "@filosign/evm";
 
-/** @filosign/server DB orchestrator profiles (see scripts/db.ts) */
-type DbProfile = "local" | "staging" | "sandbox" | "production";
-
 const HELP = `
 Filosign contracts orchestrator
 
@@ -29,10 +26,10 @@ Utilities:
   bun run contracts -- test                 OSS Hardhat tests
   bun run contracts -- node                 Hardhat local node (OSS package)
 
-Migrate (deploy contracts; testnet optionally syncs staging DB via push):
+Migrate (deploy contracts):
   bun run contracts -- --migrate --local      (OSS compile + deploy to Hardhat; no test gate)
-  bun run contracts -- --migrate --testnet    (deploys + db push staging)
-  bun run contracts -- --migrate --mainnet    (deploy only — run prod --migrate separately)
+  bun run contracts -- --migrate --testnet    (test + deploy Base Sepolia)
+  bun run contracts -- --migrate --mainnet    (test + deploy Base mainnet)
 
 Local DB: bun run db -- push local  ·  bun run prod -- --migrate  ·  bun run db -- purge local
 
@@ -46,10 +43,6 @@ const UTILITY_COMMANDS = {
 } as const;
 
 type UtilityCommand = keyof typeof UTILITY_COMMANDS;
-
-function dbCmd(action: "push" | "purge", dbProfile: DbProfile): string[] {
-	return ["bun", "run", "db", "--", action, dbProfile];
-}
 
 function parseArgv(argv: string[]) {
 	let migrate = false;
@@ -102,10 +95,6 @@ async function runMigrate(profile: DeployProfile): Promise<never> {
 	}
 
 	await runDeploy(rootDir, profile);
-
-	if (profile === "testnet") {
-		return runInheritExit(rootDir, dbCmd("push", "staging"));
-	}
 	process.exit(0);
 }
 

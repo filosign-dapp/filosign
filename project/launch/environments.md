@@ -83,7 +83,7 @@ bun run db -- push staging
 bun run db -- migrate sandbox    # after db:generate + commit drizzle/
 bun run db -- purge sandbox      # wipe + migrate
 
-bun run contracts -- --migrate --testnet   # chain deploy + staging DB push
+bun run contracts -- --migrate --testnet   # chain deploy (Base Sepolia)
 ```
 
 ## Infisical

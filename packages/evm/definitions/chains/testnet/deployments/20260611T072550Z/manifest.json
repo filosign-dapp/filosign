@@ -1,0 +1,22 @@
+{
+	"deploymentId": "20260611T072550Z",
+	"chainId": 84532,
+	"deployedAt": "2026-06-11T07:25:50.684Z",
+	"contracts": {
+		"FSEnvelopeRegistry": {
+			"address": "0x914E83136131b26A99Af92F2DE8703F376BA7923",
+			"abiRef": "584ca02aea7faacfe17d2edd0078210f747b4f3e85375124d093665ebd969cc3"
+		},
+		"FSPaymentValidator": {
+			"address": "0xcFcDfD5204d3806b5734412E163e53EfA7BE817f",
+			"abiRef": "5c06b1840e1e307bec4b426803081be2250b1a16a89ed3a3272000bfc5fd0d8f"
+		},
+		"FSAttachmentRelease": {
+			"address": "0x2802ad9359e57B060D42a7510CA1AdebffDEd519",
+			"abiRef": "bc37a8c681af0849ace7cde4b7005b58679dff2abe8276aaedbdeb31e77ee0e9"
+		}
+	},
+	"transactions": {
+		"setSatelliteContracts": "0x6c0be890ff5c26dc6c6808ab0c9b257f0784cef6163c01a6b6f6dcc68a1a9173"
+	}
+}

@@ -6,18 +6,19 @@ import {
 	deployScriptPath,
 	packageDir,
 } from "../package-paths.ts";
-import { runInheritExit } from "../spawn.ts";
+import { runInherit } from "../spawn.ts";
 
 export async function runDeploy(
 	rootDir: string,
 	profile: DeployProfile,
-): Promise<never> {
+): Promise<void> {
 	const contractsDir = packageDir(rootDir, "@filosign/contracts");
+	const evmDir = packageDir(rootDir, "@filosign/evm");
 	const envFile = definitionsEnvFile(rootDir, DEPLOY_ENV_PROFILE[profile]);
 	const script = deployScriptPath(rootDir);
 	const network = DEPLOY_NETWORK[profile];
 
-	return runInheritExit(contractsDir, [
+	const deployCode = await runInherit(contractsDir, [
 		"bun",
 		`--env-file=${envFile}`,
 		"--bun",
@@ -27,4 +28,20 @@ export async function runDeploy(
 		"--network",
 		network,
 	]);
+	if (deployCode !== 0) process.exit(deployCode);
+
+	if (profile === "testnet" || profile === "mainnet") {
+		const verifyCode = await runInherit(evmDir, [
+			"bun",
+			`--env-file=${envFile}`,
+			"run",
+			"scripts/verify-deployment.ts",
+			profile,
+		]);
+		if (verifyCode !== 0) {
+			console.warn(
+				"Block explorer verify reported errors; on-chain deploy and definitions are still valid.",
+			);
+		}
+	}
 }

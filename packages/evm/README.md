@@ -70,6 +70,7 @@ See [`index.ts`](./index.ts) and [`services/`](./services/).
 | Path | Role |
 |------|------|
 | `scripts/deploy.ts` | Hardhat deploy (invoked with OSS cwd; chdirs to evm) |
+| `scripts/verify-deployment.ts` | Basescan verify for latest manifest (runs after deploy, outside Hardhat run) |
 | `scripts/gen-definitions.ts` | Manifest → generated TS |
 | `scripts/export-public.ts` | Private definitions → public OSS abis/chains |
 | `scripts/local-dev.ts` | Local mock USDC + Hardhat funding helpers |

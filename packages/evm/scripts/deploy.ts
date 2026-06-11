@@ -33,8 +33,6 @@ const CHAIN_NUMBER_TO_KEY: Record<number, ChainKey> = {
 	[CHAIN_ID.mainnet]: "mainnet",
 };
 
-const BASE_BLOCK_EXPLORER_NETWORKS = new Set(["baseSepolia", "base"]);
-
 type WalletDeployed = Awaited<ReturnType<typeof hre.viem.getWalletClient>>;
 
 function chainKeyFromId(chainId: number): ChainKey {
@@ -175,32 +173,27 @@ async function deployPaymentValidator(
 	return validator;
 }
 
-async function verifyOnBaseExplorerIfApplicable(args: {
-	networkName: string;
-	envelopeRegistry: Awaited<ReturnType<typeof deployEnvelopeRegistry>>;
-	paymentValidator: Awaited<ReturnType<typeof deployPaymentValidator>>;
-	attachmentRelease: Awaited<ReturnType<typeof deployAttachmentRelease>>;
-	serverAddress: `0x${string}`;
+function printDeploymentSummary(args: {
+	chainKey: ChainKey;
+	deploymentId: string;
 	envelopeRegistryAddress: `0x${string}`;
-	chainId: number;
+	paymentValidatorAddress: `0x${string}`;
+	attachmentReleaseAddress: `0x${string}`;
 }) {
-	const {
-		networkName,
-		envelopeRegistry,
-		paymentValidator,
-		attachmentRelease,
-		serverAddress,
-	} = args;
-	if (!BASE_BLOCK_EXPLORER_NETWORKS.has(networkName)) return;
-
-	try {
-		await $`bunx --bun hardhat verify --network ${networkName} ${envelopeRegistry.address} ${serverAddress} --force`;
-		await sleep(1000);
-		await $`bunx --bun hardhat verify --network ${networkName} ${paymentValidator.address} ${args.envelopeRegistryAddress} ${String(args.chainId)} --force`;
-		await sleep(1000);
-		await $`bunx --bun hardhat verify --network ${networkName} ${attachmentRelease.address} ${args.envelopeRegistryAddress} ${String(args.chainId)} --force`;
-	} catch (_) {}
-	console.log(`Contracts verified on ${networkName} block explorer`);
+	console.log("\n--- Deployment summary ---");
+	console.log(`  chain:        ${args.chainKey}`);
+	console.log(`  deploymentId: ${args.deploymentId}`);
+	console.log(`  registry:     ${args.envelopeRegistryAddress}`);
+	console.log(`  validator:    ${args.paymentValidatorAddress}`);
+	console.log(`  attachment:   ${args.attachmentReleaseAddress}`);
+	console.log(
+		"\nRebuild and redeploy server + client from this commit so bundled definitions match.",
+	);
+	if (args.chainKey === "testnet" || args.chainKey === "mainnet") {
+		console.log(
+			"Block explorer verify runs as a separate step after this script exits.",
+		);
+	}
 }
 
 async function main() {
@@ -308,14 +301,12 @@ async function main() {
 	await $`bun run --cwd ${evmDir} gen:definitions`;
 	await $`bun run --cwd ${evmDir} export:public`;
 
-	await verifyOnBaseExplorerIfApplicable({
-		networkName: hre.network.name,
-		envelopeRegistry,
-		paymentValidator,
-		attachmentRelease,
-		serverAddress,
+	printDeploymentSummary({
+		chainKey,
+		deploymentId,
 		envelopeRegistryAddress: envelopeRegistry.address,
-		chainId,
+		paymentValidatorAddress: paymentValidator.address,
+		attachmentReleaseAddress: attachmentRelease.address,
 	});
 }
 

@@ -1,0 +1,16 @@
+# Filosign production pgBackRest schedule (UTC).
+# Install on VPS: see deploy/cron/README.md or project/ops/postgres-ops.md
+#
+# Replace CONTAINER if Dokploy renames the postgres container (docker ps).
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Daily: repo + archive health
+15 3 * * * root docker exec -u postgres filosign-proddata-wcm84h-postgres-1 pgbackrest --stanza=filosign check >> /var/log/filosign-pgbackrest.log 2>&1
+
+# Daily: incremental since last full
+30 3 * * * root docker exec -u postgres filosign-proddata-wcm84h-postgres-1 pgbackrest --stanza=filosign backup --type=diff >> /var/log/filosign-pgbackrest.log 2>&1
+
+# Weekly: new full baseline (Sunday)
+15 4 * * 0 root docker exec -u postgres filosign-proddata-wcm84h-postgres-1 pgbackrest --stanza=filosign backup --type=full >> /var/log/filosign-pgbackrest.log 2>&1

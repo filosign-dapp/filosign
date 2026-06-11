@@ -70,8 +70,6 @@ function resolveHref(
 			return "/dashboard/envelope/create";
 		case "payout_packet_access":
 			return "/dashboard/settings/settlements";
-		case "add_connections":
-			return "/dashboard/settings/connections";
 		case "advanced_settlements":
 			return "/dashboard/envelope/create";
 		default:

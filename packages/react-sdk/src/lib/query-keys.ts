@@ -5,7 +5,7 @@
  * `["filosign", <domain>, …]` (see `filosignQueryRoots`). Invalidate with `.key()` or a parent
  * domain root; never hand-roll procedure strings.
  *
- * **Invalidation helpers:** `invalidate-queries.ts` (inbox, sharing, orgs, auth, profile).
+ * **Invalidation helpers:** `invalidate-queries.ts` (inbox, orgs, auth, profile).
  */
 export const FILOSIGN_RPC_ROOT = ["filosign"] as const;
 
@@ -14,7 +14,6 @@ export const filosignQueryRoots = {
 	all: FILOSIGN_RPC_ROOT,
 	runtime: [...FILOSIGN_RPC_ROOT, "runtime"] as const,
 	files: [...FILOSIGN_RPC_ROOT, "files"] as const,
-	sharing: [...FILOSIGN_RPC_ROOT, "sharing"] as const,
 	users: [...FILOSIGN_RPC_ROOT, "users"] as const,
 	orgs: [...FILOSIGN_RPC_ROOT, "orgs"] as const,
 	billing: [...FILOSIGN_RPC_ROOT, "billing"] as const,

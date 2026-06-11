@@ -24,9 +24,6 @@ export function createFilosignRpcQueryUtils(client: AppRouterClient) {
 		files: createTanstackQueryUtils(client.files, {
 			path: [...ROOT, "files"],
 		}),
-		sharing: createTanstackQueryUtils(client.sharing, {
-			path: [...ROOT, "sharing"],
-		}),
 		users: createTanstackQueryUtils(client.users, {
 			path: [...ROOT, "users"],
 		}),

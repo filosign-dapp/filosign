@@ -108,16 +108,6 @@ export function invalidateActivationProgress(
 	});
 }
 
-/** Email invite queries under sharing. */
-export function invalidateSharingQueries(
-	queryClient: QueryClient,
-	rpcQuery: FilosignRpcQueryUtils,
-) {
-	return queryClient.invalidateQueries({
-		queryKey: rpcQuery.sharing.key(),
-	});
-}
-
 /** All org-domain queries (listMine, members, invites, …). */
 export function invalidateOrgsQueries(
 	queryClient: QueryClient,

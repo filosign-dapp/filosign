@@ -127,7 +127,6 @@ export default defineConfig({
 							label: "Payout access",
 							link: "/docs/workspace/payout-access/",
 						},
-						{ label: "Connections", link: "/docs/workspace/connections/" },
 						{ label: "Plans and limits", link: "/docs/plans/" },
 						{ label: "Roadmap", link: "/docs/plans/roadmap/" },
 					],

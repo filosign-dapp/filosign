@@ -409,7 +409,7 @@ function PricingPlansContent({
 						onChange={setBillingInterval}
 						savePercentLabel={savePercentLabel}
 					/>
-					<div className="col-span-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8 lg:gap-12 grid-rows-[auto_auto_auto_1fr] items-stretch">
+					<div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 grid-rows-[auto_auto_auto_1fr] items-stretch">
 						{plans.map((plan, index) => (
 							<PricingPlanCard
 								key={plan.name}

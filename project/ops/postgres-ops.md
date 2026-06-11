@@ -64,6 +64,9 @@ Run weekly (or before deploy/migrate). From laptop: `bun run prod` (see `bun run
 
 ```bash
 docker exec filosign-postgres pg_isready -U filosign -d filosign
+docker exec filosign-postgres psql -U filosign -d filosign -c \
+  "SELECT current_setting('archive_mode') AS archive_mode, current_setting('archive_timeout') AS archive_timeout, last_archived_wal, now() - last_archived_time AS archive_lag FROM pg_stat_archiver;"
+PGBACKREST_CONTAINER=filosign-postgres deploy/scripts/pgbackrest-backup.sh check-wal
 docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign check
 docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign info
 ```
@@ -71,13 +74,38 @@ docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign info
 **Good:**
 
 ```text
-pg_isready → accepting connections
-check      → completed successfully
-info       → status: ok
-             full backup: …F  (recent date)
+pg_isready   → accepting connections
+archive_lag  → under ~6 minutes (production conf sets archive_timeout = 300)
+check-wal    → ok
+check        → completed successfully
+info         → status: ok
+               full backup: …F  (recent date)
+               wal archive max close to current WAL
 ```
 
-**Bad:** `status: error`, no full backup line, or postgres logs repeating `archive command failed`.
+**Bad:** `status: error`, no full backup line, postgres logs repeating `archive command failed`, or `archive_lag` of hours while the DB is taking writes (usually `archive_timeout = 0` or `archive_mode` off after restore).
+
+---
+
+## WAL archiving (continuous PITR)
+
+Scheduled **full/diff** backups are not enough for intraday PITR. Postgres must **`archive-push` every WAL segment** to R2 via `archive_command`.
+
+Production [`postgresql.production.conf`](../../deploy/postgres/postgresql.production.conf) sets **`archive_timeout = 300`** (same as [`pgbackrest.conf`](../../deploy/postgres/pgbackrest.conf) `archive-timeout`) so a quiet database still closes and archives a WAL segment every few minutes. Without it, a single 16MB segment can stay open for hours; R2 looks stale even though Postgres is healthy.
+
+After any **restore + promote**, re-enable archiving (pgBackRest may write `archive_mode = off`):
+
+```bash
+docker exec filosign-postgres psql -U filosign -c "
+  ALTER SYSTEM SET archive_mode = on;
+  SELECT pg_reload_conf();
+"
+docker exec filosign-postgres rm -f /var/lib/postgresql/18/docker/postgresql.auto.conf
+docker restart filosign-postgres
+docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign check
+```
+
+The postgres image entrypoint strips stale `restore_command` from `postgresql.auto.conf` on start when not in recovery.
 
 ---
 
@@ -158,7 +186,7 @@ After a bad migration or bad delete — need DB as it was at time T (UTC):
    pgbackrest --stanza=filosign restore \
      --type=time "--target=2026-06-05 14:30:00+00" --target-action=promote --archive-mode=off
   ```
-3. Start postgres, verify, bring app back.
+3. Start postgres, verify, run **post-restore archiving** (above), take a **full** backup, bring app back.
 
 Use a **throwaway volume** first to practice (see **Prove restore works**).
 
@@ -183,38 +211,15 @@ docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign check
 
 ## Scenario: prove restore works (drill, safe)
 
-Does not touch production volume.
+Does not touch the production volume. Snapshot live row counts, restore **latest full + all WAL** (`--type=default`) to `filosign-pg-drill` on `127.0.0.1:5433`, diff counts.
 
-```bash
-# 1. Mark test row
-docker exec filosign-postgres psql -U filosign -d filosign -c \
-  "CREATE TABLE IF NOT EXISTS backup_drill (id serial PRIMARY KEY, note text);
-   INSERT INTO backup_drill (note) VALUES ('drill-ok');"
-docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign backup --type=full --log-level-console=info
+1. On live prod: save per-table row counts; note newest full backup label (`…F`) from `pgbackrest info` (not `--set=latest`).
+2. `pgbackrest restore --set=<FULL_F> --type=default --archive-mode=off` into `filosign-pg-drill`; `chown postgres:postgres` on the volume.
+3. Start `pg-drill` with the same image, **bind-mount** `postgresql.conf` from prod (`docker cp` if needed), and **PGBACKREST\_\*** env for WAL replay.
+4. Wait for `archive recovery complete` in logs; diff table counts vs snapshot.
+5. `docker stop pg-drill && docker rm pg-drill && docker volume rm filosign-pg-drill`.
 
-# 2. Restore to new volume
-docker volume create filosign-pg-drill
-POSTGRES_IMAGE="$(docker inspect filosign-postgres --format '{{.Config.Image}}')"
-# set PGBACKREST_* env (real values)
-docker run --rm \
-  -e PGBACKREST_STANZA=filosign -e PGBACKREST_REPO1_S3_ENDPOINT -e PGBACKREST_REPO1_S3_BUCKET \
-  -e PGBACKREST_REPO1_S3_KEY -e PGBACKREST_REPO1_S3_KEY_SECRET -e PGBACKREST_REPO1_CIPHER_PASS \
-  -v filosign-pg-drill:/var/lib/postgresql "$POSTGRES_IMAGE" \
-  pgbackrest --stanza=filosign restore --set=latest --type=immediate --target-action=promote --archive-mode=off
-
-# 3. Start temp postgres on 5433
-docker run -d --name pg-drill -e POSTGRES_USER=filosign -e POSTGRES_PASSWORD='YOUR_PASSWORD' \
-  -e POSTGRES_DB=filosign -v filosign-pg-drill:/var/lib/postgresql -p 5433:5432 \
-  "$POSTGRES_IMAGE" postgres -c config_file=/etc/postgresql/postgresql.conf
-
-docker exec pg-drill psql -U filosign -d filosign -c "SELECT * FROM backup_drill;"
-# Pass: row drill-ok visible
-
-# 4. Cleanup
-docker stop pg-drill && docker rm pg-drill && docker volume rm filosign-pg-drill
-```
-
-Run quarterly.
+Run quarterly and after any restore-to-prod incident.
 
 ---
 

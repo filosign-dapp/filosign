@@ -37,9 +37,11 @@ pgBackRest does not schedule itself. Install once on the Hetzner/Dokploy host.
 
 | When | Job |
 |------|-----|
-| Daily 03:15 | `check` |
+| Daily 03:15 | `check` (repo + archive round-trip) |
 | Daily 03:30 | `diff` backup |
 | Sunday 04:15 | `full` backup |
+
+Optional before `check`: `deploy/scripts/pgbackrest-backup.sh check-wal` (fails if archive lag exceeds ~11 minutes). Production Postgres sets `archive_timeout = 300`. See [postgres-ops.md](../../project/ops/postgres-ops.md#wal-archiving-continuous-pitr).
 
 Also run a manual `full` before `bun run db -- migrate production`.
 

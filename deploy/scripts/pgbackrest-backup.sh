@@ -13,8 +13,26 @@ case "$TYPE" in
   check)
     CMD=(check)
     ;;
+  check-wal)
+    # Default: 2x production archive_timeout (300s) + slack for archive-push latency
+    MAX_LAG="${WAL_ARCHIVE_MAX_LAG_SEC:-660}"
+    read -r mode lag <<<"$(
+      docker exec "$CONTAINER" psql -U filosign -d filosign -t -A -c \
+        "SELECT current_setting('archive_mode') || ' ' || COALESCE(EXTRACT(EPOCH FROM (now() - last_archived_time))::int, 999999) FROM pg_stat_archiver;"
+    )"
+    if [[ "$mode" != "on" ]]; then
+      echo "pgbackrest check-wal failed: archive_mode=$mode (expected on)" >&2
+      exit 1
+    fi
+    if ((lag > MAX_LAG)); then
+      echo "pgbackrest check-wal failed: lag=${lag}s exceeds ${MAX_LAG}s (raise archive_timeout or inspect archive-push)" >&2
+      exit 1
+    fi
+    echo "pgbackrest check-wal ok: lag=${lag}s"
+    exit 0
+    ;;
   *)
-    echo "Usage: $0 [full|diff|incr|check]" >&2
+    echo "Usage: $0 [full|diff|incr|check|check-wal]" >&2
     exit 2
     ;;
 esac

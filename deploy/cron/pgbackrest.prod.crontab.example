@@ -5,12 +5,16 @@
 
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+CONTAINER=filosign-proddata-wcm84h-postgres-1
 
-# Daily: repo + archive health
-15 3 * * * root docker exec -u postgres filosign-proddata-wcm84h-postgres-1 pgbackrest --stanza=filosign check >> /var/log/filosign-pgbackrest.log 2>&1
+# Daily: WAL archive lag (before check). Requires repo checkout on VPS or copy pgbackrest-backup.sh.
+# PGBACKREST_CONTAINER=$CONTAINER /path/to/filosign/deploy/scripts/pgbackrest-backup.sh check-wal >> /var/log/filosign-pgbackrest.log 2>&1
+
+# Daily: repo + archive round-trip (pgbackrest archives a test WAL)
+15 3 * * * root docker exec -u postgres "$CONTAINER" pgbackrest --stanza=filosign check >> /var/log/filosign-pgbackrest.log 2>&1
 
 # Daily: incremental since last full
-30 3 * * * root docker exec -u postgres filosign-proddata-wcm84h-postgres-1 pgbackrest --stanza=filosign backup --type=diff >> /var/log/filosign-pgbackrest.log 2>&1
+30 3 * * * root docker exec -u postgres "$CONTAINER" pgbackrest --stanza=filosign backup --type=diff >> /var/log/filosign-pgbackrest.log 2>&1
 
 # Weekly: new full baseline (Sunday)
-15 4 * * 0 root docker exec -u postgres filosign-proddata-wcm84h-postgres-1 pgbackrest --stanza=filosign backup --type=full >> /var/log/filosign-pgbackrest.log 2>&1
+15 4 * * 0 root docker exec -u postgres "$CONTAINER" pgbackrest --stanza=filosign backup --type=full >> /var/log/filosign-pgbackrest.log 2>&1

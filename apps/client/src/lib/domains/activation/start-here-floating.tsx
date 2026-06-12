@@ -8,13 +8,15 @@ import {
 } from "@phosphor-icons/react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useMemo } from "react";
+import { BackdropImage } from "@/src/lib/components/app/chrome/page-backdrop";
 import { Button, buttonVariants } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { useStartHereController } from "@/src/lib/domains/activation/use-start-here-controller";
 import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
 import { cn } from "@/src/lib/utils";
 
-const ONBOARDING_IMAGE = "/sign-bg.webp";
+const START_HERE_BODY_BACKDROP = "/images/stock_3.webp";
+const START_HERE_HEADER_IMAGE = "/sign-bg.webp";
 
 function primaryActionLabel(step: EvaluatedActivationStep): string {
 	switch (step.id) {
@@ -50,16 +52,19 @@ function StartHereCardShell({
 			>
 				<div className="relative h-36 overflow-hidden">
 					<img
-						src={ONBOARDING_IMAGE}
+						src={START_HERE_HEADER_IMAGE}
 						alt=""
 						className="absolute inset-0 size-full object-cover object-center"
 					/>
 					<div
-						className="absolute inset-0 opacity-30 bg-linear-to-b from-black/10 via-transparent to-card"
+						className="absolute inset-0 bg-linear-to-b from-black/10 via-transparent to-card opacity-30"
 						aria-hidden
 					/>
 				</div>
-				{children}
+				<div className="relative overflow-hidden">
+					<BackdropImage src={START_HERE_BODY_BACKDROP} />
+					<div className="relative z-10">{children}</div>
+				</div>
 			</article>
 		</MotionReveal>
 	);

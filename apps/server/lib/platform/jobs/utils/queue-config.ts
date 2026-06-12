@@ -12,6 +12,7 @@ export function getBullmqPrefix(): string {
 
 export const EMAIL_QUEUE_NAME = "email";
 export const PAYOUT_QUEUE_NAME = "payout-execution";
+export const POST_SIGN_ROUTING_QUEUE_NAME = "post-sign-routing";
 export const INDEXER_QUEUE_NAME = "transaction-indexing";
 export const BILLING_WEBHOOK_QUEUE_NAME = "billing-webhook";
 export const FOC_TRANSITION_QUEUE_NAME = "foc-transition";
@@ -24,13 +25,18 @@ export const DEFAULT_QUEUE_JOB_OPTIONS = {
 	backoff: { type: "exponential" as const, delay: 5000 },
 } as const;
 
-/** Payout jobs: 3 attempts with exponential backoff for canExecute / partial retries. */
-export const PAYOUT_QUEUE_JOB_OPTIONS = {
+/** Delay before post-sign chain jobs (receipt + registry read). */
+export const POST_SIGN_CHAIN_DELAY_MS = 1500;
+
+/** Post-sign chain jobs: 3 attempts with exponential backoff (payout, routing-complete). */
+export const POST_SIGN_CHAIN_JOB_OPTIONS = {
 	removeOnComplete: { age: 86_400 },
 	removeOnFail: { age: 604_800 },
 	attempts: 3,
 	backoff: { type: "exponential" as const, delay: 5000 },
 } as const;
+
+export const PAYOUT_QUEUE_JOB_OPTIONS = POST_SIGN_CHAIN_JOB_OPTIONS;
 
 function jobAttemptsExhausted(job: Job | undefined): boolean {
 	if (!job) return false;

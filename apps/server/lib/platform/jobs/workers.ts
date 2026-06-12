@@ -1,5 +1,6 @@
 import { Worker } from "bullmq";
 import { processDodoWebhookJob } from "@/lib/domains/billing";
+import { runPostSignRoutingCompleteJob } from "@/lib/domains/files/utils/sign/routing-complete";
 import { runFocTransitionForPiece } from "@/lib/domains/foc";
 import { tryExecuteSettlementRulesForPiece } from "@/lib/domains/settlements/utils/execute/payout";
 import { SettlementPayoutRetryableError } from "@/lib/domains/settlements/utils/execute/payout-readiness";
@@ -12,6 +13,7 @@ import type {
 	FocTransitionQueueJobData,
 	IndexerQueueJobData,
 	PayoutQueueJobData,
+	PostSignRoutingQueueJobData,
 } from "./queues";
 import { getWorkerConnection } from "./utils/connection";
 import { processEmailOutboxJob } from "./utils/process-email";
@@ -23,6 +25,7 @@ import {
 	getBullmqPrefix,
 	INDEXER_QUEUE_NAME,
 	PAYOUT_QUEUE_NAME,
+	POST_SIGN_ROUTING_QUEUE_NAME,
 } from "./utils/queue-config";
 
 // Concurrency and limiter constants
@@ -31,6 +34,7 @@ const EMAIL_RATE_MAX = 8;
 const EMAIL_RATE_DURATION_MS = 1000;
 
 const PAYOUT_CONCURRENCY = 1;
+const POST_SIGN_ROUTING_CONCURRENCY = 2;
 const INDEXER_CONCURRENCY = 5;
 const BILLING_WEBHOOK_CONCURRENCY = 3;
 const FOC_TRANSITION_CONCURRENCY = 2;
@@ -38,6 +42,7 @@ const FOC_TRANSITION_CONCURRENCY = 2;
 // Singleton worker references
 let emailWorker: Worker<EmailQueueJobData> | null = null;
 let payoutWorker: Worker<PayoutQueueJobData> | null = null;
+let postSignRoutingWorker: Worker<PostSignRoutingQueueJobData> | null = null;
 let indexerWorker: Worker<IndexerQueueJobData> | null = null;
 let billingWebhookWorker: Worker<BillingWebhookQueueJobData> | null = null;
 let focTransitionWorker: Worker<FocTransitionQueueJobData> | null = null;
@@ -103,6 +108,34 @@ export function startPayoutWorker(): Worker<PayoutQueueJobData> {
 
 	attachWorkerFailedHandler(payoutWorker, PAYOUT_QUEUE_NAME);
 	return payoutWorker;
+}
+
+export function startPostSignRoutingWorker(): Worker<PostSignRoutingQueueJobData> {
+	if (postSignRoutingWorker) return postSignRoutingWorker;
+
+	postSignRoutingWorker = new Worker<PostSignRoutingQueueJobData>(
+		POST_SIGN_ROUTING_QUEUE_NAME,
+		async (job) => {
+			await runPostSignRoutingCompleteJob({
+				pieceCid: job.data.pieceCid,
+				signTxHash: job.data.signTxHash,
+			});
+		},
+		{
+			...commonWorkerOptions(),
+			concurrency: POST_SIGN_ROUTING_CONCURRENCY,
+		},
+	);
+
+	attachWorkerFailedHandler(
+		postSignRoutingWorker,
+		POST_SIGN_ROUTING_QUEUE_NAME,
+		{
+			alertContext: (job) =>
+				job?.data?.pieceCid ? { pieceCid: job.data.pieceCid } : {},
+		},
+	);
+	return postSignRoutingWorker;
 }
 
 export function startIndexerWorker(): Worker<IndexerQueueJobData> {
@@ -171,6 +204,7 @@ export function startFocTransitionWorker(): Worker<FocTransitionQueueJobData> {
 export function startAllWorkers(): void {
 	startEmailWorker();
 	startPayoutWorker();
+	startPostSignRoutingWorker();
 	startIndexerWorker();
 	startBillingWebhookWorker();
 	startFocTransitionWorker();
@@ -187,6 +221,13 @@ export async function closePayoutWorker(): Promise<void> {
 	if (payoutWorker) {
 		await payoutWorker.close();
 		payoutWorker = null;
+	}
+}
+
+export async function closePostSignRoutingWorker(): Promise<void> {
+	if (postSignRoutingWorker) {
+		await postSignRoutingWorker.close();
+		postSignRoutingWorker = null;
 	}
 }
 
@@ -215,6 +256,7 @@ export async function closeAllWorkers(): Promise<void> {
 	await Promise.all([
 		closeEmailWorker(),
 		closePayoutWorker(),
+		closePostSignRoutingWorker(),
 		closeIndexerWorker(),
 		closeBillingWebhookWorker(),
 		closeFocTransitionWorker(),

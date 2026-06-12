@@ -123,6 +123,37 @@ export async function createFocStubForCompletedEnvelope(
 	});
 }
 
+/** Idempotent FOC stub + transition enqueue when routing completed (incl. chain backfill). */
+export async function tryFocForRoutingCompletePiece(
+	pieceCid: string,
+): Promise<void> {
+	if (!isFocEnabled()) {
+		return;
+	}
+
+	const [file] = await db
+		.select({ organizationId: files.organizationId })
+		.from(files)
+		.where(eq(files.pieceCid, pieceCid))
+		.limit(1);
+
+	if (!file?.organizationId) {
+		return;
+	}
+
+	try {
+		await createFocStubForCompletedEnvelope(pieceCid, file.organizationId);
+		const { enqueueFocTransition } = await import("@/lib/platform/jobs");
+		await enqueueFocTransition(pieceCid);
+		logFocSmoke("enqueued foc-transition job", { pieceCid });
+	} catch (err) {
+		logger.warn(
+			{ err, pieceCid, organizationId: file.organizationId },
+			"foc: stub/transition enqueue failed after routing complete",
+		);
+	}
+}
+
 async function senderHasComplianceExport(pieceCid: string): Promise<boolean> {
 	const [row] = await db
 		.select({ id: complianceExportLogs.id })

@@ -267,11 +267,17 @@ export async function readEnvelopeRegistryProgress(args: {
 	registryAddress: `0x${string}`;
 	registerRouting?: RegisterRoutingInput | null;
 	signerEmail?: string | null;
+	/** Pin eth_call to a mined block (e.g. sign tx receipt) to avoid stale RPC reads. */
+	blockNumber?: bigint;
 }): Promise<EnvelopeRegistryProgress | null> {
 	const registry = fsEnvelopeRegistryAt(args.registryAddress);
 	const cidId = computeCidIdentifier(args.pieceCid);
 
-	const regRes = await tryCatch(registry.read.envelopeRegistrations([cidId]));
+	const readOptions =
+		args.blockNumber !== undefined ? { blockNumber: args.blockNumber } : {};
+	const regRes = await tryCatch(
+		registry.read.envelopeRegistrations([cidId], readOptions),
+	);
 	if (regRes.error || Number(regRes.data.timestamp) === 0) {
 		return null;
 	}

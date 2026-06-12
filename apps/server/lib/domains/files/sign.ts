@@ -11,6 +11,7 @@ import {
 	recordSettlementRecipientAck,
 } from "@/lib/domains/settlement-access/utils/recipient-ack";
 import db from "@/lib/platform/db";
+import { logger } from "@/lib/platform/pino";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { isSignerReplacementPendingOnChain } from "./signer-replacement";
 import {
@@ -208,16 +209,17 @@ export async function pieceSign(args: {
 			),
 		);
 
-	await runPostPieceSignSideEffects({
+	void runPostPieceSignSideEffects({
 		pieceCid,
 		signerWallet,
-		sender: getAddress(fileRecord.sender),
-		organizationId: fileRecord.organizationId,
 		isPractice: fileRecord.isPractice,
-		registryAddress: fileRecord.registryAddress,
-		registerRoutingJson: fileRecord.registerRoutingJson,
 		fieldCount: completedFieldIdsStored.length,
 		signTxHash: txHash,
+	}).catch((err) => {
+		logger.warn(
+			{ err, pieceCid, txHash },
+			"post-sign side effects failed after piece sign",
+		);
 	});
 
 	return { txHash, signature };

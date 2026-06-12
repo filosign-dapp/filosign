@@ -14,6 +14,10 @@ export function payoutJobId(pieceCid: string): string {
 	return `payout${JOB_ID_SEP}${pieceCid}`;
 }
 
+export function postSignRoutingJobId(pieceCid: string): string {
+	return `routing${JOB_ID_SEP}${pieceCid}`;
+}
+
 export function indexerJobId(txHash: string): string {
 	return `indexer${JOB_ID_SEP}${txHash.toLowerCase()}`;
 }

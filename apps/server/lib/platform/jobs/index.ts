@@ -7,15 +7,18 @@ export {
 	enqueueFocTransition,
 	enqueueIndexerTransaction,
 	enqueuePayoutForPiece,
+	enqueuePostSignRoutingComplete,
 	type FocTransitionQueueJobData,
 	getBillingWebhookQueue,
 	getEmailQueue,
 	getFocTransitionQueue,
 	getIndexerQueue,
 	getPayoutQueue,
+	getPostSignRoutingQueue,
 	type IndexerQueueJobData,
 	isEmailJobActive,
 	type PayoutQueueJobData,
+	type PostSignRoutingQueueJobData,
 } from "./queues";
 export {
 	type JobsRuntimeOptions,
@@ -35,6 +38,7 @@ export {
 	indexerJobId,
 	isBillingWebhookProcessed,
 	payoutJobId,
+	postSignRoutingJobId,
 } from "./utils/idempotency";
 
 export {
@@ -71,6 +75,8 @@ export {
 	getBullmqPrefix,
 	INDEXER_QUEUE_NAME,
 	PAYOUT_QUEUE_NAME,
+	POST_SIGN_CHAIN_DELAY_MS,
+	POST_SIGN_ROUTING_QUEUE_NAME,
 } from "./utils/queue-config";
 export {
 	closeAllWorkers,
@@ -79,10 +85,12 @@ export {
 	closeFocTransitionWorker,
 	closeIndexerWorker,
 	closePayoutWorker,
+	closePostSignRoutingWorker,
 	startAllWorkers,
 	startBillingWebhookWorker,
 	startEmailWorker,
 	startFocTransitionWorker,
 	startIndexerWorker,
 	startPayoutWorker,
+	startPostSignRoutingWorker,
 } from "./workers";

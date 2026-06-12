@@ -7,6 +7,7 @@ import {
 	focTransitionJobId,
 	indexerJobId,
 	payoutJobId,
+	postSignRoutingJobId,
 } from "./utils/idempotency";
 import type { JobOutboxRow } from "./utils/outbox";
 import {
@@ -16,8 +17,10 @@ import {
 	FOC_TRANSITION_QUEUE_NAME,
 	getBullmqPrefix,
 	INDEXER_QUEUE_NAME,
-	PAYOUT_QUEUE_JOB_OPTIONS,
 	PAYOUT_QUEUE_NAME,
+	POST_SIGN_CHAIN_DELAY_MS,
+	POST_SIGN_CHAIN_JOB_OPTIONS,
+	POST_SIGN_ROUTING_QUEUE_NAME,
 } from "./utils/queue-config";
 
 export type EmailQueueJobData = {
@@ -26,12 +29,14 @@ export type EmailQueueJobData = {
 	idempotencyKey: string;
 };
 
-export type PayoutQueueJobData = {
+export type PostSignChainQueueJobData = {
 	pieceCid: string;
 	signTxHash?: Hex;
 };
 
-const POST_SIGN_PAYOUT_DELAY_MS = 1500;
+export type PayoutQueueJobData = PostSignChainQueueJobData;
+
+export type PostSignRoutingQueueJobData = PostSignChainQueueJobData;
 
 export type IndexerQueueJobData = {
 	txHash: `0x${string}`;
@@ -44,6 +49,7 @@ export type FocTransitionQueueJobData = { pieceCid: string };
 
 let emailQueue: Queue<EmailQueueJobData> | null = null;
 let payoutQueue: Queue<PayoutQueueJobData> | null = null;
+let postSignRoutingQueue: Queue<PostSignRoutingQueueJobData> | null = null;
 let indexerQueue: Queue<IndexerQueueJobData> | null = null;
 let billingWebhookQueue: Queue<BillingWebhookQueueJobData> | null = null;
 let focTransitionQueue: Queue<FocTransitionQueueJobData> | null = null;
@@ -71,6 +77,16 @@ export function getPayoutQueue(): Queue<PayoutQueueJobData> {
 		);
 	}
 	return payoutQueue;
+}
+
+export function getPostSignRoutingQueue(): Queue<PostSignRoutingQueueJobData> {
+	if (!postSignRoutingQueue) {
+		postSignRoutingQueue = new Queue<PostSignRoutingQueueJobData>(
+			POST_SIGN_ROUTING_QUEUE_NAME,
+			queueOptions(),
+		);
+	}
+	return postSignRoutingQueue;
 }
 
 export function getIndexerQueue(): Queue<IndexerQueueJobData> {
@@ -142,21 +158,50 @@ export async function isEmailJobActive(
 	return state === "active" || state === "waiting" || state === "delayed";
 }
 
-export async function enqueuePayoutForPiece(
+async function addPostSignChainJob(
+	queue: Queue<PostSignChainQueueJobData>,
+	name: string,
+	jobId: string,
 	pieceCid: string,
 	options?: { signTxHash?: Hex },
 ): Promise<void> {
-	await getPayoutQueue().add(
-		"execute",
+	await queue.add(
+		name,
 		{
 			pieceCid,
 			...(options?.signTxHash ? { signTxHash: options.signTxHash } : {}),
 		},
 		{
-			jobId: payoutJobId(pieceCid),
-			...PAYOUT_QUEUE_JOB_OPTIONS,
-			...(options?.signTxHash ? { delay: POST_SIGN_PAYOUT_DELAY_MS } : {}),
+			jobId,
+			...POST_SIGN_CHAIN_JOB_OPTIONS,
+			...(options?.signTxHash ? { delay: POST_SIGN_CHAIN_DELAY_MS } : {}),
 		},
+	);
+}
+
+export async function enqueuePayoutForPiece(
+	pieceCid: string,
+	options?: { signTxHash?: Hex },
+): Promise<void> {
+	await addPostSignChainJob(
+		getPayoutQueue(),
+		"execute",
+		payoutJobId(pieceCid),
+		pieceCid,
+		options,
+	);
+}
+
+export async function enqueuePostSignRoutingComplete(
+	pieceCid: string,
+	options?: { signTxHash?: Hex },
+): Promise<void> {
+	await addPostSignChainJob(
+		getPostSignRoutingQueue(),
+		"check",
+		postSignRoutingJobId(pieceCid),
+		pieceCid,
+		options,
 	);
 }
 
@@ -188,6 +233,10 @@ export async function closeJobsQueues(): Promise<void> {
 	if (payoutQueue) {
 		closes.push(payoutQueue.close());
 		payoutQueue = null;
+	}
+	if (postSignRoutingQueue) {
+		closes.push(postSignRoutingQueue.close());
+		postSignRoutingQueue = null;
 	}
 	if (indexerQueue) {
 		closes.push(indexerQueue.close());

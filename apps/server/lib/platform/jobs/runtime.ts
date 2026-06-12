@@ -6,6 +6,7 @@ import {
 	getFocTransitionQueue,
 	getIndexerQueue,
 	getPayoutQueue,
+	getPostSignRoutingQueue,
 } from "./queues";
 import { closeJobConnections } from "./utils/connection";
 import { startOutboxDrainer, stopOutboxDrainer } from "./utils/outbox";
@@ -16,6 +17,7 @@ import {
 	startFocTransitionWorker,
 	startIndexerWorker,
 	startPayoutWorker,
+	startPostSignRoutingWorker,
 } from "./workers";
 
 export type JobsRuntimeOptions = {
@@ -29,6 +31,7 @@ export function startJobsRuntime(options: JobsRuntimeOptions): void {
 	if (options.producer) {
 		getEmailQueue();
 		getPayoutQueue();
+		getPostSignRoutingQueue();
 		getIndexerQueue();
 		getBillingWebhookQueue();
 		getFocTransitionQueue();
@@ -36,6 +39,7 @@ export function startJobsRuntime(options: JobsRuntimeOptions): void {
 	if (options.worker) {
 		startEmailWorker();
 		startPayoutWorker();
+		startPostSignRoutingWorker();
 		startIndexerWorker();
 		startBillingWebhookWorker();
 		startFocTransitionWorker();

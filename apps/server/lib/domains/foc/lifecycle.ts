@@ -25,6 +25,16 @@ export function shouldDeferFocTransition(args: {
 	return args.inHotWindow && !args.senderExported;
 }
 
+/** Job runner deferral — bypassed when `TEST_FOC` smoke flag is enabled. */
+export function shouldDeferFocTransitionForJob(args: {
+	inHotWindow: boolean;
+	senderExported: boolean;
+	testFocEnabled: boolean;
+}): boolean {
+	if (args.testFocEnabled) return false;
+	return shouldDeferFocTransition(args);
+}
+
 /** Pending row is eligible for cron discovery (hot window ended or sender exported). */
 export function isFocTransitionDiscoverable(args: {
 	inHotWindow: boolean;
@@ -71,7 +81,9 @@ export async function createFocStubForCompletedEnvelope(
 		replicateStatus: "pending",
 		retentionUntil: await resolveFocRetentionUntil(organizationId),
 		completedAt,
-		r2EvictAfter: addDays(completedAt, env.R2_HOT_DAYS),
+		r2EvictAfter: env.TEST_FOC
+			? completedAt
+			: addDays(completedAt, env.R2_HOT_DAYS),
 		lifecycle: "active",
 	});
 }
@@ -107,7 +119,13 @@ export async function runFocTransitionForPiece(
 
 	const inHotWindow = row.r2EvictAfter > now;
 	const senderExported = await senderHasComplianceExport(pieceCid);
-	if (shouldDeferFocTransition({ inHotWindow, senderExported })) {
+	if (
+		shouldDeferFocTransitionForJob({
+			inHotWindow,
+			senderExported,
+			testFocEnabled: env.TEST_FOC,
+		})
+	) {
 		logger.info(
 			{ pieceCid, organizationId: row.organizationId },
 			"foc-transition: deferred until sender exports compliance packet",
@@ -181,13 +199,6 @@ export async function runFocTransitionForPiece(
 		throw new Error(`FOC bytes mismatch for ${pieceCid}`);
 	}
 
-	const deleted = await tryCatch(bucket.delete(r2Key));
-	if (deleted.error) {
-		throw new Error(`FOC transition: R2 delete failed for ${r2Key}`, {
-			cause: deleted.error,
-		});
-	}
-
 	const verifiedAt = new Date();
 	await db
 		.update(focObjects)
@@ -197,14 +208,13 @@ export async function runFocTransitionForPiece(
 			byteLength: r2Bytes.byteLength,
 			retentionUntil,
 			focVerifiedAt: verifiedAt,
-			r2EvictedAt: verifiedAt,
 			updatedAt: verifiedAt,
 		})
 		.where(eq(focObjects.pieceCid, pieceCid));
 
 	logger.info(
 		{ pieceCid, organizationId: row.organizationId, dealId },
-		"foc-transition: replicated and evicted R2",
+		"foc-transition: replicated (R2 retained)",
 	);
 }
 

@@ -50,6 +50,8 @@ Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`, `FC_OWNER_ADD
 
 | Env | Role |
 |-----|------|
+| `R2_HOT_DAYS` | Days after envelope completion before FOC replicate (default **30**); R2 stays primary |
+| `TEST_FOC` | Prod smoke only: immediate FOC replicate + prefer FOC download when replicated. **Unset after test.** |
 | `WORKSPACE_CHURN_GRACE_DAYS` | After workspace sub ends, retain blobs (default **90**) |
 | `ARCHIVAL_EXPORT_GRACE_DAYS` | After **archival** sub lapses, export window (default **30**) |
 | `DODO_PRODUCT_ID_ARCHIVAL_*` | Separate Filecoin retention product |

@@ -9,6 +9,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
+import { resolveCiphertextDownloadUrl } from "@/lib/domains/foc";
 import {
 	inviteExpiresAt,
 	pendingFileColdInviteFilter,
@@ -18,7 +19,6 @@ import {
 	trackServerEvent,
 } from "@/lib/platform/analytics";
 import db from "@/lib/platform/db";
-import { bucket } from "@/lib/platform/s3/client";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const {
@@ -169,15 +169,7 @@ export async function filesColdInviteByToken(inviteToken: string) {
 
 	const recipientEmails = [...new Set(rows.map((r) => r.email))];
 
-	const key = `uploads/${row.pieceCid}`;
-	if (!(await bucket.exists(key))) {
-		throwAppError("FILES.NOT_FOUND");
-	}
-
-	const downloadUrl = bucket.presign(key, {
-		method: "GET",
-		expiresIn: 60 * 5,
-	});
+	const downloadUrl = await resolveCiphertextDownloadUrl(row.pieceCid);
 
 	const [senderProfile] = await db
 		.select({

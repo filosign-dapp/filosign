@@ -37,5 +37,6 @@ export const testEnvStub = {
 	DODO_WEBHOOK_KEY: "dodo-webhook-test",
 	ARCHIVAL_EXPORT_GRACE_DAYS: 30,
 	R2_HOT_DAYS: 30,
+	TEST_FOC: false,
 	WORKSPACE_CHURN_GRACE_DAYS: 90,
 };

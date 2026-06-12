@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	isFocTransitionDiscoverable,
 	shouldDeferFocTransition,
+	shouldDeferFocTransitionForJob,
 } from "@/lib/domains/foc/lifecycle";
 
 describe("FOC transition policy", () => {
@@ -39,5 +40,15 @@ describe("FOC transition policy", () => {
 				senderExported: false,
 			}),
 		).toBe(true);
+	});
+
+	test("TEST_FOC bypasses deferral during hot window", () => {
+		expect(
+			shouldDeferFocTransitionForJob({
+				inHotWindow: true,
+				senderExported: false,
+				testFocEnabled: true,
+			}),
+		).toBe(false);
 	});
 });

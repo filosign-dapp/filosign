@@ -1,6 +1,7 @@
 import type { RegisterRoutingInput } from "@filosign/shared";
 import { eq } from "drizzle-orm";
 import { getAddress } from "viem";
+import env from "@/env";
 import { tryExecuteAttachmentReleasesForPiece } from "@/lib/domains/attachments";
 import {
 	SERVER_ANALYTICS_EVENTS,
@@ -101,15 +102,21 @@ async function handleEnvelopeRoutingComplete(args: {
 		const { createFocStubForCompletedEnvelope, orgQualifiesForFocBackup } =
 			await import("@/lib/domains/foc");
 		if (await orgQualifiesForFocBackup(args.organizationId)) {
-			void createFocStubForCompletedEnvelope(
-				args.pieceCid,
-				args.organizationId,
-			).catch((err) => {
+			try {
+				await createFocStubForCompletedEnvelope(
+					args.pieceCid,
+					args.organizationId,
+				);
+				if (env.TEST_FOC) {
+					const { enqueueFocTransition } = await import("@/lib/platform/jobs");
+					await enqueueFocTransition(args.pieceCid);
+				}
+			} catch (err) {
 				logger.warn(
 					{ err, pieceCid: args.pieceCid, organizationId: args.organizationId },
 					"completed envelope: FOC transition stub failed",
 				);
-			});
+			}
 		}
 	}
 }

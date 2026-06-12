@@ -12,13 +12,13 @@ import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
+import { resolveCiphertextDownloadUrl } from "@/lib/domains/foc";
 import {
 	SERVER_ANALYTICS_EVENTS,
 	trackServerEvent,
 } from "@/lib/platform/analytics";
 import db from "@/lib/platform/db";
 import { fsEnvelopeRegistryAt } from "@/lib/platform/evm";
-import { bucket } from "@/lib/platform/s3/client";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import {
 	getValidAck,
@@ -240,16 +240,7 @@ export async function pieceDownloadUrl(userWallet: Address, pieceCid: string) {
 		await requireAckForParticipantAccess(userWalletNorm, cleanPieceCid);
 	}
 
-	const fileExists = await bucket.exists(`uploads/${cleanPieceCid}`);
-
-	if (!fileExists) {
-		throwAppError("FILES.NOT_FOUND");
-	}
-
-	const presignedUrl = bucket.presign(`uploads/${cleanPieceCid}`, {
-		method: "GET",
-		expiresIn: 60 * 5,
-	});
+	const presignedUrl = await resolveCiphertextDownloadUrl(cleanPieceCid);
 
 	return { presignedUrl };
 }

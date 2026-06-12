@@ -245,7 +245,7 @@ function printDeploymentSummary(args: {
 	}
 }
 
-export default async function main() {
+async function main() {
 	process.chdir(evmPackageDir());
 
 	const chainId = requireChainId();
@@ -365,3 +365,10 @@ export default async function main() {
 		attachmentReleaseAddress: attachmentRelease.address,
 	});
 }
+
+main()
+	.then(() => console.log("Deployment script finished"))
+	.catch((e) => {
+		console.error(e);
+		process.exit(1);
+	});

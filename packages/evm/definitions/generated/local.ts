@@ -6,7 +6,7 @@ import abi_77be5f07a2c0 from "../abis/77be5f07a2c0458cde3a847eb4ea83cf0f6686a738
 import abi_584ca02aea7f from "../abis/584ca02aea7faacfe17d2edd0078210f747b4f3e85375124d093665ebd969cc3.json";
 import abi_bc37a8c681af from "../abis/bc37a8c681af0849ace7cde4b7005b58679dff2abe8276aaedbdeb31e77ee0e9.json";
 import type { ChainDefinitionsBundle } from "../bundle-types.js";
-import manifest from "../chains/local/deployments/20260612T105733Z/manifest.json";
+import manifest from "../chains/local/deployments/20260612T155656Z/manifest.json";
 
 export const definitions = {
 	latest: {
@@ -15,15 +15,15 @@ export const definitions = {
 			abi: abi_584ca02aea7f,
 		},
 		FSPaymentValidator: {
-			address: "0xB581C9264f59BF0289fA76D61B2D0746dCE3C30D",
+			address: "0xC469e7aE4aD962c30c7111dc580B4adbc7E914DD",
 			abi: abi_5c06b1840e1e,
 		},
 		FSAttachmentRelease: {
-			address: "0xC469e7aE4aD962c30c7111dc580B4adbc7E914DD",
+			address: "0x43ca3D2C94be00692D207C6A1e60D8B325c6f12f",
 			abi: abi_bc37a8c681af,
 		},
 		MockUSDC: {
-			address: "0x391342f5acAcaaC9DE1dC4eC3E03f2678f7c78F1",
+			address: "0x6d925938Edb8A16B3035A4cF34FAA090f490202a",
 			abi: abi_77be5f07a2c0,
 		},
 	},

@@ -11,6 +11,7 @@ import {
 } from "@/lib/platform/foc";
 import { logger } from "@/lib/platform/pino";
 import { bucket } from "@/lib/platform/s3/client";
+import { logFocSmoke } from "./smoke-log";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const { complianceExportLogs, files, focObjects } = db.schema;
@@ -49,6 +50,31 @@ function addDays(from: Date, days: number): Date {
 	return d;
 }
 
+/** Bun S3 `file().size` is unset until read; prefer DB, then R2 bytes. */
+async function resolveCiphertextByteLength(
+	pieceCid: string,
+	r2Key: string,
+): Promise<number> {
+	const [fileRow] = await db
+		.select({ ciphertextByteLength: files.ciphertextByteLength })
+		.from(files)
+		.where(eq(files.pieceCid, pieceCid))
+		.limit(1);
+
+	const fromDb = fileRow?.ciphertextByteLength;
+	if (fromDb != null && Number.isFinite(fromDb) && fromDb > 0) {
+		return fromDb;
+	}
+
+	if (!(await bucket.exists(r2Key))) {
+		return 0;
+	}
+
+	const bytes = await bucket.file(r2Key).arrayBuffer();
+	const len = bytes.byteLength;
+	return Number.isFinite(len) && len >= 0 ? len : 0;
+}
+
 export async function createFocStubForCompletedEnvelope(
 	pieceCid: string,
 	organizationId: string,
@@ -59,16 +85,20 @@ export async function createFocStubForCompletedEnvelope(
 		.where(eq(focObjects.pieceCid, pieceCid))
 		.limit(1);
 
-	if (existing) return;
+	if (existing) {
+		logFocSmoke("stub already exists; skipping insert", {
+			pieceCid,
+			organizationId,
+		});
+		return;
+	}
 
 	const r2Key = uploadsKey(pieceCid);
-	let byteLength = 0;
-	if (await bucket.exists(r2Key)) {
-		byteLength = bucket.file(r2Key).size;
-	} else {
+	const byteLength = await resolveCiphertextByteLength(pieceCid, r2Key);
+	if (byteLength === 0) {
 		logger.warn(
 			{ pieceCid, r2Key, organizationId },
-			"foc-stub: missing R2 blob",
+			"foc-stub: missing R2 blob or zero-length ciphertext",
 		);
 	}
 
@@ -85,6 +115,15 @@ export async function createFocStubForCompletedEnvelope(
 			? completedAt
 			: addDays(completedAt, env.R2_HOT_DAYS),
 		lifecycle: "active",
+	});
+
+	logFocSmoke("stub created (replicate_status=pending)", {
+		pieceCid,
+		organizationId,
+		r2Key,
+		byteLength,
+		r2EvictAfter: env.TEST_FOC ? completedAt.toISOString() : undefined,
+		testFoc: env.TEST_FOC,
 	});
 }
 
@@ -113,9 +152,28 @@ export async function runFocTransitionForPiece(
 		.where(eq(focObjects.pieceCid, pieceCid))
 		.limit(1);
 
-	if (!row || row.replicateStatus === "replicated" || row.r2EvictedAt) {
+	if (!row) {
+		logFocSmoke("transition skipped (no foc_objects row)", { pieceCid });
 		return;
 	}
+	if (row.replicateStatus === "replicated") {
+		logFocSmoke("transition skipped (already replicated)", {
+			pieceCid,
+			dealId: row.dealId,
+		});
+		return;
+	}
+	if (row.r2EvictedAt) {
+		logFocSmoke("transition skipped (r2 evicted)", { pieceCid });
+		return;
+	}
+
+	logFocSmoke("transition starting", {
+		pieceCid,
+		organizationId: row.organizationId,
+		byteLength: row.byteLength,
+		testFoc: env.TEST_FOC,
+	});
 
 	const inHotWindow = row.r2EvictAfter > now;
 	const senderExported = await senderHasComplianceExport(pieceCid);
@@ -148,6 +206,12 @@ export async function runFocTransitionForPiece(
 	if (r2Bytes.byteLength === 0) {
 		throw new Error("FOC transition: ciphertext on R2 is empty");
 	}
+
+	logFocSmoke("R2 ciphertext loaded; preparing Synapse upload", {
+		pieceCid,
+		byteLength: r2Bytes.byteLength,
+		r2Key,
+	});
 
 	const retentionUntil = await resolveFocRetentionUntil(row.organizationId);
 	const context = await getOrCreatePlatformDataset();
@@ -185,6 +249,11 @@ export async function runFocTransitionForPiece(
 	}
 
 	const dealId = dealIdFromUploadResult(uploaded.data);
+	logFocSmoke("Synapse upload ok; verifying FOC CDN bytes", {
+		pieceCid,
+		dealId,
+		cdnUrl: archivalCdnUrl(pieceCid),
+	});
 	const focRes = await tryCatch(fetch(archivalCdnUrl(pieceCid)));
 	if (focRes.error || !focRes.data.ok) {
 		throw new Error(`FOC CDN verify failed for ${pieceCid}`, {

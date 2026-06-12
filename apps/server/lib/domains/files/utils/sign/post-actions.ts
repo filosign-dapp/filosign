@@ -48,6 +48,11 @@ export async function runPostPieceSignSideEffects(args: {
 	);
 	if (routingComplete) {
 		await handleEnvelopeRoutingComplete(args);
+	} else if (env.TEST_FOC) {
+		const { logFocSmoke } = await import("@/lib/domains/foc");
+		logFocSmoke("sign recorded; routing not complete yet (no FOC stub)", {
+			pieceCid: args.pieceCid,
+		});
 	}
 
 	const { enqueuePayoutForPiece } = await import("@/lib/platform/jobs");
@@ -99,24 +104,34 @@ async function handleEnvelopeRoutingComplete(args: {
 	});
 
 	if (args.organizationId) {
-		const { createFocStubForCompletedEnvelope, orgQualifiesForFocBackup } =
+		const { createFocStubForCompletedEnvelope, logFocSmoke } =
 			await import("@/lib/domains/foc");
-		if (await orgQualifiesForFocBackup(args.organizationId)) {
-			try {
-				await createFocStubForCompletedEnvelope(
-					args.pieceCid,
-					args.organizationId,
-				);
-				if (env.TEST_FOC) {
-					const { enqueueFocTransition } = await import("@/lib/platform/jobs");
-					await enqueueFocTransition(args.pieceCid);
-				}
-			} catch (err) {
-				logger.warn(
-					{ err, pieceCid: args.pieceCid, organizationId: args.organizationId },
-					"completed envelope: FOC transition stub failed",
-				);
+		logFocSmoke("routing complete; creating FOC stub", {
+			pieceCid: args.pieceCid,
+			organizationId: args.organizationId,
+		});
+		try {
+			await createFocStubForCompletedEnvelope(
+				args.pieceCid,
+				args.organizationId,
+			);
+			if (env.TEST_FOC) {
+				const { enqueueFocTransition } = await import("@/lib/platform/jobs");
+				await enqueueFocTransition(args.pieceCid);
+				logFocSmoke("enqueued foc-transition job (TEST_FOC)", {
+					pieceCid: args.pieceCid,
+				});
 			}
+		} catch (err) {
+			logger.warn(
+				{ err, pieceCid: args.pieceCid, organizationId: args.organizationId },
+				"completed envelope: FOC transition stub failed",
+			);
 		}
+	} else {
+		const { logFocSmoke } = await import("@/lib/domains/foc");
+		logFocSmoke("routing complete; skipped FOC (no organizationId on file)", {
+			pieceCid: args.pieceCid,
+		});
 	}
 }

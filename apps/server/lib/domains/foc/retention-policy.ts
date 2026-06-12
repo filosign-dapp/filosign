@@ -16,40 +16,6 @@ function maxDate(a: Date, b: Date): Date {
 	return a.getTime() >= b.getTime() ? a : b;
 }
 
-/** Paid workspace (Solo / Teams) — FOC platform backup applies; Free does not. */
-export async function orgQualifiesForFocBackup(
-	organizationId: string,
-): Promise<boolean> {
-	const [sub] = await db
-		.select({
-			planId: organizationSubscriptions.planId,
-			status: organizationSubscriptions.status,
-			cancelAtPeriodEnd: organizationSubscriptions.cancelAtPeriodEnd,
-			periodEnd: organizationSubscriptions.periodEnd,
-		})
-		.from(organizationSubscriptions)
-		.where(eq(organizationSubscriptions.organizationId, organizationId))
-		.limit(1);
-
-	const effectivePlan = effectivePlanIdFromStatus(
-		sub
-			? {
-					planId: sub.planId,
-					status: sub.status,
-					cancelAtPeriodEnd: sub.cancelAtPeriodEnd ?? false,
-					periodEnd: sub.periodEnd,
-				}
-			: undefined,
-	);
-
-	return effectivePlan !== DEFAULT_PLAN_ID;
-}
-
-/**
- * Workspace SaaS retention horizon on FOC (independent of archival SKU).
- * Active paid sub → through current billing period (or 1y fallback).
- * Canceled / lapsed → period end + churn grace (default 90d) for export window.
- */
 export async function resolveWorkspaceFocRetentionUntil(
 	organizationId: string,
 ): Promise<Date | null> {

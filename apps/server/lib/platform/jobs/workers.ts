@@ -147,6 +147,11 @@ export function startFocTransitionWorker(): Worker<FocTransitionQueueJobData> {
 	focTransitionWorker = new Worker<FocTransitionQueueJobData>(
 		FOC_TRANSITION_QUEUE_NAME,
 		async (job) => {
+			const { logFocSmoke } = await import("@/lib/domains/foc/smoke-log");
+			logFocSmoke("worker picked up foc-transition job", {
+				pieceCid: job.data.pieceCid,
+				jobId: job.id,
+			});
 			await runFocTransitionForPiece(job.data.pieceCid);
 		},
 		{

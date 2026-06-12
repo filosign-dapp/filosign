@@ -1,3 +1,5 @@
+import env from "@/env";
+import { logFocSmoke } from "@/lib/domains/foc/smoke-log";
 import { shutdownPostHog } from "@/lib/platform/analytics";
 import { initCache } from "@/lib/platform/cache/session";
 import { startPlatformCron, stopPlatformCron } from "@/lib/platform/cron";
@@ -23,6 +25,10 @@ export async function bootstrapPlatformRuntime(
 ): Promise<void> {
 	validateServerRoleForDeployment();
 	await validateServerBootstrap();
+	logFocSmoke("server bootstrap ok (TEST_FOC smoke logging enabled)", {
+		serverRole: env.SERVER_ROLE,
+		chain: env.CHAIN,
+	});
 	await initCache();
 	const jobs = resolveJobsRuntimeOptions();
 	startJobsRuntime({

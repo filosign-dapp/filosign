@@ -2,7 +2,10 @@
   "8453": {
     "name": "Base",
     "explorerTxUrl": "https://basescan.org/tx/",
-    "defaultRpcUrl": "https://mainnet.base.org"
+    "defaultRpcUrl": "https://mainnet.base.org",
+    "registryAddress": "0xBA492cA1EAbAF1bf351B7521260204459aDF717b",
+    "paymentValidatorAddress": "0xbc9215c978474a6f21E0E21024C5a79a5961e2c0",
+    "attachmentReleaseAddress": "0x565A1e32EC1008840B57be09934a16C4053bb83B"
   },
   "31337": {
     "name": "Hardhat",

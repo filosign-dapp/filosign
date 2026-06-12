@@ -147,15 +147,17 @@ export function useDecryptedFileView(options: {
 		void handleViewFile();
 	}, [handleViewFile]);
 
+	const unlockSettled =
+		cryptoRequired.needsRecovery || Boolean(cryptoRequired.walletUnlockError);
+
 	const docCanvasBusy =
 		needsCrypto &&
-		(cryptoRequired.needsRecovery
-			? false
-			: cryptoRequired.tryingWalletUnlock ||
-				cryptoUnlocked.isPending ||
-				cryptoUnlocked.data !== true ||
-				viewFile.isPending ||
-				(!fileData && !viewError));
+		!unlockSettled &&
+		(cryptoRequired.tryingWalletUnlock ||
+			cryptoUnlocked.isPending ||
+			cryptoUnlocked.data !== true ||
+			viewFile.isPending ||
+			(!fileData && !viewError));
 
 	const [previewPdfBytes, setPreviewPdfBytes] = useState<Uint8Array | null>(
 		null,
@@ -189,5 +191,8 @@ export function useDecryptedFileView(options: {
 		recoveryError: cryptoRequired.recoveryError,
 		submitRecovery: cryptoRequired.submitRecovery,
 		recoveryPending: cryptoRequired.recoveryPending,
+		cryptoUnlockError: cryptoRequired.walletUnlockError,
+		retryWalletUnlock: cryptoRequired.retryWalletUnlock,
+		tryingWalletUnlock: cryptoRequired.tryingWalletUnlock,
 	};
 }

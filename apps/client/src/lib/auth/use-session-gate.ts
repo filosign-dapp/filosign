@@ -4,6 +4,7 @@ import {
 	useCryptoUnlocked,
 	useIsLoggedIn,
 	useIsRegistered,
+	useStoredKeygenData,
 } from "@filosign/react/auth";
 import { useEffect } from "react";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
@@ -20,6 +21,7 @@ export function useSessionGateFlags(): SessionGateFlags {
 	const { ready, authenticated } = useThirdweb();
 	const { wallet } = useFilosignContext();
 	const isRegistered = useIsRegistered();
+	const storedKeygen = useStoredKeygenData();
 	const apiSession = useIsLoggedIn();
 	const cryptoUnlocked = useCryptoUnlocked();
 
@@ -34,6 +36,8 @@ export function useSessionGateFlags(): SessionGateFlags {
 		isApiSessionError: apiSession.isError,
 		isCryptoUnlocked: cryptoUnlocked.data,
 		isCryptoUnlockedPending: cryptoUnlocked.isPending,
+		hasStoredKeygenData: storedKeygen.data != null,
+		isKeyRegistrySnapshotPending: storedKeygen.isPending,
 	};
 }
 

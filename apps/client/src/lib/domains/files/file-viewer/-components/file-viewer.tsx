@@ -27,6 +27,9 @@ function FileViewerShell({
 		recoveryPending,
 		viewError,
 		handleViewFile,
+		cryptoUnlockError,
+		retryWalletUnlock,
+		tryingWalletUnlock,
 		fileData,
 	} = useFileViewer();
 
@@ -82,11 +85,22 @@ function FileViewerShell({
 							recoveryPhrase={recoveryPhrase}
 							onRecoveryPhraseChange={setRecoveryPhrase}
 							recoveryError={recoveryError}
+							walletUnlockError={cryptoUnlockError}
 							onRecoverySubmit={() => void submitRecovery()}
 							recoveryPending={recoveryPending}
-							error={viewError}
-							onRetry={() => void handleViewFile()}
-							retryPending={viewFile.isPending}
+							error={
+								showRecoveryInCanvas ? null : (cryptoUnlockError ?? viewError)
+							}
+							onRetry={
+								showRecoveryInCanvas
+									? undefined
+									: cryptoUnlockError
+										? () => retryWalletUnlock()
+										: () => void handleViewFile()
+							}
+							retryPending={
+								cryptoUnlockError ? tryingWalletUnlock : viewFile.isPending
+							}
 						/>
 					)}
 					{!fileLoading && fileInfo && fileData ? <FileViewerContent /> : null}

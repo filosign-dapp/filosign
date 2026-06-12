@@ -12,6 +12,9 @@ export type SessionGateFlags = {
 	/** In-memory crypto seed matches key commitments. */
 	isCryptoUnlocked: boolean | undefined;
 	isCryptoUnlockedPending: boolean;
+	/** Key registry snapshot includes salts/commitments for wallet unlock. */
+	hasStoredKeygenData: boolean | undefined;
+	isKeyRegistrySnapshotPending: boolean;
 };
 
 function walletSessionUp(flags: SessionGateFlags): boolean {
@@ -35,10 +38,8 @@ export function isFilosignSessionActive(flags: SessionGateFlags): boolean {
 export function shouldRedirectToSignIn(flags: SessionGateFlags): boolean {
 	if (!flags.ready) return false;
 
-	// If no wallet session is connected/active, redirect immediately
 	if (!walletSessionUp(flags)) return true;
 
-	// If wallet is connected, redirect only if explicitly not registered and registration check has finished
 	return flags.isRegistered === false && !flags.isRegisteredPending;
 }
 
@@ -60,6 +61,8 @@ export function canAttemptWalletLogin(flags: SessionGateFlags): boolean {
 		flags.isRegistered === true &&
 		!flags.isRegisteredPending &&
 		flags.isApiSessionActive === true &&
+		flags.hasStoredKeygenData === true &&
+		!flags.isKeyRegistrySnapshotPending &&
 		flags.isCryptoUnlocked !== true
 	);
 }

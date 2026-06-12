@@ -9,37 +9,35 @@ export function useCryptoRequired(options?: { enabled?: boolean }) {
 
 	const isReady = !enabled || cryptoUnlocked.data === true;
 	const needsRecovery = enabled && !isReady && unlock.recoveryRequired;
-	const isPending =
-		enabled &&
-		!isReady &&
-		(!needsRecovery || unlock.tryingWalletUnlock || cryptoUnlocked.isPending);
 
 	return useMemo(
 		() => ({
 			enabled,
 			isReady,
-			isPending,
 			needsRecovery,
 			recoveryPhrase: unlock.recoveryPhrase,
 			setRecoveryPhrase: unlock.setRecoveryPhrase,
 			recoveryError: unlock.error,
 			submitRecovery: unlock.handleRecover,
 			resetRecovery: unlock.resetRecoveryGate,
-			recoveryPending: unlock.recoverWithPhrase.isPending,
+			recoveryPending: unlock.recoveryPending,
 			tryingWalletUnlock: unlock.tryingWalletUnlock,
+			walletUnlockError: unlock.walletUnlockError,
+			retryWalletUnlock: unlock.retryWalletUnlock,
 		}),
 		[
 			enabled,
 			isReady,
-			isPending,
 			needsRecovery,
 			unlock.recoveryPhrase,
 			unlock.setRecoveryPhrase,
 			unlock.error,
 			unlock.handleRecover,
 			unlock.resetRecoveryGate,
-			unlock.recoverWithPhrase.isPending,
+			unlock.recoveryPending,
 			unlock.tryingWalletUnlock,
+			unlock.walletUnlockError,
+			unlock.retryWalletUnlock,
 		],
 	);
 }

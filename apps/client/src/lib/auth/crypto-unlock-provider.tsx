@@ -13,6 +13,7 @@ import {
 import { hydrationMark } from "@/src/lib/utils/hydration-lifecycle";
 import {
 	attemptWalletLoginUnlock,
+	delay,
 	formatRecoveryPhraseError,
 	submitRecoveryPhraseUnlock,
 } from "./unlock-session";
@@ -22,18 +23,20 @@ import {
 	useSessionGateFlags,
 } from "./use-session-gate";
 
+const MAX_WALLET_UNLOCK_ATTEMPTS = 3;
+const WALLET_UNLOCK_RETRY_DELAY_MS = 600;
+
 type CryptoUnlockContextValue = {
-	flags: ReturnType<typeof useSessionGateFlags>;
-	derived: ReturnType<typeof useSessionGateDerived>;
 	tryingWalletUnlock: boolean;
 	recoveryRequired: boolean;
+	walletUnlockError: string | null;
 	recoveryPhrase: string;
 	setRecoveryPhrase: (value: string) => void;
 	error: string;
+	recoveryPending: boolean;
 	handleRecover: () => Promise<void>;
 	resetRecoveryGate: () => void;
-	login: ReturnType<typeof useLogin>;
-	recoverWithPhrase: ReturnType<typeof useRecoverWithPhrase>;
+	retryWalletUnlock: () => void;
 };
 
 const CryptoUnlockContext = createContext<CryptoUnlockContextValue | null>(
@@ -49,23 +52,32 @@ export function CryptoUnlockProvider({ children }: { children: ReactNode }) {
 	const queryClient = useQueryClient();
 
 	const [recoveryRequired, setRecoveryRequired] = useState(false);
+	const [walletUnlockError, setWalletUnlockError] = useState<string | null>(
+		null,
+	);
 	const [recoveryPhrase, setRecoveryPhrase] = useState("");
 	const [error, setError] = useState("");
 	const [tryingWalletUnlock, setTryingWalletUnlock] = useState(false);
+	const [unlockAttemptId, setUnlockAttemptId] = useState(0);
 	const walletUnlockStartedRef = useRef(false);
 	const lastWalletRef = useRef<string | null>(null);
 
 	useSessionGateAnalytics();
 
+	const resetUnlockAttemptState = useCallback(() => {
+		walletUnlockStartedRef.current = false;
+		setWalletUnlockError(null);
+	}, []);
+
 	useEffect(() => {
 		const walletAddress = wallet?.account?.address?.toLowerCase() ?? null;
 		if (lastWalletRef.current === walletAddress) return;
 		lastWalletRef.current = walletAddress;
-		walletUnlockStartedRef.current = false;
+		resetUnlockAttemptState();
 		setRecoveryRequired(false);
 		setRecoveryPhrase("");
 		setError("");
-	}, [wallet?.account?.address]);
+	}, [wallet?.account?.address, resetUnlockAttemptState]);
 
 	useEffect(() => {
 		hydrationMark("crypto-unlock:flags", {
@@ -75,7 +87,9 @@ export function CryptoUnlockProvider({ children }: { children: ReactNode }) {
 			isRegisteredPending: flags.isRegisteredPending,
 			isCryptoUnlocked: flags.isCryptoUnlocked,
 			isCryptoUnlockedPending: flags.isCryptoUnlockedPending,
+			hasStoredKeygenData: flags.hasStoredKeygenData,
 			recoveryRequired,
+			walletUnlockError,
 		});
 	}, [
 		flags.ready,
@@ -84,7 +98,9 @@ export function CryptoUnlockProvider({ children }: { children: ReactNode }) {
 		flags.isRegisteredPending,
 		flags.isCryptoUnlocked,
 		flags.isCryptoUnlockedPending,
+		flags.hasStoredKeygenData,
 		recoveryRequired,
+		walletUnlockError,
 	]);
 
 	useEffect(() => {
@@ -92,39 +108,91 @@ export function CryptoUnlockProvider({ children }: { children: ReactNode }) {
 			setRecoveryRequired(false);
 			setRecoveryPhrase("");
 			setError("");
-			walletUnlockStartedRef.current = false;
+			resetUnlockAttemptState();
 		}
-	}, [flags.isCryptoUnlocked]);
+	}, [flags.isCryptoUnlocked, resetUnlockAttemptState]);
 
 	useEffect(() => {
 		if (flags.isCryptoUnlocked) return;
+		if (recoveryRequired) return;
 		if (!derived.canAttemptWalletLogin) {
 			walletUnlockStartedRef.current = false;
 			return;
 		}
-		if (walletUnlockStartedRef.current || recoveryRequired) return;
+		if (walletUnlockStartedRef.current) return;
+		if (walletUnlockError) return;
 
 		walletUnlockStartedRef.current = true;
 		setTryingWalletUnlock(true);
 		hydrationMark("crypto-unlock:attempt-start");
 
-		void attemptWalletLoginUnlock({
-			login: {
-				mutateAsync: (args) => login.mutateAsync({ unlockOnly: true, ...args }),
-			},
-			onRecoveryRequired: () => {
-				setRecoveryRequired(true);
+		let cancelled = false;
+
+		void (async () => {
+			let lastFailedMessage = "Could not unlock with your wallet. Try again.";
+
+			for (
+				let attempt = 0;
+				attempt < MAX_WALLET_UNLOCK_ATTEMPTS && !cancelled;
+				attempt += 1
+			) {
+				if (attempt > 0) {
+					await delay(WALLET_UNLOCK_RETRY_DELAY_MS);
+				}
+				if (cancelled) return;
+
+				const outcome = await attemptWalletLoginUnlock({
+					login: {
+						mutateAsync: () => login.mutateAsync({ unlockOnly: true }),
+					},
+				});
+
+				if (cancelled) return;
+
+				if (outcome === "success") {
+					resetUnlockAttemptState();
+					return;
+				}
+				if (outcome === "recovery_required") {
+					setRecoveryRequired(true);
+					resetUnlockAttemptState();
+					return;
+				}
+
+				lastFailedMessage = outcome.failed;
+
+				if (outcome.isCancelled) {
+					break;
+				}
+			}
+
+			if (!cancelled) {
+				setWalletUnlockError(lastFailedMessage);
 				walletUnlockStartedRef.current = false;
-			},
-		}).finally(() => {
-			setTryingWalletUnlock(false);
+			}
+		})().finally(() => {
+			if (!cancelled) {
+				setTryingWalletUnlock(false);
+			}
 		});
+
+		return () => {
+			cancelled = true;
+		};
 	}, [
 		derived.canAttemptWalletLogin,
 		flags.isCryptoUnlocked,
 		login,
 		recoveryRequired,
+		resetUnlockAttemptState,
+		unlockAttemptId,
+		walletUnlockError,
 	]);
+
+	const retryWalletUnlock = useCallback(() => {
+		resetUnlockAttemptState();
+		setUnlockAttemptId((current) => current + 1);
+	}, [resetUnlockAttemptState]);
 
 	const handleRecover = useCallback(async () => {
 		if (!recoveryPhrase.trim()) return;
@@ -138,6 +206,7 @@ export function CryptoUnlockProvider({ children }: { children: ReactNode }) {
 			});
 			setRecoveryRequired(false);
 			setRecoveryPhrase("");
+			setWalletUnlockError(null);
 		} catch (recoverErr) {
 			setError(formatRecoveryPhraseError(recoverErr));
 			throw recoverErr;
@@ -153,23 +222,22 @@ export function CryptoUnlockProvider({ children }: { children: ReactNode }) {
 		setRecoveryPhrase("");
 		setError("");
 		setRecoveryRequired(false);
-		walletUnlockStartedRef.current = false;
-	}, []);
+		resetUnlockAttemptState();
+	}, [resetUnlockAttemptState]);
 
 	return (
 		<CryptoUnlockContext.Provider
 			value={{
-				flags,
-				derived,
 				tryingWalletUnlock,
 				recoveryRequired,
+				walletUnlockError,
 				recoveryPhrase,
 				setRecoveryPhrase,
 				error,
+				recoveryPending: recoverWithPhrase.isPending,
 				handleRecover,
 				resetRecoveryGate,
-				login,
-				recoverWithPhrase,
+				retryWalletUnlock,
 			}}
 		>
 			{children}

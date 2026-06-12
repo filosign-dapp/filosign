@@ -10,6 +10,7 @@ type DocCanvasPanelProps = {
 	recoveryPhrase?: string;
 	onRecoveryPhraseChange?: (value: string) => void;
 	recoveryError?: string;
+	walletUnlockError?: string | null;
 	onRecoverySubmit?: () => void;
 	recoveryPending?: boolean;
 	error?: string | null;
@@ -23,6 +24,7 @@ export function DocCanvasPanel({
 	recoveryPhrase = "",
 	onRecoveryPhraseChange,
 	recoveryError,
+	walletUnlockError,
 	onRecoverySubmit,
 	recoveryPending,
 	error,
@@ -32,7 +34,18 @@ export function DocCanvasPanel({
 	if (showRecovery) {
 		return (
 			<div className="flex w-full h-full items-center justify-center p-6">
-				<div className="w-full max-w-sm space-y-3">
+				<div className="w-full max-w-md space-y-4">
+					<div className="space-y-2 text-center">
+						<h2 className="text-base font-semibold">Unlock encryption keys</h2>
+						<p className="text-sm text-muted-foreground">
+							You are still signed in. Confirm in your wallet to decrypt this
+							document. If wallet unlock does not work, enter your 24-word
+							recovery phrase from Profile settings.
+						</p>
+					</div>
+					{walletUnlockError ? (
+						<p className="text-sm text-destructive">{walletUnlockError}</p>
+					) : null}
 					{recoveryError ? (
 						<p className="text-sm text-destructive">{recoveryError}</p>
 					) : null}
@@ -44,6 +57,7 @@ export function DocCanvasPanel({
 							onChange={(e) => onRecoveryPhraseChange?.(e.target.value)}
 							rows={3}
 							className="font-mono text-sm"
+							placeholder="Enter your 24-word recovery phrase"
 						/>
 					</div>
 					<Button
@@ -64,6 +78,9 @@ export function DocCanvasPanel({
 			<div className="flex w-full h-full items-center justify-center p-6 text-center">
 				<div className="flex max-w-md flex-col items-center gap-3">
 					<FileTextIcon className="size-12 text-destructive/50" />
+					<p className="text-sm font-medium">
+						Could not unlock with your wallet
+					</p>
 					<p className="text-sm text-destructive">{error}</p>
 					{onRetry ? (
 						<Button
@@ -72,7 +89,7 @@ export function DocCanvasPanel({
 							disabled={retryPending}
 							onClick={() => onRetry()}
 						>
-							Retry
+							{retryPending ? "Retrying…" : "Retry"}
 						</Button>
 					) : null}
 				</div>

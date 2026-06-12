@@ -39,6 +39,9 @@ export function SignViewer() {
 		recoveryError,
 		submitRecovery,
 		recoveryPending,
+		cryptoUnlockError,
+		retryWalletUnlock,
+		tryingWalletUnlock,
 		currentDocument,
 		currentDocumentId,
 		documentWidth,
@@ -217,7 +220,21 @@ export function SignViewer() {
 		);
 	}
 
-	if (docCanvasBusy || showRecoveryInCanvas || viewError || !fileData) {
+	if (
+		docCanvasBusy ||
+		showRecoveryInCanvas ||
+		cryptoUnlockError ||
+		viewError ||
+		!fileData
+	) {
+		const canvasError = cryptoUnlockError ?? viewError;
+		const canvasOnRetry = cryptoUnlockError
+			? () => retryWalletUnlock()
+			: () => void handleViewFile();
+		const canvasRetryPending = cryptoUnlockError
+			? tryingWalletUnlock
+			: viewFile.isPending;
+
 		return (
 			<div className="flex h-full min-h-0 flex-1 flex-col">
 				<DocCanvasPanel
@@ -226,11 +243,12 @@ export function SignViewer() {
 					recoveryPhrase={recoveryPhrase}
 					onRecoveryPhraseChange={setRecoveryPhrase}
 					recoveryError={recoveryError}
+					walletUnlockError={cryptoUnlockError}
 					onRecoverySubmit={() => void submitRecovery()}
 					recoveryPending={recoveryPending}
-					error={viewError}
-					onRetry={() => void handleViewFile()}
-					retryPending={viewFile.isPending}
+					error={showRecoveryInCanvas ? null : canvasError}
+					onRetry={showRecoveryInCanvas ? undefined : canvasOnRetry}
+					retryPending={canvasRetryPending}
 				/>
 			</div>
 		);

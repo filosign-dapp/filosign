@@ -1,13 +1,10 @@
 import { CaretRightIcon } from "@phosphor-icons/react";
-import { useState } from "react";
+import { type KeyboardEvent, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/src/lib/components/ui/card";
+	FeatureShellActions,
+	FeatureShellBody,
+} from "@/src/lib/components/ui/feature-shell";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 
@@ -35,58 +32,60 @@ export function OnboardingNameForm({
 		});
 	};
 
-	const handleKeyDown = (e: React.KeyboardEvent) => {
-		if (e.key === "Enter" && firstName.trim() && !disabled) {
+	const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+		if (event.key === "Enter" && firstName.trim() && !disabled) {
 			submit();
 		}
 	};
 
 	return (
-		<Card className="w-full">
-			<CardHeader>
-				<CardTitle>Welcome aboard!</CardTitle>
-				<CardDescription>
-					Enter your name to personalize your profile and workspace.
-				</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<div className="grid grid-cols-2 gap-4">
-					<div className="flex flex-col gap-2">
-						<Label>First Name</Label>
-						<Input
-							value={firstName}
-							onChange={(e) => setFirstName(e.target.value)}
-							onKeyDown={handleKeyDown}
-							placeholder="John"
-							autoFocus
-						/>
-					</div>
-					<div className="flex flex-col gap-2">
-						<Label>Last Name</Label>
-						<Input
-							value={lastName}
-							onChange={(e) => setLastName(e.target.value)}
-							onKeyDown={handleKeyDown}
-							placeholder="Doe"
-						/>
-					</div>
+		<FeatureShellBody>
+			<div className="grid gap-4 sm:grid-cols-2">
+				<div className="space-y-2">
+					<Label htmlFor="onboarding-first-name">First name</Label>
+					<Input
+						id="onboarding-first-name"
+						variant="field"
+						value={firstName}
+						onChange={(event) => setFirstName(event.target.value)}
+						onKeyDown={handleKeyDown}
+						placeholder="John"
+						autoFocus
+						disabled={disabled}
+					/>
 				</div>
+				<div className="space-y-2">
+					<Label htmlFor="onboarding-last-name">Last name</Label>
+					<Input
+						id="onboarding-last-name"
+						variant="field"
+						value={lastName}
+						onChange={(event) => setLastName(event.target.value)}
+						onKeyDown={handleKeyDown}
+						placeholder="Doe"
+						disabled={disabled}
+					/>
+				</div>
+			</div>
+			<FeatureShellActions>
 				<Button
 					type="button"
 					onClick={submit}
 					disabled={!firstName.trim() || disabled}
-					className="w-full group"
+					className="group w-full"
 					variant="primary"
+					size="lg"
+					isLoading={disabled}
 				>
-					{disabled ? "Saving…" : "Continue"}
+					Continue
 					{!disabled ? (
 						<CaretRightIcon
-							className="transition-transform duration-200 size-4 group-hover:translate-x-1"
+							className="size-4 transition-transform duration-200 group-hover:translate-x-1"
 							weight="bold"
 						/>
 					) : null}
 				</Button>
-			</CardContent>
-		</Card>
+			</FeatureShellActions>
+		</FeatureShellBody>
 	);
 }

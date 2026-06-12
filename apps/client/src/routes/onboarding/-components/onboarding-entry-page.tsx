@@ -1,30 +1,51 @@
-import { motion } from "motion/react";
-import Logo from "@/src/lib/components/app/chrome/logo";
+import { motion, SPRING_TOKENS } from "@filosign/motion";
+import {
+	FeatureShell,
+	FeatureShellHeader,
+	FeatureShellMedia,
+	FeatureShellPanel,
+} from "@/src/lib/components/ui/feature-shell";
 import { OnboardingNameForm } from "@/src/routes/onboarding/-components/OnboardingNameForm";
 import OnboardingProtector from "@/src/routes/onboarding/-components/OnboardingProtector";
 import { OnboardingSwitchAccountLink } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
 import { useOnboardingEntry } from "@/src/routes/onboarding/-lib/context/onboarding-entry-context";
+import { ONBOARDING_IMAGE } from "@/src/routes/onboarding/route";
 
 export function OnboardingEntryPage() {
 	const { isSubmitting, handleContinue } = useOnboardingEntry();
 
 	return (
 		<OnboardingProtector>
-			<div className="flex justify-center items-center min-h-screen bg-background">
+			<main className="relative flex min-h-dvh items-center justify-center px-4 py-8 sm:px-6">
 				<motion.div
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.3, delay: 0.2 }}
-					className="flex flex-col justify-center items-center px-8 mx-auto w-full max-w-lg"
+					initial={{ opacity: 0, y: 16, scale: 0.98 }}
+					animate={{ opacity: 1, y: 0, scale: 1 }}
+					transition={SPRING_TOKENS.snappy}
+					className="w-full max-w-[min(56rem,calc(100vw-2rem))]"
 				>
-					<Logo className="mb-4" textClassName="text-foreground" />
-					<OnboardingNameForm
-						onContinue={handleContinue}
-						disabled={isSubmitting}
-					/>
-					<OnboardingSwitchAccountLink />
+					<FeatureShell>
+						<FeatureShellMedia
+							src={ONBOARDING_IMAGE}
+							badge="Get started"
+							width={640}
+							height={480}
+						/>
+
+						<FeatureShellPanel>
+							<FeatureShellHeader
+								badge="Profile setup"
+								title="Welcome aboard!"
+								description="Enter your name to personalize your profile and workspace."
+							/>
+							<OnboardingNameForm
+								onContinue={handleContinue}
+								disabled={isSubmitting}
+							/>
+							<OnboardingSwitchAccountLink className="mt-6" />
+						</FeatureShellPanel>
+					</FeatureShell>
 				</motion.div>
-			</div>
+			</main>
 		</OnboardingProtector>
 	);
 }

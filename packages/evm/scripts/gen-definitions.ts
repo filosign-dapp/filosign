@@ -66,11 +66,11 @@ function abiImportVar(abiRef: string) {
 	return `abi_${abiRef.slice(0, 12)}`;
 }
 
-function formatGenerated(path: string) {
-	const format = Bun.spawnSync(["bunx", "biome", "check", "--write", path]);
-	if (format.exitCode !== 0) {
+function formatWithBiome(path: string) {
+	const result = Bun.spawnSync(["bunx", "biome", "check", "--write", path]);
+	if (result.exitCode !== 0) {
 		throw new Error(
-			`biome check failed for ${path}: ${format.stderr.toString()}`,
+			`biome format failed for ${path}: ${result.stderr.toString()}`,
 		);
 	}
 }
@@ -111,7 +111,6 @@ export type FSAttachmentReleaseAbi = Abi;
 export type MockUsdcAbi = Abi;
 `;
 		await Bun.write(generatedAbiTypesPath(), body);
-		formatGenerated(generatedAbiTypesPath());
 		console.warn("Skipped abi-types: compile artifacts missing");
 		return;
 	}
@@ -123,12 +122,15 @@ ${constBlocks.join("\n\n")}
 ${exportLines.join("\n")}
 `;
 	await Bun.write(generatedAbiTypesPath(), body);
-	formatGenerated(generatedAbiTypesPath());
 	console.log(`Generated ${generatedAbiTypesPath()}`);
 }
 
 async function ensureChainScaffold(chainKey: ChainKey) {
-	await Bun.write(addressIndexPath(chainKey), "{}\n");
+	const indexPath = addressIndexPath(chainKey);
+	const file = Bun.file(indexPath);
+	if (!(await file.exists())) {
+		await Bun.write(indexPath, "{}\n");
+	}
 }
 
 async function collectHistoricalEntries(chainKey: ChainKey) {
@@ -204,7 +206,6 @@ export const definitions = {
 } satisfies ChainDefinitionsBundle;
 `;
 		await Bun.write(outPath, body);
-		formatGenerated(outPath);
 		return;
 	}
 
@@ -254,7 +255,6 @@ ${historicalLines.join("\n")}
 `;
 
 	await Bun.write(outPath, body);
-	formatGenerated(outPath);
 	console.log(`Generated ${outPath}`);
 }
 
@@ -263,6 +263,7 @@ async function main() {
 		await generateChain(chainKey);
 	}
 	await generateAbiTypesFromArtifacts();
+	formatWithBiome(DEFINITIONS_ROOT);
 }
 
 main().catch((error) => {

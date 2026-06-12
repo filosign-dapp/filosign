@@ -80,11 +80,21 @@ async function exportChainManifest() {
 	console.log(`export-public: updated ${PUBLIC_CHAINS_MANIFEST}`);
 }
 
+function formatWithBiome(...paths: string[]) {
+	const result = Bun.spawnSync(["bunx", "biome", "check", "--write", ...paths]);
+	if (result.exitCode !== 0) {
+		throw new Error(
+			`biome format failed: ${result.stderr.toString() || result.stdout.toString()}`,
+		);
+	}
+}
+
 async function main() {
 	for (const chainKey of PUBLIC_CHAINS) {
 		await exportAbis(chainKey);
 	}
 	await exportChainManifest();
+	formatWithBiome(PUBLIC_ABIS_ROOT, PUBLIC_CHAINS_MANIFEST);
 }
 
 main().catch((error) => {

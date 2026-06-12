@@ -8,7 +8,9 @@ import {
 	trackServerEvent,
 } from "@/lib/platform/analytics";
 import db from "@/lib/platform/db";
+import { evmClient } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { buildEnvelopeCompletedEmailOutboxRows } from "../completion-email";
 import { isEnvelopeRoutingCompleteOnChain } from "../piece-helpers";
 
@@ -37,6 +39,22 @@ export async function runPostPieceSignSideEffects(args: {
 			"@/lib/domains/users/activation"
 		);
 		await userActivationOnPracticeSigned(args.signerWallet);
+	}
+
+	if (args.signTxHash) {
+		const receiptRes = await tryCatch(
+			evmClient.waitForTransactionReceipt({ hash: args.signTxHash }),
+		);
+		if (receiptRes.error) {
+			logger.warn(
+				{
+					err: receiptRes.error,
+					pieceCid: args.pieceCid,
+					txHash: args.signTxHash,
+				},
+				"post-sign: sign tx receipt wait failed before routing check",
+			);
+		}
 	}
 
 	const routingComplete = await isEnvelopeRoutingCompleteOnChain(

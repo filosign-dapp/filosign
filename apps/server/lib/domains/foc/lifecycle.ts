@@ -11,8 +11,9 @@ import {
 } from "@/lib/platform/foc";
 import { logger } from "@/lib/platform/pino";
 import { bucket } from "@/lib/platform/s3/client";
-import { logFocSmoke } from "./smoke-log";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { isFocEnabled } from "./enabled";
+import { logFocSmoke } from "./smoke-log";
 
 const { complianceExportLogs, files, focObjects } = db.schema;
 
@@ -44,12 +45,6 @@ export function isFocTransitionDiscoverable(args: {
 	return !args.inHotWindow || args.senderExported;
 }
 
-function addDays(from: Date, days: number): Date {
-	const d = new Date(from);
-	d.setUTCDate(d.getUTCDate() + days);
-	return d;
-}
-
 /** Bun S3 `file().size` is unset until read; prefer DB, then R2 bytes. */
 async function resolveCiphertextByteLength(
 	pieceCid: string,
@@ -79,6 +74,10 @@ export async function createFocStubForCompletedEnvelope(
 	pieceCid: string,
 	organizationId: string,
 ): Promise<void> {
+	if (!isFocEnabled()) {
+		return;
+	}
+
 	const [existing] = await db
 		.select({ id: focObjects.id })
 		.from(focObjects)
@@ -111,9 +110,7 @@ export async function createFocStubForCompletedEnvelope(
 		replicateStatus: "pending",
 		retentionUntil: await resolveFocRetentionUntil(organizationId),
 		completedAt,
-		r2EvictAfter: env.TEST_FOC
-			? completedAt
-			: addDays(completedAt, env.R2_HOT_DAYS),
+		r2EvictAfter: completedAt,
 		lifecycle: "active",
 	});
 
@@ -122,8 +119,7 @@ export async function createFocStubForCompletedEnvelope(
 		organizationId,
 		r2Key,
 		byteLength,
-		r2EvictAfter: env.TEST_FOC ? completedAt.toISOString() : undefined,
-		testFoc: env.TEST_FOC,
+		r2EvictAfter: completedAt.toISOString(),
 	});
 }
 
@@ -145,6 +141,11 @@ async function senderHasComplianceExport(pieceCid: string): Promise<boolean> {
 export async function runFocTransitionForPiece(
 	pieceCid: string,
 ): Promise<void> {
+	if (!isFocEnabled()) {
+		logFocSmoke("transition skipped (FOC disabled)", { pieceCid });
+		return;
+	}
+
 	const now = new Date();
 	const [row] = await db
 		.select()
@@ -288,6 +289,10 @@ export async function runFocTransitionForPiece(
 }
 
 export async function listFocTransitionsDue(limit = 50): Promise<string[]> {
+	if (!isFocEnabled()) {
+		return [];
+	}
+
 	const now = new Date();
 	const senderExportExists = db
 		.select({ id: complianceExportLogs.id })

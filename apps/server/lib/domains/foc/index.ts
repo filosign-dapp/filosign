@@ -1,5 +1,5 @@
 export { resolveCiphertextDownloadUrl } from "./ciphertext-locator";
-export { logFocSmoke } from "./smoke-log";
+export { isFocEnabled } from "./enabled";
 export {
 	createFocStubForCompletedEnvelope,
 	listFocTransitionsDue,
@@ -10,3 +10,4 @@ export {
 	resolveFocRetentionUntil,
 	resolveWorkspaceFocRetentionUntil,
 } from "./retention-policy";
+export { logFocSmoke } from "./smoke-log";

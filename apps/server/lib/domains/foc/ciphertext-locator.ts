@@ -1,8 +1,8 @@
 import { throwAppError } from "@filosign/errors/server";
 import { eq } from "drizzle-orm";
-import env from "@/env";
-import db from "@/lib/platform/db";
+import { isFocEnabled } from "@/lib/domains/foc/enabled";
 import { logFocSmoke } from "@/lib/domains/foc/smoke-log";
+import db from "@/lib/platform/db";
 import { archivalCdnUrl } from "@/lib/platform/foc";
 import { bucket } from "@/lib/platform/s3/client";
 
@@ -34,18 +34,21 @@ async function loadFocRow(pieceCid: string): Promise<FocRow | null> {
 	return row ?? null;
 }
 
-/** R2 presign when present (primary); FOC CDN when R2 missing or `TEST_FOC` smoke. */
+/** R2-only when FOC disabled; when enabled, prefer FOC CDN if replicated else R2. */
 export async function resolveCiphertextDownloadUrl(
 	pieceCid: string,
 ): Promise<string> {
 	const r2Key = uploadsKey(pieceCid);
-	const focRow = await loadFocRow(pieceCid);
-	const focReady = focRow != null && isFocRetrievable(focRow);
+	const focEnabled = isFocEnabled();
 
-	if (env.TEST_FOC && focReady) {
-		const url = archivalCdnUrl(pieceCid);
-		logFocSmoke("download via FOC CDN (TEST_FOC prefer)", { pieceCid, url });
-		return url;
+	if (focEnabled) {
+		const focRow = await loadFocRow(pieceCid);
+		const focReady = focRow != null && isFocRetrievable(focRow);
+		if (focReady) {
+			const url = archivalCdnUrl(pieceCid);
+			logFocSmoke("download via FOC CDN (FOC enabled)", { pieceCid, url });
+			return url;
+		}
 	}
 
 	if (await bucket.exists(r2Key)) {
@@ -55,17 +58,7 @@ export async function resolveCiphertextDownloadUrl(
 		});
 		logFocSmoke("download via R2 presign", {
 			pieceCid,
-			focReady,
-			testFoc: env.TEST_FOC,
-		});
-		return url;
-	}
-
-	if (focReady) {
-		const url = archivalCdnUrl(pieceCid);
-		logFocSmoke("download via FOC CDN (R2 missing fallback)", {
-			pieceCid,
-			url,
+			focEnabled,
 		});
 		return url;
 	}

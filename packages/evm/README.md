@@ -45,7 +45,7 @@ All paths resolve under **`packages/evm/definitions/`** (absolute at runtime; de
 
 | Path | Role |
 |------|------|
-| `chains/<chain>/deployments/<id>/manifest.json` | Per-deploy contract addresses + ABI refs |
+| `chains/<chain>/deployments/<id>/manifest.json` | Per-deploy contract addresses + ABI refs (`local` uses fixed id `local`, overwritten each deploy) |
 | `chains/<chain>/latest.json` | Pointer to active deployment |
 | `chains/<chain>/address-index.json` | Historical address lookup |
 | `abis/<hash>.json` | Content-addressed ABI store |

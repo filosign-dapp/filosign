@@ -11,3 +11,6 @@ export const CHAIN_ID_BY_KEY: Record<ChainKey, number> = {
 	testnet: 84532,
 	mainnet: 8453,
 };
+
+/** Single overwrite slot for local Hardhat deploys (no timestamped history). */
+export const LOCAL_DEPLOYMENT_ID = "local";

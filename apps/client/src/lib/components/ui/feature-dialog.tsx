@@ -15,9 +15,9 @@ import {
 	FeatureShellActions,
 	FeatureShellBody,
 	FeatureShellHeaderFields,
+	type FeatureShellHeaderProps,
 	FeatureShellMedia,
 	FeatureShellPanel,
-	type FeatureShellHeaderProps,
 } from "@/src/lib/components/ui/feature-shell";
 import { cn } from "@/src/lib/utils/index";
 
@@ -96,6 +96,7 @@ function FeatureDialogHeader({
 	);
 }
 
+export type { FeatureShellHeaderProps as FeatureDialogHeaderProps };
 export {
 	FeatureDialogClose,
 	FeatureDialogContent,
@@ -105,5 +106,3 @@ export {
 	FeatureShellMedia as FeatureDialogMedia,
 	FeatureShellPanel as FeatureDialogPanel,
 };
-
-export type { FeatureShellHeaderProps as FeatureDialogHeaderProps };

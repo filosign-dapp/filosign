@@ -1,5 +1,10 @@
+import { readdir, rm } from "node:fs/promises";
+import path from "node:path";
 import { getAddress } from "viem";
-import type { ChainKey } from "../../../definitions/chain-key.js";
+import {
+	LOCAL_DEPLOYMENT_ID,
+	type ChainKey,
+} from "../../../definitions/chain-key.js";
 import {
 	type ContractName,
 	type DeploymentManifest,
@@ -8,7 +13,12 @@ import {
 	parseLatestPointer,
 } from "../../../definitions/schema.js";
 import { writeAbiToStore } from "./abi-store.js";
-import { addressIndexPath, latestPointerPath, manifestPath } from "./paths.js";
+import {
+	addressIndexPath,
+	chainDir,
+	latestPointerPath,
+	manifestPath,
+} from "./paths.js";
 
 export type DeployedContractBundle = {
 	name: ContractName;
@@ -23,6 +33,26 @@ export function deploymentIdNow(date = new Date()): string {
 		.replace(/[-:]/g, "");
 }
 
+async function pruneStaleLocalDeployments(keepDeploymentId: string) {
+	const deploymentsRoot = path.join(chainDir("local"), "deployments");
+	let names: string[];
+	try {
+		names = await readdir(deploymentsRoot);
+	} catch {
+		return;
+	}
+	await Promise.all(
+		names
+			.filter((name) => name !== keepDeploymentId)
+			.map((name) =>
+				rm(path.join(deploymentsRoot, name), {
+					recursive: true,
+					force: true,
+				}),
+			),
+	);
+}
+
 export async function persistDeployment(args: {
 	chainKey: ChainKey;
 	chainId: number;
@@ -31,7 +61,9 @@ export async function persistDeployment(args: {
 	contracts: DeployedContractBundle[];
 	transactions?: DeploymentManifest["transactions"];
 }) {
-	const deploymentId = args.deploymentId ?? deploymentIdNow();
+	const isLocal = args.chainKey === "local";
+	const deploymentId =
+		args.deploymentId ?? (isLocal ? LOCAL_DEPLOYMENT_ID : deploymentIdNow());
 	const deployedAt = args.deployedAt ?? new Date().toISOString();
 
 	const manifestContracts: Partial<
@@ -80,9 +112,11 @@ export async function persistDeployment(args: {
 		string,
 		{ deploymentId: string; contractName: ContractName }
 	> = {};
-	const indexFile = Bun.file(addressIndexPath(args.chainKey));
-	if (await indexFile.exists()) {
-		index = parseAddressIndex(await indexFile.json());
+	if (!isLocal) {
+		const indexFile = Bun.file(addressIndexPath(args.chainKey));
+		if (await indexFile.exists()) {
+			index = parseAddressIndex(await indexFile.json());
+		}
 	}
 
 	for (const item of args.contracts) {
@@ -96,6 +130,10 @@ export async function persistDeployment(args: {
 		addressIndexPath(args.chainKey),
 		`${JSON.stringify(index, null, 2)}\n`,
 	);
+
+	if (isLocal) {
+		await pruneStaleLocalDeployments(deploymentId);
+	}
 
 	return { deploymentId, manifest };
 }

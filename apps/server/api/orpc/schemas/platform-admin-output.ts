@@ -52,6 +52,7 @@ export const rpcPlatformAdminInviteCreateOutputSchema = z.object({
 	trialDays: z.number().int(),
 	email: z.string().nullable(),
 	note: z.string().nullable(),
+	emailSent: z.boolean(),
 });
 
 export const rpcPlatformAdminInviteRebookOutputSchema =
@@ -61,6 +62,11 @@ export const rpcPlatformAdminInviteRebookOutputSchema =
 		kind: true,
 		planId: true,
 	});
+
+export const rpcPlatformAdminInviteSendOutputSchema = z.object({
+	emailSent: z.boolean(),
+	email: z.string().nullable(),
+});
 
 export const rpcPlatformAdminUserRowSchema = z.object({
 	walletAddress: z.string(),

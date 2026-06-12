@@ -13,6 +13,8 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
+import { toast } from "sonner";
+import { z } from "zod";
 import env from "@/src/env";
 import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
 import { AdminSectionEmpty } from "@/src/lib/components/app/empty-state";
@@ -82,8 +84,12 @@ function AdminPage() {
 	const { rpc, rpcQuery } = useFilosignContext();
 	const queryClient = useQueryClient();
 	const [note, setNote] = useState("");
-	const [emailLock, setEmailLock] = useState("");
+	const [recipientEmail, setRecipientEmail] = useState("");
 	const [lastInviteUrl, setLastInviteUrl] = useState<string | null>(null);
+	const [pendingInvite, setPendingInvite] = useState<{
+		id: string;
+		email: string;
+	} | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	const accessQuery = useQuery({
@@ -119,23 +125,25 @@ function AdminPage() {
 
 	const createInvite = useMutation({
 		meta: { suppressErrorToast: true },
-		mutationFn: () =>
+		mutationFn: (email: string) =>
 			rpc.platformAdmin.invites.create({
 				kind: "partner_trial",
 				planId: "teams_pro",
 				trialDays: 30,
-				note: note || undefined,
-				email: emailLock || undefined,
+				email,
 			}),
 		onSuccess: (data) => {
 			const url = new URL("/", env.VITE_CLIENT_URL);
 			url.searchParams.set("platformInvite", data.token as string);
 			setLastInviteUrl(url.toString());
+			if (data.email) {
+				setPendingInvite({ id: data.id, email: data.email });
+				toast.success(`Invite created for ${data.email}`);
+			}
 			void queryClient.invalidateQueries({
 				queryKey: rpcQuery.platformAdmin.invites.list.queryKey(),
 			});
-			setNote("");
-			setEmailLock("");
+			setRecipientEmail("");
 		},
 		onError: (err) => {
 			setError(formatInlineAppError(err));
@@ -152,13 +160,36 @@ function AdminPage() {
 		},
 	});
 
-	const rebookInvite = useMutation({
+	const sendInviteEmail = useMutation({
 		mutationFn: (inviteId: string) =>
-			rpc.platformAdmin.invites.rebook({ inviteId }),
-		onSuccess: (data) => {
+			rpc.platformAdmin.invites.send({ inviteId }),
+		onSuccess: (data, inviteId) => {
+			if (data.emailSent && data.email) {
+				toast.success(`Invite sent to ${data.email}`);
+			} else if (data.email) {
+				toast.success(
+					`Invite ready for ${data.email} (email delivery disabled)`,
+				);
+			}
+			if (pendingInvite?.id === inviteId) {
+				setPendingInvite(null);
+			}
+		},
+	});
+
+	const rebookInvite = useMutation({
+		mutationFn: (args: { inviteId: string; email?: string | null }) =>
+			rpc.platformAdmin.invites.rebook({ inviteId: args.inviteId }),
+		onSuccess: (data, variables) => {
 			const url = new URL("/", env.VITE_CLIENT_URL);
 			url.searchParams.set("platformInvite", data.token as string);
 			setLastInviteUrl(url.toString());
+			if (variables.email) {
+				setPendingInvite({ id: data.id, email: variables.email });
+				toast.success(`Invite reissued for ${variables.email}`);
+			} else {
+				toast.success("Invite reissued");
+			}
 			void queryClient.invalidateQueries({
 				queryKey: rpcQuery.platformAdmin.invites.list.queryKey(),
 			});
@@ -316,61 +347,27 @@ function AdminPage() {
 				<AdminSection
 					icon={<TicketIcon className="size-4" aria-hidden="true" />}
 					title="Create Invite"
-					description="Issue custom redemption tokens for partner trial environments."
+					description="Create a design partner trial invite, then send the email when ready."
 				>
 					<div className="space-y-4">
-						<div className="grid gap-3 sm:grid-cols-2">
-							<div className="space-y-1.5">
-								<span className="text-xs font-normal text-muted-foreground block">
-									Internal Note
-								</span>
-								<Input
-									placeholder="Acme DAO..."
-									value={note}
-									onChange={(e) => setNote(e.target.value)}
-								/>
-							</div>
-							<div className="space-y-1.5">
-								<span className="text-xs font-normal text-muted-foreground block">
-									Email Lock (Optional)
-								</span>
-								<Input
-									type="email"
-									placeholder="partner@acme.com"
-									value={emailLock}
-									onChange={(e) => setEmailLock(e.target.value)}
-								/>
-							</div>
+						<div className="space-y-1.5 max-w-md">
+							<span className="text-xs font-normal text-muted-foreground block">
+								Recipient email
+							</span>
+							<Input
+								type="email"
+								placeholder="partner@acme.com"
+								value={recipientEmail}
+								onChange={(e) => setRecipientEmail(e.target.value)}
+								autoComplete="email"
+								disabled={createInvite.isPending}
+							/>
 						</div>
 
 						{error && (
 							<p className="text-xs text-destructive bg-destructive/5 border border-destructive/10 rounded-md p-2">
 								{error}
 							</p>
-						)}
-
-						{lastInviteUrl && (
-							<div className="text-xs rounded-md border border-border/40 bg-muted/10 p-3 space-y-1">
-								<span className="font-medium text-foreground">
-									Generated Invite Link:
-								</span>
-								<div className="flex items-center gap-2 mt-1">
-									<p className="break-all font-mono text-muted-foreground flex-1">
-										<a
-											href={lastInviteUrl}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="underline hover:text-foreground"
-										>
-											{lastInviteUrl}
-										</a>
-									</p>
-									<CopyButton
-										text={lastInviteUrl}
-										className="text-muted-foreground hover:text-foreground shrink-0"
-									/>
-								</div>
-							</div>
 						)}
 
 						<Button
@@ -380,12 +377,63 @@ function AdminPage() {
 							className="touch-manipulation"
 							onClick={() => {
 								setError(null);
-								createInvite.mutate();
+								const email = recipientEmail.trim();
+								if (!z.email().safeParse(email).success) {
+									setError("Enter a valid recipient email.");
+									return;
+								}
+								createInvite.mutate(email);
 							}}
 							isLoading={createInvite.isPending}
 						>
-							Create Invite
+							Create invite
 						</Button>
+
+						{lastInviteUrl && (
+							<div className="text-xs rounded-md border border-border/40 bg-muted/10 p-3 space-y-3">
+								<div className="space-y-1">
+									<span className="font-medium text-foreground">
+										Invite link
+									</span>
+									<div className="flex items-center gap-2 mt-1">
+										<p className="break-all font-mono text-muted-foreground flex-1">
+											<a
+												href={lastInviteUrl}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="underline hover:text-foreground"
+											>
+												{lastInviteUrl}
+											</a>
+										</p>
+										<CopyButton
+											text={lastInviteUrl}
+											className="text-muted-foreground hover:text-foreground shrink-0"
+										/>
+									</div>
+								</div>
+								{pendingInvite ? (
+									<div className="flex flex-wrap items-center gap-2 border-t border-border/30 pt-3">
+										<p className="text-muted-foreground">
+											Step 2: send the design partner email to{" "}
+											<span className="font-medium text-foreground">
+												{pendingInvite.email}
+											</span>
+										</p>
+										<Button
+											type="button"
+											variant="secondary"
+											size="sm"
+											className="touch-manipulation"
+											onClick={() => sendInviteEmail.mutate(pendingInvite.id)}
+											isLoading={sendInviteEmail.isPending}
+										>
+											Send email
+										</Button>
+									</div>
+								) : null}
+							</div>
+						)}
 					</div>
 				</AdminSection>
 
@@ -416,7 +464,9 @@ function AdminPage() {
 									>
 										<div className="flex items-center justify-between gap-4">
 											<span className="font-semibold text-foreground">
-												{String(invite.note ?? id)}
+												{invite.email
+													? String(invite.email)
+													: String(invite.note ?? id)}
 											</span>
 											{isRevoked ? (
 												<Badge variant="destructive">Revoked</Badge>
@@ -445,7 +495,20 @@ function AdminPage() {
 													{String(invite.maxRedemptions)}
 												</span>
 											</span>
-											<div className="flex gap-2">
+											<div className="flex flex-wrap gap-2">
+												{invite.email && !isRevoked ? (
+													<Button
+														size="sm"
+														variant="primary"
+														onClick={() => sendInviteEmail.mutate(id)}
+														isLoading={
+															sendInviteEmail.isPending &&
+															sendInviteEmail.variables === id
+														}
+													>
+														Send email
+													</Button>
+												) : null}
 												<Button
 													size="sm"
 													variant="outline"
@@ -461,10 +524,15 @@ function AdminPage() {
 												<Button
 													size="sm"
 													variant="secondary"
-													onClick={() => rebookInvite.mutate(id)}
+													onClick={() =>
+														rebookInvite.mutate({
+															inviteId: id,
+															email: invite.email,
+														})
+													}
 													isLoading={
 														rebookInvite.isPending &&
-														rebookInvite.variables === id
+														rebookInvite.variables?.inviteId === id
 													}
 												>
 													Reissue

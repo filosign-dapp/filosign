@@ -56,6 +56,7 @@ import {
 	platformAdminInvitesList,
 	platformAdminInvitesRebook,
 	platformAdminInvitesRevoke,
+	platformAdminInvitesSend,
 	platformAdminUsersList,
 	platformAdminUsersSetFeatureOverrides,
 	platformAdminUsersSetPlan,
@@ -214,6 +215,12 @@ export const appRouter = {
 				.output(out.platformAdmin.inviteRebook)
 				.handler(({ context, input }) =>
 					platformAdminInvitesRebook(context.userWallet, input.inviteId),
+				),
+			send: authenticatedProcedure
+				.input(z.object({ inviteId: z.uuid() }))
+				.output(out.platformAdmin.inviteSend)
+				.handler(({ context, input }) =>
+					platformAdminInvitesSend(context.userWallet, input.inviteId),
 				),
 		},
 		users: {

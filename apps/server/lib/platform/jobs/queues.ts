@@ -104,6 +104,11 @@ export function getFocTransitionQueue(): Queue<FocTransitionQueueJobData> {
 }
 
 export async function enqueueFocTransition(pieceCid: string): Promise<void> {
+	const { isFocEnabled } = await import("@/lib/domains/foc/enabled");
+	if (!isFocEnabled()) {
+		return;
+	}
+
 	await getFocTransitionQueue().add(
 		"transition",
 		{ pieceCid },

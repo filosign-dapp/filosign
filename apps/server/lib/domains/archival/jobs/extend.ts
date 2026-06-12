@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { isFocEnabled } from "@/lib/domains/foc/enabled";
 import { resolveFocRetentionUntil } from "@/lib/domains/foc/retention-policy";
 import db from "@/lib/platform/db";
 import {
@@ -17,6 +18,10 @@ const { focObjects, organizationArchival } = db.schema;
  * does not re-upload bytes.
  */
 export async function queueFocExtendRetention(organizationId: string) {
+	if (!isFocEnabled()) {
+		return;
+	}
+
 	const [archival] = await db
 		.select({ retentionUntil: organizationArchival.retentionUntil })
 		.from(organizationArchival)

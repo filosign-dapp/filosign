@@ -92,7 +92,7 @@ const parsedEnv = createEnv({
 		ARCHIVAL_EXPORT_GRACE_DAYS: z.coerce.number().int().min(1).default(30),
 		/** Days after envelope completion before FOC replicate job may run (R2 stays primary). */
 		R2_HOT_DAYS: z.coerce.number().int().min(1).default(30),
-		/** Prod smoke: immediate FOC replicate, prefer FOC download URL when replicated. */
+		/** When true: FOC backup (Synapse replicate + FOC CDN downloads). When false: R2 only. */
 		TEST_FOC: z
 			.string()
 			.default("false")

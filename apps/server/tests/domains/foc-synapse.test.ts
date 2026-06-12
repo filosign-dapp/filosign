@@ -2,7 +2,10 @@ import { describe, expect, test } from "bun:test";
 import type { EnvelopeRegistryProgress } from "@/lib/domains/files/utils/piece-helpers";
 import { envelopeRoutingCompleteFromProgress } from "@/lib/domains/files/utils/piece-helpers";
 import { retentionEpochsFromUntil } from "@/lib/platform/foc/retention";
-import { dealIdFromUploadResult } from "@/lib/platform/foc/synapse";
+import {
+	dataSetIdFromDealId,
+	dealIdFromUploadResult,
+} from "@/lib/platform/foc/synapse";
 import { focTransitionJobId } from "@/lib/platform/jobs/utils/idempotency";
 import { uploadResultStub } from "../support/upload-result-stub";
 
@@ -14,6 +17,16 @@ describe("retentionEpochsFromUntil", () => {
 
 	test("returns 0 when retention is in the past", () => {
 		expect(retentionEpochsFromUntil(new Date(Date.now() - 60_000))).toBe(0n);
+	});
+});
+
+describe("dataSetIdFromDealId", () => {
+	test("parses dataSetId prefix from deal_id", () => {
+		expect(dataSetIdFromDealId("14361:0")).toBe(14361n);
+	});
+
+	test("throws on invalid deal_id", () => {
+		expect(() => dataSetIdFromDealId("bad")).toThrow(/Invalid FOC deal_id/);
 	});
 });
 

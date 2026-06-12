@@ -26,6 +26,8 @@ const parsedEnv = createEnv({
 		S3_ENDPOINT: z.url(),
 		FC_SERVER_PRIVATE_KEY: zEvmPrivateKey(),
 		FC_SERVER_ADDRESS: zEvmAddress(),
+		/** Synapse dataset for platform FOC uploads; inferred from foc_objects when unset. */
+		FC_SYNAPSE_DATASET_ID: z.coerce.number().int().positive().optional(),
 		PG_URI: z.string().min(1),
 		DB_NAME: z.string().min(1),
 		SERVER_URL: z.url(),

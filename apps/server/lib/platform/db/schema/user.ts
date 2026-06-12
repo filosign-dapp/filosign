@@ -36,22 +36,6 @@ export const users = t.pgTable("users", {
 	...timestamps,
 });
 
-export const usersDatasets = t.pgTable("users_datasets", {
-	walletAddress: tEvmAddress()
-		.references(() => users.walletAddress, {
-			onDelete: "cascade",
-		})
-		.primaryKey(),
-	dataSetId: t.integer().notNull(),
-	providerAddress: t.text().notNull(),
-	totalDepositedBaseUnits: t
-		.bigint({ mode: "bigint" })
-		.notNull()
-		.default(BigInt(0)),
-
-	...timestamps,
-});
-
 export const userInvites = t.pgTable(
 	"user_invites",
 	{

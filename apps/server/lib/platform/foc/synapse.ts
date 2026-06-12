@@ -5,16 +5,18 @@ import {
 	Synapse,
 	type SynapseOptions,
 } from "@filoz/synapse-sdk";
-import { eq } from "drizzle-orm";
+import { desc, isNotNull } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import env from "@/env";
 import db from "@/lib/platform/db";
+import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const SYNAPSE_SOURCE = "filosign";
 const WITH_CDN = true;
+const PLATFORM_DATASET_METADATA = { filosign_platform: "archival" } as const;
 
 const account = privateKeyToAccount(env.FC_SERVER_PRIVATE_KEY);
 export const serverWallet = getAddress(env.FC_SERVER_ADDRESS);
@@ -31,20 +33,45 @@ const synapseOptions: SynapseOptions = {
 
 export const synapse = Synapse.create(synapseOptions);
 
-const { usersDatasets } = db.schema;
+const { focObjects } = db.schema;
+
+/** `foc_objects.deal_id` is `${dataSetId}:${pieceId}` from Synapse upload. */
+export function dataSetIdFromDealId(dealId: string): bigint {
+	const colon = dealId.indexOf(":");
+	if (colon <= 0) {
+		throw new Error(`Invalid FOC deal_id: ${dealId}`);
+	}
+	return BigInt(dealId.slice(0, colon));
+}
+
+async function resolvePlatformDataSetId(): Promise<bigint | undefined> {
+	if (env.FC_SYNAPSE_DATASET_ID !== undefined) {
+		return BigInt(env.FC_SYNAPSE_DATASET_ID);
+	}
+
+	const [row] = await db
+		.select({ dealId: focObjects.dealId })
+		.from(focObjects)
+		.where(isNotNull(focObjects.dealId))
+		.orderBy(desc(focObjects.completedAt))
+		.limit(1);
+
+	if (row?.dealId) {
+		return dataSetIdFromDealId(row.dealId);
+	}
+
+	return undefined;
+}
 
 /** Single platform dataset for archival uploads (USDFC paid from FC_SERVER wallet). */
 export async function getOrCreatePlatformDataset() {
-	const [existing] = await db
-		.select()
-		.from(usersDatasets)
-		.where(eq(usersDatasets.walletAddress, serverWallet));
+	const dataSetId = await resolvePlatformDataSetId();
 
-	if (existing) {
+	if (dataSetId !== undefined) {
 		const ctx = await tryCatch(
 			synapse.storage.createContext({
-				dataSetId: BigInt(existing.dataSetId),
-				metadata: { filosign_platform: "archival" },
+				dataSetId,
+				metadata: PLATFORM_DATASET_METADATA,
 			}),
 		);
 
@@ -60,7 +87,7 @@ export async function getOrCreatePlatformDataset() {
 
 	const ctx = await tryCatch(
 		synapse.storage.createContext({
-			metadata: { filosign_platform: "archival" },
+			metadata: PLATFORM_DATASET_METADATA,
 		}),
 	);
 
@@ -71,11 +98,13 @@ export async function getOrCreatePlatformDataset() {
 	}
 
 	if (ctx.data.dataSetId !== undefined) {
-		await db.insert(usersDatasets).values({
-			walletAddress: serverWallet,
-			dataSetId: Number(ctx.data.dataSetId),
-			providerAddress: ctx.data.provider.serviceProvider,
-		});
+		logger.info(
+			{
+				dataSetId: ctx.data.dataSetId.toString(),
+				hint: "Set FC_SYNAPSE_DATASET_ID so reopen survives an empty DB",
+			},
+			"Created Synapse platform archival dataset",
+		);
 	}
 
 	return ctx.data;

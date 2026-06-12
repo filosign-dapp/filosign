@@ -1,9 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import {
-	type DeployProfile,
-	packageDir,
-} from "../package-paths.ts";
+import { type DeployProfile, packageDir } from "../package-paths.ts";
 
 /** Latest persisted deployment id for testnet/mainnet, or null if none. */
 export function readLatestDeploymentId(

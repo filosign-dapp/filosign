@@ -16,6 +16,8 @@ bun run contracts -- --migrate --testnet
 bun run contracts -- --migrate --mainnet
 ```
 
+Mainnet migrate prompts for interactive confirmation: you must type `confirm` at the deploy guard before any on-chain txs run. Non-interactive stdin (CI, piped input) is refused.
+
 Package-local scripts (usually invoked by the orchestrator):
 
 ```bash

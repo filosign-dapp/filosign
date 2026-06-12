@@ -7,6 +7,7 @@ import { base, baseSepolia } from "viem/chains";
 import type { ChainKey } from "../definitions/chain-key.js";
 import type { ContractName } from "../definitions/schema.js";
 import env from "../env.js";
+import { requireMainnetDeployConfirmation } from "./lib/confirm-mainnet-deploy.js";
 import {
 	type DeployedContractBundle,
 	persistDeployment,
@@ -245,6 +246,8 @@ async function main() {
 	process.chdir(evmPackageDir());
 
 	const chainId = requireChainId();
+	await requireMainnetDeployConfirmation(chainId);
+
 	const deployer = await getDeployerWallet(chainId);
 	const serverAddress = resolveServerAddress();
 	const ownerAddress = resolveOwnerAddress(deployer.account.address);

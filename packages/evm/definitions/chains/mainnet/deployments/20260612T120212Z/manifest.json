@@ -1,22 +1,22 @@
 {
-  "deploymentId": "20260612T120212Z",
-  "chainId": 8453,
-  "deployedAt": "2026-06-12T12:02:12.155Z",
-  "contracts": {
-    "FSEnvelopeRegistry": {
-      "address": "0xBA492cA1EAbAF1bf351B7521260204459aDF717b",
-      "abiRef": "584ca02aea7faacfe17d2edd0078210f747b4f3e85375124d093665ebd969cc3"
-    },
-    "FSPaymentValidator": {
-      "address": "0xbc9215c978474a6f21E0E21024C5a79a5961e2c0",
-      "abiRef": "5c06b1840e1e307bec4b426803081be2250b1a16a89ed3a3272000bfc5fd0d8f"
-    },
-    "FSAttachmentRelease": {
-      "address": "0x565A1e32EC1008840B57be09934a16C4053bb83B",
-      "abiRef": "bc37a8c681af0849ace7cde4b7005b58679dff2abe8276aaedbdeb31e77ee0e9"
-    }
-  },
-  "transactions": {
-    "setSatelliteContracts": "0xc43d4dc9a7f038ff3328894450a190684c3c30d5d791e2f9ad9ae18cbb6ddb79"
-  }
+	"deploymentId": "20260612T120212Z",
+	"chainId": 8453,
+	"deployedAt": "2026-06-12T12:02:12.155Z",
+	"contracts": {
+		"FSEnvelopeRegistry": {
+			"address": "0xBA492cA1EAbAF1bf351B7521260204459aDF717b",
+			"abiRef": "584ca02aea7faacfe17d2edd0078210f747b4f3e85375124d093665ebd969cc3"
+		},
+		"FSPaymentValidator": {
+			"address": "0xbc9215c978474a6f21E0E21024C5a79a5961e2c0",
+			"abiRef": "5c06b1840e1e307bec4b426803081be2250b1a16a89ed3a3272000bfc5fd0d8f"
+		},
+		"FSAttachmentRelease": {
+			"address": "0x565A1e32EC1008840B57be09934a16C4053bb83B",
+			"abiRef": "bc37a8c681af0849ace7cde4b7005b58679dff2abe8276aaedbdeb31e77ee0e9"
+		}
+	},
+	"transactions": {
+		"setSatelliteContracts": "0xc43d4dc9a7f038ff3328894450a190684c3c30d5d791e2f9ad9ae18cbb6ddb79"
+	}
 }

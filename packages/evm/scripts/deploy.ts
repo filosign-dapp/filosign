@@ -355,7 +355,9 @@ async function main() {
 
 	const evmDir = evmPackageDir();
 	await $`bun run --cwd ${evmDir} gen:definitions`;
-	await $`bun run --cwd ${evmDir} export:public`;
+	if (chainId !== CHAIN_ID.local) {
+		await $`bun run --cwd ${evmDir} export:public`;
+	}
 
 	printDeploymentSummary({
 		chainKey,

@@ -1,1 +1,50 @@
-{}
+{
+	"0x73511669fd4de447fed18bb79bafeac93ab7f31f": {
+		"deploymentId": "20260612T213842Z",
+		"contractName": "FSEnvelopeRegistry"
+	},
+	"0xb581c9264f59bf0289fa76d61b2d0746dce3c30d": {
+		"deploymentId": "20260612T213842Z",
+		"contractName": "FSPaymentValidator"
+	},
+	"0xc469e7ae4ad962c30c7111dc580b4adbc7e914dd": {
+		"deploymentId": "20260612T213842Z",
+		"contractName": "FSAttachmentRelease"
+	},
+	"0x391342f5acacaac9de1dc4ec3e03f2678f7c78f1": {
+		"deploymentId": "20260612T213842Z",
+		"contractName": "MockUSDC"
+	},
+	"0xed8cab8a931a4c0489ad3e3fb5bdea84f74fd23e": {
+		"deploymentId": "20260612T195435Z",
+		"contractName": "FSEnvelopeRegistry"
+	},
+	"0x40bde52e6b80ae11f34c58c14e1e7fe1f9c834c4": {
+		"deploymentId": "20260612T195435Z",
+		"contractName": "FSPaymentValidator"
+	},
+	"0xe9061f92ba9a3d9ef3f4eb8456ac9e552b3ff5c8": {
+		"deploymentId": "20260612T195435Z",
+		"contractName": "FSAttachmentRelease"
+	},
+	"0xc92b72ecf468d2642992b195bea99f9b9bb4a838": {
+		"deploymentId": "20260612T195435Z",
+		"contractName": "MockUSDC"
+	},
+	"0x446c29fbfef829f81e236a2376191f648dbef995": {
+		"deploymentId": "20260612T195500Z",
+		"contractName": "FSEnvelopeRegistry"
+	},
+	"0x37dd26d18abec2d311e82177f9fa58e9dc14b579": {
+		"deploymentId": "20260612T195500Z",
+		"contractName": "FSPaymentValidator"
+	},
+	"0x5a8e771b5d0b3d2e4d218478cb7c9029d00c4e5a": {
+		"deploymentId": "20260612T195500Z",
+		"contractName": "FSAttachmentRelease"
+	},
+	"0x72ed6e892932c90cdf3c2fdc436d06db4af23eec": {
+		"deploymentId": "20260612T195500Z",
+		"contractName": "MockUSDC"
+	}
+}

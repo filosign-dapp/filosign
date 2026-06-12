@@ -27,6 +27,7 @@ export function loadDrizzleToolingEnv(): void {
 		ASTRO_URL: "http://localhost:3002",
 		RESEND_API_KEY: "re_drizzle_tooling",
 		RESEND_FROM_EMAIL: "tooling@example.com",
+		RESEND_FROM_PERSONAL_EMAIL: "personal@example.com",
 		RESEND_ENABLED: "false",
 		SES_ENABLED: "false",
 		CHAIN: "local",

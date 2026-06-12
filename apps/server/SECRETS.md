@@ -33,7 +33,7 @@ When set on production, the server uses `fallback([primary, public default])` wh
 
 | Variable | Role |
 |----------|------|
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_ENABLED` | **Primary** sender (keep using free tier when healthy) |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_FROM_PERSONAL_EMAIL`, `RESEND_ENABLED` | **Primary** sender (partner invites use `RESEND_FROM_PERSONAL_EMAIL`; other product mail uses `RESEND_FROM_EMAIL`) |
 | `SES_ENABLED`, `SES_REGION`, `SES_FROM_EMAIL` | **Fallback** only when all are set — any deployment (Infisical prod recommended) |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Optional if the host uses an IAM role for SES |
 | `SES_CONFIGURATION_SET` | Optional tracking |

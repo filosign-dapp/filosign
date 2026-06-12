@@ -54,9 +54,10 @@ async function deliverEmail(args: {
 	html: string;
 	idempotencySegments: string[];
 	kind: FilosignTransactionalEmailKind;
+	from?: string;
 }) {
 	await deliverOutboundEmail({
-		from: env.RESEND_FROM_EMAIL,
+		from: args.from ?? env.RESEND_FROM_EMAIL,
 		to: args.to,
 		subject: args.subject,
 		text: args.text,
@@ -262,13 +263,20 @@ export async function sendPartnerInviteEmail(args: {
 	inviteUrl: string;
 	planLabel: string;
 	trialDays: number;
+	recipientName?: string | null;
+	customBody?: string | null;
 }): Promise<boolean> {
 	if (shouldSkipEmail()) return false;
 
 	const email = args.to.trim().toLowerCase();
-	const recipientNameRaw = recipientDisplayNameFromEmail(email);
+	const recipientNameRaw =
+		args.recipientName?.trim() || recipientDisplayNameFromEmail(email);
 	const escapedRecipientName = escapeHtml(recipientNameRaw);
 	const escapedPlanLabel = escapeHtml(args.planLabel);
+	const customBodyRaw = args.customBody?.trim();
+	const escapedCustomMiddle = customBodyRaw
+		? escapeHtml(customBodyRaw)
+		: undefined;
 
 	const subject = partnerInviteSubject(recipientNameRaw);
 
@@ -277,15 +285,23 @@ export async function sendPartnerInviteEmail(args: {
 		planLabel: escapedPlanLabel,
 		trialDays: args.trialDays,
 		ctaHref: args.inviteUrl,
+		customMiddleParagraph: escapedCustomMiddle,
 	});
 
 	await deliverEmail({
+		from: env.RESEND_FROM_PERSONAL_EMAIL,
 		to: email,
 		subject,
 		text,
 		html,
 		kind: "partner_invite",
-		idempotencySegments: ["partner-invite", email, args.inviteUrl],
+		idempotencySegments: [
+			"partner-invite",
+			email,
+			args.inviteUrl,
+			recipientNameRaw.toLowerCase(),
+			customBodyRaw ?? "",
+		],
 	});
 	return true;
 }

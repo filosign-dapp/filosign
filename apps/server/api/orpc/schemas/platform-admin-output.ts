@@ -12,6 +12,7 @@ export const zPlatformAdminInviteCreateInput = z.object({
 	maxRedemptions: z.number().int().min(1).max(100).default(1),
 	expiresAt: z.iso.datetime().optional().nullable(),
 	note: z.string().max(500).optional().nullable(),
+	emailBody: z.string().max(2000).optional().nullable(),
 });
 
 const platformInviteRedemptionSchema = z.object({
@@ -28,6 +29,7 @@ export const rpcPlatformAdminInviteRowSchema = z.object({
 	trialDays: z.number().int(),
 	email: z.string().nullable(),
 	note: z.string().nullable(),
+	emailBody: z.string().nullable(),
 	featureOverrides: z
 		.record(z.string(), z.union([z.number(), z.boolean()]))
 		.nullable()
@@ -52,6 +54,7 @@ export const rpcPlatformAdminInviteCreateOutputSchema = z.object({
 	trialDays: z.number().int(),
 	email: z.string().nullable(),
 	note: z.string().nullable(),
+	emailBody: z.string().nullable(),
 	emailSent: z.boolean(),
 });
 

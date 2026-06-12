@@ -25,6 +25,7 @@ export async function createPlatformInvite(args: {
 	maxRedemptions?: number;
 	expiresAt?: Date | null;
 	note?: string | null;
+	emailBody?: string | null;
 }) {
 	const token = generatePlatformInviteToken();
 	const [row] = await db
@@ -40,6 +41,7 @@ export async function createPlatformInvite(args: {
 			expiresAt: args.expiresAt ?? null,
 			createdByAdminWallet: getAddress(args.adminWallet),
 			note: args.note?.trim() || null,
+			emailBody: args.emailBody?.trim() || null,
 		})
 		.returning();
 
@@ -95,6 +97,7 @@ export async function rebookPlatformInvite(args: {
 		maxRedemptions: old.maxRedemptions,
 		expiresAt: old.expiresAt,
 		note: old.note,
+		emailBody: old.emailBody,
 	});
 }
 
@@ -113,6 +116,7 @@ export async function listPlatformInvites() {
 			expiresAt: platformInvites.expiresAt,
 			revokedAt: platformInvites.revokedAt,
 			note: platformInvites.note,
+			emailBody: platformInvites.emailBody,
 			createdAt: platformInvites.createdAt,
 		})
 		.from(platformInvites)

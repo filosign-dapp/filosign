@@ -21,6 +21,7 @@ import { AdminSectionEmpty } from "@/src/lib/components/app/empty-state";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 import { Input } from "@/src/lib/components/ui/input";
+import { Textarea } from "@/src/lib/components/ui/textarea";
 import { formatInlineAppError } from "@/src/lib/errors";
 import { cn } from "@/src/lib/utils/index";
 import { AdminMetricsSection } from "@/src/routes/dashboard/_shell/admin/-components/admin-metrics-section";
@@ -84,11 +85,14 @@ function AdminPage() {
 	const { rpc, rpcQuery } = useFilosignContext();
 	const queryClient = useQueryClient();
 	const [note, setNote] = useState("");
+	const [partnerName, setPartnerName] = useState("");
+	const [inviteEmailBody, setInviteEmailBody] = useState("");
 	const [recipientEmail, setRecipientEmail] = useState("");
 	const [lastInviteUrl, setLastInviteUrl] = useState<string | null>(null);
 	const [pendingInvite, setPendingInvite] = useState<{
 		id: string;
 		email: string;
+		partnerName: string | null;
 	} | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
@@ -125,25 +129,38 @@ function AdminPage() {
 
 	const createInvite = useMutation({
 		meta: { suppressErrorToast: true },
-		mutationFn: (email: string) =>
+		mutationFn: (input: {
+			email: string;
+			partnerName: string;
+			emailBody?: string;
+		}) =>
 			rpc.platformAdmin.invites.create({
 				kind: "partner_trial",
 				planId: "teams_pro",
 				trialDays: 30,
-				email,
+				email: input.email,
+				note: input.partnerName,
+				emailBody: input.emailBody || undefined,
 			}),
 		onSuccess: (data) => {
 			const url = new URL("/", env.VITE_CLIENT_URL);
 			url.searchParams.set("platformInvite", data.token as string);
 			setLastInviteUrl(url.toString());
 			if (data.email) {
-				setPendingInvite({ id: data.id, email: data.email });
-				toast.success(`Invite created for ${data.email}`);
+				setPendingInvite({
+					id: data.id,
+					email: data.email,
+					partnerName: data.note,
+				});
+				const label = data.note ? `${data.note} (${data.email})` : data.email;
+				toast.success(`Invite created for ${label}`);
 			}
 			void queryClient.invalidateQueries({
 				queryKey: rpcQuery.platformAdmin.invites.list.queryKey(),
 			});
 			setRecipientEmail("");
+			setPartnerName("");
+			setInviteEmailBody("");
 		},
 		onError: (err) => {
 			setError(formatInlineAppError(err));
@@ -178,15 +195,25 @@ function AdminPage() {
 	});
 
 	const rebookInvite = useMutation({
-		mutationFn: (args: { inviteId: string; email?: string | null }) =>
-			rpc.platformAdmin.invites.rebook({ inviteId: args.inviteId }),
+		mutationFn: (args: {
+			inviteId: string;
+			email?: string | null;
+			partnerName?: string | null;
+		}) => rpc.platformAdmin.invites.rebook({ inviteId: args.inviteId }),
 		onSuccess: (data, variables) => {
 			const url = new URL("/", env.VITE_CLIENT_URL);
 			url.searchParams.set("platformInvite", data.token as string);
 			setLastInviteUrl(url.toString());
 			if (variables.email) {
-				setPendingInvite({ id: data.id, email: variables.email });
-				toast.success(`Invite reissued for ${variables.email}`);
+				setPendingInvite({
+					id: data.id,
+					email: variables.email,
+					partnerName: variables.partnerName ?? null,
+				});
+				const label = variables.partnerName
+					? `${variables.partnerName} (${variables.email})`
+					: variables.email;
+				toast.success(`Invite reissued for ${label}`);
 			} else {
 				toast.success("Invite reissued");
 			}
@@ -350,18 +377,51 @@ function AdminPage() {
 					description="Create a design partner trial invite, then send the email when ready."
 				>
 					<div className="space-y-4">
-						<div className="space-y-1.5 max-w-md">
+						<div className="grid gap-3 sm:grid-cols-2 max-w-2xl">
+							<div className="space-y-1.5">
+								<span className="text-xs font-normal text-muted-foreground block">
+									Partner name
+								</span>
+								<Input
+									placeholder="Jordan Lee"
+									value={partnerName}
+									onChange={(e) => setPartnerName(e.target.value)}
+									autoComplete="name"
+									disabled={createInvite.isPending}
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<span className="text-xs font-normal text-muted-foreground block">
+									Recipient email
+								</span>
+								<Input
+									type="email"
+									placeholder="partner@acme.com"
+									value={recipientEmail}
+									onChange={(e) => setRecipientEmail(e.target.value)}
+									autoComplete="email"
+									disabled={createInvite.isPending}
+								/>
+							</div>
+						</div>
+
+						<div className="space-y-1.5 max-w-2xl">
 							<span className="text-xs font-normal text-muted-foreground block">
-								Recipient email
+								Custom message{" "}
+								<span className="text-muted-foreground/80">(optional)</span>
 							</span>
-							<Input
-								type="email"
-								placeholder="partner@acme.com"
-								value={recipientEmail}
-								onChange={(e) => setRecipientEmail(e.target.value)}
-								autoComplete="email"
+							<Textarea
+								placeholder="I am excited to help you set up your first real workflow. Let me know what are you trying to achieve and I will outline a customized guide for you."
+								value={inviteEmailBody}
+								onChange={(e) => setInviteEmailBody(e.target.value)}
+								rows={4}
 								disabled={createInvite.isPending}
+								className="resize-y min-h-[96px]"
 							/>
+							<p className="text-xs text-muted-foreground text-pretty">
+								Replaces the default workflow paragraph in the email. Leave
+								blank to use the standard copy.
+							</p>
 						</div>
 
 						{error && (
@@ -378,11 +438,20 @@ function AdminPage() {
 							onClick={() => {
 								setError(null);
 								const email = recipientEmail.trim();
+								const name = partnerName.trim();
+								if (!name) {
+									setError("Enter the partner's name.");
+									return;
+								}
 								if (!z.email().safeParse(email).success) {
 									setError("Enter a valid recipient email.");
 									return;
 								}
-								createInvite.mutate(email);
+								createInvite.mutate({
+									email,
+									partnerName: name,
+									emailBody: inviteEmailBody.trim() || undefined,
+								});
 							}}
 							isLoading={createInvite.isPending}
 						>
@@ -417,7 +486,9 @@ function AdminPage() {
 										<p className="text-muted-foreground">
 											Step 2: send the design partner email to{" "}
 											<span className="font-medium text-foreground">
-												{pendingInvite.email}
+												{pendingInvite.partnerName
+													? `${pendingInvite.partnerName} (${pendingInvite.email})`
+													: pendingInvite.email}
 											</span>
 										</p>
 										<Button
@@ -463,11 +534,20 @@ function AdminPage() {
 										className="rounded-lg border border-border/60 bg-muted/5 p-4 text-sm space-y-3"
 									>
 										<div className="flex items-center justify-between gap-4">
-											<span className="font-semibold text-foreground">
-												{invite.email
-													? String(invite.email)
-													: String(invite.note ?? id)}
-											</span>
+											<div className="min-w-0">
+												<span className="font-semibold text-foreground block truncate">
+													{invite.note
+														? String(invite.note)
+														: invite.email
+															? String(invite.email)
+															: id}
+												</span>
+												{invite.note && invite.email ? (
+													<span className="text-xs text-muted-foreground block truncate">
+														{String(invite.email)}
+													</span>
+												) : null}
+											</div>
 											{isRevoked ? (
 												<Badge variant="destructive">Revoked</Badge>
 											) : isRedeemed ? (
@@ -528,6 +608,7 @@ function AdminPage() {
 														rebookInvite.mutate({
 															inviteId: id,
 															email: invite.email,
+															partnerName: invite.note,
 														})
 													}
 													isLoading={
@@ -599,7 +680,7 @@ function AdminPage() {
 											</p>
 										) : null}
 										{status === "pending" ? (
-											<div className="flex gap-2 pt-1 border-t border-border/30 pt-3">
+											<div className="flex gap-2 pt-1 border-t border-border/30">
 												<Button
 													size="sm"
 													variant="primary"

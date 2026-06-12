@@ -18,12 +18,15 @@ type BareboneShellProps = {
 	preheader: string;
 	children: ReactNode;
 	contactChannel?: FilosignContactEmail;
+	/** When false, omit social icons and bulk-style footer (better for 1:1 founder mail). */
+	showSocialFooter?: boolean;
 };
 
 export function BareboneShell({
 	preheader,
 	children,
 	contactChannel = "contract",
+	showSocialFooter = true,
 }: BareboneShellProps) {
 	return (
 		<Tailwind config={bareboneTailwindConfig}>
@@ -39,7 +42,9 @@ export function BareboneShell({
 							<Section className="bg-bg mobile:px-2 px-6 py-4">
 								{children}
 
-								<SocialFooter contactChannel={contactChannel} />
+								{showSocialFooter ? (
+									<SocialFooter contactChannel={contactChannel} />
+								) : null}
 							</Section>
 						</Section>
 					</Container>

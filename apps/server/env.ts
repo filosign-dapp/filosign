@@ -35,6 +35,7 @@ const parsedEnv = createEnv({
 		ASTRO_URL: z.url(),
 		RESEND_API_KEY: z.string().min(1),
 		RESEND_FROM_EMAIL: z.email(),
+		RESEND_FROM_PERSONAL_EMAIL: z.email(),
 		RESEND_ENABLED: z
 			.string()
 			.default("true")

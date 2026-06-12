@@ -10,10 +10,8 @@ export type PartnerInviteEmailProps = {
 	planLabel: string;
 	trialDays: number;
 	ctaHref: string;
-	/** Pre-escaped pilot workflow name (e.g. from platform_invites.note) */
-	workflowLabel?: string;
-	/** Pre-escaped optional founder note shown below the body */
-	personalMessage?: string;
+	/** Pre-escaped custom middle paragraph */
+	customMiddleParagraph?: string;
 };
 
 export default function PartnerInviteEmail({
@@ -21,14 +19,13 @@ export default function PartnerInviteEmail({
 	planLabel,
 	trialDays,
 	ctaHref,
-	workflowLabel,
-	personalMessage,
+	customMiddleParagraph,
 }: PartnerInviteEmailProps) {
 	const copy = partnerInviteCopy({
 		recipientName,
 		planLabel,
 		trialDays,
-		workflowLabel,
+		customMiddleParagraph,
 	});
 
 	return (
@@ -42,11 +39,6 @@ export default function PartnerInviteEmail({
 			heroImage={filosignEmailAssets.barebone.partnerInviteHero}
 		>
 			<Text className="font-16 text-fg-2 m-0 font-sans">{copy.body}</Text>
-			{personalMessage ? (
-				<Text className="font-16 text-fg-2 border-stroke mx-auto mt-6 mb-0 max-w-[380px] border-l-2 pl-4 text-left font-sans leading-6 italic">
-					{personalMessage}
-				</Text>
-			) : null}
 			<Text className="font-16 text-fg-2 mt-6 mb-0 font-sans">
 				{copy.signOff}
 			</Text>
@@ -59,6 +51,4 @@ PartnerInviteEmail.PreviewProps = {
 	planLabel: "Teams Pro",
 	trialDays: 30,
 	ctaHref: "https://app.filosign.com/?platformInvite=example",
-	workflowLabel: "milestone approval before contributor release",
-	personalMessage: "",
 } satisfies PartnerInviteEmailProps;

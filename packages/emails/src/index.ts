@@ -13,6 +13,7 @@ export {
 	replyToForTransactionalEmail,
 } from "./contact-emails";
 export {
+	PARTNER_INVITE_DEFAULT_MIDDLE,
 	type PartnerInviteCopyInput,
 	partnerInviteCopy,
 	partnerInviteSubject,

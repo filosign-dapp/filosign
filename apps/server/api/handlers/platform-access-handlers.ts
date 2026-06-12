@@ -153,6 +153,7 @@ export async function platformAdminInvitesCreate(
 			maxRedemptions: z.number().int().min(1).max(100).default(1),
 			expiresAt: z.iso.datetime().optional().nullable(),
 			note: z.string().max(500).optional().nullable(),
+			emailBody: z.string().max(2000).optional().nullable(),
 		})
 		.safeParse(body);
 
@@ -170,6 +171,7 @@ export async function platformAdminInvitesCreate(
 		maxRedemptions: parsed.data.maxRedemptions,
 		expiresAt: parsed.data.expiresAt ? new Date(parsed.data.expiresAt) : null,
 		note: parsed.data.note,
+		emailBody: parsed.data.emailBody,
 	});
 
 	return {
@@ -180,6 +182,7 @@ export async function platformAdminInvitesCreate(
 		trialDays: invite.trialDays,
 		email: invite.email,
 		note: invite.note,
+		emailBody: invite.emailBody,
 		emailSent: false,
 	};
 }
@@ -262,6 +265,8 @@ export async function platformAdminInvitesSend(
 		inviteUrl,
 		planLabel: planLabel(invite.planId as PlanId),
 		trialDays: invite.trialDays,
+		recipientName: invite.note,
+		customBody: invite.emailBody,
 	});
 
 	return {

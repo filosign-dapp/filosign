@@ -52,6 +52,15 @@ export async function createPlatformInvite(args: {
 	return row;
 }
 
+export async function getPlatformInviteById(inviteId: string) {
+	const [row] = await db
+		.select()
+		.from(platformInvites)
+		.where(eq(platformInvites.id, inviteId))
+		.limit(1);
+	return row ?? null;
+}
+
 export async function revokePlatformInvite(inviteId: string): Promise<void> {
 	await db
 		.update(platformInvites)

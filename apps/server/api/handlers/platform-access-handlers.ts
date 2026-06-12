@@ -1,5 +1,6 @@
 import type { PlanId } from "@filosign/entitlements";
 import { PLAN_IDS } from "@filosign/entitlements";
+import { throwAppError } from "@filosign/errors/server";
 import type { Address } from "viem";
 import { z } from "zod";
 import env from "@/env";
@@ -7,6 +8,7 @@ import {
 	approveAccessRequest,
 	canStartEmailAuth,
 	createPlatformInvite,
+	getPlatformInviteById,
 	listAccessRequestsForAdmin,
 	listPlatformInvites,
 	listPlatformUsersForAdmin,
@@ -170,17 +172,6 @@ export async function platformAdminInvitesCreate(
 		note: parsed.data.note,
 	});
 
-	if (invite.kind === "partner_trial" && invite.email) {
-		const inviteUrl = `${env.CLIENT_URL.replace(/\/$/, "")}/?platformInvite=${encodeURIComponent(invite.token)}`;
-		await sendPartnerInviteEmail({
-			to: normalizeEmail(invite.email),
-			inviteUrl,
-			planLabel: planLabel(invite.planId as PlanId),
-			trialDays: invite.trialDays,
-			workflowLabel: invite.note,
-		});
-	}
-
 	return {
 		id: invite.id,
 		token: invite.token,
@@ -189,6 +180,7 @@ export async function platformAdminInvitesCreate(
 		trialDays: invite.trialDays,
 		email: invite.email,
 		note: invite.note,
+		emailSent: false,
 	};
 }
 
@@ -219,22 +211,62 @@ export async function platformAdminInvitesRebook(
 		inviteId: parsedId.data,
 	});
 
-	if (invite.kind === "partner_trial" && invite.email) {
-		const inviteUrl = `${env.CLIENT_URL.replace(/\/$/, "")}/?platformInvite=${encodeURIComponent(invite.token)}`;
-		await sendPartnerInviteEmail({
-			to: normalizeEmail(invite.email),
-			inviteUrl,
-			planLabel: planLabel(invite.planId as PlanId),
-			trialDays: invite.trialDays,
-			workflowLabel: invite.note,
-		});
-	}
-
 	return {
 		id: invite.id,
 		token: invite.token,
 		kind: invite.kind,
 		planId: invite.planId,
+	};
+}
+
+export async function platformAdminInvitesSend(
+	adminWallet: Address,
+	inviteId: string,
+) {
+	await assertPlatformAdmin(adminWallet);
+	const parsedId = z.uuid({ error: "inviteId required" }).safeParse(inviteId);
+	if (parsedId.error) {
+		throwZodBadRequest(parsedId.error);
+	}
+
+	const invite = await getPlatformInviteById(parsedId.data);
+	if (!invite) {
+		throwAppError("WORKSPACE.PLATFORM_INVITE_NOT_FOUND");
+	}
+	if (invite.revokedAt) {
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["inviteId"],
+					message: "Invite is revoked",
+				},
+			]),
+		);
+	}
+	if (invite.kind !== "partner_trial" || !invite.email) {
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["inviteId"],
+					message: "Invite has no locked partner email",
+				},
+			]),
+		);
+	}
+
+	const inviteUrl = `${env.CLIENT_URL.replace(/\/$/, "")}/?platformInvite=${encodeURIComponent(invite.token)}`;
+	const emailSent = await sendPartnerInviteEmail({
+		to: normalizeEmail(invite.email),
+		inviteUrl,
+		planLabel: planLabel(invite.planId as PlanId),
+		trialDays: invite.trialDays,
+	});
+
+	return {
+		emailSent,
+		email: invite.email,
 	};
 }
 

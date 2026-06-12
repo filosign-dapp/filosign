@@ -21,6 +21,7 @@ export {
 
 export {
 	createPlatformInvite,
+	getPlatformInviteById,
 	listPlatformInvites,
 	listPlatformUsersForAdmin,
 	rebookPlatformInvite,

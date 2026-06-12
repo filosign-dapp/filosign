@@ -262,17 +262,13 @@ export async function sendPartnerInviteEmail(args: {
 	inviteUrl: string;
 	planLabel: string;
 	trialDays: number;
-	workflowLabel?: string | null;
-}) {
-	if (shouldSkipEmail()) return;
+}): Promise<boolean> {
+	if (shouldSkipEmail()) return false;
 
 	const email = args.to.trim().toLowerCase();
 	const recipientNameRaw = recipientDisplayNameFromEmail(email);
 	const escapedRecipientName = escapeHtml(recipientNameRaw);
 	const escapedPlanLabel = escapeHtml(args.planLabel);
-	const escapedWorkflowLabel = args.workflowLabel?.trim()
-		? escapeHtml(args.workflowLabel.trim())
-		: undefined;
 
 	const subject = partnerInviteSubject(recipientNameRaw);
 
@@ -281,7 +277,6 @@ export async function sendPartnerInviteEmail(args: {
 		planLabel: escapedPlanLabel,
 		trialDays: args.trialDays,
 		ctaHref: args.inviteUrl,
-		workflowLabel: escapedWorkflowLabel,
 	});
 
 	await deliverEmail({
@@ -290,13 +285,9 @@ export async function sendPartnerInviteEmail(args: {
 		text,
 		html,
 		kind: "partner_invite",
-		idempotencySegments: [
-			"partner-invite",
-			email,
-			args.inviteUrl,
-			escapedWorkflowLabel ?? "",
-		],
+		idempotencySegments: ["partner-invite", email, args.inviteUrl],
 	});
+	return true;
 }
 
 export async function sendAccessRequestApprovedEmail(args: {

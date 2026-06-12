@@ -1,31 +1,267 @@
-import { useEffect, useRef } from "react";
-import { Button } from "@/src/lib/components/ui/button";
+import { AnimatePresence, motion, SPRING_TOKENS } from "@filosign/motion";
+import { UserCircleIcon } from "@phosphor-icons/react";
+import { useEffect, useId, useRef } from "react";
+import { Button, buttonVariants } from "@/src/lib/components/ui/button";
+import { Dialog } from "@/src/lib/components/ui/dialog";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/src/lib/components/ui/dialog";
+	FeatureDialogActions,
+	FeatureDialogBody,
+	FeatureDialogClose,
+	FeatureDialogContent,
+	FeatureDialogHeader,
+	FeatureDialogMedia,
+	FeatureDialogPanel,
+} from "@/src/lib/components/ui/feature-dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
-import type { SignInGateController } from "@/src/routes/-lib/hooks/use-sign-in-gate";
+import { OtpInput } from "@/src/lib/components/ui/otp-input";
+import { cn } from "@/src/lib/utils";
+import type {
+	SignInGateController,
+	SignInOtpDialogStep,
+} from "@/src/routes/-lib/hooks/use-sign-in-gate";
+
+const SIGN_IN_IMAGE = "/images/stock_6.webp";
 
 type Props = {
 	gate: SignInGateController;
 	pricingUrl: string;
 };
 
-export function SignInOtpDialog({ gate, pricingUrl }: Props) {
-	const otpInputRef = useRef<HTMLInputElement>(null);
+function stepMeta(
+	step: SignInOtpDialogStep,
+	planLabel: string | null,
+): { badge: string; title: string; description: string } {
+	switch (step) {
+		case "email":
+			return {
+				badge: planLabel ?? "Sign in",
+				title: "Login",
+				description:
+					"Enter the email on your Filosign account. We'll send a sign-in code.",
+			};
+		case "otp":
+			return {
+				badge: planLabel ?? "Verification",
+				title: "Enter verification code",
+				description: "Enter the code from your email to continue.",
+			};
+		case "not_registered":
+			return {
+				badge: "Get started",
+				title: "Account not found",
+				description:
+					"This email isn't registered yet. Purchase a plan to get started, then finish setup from your email.",
+			};
+	}
+}
+
+function OtpStepDescription({ gate }: { gate: SignInGateController }) {
+	if (gate.dialogPlanLabel && gate.effectiveEmail) {
+		return (
+			<>
+				Setting up{" "}
+				<span className="font-medium text-foreground">
+					{gate.dialogPlanLabel}
+				</span>
+				. We sent a code to{" "}
+				<span className="font-medium text-foreground">
+					{gate.effectiveEmail}
+				</span>
+				.
+			</>
+		);
+	}
+
+	if (gate.effectiveEmail) {
+		return (
+			<>
+				We sent a code to{" "}
+				<span className="font-medium text-foreground">
+					{gate.effectiveEmail}
+				</span>
+				.
+			</>
+		);
+	}
+
+	return <>Enter the code from your email.</>;
+}
+
+function EmailStepContent({ gate }: { gate: SignInGateController }) {
+	const emailInputId = useId();
+	const emailInputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
-		if (!gate.otpDialogOpen || gate.otpDialogStep !== "otp") return;
-		const id = window.requestAnimationFrame(() => {
-			otpInputRef.current?.focus();
+		const frame = window.requestAnimationFrame(() => {
+			emailInputRef.current?.focus();
 		});
-		return () => window.cancelAnimationFrame(id);
-	}, [gate.otpDialogOpen, gate.otpDialogStep]);
+		return () => window.cancelAnimationFrame(frame);
+	}, []);
+
+	const submit = () =>
+		void (gate.showLoginHome
+			? gate.submitLoginEmail()
+			: gate.submitEmailAndSendOtp());
+
+	return (
+		<motion.div
+			key="email"
+			initial={{ opacity: 0, y: 8 }}
+			animate={{ opacity: 1, y: 0 }}
+			exit={{ opacity: 0, y: -8 }}
+			transition={SPRING_TOKENS.snappy}
+		>
+			<FeatureDialogBody>
+				<div className="space-y-2">
+					<Label htmlFor={emailInputId}>Email</Label>
+					<Input
+						ref={emailInputRef}
+						id={emailInputId}
+						type="email"
+						autoComplete="email"
+						variant="field"
+						value={gate.emailInput}
+						onChange={(event) => gate.setEmailInput(event.target.value)}
+						onKeyDown={(event) => {
+							if (event.key === "Enter") submit();
+						}}
+						placeholder="you@example.com"
+						disabled={gate.authPending}
+					/>
+				</div>
+				{gate.authError ? (
+					<p className="text-sm text-destructive" role="alert">
+						{gate.authError}
+					</p>
+				) : null}
+				<Button
+					type="button"
+					variant="primary"
+					size="lg"
+					className="w-full"
+					disabled={gate.authPending}
+					isLoading={gate.authPending}
+					onClick={submit}
+				>
+					Continue
+				</Button>
+			</FeatureDialogBody>
+		</motion.div>
+	);
+}
+
+function OtpStepContent({ gate }: { gate: SignInGateController }) {
+	const otpInputId = useId();
+
+	return (
+		<motion.div
+			key="otp"
+			initial={{ opacity: 0, y: 8 }}
+			animate={{ opacity: 1, y: 0 }}
+			exit={{ opacity: 0, y: -8 }}
+			transition={SPRING_TOKENS.snappy}
+		>
+			<FeatureDialogBody>
+				<div className="space-y-2">
+					<Label htmlFor={otpInputId}>Verification code</Label>
+					<OtpInput
+						id={otpInputId}
+						value={gate.otpCode}
+						onChange={gate.setOtpCode}
+						disabled={gate.authPending}
+						autoFocus
+						onSubmit={() => void gate.verifyOtp()}
+					/>
+				</div>
+				{gate.authError ? (
+					<p className="text-sm text-destructive" role="alert">
+						{gate.authError}
+					</p>
+				) : null}
+				<FeatureDialogActions>
+					<Button
+						type="button"
+						variant="primary"
+						size="lg"
+						className="w-full"
+						disabled={gate.authPending}
+						isLoading={gate.authPending}
+						onClick={() => void gate.verifyOtp()}
+					>
+						Verify and continue
+					</Button>
+					<Button
+						type="button"
+						variant="outline"
+						size="lg"
+						className="w-full"
+						disabled={gate.authPending}
+						onClick={() => void gate.sendOtp()}
+					>
+						Resend code
+					</Button>
+				</FeatureDialogActions>
+			</FeatureDialogBody>
+		</motion.div>
+	);
+}
+
+function NotRegisteredContent({
+	gate,
+	pricingUrl,
+}: {
+	gate: SignInGateController;
+	pricingUrl: string;
+}) {
+	return (
+		<motion.div
+			key="not_registered"
+			initial={{ opacity: 0, y: 8 }}
+			animate={{ opacity: 1, y: 0 }}
+			exit={{ opacity: 0, y: -8 }}
+			transition={SPRING_TOKENS.snappy}
+		>
+			<FeatureDialogBody>
+				<div className="flex size-12 items-center justify-center rounded-full bg-secondary/20 text-secondary-foreground">
+					<UserCircleIcon className="size-6" weight="duotone" aria-hidden />
+				</div>
+				<FeatureDialogActions>
+					<a
+						href={pricingUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						className={cn(
+							buttonVariants({ variant: "primary", size: "lg" }),
+							"w-full",
+						)}
+					>
+						View plans
+					</a>
+					<Button
+						type="button"
+						variant="outline"
+						size="lg"
+						className="w-full"
+						onClick={() => {
+							gate.setEmailInput("");
+							gate.beginLogin();
+						}}
+					>
+						Try a different email
+					</Button>
+				</FeatureDialogActions>
+			</FeatureDialogBody>
+		</motion.div>
+	);
+}
+
+export function SignInOtpDialog({ gate, pricingUrl }: Props) {
+	const titleId = useId();
+	const { badge, title, description } = stepMeta(
+		gate.otpDialogStep,
+		gate.dialogPlanLabel,
+	);
 
 	return (
 		<Dialog
@@ -34,158 +270,36 @@ export function SignInOtpDialog({ gate, pricingUrl }: Props) {
 				if (!open && !gate.authPending) gate.closeOtpDialog();
 			}}
 		>
-			<DialogContent
-				className="sm:max-w-md"
-				showCloseButton={!gate.authPending}
-			>
-				{gate.otpDialogStep === "not_registered" ? (
-					<>
-						<DialogHeader>
-							<DialogTitle>Account not found</DialogTitle>
-							<DialogDescription>
-								This email isn&apos;t registered yet. Purchase a plan to get
-								started, then finish setup from your email.
-							</DialogDescription>
-						</DialogHeader>
-						<div className="flex flex-col gap-3">
-							<a
-								href={pricingUrl}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-							>
-								View plans
-							</a>
-							<Button
-								type="button"
-								variant="ghost"
-								className="w-full"
-								onClick={() => {
-									gate.setEmailInput("");
-									gate.beginLogin();
-								}}
-							>
-								Try a different email
-							</Button>
-						</div>
-					</>
-				) : gate.otpDialogStep === "email" ? (
-					<>
-						<DialogHeader>
-							<DialogTitle>Login</DialogTitle>
-							<DialogDescription>
-								Enter the email on your Filosign account. We&apos;ll send a
-								sign-in code.
-							</DialogDescription>
-						</DialogHeader>
-						<div className="space-y-2">
-							<Label htmlFor="sign-in-gate-email">Email</Label>
-							<Input
-								id="sign-in-gate-email"
-								type="email"
-								autoComplete="email"
-								value={gate.emailInput}
-								onChange={(e) => gate.setEmailInput(e.target.value)}
-								onKeyDown={(e) => {
-									if (e.key === "Enter") {
-										void (gate.showLoginHome
-											? gate.submitLoginEmail()
-											: gate.submitEmailAndSendOtp());
-									}
-								}}
-								placeholder="you@example.com"
-							/>
-						</div>
-						{gate.authError ? (
-							<p className="text-sm text-destructive">{gate.authError}</p>
-						) : null}
-						<Button
-							type="button"
-							variant="primary"
-							className="w-full"
-							disabled={gate.authPending}
-							isLoading={gate.authPending}
-							onClick={() =>
-								void (gate.showLoginHome
-									? gate.submitLoginEmail()
-									: gate.submitEmailAndSendOtp())
-							}
-						>
-							Continue
-						</Button>
-					</>
-				) : (
-					<>
-						<DialogHeader>
-							<DialogTitle>Enter verification code</DialogTitle>
-							<DialogDescription>
-								{gate.dialogPlanLabel && gate.effectiveEmail ? (
-									<>
-										Setting up{" "}
-										<span className="font-medium text-foreground">
-											{gate.dialogPlanLabel}
-										</span>
-										. We sent a code to{" "}
-										<span className="font-medium text-foreground">
-											{gate.effectiveEmail}
-										</span>
-										.
-									</>
-								) : gate.effectiveEmail ? (
-									<>
-										We sent a code to{" "}
-										<span className="font-medium text-foreground">
-											{gate.effectiveEmail}
-										</span>
-										.
-									</>
-								) : (
-									"Enter the code from your email."
-								)}
-							</DialogDescription>
-						</DialogHeader>
-						<div className="space-y-2">
-							<Label htmlFor="sign-in-gate-otp">Verification code</Label>
-							<Input
-								ref={otpInputRef}
-								id="sign-in-gate-otp"
-								inputMode="numeric"
-								autoComplete="one-time-code"
-								value={gate.otpCode}
-								onChange={(e) => gate.setOtpCode(e.target.value)}
-								onKeyDown={(e) => {
-									if (e.key === "Enter") {
-										void gate.verifyOtp();
-									}
-								}}
-								placeholder="6-digit code"
-							/>
-						</div>
-						{gate.authError ? (
-							<p className="text-sm text-destructive">{gate.authError}</p>
-						) : null}
-						<Button
-							type="button"
-							variant="primary"
-							className="w-full"
-							disabled={gate.authPending}
-							isLoading={gate.authPending}
-							onClick={() => void gate.verifyOtp()}
-						>
-							Verify and continue
-						</Button>
-						<Button
-							type="button"
-							variant="ghost"
-							className="w-full"
-							disabled={gate.authPending}
-							onClick={() => void gate.sendOtp()}
-						>
-							Resend code
-						</Button>
-					</>
-				)}
-			</DialogContent>
+			<FeatureDialogContent aria-labelledby={titleId}>
+				<FeatureDialogMedia src={SIGN_IN_IMAGE} badge={badge} />
+
+				<FeatureDialogPanel>
+					<FeatureDialogClose disabled={gate.authPending} />
+
+					<FeatureDialogHeader
+						badge={badge}
+						title={title}
+						titleId={titleId}
+						description={
+							gate.otpDialogStep === "otp" ? (
+								<OtpStepDescription gate={gate} />
+							) : (
+								description
+							)
+						}
+					/>
+
+					<AnimatePresence mode="wait" initial={false}>
+						{gate.otpDialogStep === "email" ? (
+							<EmailStepContent gate={gate} />
+						) : gate.otpDialogStep === "otp" ? (
+							<OtpStepContent gate={gate} />
+						) : (
+							<NotRegisteredContent gate={gate} pricingUrl={pricingUrl} />
+						)}
+					</AnimatePresence>
+				</FeatureDialogPanel>
+			</FeatureDialogContent>
 		</Dialog>
 	);
 }

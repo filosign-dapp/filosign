@@ -22,6 +22,10 @@ type SignFileRecord = {
 	orgEncryptedEncryptionKey?: string | null;
 };
 
+function documentBytesKey(doc: { id?: string; name: string }) {
+	return doc.id ?? doc.name;
+}
+
 export function useSignViewer(file: SignFileRecord | undefined) {
 	const { height: fallbackPageHeight, isMobile } = useViewportDimensions();
 	const decrypt = useDecryptedFileView({
@@ -52,7 +56,7 @@ export function useSignViewer(file: SignFileRecord | undefined) {
 			id: doc.id,
 			name: doc.name,
 			mimeType: doc.mimeType,
-			pdfBytes: documentPdfBytes.get(doc.id),
+			pdfBytes: documentPdfBytes.get(documentBytesKey(doc)),
 			pages: 1,
 		}));
 	}, [fileData, documentPdfBytes]);
@@ -75,7 +79,7 @@ export function useSignViewer(file: SignFileRecord | undefined) {
 			for (const doc of signableDocumentsFromView(fileData)) {
 				const bytes = await viewBytesForDocument(doc);
 				if (bytes) {
-					map.set(doc.id ?? doc.name, bytes);
+					map.set(documentBytesKey(doc), bytes);
 				}
 			}
 			if (!cancelled) {

@@ -150,14 +150,16 @@ export function useDecryptedFileView(options: {
 	const unlockSettled =
 		cryptoRequired.needsRecovery || Boolean(cryptoRequired.walletUnlockError);
 
+	// Once fileData is set, decrypt succeeded — do not keep blocking on unlock query state.
 	const docCanvasBusy =
 		needsCrypto &&
+		!fileData &&
+		!viewError &&
 		!unlockSettled &&
 		(cryptoRequired.tryingWalletUnlock ||
 			cryptoUnlocked.isPending ||
 			cryptoUnlocked.data !== true ||
-			viewFile.isPending ||
-			(!fileData && !viewError));
+			viewFile.isPending);
 
 	const [previewPdfBytes, setPreviewPdfBytes] = useState<Uint8Array | null>(
 		null,

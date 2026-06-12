@@ -2,8 +2,8 @@ import { readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { getAddress } from "viem";
 import {
-	LOCAL_DEPLOYMENT_ID,
 	type ChainKey,
+	LOCAL_DEPLOYMENT_ID,
 } from "../../../definitions/chain-key.js";
 import {
 	type ContractName,

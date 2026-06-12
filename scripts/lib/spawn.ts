@@ -8,6 +8,7 @@ export type SpawnTask = {
 export async function runInherit(
 	rootDir: string,
 	cmd: string[],
+	envOverrides?: Record<string, string>,
 ): Promise<number> {
 	const proc = Bun.spawn({
 		cmd,
@@ -15,7 +16,7 @@ export async function runInherit(
 		stdout: "inherit",
 		stderr: "inherit",
 		stdin: "inherit",
-		env: process.env,
+		env: envOverrides ? { ...process.env, ...envOverrides } : process.env,
 	});
 	return (await proc.exited) ?? 1;
 }

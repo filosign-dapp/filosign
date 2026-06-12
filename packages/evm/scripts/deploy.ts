@@ -7,7 +7,10 @@ import { base, baseSepolia } from "viem/chains";
 import type { ChainKey } from "../definitions/chain-key.js";
 import type { ContractName } from "../definitions/schema.js";
 import env from "../env.js";
-import { requireMainnetDeployConfirmation } from "./lib/confirm-mainnet-deploy.js";
+import {
+	MAINNET_DEPLOY_CONFIRMED_ENV,
+	requireMainnetDeployConfirmation,
+} from "./lib/confirm-mainnet-deploy.js";
 import {
 	type DeployedContractBundle,
 	persistDeployment,
@@ -242,11 +245,16 @@ function printDeploymentSummary(args: {
 	}
 }
 
-async function main() {
+export default async function main() {
 	process.chdir(evmPackageDir());
 
 	const chainId = requireChainId();
-	await requireMainnetDeployConfirmation(chainId);
+	if (
+		chainId === CHAIN_ID.mainnet &&
+		process.env[MAINNET_DEPLOY_CONFIRMED_ENV] !== "1"
+	) {
+		await requireMainnetDeployConfirmation(chainId);
+	}
 
 	const deployer = await getDeployerWallet(chainId);
 	const serverAddress = resolveServerAddress();
@@ -357,10 +365,3 @@ async function main() {
 		attachmentReleaseAddress: attachmentRelease.address,
 	});
 }
-
-main()
-	.then(() => console.log("Deployment script finished"))
-	.catch((e) => {
-		console.error(e);
-		process.exit(1);
-	});

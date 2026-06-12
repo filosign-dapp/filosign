@@ -4,8 +4,9 @@ import { stdin as input, stdout as output } from "node:process";
 import { createInterface } from "node:readline/promises";
 import { evmPackageDir } from "./repo-paths.js";
 
-const MAINNET_CHAIN_ID = 8453;
+export const MAINNET_CHAIN_ID = 8453;
 const CONFIRM_KEYWORD = "confirm";
+export const MAINNET_DEPLOY_CONFIRMED_ENV = "FC_MAINNET_DEPLOY_CONFIRMED";
 
 async function existingMainnetDeploymentSummary(): Promise<string> {
 	const defsDir = path.join(evmPackageDir(), "definitions");
@@ -61,6 +62,11 @@ export async function requireMainnetDeployConfirmation(
 	}
 
 	const rl = createInterface({ input, output });
+	const onSigint = () => {
+		console.error("\nMainnet deploy aborted.");
+		process.exit(130);
+	};
+	process.once("SIGINT", onSigint);
 	try {
 		const answer = (await rl.question("> ")).trim();
 		if (answer !== CONFIRM_KEYWORD) {
@@ -68,6 +74,7 @@ export async function requireMainnetDeployConfirmation(
 			process.exit(1);
 		}
 	} finally {
+		process.off("SIGINT", onSigint);
 		rl.close();
 	}
 }

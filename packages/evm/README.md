@@ -16,7 +16,7 @@ bun run contracts -- --migrate --testnet
 bun run contracts -- --migrate --mainnet
 ```
 
-Mainnet migrate prompts for interactive confirmation: you must type `confirm` at the deploy guard before any on-chain txs run. Non-interactive stdin (CI, piped input) is refused.
+Mainnet migrate prompts for interactive confirmation in the contracts orchestrator before Hardhat runs: type `confirm` to proceed, or Ctrl+C to abort the whole migrate (no verify step). Non-interactive stdin (CI, piped input) is refused. Direct `hardhat run deploy.ts --network base` still prompts unless `FC_MAINNET_DEPLOY_CONFIRMED=1` was set by the orchestrator.
 
 Package-local scripts (usually invoked by the orchestrator):
 

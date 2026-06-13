@@ -15,13 +15,12 @@ import {
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { OtpInput } from "@/src/lib/components/ui/otp-input";
+import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
 import { cn } from "@/src/lib/utils";
 import type {
 	SignInGateController,
 	SignInOtpDialogStep,
 } from "@/src/routes/-lib/hooks/use-sign-in-gate";
-
-const SIGN_IN_IMAGE = "/images/stock_6.webp";
 
 type Props = {
 	gate: SignInGateController;
@@ -271,7 +270,10 @@ export function SignInOtpDialog({ gate, pricingUrl }: Props) {
 			}}
 		>
 			<FeatureDialogContent aria-labelledby={titleId}>
-				<FeatureDialogMedia src={SIGN_IN_IMAGE} badge={badge} />
+				<FeatureDialogMedia
+					src={FEATURE_DIALOG_IMAGES.signInOtpAndInviteUnlockDialog}
+					badge={badge}
+				/>
 
 				<FeatureDialogPanel>
 					<FeatureDialogClose disabled={gate.authPending} />

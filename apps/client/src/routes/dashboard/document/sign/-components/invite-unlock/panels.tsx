@@ -1,54 +1,118 @@
 import { SpinnerIcon } from "@phosphor-icons/react";
+import type { ReactNode } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import {
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/src/lib/components/ui/dialog";
+	FeatureDialogActions,
+	FeatureDialogBody,
+} from "@/src/lib/components/ui/feature-dialog";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { Textarea } from "@/src/lib/components/ui/textarea";
+import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
 import type { SignInviteUnlockController } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-invite-unlock";
 import { OnboardingSwitchAccountLink } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
 
 type InvitePayload = NonNullable<SignInviteUnlockController["invite"]>;
 
-function busyPanelTitle(panel: SignInviteUnlockController["wizardPanel"]) {
-	if (panel === "signingIn") return "Signing you in…";
-	if (panel === "settingUpAccount") return "Setting up your account";
-	if (panel === "unlocking") return "Unlocking with your wallet";
-	return "One moment";
-}
+export type InviteUnlockPanelMeta = {
+	badge: string;
+	title: string;
+	description: ReactNode;
+	imageSrc: string;
+};
 
-function busyPanelDescription(
+function busyPanelMeta(
 	panel: SignInviteUnlockController["wizardPanel"],
-) {
-	if (panel === "signingIn") return "Continue in the window if prompted.";
+): InviteUnlockPanelMeta {
+	if (panel === "signingIn") {
+		return {
+			badge: "Sign in",
+			title: "Signing you in…",
+			description: "Continue in the window if prompted.",
+			imageSrc: FEATURE_DIALOG_IMAGES.signInOtpAndInviteUnlockDialog,
+		};
+	}
 	if (panel === "settingUpAccount") {
-		return "Creating your Filosign keys and workspace. This usually takes a few seconds.";
+		return {
+			badge: "Get started",
+			title: "Setting up your account",
+			description:
+				"Creating your Filosign keys and workspace. This usually takes a few seconds.",
+			imageSrc: FEATURE_DIALOG_IMAGES.workspaceCreateInviteTrialDialog,
+		};
 	}
 	if (panel === "unlocking") {
-		return "Confirm in your wallet if prompted. If automatic unlock fails, use your 24-word recovery phrase.";
+		return {
+			badge: "Unlock",
+			title: "Unlocking with your wallet",
+			description:
+				"Confirm in your wallet if prompted. If automatic unlock fails, use your 24-word recovery phrase.",
+			imageSrc: FEATURE_DIALOG_IMAGES.recoveryPhraseAndCryptoUnlockDialog,
+		};
 	}
-	return "Loading your session…";
+	return {
+		badge: "Loading",
+		title: "One moment",
+		description: "Loading your session…",
+		imageSrc: FEATURE_DIALOG_IMAGES.signInOtpAndInviteUnlockDialog,
+	};
 }
 
-export function InviteUnlockBusyPanel({
-	panel,
-}: {
-	panel: SignInviteUnlockController["wizardPanel"];
-}) {
+export function inviteUnlockWizardMeta(
+	unlock: SignInviteUnlockController,
+	invite: InvitePayload,
+): InviteUnlockPanelMeta {
+	const panel = unlock.wizardPanel;
+	if (
+		panel === "signingIn" ||
+		panel === "busy" ||
+		panel === "settingUpAccount" ||
+		panel === "unlocking"
+	) {
+		return busyPanelMeta(panel);
+	}
+	if (panel === "setupFailed") {
+		return {
+			badge: "Setup",
+			title: "Could not set up your account",
+			description:
+				unlock.autoRegisterError ?? "Check your connection and try again.",
+			imageSrc: FEATURE_DIALOG_IMAGES.workspaceCreateInviteTrialDialog,
+		};
+	}
+	if (panel === "filosignRecovery") {
+		return {
+			badge: "Recovery",
+			title: "Recovery phrase",
+			description:
+				"Your wallet could not unlock this session. Enter your 24-word Filosign recovery phrase (from Profile settings).",
+			imageSrc: FEATURE_DIALOG_IMAGES.recoveryPhraseAndCryptoUnlockDialog,
+		};
+	}
+	return {
+		badge: "Unlock document",
+		title: "Enter passphrase",
+		description: (
+			<>
+				Six hyphenated words sent to{" "}
+				<span className="font-medium text-foreground">
+					{invite.recipientEmails.join(", ")}
+				</span>
+				. Enter them exactly as given (words separated by hyphens).
+			</>
+		),
+		imageSrc: FEATURE_DIALOG_IMAGES.coldShareAccessDialog,
+	};
+}
+
+export function InviteUnlockBusyPanel() {
 	return (
-		<>
-			<DialogHeader className="space-y-2 text-left">
-				<DialogTitle>{busyPanelTitle(panel)}</DialogTitle>
-				<DialogDescription>{busyPanelDescription(panel)}</DialogDescription>
-			</DialogHeader>
+		<FeatureDialogBody>
 			<div className="flex justify-center py-6">
 				<InlineLoader size="md" />
 			</div>
-		</>
+		</FeatureDialogBody>
 	);
 }
 
@@ -58,22 +122,19 @@ export function InviteUnlockSetupFailedPanel({
 	unlock: SignInviteUnlockController;
 }) {
 	return (
-		<>
-			<DialogHeader className="space-y-2 text-left">
-				<DialogTitle>Could not set up your account</DialogTitle>
-				<DialogDescription>
-					{unlock.autoRegisterError ?? "Check your connection and try again."}
-				</DialogDescription>
-			</DialogHeader>
-			<Button
-				type="button"
-				variant="primary"
-				className="w-full"
-				onClick={() => unlock.retryAutoRegister?.()}
-			>
-				Retry
-			</Button>
-		</>
+		<FeatureDialogBody>
+			<FeatureDialogActions>
+				<Button
+					type="button"
+					variant="primary"
+					size="lg"
+					className="w-full"
+					onClick={() => unlock.retryAutoRegister?.()}
+				>
+					Retry
+				</Button>
+			</FeatureDialogActions>
+		</FeatureDialogBody>
 	);
 }
 
@@ -83,14 +144,7 @@ export function InviteUnlockFilosignRecoveryPanel({
 	unlock: SignInviteUnlockController;
 }) {
 	return (
-		<>
-			<DialogHeader className="space-y-2 text-left">
-				<DialogTitle>Recovery phrase</DialogTitle>
-				<DialogDescription>
-					Your wallet could not unlock this session. Enter your 24-word Filosign
-					recovery phrase (from Profile settings).
-				</DialogDescription>
-			</DialogHeader>
+		<FeatureDialogBody>
 			<div className="space-y-2">
 				<Label htmlFor="sign-invite-filosign-recovery">
 					Filosign recovery phrase
@@ -111,29 +165,32 @@ export function InviteUnlockFilosignRecoveryPanel({
 					}}
 				/>
 			</div>
-			{unlock.decryptError && (
+			{unlock.decryptError ? (
 				<p className="text-sm text-destructive">{unlock.decryptError}</p>
-			)}
-			<Button
-				type="button"
-				variant="primary"
-				className="w-full"
-				disabled={
-					unlock.isFilosignRecoveryPending ||
-					!unlock.filosignRecoveryPhrase.trim()
-				}
-				onClick={() => void unlock.submitFilosignRecovery()}
-			>
-				{unlock.isFilosignRecoveryPending ? (
-					<>
-						<SpinnerIcon className="size-4 animate-spin mr-2" />
-						Unlocking…
-					</>
-				) : (
-					"Continue"
-				)}
-			</Button>
-		</>
+			) : null}
+			<FeatureDialogActions>
+				<Button
+					type="button"
+					variant="primary"
+					size="lg"
+					className="w-full"
+					disabled={
+						unlock.isFilosignRecoveryPending ||
+						!unlock.filosignRecoveryPhrase.trim()
+					}
+					onClick={() => void unlock.submitFilosignRecovery()}
+				>
+					{unlock.isFilosignRecoveryPending ? (
+						<>
+							<SpinnerIcon className="mr-2 size-4 animate-spin" />
+							Unlocking…
+						</>
+					) : (
+						"Continue"
+					)}
+				</Button>
+			</FeatureDialogActions>
+		</FeatureDialogBody>
 	);
 }
 
@@ -145,17 +202,7 @@ export function InviteUnlockPassphrasePanel({
 	invite: InvitePayload;
 }) {
 	return (
-		<>
-			<DialogHeader className="space-y-2 text-left">
-				<DialogTitle>Enter passphrase</DialogTitle>
-				<DialogDescription>
-					Six hyphenated words sent to{" "}
-					<span className="font-medium text-foreground">
-						{invite.recipientEmails.join(", ")}
-					</span>
-					. Enter them exactly as given (words separated by hyphens).
-				</DialogDescription>
-			</DialogHeader>
+		<FeatureDialogBody>
 			<div className="space-y-2">
 				<Label htmlFor="sign-invite-phrase">Six-word passphrase</Label>
 				<Input
@@ -172,44 +219,47 @@ export function InviteUnlockPassphrasePanel({
 					className="font-mono text-sm"
 				/>
 			</div>
-			{unlock.phraseWordCount > 0 && unlock.phraseWordCount !== 6 && (
+			{unlock.phraseWordCount > 0 && unlock.phraseWordCount !== 6 ? (
 				<p className="text-xs text-muted-foreground">
 					Passphrase must be exactly six words (hyphen-separated). Current
 					segments detected: {unlock.phraseWordCount}
 				</p>
-			)}
-			{unlock.decryptError && (
+			) : null}
+			{unlock.decryptError ? (
 				<p className="text-sm text-destructive">{unlock.decryptError}</p>
-			)}
-			<Button
-				type="button"
-				variant="primary"
-				className="w-full"
-				disabled={
-					unlock.coldDecrypt.isPending || unlock.claimColdInvite.isPending
-				}
-				onClick={() => void unlock.handleUnlockDocument()}
-			>
-				{unlock.coldDecrypt.isPending || unlock.claimColdInvite.isPending ? (
-					<>
-						<SpinnerIcon className="size-4 animate-spin mr-2" />
-						{unlock.coldDecrypt.isPending
-							? "Unlocking…"
-							: "Securing for your wallet…"}
-					</>
-				) : (
-					"Unlock document"
-				)}
-			</Button>
-			<p className="text-xs text-muted-foreground text-center">
+			) : null}
+			<FeatureDialogActions>
+				<Button
+					type="button"
+					variant="primary"
+					size="lg"
+					className="w-full"
+					disabled={
+						unlock.coldDecrypt.isPending || unlock.claimColdInvite.isPending
+					}
+					onClick={() => void unlock.handleUnlockDocument()}
+				>
+					{unlock.coldDecrypt.isPending || unlock.claimColdInvite.isPending ? (
+						<>
+							<SpinnerIcon className="mr-2 size-4 animate-spin" />
+							{unlock.coldDecrypt.isPending
+								? "Unlocking…"
+								: "Securing for your wallet…"}
+						</>
+					) : (
+						"Unlock document"
+					)}
+				</Button>
+			</FeatureDialogActions>
+			<p className="text-center text-xs text-muted-foreground">
 				From <span className="text-foreground">{invite.senderLabel}</span>
 			</p>
 			<OnboardingSwitchAccountLink
-				className="border-t border-border mt-4 pt-4"
+				className="mt-4 border-t border-border pt-4"
 				stayAfterLogout
 				onStayAfterLogout={unlock.resetWizardAfterSwitchAccount}
 			/>
-		</>
+		</FeatureDialogBody>
 	);
 }
 
@@ -224,7 +274,7 @@ export function renderInviteUnlockWizardPanel(
 		panel === "settingUpAccount" ||
 		panel === "unlocking"
 	) {
-		return <InviteUnlockBusyPanel panel={panel} />;
+		return <InviteUnlockBusyPanel />;
 	}
 	if (panel === "setupFailed") {
 		return <InviteUnlockSetupFailedPanel unlock={unlock} />;

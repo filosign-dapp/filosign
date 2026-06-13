@@ -1,16 +1,19 @@
 import { ArrowSquareOutIcon, PackageIcon } from "@phosphor-icons/react";
+import { useId } from "react";
 import { ShareViaButtons } from "@/src/lib/components/app/share-via-buttons";
 import { Button } from "@/src/lib/components/ui/button";
+import { Dialog } from "@/src/lib/components/ui/dialog";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/src/lib/components/ui/dialog";
+	FeatureDialogActions,
+	FeatureDialogBody,
+	FeatureDialogContent,
+	FeatureDialogHeader,
+	FeatureDialogMedia,
+	FeatureDialogPanel,
+} from "@/src/lib/components/ui/feature-dialog";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
+import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
 import { buildProofPacketShareLinks } from "@/src/lib/domains/files/compliance-pdf/proof-share-links";
 import {
 	useSignCompliance,
@@ -25,6 +28,7 @@ export function SignSuccessDialog({
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 }) {
+	const titleId = useId();
 	const { pieceCid } = useSignDocumentContext();
 	const { fileData } = useSignViewer();
 	const { pdfExportBusy, exportsAllowed, handleDownloadCompletionPacket } =
@@ -32,6 +36,10 @@ export function SignSuccessDialog({
 	const shareLinks = exportsAllowed
 		? buildProofPacketShareLinks(pieceCid)
 		: null;
+
+	const description = exportsAllowed
+		? "Your workflow is complete. Download the proof packet for your records."
+		: "Your signature was recorded. Proof exports unlock when every required party has signed.";
 
 	return (
 		<Dialog
@@ -42,71 +50,80 @@ export function SignSuccessDialog({
 				}
 			}}
 		>
-			<DialogContent className="sm:max-w-md" showCloseButton={false}>
-				<DialogHeader>
-					<DialogTitle className="flex items-center gap-2">
-						Document signed
-					</DialogTitle>
-					<DialogDescription>
-						{exportsAllowed
-							? "Your workflow is complete. Download the proof packet for your records."
-							: "Your signature was recorded. Proof exports unlock when every required party has signed."}
-					</DialogDescription>
-				</DialogHeader>
-				{exportsAllowed ? (
-					<div className="py-2">
-						<Button
-							type="button"
-							variant="primary"
-							className="h-auto w-full shrink whitespace-normal justify-start gap-3 py-3"
-							onClick={() => void handleDownloadCompletionPacket()}
-							disabled={!fileData || pdfExportBusy}
-							isLoading={pdfExportBusy}
-						>
-							<PackageIcon className="size-5 shrink-0" />
-							<span className="min-w-0 text-left">
-								<span className="block font-medium">Download proof packet</span>
-								<span className="block text-xs font-normal opacity-90">
-									ZIP archive with the signed envelope and proofs.
-								</span>
-							</span>
-						</Button>
-						<div className="mt-4 space-y-3">
-							{shareLinks ? (
-								<div className="flex items-center gap-2">
-									<p className="mr-1 text-xs text-muted-foreground">
-										Share via
-									</p>
-									<ShareViaButtons links={shareLinks} />
+			<FeatureDialogContent aria-labelledby={titleId}>
+				<FeatureDialogMedia
+					src={FEATURE_DIALOG_IMAGES.signSuccessProofPacketDialog}
+					badge="Signed"
+				/>
+
+				<FeatureDialogPanel>
+					<FeatureDialogHeader
+						badge="Signed"
+						title="Document signed"
+						titleId={titleId}
+						description={description}
+					/>
+
+					<FeatureDialogBody>
+						{exportsAllowed ? (
+							<>
+								<Button
+									type="button"
+									variant="primary"
+									className="h-auto w-full shrink justify-start gap-3 whitespace-normal py-3"
+									onClick={() => void handleDownloadCompletionPacket()}
+									disabled={!fileData || pdfExportBusy}
+									isLoading={pdfExportBusy}
+								>
+									<PackageIcon className="size-5 shrink-0" />
+									<span className="min-w-0 text-left">
+										<span className="block font-medium">
+											Download proof packet
+										</span>
+										<span className="block text-xs font-normal opacity-90">
+											ZIP archive with the signed envelope and proofs.
+										</span>
+									</span>
+								</Button>
+								{shareLinks ? (
+									<div className="flex items-center gap-2">
+										<p className="mr-1 text-xs text-muted-foreground">
+											Share via
+										</p>
+										<ShareViaButtons links={shareLinks} />
+									</div>
+								) : null}
+								<div className="flex flex-col gap-2">
+									<DocsLink href={DOCS_LINKS.completionPacket()}>
+										What is in the proof packet?
+									</DocsLink>
+									<a
+										href={DOCS_LINKS.verifyProofPacket()}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline"
+									>
+										Verify a proof packet independently
+										<ArrowSquareOutIcon className="size-3.5" />
+									</a>
 								</div>
-							) : null}
-						</div>
-						<div className="mt-4 flex flex-col gap-2">
-							<DocsLink href={DOCS_LINKS.completionPacket()}>
-								What is in the proof packet?
-							</DocsLink>
-							<a
-								href={DOCS_LINKS.verifyProofPacket()}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="text-primary underline-offset-4 hover:underline text-xs flex gap-1 items-center"
+							</>
+						) : null}
+
+						<FeatureDialogActions>
+							<Button
+								type="button"
+								variant="primary"
+								size="lg"
+								className="w-full"
+								onClick={() => onOpenChange(false)}
 							>
-								Verify a proof packet independently
-								<ArrowSquareOutIcon className="size-3.5" />
-							</a>
-						</div>
-					</div>
-				) : null}
-				<DialogFooter>
-					<Button
-						type="button"
-						variant="primary"
-						onClick={() => onOpenChange(false)}
-					>
-						Close
-					</Button>
-				</DialogFooter>
-			</DialogContent>
+								Close
+							</Button>
+						</FeatureDialogActions>
+					</FeatureDialogBody>
+				</FeatureDialogPanel>
+			</FeatureDialogContent>
 		</Dialog>
 	);
 }

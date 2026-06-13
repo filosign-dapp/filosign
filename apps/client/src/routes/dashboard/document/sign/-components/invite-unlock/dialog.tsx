@@ -1,14 +1,21 @@
+import { useId } from "react";
 import { Button } from "@/src/lib/components/ui/button";
+import { Dialog } from "@/src/lib/components/ui/dialog";
 import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/src/lib/components/ui/dialog";
+	FeatureDialogActions,
+	FeatureDialogBody,
+	FeatureDialogContent,
+	FeatureDialogHeader,
+	FeatureDialogMedia,
+	FeatureDialogPanel,
+} from "@/src/lib/components/ui/feature-dialog";
+import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
 import type { SignInviteUnlockController } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-invite-unlock";
 import { ColdInviteNotForYouCallout } from "@/src/routes/onboarding/-components/ColdInviteNotForYouCallout";
-import { renderInviteUnlockWizardPanel } from "./panels";
+import {
+	inviteUnlockWizardMeta,
+	renderInviteUnlockWizardPanel,
+} from "./panels";
 
 type InvitePayload = NonNullable<SignInviteUnlockController["invite"]>;
 
@@ -23,41 +30,75 @@ export function SignInviteUnlockDialog({
 	invite,
 	onCancelHome,
 }: Props) {
+	const wizardTitleId = useId();
+	const switchTitleId = useId();
 	const wizardDialogOpen = !(
 		unlock.shouldSwitchAccountPrompt && unlock.wizardPanel === "passphrase"
 	);
+	const meta = inviteUnlockWizardMeta(unlock, invite);
 
 	return (
 		<>
 			<Dialog open={wizardDialogOpen}>
-				<DialogContent className="sm:max-w-md" showCloseButton={false}>
-					{renderInviteUnlockWizardPanel(unlock, invite)}
-				</DialogContent>
+				<FeatureDialogContent aria-labelledby={wizardTitleId}>
+					<FeatureDialogMedia src={meta.imageSrc} badge={meta.badge} />
+
+					<FeatureDialogPanel>
+						<FeatureDialogHeader
+							badge={meta.badge}
+							title={meta.title}
+							titleId={wizardTitleId}
+							description={meta.description}
+						/>
+						{renderInviteUnlockWizardPanel(unlock, invite)}
+					</FeatureDialogPanel>
+				</FeatureDialogContent>
 			</Dialog>
 
 			<Dialog open={unlock.shouldSwitchAccountPrompt}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Switch account to continue</DialogTitle>
-					</DialogHeader>
-					<ColdInviteNotForYouCallout
-						className="mt-1"
-						recipientEmails={invite.recipientEmails}
-						signedInEmailForUi={unlock.signedInEmailForUi}
+				<FeatureDialogContent aria-labelledby={switchTitleId}>
+					<FeatureDialogMedia
+						src={FEATURE_DIALOG_IMAGES.signInOtpAndInviteUnlockDialog}
+						badge="Wrong account"
 					/>
-					<DialogFooter className="mt-4">
-						<Button type="button" variant="outline" onClick={onCancelHome}>
-							Cancel
-						</Button>
-						<Button
-							type="button"
-							variant="primary"
-							onClick={() => void unlock.runSwitchAccount()}
-						>
-							Switch account
-						</Button>
-					</DialogFooter>
-				</DialogContent>
+
+					<FeatureDialogPanel>
+						<FeatureDialogHeader
+							badge="Wrong account"
+							title="Switch account to continue"
+							titleId={switchTitleId}
+							description="This invite was sent to a different email than the account you are signed in with."
+						/>
+
+						<FeatureDialogBody>
+							<ColdInviteNotForYouCallout
+								recipientEmails={invite.recipientEmails}
+								signedInEmailForUi={unlock.signedInEmailForUi}
+							/>
+
+							<FeatureDialogActions>
+								<Button
+									type="button"
+									variant="primary"
+									size="lg"
+									className="w-full"
+									onClick={() => void unlock.runSwitchAccount()}
+								>
+									Switch account
+								</Button>
+								<Button
+									type="button"
+									variant="outline"
+									size="lg"
+									className="w-full"
+									onClick={onCancelHome}
+								>
+									Cancel
+								</Button>
+							</FeatureDialogActions>
+						</FeatureDialogBody>
+					</FeatureDialogPanel>
+				</FeatureDialogContent>
 			</Dialog>
 		</>
 	);

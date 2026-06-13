@@ -1,8 +1,9 @@
 import {
 	CaretDownIcon,
+	CertificateIcon,
 	FileArrowDownIcon,
 	PackageIcon,
-	ScrollIcon,
+	SealCheckIcon,
 } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
 import { ButtonGroup } from "@/src/lib/components/ui/button-group";
@@ -14,14 +15,11 @@ import {
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
 import { cn } from "@/src/lib/utils/index";
+import type { ProofDownloadExports } from "./compliance-pdf";
 
 type ProofDownloadButtonGroupProps = {
-	exportsAllowed: boolean;
-	pdfExportBusy: boolean;
+	exports: ProofDownloadExports;
 	fileDataReady: boolean;
-	handleDownload: () => void;
-	handleDownloadCompletionPacket: () => void | Promise<void>;
-	handleDownloadCompliancePdf: () => void | Promise<void>;
 	/** When set, the main proof button opens this flow instead of downloading immediately. */
 	onMainProofClick?: () => void;
 	density?: "default" | "compact" | "toolbar" | "header";
@@ -29,16 +27,20 @@ type ProofDownloadButtonGroupProps = {
 };
 
 export function ProofDownloadButtonGroup({
-	exportsAllowed,
-	pdfExportBusy,
+	exports,
 	fileDataReady,
-	handleDownload,
-	handleDownloadCompletionPacket,
-	handleDownloadCompliancePdf,
 	onMainProofClick,
 	density = "default",
 	className,
 }: ProofDownloadButtonGroupProps) {
+	const {
+		exportsAllowed,
+		pdfExportBusy,
+		handleDownloadOriginalFiles,
+		handleDownloadSignedEnvelope,
+		handleDownloadCompletionPacket,
+		handleDownloadCompliancePdf,
+	} = exports;
 	const proofDisabled = !fileDataReady || !exportsAllowed || pdfExportBusy;
 
 	if (!exportsAllowed) {
@@ -61,9 +63,9 @@ export function ProofDownloadButtonGroup({
 								? "lg"
 								: "default"
 				}
-				onClick={handleDownload}
-				disabled={!fileDataReady}
-				title="Download original file"
+				onClick={() => void handleDownloadOriginalFiles()}
+				disabled={!fileDataReady || pdfExportBusy}
+				title="Download original files"
 				className={cn(
 					density === "toolbar" &&
 						"shrink-0 p-0 h-10 w-10 @md:h-11 @md:w-11 text-muted-foreground hover:text-primary-foreground hover:bg-primary/10",
@@ -74,7 +76,7 @@ export function ProofDownloadButtonGroup({
 					className={density === "toolbar" ? "size-6 @md:size-7" : "size-4"}
 				/>
 				{density === "default" ? (
-					<span className="ml-1.5">Download file</span>
+					<span className="ml-1.5">Download files</span>
 				) : null}
 			</Button>
 		);
@@ -135,21 +137,28 @@ export function ProofDownloadButtonGroup({
 				>
 					<CaretDownIcon className="size-4" />
 				</DropdownMenuTrigger>
-				<DropdownMenuContent align="end" className="w-52">
+				<DropdownMenuContent align="end" className="w-64">
 					<DropdownMenuGroup>
 						<DropdownMenuItem
-							disabled={!fileDataReady}
-							onClick={handleDownload}
+							disabled={!fileDataReady || pdfExportBusy}
+							onClick={() => void handleDownloadOriginalFiles()}
 						>
 							<FileArrowDownIcon />
-							Original document
+							Download original files
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							disabled={proofDisabled}
+							onClick={() => void handleDownloadSignedEnvelope()}
+						>
+							<SealCheckIcon />
+							Download signed envelope
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							disabled={proofDisabled}
 							onClick={() => void handleDownloadCompliancePdf()}
 						>
-							<ScrollIcon />
-							Proof report only
+							<CertificateIcon />
+							Download completion certificate
 						</DropdownMenuItem>
 					</DropdownMenuGroup>
 				</DropdownMenuContent>

@@ -1,6 +1,10 @@
 import type { ViewFileResult } from "@filosign/react/files";
+import type { ComplianceBundle } from "@filosign/shared";
 import { PDFDocument, type PDFImage } from "pdf-lib";
-import { mergedPdfBytesForView } from "@/src/lib/domains/files/signable-documents";
+import {
+	mergedPdfBytesForView,
+	viewBytesForDocument,
+} from "@/src/lib/domains/files/signable-documents";
 import type {
 	CompliancePdfBundleOptions,
 	CompliancePdfOptions,
@@ -74,7 +78,7 @@ function extensionHintMime(fileName: string | undefined | null): string | null {
 	return null;
 }
 
-function resolveRasterImageMime(
+export function resolveRasterImageMime(
 	bytes: Uint8Array,
 	declaredMime: string | undefined,
 	fileName: string | undefined | null,
@@ -88,7 +92,7 @@ function resolveRasterImageMime(
 	return null;
 }
 
-async function embedImagePage(
+export async function embedImagePage(
 	doc: PDFDocument,
 	bytes: Uint8Array,
 	mime: string,
@@ -121,6 +125,58 @@ async function embedImagePage(
 	const x = (page.getWidth() - w) / 2;
 	const y = (page.getHeight() - h) / 2;
 	page.drawImage(image, { x, y, width: w, height: h });
+}
+
+export async function buildSignedDocumentPdf(args: {
+	doc: ViewFileResult["documents"][number];
+	bundle: ComplianceBundle;
+}): Promise<Uint8Array> {
+	const { doc, bundle } = args;
+	const out = await PDFDocument.create();
+	const documentBytes =
+		(await viewBytesForDocument({
+			id: doc.id,
+			name: doc.name,
+			mimeType: doc.mimeType,
+			bytes: doc.bytes,
+		})) ?? doc.bytes;
+	const documentMime = doc.mimeType;
+	const documentName = doc.name;
+
+	if (
+		documentMime === "application/pdf" ||
+		documentName.toLowerCase().endsWith(".pdf")
+	) {
+		const src = await PDFDocument.load(documentBytes, {
+			ignoreEncryption: true,
+		});
+		const copied = await out.copyPages(src, src.getPageIndices());
+		for (const page of copied) {
+			out.addPage(page);
+		}
+	} else {
+		const resolved = resolveRasterImageMime(
+			documentBytes,
+			documentMime,
+			documentName,
+		);
+		if (!resolved) {
+			throw new Error(
+				`Signed export supports PDF and image documents. Skipped: ${documentName}`,
+			);
+		}
+		await embedImagePage(out, documentBytes, resolved);
+	}
+
+	await drawPlacementOverlaysOnDocumentPdf(
+		out,
+		bundle.placementManifest,
+		bundle.signers,
+		bundle.fieldCompletions,
+		{ documentId: doc.id },
+	);
+
+	return out.save();
 }
 
 export async function buildDocumentPlusCompliancePdf(

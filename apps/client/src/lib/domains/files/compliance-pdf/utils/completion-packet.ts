@@ -24,12 +24,9 @@ import { zHexString } from "@filosign/shared/zod";
 import { zipSync } from "fflate";
 import { toast } from "sonner";
 import { downloadBlobBytes } from "./build";
+import { sanitizeZipSegment, uniqueZipEntryName } from "./zip-entries";
 
 const paths = PROOF_PACKET_V1_DEFAULT_PATHS;
-
-function sanitizeZipSegment(name: string): string {
-	return name.replace(/[/\\]/g, "_").slice(0, 200) || "document";
-}
 
 function proofPacketPath(relative: string): string {
 	return `${paths.proofFolder}/${relative}`;
@@ -295,8 +292,9 @@ export async function downloadCompletionPacketZip(args: {
 		[proofPacketPath(paths.proofReport)]: args.compliancePdfBytes,
 	};
 
+	const usedOriginalNames = new Set<string>();
 	for (const doc of args.fileData.documents) {
-		const name = sanitizeZipSegment(doc.name);
+		const name = uniqueZipEntryName(doc.name, usedOriginalNames);
 		zipEntries[proofPacketPath(`${paths.originalPrefix}${name}`)] = doc.bytes;
 	}
 

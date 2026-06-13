@@ -5,8 +5,8 @@ import { useComplianceBundle } from "@filosign/react/files";
 import { useUserProfile } from "@filosign/react/users";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import { defaultChain } from "@/src/constants";
-import { VERIFY_WEB_URL } from "@/src/lib/docs/links";
+import { complianceExportContext } from "./utils/export-context";
+import { safePieceCidDownloadBasename } from "./utils/zip-entries";
 
 type ComplianceFileRef = {
 	pieceCid: string;
@@ -14,6 +14,16 @@ type ComplianceFileRef = {
 	/** Envelope finalized: fully executed or voided before complete. */
 	isFinalized?: boolean;
 };
+
+export type ProofDownloadExports = Pick<
+	ReturnType<typeof useCompliancePdfExports>,
+	| "exportsAllowed"
+	| "pdfExportBusy"
+	| "handleDownloadOriginalFiles"
+	| "handleDownloadSignedEnvelope"
+	| "handleDownloadCompletionPacket"
+	| "handleDownloadCompliancePdf"
+>;
 
 export function useCompliancePdfExports(options: {
 	file: ComplianceFileRef | null | undefined;
@@ -27,38 +37,38 @@ export function useCompliancePdfExports(options: {
 
 	const exportsAllowed = Boolean(file?.isFinalized);
 
-	const handleDownload = useCallback(() => {
+	const handleDownloadOriginalFiles = useCallback(async () => {
 		if (!fileData) return;
-		const arrayBuffer = new ArrayBuffer(fileData.fileBytes.length);
-		new Uint8Array(arrayBuffer).set(fileData.fileBytes);
-		const blob = new Blob([arrayBuffer], {
-			type: fileData.metadata.mimeType,
+		const { downloadOriginalFilesZip } = await import(
+			"./utils/envelope-downloads"
+		);
+		downloadOriginalFilesZip({
+			fileData,
+			pieceCid: file?.pieceCid ?? "unknown",
 		});
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download =
-			fileData.metadata.name ||
-			`document-${(file?.pieceCid ?? "unknown").slice(0, 8)}`;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-		URL.revokeObjectURL(url);
 	}, [fileData, file?.pieceCid]);
 
+	const fetchComplianceBundle = useCallback(
+		async (exportKind: "pdf" | "zip") => {
+			if (!file?.pieceCid || !fileData) {
+				throw new Error("File data is not ready");
+			}
+			return complianceBundle.mutateAsync({
+				pieceCid: file.pieceCid,
+				exportKind,
+				documentSha256: fileData.registerDocumentSha256,
+			});
+		},
+		[complianceBundle, file?.pieceCid, fileData],
+	);
+
 	const handleDownloadCompliancePdf = useCallback(async () => {
-		if (!file?.pieceCid || !exportsAllowed) return;
-		if (!fileData) return;
+		if (!file?.pieceCid || !exportsAllowed || !fileData) return;
 		setPdfExportBusy(true);
 		try {
-			const documentSha256 = fileData.registerDocumentSha256;
+			const exportCtx = complianceExportContext(fileData);
 			const { bundle, bundleHash, exportId } =
-				await complianceBundle.mutateAsync({
-					pieceCid: file.pieceCid,
-					exportKind: "pdf",
-					documentSha256,
-				});
-			const explorerBase = defaultChain.blockExplorers?.default?.url ?? null;
+				await fetchComplianceBundle("pdf");
 			const { buildCompliancePdfOnly, downloadPdfBytes } = await import(
 				"./utils/build"
 			);
@@ -66,77 +76,48 @@ export function useCompliancePdfExports(options: {
 				bundle,
 				bundleHash,
 				exportId,
-				chainName: defaultChain.name,
-				explorerBaseUrl: explorerBase,
-				verifyWebUrl: VERIFY_WEB_URL,
-				documentSha256,
-				decryptedDocumentMeta: fileData
-					? {
-							name: fileData.metadata.name,
-							mimeType: fileData.metadata.mimeType,
-							sizeBytes: fileData.fileBytes.length,
-						}
-					: null,
+				...exportCtx,
 			});
-			const safe = file.pieceCid.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 48);
-			downloadPdfBytes(bytes, `filosign-proof-report-${safe}`);
+			downloadPdfBytes(
+				bytes,
+				`filosign-completion-certificate-${safePieceCidDownloadBasename(file.pieceCid)}`,
+			);
 		} catch (e) {
 			console.error(e);
-			toast.error("Proof report export failed");
+			toast.error("Completion certificate export failed");
 		} finally {
 			setPdfExportBusy(false);
 		}
-	}, [complianceBundle, exportsAllowed, file, fileData]);
+	}, [exportsAllowed, fetchComplianceBundle, file, fileData]);
 
-	const handleDownloadDocumentWithCompliancePdf = useCallback(async () => {
-		if (!file?.pieceCid || !fileData || !exportsAllowed) {
-			return;
-		}
+	const handleDownloadSignedEnvelope = useCallback(async () => {
+		if (!file?.pieceCid || !fileData || !exportsAllowed) return;
 		setPdfExportBusy(true);
 		try {
-			const documentSha256 = fileData.registerDocumentSha256;
-			const { bundle, bundleHash, exportId } =
-				await complianceBundle.mutateAsync({
-					pieceCid: file.pieceCid,
-					exportKind: "pdf",
-					documentSha256,
-				});
-			const explorerBase = defaultChain.blockExplorers?.default?.url ?? null;
-			const { buildDocumentPlusCompliancePdf, downloadPdfBytes } = await import(
-				"./utils/build"
+			const { bundle } = await fetchComplianceBundle("pdf");
+			const { downloadSignedEnvelopeZip } = await import(
+				"./utils/envelope-downloads"
 			);
-			const bytes = await buildDocumentPlusCompliancePdf({
-				bundle,
-				bundleHash,
-				exportId,
+			await downloadSignedEnvelopeZip({
 				fileData,
-				chainName: defaultChain.name,
-				explorerBaseUrl: explorerBase,
-				verifyWebUrl: VERIFY_WEB_URL,
-				documentSha256,
+				bundle,
+				pieceCid: file.pieceCid,
 			});
-			const safe = file.pieceCid.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 48);
-			downloadPdfBytes(bytes, `filosign-document-with-proof-${safe}`);
 		} catch (e) {
 			console.error(e);
-			toast.error("Proof report export failed");
+			toast.error("Signed envelope export failed");
 		} finally {
 			setPdfExportBusy(false);
 		}
-	}, [complianceBundle, exportsAllowed, file, fileData]);
+	}, [exportsAllowed, fetchComplianceBundle, file, fileData]);
 
 	const handleDownloadCompletionPacket = useCallback(async () => {
 		if (!file?.pieceCid || !fileData || !exportsAllowed) return;
 		setPdfExportBusy(true);
 		try {
-			const documentSha256 = fileData.registerDocumentSha256;
+			const exportCtx = complianceExportContext(fileData);
 			const { bundle, bundleHash, exportId } =
-				await complianceBundle.mutateAsync({
-					pieceCid: file.pieceCid,
-					exportKind: "zip",
-					documentSha256,
-				});
-			const explorerBase = defaultChain.blockExplorers?.default?.url ?? null;
+				await fetchComplianceBundle("zip");
 			const { buildCompliancePdfOnly, buildDocumentPlusCompliancePdf } =
 				await import("./utils/build");
 			const { downloadCompletionPacketZip } = await import(
@@ -146,25 +127,14 @@ export function useCompliancePdfExports(options: {
 				bundle,
 				bundleHash,
 				exportId,
-				chainName: defaultChain.name,
-				explorerBaseUrl: explorerBase,
-				verifyWebUrl: VERIFY_WEB_URL,
-				documentSha256,
-				decryptedDocumentMeta: {
-					name: fileData.metadata.name,
-					mimeType: fileData.metadata.mimeType,
-					sizeBytes: fileData.fileBytes.length,
-				},
+				...exportCtx,
 			});
 			const mergedPdfBytes = await buildDocumentPlusCompliancePdf({
 				bundle,
 				bundleHash,
 				exportId,
 				fileData,
-				chainName: defaultChain.name,
-				explorerBaseUrl: explorerBase,
-				verifyWebUrl: VERIFY_WEB_URL,
-				documentSha256,
+				...exportCtx,
 			});
 			const keySeed = wallet ? getSessionSeed(wallet.account.address) : null;
 			const userEmail = userProfile?.email?.trim() ?? null;
@@ -176,9 +146,9 @@ export function useCompliancePdfExports(options: {
 				fileData,
 				compliancePdfBytes,
 				mergedPdfBytes,
-				chainName: defaultChain.name,
-				explorerBaseUrl: explorerBase,
-				verifyWebUrl: VERIFY_WEB_URL,
+				chainName: exportCtx.chainName,
+				explorerBaseUrl: exportCtx.explorerBaseUrl,
+				verifyWebUrl: exportCtx.verifyWebUrl,
 				pieceCid: file.pieceCid,
 				rpcQuery,
 				keySeed,
@@ -191,8 +161,8 @@ export function useCompliancePdfExports(options: {
 			setPdfExportBusy(false);
 		}
 	}, [
-		complianceBundle,
 		exportsAllowed,
+		fetchComplianceBundle,
 		file,
 		fileData,
 		rpcQuery,
@@ -204,9 +174,9 @@ export function useCompliancePdfExports(options: {
 		complianceBundle,
 		pdfExportBusy,
 		exportsAllowed,
-		handleDownload,
+		handleDownloadOriginalFiles,
 		handleDownloadCompliancePdf,
-		handleDownloadDocumentWithCompliancePdf,
+		handleDownloadSignedEnvelope,
 		handleDownloadCompletionPacket,
 	};
 }

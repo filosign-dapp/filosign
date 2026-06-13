@@ -1,6 +1,7 @@
 import env from "@/src/env";
 import { Button } from "@/src/lib/components/ui/button";
 import type { SignInController } from "@/src/routes/-lib/hooks/use-sign-in-controller";
+import { SignInCardShell } from "./card-shell";
 import { SignInGatedCard } from "./gated-card";
 import { SignInOtpDialog } from "./otp-dialog";
 import { SignInTermsFooter } from "./terms-footer";
@@ -34,15 +35,11 @@ export function SignInWelcomeView({
 			{signInGate.gated ? (
 				<SignInGatedCard signInGate={signInGate} />
 			) : (
-				<div className="flex flex-col gap-4 rounded-2xl border bg-card p-6 shadow-xs">
-					<div className="border-b border-border pb-4 text-left">
-						<p className="font-manrope tracking-tight text-foreground">
-							Login to Filosign
-						</p>
-						<p className="mt-2 text-sm leading-relaxed text-pretty text-muted-foreground">
-							Continue with your email or social account.
-						</p>
-					</div>
+				<SignInCardShell
+					title="Login to Filosign"
+					description="Continue with your email or social account."
+					footer={<SignInTermsFooter />}
+				>
 					<Button
 						type="button"
 						variant="default"
@@ -54,8 +51,7 @@ export function SignInWelcomeView({
 					>
 						Sign in
 					</Button>
-					<SignInTermsFooter />
-				</div>
+				</SignInCardShell>
 			)}
 
 			{signInGate.gated ? (

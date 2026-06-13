@@ -23,7 +23,7 @@ export function OnboardingEntryPage() {
 					transition={SPRING_TOKENS.snappy}
 					className="w-full max-w-[min(56rem,calc(100vw-2rem))]"
 				>
-					<FeatureShell>
+					<FeatureShell className="md:grid-cols-[2fr_3fr]">
 						<FeatureShellMedia
 							src={ONBOARDING_IMAGE}
 							badge="Get started"
@@ -33,8 +33,7 @@ export function OnboardingEntryPage() {
 
 						<FeatureShellPanel>
 							<FeatureShellHeader
-								badge="Profile setup"
-								title="Welcome aboard!"
+								title="Let's get you set up!"
 								description="Enter your name to personalize your profile and workspace."
 							/>
 							<OnboardingNameForm

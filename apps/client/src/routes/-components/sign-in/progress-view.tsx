@@ -1,5 +1,6 @@
 import { SpinnerIcon } from "@phosphor-icons/react";
 import type { SignInController } from "@/src/routes/-lib/hooks/use-sign-in-controller";
+import { SignInCardShell } from "./card-shell";
 import { SignInColdInviteCallout } from "./cold-invite-callout";
 
 type Props = Pick<
@@ -19,27 +20,39 @@ export function SignInProgressView({
 	const isAutoRegistering = view === "auto-registering";
 
 	return (
-		<div className="flex flex-col items-center gap-4 py-8 text-center">
+		<div className="space-y-8">
+			<div className="space-y-2">
+				<h1 className="font-manrope text-2xl tracking-tight text-foreground md:text-3xl">
+					Welcome to Filosign
+				</h1>
+				<p className="text-muted-foreground">
+					Send envelopes, collect signatures, and keep a clear record when deals
+					close.
+				</p>
+			</div>
+
 			<SignInColdInviteCallout
 				showColdInviteMismatch={showColdInviteMismatch}
 				recipientEmails={coldInviteWarning.recipientEmails}
 				signedInEmailForUi={coldInviteWarning.signedInEmailForUi}
 				continueAnywayColdSearch={continueAnywayColdSearch}
 			/>
-			<SpinnerIcon
-				className="size-10 animate-spin text-muted-foreground"
-				aria-hidden
-			/>
-			<div className="space-y-1">
-				<p className="text-foreground">
-					{isAutoRegistering ? "Setting up your account…" : "Signing you in…"}
-				</p>
-				<p className="text-sm text-muted-foreground">
-					{isAutoRegistering
+
+			<SignInCardShell
+				title={isAutoRegistering ? "Setting up your account" : "Signing you in"}
+				description={
+					isAutoRegistering
 						? "Creating your Filosign keys and workspace. This usually takes a few seconds."
-						: "Connecting your wallet and checking your Filosign account."}
-				</p>
-			</div>
+						: "Connecting your wallet and checking your Filosign account."
+				}
+			>
+				<div className="flex justify-center py-2">
+					<SpinnerIcon
+						className="size-8 animate-spin text-muted-foreground"
+						aria-hidden
+					/>
+				</div>
+			</SignInCardShell>
 		</div>
 	);
 }

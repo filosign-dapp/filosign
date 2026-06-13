@@ -38,7 +38,7 @@ This runs tests then deploys; regenerates `packages/evm/definitions/chains/mainn
 
 **Verify on Base scan:**
 
-- [ ] `FSEnvelopeRegistry.owner()` — cold owner if handoff started
+- [ ] `FSEnvelopeRegistry.owner()` - cold owner if handoff started
 - [ ] Pending owner → cold wallet calls `acceptOwnership()`
 - [ ] `FSEnvelopeRegistry.server()` === `FC_SERVER_ADDRESS` in Infisical prod
 - [ ] `FSPaymentValidator` constructor args: correct registry address + `chainId` (8453)
@@ -83,7 +83,7 @@ Product IDs are hardcoded in [`billing.ts`](../../apps/server/lib/domains/billin
 - [ ] Server: Infisical `prod` machine identity
 - [ ] Client (Cloudflare Pages): `VITE_DEPLOYMENT=production`, `VITE_CHAIN=mainnet`, `VITE_SERVER_URL=https://api.filosign.xyz`
 
-**Startup validation (automatic):** `index.ts` awaits bootstrap before Bun serves traffic — relayer key ↔ `FC_SERVER_ADDRESS` ↔ `FSEnvelopeRegistry.server()` on-chain, then Dragonfly `PING`. `/health` returns 503 until ready.
+**Startup validation (automatic):** `index.ts` awaits bootstrap before Bun serves traffic - relayer key ↔ `FC_SERVER_ADDRESS` ↔ `FSEnvelopeRegistry.server()` on-chain, then Dragonfly `PING`. `/health` returns 503 until ready.
 
 ---
 

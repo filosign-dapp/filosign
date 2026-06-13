@@ -27,14 +27,14 @@ Marketing (`filosign.xyz`) should set `PUBLIC_CLIENT_URL` to the **sandbox** cli
 
 Every deployed server needs:
 
-- `DEPLOYMENT` — one of `local` | `staging` | `sandbox` | `production`
-- `CHAIN` — must match tier (`staging`/`sandbox` → `testnet`, `production` → `mainnet`, `local` → `local`)
-- `DODO_API_KEY` / `DODO_WEBHOOK_KEY` — required on every tier; live mode on `production` unless `DODO_LIVE=false` (test keys + test product IDs)
+- `DEPLOYMENT` - one of `local` | `staging` | `sandbox` | `production`
+- `CHAIN` - must match tier (`staging`/`sandbox` → `testnet`, `production` → `mainnet`, `local` → `local`)
+- `DODO_API_KEY` / `DODO_WEBHOOK_KEY` - required on every tier; live mode on `production` unless `DODO_LIVE=false` (test keys + test product IDs)
 
 Client build vars (see `apps/client/.env*.example`):
 
-- `VITE_DEPLOYMENT` — must match server tier for that stack
-- `VITE_CHAIN` — must match `DEPLOYMENT` (see `@filosign/shared` `DEPLOYMENT_CHAIN`)
+- `VITE_DEPLOYMENT` - must match server tier for that stack
+- `VITE_CHAIN` - must match `DEPLOYMENT` (see `@filosign/shared` `DEPLOYMENT_CHAIN`)
 
 Runtime oRPC `runtime.deployment` and `runtime.signupPolicy` expose server tier and signup gating to the client.
 
@@ -42,7 +42,7 @@ Runtime oRPC `runtime.deployment` and `runtime.signupPolicy` expose server tier 
 
 | Layer | What it controls | Production today |
 |-------|------------------|------------------|
-| **Signup** (`signupPolicy`, `assertRegistrationAllowed`) | Who may **create an account** (invite, paid checkout, or cold doc invite) | `invite_or_paid` — no organic free signup yet |
+| **Signup** (`signupPolicy`, `assertRegistrationAllowed`) | Who may **create an account** (invite, paid checkout, or cold doc invite) | `invite_or_paid` - no organic free signup yet |
 | **Registration** (`assertRegistrationComplete` on authenticated RPC) | User finished onboarding (`users` row exists) | Same on gated tiers |
 | **Entitlements** (`assertEntitlement`, catalog `free` plan) | Feature limits **after** login | Enforced on prod/staging/local; skipped on sandbox demo |
 
@@ -64,7 +64,7 @@ Set matching IDs in Infisical for each server/client stack. **Only sandbox** kee
 
 ### Platform admin
 
-- `ADMIN_WALLETS` — comma-separated admin wallet addresses on the server (see [`metrics-handlers.ts`](../../apps/server/api/handlers/metrics-handlers.ts))
+- `ADMIN_WALLETS` - comma-separated admin wallet addresses on the server (see [`metrics-handlers.ts`](../../apps/server/api/handlers/metrics-handlers.ts))
 - Admin UI: `/admin` (wallet must be in `ADMIN_WALLETS`)
 
 ## Local commands

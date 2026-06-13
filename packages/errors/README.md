@@ -13,9 +13,9 @@ Help steps must match real UI and server checks in the repo (no assumed flows li
 
 ## Exports
 
-- `@filosign/errors` — catalog, `presentError`, `isValidationOrpcError`
-- `@filosign/errors/server` — `throwAppError`
-- `@filosign/errors/client` — `showErrorToast` (requires `sonner`), `useSupportCenterPanel`, `renderSupportStepHtml` (catalog data + hash/deep-link state; UI lives in `apps/client` and Astro docs island)
+- `@filosign/errors` - catalog, `presentError`, `isValidationOrpcError`
+- `@filosign/errors/server` - `throwAppError`
+- `@filosign/errors/client` - `showErrorToast` (requires `sonner`), `useSupportCenterPanel`, `renderSupportStepHtml` (catalog data + hash/deep-link state; UI lives in `apps/client` and Astro docs island)
 
 Internal failures: do not add user MDX; client shows `GENERIC.UNKNOWN`.
 

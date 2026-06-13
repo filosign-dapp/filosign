@@ -23,13 +23,13 @@ import { SPRING_TOKENS, TWEEN_TOKENS, LOOP_TOKENS } from "@filosign/motion";
 ### Spring Physics Presets (`SPRING_TOKENS`)
 Springs calculate movement dynamically, enabling physical inertia and interruptible transitions:
 
-*   `pop`: `stiffness: 500, damping: 20` — aggressive, bouncy staggers (e.g., dropdown list items).
-*   `bouncy`: `stiffness: 345, damping: 20` — playful mount animations (e.g., logo icon).
-*   `smooth`: `stiffness: 230, damping: 25` — default panel entrances and text slide-ins.
-*   `smoothHeavy`: `stiffness: 230, damping: 30, mass: 1.2` — elegant, heavier entrance slide-ins (e.g., login widgets).
-*   `snappy`: `stiffness: 400, damping: 28, mass: 0.8` — immediate micro-interactions (e.g., buttons, toggles, checkboxes).
-*   `soft`: `stiffness: 200, damping: 25` — gentle layout shifts (e.g., settings profile cards).
-*   `glide`: `stiffness: 180, damping: 28` — low stiffness, controlled drift (e.g., sliding panels).
+*   `pop`: `stiffness: 500, damping: 20` - aggressive, bouncy staggers (e.g., dropdown list items).
+*   `bouncy`: `stiffness: 345, damping: 20` - playful mount animations (e.g., logo icon).
+*   `smooth`: `stiffness: 230, damping: 25` - default panel entrances and text slide-ins.
+*   `smoothHeavy`: `stiffness: 230, damping: 30, mass: 1.2` - elegant, heavier entrance slide-ins (e.g., login widgets).
+*   `snappy`: `stiffness: 400, damping: 28, mass: 0.8` - immediate micro-interactions (e.g., buttons, toggles, checkboxes).
+*   `soft`: `stiffness: 200, damping: 25` - gentle layout shifts (e.g., settings profile cards).
+*   `glide`: `stiffness: 180, damping: 28` - low stiffness, controlled drift (e.g., sliding panels).
 
 ### Tweens (`TWEEN_TOKENS`)
 Used for non-physical visual crossfades (like text label swaps and opacity sweeps) where springs can look jittery:

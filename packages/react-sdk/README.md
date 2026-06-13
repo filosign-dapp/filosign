@@ -7,10 +7,10 @@ React SDK: **`FilosignProvider`**, typed **oRPC**, TanStack Query hooks, wallet/
 ## Quick rules
 
 1. **API hooks:** `useFilosignRpc()` + `rpcQuery.*.queryOptions()` / `.call()`; `enabled: isAuthed` (or document public procedures).
-2. **Invalidate:** `rpcQuery.<domain>.<procedure>.key()` (or parent `.key()`); grouped helpers in `@filosign/react/invalidate-queries`. **`filosignKeys`** / **`filosignQueryRoots`** (`@filosign/react/query-keys`) for wallet, on-chain, session, and derived client queries—not hand-rolled oRPC strings.
-3. **Apps:** import `@filosign/react/{auth,files,users}` (+ `/utils`, `/runtime` if needed)—no `/hooks` barrel, no `@filosign/react/src/...`, no `fetch` to `/api/rpc`.
+2. **Invalidate:** `rpcQuery.<domain>.<procedure>.key()` (or parent `.key()`); grouped helpers in `@filosign/react/invalidate-queries`. **`filosignKeys`** / **`filosignQueryRoots`** (`@filosign/react/query-keys`) for wallet, on-chain, session, and derived client queries - not hand-rolled oRPC strings.
+3. **Apps:** import `@filosign/react/{auth,files,users}` (+ `/utils`, `/runtime` if needed) - no `/hooks` barrel, no `@filosign/react/src/...`, no `fetch` to `/api/rpc`.
 4. **Changes:** server procedure first → hook in matching `src/hooks/<domain>/` → client import → `turbo run check-types --filter=@filosign/client`.
-5. **Never** put `rpc` inside a `queryKey` (proxy + `JSON.stringify` hazard—see root [`AGENTS.md`](../../AGENTS.md)).
+5. **Never** put `rpc` inside a `queryKey` (proxy + `JSON.stringify` hazard - see root [`AGENTS.md`](../../AGENTS.md)).
 
 Deeper context: [`AGENTS.md`](../../AGENTS.md), [api-routes.mdc](../../.cursor/rules/apps/web/api-routes.mdc).
 
@@ -20,15 +20,15 @@ Deeper context: [`AGENTS.md`](../../AGENTS.md), [api-routes.mdc](../../.cursor/r
 
 | Package | Role |
 |---------|------|
-| [`apps/server`](../../apps/server) | API source of truth—[`api/orpc/router.ts`](../../apps/server/api/orpc/router.ts); types via [`app-router-types.ts`](src/orpc/app-router-types.ts) (`AppRouterClient`). Prefer concrete `.output` schemas in `api/orpc/schemas/`. |
-| [`@filosign/shared`](../../packages/shared) | Zod, commitments, pure helpers—not HTTP. |
+| [`apps/server`](../../apps/server) | API source of truth - [`api/orpc/router.ts`](../../apps/server/api/orpc/router.ts); types via [`app-router-types.ts`](src/orpc/app-router-types.ts) (`AppRouterClient`). Prefer concrete `.output` schemas in `api/orpc/schemas/`. |
+| [`@filosign/shared`](../../packages/shared) | Zod, commitments, pure helpers - not HTTP. |
 | [`@filosign/crypto-utils`](../../packages/crypto-utils) | KEM, Dilithium, encryption inside hooks. |
 | [`@filosign/evm`](../../packages/evm) | `getContracts`, EIP-712; on-chain via context `contracts`. |
 | [`apps/client`](../../apps/client) | Wraps provider ([`filosign-provider.tsx`](../../apps/client/src/lib/filosign/filosign-provider.tsx)): `apiBaseUrl`, viem `wallet` from thirdweb, `wasm.dilithium`. `ready` after `runtime` + `chainKey`. |
 
 **Owns:** browser RPC, React Query hooks, session seed, provider, **client PostHog** (`src/analytics/`). **Not:** Hono/DB, contracts source, page UI.
 
-**Analytics:** `FilosignAnalyticsProvider`, `useCaptureAppEvent`, `CLIENT_ANALYTICS_EVENTS` — see [`apps/server/lib/platform/analytics/`](../../apps/server/lib/platform/analytics/) (full catalog: server + client events).
+**Analytics:** `FilosignAnalyticsProvider`, `useCaptureAppEvent`, `CLIENT_ANALYTICS_EVENTS` - see [`apps/server/lib/platform/analytics/`](../../apps/server/lib/platform/analytics/) (full catalog: server + client events).
 
 ---
 
@@ -66,7 +66,7 @@ flowchart TB
 2. **`FilosignSession`** holds the thirdweb auth token; app passes `useAuthToken()` via `thirdwebAuthToken` on the provider.
 3. **`useAuthedApi`:** wallet + thirdweb token + registered user → RPC headers (`Bearer` + `X-Wallet-Address`).
 4. **`useLogout`** clears local seed + session token (wallet disconnect is separate).
-5. **`useCryptoUnlocked`** — in-memory seed for decrypt/sign (lazy unlock).
+5. **`useCryptoUnlocked`** - in-memory seed for decrypt/sign (lazy unlock).
 6. Feature hooks: **`useFilosignRpc()`** → `rpcQuery` + `isAuthed`.
 
 TanStack helpers: [`src/orpc/rpc-query-utils.ts`](src/orpc/rpc-query-utils.ts) (`["filosign", …]` prefix).
@@ -104,7 +104,7 @@ return useMutation({
 });
 ```
 
-If `mutate` takes a different shape than procedure input (e.g. `string` vs `{ id }`), **do not** spread `...mutationOptions()`—use explicit `mutationFn` + `.call()`.
+If `mutate` takes a different shape than procedure input (e.g. `string` vs `{ id }`), **do not** spread `...mutationOptions()` - use explicit `mutationFn` + `.call()`.
 
 ### Cache keys ([`filosignKeys`](src/lib/query-keys.ts))
 
@@ -119,10 +119,10 @@ Non-RPC only: `useAuthedApi`, `useIsLoggedIn`, `useIsRegistered`, `useStoredKeyg
 | API session | [`useAuthedApi`](src/hooks/auth/useAuthedApi.ts) |
 | Crypto unlock | [`useCryptoUnlocked`](src/hooks/auth/useCryptoUnlocked.ts) |
 | On-chain | `contracts.*.read` |
-| Session seed | In-memory [`session-seed.ts`](src/hooks/auth/session-seed.ts)—never `sessionStorage` |
+| Session seed | In-memory [`session-seed.ts`](src/hooks/auth/session-seed.ts) - never `sessionStorage` |
 | Uploads | `rpcQuery.storage.presignPut.call` → **`fetch` PUT** to URL |
 | File bytes | Presigned GET / Filecoin in `useViewFile` |
-| Composite | e.g. `useAcceptedPeople`—multiple `.call` in one `queryFn` |
+| Composite | e.g. `useAcceptedPeople` - multiple `.call` in one `queryFn` |
 | Profile email | Keep **separate** RPCs/hooks: `profile.update` (fields/avatar), `syncThirdwebEmail`, `setPrimaryEmail`; shared `useInvalidateUserProfile()` |
 
 ---
@@ -191,7 +191,7 @@ src/utils/
 src/constants.ts      # DAY, MINUTE
 ```
 
-No package-level `test` script yet—rely on client typecheck and manual flows.
+No package-level `test` script yet - rely on client typecheck and manual flows.
 
 ---
 

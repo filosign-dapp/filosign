@@ -32,15 +32,16 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/src/lib/components/ui/dialog";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { buildCreateForm, uploadedFromDataUrl } from "@/src/lib/domains/drafts";
 import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
+import { TemplatesPageSkeleton } from "@/src/routes/dashboard/_shell/templates/-components/templates-page-skeleton";
 
 export const Route = createFileRoute("/dashboard/_shell/templates/")({
 	component: TemplatesIndexPage,
@@ -199,12 +200,7 @@ function TemplatesIndexPage() {
 	};
 
 	if (entitlementsLoading || orgLoading) {
-		return (
-			<div className="flex flex-1 flex-col items-center justify-center gap-2 py-24 bg-background">
-				<InlineLoader size="lg" />
-				<p className="text-sm text-muted-foreground">Loading templates…</p>
-			</div>
-		);
+		return <TemplatesPageSkeleton />;
 	}
 
 	// Upgrade Gate for non-Teams / non-Teams Pro users

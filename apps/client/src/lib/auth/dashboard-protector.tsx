@@ -139,12 +139,21 @@ export default function DashboardProtector({
 		derived.shouldShowBootstrapLoader,
 	]);
 
-	if (shouldShowLoader || (derived.filosignSessionActive && orgsLoading)) {
+	if (shouldShowLoader) {
 		return <Loader />;
 	}
 
 	if (!derived.filosignSessionActive) {
 		return <Loader />;
+	}
+
+	if (orgsLoading) {
+		return (
+			<>
+				<ReturnToHandler />
+				{children}
+			</>
+		);
 	}
 
 	const orgs = orgsData?.organizations ?? [];

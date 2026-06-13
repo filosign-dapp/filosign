@@ -7,7 +7,6 @@ import {
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import { Button } from "@/src/lib/components/ui/button";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import {
 	DocumentCard,
 	formatDocumentCardDate,
@@ -24,6 +23,7 @@ import {
 	documentsTableCard,
 } from "@/src/routes/dashboard/_shell/document/all/-lib/documents-page-layout";
 import type { DocumentTab } from "@/src/routes/dashboard/_shell/document/all/-lib/hooks/use-documents-controller";
+import { DocumentsContentSkeleton } from "./documents-content-skeleton";
 import { DocumentsTable } from "./documents-table";
 
 function filterEmptyCopy(tab: DocumentTab): {
@@ -99,10 +99,9 @@ export function DocumentsContent() {
 			id="documents-tab-content"
 		>
 			{isLoading ? (
-				<div className="flex flex-1 flex-col items-center justify-center gap-2 py-24">
-					<InlineLoader size="lg" />
-					<p className="text-sm text-muted-foreground">Loading documents…</p>
-				</div>
+				<DocumentsContentSkeleton
+					variant={viewMode === "list" ? "table" : "cards"}
+				/>
 			) : !hasAnyContent ? (
 				<MotionReveal
 					preset="smooth"

@@ -61,7 +61,7 @@ export const ACTIVATION_HINTS: Record<ActivationHintId, ActivationHintDef> = {
 	sign_practice_walkthrough: {
 		id: "sign_practice_walkthrough",
 		title: "Practice signing",
-		body: "This is a practice document — your real agreements work the same way. Apply your signature, then submit.",
+		body: "This is a practice document - your real agreements work the same way. Apply your signature, then submit.",
 		routePrefix: "/dashboard/document/sign",
 		dismissible: true,
 		requiresPracticePiece: true,
@@ -70,7 +70,7 @@ export const ACTIVATION_HINTS: Record<ActivationHintId, ActivationHintDef> = {
 	compose_first_envelope: {
 		id: "compose_first_envelope",
 		title: "Send your first envelope",
-		body: "Upload a PDF, add recipients, and send. You can save a draft anytime before registering on-chain.",
+		body: "Upload a PDF, add recipients, and send. You can save a draft anytime before sending it.",
 		routePrefix: "/dashboard/envelope/create",
 		dismissible: true,
 		requiresMilestones: ["signature_created"],

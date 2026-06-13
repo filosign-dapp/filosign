@@ -93,7 +93,7 @@ export function useProvisionPracticeEnvelope() {
 			viewers: [],
 			documents: [
 				{
-					id: placementManifest.documents[0]?.id ?? "welcome-practice-v1",
+					id: placementManifest.documents[0]?.id ?? "welcome-practice-v2",
 					name: WELCOME_PRACTICE_ENVELOPE_NAME,
 					mimeType: "application/pdf",
 					bytes: pdfBytes,

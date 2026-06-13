@@ -1,7 +1,7 @@
 import type { Deployment } from "../utils/deployment";
 import type { ActivationMilestoneId } from "./milestones";
 
-/** Mirrors billing PlanId — kept local to avoid entitlements dependency. */
+/** Mirrors billing PlanId - kept local to avoid entitlements dependency. */
 export const BILLING_PLAN_IDS = [
 	"free",
 	"individual",

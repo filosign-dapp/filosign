@@ -1,6 +1,6 @@
 import type { ActivationStepDef } from "./types";
 
-/** Canonical activation step definitions — profiles compose by id. */
+/** Canonical activation step definitions - profiles compose by id. */
 export const ACTIVATION_STEPS: Record<
 	ActivationStepDef["id"],
 	ActivationStepDef
@@ -121,7 +121,7 @@ export const CORE_STEP_IDS = [
 	"send_first_envelope",
 ] as const satisfies readonly ActivationStepDef["id"][];
 
-/** Compact dashboard overlay — signature, practice sign, first send. */
+/** Compact dashboard overlay - signature, practice sign, first send. */
 export const BASIC_ONBOARDING_STEP_IDS = [
 	"confirm_signature",
 	"sign_practice_agreement",

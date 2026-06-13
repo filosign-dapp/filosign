@@ -46,8 +46,10 @@ export type {
 } from "./types";
 export {
 	buildPracticePlacementManifest,
+	WELCOME_PRACTICE_DATE_RECT,
 	WELCOME_PRACTICE_DOCUMENT_ID,
 	WELCOME_PRACTICE_ENVELOPE_NAME,
+	WELCOME_PRACTICE_SIGNATURE_RECT,
 	welcomePracticeDocumentSha256,
 	welcomePracticePdfBytes,
 } from "./welcome-practice";

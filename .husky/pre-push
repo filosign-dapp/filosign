@@ -1,1 +1,1 @@
-bun run sanity
+bun run sanity -- --ci

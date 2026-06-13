@@ -63,7 +63,7 @@ export function SignChromeHeader() {
 
 			<div className="flex shrink-0 items-center gap-2 md:gap-3">
 				<SignHeaderActions />
-				<SignHeaderSignButton label="Sign document" density="comfortable" />
+				<SignHeaderSignButton label="Sign envelope" density="comfortable" />
 			</div>
 		</header>
 	);

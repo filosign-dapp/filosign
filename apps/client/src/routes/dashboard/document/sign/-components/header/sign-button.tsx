@@ -25,7 +25,6 @@ export function SignHeaderSignButton({
 		return (
 			<Button
 				variant="primary"
-				size="lg"
 				className="hidden gap-2 lg:inline-flex"
 				onClick={() => setSignConfirmOpen(true)}
 				disabled={signFile.isPending || !canSubmitSign}

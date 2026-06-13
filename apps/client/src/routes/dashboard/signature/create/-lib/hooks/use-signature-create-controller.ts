@@ -174,7 +174,6 @@ export function useSignatureCreateController(options?: {
 			}
 
 			await invalidateActivationProgress(queryClient, rpcQuery);
-			toast.success("Signature saved");
 			await navigate({ to: "/dashboard" });
 		}).then(([, err]) => {
 			setIsSavingChoose(false);

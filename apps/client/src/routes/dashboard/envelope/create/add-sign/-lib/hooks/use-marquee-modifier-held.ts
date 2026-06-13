@@ -8,7 +8,7 @@ function readMarqueeModifierHeld(event?: KeyboardEvent): boolean {
 	return false;
 }
 
-/** True while Cmd (Mac) or Ctrl (Win/Linux) is held — used to block canvas pan instantly. */
+/** True while Cmd (Mac) or Ctrl (Win/Linux) is held - used to block canvas pan instantly. */
 export function useMarqueeModifierHeld(enabled: boolean): boolean {
 	const [held, setHeld] = useState(false);
 

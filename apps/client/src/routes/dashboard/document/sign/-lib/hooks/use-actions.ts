@@ -135,7 +135,6 @@ export function useSignActions(options: {
 
 			if (isPracticeSign) {
 				await invalidateActivationProgress(queryClient, rpcQuery);
-				toast.success("Practice document signed.");
 				navigate({ to: "/dashboard" });
 				return;
 			}

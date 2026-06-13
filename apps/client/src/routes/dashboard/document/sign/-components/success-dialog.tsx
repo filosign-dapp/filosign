@@ -67,8 +67,7 @@ export function SignSuccessDialog({
 							<span className="min-w-0 text-left">
 								<span className="block font-medium">Download proof packet</span>
 								<span className="block text-xs font-normal opacity-90">
-									Full archive with the document, proof report, README, and
-									verification data
+									ZIP archive with the signed envelope and proofs.
 								</span>
 							</span>
 						</Button>
@@ -82,7 +81,7 @@ export function SignSuccessDialog({
 								</div>
 							) : null}
 						</div>
-						<div className="mt-3 flex flex-col gap-2 text-sm">
+						<div className="mt-4 flex flex-col gap-2">
 							<DocsLink href={DOCS_LINKS.completionPacket()}>
 								What is in the proof packet?
 							</DocsLink>
@@ -90,7 +89,7 @@ export function SignSuccessDialog({
 								href={DOCS_LINKS.verifyProofPacket()}
 								target="_blank"
 								rel="noopener noreferrer"
-								className="text-primary underline-offset-4 hover:underline flex gap-1 items-center"
+								className="text-primary underline-offset-4 hover:underline text-xs flex gap-1 items-center"
 							>
 								Verify a proof packet independently
 								<ArrowSquareOutIcon className="size-3.5" />
@@ -104,7 +103,7 @@ export function SignSuccessDialog({
 						variant="primary"
 						onClick={() => onOpenChange(false)}
 					>
-						Done
+						Close
 					</Button>
 				</DialogFooter>
 			</DialogContent>

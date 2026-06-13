@@ -37,7 +37,7 @@ type PaletteDragPreviewProps = {
 	size: PlacementFieldSize;
 };
 
-/** Sidebar palette ghost — matches on-canvas field chrome at current zoom. */
+/** Sidebar palette ghost - matches on-canvas field chrome at current zoom. */
 function PaletteDragPreview({
 	fieldType,
 	screenScale,

@@ -132,10 +132,9 @@ export function useSignDocumentController() {
 		compliance: {
 			pdfExportBusy: compliance.pdfExportBusy,
 			exportsAllowed: compliance.exportsAllowed,
-			handleDownload: compliance.handleDownload,
+			handleDownloadOriginalFiles: compliance.handleDownloadOriginalFiles,
 			handleDownloadCompliancePdf: compliance.handleDownloadCompliancePdf,
-			handleDownloadDocumentWithCompliancePdf:
-				compliance.handleDownloadDocumentWithCompliancePdf,
+			handleDownloadSignedEnvelope: compliance.handleDownloadSignedEnvelope,
 			handleDownloadCompletionPacket: compliance.handleDownloadCompletionPacket,
 		},
 		coldShare: {

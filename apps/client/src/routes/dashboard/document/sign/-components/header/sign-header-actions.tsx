@@ -41,13 +41,7 @@ export function SignHeaderActions() {
 	const { alreadySigned, canSign } = useSignSigning();
 	const { myPlacementFields, canSubmitPlacementSign } = useSignPlacement();
 	const { rules: settlementRules } = useSignSettlements();
-	const {
-		pdfExportBusy,
-		exportsAllowed,
-		handleDownload,
-		handleDownloadCompliancePdf,
-		handleDownloadCompletionPacket,
-	} = useSignCompliance();
+	const compliance = useSignCompliance();
 	const { setSignSuccessDialogOpen } = useSignSuccess();
 
 	const status = signStatusLabel({
@@ -62,7 +56,7 @@ export function SignHeaderActions() {
 			{settlementRules.length > 0 ? (
 				<SettlementHeaderBadge rules={settlementRules} />
 			) : null}
-			<ButtonGroup aria-label="Document actions">
+			<ButtonGroup aria-label="Envelope actions">
 				{status ? (
 					<ButtonGroupText className="hidden h-10 gap-2 border-border/60 bg-muted/30 px-2.5 text-xs font-normal text-muted-foreground shadow-none sm:flex">
 						<span
@@ -80,12 +74,8 @@ export function SignHeaderActions() {
 			</ButtonGroup>
 			<ProofDownloadButtonGroup
 				density="header"
-				exportsAllowed={exportsAllowed}
-				pdfExportBusy={pdfExportBusy}
+				exports={compliance}
 				fileDataReady={Boolean(fileData)}
-				handleDownload={handleDownload}
-				handleDownloadCompletionPacket={handleDownloadCompletionPacket}
-				handleDownloadCompliancePdf={handleDownloadCompliancePdf}
 				onMainProofClick={() => setSignSuccessDialogOpen(true)}
 			/>
 		</div>

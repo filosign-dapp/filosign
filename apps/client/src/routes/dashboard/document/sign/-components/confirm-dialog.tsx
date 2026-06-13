@@ -103,7 +103,7 @@ export function SignConfirmDialog({
 								Signing…
 							</>
 						) : (
-							"Sign document"
+							"Sign envelope"
 						)}
 					</AlertDialogAction>
 				</AlertDialogFooter>

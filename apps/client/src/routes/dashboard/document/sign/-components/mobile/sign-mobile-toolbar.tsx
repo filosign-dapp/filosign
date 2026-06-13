@@ -17,13 +17,7 @@ import {
 export function SignMobileToolbar() {
 	const { file } = useSignFile();
 	const { fileData } = useSignViewer();
-	const {
-		pdfExportBusy,
-		exportsAllowed,
-		handleDownload,
-		handleDownloadCompliancePdf,
-		handleDownloadCompletionPacket,
-	} = useSignCompliance();
+	const compliance = useSignCompliance();
 	const { setSignSuccessDialogOpen } = useSignSuccess();
 	const {
 		myPlacementFields,
@@ -62,12 +56,8 @@ export function SignMobileToolbar() {
 					<SignPageEnvelopeCommentsBlock file={file} />
 					<ProofDownloadButtonGroup
 						density="compact"
-						exportsAllowed={exportsAllowed}
-						pdfExportBusy={pdfExportBusy}
+						exports={compliance}
 						fileDataReady={Boolean(fileData)}
-						handleDownload={handleDownload}
-						handleDownloadCompletionPacket={handleDownloadCompletionPacket}
-						handleDownloadCompliancePdf={handleDownloadCompliancePdf}
 						onMainProofClick={() => setSignSuccessDialogOpen(true)}
 					/>
 					<SignHeaderRotateInviteButton variant="compact" />

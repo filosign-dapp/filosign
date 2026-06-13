@@ -109,14 +109,16 @@ export function SupportCenterPanel({
 				))
 			)}
 
-			<p className="border-t border-border pt-6 text-sm leading-relaxed text-muted-foreground">
-				Still need help? Email{" "}
-				<a
-					href="mailto:support@filosign.xyz"
-					className="font-medium text-foreground underline underline-offset-4"
-				>
-					support@filosign.xyz
-				</a>
+			<div className="border-t border-border flex w-full justify-between gap-4 pt-6 text-sm leading-relaxed text-muted-foreground">
+				<p>
+					Still need help? Email{" "}
+					<a
+						href="mailto:support@filosign.xyz"
+						className="font-medium text-foreground underline underline-offset-4"
+					>
+						support@filosign.xyz
+					</a>
+				</p>
 				{docsCrossLinkUrl ? (
 					<>
 						{" "}
@@ -128,7 +130,7 @@ export function SupportCenterPanel({
 						</a>
 					</>
 				) : null}
-			</p>
+			</div>
 		</div>
 	);
 }

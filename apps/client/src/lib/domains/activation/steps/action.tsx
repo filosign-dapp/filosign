@@ -21,6 +21,7 @@ function stepLinkLabel(
 	step: EvaluatedActivationStep,
 	compact: boolean,
 ): string {
+	if (step.actionLabel) return step.actionLabel;
 	if (step.linkKey === "pricing") return "View plans";
 	if (step.linkKey === "sandbox") return "Open sandbox";
 	return compact ? "Go" : "Open";
@@ -28,39 +29,21 @@ function stepLinkLabel(
 
 function LearnProofStepAction({
 	step,
-	isMarking,
-	onMarkProofLearned,
+	size,
+	variant,
 	onTrackStep,
 }: Pick<
 	ActivationStepActionProps,
-	"step" | "isMarking" | "onMarkProofLearned" | "onTrackStep"
+	"step" | "size" | "variant" | "onTrackStep"
 >) {
 	return (
-		<>
-			<Button
-				type="button"
-				size="sm"
-				variant="secondary"
-				disabled={isMarking}
-				onClick={() => onMarkProofLearned?.()}
-			>
-				{isMarking ? (
-					<span className="inline-flex items-center gap-2">
-						<InlineLoader size="sm" />
-						Saving
-					</span>
-				) : (
-					"Mark as learned"
-				)}
-			</Button>
-			<Link
-				to="/dashboard/support/tutorials"
-				className={buttonVariants({ variant: "ghost", size: "sm" })}
-				onClick={() => onTrackStep?.(step.id)}
-			>
-				Read more
-			</Link>
-		</>
+		<Link
+			to="/dashboard/support/tutorials"
+			className={buttonVariants({ variant, size })}
+			onClick={() => onTrackStep?.(step.id)}
+		>
+			View tutorials
+		</Link>
 	);
 }
 

@@ -2,6 +2,7 @@ import {
 	useActivationProgress,
 	useMarkActivationMilestone,
 	useProvisionPracticeEnvelope,
+	useUnmarkActivationMilestone,
 } from "@filosign/react/users";
 import type { ActivationStepId, BillingPlanId } from "@filosign/shared";
 import { useNavigate } from "@tanstack/react-router";
@@ -21,6 +22,7 @@ export function useStartHereController() {
 	const { evaluated, isLoading, activationQuery, entitlementsQuery } =
 		useActivationProgress();
 	const markMilestone = useMarkActivationMilestone();
+	const unmarkMilestone = useUnmarkActivationMilestone();
 	const {
 		provision,
 		ensureAcknowledged,
@@ -184,6 +186,10 @@ export function useStartHereController() {
 		trackMilestoneMarked("proof_packet_learned");
 	}, [markMilestone, trackMilestoneMarked]);
 
+	const unmarkProofLearned = useCallback(async () => {
+		await unmarkMilestone.mutateAsync("proof_packet_learned");
+	}, [unmarkMilestone]);
+
 	const trackStepNavigation = useCallback(
 		(stepId: ActivationStepId) => {
 			trackStepClick(stepId);
@@ -237,7 +243,7 @@ export function useStartHereController() {
 		checklistDismissed,
 		nextStepsDismissed,
 		isProvisioning,
-		isMarking: markMilestone.isPending,
+		isMarking: markMilestone.isPending || unmarkMilestone.isPending,
 		newlyUnlockedStepIds,
 		nextStepActions,
 		dismissChecklist,
@@ -245,6 +251,7 @@ export function useStartHereController() {
 		toggleCollapsed,
 		restoreChecklist,
 		markProofLearned,
+		unmarkProofLearned,
 		openSignPractice,
 		trackStepNavigation,
 	};

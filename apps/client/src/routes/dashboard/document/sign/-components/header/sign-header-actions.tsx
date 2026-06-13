@@ -24,7 +24,7 @@ function signStatusLabel(args: {
 	canSubmitPlacementSign: boolean;
 }) {
 	if (args.alreadySigned) {
-		return { label: "Signed", dotClass: "bg-emerald-500" };
+		return { label: "Signed", dotClass: "bg-secondary" };
 	}
 	if (!args.canSign) {
 		return null;
@@ -32,7 +32,7 @@ function signStatusLabel(args: {
 	if (args.hasPlacementFields && !args.canSubmitPlacementSign) {
 		return { label: "Fields incomplete", dotClass: "bg-amber-500" };
 	}
-	return { label: "Ready to sign", dotClass: "bg-emerald-500" };
+	return { label: "Ready to sign", dotClass: "bg-secondary" };
 }
 
 export function SignHeaderActions() {

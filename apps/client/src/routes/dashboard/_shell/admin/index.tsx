@@ -2,6 +2,7 @@ import { getPlanName, type PlanId } from "@filosign/entitlements";
 import { MotionReveal } from "@filosign/motion";
 import { useFilosignContext } from "@filosign/react";
 import type { AppRouterClient, InferClientOutputs } from "@filosign/react/orpc";
+import { platformInviteEmailVariants } from "@filosign/shared";
 import {
 	ArrowLeftIcon,
 	CurrencyCircleDollarIcon,
@@ -21,6 +22,13 @@ import { AdminSectionEmpty } from "@/src/lib/components/app/empty-state";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 import { Input } from "@/src/lib/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/src/lib/components/ui/select";
 import { Textarea } from "@/src/lib/components/ui/textarea";
 import { formatInlineAppError } from "@/src/lib/errors";
 import { cn } from "@/src/lib/utils/index";
@@ -28,6 +36,13 @@ import { AdminMetricsSection } from "@/src/routes/dashboard/_shell/admin/-compon
 
 type AdminInviteRow =
 	InferClientOutputs<AppRouterClient>["platformAdmin"]["invites"]["list"]["invites"][number];
+type InviteEmailVariant = AdminInviteRow["emailVariant"];
+
+const INVITE_EMAIL_VARIANT_LABELS: Record<InviteEmailVariant, string> = {
+	warm: "Variant 1 — warm (already talked)",
+	cold: "Variant 2 — cold outreach",
+	custom: "Custom message",
+};
 type AdminUserRow =
 	InferClientOutputs<AppRouterClient>["platformAdmin"]["users"]["list"]["users"][number];
 type AdminAccessRequestRow =
@@ -87,6 +102,8 @@ function AdminPage() {
 	const [note, setNote] = useState("");
 	const [partnerName, setPartnerName] = useState("");
 	const [inviteEmailBody, setInviteEmailBody] = useState("");
+	const [inviteEmailVariant, setInviteEmailVariant] =
+		useState<InviteEmailVariant>("warm");
 	const [recipientEmail, setRecipientEmail] = useState("");
 	const [lastInviteUrl, setLastInviteUrl] = useState<string | null>(null);
 	const [pendingInvite, setPendingInvite] = useState<{
@@ -132,6 +149,7 @@ function AdminPage() {
 		mutationFn: (input: {
 			email: string;
 			partnerName: string;
+			emailVariant: InviteEmailVariant;
 			emailBody?: string;
 		}) =>
 			rpc.platformAdmin.invites.create({
@@ -140,6 +158,7 @@ function AdminPage() {
 				trialDays: 30,
 				email: input.email,
 				note: input.partnerName,
+				emailVariant: input.emailVariant,
 				emailBody: input.emailBody || undefined,
 			}),
 		onSuccess: (data) => {
@@ -161,6 +180,7 @@ function AdminPage() {
 			setRecipientEmail("");
 			setPartnerName("");
 			setInviteEmailBody("");
+			setInviteEmailVariant("warm");
 		},
 		onError: (err) => {
 			setError(formatInlineAppError(err));
@@ -407,22 +427,50 @@ function AdminPage() {
 
 						<div className="space-y-1.5 max-w-2xl">
 							<span className="text-xs font-normal text-muted-foreground block">
-								Custom message{" "}
-								<span className="text-muted-foreground/80">(optional)</span>
+								Email variant
 							</span>
-							<Textarea
-								placeholder="I am excited to help you set up your first real workflow. Let me know what are you trying to achieve and I will outline a customized guide for you."
-								value={inviteEmailBody}
-								onChange={(e) => setInviteEmailBody(e.target.value)}
-								rows={4}
+							<Select
+								value={inviteEmailVariant}
+								onValueChange={(value) =>
+									setInviteEmailVariant(value as InviteEmailVariant)
+								}
 								disabled={createInvite.isPending}
-								className="resize-y min-h-[96px]"
-							/>
+							>
+								<SelectTrigger className="w-full sm:max-w-md">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{platformInviteEmailVariants.map((variant) => (
+										<SelectItem key={variant} value={variant}>
+											{INVITE_EMAIL_VARIANT_LABELS[variant]}
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
 							<p className="text-xs text-muted-foreground text-pretty">
-								Replaces the default workflow paragraph in the email. Leave
-								blank to use the standard copy.
+								Warm for people you have already spoken with. Cold for
+								unsolicited outreach. Custom lets you write the main paragraph.
 							</p>
 						</div>
+
+						{inviteEmailVariant === "custom" ? (
+							<div className="space-y-1.5 max-w-2xl">
+								<span className="text-xs font-normal text-muted-foreground block">
+									Custom message
+								</span>
+								<Textarea
+									placeholder="I am excited to help you set up your first real workflow..."
+									value={inviteEmailBody}
+									onChange={(e) => setInviteEmailBody(e.target.value)}
+									rows={4}
+									disabled={createInvite.isPending}
+									className="resize-y min-h-[96px]"
+								/>
+								<p className="text-xs text-muted-foreground text-pretty">
+									Replaces the default middle paragraph in the email body.
+								</p>
+							</div>
+						) : null}
 
 						{error && (
 							<p className="text-xs text-destructive bg-destructive/5 border border-destructive/10 rounded-md p-2">
@@ -447,10 +495,23 @@ function AdminPage() {
 									setError("Enter a valid recipient email.");
 									return;
 								}
+								if (
+									inviteEmailVariant === "custom" &&
+									!inviteEmailBody.trim()
+								) {
+									setError(
+										"Enter a custom message for the custom email variant.",
+									);
+									return;
+								}
 								createInvite.mutate({
 									email,
 									partnerName: name,
-									emailBody: inviteEmailBody.trim() || undefined,
+									emailVariant: inviteEmailVariant,
+									emailBody:
+										inviteEmailVariant === "custom"
+											? inviteEmailBody.trim()
+											: undefined,
 								});
 							}}
 							isLoading={createInvite.isPending}
@@ -569,6 +630,12 @@ function AdminPage() {
 												<span className="font-medium text-foreground">
 													{getPlanName(invite.planId as PlanId)}
 												</span>{" "}
+												· Email:{" "}
+												<span className="font-medium text-foreground">
+													{INVITE_EMAIL_VARIANT_LABELS[
+														invite.emailVariant as InviteEmailVariant
+													] ?? invite.emailVariant}
+												</span>{" "}
 												· Redemptions:{" "}
 												<span className="font-medium text-foreground">
 													{String(invite.redemptionCount)}/
@@ -654,12 +721,7 @@ function AdminPage() {
 											{status === "pending" ? (
 												<Badge variant="secondary">Pending</Badge>
 											) : status === "approved" ? (
-												<Badge
-													variant="outline"
-													className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5"
-												>
-													Approved
-												</Badge>
+												<Badge variant="secondary">Approved</Badge>
 											) : (
 												<Badge variant="destructive">Rejected</Badge>
 											)}

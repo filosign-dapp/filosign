@@ -119,7 +119,7 @@ export function RecipientCard({
 										avatarInitials
 									)}
 								</AvatarFallback>
-								<AvatarBadge className="bg-chart-2 text-black ring-background">
+								<AvatarBadge className="bg-secondary text-secondary-foreground ring-background">
 									<CheckIcon className="size-full" />
 								</AvatarBadge>
 							</Avatar>

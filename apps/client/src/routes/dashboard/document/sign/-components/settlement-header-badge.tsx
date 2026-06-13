@@ -17,7 +17,7 @@ export function SettlementHeaderBadge({ rules }: Props) {
 				variant="secondary"
 				className="gap-1.5 border-border bg-secondary/90 text-secondary-foreground shadow-none"
 			>
-				<CheckCircleIcon className="size-3.5 text-chart-2" weight="fill" />
+				<CheckCircleIcon className="size-3.5 text-secondary" weight="fill" />
 				All payouts sent
 			</Badge>
 		);

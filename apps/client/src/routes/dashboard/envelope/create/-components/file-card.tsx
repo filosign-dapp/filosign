@@ -41,7 +41,7 @@ const getFileTypeColor = (fileType: string) => {
 	if (fileType.includes("pdf")) return "text-red-500";
 	if (fileType.includes("doc") || fileType.includes("word"))
 		return "text-blue-500";
-	if (fileType.includes("image")) return "text-green-500";
+	if (fileType.includes("image")) return "text-secondary";
 	if (fileType.includes("text")) return "text-gray-500";
 	return "text-primary";
 };

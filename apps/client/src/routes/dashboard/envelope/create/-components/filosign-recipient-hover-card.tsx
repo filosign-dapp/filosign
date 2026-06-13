@@ -44,7 +44,7 @@ export function FilosignRecipientHoverCard({
 					<AvatarFallback className="bg-muted/30 text-xs font-medium text-muted-foreground">
 						{initialsFromName(displayName, email || "?")}
 					</AvatarFallback>
-					<AvatarBadge className="bg-chart-2 text-black ring-background">
+					<AvatarBadge className="bg-secondary text-secondary-foreground ring-background">
 						<CheckIcon className="size-full" />
 					</AvatarBadge>
 				</Avatar>

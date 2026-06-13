@@ -57,7 +57,7 @@
 	--white: hsl(0, 0%, 100%);
 	--off-white: hsl(90, 55%, 98%);
 
-	/* PDF canvas field overlays — stable on document pages (not flipped in .dark) */
+	/* PDF canvas field overlays - stable on document pages (not flipped in .dark) */
 	--placement-chrome: #0d0d0d;
 	--placement-chrome-foreground: oklch(0.985 0 0);
 	--placement-chrome-border: oklch(1 0 0 / 0.22);

@@ -25,7 +25,7 @@ const onboardingCopy: RecoveryPhraseDialogCopy = {
 const profileExportCopy: RecoveryPhraseDialogCopy = {
 	title: "Export recovery phrase",
 	description:
-		"Your recovery phrase is derived from your wallet on this device. Store it somewhere safe — Filosign never stores it on our servers.",
+		"Your recovery phrase is derived from your wallet on this device. Store it somewhere safe - Filosign never stores it on our servers.",
 	confirmLabel: "Done",
 };
 

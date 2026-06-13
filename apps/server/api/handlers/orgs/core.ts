@@ -20,6 +20,7 @@ import {
 } from "@/lib/domains/orgs";
 import { validateLinkOrgWalletSignature } from "@/lib/domains/orgs/utils/link-wallet";
 import {
+	attachPartnerTrialOnOrgCreateWithTx,
 	attachPendingOrgBillingOnCreateWithTx,
 	grantAdminOrgTeamsProIfEligibleWithTx,
 } from "@/lib/domains/platform-access";
@@ -101,6 +102,11 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 			});
 
 			await attachPendingOrgBillingOnCreateWithTx(tx, {
+				creatorWallet: creator,
+				organizationId: org.id,
+			});
+
+			await attachPartnerTrialOnOrgCreateWithTx(tx, {
 				creatorWallet: creator,
 				organizationId: org.id,
 			});

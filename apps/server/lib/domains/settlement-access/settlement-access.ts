@@ -1,12 +1,17 @@
 import { throwAppError } from "@filosign/errors/server";
 import { SETTLEMENT_FEATURE_TERMS_VERSION } from "@filosign/shared";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { assertOrgPermission, resolveActiveOrg } from "@/lib/domains/orgs";
+import type { PlatformAccessTx } from "@/lib/domains/platform-access/utils/shared";
 import { isPlatformAdminForWallet } from "@/lib/platform/admin";
 import db from "@/lib/platform/db";
+import {
+	platformInviteRedemptions,
+	platformInvites,
+} from "@/lib/platform/db/schema/platform-access";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 function settlementAccessSchema() {
@@ -15,6 +20,93 @@ function settlementAccessSchema() {
 }
 
 export { SETTLEMENT_FEATURE_TERMS_VERSION };
+
+export const PARTNER_INVITE_SETTLEMENT_USE_CASE =
+	"Partner invite trial workspace" as const;
+
+export const PARTNER_INVITE_SETTLEMENT_REVIEW_NOTE =
+	"Auto-approved with partner invite trial" as const;
+
+/** Pre-approve payout attachment when the creator redeemed a partner_trial invite. */
+export async function grantPartnerInviteSettlementAccessWithTx(
+	tx: PlatformAccessTx,
+	args: {
+		organizationId: string;
+		creatorWallet: Address;
+	},
+): Promise<boolean> {
+	const wallet = getAddress(args.creatorWallet);
+	const now = new Date();
+
+	const [redemption] = await tx
+		.select({
+			createdByAdminWallet: platformInvites.createdByAdminWallet,
+		})
+		.from(platformInviteRedemptions)
+		.innerJoin(
+			platformInvites,
+			eq(platformInviteRedemptions.inviteId, platformInvites.id),
+		)
+		.where(
+			and(
+				eq(platformInviteRedemptions.walletAddress, wallet),
+				eq(platformInvites.kind, "partner_trial"),
+			),
+		)
+		.limit(1);
+
+	if (!redemption) {
+		return false;
+	}
+
+	const { organizationSettlementFeatureAccess } = settlementAccessSchema();
+	const [existing] = await tx
+		.select({ status: organizationSettlementFeatureAccess.status })
+		.from(organizationSettlementFeatureAccess)
+		.where(
+			eq(
+				organizationSettlementFeatureAccess.organizationId,
+				args.organizationId,
+			),
+		)
+		.limit(1);
+
+	if (existing?.status === "approved") {
+		return true;
+	}
+
+	await tx
+		.insert(organizationSettlementFeatureAccess)
+		.values({
+			organizationId: args.organizationId,
+			status: "approved",
+			termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+			acceptedAt: now,
+			acceptedByWallet: wallet,
+			useCase: PARTNER_INVITE_SETTLEMENT_USE_CASE,
+			sanctionsSelfCertAt: now,
+			reviewedAt: now,
+			reviewedByAdminWallet: redemption.createdByAdminWallet ?? null,
+			reviewNote: PARTNER_INVITE_SETTLEMENT_REVIEW_NOTE,
+		})
+		.onConflictDoUpdate({
+			target: organizationSettlementFeatureAccess.organizationId,
+			set: {
+				status: "approved",
+				termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+				acceptedAt: now,
+				acceptedByWallet: wallet,
+				useCase: PARTNER_INVITE_SETTLEMENT_USE_CASE,
+				sanctionsSelfCertAt: now,
+				reviewedAt: now,
+				reviewedByAdminWallet: redemption.createdByAdminWallet ?? null,
+				reviewNote: PARTNER_INVITE_SETTLEMENT_REVIEW_NOTE,
+				updatedAt: now,
+			},
+		});
+
+	return true;
+}
 
 export function settlementFeatureAccessApprovedForPlatformAdmin() {
 	return {

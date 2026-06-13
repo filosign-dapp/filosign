@@ -32,12 +32,17 @@ export {
 
 export {
 	assertRegistrationComplete,
+	attachPartnerTrialOnOrgCreateWithTx,
 	attachPendingOrgBillingOnCreateWithTx,
+	isActivePartnerTrialSubscription,
 	isUserRegistered,
 	linkPaidSetupOnRegister,
 	linkPaidSetupOnRegisterWithTx,
+	type PartnerInviteTrialContext,
+	type PartnerTrialSubscriptionRow,
 	redeemPlatformInviteOnRegister,
 	redeemPlatformInviteOnRegisterWithTx,
+	resolvePartnerInviteTrialForWorkspace,
 } from "./registration";
 
 export {

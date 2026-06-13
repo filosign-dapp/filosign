@@ -1,7 +1,9 @@
 import {
 	ACTIVATION_CATALOG_VERSION,
 	type ActivationMilestoneId,
+	type UserRevocableActivationMilestoneId,
 	zActivationMilestoneId,
+	zUserRevocableActivationMilestoneId,
 } from "@filosign/shared";
 import { and, eq, sql } from "drizzle-orm";
 import type { Address } from "viem";
@@ -19,6 +21,10 @@ const { files, userActivationMilestones, userActivationState } = db.schema;
 
 export const zUserActivationMarkBody = z.object({
 	milestone: zActivationMilestoneId,
+});
+
+export const zUserActivationUnmarkBody = z.object({
+	milestone: zUserRevocableActivationMilestoneId,
 });
 
 export async function markActivationMilestone(
@@ -42,6 +48,24 @@ export async function markActivationMilestone(
 		.returning({ milestone: userActivationMilestones.milestone });
 
 	return { inserted: row != null };
+}
+
+export async function unmarkActivationMilestone(
+	wallet: Address,
+	milestone: UserRevocableActivationMilestoneId,
+): Promise<{ removed: boolean }> {
+	const walletNorm = getAddress(wallet);
+	const deleted = await db
+		.delete(userActivationMilestones)
+		.where(
+			and(
+				eq(userActivationMilestones.walletAddress, walletNorm),
+				eq(userActivationMilestones.milestone, milestone),
+			),
+		)
+		.returning({ milestone: userActivationMilestones.milestone });
+
+	return { removed: deleted.length > 0 };
 }
 
 async function markActivationMilestoneTracked(
@@ -116,6 +140,16 @@ export async function userActivationMark(wallet: Address, rawBody: unknown) {
 	}
 
 	await markActivationMilestoneTracked(wallet, parsed.data.milestone);
+	return {};
+}
+
+export async function userActivationUnmark(wallet: Address, rawBody: unknown) {
+	const parsed = zUserActivationUnmarkBody.safeParse(rawBody);
+	if (parsed.error) {
+		throwZodBadRequest(parsed.error);
+	}
+
+	await unmarkActivationMilestone(wallet, parsed.data.milestone);
 	return {};
 }
 

@@ -248,5 +248,6 @@ export const rpcUserActivationGetOutputSchema = z.object({
 });
 
 export const rpcUserActivationMarkOutputSchema = rpcEmptyOutputSchema;
+export const rpcUserActivationUnmarkOutputSchema = rpcEmptyOutputSchema;
 
 export { zUserSignatureCreateInput as rpcUserSignaturesCreateInputSchema };

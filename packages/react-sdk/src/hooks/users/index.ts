@@ -27,6 +27,7 @@ export { useProvisionPracticeEnvelope } from "./useProvisionPracticeEnvelope";
 export { useSetDefaultSignature } from "./useSetDefaultSignature";
 export { useSetPrimaryEmail } from "./useSetPrimaryEmail";
 export { useSyncThirdwebEmail } from "./useSyncThirdwebEmail";
+export { useUnmarkActivationMilestone } from "./useUnmarkActivationMilestone";
 export { useUpdateUserProfile } from "./useUpdateUserProfile";
 export {
 	fetchUserProfile,

@@ -14,7 +14,10 @@ import {
 	redeemPlatformInviteOnRegisterWithTx,
 } from "@/lib/domains/platform-access";
 import { allowsPlatformAdminAccess } from "@/lib/platform/admin";
-import { invalidateUserExists } from "@/lib/platform/cache";
+import {
+	invalidateUserEntitlements,
+	invalidateUserExists,
+} from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import {
@@ -216,4 +219,5 @@ export async function registerUserAccount(
 	});
 
 	await invalidateUserExists(wallet);
+	await invalidateUserEntitlements(wallet);
 }

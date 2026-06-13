@@ -118,6 +118,7 @@ import { rpcTxProcessIndexerHashOutputSchema } from "./tx-output";
 import {
 	rpcUserActivationGetOutputSchema,
 	rpcUserActivationMarkOutputSchema,
+	rpcUserActivationUnmarkOutputSchema,
 	rpcUserEraseAccountOutputSchema,
 	rpcUserExportAccountDataOutputSchema,
 	rpcUserPrivacyRequestCreateOutputSchema,
@@ -286,6 +287,7 @@ export const rpcOut = {
 		signaturesDelete: rpcUserSignaturesDeleteOutputSchema,
 		activationGet: rpcUserActivationGetOutputSchema,
 		activationMark: rpcUserActivationMarkOutputSchema,
+		activationUnmark: rpcUserActivationUnmarkOutputSchema,
 	},
 } as const;
 

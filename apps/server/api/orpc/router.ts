@@ -1251,6 +1251,12 @@ export const appRouter = {
 				.handler(({ context, input }) =>
 					userHandlers.userActivationMark(context.userWallet, input),
 				),
+			unmark: authenticatedProcedure
+				.input(userHandlers.zUserActivationUnmarkBody)
+				.output(out.users.activationUnmark)
+				.handler(({ context, input }) =>
+					userHandlers.userActivationUnmark(context.userWallet, input),
+				),
 		},
 		eraseAccount: authenticatedProcedure
 			.output(out.users.eraseAccount)

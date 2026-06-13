@@ -6,7 +6,9 @@ export {
 	userActivationOnRealEnvelopeSent,
 	userActivationOnSignatureReady,
 	userActivationRecordPracticePiece,
+	userActivationUnmark,
 	zUserActivationMarkBody,
+	zUserActivationUnmarkBody,
 } from "./activation";
 export { shouldEnforceSendQuota } from "./activation-quota";
 export {

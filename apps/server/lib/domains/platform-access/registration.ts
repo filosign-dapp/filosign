@@ -1,3 +1,4 @@
+import { getPlanName, type PlanId } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
 import { signupPolicyIsGated } from "@filosign/shared";
 import { and, eq, isNull, sql } from "drizzle-orm";
@@ -5,6 +6,7 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import env from "@/env";
 import { isOrgBillingPlanId } from "@/lib/domains/billing/utils/policy";
+import { grantPartnerInviteSettlementAccessWithTx } from "@/lib/domains/settlement-access/settlement-access";
 import {
 	CACHE_TTL,
 	cacheAside,
@@ -26,6 +28,29 @@ import {
 	normalizeEmail,
 	type PlatformAccessTx,
 } from "./utils/shared";
+
+export type PartnerTrialSubscriptionRow = {
+	planId: string;
+	status: string;
+	provider: string;
+	periodStart: Date;
+	periodEnd: Date | null;
+	featureOverrides: Record<string, unknown>;
+};
+
+export function isActivePartnerTrialSubscription(
+	sub: PartnerTrialSubscriptionRow | undefined,
+	now = new Date(),
+): sub is PartnerTrialSubscriptionRow & {
+	planId: "teams" | "teams_pro";
+	periodEnd: Date;
+} {
+	if (!sub) return false;
+	if (sub.status !== "trialing" || sub.provider !== "manual") return false;
+	if (!isOrgBillingPlanId(sub.planId)) return false;
+	if (!sub.periodEnd || sub.periodEnd.getTime() <= now.getTime()) return false;
+	return true;
+}
 
 async function fetchUserExists(wallet: Address): Promise<boolean> {
 	const walletNorm = getAddress(wallet);
@@ -87,18 +112,33 @@ export async function redeemPlatformInviteOnRegisterWithTx(
 		return;
 	}
 
-	const periodEnd = new Date();
+	const periodStart = new Date();
+	const periodEnd = new Date(periodStart);
 	periodEnd.setDate(periodEnd.getDate() + invite.trialDays);
 
-	await tx.insert(userSubscriptions).values({
-		walletAddress: wallet,
-		planId: invite.planId,
-		status: "trialing",
-		provider: "manual",
-		periodStart: new Date(),
-		periodEnd,
-		featureOverrides: invite.featureOverrides ?? {},
-	});
+	await tx
+		.insert(userSubscriptions)
+		.values({
+			walletAddress: wallet,
+			planId: invite.planId,
+			status: "trialing",
+			provider: "manual",
+			periodStart,
+			periodEnd,
+			featureOverrides: invite.featureOverrides ?? {},
+		})
+		.onConflictDoUpdate({
+			target: userSubscriptions.walletAddress,
+			set: {
+				planId: invite.planId,
+				status: "trialing",
+				provider: "manual",
+				periodStart,
+				periodEnd,
+				featureOverrides: invite.featureOverrides ?? {},
+				updatedAt: new Date(),
+			},
+		});
 
 	await tx.insert(platformInviteRedemptions).values({
 		inviteId: invite.id,
@@ -233,6 +273,143 @@ export async function attachPendingOrgBillingOnCreateWithTx(
 			updatedAt: new Date(),
 		})
 		.where(eq(platformAccessPending.id, pending.id));
+}
+
+/** Copy an active partner trial from user_subscriptions onto a newly created workspace. */
+export async function attachPartnerTrialOnOrgCreateWithTx(
+	tx: PlatformAccessTx,
+	args: {
+		creatorWallet: Address;
+		organizationId: string;
+	},
+): Promise<void> {
+	const wallet = getAddress(args.creatorWallet);
+	const now = new Date();
+
+	const [orgSub] = await tx
+		.select({ planId: organizationSubscriptions.planId })
+		.from(organizationSubscriptions)
+		.where(eq(organizationSubscriptions.organizationId, args.organizationId))
+		.limit(1);
+
+	if (!orgSub || orgSub.planId !== "free") {
+		return;
+	}
+
+	const [userSub] = await tx
+		.select({
+			planId: userSubscriptions.planId,
+			status: userSubscriptions.status,
+			provider: userSubscriptions.provider,
+			periodStart: userSubscriptions.periodStart,
+			periodEnd: userSubscriptions.periodEnd,
+			featureOverrides: userSubscriptions.featureOverrides,
+		})
+		.from(userSubscriptions)
+		.where(eq(userSubscriptions.walletAddress, wallet))
+		.limit(1);
+
+	if (!isActivePartnerTrialSubscription(userSub, now)) {
+		return;
+	}
+
+	await tx
+		.update(organizationSubscriptions)
+		.set({
+			planId: userSub.planId,
+			seatCount: 1,
+			status: "trialing",
+			provider: "manual",
+			periodStart: userSub.periodStart,
+			periodEnd: userSub.periodEnd,
+			featureOverrides: userSub.featureOverrides ?? {},
+			updatedAt: now,
+		})
+		.where(
+			and(
+				eq(organizationSubscriptions.organizationId, args.organizationId),
+				eq(organizationSubscriptions.planId, "free"),
+			),
+		);
+
+	await grantPartnerInviteSettlementAccessWithTx(tx, {
+		organizationId: args.organizationId,
+		creatorWallet: wallet,
+	});
+}
+
+export type PartnerInviteTrialContext = {
+	active: true;
+	planId: "teams" | "teams_pro";
+	planName: string;
+	trialDays: number;
+	periodEnd: string | null;
+};
+
+/** Active partner-invite trial on a workspace (for welcome UX and billing context). */
+export async function resolvePartnerInviteTrialForWorkspace(args: {
+	wallet: Address;
+	organizationId: string;
+}): Promise<PartnerInviteTrialContext | null> {
+	const wallet = getAddress(args.wallet);
+	const now = new Date();
+
+	const [redemption] = await db
+		.select({ trialDays: platformInvites.trialDays })
+		.from(platformInviteRedemptions)
+		.innerJoin(
+			platformInvites,
+			eq(platformInviteRedemptions.inviteId, platformInvites.id),
+		)
+		.where(
+			and(
+				eq(platformInviteRedemptions.walletAddress, wallet),
+				eq(platformInvites.kind, "partner_trial"),
+			),
+		)
+		.limit(1);
+
+	if (!redemption) {
+		return null;
+	}
+
+	const [orgSub] = await db
+		.select({
+			planId: organizationSubscriptions.planId,
+			status: organizationSubscriptions.status,
+			provider: organizationSubscriptions.provider,
+			periodStart: organizationSubscriptions.periodStart,
+			periodEnd: organizationSubscriptions.periodEnd,
+			featureOverrides: organizationSubscriptions.featureOverrides,
+		})
+		.from(organizationSubscriptions)
+		.where(eq(organizationSubscriptions.organizationId, args.organizationId))
+		.limit(1);
+
+	if (
+		!isActivePartnerTrialSubscription(
+			orgSub
+				? {
+						...orgSub,
+						featureOverrides:
+							(orgSub.featureOverrides as Record<string, unknown> | null) ?? {},
+					}
+				: undefined,
+			now,
+		)
+	) {
+		return null;
+	}
+
+	const planId = orgSub.planId as "teams" | "teams_pro";
+
+	return {
+		active: true,
+		planId,
+		planName: getPlanName(planId as PlanId),
+		trialDays: redemption.trialDays,
+		periodEnd: orgSub.periodEnd?.toISOString() ?? null,
+	};
 }
 
 export async function linkPaidSetupOnRegister(args: {

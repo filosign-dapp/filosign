@@ -21,6 +21,8 @@ export const PLATFORM_ALERT_EVENTS = {
 	serverBootstrapFailed: "server.bootstrap_failed",
 	serverDbInfraError: "server.db_infra_error",
 	serverRelayerGasLow: "server.relayer_gas_low",
+	serverFocFilLow: "server.foc_fil_low",
+	serverFocUsdfcLow: "server.foc_usdfc_low",
 	serverRpcDegraded: "server.rpc_degraded",
 	settlementsRelayPayoutFailed: "settlements.relay_payout_failed",
 	serverPgbackrestFailed: "server.pgbackrest_failed",
@@ -77,6 +79,28 @@ export type PlatformAlertEvent =
 				thresholdWei: string;
 				deployment: string;
 				chain: string;
+			};
+	  })
+	| (BaseAlertEvent & {
+			name: typeof PLATFORM_ALERT_EVENTS.serverFocFilLow;
+			context: {
+				wallet: string;
+				balanceWei: string;
+				thresholdWei: string;
+				deployment: string;
+				chain: string;
+				token: "FIL";
+			};
+	  })
+	| (BaseAlertEvent & {
+			name: typeof PLATFORM_ALERT_EVENTS.serverFocUsdfcLow;
+			context: {
+				wallet: string;
+				balanceWei: string;
+				thresholdWei: string;
+				deployment: string;
+				chain: string;
+				token: "USDFC";
 			};
 	  })
 	| (BaseAlertEvent & {

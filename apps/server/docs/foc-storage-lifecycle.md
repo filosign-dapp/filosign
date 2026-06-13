@@ -93,6 +93,7 @@ Stub rows are created when a **paid workspace** envelope is **routing-complete o
 - `WORKSPACE_CHURN_GRACE_DAYS` (default `90`)
 - `ARCHIVAL_EXPORT_GRACE_DAYS` (default `30`)
 - `FC_SERVER_*` - Synapse payer; fund with **USDFC** + **FIL**
+- `FC_SYNAPSE_DATASET_ID` (optional) - pin platform archival dataset; set from first Synapse create log or existing `foc_objects.deal_id`
 
 ## Prod smoke runbook
 
@@ -108,4 +109,5 @@ Stub rows are created when a **paid workspace** envelope is **routing-complete o
 
 - Completed-envelope stub + delayed transition + Synapse upload/extend: **implemented**
 - Parallel backup (R2 retained) + ciphertext locator: **implemented**
-- FIL balance alerts, attachment replication: **not yet** (parent FOC plan)
+- FIL/USDFC wallet balance alerts (hourly cron, staging/production): **implemented** — [`sync.ts`](../lib/platform/cron/tasks/sync.ts), [`wallet-balances.ts`](../lib/platform/foc/wallet-balances.ts)
+- Attachment replication: **not yet** (parent FOC plan)

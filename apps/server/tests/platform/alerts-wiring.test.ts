@@ -22,6 +22,11 @@ mock.module("@/lib/domains/invites", () => ({
 	expireAllPendingInvites: async () => {
 		throw new Error("db unavailable");
 	},
+	inviteExpiresAt: () => new Date(),
+	inviteTtlDays: () => 7,
+	inviteTtlMs: () => 7 * 24 * 60 * 60 * 1000,
+	pendingFileColdInviteFilter: () => ({}),
+	pendingOrgInviteFilter: () => ({}),
 }));
 
 const relayerKey =
@@ -245,7 +250,9 @@ describe("monitor relayer gas", () => {
 				CHAIN: "local",
 			},
 		}));
-		const { runMonitorRelayerGasJob } = await import("@/lib/platform/cron");
+		const { runMonitorRelayerGasJob } = await import(
+			"@/lib/platform/cron/tasks/sync"
+		);
 		const result = await runMonitorRelayerGasJob();
 		expect(result.checked).toBe(false);
 		expect(result.alerted).toBe(false);
@@ -276,7 +283,9 @@ describe("monitor relayer gas", () => {
 			fsEnvelopeRegistryAt: () => ({}),
 			fsPaymentValidatorAt: () => ({}),
 		}));
-		const { runMonitorRelayerGasJob } = await import("@/lib/platform/cron");
+		const { runMonitorRelayerGasJob } = await import(
+			"@/lib/platform/cron/tasks/sync"
+		);
 		const result = await runMonitorRelayerGasJob();
 		expect(result.checked).toBe(true);
 		expect(result.alerted).toBe(true);
@@ -285,6 +294,61 @@ describe("monitor relayer gas", () => {
 		expect(capturedTelegramEvents[0]?.name).toBe(
 			PLATFORM_ALERT_EVENTS.serverRelayerGasLow,
 		);
+	});
+});
+
+describe("monitor FOC wallet balances", () => {
+	beforeEach(resetAlertsRuntime);
+
+	test("skips balance check on local deployment", async () => {
+		mock.module("@/env", () => ({
+			default: {
+				...testEnvStub,
+				DEPLOYMENT: "local",
+				CHAIN: "local",
+			},
+		}));
+		const { runMonitorFocWalletBalancesJob } = await import(
+			"@/lib/platform/cron/tasks/sync"
+		);
+		const result = await runMonitorFocWalletBalancesJob();
+		expect(result.checked).toBe(false);
+		expect(result.filAlerted).toBe(false);
+		expect(result.usdfcAlerted).toBe(false);
+	});
+
+	test("emits critical alerts when FIL and USDFC are below threshold", async () => {
+		mock.module("@/env", () => ({
+			default: {
+				...testEnvStub,
+				TG_ANALYTICS: true,
+				TG_ANALYTICS_BOT_TOKEN: "bot",
+				TG_ANALYTICS_BOT_GROUP_ID: "group",
+				DEPLOYMENT: "production",
+				CHAIN: "mainnet",
+			},
+		}));
+		mock.module("@/lib/platform/foc/wallet-balances", () => ({
+			FOC_FIL_ALERT_THRESHOLD_WEI: 50_000_000_000_000_000n,
+			FOC_USDFC_ALERT_THRESHOLD_WEI: 5_000_000_000_000_000_000n,
+			readFocWalletBalances: async () => ({
+				filBalanceWei: 1n,
+				usdfcBalanceWei: 1n,
+			}),
+		}));
+		const { runMonitorFocWalletBalancesJob } = await import(
+			"@/lib/platform/cron/tasks/sync"
+		);
+		const result = await runMonitorFocWalletBalancesJob();
+		expect(result.checked).toBe(true);
+		expect(result.filAlerted).toBe(true);
+		expect(result.usdfcAlerted).toBe(true);
+		await flushPlatformAlerts();
+		expect(capturedTelegramEvents).toHaveLength(2);
+		expect(capturedTelegramEvents.map((event) => event.name)).toEqual([
+			PLATFORM_ALERT_EVENTS.serverFocFilLow,
+			PLATFORM_ALERT_EVENTS.serverFocUsdfcLow,
+		]);
 	});
 });
 

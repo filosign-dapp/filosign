@@ -81,6 +81,7 @@ export {
 	MONITOR_RELAYER_GAS_CRON,
 	RELAYER_GAS_ALERT_THRESHOLD_WEI,
 	relayerGasMonitoringEnabled,
+	runMonitorFocWalletBalancesJob,
 	runMonitorRelayerGasCronTick,
 	runMonitorRelayerGasJob,
 	runSyncAttachmentReleasesCronTick,

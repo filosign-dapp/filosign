@@ -6,6 +6,11 @@ import {
 	emitCriticalPlatformEvent,
 	PLATFORM_ALERT_EVENTS,
 } from "@/lib/platform/analytics";
+import {
+	FOC_FIL_ALERT_THRESHOLD_WEI,
+	FOC_USDFC_ALERT_THRESHOLD_WEI,
+	readFocWalletBalances,
+} from "@/lib/platform/foc/wallet-balances";
 import { evmClient } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
@@ -78,10 +83,106 @@ export async function runMonitorRelayerGasJob(): Promise<{
 	return { checked: true, balanceWei, thresholdWei, alerted: true };
 }
 
+export async function runMonitorFocWalletBalancesJob(): Promise<{
+	checked: boolean;
+	filBalanceWei: bigint;
+	filThresholdWei: bigint;
+	filAlerted: boolean;
+	usdfcBalanceWei: bigint;
+	usdfcThresholdWei: bigint;
+	usdfcAlerted: boolean;
+}> {
+	const filThresholdWei = FOC_FIL_ALERT_THRESHOLD_WEI;
+	const usdfcThresholdWei = FOC_USDFC_ALERT_THRESHOLD_WEI;
+
+	if (!relayerGasMonitoringEnabled()) {
+		return {
+			checked: false,
+			filBalanceWei: 0n,
+			filThresholdWei,
+			filAlerted: false,
+			usdfcBalanceWei: 0n,
+			usdfcThresholdWei,
+			usdfcAlerted: false,
+		};
+	}
+
+	const balanceRes = await tryCatch(
+		readFocWalletBalances(env.FC_SERVER_ADDRESS),
+	);
+	if (balanceRes.error) {
+		throw balanceRes.error;
+	}
+
+	const { filBalanceWei, usdfcBalanceWei } = balanceRes.data;
+	let filAlerted = false;
+	let usdfcAlerted = false;
+
+	if (filBalanceWei < filThresholdWei) {
+		filAlerted = true;
+		void emitCriticalPlatformEvent({
+			name: PLATFORM_ALERT_EVENTS.serverFocFilLow,
+			severity: "critical",
+			message: "FOC wallet FIL balance below threshold",
+			context: {
+				wallet: env.FC_SERVER_ADDRESS,
+				balanceWei: filBalanceWei.toString(),
+				thresholdWei: filThresholdWei.toString(),
+				deployment: env.DEPLOYMENT,
+				chain: env.CHAIN,
+				token: "FIL",
+			},
+		});
+		logger.warn(
+			{
+				wallet: env.FC_SERVER_ADDRESS,
+				balanceWei: filBalanceWei.toString(),
+				thresholdWei: filThresholdWei.toString(),
+			},
+			"FOC wallet FIL below threshold",
+		);
+	}
+
+	if (usdfcBalanceWei < usdfcThresholdWei) {
+		usdfcAlerted = true;
+		void emitCriticalPlatformEvent({
+			name: PLATFORM_ALERT_EVENTS.serverFocUsdfcLow,
+			severity: "critical",
+			message: "FOC wallet USDFC balance below threshold",
+			context: {
+				wallet: env.FC_SERVER_ADDRESS,
+				balanceWei: usdfcBalanceWei.toString(),
+				thresholdWei: usdfcThresholdWei.toString(),
+				deployment: env.DEPLOYMENT,
+				chain: env.CHAIN,
+				token: "USDFC",
+			},
+		});
+		logger.warn(
+			{
+				wallet: env.FC_SERVER_ADDRESS,
+				balanceWei: usdfcBalanceWei.toString(),
+				thresholdWei: usdfcThresholdWei.toString(),
+			},
+			"FOC wallet USDFC below threshold",
+		);
+	}
+
+	return {
+		checked: true,
+		filBalanceWei,
+		filThresholdWei,
+		filAlerted,
+		usdfcBalanceWei,
+		usdfcThresholdWei,
+		usdfcAlerted,
+	};
+}
+
 export async function runMonitorRelayerGasCronTick(): Promise<void> {
-	const res = await tryCatch(runMonitorRelayerGasJob());
-	if (res.error) {
-		logger.error({ err: res.error }, "cron monitor-relayer-gas failed");
+	const gasRes = await tryCatch(runMonitorRelayerGasJob());
+	if (gasRes.error) {
+		logger.error({ err: gasRes.error }, "cron monitor-relayer-gas failed");
 		void emitCriticalPlatformEvent({
 			name: PLATFORM_ALERT_EVENTS.serverCronJobFailed,
 			severity: "error",
@@ -89,7 +190,26 @@ export async function runMonitorRelayerGasCronTick(): Promise<void> {
 			context: {
 				job: "monitor-relayer-gas",
 				error:
-					res.error instanceof Error ? res.error.message : String(res.error),
+					gasRes.error instanceof Error
+						? gasRes.error.message
+						: String(gasRes.error),
+			},
+		});
+	}
+
+	const focRes = await tryCatch(runMonitorFocWalletBalancesJob());
+	if (focRes.error) {
+		logger.error({ err: focRes.error }, "cron monitor-foc-wallet-balances failed");
+		void emitCriticalPlatformEvent({
+			name: PLATFORM_ALERT_EVENTS.serverCronJobFailed,
+			severity: "error",
+			message: "Cron monitor-foc-wallet-balances failed",
+			context: {
+				job: "monitor-foc-wallet-balances",
+				error:
+					focRes.error instanceof Error
+						? focRes.error.message
+						: String(focRes.error),
 			},
 		});
 	}

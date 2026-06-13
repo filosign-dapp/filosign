@@ -11,7 +11,6 @@ import { validateDeploymentEnv } from "@/lib/platform/validate-deployment-env";
 const parsedEnv = createEnv({
 	server: {
 		DEPLOYMENT: z.enum(DEPLOYMENTS),
-		/** `api` = HTTP only; `worker` = crons + heartbeat; `all` = local dev monolith. */
 		SERVER_ROLE: z.enum(["api", "worker", "all"]).default("all"),
 		NODE_ENV: z.enum(["development", "production"]).default("production"),
 		TG_ANALYTICS: z
@@ -26,7 +25,6 @@ const parsedEnv = createEnv({
 		S3_ENDPOINT: z.url(),
 		FC_SERVER_PRIVATE_KEY: zEvmPrivateKey(),
 		FC_SERVER_ADDRESS: zEvmAddress(),
-		/** Synapse dataset for platform FOC uploads; inferred from foc_objects when unset. */
 		FC_SYNAPSE_DATASET_ID: z.coerce.number().int().positive().optional(),
 		PG_URI: z.string().min(1),
 		DB_NAME: z.string().min(1),

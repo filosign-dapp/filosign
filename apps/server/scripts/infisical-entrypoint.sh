@@ -16,7 +16,7 @@ fi
 INFISICAL_ENV="${INFISICAL_ENV:-staging}"
 INFISICAL_SECRET_PATH="${INFISICAL_SECRET_PATH:-/app}"
 
-# EU / self-hosted: https://eu.infisical.com — CLI reads INFISICAL_API_URL (also passed to login).
+# EU / self-hosted: https://eu.infisical.com - CLI reads INFISICAL_API_URL (also passed to login).
 if [ -n "${INFISICAL_API_URL:-}" ]; then
 	export INFISICAL_API_URL
 fi

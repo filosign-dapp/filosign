@@ -7,7 +7,7 @@ x-filosign-image: &filosign-image
     dockerfile: deploy/Dockerfile
   image: ${FILOSIGN_IMAGE:-filosign/server:local}
 
-# Dokploy project env is NOT auto-injected into containers — list passthrough + ${VAR} here.
+# Dokploy project env is NOT auto-injected into containers - list passthrough + ${VAR} here.
 # PG_URI, DB_NAME, DEPLOYMENT, S3_*, THIRDWEB_*, … come from Infisical at runtime (entrypoint).
 # Optional Dokploy override: set PG_URI + DB_NAME here only if not using Infisical for DB.
 x-app-env: &app-env
@@ -27,7 +27,7 @@ services:
     environment:
       <<: *app-env
       SERVER_ROLE: api
-    # Internal port 3000 only — Dokploy UI binds host :3000. Route public API via Domains (container port 3000).
+    # Internal port 3000 only - Dokploy UI binds host :3000. Route public API via Domains (container port 3000).
     expose:
       - "3000"
     healthcheck:
@@ -51,7 +51,7 @@ services:
     command: ["./worker"]
     deploy:
       replicas: 1
-    # Dokploy: set max replicas / scale = 1 explicitly — UI scale overrides compose.
+    # Dokploy: set max replicas / scale = 1 explicitly - UI scale overrides compose.
     healthcheck:
       test: ["CMD", "./worker-healthcheck"]
       interval: 30s

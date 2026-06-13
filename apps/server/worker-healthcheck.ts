@@ -1,5 +1,5 @@
 /**
- * Minimal worker container health probe — no `@/env` (Docker HEALTHCHECK does not run Infisical).
+ * Minimal worker container health probe - no `@/env` (Docker HEALTHCHECK does not run Infisical).
  * Requires only `DRAGONFLY_URL` from compose / runtime env.
  */
 import { RedisClient } from "bun";

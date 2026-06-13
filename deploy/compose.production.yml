@@ -86,7 +86,7 @@ services:
       DRAGONFLY_URL: redis://dragonfly:6379
       PG_URI: postgresql://${POSTGRES_USER:-filosign}:${POSTGRES_PASSWORD}@postgres:5432/:dbname
       DB_NAME: ${POSTGRES_DB:-filosign}
-    # Internal port 3000 only — do not publish to host when Dokploy runs on :3000. Use Domains → container 3000.
+    # Internal port 3000 only - do not publish to host when Dokploy runs on :3000. Use Domains → container 3000.
     expose:
       - "3000"
     healthcheck:

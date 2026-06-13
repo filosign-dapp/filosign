@@ -1,8 +1,8 @@
 import { AnimatePresence, motion, SPRING_TOKENS } from "@filosign/motion";
 import type { AppRouterClient, InferClientOutputs } from "@filosign/react/orpc";
+import { pricingCheckoutDialogImagePath } from "@filosign/shared";
 import { XIcon } from "@phosphor-icons/react";
 import { type SubmitEvent, useEffect, useId, useRef, useState } from "react";
-import { checkoutDialogImageForPlan } from "../../config/pricing-media";
 import { cn } from "../../lib/cn";
 import { useFilosignRpc } from "../../lib/filosign-rpc";
 import { marketingButtonFocus } from "../../lib/marketing-button";
@@ -36,7 +36,7 @@ function CheckoutImageColumn({
 	return (
 		<div className="relative aspect-3/2 w-full shrink-0 overflow-hidden lg:aspect-auto lg:min-h-full">
 			<img
-				src={checkoutDialogImageForPlan(planId)}
+				src={pricingCheckoutDialogImagePath(planId)}
 				alt=""
 				width={640}
 				height={480}

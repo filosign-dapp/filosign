@@ -6,8 +6,8 @@ Marketing / SEO site (Astro 6 + Tailwind v4). Migrated from the React client app
 
 From repo root:
 
-- `bun run dev -- --astro` or `bun run --cwd apps/astro dev:local` — dev server ([localhost:3002](http://localhost:3002))
-- `bun run astro:build` — production build to `dist/`
+- `bun run dev -- --astro` or `bun run --cwd apps/astro dev:local` - dev server ([localhost:3002](http://localhost:3002))
+- `bun run astro:build` - production build to `dist/`
 
 From this package:
 
@@ -31,9 +31,9 @@ PUBLIC_SERVER_URL=http://localhost:3000
 
 | Variable | Default (local) | Description |
 |----------|-----------------|-------------|
-| `PUBLIC_ASTRO_URL` | `http://localhost:3002` | Marketing origin — canonical URLs, OG images, sitemap, email static assets |
+| `PUBLIC_ASTRO_URL` | `http://localhost:3002` | Marketing origin - canonical URLs, OG images, sitemap, email static assets |
 | `PUBLIC_CLIENT_URL` | `http://localhost:3001` | Legacy / misc links (optional) |
-| `PUBLIC_SANDBOX_CLIENT_URL` | `https://sandbox.filosign.xyz` | “Try Filosign” CTA — open sandbox client (testnet demo) |
+| `PUBLIC_SANDBOX_CLIENT_URL` | `https://sandbox.filosign.xyz` | “Try Filosign” CTA - open sandbox client (testnet demo) |
 | `PUBLIC_SERVER_URL` | `http://localhost:3000` | Filosign API base for oRPC (`@filosign/react/orpc` → `/api/rpc`) |
 
 Canonical URLs default from `PUBLIC_ASTRO_URL` + current path in `BaseLayout` unless you pass `canonicalUrl`.
@@ -47,9 +47,9 @@ All marketing pages migrated from the React app:
 | `/` | Landing page with Hero, Features Bento, and Stats |
 | `/about` | About page with mission, values, and team |
 | `/pricing` | Pricing plans with yearly/monthly toggle |
-| `/blog` | Blog index — lists posts; hero uses `featured: true` or newest post |
+| `/blog` | Blog index - lists posts; hero uses `featured: true` or newest post |
 | `/blog/[slug]` | MDX articles under `src/content/blog/` (e.g. `/blog/introduction`) |
-| `/changelog` | What's new — feature updates and releases |
+| `/changelog` | What's new - feature updates and releases |
 | `/docs` | Product docs (Starlight): guides |
 | `/docs/workflows` | Agreement workflows overview |
 | `/docs/workflows/payouts` | Payout packets user guide |
@@ -96,7 +96,7 @@ Set `PUBLIC_SANDBOX_CLIENT_URL` in `.env` for each deployment (e.g. `https://san
 
 ## Marketing mocks
 
-Decorative product UI panels for landing sections live in [`src/components/marketing-mocks/`](src/components/marketing-mocks/) — not under `islands/` (islands are hydration entry points only).
+Decorative product UI panels for landing sections live in [`src/components/marketing-mocks/`](src/components/marketing-mocks/) - not under `islands/` (islands are hydration entry points only).
 
 | Layer | Folder | When to add |
 |-------|--------|-------------|
@@ -110,7 +110,7 @@ Import from the barrel in islands:
 import { SendStepMock, ProofOutsideMock } from "../marketing-mocks";
 ```
 
-`MockPanel` variants (`tokens.ts`): `compact` (168px timeline), `default` (192px bento tiles), `auto` (wide cards). Use design tokens only — no hardcoded hex.
+`MockPanel` variants (`tokens.ts`): `compact` (168px timeline), `default` (192px bento tiles), `auto` (wide cards). Use design tokens only - no hardcoded hex.
 
 ## API (oRPC)
 
@@ -141,16 +141,16 @@ Global styles: `src/styles/global.css` (imported from `src/layouts/BaseLayout.as
 
 Every page includes:
 - Meta title & description
-- OpenGraph tags (title, description, image, dimensions, URL) — images are **generated at build** with [astro-og-canvas](https://github.com/delucis/astro-og-canvas) (`src/pages/open-graph/[route].ts`, 1200×630 PNGs under `/open-graph/`). Copy for each card lives in `src/content/og-marketing.ts` and should stay aligned with each page’s `<BaseLayout>` title/description.
+- OpenGraph tags (title, description, image, dimensions, URL) - images are **generated at build** with [astro-og-canvas](https://github.com/delucis/astro-og-canvas) (`src/pages/open-graph/[route].ts`, 1200×630 PNGs under `/open-graph/`). Copy for each card lives in `src/content/og-marketing.ts` and should stay aligned with each page’s `<BaseLayout>` title/description.
 - Twitter Card tags (`name=` attributes)
 - Canonical URL (`PUBLIC_ASTRO_URL` + path in `BaseLayout`, optional override via `canonicalUrl`)
 - JSON-LD (`WebSite`, `Organization`, plus `SoftwareApplication` or `BlogPosting` on blog posts)
 - Preconnect hints for external fonts
 - `@astrojs/sitemap` (marketing HTML routes only; `/open-graph/*` PNGs are excluded)
-- `public/robots.txt` — points crawlers at `sitemap-index.xml` (edit the `Sitemap:` URL if the deploy origin is not `filosign.xyz`)
-- `public/llms.txt` — short URL index for AI assistants; `public/llms-full.txt` — extended summaries
-- **IndexNow** — `postbuild` runs `scripts/indexnow-ping.ts` (submits sitemap URLs to Bing/Yandex partners). Skips localhost; set `INDEXNOW_SKIP=1` to disable. Key file: `public/8f3c2a1b-4d5e-6f70-8a9b-0c1d2e3f4a5b.txt` (must stay hosted at `/{key}.txt` on the live domain).
-- **Performance (landing)** — hero/trust videos defer with `preload="none"` + viewport load (`MotionAwareVideo`); poster at `public/media/demo-poster.webp`; optimized assets `logo-64.webp`, `images/stock_14-760.webp`; Manrope preloaded in `BaseLayout`; cache hints in `public/_headers`.
+- `public/robots.txt` - points crawlers at `sitemap-index.xml` (edit the `Sitemap:` URL if the deploy origin is not `filosign.xyz`)
+- `public/llms.txt` - short URL index for AI assistants; `public/llms-full.txt` - extended summaries
+- **IndexNow** - `postbuild` runs `scripts/indexnow-ping.ts` (submits sitemap URLs to Bing/Yandex partners). Skips localhost; set `INDEXNOW_SKIP=1` to disable. Key file: `public/8f3c2a1b-4d5e-6f70-8a9b-0c1d2e3f4a5b.txt` (must stay hosted at `/{key}.txt` on the live domain).
+- **Performance (landing)** - hero/trust videos defer with `preload="none"` + viewport load (`MotionAwareVideo`); poster at `public/media/demo-poster.webp`; optimized assets `logo-64.webp`, `images/stock_14-760.webp`; Manrope preloaded in `BaseLayout`; cache hints in `public/_headers`.
 
 Direct dependency **`canvaskit-wasm`** is required for OG generation (see astro-og-canvas README).
 
@@ -166,9 +166,9 @@ Horizontal padding uses the `px-page` / `p-page` utilities in [`global.css`](src
 ## Animations
 
 AOS (Animate On Scroll) is used for scroll-triggered animations:
-- `data-aos="fade-up"` — Most elements
-- `data-aos="fade-right/left"` — Split layouts
-- `data-aos-delay` — Staggered animations
+- `data-aos="fade-up"` - Most elements
+- `data-aos="fade-right/left"` - Split layouts
+- `data-aos-delay` - Staggered animations
 
 Configured in `BaseLayout.astro` with 800ms duration and `ease-out-cubic` easing.
 

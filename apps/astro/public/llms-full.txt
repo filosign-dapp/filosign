@@ -1,4 +1,4 @@
-# Filosign — extended summary for AI assistants
+# Filosign - extended summary for AI assistants
 
 > Use this file when you need more context than https://filosign.xyz/llms.txt . All URLs use the production marketing origin unless noted.
 
@@ -8,11 +8,11 @@ Filosign is a wallet-native document signing platform for encrypted agreements, 
 
 Core properties:
 
-- **End-to-end encryption** — Documents are encrypted in the browser before upload. Filosign stores ciphertext and encrypted key envelopes, not readable file contents.
-- **Wallet-backed identity** — Embedded wallet (thirdweb) plus app-level post-quantum signing keys derived client-side.
-- **On-chain proof on Base** — `FSEnvelopeRegistry` records registration, routing, quorum, and signer state. Compliance bundles combine Merkle placement manifests with chain attestations.
-- **Non-custodial settlements** — Optional USDC payout legs via `FSPaymentValidator`; funds move payer to recipient wallets when release conditions pass, without Filosign custody.
-- **Decentralized storage** — Hot object storage with Filecoin backup and archival paths documented on-site.
+- **End-to-end encryption** - Documents are encrypted in the browser before upload. Filosign stores ciphertext and encrypted key envelopes, not readable file contents.
+- **Wallet-backed identity** - Embedded wallet (thirdweb) plus app-level post-quantum signing keys derived client-side.
+- **On-chain proof on Base** - `FSEnvelopeRegistry` records registration, routing, quorum, and signer state. Compliance bundles combine Merkle placement manifests with chain attestations.
+- **Non-custodial settlements** - Optional USDC payout legs via `FSPaymentValidator`; funds move payer to recipient wallets when release conditions pass, without Filosign custody.
+- **Decentralized storage** - Hot object storage with Filecoin backup and archival paths documented on-site.
 
 Public beta. Marketing site: https://filosign.xyz . Try demo: https://sandbox.filosign.xyz . App: https://app.filosign.xyz .
 
@@ -28,7 +28,7 @@ Public beta. Marketing site: https://filosign.xyz . Try demo: https://sandbox.fi
 
 | URL | Summary |
 | --- | --- |
-| https://filosign.xyz/ | Landing: agreements that unlock the next step — private docs, signatures, conditional payouts/file release. |
+| https://filosign.xyz/ | Landing: agreements that unlock the next step - private docs, signatures, conditional payouts/file release. |
 | https://filosign.xyz/about/ | Company story, mission, team. |
 | https://filosign.xyz/pricing/ | Free, Solo, Teams, Teams Pro, Enterprise tiers with feature comparison. |
 | https://filosign.xyz/changelog/ | Shipped features and release notes. |
@@ -51,11 +51,11 @@ Guides for sending envelopes, signing order, void/amend flows, encrypted comment
 
 Key pages:
 
-- **Signing and routing** — Sign page UX, turn order, quorum, required acknowledgements.
-- **Envelope governance** — Void envelopes, propose/execute signer replacement, post-send changes.
-- **Payouts** — Attach optional USDC legs; auto-release when conditions met; non-custodial.
-- **Attached files** — Release encrypted attachments after signing conditions.
-- **Release conditions** — Configure when payouts or file unlocks fire.
+- **Signing and routing** - Sign page UX, turn order, quorum, required acknowledgements.
+- **Envelope governance** - Void envelopes, propose/execute signer replacement, post-send changes.
+- **Payouts** - Attach optional USDC legs; auto-release when conditions met; non-custodial.
+- **Attached files** - Release encrypted attachments after signing conditions.
+- **Release conditions** - Configure when payouts or file unlocks fire.
 
 ### Proof and evidence (`/docs/proof/`)
 
@@ -71,7 +71,7 @@ Workspace roles, billing/seats, treasury wallet, payout access, connections, pla
 
 ### Support
 
-- https://filosign.xyz/help/ — Redirect to in-app Support Center (searchable error catalog in the client app).
+- https://filosign.xyz/help/ - Redirect to in-app Support Center (searchable error catalog in the client app).
 - Legacy `/help/errors/*` URLs redirect to a specific Support Center topic.
 
 ## Legal and compliance (public pages)
@@ -80,7 +80,7 @@ Privacy Policy, Terms, Acceptable Use, Subprocessors (Resend, Hetzner, Cloudflar
 
 ## Technical stack (for integrators)
 
-Monorepo: https://github.com/filosign-dapp/filosign — React client, Hono API, Solidity contracts (`FSEnvelopeRegistry`, `FSPaymentValidator`), `@filosign/react` SDK, shared Zod schemas, crypto-utils (ML-KEM/Kyber, Dilithium, AES-GCM).
+Monorepo: https://github.com/filosign-dapp/filosign - React client, Hono API, Solidity contracts (`FSEnvelopeRegistry`, `FSPaymentValidator`), `@filosign/react` SDK, shared Zod schemas, crypto-utils (ML-KEM/Kyber, Dilithium, AES-GCM).
 
 ## Discovery metadata
 

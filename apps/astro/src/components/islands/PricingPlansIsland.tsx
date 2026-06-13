@@ -52,7 +52,7 @@ export type PricingPlan = {
 	highlight: boolean;
 	badge?: string;
 	planId?: CheckoutPlanId;
-	/** Testnet sandbox — links out to PUBLIC_SANDBOX_CLIENT_URL; excluded from comparison. */
+	/** Testnet sandbox - links out to PUBLIC_SANDBOX_CLIENT_URL; excluded from comparison. */
 	sandbox?: boolean;
 };
 

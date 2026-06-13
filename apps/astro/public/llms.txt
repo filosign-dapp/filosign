@@ -7,69 +7,69 @@ Sitemap: https://filosign.xyz/sitemap-index.xml
 
 ## Product (try the app)
 
-- https://sandbox.filosign.xyz — Try Filosign (testnet demo, no account required to explore)
-- https://app.filosign.xyz — Web application (wallet sign-in, send/sign envelopes)
-- https://filosign.xyz/pricing/ — Plans: Free, Solo, Teams, Teams Pro, Enterprise
+- https://sandbox.filosign.xyz - Try Filosign (testnet demo, no account required to explore)
+- https://app.filosign.xyz - Web application (wallet sign-in, send/sign envelopes)
+- https://filosign.xyz/pricing/ - Plans: Free, Solo, Teams, Teams Pro, Enterprise
 
 ## Marketing
 
-- https://filosign.xyz/ — Landing: private agreements, attached payouts, proof exports
-- https://filosign.xyz/about/ — Mission, team, values
-- https://filosign.xyz/changelog/ — Product updates and releases
-- https://filosign.xyz/security/ — Security overview and reporting
+- https://filosign.xyz/ - Landing: private agreements, attached payouts, proof exports
+- https://filosign.xyz/about/ - Mission, team, values
+- https://filosign.xyz/changelog/ - Product updates and releases
+- https://filosign.xyz/security/ - Security overview and reporting
 
 ## Blog
 
-- https://filosign.xyz/blog/ — All posts
-- https://filosign.xyz/blog/introduction/ — Introducing Filosign (E2EE, Base proofs, attached payouts)
-- https://filosign.xyz/blog/future-of-digital-agreements/ — Platform risk vs decentralized proof
-- https://filosign.xyz/blog/placement-based-signing-infrastructure/ — Placement manifests, Merkle proofs, compliance bundles
-- https://filosign.xyz/blog/unlocking-filosign-after-privy/ — Wallet-derived unlock vs OAuth identity
+- https://filosign.xyz/blog/ - All posts
+- https://filosign.xyz/blog/introduction/ - Introducing Filosign (E2EE, Base proofs, attached payouts)
+- https://filosign.xyz/blog/future-of-digital-agreements/ - Platform risk vs decentralized proof
+- https://filosign.xyz/blog/placement-based-signing-infrastructure/ - Placement manifests, Merkle proofs, compliance bundles
+- https://filosign.xyz/blog/unlocking-filosign-after-privy/ - Wallet-derived unlock vs OAuth identity
 
 ## Documentation
 
-- https://filosign.xyz/docs/ — Product docs home
-- https://filosign.xyz/docs/workflows/ — Agreement workflows overview
-- https://filosign.xyz/docs/workflows/signing-and-routing/ — Sign page, turn order, quorum
-- https://filosign.xyz/docs/workflows/envelope-governance/ — Void, amend signers, post-send changes
-- https://filosign.xyz/docs/workflows/comments/ — Encrypted draft and envelope comments
-- https://filosign.xyz/docs/workflows/payouts/ — USDC payout packets (non-custodial)
-- https://filosign.xyz/docs/workflows/attached-files/ — Gated file release after signing
-- https://filosign.xyz/docs/workflows/release-conditions/ — Payout and unlock release conditions
-- https://filosign.xyz/docs/workflows/drafts/ — Envelope drafts
-- https://filosign.xyz/docs/workflows/templates/ — Org templates
-- https://filosign.xyz/docs/proof/completion-packet/ — ZIP proof export contents
-- https://filosign.xyz/docs/proof/read-compliance-report/ — How to read the compliance report
-- https://filosign.xyz/docs/proof/e-signature-evidence/ — E-signature evidence guide
-- https://filosign.xyz/docs/proof/signature-library/ — Saved signature library
-- https://filosign.xyz/docs/security/encrypted-workflows/ — Browser encryption and decryption
-- https://filosign.xyz/docs/security/what-we-can-see/ — What Filosign can and cannot see
-- https://filosign.xyz/docs/security/on-chain-record/ — On-chain verification records
-- https://filosign.xyz/docs/storage/how-retention-works/ — Hot storage, Filecoin backup, archival
-- https://filosign.xyz/docs/storage/export-before-archival/ — Download your own copy
-- https://filosign.xyz/docs/storage/status-in-app/ — Storage status in the app
-- https://filosign.xyz/docs/workspace/ — Teams, billing, roles overview
-- https://filosign.xyz/docs/workspace/members-and-roles/ — Workspace members and roles
-- https://filosign.xyz/docs/workspace/billing-and-seats/ — Billing and seats
-- https://filosign.xyz/docs/workspace/treasury-wallet/ — Team treasury wallet
-- https://filosign.xyz/docs/workspace/payout-access/ — Who can attach payout rules
-- https://filosign.xyz/docs/plans/ — Plans and limits
-- https://filosign.xyz/docs/plans/roadmap/ — Planned features not shipped yet
-- https://filosign.xyz/help/ — Redirect to in-app Support Center (error catalog)
+- https://filosign.xyz/docs/ - Product docs home
+- https://filosign.xyz/docs/workflows/ - Agreement workflows overview
+- https://filosign.xyz/docs/workflows/signing-and-routing/ - Sign page, turn order, quorum
+- https://filosign.xyz/docs/workflows/envelope-governance/ - Void, amend signers, post-send changes
+- https://filosign.xyz/docs/workflows/comments/ - Encrypted draft and envelope comments
+- https://filosign.xyz/docs/workflows/payouts/ - USDC payout packets (non-custodial)
+- https://filosign.xyz/docs/workflows/attached-files/ - Gated file release after signing
+- https://filosign.xyz/docs/workflows/release-conditions/ - Payout and unlock release conditions
+- https://filosign.xyz/docs/workflows/drafts/ - Envelope drafts
+- https://filosign.xyz/docs/workflows/templates/ - Org templates
+- https://filosign.xyz/docs/proof/completion-packet/ - ZIP proof export contents
+- https://filosign.xyz/docs/proof/read-compliance-report/ - How to read the compliance report
+- https://filosign.xyz/docs/proof/e-signature-evidence/ - E-signature evidence guide
+- https://filosign.xyz/docs/proof/signature-library/ - Saved signature library
+- https://filosign.xyz/docs/security/encrypted-workflows/ - Browser encryption and decryption
+- https://filosign.xyz/docs/security/what-we-can-see/ - What Filosign can and cannot see
+- https://filosign.xyz/docs/security/on-chain-record/ - On-chain verification records
+- https://filosign.xyz/docs/storage/how-retention-works/ - Hot storage, Filecoin backup, archival
+- https://filosign.xyz/docs/storage/export-before-archival/ - Download your own copy
+- https://filosign.xyz/docs/storage/status-in-app/ - Storage status in the app
+- https://filosign.xyz/docs/workspace/ - Teams, billing, roles overview
+- https://filosign.xyz/docs/workspace/members-and-roles/ - Workspace members and roles
+- https://filosign.xyz/docs/workspace/billing-and-seats/ - Billing and seats
+- https://filosign.xyz/docs/workspace/treasury-wallet/ - Team treasury wallet
+- https://filosign.xyz/docs/workspace/payout-access/ - Who can attach payout rules
+- https://filosign.xyz/docs/plans/ - Plans and limits
+- https://filosign.xyz/docs/plans/roadmap/ - Planned features not shipped yet
+- https://filosign.xyz/help/ - Redirect to in-app Support Center (error catalog)
 
 ## Legal and trust
 
-- https://filosign.xyz/privacy/ — Privacy Policy
-- https://filosign.xyz/terms/ — Terms of Service
-- https://filosign.xyz/acceptable-use/ — Acceptable Use Policy
-- https://filosign.xyz/subprocessors/ — Subprocessors list
-- https://filosign.xyz/legal/e-signature-validity/ — E-signature validity explainer
-- https://filosign.xyz/legal/non-custodial-settlement/ — Non-custodial USDC settlement
-- https://filosign.xyz/legal/settlement-feature-addendum/ — Settlement feature addendum
-- https://filosign.xyz/legal/data-processing-addendum/ — Data Processing Addendum (DPA)
+- https://filosign.xyz/privacy/ - Privacy Policy
+- https://filosign.xyz/terms/ - Terms of Service
+- https://filosign.xyz/acceptable-use/ - Acceptable Use Policy
+- https://filosign.xyz/subprocessors/ - Subprocessors list
+- https://filosign.xyz/legal/e-signature-validity/ - E-signature validity explainer
+- https://filosign.xyz/legal/non-custodial-settlement/ - Non-custodial USDC settlement
+- https://filosign.xyz/legal/settlement-feature-addendum/ - Settlement feature addendum
+- https://filosign.xyz/legal/data-processing-addendum/ - Data Processing Addendum (DPA)
 
 ## Source and social
 
-- https://github.com/filosign-dapp/filosign — Monorepo (client, server, contracts, SDK)
-- https://x.com/filosign — Official X account
-- support@filosign.xyz — Support email
+- https://github.com/filosign-dapp/filosign - Monorepo (client, server, contracts, SDK)
+- https://x.com/filosign - Official X account
+- support@filosign.xyz - Support email

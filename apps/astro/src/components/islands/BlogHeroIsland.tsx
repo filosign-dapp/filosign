@@ -53,11 +53,11 @@ export default function BlogHeroIsland({
 						<MarketingStagger pace="page">
 							<div className="relative rounded-3xl overflow-hidden aspect-video">
 								<img
-									src="banner.webp"
+									src="/images/stock_11.webp"
 									alt=""
 									width={1280}
 									height={720}
-									className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 hover:-translate-y-1"
+									className="absolute inset-0 w-full h-full object-cover"
 								/>
 							</div>
 						</MarketingStagger>

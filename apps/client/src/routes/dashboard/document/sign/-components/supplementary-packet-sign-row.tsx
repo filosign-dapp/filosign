@@ -1,7 +1,7 @@
 import type { MySupplementaryPacketRow } from "@filosign/react/files";
 import { DownloadSimpleIcon, KeyIcon, LockIcon } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import {
 	type SupplementaryPacketAccessState,
 	supplementaryPacketAccessState,

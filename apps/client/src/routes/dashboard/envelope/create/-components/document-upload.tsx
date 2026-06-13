@@ -15,7 +15,7 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/src/lib/components/ui/collapsible";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import {
 	normalizeSignableDocumentToPdf,
 	SignableDocumentNormalizeError,

@@ -1,13 +1,12 @@
-import { SpinnerIcon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	FeatureDialogActions,
 	FeatureDialogBody,
 } from "@/src/lib/components/ui/feature-dialog";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { Textarea } from "@/src/lib/components/ui/textarea";
 import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
 import type { SignInviteUnlockController } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-invite-unlock";
@@ -182,7 +181,7 @@ export function InviteUnlockFilosignRecoveryPanel({
 				>
 					{unlock.isFilosignRecoveryPending ? (
 						<>
-							<SpinnerIcon className="mr-2 size-4 animate-spin" />
+							<InlineLoader size="sm" className="mr-2 text-current" />
 							Unlocking…
 						</>
 					) : (
@@ -241,7 +240,7 @@ export function InviteUnlockPassphrasePanel({
 				>
 					{unlock.coldDecrypt.isPending || unlock.claimColdInvite.isPending ? (
 						<>
-							<SpinnerIcon className="mr-2 size-4 animate-spin" />
+							<InlineLoader size="sm" className="mr-2 text-current" />
 							{unlock.coldDecrypt.isPending
 								? "Unlocking…"
 								: "Securing for your wallet…"}

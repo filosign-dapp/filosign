@@ -3,7 +3,6 @@ import {
 	SETTLEMENT_RECIPIENT_ACK_LABEL,
 	SIGN_CONFIRM_DESCRIPTION_V1,
 } from "@filosign/shared";
-import { SpinnerIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import {
 	AlertDialog,
@@ -17,6 +16,7 @@ import {
 } from "@/src/lib/components/ui/alert-dialog";
 import { Checkbox } from "@/src/lib/components/ui/checkbox";
 import { Label } from "@/src/lib/components/ui/label";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 
 export type SignConfirmResult = {
 	settlementRecipientAck?: {
@@ -99,7 +99,7 @@ export function SignConfirmDialog({
 					>
 						{pending ? (
 							<>
-								<SpinnerIcon className="size-4 animate-spin" />
+								<InlineLoader size="sm" className="text-current" />
 								Signing…
 							</>
 						) : (

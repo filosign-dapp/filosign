@@ -7,7 +7,7 @@ import {
 	LazyPdfJsPreview,
 } from "@/src/lib/components/app/suspense";
 import { Button } from "@/src/lib/components/ui/button";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { FileViewerFieldOverlay } from "@/src/lib/domains/files/file-viewer/-components/field-overlay";
 import { useFileViewer } from "@/src/lib/domains/files/file-viewer/-lib/context/context";
 

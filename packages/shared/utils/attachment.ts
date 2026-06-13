@@ -1,4 +1,5 @@
 import z from "zod";
+import { normalizePlacementRecipientEmail } from "./placement";
 import {
 	settlementReleaseTypes,
 	zSettlementReleaseParams,
@@ -130,3 +131,25 @@ export const zAttachmentPacketSendInput = z
 export type AttachmentPacketSendInput = z.infer<
 	typeof zAttachmentPacketSendInput
 >;
+
+export const zEnvelopeColdInviteRef = z.object({
+	email: z.email(),
+	inviteToken: z.string().min(16),
+});
+
+export type EnvelopeColdInviteRef = z.infer<typeof zEnvelopeColdInviteRef>;
+
+/** Normalized email -> invite token for cold attachment wrap persistence. */
+export function mapColdInviteTokensByEmail(
+	coldInvites: EnvelopeColdInviteRef[],
+): Map<string, string> {
+	const tokenByEmail = new Map<string, string>();
+	for (const invite of coldInvites) {
+		const email = normalizePlacementRecipientEmail(invite.email);
+		const token = invite.inviteToken.trim();
+		if (email && token) {
+			tokenByEmail.set(email, token);
+		}
+	}
+	return tokenByEmail;
+}

@@ -1,5 +1,6 @@
 export * from "./activation";
 export * from "./utils/attachment";
+export * from "./utils/attachment-packet-validation";
 export * from "./utils/compliance";
 export * from "./utils/crypto";
 export * from "./utils/deployment";

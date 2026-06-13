@@ -4,6 +4,7 @@ import {
 	canUseConditionalAttachmentRelease,
 	canUseSupplementaryAttachments,
 } from "@filosign/react/files";
+import { validateAttachmentPacketDraftsForSend } from "@filosign/shared";
 import { PencilSimpleIcon } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
@@ -18,10 +19,7 @@ import {
 	removePacketById,
 	upsertPacketDraft,
 } from "@/src/lib/domains/files/attachment-packet-compose";
-import {
-	validateAttachmentPacketComposeDrafts,
-	validateAttachmentPacketDraftsForSend,
-} from "@/src/lib/domains/files/validate-attachment-packets";
+import { validateAttachmentPacketComposeDrafts } from "@/src/lib/domains/files/validate-attachment-packets";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { AttachmentPacketDialog } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-dialog";
 import { AttachmentPacketSummaryBody } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-summary-card";

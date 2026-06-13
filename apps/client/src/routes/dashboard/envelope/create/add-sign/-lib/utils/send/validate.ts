@@ -4,15 +4,15 @@ import {
 	canUseConditionalAttachmentRelease,
 	canUseSupplementaryAttachments,
 } from "@filosign/react/files";
-import { normalizePlacementRecipientEmail } from "@filosign/shared";
+import {
+	normalizePlacementRecipientEmail,
+	validateAttachmentPacketDraftsForSend,
+} from "@filosign/shared";
 import { toast } from "sonner";
 import type { Address } from "viem";
 import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
 import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
-import {
-	validateAttachmentPacketComposeDrafts,
-	validateAttachmentPacketDraftsForSend,
-} from "@/src/lib/domains/files/validate-attachment-packets";
+import { validateAttachmentPacketComposeDrafts } from "@/src/lib/domains/files/validate-attachment-packets";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
 import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements/payout-copy";

@@ -52,7 +52,7 @@ export const zPlacementManifest = z.object({
 	fields: z.array(zPlacementField).min(1),
 });
 
-/** Draft checkpoints — fields and document metadata may be incomplete before send. */
+/** Draft checkpoints - fields and document metadata may be incomplete before send. */
 export const zDraftPlacementManifest = z.object({
 	version: z.literal(1),
 	documents: z.array(zPlacementDocument),
@@ -79,7 +79,7 @@ export function sortKeysDeep(value: unknown): unknown {
 	return sorted;
 }
 
-/** Canonical JSON string for hashing — stable key order. */
+/** Canonical JSON string for hashing - stable key order. */
 export function canonicalPlacementManifestJson(
 	manifest: PlacementManifest,
 ): string {

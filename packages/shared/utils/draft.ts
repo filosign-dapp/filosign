@@ -73,7 +73,7 @@ export const zDraftSnapshot = z.object({
 
 export type DraftSnapshot = z.infer<typeof zDraftSnapshot>;
 
-/** Canonical JSON for draft snapshot hashing — stable key order. */
+/** Canonical JSON for draft snapshot hashing - stable key order. */
 export function canonicalDraftSnapshotJson(snapshot: DraftSnapshot): string {
 	const parsed = zDraftSnapshot.parse(snapshot);
 	return jsonStringify(sortKeysDeep(parsed) as DraftSnapshot);

@@ -76,9 +76,9 @@ export function signupPolicyIsGated(deployment: Deployment): boolean {
 export function deploymentBannerMessage(deployment: Deployment): string | null {
 	switch (deployment) {
 		case "staging":
-			return "Staging — internal QA on Base Sepolia testnet.";
+			return "Staging - internal QA on Base Sepolia testnet.";
 		case "sandbox":
-			return "Sandbox — Base Sepolia testnet only. No real money. Data may be reset.";
+			return "Sandbox - Base Sepolia testnet only. No real money. Data may be reset.";
 		default:
 			return null;
 	}
@@ -105,7 +105,7 @@ export function publicRpcUrlForChain(chain: Chain): string {
 export type BuildChainRpcTransportArgs = {
 	deployment: Deployment;
 	chainKey: ChainKey;
-	/** Primary RPC URL — only honored when `deployment` is `production` (mainnet or testnet). */
+	/** Primary RPC URL - only honored when `deployment` is `production` (mainnet or testnet). */
 	primaryUrl?: string | undefined;
 };
 

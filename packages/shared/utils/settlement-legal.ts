@@ -3,7 +3,7 @@ import type {
 	SettlementRuleStatus,
 } from "./settlement-rules";
 
-/** Versioned settlement feature legal copy — counsel must review before production. */
+/** Versioned settlement feature legal copy - counsel must review before production. */
 export const SETTLEMENT_FEATURE_TERMS_VERSION = "2026-05-01" as const;
 
 /** Checkbox label on sign page when a payout attachment is present. */

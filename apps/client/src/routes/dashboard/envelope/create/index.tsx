@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import {
 	createFormToEnvelopeForm,
 	createFormToEnvelopeFormWithoutDocuments,

@@ -7,7 +7,7 @@ import {
 import { PencilSimpleIcon } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import {
 	hydrateAttachmentPacketDrafts,
 	saveAttachmentPacketDrafts,

@@ -2,7 +2,7 @@ import type { EvaluatedActivationStep } from "@filosign/shared";
 import { ArrowSquareOutIcon, SealCheckIcon } from "@phosphor-icons/react";
 import { BackdropImage } from "@/src/lib/components/app/chrome/page-backdrop";
 import { Button, buttonVariants } from "@/src/lib/components/ui/button";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { cn } from "@/src/lib/utils";
 

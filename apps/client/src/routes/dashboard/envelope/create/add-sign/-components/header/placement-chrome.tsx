@@ -2,13 +2,13 @@ import {
 	ArrowLeftIcon,
 	CheckCircleIcon,
 	PaperPlaneRightIcon,
-	SpinnerGapIcon,
 	XCircleIcon,
 } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import Logo from "@/src/lib/components/app/chrome/logo";
 import { Button } from "@/src/lib/components/ui/button";
 import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements/payout-copy";
 import { useAttachedPayoutBalance } from "@/src/lib/domains/settlements/use-attached-payout-balance";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
@@ -37,7 +37,7 @@ export function AddSignHeader() {
 		if (isSigning) {
 			return (
 				<>
-					<SpinnerGapIcon className="size-4 animate-spin" />
+					<InlineLoader size="sm" className="text-current" />
 					<span className="hidden sm:inline">Signing…</span>
 				</>
 			);
@@ -45,7 +45,7 @@ export function AddSignHeader() {
 		if (sendStatus === "loading") {
 			return (
 				<>
-					<SpinnerGapIcon className="size-4 animate-spin" />
+					<InlineLoader size="sm" className="text-current" />
 					<span className="hidden sm:inline">Sending…</span>
 				</>
 			);

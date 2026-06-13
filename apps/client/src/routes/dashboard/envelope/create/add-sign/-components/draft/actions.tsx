@@ -6,7 +6,6 @@ import {
 	FileTextIcon,
 	FloppyDiskIcon,
 	KeyIcon,
-	SpinnerGapIcon,
 } from "@phosphor-icons/react";
 import { getRouteApi } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
@@ -24,6 +23,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { useDraftCommentCount, useDraftSaveUi } from "@/src/lib/domains/drafts";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn } from "@/src/lib/utils/utils";
@@ -223,7 +223,7 @@ export function AddSignDraftActions() {
 					)}
 				>
 					{isSaving ? (
-						<SpinnerGapIcon className="size-3 animate-spin" aria-hidden />
+						<InlineLoader size="sm" />
 					) : (
 						<span
 							className={cn("size-2 rounded-full", status.dotClass)}

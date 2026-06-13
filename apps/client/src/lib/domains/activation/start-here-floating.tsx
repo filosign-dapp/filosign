@@ -10,7 +10,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useMemo } from "react";
 import { BackdropImage } from "@/src/lib/components/app/chrome/page-backdrop";
 import { Button, buttonVariants } from "@/src/lib/components/ui/button";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { useStartHereController } from "@/src/lib/domains/activation/use-start-here-controller";
 import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
 import { cn } from "@/src/lib/utils";

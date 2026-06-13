@@ -1,7 +1,7 @@
 import type { EvaluatedActivationStep } from "@filosign/shared";
 import { Link } from "@tanstack/react-router";
 import { Button, buttonVariants } from "@/src/lib/components/ui/button";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { resolveActivationStepHref } from "@/src/lib/domains/activation/resolve-step-href";
 
 type ActivationStepActionProps = {

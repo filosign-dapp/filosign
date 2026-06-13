@@ -155,18 +155,22 @@ export const zOrgsInviteCreateBody = z.object({
 	role: zOrgMemberRole.optional().default("sender"),
 });
 
+type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 async function assertOrgHasInviteSeat(
 	organizationId: string,
+	tx?: DbTx,
 	options?: { excludePendingInviteId?: string },
 ) {
-	const [sub] = await db
+	const client = tx || db;
+	const [sub] = await client
 		.select({ seatCount: organizationSubscriptions.seatCount })
 		.from(organizationSubscriptions)
 		.where(eq(organizationSubscriptions.organizationId, organizationId))
 		.limit(1);
 
 	const seatCount = sub?.seatCount ?? 1;
-	const [activeMembers] = await db
+	const [activeMembers] = await client
 		.select({ count: sql<number>`count(*)::int` })
 		.from(organizationMembers)
 		.where(
@@ -175,7 +179,7 @@ async function assertOrgHasInviteSeat(
 				eq(organizationMembers.status, "active"),
 			),
 		);
-	const [openInvites] = await db
+	const [openInvites] = await client
 		.select({ count: sql<number>`count(*)::int` })
 		.from(organizationInvites)
 		.where(
@@ -302,7 +306,7 @@ export async function orgsInvitesAccept(wallet: Address, body: unknown) {
 	const invitee = getAddress(wallet);
 
 	await db.transaction(async (tx) => {
-		await assertOrgHasInviteSeat(invite.organizationId, {
+		await assertOrgHasInviteSeat(invite.organizationId, tx, {
 			excludePendingInviteId: invite.id,
 		});
 		await tx

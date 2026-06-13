@@ -6,6 +6,7 @@ import type { createEntitlementCacheInvalidation } from "@/lib/platform/cache";
 import type db from "@/lib/platform/db";
 import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import { organizationSubscriptions } from "@/lib/platform/db/schema/organization";
+import { platformAccessPending } from "@/lib/platform/db/schema/platform-access";
 import {
 	isWorkspaceBillingPlanId,
 	resolveIntervalFromProductId,
@@ -238,6 +239,23 @@ const WEBHOOK_HANDLERS: WebhookHandler[] = [
 		}
 
 		if (ctx.eventType !== "subscription.active") {
+			if (
+				ctx.eventType === "subscription.cancelled" ||
+				ctx.eventType === "subscription.expired"
+			) {
+				const dodoSubscriptionId = ctx.payloadData.subscription_id ?? null;
+				if (dodoSubscriptionId) {
+					await tx
+						.update(platformAccessPending)
+						.set({
+							status: "expired",
+							updatedAt: new Date(),
+						})
+						.where(
+							eq(platformAccessPending.dodoSubscriptionId, dodoSubscriptionId),
+						);
+				}
+			}
 			return { handled: true, stop: true };
 		}
 

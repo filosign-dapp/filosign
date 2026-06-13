@@ -26,6 +26,7 @@ export {
 export {
 	assertCanCreateAdditionalWorkspace,
 	assertSeatCountForPlan,
+	assertUserOwnsOrganization,
 	countOwnedOrganizations,
 	getPersonalOrganizationId,
 	isPaidWorkspacePlan,

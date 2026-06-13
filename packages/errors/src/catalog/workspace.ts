@@ -283,6 +283,18 @@ export const workspaceErrors = {
 		severity: "error",
 		defaultOrpcCode: "NOT_FOUND",
 	},
+	"WORKSPACE.PLATFORM_INVITE_PAID_PLAN_BLOCKS": {
+		title: "Partner invite unavailable",
+		description:
+			"You already have an active paid plan. Partner trials apply to free workspaces only.",
+		steps: [
+			"Contact support if you believe this is an error.",
+			"Partner access is intended for new or free-tier design partners.",
+		],
+		audience: "user",
+		severity: "warning",
+		defaultOrpcCode: "FORBIDDEN",
+	},
 	"WORKSPACE.PLATFORM_ACCESS_REQUEST_NOT_FOUND": {
 		title: "Access request not found",
 		description: "The platform access request could not be located.",

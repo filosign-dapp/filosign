@@ -14,6 +14,8 @@ import {
 
 const TEAM_PLANS = ["teams", "teams_pro"] as const satisfies PlanId[];
 
+type OrgDbClient = Pick<typeof db, "select">;
+
 export async function countOwnedOrganizations(
 	wallet: Address,
 ): Promise<number> {
@@ -37,9 +39,10 @@ export async function countOwnedOrganizations(
 
 export async function getPersonalOrganizationId(
 	wallet: Address,
+	client: OrgDbClient = db,
 ): Promise<string | null> {
 	const walletNorm = getAddress(wallet);
-	const [row] = await db
+	const [row] = await client
 		.select({ organizationId: organizations.id })
 		.from(organizationMembers)
 		.innerJoin(
@@ -56,6 +59,30 @@ export async function getPersonalOrganizationId(
 		)
 		.limit(1);
 	return row?.organizationId ?? null;
+}
+
+export async function assertUserOwnsOrganization(
+	wallet: Address,
+	organizationId: string,
+	client: OrgDbClient = db,
+): Promise<void> {
+	const walletNorm = getAddress(wallet);
+	const [row] = await client
+		.select({ organizationId: organizationMembers.organizationId })
+		.from(organizationMembers)
+		.where(
+			and(
+				eq(organizationMembers.organizationId, organizationId),
+				eq(organizationMembers.walletAddress, walletNorm),
+				eq(organizationMembers.role, "owner"),
+				eq(organizationMembers.status, "active"),
+			),
+		)
+		.limit(1);
+
+	if (!row) {
+		throwAppError("WORKSPACE.NOT_MEMBER");
+	}
 }
 
 export async function userCanCreateAdditionalWorkspaces(

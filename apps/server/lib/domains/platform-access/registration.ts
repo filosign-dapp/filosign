@@ -24,6 +24,10 @@ import {
 } from "@/lib/platform/db/schema/platform-access";
 import { users } from "@/lib/platform/db/schema/user";
 import {
+	assertNoOwnedActiveDodoSubscriptions,
+	canApplyPartnerTrialToUserSub,
+} from "./utils/partner-trial-guards";
+import {
 	inviteIsActive,
 	normalizeEmail,
 	type PlatformAccessTx,
@@ -110,6 +114,24 @@ export async function redeemPlatformInviteOnRegisterWithTx(
 
 	if (existingRedemption) {
 		return;
+	}
+
+	await assertNoOwnedActiveDodoSubscriptions(tx, wallet);
+
+	const [existingUserSub] = await tx
+		.select({
+			planId: userSubscriptions.planId,
+			status: userSubscriptions.status,
+			provider: userSubscriptions.provider,
+			periodEnd: userSubscriptions.periodEnd,
+			dodoSubscriptionId: userSubscriptions.dodoSubscriptionId,
+		})
+		.from(userSubscriptions)
+		.where(eq(userSubscriptions.walletAddress, wallet))
+		.limit(1);
+
+	if (!canApplyPartnerTrialToUserSub(existingUserSub)) {
+		throwAppError("WORKSPACE.PLATFORM_INVITE_PAID_PLAN_BLOCKS");
 	}
 
 	const periodStart = new Date();
@@ -275,25 +297,47 @@ export async function attachPendingOrgBillingOnCreateWithTx(
 		.where(eq(platformAccessPending.id, pending.id));
 }
 
-/** Copy an active partner trial from user_subscriptions onto a newly created workspace. */
-export async function attachPartnerTrialOnOrgCreateWithTx(
+/** Copy an active partner trial from user_subscriptions onto a workspace when eligible. */
+async function copyActivePartnerTrialToOrgWithTx(
 	tx: PlatformAccessTx,
 	args: {
 		creatorWallet: Address;
 		organizationId: string;
 	},
-): Promise<void> {
+): Promise<boolean> {
 	const wallet = getAddress(args.creatorWallet);
 	const now = new Date();
 
 	const [orgSub] = await tx
-		.select({ planId: organizationSubscriptions.planId })
+		.select({
+			planId: organizationSubscriptions.planId,
+			status: organizationSubscriptions.status,
+			provider: organizationSubscriptions.provider,
+			periodStart: organizationSubscriptions.periodStart,
+			periodEnd: organizationSubscriptions.periodEnd,
+			featureOverrides: organizationSubscriptions.featureOverrides,
+		})
 		.from(organizationSubscriptions)
 		.where(eq(organizationSubscriptions.organizationId, args.organizationId))
 		.limit(1);
 
+	if (
+		isActivePartnerTrialSubscription(
+			orgSub
+				? {
+						...orgSub,
+						featureOverrides:
+							(orgSub.featureOverrides as Record<string, unknown> | null) ?? {},
+					}
+				: undefined,
+			now,
+		)
+	) {
+		return true;
+	}
+
 	if (!orgSub || orgSub.planId !== "free") {
-		return;
+		return false;
 	}
 
 	const [userSub] = await tx
@@ -310,7 +354,7 @@ export async function attachPartnerTrialOnOrgCreateWithTx(
 		.limit(1);
 
 	if (!isActivePartnerTrialSubscription(userSub, now)) {
-		return;
+		return false;
 	}
 
 	await tx
@@ -336,6 +380,40 @@ export async function attachPartnerTrialOnOrgCreateWithTx(
 		organizationId: args.organizationId,
 		creatorWallet: wallet,
 	});
+
+	return true;
+}
+
+/** Copy an active partner trial from user_subscriptions onto a newly created workspace. */
+export async function attachPartnerTrialOnOrgCreateWithTx(
+	tx: PlatformAccessTx,
+	args: {
+		creatorWallet: Address;
+		organizationId: string;
+	},
+): Promise<void> {
+	await copyActivePartnerTrialToOrgWithTx(tx, args);
+}
+
+/** Attach partner trial to an existing workspace the user owns. Rolls back when attach is required but fails. */
+export async function attachPartnerTrialToExistingOrgWithTx(
+	tx: PlatformAccessTx,
+	args: {
+		creatorWallet: Address;
+		organizationId: string;
+		requireAttach: boolean;
+	},
+): Promise<boolean> {
+	const attached = await copyActivePartnerTrialToOrgWithTx(tx, {
+		creatorWallet: args.creatorWallet,
+		organizationId: args.organizationId,
+	});
+
+	if (args.requireAttach && !attached) {
+		throwAppError("WORKSPACE.PLATFORM_INVITE_PAID_PLAN_BLOCKS");
+	}
+
+	return attached;
 }
 
 export type PartnerInviteTrialContext = {

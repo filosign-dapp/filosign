@@ -25,6 +25,11 @@ export type TweenPreset = keyof typeof TWEEN_TOKENS;
 export const LOOP_TOKENS = {
 	shimmer: { repeat: Infinity, ease: "linear" as const, duration: 1.5 },
 	spinner: { repeat: Infinity, ease: "linear" as const, duration: 1 },
+	breath: {
+		repeat: Infinity,
+		ease: [0.38, 0.1, 0.72, 1] as const,
+		duration: 0.9,
+	},
 } as const;
 
 export type LoopPreset = keyof typeof LOOP_TOKENS;

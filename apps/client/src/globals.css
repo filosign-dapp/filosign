@@ -122,6 +122,10 @@
 	--scrollbar-thumb: oklch(0.42 0 0 / 0.55);
 	--scrollbar-thumb-hover: oklch(0.52 0 0 / 0.72);
 	--scrollbar-track: transparent;
+
+	--badge-blue: #016287;
+	--badge-yellow: #d9a81a;
+	--badge-green: #5ca999;
 }
 
 @theme inline {
@@ -154,6 +158,9 @@
 	--color-chart-3: var(--chart-3);
 	--color-chart-4: var(--chart-4);
 	--color-chart-5: var(--chart-5);
+	--color-badge-blue: var(--badge-blue);
+	--color-badge-yellow: var(--badge-yellow);
+	--color-badge-green: var(--badge-green);
 
 	--color-sidebar: var(--sidebar);
 	--color-sidebar-foreground: var(--sidebar-foreground);
@@ -184,6 +191,14 @@
 	--radius-2xl: calc(var(--radius) * 1.8);
 	--radius-3xl: calc(var(--radius) * 2.2);
 	--radius-4xl: calc(var(--radius) * 2.6);
+
+	--animate-shimmer: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+	to {
+		transform: translateX(100%);
+	}
 }
 
 @layer base {
@@ -343,14 +358,14 @@
 }
 
 @utility placement-field-applied-shell {
-	@apply overflow-hidden rounded-sm border p-0.5 shadow-md touch-manipulation;
+	@apply overflow-hidden rounded-sm border p-[1.5px] shadow-md touch-manipulation;
 	@apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1;
 	background-color: var(--placement-chrome);
 	border-color: var(--placement-chrome-border);
 }
 
 @utility placement-field-applied-fill {
-	@apply flex h-full w-full items-center justify-center overflow-hidden rounded-sm px-1 text-xs text-placement-fill-foreground;
+	@apply flex h-full w-full items-center justify-center overflow-hidden rounded-sm p-[2px] text-xs text-placement-fill-foreground;
 	background-color: var(--placement-fill);
 }
 

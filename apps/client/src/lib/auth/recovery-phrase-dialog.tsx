@@ -1,13 +1,16 @@
 import { CopySimpleIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
+import { useId } from "react";
 import { Button } from "@/src/lib/components/ui/button";
+import { Dialog } from "@/src/lib/components/ui/dialog";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/src/lib/components/ui/dialog";
+	FeatureDialogActions,
+	FeatureDialogBody,
+	FeatureDialogContent,
+	FeatureDialogHeader,
+	FeatureDialogMedia,
+	FeatureDialogPanel,
+} from "@/src/lib/components/ui/feature-dialog";
+import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
 
 export type RecoveryPhraseDialogCopy = {
 	title: string;
@@ -42,10 +45,12 @@ export function RecoveryPhraseDialog({
 	variant = "onboarding",
 	copy,
 }: RecoveryPhraseDialogProps) {
+	const titleId = useId();
 	const open = phrase !== null;
 	const baseCopy =
 		variant === "profile-export" ? profileExportCopy : onboardingCopy;
 	const resolvedCopy = { ...baseCopy, ...copy };
+	const badge = variant === "profile-export" ? "Export" : "One-time backup";
 
 	const handleCopy = async () => {
 		if (!phrase) return;
@@ -72,47 +77,61 @@ export function RecoveryPhraseDialog({
 
 	return (
 		<Dialog open={open} onOpenChange={() => {}}>
-			<DialogContent showCloseButton={false}>
-				<DialogHeader>
-					<DialogTitle>{resolvedCopy.title}</DialogTitle>
-					<DialogDescription>{resolvedCopy.description}</DialogDescription>
-				</DialogHeader>
-				<div className="flex items-center justify-end gap-2">
-					<Button
-						variant="outline"
-						size="icon"
-						type="button"
-						onClick={() => void handleCopy()}
-						aria-label="Copy recovery phrase"
-						title="Copy recovery phrase"
-					>
-						<CopySimpleIcon className="size-4" />
-					</Button>
-					<Button
-						variant="outline"
-						size="icon"
-						type="button"
-						onClick={handleDownload}
-						aria-label="Download recovery phrase as text file"
-						title="Download recovery phrase as text file"
-					>
-						<DownloadSimpleIcon className="size-4" />
-					</Button>
-				</div>
-				<div className="rounded-md border bg-muted p-3 text-sm leading-6">
-					{phrase}
-				</div>
-				<DialogFooter className="flex-col gap-2 sm:flex-col">
-					<Button
-						type="button"
-						onClick={onConfirmSaved}
-						variant="primary"
-						className="w-full"
-					>
-						{resolvedCopy.confirmLabel}
-					</Button>
-				</DialogFooter>
-			</DialogContent>
+			<FeatureDialogContent aria-labelledby={titleId}>
+				<FeatureDialogMedia
+					src={FEATURE_DIALOG_IMAGES.recoveryPhraseAndCryptoUnlockDialog}
+					badge={badge}
+				/>
+
+				<FeatureDialogPanel>
+					<FeatureDialogHeader
+						badge={badge}
+						title={resolvedCopy.title}
+						titleId={titleId}
+						description={resolvedCopy.description}
+					/>
+
+					<FeatureDialogBody>
+						<div className="flex items-center justify-end gap-2">
+							<Button
+								variant="outline"
+								size="icon"
+								type="button"
+								onClick={() => void handleCopy()}
+								aria-label="Copy recovery phrase"
+								title="Copy recovery phrase"
+							>
+								<CopySimpleIcon className="size-4" />
+							</Button>
+							<Button
+								variant="outline"
+								size="icon"
+								type="button"
+								onClick={handleDownload}
+								aria-label="Download recovery phrase as text file"
+								title="Download recovery phrase as text file"
+							>
+								<DownloadSimpleIcon className="size-4" />
+							</Button>
+						</div>
+						<div className="rounded-md border bg-muted p-3 text-sm leading-6">
+							{phrase}
+						</div>
+
+						<FeatureDialogActions>
+							<Button
+								type="button"
+								onClick={onConfirmSaved}
+								variant="primary"
+								size="lg"
+								className="w-full"
+							>
+								{resolvedCopy.confirmLabel}
+							</Button>
+						</FeatureDialogActions>
+					</FeatureDialogBody>
+				</FeatureDialogPanel>
+			</FeatureDialogContent>
 		</Dialog>
 	);
 }

@@ -14,15 +14,14 @@ import type {
 
 function buildColdShareRecipientMessage(share: ColdSharePackage): string {
 	return [
-		"You received a secure Filosign document.",
+		"You have a document to sign on Filosign.",
 		"",
-		"To open it:",
-		"1. Open this link in your browser:",
+		"1. Open this link:",
 		share.magicLink,
-		"2. When Filosign asks for a secret code, paste this exactly (keep the hyphens):",
+		"2. Paste this secret code when prompted (keep the hyphens):",
 		share.phrase,
 		"",
-		"The link alone won't open the document without the code.",
+		"The link alone won't work without the code.",
 	].join("\n");
 }
 
@@ -32,8 +31,8 @@ function shareLinks(share: ColdSharePackage) {
 		message,
 		url: share.magicLink,
 		emailTo: share.emails,
-		subject: "Secure document waiting for you",
-		telegramText: `Paste this secret code after opening the link: ${share.phrase}`,
+		subject: "Sign your Filosign document",
+		telegramText: `Secret code: ${share.phrase}`,
 	});
 }
 
@@ -48,20 +47,20 @@ export function ColdSharePanel({
 
 	return (
 		<div className="space-y-4">
-			<div className="flex items-start gap-3 rounded-large border border-amber-500/30 bg-amber-500/5 p-4">
-				<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-200">
+			<div className="flex items-start gap-3 rounded-large border border-warning/20 bg-warning/2 p-4">
+				<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning">
 					<KeyIcon className="size-5" weight="duotone" aria-hidden />
 				</div>
 				<div className="min-w-0 space-y-1">
 					<p className="text-sm font-semibold text-foreground">
-						How recipients open the document
+						What recipients do
 					</p>
-					<ol className="list-decimal space-y-0.5 pl-4 text-xs leading-relaxed text-muted-foreground">
-						<li>Open the link from their Filosign email</li>
+					<ol className="list-decimal space-y-0.5 pl-4 text-xs text-muted-foreground">
+						<li>Open the link from email</li>
 						<li>Paste the secret code when prompted</li>
 					</ol>
-					<p className="text-xs leading-relaxed text-muted-foreground">
-						Share the code below separately. The email link alone is not enough.
+					<p className="text-xs text-muted-foreground">
+						Send the code below in a separate message.
 					</p>
 				</div>
 			</div>
@@ -74,7 +73,7 @@ export function ColdSharePanel({
 							className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-2"
 						>
 							<span className="truncate text-sm">{email}</span>
-							<Badge variant="secondary" className="shrink-0 text-[10px]">
+							<Badge variant="secondary" className="shrink-0">
 								Secret code
 							</Badge>
 						</li>
@@ -97,17 +96,16 @@ export function ColdSharePanel({
 				</SidebarSection>
 			) : null}
 
-			<SidebarSection title="Secret code">
-				<div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-background px-3 py-2.5">
+			<SidebarSection
+				title="Secret code"
+				description="Send this separately. Recipients paste it after opening the link."
+			>
+				<div className="flex items-center gap-2 rounded-lg border border-warning/20 bg-background px-3 py-2.5">
 					<code className="min-w-0 flex-1 break-all font-mono text-sm font-medium tracking-wide">
 						{share.phrase}
 					</code>
 					<CopyButton text={share.phrase} className="shrink-0" />
 				</div>
-				<p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-					Recipients paste this on the unlock screen after opening the link.
-					Copy and send it in a separate message from the email.
-				</p>
 			</SidebarSection>
 
 			<div className="flex flex-wrap items-center gap-2">
@@ -118,7 +116,7 @@ export function ColdSharePanel({
 			{warmSummary && warmSummary.recipients.length > 0 ? (
 				<SidebarSection
 					title="Also notified by email"
-					description="They can open the document from email."
+					description="No secret code needed."
 				>
 					<ul className="space-y-2">
 						{warmSummary.recipients.map((recipient) => (
@@ -136,10 +134,7 @@ export function ColdSharePanel({
 										</p>
 									) : null}
 								</div>
-								<Badge
-									variant="secondary"
-									className="shrink-0 text-[10px] capitalize"
-								>
+								<Badge variant="secondary" className="shrink-0 capitalize">
 									{recipient.role}
 								</Badge>
 							</li>

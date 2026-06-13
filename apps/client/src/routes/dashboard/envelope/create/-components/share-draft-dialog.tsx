@@ -6,7 +6,7 @@ import {
 	SpinnerGapIcon,
 	XIcon,
 } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
 import { SidebarSection } from "@/src/lib/components/app/sidebar/section";
 import { Badge } from "@/src/lib/components/ui/badge";
@@ -19,8 +19,17 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/src/lib/components/ui/dialog";
+import {
+	FeatureDialogActions,
+	FeatureDialogBody,
+	FeatureDialogContent,
+	FeatureDialogHeader,
+	FeatureDialogMedia,
+	FeatureDialogPanel,
+} from "@/src/lib/components/ui/feature-dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
 import { localMutationErrorOptions } from "@/src/lib/errors";
 
 type Step = "invite" | "success";
@@ -42,6 +51,7 @@ export function ShareDraftDialog(props: {
 	const [emails, setEmails] = useState<string[]>([]);
 	const [shares, setShares] = useState<ShareDraftExternalResult["shares"]>([]);
 	const share = useShareDraftExternal();
+	const successTitleId = useId();
 
 	useEffect(() => {
 		if (!props.open) {
@@ -97,101 +107,101 @@ export function ShareDraftDialog(props: {
 	if (step === "success") {
 		return (
 			<Dialog open={props.open}>
-				<DialogContent
-					className="gap-0 overflow-hidden p-0 sm:max-w-lg"
-					showCloseButton={false}
-				>
-					<div className="border-b border-border/50 bg-muted/20 px-6 py-5">
-						<DialogHeader className="gap-1.5 space-y-0 text-left">
-							<DialogTitle className="font-manrope text-lg font-semibold tracking-tight">
-								Review invites sent
-							</DialogTitle>
-							<DialogDescription className="text-sm leading-relaxed">
-								Share each secret code separately. Recipients paste it after
-								opening the link from their email.
-							</DialogDescription>
-						</DialogHeader>
-					</div>
+				<FeatureDialogContent aria-labelledby={successTitleId}>
+					<FeatureDialogMedia
+						src={FEATURE_DIALOG_IMAGES.coldShareAccessDialog}
+						badge="Invites sent"
+					/>
 
-					<div className="max-h-[min(60vh,28rem)] space-y-4 overflow-y-auto px-6 py-5">
-						{coldShares.length > 0 ? (
-							<div className="flex items-start gap-3 rounded-large border border-amber-500/30 bg-amber-500/5 p-4">
-								<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-200">
-									<KeyIcon className="size-5" weight="duotone" aria-hidden />
+					<FeatureDialogPanel>
+						<FeatureDialogHeader
+							badge="Invites sent"
+							title="Review invites sent"
+							titleId={successTitleId}
+							description="Share each secret code separately. Recipients paste it after opening the link from their email."
+						/>
+
+						<FeatureDialogBody>
+							{coldShares.length > 0 ? (
+								<div className="flex items-start gap-3 rounded-large border border-amber-500/30 bg-amber-500/5 p-4">
+									<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-200">
+										<KeyIcon className="size-5" weight="duotone" aria-hidden />
+									</div>
+									<div className="min-w-0 space-y-1">
+										<p className="text-sm font-semibold text-foreground">
+											Secret codes
+										</p>
+										<p className="text-xs leading-relaxed text-muted-foreground">
+											The email link alone is not enough for first-time
+											recipients.
+										</p>
+									</div>
 								</div>
-								<div className="min-w-0 space-y-1">
-									<p className="text-sm font-semibold text-foreground">
-										Secret codes
-									</p>
-									<p className="text-xs leading-relaxed text-muted-foreground">
-										The email link alone is not enough for first-time
-										recipients.
-									</p>
-								</div>
-							</div>
-						) : null}
+							) : null}
 
-						{coldShares.length > 0 ? (
-							<SidebarSection title="Cold recipients">
-								<ul className="space-y-3">
-									{coldShares.map((row) => (
-										<li
-											key={row.shareId || row.inviteToken}
-											className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-3"
-										>
-											<div className="flex items-center justify-between gap-2">
-												<span className="truncate text-sm font-medium">
-													{row.email}
-												</span>
-												<Badge
-													variant="secondary"
-													className="shrink-0 text-[10px]"
-												>
-													Secret code
-												</Badge>
-											</div>
-											<div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-background px-3 py-2">
-												<code className="min-w-0 flex-1 break-all font-mono text-xs font-medium tracking-wide">
-													{row.phrase}
-												</code>
-												<CopyButton text={row.phrase} className="shrink-0" />
-											</div>
-										</li>
-									))}
-								</ul>
-							</SidebarSection>
-						) : null}
+							{coldShares.length > 0 ? (
+								<SidebarSection title="Cold recipients">
+									<ul className="space-y-3">
+										{coldShares.map((row) => (
+											<li
+												key={row.shareId || row.inviteToken}
+												className="space-y-2 rounded-lg border border-border/60 bg-muted/20 p-3"
+											>
+												<div className="flex items-center justify-between gap-2">
+													<span className="truncate text-sm font-medium">
+														{row.email}
+													</span>
+													<Badge
+														variant="secondary"
+														className="shrink-0 text-[10px]"
+													>
+														Secret code
+													</Badge>
+												</div>
+												<div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-background px-3 py-2">
+													<code className="min-w-0 flex-1 break-all font-mono text-xs font-medium tracking-wide">
+														{row.phrase}
+													</code>
+													<CopyButton text={row.phrase} className="shrink-0" />
+												</div>
+											</li>
+										))}
+									</ul>
+								</SidebarSection>
+							) : null}
 
-						{warmShares.length > 0 ? (
-							<SidebarSection
-								title="Also notified by email"
-								description="Registered Filosign users can open the draft from email. No secret code needed."
-							>
-								<ul className="space-y-2">
-									{warmShares.map((row) => (
-										<li
-											key={row.shareId || row.inviteToken}
-											className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm"
-										>
-											{row.email}
-										</li>
-									))}
-								</ul>
-							</SidebarSection>
-						) : null}
-					</div>
+							{warmShares.length > 0 ? (
+								<SidebarSection
+									title="Also notified by email"
+									description="Registered Filosign users can open the draft from email. No secret code needed."
+								>
+									<ul className="space-y-2">
+										{warmShares.map((row) => (
+											<li
+												key={row.shareId || row.inviteToken}
+												className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm"
+											>
+												{row.email}
+											</li>
+										))}
+									</ul>
+								</SidebarSection>
+							) : null}
 
-					<DialogFooter className="border-t border-border/50 bg-muted/10 px-6 py-4">
-						<Button
-							type="button"
-							variant="primary"
-							className="w-full sm:w-auto"
-							onClick={handleDone}
-						>
-							Okay
-						</Button>
-					</DialogFooter>
-				</DialogContent>
+							<FeatureDialogActions>
+								<Button
+									type="button"
+									variant="primary"
+									size="lg"
+									className="w-full"
+									onClick={handleDone}
+								>
+									Okay
+								</Button>
+							</FeatureDialogActions>
+						</FeatureDialogBody>
+					</FeatureDialogPanel>
+				</FeatureDialogContent>
 			</Dialog>
 		);
 	}

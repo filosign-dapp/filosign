@@ -9,21 +9,22 @@ import {
 	useCreateOrgCheckoutSession,
 	useUpgradeOfferings,
 } from "@filosign/react/billing";
-import { ArrowSquareOutIcon, SparkleIcon } from "@phosphor-icons/react";
+import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import env from "@/src/env";
-import Logo from "@/src/lib/components/app/chrome/logo";
 import { Button } from "@/src/lib/components/ui/button";
+import { Dialog } from "@/src/lib/components/ui/dialog";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/src/lib/components/ui/dialog";
+	FeatureDialogActions,
+	FeatureDialogBody,
+	FeatureDialogClose,
+	FeatureDialogContent,
+	FeatureDialogHeader,
+	FeatureDialogMedia,
+	FeatureDialogPanel,
+} from "@/src/lib/components/ui/feature-dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import {
@@ -31,6 +32,7 @@ import {
 	billingSettingsReturnUrl,
 } from "@/src/lib/domains/billing/settings-path";
 import { PLAN_LIMIT_COPY } from "@/src/lib/domains/entitlements/plan-limit-copy";
+import { upgradePlanLimitMedia } from "@/src/lib/domains/feature-dialog/images";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { cn } from "@/src/lib/utils/index";
 
@@ -53,12 +55,14 @@ export function UpgradePlanDialog({
 	onOpenChange,
 	reason,
 }: UpgradePlanDialogProps) {
+	const titleId = useId();
 	const navigate = useNavigate();
 	const captureAppEvent = useCaptureAppEvent();
 	const offeringsQuery = useUpgradeOfferings(open ? reason : null);
 	const orgCheckout = useCreateOrgCheckoutSession();
 	const changePlan = useChangeOrgPlan();
 	const copy = PLAN_LIMIT_COPY[reason];
+	const media = upgradePlanLimitMedia(reason);
 
 	const offerings = offeringsQuery.data?.offerings ?? [];
 	const recommendedId =
@@ -149,176 +153,163 @@ export function UpgradePlanDialog({
 		? getPlanName(offeringsQuery.data.effectivePlanId)
 		: "Free";
 
+	const primaryPending = orgCheckout.isPending || changePlan.isPending;
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent
-				className="gap-0 overflow-hidden p-0 sm:max-w-lg"
-				showCloseButton
-			>
-				<div className="border-b border-border/60 bg-muted/20 px-6 py-5">
-					<DialogHeader className="gap-3 space-y-0">
-						<div className="flex items-center gap-3">
-							<Logo iconOnly animatedLogo={false} noHref />
-							<div className="min-w-0 space-y-1">
-								<p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-									Current plan: {planLabel}
-								</p>
-								<DialogTitle className="text-lg leading-snug">
-									{copy.title}
-								</DialogTitle>
-							</div>
-						</div>
-						<DialogDescription className="text-sm leading-relaxed pt-1">
-							{copy.description}
-						</DialogDescription>
-					</DialogHeader>
-				</div>
+			<FeatureDialogContent aria-labelledby={titleId}>
+				<FeatureDialogMedia src={media.src} badge={media.badge} />
 
-				<div className="px-6 py-5 space-y-4">
-					{offeringsQuery.isLoading ? (
-						<p className="text-sm text-muted-foreground text-center py-4">
-							Loading upgrade options…
-						</p>
-					) : offeringsQuery.data?.noUpgradeMessage &&
-						offerings.length === 0 ? (
-						<p className="text-sm text-pretty text-muted-foreground">
-							{offeringsQuery.data.noUpgradeMessage}
-						</p>
-					) : (
-						<>
-							<div className="flex justify-center p-1 border border-border/60 bg-muted/40 rounded-lg max-w-60 mx-auto">
-								{(["monthly", "yearly"] as const).map((value) => (
-									<button
-										key={value}
-										type="button"
-										onClick={() => setInterval(value)}
-										className={cn(
-											"flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition",
-											interval === value
-												? "bg-background text-foreground shadow-xs"
-												: "text-muted-foreground hover:text-foreground",
-										)}
-									>
-										{value === "yearly" ? "Yearly (-15%)" : "Monthly"}
-									</button>
-								))}
-							</div>
+				<FeatureDialogPanel>
+					<FeatureDialogClose disabled={primaryPending} />
 
-							<div className="space-y-2">
-								{offerings.map((offering) => (
-									<button
-										key={offering.planId}
-										type="button"
-										disabled={!offering.selectable}
-										onClick={() =>
-											offering.selectable && setSelectedPlan(offering.planId)
-										}
-										className={cn(
-											"flex items-center justify-between p-3.5 rounded-xl border text-left transition w-full select-none",
-											!offering.selectable
-												? "opacity-50 cursor-not-allowed bg-muted/10 border-border/40"
-												: selectedPlan === offering.planId
-													? "border-primary bg-primary/5 ring-1 ring-primary"
-													: "border-border/60 hover:border-border hover:bg-muted/10",
-										)}
-									>
-										<div className="min-w-0 pr-2">
-											<div className="flex items-center gap-1.5">
-												<span className="font-semibold text-sm text-foreground">
-													{getPlanName(offering.planId)}
-												</span>
-												{offering.planId === "teams_pro" ? (
-													<SparkleIcon
-														className="size-3 text-warning"
-														weight="fill"
-														aria-hidden
-													/>
-												) : null}
-											</div>
-											<span className="text-xs text-muted-foreground block mt-0.5">
-												{offering.blockedReason ??
-													(offering.planId === "individual"
-														? "Billed on this workspace"
-														: "Billed per workspace seat")}
-											</span>
-										</div>
-										<span className="font-bold text-sm shrink-0 tabular-nums">
-											${getPrice(offering.planId)}/mo
-										</span>
-									</button>
-								))}
-							</div>
+					<FeatureDialogHeader
+						badge={`Current plan: ${planLabel}`}
+						title={copy.title}
+						titleId={titleId}
+						description={copy.description}
+					/>
 
-							{selectedPlan && selectedPlan !== "individual" ? (
-								<div className="space-y-2 p-4 bg-muted/10 rounded-xl border border-border/40">
-									<Label
-										htmlFor="upgrade-seats"
-										className="text-sm font-medium"
-									>
-										Workspace seats
-									</Label>
-									<Input
-										id="upgrade-seats"
-										type="number"
-										min={1}
-										max={100}
-										value={seatCount}
-										onChange={(e) =>
-											setSeatCount(
-												Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-											)
-										}
-										className="w-20 h-9"
-									/>
+					<FeatureDialogBody className="overflow-y-auto">
+						{offeringsQuery.isLoading ? (
+							<p className="py-4 text-center text-sm text-muted-foreground">
+								Loading upgrade options…
+							</p>
+						) : offeringsQuery.data?.noUpgradeMessage &&
+							offerings.length === 0 ? (
+							<p className="text-sm text-pretty text-muted-foreground">
+								{offeringsQuery.data.noUpgradeMessage}
+							</p>
+						) : (
+							<>
+								<div className="mx-auto flex max-w-60 justify-center rounded-lg border border-border/60 bg-muted/40 p-1">
+									{(["monthly", "yearly"] as const).map((value) => (
+										<button
+											key={value}
+											type="button"
+											onClick={() => setInterval(value)}
+											className={cn(
+												"flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition",
+												interval === value
+													? "bg-background text-foreground shadow-xs"
+													: "text-muted-foreground hover:text-foreground",
+											)}
+										>
+											{value === "yearly" ? "Yearly (-15%)" : "Monthly"}
+										</button>
+									))}
 								</div>
-							) : null}
-						</>
-					)}
-				</div>
 
-				<DialogFooter className="border-t border-border/60 bg-muted/10 px-6 py-4 flex-col sm:flex-col gap-3">
-					<div className="flex w-full flex-wrap justify-end gap-2">
+								<div className="space-y-2">
+									{offerings.map((offering) => (
+										<button
+											key={offering.planId}
+											type="button"
+											disabled={!offering.selectable}
+											onClick={() =>
+												offering.selectable && setSelectedPlan(offering.planId)
+											}
+											className={cn(
+												"flex w-full select-none items-center justify-between rounded-xl border p-3.5 text-left transition",
+												!offering.selectable
+													? "cursor-not-allowed border-border/40 bg-muted/10 opacity-50"
+													: selectedPlan === offering.planId
+														? "border-primary bg-primary/5 ring-1 ring-primary"
+														: "border-border/60 hover:border-border hover:bg-muted/10",
+											)}
+										>
+											<div className="min-w-0 pr-2">
+												<div className="flex items-center gap-1.5">
+													<span className="text-sm font-semibold text-foreground">
+														{getPlanName(offering.planId)}
+													</span>
+												</div>
+												<span className="mt-0.5 block text-xs text-muted-foreground">
+													{offering.blockedReason ??
+														(offering.planId === "individual"
+															? "Billed on this workspace"
+															: "Billed per workspace seat")}
+												</span>
+											</div>
+											<span className="shrink-0 text-sm font-bold tabular-nums">
+												${getPrice(offering.planId)}/mo
+											</span>
+										</button>
+									))}
+								</div>
+
+								{selectedPlan && selectedPlan !== "individual" ? (
+									<div className="space-y-2 rounded-xl border border-border/40 bg-muted/10 p-4">
+										<Label
+											htmlFor="upgrade-seats"
+											className="text-sm font-medium"
+										>
+											Workspace seats
+										</Label>
+										<Input
+											id="upgrade-seats"
+											type="number"
+											min={1}
+											max={100}
+											value={seatCount}
+											onChange={(e) =>
+												setSeatCount(
+													Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+												)
+											}
+											className="h-9 w-20"
+										/>
+									</div>
+								) : null}
+							</>
+						)}
+
 						<a
 							href={pricingHref()}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="mr-auto self-center text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+							className="block text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
 						>
 							Compare all plans
 						</a>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => onOpenChange(false)}
-						>
-							Close
-						</Button>
-						<Button
-							type="button"
-							variant="primary"
-							className="gap-1.5"
-							disabled={
-								offeringsQuery.isLoading ||
-								(!selectedOffering?.selectable && offerings.length > 0) ||
-								orgCheckout.isPending ||
-								changePlan.isPending
-							}
-							onClick={() => void handlePrimary()}
-						>
-							{orgCheckout.isPending || changePlan.isPending
-								? "Working…"
-								: primaryLabel}
-							{selectedOffering?.cta === "checkout" ? (
-								<ArrowSquareOutIcon
-									className="size-4"
-									weight="bold"
-									aria-hidden
-								/>
-							) : null}
-						</Button>
-					</div>
-				</DialogFooter>
-			</DialogContent>
+
+						<FeatureDialogActions>
+							<Button
+								type="button"
+								variant="primary"
+								size="lg"
+								className="w-full gap-1.5"
+								disabled={
+									offeringsQuery.isLoading ||
+									(!selectedOffering?.selectable && offerings.length > 0) ||
+									primaryPending
+								}
+								isLoading={primaryPending}
+								onClick={() => void handlePrimary()}
+							>
+								{primaryPending ? "Working…" : primaryLabel}
+								{selectedOffering?.cta === "checkout" ? (
+									<ArrowSquareOutIcon
+										className="size-4"
+										weight="bold"
+										aria-hidden
+									/>
+								) : null}
+							</Button>
+							<Button
+								type="button"
+								variant="outline"
+								size="lg"
+								className="w-full"
+								onClick={() => onOpenChange(false)}
+								disabled={primaryPending}
+							>
+								Close
+							</Button>
+						</FeatureDialogActions>
+					</FeatureDialogBody>
+				</FeatureDialogPanel>
+			</FeatureDialogContent>
 		</Dialog>
 	);
 }

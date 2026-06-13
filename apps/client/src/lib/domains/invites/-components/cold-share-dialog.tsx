@@ -2,16 +2,18 @@ import {
 	CLIENT_ANALYTICS_EVENTS,
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { Button } from "@/src/lib/components/ui/button";
+import { Dialog } from "@/src/lib/components/ui/dialog";
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/src/lib/components/ui/dialog";
+	FeatureDialogActions,
+	FeatureDialogBody,
+	FeatureDialogContent,
+	FeatureDialogHeader,
+	FeatureDialogMedia,
+	FeatureDialogPanel,
+} from "@/src/lib/components/ui/feature-dialog";
+import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
 import { ColdSharePanel } from "@/src/lib/domains/invites/-components/cold-share-panel";
 import { WarmSharePanel } from "@/src/lib/domains/invites/-components/warm-share-panel";
 import type {
@@ -30,6 +32,7 @@ export function ColdShareDialog(props: {
 	warmSummary?: WarmShareSummary | null;
 	onDone: () => void;
 }) {
+	const titleId = useId();
 	const captureAppEvent = useCaptureAppEvent();
 	const share = props.share;
 	const warmSummary = props.warmSummary ?? null;
@@ -48,43 +51,45 @@ export function ColdShareDialog(props: {
 	const description = isColdVariant
 		? "First-time recipients get the link by email. Share the secret code so they can paste it after opening the link."
 		: "Your envelope is live. Recipients can sign from their inbox.";
+	const badge = isColdVariant ? "Share access" : "Envelope sent";
+	const imageSrc = isColdVariant
+		? FEATURE_DIALOG_IMAGES.coldShareAccessDialog
+		: FEATURE_DIALOG_IMAGES.postSendEnvelopeSentDialog;
 
 	return (
 		<Dialog open={props.open}>
-			<DialogContent
-				className="gap-0 overflow-hidden p-0 sm:max-w-lg"
-				showCloseButton={false}
-			>
-				<div className="border-b border-border/50 bg-muted/20 px-6 py-5">
-					<DialogHeader className="gap-1.5 space-y-0 text-left">
-						<DialogTitle className="font-manrope text-lg font-semibold tracking-tight">
-							{title}
-						</DialogTitle>
-						<DialogDescription className="text-sm leading-relaxed">
-							{description}
-						</DialogDescription>
-					</DialogHeader>
-				</div>
+			<FeatureDialogContent aria-labelledby={titleId}>
+				<FeatureDialogMedia src={imageSrc} badge={badge} />
 
-				<div className="overflow-y-auto px-6 py-5">
-					{isColdVariant && share ? (
-						<ColdSharePanel share={share} warmSummary={warmSummary} />
-					) : warmSummary ? (
-						<WarmSharePanel summary={warmSummary} />
-					) : null}
-				</div>
+				<FeatureDialogPanel>
+					<FeatureDialogHeader
+						badge={badge}
+						title={title}
+						titleId={titleId}
+						description={description}
+					/>
 
-				<DialogFooter className="border-t border-border/50 bg-muted/10 px-6 py-4">
-					<Button
-						type="button"
-						variant="primary"
-						className="w-full sm:w-auto"
-						onClick={props.onDone}
-					>
-						{isColdVariant ? "Done" : "Continue to dashboard"}
-					</Button>
-				</DialogFooter>
-			</DialogContent>
+					<FeatureDialogBody>
+						{isColdVariant && share ? (
+							<ColdSharePanel share={share} warmSummary={warmSummary} />
+						) : warmSummary ? (
+							<WarmSharePanel summary={warmSummary} />
+						) : null}
+
+						<FeatureDialogActions>
+							<Button
+								type="button"
+								variant="primary"
+								size="lg"
+								className="w-full"
+								onClick={props.onDone}
+							>
+								{isColdVariant ? "Done" : "Continue to dashboard"}
+							</Button>
+						</FeatureDialogActions>
+					</FeatureDialogBody>
+				</FeatureDialogPanel>
+			</FeatureDialogContent>
 		</Dialog>
 	);
 }

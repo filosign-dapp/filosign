@@ -1,5 +1,6 @@
 import { AsteriskIcon, CircleIcon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
+import { Skeleton } from "@/src/lib/components/ui/skeleton";
 import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
 import { SignatureFieldTypeIcon } from "@/src/lib/domains/files/placement-field-display";
 import { cn } from "@/src/lib/utils";
@@ -21,7 +22,6 @@ function defaultContentFill(
 type PlacementFieldChromeProps = {
 	type: SignatureField["type"];
 	primaryLabel: string;
-	secondaryLabel?: string;
 	assigneeEmail?: string | null;
 	required?: boolean;
 	accentColor: string;
@@ -29,6 +29,7 @@ type PlacementFieldChromeProps = {
 	contentFill?: PlacementFieldContentFill;
 	isMobile?: boolean;
 	focused?: boolean;
+	loading?: boolean;
 	className?: string;
 	children?: ReactNode;
 };
@@ -36,7 +37,6 @@ type PlacementFieldChromeProps = {
 export function PlacementFieldChrome({
 	type,
 	primaryLabel,
-	secondaryLabel,
 	assigneeEmail,
 	required = false,
 	accentColor,
@@ -44,6 +44,7 @@ export function PlacementFieldChrome({
 	contentFill,
 	isMobile = false,
 	focused = false,
+	loading = false,
 	className,
 	children,
 }: PlacementFieldChromeProps) {
@@ -53,10 +54,6 @@ export function PlacementFieldChrome({
 	const showAssignee =
 		assigneeEmail && (variant === "muted" || variant === "pending");
 	const displayPrimary = showAssignee ? assigneeEmail : primaryLabel;
-	const displaySecondary =
-		showAssignee && secondaryLabel
-			? secondaryLabel
-			: (secondaryLabel ?? primaryLabel);
 
 	return (
 		<div
@@ -87,6 +84,11 @@ export function PlacementFieldChrome({
 				>
 					{children}
 				</div>
+			) : loading ? (
+				<div className="flex h-full w-full items-center justify-center px-2">
+					<Skeleton className="h-2 w-full max-w-[95%] rounded-full" />
+					<span className="sr-only">Loading {primaryLabel}</span>
+				</div>
 			) : (
 				<div className="flex h-full w-full items-center gap-1.5 px-1.5">
 					<span className="shrink-0 text-placement-chrome-foreground">
@@ -96,11 +98,6 @@ export function PlacementFieldChrome({
 						<div className="truncate placement-field-label">
 							{displayPrimary}
 						</div>
-						{displaySecondary && displaySecondary !== displayPrimary ? (
-							<div className="truncate placement-field-subtle">
-								{displaySecondary}
-							</div>
-						) : null}
 					</div>
 					{variant === "pending" || variant === "muted" ? (
 						required ? (

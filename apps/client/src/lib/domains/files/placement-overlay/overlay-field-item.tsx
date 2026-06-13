@@ -26,12 +26,12 @@ function VisualPreviewContent({
 			<img
 				src={completion.previewUrl}
 				alt=""
-				className="h-full w-full object-contain"
+				className="max-h-full max-w-full object-contain"
 			/>
 		);
 	}
 
-	return <Skeleton className="h-full w-full rounded-sm bg-muted/60" />;
+	return <Skeleton className="size-full min-h-0 rounded-sm" />;
 }
 
 function fieldAccent(field: PlacementField): string {
@@ -308,12 +308,35 @@ export function PlacementFieldOverlayItem({
 					<PlacementFieldChrome
 						type={field.type}
 						primaryLabel={signatureFieldTypeLabel(field.type)}
-						secondaryLabel={plan.label}
 						required={field.required}
 						accentColor={accent}
 						variant="pending"
 					/>
 				</button>
+			);
+
+		case "interactive-provisioning":
+			return (
+				<div
+					className={cn(
+						"placement-field-overlay pointer-events-none absolute z-10",
+						overlayClassName,
+					)}
+					style={style}
+					role="status"
+					aria-live="polite"
+					aria-busy="true"
+					aria-label={`Loading ${typeLabel}, page ${field.pageIndex + 1}`}
+				>
+					<PlacementFieldChrome
+						type={field.type}
+						primaryLabel={signatureFieldTypeLabel(field.type)}
+						required={field.required}
+						accentColor={accent}
+						variant="pending"
+						loading
+					/>
+				</div>
 			);
 	}
 }

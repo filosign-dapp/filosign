@@ -26,6 +26,7 @@ type PlacementOverlayProps = {
 	overlayClassName?: string;
 	/** When mode is readonly, render muted placeholders for fields without completions. */
 	showPlaceholders?: boolean;
+	provisioningFieldIds?: ReadonlySet<string>;
 };
 
 export const PlacementOverlay = memo(function PlacementOverlay({
@@ -41,6 +42,7 @@ export const PlacementOverlay = memo(function PlacementOverlay({
 	onTextBlur,
 	overlayClassName = "z-10",
 	showPlaceholders = false,
+	provisioningFieldIds,
 }: PlacementOverlayProps) {
 	const pageFields = fields.filter((f) => f.pageIndex === pageIndex);
 
@@ -53,6 +55,7 @@ export const PlacementOverlay = memo(function PlacementOverlay({
 					completions,
 					alreadySigned,
 					showPlaceholders,
+					provisioningFieldIds,
 				});
 
 				return (

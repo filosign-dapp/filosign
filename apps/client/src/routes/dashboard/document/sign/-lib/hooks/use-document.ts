@@ -114,6 +114,7 @@ export function useSignDocumentController() {
 			canSubmitPlacementSign: placement.canSubmitPlacementSign,
 			signerPlacementEmail: identity.signerPlacementEmail,
 			requiredFields: placementParsed.requiredFields,
+			provisioningFieldIds: fieldSession.provisioningFieldIds,
 		},
 		viewer,
 		signing: {

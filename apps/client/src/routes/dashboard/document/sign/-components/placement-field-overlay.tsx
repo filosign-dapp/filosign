@@ -12,6 +12,7 @@ type PlacementFieldOverlayProps = {
 	onTextDraftChange: (fieldId: string, value: string) => void;
 	onTextFocus: (fieldId: string) => void;
 	onTextBlur: (fieldId: string) => void;
+	provisioningFieldIds?: ReadonlySet<string>;
 };
 
 export const PlacementFieldOverlay = memo(function PlacementFieldOverlay(
@@ -29,6 +30,7 @@ export const PlacementFieldOverlay = memo(function PlacementFieldOverlay(
 			onTextDraftChange={props.onTextDraftChange}
 			onTextFocus={props.onTextFocus}
 			onTextBlur={props.onTextBlur}
+			provisioningFieldIds={props.provisioningFieldIds}
 		/>
 	);
 });

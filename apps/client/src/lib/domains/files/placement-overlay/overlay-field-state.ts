@@ -34,7 +34,8 @@ export type OverlayFieldRenderPlan =
 			text: string;
 	  }
 	| { kind: "interactive-signed-readonly"; typeLabel: string }
-	| { kind: "interactive-tap"; label: string };
+	| { kind: "interactive-tap"; label: string }
+	| { kind: "interactive-provisioning" };
 
 export type DeriveOverlayFieldStateInput = {
 	field: PlacementField;
@@ -42,6 +43,7 @@ export type DeriveOverlayFieldStateInput = {
 	completions: FieldCompletionMap | FieldCompletionWireRow[] | undefined;
 	alreadySigned: boolean;
 	showPlaceholders: boolean;
+	provisioningFieldIds?: ReadonlySet<string>;
 };
 
 function completionForField(
@@ -109,7 +111,15 @@ function deriveInteractiveOverlayFieldState(
 	completion: CompletionSource,
 	alreadySigned: boolean,
 	typeLabel: string,
+	provisioningFieldIds?: ReadonlySet<string>,
 ): OverlayFieldRenderPlan {
+	if (
+		provisioningFieldIds?.has(field.id) &&
+		(field.type === "signature" || field.type === "initial")
+	) {
+		return { kind: "interactive-provisioning" };
+	}
+
 	if (field.type === "text" && !alreadySigned) {
 		return { kind: "interactive-text" };
 	}
@@ -151,7 +161,14 @@ export function deriveOverlayFieldState(input: DeriveOverlayFieldStateInput): {
 	typeLabel: string;
 	plan: OverlayFieldRenderPlan;
 } {
-	const { field, mode, completions, alreadySigned, showPlaceholders } = input;
+	const {
+		field,
+		mode,
+		completions,
+		alreadySigned,
+		showPlaceholders,
+		provisioningFieldIds,
+	} = input;
 	const completion = completionForField(field.id, completions);
 	const typeLabel = signatureFieldTypeLabel(field.type);
 
@@ -177,6 +194,7 @@ export function deriveOverlayFieldState(input: DeriveOverlayFieldStateInput): {
 			completion,
 			alreadySigned,
 			typeLabel,
+			provisioningFieldIds,
 		),
 	};
 }

@@ -70,8 +70,7 @@ function PaletteDragPreview({
 					<SignatureFieldTypeIcon type={fieldType} isMobile={isMobile} />
 				</span>
 				<div className="min-w-0 flex-1 leading-none">
-					<div className="truncate placement-field-label">New field</div>
-					<div className="truncate placement-field-subtle">
+					<div className="truncate placement-field-label">
 						{signatureFieldTypeLabel(fieldType)}
 					</div>
 				</div>

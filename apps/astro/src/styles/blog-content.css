@@ -155,7 +155,7 @@
 	border-bottom-width: 0;
 }
 
-/* Inline code (not inside pre) — before block code rules for ascending specificity. */
+/* Inline code (not inside pre) - before block code rules for ascending specificity. */
 .blog-mdx :not(pre) > code {
 	background-color: color-mix(in oklab, var(--muted) 50%, transparent);
 	padding: 0.125rem 0.375rem;
@@ -166,7 +166,7 @@
 }
 
 /* Starlight's Expressive Code drives fenced MDX blocks. Marketing pages stay light, but
-   token colors follow OS theme while our generic `pre` rules flatten the panel — fix both. */
+   token colors follow OS theme while our generic `pre` rules flatten the panel - fix both. */
 .blog-mdx .expressive-code {
 	--ec-codeBg: #23262f;
 	--ec-codeFg: #d6deeb;

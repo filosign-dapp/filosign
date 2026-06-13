@@ -202,7 +202,7 @@ export function buildPricingComparisonRows(): ComparisonRow[] {
 			featureMarketingLabel("features.draft_comments"),
 			"features.draft_comments",
 		),
-		// Catalog-only — not shipped; restore when implemented (see project/todo.md).
+		// Catalog-only - not shipped; restore when implemented (see project/todo.md).
 		// booleanRow(
 		// 	"features.integrations.custom",
 		// 	featureMarketingLabel("features.integrations.custom"),

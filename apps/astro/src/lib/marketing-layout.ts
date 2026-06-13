@@ -26,7 +26,7 @@ export const marketingHeroSectionClass = [
 	marketingSectionYClass,
 ].join(" ");
 
-/** Content column width — matches floating navbar inner max. */
+/** Content column width - matches floating navbar inner max. */
 export const marketingNarrowWidthClass = "max-w-3xl";
 
 /** Centered narrow column (navbar-aligned). */

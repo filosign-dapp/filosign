@@ -91,7 +91,7 @@ Initial business model:
 
 Do not lead with a full pricing table in sales. Lead with the pilot workflow.
 
-Pricing source (catalog v1 — [`packages/entitlements/src/catalog/v1.ts`](../../packages/entitlements/src/catalog/v1.ts)):
+Pricing source (catalog v1 - [`packages/entitlements/src/catalog/v1.ts`](../../packages/entitlements/src/catalog/v1.ts)):
 
 ## Launch-Critical Product Work
 

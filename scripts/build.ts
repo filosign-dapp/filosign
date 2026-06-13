@@ -118,7 +118,7 @@ function buildCommands(targets: Target[]): string[][] {
 		const def = TARGETS[target];
 		if (!def.ready) {
 			die(
-				`${def.package} has no build script yet — add "build" to packages/react-sdk/package.json when publishing.`,
+				`${def.package} has no build script yet - add "build" to packages/react-sdk/package.json when publishing.`,
 			);
 		}
 		cmds.push(packageRunCmd(rootDir, def.package, def.script));

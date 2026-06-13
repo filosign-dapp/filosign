@@ -4,8 +4,8 @@ Filosign does **not** custody organization treasuries. Workspace payouts use **l
 
 ## Data model
 
-- `organizations.orgWalletAddress` — optional linked treasury address
-- `organizations.orgWalletLinkedAt` — when proof-of-control completed
+- `organizations.orgWalletAddress` - optional linked treasury address
+- `organizations.orgWalletLinkedAt` - when proof-of-control completed
 - Payout legs may use `recipientSource: "org_wallet"` for indexing/compliance only
 
 ## Link flow (Teams Pro)
@@ -26,8 +26,8 @@ On-chain `registerRule` / `updatePayoutRule` / `cancelPayoutRule` require `msg.s
 
 ## Payer source picker (supported app path)
 
-1. **Personal wallet** — connected member EOA/smart wallet (default)
-2. **Org treasury** — `orgWalletAddress` if linked; client builds txs for Safe execution
+1. **Personal wallet** - connected member EOA/smart wallet (default)
+2. **Org treasury** - `orgWalletAddress` if linked; client builds txs for Safe execution
 
 The app does **not** offer a free-form external payer picker. Direct contract registration with other payers is possible on-chain but outside the supported path (Terms §10).
 

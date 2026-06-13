@@ -10,7 +10,7 @@
 
 ## Not allowed
 
-- `external` — removed; free-form addresses are not supported.
+- `external` - removed; free-form addresses are not supported.
 
 ## Payer allowlist (supported path)
 
@@ -25,7 +25,7 @@ Arbitrary external payer addresses are not offered in the product UI.
 
 - **Client:** Payout attach UI only offers envelope participants and org payout wallet (when linked); payer is the connected sender wallet (org treasury when product supports treasury registration).
 - **Server:** `assertSettlementRecipientsAllowlisted` on **`settlements.registerForFile`** (each leg in `legs[]`).
-- **Server:** `assertSettlementRulesVerifiedOnChain` — payer ∈ {sender, org treasury}, `cidId`, token, release type/params, and **each leg** must match on-chain `FSPaymentValidator.rules` plus successful `registerRule` / `approve` receipts.
+- **Server:** `assertSettlementRulesVerifiedOnChain` - payer ∈ {sender, org treasury}, `cidId`, token, release type/params, and **each leg** must match on-chain `FSPaymentValidator.rules` plus successful `registerRule` / `approve` receipts.
 - **Server:** `assertOrganizationSettlementFeatureApproved` before register/update when `organizationId` is present.
 
 Multi-leg rules: allowlist is checked **per leg**. Product cap: **5 legs** per rule (`MAX_SETTLEMENT_LEGS_PRODUCT`); on-chain max **32**.

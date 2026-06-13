@@ -1,4 +1,4 @@
-# Payout packets — architecture and non-custody
+# Payout packets - architecture and non-custody
 
 Filosign is a **software provider** for document signing. Optional USDC **payout packets** use a **non-custodial push** model on `FSPaymentValidator`; Filosign does not custody user funds.
 
@@ -7,10 +7,10 @@ Public terms: [Terms of Service](/terms) and [Privacy Policy](/privacy) on the m
 ## What happens on-chain
 
 1. **Sender** registers the file on `FSEnvelopeRegistry` (via server relay).
-2. **Sender** calls `registerRule` as the payer (`msg.sender == payer`) with one or more **payout legs** (recipient + amount per leg) — **one on-chain rule id per payout packet**.
+2. **Sender** calls `registerRule` as the payer (`msg.sender == payer`) with one or more **payout legs** (recipient + amount per leg) - **one on-chain rule id per payout packet**.
 3. **Sender** `approve`s the validator for the **sum of leg amounts** per packet.
 4. When **release conditions** are satisfied (`FSEnvelopeRegistry` signatures), **anyone** may call `executePayoutLeg(ruleId, legIndex)` (Filosign server relay, sender, recipient, or any address paying its own gas).
-5. The validator `transferFrom`s USDC **from the payer wallet to that leg’s recipient** — one leg per transaction. Paid legs are tracked on-chain (`legPaidBitmap`); the packet is **fully executed** when every leg is paid.
+5. The validator `transferFrom`s USDC **from the payer wallet to that leg’s recipient** - one leg per transaction. Paid legs are tracked on-chain (`legPaidBitmap`); the packet is **fully executed** when every leg is paid.
 
 The validator **never holds payout USDC** (no escrow, no claim vault). Only ERC-20 **allowance** from payer to validator.
 
@@ -28,9 +28,9 @@ Release checks are enforced in the contract (`canExecute` / `RuleNotExecutable`)
 
 ## Supported send path (indexing)
 
-1. **`files.register`** — file registration (+ optional advanced routing on-chain). No payout rows are written here.
-2. **Client (on-chain)** — payer `registerRule` + `approve` on `FSPaymentValidator` (at send or post-send attach).
-3. **`settlements.registerForFile`** — server verifies on-chain state (`assertSettlementRulesVerifiedOnChain`), enforces recipient allowlist and entitlements, then inserts into `file_settlement_rules`.
+1. **`files.register`** - file registration (+ optional advanced routing on-chain). No payout rows are written here.
+2. **Client (on-chain)** - payer `registerRule` + `approve` on `FSPaymentValidator` (at send or post-send attach).
+3. **`settlements.registerForFile`** - server verifies on-chain state (`assertSettlementRulesVerifiedOnChain`), enforces recipient allowlist and entitlements, then inserts into `file_settlement_rules`.
 
 Packets created only outside the app are **not** indexed in Postgres or shown in the UI.
 
@@ -101,8 +101,8 @@ After the first **required** signer signs on-chain (`requiredSignaturesCount > 0
 
 **Escape hatches (destructive or terminal):**
 
-1. **`clearEnvelopeSignatures`** (sender or org controller, server relay) — clears on-chain signatures and bound wallets; reopens update and cancel on both satellites; blocked if any payout leg was paid.
-2. **`recallEnvelope` (void)** — terminal; no further signing or rule edits on the active envelope.
+1. **`clearEnvelopeSignatures`** (sender or org controller, server relay) - clears on-chain signatures and bound wallets; reopens update and cancel on both satellites; blocked if any payout leg was paid.
+2. **`recallEnvelope` (void)** - terminal; no further signing or rule edits on the active envelope.
 
 ## Recipient expectations
 
@@ -118,4 +118,4 @@ For **signer-specific** and partial-progress release types, expiry is checked at
 
 ## Wallet screening
 
-Sanctions screening (third-party API) is planned for production rollout on the **Filosign send and registration path only**—not for every `registerRule` on the chain. Not required for pre-production development.
+Sanctions screening (third-party API) is planned for production rollout on the **Filosign send and registration path only** - not for every `registerRule` on the chain. Not required for pre-production development.

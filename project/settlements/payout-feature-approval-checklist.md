@@ -1,15 +1,15 @@
-# Payout attachment access — manual approval checklist
+# Payout attachment access - manual approval checklist
 
 Use when reviewing a workspace **Programmatic payout attachment** request (`organization_settlement_feature_access.status = pending`). This is an operational checklist, not legal advice.
 
 ## Before you approve
 
-- [ ] **Identity** — Requester is an org **owner** or **admin** with `billing:manage`; workspace name and members match a legitimate account (not a throwaway org).
-- [ ] **Use case** — `useCase` field describes a lawful, non–high-risk workflow (no sanctions evasion, gambling, unlicensed MSB, etc.).
-- [ ] **Sanctions self-cert** — `sanctionsSelfCertAt` is set (checkbox on request form).
-- [ ] **Terms** — `termsVersion` matches current `SETTLEMENT_FEATURE_TERMS_VERSION`; addendum linked in app matches published `/legal/settlement-feature-addendum`.
-- [ ] **Plan** — Workspace has settlement entitlements on its plan (basic/advanced as needed).
-- [ ] **Treasury (if applicable)** — If they will pay from org treasury, `orgWalletAddress` is linked and matches their stated control model.
+- [ ] **Identity** - Requester is an org **owner** or **admin** with `billing:manage`; workspace name and members match a legitimate account (not a throwaway org).
+- [ ] **Use case** - `useCase` field describes a lawful, non–high-risk workflow (no sanctions evasion, gambling, unlicensed MSB, etc.).
+- [ ] **Sanctions self-cert** - `sanctionsSelfCertAt` is set (checkbox on request form).
+- [ ] **Terms** - `termsVersion` matches current `SETTLEMENT_FEATURE_TERMS_VERSION`; addendum linked in app matches published `/legal/settlement-feature-addendum`.
+- [ ] **Plan** - Workspace has settlement entitlements on its plan (basic/advanced as needed).
+- [ ] **Treasury (if applicable)** - If they will pay from org treasury, `orgWalletAddress` is linked and matches their stated control model.
 
 ## Approve
 
@@ -31,4 +31,4 @@ Use when reviewing a workspace **Programmatic payout attachment** request (`orga
 | Recipient disclosure at sign | `file_settlement_recipient_acks` |
 | On-chain payout events | Indexed `file_settlement_rules` + compliance export |
 
-Phase 2 (optional): automated wallet/entity screening API before approve — document vendor and retention in subprocessors when added.
+Phase 2 (optional): automated wallet/entity screening API before approve - document vendor and retention in subprocessors when added.

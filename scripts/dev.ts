@@ -14,7 +14,7 @@ type Profile = "local" | "staging" | "sandbox";
 const PRESET_FLAGS = ["serloc", "web", "emails"] as const;
 
 const HELP = `
-bun run dev — start dev servers (bun run dev -- --help)
+bun run dev - start dev servers (bun run dev -- --help)
 
 Stacks (pick one):
   dev                 hardhat bootstrap + server + client + astro   [.env.local]

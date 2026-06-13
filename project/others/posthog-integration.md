@@ -2,7 +2,7 @@
 
 Filosign sends **custom product events** to PostHog for funnels, retention, and debugging. This document is the event catalog and how to use it in PostHog.
 
-**Not in PostHog:** billing limits, entitlements, admin invite totals — those live in Postgres and `metrics.*` oRPC.
+**Not in PostHog:** billing limits, entitlements, admin invite totals - those live in Postgres and `metrics.*` oRPC.
 
 ---
 
@@ -36,7 +36,7 @@ Many events belong to one document envelope (IPFS piece CID). Those events inclu
 
 | Mechanism | Purpose |
 | --- | --- |
-| Property `piece_cid` | Works on every PostHog plan — filter, breakdown, HogQL |
+| Property `piece_cid` | Works on every PostHog plan - filter, breakdown, HogQL |
 | Group `envelope` | Same CID as group key; enables **group funnels** when Group analytics is enabled on your PostHog plan |
 
 **Server:** pass `pieceCid` to `trackServerEvent` ([`apps/server/lib/platform/analytics/envelope.ts`](apps/server/lib/platform/analytics/envelope.ts)).
@@ -49,7 +49,7 @@ Every server event includes `chain` and `service: "filosign-server"`.
 
 ### Client defaults
 
-In `FilosignAnalyticsProvider`: autocapture, pageviews, pageleave, and **session replay** are **disabled** — only listed client events are sent.
+In `FilosignAnalyticsProvider`: autocapture, pageviews, pageleave, and **session replay** are **disabled** - only listed client events are sent.
 
 Wallet sign-in must go through [`useThirdweb`](apps/client/src/lib/web3/hooks/use-thirdweb.ts) `.login()` (thirdweb Connect modal) so first-time wallet connects emit `wallet_signup`.
 
@@ -72,17 +72,17 @@ Defined in [`apps/server/lib/platform/analytics/events.ts`](apps/server/lib/plat
 
 | Event | Person (`distinct_id`) | `piece_cid` | When | Properties |
 | --- | --- | --- | --- | --- |
-| `user_registered` | Registrant | — | Filosign keygen registration completes | `entry`: `organic` \| `dev` |
+| `user_registered` | Registrant | - | Filosign keygen registration completes | `entry`: `organic` \| `dev` |
 | `file_registered` | Sender | ✓ | File/envelope registered | `signer_count`, `cold_invite_count`, `warm_participant_count`, `recipient_slot_count` |
 | `cold_invite_created` | Sender | ✓ | Same request, if cold invites exist | `cold_invite_count` |
 | `cold_invite_claimed` | Claimant | ✓ | Cold invite claimed (also emits `piece_acknowledged` `mode=cold`) | `is_signer` |
 | `cold_invite_expired` | `system` | ✓ | Cron expires one invite row | `invite_id` |
-| `sharing_invite_claimed` | Wallet | — | Warm sharing invite claimed | — |
+| `sharing_invite_claimed` | Wallet | - | Warm sharing invite claimed | - |
 | `piece_acknowledged` | Recipient/signer | ✓ | Piece acknowledged (warm: ack API; cold: same request as claim) | `mode`: `cold` \| `warm` |
 | `piece_signed` | Signer | ✓ | Signing completes | `field_count` |
-| `envelope_fully_signed` | Sender | ✓ | All required signatures done | — |
+| `envelope_fully_signed` | Sender | ✓ | All required signatures done | - |
 
-**Cold flow — two wallets, one `piece_cid`:**
+**Cold flow - two wallets, one `piece_cid`:**
 
 ```
 Sender:  cold_invite_created  →  …  →  envelope_fully_signed
@@ -97,14 +97,14 @@ Defined in [`packages/react-sdk/src/analytics/events.ts`](packages/react-sdk/src
 
 | Event | `piece_cid` | When | Properties |
 | --- | --- | --- | --- |
-| `wallet_signup` | — | First thirdweb wallet connect in session (`useThirdwebLogin`) | — |
-| `onboarding_completed` | If cold-invite URL | Welcome step done | — |
-| `envelope_compose_submitted` | — | Create step submitted | `recipient_count` |
-| `envelope_send_clicked` | — | Send started | `recipient_count` |
+| `wallet_signup` | - | First thirdweb wallet connect in session (`useThirdwebLogin`) | - |
+| `onboarding_completed` | If cold-invite URL | Welcome step done | - |
+| `envelope_compose_submitted` | - | Create step submitted | `recipient_count` |
+| `envelope_send_clicked` | - | Send started | `recipient_count` |
 | `envelope_send_succeeded` | From API response | Send succeeds | `had_cold_recipients` |
-| `cold_share_dialog_shown` | — | Cold share dialog opens | — |
-| `cold_invite_mismatch_shown` | — | *(constant exists; not emitted yet)* | — |
-| `upgrade_plan_prompt_shown` | — | Plan upgrade dialog opens | `reason` (`UpgradeLimitReason`) |
+| `cold_share_dialog_shown` | - | Cold share dialog opens | - |
+| `cold_invite_mismatch_shown` | - | *(constant exists; not emitted yet)* | - |
+| `upgrade_plan_prompt_shown` | - | Plan upgrade dialog opens | `reason` (`UpgradeLimitReason`) |
 
 ---
 
@@ -114,7 +114,7 @@ Defined in [`packages/react-sdk/src/analytics/events.ts`](packages/react-sdk/src
 
 Use **Unique users** aggregation. Each funnel follows one wallet through its steps.
 
-**Signer — claim to sign**
+**Signer - claim to sign**
 
 1. `cold_invite_claimed`
 2. `piece_acknowledged` (`mode = cold` on claim, or `mode = warm` via ack API)
@@ -122,12 +122,12 @@ Use **Unique users** aggregation. Each funnel follows one wallet through its ste
 
 Do not start with `cold_invite_created` (that event is on the sender).
 
-**Sender — cold send to completion**
+**Sender - cold send to completion**
 
 1. `cold_invite_created`
 2. `envelope_fully_signed`
 
-**New user — wallet → Filosign setup**
+**New user - wallet → Filosign setup**
 
 1. `wallet_signup` (client)
 2. `onboarding_completed` (optional cold `piece_cid`)
@@ -147,7 +147,7 @@ Filter or break down by **`properties.piece_cid`** to follow one envelope across
 - HogQL: constrain all steps with `properties.piece_cid = '<cid>'`
 - Trends: unique `piece_cid` counts for `envelope_fully_signed`
 
-### Group funnels (PostHog Group analytics — paid tier)
+### Group funnels (PostHog Group analytics - paid tier)
 
 The app already sends group type **`envelope`** with key = `piece_cid`. To use **Funnels → aggregated by Group**:
 
@@ -156,7 +156,7 @@ The app already sends group type **`envelope`** with key = `piece_cid`. To use *
 3. Set aggregation to **Group** → **`envelope`** (not “Unique users”).
 4. Filter `chain` for the environment you care about.
 
-Until Group analytics is on your plan, use `piece_cid` property filters above — same data, manual or HogQL.
+Until Group analytics is on your plan, use `piece_cid` property filters above - same data, manual or HogQL.
 
 ---
 
@@ -188,7 +188,7 @@ Implementation: [`platform-alert-posthog.ts`](apps/server/lib/platform/analytics
 
 **PostHog insights:** filter `event = platform_alert`, break down by `alert_name`, alert on spikes (e.g. `server.db_infra_error`). Telegram remains the primary on-call channel.
 
-Bootstrap / pre-env failures use `emitCriticalPlatformEventFromProcessEnv` — PostHog mirror runs only when `POSTHOG_*` is present in `process.env`.
+Bootstrap / pre-env failures use `emitCriticalPlatformEventFromProcessEnv` - PostHog mirror runs only when `POSTHOG_*` is present in `process.env`.
 
 ---
 

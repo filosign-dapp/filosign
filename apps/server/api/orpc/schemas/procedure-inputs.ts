@@ -1,4 +1,4 @@
-/** Router `.input()` schemas — single import surface (sources live in domains/handlers). */
+/** Router `.input()` schemas - single import surface (sources live in domains/handlers). */
 
 export { zOrgsTemplateCreateBody } from "@/api/handlers/orgs/connections-templates";
 export {

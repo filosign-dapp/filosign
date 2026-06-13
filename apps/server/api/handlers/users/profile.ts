@@ -1,4 +1,4 @@
-/** Profile and thirdweb email sync — domain logic in `lib/domains/users/profile`. */
+/** Profile and thirdweb email sync - domain logic in `lib/domains/users/profile`. */
 export {
 	userEraseAccount,
 	userExportAccountData,

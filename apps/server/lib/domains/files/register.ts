@@ -50,6 +50,7 @@ import {
 	resolveRegisterRoutingCalldata,
 	trackRegisterAnalytics,
 } from "./utils/register-helpers";
+import { compileRegisterRosterEmails } from "./utils/roster-emails";
 
 const { FSEnvelopeRegistry } = fsContracts;
 
@@ -375,7 +376,15 @@ export async function filesRegister(
 		sender,
 		organizationId,
 		packets: attachmentPackets,
-		coldInviteToken: coldInvites[0]?.inviteToken,
+		rosterEmails: await compileRegisterRosterEmails({
+			senderEmail: senderEmailRaw,
+			participants,
+			coldInvites,
+		}),
+		coldInvites: coldInvites.map((invite) => ({
+			email: invite.email,
+			inviteToken: invite.inviteToken,
+		})),
 	});
 
 	if (isPractice) {

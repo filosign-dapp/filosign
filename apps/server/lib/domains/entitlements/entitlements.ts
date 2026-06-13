@@ -17,6 +17,7 @@ import { and, eq, gte, lt, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import env from "@/env";
+import { getPersonalOrganizationId } from "@/lib/domains/orgs";
 import {
 	CACHE_TTL,
 	cacheAside,
@@ -28,6 +29,16 @@ import db from "@/lib/platform/db";
 import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import { files } from "@/lib/platform/db/schema/file";
 import { organizationSubscriptions } from "@/lib/platform/db/schema/organization";
+
+export type FetchEntitlementContextArgs = {
+	organizationId?: string | null;
+	/**
+	 * When resolving implicit personal org (no explicit orgId): fall back to
+	 * userSubscriptions if the personal org plan is free. Never applies to
+	 * explicit team/other workspace orgId.
+	 */
+	allowUserSubFallback?: boolean;
+};
 
 export function calendarMonthPeriod(now = new Date()): {
 	periodStart: Date;
@@ -55,7 +66,18 @@ export function effectivePlanIdFromStatus(
 ): PlanId {
 	if (!sub) return DEFAULT_PLAN_ID;
 
-	if (sub.status === "active" || sub.status === "trialing") {
+	if (sub.status === "active") {
+		const graceMs = 48 * 60 * 60 * 1000;
+		if (sub.periodEnd && sub.periodEnd.getTime() + graceMs < now.getTime()) {
+			return DEFAULT_PLAN_ID;
+		}
+		return sub.planId;
+	}
+
+	if (sub.status === "trialing") {
+		if (sub.periodEnd && sub.periodEnd.getTime() < now.getTime()) {
+			return DEFAULT_PLAN_ID;
+		}
 		return sub.planId;
 	}
 
@@ -214,9 +236,11 @@ function withOrgMemberWallet(
 
 export async function fetchEntitlementContext(
 	wallet: Address,
-	organizationId?: string | null,
+	args: FetchEntitlementContextArgs = {},
 ): Promise<EntitlementContext> {
 	const walletNorm = getAddress(wallet);
+	const organizationId = args.organizationId?.trim() || null;
+	const allowUserSubFallback = args.allowUserSubFallback ?? false;
 	const { periodStart, periodEnd } = calendarMonthPeriod();
 	const [sub] = await db
 		.select({
@@ -283,6 +307,11 @@ export async function fetchEntitlementContext(
 		planId = orgPlanId;
 		overrides = orgOverrides;
 
+		if (allowUserSubFallback && orgPlanId === "free" && userPlanId !== "free") {
+			planId = userPlanId;
+			overrides = userOverrides;
+		}
+
 		if (
 			planId === "teams" ||
 			planId === "teams_pro" ||
@@ -339,23 +368,33 @@ export async function resolveEntitlementContext(
 	organizationId?: string | null,
 ): Promise<EntitlementContext> {
 	const walletNorm = getAddress(wallet);
-	const orgId = organizationId?.trim() || null;
+	const explicitOrgId = organizationId?.trim() || null;
+	const personalOrgId = explicitOrgId
+		? null
+		: await getPersonalOrganizationId(walletNorm);
+	const resolvedOrgId = explicitOrgId ?? personalOrgId;
 
-	if (orgId) {
+	if (resolvedOrgId) {
 		const ctx = await cacheAside({
-			key: cacheKeys.orgEntitlements(orgId),
+			key: cacheKeys.orgEntitlements(resolvedOrgId),
 			ttlSec: CACHE_TTL.orgEntitlements,
-			fetch: () => fetchEntitlementContext(wallet, orgId),
+			fetch: () =>
+				fetchEntitlementContext(wallet, {
+					organizationId: resolvedOrgId,
+					// Legacy userSubscriptions trial when personal org row is still free.
+					allowUserSubFallback:
+						!explicitOrgId && resolvedOrgId === personalOrgId,
+				}),
 			serialize: serializeEntitlementContext,
 			deserialize: deserializeEntitlementContext,
 		});
-		return withOrgMemberWallet(ctx, walletNorm, orgId);
+		return withOrgMemberWallet(ctx, walletNorm, resolvedOrgId);
 	}
 
 	return cacheAside({
 		key: cacheKeys.userEntitlements(walletNorm),
 		ttlSec: CACHE_TTL.userEntitlements,
-		fetch: () => fetchEntitlementContext(wallet, null),
+		fetch: () => fetchEntitlementContext(wallet, { organizationId: null }),
 		serialize: serializeEntitlementContext,
 		deserialize: deserializeEntitlementContext,
 	});

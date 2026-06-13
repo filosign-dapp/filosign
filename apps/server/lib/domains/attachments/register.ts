@@ -1,7 +1,10 @@
+import { check } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
 import { computeCidIdentifier } from "@filosign/evm";
 import {
+	type EnvelopeColdInviteRef,
 	SUPPLEMENTARY_ATTACHMENT_LIMITS,
+	validateAttachmentPacketsForSend,
 	zAttachmentPacketSendInput,
 } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
@@ -120,7 +123,8 @@ export async function insertAttachmentPacketsForFile(args: {
 	sender: Address;
 	organizationId: string | null;
 	packets: unknown;
-	coldInviteToken?: string;
+	rosterEmails: string[];
+	coldInvites: EnvelopeColdInviteRef[];
 }) {
 	const parsed = zAttachmentPacketsRegister.safeParse(args.packets ?? []);
 	if (parsed.error) {
@@ -132,15 +136,51 @@ export async function insertAttachmentPacketsForFile(args: {
 		getAddress(args.sender),
 		args.organizationId,
 	);
-	assertEntitlement(entitlementCtx, "features.supplementary_attachments");
 
-	for (const packet of parsed.data) {
-		if (packet.releaseMode === "conditional") {
+	const supplementaryAttachments = check(
+		entitlementCtx,
+		"features.supplementary_attachments",
+	).allowed;
+	const recipientSelect = check(
+		entitlementCtx,
+		"features.supplementary_attachments.recipient_select",
+	).allowed;
+	const conditionalRelease = check(
+		entitlementCtx,
+		"features.supplementary_attachments.conditional_release",
+	).allowed;
+
+	const validationIssues = validateAttachmentPacketsForSend({
+		supplementaryAttachments,
+		recipientSelect,
+		conditionalRelease,
+		packets: parsed.data,
+		rosterEmails: args.rosterEmails,
+	});
+	if (validationIssues.length > 0) {
+		const issue = validationIssues[0];
+		if (issue?.code === "FEATURE_DISABLED") {
+			assertEntitlement(entitlementCtx, "features.supplementary_attachments");
+		} else if (issue?.code === "RECIPIENT_SELECT_DISABLED") {
+			assertEntitlement(
+				entitlementCtx,
+				"features.supplementary_attachments.recipient_select",
+			);
+		} else if (issue?.code === "CONDITIONAL_DISABLED") {
 			assertEntitlement(
 				entitlementCtx,
 				"features.supplementary_attachments.conditional_release",
 			);
 		}
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: issue?.message ?? "Invalid attachment packets",
+					path: ["attachmentPackets"],
+				},
+			]),
+		);
 	}
 
 	await assertAttachmentPacketsExistInStorage(parsed.data);
@@ -150,7 +190,7 @@ export async function insertAttachmentPacketsForFile(args: {
 			await insertSingleAttachmentPacket(tx, {
 				pieceCid: args.pieceCid,
 				packet,
-				coldInviteToken: args.coldInviteToken,
+				coldInvites: args.coldInvites,
 			});
 		}
 	});

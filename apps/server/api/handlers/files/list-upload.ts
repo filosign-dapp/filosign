@@ -19,10 +19,7 @@ async function assertCanStartEnvelopeUpload(
 	isPractice?: boolean,
 ): Promise<void> {
 	if (!shouldEnforceSendQuota(isPractice)) return;
-	const entitlementCtx = await resolveEntitlementContext(
-		getAddress(sender),
-		null,
-	);
+	const entitlementCtx = await resolveEntitlementContext(getAddress(sender));
 	assertEntitlement(entitlementCtx, "documents.sent.monthly");
 }
 

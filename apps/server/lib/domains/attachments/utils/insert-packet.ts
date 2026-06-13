@@ -1,6 +1,11 @@
 import { throwAppError } from "@filosign/errors/server";
-import type { zAttachmentPacketSendInput } from "@filosign/shared";
-import { hashNormalizedSignerEmail } from "@filosign/shared";
+import {
+	type EnvelopeColdInviteRef,
+	hashNormalizedSignerEmail,
+	mapColdInviteTokensByEmail,
+	normalizePlacementRecipientEmail,
+	type zAttachmentPacketSendInput,
+} from "@filosign/shared";
 import type { Hex } from "viem";
 import { getAddress } from "viem";
 import type z from "zod";
@@ -33,10 +38,10 @@ export async function insertSingleAttachmentPacket(
 	args: {
 		pieceCid: string;
 		packet: PacketInput;
-		coldInviteToken?: string;
+		coldInvites: EnvelopeColdInviteRef[];
 	},
 ): Promise<void> {
-	const { pieceCid, packet, coldInviteToken } = args;
+	const { pieceCid, packet, coldInvites } = args;
 
 	const [packetRow] = await tx
 		.insert(envelopeAttachmentPackets)
@@ -74,7 +79,7 @@ export async function insertSingleAttachmentPacket(
 	await insertPacketRecipients(tx, {
 		packetRowId: packetRow.id,
 		packet,
-		coldInviteToken,
+		coldInvites,
 	});
 
 	if (
@@ -99,7 +104,7 @@ async function insertPacketRecipients(
 	args: {
 		packetRowId: string;
 		packet: PacketInput;
-		coldInviteToken?: string;
+		coldInvites: EnvelopeColdInviteRef[];
 	},
 ): Promise<void> {
 	const wrappedEmails = new Set<string>();
@@ -150,21 +155,28 @@ async function insertPacketRecipients(
 	}
 
 	if (args.packet.coldWraps?.length) {
-		const token = args.coldInviteToken?.trim();
-		if (!token) {
-			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
-				params: {
-					reason: "Cold packet wraps require envelope cold invite",
-				},
-			});
-		}
+		const tokenByEmail = mapColdInviteTokensByEmail(args.coldInvites);
+
 		await tx.insert(envelopeAttachmentPacketColdWraps).values(
-			args.packet.coldWraps.map((c) => ({
-				packetRowId: args.packetRowId,
-				email: c.email.trim().toLowerCase(),
-				wrappedPacketDek: c.wrappedPacketDek as Hex,
-				inviteToken: token,
-			})),
+			args.packet.coldWraps.map((c) => {
+				const email = c.email.trim().toLowerCase();
+				const token = tokenByEmail
+					.get(normalizePlacementRecipientEmail(c.email))
+					?.trim();
+				if (!token) {
+					throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+						params: {
+							reason: "Cold packet wraps require matching envelope cold invite",
+						},
+					});
+				}
+				return {
+					packetRowId: args.packetRowId,
+					email,
+					wrappedPacketDek: c.wrappedPacketDek as Hex,
+					inviteToken: token,
+				};
+			}),
 		);
 	}
 }

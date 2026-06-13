@@ -89,6 +89,7 @@ describe("entitlements", () => {
 
 	describe("entitlements-org-scope", () => {
 		const orgId = "00000000-0000-7000-8000-000000000002";
+		const personalOrgId = "00000000-0000-7000-8000-000000000001";
 		const wallet = "0x0000000000000000000000000000000000000001";
 
 		let selectQueue: unknown[][] = [];
@@ -97,6 +98,9 @@ describe("entitlements", () => {
 
 		beforeAll(() => {
 			mockSessionCacheRedis(mockRedis);
+			mock.module("@/lib/domains/orgs", () => ({
+				getPersonalOrganizationId: async () => personalOrgId,
+			}));
 			mock.module("@/lib/platform/db", () => ({
 				default: {
 					schema: {
@@ -152,6 +156,110 @@ describe("entitlements", () => {
 					wallet,
 				});
 				expect(ctx.seatCount).toBe(3);
+			});
+
+			test("resolves individual from personal org when no org is passed", async () => {
+				redisStore.clear();
+				selectQueue = [
+					[],
+					[
+						{
+							planId: "individual",
+							status: "active",
+							seatCount: 1,
+							cancelAtPeriodEnd: false,
+							periodEnd: null,
+							featureOverrides: {},
+						},
+					],
+					[{ count: 2 }],
+				];
+
+				const { resolveEntitlementContext } = await import(
+					"@/lib/domains/entitlements"
+				);
+
+				const ctx = await resolveEntitlementContext(wallet);
+
+				expect(ctx.planId).toBe("individual");
+				expect(ctx.subject).toEqual({
+					type: "org_member",
+					orgId: personalOrgId,
+					wallet,
+				});
+				expect(ctx.usage?.["documents.sent.monthly"]).toBe(2);
+			});
+
+			test("falls back to user subscription on free personal org", async () => {
+				redisStore.clear();
+				selectQueue = [
+					[
+						{
+							planId: "individual",
+							status: "active",
+							cancelAtPeriodEnd: false,
+							periodEnd: null,
+							featureOverrides: {},
+						},
+					],
+					[
+						{
+							planId: "free",
+							status: "active",
+							seatCount: 1,
+							cancelAtPeriodEnd: false,
+							periodEnd: null,
+							featureOverrides: {},
+						},
+					],
+					[{ count: 0 }],
+				];
+
+				const { resolveEntitlementContext } = await import(
+					"@/lib/domains/entitlements"
+				);
+
+				const ctx = await resolveEntitlementContext(wallet);
+
+				expect(ctx.planId).toBe("individual");
+			});
+
+			test("explicit team org does not inherit user solo plan", async () => {
+				redisStore.clear();
+				selectQueue = [
+					[
+						{
+							planId: "individual",
+							status: "active",
+							cancelAtPeriodEnd: false,
+							periodEnd: null,
+							featureOverrides: {},
+						},
+					],
+					[
+						{
+							planId: "free",
+							status: "active",
+							seatCount: 3,
+							cancelAtPeriodEnd: false,
+							periodEnd: null,
+							featureOverrides: {},
+						},
+					],
+					[{ count: 1 }],
+				];
+
+				const { resolveEntitlementContext } = await import(
+					"@/lib/domains/entitlements"
+				);
+
+				const ctx = await resolveEntitlementContext(wallet, orgId);
+
+				expect(ctx.planId).toBe("free");
+				expect(ctx.subject.type).toBe("org_member");
+				if (ctx.subject.type === "org_member") {
+					expect(ctx.subject.orgId).toBe(orgId);
+				}
 			});
 		});
 	});

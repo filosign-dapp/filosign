@@ -1,4 +1,4 @@
-/** Mirrors server `UPGRADE_LIMIT_REASONS` — keep in sync with plan-transitions.ts */
+/** Mirrors server `UPGRADE_LIMIT_REASONS` - keep in sync with plan-transitions.ts */
 export const UPGRADE_PLAN_LIMIT_REASONS = [
 	"documents.sent.monthly",
 	"envelope.recipients.max",

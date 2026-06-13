@@ -1,14 +1,14 @@
 # Filosign Competitive Pricing Analysis & Strategy
 
-> **Source of truth (shipped):** [`packages/entitlements/src/catalog/v1.ts`](../../packages/entitlements/src/catalog/v1.ts) · marketing prices: [`apps/astro/src/pages/pricing.astro`](../../apps/astro/src/pages/pricing.astro). Plan IDs: `free`, `individual` (Solo), `teams`, `teams_pro`, `enterprise`. **Future (not in catalog v1):** Platform Starter, Platform Pro, Secure Enterprise — planned separately.
+> **Source of truth (shipped):** [`packages/entitlements/src/catalog/v1.ts`](../../packages/entitlements/src/catalog/v1.ts) · marketing prices: [`apps/astro/src/pages/pricing.astro`](../../apps/astro/src/pages/pricing.astro). Plan IDs: `free`, `individual` (Solo), `teams`, `teams_pro`, `enterprise`. **Future (not in catalog v1):** Platform Starter, Platform Pro, Secure Enterprise - planned separately.
 
 ## Filosign catalog v1 (current)
 
 | Plan | Monthly | Yearly (per month) | Docs / month | Recipients | Settlement | Routing advanced |
 |------|---------|-------------------|--------------|------------|--------------|-------------------|
-| **Free** | $0 | — | 3 (account) | 1 | — | — |
-| **Solo** (`individual`) | $20 | $15 | 10 (account) | 3 | — | — |
-| **Teams** | $35/user | $29/user | 15/seat (pooled) | 10 | USDC basic (`settlement.basic`) | — |
+| **Free** | $0 | - | 3 (account) | 1 | - | - |
+| **Solo** (`individual`) | $20 | $15 | 10 (account) | 3 | - | - |
+| **Teams** | $35/user | $29/user | 15/seat (pooled) | 10 | USDC basic (`settlement.basic`) | - |
 | **Teams Pro** | $59/user | $49/user | 25/seat (pooled) | 15 | basic + multi-leg/update/cancel (`settlement.advanced`) | sequential/parallel routing, quorum |
 | **Enterprise** | Custom | Custom | Unlimited | Unlimited | advanced | advanced |
 
@@ -51,9 +51,9 @@ graph TD
     B --> D[Solo at \$20/mo: E2EE + PQC for professionals]
     B --> E[Teams at \$35/mo: Document-linked USDC settlement]
     B --> F[Teams Pro at \$59/mo: Multi-leg payouts + advanced routing]
-    B --> H[Platform Starter — planned]
-    B --> G[Enterprise — planned]
-    B --> I[Platform Pro — planned]
+    B --> H[Platform Starter - planned]
+    B --> G[Enterprise - planned]
+    B --> I[Platform Pro - planned]
 ```
 
 ### Tier-by-Tier Strategic Justification
@@ -76,7 +76,7 @@ graph TD
 #### 4. Teams Pro
 * **Price:** \$59.00 / user / month (Monthly) or **\$49.00 / user / month (Billed Annually)**
 * **Offering:** 25 documents/user/mo pooled, 15 recipients, **`features.settlement.advanced`** (multi-leg, update/cancel), **`features.routing.advanced`**, bulk send, webhooks, branding, etc. (see catalog v1).
-* **Strategic Positioning:** Operational control tier vs DocuSign Business Pro — E2EE, PQC, on-chain routing, and settlement CRUD.
+* **Strategic Positioning:** Operational control tier vs DocuSign Business Pro - E2EE, PQC, on-chain routing, and settlement CRUD.
 
 #### 5–7. Future tiers (not in catalog v1)
 

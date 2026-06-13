@@ -15,8 +15,8 @@ This document outlines entitlements per tier: **Existing Features** (in catalog 
 | **Teams** | `teams` | \$35 / \$29 per seat | 15 / seat / mo (pooled), 10 recipients | + team templates/drafts, **`settlement.basic`** |
 | **Teams Pro** | `teams_pro` | \$59 / \$49 per seat | 25 / seat / mo (pooled), 15 recipients | + **`settlement.advanced`**, **`routing.advanced`**, bulk send, webhooks, branding, … |
 | **Enterprise** | `enterprise` | Custom | Unlimited | All Teams Pro features + custom limits |
-| **Platform Starter** | — | *planned* | TBD | API / webhooks (future) |
-| **Platform Pro** | — | *planned* | TBD | Embedded / SDK (future) |
+| **Platform Starter** | - | *planned* | TBD | API / webhooks (future) |
+| **Platform Pro** | - | *planned* | TBD | Embedded / SDK (future) |
 
 ---
 
@@ -70,13 +70,13 @@ This document outlines entitlements per tier: **Existing Features** (in catalog 
 *   **Existing Features (catalog v1):**
     *   15 documents per user/mo (pooled), 10 recipients max.
     *   Team collaboration: shared templates, team drafts, draft review links, team envelope visibility.
-    *   **`features.settlement.basic`** — single-leg USDC settlement at send or post-send attach.
+    *   **`features.settlement.basic`** - single-leg USDC settlement at send or post-send attach.
     *   Client-side E2EE + PQC.
 *   **Suggested Features to Build:**
     *   **Shared Template Libraries (Team Key-Sharing):** Team members need to share encrypted templates.
         *   *Why E2EE Templates:* Storing templates in plaintext compromises our "Zero-Knowledge" claim (since templates contain 90% of proprietary contract text, IP terms, and pricing). It also keeps codebase rendering pipelines unified.
         *   *E2EE Architecture:* Templates are encrypted with a symmetric *Team Key*. This Team Key is encrypted for each member using their public key, allowing them to decrypt the templates on login.
-    *   **Sequential signing / routing** — shipped on **Teams Pro** (`features.routing.advanced`); see Teams Pro § Existing Features.
+    *   **Sequential signing / routing** - shipped on **Teams Pro** (`features.routing.advanced`); see Teams Pro § Existing Features.
     *   **Basic Webhook Integrations:** Outgoing webhooks to push basic status changes to external URLs (e.g., notifying a Discord/Slack channel on signature).
     *   **Encrypted Shared Contacts & Team Address Book:** A central workspace directory where members can save frequently used signer details and pre-fetched public encryption keys to streamline signing workflows.
     *   **Automated Reminder Rules & Expiration Scheduler:** Senders can configure automated expiration limits and custom reminder schedules (e.g., daily/weekly follow-ups) for envelopes.
@@ -88,9 +88,9 @@ This document outlines entitlements per tier: **Existing Features** (in catalog 
 
 *   **Existing Features:**
     *   25 documents per user/mo (pooled across team members).
-    *   **`features.settlement.advanced`** — multi-leg USDC payout rules (on-chain + server relay).
-    *   **`features.routing.advanced`** — parallel/sequential routing and quorum via `FSEnvelopeRegistry` + client routing UI (optional signers not supported on-chain in v1).
-    *   **`features.comments`** / **`features.draft_comments`** — E2EE envelope and draft threads.
+    *   **`features.settlement.advanced`** - multi-leg USDC payout rules (on-chain + server relay).
+    *   **`features.routing.advanced`** - parallel/sequential routing and quorum via `FSEnvelopeRegistry` + client routing UI (optional signers not supported on-chain in v1).
+    *   **`features.comments`** / **`features.draft_comments`** - E2EE envelope and draft threads.
     *   Workspace team permissions.
 *   **Suggested Features to Build:**
     *   **Seat Quota Allocation / Redistribution:** An admin panel interface allowing workspace owners to set custom document caps per user or reallocate seat quotas within the team's pooled limit.
@@ -105,7 +105,7 @@ This document outlines entitlements per tier: **Existing Features** (in catalog 
 
 ---
 
-### 5. Platform Starter (API) — *planned, not in catalog v1*
+### 5. Platform Starter (API) - *planned, not in catalog v1*
 *Designed for developers building basic apps requiring cryptographically secure, automated sign flows.*
 
 *   **Existing Features:**
@@ -120,7 +120,7 @@ This document outlines entitlements per tier: **Existing Features** (in catalog 
 
 ---
 
-### 6. Enterprise (`enterprise`) — *custom; catalog entry exists, sales-led*
+### 6. Enterprise (`enterprise`) - *custom; catalog entry exists, sales-led*
 *Designed for VC firms, OTC trading desks, and protocols handling institutional agreements.*
 
 *   **Existing Features:**
@@ -139,7 +139,7 @@ This document outlines entitlements per tier: **Existing Features** (in catalog 
 
 ---
 
-### 7. Platform Pro (Embedded) — *planned, not in catalog v1*
+### 7. Platform Pro (Embedded) - *planned, not in catalog v1*
 *Designed for Web3 SaaS products embedding white-labeled cryptographic signatures into their user journeys.*
 
 *   **Existing Features:**

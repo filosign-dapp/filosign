@@ -67,7 +67,7 @@ export function effectivePlanIdFromStatus(
 		return sub.planId;
 	}
 
-	// Payment retry window — keep plan while Dodo marks subscription on_hold.
+	// Payment retry window - keep plan while Dodo marks subscription on_hold.
 	if (sub.status === "past_due") {
 		return sub.planId;
 	}

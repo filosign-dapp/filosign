@@ -6,7 +6,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 
 | Label | Rough meaning |
 | ----- | ------------- |
-| **XS** | Days — wiring, gating, polish |
+| **XS** | Days - wiring, gating, polish |
 | **S** | ~1 week |
 | **M** | 2–4 weeks |
 | **L** | 1–2 months |
@@ -39,7 +39,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | **Advanced audit export (CSV/JSON)** | Teams Pro | Compliance bundle done client-side | Reuse decrypt + bundle; CSV/JSON download |
 | **Advanced field types** (radio, dropdown, regex) | Solo | Checkbox + text exist | Extend [`placement-manifest`](../../packages/shared/placement-manifest.ts); palette + sign UX |
 | **Iframe `postMessage` events** | Platform Pro | No embed route | Embed route + `postMessage` on sign/decline/complete |
-| **SDK white-labeled SMTP relay** | Platform Pro | — | Per-dev/org SMTP settings on email transport |
+| **SDK white-labeled SMTP relay** | Platform Pro | - | Per-dev/org SMTP settings on email transport |
 | **Bring your own SMTP** | Enterprise | Resend wired | Per-org SMTP config; template from-domain |
 
 ---
@@ -77,9 +77,9 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | ------- | ---- | --- | ------------ |
 | **Custom subdomains** | Team Pro | Single-host app today | Wildcard DNS, TLS, tenant routing, CORS, cookies |
 | **Single sign-on (SAML/OIDC)** | Enterprise | Wallet/JWT only | IdP + preserve client key unlock ceremony |
-| **Active Directory / LDAP sync** | Enterprise | — | SCIM/LDAP connector; group → seat mapping |
+| **Active Directory / LDAP sync** | Enterprise | - | SCIM/LDAP connector; group → seat mapping |
 | **Bring your own key (BYOK)** | Enterprise | App-managed KEM only | KMS envelope for org keys; revoke semantics |
-| **eWitness & QES compliance** | Enterprise | — | Third-party QES provider; legal/compliance integration |
+| **eWitness & QES compliance** | Enterprise | - | Third-party QES provider; legal/compliance integration |
 
 ---
 
@@ -97,7 +97,7 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 
 | Prerequisite | Unlocks |
 | ------------ | ------- |
-| **Field value capture** (partial — sign snapshots in `file_field_completions`) | CSV export, conditional logic, calculations |
+| **Field value capture** (partial - sign snapshots in `file_field_completions`) | CSV export, conditional logic, calculations |
 | **Product webhook infrastructure** | Signed webhooks, metadata in events, Platform Starter |
 | **Per-org settings store** | Branding, SMTP, webhooks, subdomains |
 | **Team symmetric key design** | Shared template libraries (beyond current org templates) |
@@ -107,9 +107,9 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 
 ## Report vs codebase (gaps)
 
-- **Free Trial “standard fields”** — largely **already built**; tier work is gating + sign UX.  
-- **“Shared templates” (Team)** — org templates exist; **team key-sharing** is the **L** row above.  
-- **`features.routing.advanced`** — **shipped:** on-chain sequential/quorum, register assert, `canSignByRouting` sign UX.  
+- **Free Trial “standard fields”** - largely **already built**; tier work is gating + sign UX.  
+- **“Shared templates” (Team)** - org templates exist; **team key-sharing** is the **L** row above.  
+- **`features.routing.advanced`** - **shipped:** on-chain sequential/quorum, register assert, `canSignByRouting` sign UX.  
 - **Settlements / USDC** are implemented (on-chain rules + server `trySettle` relay + manual confirm + daily sync) but were outside the suggested-feature list in the report.
 
 ---
@@ -122,21 +122,21 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | Email / reminders | **partial** | `lib/platform/email/`, `packages/emails/` |
 | Audit / compliance PDF | **done** (IP in PDF pending) | `compliance-pdf/`, `compliance-bundle.ts` |
 | Mobile sign UI | **partial** | `document/sign/-components/` |
-| Signer attachments | **none** | — |
-| CSV export | **none** | — |
+| Signer attachments | **none** | - |
+| CSV export | **none** | - |
 | Templates / org keys | **done–partial** | `orgs/connections-templates.ts`, `invites-keys.ts` |
 | Sequential signing | **done** | `FSEnvelopeRegistry`, `piece-helpers.ts`, envelope create routing UI |
-| Product webhooks | **none** | — |
+| Product webhooks | **none** | - |
 | Contacts | **removed** | was partial Connections / user invites; rebuild on request |
 | Reminders / expiration | **partial** | `expire-invites.ts` |
 | Seat / billing | **partial** | `packages/entitlements/`, `billing.ts` |
-| Bulk send | **none** | — |
+| Bulk send | **none** | - |
 | Comments (post-send) | **shipped** | `features.comments`, `lib/domains/files/comments.ts` |
-| Conditional fields | **none** | — |
+| Conditional fields | **none** | - |
 | Branding / subdomains | **none** / marketing | astro pricing |
 | API keys | **none** | oRPC + JWT only |
-| SSO / LDAP / BYOK | **none** | — |
-| Embed / postMessage | **none** | — |
+| SSO / LDAP / BYOK | **none** | - |
+| Embed / postMessage | **none** | - |
 | Anchor text placement | **none** | manual placement only |
 | Server WASM SDK | **partial** (internal) | `crypto-utils/node` |
 

@@ -1,4 +1,4 @@
-# Entitlement packaging — conversion validation
+# Entitlement packaging - conversion validation
 
 Checklist after aligning Solo / Teams / Teams Pro packaging (handoffs on Solo, collaboration on Teams, workflow control on Teams Pro).
 
@@ -8,7 +8,7 @@ Event: `upgrade_plan_prompt_shown` with property `reason` (matches `UpgradeLimit
 
 **Dashboards to build**
 
-1. Upgrade prompts by `reason` (last 30 days) — surfaces which gates drive upgrades.
+1. Upgrade prompts by `reason` (last 30 days) - surfaces which gates drive upgrades.
 2. Funnel: `upgrade_plan_prompt_shown` → checkout started → subscription active, segmented by `reason`.
 3. Trial → paid conversion by initial plan (`individual` vs `teams` vs `teams_pro`).
 
@@ -36,5 +36,5 @@ Record WTP and whether they need collaboration vs workflow power only.
 
 ## Deferred
 
-- **Solo Pro** fourth tier — only if Workflow add-on attach rate is high.
-- **Workflow add-on** on Solo — design in Dodo after interview data.
+- **Solo Pro** fourth tier - only if Workflow add-on attach rate is high.
+- **Workflow add-on** on Solo - design in Dodo after interview data.

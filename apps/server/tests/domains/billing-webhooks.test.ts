@@ -300,6 +300,7 @@ describe("billing", () => {
 			to: "buyer@example.com",
 			setupUrl: "https://app.example.com/setup/token",
 			planLabel: "Teams",
+			planId: "teams" as const,
 		};
 		const prepareCheckoutFirstPaidAccessInTx = mock(() =>
 			Promise.resolve(checkoutFirstEmail),

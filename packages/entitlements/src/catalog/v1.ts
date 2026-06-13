@@ -183,7 +183,7 @@ const disabledArchivalPurchase = {
 	"features.archival.purchase": { kind: "boolean", enabled: false },
 } as const satisfies Pick<PlanEntitlements, "features.archival.purchase">;
 
-/** Versioned plan catalog — change via PR + tests; bump version when breaking. */
+/** Versioned plan catalog - change via PR + tests; bump version when breaking. */
 export const catalogV1: Record<PlanId, PlanEntitlements> = {
 	free: {
 		"documents.sent.monthly": {

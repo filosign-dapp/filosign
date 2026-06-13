@@ -1,4 +1,4 @@
-/** Stable feature identifiers — add keys when shipping new product capabilities. */
+/** Stable feature identifiers - add keys when shipping new product capabilities. */
 export const FEATURE_KEYS = [
 	"documents.sent.monthly",
 	"envelope.recipients.max",

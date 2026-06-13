@@ -5,7 +5,7 @@ import { tEvmAddress, timestamps } from "@/lib/platform/db/helpers";
 import { randomUuidV7 } from "@/lib/platform/db/random-uuid-v7";
 import { users } from "./user";
 
-/** Mirrors `@filosign/entitlements` `PlanId` — stored on subscription rows only. */
+/** Mirrors `@filosign/entitlements` `PlanId` - stored on subscription rows only. */
 export const subscriptionPlanIds = PLAN_IDS;
 
 export type SubscriptionPlanId = (typeof subscriptionPlanIds)[number];
@@ -38,7 +38,7 @@ export type SubscriptionFeatureOverrides = Partial<
 >;
 
 /**
- * One row per wallet — current plan and billing period.
+ * One row per wallet - current plan and billing period.
  * Absence of a row means `free` at evaluation time (see entitlement resolver).
  */
 export const userSubscriptions = t.pgTable(

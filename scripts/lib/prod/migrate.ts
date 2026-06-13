@@ -25,7 +25,7 @@ export async function migrateProd(
 	const ctx = createProdContext(root, { verbose, log });
 	const server = path.join(root, "apps/server");
 
-	log.section("Drizzle migrate — production");
+	log.section("Drizzle migrate - production");
 	log.info(`ssh: ${ctx.ssh}`);
 	log.info(`postgres container: ${ctx.containers.postgres}`);
 	log.detail(`server dir: ${server}`);
@@ -58,7 +58,7 @@ export async function migrateProd(
 		log.detail(before.map(formatAppliedMigration));
 	}
 	if (pending.length === 0) {
-		log.ok("database already up to date — nothing to apply");
+		log.ok("database already up to date - nothing to apply");
 		return 0;
 	}
 	log.info(`pending to apply: ${pending.length}`);
@@ -130,7 +130,7 @@ export async function migrateProd(
 		log.detail(
 			appliedTags.map((tag, i) => {
 				const row = newRows[i];
-				return row ? `${tag} — ${formatAppliedMigration(row)}` : tag;
+				return row ? `${tag} - ${formatAppliedMigration(row)}` : tag;
 			}),
 		);
 	} else if (delta === 0) {

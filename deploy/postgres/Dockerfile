@@ -1,4 +1,4 @@
-# Single-container Postgres + pgBackRest (Docker VPS best practice — no SSH sidecar).
+# Single-container Postgres + pgBackRest (Docker VPS best practice - no SSH sidecar).
 # Pattern: https://dataegret.com/2025/12/pgbackrest-pitr-in-docker-a-simple-demo/
 # pgBackRest from PGDG so version matches upstream docs (not stale distro packages).
 

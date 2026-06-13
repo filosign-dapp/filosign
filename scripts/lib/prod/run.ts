@@ -34,7 +34,7 @@ export async function runMany(
 	action: Action,
 ): Promise<number> {
 	const { log } = ctx;
-	log.section(`${action} check — ${ctx.ssh}`);
+	log.section(`${action} check - ${ctx.ssh}`);
 	log.info(`targets: ${targets.join(", ")}`);
 	if (ctx.verbose) {
 		log.detail([

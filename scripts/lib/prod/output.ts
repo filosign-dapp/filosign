@@ -2,7 +2,7 @@ import type { ProbeResult, ProdContext } from "./types.ts";
 
 export function printResult(result: ProbeResult, ctx?: ProdContext): void {
 	const label = result.ok ? "OK" : "FAIL";
-	const line = `[${result.id}] ${result.action} ${label} — ${result.summary}`;
+	const line = `[${result.id}] ${result.action} ${label} - ${result.summary}`;
 	if (ctx) ctx.log.info(line);
 	else console.log(`[prod] ${line}`);
 

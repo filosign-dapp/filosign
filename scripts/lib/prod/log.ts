@@ -22,9 +22,9 @@ export function createProdLog(verbose = true): ProdLog {
 	return {
 		verbose,
 		info: (message) => write("out", message),
-		ok: (message) => write("out", `OK — ${message}`),
-		warn: (message) => write("err", `WARN — ${message}`),
-		fail: (message) => write("err", `FAIL — ${message}`),
+		ok: (message) => write("out", `OK - ${message}`),
+		warn: (message) => write("err", `WARN - ${message}`),
+		fail: (message) => write("err", `FAIL - ${message}`),
 		section: (title) => {
 			write("out", "");
 			write("out", `── ${title} ──`);

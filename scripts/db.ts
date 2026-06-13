@@ -24,9 +24,9 @@ Filosign database orchestrator (@filosign/server)
 
   bun run db -- push local        drizzle-kit push (.env.local)
   bun run db -- push staging      drizzle-kit push (Infisical staging)
-  bun run db -- generate          drizzle-kit generate — commit apps/server/drizzle/ before migrate
-  bun run db -- migrate local     drizzle-kit migrate (.env.local) — optional; dev uses push
-  bun run db -- migrate staging   drizzle-kit migrate (Infisical staging) — optional
+  bun run db -- generate          drizzle-kit generate - commit apps/server/drizzle/ before migrate
+  bun run db -- migrate local     drizzle-kit migrate (.env.local) - optional; dev uses push
+  bun run db -- migrate staging   drizzle-kit migrate (Infisical staging) - optional
   bun run db -- migrate sandbox   drizzle-kit migrate (Infisical sandbox)
   bun run db -- migrate production drizzle-kit migrate (SSH tunnel + Infisical prod)
   bun run db -- purge local       clear schema + push (.env.local)
@@ -112,7 +112,7 @@ runMain(async () => {
 
 	if (action === "generate") {
 		if (argv[1] !== undefined) {
-			die('generate takes no profile — use "bun run db -- generate"');
+			die('generate takes no profile - use "bun run db -- generate"');
 		}
 		await runInheritExit(
 			rootDir,

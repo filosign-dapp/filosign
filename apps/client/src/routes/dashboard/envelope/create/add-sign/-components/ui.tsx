@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { ViewerChromeSkeleton } from "@/src/lib/components/app/skeletons";
 import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { AddSignHeader } from "@/src/routes/dashboard/envelope/create/add-sign/-components/header";
 import {
@@ -63,15 +63,11 @@ function AddSignViewerSlot() {
 	return (
 		<main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background">
 			{!showViewer ? (
-				<div className="flex flex-1 items-center justify-center">
-					<InlineLoader size="lg" />
-				</div>
+				<ViewerChromeSkeleton className="min-h-0 flex-1" />
 			) : currentDocument ? (
 				<DocumentViewer />
 			) : (
-				<div className="flex flex-1 items-center justify-center">
-					<InlineLoader size="lg" />
-				</div>
+				<ViewerChromeSkeleton className="min-h-0 flex-1" />
 			)}
 		</main>
 	);

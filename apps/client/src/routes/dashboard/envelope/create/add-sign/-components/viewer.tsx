@@ -1,6 +1,6 @@
 import { useDroppable } from "@dnd-kit/core";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { SkeletonDocumentCanvas } from "@/src/lib/components/app/skeletons";
 import { cn } from "@/src/lib/utils/utils";
 import { PlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-canvas";
 import {
@@ -292,11 +292,12 @@ function DocumentViewer() {
 							}
 						>
 							{docRendering ? (
-								<div className="absolute inset-0 z-40 flex min-h-48 flex-col items-center justify-center gap-2 bg-background/80">
-									<InlineLoader size="lg" />
-									<span className="text-xs text-muted-foreground">
-										Loading document…
-									</span>
+								<div className="absolute inset-0 z-40 bg-background/80">
+									<SkeletonDocumentCanvas
+										fillContainer
+										documentWidth={documentWidth}
+										documentHeight={getPageHeight(1)}
+									/>
 								</div>
 							) : null}
 

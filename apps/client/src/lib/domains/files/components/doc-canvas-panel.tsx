@@ -1,11 +1,13 @@
 import { FileTextIcon } from "@phosphor-icons/react";
+import { SkeletonDocumentCanvas } from "@/src/lib/components/app/skeletons";
 import { Button } from "@/src/lib/components/ui/button";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { Label } from "@/src/lib/components/ui/label";
 import { Textarea } from "@/src/lib/components/ui/textarea";
 
 type DocCanvasPanelProps = {
 	busy?: boolean;
+	documentWidth?: number;
+	documentHeight?: number;
 	showRecovery?: boolean;
 	recoveryPhrase?: string;
 	onRecoveryPhraseChange?: (value: string) => void;
@@ -20,6 +22,8 @@ type DocCanvasPanelProps = {
 
 export function DocCanvasPanel({
 	busy,
+	documentWidth,
+	documentHeight,
 	showRecovery,
 	recoveryPhrase = "",
 	onRecoveryPhraseChange,
@@ -99,9 +103,11 @@ export function DocCanvasPanel({
 
 	if (busy) {
 		return (
-			<div className="flex w-full h-full items-center justify-center">
-				<InlineLoader size="lg" />
-			</div>
+			<SkeletonDocumentCanvas
+				className="h-full w-full"
+				documentWidth={documentWidth}
+				documentHeight={documentHeight}
+			/>
 		);
 	}
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo } from "react";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { SkeletonDocumentCanvas } from "@/src/lib/components/app/skeletons";
 import {
 	DocumentPageContent,
 	DocumentSurface,
@@ -60,10 +60,11 @@ export function DraftReviewViewer() {
 
 	if (viewportBusy) {
 		return (
-			<div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center p-4 text-sm text-muted-foreground">
-				<InlineLoader size="lg" />
-				<span className="mt-3">Preparing documents…</span>
-			</div>
+			<SkeletonDocumentCanvas
+				className="h-full min-h-0 flex-1"
+				documentWidth={documentWidth}
+				documentHeight={getPageHeight(1)}
+			/>
 		);
 	}
 

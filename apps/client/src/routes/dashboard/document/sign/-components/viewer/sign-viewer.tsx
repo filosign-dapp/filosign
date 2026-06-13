@@ -3,8 +3,8 @@ import {
 	FILE_ACK_INTENT_VERSION_V1,
 } from "@filosign/shared";
 import { useCallback, useEffect, useMemo } from "react";
+import { SkeletonDocumentCanvas } from "@/src/lib/components/app/skeletons";
 import { Button } from "@/src/lib/components/ui/button";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { DocCanvasPanel } from "@/src/lib/domains/files/components/doc-canvas-panel";
 import {
 	DocumentPageContent,
@@ -62,6 +62,7 @@ export function SignViewer() {
 		handleTextDraftChange,
 		handleTextFocus,
 		handleTextBlur,
+		provisioningFieldIds,
 	} = useSignPlacement();
 	const { alreadySigned } = useSignSigning();
 	const {
@@ -166,6 +167,7 @@ export function SignViewer() {
 					onTextDraftChange={handleTextDraftChange}
 					onTextFocus={handleTextFocus}
 					onTextBlur={handleTextBlur}
+					provisioningFieldIds={provisioningFieldIds}
 				/>
 			</>
 		),
@@ -180,13 +182,18 @@ export function SignViewer() {
 			handleTextDraftChange,
 			handleTextFocus,
 			handleTextBlur,
+			provisioningFieldIds,
 		],
 	);
 
 	if (filePending && !file) {
 		return (
 			<div className="flex h-full min-h-0 flex-1 flex-col">
-				<DocCanvasPanel busy />
+				<DocCanvasPanel
+					busy
+					documentWidth={documentWidth}
+					documentHeight={getPageHeight(1)}
+				/>
 			</div>
 		);
 	}
@@ -239,6 +246,8 @@ export function SignViewer() {
 			<div className="flex h-full min-h-0 flex-1 flex-col">
 				<DocCanvasPanel
 					busy={docCanvasBusy}
+					documentWidth={documentWidth}
+					documentHeight={getPageHeight(1)}
 					showRecovery={showRecoveryInCanvas}
 					recoveryPhrase={recoveryPhrase}
 					onRecoveryPhraseChange={setRecoveryPhrase}
@@ -256,9 +265,11 @@ export function SignViewer() {
 
 	if (!currentDocument?.pdfBytes) {
 		return (
-			<div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center p-4 text-sm text-muted-foreground">
-				<InlineLoader size="lg" />
-			</div>
+			<SkeletonDocumentCanvas
+				className="h-full min-h-0 flex-1"
+				documentWidth={documentWidth}
+				documentHeight={getPageHeight(1)}
+			/>
 		);
 	}
 

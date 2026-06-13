@@ -48,6 +48,9 @@
 		"./invalidate-queries": {
 			"default": "./src/lib/invalidate-queries.ts"
 		},
+		"./platform-access": {
+			"default": "./src/hooks/platform-access/index.ts"
+		},
 		"./orpc": {
 			"default": "./src/orpc/index.ts"
 		}

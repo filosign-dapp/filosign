@@ -1,4 +1,5 @@
 import type { PlanId } from "@filosign/entitlements";
+import type { PaidCheckoutPlanId } from "@filosign/shared";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import type { createEntitlementCacheInvalidation } from "@/lib/platform/cache";
@@ -55,6 +56,7 @@ export type WebhookHandlerResult =
 				to: string;
 				setupUrl: string;
 				planLabel: string;
+				planId: PaidCheckoutPlanId;
 			} | null;
 	  }
 	| {
@@ -64,6 +66,7 @@ export type WebhookHandlerResult =
 				to: string;
 				setupUrl: string;
 				planLabel: string;
+				planId: PaidCheckoutPlanId;
 			} | null;
 	  }
 	| { handled: false };
@@ -351,6 +354,7 @@ export async function dispatchWebhookSubscriptionSync(args: {
 		to: string;
 		setupUrl: string;
 		planLabel: string;
+		planId: PaidCheckoutPlanId;
 	} | null;
 }> {
 	for (const handler of WEBHOOK_HANDLERS) {

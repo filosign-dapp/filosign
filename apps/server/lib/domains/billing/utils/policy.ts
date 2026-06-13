@@ -97,7 +97,7 @@ export function isWorkspaceBillingPlanId(
 	);
 }
 
-/** Immediate entitlement revocation — term ended or hard cancel (not at period end). */
+/** Immediate entitlement revocation - term ended or hard cancel (not at period end). */
 export function shouldDowngradeToFree(eventType: string) {
 	return eventType === "subscription.expired";
 }

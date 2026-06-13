@@ -1,5 +1,6 @@
 import { getPlanName, type PlanId } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
+import { isPaidCheckoutPlanId } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { and, eq, gt } from "drizzle-orm";
 import {
@@ -247,12 +248,16 @@ export async function resendPaidSetupLink(args: {
 	if (!pending) {
 		throwAppError("BILLING.PENDING_SETUP_NOT_FOUND");
 	}
+	if (!isPaidCheckoutPlanId(pending.planId)) {
+		throwAppError("BILLING.PENDING_SETUP_NOT_FOUND");
+	}
 
 	const setupUrl = `${getClientUrl()}/?setup=${encodeURIComponent(pending.setupToken)}`;
 	await sendPaidSetupEmail({
 		to: email,
 		setupUrl,
-		planLabel: checkoutPlanLabel(pending.planId as PlanId),
+		planLabel: checkoutPlanLabel(pending.planId),
+		planId: pending.planId,
 	});
 
 	return { ok: true };

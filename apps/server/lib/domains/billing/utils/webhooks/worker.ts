@@ -1,4 +1,5 @@
 import type { PlanId } from "@filosign/entitlements";
+import type { PaidCheckoutPlanId } from "@filosign/shared";
 import { eq } from "drizzle-orm";
 import { getAddress } from "viem";
 import {
@@ -218,7 +219,12 @@ export async function processDodoWebhookJob(webhookId: string): Promise<void> {
 		}
 
 		const checkoutFirstEmail: {
-			payload: { to: string; setupUrl: string; planLabel: string } | null;
+			payload: {
+				to: string;
+				setupUrl: string;
+				planLabel: string;
+				planId: PaidCheckoutPlanId;
+			} | null;
 		} = { payload: null };
 		const entitlementInvalidation = createEntitlementCacheInvalidation();
 
@@ -242,6 +248,7 @@ export async function processDodoWebhookJob(webhookId: string): Promise<void> {
 				to: checkoutFirstEmail.payload.to,
 				setupUrl: checkoutFirstEmail.payload.setupUrl,
 				planLabel: checkoutFirstEmail.payload.planLabel,
+				planId: checkoutFirstEmail.payload.planId,
 			});
 		}
 

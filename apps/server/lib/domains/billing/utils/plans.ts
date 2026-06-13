@@ -71,7 +71,7 @@ const MIN_PLAN_FOR_REASON: Record<
 
 const CHECKOUT_PLANS: CheckoutPlanId[] = ["individual", "teams", "teams_pro"];
 
-/** Volume limits — exhausted on current tier still warrant a higher plan. */
+/** Volume limits - exhausted on current tier still warrant a higher plan. */
 const QUOTA_UPGRADE_REASONS = new Set<UpgradeLimitReason>([
 	"documents.sent.monthly",
 	"envelope.recipients.max",

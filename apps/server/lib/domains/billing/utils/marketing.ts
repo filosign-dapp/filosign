@@ -115,7 +115,7 @@ export function resolveMarketingCheckoutPreview(args: {
 	) {
 		return {
 			action: "use_in_app",
-			message: `Your workspace is on ${getPlanName(subscriber.matchingOrgPlan)}. Sign in to manage billing — a separate Solo plan is not required.`,
+			message: `Your workspace is on ${getPlanName(subscriber.matchingOrgPlan)}. Sign in to manage billing - a separate Solo plan is not required.`,
 			deepLink: "workspace",
 			clientUrl,
 		};

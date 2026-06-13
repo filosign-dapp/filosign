@@ -1,4 +1,6 @@
 import type { PlanId } from "@filosign/entitlements";
+import type { PaidCheckoutPlanId } from "@filosign/shared";
+import { isPaidCheckoutPlanId } from "@filosign/shared";
 import { and, eq } from "drizzle-orm";
 import { checkoutPlanLabel } from "@/lib/domains/billing/checkout-intents";
 import {
@@ -113,7 +115,12 @@ export async function prepareCheckoutFirstPaidAccessInTx(
 		productId?: string;
 		payloadQuantity?: number;
 	},
-): Promise<{ to: string; setupUrl: string; planLabel: string } | null> {
+): Promise<{
+	to: string;
+	setupUrl: string;
+	planLabel: string;
+	planId: PaidCheckoutPlanId;
+} | null> {
 	if (args.eventType !== "subscription.active") return null;
 
 	const planId = args.metadataPlanId ?? args.mappedPlan;
@@ -121,6 +128,14 @@ export async function prepareCheckoutFirstPaidAccessInTx(
 		logger.error(
 			{ setupToken: args.setupToken, planId },
 			"checkout-first webhook missing plan id",
+		);
+		return null;
+	}
+
+	if (!isPaidCheckoutPlanId(planId)) {
+		logger.error(
+			{ setupToken: args.setupToken, planId },
+			"checkout-first webhook unsupported plan id",
 		);
 		return null;
 	}
@@ -219,5 +234,6 @@ export async function prepareCheckoutFirstPaidAccessInTx(
 		to: email,
 		setupUrl,
 		planLabel: checkoutPlanLabel(planId),
+		planId,
 	};
 }

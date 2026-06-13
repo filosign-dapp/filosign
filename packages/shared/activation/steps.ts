@@ -41,6 +41,7 @@ export const ACTIVATION_STEPS: Record<
 		section: "advanced",
 		title: "Try gated file release",
 		description: "Attach supplementary files that unlock after signing.",
+		actionLabel: "Create envelope",
 		hintOnly: true,
 		requiresFeatures: ["features.supplementary_attachments"],
 	},
@@ -49,6 +50,7 @@ export const ACTIVATION_STEPS: Record<
 		section: "advanced",
 		title: "Request payout packet access",
 		description: "Enable settlement attachments for your workspace.",
+		actionLabel: "Request payout access",
 		hintOnly: true,
 		requiresFeatures: ["features.settlement.basic"],
 		requiresPlans: ["teams_pro", "enterprise"],
@@ -58,6 +60,7 @@ export const ACTIVATION_STEPS: Record<
 		section: "advanced",
 		title: "Invite teammates",
 		description: "Bring your team into a shared workspace.",
+		actionLabel: "Open workspace",
 		hintOnly: true,
 		requiresPlans: ["teams", "teams_pro", "enterprise"],
 		requiresFeatures: ["features.shared_templates", "features.team_drafts"],
@@ -67,6 +70,7 @@ export const ACTIVATION_STEPS: Record<
 		section: "advanced",
 		title: "Explore advanced settlements",
 		description: "Configure routing and settlement rules on Teams Pro.",
+		actionLabel: "Create envelope",
 		hintOnly: true,
 		requiresPlans: ["teams_pro", "enterprise"],
 		requiresFeatures: [
@@ -96,6 +100,7 @@ export const ACTIVATION_STEPS: Record<
 		title: "Try the full workflow on sandbox",
 		description:
 			"Explore Teams Pro features on our testnet before upgrading on production.",
+		actionLabel: "Open sandbox",
 		hintOnly: true,
 		requiresPlans: ["free"],
 		requiresDeployments: ["production"],
@@ -107,6 +112,7 @@ export const ACTIVATION_STEPS: Record<
 		title: "Compare paid plans",
 		description:
 			"See Solo, Teams, and Teams Pro when you need more sends or team features.",
+		actionLabel: "View plans",
 		hintOnly: true,
 		requiresPlans: ["free"],
 		requiresDeployments: ["production"],

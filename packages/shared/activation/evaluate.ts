@@ -65,11 +65,11 @@ function resolveHref(
 		case "send_first_envelope":
 			return "/dashboard/envelope/create";
 		case "invite_teammates":
-			return "/dashboard/settings/team";
+			return "/dashboard/settings/workspace";
 		case "gated_file_release":
 			return "/dashboard/envelope/create";
 		case "payout_packet_access":
-			return "/dashboard/settings/settlements";
+			return "/dashboard/settings/workspace";
 		case "advanced_settlements":
 			return "/dashboard/envelope/create";
 		default:

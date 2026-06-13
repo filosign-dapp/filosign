@@ -18,7 +18,10 @@ export {
 	ACTIVATION_CATALOG_VERSION,
 	ACTIVATION_MILESTONE_IDS,
 	type ActivationMilestoneId,
+	USER_REVOCABLE_ACTIVATION_MILESTONES,
+	type UserRevocableActivationMilestoneId,
 	zActivationMilestoneId,
+	zUserRevocableActivationMilestoneId,
 } from "./milestones";
 export {
 	ACTIVATION_PROFILES,

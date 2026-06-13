@@ -52,6 +52,8 @@ export type ActivationStepDef = {
 	hintOnly?: boolean;
 	/** Client resolves href from env / shared defaults when set. */
 	linkKey?: ActivationStepLinkKey;
+	/** Primary CTA label on tutorial cards and step actions. */
+	actionLabel?: string;
 };
 
 export type EvaluatedActivationStep = ActivationStepDef & {

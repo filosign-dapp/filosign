@@ -179,6 +179,22 @@ describe("evaluateActivationChecklist", () => {
 		});
 		expect(result.coreComplete).toBe(true);
 	});
+
+	test("teams_pro advanced steps resolve workspace hrefs", () => {
+		const result = evaluateActivationChecklist({
+			deployment: "production",
+			billingPlanId: "teams_pro",
+			milestones: new Set(),
+			features: allFeaturesEnabled,
+		});
+
+		expect(result.steps.find((s) => s.id === "invite_teammates")?.href).toBe(
+			"/dashboard/settings/workspace",
+		);
+		expect(
+			result.steps.find((s) => s.id === "payout_packet_access")?.href,
+		).toBe("/dashboard/settings/workspace");
+	});
 });
 
 describe("zActivationMilestoneId", () => {

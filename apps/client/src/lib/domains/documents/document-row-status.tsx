@@ -18,25 +18,22 @@ export type DocumentRowStatus = {
 
 const statusToneClass: Record<DocumentRowStatusTone, string> = {
 	muted: "border-border/60 bg-muted/60 text-muted-foreground",
-	success: "border-secondary/30 bg-secondary/10 text-secondary-foreground",
-	warning:
-		"border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400",
-	primary: "border-primary/30 bg-primary/10 text-primary",
-	destructive:
-		"border-destructive/30 bg-destructive/10 text-destructive dark:text-destructive",
-	secondary: "border-border/60 bg-secondary text-secondary-foreground",
+	success: "border-border bg-secondary text-black",
+	warning: "border-warning/30 bg-warning/10 text-warning",
+	primary: "border-secondary/30 bg-secondary/5 text-secondary",
+	destructive: "border-destructive/30 bg-destructive/10 text-destructive",
+	secondary: "border-badge-yellow/25 bg-badge-yellow/20 text-white/90",
 };
 
 const directionToneClass: Record<"Sent" | "Received", string> = {
-	Sent: "border-sky-500/25 bg-sky-500/8 text-sky-800 dark:text-sky-300",
-	Received:
-		"border-violet-500/25 bg-violet-500/8 text-violet-800 dark:text-violet-300",
+	Sent: "border-badge-blue/25 bg-badge-blue/20 text-white/90",
+	Received: "border-badge-green/25 bg-badge-green/10 text-white/90",
 };
 
 export const rowAccentClass: Record<DocumentRowStatusTone, string> = {
 	muted: "border-l-muted-foreground/35",
 	success: "border-l-secondary",
-	warning: "border-l-amber-500",
+	warning: "border-l-warning",
 	primary: "border-l-primary",
 	destructive: "border-l-destructive/70",
 	secondary: "border-l-border",
@@ -101,16 +98,18 @@ export function DocumentRowStatusBadge({
 	className,
 }: DocumentRowStatusBadgeProps) {
 	const status = resolveDocumentRowStatus(row);
+	const isDraft = row.kind === "draft";
 
 	return (
 		<div className={cn("flex flex-wrap items-center gap-1.5", className)}>
-			<Badge
-				variant="outline"
-				className={cn("text-[11px] font-medium", statusToneClass[status.tone])}
-			>
-				{status.label}
-			</Badge>
-			{showDirection && status.directionLabel ? (
+			{isDraft ? (
+				<Badge
+					variant="outline"
+					className={cn("text-[11px] font-medium", statusToneClass.muted)}
+				>
+					Draft
+				</Badge>
+			) : showDirection && status.directionLabel ? (
 				<Badge
 					variant="outline"
 					className={cn(
@@ -119,6 +118,17 @@ export function DocumentRowStatusBadge({
 					)}
 				>
 					{status.directionLabel}
+				</Badge>
+			) : null}
+			{!isDraft ? (
+				<Badge
+					variant="outline"
+					className={cn(
+						"text-[11px] font-medium",
+						statusToneClass[status.tone],
+					)}
+				>
+					{status.label}
 				</Badge>
 			) : null}
 		</div>

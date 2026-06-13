@@ -21,7 +21,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { DocumentRowStatusBadge } from "@/src/lib/domains/documents/document-row-status";
 import { formatFileSize } from "@/src/lib/utils/format-file-size";
 import { cn } from "@/src/lib/utils/utils";

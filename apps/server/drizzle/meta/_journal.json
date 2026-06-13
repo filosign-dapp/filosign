@@ -36,6 +36,13 @@
       "when": 1781281700080,
       "tag": "0004_drop_users_datasets",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781352522769,
+      "tag": "0005_platform_invite_email_fields",
+      "breakpoints": true
     }
   ]
 }

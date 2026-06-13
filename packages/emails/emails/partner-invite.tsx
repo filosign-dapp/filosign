@@ -1,3 +1,4 @@
+import type { PlatformInviteEmailVariant } from "@filosign/shared";
 import { Text } from "@react-email/components";
 import { partnerInviteCopy } from "../src/copy/partner-invite";
 import { filosignEmailAssets } from "../src/email-assets";
@@ -10,7 +11,8 @@ export type PartnerInviteEmailProps = {
 	planLabel: string;
 	trialDays: number;
 	ctaHref: string;
-	/** Pre-escaped custom middle paragraph */
+	variant?: PlatformInviteEmailVariant;
+	/** Pre-escaped custom middle paragraph (custom variant only) */
 	customMiddleParagraph?: string;
 };
 
@@ -19,12 +21,14 @@ export default function PartnerInviteEmail({
 	planLabel,
 	trialDays,
 	ctaHref,
+	variant = "warm",
 	customMiddleParagraph,
 }: PartnerInviteEmailProps) {
 	const copy = partnerInviteCopy({
 		recipientName,
 		planLabel,
 		trialDays,
+		variant,
 		customMiddleParagraph,
 	});
 

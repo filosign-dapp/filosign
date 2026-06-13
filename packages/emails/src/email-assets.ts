@@ -1,3 +1,6 @@
+import type { PaidCheckoutPlanId } from "@filosign/shared";
+import { pricingCheckoutDialogImagePath } from "@filosign/shared";
+
 /** Marketing site origin for email image URLs (`ASTRO_URL`). */
 export function getEmailAssetBaseUrl(): string {
 	const raw = process.env.ASTRO_URL;
@@ -19,6 +22,11 @@ export function themeAssetUrl(relativePath: string): string {
 	return emailAssetUrl(`/emails/${normalized}`);
 }
 
+/** Checkout dialog hero for paid setup email (matches astro pricing dialog). */
+export function paidSetupHeroForPlan(planId: PaidCheckoutPlanId): string {
+	return emailAssetUrl(pricingCheckoutDialogImagePath(planId));
+}
+
 export const filosignEmailAssets = {
 	get logo() {
 		return emailAssetUrl("/logo.webp");
@@ -38,11 +46,8 @@ export const filosignEmailAssets = {
 		get hero() {
 			return themeAssetUrl("barebones/barebones-image.png");
 		},
-		get paidSetupHero() {
-			return emailAssetUrl("/images/stock_12.webp");
-		},
 		get partnerInviteHero() {
-			return emailAssetUrl("/images/stock_11.webp");
+			return emailAssetUrl("/images/ww/stock_59.webp");
 		},
 	},
 };

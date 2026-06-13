@@ -11,6 +11,8 @@ export type EmailLayoutProps = {
 	disclaimer?: ReactNode;
 	/** Footer mail icon + implied reply routing */
 	contactChannel?: FilosignContactEmail;
+	/** When false, omit social footer (1:1 founder mail). */
+	showSocialFooter?: boolean;
 };
 
 export type WelcomeLayoutProps = EmailLayoutProps & {

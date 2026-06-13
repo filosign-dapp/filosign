@@ -19,9 +19,14 @@ export function WelcomeLayout({
 	disclaimer,
 	heroImage = filosignEmailAssets.barebone.hero,
 	contactChannel,
+	showSocialFooter,
 }: WelcomeLayoutProps) {
 	return (
-		<BareboneShell preheader={preheader} contactChannel={contactChannel}>
+		<BareboneShell
+			preheader={preheader}
+			contactChannel={contactChannel}
+			showSocialFooter={showSocialFooter}
+		>
 			<Section className="bg-bg-2 mobile:mb-2 mb-6 rounded-[10px] px-5 pt-5 pb-14 mobile:px-4 mobile:pt-4 mobile:pb-10">
 				<Section className="mx-auto mb-10 max-w-[600px] overflow-hidden rounded-[12px]">
 					<Img

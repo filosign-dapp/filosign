@@ -9,7 +9,7 @@ Hono API, Drizzle/Postgres, thirdweb auth verification, S3, and chain/indexer he
 - Staging: `bun run dev:staging` (Infisical `staging`; `infisical login` first)
 - Sandbox: `bun run dev:sandbox` (Infisical `sandbox`)
 
-Deploy splits **api** (`./server`, HTTP) and **worker** (`./worker`, `Bun.cron` + `fs:worker:heartbeat`) — see [`deploy/compose.app.yml`](../../deploy/compose.app.yml).
+Deploy splits **api** (`./server`, HTTP) and **worker** (`./worker`, `Bun.cron` + `fs:worker:heartbeat`) - see [`deploy/compose.app.yml`](../../deploy/compose.app.yml).
 
 Secrets layout: [`SECRETS.md`](SECRETS.md). Local server uses **`--env-file`**; staging/prod server uses **`infisical run`** (contracts keep `packages/evm/.env.*`).
 
@@ -17,16 +17,16 @@ Secrets layout: [`SECRETS.md`](SECRETS.md). Local server uses **`--env-file`**; 
 
 | Path | Role |
 |------|------|
-| `api/integrations/` | Partner webhooks — before session middleware |
+| `api/integrations/` | Partner webhooks - before session middleware |
 | `api/orpc/` | oRPC **`/api/rpc`** + OpenAPI **`/api/api-reference`** (see `hono-mount.ts`, `router.ts`) |
 | `api/handlers/` | oRPC procedure implementations (**`ORPCError`**, reuse `tryCatch`) |
-| `api/orpc/hono-mount.ts` | **`apiRouter`** — integrations, then optional thirdweb Bearer + oRPC on `/api` |
+| `api/orpc/hono-mount.ts` | **`apiRouter`** - integrations, then optional thirdweb Bearer + oRPC on `/api` |
 | `lib/platform/cache/` | Dragonfly cache-aside (`aside.ts`, `keys.ts`, `invalidate.ts`, `session.ts`) |
 | `lib/platform/role.ts` | `SERVER_ROLE` gates (`api` / `worker` / `all`) |
 | `worker.ts` | Background entry: crons, heartbeat, no HTTP (`./worker`) |
 | `lib/platform/cron/` | `Bun.cron` jobs + per-tick `lock:cron:{job}:{bucket}` locks |
 | `lib/platform/worker/heartbeat.ts` | `fs:worker:heartbeat` for worker container health |
-| `lib/domains/` | Business logic by bounded context (orgs, files, settlements, sharing, users, entitlements, invites, runtime) — shared by handlers, indexer, cron |
+| `lib/domains/` | Business logic by bounded context (orgs, files, settlements, sharing, users, entitlements, invites, runtime) - shared by handlers, indexer, cron |
 | `lib/platform/` | Shared infra: `db/`, `indexer/`, `cron/`, `evm`, `s3/`, `analytics/`, `compliance/`, `validation/`, `utils/` |
 | `lib/platform/polyfills/` | `bigint-json` for JSON serialization |
 | `constants.ts` | Shared limits (e.g. `MAX_FILE_SIZE`) |
@@ -38,16 +38,16 @@ Relayer, cron, and indexer traffic use [`lib/platform/chain-rpc.ts`](lib/platfor
 | `DEPLOYMENT` | Behavior |
 |--------------|----------|
 | `local` | Hardhat `127.0.0.1:8545` |
-| `staging`, `sandbox` | Public Base Sepolia (`sepolia.base.org`) — `CHAIN_RPC_URL` ignored |
+| `staging`, `sandbox` | Public Base Sepolia (`sepolia.base.org`) - `CHAIN_RPC_URL` ignored |
 | `production` | Optional `CHAIN_RPC_URL` → primary + fallback to public URL for `CHAIN` (`mainnet` or `testnet`); unset → public only |
 
 Startup logs `rpc`, `rpcDedicatedPrimary`, and `rpcPublicFallback` when fallback is enabled. Repeated primary RPC failures emit `server.rpc_degraded` (Telegram + PostHog mirror) with 5-minute dedupe.
 
 ## Session
 
-- **`DRAGONFLY_URL`** (required) — `docker compose -f deploy/compose.dev.yml up -d` → `redis://127.0.0.1:6379`
+- **`DRAGONFLY_URL`** (required) - `docker compose -f deploy/compose.dev.yml up -d` → `redis://127.0.0.1:6379`
 - Client: thirdweb `useAuthToken()` → `Authorization: Bearer` + `X-Wallet-Address` on `/api/rpc`
-- **`tx.processIndexerHash`:** `{ hash, body? }` — returns `{ queued: true, txHash }`; receipt wait runs on BullMQ **`transaction-indexing`** worker (`body: {}` ok for registry relay txs).
+- **`tx.processIndexerHash`:** `{ hash, body? }` - returns `{ queued: true, txHash }`; receipt wait runs on BullMQ **`transaction-indexing`** worker (`body: {}` ok for registry relay txs).
 
 ## Observability (three layers)
 
@@ -65,7 +65,7 @@ Server-side product events via [`lib/platform/analytics/analytics.ts`](lib/platf
 
 ### Error tracking (server)
 
-- **`captureServerException`** — unexpected errors only (`shouldCaptureServerException` in [`analytics.ts`](lib/platform/analytics/analytics.ts)).
+- **`captureServerException`** - unexpected errors only (`shouldCaptureServerException` in [`analytics.ts`](lib/platform/analytics/analytics.ts)).
 - **Primary capture:** oRPC base middleware on [`api/orpc/procedures.ts`](api/orpc/procedures.ts) (`/api/rpc`).
 - **Secondary:** Hono `app.onError` (non-oRPC routes) and integrations webhook `catch`.
 - Properties are scrubbed via [`@filosign/shared` `analytics-scrub`](../../packages/shared/analytics-scrub.ts) (no emails, keys, ciphertext).
@@ -82,7 +82,7 @@ When `POSTHOG_ENABLED=true` (with `POSTHOG_HOST` and `POSTHOG_API_KEY`), the sam
 1. Set `TG_ANALYTICS=true` plus valid bot token and group id in Infisical **staging**.
 2. pgBackRest wrapper failure → `server.pgbackrest_failed` ([`deploy/scripts/pgbackrest-backup.sh`](../../deploy/scripts/pgbackrest-backup.sh)).
 3. BullMQ job after retries exhausted → `server.bullmq_job_failed` ([`lib/platform/jobs/utils/queue-config.ts`](lib/platform/jobs/utils/queue-config.ts)).
-4. Repeat the same alert within 5 minutes — expect dedupe (no spam).
+4. Repeat the same alert within 5 minutes - expect dedupe (no spam).
 
 Unit tests: `bun test tests/` in this package; see [TESTING.md](../../TESTING.md) and `tests/platform/` for platform alerts.
 
@@ -90,22 +90,22 @@ Domain modules that read `db.schema` should do so at **call time** (inside funct
 
 ## Ops
 
-- **Dokploy / Docker** — image uses [`scripts/infisical-entrypoint.sh`](scripts/infisical-entrypoint.sh); set bootstrap vars per [`SECRETS.md`](SECRETS.md). Do not paste app secrets into Dokploy env UI.
-- **`GET /health`** (root app, not under `/api`) — `{ ok: true }` for probes.
-- **Dodo billing webhook** — `POST /api/integrations/dodo/webhook` (Standard Webhooks headers). API **acks fast**: `received` row, `invalidateOrgEntitlements`, enqueue **`billing-webhook`** queue; worker runs full sync. See [`project/ops/job-idempotency.md`](../../project/ops/job-idempotency.md).
-- **`bun run db -- purge local|staging|sandbox`** (repo root) — drops `public` schema; local/staging then **push**, sandbox then **migrate** (`production` purge blocked).
-- **Data lifecycle policy** — see [`project/ops/data-lifecycle.md`](../../project/ops/data-lifecycle.md) and PR checklist [`project/ops/data-lifecycle-pr-checklist.md`](../../project/ops/data-lifecycle-pr-checklist.md).
-- **Schema:** [`drizzle/`](drizzle/) — squashed baseline [`0000_initial.sql`](drizzle/0000_initial.sql); add migrations via `db:generate`. **Local/staging:** `push`. **Sandbox/production:** `db:generate` → commit → `migrate` only. First prod apply may require public-schema reset — [postgres-ops.md](../../project/ops/postgres-ops.md). Drift check: `bun run db:schema:check`.
-- **Invite expiry** — `INVITE_TTL_DAYS` in env (default `7`). Invite types set `expiresAt` at creation via [`inviteExpiresAt()`](lib/domains/invites/invites.ts): `file_cold_invites`, `organization_invites`. Hourly `Bun.cron` in [`lib/platform/cron/`](lib/platform/cron/) marks overdue `pending` rows `expired`; handlers use `pending*InviteFilter()` immediately after expiry. PostHog: `cold_invite_expired` for document invites.
-- **Settlements** — `file_settlement_rules` stores on-chain payout rules (`legs` jsonb, status, tx hashes). Indexing path: client `registerRule` + `approve` on-chain, then **`settlements.registerForFile`** (not `files.register`). After each signature the **`payout-execution`** worker runs `executePayoutLeg` for executable rules (inline `canExecute` poll, 3 BullMQ retries). Sign page **Send payout** → `settlements.trySettle` (server relay + chain sync). Wallet fallback **Send from my wallet instead** → `settlements.confirmSettlement` (hash + `rules()` sync, no receipt RPC). **Teams Pro:** `settlements.updateRule` / `settlements.cancelRule` after on-chain `updatePayoutRule` / `cancelPayoutRule`. Daily `sync-settlement-rules` cron backfills `executed` from chain. oRPC: `settlements.listByFile`, `settlements.registerForFile`, `settlements.trySettle`, `settlements.confirmSettlement`, `settlements.updateRule`, `settlements.cancelRule`. **`files.proposeSignerReplacement` / `executeSignerReplacement` / `cancelSignerReplacement`** — on-chain signer commitment swap with DB participant row updates. Compliance bundles are **version 7** (`onchainRegistration`, multi-leg `settlements[]`, `signer_amended` tx kind). See [`project/settlements/architecture-and-non-custody.md`](../../project/settlements/architecture-and-non-custody.md).
+- **Dokploy / Docker** - image uses [`scripts/infisical-entrypoint.sh`](scripts/infisical-entrypoint.sh); set bootstrap vars per [`SECRETS.md`](SECRETS.md). Do not paste app secrets into Dokploy env UI.
+- **`GET /health`** (root app, not under `/api`) - `{ ok: true }` for probes.
+- **Dodo billing webhook** - `POST /api/integrations/dodo/webhook` (Standard Webhooks headers). API **acks fast**: `received` row, `invalidateOrgEntitlements`, enqueue **`billing-webhook`** queue; worker runs full sync. See [`project/ops/job-idempotency.md`](../../project/ops/job-idempotency.md).
+- **`bun run db -- purge local|staging|sandbox`** (repo root) - drops `public` schema; local/staging then **push**, sandbox then **migrate** (`production` purge blocked).
+- **Data lifecycle policy** - see [`project/ops/data-lifecycle.md`](../../project/ops/data-lifecycle.md) and PR checklist [`project/ops/data-lifecycle-pr-checklist.md`](../../project/ops/data-lifecycle-pr-checklist.md).
+- **Schema:** [`drizzle/`](drizzle/) - squashed baseline [`0000_initial.sql`](drizzle/0000_initial.sql); add migrations via `db:generate`. **Local/staging:** `push`. **Sandbox/production:** `db:generate` → commit → `migrate` only. First prod apply may require public-schema reset - [postgres-ops.md](../../project/ops/postgres-ops.md). Drift check: `bun run db:schema:check`.
+- **Invite expiry** - `INVITE_TTL_DAYS` in env (default `7`). Invite types set `expiresAt` at creation via [`inviteExpiresAt()`](lib/domains/invites/invites.ts): `file_cold_invites`, `organization_invites`. Hourly `Bun.cron` in [`lib/platform/cron/`](lib/platform/cron/) marks overdue `pending` rows `expired`; handlers use `pending*InviteFilter()` immediately after expiry. PostHog: `cold_invite_expired` for document invites.
+- **Settlements** - `file_settlement_rules` stores on-chain payout rules (`legs` jsonb, status, tx hashes). Indexing path: client `registerRule` + `approve` on-chain, then **`settlements.registerForFile`** (not `files.register`). After each signature the **`payout-execution`** worker runs `executePayoutLeg` for executable rules (inline `canExecute` poll, 3 BullMQ retries). Sign page **Send payout** → `settlements.trySettle` (server relay + chain sync). Wallet fallback **Send from my wallet instead** → `settlements.confirmSettlement` (hash + `rules()` sync, no receipt RPC). **Teams Pro:** `settlements.updateRule` / `settlements.cancelRule` after on-chain `updatePayoutRule` / `cancelPayoutRule`. Daily `sync-settlement-rules` cron backfills `executed` from chain. oRPC: `settlements.listByFile`, `settlements.registerForFile`, `settlements.trySettle`, `settlements.confirmSettlement`, `settlements.updateRule`, `settlements.cancelRule`. **`files.proposeSignerReplacement` / `executeSignerReplacement` / `cancelSignerReplacement`** - on-chain signer commitment swap with DB participant row updates. Compliance bundles are **version 7** (`onchainRegistration`, multi-leg `settlements[]`, `signer_amended` tx kind). See [`project/settlements/architecture-and-non-custody.md`](../../project/settlements/architecture-and-non-custody.md).
 
 ## API envelope
 
-JSON API is **`/api/rpc`** — native outputs + **`ORPCError`** mapping. OpenAPI explorer: **`/api/api-reference`**. Avatar flow: **`storage.presignPut`** + browser **`fetch` PUT** to storage, then **`users.profile.update`** with **`avatarKey`**. **`runtime`** stays on **`rpc.runtime`**.
+JSON API is **`/api/rpc`** - native outputs + **`ORPCError`** mapping. OpenAPI explorer: **`/api/api-reference`**. Avatar flow: **`storage.presignPut`** + browser **`fetch` PUT** to storage, then **`users.profile.update`** with **`avatarKey`**. **`runtime`** stays on **`rpc.runtime`**.
 
 Billing oRPC (two rails):
-- **Wallet (Solo):** `user_subscriptions` — `billing.getUserSummary`, `billing.createCheckoutSession` (`individual` only), `billing.createPortalSession`.
-- **Workspace (Teams / Teams Pro):** `organization_subscriptions` — `billing.getOrgSummary`, `billing.getWorkspaceBillingContext`, `billing.createOrgCheckoutSession`, `billing.changeOrgPlan`, seat preview/update, org portal.
+- **Wallet (Solo):** `user_subscriptions` - `billing.getUserSummary`, `billing.createCheckoutSession` (`individual` only), `billing.createPortalSession`.
+- **Workspace (Teams / Teams Pro):** `organization_subscriptions` - `billing.getOrgSummary`, `billing.getWorkspaceBillingContext`, `billing.createOrgCheckoutSession`, `billing.changeOrgPlan`, seat preview/update, org portal.
 - **Upgrade UX:** `billing.getUpgradeOfferings` (feature gate + current plans → selectable checkout paths).
 - **Marketing:** `billing.previewMarketingCheckout` (public) then `billing.requestCheckoutLink`; preflight blocks duplicate Solo / paid workspace checkout for known emails.
 
@@ -116,10 +116,10 @@ Billing security notes:
 
 ## Security notes
 
-- **`tx.processIndexerHash`** — **`authenticatedProcedure`** (thirdweb session). Enqueues indexer job; does not wait for receipt on the API thread.
-- **`DEBUG=true`** — verbose request/indexer logging (does not affect email).
-- **`RESEND_ENABLED=false`** — skip all outbound product email (default `true`).
-- **Email delivery** — Resend primary via [`lib/platform/email/email.ts`](lib/platform/email/email.ts); optional SES fallback when `SES_ENABLED` + `SES_REGION` + `SES_FROM_EMAIL` are set (retryable Resend failures only). See [`SECRETS.md`](SECRETS.md).
+- **`tx.processIndexerHash`** - **`authenticatedProcedure`** (thirdweb session). Enqueues indexer job; does not wait for receipt on the API thread.
+- **`DEBUG=true`** - verbose request/indexer logging (does not affect email).
+- **`RESEND_ENABLED=false`** - skip all outbound product email (default `true`).
+- **Email delivery** - Resend primary via [`lib/platform/email/email.ts`](lib/platform/email/email.ts); optional SES fallback when `SES_ENABLED` + `SES_REGION` + `SES_FROM_EMAIL` are set (retryable Resend failures only). See [`SECRETS.md`](SECRETS.md).
 
 ## Object storage (S3-compatible / R2)
 
@@ -135,6 +135,6 @@ Billing security notes:
 
 ## Checks
 
-- `bun run check` — Biome
-- `bun run check-types` — TypeScript
-- **`bun test`** — unit tests under [`tests/`](tests/) (domains, platform, support mocks)
+- `bun run check` - Biome
+- `bun run check-types` - TypeScript
+- **`bun test`** - unit tests under [`tests/`](tests/) (domains, platform, support mocks)

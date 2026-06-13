@@ -5,7 +5,7 @@ const relayerKey =
 
 /**
  * Minimal process.env for drizzle-kit generate/check (no live DB required for generate).
- * Do not import from tests/support — tooling-only stub.
+ * Do not import from tests/support - tooling-only stub.
  */
 export function loadDrizzleToolingEnv(): void {
 	const pairs: Record<string, string> = {

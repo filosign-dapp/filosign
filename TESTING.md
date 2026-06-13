@@ -6,22 +6,22 @@ Where tests live, how to run them, and how to add new ones.
 
 | Location | Purpose |
 |----------|---------|
-| `src/` or `lib/` | Production only — no `*.test.ts`, no test helpers or fixtures |
+| `src/` or `lib/` | Production only - no `*.test.ts`, no test helpers or fixtures |
 | **`tests/`** | All Bun tests for that workspace |
-| **`tests/support/`** | Mocks, fixtures, fakes — never imported from production |
+| **`tests/support/`** | Mocks, fixtures, fakes - never imported from production |
 | **`tests/<area>/`** | Optional mirror of product areas (e.g. `tests/domains/`, `tests/platform/`) when structure helps |
 
 **Exception:** [`oss/packages/contracts/test/`](oss/packages/contracts/test/) uses Hardhat’s `test/` + `*.spec.ts` convention.
 
 ## How to group test files
 
-Align with [AGENTS.md](AGENTS.md) domain layout — merge smartly, not by line count:
+Align with [AGENTS.md](AGENTS.md) domain layout - merge smartly, not by line count:
 
-1. **Separate files for real boundaries** — e.g. Telegram transport vs PostHog transport; critical platform alerts vs product analytics.
-2. **Merge when same feature or domain** — e.g. billing + dodo webhooks; all “emit critical alert on wiring failure” cases in one wiring suite.
-3. **`describe()` inside a file** for small related cases — not a new file beside every production module.
+1. **Separate files for real boundaries** - e.g. Telegram transport vs PostHog transport; critical platform alerts vs product analytics.
+2. **Merge when same feature or domain** - e.g. billing + dodo webhooks; all “emit critical alert on wiring failure” cases in one wiring suite.
+3. **`describe()` inside a file** for small related cases - not a new file beside every production module.
 4. **Avoid** one monolith per app/package; **avoid** scattered wiring tests next to `pino.ts`, `cron.ts`, etc.
-5. **Split when a file is hard to navigate** — use the same logical seams as production (`utils/` when ~100+ lines or 2+ callers).
+5. **Split when a file is hard to navigate** - use the same logical seams as production (`utils/` when ~100+ lines or 2+ callers).
 
 ## Run
 
@@ -41,5 +41,5 @@ Typecheck including tests: each workspace with `tests/` runs `tsc -p tsconfig.te
 ## Adding tests
 
 - **New Bun workspace:** create `tests/` at package root; add `tsconfig.tests.json` if the main `tsconfig` excludes tests, plus `tests/tsconfig.json` extending it so the IDE typechecks test files with Bun types (same pattern as [`apps/server/tests/tsconfig.json`](apps/server/tests/tsconfig.json)).
-- **Shared mocks:** `tests/support/` — do not put under `lib/`.
+- **Shared mocks:** `tests/support/` - do not put under `lib/`.
 - **Client / react-sdk:** use `tests/` when first unit tests land; `tests/e2e/` optional for Playwright later.

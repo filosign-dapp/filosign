@@ -1,4 +1,4 @@
-# SCRIPTS.md — monorepo commands (agents)
+# SCRIPTS.md - monorepo commands (agents)
 
 **Source:** [`package.json`](package.json) → [`scripts/*.ts`](scripts/). Flags after `--`. Help: `bun run <script> -- --help`.
 
@@ -37,8 +37,9 @@
 | Contracts ops | `bun run contracts -- …` |
 | Nuke deps | `bun run purge` then `bun install` |
 | Email package tests | `bun run test -- --emails` |
+| Re-embed welcome practice PDF (after editing `packages/shared/activation/assets/welcome-practice.pdf`) | `bun run --cwd packages/shared embed-welcome-practice-pdf` |
 
-**`check`** = Biome `--write` + types. **`sanity`** = `check --ci --types` + turbo unit tests + Hardhat (`contracts -- test`). **`test`** = all packages with tests (includes contracts). CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (`bun run sanity`, Node 25 — matches `engines.node` in root `package.json`). Pre-push (husky): `bun check --lint` then `bun sanity`.
+**`check`** = Biome `--write` + types. **`sanity`** = `check --ci --types` + turbo unit tests + Hardhat (`contracts -- test`). **`test`** = all packages with tests (includes contracts). CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (`bun run sanity`, Node 25 - matches `engines.node` in root `package.json`). Pre-push (husky): `bun check --lint` then `bun sanity`.
 
 ## Entrypoints
 
@@ -97,8 +98,8 @@ Flags: `--client`, `--astro`, `--server`, `--harness` (`--test`), `--contracts`,
 
 | Action | Profiles | Tool |
 |--------|----------|------|
-| `push` | `local`, `staging` | `drizzle-kit push` — fast dev sync (no generate) |
-| `migrate` | all profiles | `drizzle-kit migrate` — **required** for sandbox + production |
+| `push` | `local`, `staging` | `drizzle-kit push` - fast dev sync (no generate) |
+| `migrate` | all profiles | `drizzle-kit migrate` - **required** for sandbox + production |
 | `purge` | `local`, `staging`, `sandbox` | wipe schema; then **push** (local/staging) or **migrate** (sandbox) |
 
 **Sandbox / production:** never `push` (orchestrator blocks). After schema is stable on local/staging: `bun run --cwd apps/server db:generate` → commit `apps/server/drizzle/` → `bun run db -- migrate sandbox` → backup → `bun run prod -- --migrate`.

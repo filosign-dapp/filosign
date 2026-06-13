@@ -17,6 +17,6 @@ Symbols that must match private `@filosign/shared` byte-for-byte for verificatio
 | `verifyDocumentMerkleProofV1` | `merkle/document.ts` | Yes |
 | `computeCidIdentifier` | `piece/cid-identifier.ts` | Yes |
 | `jsonStringify` (stable) | `json/stable-stringify.ts` | Yes |
-| — | `proof-packet/schema.ts` (`zVerifyManifestV1`, `PROOF_PACKET_V1_DEFAULT_PATHS`) | Private monorepo consumes via `@filosign/protocol` (`oss/packages/protocol` workspace) |
+| - | `proof-packet/schema.ts` (`zVerifyManifestV1`, `PROOF_PACKET_V1_DEFAULT_PATHS`) | Private monorepo consumes via `@filosign/protocol` (`oss/packages/protocol` workspace) |
 
 Update this table when adding symbols. Golden fixtures live in `packages/protocol/tests/fixtures/`.

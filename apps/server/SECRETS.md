@@ -1,10 +1,10 @@
-# Secrets (Infisical — server only)
+# Secrets (Infisical - server only)
 
 Server secrets for deployed tiers live in [Infisical Cloud](https://app.infisical.com). Local dev uses **`apps/server/.env.local`**. **Contracts** deploy/migrate use **`packages/evm/.env.local`**, **`.env.staging`**, and **`.env.production`** (gitignored).
 
 | `DEPLOYMENT` | Infisical env | Server secrets | Contracts (laptop deploy) |
 |--------------|---------------|----------------|---------------------------|
-| `local` | — | `apps/server/.env.local` | `packages/evm/.env.local` |
+| `local` | - | `apps/server/.env.local` | `packages/evm/.env.local` |
 | `staging` | `staging` | Infisical | `packages/evm/.env.staging` |
 | `sandbox` | `sandbox` | Infisical | `packages/evm/.env.staging` (same testnet chain) |
 | `production` | `prod` | Infisical (Dokploy) | `packages/evm/.env.production` |
@@ -22,19 +22,19 @@ Every server env must set **`DEPLOYMENT`** and an allowed **`CHAIN`** (`staging`
 
 | `DEPLOYMENT` | `CHAIN_RPC_URL` |
 |--------------|-----------------|
-| `local`, `staging`, `sandbox` | **Do not set** — ignored; viem public testnet/Hardhat URLs only |
-| `production` | **Optional** in Infisical `prod` — primary JSON-RPC for the configured `CHAIN` (thirdweb, Alchemy, QuickNode, etc.) |
+| `local`, `staging`, `sandbox` | **Do not set** - ignored; viem public testnet/Hardhat URLs only |
+| `production` | **Optional** in Infisical `prod` - primary JSON-RPC for the configured `CHAIN` (thirdweb, Alchemy, QuickNode, etc.) |
 
 When set on production, the server uses `fallback([primary, public default])` where the public URL is `mainnet.base.org` or `sepolia.base.org` per `CHAIN`. When unset, only the public URL is used.
 
-**Client (optional):** `VITE_CHAIN_RPC_URL` in production Pages env only — same production-only rule; not required for launch (server relayer is the critical path).
+**Client (optional):** `VITE_CHAIN_RPC_URL` in production Pages env only - same production-only rule; not required for launch (server relayer is the critical path).
 
 ### Email delivery (Resend + SES fallback)
 
 | Variable | Role |
 |----------|------|
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_FROM_PERSONAL_EMAIL`, `RESEND_ENABLED` | **Primary** sender (partner invites use `RESEND_FROM_PERSONAL_EMAIL`; other product mail uses `RESEND_FROM_EMAIL`) |
-| `SES_ENABLED`, `SES_REGION`, `SES_FROM_EMAIL` | **Fallback** only when all are set — any deployment (Infisical prod recommended) |
+| `SES_ENABLED`, `SES_REGION`, `SES_FROM_EMAIL` | **Fallback** only when all are set - any deployment (Infisical prod recommended) |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Optional if the host uses an IAM role for SES |
 | `SES_CONFIGURATION_SET` | Optional tracking |
 
@@ -42,11 +42,11 @@ Flow: every send tries Resend first. On retryable Resend errors (429, 5xx, timeo
 
 Verify the same From domain in [Resend](https://resend.com) and [Amazon SES](https://console.aws.amazon.com/ses/) (DKIM/SPF). Leave `SES_ENABLED=false` on local unless you are testing fallback.
 
-Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`, `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY` (see [`packages/evm/env.ts`](../../packages/evm/env.ts)). On-chain addresses for the app come from [`packages/evm/definitions/`](../../packages/evm/definitions/) via `CHAIN` — after redeploy, run migrate and align `FC_SERVER_ADDRESS` with `FSEnvelopeRegistry.server()` ([migration note](../../project/contracts/envelope-registry-migration.md)).
+Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`, `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY` (see [`packages/evm/env.ts`](../../packages/evm/env.ts)). On-chain addresses for the app come from [`packages/evm/definitions/`](../../packages/evm/definitions/) via `CHAIN` - after redeploy, run migrate and align `FC_SERVER_ADDRESS` with `FSEnvelopeRegistry.server()` ([migration note](../../project/contracts/envelope-registry-migration.md)).
 
 ### Filecoin / FOC (Synapse)
 
-`FC_SERVER_PRIVATE_KEY` and `FC_SERVER_ADDRESS` power [`@filoz/synapse-sdk`](https://docs.filecoin.cloud/) — **platform backup** for all **paid workspaces** (not only archival SKU). Fund with **USDFC** (Filecoin Pay) and **FIL** (gas). See [`docs/foc-storage-lifecycle.md`](docs/foc-storage-lifecycle.md).
+`FC_SERVER_PRIVATE_KEY` and `FC_SERVER_ADDRESS` power [`@filoz/synapse-sdk`](https://docs.filecoin.cloud/) - **platform backup** for all **paid workspaces** (not only archival SKU). Fund with **USDFC** (Filecoin Pay) and **FIL** (gas). See [`docs/foc-storage-lifecycle.md`](docs/foc-storage-lifecycle.md).
 
 | Env | Role |
 |-----|------|
@@ -93,7 +93,7 @@ bun run db -- push staging
 bun run db -- migrate sandbox
 bun run db -- purge sandbox
 
-# Contracts (packages/evm — no Infisical)
+# Contracts (packages/evm - no Infisical)
 bun run contracts -- --migrate --testnet
 bun run contracts -- --migrate --mainnet
 

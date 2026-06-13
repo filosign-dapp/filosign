@@ -9,7 +9,7 @@ export const LEGAL_OPERATOR = {
 	securityEmail: "security@filosign.xyz",
 } as const;
 
-/** Privacy Policy operator disclosure only — do not use on other public pages. */
+/** Privacy Policy operator disclosure only - do not use on other public pages. */
 export function operatorIdentitySentence(): string {
 	return `${LEGAL_OPERATOR.legalName}, an individual residing in ${LEGAL_OPERATOR.location}, doing business as ${LEGAL_OPERATOR.tradingName}`;
 }

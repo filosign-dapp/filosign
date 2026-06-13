@@ -89,7 +89,7 @@ export default function ProblemSectionIsland() {
 	return (
 		<MotionProvider>
 			<section className={marketingSectionShellClass}>
-				<div className="grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-12">
+				<div className="grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-30">
 					<div className="flex flex-col gap-5">
 						<p className="font-manrope text-sm font-medium text-primary">
 							Why Filosign?

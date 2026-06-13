@@ -1,3 +1,4 @@
+import type { DocumentListRow } from "@filosign/react/documents";
 import {
 	DotsThreeVerticalIcon,
 	FilePdfIcon,
@@ -21,6 +22,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
 import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
+import { DocumentRowStatusBadge } from "@/src/lib/domains/documents/document-row-status";
 import { formatFileSize } from "@/src/lib/utils/format-file-size";
 import { cn } from "@/src/lib/utils/utils";
 
@@ -40,15 +42,29 @@ export type DocumentCardProps = {
 	deleteDisabled?: boolean;
 	/** Hide overlay / row action buttons; use context menu instead. */
 	hideInlineActions?: boolean;
+	/** When set, renders status badges on grid cards. */
+	statusRow?: DocumentListRow;
 };
 
-function CardIcon({ kind }: { kind: DocumentCardKind }) {
+function CardIcon({
+	kind,
+	size = "default",
+}: {
+	kind: DocumentCardKind;
+	size?: "default" | "grid";
+}) {
+	const className =
+		size === "grid"
+			? kind === "draft"
+				? "size-11 text-destructive/70 sm:size-12"
+				: "size-11 text-red-500 sm:size-12"
+			: kind === "draft"
+				? "size-8 text-destructive/70"
+				: "size-8 text-red-500";
 	if (kind === "draft") {
-		return (
-			<FileTextIcon className="size-8 text-destructive/70" weight="light" />
-		);
+		return <FileTextIcon className={className} weight="light" />;
 	}
-	return <FilePdfIcon className="size-8 text-red-500" />;
+	return <FilePdfIcon className={className} />;
 }
 
 function OpenMenuAction(props: {
@@ -236,14 +252,14 @@ function DocumentCardGrid(props: DocumentCardProps) {
 			busy={props.busy}
 			onOpen={props.onOpen}
 			className={cn(
-				"group relative rounded-lg border bg-background p-2 text-left transition-colors",
+				"group relative flex h-full flex-col rounded-xl border border-border/80 bg-card/40 p-3 text-left transition-colors sm:p-4",
 				props.busy
 					? "cursor-wait opacity-70"
-					: "cursor-pointer hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+					: "cursor-pointer hover:border-border hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
 			)}
 		>
 			{props.hideInlineActions ? null : (
-				<div className="absolute top-1.5 right-1.5 z-10">
+				<div className="absolute top-2 right-2 z-10 sm:top-3 sm:right-3">
 					<CardActions
 						kind={props.kind}
 						draftId={props.draftId}
@@ -254,18 +270,29 @@ function DocumentCardGrid(props: DocumentCardProps) {
 					/>
 				</div>
 			)}
-			<div className="mb-2 flex aspect-4/3 items-center justify-center rounded-md bg-muted">
+			<div className="mb-3 flex min-h-30 flex-1 items-center justify-center rounded-lg bg-muted/80 p-5 sm:min-h-34 sm:p-6">
 				{props.busy ? (
 					<InlineLoader size="sm" />
 				) : (
-					<CardIcon kind={props.kind} />
+					<CardIcon kind={props.kind} size="grid" />
 				)}
 			</div>
-			<div className="space-y-1 pr-1">
-				<p className="truncate text-sm font-medium" title={props.title}>
+			<div className="space-y-2">
+				{props.statusRow ? (
+					<DocumentRowStatusBadge
+						row={props.statusRow}
+						showDirection={props.statusRow.kind === "envelope"}
+					/>
+				) : null}
+				<p
+					className="line-clamp-2 text-sm font-medium leading-snug sm:text-[0.9375rem]"
+					title={props.title}
+				>
 					{props.title}
 				</p>
-				<p className="text-xs text-muted-foreground">{props.subtitle}</p>
+				<p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+					{props.subtitle}
+				</p>
 			</div>
 		</DocumentCardShell>
 	);

@@ -1,5 +1,6 @@
 import type { DocumentListRow } from "@filosign/react/documents";
 import { formatDocumentCardDate } from "@/src/lib/domains/documents/document-card";
+import { documentRowStatusLabelFromRow } from "@/src/lib/domains/documents/document-row-status";
 import { formatFileSize } from "@/src/lib/utils/format-file-size";
 
 export function documentRowTypeLabel(row: DocumentListRow): string {
@@ -8,16 +9,7 @@ export function documentRowTypeLabel(row: DocumentListRow): string {
 }
 
 export function documentRowStatusLabel(row: DocumentListRow): string {
-	if (row.kind === "draft") return "Draft";
-	if (row.lifecycle === "voided") return "Voided";
-	if (row.lifecycle === "completed") return "Completed";
-	if (row.lifecycle === "active" && row.direction === "sent" && row.signing) {
-		return `${row.signing.signedCount}/${row.signing.requiredCount} signed`;
-	}
-	if (row.direction === "received" && !row.signedByMe) {
-		return "Needs signature";
-	}
-	return "Active";
+	return documentRowStatusLabelFromRow(row);
 }
 
 export function documentRowPartySubtitle(row: DocumentListRow): string | null {

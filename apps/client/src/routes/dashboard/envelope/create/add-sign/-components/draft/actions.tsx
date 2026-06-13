@@ -84,13 +84,13 @@ function draftStatusLabel(args: {
 		return { label: "Saving", dotClass: "bg-muted-foreground animate-pulse" };
 	}
 	if (args.showSavedState || args.isSavedToServer) {
-		return { label: "Saved", dotClass: "bg-emerald-500" };
+		return { label: "Saved", dotClass: "bg-secondary" };
 	}
 	if (args.hasChanges) {
 		return { label: "Unsaved", dotClass: "bg-amber-500" };
 	}
 	if (args.hasServerDraft) {
-		return { label: "Saved", dotClass: "bg-emerald-500" };
+		return { label: "Saved", dotClass: "bg-secondary" };
 	}
 	return { label: "Unsaved", dotClass: "bg-amber-500" };
 }

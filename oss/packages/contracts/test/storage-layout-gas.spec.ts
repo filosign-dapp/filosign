@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { expect } from "chai";
 import type { Hex } from "viem";
@@ -17,44 +17,54 @@ function loadRegistryStorageLayout(): {
 	envelope: StorageSlot[];
 } {
 	const buildInfoDir = join(import.meta.dirname, "../artifacts/build-info");
-	const buildInfoFile = readdirSync(buildInfoDir).sort().at(-1);
-	if (!buildInfoFile) {
+	const buildInfoFiles = readdirSync(buildInfoDir)
+		.filter((name) => name.endsWith(".json"))
+		.map((name) => ({
+			name,
+			mtimeMs: statSync(join(buildInfoDir, name)).mtimeMs,
+		}))
+		.sort((a, b) => b.mtimeMs - a.mtimeMs);
+
+	if (buildInfoFiles.length === 0) {
 		throw new Error("Missing build-info; run hardhat compile");
 	}
-	const buildInfo = JSON.parse(
-		readFileSync(join(buildInfoDir, buildInfoFile), "utf8"),
-	) as {
-		output: {
-			contracts: Record<
-				string,
-				Record<
+
+	for (const { name } of buildInfoFiles) {
+		const buildInfo = JSON.parse(
+			readFileSync(join(buildInfoDir, name), "utf8"),
+		) as {
+			output: {
+				contracts: Record<
 					string,
-					{
-						storageLayout?: {
-							types: Record<string, { members?: StorageSlot[] }>;
-						};
-					}
-				>
-			>;
+					Record<
+						string,
+						{
+							storageLayout?: {
+								types: Record<string, { members?: StorageSlot[] }>;
+							};
+						}
+					>
+				>;
+			};
 		};
-	};
-	const layout =
-		buildInfo.output.contracts["src/FSEnvelopeRegistry.sol"]?.FSEnvelopeRegistry
-			?.storageLayout;
-	if (!layout?.types) {
-		throw new Error("FSEnvelopeRegistry storageLayout missing; run compile");
+		const layout =
+			buildInfo.output.contracts["src/FSEnvelopeRegistry.sol"]
+				?.FSEnvelopeRegistry?.storageLayout;
+		if (!layout?.types) continue;
+
+		const pending = Object.values(layout.types).find((t) =>
+			t.members?.some((m) => m.label === "signersCommitmentAfter"),
+		);
+		const envelope = Object.values(layout.types).find((t) =>
+			t.members?.some((m) => m.label === "signerRoster"),
+		);
+		if (!pending?.members || !envelope?.members) {
+			throw new Error("Expected nested struct layouts in build-info");
+		}
+		return { pending: pending.members, envelope: envelope.members };
 	}
 
-	const pending = Object.values(layout.types).find((t) =>
-		t.members?.some((m) => m.label === "signersCommitmentAfter"),
-	);
-	const envelope = Object.values(layout.types).find((t) =>
-		t.members?.some((m) => m.label === "signerRoster"),
-	);
-	if (!pending?.members || !envelope?.members) {
-		throw new Error("Expected nested struct layouts in build-info");
-	}
-	return { pending: pending.members, envelope: envelope.members };
+	throw new Error("FSEnvelopeRegistry storageLayout missing; run compile");
 }
 
 describe("FSEnvelopeRegistry storage layout and register gas", () => {

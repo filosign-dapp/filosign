@@ -61,3 +61,11 @@ export function getServerUrl(): string {
 export function getAstroUrl(): string {
 	return env.ASTRO_URL.replace(/\/$/, "");
 }
+
+/** Resend From header: `Name <email>` when RESEND_FROM_NAME is set. */
+export function resendFromAddress(): string {
+	const email = env.RESEND_FROM_EMAIL;
+	const name = env.RESEND_FROM_NAME?.trim();
+	if (name) return `${name} <${email}>`;
+	return email;
+}

@@ -130,7 +130,7 @@ function buildAboutSection(args: {
 			},
 			rowFromCheck(hashCheck, {
 				claim: "Proof export hash",
-				exportValue: bundleSha256Sidecar ?? "—",
+				exportValue: bundleSha256Sidecar ?? " - ",
 				verifiedAgainst: "Bundle hash",
 			}),
 			{
@@ -192,7 +192,7 @@ function buildSignersSection(
 		rows.push({
 			claim: "Signers",
 			exportValue: "None listed in export",
-			verifiedAgainst: "—",
+			verifiedAgainst: " - ",
 			result: "skip",
 		});
 	}
@@ -222,23 +222,23 @@ function buildPublicRegistrationSection(
 		{
 			claim: "Signers roster commitment",
 			checkId: "chain.registration.signersCommitment",
-			exportValue: bundle.onchainRegistration?.signersCommitment ?? "—",
+			exportValue: bundle.onchainRegistration?.signersCommitment ?? " - ",
 		},
 		{
 			claim: "Viewers roster commitment",
 			checkId: "chain.registration.viewersCommitment",
-			exportValue: bundle.onchainRegistration?.viewersCommitment ?? "—",
+			exportValue: bundle.onchainRegistration?.viewersCommitment ?? " - ",
 		},
 		{
 			claim: "Sender email commitment",
 			checkId: "chain.registration.senderEmailCommitment",
-			exportValue: bundle.onchainRegistration?.senderEmailCommitment ?? "—",
+			exportValue: bundle.onchainRegistration?.senderEmailCommitment ?? " - ",
 		},
 	];
 
 	const rows = chainFields
 		.filter(
-			(field) => findCheck(results, field.checkId) || field.exportValue !== "—",
+			(field) => findCheck(results, field.checkId) || field.exportValue !== " - ",
 		)
 		.map((field) => {
 			const check = findCheck(results, field.checkId);
@@ -504,7 +504,7 @@ function buildAttachmentsSection(
 						claim: `Attachment ${att.packetId} file bundle hash`,
 						exportValue: att.packetContentHash
 							? truncateHash(att.packetContentHash)
-							: "—",
+							: " - ",
 						verifiedAgainst: "Exported file bytes",
 					}),
 				);
@@ -519,7 +519,7 @@ function buildAttachmentsSection(
 						claim: `Attachment file: ${fileSegment}`,
 						exportValue: byteCheck.expected
 							? truncateHash(byteCheck.expected)
-							: "—",
+							: " - ",
 						verifiedAgainst: "File bytes in packet",
 					}),
 				);

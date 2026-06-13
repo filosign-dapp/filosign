@@ -52,7 +52,7 @@ export function TechnicalAuditTable({ checks }: TechnicalAuditTableProps) {
 											</span>
 										</td>
 										<td>
-											{check.message ?? "—"}
+											{check.message ?? " - "}
 											{check.expected &&
 											check.actual &&
 											check.status === "fail" ? (

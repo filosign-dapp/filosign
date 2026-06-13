@@ -7,7 +7,7 @@ export function emailJobId(idempotencyKey: string): string {
 	return idempotencyKey;
 }
 
-/** BullMQ rejects `:` in custom jobId — use `__` as namespace separator. */
+/** BullMQ rejects `:` in custom jobId - use `__` as namespace separator. */
 const JOB_ID_SEP = "__";
 
 export function payoutJobId(pieceCid: string): string {

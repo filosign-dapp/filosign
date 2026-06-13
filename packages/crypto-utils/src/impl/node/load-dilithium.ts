@@ -35,7 +35,7 @@ function resolveWasmBinary(): Buffer {
 let ready: Promise<DilithiumInstance> | undefined;
 
 /**
- * Node/Bun Dilithium — never import `dilithium-crystals-js` main (CJS `exports = promise.then`
+ * Node/Bun Dilithium - never import `dilithium-crystals-js` main (CJS `exports = promise.then`
  * breaks `bun build --compile` with "|this| is not a Promise"). Bundle emscripten + common only.
  */
 export function loadNodeDilithium(): Promise<DilithiumInstance> {

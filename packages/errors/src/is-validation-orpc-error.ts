@@ -1,6 +1,6 @@
 import { isOrpcErrorLike, readOrpcData } from "./is-orpc-error";
 
-/** Input/schema validation — forms should show inline; skip global mutation toast. */
+/** Input/schema validation - forms should show inline; skip global mutation toast. */
 export function isValidationOrpcError(error: unknown): boolean {
 	if (!isOrpcErrorLike(error)) return false;
 	if (error.code !== "BAD_REQUEST") return false;

@@ -14,7 +14,7 @@ export function registerClientExceptionCapture(
 	capture = fn;
 }
 
-/** Non-React entry (e.g. `reportClientError`) — no-ops when analytics disabled. */
+/** Non-React entry (e.g. `reportClientError`) - no-ops when analytics disabled. */
 export function captureClientException(
 	error: unknown,
 	properties?: AnalyticsExceptionProperties,

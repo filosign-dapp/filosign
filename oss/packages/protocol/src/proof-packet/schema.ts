@@ -47,6 +47,6 @@ export const zVerifyManifestV1 = z.object({
 
 export type VerifyManifestV1 = z.infer<typeof zVerifyManifestV1>;
 
-/** Alias — only one manifest shape is supported today. */
+/** Alias - only one manifest shape is supported today. */
 export const zVerifyManifest = zVerifyManifestV1;
 export type VerifyManifest = VerifyManifestV1;

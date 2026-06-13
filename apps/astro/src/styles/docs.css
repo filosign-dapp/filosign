@@ -1,5 +1,5 @@
 /**
- * Starlight docs theme — mirrors apps/client/src/globals.css (`:root` + `.dark`).
+ * Starlight docs theme - mirrors apps/client/src/globals.css (`:root` + `.dark`).
  */
 @import "@fontsource-variable/inter/index.css";
 @import "@fontsource-variable/manrope/index.css";
@@ -11,7 +11,7 @@
 	--sl-font: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Light — client :root */
+/* Light - client :root */
 :root[data-theme="light"],
 [data-theme="light"] {
 	--fs-background: oklch(1 0 0);
@@ -73,7 +73,7 @@
 	color: var(--fs-secondary-foreground);
 }
 
-/* Dark — client `.dark` */
+/* Dark - client `.dark` */
 :root[data-theme="dark"],
 [data-theme="dark"] {
 	--fs-background: oklch(0.145 0 0);

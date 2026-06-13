@@ -139,21 +139,21 @@ bun run test:dev
 
 Server configuration is defined in `apps/server/env.ts`. The main required values are:
 
-- `DEPLOYMENT` — `local` | `staging` | `sandbox` | `production` (drives billing, Dodo mode, entitlement policy; see [`project/launch/environments.md`](project/launch/environments.md))
-- `CHAIN` — must match `DEPLOYMENT` (`local`→`local`, `staging`/`sandbox`→`testnet`, `production`→`mainnet`); not auto-derived — set both explicitly
-- `SERVER_URL` — public API origin (no trailing slash).
-- `CLIENT_URL` — React app origin; email CTAs and CORS. Must not be `http://localhost` in deployed (`testnet` / `mainnet`) environments.
-- `ASTRO_URL` — marketing site origin; email static assets (`/logo.webp`, `/icons/*`).
+- `DEPLOYMENT` - `local` | `staging` | `sandbox` | `production` (drives billing, Dodo mode, entitlement policy; see [`project/launch/environments.md`](project/launch/environments.md))
+- `CHAIN` - must match `DEPLOYMENT` (`local`→`local`, `staging`/`sandbox`→`testnet`, `production`→`mainnet`); not auto-derived - set both explicitly
+- `SERVER_URL` - public API origin (no trailing slash).
+- `CLIENT_URL` - React app origin; email CTAs and CORS. Must not be `http://localhost` in deployed (`testnet` / `mainnet`) environments.
+- `ASTRO_URL` - marketing site origin; email static assets (`/logo.webp`, `/icons/*`).
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
-- `RESEND_ENABLED` — `true` (default) sends via Resend; set `false` to no-op outbound email
+- `RESEND_ENABLED` - `true` (default) sends via Resend; set `false` to no-op outbound email
 - `PG_URI`
 - `DB_NAME`
 - `FC_SERVER_PRIVATE_KEY` / `FC_SERVER_ADDRESS` (on-chain relayer + Synapse; must match contracts deploy)
-- `DRAGONFLY_URL` — `redis://127.0.0.1:6379` with `docker compose -f deploy/compose.dev.yml up -d`
-- `THIRDWEB_CLIENT_ID` — same value as client `VITE_THIRDWEB_CLIENT_ID`
-- `THIRDWEB_SECRET_KEY` — project secret key (server only)
-- `DODO_API_KEY` / `DODO_WEBHOOK_KEY` — required for `staging` and `production`; optional for `local` and `sandbox`
+- `DRAGONFLY_URL` - `redis://127.0.0.1:6379` with `docker compose -f deploy/compose.dev.yml up -d`
+- `THIRDWEB_CLIENT_ID` - same value as client `VITE_THIRDWEB_CLIENT_ID`
+- `THIRDWEB_SECRET_KEY` - project secret key (server only)
+- `DODO_API_KEY` / `DODO_WEBHOOK_KEY` - required for `staging` and `production`; optional for `local` and `sandbox`
 - `DODO_PRODUCT_ID_INDIVIDUAL_MONTHLY` / `DODO_PRODUCT_ID_INDIVIDUAL_YEARLY`
 - `DODO_PRODUCT_ID_TEAMS_MONTHLY` / `DODO_PRODUCT_ID_TEAMS_YEARLY`
 - `DODO_PRODUCT_ID_TEAMS_PRO_MONTHLY` / `DODO_PRODUCT_ID_TEAMS_PRO_YEARLY`

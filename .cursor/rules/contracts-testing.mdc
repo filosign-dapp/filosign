@@ -1,5 +1,5 @@
 ---
-description: Hardhat/viem contract tests in oss/packages/contracts — read TESTING.md before edits
+description: Hardhat/viem contract tests in oss/packages/contracts - read TESTING.md before edits
 globs: oss/packages/contracts/**,packages/evm/**
 alwaysApply: false
 ---

@@ -82,7 +82,7 @@ Defined in [marketing-button.ts](file:///Users/styles/Styles/Code/filosign/apps/
 
 ## 3. Product Native Shape: The Timeline
 
-Filosign's design does not follow a generic landing-page template. Instead, it is organized around the product's native workflow shape—a sequential agreement-to-settlement pipeline:
+Filosign's design does not follow a generic landing-page template. Instead, it is organized around the product's native workflow shape - a sequential agreement-to-settlement pipeline:
 
 ```mermaid
 graph LR
@@ -97,7 +97,7 @@ Defined in [HowItWorksIsland.tsx](file:///Users/styles/Styles/Code/filosign/apps
 2. **Collect signatures** (`SignStepMock`)
    * *Copy:* "Signers complete assigned fields while Filosign records who signed and what was completed."
 3. **Export proof** (`ProofStepMock`)
-   * *Copy:* "Generate an exportable proof packet — no stitching together emails and screenshots."
+   * *Copy:* "Generate an exportable proof packet - no stitching together emails and screenshots."
 4. **Settle when needed** (`SettleStepMock`)
    * *Copy:* "Attach payout rules that execute after signing conditions are met."
 
@@ -129,10 +129,10 @@ Every piece of text and asset is mapped directly from the codebase.
      * *After:* "encrypted agreement, verifiable signature record, proof packet, and attached payouts."
    * *Asset:* `/images/stock_14.webp` (Problem Architecture).
 6. **Bento Features:**
-   * **Verify anywhere:** "Take the signing record with you. Anyone can check that the agreement was signed — without logging into Filosign." (`ProofOutsideMock`)
-   * **Private by default:** "Files are encrypted in your browser before upload. Only you and your signers can read them — we cannot." (`PrivateByDefaultMock`)
+   * **Verify anywhere:** "Take the signing record with you. Anyone can check that the agreement was signed - without logging into Filosign." (`ProofOutsideMock`)
+   * **Private by default:** "Files are encrypted in your browser before upload. Only you and your signers can read them - we cannot." (`PrivateByDefaultMock`)
    * **You approve who can send:** "Senders need your permission before they can route documents to you. Fewer surprise requests in your inbox." (`RecipientControlMock`)
-   * **Export a record anyone can read:** "Get a clear summary of who signed, when they signed, and which fields were completed — ready to share with finance, legal, or a grant reviewer." (`SignAndSettleMock`)
+   * **Export a record anyone can read:** "Get a clear summary of who signed, when they signed, and which fields were completed - ready to share with finance, legal, or a grant reviewer." (`SignAndSettleMock`)
 7. **Use Cases Grid:**
    * **Grant milestone approvals:** "Release funds when deliverables are signed and verified." (Asset: `/images/stock_2.webp`)
    * **Contractor forms and handovers:** "Close out work with proof you can export, not just email threads." (Asset: `/images/stock_5.webp`)

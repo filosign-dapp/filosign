@@ -4,6 +4,6 @@ alwaysApply: false
 ---
 
 - Use **`bun run <script>`** and **`bunx <pkg> <cmd>`** per root / app **`package.json`** (this repo standardizes on Bun over npm/pnpm/yarn for scripts).
-- **`bun test`** where a package uses Bun’s test runner; root **`bun run test`** runs the workspace test script—follow that unless a path uses another runner.
-- **Layout:** **`apps/server`** runs on Bun (Hono). **`apps/client`** uses **Vite** via scripts (e.g. **`bunx vite`**)—do not replace it with Bun.serve HTML-import patterns unless the project explicitly changes.
-- **Env:** server validates config with **`@t3-oss/env-core`** and loads env as in **`apps/server`** (`dotenv` / `.env.*` as already wired)—match that, do not assume “no dotenv” globally.
+- **`bun test`** where a package uses Bun’s test runner; root **`bun run test`** runs the workspace test script - follow that unless a path uses another runner.
+- **Layout:** **`apps/server`** runs on Bun (Hono). **`apps/client`** uses **Vite** via scripts (e.g. **`bunx vite`**) - do not replace it with Bun.serve HTML-import patterns unless the project explicitly changes.
+- **Env:** server validates config with **`@t3-oss/env-core`** and loads env as in **`apps/server`** (`dotenv` / `.env.*` as already wired) - match that, do not assume “no dotenv” globally.

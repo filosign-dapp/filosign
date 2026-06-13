@@ -47,6 +47,7 @@ import * as notificationHandlers from "@/api/handlers/notifications";
 import * as orgsHandlers from "@/api/handlers/orgs";
 import {
 	platformAccessPreviewGate,
+	platformAccessRedeemPartnerInvite,
 	platformAccessSubmitAccessRequest,
 	platformAdminAccess,
 	platformAdminAccessRequestsApprove,
@@ -189,6 +190,31 @@ export const appRouter = {
 			)
 			.output(z.object({ ok: z.literal(true) }))
 			.handler(({ input }) => platformAccessSubmitAccessRequest(input)),
+		redeemPartnerInvite: authenticatedProcedure
+			.input(
+				z.object({
+					platformInviteToken: z.string().min(8),
+					organizationId: z.uuid().optional(),
+				}),
+			)
+			.output(
+				z.object({
+					applied: z.boolean(),
+					organizationId: z.uuid().nullable(),
+					partnerInviteTrial: z
+						.object({
+							active: z.literal(true),
+							planId: z.enum(["teams", "teams_pro"]),
+							planName: z.string(),
+							trialDays: z.number().int(),
+							periodEnd: z.iso.datetime().nullable(),
+						})
+						.nullable(),
+				}),
+			)
+			.handler(({ context, input }) =>
+				platformAccessRedeemPartnerInvite(context.userWallet, input),
+			),
 	},
 	platformAdmin: {
 		access: authenticatedProcedure

@@ -5,6 +5,11 @@ import {
 	generateSetupToken,
 	isActivePartnerTrialSubscription,
 } from "@/lib/domains/platform-access";
+import {
+	canApplyPartnerTrialToOrgSub,
+	canApplyPartnerTrialToUserSub,
+	isDodoBackedSubscription,
+} from "@/lib/domains/platform-access/utils/partner-trial-guards";
 import { dbQueryResult } from "../support/db-query-result";
 
 describe("platform-access tokens", () => {
@@ -94,6 +99,82 @@ describe("partner trial subscription", () => {
 				"function",
 			);
 		});
+	});
+});
+
+describe("partner trial guards", () => {
+	const now = new Date("2026-06-01T12:00:00.000Z");
+	const futureEnd = new Date("2026-07-01T12:00:00.000Z");
+	const pastEnd = new Date("2026-05-01T12:00:00.000Z");
+
+	test("isDodoBackedSubscription detects provider and subscription id", () => {
+		expect(isDodoBackedSubscription({ provider: "dodo" })).toBe(true);
+		expect(
+			isDodoBackedSubscription({
+				provider: "manual",
+				dodoSubscriptionId: "sub_123",
+			}),
+		).toBe(true);
+		expect(isDodoBackedSubscription({ provider: "manual" })).toBe(false);
+	});
+
+	test("canApplyPartnerTrialToUserSub blocks dodo rows", () => {
+		expect(canApplyPartnerTrialToUserSub(undefined)).toBe(true);
+		expect(
+			canApplyPartnerTrialToUserSub({
+				planId: "teams_pro",
+				status: "active",
+				provider: "dodo",
+				periodEnd: futureEnd,
+				dodoSubscriptionId: "sub_1",
+			}),
+		).toBe(false);
+	});
+
+	test("canApplyPartnerTrialToOrgSub allows free and expired manual org rows", () => {
+		expect(canApplyPartnerTrialToOrgSub(undefined, now)).toBe(true);
+		expect(
+			canApplyPartnerTrialToOrgSub(
+				{
+					planId: "free",
+					status: "active",
+					provider: "manual",
+					periodEnd: null,
+				},
+				now,
+			),
+		).toBe(true);
+		expect(
+			canApplyPartnerTrialToOrgSub(
+				{
+					planId: "teams_pro",
+					status: "canceled",
+					provider: "manual",
+					periodEnd: pastEnd,
+				},
+				now,
+			),
+		).toBe(true);
+		expect(
+			canApplyPartnerTrialToOrgSub(
+				{
+					planId: "teams_pro",
+					status: "active",
+					provider: "dodo",
+					periodEnd: futureEnd,
+					dodoSubscriptionId: "sub_1",
+				},
+				now,
+			),
+		).toBe(false);
+	});
+});
+
+describe("redeemPartnerInviteForExistingUser", () => {
+	test("module exports orchestrator", async () => {
+		const mod = await import("@/lib/domains/platform-access/redeem-existing");
+		expect(typeof mod.redeemPartnerInviteForExistingUser).toBe("function");
+		expect(typeof mod.fetchRegisteredUserEmail).toBe("function");
 	});
 });
 

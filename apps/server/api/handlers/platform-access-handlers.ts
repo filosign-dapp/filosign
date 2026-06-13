@@ -9,6 +9,7 @@ import {
 	approveAccessRequest,
 	canStartEmailAuth,
 	createPlatformInvite,
+	fetchRegisteredUserEmail,
 	getPlatformInviteById,
 	listAccessRequestsForAdmin,
 	listPlatformInvites,
@@ -19,6 +20,7 @@ import {
 	previewPaidSetup,
 	previewPlatformInvite,
 	rebookPlatformInvite,
+	redeemPartnerInviteForExistingUser,
 	rejectAccessRequest,
 	revokePlatformInvite,
 	setUserFeatureOverrides,
@@ -415,4 +417,33 @@ export async function platformAdminAccessRequestsReject(
 	}
 	await rejectAccessRequest({ adminWallet, requestId: parsedId.data });
 	return { ok: true as const };
+}
+
+export const zPlatformAccessRedeemPartnerInviteBody = z.object({
+	platformInviteToken: z.string().min(8),
+	organizationId: z.uuid().optional(),
+});
+
+export async function platformAccessRedeemPartnerInvite(
+	wallet: Address,
+	rawBody: unknown,
+) {
+	const parsed = zPlatformAccessRedeemPartnerInviteBody.safeParse(rawBody);
+	if (parsed.error) {
+		throwZodBadRequest(parsed.error);
+	}
+
+	const email = await fetchRegisteredUserEmail(wallet);
+	const result = await redeemPartnerInviteForExistingUser({
+		wallet,
+		email,
+		platformInviteToken: parsed.data.platformInviteToken,
+		organizationId: parsed.data.organizationId,
+	});
+
+	return {
+		applied: result.applied,
+		organizationId: result.organizationId,
+		partnerInviteTrial: result.partnerInviteTrial,
+	};
 }

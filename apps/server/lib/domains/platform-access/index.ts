@@ -29,10 +29,15 @@ export {
 	setUserFeatureOverrides,
 	setUserPlanManual,
 } from "./invites";
-
+export {
+	fetchRegisteredUserEmail,
+	type RedeemPartnerInviteForExistingUserResult,
+	redeemPartnerInviteForExistingUser,
+} from "./redeem-existing";
 export {
 	assertRegistrationComplete,
 	attachPartnerTrialOnOrgCreateWithTx,
+	attachPartnerTrialToExistingOrgWithTx,
 	attachPendingOrgBillingOnCreateWithTx,
 	isActivePartnerTrialSubscription,
 	isUserRegistered,

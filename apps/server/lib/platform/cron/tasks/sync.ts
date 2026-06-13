@@ -6,12 +6,12 @@ import {
 	emitCriticalPlatformEvent,
 	PLATFORM_ALERT_EVENTS,
 } from "@/lib/platform/analytics";
+import { evmClient } from "@/lib/platform/evm";
 import {
 	FOC_FIL_ALERT_THRESHOLD_WEI,
 	FOC_USDFC_ALERT_THRESHOLD_WEI,
 	readFocWalletBalances,
 } from "@/lib/platform/foc/wallet-balances";
-import { evmClient } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { CRON_LOCK_TTL, type CronHandle, registerLockedCron } from "../utils";
@@ -199,7 +199,10 @@ export async function runMonitorRelayerGasCronTick(): Promise<void> {
 
 	const focRes = await tryCatch(runMonitorFocWalletBalancesJob());
 	if (focRes.error) {
-		logger.error({ err: focRes.error }, "cron monitor-foc-wallet-balances failed");
+		logger.error(
+			{ err: focRes.error },
+			"cron monitor-foc-wallet-balances failed",
+		);
 		void emitCriticalPlatformEvent({
 			name: PLATFORM_ALERT_EVENTS.serverCronJobFailed,
 			severity: "error",

@@ -1,10 +1,10 @@
 import { calibration, mainnet } from "@filoz/synapse-sdk";
 import {
+	type Address,
 	createPublicClient,
 	erc20Abi,
 	http,
 	parseEther,
-	type Address,
 } from "viem";
 import env from "@/env";
 
@@ -15,7 +15,9 @@ function filecoinChain() {
 	return env.CHAIN === "mainnet" ? mainnet : calibration;
 }
 
-function usdfcTokenAddress(chain: typeof mainnet | typeof calibration): Address {
+function usdfcTokenAddress(
+	chain: typeof mainnet | typeof calibration,
+): Address {
 	const address = chain.contracts?.usdfc?.address;
 	if (!address) {
 		throw new Error("USDFC contract not configured for Filecoin chain");

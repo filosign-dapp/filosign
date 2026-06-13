@@ -10,20 +10,12 @@ import {
 	renderPartnerInvite,
 	replyToForTransactionalEmail,
 } from "@filosign/emails";
-import type {
-	PaidCheckoutPlanId,
-	PlatformInviteEmailVariant,
-} from "@filosign/shared";
+import type { PaidCheckoutPlanId } from "@filosign/shared";
 import type { Address } from "viem";
 import env from "@/env";
 import { deliverOutboundEmail } from "./email";
 import { recipientDisplayNameFromEmail } from "./recipient-name";
-import {
-	buildEmailIdempotencyKey,
-	escapeHtml,
-	getClientUrl,
-	resendFromAddress,
-} from "./utils";
+import { buildEmailIdempotencyKey, escapeHtml, getClientUrl } from "./utils";
 
 /**
  * All outbound product email is sent through this file (`deliverOutboundEmail`).

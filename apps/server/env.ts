@@ -36,6 +36,7 @@ const parsedEnv = createEnv({
 		RESEND_API_KEY: z.string().min(1),
 		RESEND_FROM_EMAIL: z.email(),
 		RESEND_FROM_PERSONAL_EMAIL: z.email(),
+		RESEND_FROM_NAME: z.string().min(1).optional(),
 		RESEND_ENABLED: z
 			.string()
 			.default("true")

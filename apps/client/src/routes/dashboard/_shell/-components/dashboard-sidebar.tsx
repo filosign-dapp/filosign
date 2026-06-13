@@ -3,8 +3,6 @@ import { useEntitlements } from "@filosign/react/billing";
 import {
 	useActiveOrganization,
 	useActiveOrgId,
-	useCreateOrganization,
-	useInviteOrgMember,
 	useOrganizations,
 } from "@filosign/react/orgs";
 import {
@@ -28,17 +26,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
-import { toast } from "sonner";
 import Logo from "@/src/lib/components/app/chrome/logo";
-import { Button } from "@/src/lib/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/src/lib/components/ui/dialog";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -48,8 +36,6 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
-import { Input } from "@/src/lib/components/ui/input";
-import { Label } from "@/src/lib/components/ui/label";
 import {
 	Sidebar,
 	SidebarContent,
@@ -72,6 +58,10 @@ import {
 } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { cn } from "@/src/lib/utils/index";
+import {
+	CreateWorkspaceDialog,
+	InviteTeammateDialog,
+} from "@/src/routes/dashboard/_shell/-components/workspace-dialogs";
 
 type NavItem = {
 	title: string;
@@ -182,132 +172,6 @@ const groups: { label: string; items: NavItem[] }[] = [
 		],
 	},
 ];
-
-function CreateWorkspaceDialog(props: {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-}) {
-	const createOrg = useCreateOrganization();
-	const setActiveOrg = useSetPersistedActiveOrganizationId();
-	const [name, setName] = useState("");
-
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!name.trim()) return;
-		try {
-			const res = await createOrg.mutateAsync({ name: name.trim() });
-			if (res?.organization?.id) {
-				setActiveOrg(res.organization.id);
-				toast.success("Workspace created!");
-				props.onOpenChange(false);
-				setName("");
-			}
-		} catch {}
-	};
-
-	return (
-		<Dialog open={props.open} onOpenChange={props.onOpenChange}>
-			<DialogContent>
-				<DialogHeader>
-					<DialogTitle>Create new workspace</DialogTitle>
-					<DialogDescription>
-						A workspace is where you work, organize drafts, and invite members.
-					</DialogDescription>
-				</DialogHeader>
-				<form onSubmit={handleSubmit} className="space-y-4 pt-2">
-					<div className="space-y-2">
-						<Label htmlFor="create-workspace-name">Workspace Name</Label>
-						<Input
-							id="create-workspace-name"
-							placeholder="Acme Corp"
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-							autoFocus
-						/>
-					</div>
-					<DialogFooter>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => props.onOpenChange(false)}
-						>
-							Cancel
-						</Button>
-						<Button
-							type="submit"
-							variant="primary"
-							disabled={createOrg.isPending || !name.trim()}
-						>
-							{createOrg.isPending ? "Creating..." : "Create Workspace"}
-						</Button>
-					</DialogFooter>
-				</form>
-			</DialogContent>
-		</Dialog>
-	);
-}
-
-function InviteTeammateDialog(props: {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-}) {
-	const inviteMember = useInviteOrgMember();
-	const [email, setEmail] = useState("");
-
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!email.trim()) return;
-		try {
-			await inviteMember.mutateAsync({ email: email.trim() });
-			toast.success("Teammate invited successfully!");
-			setEmail("");
-			props.onOpenChange(false);
-		} catch {}
-	};
-
-	return (
-		<Dialog open={props.open} onOpenChange={props.onOpenChange}>
-			<DialogContent>
-				<DialogHeader>
-					<DialogTitle>Invite teammate to workspace</DialogTitle>
-					<DialogDescription>
-						Enter your teammate's email address. Once they register/login, they
-						will be automatically added to this workspace.
-					</DialogDescription>
-				</DialogHeader>
-				<form onSubmit={handleSubmit} className="space-y-4 pt-2">
-					<div className="space-y-2">
-						<Label htmlFor="invite-teammate-email">Email Address</Label>
-						<Input
-							id="invite-teammate-email"
-							type="email"
-							placeholder="colleague@company.com"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							autoFocus
-						/>
-					</div>
-					<DialogFooter>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => props.onOpenChange(false)}
-						>
-							Cancel
-						</Button>
-						<Button
-							type="submit"
-							variant="primary"
-							disabled={inviteMember.isPending || !email.includes("@")}
-						>
-							{inviteMember.isPending ? "Inviting..." : "Invite"}
-						</Button>
-					</DialogFooter>
-				</form>
-			</DialogContent>
-		</Dialog>
-	);
-}
 
 export function DashboardSidebar() {
 	const { rpcQuery } = useFilosignContext();

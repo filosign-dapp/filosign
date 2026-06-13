@@ -21,7 +21,7 @@ export function SignInWelcomeView({
 	return (
 		<div className="space-y-8">
 			<div className="space-y-2">
-				<h1 className="font-manrope text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+				<h1 className="font-manrope text-2xl tracking-tight text-foreground md:text-3xl">
 					Welcome to Filosign
 				</h1>
 				<p className="text-muted-foreground">
@@ -36,7 +36,7 @@ export function SignInWelcomeView({
 			) : (
 				<div className="flex flex-col gap-4 rounded-2xl border bg-card p-6 shadow-xs">
 					<div className="border-b border-border pb-4 text-left">
-						<p className="font-manrope font-semibold tracking-tight text-foreground">
+						<p className="font-manrope tracking-tight text-foreground">
 							Login to Filosign
 						</p>
 						<p className="mt-2 text-sm leading-relaxed text-pretty text-muted-foreground">
@@ -67,7 +67,7 @@ export function SignInWelcomeView({
 						href={env.VITE_ASTRO_URL}
 						target="_blank"
 						rel="noopener noreferrer"
-						className="font-medium text-primary underline-offset-4 hover:underline"
+						className="text-primary underline-offset-4 hover:underline"
 					>
 						Learn more on our site
 					</a>

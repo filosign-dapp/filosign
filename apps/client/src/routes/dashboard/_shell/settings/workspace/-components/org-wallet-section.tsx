@@ -84,7 +84,7 @@ export function OrgWalletSection() {
 			<WorkspaceSection
 				icon={<WalletIcon className="size-4" aria-hidden="true" />}
 				title="Workspace treasury"
-				description="Optional payout wallet for team settlements. Distinct from your personal signing wallet — connect the address that will approve USDC payouts on-chain."
+				description="Optional payout wallet for team settlements. Distinct from your personal signing wallet - connect the address that will approve USDC payouts on-chain."
 			>
 				<DocsLink href={DOCS_LINKS.treasuryWallet()} className="mb-4">
 					Treasury wallet guide
@@ -143,7 +143,7 @@ export function OrgWalletSection() {
 							{linked ? "Change treasury wallet" : "Connect treasury wallet"}
 						</DialogTitle>
 						<DialogDescription>
-							Connect the wallet that will pay team settlements — your EOA or an
+							Connect the wallet that will pay team settlements - your EOA or an
 							external smart wallet (including a Safe via WalletConnect). You
 							will sign once to prove control of that address.
 						</DialogDescription>

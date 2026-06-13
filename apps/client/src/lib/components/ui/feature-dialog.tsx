@@ -22,9 +22,39 @@ import {
 import { cn } from "@/src/lib/utils/index";
 
 const featureDialogPositionClassName = cn(
-	"top-auto bottom-0 max-h-[92dvh] w-full translate-x-[-50%] translate-y-0 gap-0 overflow-hidden rounded-t-3xl rounded-b-none p-0 ring-0",
-	"max-w-[calc(100vw-1rem)] sm:top-1/2 sm:bottom-auto sm:max-w-[min(56rem,calc(100vw-2rem))] sm:-translate-y-1/2 sm:rounded-3xl sm:min-h-[min(32rem,85dvh)]",
+	"top-auto bottom-0 flex max-h-[90dvh] min-h-0 w-full flex-col translate-x-[-50%] translate-y-0 gap-0 overflow-hidden rounded-t-3xl rounded-b-none p-0 ring-0",
+	"max-w-[calc(100vw-1rem)] sm:top-1/2 sm:bottom-auto sm:max-w-[min(72rem,calc(100vw-2rem))] sm:-translate-y-1/2 sm:rounded-3xl sm:min-h-[min(34rem,85dvh)]",
 );
+
+const featureDialogShellClassName =
+	"min-h-0 max-h-full w-full flex-1 overflow-hidden shadow-none ring-0 max-sm:grid-rows-[auto_minmax(0,1fr)] sm:grid-cols-[1fr_1fr] sm:grid-rows-[minmax(0,1fr)]";
+
+function FeatureDialogMedia({
+	className,
+	...props
+}: React.ComponentProps<typeof FeatureShellMedia>) {
+	return (
+		<FeatureShellMedia
+			className={cn(
+				"min-h-0 max-sm:max-h-52 sm:aspect-auto sm:h-full sm:max-h-full sm:min-h-0",
+				className,
+			)}
+			{...props}
+		/>
+	);
+}
+
+function FeatureDialogPanel({
+	className,
+	...props
+}: React.ComponentProps<typeof FeatureShellPanel>) {
+	return (
+		<FeatureShellPanel
+			className={cn("min-h-0 overscroll-contain", className)}
+			{...props}
+		/>
+	);
+}
 
 function FeatureDialogContent({
 	className,
@@ -39,7 +69,7 @@ function FeatureDialogContent({
 			showCloseButton={false}
 			{...props}
 		>
-			<FeatureShell className="h-full min-h-0 shadow-none ring-0">
+			<FeatureShell className={featureDialogShellClassName}>
 				{children}
 			</FeatureShell>
 		</DialogContent>
@@ -101,8 +131,8 @@ export {
 	FeatureDialogClose,
 	FeatureDialogContent,
 	FeatureDialogHeader,
+	FeatureDialogMedia,
+	FeatureDialogPanel,
 	FeatureShellActions as FeatureDialogActions,
 	FeatureShellBody as FeatureDialogBody,
-	FeatureShellMedia as FeatureDialogMedia,
-	FeatureShellPanel as FeatureDialogPanel,
 };

@@ -3,7 +3,7 @@ import { Badge } from "@/src/lib/components/ui/badge";
 import { cn } from "@/src/lib/utils/index";
 
 export const featureShellTitleClassName =
-	"font-manrope text-2xl font-semibold tracking-tight sm:text-3xl";
+	"font-manrope text-2xl tracking-tight sm:text-3xl";
 
 export const featureShellDescriptionClassName =
 	"max-w-prose text-base leading-relaxed text-muted-foreground";
@@ -71,7 +71,6 @@ function FeatureShell({ className, ...props }: React.ComponentProps<"div">) {
 		<div
 			className={cn(
 				"grid w-full overflow-hidden rounded-3xl bg-popover text-popover-foreground shadow-2xl ring-1 ring-foreground/10",
-				"md:grid-cols-[2fr_3fr]",
 				className,
 			)}
 			{...props}

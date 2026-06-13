@@ -35,6 +35,8 @@ interface ActivationUiState {
 	seenAdvancedStepIds: string[];
 	/** Last billing plan used to diff newly unlocked advanced steps. */
 	lastSeenBillingPlanId: string | null;
+	/** Org ids where partner trial welcome dialog was dismissed. */
+	dismissedPartnerTrialWelcomeOrgIds: string[];
 }
 
 interface StorePersist {
@@ -69,6 +71,7 @@ const defaultActivationUi: ActivationUiState = {
 	lastSeenCatalogVersion: 0,
 	seenAdvancedStepIds: [],
 	lastSeenBillingPlanId: null,
+	dismissedPartnerTrialWelcomeOrgIds: [],
 };
 
 export const useStorePersist = create<StorePersist>()(
@@ -130,12 +133,25 @@ export const useStorePersist = create<StorePersist>()(
 		}),
 		{
 			name: "filosign-client",
-			version: 3,
+			version: 4,
 			migrate: (persistedState, version) => {
+				const state = persistedState as Partial<StorePersist> & {
+					activationUi?: Partial<ActivationUiState>;
+				};
 				if (version < 3) {
 					return {
-						...(persistedState as object),
+						...state,
 						documentsViewMode: "list" as const,
+					};
+				}
+				if (version < 4) {
+					return {
+						...state,
+						activationUi: {
+							...defaultActivationUi,
+							...state.activationUi,
+							dismissedPartnerTrialWelcomeOrgIds: [],
+						},
 					};
 				}
 				return persistedState;

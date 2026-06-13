@@ -9,9 +9,31 @@ import { Loader } from "@/src/lib/components/ui/loader";
 import { SidebarInset, SidebarProvider } from "@/src/lib/components/ui/sidebar";
 import { TooltipProvider } from "@/src/lib/components/ui/tooltip";
 import { StartHereFloating } from "@/src/lib/domains/activation/start-here-floating";
+import { PartnerTrialWelcomeDialog } from "@/src/lib/domains/billing/partner-trial-welcome-dialog";
+import { usePartnerTrialWelcome } from "@/src/lib/domains/billing/use-partner-trial-welcome";
 import { SupportNavigationProvider } from "@/src/lib/errors/support-navigation-provider";
 import DashboardNav from "./dashboard-nav";
 import { DashboardSidebar } from "./dashboard-sidebar";
+
+function PartnerTrialWelcomeMount({
+	skipCheckoutFlow,
+}: {
+	skipCheckoutFlow: boolean;
+}) {
+	const { open, onOpenChange, trial } = usePartnerTrialWelcome({
+		skipCheckoutFlow,
+	});
+
+	if (!trial) return null;
+
+	return (
+		<PartnerTrialWelcomeDialog
+			open={open}
+			onOpenChange={onOpenChange}
+			trial={trial}
+		/>
+	);
+}
 
 export default function DashboardLayout({
 	children,
@@ -58,6 +80,8 @@ export default function DashboardLayout({
 		}
 	}, [account, createCheckoutSession, hasTriggered]);
 
+	const skipPartnerTrialWelcome = hasTriggered || isCheckingOut;
+
 	return (
 		<TooltipProvider delay={200}>
 			<SupportNavigationProvider>
@@ -80,6 +104,7 @@ export default function DashboardLayout({
 						<StartHereFloating />
 					</SidebarInset>
 				</SidebarProvider>
+				<PartnerTrialWelcomeMount skipCheckoutFlow={skipPartnerTrialWelcome} />
 			</SupportNavigationProvider>
 		</TooltipProvider>
 	);

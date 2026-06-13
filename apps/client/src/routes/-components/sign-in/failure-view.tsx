@@ -14,7 +14,7 @@ export function SignInFailureView({
 }: Props) {
 	return (
 		<div className="flex flex-col items-center gap-4 py-8 text-center">
-			<p className="font-medium text-foreground">
+			<p className="text-foreground">
 				{view === "bootstrap-failed"
 					? "Could not finish setting up your account"
 					: "Could not verify your account"}

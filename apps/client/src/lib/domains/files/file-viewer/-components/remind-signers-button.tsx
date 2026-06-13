@@ -47,7 +47,7 @@ export function RemindSignersButton({
 						}
 						if (result.skippedCount > 0) {
 							toast.message(
-								"Reminders already sent today — try again tomorrow",
+								"Reminders already sent today - try again tomorrow",
 							);
 							return;
 						}

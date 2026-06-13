@@ -150,7 +150,7 @@ export function useDecryptedFileView(options: {
 	const unlockSettled =
 		cryptoRequired.needsRecovery || Boolean(cryptoRequired.walletUnlockError);
 
-	// Once fileData is set, decrypt succeeded — do not keep blocking on unlock query state.
+	// Once fileData is set, decrypt succeeded - do not keep blocking on unlock query state.
 	const docCanvasBusy =
 		needsCrypto &&
 		!fileData &&

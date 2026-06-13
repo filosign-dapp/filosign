@@ -31,7 +31,7 @@ export function SignInProgressView({
 				aria-hidden
 			/>
 			<div className="space-y-1">
-				<p className="font-medium text-foreground">
+				<p className="text-foreground">
 					{isAutoRegistering ? "Setting up your account…" : "Signing you in…"}
 				</p>
 				<p className="text-sm text-muted-foreground">

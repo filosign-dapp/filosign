@@ -4,7 +4,7 @@ export function SignInHeroPanel() {
 	return (
 		<div className="relative hidden overflow-hidden lg:block">
 			<img
-				src="/images/stock_1.webp"
+				src="/images/ww/stock_59.webp"
 				alt=""
 				className="absolute inset-0 size-full object-cover"
 				width={1920}
@@ -14,7 +14,7 @@ export function SignInHeroPanel() {
 				<Logo
 					redirectTo="/"
 					className="px-0"
-					textClassName="text-foreground"
+					textClassName="text-black"
 					textDelay={0}
 					iconDelay={0}
 				/>

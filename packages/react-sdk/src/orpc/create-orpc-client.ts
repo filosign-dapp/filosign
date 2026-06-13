@@ -85,7 +85,7 @@ export function createFilosignOrpcClient(
 	return createORPCClient<AppRouterClient>(link);
 }
 
-/** Browser marketing / public pages — no wallet session headers. */
+/** Browser marketing / public pages - no wallet session headers. */
 export function createPublicFilosignOrpcClient(
 	apiBaseUrl: string,
 ): AppRouterClient {

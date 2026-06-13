@@ -11,6 +11,7 @@
 	},
 	"scripts": {
 		"check-types": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.tests.json",
+		"embed-welcome-practice-pdf": "bun run scripts/embed-welcome-practice-pdf.ts",
 		"test": "bun test tests/"
 	},
 	"dependencies": {

@@ -11,6 +11,8 @@ export * from "./utils/field-completion";
 export * from "./utils/file-data";
 export * from "./utils/keygen";
 export * from "./utils/placement";
+export * from "./utils/platform-invite";
+export * from "./utils/pricing-media";
 export * from "./utils/render-typed-signature-svg";
 export * from "./utils/routing";
 export * from "./utils/settlement-legal";

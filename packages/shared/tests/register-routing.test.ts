@@ -73,7 +73,7 @@ describe("register routing helpers", () => {
 	});
 
 	it("preserves sequential routingOrder email sequence", () => {
-		// hash(b@) < hash(a@) lexicographically — sorted order would be [b, a].
+		// hash(b@) < hash(a@) lexicographically - sorted order would be [b, a].
 		const routingOrderEmails = ["a@example.com", "b@example.com"];
 		const calldata = buildRegisterRoutingCalldata({
 			placementManifest: manifest,

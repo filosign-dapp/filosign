@@ -1,7 +1,7 @@
 /**
  * TanStack Query keys for non-oRPC state (wallet, on-chain reads, session, derived client queries).
  *
- * **oRPC procedures:** use `rpcQuery.<domain>.<procedure>.key()` from context — keys are
+ * **oRPC procedures:** use `rpcQuery.<domain>.<procedure>.key()` from context - keys are
  * `["filosign", <domain>, …]` (see `filosignQueryRoots`). Invalidate with `.key()` or a parent
  * domain root; never hand-roll procedure strings.
  *
@@ -9,7 +9,7 @@
  */
 export const FILOSIGN_RPC_ROOT = ["filosign"] as const;
 
-/** Static prefixes aligned with `createFilosignRpcQueryUtils` — use when `rpcQuery` is unavailable. */
+/** Static prefixes aligned with `createFilosignRpcQueryUtils` - use when `rpcQuery` is unavailable. */
 export const filosignQueryRoots = {
 	all: FILOSIGN_RPC_ROOT,
 	runtime: [...FILOSIGN_RPC_ROOT, "runtime"] as const,

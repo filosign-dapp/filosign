@@ -20,7 +20,7 @@ export type FilosignContextValue = {
 	rpc: AppRouterClient;
 	rpcQuery: FilosignRpcQueryUtils;
 	session: FilosignSession;
-	/** thirdweb `useAuthToken()` — synced by the app shell. */
+	/** thirdweb `useAuthToken()` - synced by the app shell. */
 	thirdwebAuthToken: string | null;
 	wallet: Wallet;
 	contracts: FilosignContracts | null;

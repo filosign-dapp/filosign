@@ -45,7 +45,7 @@ export function generateInterfaceForContract(
 
 	const rel = path.relative(process.cwd(), srcFilePath);
 	lines.push(
-		`// Auto-generated from ${rel} — DO NOT EDIT (regenerate with the script only)`,
+		`// Auto-generated from ${rel} - DO NOT EDIT (regenerate with the script only)`,
 	);
 	lines.push("");
 

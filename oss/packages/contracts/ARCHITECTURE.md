@@ -1,4 +1,4 @@
-# Filosign contracts — architecture (immutable v1)
+# Filosign contracts - architecture (immutable v1)
 
 Frozen **immutable bytecode** for mainnet: two production contracts. No UUPS proxies. Identity, keygen, and sharing approvals live **off-chain** (Postgres + server).
 
@@ -39,9 +39,9 @@ flowchart TB
   end
 ```
 
-1. **`FSEnvelopeRegistry(server)`** — permanent auditable send + sign trail (EIP-712 **v5** `SignEnvelope` (binds `signersCommitment`), `RegisterEnvelope`, required signers, parallel/sequential routing, quorum, `proposeSignerReplacement` / `executeSignerReplacement` / `cancelSignerReplacement`, org controller governance).
-2. **`FSPaymentValidator(envelopeRegistry, chainId)`** — permissionless pull settlement on sign; multi-leg rules, release types, payer CRUD, `expiresAt`; no custody.
-3. **`FSAttachmentRelease(envelopeRegistry, chainId)`** (Teams Pro) — supplementary packet release rules; sender or org controller may register/cancel.
+1. **`FSEnvelopeRegistry(server)`** - permanent auditable send + sign trail (EIP-712 **v5** `SignEnvelope` (binds `signersCommitment`), `RegisterEnvelope`, required signers, parallel/sequential routing, quorum, `proposeSignerReplacement` / `executeSignerReplacement` / `cancelSignerReplacement`, org controller governance).
+2. **`FSPaymentValidator(envelopeRegistry, chainId)`** - permissionless pull settlement on sign; multi-leg rules, release types, payer CRUD, `expiresAt`; no custody.
+3. **`FSAttachmentRelease(envelopeRegistry, chainId)`** (Teams Pro) - supplementary packet release rules; sender or org controller may register/cancel.
 
 ## Trust boundaries
 
@@ -58,19 +58,19 @@ Team workspaces use a **mapping-only** controller ACL on the registry (not per-e
 | Concept | On-chain | Off-chain (Postgres) |
 | ------- | -------- | --------------------- |
 | **Controllers** | `setOrgControllers(orgIdCommitment, wallets[])` → `isOrgController` | Active **owner + admin** wallets; synced by server on org create / role change / member remove / invite accept |
-| **Treasury** | Not stored on registry | `organizations.orgWalletAddress` — settlement payer/recipient only |
+| **Treasury** | Not stored on registry | `organizations.orgWalletAddress` - settlement payer/recipient only |
 | **Org id** | `orgIdCommitment` on each envelope at register | UUID → `hashOrgIdCommitment` |
 
 **Who may void / amend / attachment-govern:** document **sender**, or any wallet in the on-chain controller set for that envelope’s `orgIdCommitment`. Recall EIP-712 includes `orgIdCommitment` read from storage at relay time.
 
 **Indexer / ops rule:** treat each **`OrgControllersSet`** event as the **full replacement** controller set for that `orgIdCommitment` (not a delta). Alternatively call **`getOrgControllers(orgIdCommitment)`**. Personal sends use zero `orgIdCommitment`; controller ACL does not apply.
 
-**Definitions:** `bun compile` then `bun run scripts/export-definitions-from-artifacts.ts [local|testnet|mainnet]` — refreshes ABI from artifacts (keeps deployed addresses for non-local chains). Deploy via `migrate:*` writes definitions automatically.
+**Definitions:** `bun compile` then `bun run scripts/export-definitions-from-artifacts.ts [local|testnet|mainnet]` - refreshes ABI from artifacts (keeps deployed addresses for non-local chains). Deploy via `migrate:*` writes definitions automatically.
 
 ## Security practices (pre-mainnet)
 
 - Run `bun run contracts -- test` (required before testnet/mainnet migrate).
-- Run `slither .` from `oss/packages/contracts` (see [TESTING.md](./TESTING.md) and [README — Static analysis](./README.md#static-analysis-slither)).
+- Run `slither .` from `oss/packages/contracts` (see [TESTING.md](./TESTING.md) and [README - Static analysis](./README.md#static-analysis-slither)).
 - USDC is **6 decimals** on Base; never assume `1e18` in app or contract math.
 - `FSPaymentValidator` uses OpenZeppelin `SafeERC20`, balance-delta per leg, and `ReentrancyGuard`.
 - Slither **`arbitrary-send-erc20`** on `executePayout` is expected (pull from `rule.payer`, not `msg.sender`); see README for triage rationale.

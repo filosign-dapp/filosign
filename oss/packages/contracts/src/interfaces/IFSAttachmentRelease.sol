@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-// Auto-generated from src/FSAttachmentRelease.sol — DO NOT EDIT (regenerate with the script only)
+// Auto-generated from src/FSAttachmentRelease.sol - DO NOT EDIT (regenerate with the script only)
 
 import "./IFSEnvelopeRegistry.sol";
 

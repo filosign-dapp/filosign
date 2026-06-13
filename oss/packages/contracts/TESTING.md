@@ -43,9 +43,9 @@ Hardhat + viem + TypeScript. Test what loses money or breaks trust:
 
 ## Non-negotiables
 
-1. **Chain time** — Use `latestBlockTimestamp(publicClient)` for anything compared to `block.timestamp`.
-2. **Viem `.read` args** — Single ABI array args as one tuple: `read.foo([arg])`.
-3. **Definitions** — Never hand-edit `packages/evm/definitions/`; updated by deploy only.
+1. **Chain time** - Use `latestBlockTimestamp(publicClient)` for anything compared to `block.timestamp`.
+2. **Viem `.read` args** - Single ABI array args as one tuple: `read.foo([arg])`.
+3. **Definitions** - Never hand-edit `packages/evm/definitions/`; updated by deploy only.
 
 ## Adding tests
 
@@ -65,15 +65,15 @@ Triage reentrancy, unchecked returns, and unprotected state-changing findings. N
 
 ### Expected: `arbitrary-send-erc20`
 
-`FSPaymentValidator.executePayout` uses `transferFrom(rule.payer, recipient, amount)` — intentional pull-payment design (payer approves; permissionless execute). **Do not** change to `msg.sender` as `from` to silence Slither.
+`FSPaymentValidator.executePayout` uses `transferFrom(rule.payer, recipient, amount)` - intentional pull-payment design (payer approves; permissionless execute). **Do not** change to `msg.sender` as `from` to silence Slither.
 
-Full rationale and other informational findings: [README — Static analysis (Slither)](./README.md#static-analysis-slither).
+Full rationale and other informational findings: [README - Static analysis (Slither)](./README.md#static-analysis-slither).
 
 ### Org controller governance
 
 Hardhat covers `setOrgControllers` edge cases (`ZeroOrgIdCommitment`, `DuplicateOrgController`, `ExceedsMaxOrgControllers`, empty clear, `getOrgControllers`), recall/amend by controller, and `FSAttachmentRelease` register/cancel ACL. Index **`OrgControllersSet`** as a full replace per `orgIdCommitment` (see [ARCHITECTURE.md](./ARCHITECTURE.md)).
 
-**Slither (governance pass):** after `bun compile`, run with deploy env set (see `packages/evm/.env.example`). No new high/medium on `setOrgControllers` / `getOrgControllers` / attachment ACL beyond existing informational patterns (`arbitrary-send-erc20` on validator only, cyclomatic complexity, uninitialized locals). Triage notes: [README — Org controller governance](./README.md#org-controller-governance-slither-triage).
+**Slither (governance pass):** after `bun compile`, run with deploy env set (see `packages/evm/.env.example`). No new high/medium on `setOrgControllers` / `getOrgControllers` / attachment ACL beyond existing informational patterns (`arbitrary-send-erc20` on validator only, cyclomatic complexity, uninitialized locals). Triage notes: [README - Org controller governance](./README.md#org-controller-governance-slither-triage).
 
 ## Before merge
 

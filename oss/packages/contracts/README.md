@@ -2,7 +2,7 @@
 
 Solidity contracts for Filosign: document registration and signing (`FSEnvelopeRegistry`) and pull-based settlement (`FSPaymentValidator`). Hardhat mocks (`MockUSDCToken`, `MockFeeOnTransferToken`, `MockERC1271Signer`) support local testing only.
 
-Wallet identity, keygen, and sharing approvals are **server-side** — not on-chain.
+Wallet identity, keygen, and sharing approvals are **server-side** - not on-chain.
 
 ## Contents
 
@@ -51,7 +51,7 @@ flowchart TB
 
 ## Capacity limits
 
-Bytecode constants — not product tier limits. Entitlements + server enforce stricter caps per plan.
+Bytecode constants - not product tier limits. Entitlements + server enforce stricter caps per plan.
 
 | Constant | Value | Applies to |
 | -------- | ----: | ---------- |
@@ -69,7 +69,7 @@ Permanent on-chain send + sign trail. Writes are **`onlyServer`** (KMS relayer);
 
 Sender-signed at send. Stored per file:
 
-- **`orgIdCommitment`** — team org UUID hash, or zero for personal sends
+- **`orgIdCommitment`** - team org UUID hash, or zero for personal sends
 - **Required** signer commitments only (optional roster rejected at register)
 - **Routing:** `Parallel` (default) or `Sequential`; `routingOrderHash` on-chain; pass `routingOrder` calldata on sign/amend (hash verified)
 - **Quorum:** `quorumN` + `quorumSetHash`; pass `quorumSet` calldata on sign/amend when needed
@@ -79,20 +79,20 @@ Sender-signed at send. Stored per file:
 
 | View | Meaning |
 | ---- | ------- |
-| `isEnvelopeComplete(cid)` | `completedAt != 0` — sole envelope completion source of truth |
-| `isRevokedBeforeComplete(cid)` | `revokedBeforeCompletedAt != 0` — void tombstone |
+| `isEnvelopeComplete(cid)` | `completedAt != 0` - sole envelope completion source of truth |
+| `isRevokedBeforeComplete(cid)` | `revokedBeforeCompletedAt != 0` - void tombstone |
 | `rosterSignedCount(cid)` | Signers who have posted signature bytes (rule-level releases) |
 | `rosterSignedCount(cid)` | Signed count across full roster |
 | `hasSigned(cid, commitment)` | Single signer signed |
 
 ### Other registry APIs
 
-- **`registerEnvelopeSignature`** — sequential order enforced when configured; verifies routing/quorum calldata against stored hashes; increments required counters; may set `completedAt` via `_markCompleteIfNeeded`
-- **`proposeSignerReplacement`** — instant apply when nobody signed; otherwise pending + freeze until **`executeSignerReplacement`** (clears all signatures) or **`cancelSignerReplacement`**
-- **`recallEnvelope`** — void before complete; recaller = sender or `isOrgController(orgIdCommitment, recaller)`; emits `EnvelopeRevokedBeforeComplete`
-- **`setOrgControllers` / `getOrgControllers` / `isOrgController`** — server-synced owner+admin set per org; emits **`OrgControllersSet`** (full replace — index as authoritative snapshot)
-- **`validateEnvelopeAckSignature`** — viewer/signer ack validation (off-chain consent; not used for payout release)
-- **ERC-1271** — Safe-compatible wallets via `FSSignatureValidation`
+- **`registerEnvelopeSignature`** - sequential order enforced when configured; verifies routing/quorum calldata against stored hashes; increments required counters; may set `completedAt` via `_markCompleteIfNeeded`
+- **`proposeSignerReplacement`** - instant apply when nobody signed; otherwise pending + freeze until **`executeSignerReplacement`** (clears all signatures) or **`cancelSignerReplacement`**
+- **`recallEnvelope`** - void before complete; recaller = sender or `isOrgController(orgIdCommitment, recaller)`; emits `EnvelopeRevokedBeforeComplete`
+- **`setOrgControllers` / `getOrgControllers` / `isOrgController`** - server-synced owner+admin set per org; emits **`OrgControllersSet`** (full replace - index as authoritative snapshot)
+- **`validateEnvelopeAckSignature`** - viewer/signer ack validation (off-chain consent; not used for payout release)
+- **ERC-1271** - Safe-compatible wallets via `FSSignatureValidation`
 
 **Treasury vs controllers:** payout wallet (`organizations.orgWalletAddress`) is off-chain only. Controllers govern void/amend/attachment; they do not replace the treasury as settlement payer unless product routes payouts through that wallet separately.
 
@@ -111,8 +111,8 @@ struct PayoutLeg { address recipient; uint256 amount; }
 ```
 
 - One **`approve`** for the sum of leg amounts
-- **`executePayout(ruleId)`** — atomic multi-leg transfer; balance-delta check per leg (`InsufficientTransferReceived` on fee-on-transfer tokens)
-- **`expiresAt`** — `0` = none; else must be in the future at register/update and blocks execute after deadline
+- **`executePayout(ruleId)`** - atomic multi-leg transfer; balance-delta check per leg (`InsufficientTransferReceived` on fee-on-transfer tokens)
+- **`expiresAt`** - `0` = none; else must be in the future at register/update and blocks execute after deadline
 
 ### Release types
 
@@ -159,8 +159,8 @@ Filosign never holds funds. Payout txs are permissionless; the server relay only
 
 ### Cancelling before execution
 
-1. **`cancelPayoutRule(ruleId)`** — payer-only; sets `cancelled` on-chain.
-2. **Revoke allowance** — `token.approve(FSPaymentValidator, 0)` from the payer wallet. `executePayout` reverts on `transferFrom` even when release conditions are met.
+1. **`cancelPayoutRule(ruleId)`** - payer-only; sets `cancelled` on-chain.
+2. **Revoke allowance** - `token.approve(FSPaymentValidator, 0)` from the payer wallet. `executePayout` reverts on `transferFrom` even when release conditions are met.
 
 Pair both in product UX for clarity. The rule row may remain on-chain and in Postgres until marked executed or failed.
 
@@ -194,7 +194,7 @@ After deploy, **`setSatelliteContracts(paymentValidator, attachmentRelease)`** o
 - **Payer:** Must call `registerRule` / `updatePayoutRule` / `cancelPayoutRule` as `msg.sender == payer`; chooses token, recipients, and release params.
 - **Recipients (product):** Filosign UI restricts envelope participants or org payout wallets; chain allows arbitrary leg recipients by payer choice.
 
-Release conditions are **verifiable on-chain** so execute stays permissionless — the server facilitates relay/UX only.
+Release conditions are **verifiable on-chain** so execute stays permissionless - the server facilitates relay/UX only.
 
 ## Static analysis (Slither)
 
@@ -217,25 +217,25 @@ where **`from != msg.sender`**.
 **This is intentional.** Filosign uses a **pull-payment validator** model:
 
 - The **payer** creates the rule (`msg.sender == payer`) and **`approve`s** the validator.
-- **`from` is not a free parameter at execute time** — it is always the stored `rule.payer`.
+- **`from` is not a free parameter at execute time** - it is always the stored `rule.payer`.
 - **Anyone** may execute when sign conditions are met (permissionless settlement / gas sponsorship).
 
 Slither’s generic exploit assumes a function lets callers pass an arbitrary `from` and drain any approver. That does not apply here: only pre-registered rules pull from the payer who opted in.
 
-**Industry resolution:** accept the pattern, document it (this section), and triage in audit/CI — do **not** switch to `transferFrom(msg.sender, …)`, which would break permissionless execute.
+**Industry resolution:** accept the pattern, document it (this section), and triage in audit/CI - do **not** switch to `transferFrom(msg.sender, …)`, which would break permissionless execute.
 
-Optional hardening (product, not a Slither fix): **immutable USDC allowlist** at `registerRule` for v1 mainnet — deferred; see future scope.
+Optional hardening (product, not a Slither fix): **immutable USDC allowlist** at `registerRule` for v1 mainnet - deferred; see future scope.
 
 ### Org controller governance (Slither triage)
 
-- **`setOrgControllers` is `onlyServer`** — same trust model as other relay writes; duplicate-wallet and max-64 guards are on-chain validation only.
-- **`getOrgControllers`** — read-only; no state change.
-- **`FSAttachmentRelease`** — `UnauthorizedRuleRegistration` vs `UnauthorizedRuleCancellation` split for explorer clarity; ACL unchanged.
+- **`setOrgControllers` is `onlyServer`** - same trust model as other relay writes; duplicate-wallet and max-64 guards are on-chain validation only.
+- **`getOrgControllers`** - read-only; no state change.
+- **`FSAttachmentRelease`** - `UnauthorizedRuleRegistration` vs `UnauthorizedRuleCancellation` split for explorer clarity; ACL unchanged.
 
 ### Informational noise (safe to ignore)
 
-- **Cyclomatic complexity** on `amendSigner` / `_validateRegisterRouting` / `setOrgControllers` — complex validation, no known exploit.
-- **Uninitialized local** on `uint8 signed` / loop flags — Solidity defaults to zero; Slither false positive.
+- **Cyclomatic complexity** on `amendSigner` / `_validateRegisterRouting` / `setOrgControllers` - complex validation, no known exploit.
+- **Uninitialized local** on `uint8 signed` / loop flags - Solidity defaults to zero; Slither false positive.
 
 Triage real high/medium findings: reentrancy (mitigated by `nonReentrant` + CEI), unchecked returns (mitigated by `SafeERC20`), unprotected privileged functions.
 

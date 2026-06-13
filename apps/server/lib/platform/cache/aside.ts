@@ -37,7 +37,7 @@ export async function cacheAside<T>(options: CacheAsideOptions<T>): Promise<T> {
 				const deserialize = options.deserialize ?? defaultDeserialize<T>;
 				return deserialize(cached);
 			} catch {
-				// Corrupt payload — treat as miss and refetch.
+				// Corrupt payload - treat as miss and refetch.
 			}
 		}
 

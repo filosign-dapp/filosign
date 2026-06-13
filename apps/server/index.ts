@@ -137,7 +137,7 @@ async function gatedFetch(
 	return app.fetch(request, server);
 }
 
-/** Bun serve + `bun build --compile` entry (no top-level await — bytecode-safe). */
+/** Bun serve + `bun build --compile` entry (no top-level await - bytecode-safe). */
 export default {
 	port: config.http.port,
 	fetch: gatedFetch,

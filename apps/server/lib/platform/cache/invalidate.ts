@@ -34,7 +34,7 @@ export async function invalidateUserExists(wallet: Address): Promise<void> {
 	await cacheDel(cacheKeys.userExists(getAddress(wallet)));
 }
 
-/** Bell feed — bust all limit variants for a wallet (v1 uses limit 20 only). */
+/** Bell feed - bust all limit variants for a wallet (v1 uses limit 20 only). */
 export async function invalidateNotificationsInbox(
 	wallet: Address,
 ): Promise<void> {
@@ -45,7 +45,7 @@ export async function invalidateNotificationsInbox(
 	]);
 }
 
-/** After register send or subscription mutation — org-scoped vs personal sender. */
+/** After register send or subscription mutation - org-scoped vs personal sender. */
 export async function invalidateEntitlementsForFileSend(args: {
 	sender: Address;
 	organizationId: string | null | undefined;

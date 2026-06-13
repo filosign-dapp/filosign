@@ -81,7 +81,7 @@ export async function isPlatformAdminForWallet(
 }
 
 /**
- * Platform admin signup/login gate bypass — all deployments (including production).
+ * Platform admin signup/login gate bypass - all deployments (including production).
  * Use this anywhere invite-only policy would block an admin email.
  */
 export function allowsPlatformAdminAccess(

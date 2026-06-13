@@ -4,7 +4,7 @@ import { filosignKeys } from "../../lib/query-keys";
 import { clearSessionSeed } from "./session-seed";
 
 export function useLogout() {
-	const { wallet, session } = useFilosignContext();
+	const { wallet, session, rpcQuery } = useFilosignContext();
 	const queryClient = useQueryClient();
 
 	return useMutation({
@@ -18,14 +18,23 @@ export function useLogout() {
 			clearSessionSeed(address);
 			session.setThirdwebAuthToken(null);
 
-			queryClient.invalidateQueries({
+			queryClient.removeQueries({
+				queryKey: rpcQuery.users.profile.me.key(),
+			});
+			queryClient.removeQueries({
+				queryKey: filosignKeys.keyRegistrySnapshot(address),
+			});
+			queryClient.removeQueries({
 				queryKey: filosignKeys.authedApi(address),
 			});
-			queryClient.invalidateQueries({
+			queryClient.removeQueries({
 				queryKey: filosignKeys.cryptoUnlocked(address),
 			});
-			queryClient.invalidateQueries();
-			queryClient.refetchQueries();
+			queryClient.removeQueries({
+				queryKey: ["platform-access-preview"],
+			});
+
+			await queryClient.invalidateQueries();
 		},
 	});
 }

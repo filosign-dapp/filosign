@@ -4,14 +4,21 @@ import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import {
-	extractColdInviteSearchFromLocation,
+	type ColdInviteEntrySearch,
+	extractSignInEntrySearchFromLocation,
+	hasSignInEntryParams,
 	SKIP_COLD_SIGN_AFTER_MISMATCH,
 } from "@/src/lib/domains/invites/cold-invite-search";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn } from "@/src/lib/utils";
 import { logger } from "@/src/lib/utils/logger";
 import { safeAsync } from "@/src/lib/utils/safe";
-import { clearStoredAccessGate } from "@/src/lib/web3/platform-access-session";
+import {
+	accessGateFromSearch,
+	clearStoredAccessGate,
+	readStoredAccessGate,
+	storeAccessGate,
+} from "@/src/lib/web3/platform-access-session";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
 export type ExecuteSwitchAccountLogoutArgs = {
@@ -29,7 +36,13 @@ export type ExecuteSwitchAccountLogoutArgs = {
 export async function executeSwitchAccountLogout(
 	args: ExecuteSwitchAccountLogoutArgs,
 ): Promise<void> {
-	const preservedColdSearch = extractColdInviteSearchFromLocation();
+	const preservedSearch = extractSignInEntrySearchFromLocation();
+	const storedGate = readStoredAccessGate();
+	const gateToRestore = {
+		...storedGate,
+		...(preservedSearch ? accessGateFromSearch(preservedSearch) : {}),
+	};
+
 	args.clearOnboardingForm();
 	clearStoredAccessGate();
 	if (args.wallet) {
@@ -42,13 +55,37 @@ export async function executeSwitchAccountLogout(
 	if (walletErr) {
 		logger.error("Wallet logout (switch account):", walletErr);
 	}
+
+	if (Object.keys(gateToRestore).length > 0) {
+		storeAccessGate(gateToRestore);
+	}
+
 	if (args.stayAfterLogout) {
 		args.onStayAfterLogout?.();
-	} else if (preservedColdSearch) {
-		await args.navigate({ to: "/", search: preservedColdSearch });
-	} else {
-		await args.navigate({ to: "/" });
+		return;
 	}
+
+	const navigateSearch: ColdInviteEntrySearch | undefined = (() => {
+		if (preservedSearch) return preservedSearch;
+		if (!storedGate?.platformInviteToken && !storedGate?.setupToken) {
+			return undefined;
+		}
+		return {
+			coldPieceCid: "",
+			coldInvite: "",
+			email: storedGate.coldRecipientEmail ?? "",
+			platformInvite: storedGate.platformInviteToken ?? "",
+			setup: storedGate.setupToken ?? "",
+			skipColdSign: "",
+		};
+	})();
+
+	if (navigateSearch && hasSignInEntryParams(navigateSearch)) {
+		await args.navigate({ to: "/", search: navigateSearch });
+		return;
+	}
+
+	await args.navigate({ to: "/" });
 }
 
 export function OnboardingSwitchAccountLink({

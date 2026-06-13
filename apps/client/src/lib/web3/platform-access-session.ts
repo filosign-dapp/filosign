@@ -24,6 +24,14 @@ export function accessGateFromSearch(
 	return gate;
 }
 
+/** Persist invite/setup tokens from validated router search (sync, before React effects). */
+export function storeAccessGateFromSearch(search: ColdInviteEntrySearch): void {
+	const gate = accessGateFromSearch(search);
+	if (Object.keys(gate).length === 0) return;
+	if (typeof sessionStorage === "undefined") return;
+	sessionStorage.setItem(STORAGE_KEY, JSON.stringify(gate));
+}
+
 export function storeAccessGate(gate: StoredAccessGate): void {
 	if (typeof sessionStorage === "undefined") return;
 	if (Object.keys(gate).length === 0) return;

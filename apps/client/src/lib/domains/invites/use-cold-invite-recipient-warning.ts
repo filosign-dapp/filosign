@@ -39,8 +39,15 @@ export function useColdInviteRecipientWarning() {
 	}, [searchKey]);
 	const inviteToken = cold?.coldInvite;
 
-	const { authenticated, user, email: walletEmail } = useThirdweb();
-	const { data: userProfile } = useUserProfile({ enabled: authenticated });
+	const {
+		authenticated,
+		user,
+		email: walletEmail,
+		walletAddress,
+	} = useThirdweb();
+	const { data: userProfile } = useUserProfile({
+		enabled: authenticated && Boolean(walletAddress),
+	});
 	const { wallet } = useFilosignContext();
 
 	const { data: invite, isSuccess } = useColdInvitePayload(inviteToken);
@@ -65,7 +72,13 @@ export function useColdInviteRecipientWarning() {
 			senderWallet: wallet?.account?.address,
 			inviteSender: invite.sender,
 		});
-	}, [invite, loggedInEmail, userProfile?.email, wallet?.account?.address]);
+	}, [
+		invite,
+		loggedInEmail,
+		userProfile?.email,
+		wallet?.account?.address,
+		walletAddress,
+	]);
 
 	const showWarning =
 		Boolean(inviteToken && inviteToken.length >= 8) &&

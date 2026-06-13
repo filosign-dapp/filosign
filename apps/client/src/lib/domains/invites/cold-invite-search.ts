@@ -116,6 +116,41 @@ export function coldInviteRecipientMatchesIdentity(args: {
 	return false;
 }
 
+/** True when URL or session carries sign-in entry params worth preserving across logout. */
+export function hasSignInEntryParams(search: ColdInviteEntrySearch): boolean {
+	return Boolean(
+		search.platformInvite?.trim() ||
+			search.setup?.trim() ||
+			(search.coldInvite?.trim() && search.coldPieceCid?.trim()) ||
+			search.email?.trim(),
+	);
+}
+
+/**
+ * Reads partner/cold/setup params from the current URL for switch-account flows.
+ * Call synchronously before async logout (same timing as {@link extractColdInviteSearchFromLocation}).
+ */
+export function extractSignInEntrySearchFromLocation():
+	| ColdInviteEntrySearch
+	| undefined {
+	if (typeof window === "undefined") return undefined;
+	const params = searchParamsFromLocationSearch(window.location.search);
+	const parsed = coldInviteEntrySearchSchema.safeParse({
+		coldPieceCid: params.get("coldPieceCid") ?? "",
+		coldInvite: params.get("coldInvite") ?? "",
+		email: params.get("email") ?? "",
+		platformInvite: params.get("platformInvite") ?? "",
+		setup: params.get("setup") ?? "",
+		skipColdSign: params.get("skipColdSign") ?? "",
+		upgrade: params.get("upgrade") ?? undefined,
+		interval: params.get("interval") ?? undefined,
+	});
+	if (!parsed.success || !hasSignInEntryParams(parsed.data)) {
+		return undefined;
+	}
+	return parsed.data;
+}
+
 /**
  * Reads cold-invite params from the current URL (`coldPieceCid` + `coldInvite`), or maps
  * `/dashboard/document/sign` query `pieceCid` + `invite` into the same shape.

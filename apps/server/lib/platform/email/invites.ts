@@ -10,15 +10,24 @@ import {
 	renderPartnerInvite,
 	replyToForTransactionalEmail,
 } from "@filosign/emails";
+import type {
+	PaidCheckoutPlanId,
+	PlatformInviteEmailVariant,
+} from "@filosign/shared";
 import type { Address } from "viem";
 import env from "@/env";
 import { deliverOutboundEmail } from "./email";
 import { recipientDisplayNameFromEmail } from "./recipient-name";
-import { buildEmailIdempotencyKey, escapeHtml, getClientUrl } from "./utils";
+import {
+	buildEmailIdempotencyKey,
+	escapeHtml,
+	getClientUrl,
+	resendFromAddress,
+} from "./utils";
 
 /**
  * All outbound product email is sent through this file (`deliverOutboundEmail`).
- * Transport: Resend primary, optional SES fallback — see `email.ts`.
+ * Transport: Resend primary, optional SES fallback - see `email.ts`.
  */
 function shouldSkipEmail(): boolean {
 	if (!env.RESEND_ENABLED) {
@@ -233,6 +242,7 @@ export async function sendPaidSetupEmail(args: {
 	to: string;
 	setupUrl: string;
 	planLabel: string;
+	planId: PaidCheckoutPlanId;
 }) {
 	if (shouldSkipEmail()) return;
 
@@ -241,6 +251,7 @@ export async function sendPaidSetupEmail(args: {
 
 	const { html, text } = await renderPaidSetup({
 		planLabel: escapedPlanLabel,
+		planId: args.planId,
 		ctaHref: args.setupUrl,
 	});
 
@@ -254,6 +265,7 @@ export async function sendPaidSetupEmail(args: {
 			"paid-setup",
 			args.to.trim().toLowerCase(),
 			args.setupUrl,
+			args.planId,
 		],
 	});
 }

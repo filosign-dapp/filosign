@@ -1,7 +1,7 @@
 import type { Address } from "viem";
 import { getAddress } from "viem";
 
-/** TTLs (seconds) — Tier 1 cache-aside. */
+/** TTLs (seconds) - Tier 1 cache-aside. */
 export const CACHE_TTL = {
 	orgEntitlements: 60 * 60,
 	userEntitlements: 60 * 60,

@@ -30,7 +30,7 @@ export function formatCronBucket(
 
 /**
  * Last scheduled fire at or before `nowMs` for a cron expression (UTC).
- * Uses `Bun.cron.parse` — not wall-clock at job end (avoids double-run on drift).
+ * Uses `Bun.cron.parse` - not wall-clock at job end (avoids double-run on drift).
  */
 const CRON_LOOKBACK_MS = 8 * 24 * 60 * 60 * 1000;
 
@@ -98,7 +98,7 @@ export async function withCronLock(options: {
 		String(options.ttlSec),
 	]);
 	if (acquired !== "OK") return false;
-	// Lock is not released on success — TTL expires so the same bucket cannot double-run.
+	// Lock is not released on success - TTL expires so the same bucket cannot double-run.
 	await options.run();
 	return true;
 }

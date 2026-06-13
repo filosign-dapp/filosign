@@ -59,7 +59,7 @@ export const files = t.pgTable(
 		placementManifestJson: t.jsonb().$type<PlacementManifest>().notNull(),
 		/** Snapshot of register routing for sign UX (sequential order, quorum). */
 		registerRoutingJson: t.jsonb().$type<RegisterRoutingInput>(),
-		/** Sender-defined opaque metadata (tags, external ids) — not encrypted. */
+		/** Sender-defined opaque metadata (tags, external ids) - not encrypted. */
 		metadataJson: t.jsonb().$type<EnvelopeMetadata>(),
 
 		warmParticipantCount: t.integer().notNull().default(0),
@@ -76,7 +76,7 @@ export const files = t.pgTable(
 		/** Set when envelope routing completes on-chain (completedAt). */
 		completedAt: t.timestamp({ withTimezone: true }),
 		revokeOnchainTxHash: tBytes32(),
-		/** Practice/tutorial envelope — excluded from send quota and first-send metrics. */
+		/** Practice/tutorial envelope - excluded from send quota and first-send metrics. */
 		isPractice: t.boolean().notNull().default(false),
 
 		...timestamps,

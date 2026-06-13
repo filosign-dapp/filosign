@@ -8,6 +8,7 @@ import { Resend } from "resend";
 import env from "@/env";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import type { EmailDeliveryResult, OutboundEmail } from "./utils";
+import { resendFromAddress } from "./utils";
 
 // ==========================================
 // 1. SES Configurations
@@ -204,7 +205,7 @@ export async function sendViaSes(msg: OutboundEmail): Promise<{ id: string }> {
 function outboundFromResendDefaults(msg: OutboundEmail): OutboundEmail {
 	return {
 		...msg,
-		from: msg.from || env.RESEND_FROM_EMAIL,
+		from: msg.from || resendFromAddress(),
 		replyTo: msg.replyTo ?? env.RESEND_FROM_EMAIL,
 	};
 }

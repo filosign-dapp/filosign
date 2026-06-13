@@ -1,4 +1,8 @@
 import { PLAN_IDS } from "@filosign/entitlements";
+import {
+	type PlatformInviteEmailVariant,
+	platformInviteEmailVariants,
+} from "@filosign/shared";
 import * as t from "drizzle-orm/pg-core";
 import { tEvmAddress, timestamps } from "@/lib/platform/db/helpers";
 import { randomUuidV7 } from "@/lib/platform/db/random-uuid-v7";
@@ -9,6 +13,8 @@ import { users } from "./user";
 export const platformInviteKinds = ["partner_trial", "manual_paid"] as const;
 
 export type PlatformInviteKind = (typeof platformInviteKinds)[number];
+
+export { type PlatformInviteEmailVariant, platformInviteEmailVariants };
 
 export const platformAccessPendingStatuses = [
 	"pending_wallet",
@@ -80,7 +86,7 @@ export const checkoutIntentStatuses = [
 
 export type CheckoutIntentStatus = (typeof checkoutIntentStatuses)[number];
 
-/** Phase 2 — email-verified checkout magic link before Dodo session. */
+/** Phase 2 - email-verified checkout magic link before Dodo session. */
 export const checkoutIntents = t.pgTable(
 	"checkout_intents",
 	{
@@ -113,7 +119,7 @@ export const accessRequestStatuses = [
 
 export type AccessRequestStatus = (typeof accessRequestStatuses)[number];
 
-/** Phase 3 — marketing waitlist before admin issues partner invite. */
+/** Phase 3 - marketing waitlist before admin issues partner invite. */
 export const accessRequests = t.pgTable(
 	"access_requests",
 	{
@@ -139,7 +145,7 @@ export const accessRequests = t.pgTable(
 	],
 );
 
-/** Phase 2 — paid checkout setup recovery before wallet links. */
+/** Phase 2 - paid checkout setup recovery before wallet links. */
 export const platformAccessPending = t.pgTable(
 	"platform_access_pending",
 	{

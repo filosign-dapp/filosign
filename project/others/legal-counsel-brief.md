@@ -1,4 +1,4 @@
-# Counsel briefing packet — Filosign legal pages
+# Counsel briefing packet - Filosign legal pages
 
 **Not legal advice.** Use this memo to brief qualified counsel before paid production launch.
 
@@ -46,9 +46,9 @@
 
 ## In-product behavior to verify against policies
 
-- **E-sign consent** — shown on the document signing screen in the web app ([app.filosign.xyz](https://app.filosign.xyz/)).
-- **Analytics consent** — non-essential analytics gated behind consent in the web app; should match [Privacy Policy](https://filosign.xyz/privacy/) §10.
-- **Subscription checkout** — processed by Dodo as MoR; confirm checkout/disclosure flow matches [Terms §8](https://filosign.xyz/terms/) and [Dodo’s privacy policy](https://dodopayments.com/legal/privacy-policy).
+- **E-sign consent** - shown on the document signing screen in the web app ([app.filosign.xyz](https://app.filosign.xyz/)).
+- **Analytics consent** - non-essential analytics gated behind consent in the web app; should match [Privacy Policy](https://filosign.xyz/privacy/) §10.
+- **Subscription checkout** - processed by Dodo as MoR; confirm checkout/disclosure flow matches [Terms §8](https://filosign.xyz/terms/) and [Dodo’s privacy policy](https://dodopayments.com/legal/privacy-policy).
 
 ## Dodo references
 

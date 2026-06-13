@@ -26,7 +26,7 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 
 ---
 
-## Scenario 1 — Register → outbox → email (no duplicate send)
+## Scenario 1 - Register → outbox → email (no duplicate send)
 
 **Proves:** Outbox idempotency + drainer; no duplicate provider sends.
 
@@ -48,7 +48,7 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 
 ---
 
-## Scenario 2 — Dodo test webhook → dashboard plan (no hard refresh)
+## Scenario 2 - Dodo test webhook → dashboard plan (no hard refresh)
 
 **Proves:** Fast webhook ack, entitlement cache invalidation, **client** billing refetch after checkout return.
 
@@ -66,7 +66,7 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 
 ---
 
-## Scenario 3 — Post-sign payout + SIGTERM mid-job
+## Scenario 3 - Post-sign payout + SIGTERM mid-job
 
 **Proves:** Payout queue + relayer lock; graceful worker shutdown; no double on-chain leg.
 
@@ -84,7 +84,7 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 
 ---
 
-## Scenario 4 — trySettle while payout job queued
+## Scenario 4 - trySettle while payout job queued
 
 **Proves:** Relayer lock + DB gates across trySettle and payout worker.
 
@@ -101,7 +101,7 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 
 ---
 
-## Scenario 5 — `docker restart` Dragonfly
+## Scenario 5 - `docker restart` Dragonfly
 
 **Proves:** Persistence + job resume after broker bounce.
 
@@ -118,7 +118,7 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 
 ---
 
-## Scenario 6 — pgBackRest restore to clone DB + app boot
+## Scenario 6 - pgBackRest restore to clone DB + app boot
 
 **Proves:** PITR / restore path documented in [`postgres-ops.md`](postgres-ops.md).
 
@@ -134,7 +134,7 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 
 ---
 
-## Scenario 7 — Backup cron failure → Telegram alert
+## Scenario 7 - Backup cron failure → Telegram alert
 
 **Proves:** [`deploy/scripts/pgbackrest-backup.sh`](../../deploy/scripts/pgbackrest-backup.sh) non-zero exit → platform alert.
 
@@ -154,7 +154,7 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 
 ---
 
-## Scenario 8 — BullMQ terminal failure → log + Telegram
+## Scenario 8 - BullMQ terminal failure → log + Telegram
 
 **Proves:** Failed handler after retries exhausted.
 
@@ -182,7 +182,7 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 
 ## GDPR migration preflight + rollout
 
-Run these checks before the **first** `bun run prod -- --migrate` on a database (squashed schema in `apps/server/drizzle/0000_initial.sql`). See [postgres-ops.md](postgres-ops.md) if prod still has a partial old schema — reset public schema first.
+Run these checks before the **first** `bun run prod -- --migrate` on a database (squashed schema in `apps/server/drizzle/0000_initial.sql`). See [postgres-ops.md](postgres-ops.md) if prod still has a partial old schema - reset public schema first.
 
 ### Preflight SQL checks
 

@@ -6,19 +6,19 @@ Two Compose projects on one VPS is the **recommended** model. An optional single
 
 | Model | Compose files | Dokploy projects | When |
 |-------|---------------|------------------|------|
-| **Two-stack (recommended)** | [`deploy/compose.data.yml`](../../deploy/compose.data.yml) + [`deploy/compose.app.yml`](../../deploy/compose.app.yml) | `filosign-data`, `filosign-app` | Production, staging — scale/redeploy API without touching Postgres |
+| **Two-stack (recommended)** | [`deploy/compose.data.yml`](../../deploy/compose.data.yml) + [`deploy/compose.app.yml`](../../deploy/compose.app.yml) | `filosign-data`, `filosign-app` | Production, staging - scale/redeploy API without touching Postgres |
 | **All-in-one (shortcut)** | [`deploy/compose.production.yml`](../../deploy/compose.production.yml) | Single project | First solo VPS, minimal ops |
 
 ### Two-stack topology
 
-**`filosign-data`** — Postgres 18 + pgBackRest (in postgres image), Dragonfly (BullMQ flags).
+**`filosign-data`** - Postgres 18 + pgBackRest (in postgres image), Dragonfly (BullMQ flags).
 
-**`filosign-app`** — API (`SERVER_ROLE=api`, HTTP port) + worker (`SERVER_ROLE=worker`, no public port).
+**`filosign-app`** - API (`SERVER_ROLE=api`, HTTP port) + worker (`SERVER_ROLE=worker`, no public port).
 
 Shared Docker network: **`filosign-data_filosign_net`** (created by the data project).
 
 ```bash
-# Bootstrap order — data first
+# Bootstrap order - data first
 docker compose -p filosign-data -f deploy/compose.data.yml up -d
 docker compose -p filosign-app -f deploy/compose.app.yml up -d
 ```
@@ -51,7 +51,7 @@ Do **not** use Advanced → Ports to bind API to host `:3000` (conflicts with Do
 3. Enable HTTPS (Let’s Encrypt) for production.
 4. Set Infisical `SERVER_URL` to that public URL.
 
-Compose uses `expose: 3000` only — same pattern as staging (`3000/tcp` in `docker ps`, no `0.0.0.0:3000` mapping).
+Compose uses `expose: 3000` only - same pattern as staging (`3000/tcp` in `docker ps`, no `0.0.0.0:3000` mapping).
 
 ## Environment variables
 
@@ -66,7 +66,7 @@ Wire secrets via **Infisical** → Dokploy env injection. Split by project:
 | `POSTGRES_DB` | postgres | Default `filosign` |
 | `PGBACKREST_REPO1_S3_*`, `PGBACKREST_REPO1_CIPHER_PASS` | postgres | Dokploy **Environment** (see [`compose.data.yml`](../../deploy/compose.data.yml)); not Infisical at runtime |
 
-**Backups:** see [`postgres-ops.md`](postgres-ops.md) — health, backup, restore scenarios.
+**Backups:** see [`postgres-ops.md`](postgres-ops.md) - health, backup, restore scenarios.
 
 No Filosign app secrets on the data project.
 
@@ -76,18 +76,18 @@ No Filosign app secrets on the data project.
 
 | Variable | api | worker | Notes |
 |----------|-----|--------|-------|
-| `INFISICAL_CLIENT_ID` | ✓ | ✓ | Machine identity — **required in Dokploy** (entrypoint) |
-| `INFISICAL_CLIENT_SECRET` | ✓ | ✓ | Machine identity — **required in Dokploy** |
-| `INFISICAL_PROJECT_ID` | ✓ | ✓ | Infisical project UUID — **required in Dokploy** |
+| `INFISICAL_CLIENT_ID` | ✓ | ✓ | Machine identity - **required in Dokploy** (entrypoint) |
+| `INFISICAL_CLIENT_SECRET` | ✓ | ✓ | Machine identity - **required in Dokploy** |
+| `INFISICAL_PROJECT_ID` | ✓ | ✓ | Infisical project UUID - **required in Dokploy** |
 | `INFISICAL_ENV` | ✓ | ✓ | `prod` / `staging` / `sandbox` (default in compose: `prod`) |
 | `INFISICAL_API_URL` | ✓ | ✓ | EU: `https://eu.infisical.com` (omit for US cloud) |
 | `INFISICAL_SECRET_PATH` | ✓ | ✓ | Infisical folder for app secrets (default `/app`; must match dashboard path) |
 | `SERVER_ROLE` | `api` | `worker` | Set in compose; do not override |
 | `DRAGONFLY_URL` | ✓ | ✓ | `redis://dragonfly:6379` (hostname on shared network) |
-| `PG_URI` | Infisical | Infisical | e.g. `postgresql://filosign:SECRET@postgres:5432/:dbname` — **not** compose-built |
-| `DB_NAME` | Infisical | Infisical | e.g. `filosign` — match data stack |
-| `POSTGRES_PASSWORD` | — | — | Only for **filosign-data** project; app stack does not need it in Dokploy if `PG_URI` is in Infisical |
-| `FC_SERVER_PRIVATE_KEY` | ✓ | ✓ | Relayer key — worker signs txs |
+| `PG_URI` | Infisical | Infisical | e.g. `postgresql://filosign:SECRET@postgres:5432/:dbname` - **not** compose-built |
+| `DB_NAME` | Infisical | Infisical | e.g. `filosign` - match data stack |
+| `POSTGRES_PASSWORD` | - | - | Only for **filosign-data** project; app stack does not need it in Dokploy if `PG_URI` is in Infisical |
+| `FC_SERVER_PRIVATE_KEY` | ✓ | ✓ | Relayer key - worker signs txs |
 | `FC_SERVER_ADDRESS` | ✓ | ✓ | Relayer address |
 | `DEPLOYMENT`, `CHAIN`, `SERVER_URL`, `CLIENT_URL`, `ASTRO_URL` | ✓ | ✓ | Tier config |
 | `S3_*`, `THIRDWEB_*`, `RESEND_*`, `DODO_*`, `POSTHOG_*` | ✓ | optional | API handles HTTP; worker may need subset for jobs |
@@ -111,7 +111,7 @@ Merge data + app env into one Dokploy project. Same variable names; all services
 Why:
 
 - Multiple worker containers share one relayer private key.
-- BullMQ `concurrency: 1` is **per process** — two containers = two concurrent relayer txs.
+- BullMQ `concurrency: 1` is **per process** - two containers = two concurrent relayer txs.
 - Production hardening adds Redis `fs:lock:relayer:{address}` (300s TTL) around all `FC_SERVER` writes, but **one worker replica** is still recommended to avoid duplicate cron ticks and duplicated job side effects.
 
 Compose sets `deploy.replicas: 1`, but **Dokploy UI scale overrides compose**. In Dokploy:
@@ -134,6 +134,6 @@ Compose sets `deploy.replicas: 1`, but **Dokploy UI scale overrides compose**. I
 
 ## Related docs
 
-- [`deploy/README.md`](../../deploy/README.md) — file map, start order, Dragonfly checklist
-- [`dragonfly-bullmq-production.md`](dragonfly-bullmq-production.md) — broker flags, memory, failure modes
-- [`postgres-ops.md`](postgres-ops.md) — Postgres backup, health, disaster recovery
+- [`deploy/README.md`](../../deploy/README.md) - file map, start order, Dragonfly checklist
+- [`dragonfly-bullmq-production.md`](dragonfly-bullmq-production.md) - broker flags, memory, failure modes
+- [`postgres-ops.md`](postgres-ops.md) - Postgres backup, health, disaster recovery

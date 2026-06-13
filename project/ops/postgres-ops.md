@@ -12,7 +12,7 @@ ENVs are required in dokploy, a backup is stored in infisical (filosigndapp@gmai
 
 ## Migrate schema from your laptop (production)
 
-App containers use `postgres` as DB host on Docker DNS. Your Mac cannot resolve that — use the **SSH tunnel helper** (after `compose.data.yml` publishes Postgres on **VPS loopback** `127.0.0.1:5432` only).
+App containers use `postgres` as DB host on Docker DNS. Your Mac cannot resolve that - use the **SSH tunnel helper** (after `compose.data.yml` publishes Postgres on **VPS loopback** `127.0.0.1:5432` only).
 
 **One-time:** `FILOSIGN_PROD_SSH=root@YOUR_VPS` in `deploy/.env` (gitignored).
 
@@ -20,7 +20,7 @@ Schema history is a **single squashed migration**: [`apps/server/drizzle/0000_in
 
 ### First prod apply (or after squash reset)
 
-Pre-production only — wipes app data. Take a pgBackRest backup first.
+Pre-production only - wipes app data. Take a pgBackRest backup first.
 
 If prod was ever migrated with the old multi-file history (or `push`), Drizzle’s journal no longer matches. **Reset the public schema**, then migrate:
 
@@ -54,7 +54,7 @@ Opens SSH `-L 5433:<postgres-container-ip>:5432` (auto-detected via `docker insp
 
 **Optional:** redeploy `filosign-data` with `127.0.0.1:5432:5432` in compose so the tunnel can use host loopback instead of the container IP.
 
-**On the VPS** (optional — same network as `postgres`): `infisical run --env=prod --path=/app -- bun run --cwd apps/server drizzle-kit:migrate` from a repo checkout.
+**On the VPS** (optional - same network as `postgres`): `infisical run --env=prod --path=/app -- bun run --cwd apps/server drizzle-kit:migrate` from a repo checkout.
 
 ---
 
@@ -138,7 +138,7 @@ Wait until `info` shows the new full backup. If it hangs, see **Backup stuck** b
 
 ---
 
-## Scenario: VPS wiped — R2 still has backups
+## Scenario: VPS wiped - R2 still has backups
 
 GitHub + Dokploy = new empty Postgres. Data is in R2.
 
@@ -178,7 +178,7 @@ GitHub + Dokploy = new empty Postgres. Data is in R2.
 
 ## Scenario: restore to a specific time (PITR)
 
-After a bad migration or bad delete — need DB as it was at time T (UTC):
+After a bad migration or bad delete - need DB as it was at time T (UTC):
 
 1. Stop app + `docker stop filosign-postgres`.
 2. Restore (same as above, but):
@@ -192,7 +192,7 @@ Use a **throwaway volume** first to practice (see **Prove restore works**).
 
 ---
 
-## Scenario: Postgres container broken — volume OK
+## Scenario: Postgres container broken - volume OK
 
 Redeploy `filosign-data` in Dokploy. Data volume usually survives. No restore needed if volume intact.
 

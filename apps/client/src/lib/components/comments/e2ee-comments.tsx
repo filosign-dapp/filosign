@@ -12,13 +12,13 @@ import {
 	ContextMenuItem,
 	ContextMenuTrigger,
 } from "@/src/lib/components/ui/context-menu";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupButton,
 	InputGroupTextarea,
 } from "@/src/lib/components/ui/input-group";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { cn } from "@/src/lib/utils/utils";
 
 const COMMENT_GROUP_MS = 5 * 60 * 1000;

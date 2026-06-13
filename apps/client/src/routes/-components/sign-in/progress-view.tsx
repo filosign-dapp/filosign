@@ -1,4 +1,4 @@
-import { SpinnerIcon } from "@phosphor-icons/react";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import type { SignInController } from "@/src/routes/-lib/hooks/use-sign-in-controller";
 import { SignInCardShell } from "./card-shell";
 import { SignInColdInviteCallout } from "./cold-invite-callout";
@@ -47,10 +47,7 @@ export function SignInProgressView({
 				}
 			>
 				<div className="flex justify-center py-2">
-					<SpinnerIcon
-						className="size-8 animate-spin text-muted-foreground"
-						aria-hidden
-					/>
+					<InlineLoader size="lg" />
 				</div>
 			</SignInCardShell>
 		</div>

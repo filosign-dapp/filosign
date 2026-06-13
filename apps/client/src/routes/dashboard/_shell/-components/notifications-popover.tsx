@@ -7,6 +7,7 @@ import {
 import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import {
 	Popover,
 	PopoverContent,
@@ -67,7 +68,7 @@ export function NotificationsPopover() {
 				<div className="max-h-96 overflow-y-auto">
 					{n.isLoading && (
 						<div className="p-8 text-center">
-							<div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-3" />
+							<InlineLoader size="md" className="mx-auto mb-3" />
 							<p className="text-sm text-muted-foreground">
 								Loading notifications...
 							</p>

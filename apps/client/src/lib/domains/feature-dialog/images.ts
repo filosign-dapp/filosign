@@ -3,7 +3,7 @@ import type { UpgradePlanLimitReason } from "@filosign/react/billing";
 export const FEATURE_DIALOG_IMAGES = {
 	upgradePlanDialogTeamsProRouting: "/images/ww/stock_59.webp",
 	billingChangePreviewDialog: "/images/ww/stock_47.webp",
-	signSuccessProofPacketDialog: "/images/ww/stock_52.webp",
+	signSuccessProofPacketDialog: "/images/ww/stock_46.webp",
 	recoveryPhraseAndCryptoUnlockDialog: "/images/ww/stock_63.webp",
 	workspaceCreateInviteTrialDialog: "/images/ww/stock_44.webp",
 	signInOtpAndInviteUnlockDialog: "/images/ww/stock_26.webp",

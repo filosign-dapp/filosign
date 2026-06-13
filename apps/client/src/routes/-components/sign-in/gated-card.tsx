@@ -1,6 +1,6 @@
-import { SpinnerIcon } from "@phosphor-icons/react";
 import env from "@/src/env";
 import { Button } from "@/src/lib/components/ui/button";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import type { SignInController } from "@/src/routes/-lib/hooks/use-sign-in-controller";
 import { SignInCardShell } from "./card-shell";
 import { signInGatedCardSubtitle } from "./gated-subtitle";
@@ -18,10 +18,7 @@ function SignInGateLoadingCard() {
 			description="Checking your invite or checkout link. This usually takes a moment."
 		>
 			<div className="flex justify-center py-2">
-				<SpinnerIcon
-					className="size-8 animate-spin text-muted-foreground"
-					aria-hidden
-				/>
+				<InlineLoader size="lg" />
 			</div>
 		</SignInCardShell>
 	);

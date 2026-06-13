@@ -1,11 +1,6 @@
 import type { ShareDraftExternalResult } from "@filosign/react/drafts";
 import { useShareDraftExternal } from "@filosign/react/drafts";
-import {
-	KeyIcon,
-	PlusIcon,
-	SpinnerGapIcon,
-	XIcon,
-} from "@phosphor-icons/react";
+import { KeyIcon, PlusIcon, XIcon } from "@phosphor-icons/react";
 import { useEffect, useId, useState } from "react";
 import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
 import { SidebarSection } from "@/src/lib/components/app/sidebar/section";
@@ -303,17 +298,11 @@ export function ShareDraftDialog(props: {
 					<Button
 						type="button"
 						variant="primary"
-						disabled={emails.length === 0 || share.isPending}
+						disabled={emails.length === 0}
+						isLoading={share.isPending}
 						onClick={handleSend}
 					>
-						{share.isPending ? (
-							<>
-								<SpinnerGapIcon className="size-4 animate-spin" />
-								Sending…
-							</>
-						) : (
-							"Send invites"
-						)}
+						{share.isPending ? "Sending…" : "Send invites"}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

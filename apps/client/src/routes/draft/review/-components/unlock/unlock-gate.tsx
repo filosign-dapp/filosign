@@ -1,8 +1,7 @@
-import { SpinnerIcon } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
-import { InlineLoader } from "@/src/lib/components/ui/inline-loader";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { Textarea } from "@/src/lib/components/ui/textarea";
 import {
 	useDraftReviewColdSlice,
@@ -78,7 +77,7 @@ function WarmDraftReviewPanel({ unlock }: { unlock: WarmUnlock }) {
 				>
 					{unlock.isFilosignRecoveryPending ? (
 						<>
-							<SpinnerIcon className="mr-2 size-4 animate-spin" />
+							<InlineLoader size="sm" className="mr-2 text-current" />
 							Unlocking…
 						</>
 					) : (

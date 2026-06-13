@@ -29,12 +29,22 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 		zoom,
 		handleZoomIn,
 		handleZoomOut,
-		pdfExportBusy,
-		handleDownload,
 		exportsAllowed,
+		pdfExportBusy,
+		handleDownloadOriginalFiles,
 		handleDownloadCompliancePdf,
+		handleDownloadSignedEnvelope,
 		handleDownloadCompletionPacket,
 	} = useFileViewer();
+
+	const proofExports = {
+		exportsAllowed,
+		pdfExportBusy,
+		handleDownloadOriginalFiles,
+		handleDownloadCompliancePdf,
+		handleDownloadSignedEnvelope,
+		handleDownloadCompletionPacket,
+	};
 
 	return (
 		<div className="absolute top-0 left-0 right-0 z-50 shrink-0 border-b border-border bg-transparent px-4 py-3 @md:px-6 @md:py-4 glass">
@@ -134,12 +144,8 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 					<div className="relative z-10 flex min-w-0 flex-1 items-center justify-end gap-1 @md:gap-2">
 						<ProofDownloadButtonGroup
 							density="toolbar"
-							exportsAllowed={exportsAllowed}
-							pdfExportBusy={pdfExportBusy}
+							exports={proofExports}
 							fileDataReady={Boolean(fileData)}
-							handleDownload={handleDownload}
-							handleDownloadCompletionPacket={handleDownloadCompletionPacket}
-							handleDownloadCompliancePdf={handleDownloadCompliancePdf}
 						/>
 						<Button
 							variant="ghost"

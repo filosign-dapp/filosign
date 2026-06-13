@@ -3,9 +3,8 @@ import type { PDFDocument, PDFFont } from "pdf-lib";
 import { rgb } from "pdf-lib";
 import { resolveImageMime, supersampleImageBytesForPdfEmbed } from "../images";
 import {
-	bodyFontSize,
 	type FieldInnerRect,
-	fitTextFontSize,
+	fillContentFontSize,
 	textBaselineY,
 	textXCentered,
 } from "./layout";
@@ -105,13 +104,7 @@ export function drawCompletionTextOnField(
 		return false;
 	}
 
-	const preferredSize = bodyFontSize(inner.height);
-	const size = fitTextFontSize(
-		inner,
-		font,
-		completion.textValue,
-		preferredSize,
-	);
+	const size = fillContentFontSize(inner, font, completion.textValue);
 	page.drawText(completion.textValue, {
 		x: textXCentered(inner, font, completion.textValue, size),
 		y: textBaselineY(inner, font, size),

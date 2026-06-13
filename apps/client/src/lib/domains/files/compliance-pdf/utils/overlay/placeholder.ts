@@ -2,6 +2,7 @@ import type { PDFDocument, PDFFont, RGB } from "pdf-lib";
 import { rgb } from "pdf-lib";
 import { lineHeightAt } from "../text";
 import { drawRecipientFieldChrome } from "./chrome";
+import { recipientAccentWidth } from "./layout";
 import {
 	buildOverlaySegments,
 	fitOverlaySegmentsToHeight,
@@ -10,21 +11,8 @@ import {
 
 type PlacementStatus = "signed" | "draft" | "pending";
 
-function statusColors(st: PlacementStatus) {
-	const border =
-		st === "signed"
-			? rgb(0.1, 0.55, 0.25)
-			: st === "draft"
-				? rgb(0.85, 0.5, 0.1)
-				: rgb(0.55, 0.55, 0.55);
-	const bg =
-		st === "signed"
-			? rgb(0.75, 0.95, 0.8)
-			: st === "draft"
-				? rgb(1, 0.94, 0.85)
-				: rgb(0.94, 0.94, 0.94);
-	return { border, bg };
-}
+const PLACEMENT_CHROME_FOREGROUND = rgb(0.985, 0.985, 0.985);
+const PLACEMENT_CHROME_MUTED_FG = rgb(0.62, 0.62, 0.65);
 
 type DrawPlaceholderOverlayInput = {
 	page: ReturnType<PDFDocument["getPage"]>;
@@ -50,7 +38,6 @@ export function drawPlaceholderOverlay(
 		yPdf,
 		rw,
 		rh,
-		st,
 		displayName,
 		email,
 		footerText,
@@ -59,23 +46,15 @@ export function drawPlaceholderOverlay(
 		accent,
 	} = input;
 
-	const { border, bg } = statusColors(st);
-
-	drawRecipientFieldChrome(page, x, yPdf, rw, rh, accent);
-
-	page.drawRectangle({
-		x: x + 1,
-		y: yPdf + 1,
-		width: Math.max(0, rw - 2),
-		height: Math.max(0, rh - 2),
-		borderColor: border,
-		borderWidth: 1,
-		color: bg,
-		opacity: 0.38,
+	drawRecipientFieldChrome(page, x, yPdf, rw, rh, accent, {
+		variant: "muted",
 	});
 
 	const pad = Math.min(6, Math.max(3, Math.min(rw, rh) * 0.06));
-	const innerW = Math.max(28, rw - 2 * pad);
+	const accentW = recipientAccentWidth(rw);
+	const innerX = x + accentW + pad;
+	const innerW = Math.max(28, rw - accentW - 2 * pad);
+	const innerTop = yPdf + rh - pad;
 
 	const nameSize = Math.min(8.5, Math.max(6, Math.min(rh / 5, rw / 22)));
 
@@ -100,25 +79,20 @@ export function drawPlaceholderOverlay(
 		cap,
 		Math.max(overlaySegTotalHeight(segments), lineHeightAt(fontBold, nameSize)),
 	);
-	page.drawRectangle({
-		x: x + 0.75,
-		y: yPdf + rh - blockH - pad * 0.5,
-		width: Math.max(0, rw - 1.5),
-		height: blockH + pad * 0.5,
-		color: rgb(1, 1, 1),
-		opacity: 0.92,
-		borderWidth: 0,
-	});
 
-	let baseline = yPdf + rh - pad - segments[0].size * 0.85;
-	for (const seg of segments) {
+	let baseline = innerTop - segments[0].size * 0.85;
+	const verticalOffset = Math.max(0, (cap - blockH) / 2);
+	baseline -= verticalOffset;
+
+	for (const [index, seg] of segments.entries()) {
 		if (baseline < yPdf + pad) break;
 		page.drawText(seg.text, {
-			x: x + pad,
+			x: innerX,
 			y: baseline,
 			size: seg.size,
 			font: seg.font,
-			color: rgb(0.1, 0.1, 0.11),
+			color:
+				index === 0 ? PLACEMENT_CHROME_FOREGROUND : PLACEMENT_CHROME_MUTED_FG,
 		});
 		baseline -= lineHeightAt(seg.font, seg.size);
 	}

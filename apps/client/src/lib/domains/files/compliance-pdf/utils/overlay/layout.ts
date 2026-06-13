@@ -12,11 +12,18 @@ export function fieldInnerPadding(
 	fieldWidth: number,
 	fieldHeight: number,
 ): number {
-	return Math.min(3, Math.max(2, Math.min(fieldWidth, fieldHeight) * 0.06));
+	return Math.min(2.5, Math.max(1.5, Math.min(fieldWidth, fieldHeight) * 0.04));
 }
 
-export function recipientUnderlineHeight(fieldHeight: number): number {
-	return Math.max(2, Math.min(4, fieldHeight * 0.14));
+export function recipientAccentWidth(fieldWidth: number): number {
+	return Math.max(2, Math.min(3.5, fieldWidth * 0.045));
+}
+
+export function fieldCornerRadius(
+	fieldWidth: number,
+	fieldHeight: number,
+): number {
+	return Math.min(7, Math.max(3, Math.min(fieldWidth, fieldHeight) * 0.16));
 }
 
 export function innerRectFromField(
@@ -26,17 +33,34 @@ export function innerRectFromField(
 	rh: number,
 ): FieldInnerRect {
 	const pad = fieldInnerPadding(rw, rh);
-	const underlineH = recipientUnderlineHeight(rh);
+	const accentW = recipientAccentWidth(rw);
 	return {
-		x: x + pad,
+		x: x + accentW + pad,
 		yPdf: yPdf + pad,
-		width: Math.max(1, rw - 2 * pad),
-		height: Math.max(1, rh - 2 * pad - underlineH),
+		width: Math.max(1, rw - accentW - 2 * pad),
+		height: Math.max(1, rh - 2 * pad),
 	};
 }
 
-export function bodyFontSize(fieldHeight: number): number {
-	return Math.min(11, Math.max(8, fieldHeight * 0.62));
+export function fillContentFontSize(
+	inner: FieldInnerRect,
+	font: PDFFont,
+	text: string,
+	minSize = 6,
+): number {
+	const maxHeight = inner.height * 0.72;
+	const maxWidth = inner.width * 0.92;
+	let size = inner.height * 0.62;
+	while (size > minSize) {
+		if (
+			font.widthOfTextAtSize(text, size) <= maxWidth &&
+			font.heightAtSize(size) <= maxHeight
+		) {
+			return size;
+		}
+		size -= 0.25;
+	}
+	return minSize;
 }
 
 export function textBaselineY(
@@ -45,7 +69,15 @@ export function textBaselineY(
 	size: number,
 ): number {
 	const textHeight = font.heightAtSize(size);
-	return inner.yPdf + (inner.height - textHeight) / 2;
+	const capHeight = font.heightAtSize(size, { descender: false });
+	const descenderDepth = textHeight - capHeight;
+	const verticalNudge = Math.min(2.5, Math.max(1, inner.height * 0.05));
+	return (
+		inner.yPdf +
+		(inner.height - textHeight) / 2 +
+		descenderDepth -
+		verticalNudge
+	);
 }
 
 export function textXCentered(
@@ -56,20 +88,6 @@ export function textXCentered(
 ): number {
 	const textWidth = font.widthOfTextAtSize(text, size);
 	return inner.x + (inner.width - textWidth) / 2;
-}
-
-export function fitTextFontSize(
-	inner: FieldInnerRect,
-	font: PDFFont,
-	text: string,
-	preferredSize: number,
-	minSize = 7,
-): number {
-	let size = preferredSize;
-	while (size > minSize && font.widthOfTextAtSize(text, size) > inner.width) {
-		size -= 0.5;
-	}
-	return size;
 }
 
 export function hexToPdfRgb(hex: string): RGB {

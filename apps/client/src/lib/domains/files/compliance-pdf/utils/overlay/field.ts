@@ -10,7 +10,10 @@ import {
 	fieldPlacementStatusFromSignerRow,
 	signersByNormalizedRecipientEmail,
 } from "../placement";
-import { drawRecipientFieldChrome } from "./chrome";
+import {
+	drawPlacementFieldInnerFill,
+	drawRecipientFieldChrome,
+} from "./chrome";
 import {
 	drawCompletionTextOnField,
 	drawFieldCompletionVisual,
@@ -57,6 +60,7 @@ export async function drawSinglePlacementFieldOverlay(
 	let drewCompletion = false;
 	if (completion) {
 		drawRecipientFieldChrome(page, x, yPdf, rw, rh, accent);
+		drawPlacementFieldInnerFill(page, inner, rw, rh);
 
 		if (completion.valueKind === "visual") {
 			drewCompletion = await drawFieldCompletionVisual(
@@ -104,6 +108,7 @@ export async function drawPlacementOverlaysOnDocumentPdf(
 	placementManifest: ComplianceBundle["placementManifest"],
 	signers: ComplianceBundle["signers"],
 	fieldCompletions: FieldCompletionWireRow[] | undefined,
+	options?: { documentId?: string },
 ): Promise<void> {
 	const font = await doc.embedFont(StandardFonts.Helvetica);
 	const fontBold = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -113,7 +118,13 @@ export async function drawPlacementOverlaysOnDocumentPdf(
 		(fieldCompletions ?? []).map((c) => [c.fieldId, c]),
 	);
 
-	for (const f of placementManifest.fields) {
+	const fields = options?.documentId
+		? placementManifest.fields.filter(
+				(f) => f.documentId === options.documentId,
+			)
+		: placementManifest.fields;
+
+	for (const f of fields) {
 		const pi = f.pageIndex;
 		if (pi < 0 || pi >= n) continue;
 		const page = doc.getPage(pi);

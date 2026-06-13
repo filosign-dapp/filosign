@@ -85,7 +85,7 @@ export function buildSigningTimelineLines(
 	];
 	for (let i = 0; i < events.length; i++) {
 		const event = events[i];
-		lines.push({ text: `${i + 1}. ${event.at} — ${event.text}` });
+		lines.push({ text: `${i + 1}. ${event.at} - ${event.text}` });
 	}
 	return lines;
 }

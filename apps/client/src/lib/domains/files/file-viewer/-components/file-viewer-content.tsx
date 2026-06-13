@@ -22,7 +22,7 @@ export function FileViewerContent() {
 		previewPdfBytes,
 		zoom,
 		documentDimensions,
-		handleDownload,
+		handleDownloadOriginalFiles,
 	} = useFileViewer();
 
 	if (viewError) {
@@ -199,11 +199,11 @@ export function FileViewerContent() {
 				<Button
 					size="sm"
 					variant="outline"
-					onClick={handleDownload}
+					onClick={() => void handleDownloadOriginalFiles()}
 					className="mt-2"
 				>
 					<DownloadIcon className="size-4 mr-2" />
-					Download File
+					Download files
 				</Button>
 			</div>
 		</div>

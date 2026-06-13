@@ -21,7 +21,7 @@ const ABI_FILES = {
 async function exportAbis(chainKey: ChainKey) {
 	const manifest = await readLatestManifest(chainKey);
 	if (!manifest) {
-		console.warn(`export-public: skip abis — no deployment for ${chainKey}`);
+		console.warn(`export-public: skip abis - no deployment for ${chainKey}`);
 		return;
 	}
 
@@ -55,12 +55,12 @@ async function exportChainManifest() {
 		const chainId = String(CHAIN_ID_BY_KEY[chainKey]);
 		const entry = existing[chainId];
 		if (!entry) {
-			console.warn(`export-public: skip manifest — no template for ${chainId}`);
+			console.warn(`export-public: skip manifest - no template for ${chainId}`);
 			continue;
 		}
 		if (!manifest) {
 			console.warn(
-				`export-public: skip manifest addresses — no deployment for ${chainKey}`,
+				`export-public: skip manifest addresses - no deployment for ${chainKey}`,
 			);
 			continue;
 		}

@@ -1,6 +1,6 @@
 /**
  * Verify latest deployment on Basescan. Run after `hardhat run deploy.ts` completes
- * (not from inside deploy.ts — nested Hardhat CLI crashes under Bun source-map).
+ * (not from inside deploy.ts - nested Hardhat CLI crashes under Bun source-map).
  */
 import type { ChainKey } from "../definitions/chain-key.js";
 import env from "../env.js";

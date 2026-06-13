@@ -22,7 +22,7 @@ export const testEnvStub = {
 	ASTRO_URL: "https://astro.example.com",
 	RESEND_API_KEY: "re_test",
 	RESEND_FROM_EMAIL: "test@example.com",
-	RESEND_FROM_PERSONAL_EMAIL: "personal@example.com",
+	RESEND_FROM_NAME: "Filosign",
 	RESEND_ENABLED: false,
 	CHAIN: "local" as const,
 	DEPLOYMENT: "local" as const,

@@ -1,6 +1,7 @@
 import {
 	documentSharedSubject,
 	type FilosignTransactionalEmailKind,
+	type PartnerInviteEmailVariant,
 	partnerInviteSubject,
 	renderAccessRequestApproved,
 	renderCheckoutContinue,
@@ -15,7 +16,12 @@ import type { Address } from "viem";
 import env from "@/env";
 import { deliverOutboundEmail } from "./email";
 import { recipientDisplayNameFromEmail } from "./recipient-name";
-import { buildEmailIdempotencyKey, escapeHtml, getClientUrl } from "./utils";
+import {
+	buildEmailIdempotencyKey,
+	escapeHtml,
+	getClientUrl,
+	resendFromAddress,
+} from "./utils";
 
 /**
  * All outbound product email is sent through this file (`deliverOutboundEmail`).
@@ -58,7 +64,7 @@ async function deliverEmail(args: {
 	from?: string;
 }) {
 	await deliverOutboundEmail({
-		from: args.from ?? env.RESEND_FROM_EMAIL,
+		from: args.from ?? resendFromAddress(),
 		to: args.to,
 		subject: args.subject,
 		text: args.text,
@@ -268,6 +274,7 @@ export async function sendPartnerInviteEmail(args: {
 	planLabel: string;
 	trialDays: number;
 	recipientName?: string | null;
+	emailVariant?: PartnerInviteEmailVariant;
 	customBody?: string | null;
 }): Promise<boolean> {
 	if (shouldSkipEmail()) return false;
@@ -277,23 +284,25 @@ export async function sendPartnerInviteEmail(args: {
 		args.recipientName?.trim() || recipientDisplayNameFromEmail(email);
 	const escapedRecipientName = escapeHtml(recipientNameRaw);
 	const escapedPlanLabel = escapeHtml(args.planLabel);
-	const customBodyRaw = args.customBody?.trim();
+	const emailVariant = args.emailVariant ?? "warm";
+	const customBodyRaw =
+		emailVariant === "custom" ? args.customBody?.trim() : undefined;
 	const escapedCustomMiddle = customBodyRaw
 		? escapeHtml(customBodyRaw)
 		: undefined;
 
-	const subject = partnerInviteSubject(recipientNameRaw);
+	const subject = partnerInviteSubject(recipientNameRaw, emailVariant);
 
 	const { html, text } = await renderPartnerInvite({
 		recipientName: escapedRecipientName,
 		planLabel: escapedPlanLabel,
 		trialDays: args.trialDays,
 		ctaHref: args.inviteUrl,
+		variant: emailVariant,
 		customMiddleParagraph: escapedCustomMiddle,
 	});
 
 	await deliverEmail({
-		from: env.RESEND_FROM_PERSONAL_EMAIL,
 		to: email,
 		subject,
 		text,
@@ -303,6 +312,7 @@ export async function sendPartnerInviteEmail(args: {
 			"partner-invite",
 			email,
 			args.inviteUrl,
+			emailVariant,
 			recipientNameRaw.toLowerCase(),
 			customBodyRaw ?? "",
 		],

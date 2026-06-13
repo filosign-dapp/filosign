@@ -13,8 +13,11 @@ export {
 	replyToForTransactionalEmail,
 } from "./contact-emails";
 export {
+	PARTNER_INVITE_COLD_MIDDLE,
 	PARTNER_INVITE_DEFAULT_MIDDLE,
+	PARTNER_INVITE_WARM_MIDDLE,
 	type PartnerInviteCopyInput,
+	type PartnerInviteEmailVariant,
 	partnerInviteCopy,
 	partnerInviteSubject,
 } from "./copy/partner-invite";

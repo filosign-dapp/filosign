@@ -44,7 +44,7 @@ describe("sendPartnerInviteEmail", () => {
 		expect(deliverOutboundEmail).not.toHaveBeenCalled();
 	});
 
-	test("sends from RESEND_FROM_PERSONAL_EMAIL", async () => {
+	test("warm variant uses default subject and from address", async () => {
 		const { sendPartnerInviteEmail: sendEnabled } = await import(
 			"@/lib/platform/email/invites"
 		);
@@ -55,13 +55,59 @@ describe("sendPartnerInviteEmail", () => {
 			planLabel: "Teams Pro",
 			trialDays: 30,
 			recipientName: "Jordan Lee",
+			emailVariant: "warm",
 		});
 
 		expect(deliverOutboundEmail).toHaveBeenCalledWith(
 			expect.objectContaining({
-				from: testEnvStub.RESEND_FROM_PERSONAL_EMAIL,
-				subject: "Jordan Lee, your Filosign design partner invite",
+				from: "Filosign <test@example.com>",
+				subject: "Your filosign pilot is here.",
 				to: "partner@acme.com",
+			}),
+		);
+	});
+
+	test("cold variant uses cold subject line", async () => {
+		const { sendPartnerInviteEmail: sendEnabled } = await import(
+			"@/lib/platform/email/invites"
+		);
+
+		await sendEnabled({
+			to: "partner@acme.com",
+			inviteUrl: "https://app.example.com/?platformInvite=abc",
+			planLabel: "Teams Pro",
+			trialDays: 30,
+			recipientName: "Jordan Lee",
+			emailVariant: "cold",
+		});
+
+		expect(deliverOutboundEmail).toHaveBeenCalledWith(
+			expect.objectContaining({
+				subject: "You're invited to try filosign",
+			}),
+		);
+	});
+
+	test("custom variant includes custom body in rendered html", async () => {
+		const { sendPartnerInviteEmail: sendEnabled } = await import(
+			"@/lib/platform/email/invites"
+		);
+
+		await sendEnabled({
+			to: "partner@acme.com",
+			inviteUrl: "https://app.example.com/?platformInvite=abc",
+			planLabel: "Teams Pro",
+			trialDays: 30,
+			recipientName: "Jordan Lee",
+			emailVariant: "custom",
+			customBody: "Looking forward to mapping your first workflow together.",
+		});
+
+		expect(deliverOutboundEmail).toHaveBeenCalledWith(
+			expect.objectContaining({
+				html: expect.stringContaining(
+					"Looking forward to mapping your first workflow together.",
+				),
 			}),
 		);
 	});

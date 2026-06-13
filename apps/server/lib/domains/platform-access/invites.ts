@@ -1,5 +1,6 @@
 import type { PlanId } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
+import type { PlatformInviteEmailVariant } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Address } from "viem";
@@ -26,6 +27,7 @@ export async function createPlatformInvite(args: {
 	expiresAt?: Date | null;
 	note?: string | null;
 	emailBody?: string | null;
+	emailVariant?: PlatformInviteEmailVariant;
 }) {
 	const token = generatePlatformInviteToken();
 	const [row] = await db
@@ -42,6 +44,7 @@ export async function createPlatformInvite(args: {
 			createdByAdminWallet: getAddress(args.adminWallet),
 			note: args.note?.trim() || null,
 			emailBody: args.emailBody?.trim() || null,
+			emailVariant: args.emailVariant ?? "warm",
 		})
 		.returning();
 
@@ -98,6 +101,7 @@ export async function rebookPlatformInvite(args: {
 		expiresAt: old.expiresAt,
 		note: old.note,
 		emailBody: old.emailBody,
+		emailVariant: old.emailVariant,
 	});
 }
 
@@ -117,6 +121,7 @@ export async function listPlatformInvites() {
 			revokedAt: platformInvites.revokedAt,
 			note: platformInvites.note,
 			emailBody: platformInvites.emailBody,
+			emailVariant: platformInvites.emailVariant,
 			createdAt: platformInvites.createdAt,
 		})
 		.from(platformInvites)

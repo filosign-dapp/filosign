@@ -61,9 +61,9 @@ All paths resolve under **`packages/evm/definitions/`** (absolute at runtime; de
 
 ## Runtime API
 
-- `getContracts(chainKey)` — typed viem contract bundle for server/SDK
-- `getDefinitionsEntry(chainKey)` — addresses from latest manifest
-- `readRegistryEip712Domain`, `filosignRegistrationSignature` — EIP-712 helpers
+- `getContracts(chainKey)` - typed viem contract bundle for server/SDK
+- `getDefinitionsEntry(chainKey)` - addresses from latest manifest
+- `readRegistryEip712Domain`, `filosignRegistrationSignature` - EIP-712 helpers
 
 See [`index.ts`](./index.ts) and [`services/`](./services/).
 

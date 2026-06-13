@@ -2,7 +2,7 @@ import "@nomicfoundation/hardhat-viem";
 import hre from "hardhat";
 import type { PublicClient } from "viem";
 
-/** Use chain time for EIP-712 payloads — `block.timestamp` must align with `SIGNATURE_VALIDITY_PERIOD`. */
+/** Use chain time for EIP-712 payloads - `block.timestamp` must align with `SIGNATURE_VALIDITY_PERIOD`. */
 export async function latestBlockTimestamp(
 	publicClient: PublicClient,
 ): Promise<bigint> {

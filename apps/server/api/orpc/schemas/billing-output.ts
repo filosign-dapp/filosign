@@ -109,11 +109,20 @@ export const rpcBillingWorkspaceAllowedActionsSchema = z.object({
 	showSoloOnWorkspace: z.boolean(),
 });
 
+export const rpcBillingPartnerInviteTrialSchema = z.object({
+	active: z.literal(true),
+	planId: z.enum(["teams", "teams_pro"]),
+	planName: z.string(),
+	trialDays: z.number().int(),
+	periodEnd: z.iso.datetime().nullable(),
+});
+
 export const rpcBillingWorkspaceContextOutputSchema = z.object({
 	user: rpcBillingUserSummaryOutputSchema,
 	org: rpcBillingOrgSummaryOutputSchema,
 	effectivePlanId: z.enum(PLAN_IDS),
 	allowedActions: rpcBillingWorkspaceAllowedActionsSchema,
+	partnerInviteTrial: rpcBillingPartnerInviteTrialSchema.nullable(),
 });
 
 export const rpcBillingMarketingPreviewOutputSchema = z.discriminatedUnion(

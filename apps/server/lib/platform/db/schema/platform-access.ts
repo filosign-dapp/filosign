@@ -45,8 +45,12 @@ export const platformInvites = t.pgTable(
 		revokedAt: t.timestamp({ withTimezone: true }),
 		createdByAdminWallet: tEvmAddress(),
 		note: t.text(),
-		/** Optional custom middle paragraph for partner invite email body */
+		/** Optional custom middle paragraph when emailVariant is custom */
 		emailBody: t.text(),
+		emailVariant: t
+			.text({ enum: platformInviteEmailVariants })
+			.notNull()
+			.default("warm"),
 		...timestamps,
 	},
 	(table) => [

@@ -171,39 +171,59 @@ export async function grantDevPlansForAdminEmail(email: string): Promise<{
 }
 export async function expirePartnerTrialsJob(): Promise<{ expired: number }> {
 	const now = new Date();
-	const rows = await db
-		.select({
-			walletAddress: userSubscriptions.walletAddress,
-		})
-		.from(userSubscriptions)
-		.where(
-			and(
-				eq(userSubscriptions.status, "trialing"),
-				eq(userSubscriptions.provider, "manual"),
-				isNotNull(userSubscriptions.periodEnd),
-				lt(userSubscriptions.periodEnd, now),
-			),
-		);
-
-	if (rows.length === 0) return { expired: 0 };
-
-	await db
-		.update(userSubscriptions)
-		.set({ status: "canceled", updatedAt: now })
-		.where(
-			and(
-				eq(userSubscriptions.status, "trialing"),
-				eq(userSubscriptions.provider, "manual"),
-				isNotNull(userSubscriptions.periodEnd),
-				lt(userSubscriptions.periodEnd, now),
-			),
-		);
-
-	await Promise.all(
-		rows.map((row) => invalidateUserEntitlements(row.walletAddress)),
+	const manualTrialExpiry = and(
+		eq(userSubscriptions.status, "trialing"),
+		eq(userSubscriptions.provider, "manual"),
+		isNotNull(userSubscriptions.periodEnd),
+		lt(userSubscriptions.periodEnd, now),
+	);
+	const orgManualTrialExpiry = and(
+		eq(organizationSubscriptions.status, "trialing"),
+		eq(organizationSubscriptions.provider, "manual"),
+		isNotNull(organizationSubscriptions.periodEnd),
+		lt(organizationSubscriptions.periodEnd, now),
 	);
 
-	return { expired: rows.length };
+	const [userRows, orgRows] = await Promise.all([
+		db
+			.select({
+				walletAddress: userSubscriptions.walletAddress,
+			})
+			.from(userSubscriptions)
+			.where(manualTrialExpiry),
+		db
+			.select({
+				organizationId: organizationSubscriptions.organizationId,
+			})
+			.from(organizationSubscriptions)
+			.where(orgManualTrialExpiry),
+	]);
+
+	if (userRows.length === 0 && orgRows.length === 0) {
+		return { expired: 0 };
+	}
+
+	await Promise.all([
+		userRows.length > 0
+			? db
+					.update(userSubscriptions)
+					.set({ status: "canceled", updatedAt: now })
+					.where(manualTrialExpiry)
+			: Promise.resolve(),
+		orgRows.length > 0
+			? db
+					.update(organizationSubscriptions)
+					.set({ status: "canceled", updatedAt: now })
+					.where(orgManualTrialExpiry)
+			: Promise.resolve(),
+	]);
+
+	await Promise.all([
+		...userRows.map((row) => invalidateUserEntitlements(row.walletAddress)),
+		...orgRows.map((row) => invalidateOrgEntitlements(row.organizationId)),
+	]);
+
+	return { expired: userRows.length + orgRows.length };
 }
 
 const PAID_SETUP_TTL_DAYS = 30;

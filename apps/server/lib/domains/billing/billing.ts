@@ -5,6 +5,7 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import env from "@/env";
 import { resolveEntitlementContext } from "@/lib/domains/entitlements";
+import { resolvePartnerInviteTrialForWorkspace } from "@/lib/domains/platform-access/registration";
 import db from "@/lib/platform/db";
 import {
 	type SubscriptionPlanId,
@@ -152,11 +153,17 @@ export async function getWorkspaceBillingContext(args: {
 		orgProvider: org.provider,
 	});
 
+	const partnerInviteTrial = await resolvePartnerInviteTrialForWorkspace({
+		wallet: walletNorm,
+		organizationId: args.organizationId,
+	});
+
 	return {
 		user,
 		org,
 		effectivePlanId,
 		allowedActions,
+		partnerInviteTrial,
 	};
 }
 

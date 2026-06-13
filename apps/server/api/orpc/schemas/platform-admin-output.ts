@@ -1,4 +1,5 @@
 import { PLAN_IDS } from "@filosign/entitlements";
+import { zPlatformInviteEmailVariant } from "@filosign/shared";
 import { z } from "zod";
 
 export const zPlatformAdminInviteCreateInput = z.object({
@@ -13,6 +14,7 @@ export const zPlatformAdminInviteCreateInput = z.object({
 	expiresAt: z.iso.datetime().optional().nullable(),
 	note: z.string().max(500).optional().nullable(),
 	emailBody: z.string().max(2000).optional().nullable(),
+	emailVariant: zPlatformInviteEmailVariant.default("warm"),
 });
 
 const platformInviteRedemptionSchema = z.object({
@@ -30,6 +32,7 @@ export const rpcPlatformAdminInviteRowSchema = z.object({
 	email: z.string().nullable(),
 	note: z.string().nullable(),
 	emailBody: z.string().nullable(),
+	emailVariant: zPlatformInviteEmailVariant,
 	featureOverrides: z
 		.record(z.string(), z.union([z.number(), z.boolean()]))
 		.nullable()
@@ -55,6 +58,7 @@ export const rpcPlatformAdminInviteCreateOutputSchema = z.object({
 	email: z.string().nullable(),
 	note: z.string().nullable(),
 	emailBody: z.string().nullable(),
+	emailVariant: zPlatformInviteEmailVariant,
 	emailSent: z.boolean(),
 });
 

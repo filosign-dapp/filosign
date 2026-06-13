@@ -1,6 +1,7 @@
 import type { PlanId } from "@filosign/entitlements";
 import { PLAN_IDS } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
+import { zPlatformInviteEmailVariant } from "@filosign/shared";
 import type { Address } from "viem";
 import { z } from "zod";
 import env from "@/env";
@@ -154,11 +155,24 @@ export async function platformAdminInvitesCreate(
 			expiresAt: z.iso.datetime().optional().nullable(),
 			note: z.string().max(500).optional().nullable(),
 			emailBody: z.string().max(2000).optional().nullable(),
+			emailVariant: zPlatformInviteEmailVariant.default("warm"),
 		})
 		.safeParse(body);
 
 	if (parsed.error) {
 		throwZodBadRequest(parsed.error);
+	}
+
+	if (parsed.data.emailVariant === "custom" && !parsed.data.emailBody?.trim()) {
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["emailBody"],
+					message: "Custom message is required when email variant is custom",
+				},
+			]),
+		);
 	}
 
 	const invite = await createPlatformInvite({
@@ -172,6 +186,7 @@ export async function platformAdminInvitesCreate(
 		expiresAt: parsed.data.expiresAt ? new Date(parsed.data.expiresAt) : null,
 		note: parsed.data.note,
 		emailBody: parsed.data.emailBody,
+		emailVariant: parsed.data.emailVariant,
 	});
 
 	return {
@@ -183,6 +198,7 @@ export async function platformAdminInvitesCreate(
 		email: invite.email,
 		note: invite.note,
 		emailBody: invite.emailBody,
+		emailVariant: invite.emailVariant,
 		emailSent: false,
 	};
 }
@@ -258,6 +274,17 @@ export async function platformAdminInvitesSend(
 			]),
 		);
 	}
+	if (invite.emailVariant === "custom" && !invite.emailBody?.trim()) {
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					path: ["inviteId"],
+					message: "Invite is missing custom email body",
+				},
+			]),
+		);
+	}
 
 	const inviteUrl = `${env.CLIENT_URL.replace(/\/$/, "")}/?platformInvite=${encodeURIComponent(invite.token)}`;
 	const emailSent = await sendPartnerInviteEmail({
@@ -266,6 +293,7 @@ export async function platformAdminInvitesSend(
 		planLabel: planLabel(invite.planId as PlanId),
 		trialDays: invite.trialDays,
 		recipientName: invite.note,
+		emailVariant: invite.emailVariant,
 		customBody: invite.emailBody,
 	});
 

@@ -1,4 +1,4 @@
-/** Filecoin epoch length (30s) — matches @filoz/synapse-core TIME_CONSTANTS. */
+/** Filecoin epoch length (30s) - matches @filoz/synapse-core TIME_CONSTANTS. */
 const MS_PER_EPOCH = 30_000;
 
 /** Epochs of payment runway from now until `retentionUntil` (ceil). */

@@ -27,7 +27,7 @@ export function shouldDeferFocTransition(args: {
 	return args.inHotWindow && !args.senderExported;
 }
 
-/** Job runner deferral — bypassed when `TEST_FOC` smoke flag is enabled. */
+/** Job runner deferral - bypassed when `TEST_FOC` smoke flag is enabled. */
 export function shouldDeferFocTransitionForJob(args: {
 	inHotWindow: boolean;
 	senderExported: boolean;

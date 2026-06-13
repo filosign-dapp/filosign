@@ -25,10 +25,14 @@ import {
 import {
 	documentRowPartySubtitle,
 	documentRowSizeLabel,
-	documentRowStatusLabel,
-	documentRowTypeLabel,
 	documentRowUpdatedLabel,
 } from "@/src/lib/domains/documents/document-list-format";
+import {
+	DocumentRowStatusBadge,
+	resolveDocumentRowStatus,
+	rowAccentClass,
+} from "@/src/lib/domains/documents/document-row-status";
+import { cn } from "@/src/lib/utils/index";
 
 function MetadataChips(props: { metadata: Record<string, string> }) {
 	const entries = Object.entries(props.metadata).slice(0, 3);
@@ -128,6 +132,12 @@ function DraftActionButtons(props: {
 	);
 }
 
+const tableHeadClass =
+	"h-9 px-4 text-xs font-normal text-muted-foreground first:pl-5 last:pr-5";
+const tableCellClass = "px-4 py-3 first:pl-5 last:pr-5";
+const tableRowClass =
+	"cursor-pointer border-b border-border/40 last:border-0 hover:bg-muted/30";
+
 export function DocumentsTable(props: {
 	items: DocumentListRow[];
 	onOpenEnvelope: (pieceCid: string) => void;
@@ -139,6 +149,7 @@ export function DocumentsTable(props: {
 }) {
 	const { data: entitlements } = useEntitlements();
 	const showMetadata = canUseMetadataTags(entitlements);
+	const hasDraftRows = props.items.some((row) => row.kind === "draft");
 
 	const openRow = (row: DocumentListRow) => {
 		if (row.kind === "draft") {
@@ -148,19 +159,29 @@ export function DocumentsTable(props: {
 		props.onOpenEnvelope(row.id);
 	};
 
+	const rowAccent = (row: DocumentListRow) =>
+		cn(
+			tableRowClass,
+			"border-l-2",
+			rowAccentClass[resolveDocumentRowStatus(row).tone],
+		);
+
 	const renderCells = (row: DocumentListRow) => {
 		const isDraft = row.kind === "draft";
 		const partySubtitle = documentRowPartySubtitle(row);
+		const updatedLabel = documentRowUpdatedLabel(row);
 		return (
 			<>
-				<TableCell className="max-w-[280px]">
+				<TableCell
+					className={cn(tableCellClass, "max-w-[320px] whitespace-normal")}
+				>
 					<div className="min-w-0">
 						<p className="truncate font-medium">{row.title}</p>
-						{partySubtitle ? (
-							<p className="truncate text-xs text-muted-foreground">
-								{partySubtitle}
-							</p>
-						) : null}
+						<p className="truncate text-xs text-muted-foreground">
+							{partySubtitle
+								? `${partySubtitle} · Updated ${updatedLabel}`
+								: `Updated ${updatedLabel}`}
+						</p>
 						{showMetadata &&
 						row.kind === "envelope" &&
 						row.metadata &&
@@ -169,11 +190,13 @@ export function DocumentsTable(props: {
 						) : null}
 					</div>
 				</TableCell>
-				<TableCell>{documentRowTypeLabel(row)}</TableCell>
-				<TableCell>{documentRowUpdatedLabel(row)}</TableCell>
-				<TableCell>{documentRowStatusLabel(row)}</TableCell>
-				<TableCell>{documentRowSizeLabel(row)}</TableCell>
-				<TableCell className="text-right">
+				<TableCell className={cn(tableCellClass, "whitespace-normal")}>
+					<DocumentRowStatusBadge row={row} />
+				</TableCell>
+				<TableCell className={tableCellClass}>
+					{documentRowSizeLabel(row)}
+				</TableCell>
+				<TableCell className={cn(tableCellClass, "text-right")}>
 					{isDraft ? (
 						<DraftActionButtons
 							row={row}
@@ -190,17 +213,21 @@ export function DocumentsTable(props: {
 
 	return (
 		<Table>
-			<TableHeader>
-				<TableRow>
-					<TableHead>Name</TableHead>
-					<TableHead>Type</TableHead>
-					<TableHead>Updated</TableHead>
-					<TableHead>Status</TableHead>
-					<TableHead>Size</TableHead>
-					<TableHead className="text-right">Actions</TableHead>
+			<TableHeader className="border-b border-border/60 bg-muted/15 [&_tr]:border-0">
+				<TableRow className="hover:bg-transparent">
+					<TableHead className={tableHeadClass}>Name</TableHead>
+					<TableHead className={tableHeadClass}>Status</TableHead>
+					<TableHead className={tableHeadClass}>Size</TableHead>
+					<TableHead className={cn(tableHeadClass, "text-right")}>
+						{hasDraftRows ? (
+							"Actions"
+						) : (
+							<span className="sr-only">Actions</span>
+						)}
+					</TableHead>
 				</TableRow>
 			</TableHeader>
-			<TableBody>
+			<TableBody className="[&_tr:last-child]:border-0">
 				{props.items.map((row) => {
 					const isDraft = row.kind === "draft";
 					const hasDraftContextMenu =
@@ -213,7 +240,7 @@ export function DocumentsTable(props: {
 								<ContextMenuTrigger
 									render={
 										<TableRow
-											className="cursor-pointer"
+											className={rowAccent(row)}
 											onClick={() => openRow(row)}
 										/>
 									}
@@ -235,7 +262,7 @@ export function DocumentsTable(props: {
 					return (
 						<TableRow
 							key={row.id}
-							className="cursor-pointer"
+							className={rowAccent(row)}
 							onClick={() => openRow(row)}
 						>
 							{renderCells(row)}

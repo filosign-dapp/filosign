@@ -22,6 +22,8 @@ export function SignInContent() {
 		buttonLoading,
 		isRegistered,
 		autoRegisterError,
+		autoRegisterStatus,
+		autoRegisterFailedPhase,
 		retryAutoRegister,
 		login,
 		signInGate,
@@ -44,6 +46,7 @@ export function SignInContent() {
 						autoRegisterError={autoRegisterError}
 						retryAutoRegister={retryAutoRegister}
 						isRegistered={isRegistered}
+						autoRegisterFailedPhase={autoRegisterFailedPhase}
 					/>
 				) : isProgressView(view) ? (
 					<SignInProgressView
@@ -51,6 +54,7 @@ export function SignInContent() {
 						showColdInviteMismatch={showColdInviteMismatch}
 						coldInviteWarning={coldInviteWarning}
 						continueAnywayColdSearch={continueAnywayColdSearch}
+						autoRegisterStatus={autoRegisterStatus}
 					/>
 				) : (
 					<SignInWelcomeView

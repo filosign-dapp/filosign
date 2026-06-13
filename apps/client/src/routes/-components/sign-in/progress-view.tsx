@@ -9,6 +9,7 @@ type Props = Pick<
 	| "showColdInviteMismatch"
 	| "coldInviteWarning"
 	| "continueAnywayColdSearch"
+	| "autoRegisterStatus"
 >;
 
 export function SignInProgressView({
@@ -16,8 +17,11 @@ export function SignInProgressView({
 	showColdInviteMismatch,
 	coldInviteWarning,
 	continueAnywayColdSearch,
+	autoRegisterStatus,
 }: Props) {
-	const isAutoRegistering = view === "auto-registering";
+	const isRedeeming = autoRegisterStatus === "redeeming";
+	const isAutoRegistering =
+		view === "auto-registering" && autoRegisterStatus !== "redeeming";
 
 	return (
 		<div className="space-y-8">
@@ -39,11 +43,19 @@ export function SignInProgressView({
 			/>
 
 			<SignInCardShell
-				title={isAutoRegistering ? "Setting up your account" : "Signing you in"}
+				title={
+					isRedeeming
+						? "Activating your partner trial"
+						: isAutoRegistering
+							? "Setting up your account"
+							: "Signing you in"
+				}
 				description={
-					isAutoRegistering
-						? "Creating your Filosign keys and workspace. This usually takes a few seconds."
-						: "Connecting your wallet and checking your Filosign account."
+					isRedeeming
+						? "Applying Teams Pro to your workspace. This usually takes a moment."
+						: isAutoRegistering
+							? "Creating your Filosign keys and workspace. This usually takes a few seconds."
+							: "Connecting your wallet and checking your Filosign account."
 				}
 			>
 				<div className="flex justify-center py-2">

@@ -164,6 +164,11 @@ export function useSignInController() {
 		switchAccountPending,
 		buttonLoading,
 		isRegistered,
+		autoRegisterStatus,
+		autoRegisterFailedPhase:
+			autoRegister?.status.status === "failed"
+				? autoRegister.status.phase
+				: null,
 		autoRegisterError:
 			autoRegister?.status.status === "failed"
 				? autoRegister.status.error

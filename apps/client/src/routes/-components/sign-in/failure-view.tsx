@@ -4,16 +4,33 @@ import { SignInCardShell } from "./card-shell";
 
 type Props = Pick<
 	SignInController,
-	"view" | "autoRegisterError" | "retryAutoRegister" | "isRegistered"
+	| "view"
+	| "autoRegisterError"
+	| "retryAutoRegister"
+	| "isRegistered"
+	| "autoRegisterFailedPhase"
 >;
 
-function failureCopy(view: Props["view"], errorMessage: string | null) {
+function failureCopy(
+	view: Props["view"],
+	errorMessage: string | null,
+	failedPhase: Props["autoRegisterFailedPhase"],
+) {
 	if (view === "bootstrap-failed") {
 		return {
 			title: "Setup could not finish",
 			description:
 				errorMessage ??
 				"We could not finish creating your Filosign keys. Try again, or sign out and use a different account.",
+		};
+	}
+
+	if (failedPhase === "redeem") {
+		return {
+			title: "Partner trial could not activate",
+			description:
+				errorMessage ??
+				"We could not apply your partner invite. Check your connection and try again.",
 		};
 	}
 
@@ -30,8 +47,9 @@ export function SignInFailureView({
 	autoRegisterError,
 	retryAutoRegister,
 	isRegistered,
+	autoRegisterFailedPhase,
 }: Props) {
-	const copy = failureCopy(view, autoRegisterError);
+	const copy = failureCopy(view, autoRegisterError, autoRegisterFailedPhase);
 
 	return (
 		<div className="space-y-8">

@@ -112,20 +112,29 @@ function SignInGateCompleteSignupCard({
 	gateState: Extract<GateState, { status: "ready" }>;
 }) {
 	const isPaidSetup = gateState.gate === "paid_setup";
+	const isPlatformInvite = gateState.gate === "platform_invite";
 
 	return (
 		<SignInCardShell
 			title={
-				signInGate.isReturningUser ? "Sign in to Filosign" : "Complete sign up"
+				isPlatformInvite
+					? "Activate your partner trial"
+					: signInGate.isReturningUser
+						? "Sign in to Filosign"
+						: "Complete sign up"
 			}
-			description={signInGatedCardSubtitle({
-				isReturningUser: signInGate.isReturningUser,
-				isAdminBootstrap: signInGate.isAdminBootstrap,
-				isPaidSetup,
-				planLabel: gateState.planLabel,
-				effectiveEmail: signInGate.effectiveEmail,
-				needsEmailInput: gateState.needsEmailInput,
-			})}
+			description={
+				isPlatformInvite
+					? "Sign in with the email on your invite to unlock Teams Pro on your workspace."
+					: signInGatedCardSubtitle({
+							isReturningUser: signInGate.isReturningUser,
+							isAdminBootstrap: signInGate.isAdminBootstrap,
+							isPaidSetup,
+							planLabel: gateState.planLabel,
+							effectiveEmail: signInGate.effectiveEmail,
+							needsEmailInput: gateState.needsEmailInput,
+						})
+			}
 			footer={<SignInTermsFooter />}
 		>
 			<Button

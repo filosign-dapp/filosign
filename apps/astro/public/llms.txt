@@ -1,15 +1,15 @@
 # Filosign
 
-> Wallet-native document signing: end-to-end encrypted files, verifiable signing records on Base, optional USDC payout packets, and gated file release when signing conditions are met. Public beta.
+> Wallet-native document signing: end-to-end encrypted files, verifiable signing records on Base, optional USDC payout packets, and gated file release when signing conditions are met.
 
 Extended product summary: https://filosign.xyz/llms-full.txt
 Sitemap: https://filosign.xyz/sitemap-index.xml
 
-## Product (try the app)
+## Product
 
-- https://sandbox.filosign.xyz - Try Filosign (testnet demo, no account required to explore)
-- https://app.filosign.xyz - Web application (wallet sign-in, send/sign envelopes)
-- https://filosign.xyz/pricing/ - Plans: Free, Solo, Teams, Teams Pro, Enterprise
+- https://filosign.xyz/pricing/ - Solo, Teams, and Teams Pro with 7-day free trials
+- https://filosign.xyz/docs/ - Product documentation
+- https://filosign.xyz/ - Landing: private agreements, attached payouts, proof exports
 
 ## Marketing
 

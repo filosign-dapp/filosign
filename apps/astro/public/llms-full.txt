@@ -14,7 +14,7 @@ Core properties:
 - **Non-custodial settlements** - Optional USDC payout legs via `FSPaymentValidator`; funds move payer to recipient wallets when release conditions pass, without Filosign custody.
 - **Decentralized storage** - Hot object storage with Filecoin backup and archival paths documented on-site.
 
-Public beta. Marketing site: https://filosign.xyz . Try demo: https://sandbox.filosign.xyz . App: https://app.filosign.xyz .
+Paid plans (Solo, Teams, Teams Pro) include 7-day free trials. Marketing site: https://filosign.xyz . Pricing: https://filosign.xyz/pricing . Docs: https://filosign.xyz/docs .
 
 ## Primary user journeys
 

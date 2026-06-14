@@ -22,7 +22,7 @@ export const MARKETING_OG_PAGES = {
 	changelog: {
 		title: "Changelog - What's new at Filosign",
 		description:
-			"How Filosign grew from private signing into agreement workflows with proof, teams, gated files, payout packets, and drafts.",
+			"What Filosign ships for modern teams: private signing, proof, payouts, workspaces, and workflow improvements - updated often.",
 	},
 	blog: {
 		title: "Blog - News and updates from Filosign",

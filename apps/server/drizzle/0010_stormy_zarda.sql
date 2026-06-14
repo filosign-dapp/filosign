@@ -1,0 +1,1 @@
+ALTER TABLE "product_feedback" DROP COLUMN "rating";

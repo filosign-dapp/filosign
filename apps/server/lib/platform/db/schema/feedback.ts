@@ -1,5 +1,6 @@
 import {
 	FEEDBACK_FEATURE_AREAS,
+	FEEDBACK_KINDS,
 	FEEDBACK_PROMPT_TYPES,
 } from "@filosign/shared";
 import * as t from "drizzle-orm/pg-core";
@@ -19,8 +20,8 @@ export const productFeedback = t.pgTable(
 			.uuid()
 			.references(() => organizations.id, { onDelete: "set null" }),
 		featureArea: t.text({ enum: FEEDBACK_FEATURE_AREAS }).notNull(),
+		kind: t.text({ enum: FEEDBACK_KINDS }).notNull().default("feedback"),
 		route: t.text(),
-		rating: t.integer(),
 		message: t.text(),
 		pieceCid: t.text(),
 		promptType: t

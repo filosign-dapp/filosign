@@ -18,3 +18,9 @@ export const FEEDBACK_PROMPT_TYPES = ["global", "contextual"] as const;
 export type FeedbackPromptType = (typeof FEEDBACK_PROMPT_TYPES)[number];
 
 export const zFeedbackPromptType = z.enum(FEEDBACK_PROMPT_TYPES);
+
+export const FEEDBACK_KINDS = ["feedback", "bug", "support"] as const;
+
+export type FeedbackKind = (typeof FEEDBACK_KINDS)[number];
+
+export const zFeedbackKind = z.enum(FEEDBACK_KINDS);

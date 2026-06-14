@@ -97,6 +97,7 @@ import {
 } from "./orgs-output";
 import {
 	rpcPlatformAdminAccessRequestsListOutputSchema,
+	rpcPlatformAdminFeedbackListOutputSchema,
 	rpcPlatformAdminInviteCreateOutputSchema,
 	rpcPlatformAdminInviteRebookOutputSchema,
 	rpcPlatformAdminInviteSendOutputSchema,
@@ -236,6 +237,7 @@ export const rpcOut = {
 		settlementAccessList: rpcPlatformAdminSettlementAccessListOutputSchema,
 		settlementAccessDecision:
 			rpcPlatformAdminSettlementAccessDecisionOutputSchema,
+		feedbackList: rpcPlatformAdminFeedbackListOutputSchema,
 	},
 	documents: {
 		list: rpcDocumentsListOutputSchema,
@@ -298,6 +300,7 @@ export {
 } from "@/lib/domains/drafts";
 export { zFileCommentAppendBody as zFilesCommentAppendInput } from "@/lib/domains/files";
 export {
+	zPlatformAdminFeedbackListInput,
 	zPlatformAdminInviteCreateInput,
 	zPlatformAdminSetFeatureOverridesInput,
 	zPlatformAdminSetPlanInput,

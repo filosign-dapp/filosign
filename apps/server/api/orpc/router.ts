@@ -38,6 +38,12 @@ import {
 } from "@/api/handlers/billing-handlers";
 import * as documentHandlers from "@/api/handlers/documents";
 import * as draftHandlers from "@/api/handlers/drafts";
+import {
+	feedbackSubmit,
+	platformAdminFeedbackList,
+	zFeedbackSubmitInput,
+	zFeedbackSubmitOutput,
+} from "@/api/handlers/feedback-handlers";
 import * as fileHandlers from "@/api/handlers/files";
 import {
 	metricsInvitesSummary,
@@ -112,6 +118,7 @@ import {
 	zDocumentsListInputSchema,
 	zNotificationsDismissInputSchema,
 	zNotificationsInboxInputSchema,
+	zPlatformAdminFeedbackListInput,
 	zPlatformAdminInviteCreateInput,
 	zPlatformAdminSetFeatureOverridesInput,
 	zPlatformAdminSetPlanInput,
@@ -330,6 +337,14 @@ export const appRouter = {
 					settlementAdminRejectAccess(context.userWallet, input),
 				),
 		},
+		feedback: {
+			list: authenticatedProcedure
+				.input(zPlatformAdminFeedbackListInput)
+				.output(out.platformAdmin.feedbackList)
+				.handler(({ context, input }) =>
+					platformAdminFeedbackList(context.userWallet, input),
+				),
+		},
 	},
 	drafts: {
 		create: orgProcedure
@@ -540,6 +555,14 @@ export const appRouter = {
 					context.activeOrg,
 					input,
 				),
+			),
+	},
+	feedback: {
+		submit: authenticatedProcedure
+			.input(zFeedbackSubmitInput)
+			.output(zFeedbackSubmitOutput)
+			.handler(({ context, input }) =>
+				feedbackSubmit(context.userWallet, input),
 			),
 	},
 	notifications: {

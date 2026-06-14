@@ -51,6 +51,9 @@
 		"./platform-access": {
 			"default": "./src/hooks/platform-access/index.ts"
 		},
+		"./feedback": {
+			"default": "./src/hooks/feedback/index.ts"
+		},
 		"./orpc": {
 			"default": "./src/orpc/index.ts"
 		}

@@ -1,5 +1,9 @@
 import { PLAN_IDS } from "@filosign/entitlements";
-import { zPlatformInviteEmailVariant } from "@filosign/shared";
+import {
+	zFeedbackFeatureArea,
+	zFeedbackPromptType,
+	zPlatformInviteEmailVariant,
+} from "@filosign/shared";
 import { z } from "zod";
 
 export const zPlatformAdminInviteCreateInput = z.object({
@@ -142,4 +146,29 @@ export const rpcPlatformAdminSettlementAccessDecisionOutputSchema = z.object({
 	reviewedAt: z.string().nullable().optional(),
 	reviewNote: z.string().nullable().optional(),
 	termsCurrent: z.boolean().optional(),
+});
+
+export const zPlatformAdminFeedbackListInput = z.object({
+	page: z.number().int().min(1).default(1),
+});
+
+export const rpcPlatformAdminFeedbackRowSchema = z.object({
+	id: z.uuid(),
+	walletAddress: z.string(),
+	userEmail: z.string().nullable(),
+	featureArea: zFeedbackFeatureArea,
+	route: z.string().nullable(),
+	rating: z.number().int().min(1).max(5).nullable(),
+	message: z.string().nullable(),
+	promptType: zFeedbackPromptType,
+	trigger: z.string().nullable(),
+	createdAt: z.iso.datetime(),
+});
+
+export const rpcPlatformAdminFeedbackListOutputSchema = z.object({
+	items: z.array(rpcPlatformAdminFeedbackRowSchema),
+	page: z.number().int().min(1),
+	pageSize: z.number().int().min(1),
+	totalCount: z.number().int().min(0),
+	totalPages: z.number().int().min(0),
 });

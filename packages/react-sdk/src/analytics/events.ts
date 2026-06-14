@@ -21,6 +21,7 @@ export const CLIENT_ANALYTICS_EVENTS = {
 	activationHintDismissed: "activation_hint_dismissed",
 	activationMilestoneMarked: "activation_milestone_marked",
 	activationEnvelopeStarted: "activation_envelope_started",
+	feedbackSubmitted: "feedback_submitted",
 	partnerTrialWelcomeShown: "partner_trial_welcome_shown",
 	partnerTrialWelcomeDismissed: "partner_trial_welcome_dismissed",
 } as const;

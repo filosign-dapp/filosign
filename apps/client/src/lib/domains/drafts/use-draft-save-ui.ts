@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { useServerDraftActions } from "@/src/lib/domains/drafts/server";
 import {
 	clearPersistedCreateFormFromDisk,
@@ -11,6 +12,7 @@ import {
 	placementManifestFromCreateForm,
 } from "@/src/lib/domains/drafts/utils/draft-form-state";
 import type { CreateForm } from "@/src/lib/domains/files/envelope-form-types";
+import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { safeAsync } from "@/src/lib/utils/safe";
 
@@ -91,15 +93,19 @@ export function useDraftSaveUi(args: {
 			if (!createForm || !placementManifest) return Promise.reject();
 			const doc = createForm.documents[0];
 			if (!doc) {
-				toast.error("Upload a document first");
+				toastUser.error(TOASTS.drafts.uploadFirst.title);
 				return Promise.reject();
 			}
 			if (!cryptoReady) {
-				toast.error(
-					cryptoNeedsRecovery
-						? "Unlock encryption keys with your recovery phrase before saving."
-						: "Unlocking encryption keys. Try saving again in a moment.",
-				);
+				if (cryptoNeedsRecovery) {
+					toastUser.error(TOASTS.drafts.unlockBeforeSave.title, {
+						hint: TOASTS.drafts.unlockBeforeSave.hint,
+					});
+				} else {
+					toastUser.error(TOASTS.drafts.keysUnlocking.title, {
+						hint: TOASTS.drafts.keysUnlocking.hint,
+					});
+				}
 				return Promise.reject();
 			}
 			const hasServerDraft = Boolean(createForm.serverDraftId?.trim());
@@ -131,9 +137,7 @@ export function useDraftSaveUi(args: {
 				}),
 			).then(([, err]) => {
 				if (err) {
-					toast.error(
-						err.message.length > 0 ? err.message : "Failed to save draft",
-					);
+					showAppErrorToast(err);
 					return;
 				}
 				const saved = useStorePersist.getState().createForm;

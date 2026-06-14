@@ -1,6 +1,7 @@
 import { useRenameDraft } from "@filosign/react/drafts";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 
 /** Rename dialog state + mutation for draft rows in document lists. */
 export function useDraftRename() {
@@ -29,7 +30,7 @@ export function useDraftRename() {
 					draftId: renameTarget.id,
 					title: trimmed,
 				});
-				toast.success("Draft renamed");
+				toastUser.success(TOASTS.drafts.renamed);
 				setRenameTarget(null);
 			} catch {}
 		},

@@ -7,7 +7,8 @@ import {
 import type { ActivationStepId, BillingPlanId } from "@filosign/shared";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { resolveActivationStepHref } from "@/src/lib/domains/activation/resolve-step-href";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { safeAsync } from "@/src/lib/utils/safe";
@@ -89,12 +90,7 @@ export function useStartHereController() {
 				lastSeenBillingPlanId: billingPlanId,
 				seenAdvancedStepIds: advancedStepIds,
 			});
-			toast.success("New tutorials are available for your plan.", {
-				action: {
-					label: "View",
-					onClick: () => navigate({ to: "/dashboard/support/tutorials" }),
-				},
-			});
+			toastUser.success(TOASTS.activation.newTutorials.title);
 			return;
 		}
 
@@ -208,14 +204,18 @@ export function useStartHereController() {
 				ensureAcknowledged(existingPracticePieceCid),
 			);
 			if (ackError) {
-				toast.error("Could not accept your practice document. Try again.");
+				toastUser.error(TOASTS.activation.practiceAcceptFailed.title, {
+					hint: TOASTS.activation.practiceAcceptFailed.hint,
+				});
 				return;
 			}
 			pieceCid = existingPracticePieceCid;
 		} else {
 			const [provisioned, error] = await safeAsync(provision());
 			if (error || !provisioned) {
-				toast.error("Could not prepare your practice document. Try again.");
+				toastUser.error(TOASTS.activation.practicePrepareFailed.title, {
+					hint: TOASTS.activation.practicePrepareFailed.hint,
+				});
 				return;
 			}
 			pieceCid = provisioned;

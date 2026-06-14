@@ -1,7 +1,8 @@
 import { useArchiveDraft } from "@filosign/react/drafts";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { isServerDraftSyncFromUrl } from "@/src/lib/domains/drafts";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 
@@ -42,7 +43,7 @@ export function useDraftDelete() {
 					});
 				}
 			}
-			toast.success("Draft deleted");
+			toastUser.success(TOASTS.drafts.deleted);
 			setDeleteDraftId(null);
 		} catch {}
 	}, [archive, clearCreateForm, deleteDraftId, navigate]);

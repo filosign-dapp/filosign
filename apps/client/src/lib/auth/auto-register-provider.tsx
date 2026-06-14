@@ -13,9 +13,10 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { toast } from "sonner";
 import { useAuthToken } from "thirdweb/react";
 import { bootstrapNewAccount } from "@/src/lib/auth/bootstrap-new-account";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { showAppErrorToast } from "@/src/lib/errors";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import {
@@ -154,8 +155,8 @@ export function AutoRegisterProvider({ children }: { children: ReactNode }) {
 			} else if (!shouldPreservePartnerInviteGate(error)) {
 				showAppErrorToast(error);
 			} else {
-				toast.error("Could not activate partner trial", {
-					description: "Check your connection and try again.",
+				toastUser.error(TOASTS.auth.partnerTrialFailed.title, {
+					hint: TOASTS.auth.partnerTrialFailed.hint,
 				});
 			}
 

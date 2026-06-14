@@ -9,7 +9,6 @@ import { useActiveOrganization } from "@filosign/react/orgs";
 import { type DraftSnapshot, digestDraftSnapshot } from "@filosign/shared";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import {
 	buildCreateForm,
 	loadDocumentBytes,
@@ -32,6 +31,7 @@ import type {
 	StoredDocument,
 } from "@/src/lib/domains/files/envelope-form-types";
 import { normalizeSignatureFieldsList } from "@/src/lib/domains/files/field-box";
+import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 
 const LOG_PREFIX = "[draft-save]";
@@ -352,11 +352,7 @@ export function useServerDraftHydrate(args: {
 				if (cancelled) return;
 				lastServerHydrateRef.current = null;
 				setServerDraftLoadState("error");
-				toast.error(
-					err instanceof Error && err.message.length > 0
-						? err.message
-						: "Failed to open draft",
-				);
+				showAppErrorToast(err);
 				void navigate({
 					to: "/dashboard/document/all",
 					search: { tab: "drafts" },

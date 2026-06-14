@@ -2,7 +2,6 @@ import { useCreateOrganization, useOrganizations } from "@filosign/react/orgs";
 import { useUserProfile } from "@filosign/react/users";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Card,
@@ -14,6 +13,8 @@ import {
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { Loader } from "@/src/lib/components/ui/loader";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { hydrationMark } from "@/src/lib/utils/hydration-lifecycle";
@@ -46,7 +47,7 @@ function WorkspaceSetupGate() {
 			);
 			if (res?.organization?.id) {
 				setActiveOrg(res.organization.id);
-				toast.success("Workspace created successfully!");
+				toastUser.success(TOASTS.workspace.created);
 				requestAnimationFrame(() => {
 					navigateToReturnTo(navigate);
 				});

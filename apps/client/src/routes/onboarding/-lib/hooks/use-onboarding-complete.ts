@@ -1,3 +1,4 @@
+import { useFilosignContext } from "@filosign/react";
 import {
 	CLIENT_ANALYTICS_EVENTS,
 	useCaptureAppEvent,
@@ -8,11 +9,17 @@ import {
 	useUpdateOrganization,
 } from "@filosign/react/orgs";
 import { useUpdateUserProfile } from "@filosign/react/users";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
 	defaultWorkspaceName,
+	isReservedAccountFirstName,
 	personalizedWorkspaceName,
 } from "@/src/lib/auth/account-defaults";
+import {
+	navigatePostAuthDestination,
+	resolvePostAuthDestination,
+} from "@/src/lib/auth/post-auth-destination";
 import type { ColdInviteEntrySearch } from "@/src/lib/domains/invites/cold-invite-search";
 import { signDocumentSearchFromColdEntry } from "@/src/lib/domains/invites/cold-invite-search";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
@@ -23,6 +30,8 @@ import type { OnboardingNamePayload } from "@/src/routes/onboarding/-components/
 /** Profile sync, workspace rename, and post-personalization navigation. */
 export function useOnboardingComplete() {
 	const captureAppEvent = useCaptureAppEvent();
+	const queryClient = useQueryClient();
+	const { wallet, rpcQuery } = useFilosignContext();
 	const updateUserProfile = useUpdateUserProfile();
 	const updateOrganization = useUpdateOrganization();
 	const { data: orgsData } = useOrganizations();
@@ -41,6 +50,9 @@ export function useOnboardingComplete() {
 
 		const firstName = names.firstName.trim();
 		const lastName = names.lastName.trim();
+		if (isReservedAccountFirstName(firstName)) {
+			return;
+		}
 		if (firstName) {
 			await updateUserProfile.mutateAsync({
 				firstName,
@@ -70,23 +82,46 @@ export function useOnboardingComplete() {
 				lastName: "",
 				hasOnboarded: true,
 			});
+
+			await queryClient.refetchQueries({
+				queryKey: [
+					...rpcQuery.users.profile.me.key(),
+					wallet?.account.address ?? null,
+				],
+			});
 		}
 
-		const coldSign = signDocumentSearchFromColdEntry(search);
-		if (coldSign) {
+		if (!firstName) {
+			const coldSign = signDocumentSearchFromColdEntry(search);
+			if (coldSign) {
+				await navigate({
+					to: "/dashboard/document/sign",
+					search: coldSign,
+				});
+				return;
+			}
+
 			await navigate({
-				to: "/dashboard/document/sign",
-				search: coldSign,
+				to: "/dashboard",
+				search: {
+					upgrade: search.upgrade,
+					interval: search.interval,
+				},
 			});
 			return;
 		}
 
-		await navigate({
-			to: "/dashboard",
-			search: {
-				upgrade: search.upgrade,
-				interval: search.interval,
-			},
+		const destination = resolvePostAuthDestination({
+			coldSearch: search,
+			signSearch: signDocumentSearchFromColdEntry(search),
+			profile: { firstName },
+			profilePending: false,
 		});
+
+		if (destination.type === "pending" || destination.type === "onboarding") {
+			return;
+		}
+
+		await navigatePostAuthDestination(navigate, destination);
 	};
 }

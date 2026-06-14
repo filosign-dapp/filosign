@@ -3,8 +3,9 @@ import { useIsRegistered, useLogout } from "@filosign/react/auth";
 import { useUserProfile } from "@filosign/react/users";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { isPersonalizationComplete } from "@/src/lib/auth/account-defaults";
 import { useAutoRegisterOptional } from "@/src/lib/auth/auto-register-provider";
+import { resolvePostAuthDestination } from "@/src/lib/auth/post-auth-destination";
+import { useNavigatePostAuthOnce } from "@/src/lib/auth/use-navigate-post-auth-once";
 import {
 	hasColdReturn,
 	signDocumentSearchFromColdEntry,
@@ -28,13 +29,20 @@ export function useSignInController() {
 	const logoutFilosign = useLogout();
 	const clearOnboardingForm = useStorePersist((s) => s.clearOnboardingForm);
 	const isRegistered = useIsRegistered();
-	const { data: userProfile, isPending: profilePending } = useUserProfile({
+	const {
+		data: userProfile,
+		isPending: profilePending,
+		isFetching: profileFetching,
+	} = useUserProfile({
 		enabled: authenticated && isRegistered.data === true,
 	});
 	const autoRegister = useAutoRegisterOptional();
 	const navigate = useNavigate();
 	const [switchAccountPending, setSwitchAccountPending] = useState(false);
 	const coldSearch = useSearch({ from: "/" });
+	const navigatePostAuth = useNavigatePostAuthOnce({
+		resetKey: `${coldSearch.coldPieceCid}:${coldSearch.coldInvite}:${coldSearch.skipColdSign}`,
+	});
 	const signInGate = useSignInGate(coldSearch);
 
 	const coldReturn = useMemo(
@@ -68,46 +76,29 @@ export function useSignInController() {
 		if (isRegistered.isPending) return;
 		if (isRegistered.data !== true) return;
 		if (!autoRegisterReady) return;
-		if (signSearch) {
-			void navigate({
-				to: "/dashboard/document/sign",
-				search: signSearch,
-				replace: true,
-			});
-			return;
-		}
-		if (profilePending) return;
-		if (!isPersonalizationComplete(userProfile)) {
-			void navigate({
-				to: "/onboarding",
-				search: {
-					upgrade: coldSearch.upgrade,
-					interval: coldSearch.interval,
-				},
-				replace: true,
-			});
-			return;
-		}
-		void navigate({
-			to: "/dashboard",
-			replace: true,
-			search: {
-				upgrade: coldSearch.upgrade,
-				interval: coldSearch.interval,
-			},
+
+		const destination = resolvePostAuthDestination({
+			coldSearch,
+			signSearch,
+			profile: userProfile,
+			profilePending: profilePending || profileFetching,
 		});
+
+		if (destination.type === "pending") return;
+
+		navigatePostAuth(destination, { replace: true });
 	}, [
 		ready,
 		authenticated,
 		isRegistered.isPending,
 		isRegistered.data,
 		autoRegisterReady,
-		navigate,
+		navigatePostAuth,
 		signSearch,
 		profilePending,
+		profileFetching,
 		userProfile,
-		coldSearch.upgrade,
-		coldSearch.interval,
+		coldSearch,
 	]);
 
 	const walletAddress = wallet?.account.address;

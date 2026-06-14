@@ -1,55 +1,44 @@
 import { useUserProfile } from "@filosign/react/users";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { useSearch } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { isPersonalizationComplete } from "@/src/lib/auth/account-defaults";
-import {
-	coldInviteEntrySearchSchema,
-	signDocumentSearchFromColdEntry,
-} from "@/src/lib/domains/invites/cold-invite-search";
+import { resolvePostAuthDestination } from "@/src/lib/auth/post-auth-destination";
+import { useNavigatePostAuthOnce } from "@/src/lib/auth/use-navigate-post-auth-once";
+import { signDocumentSearchFromColdEntry } from "@/src/lib/domains/invites/cold-invite-search";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
 export function useOnboardingRegisteredGuestRedirect() {
-	const navigate = useNavigate();
+	const coldSearch = useSearch({ from: "/onboarding/" });
 	const { ready, authenticated } = useThirdweb();
 	const { data: profile, isPending: profilePending } = useUserProfile({
 		enabled: ready && authenticated,
 	});
-	const coldSignSearch = useRouterState({
-		select: (s) => {
-			const p = coldInviteEntrySearchSchema.safeParse(s.location.search);
-			return p.success ? signDocumentSearchFromColdEntry(p.data) : null;
-		},
+	const navigatePostAuth = useNavigatePostAuthOnce({
+		resetKey: `${coldSearch.coldPieceCid}:${coldSearch.coldInvite}:${coldSearch.skipColdSign}`,
 	});
 
 	useEffect(() => {
 		if (!ready || !authenticated || profilePending) return;
 		if (!isPersonalizationComplete(profile)) return;
 
-		const parsedSearch = coldInviteEntrySearchSchema.safeParse(
-			window.location.search,
-		);
-		const billingSearch = parsedSearch.success
-			? {
-					upgrade: parsedSearch.data.upgrade,
-					interval: parsedSearch.data.interval,
-				}
-			: undefined;
+		const destination = resolvePostAuthDestination({
+			coldSearch,
+			signSearch: signDocumentSearchFromColdEntry(coldSearch),
+			profile,
+			profilePending: false,
+		});
 
-		if (coldSignSearch) {
-			navigate({
-				to: "/dashboard/document/sign",
-				search: coldSignSearch,
-				replace: true,
-			});
+		if (destination.type === "pending" || destination.type === "onboarding") {
 			return;
 		}
-		navigate({
-			to: "/dashboard",
-			replace: true,
-			search: {
-				upgrade: billingSearch?.upgrade,
-				interval: billingSearch?.interval,
-			},
-		});
-	}, [ready, authenticated, profile, profilePending, coldSignSearch, navigate]);
+
+		navigatePostAuth(destination, { replace: true });
+	}, [
+		ready,
+		authenticated,
+		profile,
+		profilePending,
+		coldSearch,
+		navigatePostAuth,
+	]);
 }

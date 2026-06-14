@@ -1,5 +1,6 @@
 import { CaretRightIcon } from "@phosphor-icons/react";
-import { type KeyboardEvent, useState } from "react";
+import { type KeyboardEvent, useMemo, useState } from "react";
+import { isReservedAccountFirstName } from "@/src/lib/auth/account-defaults";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	FeatureShellActions,
@@ -7,6 +8,7 @@ import {
 } from "@/src/lib/components/ui/feature-shell";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { InlineLoader } from "@/src/lib/components/ui/loader";
 
 export type OnboardingNamePayload = {
 	firstName: string;
@@ -25,15 +27,23 @@ export function OnboardingNameForm({
 	const [firstName, setFirstName] = useState("");
 	const [lastName, setLastName] = useState("");
 
+	const trimmedFirstName = firstName.trim();
+	const reservedFirstName = useMemo(
+		() => isReservedAccountFirstName(trimmedFirstName),
+		[trimmedFirstName],
+	);
+	const canContinue = Boolean(trimmedFirstName) && !reservedFirstName;
+
 	const submit = () => {
+		if (!canContinue) return;
 		void onContinue({
-			firstName: firstName.trim(),
+			firstName: trimmedFirstName,
 			lastName: lastName.trim(),
 		});
 	};
 
 	const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-		if (event.key === "Enter" && firstName.trim() && !disabled) {
+		if (event.key === "Enter" && canContinue && !disabled) {
 			submit();
 		}
 	};
@@ -52,7 +62,13 @@ export function OnboardingNameForm({
 						placeholder="John"
 						autoFocus
 						disabled={disabled}
+						aria-invalid={reservedFirstName || undefined}
 					/>
+					{reservedFirstName ? (
+						<p className="text-sm text-destructive">
+							Choose a different first name. That placeholder is not allowed.
+						</p>
+					) : null}
 				</div>
 				<div className="space-y-2">
 					<Label htmlFor="onboarding-last-name">Last name</Label>
@@ -68,23 +84,26 @@ export function OnboardingNameForm({
 				</div>
 			</div>
 			<FeatureShellActions>
-				<Button
-					type="button"
-					onClick={submit}
-					disabled={!firstName.trim() || disabled}
-					className="group w-full"
-					variant="primary"
-					size="lg"
-					isLoading={disabled}
-				>
-					Continue
-					{!disabled ? (
+				{disabled ? (
+					<div className="flex w-full justify-center py-2">
+						<InlineLoader size="lg" />
+					</div>
+				) : (
+					<Button
+						type="button"
+						onClick={submit}
+						disabled={!canContinue}
+						className="group w-full"
+						variant="primary"
+						size="lg"
+					>
+						Continue
 						<CaretRightIcon
 							className="size-4 transition-transform duration-200 group-hover:translate-x-1"
 							weight="bold"
 						/>
-					) : null}
-				</Button>
+					</Button>
+				)}
 			</FeatureShellActions>
 		</FeatureShellBody>
 	);

@@ -23,7 +23,6 @@ Copy `.env.example` to `.env` and set:
 # Local dev (server :3000, client :3001, astro :3002)
 PUBLIC_ASTRO_URL=http://localhost:3002
 PUBLIC_CLIENT_URL=http://localhost:3001
-PUBLIC_SANDBOX_CLIENT_URL=http://localhost:3001
 PUBLIC_SERVER_URL=http://localhost:3000
 ```
 
@@ -32,8 +31,7 @@ PUBLIC_SERVER_URL=http://localhost:3000
 | Variable | Default (local) | Description |
 |----------|-----------------|-------------|
 | `PUBLIC_ASTRO_URL` | `http://localhost:3002` | Marketing origin - canonical URLs, OG images, sitemap, email static assets |
-| `PUBLIC_CLIENT_URL` | `http://localhost:3001` | Legacy / misc links (optional) |
-| `PUBLIC_SANDBOX_CLIENT_URL` | `https://sandbox.filosign.xyz` | “Try Filosign” CTA - open sandbox client (testnet demo) |
+| `PUBLIC_CLIENT_URL` | `http://localhost:3001` | Help redirects to in-app Support Center |
 | `PUBLIC_SERVER_URL` | `http://localhost:3000` | Filosign API base for oRPC (`@filosign/react/orpc` → `/api/rpc`) |
 
 Canonical URLs default from `PUBLIC_ASTRO_URL` + current path in `BaseLayout` unless you pass `canonicalUrl`.
@@ -89,10 +87,8 @@ All marketing pages migrated from the React app:
 
 Shared CTAs live in `src/lib/marketing-cta.ts` and `MarketingCtaButtons`:
 
-- **Get started** → `/pricing` (choose a plan or checkout)
-- **Try Filosign** → `PUBLIC_SANDBOX_CLIENT_URL` (opens sandbox client in a new tab)
-
-Set `PUBLIC_SANDBOX_CLIENT_URL` in `.env` for each deployment (e.g. `https://sandbox.filosign.xyz` in production, `http://localhost:3001` locally).
+- **Start Free Trial** → `/pricing`
+- **See how it works** → `/#how-it-works` (secondary on most pages)
 
 ## Marketing mocks
 

@@ -4,7 +4,7 @@ import { landingMedia } from "../../config/landing-media";
 import { cn } from "../../lib/cn";
 import { marketingHeroSectionClass } from "../../lib/marketing-layout";
 import MarketingCtaButtons from "./MarketingCtaButtons";
-import MotionAwareVideo from "./MotionAwareVideo";
+// import MotionAwareVideo from "./MotionAwareVideo";
 import { MotionProvider } from "./MotionProvider";
 
 export default function MarketingHero() {
@@ -17,7 +17,7 @@ export default function MarketingHero() {
 			<section
 				className={cn(
 					marketingHeroSectionClass,
-					"flex flex-col gap-6 md:gap-8",
+					"flex flex-col gap-6 md:gap-10",
 				)}
 			>
 				<motion.div
@@ -51,8 +51,7 @@ export default function MarketingHero() {
 						className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed -mt-2 font-manrope font-light text-pretty"
 					>
 						Send private documents, collect signatures, and release payouts or
-						files only when the right conditions are met. Filosign gives
-						sensitive workflows one place to sign, prove, and execute.
+						files only when the right conditions are met.
 					</motion.p>
 
 					<motion.div
@@ -83,14 +82,24 @@ export default function MarketingHero() {
 					}}
 					className="relative flex items-center justify-center rounded-3xl mt-4 overflow-hidden"
 				>
-					<MotionAwareVideo
+					{/* TEMP: demo video disabled — restore MotionAwareVideo block when ready */}
+					<img
+						src={landingMedia.heroStaticImage}
+						alt="Filosign agreement workflow preview"
+						width={1200}
+						height={675}
+						className="w-full h-auto aspect-video rounded-large relative z-10 shadow-sm object-cover"
+						loading="eager"
+						decoding="async"
+					/>
+					{/* <MotionAwareVideo
 						width={1200}
 						height={600}
 						poster={landingMedia.demoVideoPoster}
 						className="w-full h-auto aspect-video rounded-large relative z-10 shadow-sm object-cover"
 					>
 						<source src={landingMedia.demoVideo} type="video/webm" />
-					</MotionAwareVideo>
+					</MotionAwareVideo> */}
 				</motion.div>
 			</section>
 		</MotionProvider>

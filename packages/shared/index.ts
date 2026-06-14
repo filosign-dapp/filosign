@@ -1,5 +1,6 @@
 export * from "./activation";
 export * from "./feedback";
+export * from "./platform-invite";
 export * from "./utils/attachment";
 export * from "./utils/attachment-packet-validation";
 export * from "./utils/compliance";

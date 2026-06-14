@@ -2,7 +2,7 @@
 
 Filosign sends **custom product events** to PostHog for funnels, retention, and debugging. This document is the event catalog and how to use it in PostHog.
 
-**Not in PostHog:** billing limits, entitlements, admin invite totals - those live in Postgres and `metrics.*` oRPC.
+**Not in PostHog:** billing limits, entitlements, paid conversion after partner trial — those live in Postgres and `metrics.*` oRPC. Design partner invite create/redeem events are tracked (see Design partner funnel below).
 
 ---
 
@@ -81,6 +81,9 @@ Defined in [`apps/server/lib/platform/analytics/events.ts`](apps/server/lib/plat
 | `piece_acknowledged` | Recipient/signer | ✓ | Piece acknowledged (warm: ack API; cold: same request as claim) | `mode`: `cold` \| `warm` |
 | `piece_signed` | Signer | ✓ | Signing completes | `field_count` |
 | `envelope_fully_signed` | Sender | ✓ | All required signatures done | - |
+| `activation_milestone_recorded` | Wallet | - | Activation milestone first persisted | `milestone`, `deployment` |
+| `platform_invite_created` | Admin wallet or `system:platform-invites` | - | Design partner invite created in admin | `email_variant`, `invite_id`, `plan_id`, `trial_days`, `invite_kind` |
+| `platform_invite_redeemed` | Invitee wallet | - | Partner invite token redeemed | `email_variant`, `invite_id`, `plan_id`, `trial_days`, `invite_kind` |
 
 **Cold flow - two wallets, one `piece_cid`:**
 
@@ -136,6 +139,17 @@ Do not start with `cold_invite_created` (that event is on the sender).
 **Invite volume**
 
 Trends: compare event counts for `cold_invite_created` vs `cold_invite_claimed` (not a single-user funnel).
+
+**Design partner funnel (warm / cold / custom email variants)**
+
+Warm, cold, and custom are email copy variants for the same entry URL (`/?platformInvite=…`). They are not separate routes and are unrelated to document cold invites.
+
+| Insight | PostHog setup |
+| --- | --- |
+| Invited by variant | **Trends** → event `platform_invite_created` → breakdown `email_variant` |
+| Join → first envelope | **Funnel** → step 1 `platform_invite_redeemed`, step 2 `activation_milestone_recorded` where `milestone = first_envelope_sent` → breakdown step 1 by `email_variant` |
+
+Filter `deployment = production` (and `chain` if needed). Events only accumulate from deploy forward; historical partner counts stay in Postgres (`platform_invites`, `platform_invite_redemptions`). Paid conversion after trial is not in PostHog v1 — query `organization_subscriptions` for partner redeemers with `provider = dodo` and `status = active`.
 
 **Common mistake:** one funnel `cold_invite_created` → `cold_invite_claimed` with “Same user” will show ~0% conversion even when the product works, because step 1 is the sender and step 2 is the signer.
 

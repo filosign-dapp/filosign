@@ -3,8 +3,13 @@ import type { PostHogExceptionProperties } from "@filosign/logger";
 import { createPostHogRuntime } from "@filosign/logger";
 import {
 	type AnalyticsProperties,
+	type PlatformInviteEmailVariant,
+	type PlatformInviteKind,
+	platformInviteAnalyticsProperties,
 	scrubAnalyticsProperties,
 } from "@filosign/shared";
+import type { Address } from "viem";
+import { getAddress } from "viem";
 
 // ==========================================
 // 1. Events Constants & Types
@@ -20,6 +25,8 @@ export const SERVER_ANALYTICS_EVENTS = {
 	pieceSigned: "piece_signed",
 	envelopeFullySigned: "envelope_fully_signed",
 	activationMilestoneRecorded: "activation_milestone_recorded",
+	platformInviteCreated: "platform_invite_created",
+	platformInviteRedeemed: "platform_invite_redeemed",
 } as const;
 
 export type ServerAnalyticsEvent =
@@ -209,5 +216,39 @@ export function trackServerEvent(args: {
 			...envelope?.properties,
 		},
 		groups: envelope?.groups,
+	});
+}
+
+const PLATFORM_INVITE_SYSTEM_DISTINCT_ID = "system:platform-invites";
+
+export function trackPlatformInviteCreated(args: {
+	adminWallet?: Address | null;
+	inviteId: string;
+	emailVariant: PlatformInviteEmailVariant;
+	planId: string;
+	trialDays: number;
+	inviteKind: PlatformInviteKind;
+}): void {
+	trackServerEvent({
+		distinctId: args.adminWallet
+			? getAddress(args.adminWallet)
+			: PLATFORM_INVITE_SYSTEM_DISTINCT_ID,
+		event: SERVER_ANALYTICS_EVENTS.platformInviteCreated,
+		properties: platformInviteAnalyticsProperties(args),
+	});
+}
+
+export function trackPlatformInviteRedeemed(args: {
+	wallet: Address;
+	inviteId: string;
+	emailVariant: PlatformInviteEmailVariant;
+	planId: string;
+	trialDays: number;
+	inviteKind: PlatformInviteKind;
+}): void {
+	trackServerEvent({
+		distinctId: getAddress(args.wallet),
+		event: SERVER_ANALYTICS_EVENTS.platformInviteRedeemed,
+		properties: platformInviteAnalyticsProperties(args),
 	});
 }

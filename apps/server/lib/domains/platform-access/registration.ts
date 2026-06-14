@@ -7,6 +7,7 @@ import { getAddress } from "viem";
 import env from "@/env";
 import { isOrgBillingPlanId } from "@/lib/domains/billing/utils/policy";
 import { grantPartnerInviteSettlementAccessWithTx } from "@/lib/domains/settlement-access/settlement-access";
+import { trackPlatformInviteRedeemed } from "@/lib/platform/analytics";
 import {
 	CACHE_TTL,
 	cacheAside,
@@ -127,6 +128,15 @@ export async function redeemPlatformInviteOnRegisterWithTx(
 			updatedAt: new Date(),
 		})
 		.where(eq(platformInvites.id, invite.id));
+
+	trackPlatformInviteRedeemed({
+		wallet,
+		inviteId: invite.id,
+		emailVariant: invite.emailVariant,
+		planId: invite.planId,
+		trialDays: invite.trialDays,
+		inviteKind: invite.kind,
+	});
 }
 
 export async function redeemPlatformInviteOnRegister(args: {

@@ -6,6 +6,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import { getPersonalOrganizationId } from "@/lib/domains/orgs/workspace";
+import { trackPlatformInviteCreated } from "@/lib/platform/analytics";
 import { invalidateOrgEntitlements } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import {
@@ -59,6 +60,15 @@ export async function createPlatformInvite(args: {
 			message: "Failed to create invite",
 		});
 	}
+
+	trackPlatformInviteCreated({
+		adminWallet: row.createdByAdminWallet,
+		inviteId: row.id,
+		emailVariant: row.emailVariant,
+		planId: row.planId,
+		trialDays: row.trialDays,
+		inviteKind: row.kind,
+	});
 
 	return row;
 }

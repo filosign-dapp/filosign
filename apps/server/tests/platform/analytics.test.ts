@@ -133,3 +133,73 @@ describe("trackServerEvent", () => {
 		expect(posthogCaptures[0]?.groups).toEqual({ envelope: pieceCid });
 	});
 });
+
+describe("trackPlatformInviteCreated", () => {
+	test("captures invite created with email_variant and admin distinct_id", async () => {
+		const { trackPlatformInviteCreated } = await import(
+			"@/lib/platform/analytics"
+		);
+		const adminWallet = "0x00000000000000000000000000000000000000aa";
+		trackPlatformInviteCreated({
+			adminWallet,
+			inviteId: "invite-1",
+			emailVariant: "warm",
+			planId: "teams_pro",
+			trialDays: 30,
+			inviteKind: "partner_trial",
+		});
+		expect(posthogCaptures).toHaveLength(1);
+		expect(posthogCaptures[0]?.event).toBe(
+			SERVER_ANALYTICS_EVENTS.platformInviteCreated,
+		);
+		expect(posthogCaptures[0]?.distinctId).toBe(adminWallet);
+		expect(posthogCaptures[0]?.properties).toMatchObject({
+			email_variant: "warm",
+			invite_id: "invite-1",
+			plan_id: "teams_pro",
+			trial_days: 30,
+			invite_kind: "partner_trial",
+		});
+	});
+
+	test("uses system distinct_id when admin wallet is missing", async () => {
+		const { trackPlatformInviteCreated } = await import(
+			"@/lib/platform/analytics"
+		);
+		trackPlatformInviteCreated({
+			inviteId: "invite-2",
+			emailVariant: "custom",
+			planId: "teams_pro",
+			trialDays: 14,
+			inviteKind: "partner_trial",
+		});
+		expect(posthogCaptures[0]?.distinctId).toBe("system:platform-invites");
+	});
+});
+
+describe("trackPlatformInviteRedeemed", () => {
+	test("captures invite redeemed with invitee wallet distinct_id", async () => {
+		const { trackPlatformInviteRedeemed } = await import(
+			"@/lib/platform/analytics"
+		);
+		const wallet = "0x00000000000000000000000000000000000000bb";
+		trackPlatformInviteRedeemed({
+			wallet,
+			inviteId: "invite-3",
+			emailVariant: "cold",
+			planId: "teams_pro",
+			trialDays: 30,
+			inviteKind: "partner_trial",
+		});
+		expect(posthogCaptures).toHaveLength(1);
+		expect(posthogCaptures[0]?.event).toBe(
+			SERVER_ANALYTICS_EVENTS.platformInviteRedeemed,
+		);
+		expect(posthogCaptures[0]?.distinctId).toBe(wallet);
+		expect(posthogCaptures[0]?.properties).toMatchObject({
+			email_variant: "cold",
+			invite_id: "invite-3",
+			invite_kind: "partner_trial",
+		});
+	});
+});

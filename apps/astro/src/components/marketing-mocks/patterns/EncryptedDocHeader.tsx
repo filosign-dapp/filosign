@@ -15,8 +15,8 @@ export default function EncryptedDocHeader({
 	recipients = [mockPersonas.alice.email, mockPersonas.bob.email],
 }: EncryptedDocHeaderProps) {
 	return (
-		<div className="space-y-4">
-			<div className="flex items-start gap-3">
+		<div className="min-w-0 space-y-4">
+			<div className="flex min-w-0 items-start gap-3">
 				<div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
 					<FileTextIcon className="size-5" weight="fill" aria-hidden />
 				</div>
@@ -28,7 +28,7 @@ export default function EncryptedDocHeader({
 						{fieldCount} signature fields
 					</div>
 				</div>
-				<MockBadge className="px-2 py-0.5">Encrypted</MockBadge>
+				<MockBadge className="shrink-0 px-2 py-0.5">Encrypted</MockBadge>
 			</div>
 			<div className="flex flex-wrap gap-2">
 				{recipients.map((email) => (

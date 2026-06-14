@@ -123,8 +123,8 @@ export default function TrustCtaBand() {
 							className="md:justify-end"
 							primaryHref={MARKETING_CTA.getStartedHref}
 							primaryLabel={MARKETING_CTA.getStartedLabel}
-							secondaryHref={MARKETING_CTA.sandboxUrl}
-							secondaryLabel={MARKETING_CTA.tryFilosignLabel}
+							secondaryHref={MARKETING_CTA.exploreHref}
+							secondaryLabel={MARKETING_CTA.exploreLabel}
 						/>
 					</div>
 				</motion.div>

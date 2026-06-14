@@ -39,8 +39,8 @@ export default function AboutCtaBand() {
 									Ready to move the whole workflow?
 								</h2>
 								<p className="font-manrope text-base leading-relaxed text-muted-foreground">
-									See how it works on the homepage, pick a plan, or try the
-									sandbox when you are ready to run a real envelope.
+									See how it works on the homepage, read the docs, or start a
+									7-day free trial on Solo, Teams, or Teams Pro.
 								</p>
 								<a
 									href="/security"
@@ -51,7 +51,11 @@ export default function AboutCtaBand() {
 							</div>
 
 							<div className="self-start">
-								<MarketingCtaButtons size="md" />
+								<MarketingCtaButtons
+									size="md"
+									secondaryHref="/docs"
+									secondaryLabel="Read the docs"
+								/>
 							</div>
 						</div>
 					</div>

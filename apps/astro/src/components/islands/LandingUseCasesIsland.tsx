@@ -71,7 +71,7 @@ export default function LandingUseCasesIsland() {
 					</p>
 				</div>
 
-				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+				<div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-6">
 					{useCases.map((item, i) => (
 						<motion.article
 							key={item.title}
@@ -80,14 +80,14 @@ export default function LandingUseCasesIsland() {
 							viewport={{ once: true }}
 							transition={{ delay: i * 0.08 }}
 							className={cn(
-								"flex flex-col rounded-2xl bg-muted",
+								"flex min-w-0 flex-col overflow-hidden rounded-2xl bg-muted",
 								"wide" in item && item.wide
 									? "md:col-span-1 lg:col-span-3"
 									: "lg:col-span-2",
 							)}
 						>
-							<div className="p-4">{item.mock}</div>
-							<div className="flex flex-1 flex-col p-5 pt-0">
+							<div className="min-w-0 p-4">{item.mock}</div>
+							<div className="flex min-w-0 flex-1 flex-col p-5 pt-0">
 								<h3 className="mb-2 font-manrope text-base font-medium">
 									{item.title}
 								</h3>

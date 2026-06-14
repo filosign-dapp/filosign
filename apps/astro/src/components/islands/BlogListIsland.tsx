@@ -1,4 +1,4 @@
-import { type SubmitEvent, useState } from "react";
+import { useState } from "react";
 import { cn } from "../../lib/cn";
 import { MARKETING_CTA } from "../../lib/marketing-cta";
 import { marketingSectionClass } from "../../lib/marketing-layout";
@@ -37,22 +37,6 @@ export default function BlogListIsland({ posts }: BlogListIslandProps) {
 	const allTags = ["All", ...uniqueTags];
 
 	const [selectedTag, setSelectedTag] = useState<string>("All");
-
-	// Email subscription states
-	const [email, setEmail] = useState("");
-	const [subscribed, setSubscribed] = useState(false);
-	const [submitting, setSubmitting] = useState(false);
-
-	const handleSubscribe = (e: SubmitEvent) => {
-		e.preventDefault();
-		if (!email.trim()) return;
-		setSubmitting(true);
-		setTimeout(() => {
-			setSubmitting(false);
-			setSubscribed(true);
-			setEmail("");
-		}, 800);
-	};
 
 	const filteredPosts = posts.filter((post) => {
 		if (selectedTag === "All") {
@@ -201,68 +185,6 @@ export default function BlogListIsland({ posts }: BlogListIslandProps) {
 							</div>
 						</div>
 
-						{/* Newsletter signup Card */}
-						<div className="border border-border/60 bg-muted/10 backdrop-blur-sm rounded-2xl p-6">
-							<h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-								Newsletter
-							</h3>
-							<p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-								Get product notes on private agreements, proof, handoffs, and
-								payout workflows.
-							</p>
-
-							{subscribed ? (
-								<div className="text-center py-4 bg-emerald-500/5 rounded-xl border border-emerald-500/20 px-2">
-									<div className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600">
-										<svg
-											className="h-5 w-5"
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke="currentColor"
-											strokeWidth={2.5}
-											aria-hidden="true"
-										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												d="M5 13l4 4L19 7"
-											/>
-										</svg>
-									</div>
-									<h4 className="text-sm font-semibold text-foreground">
-										Subscribed!
-									</h4>
-									<p className="mt-1 text-xs text-muted-foreground">
-										Keep an eye on your inbox for updates.
-									</p>
-								</div>
-							) : (
-								<form onSubmit={handleSubscribe} className="space-y-3">
-									<div>
-										<label htmlFor="email-input" className="sr-only">
-											Email address
-										</label>
-										<input
-											id="email-input"
-											type="email"
-											required
-											placeholder="name@email.com"
-											value={email}
-											onChange={(e) => setEmail(e.target.value)}
-											className="w-full px-3 py-2 bg-background border border-border/80 rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200"
-										/>
-									</div>
-									<button
-										type="submit"
-										disabled={submitting}
-										className="w-full py-2 px-4 bg-primary text-primary-foreground hover:bg-primary/90 font-medium rounded-xl text-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-									>
-										{submitting ? "Subscribing..." : "Subscribe"}
-									</button>
-								</form>
-							)}
-						</div>
-
 						{/* Product CTA Card */}
 						<div className="relative overflow-hidden rounded-2xl bg-primary text-primary-foreground p-6 shadow-lg border border-foreground/5 group">
 							{/* Background gradient blob glow */}
@@ -272,16 +194,14 @@ export default function BlogListIsland({ posts }: BlogListIslandProps) {
 								Agreements that unlock the next step
 							</h3>
 							<p className="text-xs text-primary-foreground/80 leading-relaxed mb-6">
-								Try private signing with proof exports, gated files, and payout
-								packets when your workflow needs them.
+								Solo, Teams, and Teams Pro include a 7-day free trial—private
+								signing with proof exports, gated files, and payout packets.
 							</p>
 							<a
-								href={MARKETING_CTA.sandboxUrl}
-								target="_blank"
-								rel="noopener noreferrer"
+								href={MARKETING_CTA.getStartedHref}
 								className="inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm hover:bg-white/95 transition-all duration-200 gap-1.5 group/link"
 							>
-								<span>{MARKETING_CTA.tryFilosignLabel}</span>
+								<span>{MARKETING_CTA.getStartedLabel}</span>
 								<svg
 									className="h-3.5 w-3.5 transform transition-transform duration-200 group-hover/link:translate-x-1"
 									fill="none"

@@ -52,7 +52,7 @@ export type PricingPlan = {
 	highlight: boolean;
 	badge?: string;
 	planId?: CheckoutPlanId;
-	/** Testnet sandbox - links out to PUBLIC_SANDBOX_CLIENT_URL; excluded from comparison. */
+	/** Optional demo tier - excluded from comparison until live. */
 	sandbox?: boolean;
 };
 
@@ -149,7 +149,7 @@ function PlanPriceBlock({
 	const unitLabel = isPerUser ? "/user/month" : "/month";
 
 	const caption = isSandbox
-		? "testnet sandbox · no card required"
+		? "7-day free trial · card required"
 		: billingInterval === "yearly"
 			? `${unitLabel} billed yearly`
 			: `${unitLabel} billed monthly`;
@@ -264,9 +264,7 @@ function PricingPlanCard({
 				>
 					{isSandbox ? (
 						<a
-							href={MARKETING_CTA.sandboxUrl}
-							target="_blank"
-							rel="noopener noreferrer"
+							href={MARKETING_CTA.getStartedHref}
 							className={cn(marketingPrimaryMdClass, "w-full")}
 						>
 							{plan.cta}

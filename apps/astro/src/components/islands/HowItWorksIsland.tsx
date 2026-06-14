@@ -134,8 +134,8 @@ export default function HowItWorksIsland() {
 					))}
 				</ol>
 
-				{/* Mobile: vertical timeline rail */}
-				<ol className="flex flex-col gap-10 border-l-2 border-border pl-6 md:hidden">
+				{/* Mobile: vertical timeline rail (grid keeps nodes inside page gutters) */}
+				<ol className="flex flex-col gap-10 md:hidden">
 					{steps.map((step, i) => (
 						<motion.li
 							key={step.kicker}
@@ -143,23 +143,32 @@ export default function HowItWorksIsland() {
 							whileInView={{ opacity: 1, y: 0 }}
 							viewport={{ once: true }}
 							transition={{ delay: i * 0.08 }}
-							className="relative space-y-4"
+							className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-x-4"
 						>
-							<span
-								aria-hidden
-								className="absolute -left-11.25 top-0 flex size-10 items-center justify-center rounded-full border border-border bg-background font-manrope text-xs font-semibold text-primary"
-							>
-								{step.kicker}
-							</span>
-							<div className="space-y-2 pt-1">
-								<h3 className="font-manrope text-lg font-medium">
-									{step.title}
-								</h3>
-								<p className="font-manrope text-sm leading-relaxed text-muted-foreground">
-									{step.body}
-								</p>
+							<div className="flex flex-col items-center">
+								<span
+									aria-hidden
+									className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-background font-manrope text-xs font-semibold text-primary"
+								>
+									{step.kicker}
+								</span>
+								{i < steps.length - 1 ? (
+									<span aria-hidden className="mt-2 w-0.5 flex-1 bg-border" />
+								) : null}
 							</div>
-							<div aria-hidden>{step.mock}</div>
+							<div className="min-w-0 space-y-4">
+								<div className="space-y-2">
+									<h3 className="font-manrope text-lg font-medium">
+										{step.title}
+									</h3>
+									<p className="font-manrope text-sm leading-relaxed text-muted-foreground">
+										{step.body}
+									</p>
+								</div>
+								<div aria-hidden className="min-w-0">
+									{step.mock}
+								</div>
+							</div>
 						</motion.li>
 					))}
 				</ol>

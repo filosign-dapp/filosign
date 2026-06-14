@@ -1,5 +1,5 @@
 import {
-	useCreateCheckoutSession,
+	useCreateOrgCheckoutSession,
 	useRefetchBillingOnDashboardMount,
 } from "@filosign/react/billing";
 import { useEffect, useState } from "react";
@@ -41,8 +41,8 @@ export default function DashboardLayout({
 }) {
 	const account = useActiveAccount();
 	useRefetchBillingOnDashboardMount();
-	const { mutateAsync: createCheckoutSession, isPending: isCheckingOut } =
-		useCreateCheckoutSession();
+	const { mutateAsync: createOrgCheckoutSession, isPending: isCheckingOut } =
+		useCreateOrgCheckoutSession();
 	const [hasTriggered, setHasTriggered] = useState(false);
 
 	useEffect(() => {
@@ -63,9 +63,10 @@ export default function DashboardLayout({
 			const cleanUrl = window.location.pathname;
 			window.history.replaceState({}, "", cleanUrl);
 
-			createCheckoutSession({
+			createOrgCheckoutSession({
 				planId: upgradePlan as "individual" | "teams" | "teams_pro",
 				interval: interval as "monthly" | "yearly",
+				seatCount: 1,
 				returnUrl: `${window.location.origin}/dashboard`,
 			})
 				.then((res) => {
@@ -77,7 +78,7 @@ export default function DashboardLayout({
 					console.error("Failed to initiate checkout session:", err);
 				});
 		}
-	}, [account, createCheckoutSession, hasTriggered]);
+	}, [account, createOrgCheckoutSession, hasTriggered]);
 
 	const skipPartnerTrialWelcome = hasTriggered || isCheckingOut;
 

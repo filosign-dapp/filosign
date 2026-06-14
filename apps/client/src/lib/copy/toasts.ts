@@ -140,6 +140,8 @@ export const TOASTS = {
 	},
 	workspace: {
 		created: "Workspace created",
+		checkoutNotCompleted:
+			"Checkout was not completed. Choose a plan to try again.",
 		inviteSent: "Invite sent",
 		nameSaved: "Name saved",
 		teammateInvited: "Teammate invited",

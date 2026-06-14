@@ -1,6 +1,6 @@
 import { useFilosignContext } from "@filosign/react";
 import { useEntitlements } from "@filosign/react/billing";
-import { canUseSharedTemplates } from "@filosign/react/files";
+import { canUseTeamCollaboration } from "@filosign/react/files";
 import {
 	useActiveOrganization,
 	useActiveOrgId,
@@ -27,7 +27,7 @@ import {
 } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Logo from "@/src/lib/components/app/chrome/logo";
 import {
 	DropdownMenu,
@@ -54,6 +54,7 @@ import {
 } from "@/src/lib/components/ui/sidebar";
 import { BILLING_SETTINGS_PATH } from "@/src/lib/domains/billing/settings-path";
 import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
+import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import {
 	UpgradePlanDialog,
 	type UpgradePlanLimitReason,
@@ -62,8 +63,9 @@ import { useFeedback } from "@/src/lib/feedback/feedback-provider";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { cn } from "@/src/lib/utils/index";
 import {
-	CreateWorkspaceDialog,
+	CreateWorkspaceFlow,
 	InviteTeammateDialog,
+	useCreateWorkspacePendingFromUrl,
 } from "@/src/routes/dashboard/_shell/-components/workspace-dialogs";
 
 type NavItem = {
@@ -77,6 +79,8 @@ type NavItem = {
 	tooltip: string;
 	/** Clear open envelope draft before navigating (new envelope, not resume). */
 	resetComposer?: boolean;
+	/** Show the plan-gated feature mark beside the label. */
+	proFeature?: boolean;
 	/** Opens an in-app action instead of navigating. */
 	onSelect?: () => void;
 };
@@ -105,6 +109,7 @@ const groups: { label: string; items: NavItem[] }[] = [
 				icon: FileTextIcon,
 				match: (p) => matchPrefix(p, "/dashboard/templates"),
 				tooltip: "Shared templates",
+				proFeature: true,
 			},
 		],
 	},
@@ -207,10 +212,16 @@ export function DashboardSidebar() {
 	const [isInviteOpen, setIsInviteOpen] = useState(false);
 	const [upgradeOpen, setUpgradeOpen] = useState(false);
 	const [upgradeReason, setUpgradeReason] = useState<UpgradePlanLimitReason>(
-		"features.shared_templates",
+		"features.team_collaboration",
 	);
+	const { pendingBillingId: pendingFromCheckout } =
+		useCreateWorkspacePendingFromUrl();
 
-	const hasCollaboration = canUseSharedTemplates(entitlements);
+	useEffect(() => {
+		if (pendingFromCheckout) setIsCreateOpen(true);
+	}, [pendingFromCheckout]);
+
+	const hasCollaboration = canUseTeamCollaboration(entitlements);
 
 	const orgs = orgsData?.organizations ?? [];
 
@@ -295,7 +306,12 @@ export function DashboardSidebar() {
 															className="size-4 opacity-80"
 															weight="regular"
 														/>
-														<span className="truncate">{item.title}</span>
+														<span className="inline-flex min-w-0 items-center gap-1.5 truncate">
+															<span className="truncate">{item.title}</span>
+															{item.proFeature ? (
+																<ProFeatureMark size="xs" />
+															) : null}
+														</span>
 														<CaretRightIcon
 															className="ml-auto size-3 shrink-0 opacity-35 group-data-[collapsible=icon]:hidden"
 															weight="bold"
@@ -312,114 +328,117 @@ export function DashboardSidebar() {
 				</SidebarContent>
 
 				<SidebarFooter className="border-t border-sidebar-border/70 p-2 group-data-[collapsible=icon]:py-2 flex flex-col gap-2">
-					<DropdownMenu>
-						<DropdownMenuTrigger
-							render={
-								<button
-									type="button"
-									className={cn(
-										"flex items-center gap-2 rounded-md hover:bg-sidebar-accent/80 transition-colors duration-150 text-left outline-none",
-										state === "collapsed"
-											? "w-8 h-8 justify-center p-0 mx-auto"
-											: "w-full p-2 border border-sidebar-border/40 bg-sidebar-background",
-									)}
-								/>
-							}
-						>
-							<div className="flex aspect-square size-6 items-center justify-center rounded-md bg-primary text-primary-foreground font-semibold text-xs shrink-0 select-none">
-								{activeOrg?.name
-									? activeOrg.name.slice(0, 2).toUpperCase()
-									: "WS"}
-							</div>
-							{state !== "collapsed" && (
-								<>
-									<div className="flex flex-col min-w-0 flex-1 gap-0.5">
-										<span className="font-medium text-xs truncate leading-none text-sidebar-foreground">
-											{activeOrg?.name ?? "Select Workspace"}
-										</span>
-										<span className="text-[10px] text-muted-foreground leading-none">
-											Workspace
-										</span>
-									</div>
-									<CaretUpDownIcon className="size-3 text-muted-foreground shrink-0" />
-								</>
-							)}
-						</DropdownMenuTrigger>
-						<DropdownMenuContent
-							className="w-56"
-							align="start"
-							side={state === "collapsed" ? "right" : "top"}
-						>
-							<DropdownMenuGroup>
-								<DropdownMenuLabel className="text-muted-foreground text-xs">
-									Workspaces
-								</DropdownMenuLabel>
-								{orgs.map((org) => {
-									const isActive = org.id === activeOrgId;
-									return (
-										<DropdownMenuItem
-											key={org.id}
-											onClick={() => setActiveOrg(org.id)}
-											className="flex items-center justify-between cursor-pointer"
-										>
-											<span
-												className={cn(
-													"truncate text-sm",
-													isActive && "font-medium",
-												)}
-											>
-												{org.name}
+					<div className={cn(state !== "collapsed" && "w-full")}>
+						<DropdownMenu>
+							<DropdownMenuTrigger
+								render={
+									<button
+										type="button"
+										className={cn(
+											"flex items-center gap-2 rounded-md text-left outline-none transition-colors duration-150 hover:bg-sidebar-accent/80",
+											state === "collapsed"
+												? "mx-auto size-8 justify-center p-0"
+												: "w-full p-2",
+										)}
+									/>
+								}
+							>
+								<div className="flex aspect-square size-6 items-center justify-center rounded-md bg-primary text-primary-foreground font-semibold text-xs shrink-0 select-none">
+									{activeOrg?.name
+										? activeOrg.name.slice(0, 2).toUpperCase()
+										: "WS"}
+								</div>
+								{state !== "collapsed" && (
+									<>
+										<div className="flex flex-col min-w-0 flex-1 gap-0.5">
+											<span className="font-medium text-xs truncate leading-none text-sidebar-foreground">
+												{activeOrg?.name ?? "Select Workspace"}
 											</span>
-											{isActive && (
-												<CheckIcon className="size-3.5 text-primary shrink-0" />
-											)}
-										</DropdownMenuItem>
-									);
-								})}
-							</DropdownMenuGroup>
-							<DropdownMenuSeparator />
-							<DropdownMenuGroup>
-								<DropdownMenuItem
-									onClick={() => {
-										if (hasCollaboration) {
-											setIsInviteOpen(true);
-										} else {
-											setUpgradeReason("features.shared_templates");
-											setUpgradeOpen(true);
+											<span className="text-[10px] text-muted-foreground leading-none">
+												Workspace
+											</span>
+										</div>
+										<CaretUpDownIcon className="size-3 text-muted-foreground shrink-0" />
+									</>
+								)}
+							</DropdownMenuTrigger>
+							<DropdownMenuContent
+								className={state === "collapsed" ? "w-56" : "min-w-0 mb-2"}
+								align="start"
+								side={state === "collapsed" ? "right" : "top"}
+								sideOffset={4}
+							>
+								<DropdownMenuGroup>
+									<DropdownMenuLabel className="text-muted-foreground text-xs">
+										Workspaces
+									</DropdownMenuLabel>
+									{orgs.map((org) => {
+										const isActive = org.id === activeOrgId;
+										return (
+											<DropdownMenuItem
+												key={org.id}
+												onClick={() => setActiveOrg(org.id)}
+												className="flex items-center justify-between cursor-pointer"
+											>
+												<span
+													className={cn(
+														"truncate text-sm",
+														isActive && "font-medium",
+													)}
+												>
+													{org.name}
+												</span>
+												{isActive && (
+													<CheckIcon className="size-3.5 text-primary shrink-0" />
+												)}
+											</DropdownMenuItem>
+										);
+									})}
+								</DropdownMenuGroup>
+								<DropdownMenuSeparator />
+								<DropdownMenuGroup>
+									<DropdownMenuItem
+										onClick={() => {
+											if (hasCollaboration) {
+												setIsInviteOpen(true);
+											} else {
+												setUpgradeReason("features.team_collaboration");
+												setUpgradeOpen(true);
+											}
+										}}
+										className="gap-2 cursor-pointer"
+									>
+										<UserPlusIcon className="size-4" />
+										<span className="inline-flex items-center gap-2 text-sm">
+											Invite Teammates
+											<ProFeatureMark size="xs" />
+										</span>
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() => setIsCreateOpen(true)}
+										className="gap-2 cursor-pointer"
+									>
+										<PlusIcon className="size-4" />
+										<span className="text-sm">Create Workspace</span>
+									</DropdownMenuItem>
+									<DropdownMenuItem
+										onClick={() =>
+											navigate({ to: "/dashboard/settings/workspace" })
 										}
-									}}
-									className="gap-2 cursor-pointer"
-								>
-									<UserPlusIcon className="size-4" />
-									<span className="text-sm">Invite Teammates</span>
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									onClick={() => setIsCreateOpen(true)}
-									className="gap-2 cursor-pointer"
-								>
-									<PlusIcon className="size-4" />
-									<span className="text-sm">Create Workspace</span>
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									onClick={() =>
-										navigate({ to: "/dashboard/settings/workspace" })
-									}
-									className="gap-2 cursor-pointer"
-								>
-									<GearIcon className="size-4" />
-									<span className="text-sm">Workspace Settings</span>
-								</DropdownMenuItem>
-							</DropdownMenuGroup>
-						</DropdownMenuContent>
-					</DropdownMenu>
+										className="gap-2 cursor-pointer"
+									>
+										<GearIcon className="size-4" />
+										<span className="text-sm">Workspace Settings</span>
+									</DropdownMenuItem>
+								</DropdownMenuGroup>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					</div>
 				</SidebarFooter>
 				<SidebarRail />
 			</Sidebar>
 
-			<CreateWorkspaceDialog
-				open={isCreateOpen}
-				onOpenChange={setIsCreateOpen}
-			/>
+			<CreateWorkspaceFlow open={isCreateOpen} onOpenChange={setIsCreateOpen} />
 			<InviteTeammateDialog
 				open={isInviteOpen}
 				onOpenChange={setIsInviteOpen}

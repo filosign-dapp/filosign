@@ -1,9 +1,5 @@
 import { useEntitlements } from "@filosign/react/billing";
-import { canUseSharedTemplates } from "@filosign/react/files";
-import {
-	useCreateOrganization,
-	useInviteOrgMember,
-} from "@filosign/react/orgs";
+import { canUseTeamCollaboration } from "@filosign/react/files";
 import {
 	BuildingsIcon,
 	GearIcon,
@@ -12,168 +8,26 @@ import {
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@/src/lib/components/ui/dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
+import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
-import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
+import {
+	CreateWorkspaceFlow,
+	InviteTeammateDialog,
+	useCreateWorkspacePendingFromUrl,
+} from "@/src/routes/dashboard/_shell/-components/workspace-dialogs";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
 import { MembersSection } from "./members-section";
 import { OrgWalletSection } from "./org-wallet-section";
 import { PayoutFeatureAccessSection } from "./payout/feature-access-section";
 import { WorkspacePlanSummary } from "./workspace-plan-summary";
 import { WorkspaceSection } from "./workspace-section";
-
-function CreateWorkspaceDialog(props: {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-}) {
-	const createOrg = useCreateOrganization();
-	const setActiveOrg = useSetPersistedActiveOrganizationId();
-	const [name, setName] = useState("");
-
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!name.trim()) return;
-		try {
-			const res = await createOrg.mutateAsync(
-				{ name: name.trim() },
-				suppressGlobalErrorToast(),
-			);
-			if (res?.organization?.id) {
-				setActiveOrg(res.organization.id);
-				toastUser.success(TOASTS.workspace.created);
-				props.onOpenChange(false);
-				setName("");
-			}
-		} catch (err) {
-			showAppErrorToast(err);
-		}
-	};
-
-	return (
-		<Dialog open={props.open} onOpenChange={props.onOpenChange}>
-			<DialogContent className="overscroll-contain">
-				<DialogHeader>
-					<DialogTitle>Create workspace</DialogTitle>
-					<DialogDescription>
-						A workspace holds your team, drafts, and shared templates.
-					</DialogDescription>
-				</DialogHeader>
-				<form onSubmit={handleSubmit} className="space-y-4 pt-2">
-					<div className="space-y-2">
-						<Label htmlFor="create-ws-name">Workspace name</Label>
-						<Input
-							id="create-ws-name"
-							name="workspaceName"
-							placeholder="Acme Corp…"
-							autoComplete="organization"
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-						/>
-					</div>
-					<DialogFooter>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => props.onOpenChange(false)}
-						>
-							Cancel
-						</Button>
-						<Button
-							type="submit"
-							variant="primary"
-							disabled={createOrg.isPending || !name.trim()}
-						>
-							{createOrg.isPending ? "Creating…" : "Create workspace"}
-						</Button>
-					</DialogFooter>
-				</form>
-			</DialogContent>
-		</Dialog>
-	);
-}
-
-function InviteTeammateDialog(props: {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-}) {
-	const inviteMember = useInviteOrgMember();
-	const [email, setEmail] = useState("");
-
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!email.trim()) return;
-		try {
-			await inviteMember.mutateAsync(
-				{ email: email.trim() },
-				suppressGlobalErrorToast(),
-			);
-			toastUser.success(TOASTS.workspace.inviteSent);
-			setEmail("");
-			props.onOpenChange(false);
-		} catch (err) {
-			showAppErrorToast(err);
-		}
-	};
-
-	return (
-		<Dialog open={props.open} onOpenChange={props.onOpenChange}>
-			<DialogContent className="overscroll-contain">
-				<DialogHeader>
-					<DialogTitle>Invite teammate</DialogTitle>
-					<DialogDescription>
-						They join this workspace after they sign in with that email. Pending
-						invites count toward your seat limit.
-					</DialogDescription>
-				</DialogHeader>
-				<form onSubmit={handleSubmit} className="space-y-4 pt-2">
-					<div className="space-y-2">
-						<Label htmlFor="invite-email-ws">Email address</Label>
-						<Input
-							id="invite-email-ws"
-							name="inviteEmail"
-							type="email"
-							autoComplete="email"
-							spellCheck={false}
-							placeholder="colleague@company.com"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-						/>
-					</div>
-					<DialogFooter>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => props.onOpenChange(false)}
-						>
-							Cancel
-						</Button>
-						<Button
-							type="submit"
-							variant="primary"
-							disabled={inviteMember.isPending || !email.includes("@")}
-						>
-							{inviteMember.isPending ? "Sending…" : "Send invite"}
-						</Button>
-					</DialogFooter>
-				</form>
-			</DialogContent>
-		</Dialog>
-	);
-}
 
 function WorkspaceDetailsSection() {
 	const { orgDetail, updateOrg, activeMembership } = useWorkspaceSettings();
@@ -259,8 +113,14 @@ export function WorkspaceSettingsPage() {
 	const [isInviteOpen, setIsInviteOpen] = useState(false);
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [upgradeOpen, setUpgradeOpen] = useState(false);
+	const { pendingBillingId: pendingFromCheckout } =
+		useCreateWorkspacePendingFromUrl();
 
-	const hasCollaboration = canUseSharedTemplates(entitlements);
+	useEffect(() => {
+		if (pendingFromCheckout) setIsCreateOpen(true);
+	}, [pendingFromCheckout]);
+
+	const hasCollaboration = canUseTeamCollaboration(entitlements);
 
 	const handleInviteClick = () => {
 		if (hasCollaboration) {
@@ -281,13 +141,14 @@ export function WorkspaceSettingsPage() {
 						{canInviteMembers ? (
 							<Button
 								type="button"
-								variant="primary"
+								variant="outline"
 								size="sm"
 								className="gap-2 touch-manipulation"
 								onClick={handleInviteClick}
 							>
 								<UserPlusIcon className="size-4" aria-hidden="true" />
 								Invite teammate
+								<ProFeatureMark size="xs" />
 							</Button>
 						) : null}
 						<Button
@@ -350,14 +211,11 @@ export function WorkspaceSettingsPage() {
 				open={isInviteOpen}
 				onOpenChange={setIsInviteOpen}
 			/>
-			<CreateWorkspaceDialog
-				open={isCreateOpen}
-				onOpenChange={setIsCreateOpen}
-			/>
+			<CreateWorkspaceFlow open={isCreateOpen} onOpenChange={setIsCreateOpen} />
 			<UpgradePlanDialog
 				open={upgradeOpen}
 				onOpenChange={setUpgradeOpen}
-				reason="features.shared_templates"
+				reason="features.team_collaboration"
 			/>
 		</div>
 	);

@@ -91,7 +91,6 @@ describe("attachments-register", () => {
 				default: {
 					schema: {
 						users: {},
-						userSubscriptions: {},
 						organizationSubscriptions: {},
 						files: {},
 					},

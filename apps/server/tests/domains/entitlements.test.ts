@@ -122,7 +122,6 @@ describe("entitlements", () => {
 				default: {
 					schema: {
 						users: {},
-						userSubscriptions: {},
 						organizationSubscriptions: {},
 						files: {},
 					},
@@ -143,10 +142,9 @@ describe("entitlements", () => {
 			restoreTestEnvMock();
 		});
 
-		test("inherits teams_pro from org when user has no subscription", async () => {
+		test("inherits teams_pro from org subscription", async () => {
 			redisStore.clear();
 			selectQueue = [
-				[],
 				[
 					{
 						planId: "teams_pro",
@@ -178,7 +176,6 @@ describe("entitlements", () => {
 		test("resolves individual from personal org when no org is passed", async () => {
 			redisStore.clear();
 			selectQueue = [
-				[],
 				[
 					{
 						planId: "individual",
@@ -207,52 +204,9 @@ describe("entitlements", () => {
 			expect(ctx.usage?.["documents.sent.monthly"]).toBe(2);
 		});
 
-		test("falls back to user subscription on free personal org", async () => {
+		test("explicit team org uses org subscription only", async () => {
 			redisStore.clear();
 			selectQueue = [
-				[
-					{
-						planId: "individual",
-						status: "active",
-						cancelAtPeriodEnd: false,
-						periodEnd: null,
-						featureOverrides: {},
-					},
-				],
-				[
-					{
-						planId: "free",
-						status: "active",
-						seatCount: 1,
-						cancelAtPeriodEnd: false,
-						periodEnd: null,
-						featureOverrides: {},
-					},
-				],
-				[{ count: 0 }],
-			];
-
-			const { resolveEntitlementContext } = await import(
-				"@/lib/domains/entitlements"
-			);
-
-			const ctx = await resolveEntitlementContext(wallet);
-
-			expect(ctx.planId).toBe("individual");
-		});
-
-		test("explicit team org does not inherit user solo plan", async () => {
-			redisStore.clear();
-			selectQueue = [
-				[
-					{
-						planId: "individual",
-						status: "active",
-						cancelAtPeriodEnd: false,
-						periodEnd: null,
-						featureOverrides: {},
-					},
-				],
 				[
 					{
 						planId: "free",
@@ -277,6 +231,23 @@ describe("entitlements", () => {
 			if (ctx.subject.type === "org_member") {
 				expect(ctx.subject.orgId).toBe(orgId);
 			}
+		});
+	});
+
+	describe("activation quota", () => {
+		test("practice envelopes skip quota enforcement", async () => {
+			const { shouldEnforceSendQuota } = await import(
+				"@/lib/domains/users/activation-quota"
+			);
+			expect(shouldEnforceSendQuota(true)).toBe(false);
+		});
+
+		test("real envelopes enforce quota", async () => {
+			const { shouldEnforceSendQuota } = await import(
+				"@/lib/domains/users/activation-quota"
+			);
+			expect(shouldEnforceSendQuota(false)).toBe(true);
+			expect(shouldEnforceSendQuota(undefined)).toBe(true);
 		});
 	});
 });

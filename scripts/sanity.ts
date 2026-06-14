@@ -133,6 +133,7 @@ function buildCommands(
 
 	if (steps.has("check")) {
 		cmds.push(checkCmd(ci));
+		cmds.push(["bun", "run", "scripts/check-test-antipatterns.ts"]);
 		if (ci) {
 			cmds.push(["bun", "run", "--cwd", "apps/server", "db:schema:check"]);
 		}

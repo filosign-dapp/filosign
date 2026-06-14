@@ -38,6 +38,18 @@ Typecheck including tests: each workspace with `tests/` runs `tsc -p tsconfig.te
 
 **Server:** [`apps/server/bunfig.toml`](apps/server/bunfig.toml) preloads [`tests/preload.ts`](apps/server/tests/preload.ts) so `@/env` is stubbed before modules like `pino` load during unrelated domain tests.
 
+## Do not add
+
+Anti-patterns that add noise without exercising production behavior:
+
+- **`typeof fn === "function"` / "is exported" tests** — TypeScript and imports already enforce exports.
+- **Duplicate `describe` blocks across files** for the same module — merge into one domain file with nested `describe`.
+- **Constant-array membership only** — e.g. `expect(PLAN_IDS).toContain("teams")` with no behavior under test.
+- **Production logic copy-pasted in the test file** — import the real helper or delete the test.
+- **Many tiny one-off files** — prefer one domain file + nested `describe` (see grouping rules above).
+
+CI runs [`scripts/check-test-antipatterns.ts`](scripts/check-test-antipatterns.ts) during `bun run sanity` to catch export-only patterns in `tests/`.
+
 ## Adding tests
 
 - **New Bun workspace:** create `tests/` at package root; add `tsconfig.tests.json` if the main `tsconfig` excludes tests, plus `tests/tsconfig.json` extending it so the IDE typechecks test files with Bun types (same pattern as [`apps/server/tests/tsconfig.json`](apps/server/tests/tsconfig.json)).

@@ -43,11 +43,11 @@ function redactDatabaseUrl(url: string): string {
 }
 
 const databaseUrl = tunnelDatabaseUrl(pgUri, dbName, Number(localPort));
-console.error(
-	`[drizzle-migrate] target ${redactDatabaseUrl(databaseUrl)}`,
-);
+console.error(`[drizzle-migrate] target ${redactDatabaseUrl(databaseUrl)}`);
 
-const require = createRequire(path.join(path.resolve(serverDir), "package.json"));
+const require = createRequire(
+	path.join(path.resolve(serverDir), "package.json"),
+);
 const { Client } = require("pg") as typeof import("pg");
 
 function isMigrationJournalMissing(error: unknown): boolean {
@@ -73,14 +73,16 @@ async function countMigrations(connectionString: string): Promise<number> {
 	}
 }
 
-const beforeCount = await countMigrations(databaseUrl).catch((error: unknown) => {
-	console.error(
-		`[drizzle-migrate] could not read drizzle.__drizzle_migrations before migrate: ${
-			error instanceof Error ? error.message : String(error)
-		}`,
-	);
-	process.exit(1);
-});
+const beforeCount = await countMigrations(databaseUrl).catch(
+	(error: unknown) => {
+		console.error(
+			`[drizzle-migrate] could not read drizzle.__drizzle_migrations before migrate: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
+		);
+		process.exit(1);
+	},
+);
 
 if (sshProbeCountRaw) {
 	const sshProbeCount = Number(sshProbeCountRaw);
@@ -114,14 +116,16 @@ if (proc.exitCode !== 0) {
 	process.exit(proc.exitCode ?? 1);
 }
 
-const afterCount = await countMigrations(databaseUrl).catch((error: unknown) => {
-	console.error(
-		`[drizzle-migrate] could not read drizzle.__drizzle_migrations after migrate: ${
-			error instanceof Error ? error.message : String(error)
-		}`,
-	);
-	process.exit(1);
-});
+const afterCount = await countMigrations(databaseUrl).catch(
+	(error: unknown) => {
+		console.error(
+			`[drizzle-migrate] could not read drizzle.__drizzle_migrations after migrate: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
+		);
+		process.exit(1);
+	},
+);
 
 const expectedCount = expectedCountRaw ? Number(expectedCountRaw) : null;
 if (expectedCount != null && Number.isFinite(expectedCount)) {

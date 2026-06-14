@@ -9,12 +9,14 @@ import {
 } from "../support/posthog-capture";
 
 const priorEnabled = process.env.POSTHOG_ENABLED;
+const priorPlatformAlerts = process.env.POSTHOG_PLATFORM_ALERTS;
 const priorKey = process.env.POSTHOG_API_KEY;
 const priorHost = process.env.POSTHOG_HOST;
 
 beforeEach(async () => {
 	clearPosthogCaptures();
 	process.env.POSTHOG_ENABLED = "true";
+	process.env.POSTHOG_PLATFORM_ALERTS = "true";
 	process.env.POSTHOG_API_KEY = "phc_test";
 	process.env.POSTHOG_HOST = "https://posthog.example.com";
 	const { resetPostHogClientForTests } = await import(
@@ -34,6 +36,9 @@ afterEach(async () => {
 	resetPostHogClientForTests();
 	if (priorEnabled === undefined) delete process.env.POSTHOG_ENABLED;
 	else process.env.POSTHOG_ENABLED = priorEnabled;
+	if (priorPlatformAlerts === undefined)
+		delete process.env.POSTHOG_PLATFORM_ALERTS;
+	else process.env.POSTHOG_PLATFORM_ALERTS = priorPlatformAlerts;
 	if (priorKey === undefined) delete process.env.POSTHOG_API_KEY;
 	else process.env.POSTHOG_API_KEY = priorKey;
 	if (priorHost === undefined) delete process.env.POSTHOG_HOST;
@@ -120,6 +125,20 @@ describe("emitCriticalPlatformEvent PostHog mirror", () => {
 		);
 		expect(posthogCaptures).toHaveLength(0);
 	});
+
+	test("does not mirror when POSTHOG_PLATFORM_ALERTS is off", async () => {
+		const { emitCriticalPlatformEvent, resetPlatformAlertsRuntimeForTests } =
+			await import("@/lib/platform/analytics");
+		resetPlatformAlertsRuntimeForTests();
+		process.env.POSTHOG_PLATFORM_ALERTS = "false";
+		await emitCriticalPlatformEvent({
+			name: PLATFORM_ALERT_EVENTS.serverHttp500,
+			severity: "critical",
+			message: "HTTP request returned 5xx",
+			context: { method: "GET", path: "/api/rpc", status: 500, durationMs: 42 },
+		});
+		expect(posthogCaptures).toHaveLength(0);
+	});
 });
 
 describe("emitCriticalPlatformEventFromProcessEnv PostHog mirror", () => {
@@ -128,6 +147,7 @@ describe("emitCriticalPlatformEventFromProcessEnv PostHog mirror", () => {
 			"@/lib/platform/analytics"
 		);
 		process.env.TG_ANALYTICS = "false";
+		process.env.POSTHOG_PLATFORM_ALERTS = "true";
 		await emitCriticalPlatformEventFromProcessEnv({
 			name: PLATFORM_ALERT_EVENTS.serverBootstrapFailed,
 			severity: "critical",

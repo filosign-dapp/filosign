@@ -1,10 +1,11 @@
-import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { PLATFORM_ALERT_EVENTS } from "@/lib/platform/analytics";
 import {
 	capturedTelegramEvents,
 	clearCapturedTelegramEvents,
 	mockLoggerTelegramCapture,
 } from "../support/alerts";
+import { testEnvStub } from "../support/env-stub";
 
 mockLoggerTelegramCapture();
 
@@ -101,5 +102,38 @@ describe("createPlatformAlertsRuntime", () => {
 		await runtime.emit(event);
 		await runtime.emit(event);
 		expect(capturedTelegramEvents).toHaveLength(1);
+	});
+});
+
+describe("emitServerStartedPing", () => {
+	beforeEach(async () => {
+		clearCapturedTelegramEvents();
+		const { resetPlatformAlertsRuntimeForTests } = await import(
+			"@/lib/platform/analytics"
+		);
+		resetPlatformAlertsRuntimeForTests();
+	});
+
+	test("emits info ping when TG_ANALYTICS is enabled", async () => {
+		mock.module("@/env", () => ({
+			default: { ...testEnvStub, TG_ANALYTICS: true },
+		}));
+		const { emitServerStartedPing } = await import("@/lib/platform/analytics");
+		await emitServerStartedPing();
+		expect(capturedTelegramEvents).toHaveLength(1);
+		expect(capturedTelegramEvents[0]?.name).toBe(
+			PLATFORM_ALERT_EVENTS.serverStarted,
+		);
+		expect(capturedTelegramEvents[0]?.severity).toBe("info");
+		expect(capturedTelegramEvents[0]?.message).toBe("Filosign server started");
+	});
+
+	test("does not emit when TG_ANALYTICS is disabled", async () => {
+		mock.module("@/env", () => ({
+			default: { ...testEnvStub, TG_ANALYTICS: false },
+		}));
+		const { emitServerStartedPing } = await import("@/lib/platform/analytics");
+		await emitServerStartedPing();
+		expect(capturedTelegramEvents).toHaveLength(0);
 	});
 });

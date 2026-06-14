@@ -48,7 +48,7 @@ export function invalidateEntitlements(
 	});
 }
 
-/** Entitlements + org/user billing summaries (checkout return / dashboard mount). */
+/** Entitlements + org billing summaries (checkout return / dashboard mount). */
 export function invalidateBillingAndEntitlements(
 	queryClient: QueryClient,
 	rpcQuery: FilosignRpcQueryUtils,
@@ -60,9 +60,6 @@ export function invalidateBillingAndEntitlements(
 		}),
 		queryClient.invalidateQueries({
 			queryKey: rpcQuery.billing.getWorkspaceBillingContext.key(),
-		}),
-		queryClient.invalidateQueries({
-			queryKey: rpcQuery.billing.getUserSummary.key(),
 		}),
 	]);
 }

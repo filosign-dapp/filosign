@@ -18,7 +18,7 @@ export function useCreateOrganization() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: async (args: { name: string }) => {
+		mutationFn: async (args: { name: string; pendingBillingId?: string }) => {
 			if (!wallet?.account || !user || !isAuthed) {
 				throw new Error("Wallet and profile required");
 			}
@@ -40,6 +40,9 @@ export function useCreateOrganization() {
 				encryptionPublicKey: omkPublicHex,
 				wrappedOmkForCreator: toHex(wrappedOmkForCreator),
 				creatorWrapKemCiphertext: toHex(ciphertext),
+				...(args.pendingBillingId
+					? { pendingBillingId: args.pendingBillingId }
+					: {}),
 			});
 
 			return result;

@@ -9,6 +9,11 @@ export {
 	type EnsuredSignatureArtifact,
 	ensureDefaultTypedSignatureArtifact,
 } from "../../lib/ensure-default-signature-artifact";
+export {
+	prefetchDefaultTypedSignatures,
+	type SignaturePrefetchProfile,
+	signatureRolesNeedingPrefetch,
+} from "../../lib/prefetch-default-signatures";
 export { rasterizeTypedSignature } from "../../lib/rasterize-typed-signature";
 export {
 	dataUrlToBytes,

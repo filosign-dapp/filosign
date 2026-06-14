@@ -8,7 +8,11 @@ import {
 	useOrganizations,
 	useUpdateOrganization,
 } from "@filosign/react/orgs";
-import { useUpdateUserProfile } from "@filosign/react/users";
+import {
+	prefetchDefaultTypedSignatures,
+	useUpdateUserProfile,
+} from "@filosign/react/users";
+import { invalidateUserProfile } from "@filosign/react/invalidate-queries";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -89,6 +93,36 @@ export function useOnboardingComplete() {
 					wallet?.account.address ?? null,
 				],
 			});
+
+			void (async () => {
+				try {
+					const [profile, signatureList] = await Promise.all([
+						rpcQuery.users.profile.me.call(),
+						rpcQuery.users.signatures.list.call(),
+					]);
+					const { ensuredRoles } = await prefetchDefaultTypedSignatures({
+						rpcQuery,
+						profile: {
+							firstName: profile.firstName,
+							lastName: profile.lastName,
+							email: profile.email,
+							username: profile.username,
+							defaultSignatureId: profile.defaultSignatureId,
+							defaultInitialId: profile.defaultInitialId,
+						},
+						signatures: signatureList.signatures ?? [],
+					});
+					if (ensuredRoles.length === 0) return;
+					await Promise.all([
+						queryClient.invalidateQueries({
+							queryKey: rpcQuery.users.signatures.list.key(),
+						}),
+						invalidateUserProfile(queryClient, rpcQuery),
+					]);
+				} catch {
+					// Non-blocking warmup before cold-sign navigation.
+				}
+			})();
 		}
 
 		if (!firstName) {

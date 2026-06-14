@@ -4,12 +4,14 @@ import { z } from "zod";
 import { usePersonalizationGateForSign } from "@/src/lib/auth/use-personalization-gate-for-sign";
 import { RoutePendingFallback } from "@/src/lib/components/app/suspense";
 import { EntitlementUpgradeProvider } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
+import { usePrefetchDefaultSignatures } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-prefetch-default-signatures";
 import { SignInviteUnlockRoutePage } from "./-components/invite-unlock/page";
 import { SignDocumentPage } from "./-components/page";
 import { SignPieceFileProvider } from "./-lib/context/piece-file-context";
 
 function SignDocumentRoutePage() {
 	usePersonalizationGateForSign();
+	usePrefetchDefaultSignatures();
 	const search = useSearch({ from: "/dashboard/document/sign/" });
 	const invite = search.invite?.trim() ?? "";
 	const pieceCid = search.pieceCid?.trim() ?? "";

@@ -1,6 +1,7 @@
 import { useCancelAttachmentRule } from "@filosign/react/files";
-import { toast } from "sonner";
 import { Button } from "@/src/lib/components/ui/button";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { safeAsync } from "@/src/lib/utils/safe";
 
 type Packet = {
@@ -68,7 +69,7 @@ export function ConditionalAttachmentsPanel({
 									if (err) {
 										return;
 									}
-									toast.success("Unlock rule removed");
+									toastUser.success(TOASTS.sign.unlockRuleRemoved);
 									onCancelled?.();
 								})();
 							}}

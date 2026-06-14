@@ -28,8 +28,9 @@ import {
 	zPlacementManifest,
 } from "@filosign/shared";
 import { useCallback, useMemo, useState } from "react";
-import { toast } from "sonner";
 import { type Address, getAddress } from "viem";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { legsToDraftAmounts } from "@/src/routes/dashboard/document/sign/-lib/utils/settlement-legs";
 
 type SignFileMeta = {
@@ -100,13 +101,13 @@ export function useSignSettlementsActions(
 					);
 					const legCount = rule?.legs?.length ?? 1;
 					if (legCount <= 1) {
-						toast.message(
-							"Payout is still confirming on-chain. Wait a moment, then tap Retry payout if needed.",
-						);
+						toastUser.message(TOASTS.sign.paymentConfirming.title, {
+							hint: TOASTS.sign.paymentConfirming.hint,
+						});
 					} else {
-						toast.message(
-							"Some recipients were paid. Tap Retry payout for the rest.",
-						);
+						toastUser.message(TOASTS.sign.paymentPartial.title, {
+							hint: TOASTS.sign.paymentPartial.hint,
+						});
 					}
 				}
 			} catch {}
@@ -177,9 +178,9 @@ export function useSignSettlementsActions(
 		async (registryAddress?: `0x${string}` | null) => {
 			try {
 				await clearEnvelopeSignatures.mutateAsync({ registryAddress });
-				toast.success(
-					"Signatures cleared. Signers must acknowledge and sign again.",
-				);
+				toastUser.success(TOASTS.sign.signaturesCleared.title, {
+					hint: TOASTS.sign.signaturesCleared.hint,
+				});
 			} catch {}
 		},
 		[clearEnvelopeSignatures],
@@ -189,7 +190,7 @@ export function useSignSettlementsActions(
 		async (organizationId?: string | null) => {
 			try {
 				await recallEnvelope.mutateAsync({ organizationId });
-				toast.success("Envelope recalled");
+				toastUser.success(TOASTS.sign.envelopeRecalled);
 			} catch {}
 		},
 		[recallEnvelope],
@@ -227,11 +228,11 @@ export function useSignSettlementsActions(
 					newSignerE2ee,
 				});
 				if (result.pending) {
-					toast.message(
-						"Roster change proposed. Execute it when ready. Signing is paused until then.",
-					);
+					toastUser.message(TOASTS.sign.signerChangeProposed.title, {
+						hint: TOASTS.sign.signerChangeProposed.hint,
+					});
 				} else {
-					toast.success("Signer updated");
+					toastUser.success(TOASTS.sign.signerUpdated);
 				}
 			} catch {}
 		},
@@ -241,16 +242,16 @@ export function useSignSettlementsActions(
 	const onExecuteSignerReplacement = useCallback(async () => {
 		try {
 			await executeSignerReplacement.mutateAsync();
-			toast.success(
-				"Roster change applied. Prior signatures were cleared. Signers must sign again.",
-			);
+			toastUser.success(TOASTS.sign.signerChangeApplied.title, {
+				hint: TOASTS.sign.signerChangeApplied.hint,
+			});
 		} catch {}
 	}, [executeSignerReplacement]);
 
 	const onCancelSignerReplacement = useCallback(async () => {
 		try {
 			await cancelSignerReplacement.mutateAsync();
-			toast.success("Pending roster change cancelled");
+			toastUser.success(TOASTS.sign.signerChangeCancelled);
 		} catch {}
 	}, [cancelSignerReplacement]);
 

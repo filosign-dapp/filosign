@@ -17,7 +17,9 @@ import type { UserSignatureRole } from "@filosign/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
+import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { safeAsync } from "@/src/lib/utils/safe";
 
@@ -178,9 +180,7 @@ export function useSignatureCreateController(options?: {
 		}).then(([, err]) => {
 			setIsSavingChoose(false);
 			if (err) {
-				toast.error(
-					err instanceof Error ? err.message : "Failed to save signature",
-				);
+				showAppErrorToast(err);
 			}
 		});
 	};
@@ -207,15 +207,11 @@ export function useSignatureCreateController(options?: {
 				return;
 			}
 
-			toast.success(
-				role === "signature" ? "Signature saved" : "Initials saved",
-			);
+			toastUser.success(TOASTS.signatures.saved(role));
 		}).then(([, err]) => {
 			setSavingRole(null);
 			if (err) {
-				toast.error(
-					err instanceof Error ? err.message : "Failed to save signature",
-				);
+				showAppErrorToast(err);
 			}
 		});
 	};

@@ -10,7 +10,8 @@ import {
 import { useForm, useStore } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import {
 	buildCreateForm,
 	EMPTY_ENVELOPE_FORM,
@@ -19,7 +20,6 @@ import {
 	hydrateAttachmentPacketDrafts,
 	saveAttachmentPacketDrafts,
 } from "@/src/lib/domains/drafts";
-import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements/payout-copy";
 import { settlementPayoutExceedsBalance } from "@/src/lib/domains/settlements/payout-totals";
 import { useAttachedPayoutBalance } from "@/src/lib/domains/settlements/use-attached-payout-balance";
 import {
@@ -88,7 +88,9 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 						walletBalance: balance,
 					})
 				) {
-					toast.error(PAYOUT_EXCEEDS_BALANCE_MESSAGE);
+					toastUser.error(TOASTS.send.payoutExceedsBalance.title, {
+						hint: TOASTS.send.payoutExceedsBalance.hint,
+					});
 					return;
 				}
 

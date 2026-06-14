@@ -10,8 +10,10 @@ import {
 } from "@filosign/shared";
 import { PaperclipIcon } from "@phosphor-icons/react";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
+import { showAppErrorToast } from "@/src/lib/errors";
 import { safeAsync } from "@/src/lib/utils/safe";
 import { SupplementaryPacketSignRow } from "@/src/routes/dashboard/document/sign/-components/supplementary-packet-sign-row";
 
@@ -36,15 +38,17 @@ export function SupplementaryPacketsSignList({
 		async (packet: MySupplementaryPacketRow) => {
 			if (!packet.unlocked) return;
 			if (!packet.canDecrypt) {
-				toast.error(
-					"Unlock your wallet keys to download these files. If you opened this from a cold invite, use the same unlock flow as the main document.",
-				);
+				toastUser.error(TOASTS.sign.supplementaryDownloadSignIn.title, {
+					hint: TOASTS.sign.supplementaryDownloadSignIn.hint,
+				});
 				return;
 			}
 
 			const profileEmail = profile?.email?.trim();
 			if (!profileEmail) {
-				toast.error("Add an email to your profile to download attached files.");
+				toastUser.error(TOASTS.sign.supplementaryDownloadEmail.title, {
+					hint: TOASTS.sign.supplementaryDownloadEmail.hint,
+				});
 				return;
 			}
 
@@ -59,21 +63,15 @@ export function SupplementaryPacketsSignList({
 			setDownloadingPacketId(null);
 
 			if (err) {
-				toast.error(
-					err instanceof Error
-						? err.message
-						: "Could not download attached files",
-				);
+				showAppErrorToast(err);
 				return;
 			}
 
 			for (const file of result.files) {
 				triggerBrowserFileDownload(file);
 			}
-			toast.success(
-				result.files.length === 1
-					? "Download started"
-					: `Downloading ${result.files.length} files`,
+			toastUser.success(
+				TOASTS.sign.supplementaryDownloading(result.files.length),
 			);
 		},
 		[downloadPacket, pieceCid, profile?.email],

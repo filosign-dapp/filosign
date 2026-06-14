@@ -7,7 +7,6 @@ import {
 } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import { useCallback, useRef, useState } from "react";
-import { toast } from "sonner";
 import { ListGridViewToggle } from "@/src/lib/components/app/view/list-grid-view-toggle";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -16,6 +15,7 @@ import {
 	CollapsibleTrigger,
 } from "@/src/lib/components/ui/collapsible";
 import { InlineLoader } from "@/src/lib/components/ui/loader";
+import { toastUser } from "@/src/lib/copy/toast";
 import {
 	normalizeSignableDocumentToPdf,
 	SignableDocumentNormalizeError,
@@ -108,7 +108,7 @@ export default function DocumentsSection() {
 							error instanceof SignableDocumentNormalizeError
 								? error.message
 								: `${file.name} could not be prepared for signing`;
-						toast.error(message);
+						toastUser.error(message);
 					}
 				}
 

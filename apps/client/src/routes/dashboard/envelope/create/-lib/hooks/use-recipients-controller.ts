@@ -4,7 +4,8 @@ import { useUserProfile } from "@filosign/react/users";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { useStore } from "@tanstack/react-form";
 import { useCallback, useMemo } from "react";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { createClientId } from "@/src/lib/utils/id";
 import { useCreateEnvelope } from "@/src/routes/dashboard/envelope/create/-lib/context/create-envelope-context";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
@@ -143,9 +144,9 @@ export function useRecipientsController() {
 					selfSignProfile,
 				);
 				if (!next) {
-					toast.error(
-						"Add a primary email to your Filosign profile before signing yourself",
-					);
+					toastUser.error(TOASTS.send.addEmailToSelfSign.title, {
+						hint: TOASTS.send.addEmailToSelfSign.hint,
+					});
 					return;
 				}
 				applyRecipientsChange(next);

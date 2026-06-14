@@ -1,11 +1,11 @@
 import {
 	ArrowLeftIcon,
 	CheckCircleIcon,
-	PaperPlaneRightIcon,
 	XCircleIcon,
 } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import Logo from "@/src/lib/components/app/chrome/logo";
+import { SendPlaneIcon } from "@/src/lib/components/app/send-plane-icon";
 import { Button } from "@/src/lib/components/ui/button";
 import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
 import { InlineLoader } from "@/src/lib/components/ui/loader";
@@ -68,7 +68,7 @@ export function AddSignHeader() {
 		}
 		return (
 			<>
-				<PaperPlaneRightIcon className="size-4" weight="bold" />
+				<SendPlaneIcon className="size-4" />
 				<span className="hidden sm:inline">Send</span>
 			</>
 		);

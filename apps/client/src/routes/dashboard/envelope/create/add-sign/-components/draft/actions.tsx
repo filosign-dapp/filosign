@@ -9,7 +9,6 @@ import {
 } from "@phosphor-icons/react";
 import { getRouteApi } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { useCryptoRequired } from "@/src/lib/auth/use-crypto-required";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -24,6 +23,8 @@ import {
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
 import { InlineLoader } from "@/src/lib/components/ui/loader";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { useDraftCommentCount, useDraftSaveUi } from "@/src/lib/domains/drafts";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn } from "@/src/lib/utils/utils";
@@ -172,7 +173,7 @@ export function AddSignDraftActions() {
 		try {
 			await cryptoRequired.submitRecovery();
 			setShowCryptoRecoveryDialog(false);
-			toast.success("Encryption keys unlocked");
+			toastUser.success(TOASTS.drafts.keysUnlocked);
 		} catch {
 			// Error string comes from shared unlock state.
 		}

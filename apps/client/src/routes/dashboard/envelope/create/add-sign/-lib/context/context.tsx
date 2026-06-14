@@ -83,6 +83,9 @@ type AddSignChromeContextValue = Pick<
 	| "postSendShare"
 	| "postSendWarmSummary"
 	| "handlePostSendDone"
+	| "sendProgressOpen"
+	| "sendProgressState"
+	| "dismissSendProgress"
 	| "undo"
 	| "redo"
 	| "canUndo"
@@ -257,6 +260,9 @@ export function AddSignProvider({
 			postSendShare: controller.postSendShare,
 			postSendWarmSummary: controller.postSendWarmSummary,
 			handlePostSendDone: controller.handlePostSendDone,
+			sendProgressOpen: controller.sendProgressOpen,
+			sendProgressState: controller.sendProgressState,
+			dismissSendProgress: controller.dismissSendProgress,
 			undo: controller.undo,
 			redo: controller.redo,
 			canUndo: controller.canUndo,
@@ -273,6 +279,9 @@ export function AddSignProvider({
 			controller.postSendShare,
 			controller.postSendWarmSummary,
 			controller.handlePostSendDone,
+			controller.sendProgressOpen,
+			controller.sendProgressState,
+			controller.dismissSendProgress,
 			controller.undo,
 			controller.redo,
 			controller.canUndo,

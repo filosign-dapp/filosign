@@ -1,7 +1,6 @@
 import { useFilosignContext } from "@filosign/react";
 import { useCreateOrgTemplate } from "@filosign/react/orgs";
 import { useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Dialog,
@@ -13,6 +12,9 @@ import {
 } from "@/src/lib/components/ui/dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
+import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
 
 type Props = {
 	open: boolean;
@@ -76,7 +78,7 @@ export function DraftTemplateDialog({
 						variant="primary"
 						onClick={async () => {
 							if (!templateName.trim()) {
-								toast.error("Please enter a template name");
+								toastUser.error(TOASTS.templates.nameRequired.title);
 								return;
 							}
 							setTemplateSaving(true);
@@ -108,15 +110,11 @@ export function DraftTemplateDialog({
 									dekWrappedOmk: draftDetails.headDekWrappedOmk || "",
 									placementManifest,
 								});
-								toast.success("Saved as template!");
+								toastUser.success(TOASTS.templates.saved);
 								onOpenChange(false);
 								setTemplateName("");
 							} catch (err) {
-								toast.error(
-									err instanceof Error
-										? err.message
-										: "Failed to save template",
-								);
+								showAppErrorToast(err);
 							} finally {
 								setTemplateSaving(false);
 							}

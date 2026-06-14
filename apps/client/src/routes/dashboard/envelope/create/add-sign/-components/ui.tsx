@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { ViewerChromeSkeleton } from "@/src/lib/components/app/skeletons";
 import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { AddSignHeader } from "@/src/routes/dashboard/envelope/create/add-sign/-components/header";
+import { SendProgressDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/send-progress-dialog";
 import {
 	AddSignProvider,
 	useAddSignChrome,
@@ -97,12 +98,20 @@ function AddSignMobileToolbarSlot() {
 function AddSignDialogs() {
 	const chrome = useAddSignChrome();
 	return (
-		<ColdShareDialog
-			open={chrome.postSendDialogOpen}
-			share={chrome.postSendShare}
-			warmSummary={chrome.postSendWarmSummary}
-			onDone={chrome.handlePostSendDone}
-		/>
+		<>
+			<SendProgressDialog
+				open={chrome.sendProgressOpen}
+				state={chrome.sendProgressState}
+				onRetry={chrome.handleSend}
+				onDismiss={chrome.dismissSendProgress}
+			/>
+			<ColdShareDialog
+				open={chrome.postSendDialogOpen}
+				share={chrome.postSendShare}
+				warmSummary={chrome.postSendWarmSummary}
+				onDone={chrome.handlePostSendDone}
+			/>
+		</>
 	);
 }
 

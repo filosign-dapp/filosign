@@ -4,6 +4,10 @@ import { and, desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
+import {
+	assertEntitlement,
+	resolveEntitlementContext,
+} from "@/lib/domains/entitlements";
 import { assertOrgPermission, resolveActiveOrg } from "@/lib/domains/orgs/orgs";
 import type { PlatformAccessTx } from "@/lib/domains/platform-access/utils/shared";
 import { isPlatformAdminForWallet } from "@/lib/platform/admin";
@@ -172,6 +176,12 @@ export async function submitOrganizationSettlementFeatureRequest(args: {
 }) {
 	const activeOrg = await resolveActiveOrg(args.wallet, args.organizationId);
 	assertOrgPermission(activeOrg, "billing:manage");
+
+	const entitlementCtx = await resolveEntitlementContext(
+		getAddress(args.wallet),
+		args.organizationId,
+	);
+	assertEntitlement(entitlementCtx, "features.settlement.basic");
 
 	const parsed = z
 		.object({

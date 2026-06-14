@@ -11,6 +11,10 @@ import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
+import {
+	assertEntitlement,
+	resolveEntitlementContext,
+} from "@/lib/domains/entitlements";
 import { inviteExpiresAt } from "@/lib/domains/invites";
 import type { ActiveOrgContext } from "@/lib/domains/orgs";
 import { invalidateNotificationsInbox } from "@/lib/platform/cache/invalidate";
@@ -111,6 +115,17 @@ function assertFileOpenForReplacement(file: FileRow): void {
 	if (file.completedAt) {
 		throw throwAppError("FILES.ENVELOPE_COMPLETE");
 	}
+}
+
+async function assertSignerReplacementEntitlements(
+	wallet: Address,
+	organizationId: string | null,
+) {
+	const entitlementCtx = await resolveEntitlementContext(
+		getAddress(wallet),
+		organizationId,
+	);
+	assertEntitlement(entitlementCtx, "features.settlement.advanced");
 }
 
 async function assertNoDbPendingAmendment(pieceCid: string): Promise<void> {
@@ -384,6 +399,7 @@ export async function filesProposeSignerReplacement(
 	if (!file) {
 		throw throwAppError("FILES.NOT_FOUND");
 	}
+	await assertSignerReplacementEntitlements(wallet, file.organizationId);
 	assertFileOpenForReplacement(file);
 	await assertNoDbPendingAmendment(pieceCid);
 
@@ -501,6 +517,7 @@ export async function filesExecuteSignerReplacement(
 	if (!file) {
 		throw throwAppError("FILES.NOT_FOUND");
 	}
+	await assertSignerReplacementEntitlements(wallet, file.organizationId);
 	assertFileOpenForReplacement(file);
 
 	const [pendingRow] = await db
@@ -603,6 +620,8 @@ export async function filesCancelSignerReplacement(
 		throw throwAppError("FILES.NOT_FOUND");
 	}
 	assertFileOpenForReplacement(file);
+
+	await assertSignerReplacementEntitlements(wallet, file.organizationId);
 
 	const [pendingRow] = await db
 		.select({ id: fileSignerAmendments.id })

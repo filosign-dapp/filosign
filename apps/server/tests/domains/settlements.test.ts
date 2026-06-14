@@ -175,7 +175,7 @@ describe("settlements", () => {
 		});
 
 		function ctx(
-			planId: "individual" | "teams" | "teams_pro",
+			planId: "free" | "individual" | "teams" | "teams_pro",
 		): EntitlementContext {
 			return {
 				subject: {
@@ -273,8 +273,39 @@ describe("settlements", () => {
 				await expect(
 					assertSettlementUpdateEntitlements(ctx("teams"), orgId),
 				).rejects.toBeInstanceOf(ORPCError);
+				await expect(
+					assertSettlementUpdateEntitlements(ctx("free"), orgId),
+				).rejects.toBeInstanceOf(ORPCError);
 				await assertSettlementUpdateEntitlements(ctx("teams_pro"), orgId);
 			});
+		});
+	});
+
+	describe("feature-catalog-gates", () => {
+		const wallet = "0x0000000000000000000000000000000000000001";
+
+		function ctx(
+			planId: "free" | "individual" | "teams" | "teams_pro",
+		): EntitlementContext {
+			return {
+				subject: { type: "user", wallet },
+				planId,
+				periodStart: new Date("2026-05-01T00:00:00Z"),
+				usage: {},
+			};
+		}
+
+		test("features.team_drafts requires teams plan or higher", async () => {
+			const { assertEntitlement } = await import("@/lib/domains/entitlements");
+			expect(() =>
+				assertEntitlement(ctx("free"), "features.team_drafts"),
+			).toThrow();
+			expect(() =>
+				assertEntitlement(ctx("individual"), "features.team_drafts"),
+			).toThrow();
+			expect(() =>
+				assertEntitlement(ctx("teams"), "features.team_drafts"),
+			).not.toThrow();
 		});
 	});
 

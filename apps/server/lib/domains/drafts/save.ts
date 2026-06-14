@@ -9,7 +9,12 @@ import { zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
+import { getAddress } from "viem";
 import z from "zod";
+import {
+	assertEntitlement,
+	resolveEntitlementContext,
+} from "@/lib/domains/entitlements";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
 import db from "@/lib/platform/db";
 import { logger } from "@/lib/platform/pino";
@@ -100,6 +105,11 @@ async function draftsSaveInner(
 	parsed: z.infer<typeof zDraftSaveBody>,
 ) {
 	assertOrgPermission(activeOrg, "drafts:write");
+	const entitlementCtx = await resolveEntitlementContext(
+		getAddress(wallet),
+		activeOrg.organizationId,
+	);
+	assertEntitlement(entitlementCtx, "features.team_drafts");
 	const draft = await loadDraftOrThrow(parsed.draftId);
 	if (draft.organizationId !== activeOrg.organizationId) {
 		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");

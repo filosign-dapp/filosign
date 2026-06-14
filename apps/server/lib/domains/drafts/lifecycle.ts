@@ -6,6 +6,10 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import {
+	assertEntitlement,
+	resolveEntitlementContext,
+} from "@/lib/domains/entitlements";
+import {
 	type ActiveOrgContext,
 	assertOrgPermission,
 	orgRoleHasPermission,
@@ -130,6 +134,12 @@ export async function draftsCreate(
 
 	assertOrgPermission(activeOrg, "drafts:write");
 	const organizationId = activeOrg.organizationId;
+
+	const entitlementCtx = await resolveEntitlementContext(
+		getAddress(wallet),
+		organizationId,
+	);
+	assertEntitlement(entitlementCtx, "features.team_drafts");
 
 	const draftId = randomUuidV7();
 	const snapshotKey = draftSnapshotKey({

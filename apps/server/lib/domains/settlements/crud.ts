@@ -143,6 +143,21 @@ export async function settlementsCancelRule(sender: Address, rawBody: unknown) {
 	const ruleId = BigInt(input.onChainRuleId);
 	const rule = await loadPayerRule(sender, ruleId, input.validatorAddress);
 
+	const [file] = await db
+		.select({ organizationId: files.organizationId })
+		.from(files)
+		.where(eq(files.pieceCid, rule.pieceCid))
+		.limit(1);
+	const entitlementCtx = await resolveEntitlementContext(
+		getAddress(sender),
+		file?.organizationId ?? null,
+	);
+	await assertSettlementUpdateEntitlements(
+		entitlementCtx,
+		file?.organizationId ?? null,
+		getAddress(sender),
+	);
+
 	const receiptRes = await tryCatch(
 		evmClient.waitForTransactionReceipt({ hash: input.cancelRuleTxHash }),
 	);

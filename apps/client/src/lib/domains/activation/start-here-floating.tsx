@@ -1,18 +1,18 @@
-import { MotionReveal } from "@filosign/motion";
 import type { EvaluatedActivationStep } from "@filosign/shared";
 import { BASIC_ONBOARDING_STEP_IDS } from "@filosign/shared";
 import {
 	ArrowSquareOutIcon,
 	CheckCircleIcon,
 	CircleIcon,
+	InfoIcon,
 } from "@phosphor-icons/react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, useMemo } from "react";
-import { BackdropImage } from "@/src/lib/components/app/chrome/page-backdrop";
 import { Button, buttonVariants } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { useStartHereController } from "@/src/lib/domains/activation/use-start-here-controller";
 import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
+import { FloatingPromptShell } from "@/src/lib/feedback/floating-prompt-shell";
 import { cn } from "@/src/lib/utils";
 
 const START_HERE_BODY_BACKDROP = "/images/stock_3.webp";
@@ -39,34 +39,13 @@ function StartHereCardShell({
 	titleId: string;
 }) {
 	return (
-		<MotionReveal
-			preset="smooth"
-			delay={0.15}
-			onlyOnce
-			className="pointer-events-none fixed bottom-6 right-6 z-40 w-min(100vw-2rem,96)"
-			id="start-here-floating"
+		<FloatingPromptShell
+			titleId={titleId}
+			headerImage={START_HERE_HEADER_IMAGE}
+			bodyBackdrop={START_HERE_BODY_BACKDROP}
 		>
-			<article
-				className="pointer-events-auto overflow-hidden rounded-large border border-border/50 bg-card text-card-foreground shadow-2xl ring-1 ring-foreground/5"
-				aria-labelledby={titleId}
-			>
-				<div className="relative h-36 overflow-hidden">
-					<img
-						src={START_HERE_HEADER_IMAGE}
-						alt=""
-						className="absolute inset-0 size-full object-cover object-center"
-					/>
-					<div
-						className="absolute inset-0 bg-linear-to-b from-black/10 via-transparent to-card opacity-30"
-						aria-hidden
-					/>
-				</div>
-				<div className="relative overflow-hidden">
-					<BackdropImage src={START_HERE_BODY_BACKDROP} />
-					<div className="relative z-10">{children}</div>
-				</div>
-			</article>
-		</MotionReveal>
+			{children}
+		</FloatingPromptShell>
 	);
 }
 
@@ -122,12 +101,11 @@ export function StartHereFloating() {
 			<div className="pointer-events-none fixed bottom-6 right-6 z-40">
 				<Button
 					type="button"
-					size="sm"
 					variant="secondary"
-					className="pointer-events-auto rounded-full px-4 shadow-lg"
+					className="pointer-events-auto"
 					onClick={restoreChecklist}
 				>
-					Get started
+					<InfoIcon className="size-6 shrink-0" />
 				</Button>
 			</div>
 		);

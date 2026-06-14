@@ -33,6 +33,7 @@ import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
 import { formatInlineAppError } from "@/src/lib/errors";
 import { cn } from "@/src/lib/utils/index";
+import { AdminFeedbackSection } from "@/src/routes/dashboard/_shell/admin/-components/admin-feedback-section";
 import { AdminMetricsSection } from "@/src/routes/dashboard/_shell/admin/-components/admin-metrics-section";
 
 type AdminInviteRow =
@@ -935,6 +936,10 @@ function AdminPage() {
 						</ul>
 					)}
 				</AdminSection>
+			</MotionReveal>
+
+			<MotionReveal delay={0.08}>
+				<AdminFeedbackSection enabled={isAdmin} />
 			</MotionReveal>
 
 			<MotionReveal delay={0.08}>

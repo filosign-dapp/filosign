@@ -16,6 +16,7 @@ import {
 	FileTextIcon,
 	GearIcon,
 	HouseIcon,
+	NotePencilIcon,
 	PlusIcon,
 	QuestionIcon,
 	SealIcon,
@@ -56,6 +57,7 @@ import {
 	UpgradePlanDialog,
 	type UpgradePlanLimitReason,
 } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
+import { useFeedback } from "@/src/lib/feedback/feedback-provider";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { cn } from "@/src/lib/utils/index";
 import {
@@ -74,6 +76,8 @@ type NavItem = {
 	tooltip: string;
 	/** Clear open envelope draft before navigating (new envelope, not resume). */
 	resetComposer?: boolean;
+	/** Opens an in-app action instead of navigating. */
+	onSelect?: () => void;
 };
 
 function matchPrefix(pathname: string, prefix: string) {
@@ -175,6 +179,7 @@ const groups: { label: string; items: NavItem[] }[] = [
 
 export function DashboardSidebar() {
 	const { rpcQuery } = useFilosignContext();
+	const { openFeedback } = useFeedback();
 	const navigate = useNavigate();
 	const startNewEnvelope = useStartNewEnvelope();
 	const pathname = useRouterState({
@@ -224,18 +229,31 @@ export function DashboardSidebar() {
 				<SidebarContent className="gap-0 px-1 py-3">
 					{groups.map((group) => {
 						const items =
-							group.label === "Account" && showAdminNav
+							group.label === "Support"
 								? [
 										...group.items,
 										{
-											title: "Admin",
-											url: "/dashboard/admin",
-											icon: ShieldCheckIcon,
-											match: (p: string) => matchPrefix(p, "/dashboard/admin"),
-											tooltip: "Platform admin",
+											title: "Send feedback",
+											url: "#send-feedback",
+											icon: NotePencilIcon,
+											match: () => false,
+											tooltip: "Send feedback",
+											onSelect: () => openFeedback(),
 										},
 									]
-								: group.items;
+								: group.label === "Account" && showAdminNav
+									? [
+											...group.items,
+											{
+												title: "Admin",
+												url: "/dashboard/admin",
+												icon: ShieldCheckIcon,
+												match: (p: string) =>
+													matchPrefix(p, "/dashboard/admin"),
+												tooltip: "Platform admin",
+											},
+										]
+									: group.items;
 						return (
 							<SidebarGroup key={group.label} className="p-0 pb-4">
 								<SidebarGroupLabel className="mb-1 px-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
@@ -262,7 +280,9 @@ export function DashboardSidebar() {
 																"bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-none",
 														)}
 														render={
-															item.resetComposer ? (
+															item.onSelect ? (
+																<button type="button" onClick={item.onSelect} />
+															) : item.resetComposer ? (
 																<button
 																	type="button"
 																	onClick={startNewEnvelope}

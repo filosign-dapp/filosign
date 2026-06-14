@@ -11,6 +11,8 @@ import {
 	AccordionTrigger,
 } from "@/src/lib/components/ui/accordion";
 import { Input } from "@/src/lib/components/ui/input";
+import { FEEDBACK_COPY } from "@/src/lib/copy/feedback";
+import { useFeedback } from "@/src/lib/feedback/feedback-provider";
 
 export type SupportCenterPanelProps = {
 	showHeader?: boolean;
@@ -27,6 +29,7 @@ export function SupportCenterPanel({
 }: SupportCenterPanelProps) {
 	const { query, setQuery, openSlug, setOpenSlug, grouped } =
 		useSupportCenterPanel();
+	const { openFeedback } = useFeedback();
 
 	return (
 		<div className="flex w-full flex-col gap-8">
@@ -38,6 +41,13 @@ export function SupportCenterPanel({
 					<p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
 						{lead}
 					</p>
+					<button
+						type="button"
+						className="w-fit text-left text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+						onClick={() => openFeedback()}
+					>
+						{FEEDBACK_COPY.supportLink}
+					</button>
 				</header>
 			) : null}
 

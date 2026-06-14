@@ -73,10 +73,12 @@ export function shouldCaptureServerException(error: unknown): boolean {
 	if (isOrpcErrorLike(error)) {
 		if (readAppCodeFromOrpc(error)) return false;
 		if (SKIP_ORPC_CODE_SET.has(error.code)) return false;
+		// Opt-in: only untagged internal failures (true bugs / invariant breaks).
 		if (error.code === "INTERNAL_SERVER_ERROR") return true;
 		return false;
 	}
-	return error instanceof Error;
+	// Plain Error at the oRPC boundary is logged locally; map to catalog at source.
+	return false;
 }
 
 // ==========================================

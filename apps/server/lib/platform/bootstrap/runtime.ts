@@ -1,6 +1,9 @@
 import env from "@/env";
 import { logFocSmoke } from "@/lib/domains/foc/smoke-log";
-import { shutdownPostHog } from "@/lib/platform/analytics";
+import {
+	emitServerStartedPing,
+	shutdownPostHog,
+} from "@/lib/platform/analytics";
 import { initCache } from "@/lib/platform/cache/session";
 import { startPlatformCron, stopPlatformCron } from "@/lib/platform/cron";
 import {
@@ -37,6 +40,7 @@ export async function bootstrapPlatformRuntime(
 	});
 	if (options.crons) startPlatformCron();
 	if (options.heartbeat) startWorkerHeartbeat();
+	await emitServerStartedPing();
 }
 
 export async function shutdownPlatformRuntime(

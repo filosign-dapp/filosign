@@ -38,8 +38,8 @@ export function createPostHogRuntime(args: {
 		if (!client) {
 			client = new PostHog(args.apiKey, {
 				host: args.host,
-				// Supplement oRPC middleware for process-level uncaught errors.
-				enableExceptionAutocapture: true,
+				// Explicit capture via oRPC middleware only (see shouldCaptureServerException).
+				enableExceptionAutocapture: false,
 			});
 		}
 		return client;

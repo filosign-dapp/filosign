@@ -69,6 +69,11 @@ const parsedEnv = createEnv({
 			.string()
 			.default("false")
 			.transform((v) => v === "true"),
+		/** Mirror ops platform_alert events to PostHog (default off; Telegram remains primary). */
+		POSTHOG_PLATFORM_ALERTS: z
+			.string()
+			.default("false")
+			.transform((v) => v === "true"),
 		ADMIN_WALLETS: z.string().optional(),
 		PLATFORM_ADMIN_EMAILS: z.string().optional(),
 		INVITE_TTL_DAYS: z.coerce.number().int().min(1).default(7),

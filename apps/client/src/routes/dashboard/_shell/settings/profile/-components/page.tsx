@@ -1,6 +1,7 @@
 import { MotionReveal } from "@filosign/motion";
 import { Form } from "@/src/lib/components/ui/form";
 import { useProfileSettingsContext } from "../-lib/context/context";
+import { AnalyticsPrivacySection } from "./analytics-privacy-section";
 // import { LinkedAccountsSection } from "./LinkedAccountsSection";
 import { PersonalInfoSection } from "./PersonalInfoSection";
 import { RecoveryPhraseSection } from "./recovery-phrase-section";
@@ -40,6 +41,7 @@ export function ProfileSettingsPage() {
 						<SignatureLibrarySection />
 						{/* <LinkedAccountsSection /> */}
 						<ThemeSection />
+						<AnalyticsPrivacySection />
 					</MotionReveal>
 				</form>
 			</Form>

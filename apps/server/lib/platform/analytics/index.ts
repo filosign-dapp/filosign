@@ -2,6 +2,7 @@ export {
 	createPlatformAlertsRuntime,
 	emitCriticalPlatformEvent,
 	emitCriticalPlatformEventFromProcessEnv,
+	emitServerStartedPing,
 	mirrorPlatformAlertToPostHog,
 	mirrorPlatformAlertToPostHogFromProcessEnv,
 	PLATFORM_ALERT_EVENTS,

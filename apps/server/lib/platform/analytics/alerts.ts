@@ -1,3 +1,4 @@
+import os from "node:os";
 import {
 	createInMemoryDedupe,
 	createLoggerRuntime,
@@ -27,6 +28,7 @@ export const PLATFORM_ALERT_EVENTS = {
 	settlementsRelayPayoutFailed: "settlements.relay_payout_failed",
 	serverPgbackrestFailed: "server.pgbackrest_failed",
 	serverBullmqJobFailed: "server.bullmq_job_failed",
+	serverStarted: "server.started",
 } as const;
 
 export const PLATFORM_ALERT_POSTHOG_EVENT = "platform_alert" as const;
@@ -199,6 +201,7 @@ export function platformAlertPostHogProperties(
 
 function postHogMirrorEnabledFromProcessEnv(): boolean {
 	return (
+		process.env.POSTHOG_PLATFORM_ALERTS === "true" &&
 		process.env.POSTHOG_ENABLED === "true" &&
 		Boolean(process.env.POSTHOG_HOST?.trim()) &&
 		Boolean(process.env.POSTHOG_API_KEY?.trim())
@@ -207,7 +210,11 @@ function postHogMirrorEnabledFromProcessEnv(): boolean {
 
 export function mirrorPlatformAlertToPostHog(
 	event: PlatformAlertEvent,
-	enabled: boolean = postHogMirrorEnabledFromProcessEnv(),
+	enabled: boolean = postHogMirrorEnabledFromProcessEnv() ||
+		(env.POSTHOG_PLATFORM_ALERTS &&
+			env.POSTHOG_ENABLED &&
+			Boolean(env.POSTHOG_HOST?.trim()) &&
+			Boolean(env.POSTHOG_API_KEY?.trim())),
 ): void {
 	if (!enabled) return;
 	if (!postHogDedupe.shouldSend(toLoggerEvent(event))) return;
@@ -266,6 +273,28 @@ export function emitCriticalPlatformEvent(
 	mirrorPlatformAlertToPostHog(event);
 	return getRuntime().emit({
 		...event,
+		timestamp: Date.now(),
+	});
+}
+
+/** Telegram ping on successful bootstrap (ops connectivity check; not mirrored to PostHog). */
+export function emitServerStartedPing(): Promise<void> {
+	if (!env.TG_ANALYTICS) {
+		return Promise.resolve();
+	}
+
+	const startedAt = new Date().toISOString();
+	return getRuntime().emit({
+		name: PLATFORM_ALERT_EVENTS.serverStarted,
+		severity: "info",
+		message: "Filosign server started",
+		context: {
+			startedAt,
+			deployment: env.DEPLOYMENT,
+			chain: env.CHAIN,
+			serverRole: env.SERVER_ROLE,
+			hostname: os.hostname(),
+		},
 		timestamp: Date.now(),
 	});
 }

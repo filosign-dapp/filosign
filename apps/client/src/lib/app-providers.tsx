@@ -5,10 +5,11 @@ import { RouterProvider } from "@tanstack/react-router";
 import { type ReactNode, StrictMode } from "react";
 import { Toaster } from "sonner";
 import env from "@/src/env";
+import { AnalyticsConsentCoordinator } from "@/src/lib/analytics/analytics-consent-coordinator";
 import {
-	AnalyticsConsentBanner,
+	AnalyticsConsentProvider,
 	useAnalyticsConsent,
-} from "@/src/lib/analytics/analytics-consent";
+} from "@/src/lib/analytics/consent-context";
 import { ErrorBoundary } from "@/src/lib/components/app/errors/error-boundary";
 import { HydrationLifecycleTracer } from "@/src/lib/components/app/hydration-lifecycle-tracer";
 import { ThemeProvider } from "@/src/lib/components/ui/theme-provider";
@@ -18,10 +19,9 @@ import { QueryClientProvider } from "@/src/lib/filosign/query-client";
 import { Web3Provider } from "@/src/lib/web3/providers";
 import router from "@/src/router";
 
-export function AppProviders({ children }: { children?: ReactNode }) {
+function AppAnalyticsShell({ children }: { children?: ReactNode }) {
 	const consentRequired = clientAnalyticsConsentRequired();
-	const { analyticsAllowed, needsConsent, acceptAnalytics, declineAnalytics } =
-		useAnalyticsConsent();
+	const { analyticsAllowed } = useAnalyticsConsent();
 	const posthogEnabled = env.VITE_POSTHOG_ENABLED === true;
 	const analyticsEnabled =
 		posthogEnabled && (consentRequired ? analyticsAllowed : true);
@@ -29,43 +29,48 @@ export function AppProviders({ children }: { children?: ReactNode }) {
 		analyticsEnabled && env.VITE_POSTHOG_SESSION_REPLAY === true;
 
 	return (
+		<FilosignAnalyticsProvider
+			apiKey={env.VITE_POSTHOG_KEY ?? ""}
+			apiHost={env.VITE_POSTHOG_HOST}
+			enabled={analyticsEnabled}
+			sessionReplay={sessionReplay}
+		>
+			<Web3Provider>
+				<FilosignProvider>
+					<IconContext.Provider
+						value={{
+							mirrored: false,
+							weight: "regular",
+						}}
+					>
+						<HydrationLifecycleTracer />
+						<AnalyticsConsentCoordinator
+							consentRequired={consentRequired}
+							posthogEnabled={posthogEnabled}
+						/>
+						<MotionConfig
+							reducedMotion="user"
+							transition={SPRING_TOKENS.smooth}
+						>
+							{children ?? <RouterProvider router={router} />}
+						</MotionConfig>
+					</IconContext.Provider>
+				</FilosignProvider>
+			</Web3Provider>
+		</FilosignAnalyticsProvider>
+	);
+}
+
+export function AppProviders({ children }: { children?: ReactNode }) {
+	return (
 		<StrictMode>
 			<ErrorBoundary>
 				<ThemeProvider defaultTheme="system" storageKey="theme">
 					<Toaster position="bottom-right" theme="system" />
 					<QueryClientProvider>
-						<FilosignAnalyticsProvider
-							apiKey={env.VITE_POSTHOG_KEY ?? ""}
-							apiHost={env.VITE_POSTHOG_HOST}
-							enabled={analyticsEnabled}
-							sessionReplay={sessionReplay}
-						>
-							<Web3Provider>
-								<FilosignProvider>
-									<IconContext.Provider
-										value={{
-											mirrored: false,
-											weight: "regular",
-										}}
-									>
-										<HydrationLifecycleTracer />
-										<AnalyticsConsentBanner
-											needsConsent={
-												consentRequired && posthogEnabled && needsConsent
-											}
-											onAccept={acceptAnalytics}
-											onDecline={declineAnalytics}
-										/>
-										<MotionConfig
-											reducedMotion="user"
-											transition={SPRING_TOKENS.smooth}
-										>
-											{children ?? <RouterProvider router={router} />}
-										</MotionConfig>
-									</IconContext.Provider>
-								</FilosignProvider>
-							</Web3Provider>
-						</FilosignAnalyticsProvider>
+						<AnalyticsConsentProvider>
+							<AppAnalyticsShell>{children}</AppAnalyticsShell>
+						</AnalyticsConsentProvider>
 					</QueryClientProvider>
 				</ThemeProvider>
 			</ErrorBoundary>

@@ -2,6 +2,7 @@ export {
 	userActivationGet,
 	userActivationMark,
 	userActivationOnEnvelopeStarted,
+	userActivationOnFirstAgreementSigned,
 	userActivationOnPracticeSigned,
 	userActivationOnRealEnvelopeSent,
 	userActivationOnSignatureReady,

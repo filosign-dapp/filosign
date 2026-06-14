@@ -46,9 +46,8 @@ export function useSendFile() {
 			);
 
 			void invalidateDocumentsList(queryClient, rpcQuery);
-			if (args.isPractice) {
-				void invalidateActivationProgress(queryClient, rpcQuery);
-			} else {
+			void invalidateActivationProgress(queryClient, rpcQuery);
+			if (!args.isPractice) {
 				void invalidateEntitlements(queryClient, rpcQuery);
 			}
 

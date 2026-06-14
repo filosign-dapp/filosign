@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
 import { resolveActivationStepHref } from "@/src/lib/domains/activation/resolve-step-href";
+import { recordTutorialFeedbackEligible } from "@/src/lib/feedback/prefs-storage";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { safeAsync } from "@/src/lib/utils/safe";
 import {
@@ -166,6 +167,7 @@ export function useStartHereController() {
 	const dismissNextSteps = useCallback(() => {
 		trackNextStepsDismiss();
 		setActivationUi({ nextStepsDismissed: true });
+		recordTutorialFeedbackEligible();
 	}, [setActivationUi, trackNextStepsDismiss]);
 
 	const toggleCollapsed = useCallback(() => {

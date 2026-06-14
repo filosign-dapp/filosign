@@ -18,7 +18,7 @@ export const ACTIVATION_STEPS: Record<
 		section: "core",
 		title: "Sign your first agreement",
 		description:
-			"Practice signing on a sample document before you send a real envelope.",
+			"Sign any agreement you received, or try the sample document to practice.",
 		milestoneId: "practice_document_signed",
 	},
 	learn_proof_packets: {

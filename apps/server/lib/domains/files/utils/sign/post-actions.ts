@@ -8,7 +8,6 @@ import { logger } from "@/lib/platform/pino";
 export async function runPostPieceSignSideEffects(args: {
 	pieceCid: string;
 	signerWallet: `0x${string}`;
-	isPractice: boolean;
 	fieldCount: number;
 	signTxHash?: `0x${string}`;
 }): Promise<void> {
@@ -19,12 +18,10 @@ export async function runPostPieceSignSideEffects(args: {
 		properties: { field_count: args.fieldCount },
 	});
 
-	if (args.isPractice) {
-		const { userActivationOnPracticeSigned } = await import(
-			"@/lib/domains/users/activation"
-		);
-		await userActivationOnPracticeSigned(args.signerWallet);
-	}
+	const { userActivationOnFirstAgreementSigned } = await import(
+		"@/lib/domains/users/activation"
+	);
+	await userActivationOnFirstAgreementSigned(args.signerWallet);
 
 	const { enqueuePostSignRoutingComplete, enqueuePayoutForPiece } =
 		await import("@/lib/platform/jobs");

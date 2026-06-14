@@ -17,7 +17,8 @@ import {
 import db from "@/lib/platform/db";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
-const { files, userActivationMilestones, userActivationState } = db.schema;
+const { files, fileSignatures, userActivationMilestones, userActivationState } =
+	db.schema;
 
 export const zUserActivationMarkBody = z.object({
 	milestone: zActivationMilestoneId,
@@ -121,7 +122,45 @@ async function resolvePracticePieceCid(
 	return practiceFile?.pieceCid ?? null;
 }
 
+async function syncFirstAgreementSignedFromHistory(
+	wallet: Address,
+): Promise<void> {
+	const walletNorm = getAddress(wallet);
+	const milestones = await listActivationMilestones(walletNorm);
+	if (milestones.includes("practice_document_signed")) return;
+
+	const [signedRow] = await db
+		.select({ signer: fileSignatures.signer })
+		.from(fileSignatures)
+		.where(eq(fileSignatures.signer, walletNorm))
+		.limit(1);
+
+	if (!signedRow) return;
+
+	await markActivationMilestoneTracked(walletNorm, "practice_document_signed");
+}
+
+async function syncFirstEnvelopeSentFromHistory(
+	wallet: Address,
+): Promise<void> {
+	const walletNorm = getAddress(wallet);
+	const milestones = await listActivationMilestones(walletNorm);
+	if (milestones.includes("first_envelope_sent")) return;
+
+	const [sentRow] = await db
+		.select({ pieceCid: files.pieceCid })
+		.from(files)
+		.where(and(eq(files.sender, walletNorm), eq(files.isPractice, false)))
+		.limit(1);
+
+	if (!sentRow) return;
+
+	await markActivationMilestoneTracked(walletNorm, "first_envelope_sent");
+}
+
 export async function userActivationGet(wallet: Address) {
+	await syncFirstAgreementSignedFromHistory(wallet);
+	await syncFirstEnvelopeSentFromHistory(wallet);
 	const milestones = await listActivationMilestones(wallet);
 	const practicePieceCid = await resolvePracticePieceCid(wallet);
 
@@ -177,10 +216,17 @@ export async function userActivationRecordPracticePiece(
 		});
 }
 
-export async function userActivationOnPracticeSigned(
+export async function userActivationOnFirstAgreementSigned(
 	wallet: Address,
 ): Promise<void> {
 	await markActivationMilestoneTracked(wallet, "practice_document_signed");
+}
+
+/** @deprecated Use userActivationOnFirstAgreementSigned */
+export async function userActivationOnPracticeSigned(
+	wallet: Address,
+): Promise<void> {
+	await userActivationOnFirstAgreementSigned(wallet);
 }
 
 export async function userActivationOnRealEnvelopeSent(

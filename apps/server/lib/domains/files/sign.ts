@@ -209,7 +209,6 @@ export async function pieceSign(args: {
 	void runPostPieceSignSideEffects({
 		pieceCid,
 		signerWallet,
-		isPractice: fileRecord.isPractice,
 		fieldCount: completedFieldIdsStored.length,
 		signTxHash: txHash,
 	}).catch((err) => {

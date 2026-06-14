@@ -3,6 +3,7 @@ import type { EntitlementsSnapshot } from "../src/hooks/billing/useEntitlements"
 import {
 	canUseDraftComments,
 	canUseSharedTemplates,
+	canUseTeamCollaboration,
 	canUseTeamDrafts,
 } from "../src/lib/entitlements";
 
@@ -52,5 +53,19 @@ describe("draft entitlement helpers", () => {
 				entitlements({ "features.shared_templates": false }),
 			),
 		).toBe(false);
+	});
+
+	it("canUseTeamCollaboration reflects team visibility flag", () => {
+		expect(
+			canUseTeamCollaboration(
+				entitlements({ "features.envelope.team_visibility": true }),
+			),
+		).toBe(true);
+		expect(
+			canUseTeamCollaboration(
+				entitlements({ "features.envelope.team_visibility": false }),
+			),
+		).toBe(false);
+		expect(canUseTeamCollaboration(undefined)).toBe(false);
 	});
 });

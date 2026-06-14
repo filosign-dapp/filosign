@@ -15,7 +15,6 @@ import {
 	FileTextIcon,
 	FolderOpenIcon,
 	PlusIcon,
-	ShieldWarningIcon,
 	TrashIcon,
 } from "@phosphor-icons/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -41,6 +40,8 @@ import { TOASTS } from "@/src/lib/copy/toasts";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { buildCreateForm, uploadedFromDataUrl } from "@/src/lib/domains/drafts";
+import { PLAN_LIMIT_COPY } from "@/src/lib/domains/entitlements/plan-limit-copy";
+import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
@@ -72,7 +73,7 @@ function TemplatesIndexPage() {
 	const createTemplate = useCreateOrgTemplate();
 
 	// Dialog & Alert State
-	const [upgradeOpen, setUpgradeOpen] = useState(false);
+	const [templatesUpgradeOpen, setTemplatesUpgradeOpen] = useState(true);
 	const [createOpen, setCreateOpen] = useState(false);
 	const [selectedDraftId, setSelectedDraftId] = useState("");
 	const [newTemplateName, setNewTemplateName] = useState("");
@@ -204,51 +205,29 @@ function TemplatesIndexPage() {
 		return <TemplatesPageSkeleton />;
 	}
 
-	// Upgrade Gate for non-Teams / non-Teams Pro users
 	if (!isTemplatesEnabled) {
+		const upgradeCopy = PLAN_LIMIT_COPY["features.shared_templates"];
+
 		return (
-			<div className="flex min-h-0 flex-1 flex-col items-center justify-center p-8 bg-background @container">
-				<motion.div
-					initial={{ opacity: 0, scale: 0.95 }}
-					animate={{ opacity: 1, scale: 1 }}
-					transition={{ duration: 0.3 }}
-					className="max-w-md w-full rounded-2xl border border-border/80 bg-linear-to-b from-card to-muted/20 p-8 text-center shadow-xl space-y-6"
+			<div className="flex min-h-0 flex-1 flex-col bg-background @container">
+				<AppEmptyState
+					preset="page"
+					icon={FileTextIcon}
+					title={upgradeCopy.title}
+					description={upgradeCopy.description}
 				>
-					<div className="size-16 mx-auto rounded-full bg-warning/15 flex items-center justify-center text-warning">
-						<ShieldWarningIcon className="size-8" weight="duotone" />
-					</div>
-					<div className="space-y-2">
-						<h2 className="text-xl font-bold tracking-tight text-foreground">
-							Templates require Teams plan
-						</h2>
-						<p className="text-sm text-muted-foreground leading-relaxed">
-							Create and reuse shared document templates with your team. Upgrade
-							to Teams or Teams Pro to build reusable workflows.
-						</p>
-					</div>
-					<div className="pt-2 flex flex-col gap-2">
-						<Button
-							type="button"
-							variant="primary"
-							onClick={() => setUpgradeOpen(true)}
-							className="w-full"
-						>
-							Upgrade Plan
-						</Button>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => void navigate({ to: "/dashboard/document/all" })}
-							className="w-full"
-						>
-							Back to Dashboard
-						</Button>
-					</div>
-				</motion.div>
+					<Button
+						type="button"
+						variant="primary"
+						onClick={() => setTemplatesUpgradeOpen(true)}
+					>
+						Upgrade plan
+					</Button>
+				</AppEmptyState>
 
 				<UpgradePlanDialog
-					open={upgradeOpen}
-					onOpenChange={setUpgradeOpen}
+					open={templatesUpgradeOpen}
+					onOpenChange={setTemplatesUpgradeOpen}
 					reason="features.shared_templates"
 				/>
 			</div>
@@ -265,8 +244,9 @@ function TemplatesIndexPage() {
 					transition={{ duration: 0.2 }}
 				>
 					<div className="space-y-0.5">
-						<h2 className="text-lg font-medium text-foreground">
+						<h2 className="inline-flex items-center gap-2 text-lg font-medium text-foreground">
 							Shared Templates
+							<ProFeatureMark size="xs" />
 						</h2>
 						<p className="text-xs text-muted-foreground hidden sm:block">
 							Reuse standard team documents for new envelopes.{" "}

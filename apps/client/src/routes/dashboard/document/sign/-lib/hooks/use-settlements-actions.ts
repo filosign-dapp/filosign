@@ -309,7 +309,7 @@ export function useSignSettlementsActions(
 
 	const openAmendDialog = useCallback(() => {
 		if (!canManageSettlements) {
-			promptPlanUpgrade("features.settlement.advanced");
+			promptPlanUpgrade("features.signer_replacement");
 			return;
 		}
 		setAmendDialogOpen(true);

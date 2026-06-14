@@ -62,6 +62,7 @@ export function getLimit(
 export function getQuotaScope(ctx: EntitlementContext, key: FeatureKey) {
 	const def = resolveDef(ctx, key);
 	if (def.kind !== "quota") return undefined;
+	// "account" = flat limit (not multiplied by seatCount). Not wallet-wide cross-org pooling.
 	return def.scope ?? "account";
 }
 

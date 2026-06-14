@@ -178,11 +178,13 @@ export function ComposePayoutsSection() {
 						type="button"
 						variant="outline"
 						size="sm"
+						className="gap-1.5"
 						onClick={openCreate}
 						disabled={addPayoutDisabled}
 					>
 						<PlusIcon className="size-4" weight="regular" />
 						Add payout
+						<ProFeatureMark size="xs" />
 					</Button>
 				</DisabledTooltip>
 			</div>

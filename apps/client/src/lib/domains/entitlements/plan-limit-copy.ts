@@ -17,7 +17,7 @@ export const PLAN_LIMIT_COPY: Record<
 	"features.settlement.basic": {
 		title: "USDC payouts need a paid plan",
 		description:
-			"Upgrade to Solo or higher, then request payout attachment access in Workspace settings. After Filosign approves, you can attach USDC payouts when signing finishes.",
+			"Upgrade to Solo or higher, then request payout attachment access in Workspace settings.",
 	},
 	"features.settlement.advanced": {
 		title: "Advanced payouts need Teams Pro",
@@ -58,5 +58,20 @@ export const PLAN_LIMIT_COPY: Record<
 		title: "Conditional file unlock needs Teams Pro",
 		description:
 			"Release supplementary files only when signing conditions are met with Teams Pro or Enterprise.",
+	},
+	"features.signer_replacement": {
+		title: "Change signer needs Teams Pro",
+		description:
+			"Swap a signer on a sent envelope and re-encrypt for the new recipient. Available on Teams Pro or Enterprise.",
+	},
+	"features.team_collaboration": {
+		title: "Team collaboration requires Teams plan",
+		description:
+			"Invite teammates to your workspace, share drafts, and collaborate on envelopes. Upgrade to Teams or Teams Pro.",
+	},
+	"features.workspace.create": {
+		title: "New workspace needs its own plan",
+		description:
+			"Each additional workspace requires its own Teams or Teams Pro subscription. Choose a plan and complete checkout, then name your workspace.",
 	},
 };

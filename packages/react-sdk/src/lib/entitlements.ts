@@ -116,3 +116,9 @@ export function canUseSharedTemplates(
 ): boolean {
 	return featureEnabled(entitlements, "features.shared_templates");
 }
+
+export function canUseTeamCollaboration(
+	entitlements: EntitlementsSnapshot | undefined,
+): boolean {
+	return featureEnabled(entitlements, "features.envelope.team_visibility");
+}

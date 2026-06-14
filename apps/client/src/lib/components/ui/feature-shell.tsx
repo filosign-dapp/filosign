@@ -1,5 +1,7 @@
 import type * as React from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/src/lib/components/ui/badge";
+import { Skeleton } from "@/src/lib/components/ui/skeleton";
 import { cn } from "@/src/lib/utils/index";
 
 export const featureShellTitleClassName =
@@ -82,21 +84,47 @@ function FeatureShellMedia({
 	src,
 	badge,
 	className,
+	onLoad,
+	onError,
 	...props
 }: React.ComponentProps<"img"> & {
 	badge?: React.ReactNode;
 }) {
+	const [loaded, setLoaded] = useState(false);
+
+	useEffect(() => {
+		setLoaded(false);
+	}, [src]);
+
 	return (
 		<div
 			className={cn(
 				"relative aspect-16/10 max-h-52 w-full shrink-0 overflow-hidden sm:max-h-none md:aspect-auto md:min-h-88 lg:min-h-104",
 				className,
 			)}
+			aria-busy={!loaded}
 		>
+			{!loaded ? (
+				<Skeleton
+					className="absolute inset-0 size-full rounded-none"
+					aria-hidden
+				/>
+			) : null}
 			<img
 				src={src}
 				alt=""
-				className="absolute inset-0 size-full object-cover"
+				className={cn(
+					"absolute inset-0 size-full object-cover transition-opacity duration-300",
+					loaded ? "opacity-100" : "opacity-0",
+				)}
+				onLoad={(event) => {
+					setLoaded(true);
+					onLoad?.(event);
+				}}
+				onError={(event) => {
+					setLoaded(true);
+					onError?.(event);
+				}}
 				{...props}
 			/>
 			<div

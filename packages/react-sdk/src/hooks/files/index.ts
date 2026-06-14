@@ -26,6 +26,7 @@ export {
 	canUseMetadataTags,
 	canUseSharedTemplates,
 	canUseSupplementaryAttachments,
+	canUseTeamCollaboration,
 	canUseTeamDrafts,
 	resolveBasicPayoutGate,
 } from "../../lib/entitlements";

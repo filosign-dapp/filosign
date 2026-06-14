@@ -3,7 +3,7 @@ import { cn } from "@/src/lib/utils/index";
 
 export function SettingsSection(props: {
 	icon: ReactNode;
-	title: string;
+	title: ReactNode;
 	description?: ReactNode;
 	headerAside?: ReactNode;
 	className?: string;

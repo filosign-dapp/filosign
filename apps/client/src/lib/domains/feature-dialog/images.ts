@@ -31,10 +31,14 @@ export function upgradePlanLimitMedia(reason: UpgradePlanLimitReason): {
 		case "features.supplementary_attachments.conditional_release":
 			return { src, badge: "Upgrade" };
 		case "features.routing.advanced":
+		case "features.signer_replacement":
 			return { src, badge: "Teams Pro" };
 		case "features.shared_templates":
 		case "features.team_drafts":
 		case "features.draft_comments":
+		case "features.team_collaboration":
+		case "features.workspace.create":
 			return { src, badge: "Teams" };
 	}
+	return { src, badge: "Upgrade" };
 }

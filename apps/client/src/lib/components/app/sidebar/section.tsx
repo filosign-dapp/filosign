@@ -8,7 +8,7 @@ export function SidebarSection({
 	className,
 	sticky = false,
 }: {
-	title: string;
+	title: ReactNode;
 	description?: string;
 	children: ReactNode;
 	className?: string;

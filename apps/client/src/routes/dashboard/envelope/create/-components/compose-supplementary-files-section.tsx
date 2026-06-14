@@ -114,12 +114,13 @@ export function ComposeSupplementaryFilesSection() {
 					type="button"
 					variant="outline"
 					size="sm"
-					className="shrink-0"
+					className="shrink-0 gap-1.5"
 					onClick={openAdd}
 					disabled={atPacketLimit}
 				>
 					<PlusIcon className="size-4" weight="regular" />
 					Add packet
+					<ProFeatureMark size="xs" />
 				</Button>
 			</div>
 

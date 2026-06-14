@@ -2,6 +2,7 @@ import { useCancelAttachmentRule } from "@filosign/react/files";
 import { Button } from "@/src/lib/components/ui/button";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
+import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { safeAsync } from "@/src/lib/utils/safe";
 
 type Packet = {
@@ -34,7 +35,10 @@ export function ConditionalAttachmentsPanel({
 	return (
 		<div className="space-y-2 rounded-lg border border-border/60 p-3">
 			<div className="space-y-1">
-				<p className="text-xs font-medium">Extra files with conditions</p>
+				<p className="inline-flex items-center gap-2 text-xs font-medium">
+					Extra files with conditions
+					<ProFeatureMark size="xs" />
+				</p>
 				<p className="text-xs text-muted-foreground">
 					Recipients can open these only after the signing rules you set are
 					met.

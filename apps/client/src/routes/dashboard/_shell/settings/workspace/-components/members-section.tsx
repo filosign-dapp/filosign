@@ -2,6 +2,7 @@ import { PlusIcon, UsersIcon } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/src/lib/components/ui/button";
 import { BILLING_SETTINGS_PATH } from "@/src/lib/domains/billing/settings-path";
+import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { MemberRow } from "@/src/routes/dashboard/_shell/settings/workspace/-components/member-row";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
 import { WorkspaceSection } from "./workspace-section";
@@ -35,11 +36,12 @@ export function MembersSection(props: { onInviteClick?: () => void }) {
 						type="button"
 						variant="outline"
 						size="sm"
-						className="h-8 rounded-lg text-xs gap-1.5 touch-manipulation cursor-pointer"
+						className="h-8 gap-1.5 rounded-lg text-xs touch-manipulation cursor-pointer"
 						onClick={props.onInviteClick}
 					>
 						<PlusIcon className="size-3.5" aria-hidden="true" />
 						Add member
+						<ProFeatureMark size="xs" />
 					</Button>
 				) : null
 			}

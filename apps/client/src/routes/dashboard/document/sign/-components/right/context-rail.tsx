@@ -1,4 +1,5 @@
 import { Button } from "@/src/lib/components/ui/button";
+import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { ConditionalAttachmentsPanel } from "@/src/routes/dashboard/document/sign/-components/conditional-attachments-panel";
 import { SettlementStatusPanel } from "@/src/routes/dashboard/document/sign/-components/settlement-status-panel";
 import { SignSidebar } from "@/src/routes/dashboard/document/sign/-components/sidebar";
@@ -96,7 +97,14 @@ export function SignContextRail() {
 			) : null}
 
 			{settlements.rules.length > 0 ? (
-				<SignSidebar.Section title="Attached payouts">
+				<SignSidebar.Section
+					title={
+						<span className="inline-flex items-center gap-2">
+							Attached payouts
+							<ProFeatureMark size="xs" />
+						</span>
+					}
+				>
 					<SettlementStatusPanel
 						rules={settlements.rules}
 						formatAddress={formatAddress}
@@ -150,19 +158,21 @@ export function SignContextRail() {
 							type="button"
 							variant="outline"
 							size="sm"
-							className="h-8 text-xs"
+							className="h-8 gap-1.5 text-xs"
 							onClick={() => settlements.openAttachDialog()}
 						>
 							Add payout
+							<ProFeatureMark size="xs" />
 						</Button>
 						<Button
 							type="button"
 							variant="outline"
 							size="sm"
-							className="h-8 text-xs"
+							className="h-8 gap-1.5 text-xs"
 							onClick={() => settlements.openAmendDialog()}
 						>
 							Change signer
+							<ProFeatureMark size="xs" />
 						</Button>
 					</div>
 					<ConditionalAttachmentsPanel

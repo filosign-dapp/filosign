@@ -31,6 +31,7 @@ import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
 import { useDraftCommentCount, useDraftSaveUi } from "@/src/lib/domains/drafts";
+import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn } from "@/src/lib/utils/utils";
 import { ShareDraftDialog } from "@/src/routes/dashboard/envelope/create/-components/share-draft-dialog";
@@ -262,17 +263,22 @@ export function AddSignDraftActions() {
 				>
 					<FloppyDiskIcon className="size-4" />
 					<span className="hidden sm:inline">Save draft</span>
+					<ProFeatureMark size="xs" />
 				</Button>
 				<Button
 					type="button"
 					variant="outline"
 					size="icon-lg"
-					className="relative"
+					className="relative gap-1"
 					disabled={!serverDraftId}
 					aria-label={badgeLabel ? `Comments, ${badgeLabel} total` : "Comments"}
 					onClick={handleCommentsClick}
 				>
 					<ChatCircleIcon className="size-4" />
+					<ProFeatureMark
+						size="xs"
+						className="absolute -bottom-0.5 -right-0.5"
+					/>
 					{badgeLabel ? (
 						<span className="absolute -top-1 -right-1 flex size-4 min-w-4 items-center justify-center rounded-full bg-secondary px-0.5 text-[10px] font-medium leading-none text-secondary-foreground">
 							{badgeLabel}
@@ -306,7 +312,10 @@ export function AddSignDraftActions() {
 							onClick={handleTemplateClick}
 						>
 							<FileTextIcon className="size-4" />
-							Save as template
+							<span className="inline-flex items-center gap-2">
+								Save as template
+								<ProFeatureMark size="xs" />
+							</span>
 						</DropdownMenuItem>
 						{needsDraftCrypto && cryptoRequired.needsRecovery ? (
 							<>

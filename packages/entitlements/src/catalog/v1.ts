@@ -183,7 +183,10 @@ const disabledArchivalPurchase = {
 	"features.archival.purchase": { kind: "boolean", enabled: false },
 } as const satisfies Pick<PlanEntitlements, "features.archival.purchase">;
 
-/** Versioned plan catalog - change via PR + tests; bump version when breaking. */
+/** Versioned plan catalog - change via PR + tests; bump version when breaking.
+ *  Quota scope "account" = flat limit (not per-seat). Usage is counted per organization server-side.
+ *  Scope "per_seat" = limit multiplied by seatCount (Teams pooled quota).
+ */
 export const catalogV1: Record<PlanId, PlanEntitlements> = {
 	free: {
 		"documents.sent.monthly": {

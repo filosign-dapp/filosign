@@ -1,4 +1,4 @@
-import { useBasicPayoutAttachGate } from "@filosign/react/files";
+import { useActiveOrganization, useActiveOrgId } from "@filosign/react/orgs";
 import {
 	isAdvancedSettlementReleaseType,
 	normalizeSettlementReleaseType,
@@ -10,10 +10,14 @@ import { useMemo, useState } from "react";
 import { SUPPORTED_TOKENS } from "@/src/constants";
 import { Image } from "@/src/lib/components/app/media/image";
 import { Button } from "@/src/lib/components/ui/button";
+import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
+import { payoutAccessRequestDialogProps } from "@/src/lib/domains/settlements/payout-access-controls";
+import { PayoutAccessRequestDialog } from "@/src/lib/domains/settlements/payout-access-request-dialog";
+import { useBasicPayoutGateActions } from "@/src/lib/domains/settlements/use-basic-payout-gate-actions";
 import { formatUsdcAmountString } from "@/src/lib/web3/format-usdc";
 import {
 	ComposeRuleCard,
@@ -87,15 +91,31 @@ function PayoutRuleCard({
 
 export function ComposePayoutsSection() {
 	const { form, payoutBalance } = useCreateEnvelope();
+	const activeOrgId = useActiveOrgId();
+	const activeOrg = useActiveOrganization();
+
 	const recipients = useStore(form.store, (state) => state.values.recipients);
 	const settlementDrafts = useStore(
 		form.store,
 		(state) => state.values.settlementDrafts ?? [],
 	);
-	const { canAttach } = useBasicPayoutAttachGate();
 
-	const [dialogOpen, setDialogOpen] = useState(false);
+	const canManage = activeOrg?.role === "owner" || activeOrg?.role === "admin";
+	const addPayoutDisabled = recipients.length === 0;
+
+	const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
 	const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+
+	const {
+		canAttach,
+		requestDialogOpen,
+		setRequestDialogOpen,
+		payoutAccess,
+		guardPayoutAttach,
+	} = useBasicPayoutGateActions({
+		activeOrgId: activeOrgId ?? undefined,
+		canManage,
+	});
 
 	const ruleGroups = useMemo(
 		() => getRuleGroups(settlementDrafts),
@@ -111,13 +131,15 @@ export function ComposePayoutsSection() {
 	};
 
 	const openCreate = () => {
+		if (guardPayoutAttach()) return;
 		setEditingRuleId(null);
-		setDialogOpen(true);
+		setRuleDialogOpen(true);
 	};
 
 	const openEdit = (ruleId: string) => {
+		if (guardPayoutAttach()) return;
 		setEditingRuleId(ruleId);
-		setDialogOpen(true);
+		setRuleDialogOpen(true);
 	};
 
 	const handleSave = (ruleId: string, legs: SettlementAttachmentDraft[]) => {
@@ -133,13 +155,14 @@ export function ComposePayoutsSection() {
 		setEditingRuleId(null);
 	};
 
-	if (!canAttach || recipients.length === 0) return null;
-
 	return (
 		<section className="space-y-3 rounded-xl border border-border/60 bg-muted/5 p-5">
 			<div className="flex items-start justify-between gap-3">
 				<div className="space-y-1">
-					<h2 className="text-sm font-semibold">Attached payouts</h2>
+					<h2 className="inline-flex items-center gap-2 text-sm font-semibold">
+						Attached payouts
+						<ProFeatureMark size="xs" />
+					</h2>
 					<p className="text-xs text-muted-foreground">
 						Pre-authorize stablecoin payouts for Filosign recipients when
 						signing conditions are met. Funds stay in your wallet until each
@@ -147,10 +170,21 @@ export function ComposePayoutsSection() {
 						<DocsLink href={DOCS_LINKS.payouts()}>Payouts guide</DocsLink>
 					</p>
 				</div>
-				<Button type="button" variant="outline" size="sm" onClick={openCreate}>
-					<PlusIcon className="size-4" weight="regular" />
-					Add payout
-				</Button>
+				<DisabledTooltip
+					disabled={addPayoutDisabled}
+					reason="Add recipients first."
+				>
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={openCreate}
+						disabled={addPayoutDisabled}
+					>
+						<PlusIcon className="size-4" weight="regular" />
+						Add payout
+					</Button>
+				</DisabledTooltip>
 			</div>
 
 			{ruleGroups.length > 0 ? (
@@ -169,14 +203,16 @@ export function ComposePayoutsSection() {
 							/>
 						))}
 					</ul>
-					<PayoutBalanceSummary
-						formattedTotal={payoutBalance.formattedTotal}
-						formattedBalance={payoutBalance.formattedBalance}
-						balancePending={payoutBalance.balancePending}
-						balanceError={payoutBalance.balanceError}
-						walletConnected={Boolean(payoutBalance.walletAddress)}
-						exceedsBalance={payoutBalance.exceedsBalance}
-					/>
+					{canAttach ? (
+						<PayoutBalanceSummary
+							formattedTotal={payoutBalance.formattedTotal}
+							formattedBalance={payoutBalance.formattedBalance}
+							balancePending={payoutBalance.balancePending}
+							balanceError={payoutBalance.balanceError}
+							walletConnected={Boolean(payoutBalance.walletAddress)}
+							exceedsBalance={payoutBalance.exceedsBalance}
+						/>
+					) : null}
 				</>
 			) : (
 				<p className="text-xs text-muted-foreground">
@@ -185,11 +221,11 @@ export function ComposePayoutsSection() {
 				</p>
 			)}
 
-			{dialogOpen ? (
+			{ruleDialogOpen ? (
 				<PayoutRuleDialog
-					open={dialogOpen}
+					open={ruleDialogOpen}
 					onOpenChange={(open) => {
-						setDialogOpen(open);
+						setRuleDialogOpen(open);
 						if (!open) setEditingRuleId(null);
 					}}
 					recipients={recipients}
@@ -200,6 +236,13 @@ export function ComposePayoutsSection() {
 					onRemove={handleRemove}
 				/>
 			) : null}
+
+			<PayoutAccessRequestDialog
+				{...payoutAccessRequestDialogProps(
+					{ open: requestDialogOpen, onOpenChange: setRequestDialogOpen },
+					payoutAccess,
+				)}
+			/>
 		</section>
 	);
 }

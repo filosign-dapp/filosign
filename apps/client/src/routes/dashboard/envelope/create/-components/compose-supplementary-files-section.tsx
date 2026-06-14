@@ -10,6 +10,7 @@ import {
 	hydrateAttachmentPacketDrafts,
 	saveAttachmentPacketDrafts,
 } from "@/src/lib/domains/drafts";
+import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import {
 	type AttachmentPacketComposeDraft,
 	removePacketById,
@@ -40,11 +41,14 @@ export function ComposeSupplementaryFilesSection() {
 
 	if (!createForm) return null;
 
+	const guardSupplementaryAccess = () => {
+		if (canUse) return false;
+		promptPlanUpgrade("features.supplementary_attachments");
+		return true;
+	};
+
 	const openAdd = () => {
-		if (!canUse) {
-			promptPlanUpgrade("features.supplementary_attachments");
-			return;
-		}
+		if (guardSupplementaryAccess()) return;
 		if (
 			drafts.length >= SUPPLEMENTARY_ATTACHMENT_LIMITS.maxPacketsPerEnvelope
 		) {
@@ -56,6 +60,7 @@ export function ComposeSupplementaryFilesSection() {
 	};
 
 	const openEdit = async (packetId: string) => {
+		if (guardSupplementaryAccess()) return;
 		const draft = drafts.find((d) => d.packetId === packetId);
 		if (!draft) return;
 		const [hydrated] = await hydrateAttachmentPacketDrafts(createForm.draftId, [
@@ -93,7 +98,10 @@ export function ComposeSupplementaryFilesSection() {
 		<section className="space-y-3 rounded-xl border border-border/60 bg-muted/5 p-5">
 			<div className="flex items-start justify-between gap-3">
 				<div className="space-y-1">
-					<h2 className="text-sm font-semibold">Attached file packets</h2>
+					<h2 className="inline-flex items-center gap-2 text-sm font-semibold">
+						Attached file packets
+						<ProFeatureMark size="xs" />
+					</h2>
 					<p className="text-xs text-muted-foreground">
 						Send encrypted PDF packets with your envelope. Set unlock rules,
 						choose recipients, then add files.{" "}

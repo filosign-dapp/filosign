@@ -12,6 +12,7 @@ export {
 	createFormToEnvelopeForm,
 	createFormToEnvelopeFormWithoutDocuments,
 	EMPTY_ENVELOPE_FORM,
+	getPersistedAttachmentDrafts,
 	hasDraftContent,
 	hasEnvelopeFormContent,
 	hydrateAttachmentPacketDrafts,

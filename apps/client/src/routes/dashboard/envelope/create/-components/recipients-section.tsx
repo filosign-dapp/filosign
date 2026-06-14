@@ -7,6 +7,7 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/src/lib/components/ui/collapsible";
+import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
 import { Label } from "@/src/lib/components/ui/label";
 import { Switch } from "@/src/lib/components/ui/switch";
 import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
@@ -87,12 +88,16 @@ function RecipientsSectionContent() {
 							</div>
 
 							<div className="flex shrink-0 flex-wrap items-center gap-3 sm:justify-end">
-								{recipients.length > 0 ? (
+								<DisabledTooltip
+									disabled={recipients.length === 0}
+									reason="Add recipients first."
+								>
 									<div className="flex items-center gap-2 rounded-lg bg-background/50 px-3 py-1.5">
 										<Switch
 											id="turn-order-enabled-recipients"
 											checked={turnOrderEnabled}
 											onCheckedChange={setTurnOrderEnabled}
+											disabled={recipients.length === 0}
 										/>
 										<Label
 											htmlFor="turn-order-enabled-recipients"
@@ -102,7 +107,7 @@ function RecipientsSectionContent() {
 											<ProFeatureMark size="xs" />
 										</Label>
 									</div>
-								) : null}
+								</DisabledTooltip>
 
 								<Button
 									type="button"

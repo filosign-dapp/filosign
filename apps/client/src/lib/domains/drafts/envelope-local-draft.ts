@@ -492,3 +492,9 @@ export function hasDraftContent(draft: CreateForm | null | undefined): boolean {
 		(draft.settlementDrafts?.length ?? 0) > 0
 	);
 }
+
+export function getPersistedAttachmentDrafts(
+	createForm: CreateForm | null | undefined,
+): AttachmentPacketComposeDraft[] {
+	return createForm?.attachmentPacketDrafts ?? [];
+}

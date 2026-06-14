@@ -3,10 +3,15 @@ import {
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
 import {
+	useEntitlements,
 	useEnvelopeRecipientLimit,
 	useMonthlyDocumentQuota,
 	useRefetchEntitlementsOnMount,
 } from "@filosign/react/billing";
+import {
+	canUseBasicSettlements,
+	canUseSupplementaryAttachments,
+} from "@filosign/react/files";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -15,6 +20,7 @@ import { TOASTS } from "@/src/lib/copy/toasts";
 import {
 	buildCreateForm,
 	EMPTY_ENVELOPE_FORM,
+	getPersistedAttachmentDrafts,
 	hasDraftContent,
 	hasEnvelopeFormContent,
 	hydrateAttachmentPacketDrafts,
@@ -29,6 +35,7 @@ import {
 import { useWalletUsdcBalance } from "@/src/lib/web3/use-wallet-usdc-balance";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 import type { EnvelopeForm } from "@/src/routes/dashboard/envelope/create/-lib/types";
+import { resolveComposeAdvanceUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/utils/compose-advance-guards";
 
 const PERSIST_DEBOUNCE_MS = 400;
 
@@ -41,6 +48,7 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 	persistHydratedRef.current = persistHydrated;
 	const promptPlanUpgrade = usePromptPlanUpgrade();
 	const captureAppEvent = useCaptureAppEvent();
+	const { data: entitlements } = useEntitlements();
 	useRefetchEntitlementsOnMount();
 	const { isWithinRecipientLimit } = useEnvelopeRecipientLimit();
 	const { isMonthlyQuotaExhausted } = useMonthlyDocumentQuota();
@@ -70,13 +78,20 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 		onSubmit: async ({ value }) => {
 			setIsAdvancing(true);
 			try {
-				if (isMonthlyQuotaExhausted) {
-					promptPlanUpgrade("documents.sent.monthly");
-					return;
-				}
-
-				if (!isWithinRecipientLimit(value.recipients.length)) {
-					promptPlanUpgrade("envelope.recipients.max");
+				const prev = useStorePersist.getState().createForm;
+				const upgradeReason = resolveComposeAdvanceUpgrade({
+					recipientCount: value.recipients.length,
+					settlementDraftCount: value.settlementDrafts?.length ?? 0,
+					persistedAttachmentDraftCount:
+						getPersistedAttachmentDrafts(prev).length,
+					monthlyQuotaExhausted: isMonthlyQuotaExhausted,
+					withinRecipientLimit: isWithinRecipientLimit(value.recipients.length),
+					settlementsAllowed: canUseBasicSettlements(entitlements),
+					supplementaryAttachmentsAllowed:
+						canUseSupplementaryAttachments(entitlements),
+				});
+				if (upgradeReason) {
+					promptPlanUpgrade(upgradeReason);
 					return;
 				}
 
@@ -94,7 +109,6 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 					return;
 				}
 
-				const prev = useStorePersist.getState().createForm;
 				const prevWithAttachments = prev?.attachmentPacketDrafts?.length
 					? {
 							...prev,

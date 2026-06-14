@@ -5,7 +5,7 @@ export const FEATURE_DIALOG_IMAGES = {
 	signSuccessProofPacketDialog: "/images/ww/stock_46.webp",
 	recoveryPhraseAndCryptoUnlockDialog: "/images/ww/stock_63.webp",
 	workspaceCreateInviteTrialDialog: "/images/ww/stock_44.webp",
-	signInOtpAndInviteUnlockDialog: "/images/ww/stock_40.webp",
+	signInOtpAndInviteUnlockDialog: "/images/ww/stock_30.webp",
 	upgradePlanDialog: "/images/ww/stock_18.webp",
 	payoutAccessRequestDialog: "/images/ww/stock_41.webp",
 	postSendEnvelopeSentDialog: "/images/ww/stock_24.webp",

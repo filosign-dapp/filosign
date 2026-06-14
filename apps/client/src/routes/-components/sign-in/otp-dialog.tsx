@@ -1,5 +1,4 @@
 import { AnimatePresence, motion, SPRING_TOKENS } from "@filosign/motion";
-import { UserCircleIcon } from "@phosphor-icons/react";
 import { useEffect, useId, useRef } from "react";
 import { Button, buttonVariants } from "@/src/lib/components/ui/button";
 import { Dialog } from "@/src/lib/components/ui/dialog";
@@ -222,9 +221,6 @@ function NotRegisteredContent({
 			transition={SPRING_TOKENS.snappy}
 		>
 			<FeatureDialogBody>
-				<div className="flex size-12 items-center justify-center rounded-full bg-secondary/20 text-secondary-foreground">
-					<UserCircleIcon className="size-6" weight="duotone" aria-hidden />
-				</div>
 				<FeatureDialogActions>
 					<a
 						href={pricingUrl}

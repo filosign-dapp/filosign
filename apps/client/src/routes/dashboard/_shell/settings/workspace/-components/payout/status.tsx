@@ -1,32 +1,28 @@
+import { Button } from "@/src/lib/components/ui/button";
 import { WorkspaceSyncNotice } from "../workspace-section";
-import { PayoutAccessRequestForm } from "./request-form";
-
-type RequestFormProps = {
-	useCase: string;
-	onUseCaseChange: (v: string) => void;
-	acceptTerms: boolean;
-	onAcceptTermsChange: (v: boolean) => void;
-	sanctionsSelfCert: boolean;
-	onSanctionsSelfCertChange: (v: boolean) => void;
-	canSubmit: boolean;
-	pending: boolean;
-	onSubmit: () => void;
-};
 
 type Props = {
 	status: string | undefined;
 	termsCurrent: boolean;
 	reviewNote: string | null | undefined;
 	canManage: boolean;
-	requestForm: RequestFormProps;
+	onRequestAccess: () => void;
 };
+
+function RequestAccessButton(props: { onClick: () => void }) {
+	return (
+		<Button type="button" variant="primary" onClick={props.onClick}>
+			Request access
+		</Button>
+	);
+}
 
 export function PayoutAccessStatusContent({
 	status,
 	termsCurrent,
 	reviewNote,
 	canManage,
-	requestForm,
+	onRequestAccess,
 }: Props) {
 	if (status === "approved" && termsCurrent) {
 		return (
@@ -38,10 +34,13 @@ export function PayoutAccessStatusContent({
 
 	if (status === "approved" && !termsCurrent) {
 		return (
-			<WorkspaceSyncNotice
-				title="Addendum updated"
-				body="Settlement terms were updated. Submit a new access request and accept the current addendum."
-			/>
+			<div className="space-y-4">
+				<WorkspaceSyncNotice
+					title="Addendum updated"
+					body="Settlement terms were updated. Submit a new access request and accept the current addendum."
+				/>
+				{canManage ? <RequestAccessButton onClick={onRequestAccess} /> : null}
+			</div>
 		);
 	}
 
@@ -56,18 +55,26 @@ export function PayoutAccessStatusContent({
 
 	if (status === "rejected") {
 		return (
-			<div className="space-y-3">
+			<div className="space-y-4">
 				<p className="text-sm text-destructive">
 					Your payout attachment request was not approved.
 					{reviewNote ? ` Note: ${reviewNote}` : ""}
 				</p>
-				{canManage ? <PayoutAccessRequestForm {...requestForm} /> : null}
+				{canManage ? <RequestAccessButton onClick={onRequestAccess} /> : null}
 			</div>
 		);
 	}
 
 	if (canManage) {
-		return <PayoutAccessRequestForm {...requestForm} />;
+		return (
+			<div className="space-y-4">
+				<p className="text-sm text-muted-foreground">
+					Request access to attach optional USDC payout instructions on
+					documents. Filosign reviews each workspace before payouts can be used.
+				</p>
+				<RequestAccessButton onClick={onRequestAccess} />
+			</div>
+		);
 	}
 
 	return (

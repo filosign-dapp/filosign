@@ -1,5 +1,6 @@
 import { useFilosignContext } from "@filosign/react";
 import { useEntitlements } from "@filosign/react/billing";
+import { canUseSharedTemplates } from "@filosign/react/files";
 import {
 	useActiveOrganization,
 	useActiveOrgId,
@@ -209,9 +210,7 @@ export function DashboardSidebar() {
 		"features.shared_templates",
 	);
 
-	const hasCollaboration = Boolean(
-		entitlements?.features["features.shared_templates"]?.enabled,
-	);
+	const hasCollaboration = canUseSharedTemplates(entitlements);
 
 	const orgs = orgsData?.organizations ?? [];
 

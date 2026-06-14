@@ -1,6 +1,7 @@
 import { useFilosignContext } from "@filosign/react";
 import { useEntitlements } from "@filosign/react/billing";
 import { useDocumentsList } from "@filosign/react/documents";
+import { canUseSharedTemplates } from "@filosign/react/files";
 import {
 	type OrgsTemplatesCloneOutput,
 	useActiveOrgId,
@@ -84,9 +85,7 @@ function TemplatesIndexPage() {
 		return (draftsData?.items ?? []).filter((row) => row.kind === "draft");
 	}, [draftsData]);
 
-	const isTemplatesEnabled = Boolean(
-		entitlements?.features["features.shared_templates"]?.enabled,
-	);
+	const isTemplatesEnabled = canUseSharedTemplates(entitlements);
 
 	// Handlers
 	const handleUseTemplate = (templateId: string) => {

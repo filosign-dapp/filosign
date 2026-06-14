@@ -12,8 +12,8 @@ import {
 import {
 	prefetchDefaultTypedSignatures,
 	toSignaturePrefetchProfile,
-	useUpdateUserProfile,
 	type UserProfile,
+	useUpdateUserProfile,
 } from "@filosign/react/users";
 import type { UserSignatureArtifact } from "@filosign/shared";
 import { useQueryClient } from "@tanstack/react-query";

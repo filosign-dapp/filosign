@@ -1,4 +1,3 @@
-import { dataUrlToBytes } from "./upload-user-signature";
 import {
 	fitSignatureRasterFontSize,
 	getSignatureFontRasterSpec,
@@ -6,6 +5,7 @@ import {
 	SIGNATURE_RASTER_INK,
 	type UserSignatureRole,
 } from "@filosign/shared";
+import { dataUrlToBytes } from "./upload-user-signature";
 
 /** Physical pixels per logical raster unit (sharp PDF + retina previews). */
 const RASTER_PIXEL_RATIO = 4;

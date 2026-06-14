@@ -12,10 +12,8 @@ export {
 export {
 	expirePartnerTrialsJob,
 	grantAdminOrgTeamsProIfEligibleWithTx,
-	grantAdminUserTeamsProIfEligibleWithTx,
 	grantDevPlansForAdminEmail,
 	setOrgPlanManualWithTx,
-	setUserPlanManualWithTx,
 	upsertPaidAccessPendingFromWebhook,
 } from "./grants";
 
@@ -26,8 +24,8 @@ export {
 	listPlatformUsersForAdmin,
 	rebookPlatformInvite,
 	revokePlatformInvite,
-	setUserFeatureOverrides,
-	setUserPlanManual,
+	setPersonalOrgFeatureOverrides,
+	setPersonalOrgPlanManual,
 } from "./invites";
 export {
 	fetchRegisteredUserEmail,

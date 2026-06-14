@@ -7,7 +7,6 @@ import env from "@/env";
 
 import {
 	assertRegistrationAllowed,
-	grantAdminUserTeamsProIfEligibleWithTx,
 	linkPaidSetupOnRegisterWithTx,
 	previewColdRecipientGate,
 	type RegistrationAccessGate,
@@ -19,7 +18,10 @@ import {
 	invalidateUserExists,
 } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
-import { userSubscriptions } from "@/lib/platform/db/schema/billing";
+import {
+	organizationMembers,
+	organizationSubscriptions,
+} from "@/lib/platform/db/schema/organization";
 import {
 	platformAccessPending,
 	platformInviteRedemptions,
@@ -51,12 +53,25 @@ async function userHasGatedRegistrationRecord(
 ): Promise<boolean> {
 	const walletNorm = getAddress(wallet);
 
-	const [subscription] = await db
-		.select({ walletAddress: userSubscriptions.walletAddress })
-		.from(userSubscriptions)
-		.where(eq(userSubscriptions.walletAddress, walletNorm))
+	const [ownedOrgSub] = await db
+		.select({ organizationId: organizationSubscriptions.organizationId })
+		.from(organizationMembers)
+		.innerJoin(
+			organizationSubscriptions,
+			eq(
+				organizationSubscriptions.organizationId,
+				organizationMembers.organizationId,
+			),
+		)
+		.where(
+			and(
+				eq(organizationMembers.walletAddress, walletNorm),
+				eq(organizationMembers.role, "owner"),
+				eq(organizationMembers.status, "active"),
+			),
+		)
 		.limit(1);
-	if (subscription) return true;
+	if (ownedOrgSub) return true;
 
 	const [redemption] = await db
 		.select({ id: platformInviteRedemptions.id })
@@ -140,12 +155,6 @@ async function completeExistingUserRegistration(args: {
 	}
 
 	if (allowsPlatformAdminAccess(emailNorm)) {
-		await db.transaction(async (tx) => {
-			await grantAdminUserTeamsProIfEligibleWithTx(tx, {
-				wallet,
-				email: emailNorm,
-			});
-		});
 		return;
 	}
 
@@ -211,11 +220,6 @@ export async function registerUserAccount(
 			});
 			return;
 		}
-
-		await grantAdminUserTeamsProIfEligibleWithTx(tx, {
-			wallet,
-			email: emailNorm,
-		});
 	});
 
 	await invalidateUserExists(wallet);

@@ -23,8 +23,8 @@ import {
 	redeemPartnerInviteForExistingUser,
 	rejectAccessRequest,
 	revokePlatformInvite,
-	setUserFeatureOverrides,
-	setUserPlanManual,
+	setPersonalOrgFeatureOverrides,
+	setPersonalOrgPlanManual,
 	submitAccessRequest,
 } from "@/lib/domains/platform-access";
 import {
@@ -328,7 +328,7 @@ export async function platformAdminUsersSetFeatureOverrides(
 	if (parsed.error) {
 		throwZodBadRequest(parsed.error);
 	}
-	await setUserFeatureOverrides({
+	await setPersonalOrgFeatureOverrides({
 		wallet: parsed.data.wallet as Address,
 		featureOverrides: parsed.data.featureOverrides,
 	});
@@ -351,7 +351,7 @@ export async function platformAdminUsersSetPlan(
 	if (parsed.error) {
 		throwZodBadRequest(parsed.error);
 	}
-	await setUserPlanManual({
+	await setPersonalOrgPlanManual({
 		wallet: parsed.data.wallet as Address,
 		planId: parsed.data.planId,
 		status: parsed.data.status,

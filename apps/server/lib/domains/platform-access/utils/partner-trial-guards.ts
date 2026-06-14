@@ -23,13 +23,6 @@ export function isDodoBackedSubscription(row: {
 	return row.provider === "dodo" || Boolean(row.dodoSubscriptionId?.trim());
 }
 
-export function canApplyPartnerTrialToUserSub(
-	row: PartnerTrialSubscriptionGuardRow | undefined,
-): boolean {
-	if (!row) return true;
-	return !isDodoBackedSubscription(row);
-}
-
 export function canApplyPartnerTrialToOrgSub(
 	row: PartnerTrialSubscriptionGuardRow | undefined,
 	now = new Date(),

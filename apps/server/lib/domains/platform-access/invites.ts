@@ -5,15 +5,21 @@ import { ORPCError } from "@orpc/server";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
-import { invalidateUserEntitlements } from "@/lib/platform/cache";
+import { getPersonalOrganizationId } from "@/lib/domains/orgs/workspace";
+import { invalidateOrgEntitlements } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
-import { userSubscriptions } from "@/lib/platform/db/schema/billing";
+import {
+	organizationMembers,
+	organizationSubscriptions,
+	organizations,
+} from "@/lib/platform/db/schema/organization";
 import {
 	platformInviteRedemptions,
 	platformInvites,
 } from "@/lib/platform/db/schema/platform-access";
 import { users } from "@/lib/platform/db/schema/user";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
+import { setOrgPlanManualWithTx } from "./grants";
 import { generatePlatformInviteToken } from "./utils/shared";
 
 export async function createPlatformInvite(args: {
@@ -162,15 +168,31 @@ export async function listPlatformUsersForAdmin() {
 			walletAddress: users.walletAddress,
 			email: users.email,
 			createdAt: users.createdAt,
-			planId: userSubscriptions.planId,
-			status: userSubscriptions.status,
-			periodEnd: userSubscriptions.periodEnd,
-			featureOverrides: userSubscriptions.featureOverrides,
+			organizationId: organizations.id,
+			planId: organizationSubscriptions.planId,
+			status: organizationSubscriptions.status,
+			periodEnd: organizationSubscriptions.periodEnd,
+			featureOverrides: organizationSubscriptions.featureOverrides,
 		})
 		.from(users)
 		.leftJoin(
-			userSubscriptions,
-			eq(users.walletAddress, userSubscriptions.walletAddress),
+			organizationMembers,
+			and(
+				eq(organizationMembers.walletAddress, users.walletAddress),
+				eq(organizationMembers.role, "owner"),
+				eq(organizationMembers.status, "active"),
+			),
+		)
+		.leftJoin(
+			organizations,
+			and(
+				eq(organizations.id, organizationMembers.organizationId),
+				eq(organizations.isPersonal, true),
+			),
+		)
+		.leftJoin(
+			organizationSubscriptions,
+			eq(organizationSubscriptions.organizationId, organizations.id),
 		)
 		.orderBy(sql`${users.createdAt} desc`)
 		.limit(500);
@@ -182,58 +204,76 @@ export async function listPlatformUsersForAdmin() {
 		planId: row.planId ?? "free",
 		status: row.status ?? "active",
 		periodEnd: row.periodEnd?.toISOString() ?? null,
-		featureOverrides: row.featureOverrides ?? {},
+		featureOverrides: (row.featureOverrides ?? {}) as Record<
+			string,
+			number | boolean
+		>,
 	}));
 }
 
-export async function setUserFeatureOverrides(args: {
+async function resolvePersonalOrgId(wallet: Address): Promise<string> {
+	const orgId = await getPersonalOrganizationId(wallet);
+	if (!orgId) {
+		throwAppError("WORKSPACE.ORGANIZATION_NOT_FOUND");
+	}
+	return orgId;
+}
+
+export async function setPersonalOrgFeatureOverrides(args: {
 	wallet: Address;
 	featureOverrides: Record<string, number | boolean>;
 }) {
 	const wallet = getAddress(args.wallet);
+	const organizationId = await resolvePersonalOrgId(wallet);
 	const res = await tryCatch(
 		db
-			.update(userSubscriptions)
+			.update(organizationSubscriptions)
 			.set({
 				featureOverrides: args.featureOverrides,
 				updatedAt: new Date(),
 			})
-			.where(eq(userSubscriptions.walletAddress, wallet)),
+			.where(eq(organizationSubscriptions.organizationId, organizationId)),
 	);
 	if (res.error) {
 		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
 			message: "Failed to update overrides",
 		});
 	}
-	await invalidateUserEntitlements(wallet);
+	await invalidateOrgEntitlements(organizationId);
 }
 
-export async function setUserPlanManual(args: {
+export async function setPersonalOrgPlanManual(args: {
 	wallet: Address;
 	planId: PlanId;
 	status?: "active" | "trialing" | "canceled";
 	periodEnd?: Date | null;
 }) {
 	const wallet = getAddress(args.wallet);
-	await db
-		.insert(userSubscriptions)
-		.values({
-			walletAddress: wallet,
-			planId: args.planId,
-			status: args.status ?? "active",
-			provider: "manual",
-			periodStart: new Date(),
-			periodEnd: args.periodEnd ?? null,
-		})
-		.onConflictDoUpdate({
-			target: userSubscriptions.walletAddress,
-			set: {
+	const organizationId = await resolvePersonalOrgId(wallet);
+
+	await db.transaction(async (tx) => {
+		if (args.planId === "teams" || args.planId === "teams_pro") {
+			await setOrgPlanManualWithTx(tx, {
+				organizationId,
+				planId: args.planId,
+				seatCount: 1,
+				status: args.status ?? "active",
+			});
+			return;
+		}
+
+		await tx
+			.update(organizationSubscriptions)
+			.set({
 				planId: args.planId,
 				status: args.status ?? "active",
 				provider: "manual",
+				periodStart: new Date(),
 				periodEnd: args.periodEnd ?? null,
 				updatedAt: new Date(),
-			},
-		});
-	await invalidateUserEntitlements(wallet);
+			})
+			.where(eq(organizationSubscriptions.organizationId, organizationId));
+	});
+
+	await invalidateOrgEntitlements(organizationId);
 }

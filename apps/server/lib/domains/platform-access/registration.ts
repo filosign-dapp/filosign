@@ -15,7 +15,6 @@ import {
 	defaultSerialize,
 } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
-import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import { organizationSubscriptions } from "@/lib/platform/db/schema/organization";
 import {
 	platformAccessPending,
@@ -23,10 +22,7 @@ import {
 	platformInvites,
 } from "@/lib/platform/db/schema/platform-access";
 import { users } from "@/lib/platform/db/schema/user";
-import {
-	assertNoOwnedActiveDodoSubscriptions,
-	canApplyPartnerTrialToUserSub,
-} from "./utils/partner-trial-guards";
+import { assertNoOwnedActiveDodoSubscriptions } from "./utils/partner-trial-guards";
 import {
 	inviteIsActive,
 	normalizeEmail,
@@ -118,50 +114,6 @@ export async function redeemPlatformInviteOnRegisterWithTx(
 
 	await assertNoOwnedActiveDodoSubscriptions(tx, wallet);
 
-	const [existingUserSub] = await tx
-		.select({
-			planId: userSubscriptions.planId,
-			status: userSubscriptions.status,
-			provider: userSubscriptions.provider,
-			periodEnd: userSubscriptions.periodEnd,
-			dodoSubscriptionId: userSubscriptions.dodoSubscriptionId,
-		})
-		.from(userSubscriptions)
-		.where(eq(userSubscriptions.walletAddress, wallet))
-		.limit(1);
-
-	if (!canApplyPartnerTrialToUserSub(existingUserSub)) {
-		throwAppError("WORKSPACE.PLATFORM_INVITE_PAID_PLAN_BLOCKS");
-	}
-
-	const periodStart = new Date();
-	const periodEnd = new Date(periodStart);
-	periodEnd.setDate(periodEnd.getDate() + invite.trialDays);
-
-	await tx
-		.insert(userSubscriptions)
-		.values({
-			walletAddress: wallet,
-			planId: invite.planId,
-			status: "trialing",
-			provider: "manual",
-			periodStart,
-			periodEnd,
-			featureOverrides: invite.featureOverrides ?? {},
-		})
-		.onConflictDoUpdate({
-			target: userSubscriptions.walletAddress,
-			set: {
-				planId: invite.planId,
-				status: "trialing",
-				provider: "manual",
-				periodStart,
-				periodEnd,
-				featureOverrides: invite.featureOverrides ?? {},
-				updatedAt: new Date(),
-			},
-		});
-
 	await tx.insert(platformInviteRedemptions).values({
 		inviteId: invite.id,
 		walletAddress: wallet,
@@ -243,33 +195,57 @@ export async function linkPaidSetupOnRegisterWithTx(
 	// Paid Solo and Teams attach to the workspace on create (see attachPendingOrgBillingOnCreateWithTx).
 }
 
-/** Attach paid Teams checkout to the creator's first workspace. */
+/** Attach paid checkout to a workspace on create (first org or additional with pendingBillingId). */
 export async function attachPendingOrgBillingOnCreateWithTx(
 	tx: PlatformAccessTx,
 	args: {
 		creatorWallet: Address;
 		organizationId: string;
+		pendingBillingId?: string | null;
+		isPersonalOrg: boolean;
 	},
-): Promise<void> {
+): Promise<boolean> {
 	const wallet = getAddress(args.creatorWallet);
+	const pendingBillingId = args.pendingBillingId?.trim() || null;
 
-	const [pending] = await tx
-		.select()
-		.from(platformAccessPending)
-		.where(
-			and(
-				eq(platformAccessPending.linkedWallet, wallet),
-				eq(platformAccessPending.status, "linked"),
-				isNull(platformAccessPending.linkedOrganizationId),
-			),
-		)
-		.limit(1);
+	const pending = pendingBillingId
+		? (
+				await tx
+					.select()
+					.from(platformAccessPending)
+					.where(
+						and(
+							eq(platformAccessPending.id, pendingBillingId),
+							eq(platformAccessPending.linkedWallet, wallet),
+							eq(platformAccessPending.status, "linked"),
+							isNull(platformAccessPending.linkedOrganizationId),
+						),
+					)
+					.limit(1)
+			)[0]
+		: (
+				await tx
+					.select()
+					.from(platformAccessPending)
+					.where(
+						and(
+							eq(platformAccessPending.linkedWallet, wallet),
+							eq(platformAccessPending.status, "linked"),
+							isNull(platformAccessPending.linkedOrganizationId),
+						),
+					)
+					.limit(1)
+			)[0];
 
 	if (
 		!pending?.dodoSubscriptionId ||
 		(pending.planId !== "individual" && !isOrgBillingPlanId(pending.planId))
 	) {
-		return;
+		return false;
+	}
+
+	if (pending.planId === "individual" && !args.isPersonalOrg) {
+		return false;
 	}
 
 	const seatCount = pending.planId === "individual" ? 1 : pending.seatCount;
@@ -295,9 +271,11 @@ export async function attachPendingOrgBillingOnCreateWithTx(
 			updatedAt: new Date(),
 		})
 		.where(eq(platformAccessPending.id, pending.id));
+
+	return true;
 }
 
-/** Copy an active partner trial from user_subscriptions onto a workspace when eligible. */
+/** Apply partner trial from redemption onto a free workspace when eligible. */
 async function copyActivePartnerTrialToOrgWithTx(
 	tx: PlatformAccessTx,
 	args: {
@@ -340,33 +318,44 @@ async function copyActivePartnerTrialToOrgWithTx(
 		return false;
 	}
 
-	const [userSub] = await tx
+	const [redemption] = await tx
 		.select({
-			planId: userSubscriptions.planId,
-			status: userSubscriptions.status,
-			provider: userSubscriptions.provider,
-			periodStart: userSubscriptions.periodStart,
-			periodEnd: userSubscriptions.periodEnd,
-			featureOverrides: userSubscriptions.featureOverrides,
+			planId: platformInvites.planId,
+			trialDays: platformInvites.trialDays,
+			featureOverrides: platformInvites.featureOverrides,
+			kind: platformInvites.kind,
 		})
-		.from(userSubscriptions)
-		.where(eq(userSubscriptions.walletAddress, wallet))
+		.from(platformInviteRedemptions)
+		.innerJoin(
+			platformInvites,
+			eq(platformInviteRedemptions.inviteId, platformInvites.id),
+		)
+		.where(
+			and(
+				eq(platformInviteRedemptions.walletAddress, wallet),
+				eq(platformInvites.kind, "partner_trial"),
+			),
+		)
 		.limit(1);
 
-	if (!isActivePartnerTrialSubscription(userSub, now)) {
+	if (!redemption || !isOrgBillingPlanId(redemption.planId)) {
 		return false;
 	}
+
+	const periodStart = new Date();
+	const periodEnd = new Date(periodStart);
+	periodEnd.setDate(periodEnd.getDate() + redemption.trialDays);
 
 	await tx
 		.update(organizationSubscriptions)
 		.set({
-			planId: userSub.planId,
+			planId: redemption.planId,
 			seatCount: 1,
 			status: "trialing",
 			provider: "manual",
-			periodStart: userSub.periodStart,
-			periodEnd: userSub.periodEnd,
-			featureOverrides: userSub.featureOverrides ?? {},
+			periodStart,
+			periodEnd,
+			featureOverrides: redemption.featureOverrides ?? {},
 			updatedAt: now,
 		})
 		.where(
@@ -384,7 +373,7 @@ async function copyActivePartnerTrialToOrgWithTx(
 	return true;
 }
 
-/** Copy an active partner trial from user_subscriptions onto a newly created workspace. */
+/** Apply partner trial from redemption onto a newly created workspace. */
 export async function attachPartnerTrialOnOrgCreateWithTx(
 	tx: PlatformAccessTx,
 	args: {

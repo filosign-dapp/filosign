@@ -1,14 +1,8 @@
 import type { PlanId } from "@filosign/entitlements";
 import { and, eq, isNotNull, lt, sql } from "drizzle-orm";
-import type { Address } from "viem";
-import { getAddress } from "viem";
 import { shouldAutoGrantTeamsProForAdminEmail } from "@/lib/platform/admin";
-import {
-	invalidateOrgEntitlements,
-	invalidateUserEntitlements,
-} from "@/lib/platform/cache";
+import { invalidateOrgEntitlements } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
-import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import {
 	organizationMembers,
 	organizationSubscriptions,
@@ -18,40 +12,7 @@ import {
 	platformAccessPending,
 } from "@/lib/platform/db/schema/platform-access";
 import { users } from "@/lib/platform/db/schema/user";
-import { setUserPlanManual } from "./invites";
 import { normalizeEmail, type PlatformAccessTx } from "./utils/shared";
-
-export async function setUserPlanManualWithTx(
-	tx: PlatformAccessTx,
-	args: {
-		wallet: Address;
-		planId: PlanId;
-		status?: "active" | "trialing" | "canceled";
-		periodEnd?: Date | null;
-	},
-): Promise<void> {
-	const wallet = getAddress(args.wallet);
-	await tx
-		.insert(userSubscriptions)
-		.values({
-			walletAddress: wallet,
-			planId: args.planId,
-			status: args.status ?? "active",
-			provider: "manual",
-			periodStart: new Date(),
-			periodEnd: args.periodEnd ?? null,
-		})
-		.onConflictDoUpdate({
-			target: userSubscriptions.walletAddress,
-			set: {
-				planId: args.planId,
-				status: args.status ?? "active",
-				provider: "manual",
-				periodEnd: args.periodEnd ?? null,
-				updatedAt: new Date(),
-			},
-		});
-}
 
 /** Callers must `invalidateOrgEntitlements(organizationId)` after the surrounding transaction commits. */
 export async function setOrgPlanManualWithTx(
@@ -81,18 +42,6 @@ export async function setOrgPlanManualWithTx(
 		.where(eq(organizationSubscriptions.organizationId, args.organizationId));
 }
 
-export async function grantAdminUserTeamsProIfEligibleWithTx(
-	tx: PlatformAccessTx,
-	args: { wallet: Address; email: string },
-): Promise<void> {
-	if (!shouldAutoGrantTeamsProForAdminEmail(args.email)) return;
-	await setUserPlanManualWithTx(tx, {
-		wallet: args.wallet,
-		planId: "teams_pro",
-		status: "active",
-	});
-}
-
 export async function grantAdminOrgTeamsProIfEligibleWithTx(
 	tx: PlatformAccessTx,
 	args: { organizationId: string; creatorEmail: string | null },
@@ -107,12 +56,11 @@ export async function grantAdminOrgTeamsProIfEligibleWithTx(
 }
 
 export async function grantDevPlansForAdminEmail(email: string): Promise<{
-	userGrants: number;
 	orgGrants: number;
 }> {
 	const emailNorm = normalizeEmail(email);
 	if (!shouldAutoGrantTeamsProForAdminEmail(emailNorm)) {
-		return { userGrants: 0, orgGrants: 0 };
+		return { orgGrants: 0 };
 	}
 
 	const [userRow] = await db
@@ -121,35 +69,27 @@ export async function grantDevPlansForAdminEmail(email: string): Promise<{
 		.where(eq(sql`lower(${users.email})`, emailNorm))
 		.limit(1);
 
-	let userGrants = 0;
-	if (userRow) {
-		await setUserPlanManual({
-			wallet: userRow.walletAddress,
-			planId: "teams_pro",
-			status: "active",
-		});
-		userGrants = 1;
+	if (!userRow) {
+		return { orgGrants: 0 };
 	}
 
-	const orgRows = userRow
-		? await db
-				.select({ organizationId: organizationSubscriptions.organizationId })
-				.from(organizationSubscriptions)
-				.innerJoin(
-					organizationMembers,
-					eq(
-						organizationMembers.organizationId,
-						organizationSubscriptions.organizationId,
-					),
-				)
-				.where(
-					and(
-						eq(organizationMembers.walletAddress, userRow.walletAddress),
-						eq(organizationMembers.role, "owner"),
-						eq(organizationMembers.status, "active"),
-					),
-				)
-		: [];
+	const orgRows = await db
+		.select({ organizationId: organizationSubscriptions.organizationId })
+		.from(organizationSubscriptions)
+		.innerJoin(
+			organizationMembers,
+			eq(
+				organizationMembers.organizationId,
+				organizationSubscriptions.organizationId,
+			),
+		)
+		.where(
+			and(
+				eq(organizationMembers.walletAddress, userRow.walletAddress),
+				eq(organizationMembers.role, "owner"),
+				eq(organizationMembers.status, "active"),
+			),
+		);
 
 	let orgGrants = 0;
 	for (const row of orgRows) {
@@ -167,16 +107,11 @@ export async function grantDevPlansForAdminEmail(email: string): Promise<{
 		orgGrants += 1;
 	}
 
-	return { userGrants, orgGrants };
+	return { orgGrants };
 }
+
 export async function expirePartnerTrialsJob(): Promise<{ expired: number }> {
 	const now = new Date();
-	const manualTrialExpiry = and(
-		eq(userSubscriptions.status, "trialing"),
-		eq(userSubscriptions.provider, "manual"),
-		isNotNull(userSubscriptions.periodEnd),
-		lt(userSubscriptions.periodEnd, now),
-	);
 	const orgManualTrialExpiry = and(
 		eq(organizationSubscriptions.status, "trialing"),
 		eq(organizationSubscriptions.provider, "manual"),
@@ -184,46 +119,27 @@ export async function expirePartnerTrialsJob(): Promise<{ expired: number }> {
 		lt(organizationSubscriptions.periodEnd, now),
 	);
 
-	const [userRows, orgRows] = await Promise.all([
-		db
-			.select({
-				walletAddress: userSubscriptions.walletAddress,
-			})
-			.from(userSubscriptions)
-			.where(manualTrialExpiry),
-		db
-			.select({
-				organizationId: organizationSubscriptions.organizationId,
-			})
-			.from(organizationSubscriptions)
-			.where(orgManualTrialExpiry),
-	]);
+	const orgRows = await db
+		.select({
+			organizationId: organizationSubscriptions.organizationId,
+		})
+		.from(organizationSubscriptions)
+		.where(orgManualTrialExpiry);
 
-	if (userRows.length === 0 && orgRows.length === 0) {
+	if (orgRows.length === 0) {
 		return { expired: 0 };
 	}
 
-	await Promise.all([
-		userRows.length > 0
-			? db
-					.update(userSubscriptions)
-					.set({ status: "canceled", updatedAt: now })
-					.where(manualTrialExpiry)
-			: Promise.resolve(),
-		orgRows.length > 0
-			? db
-					.update(organizationSubscriptions)
-					.set({ status: "canceled", updatedAt: now })
-					.where(orgManualTrialExpiry)
-			: Promise.resolve(),
-	]);
+	await db
+		.update(organizationSubscriptions)
+		.set({ status: "canceled", updatedAt: now })
+		.where(orgManualTrialExpiry);
 
-	await Promise.all([
-		...userRows.map((row) => invalidateUserEntitlements(row.walletAddress)),
-		...orgRows.map((row) => invalidateOrgEntitlements(row.organizationId)),
-	]);
+	await Promise.all(
+		orgRows.map((row) => invalidateOrgEntitlements(row.organizationId)),
+	);
 
-	return { expired: userRows.length + orgRows.length };
+	return { expired: orgRows.length };
 }
 
 const PAID_SETUP_TTL_DAYS = 30;

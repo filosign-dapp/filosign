@@ -9,16 +9,14 @@ if (emails.size === 0) {
 	process.exit(1);
 }
 
-let totalUser = 0;
 let totalOrg = 0;
 
 for (const email of emails) {
 	const result = await grantDevPlansForAdminEmail(email);
 	console.log(
-		`${email}: user=${result.userGrants} org=${result.orgGrants} (0 means no user row yet)`,
+		`${email}: org=${result.orgGrants} (0 means no owned org rows yet)`,
 	);
-	totalUser += result.userGrants;
 	totalOrg += result.orgGrants;
 }
 
-console.log(`Done. userGrants=${totalUser} orgGrants=${totalOrg}`);
+console.log(`Done. orgGrants=${totalOrg}`);

@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import type { Address, Hex } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
-import { ackFile } from "../../lib/ack-file/ack-file";
+import { ensureAcknowledged } from "../../lib/ack-file/ensure-acknowledged";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import { useSendFile } from "../files/useSendFile";
 import { useActiveOrganization } from "../orgs/useActiveOrganization";
@@ -23,13 +23,8 @@ export function useProvisionPracticeEnvelope() {
 	const activeOrg = useActiveOrganization();
 	const { activationQuery } = useActivationProgress();
 
-	const ensureAcknowledged = useCallback(
+	const ensureAcknowledgedForPiece = useCallback(
 		async (pieceCid: string) => {
-			const detail = await rpcQuery.files.piece.detail.call({ pieceCid });
-			if (detail.participantAccess?.acknowledged) {
-				return;
-			}
-
 			if (!isAuthed || !contracts || !wallet) {
 				throw new Error("Wallet connection required");
 			}
@@ -41,14 +36,14 @@ export function useProvisionPracticeEnvelope() {
 				);
 			}
 
-			await ackFile(
+			await ensureAcknowledged(
 				{
 					contracts,
 					wallet,
 					rpcQuery,
 					authSubjectCommitment,
 				},
-				{ pieceCid },
+				pieceCid,
 			);
 
 			void queryClient.invalidateQueries({
@@ -113,13 +108,13 @@ export function useProvisionPracticeEnvelope() {
 			throw new Error("Practice envelope was sent but pieceCid is missing");
 		}
 
-		await ensureAcknowledged(pieceCid);
+		await ensureAcknowledgedForPiece(pieceCid);
 		return pieceCid;
 	}, [
 		activeOrg?.encryptionPublicKey,
 		activeOrg?.id,
 		activationQuery,
-		ensureAcknowledged,
+		ensureAcknowledgedForPiece,
 		profile?.email,
 		profile?.encryptionPublicKey,
 		sendFile,
@@ -128,7 +123,7 @@ export function useProvisionPracticeEnvelope() {
 
 	return {
 		provision,
-		ensureAcknowledged,
+		ensureAcknowledged: ensureAcknowledgedForPiece,
 		isPending: sendFile.isPending,
 		practicePieceCid: activationQuery.data?.practicePieceCid ?? null,
 	};

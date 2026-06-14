@@ -7,6 +7,8 @@ import {
 } from "@filosign/shared";
 import type { Address, Hex } from "viem";
 import { encodeFunctionData } from "viem";
+import type { SendFileProgressReporter } from "./send-file/progress";
+import { emitSendFileProgress } from "./send-file/progress";
 import { releaseParamsToContractArgs } from "./settlement-rules";
 import { parseRuleIdFromReceipt, waitForTxReceipt } from "./tx-receipt";
 import type { FilosignWallet } from "./wallet";
@@ -25,6 +27,7 @@ export async function registerAttachmentRulesOnChain(args: {
 	contracts: FilosignContracts;
 	pieceCid: string;
 	rules: AttachmentRuleDraft[];
+	onProgress?: SendFileProgressReporter;
 }): Promise<
 	Array<{
 		packetId: string;
@@ -46,7 +49,9 @@ export async function registerAttachmentRulesOnChain(args: {
 		registerRuleTxHash: Hex;
 	}> = [];
 
-	for (const rule of args.rules) {
+	for (let ruleIndex = 0; ruleIndex < args.rules.length; ruleIndex++) {
+		const rule = args.rules[ruleIndex];
+		if (!rule) continue;
 		const { specificSignerCommitment, thresholdN, signerCommitments } =
 			releaseParamsToContractArgs(rule.releaseType, rule.releaseParams);
 		const recipientEmailCommitments = rule.recipientEmails.map((email) =>
@@ -69,11 +74,22 @@ export async function registerAttachmentRulesOnChain(args: {
 			],
 		});
 
+		emitSendFileProgress(args.onProgress, {
+			phase: "wallet_attachment_rule",
+			status: "wallet_prompt",
+			ruleIndex,
+		});
+
 		const registerHash = await args.wallet.sendTransaction({
 			to: release.address,
 			data: registerData,
 			account: args.wallet.account,
 			chain: args.wallet.chain,
+		});
+		emitSendFileProgress(args.onProgress, {
+			phase: "confirming_transaction",
+			status: "confirming",
+			txLabel: "attachment rule",
 		});
 		const registerReceipt = await waitForTxReceipt(
 			args.contracts,
@@ -91,6 +107,12 @@ export async function registerAttachmentRulesOnChain(args: {
 			onChainRuleId,
 			releaseContractAddress: release.address,
 			registerRuleTxHash: registerHash,
+		});
+
+		emitSendFileProgress(args.onProgress, {
+			phase: "wallet_attachment_rule",
+			status: "done",
+			ruleIndex,
 		});
 	}
 

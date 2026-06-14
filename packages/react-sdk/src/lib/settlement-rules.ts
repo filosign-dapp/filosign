@@ -12,6 +12,8 @@ import {
 	settlementRuleTotalAmount,
 } from "@filosign/shared";
 import { type Address, encodeFunctionData, type Hex } from "viem";
+import type { SendFileProgressReporter } from "./send-file/progress";
+import { emitSendFileProgress } from "./send-file/progress";
 import {
 	paymentValidatorAt,
 	simulateSettlementWrite,
@@ -184,6 +186,7 @@ export async function registerSettlementRulesOnChain(args: {
 	payer: Address;
 	cidIdentifier: Hex;
 	rules: SettlementRuleDraft[];
+	onProgress?: SendFileProgressReporter;
 }): Promise<SettlementRuleRegistrationInput[]> {
 	const validator = args.contracts.FSPaymentValidator;
 	if (!validator) {
@@ -195,8 +198,14 @@ export async function registerSettlementRulesOnChain(args: {
 	const validatorAbi = validator.abi;
 	const approveAbi = erc20ApproveAbi(args.chainKey);
 	const registered: SettlementRuleRegistrationInput[] = [];
+	const ruleCount = args.rules.length;
 
-	for (const rule of args.rules) {
+	for (let ruleIndex = 0; ruleIndex < args.rules.length; ruleIndex++) {
+		const rule = args.rules[ruleIndex];
+		if (!rule) continue;
+		const payoutDetail =
+			ruleCount > 1 ? `Payout ${ruleIndex + 1} of ${ruleCount}` : undefined;
+
 		assertSettlementLegs(rule.legs);
 		const totalAmount = settlementRuleTotalAmount(
 			rule.legs.map((leg) => ({ amount: leg.amount.toString() })),
@@ -237,13 +246,33 @@ export async function registerSettlementRulesOnChain(args: {
 			args: [validator.address, totalAmount],
 		});
 
+		emitSendFileProgress(args.onProgress, {
+			phase: "wallet_payout_approve",
+			status: "wallet_prompt",
+			ruleIndex,
+			detail: payoutDetail,
+		});
+
 		const approveHash = await args.wallet.sendTransaction({
 			to: rule.tokenAddress,
 			data: approveData,
 			account: args.wallet.account,
 			chain: args.wallet.chain,
 		});
+		emitSendFileProgress(args.onProgress, {
+			phase: "confirming_transaction",
+			status: "confirming",
+			ruleIndex,
+			detail: payoutDetail,
+			txLabel: "USDC approval",
+		});
 		await waitForTxReceipt(args.contracts, approveHash);
+		emitSendFileProgress(args.onProgress, {
+			phase: "wallet_payout_approve",
+			status: "done",
+			ruleIndex,
+			detail: payoutDetail,
+		});
 
 		await simulateSettlementWrite({
 			contracts: args.contracts,
@@ -264,11 +293,25 @@ export async function registerSettlementRulesOnChain(args: {
 			],
 		});
 
+		emitSendFileProgress(args.onProgress, {
+			phase: "wallet_payout_register",
+			status: "wallet_prompt",
+			ruleIndex,
+			detail: payoutDetail,
+		});
+
 		const registerHash = await args.wallet.sendTransaction({
 			to: validator.address,
 			data: registerData,
 			account: args.wallet.account,
 			chain: args.wallet.chain,
+		});
+		emitSendFileProgress(args.onProgress, {
+			phase: "confirming_transaction",
+			status: "confirming",
+			ruleIndex,
+			detail: payoutDetail,
+			txLabel: "payout registration",
 		});
 		const registerReceipt = await waitForTxReceipt(
 			args.contracts,
@@ -291,6 +334,13 @@ export async function registerSettlementRulesOnChain(args: {
 			expiresAt: expiresAt === 0n ? undefined : expiresAt.toString(),
 			registerRuleTxHash: registerHash,
 			approveTxHash: approveHash,
+		});
+
+		emitSendFileProgress(args.onProgress, {
+			phase: "wallet_payout_register",
+			status: "done",
+			ruleIndex,
+			detail: payoutDetail,
 		});
 	}
 

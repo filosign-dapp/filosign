@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
+import { payoutAccessRequestDialogProps } from "@/src/lib/domains/settlements/payout-access-controls";
+import { PayoutAccessRequestDialog } from "@/src/lib/domains/settlements/payout-access-request-dialog";
 import {
 	AmendSignerDialog,
 	signerOptionsFromFile,
@@ -108,6 +110,15 @@ function SignSettlementDialogs() {
 				}
 				onConfirm={settlements.onConfirmAttachSettlement}
 				pending={settlements.attachPending}
+			/>
+			<PayoutAccessRequestDialog
+				{...payoutAccessRequestDialogProps(
+					{
+						open: settlements.requestDialogOpen,
+						onOpenChange: settlements.setRequestDialogOpen,
+					},
+					settlements.payoutAccess,
+				)}
 			/>
 		</>
 	);

@@ -1,5 +1,10 @@
 import { useEntitlements } from "@filosign/react/billing";
 import {
+	canUseDraftComments,
+	canUseSharedTemplates,
+	canUseTeamDrafts,
+} from "@filosign/react/files";
+import {
 	ArrowSquareOutIcon,
 	ChatCircleIcon,
 	DotsThreeIcon,
@@ -134,12 +139,9 @@ export function AddSignDraftActions() {
 	const commentCount = useDraftCommentCount(serverDraftId);
 	const badgeLabel = formatCommentBadgeCount(commentCount);
 
-	const showComments = Boolean(
-		entitlements?.features["features.draft_comments"]?.enabled,
-	);
-	const showTemplates = Boolean(
-		entitlements?.features["features.shared_templates"]?.enabled,
-	);
+	const showComments = canUseDraftComments(entitlements);
+	const showTemplates = canUseSharedTemplates(entitlements);
+	const canUseTeamDraftsEntitled = canUseTeamDrafts(entitlements);
 
 	const shareDisabled = draftActionDisabled({
 		planId,
@@ -157,7 +159,7 @@ export function AddSignDraftActions() {
 	});
 
 	const saveDisabled =
-		planId !== "free" &&
+		canUseTeamDraftsEntitled &&
 		(isSaving ||
 			(needsDraftCrypto && !cryptoRequired.isReady) ||
 			(isSavedToServer && !hasChanges) ||
@@ -181,13 +183,13 @@ export function AddSignDraftActions() {
 
 	const runSave = useCallback(
 		(title?: string) => {
-			if (planId === "free") {
-				promptPlanUpgrade("documents.sent.monthly");
+			if (!canUseTeamDraftsEntitled) {
+				promptPlanUpgrade("features.team_drafts");
 				return;
 			}
 			handleSaveDraft(title);
 		},
-		[planId, promptPlanUpgrade, handleSaveDraft],
+		[canUseTeamDraftsEntitled, promptPlanUpgrade, handleSaveDraft],
 	);
 
 	const handleSaveClick = useCallback(() => {
@@ -205,6 +207,22 @@ export function AddSignDraftActions() {
 		}
 		if (shareDisabled) return;
 		setShareOpen(true);
+	};
+
+	const handleCommentsClick = () => {
+		if (!showComments) {
+			promptPlanUpgrade("features.draft_comments");
+			return;
+		}
+		setCommentsOpen(true);
+	};
+
+	const handleTemplateClick = () => {
+		if (!showTemplates) {
+			promptPlanUpgrade("features.shared_templates");
+			return;
+		}
+		setTemplateDialogOpen(true);
 	};
 
 	const status = draftStatusLabel({
@@ -245,26 +263,22 @@ export function AddSignDraftActions() {
 					<FloppyDiskIcon className="size-4" />
 					<span className="hidden sm:inline">Save draft</span>
 				</Button>
-				{showComments ? (
-					<Button
-						type="button"
-						variant="outline"
-						size="icon-lg"
-						className="relative"
-						disabled={!serverDraftId}
-						aria-label={
-							badgeLabel ? `Comments, ${badgeLabel} total` : "Comments"
-						}
-						onClick={() => setCommentsOpen(true)}
-					>
-						<ChatCircleIcon className="size-4" />
-						{badgeLabel ? (
-							<span className="absolute -top-1 -right-1 flex size-4 min-w-4 items-center justify-center rounded-full bg-secondary px-0.5 text-[10px] font-medium leading-none text-secondary-foreground">
-								{badgeLabel}
-							</span>
-						) : null}
-					</Button>
-				) : null}
+				<Button
+					type="button"
+					variant="outline"
+					size="icon-lg"
+					className="relative"
+					disabled={!serverDraftId}
+					aria-label={badgeLabel ? `Comments, ${badgeLabel} total` : "Comments"}
+					onClick={handleCommentsClick}
+				>
+					<ChatCircleIcon className="size-4" />
+					{badgeLabel ? (
+						<span className="absolute -top-1 -right-1 flex size-4 min-w-4 items-center justify-center rounded-full bg-secondary px-0.5 text-[10px] font-medium leading-none text-secondary-foreground">
+							{badgeLabel}
+						</span>
+					) : null}
+				</Button>
 				<DropdownMenu>
 					<DropdownMenuTrigger
 						render={
@@ -287,15 +301,13 @@ export function AddSignDraftActions() {
 							<ArrowSquareOutIcon className="size-4" />
 							Share draft
 						</DropdownMenuItem>
-						{showTemplates ? (
-							<DropdownMenuItem
-								disabled={!serverDraftId}
-								onClick={() => setTemplateDialogOpen(true)}
-							>
-								<FileTextIcon className="size-4" />
-								Save as template
-							</DropdownMenuItem>
-						) : null}
+						<DropdownMenuItem
+							disabled={!serverDraftId}
+							onClick={handleTemplateClick}
+						>
+							<FileTextIcon className="size-4" />
+							Save as template
+						</DropdownMenuItem>
 						{needsDraftCrypto && cryptoRequired.needsRecovery ? (
 							<>
 								<DropdownMenuSeparator />
@@ -324,13 +336,11 @@ export function AddSignDraftActions() {
 
 			{serverDraftId ? (
 				<>
-					{showComments ? (
-						<DraftCommentsSheet
-							draftId={serverDraftId}
-							open={commentsOpen}
-							onOpenChange={setCommentsOpen}
-						/>
-					) : null}
+					<DraftCommentsSheet
+						draftId={serverDraftId}
+						open={commentsOpen}
+						onOpenChange={setCommentsOpen}
+					/>
 					<ShareDraftDialog
 						open={shareOpen}
 						onOpenChange={setShareOpen}

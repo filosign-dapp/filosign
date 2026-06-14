@@ -3,15 +3,14 @@ import {
 	useDraftCommentsDecrypted,
 	useDraftCommentsList,
 } from "@filosign/react/drafts";
+import { canUseDraftComments } from "@filosign/react/files";
 import { createContext, type ReactNode, useContext } from "react";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 
 /** Encrypted comment count for badges - avoids decrypting every comment. */
 export function useDraftCommentCount(draftId: string | undefined) {
 	const { data: entitlements } = useEntitlements();
-	const showComments = Boolean(
-		entitlements?.features["features.draft_comments"]?.enabled,
-	);
+	const showComments = canUseDraftComments(entitlements);
 
 	const list = useDraftCommentsList(draftId, {
 		enabled: Boolean(showComments),

@@ -146,28 +146,24 @@ export function SignContextRail() {
 								Clear signatures
 							</Button>
 						) : null}
-						{settlements.canAttachSettlement ? (
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								className="h-8 text-xs"
-								onClick={() => settlements.setAttachDialogOpen(true)}
-							>
-								Add payout
-							</Button>
-						) : null}
-						{settlements.canManageSettlements ? (
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								className="h-8 text-xs"
-								onClick={() => settlements.setAmendDialogOpen(true)}
-							>
-								Change signer
-							</Button>
-						) : null}
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							className="h-8 text-xs"
+							onClick={() => settlements.openAttachDialog()}
+						>
+							Add payout
+						</Button>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							className="h-8 text-xs"
+							onClick={() => settlements.openAmendDialog()}
+						>
+							Change signer
+						</Button>
 					</div>
 					<ConditionalAttachmentsPanel
 						packets={file?.conditionalAttachmentPackets}

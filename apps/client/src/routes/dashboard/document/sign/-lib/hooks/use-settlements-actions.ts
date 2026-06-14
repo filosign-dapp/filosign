@@ -4,7 +4,6 @@ import {
 	canUseAdvancedSettlements,
 	type SettlementRuleRow,
 	useAttachSettlementForFile,
-	useBasicPayoutAttachGate,
 	useCancelSettlementRule,
 	useCancelSignerReplacement,
 	useClearEnvelopeSignatures,
@@ -17,6 +16,7 @@ import {
 	useTrySettleSettlement,
 	useUpdateSettlementRule,
 } from "@filosign/react/files";
+import { useActiveOrganization, useActiveOrgId } from "@filosign/react/orgs";
 import type {
 	SettlementRecipientSource,
 	SettlementRuleUpdateInput,
@@ -31,7 +31,9 @@ import { useCallback, useMemo, useState } from "react";
 import { type Address, getAddress } from "viem";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
+import { useBasicPayoutGateActions } from "@/src/lib/domains/settlements/use-basic-payout-gate-actions";
 import { legsToDraftAmounts } from "@/src/routes/dashboard/document/sign/-lib/utils/settlement-legs";
+import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 
 type SignFileMeta = {
 	kemCiphertext?: string | null;
@@ -66,8 +68,22 @@ export function useSignSettlementsActions(
 	const clearEnvelopeSignatures = useClearEnvelopeSignatures(pieceCid);
 	const attachSettlementRules = useAttachSettlementForFile(pieceCid);
 	const { data: entitlements } = useEntitlements();
-	const { canAttach: canAttachSettlement } = useBasicPayoutAttachGate();
+	const activeOrgId = useActiveOrgId();
+	const activeOrg = useActiveOrganization();
+	const promptPlanUpgrade = usePromptPlanUpgrade();
 	const canManageSettlements = canUseAdvancedSettlements(entitlements);
+
+	const canManage = activeOrg?.role === "owner" || activeOrg?.role === "admin";
+
+	const {
+		requestDialogOpen,
+		setRequestDialogOpen,
+		payoutAccess,
+		guardPayoutAttach,
+	} = useBasicPayoutGateActions({
+		activeOrgId: activeOrgId ?? undefined,
+		canManage,
+	});
 
 	const [updateRuleTarget, setUpdateRuleTarget] =
 		useState<SettlementRuleRow | null>(null);
@@ -286,6 +302,19 @@ export function useSignSettlementsActions(
 		return options;
 	}, [file]);
 
+	const openAttachDialog = useCallback(() => {
+		if (guardPayoutAttach()) return;
+		setAttachDialogOpen(true);
+	}, [guardPayoutAttach]);
+
+	const openAmendDialog = useCallback(() => {
+		if (!canManageSettlements) {
+			promptPlanUpgrade("features.settlement.advanced");
+			return;
+		}
+		setAmendDialogOpen(true);
+	}, [canManageSettlements, promptPlanUpgrade]);
+
 	return {
 		rules: settlementRules,
 		isPending: settlementsQuery.isPending,
@@ -302,7 +331,6 @@ export function useSignSettlementsActions(
 		revokePending: revokeSettlementAllowance.isPending,
 		onRevokeAllowance,
 		canManageSettlements,
-		canAttachSettlement,
 		onCancelRule,
 		onUpdateRule,
 		cancelPending: cancelSettlementRule.isPending,
@@ -330,6 +358,11 @@ export function useSignSettlementsActions(
 		clearSignaturesPending: clearEnvelopeSignatures.isPending,
 		attachDialogOpen,
 		setAttachDialogOpen,
+		openAttachDialog,
+		openAmendDialog,
+		requestDialogOpen,
+		setRequestDialogOpen,
+		payoutAccess,
 		onConfirmAttachSettlement,
 		attachPending: attachSettlementRules.isPending,
 		attachPayeeOptions,

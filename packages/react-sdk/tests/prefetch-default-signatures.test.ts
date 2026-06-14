@@ -16,7 +16,8 @@ const baseArtifact = {
 };
 
 function artifact(
-	overrides: Partial<UserSignatureArtifact> & Pick<UserSignatureArtifact, "id" | "role">,
+	overrides: Partial<UserSignatureArtifact> &
+		Pick<UserSignatureArtifact, "id" | "role">,
 ): UserSignatureArtifact {
 	return { ...baseArtifact, ...overrides };
 }

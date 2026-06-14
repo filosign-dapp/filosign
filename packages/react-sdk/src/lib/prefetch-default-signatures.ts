@@ -7,7 +7,10 @@ import {
 import { ensureDefaultTypedSignatureArtifact } from "./ensure-default-signature-artifact";
 import type { RpcQueryForUserSignatureUpload } from "./upload-user-signature";
 
-const SIGNATURE_PREFETCH_ROLES = ["signature", "initial"] as const satisfies readonly UserSignatureRole[];
+const SIGNATURE_PREFETCH_ROLES = [
+	"signature",
+	"initial",
+] as const satisfies readonly UserSignatureRole[];
 
 export type SignaturePrefetchProfile = SignerProfileForTypedSignature & {
 	defaultSignatureId?: string | null;

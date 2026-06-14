@@ -22,9 +22,7 @@ export function isWebKitBrowser(): boolean {
 	);
 }
 
-export function resolveSignatureRasterPixelRatio(
-	devicePixelRatio = 1,
-): number {
+export function resolveSignatureRasterPixelRatio(devicePixelRatio = 1): number {
 	const cap = isWebKitBrowser()
 		? WEBKIT_RASTER_PIXEL_RATIO
 		: RASTER_PIXEL_RATIO;

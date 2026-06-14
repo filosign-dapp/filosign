@@ -3,6 +3,7 @@ import {
 	CLIENT_ANALYTICS_EVENTS,
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
+import { invalidateUserProfile } from "@filosign/react/invalidate-queries";
 import {
 	useActiveOrgId,
 	useOrganizations,
@@ -12,7 +13,6 @@ import {
 	prefetchDefaultTypedSignatures,
 	useUpdateUserProfile,
 } from "@filosign/react/users";
-import { invalidateUserProfile } from "@filosign/react/invalidate-queries";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {

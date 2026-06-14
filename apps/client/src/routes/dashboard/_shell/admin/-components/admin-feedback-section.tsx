@@ -114,9 +114,9 @@ export function AdminFeedbackSection(props: { enabled: boolean }) {
 							<TableHeader>
 								<TableRow>
 									<TableHead>Submitted</TableHead>
+									<TableHead>Type</TableHead>
 									<TableHead>User</TableHead>
 									<TableHead>Area</TableHead>
-									<TableHead>Rating</TableHead>
 									<TableHead>Notes</TableHead>
 									<TableHead>Route</TableHead>
 								</TableRow>
@@ -145,11 +145,11 @@ export function AdminFeedbackSection(props: { enabled: boolean }) {
 												<TableCell>
 													{formatSubmittedAt(row.createdAt)}
 												</TableCell>
+												<TableCell>{FEEDBACK_COPY.kinds[row.kind]}</TableCell>
 												<TableCell>{formatUserLabel(row)}</TableCell>
 												<TableCell>
 													{FEEDBACK_COPY.areas[row.featureArea]}
 												</TableCell>
-												<TableCell>{row.rating ?? "—"}</TableCell>
 												<TableCell className="max-w-56 whitespace-normal">
 													{notePreview}
 												</TableCell>

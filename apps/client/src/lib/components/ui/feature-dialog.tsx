@@ -101,20 +101,20 @@ function FeatureDialogClose({
 	);
 }
 
+export type FeatureDialogHeaderProps = Omit<FeatureShellHeaderProps, "badge">;
+
 function FeatureDialogHeader({
-	badge,
 	title,
 	description,
 	titleId,
 	descriptionClassName,
 	className,
-}: FeatureShellHeaderProps & Pick<React.ComponentProps<"div">, "className">) {
+}: FeatureDialogHeaderProps & Pick<React.ComponentProps<"div">, "className">) {
 	return (
 		<DialogHeader
 			className={cn("gap-4 space-y-0 pr-12 text-left sm:pr-14", className)}
 		>
 			<FeatureShellHeaderFields
-				badge={badge}
 				title={title}
 				description={description}
 				titleId={titleId}
@@ -126,7 +126,6 @@ function FeatureDialogHeader({
 	);
 }
 
-export type { FeatureShellHeaderProps as FeatureDialogHeaderProps };
 export {
 	FeatureDialogClose,
 	FeatureDialogContent,

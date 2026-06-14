@@ -44,9 +44,9 @@ export function SupportCenterPanel({
 					<button
 						type="button"
 						className="w-fit text-left text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-						onClick={() => openFeedback()}
+						onClick={() => openFeedback({ kind: "support" })}
 					>
-						{FEEDBACK_COPY.supportLink}
+						{FEEDBACK_COPY.supportTicketLink}
 					</button>
 				</header>
 			) : null}
@@ -119,9 +119,17 @@ export function SupportCenterPanel({
 				))
 			)}
 
-			<div className="border-t border-border flex w-full justify-between gap-4 pt-6 text-sm leading-relaxed text-muted-foreground">
+			<div className="border-t border-border flex w-full flex-wrap justify-between gap-4 pt-6 text-sm leading-relaxed text-muted-foreground">
 				<p>
-					Still need help? Email{" "}
+					Still need help?{" "}
+					<button
+						type="button"
+						className="font-medium text-foreground underline underline-offset-4"
+						onClick={() => openFeedback({ kind: "support" })}
+					>
+						Raise a support ticket
+					</button>{" "}
+					or email{" "}
 					<a
 						href="mailto:support@filosign.xyz"
 						className="font-medium text-foreground underline underline-offset-4"

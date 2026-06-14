@@ -8,6 +8,7 @@ import {
 } from "@filosign/react/orgs";
 import {
 	BookOpenIcon,
+	BugIcon,
 	BuildingsIcon,
 	CaretRightIcon,
 	CaretUpDownIcon,
@@ -16,6 +17,7 @@ import {
 	EnvelopeSimpleIcon,
 	FileTextIcon,
 	GearIcon,
+	HeadsetIcon,
 	HouseIcon,
 	NotePencilIcon,
 	PlusIcon,
@@ -52,6 +54,7 @@ import {
 	SidebarRail,
 	useSidebar,
 } from "@/src/lib/components/ui/sidebar";
+import { FEEDBACK_COPY } from "@/src/lib/copy/feedback";
 import { BILLING_SETTINGS_PATH } from "@/src/lib/domains/billing/settings-path";
 import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
 import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
@@ -249,6 +252,22 @@ export function DashboardSidebar() {
 											match: () => false,
 											tooltip: "Send feedback",
 											onSelect: () => openFeedback(),
+										},
+										{
+											title: FEEDBACK_COPY.kinds.bug,
+											url: "#report-bug",
+											icon: BugIcon,
+											match: () => false,
+											tooltip: FEEDBACK_COPY.kinds.bug,
+											onSelect: () => openFeedback({ kind: "bug" }),
+										},
+										{
+											title: FEEDBACK_COPY.kinds.support,
+											url: "#get-help",
+											icon: HeadsetIcon,
+											match: () => false,
+											tooltip: FEEDBACK_COPY.kinds.support,
+											onSelect: () => openFeedback({ kind: "support" }),
 										},
 									]
 								: group.label === "Account" && showAdminNav

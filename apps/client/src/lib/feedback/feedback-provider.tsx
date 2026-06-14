@@ -1,3 +1,4 @@
+import type { FeedbackKind } from "@filosign/shared";
 import {
 	createContext,
 	type ReactNode,
@@ -7,9 +8,14 @@ import {
 	useState,
 } from "react";
 
+type OpenFeedbackOptions = {
+	kind?: FeedbackKind;
+};
+
 type FeedbackContextValue = {
 	dialogOpen: boolean;
-	openFeedback: () => void;
+	initialKind: FeedbackKind;
+	openFeedback: (options?: OpenFeedbackOptions) => void;
 	closeFeedback: () => void;
 	setDialogOpen: (open: boolean) => void;
 };
@@ -18,8 +24,10 @@ const FeedbackContext = createContext<FeedbackContextValue | null>(null);
 
 export function FeedbackProvider({ children }: { children: ReactNode }) {
 	const [dialogOpen, setDialogOpen] = useState(false);
+	const [initialKind, setInitialKind] = useState<FeedbackKind>("feedback");
 
-	const openFeedback = useCallback(() => {
+	const openFeedback = useCallback((options?: OpenFeedbackOptions) => {
+		setInitialKind(options?.kind ?? "feedback");
 		setDialogOpen(true);
 	}, []);
 
@@ -30,11 +38,12 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 	const value = useMemo(
 		() => ({
 			dialogOpen,
+			initialKind,
 			openFeedback,
 			closeFeedback,
 			setDialogOpen,
 		}),
-		[dialogOpen, openFeedback, closeFeedback],
+		[dialogOpen, initialKind, openFeedback, closeFeedback],
 	);
 
 	return (

@@ -6,8 +6,11 @@ import { useSubmitFeedback } from "@filosign/react/feedback";
 import { useActiveOrgId } from "@filosign/react/orgs";
 import {
 	FEEDBACK_FEATURE_AREAS,
+	FEEDBACK_KINDS,
 	type FeedbackFeatureArea,
+	type FeedbackKind,
 	zFeedbackFeatureArea,
+	zFeedbackKind,
 } from "@filosign/shared";
 import { useRouterState } from "@tanstack/react-router";
 import { useEffect, useId, useState } from "react";
@@ -31,35 +34,39 @@ import {
 	SelectValue,
 } from "@/src/lib/components/ui/select";
 import { Textarea } from "@/src/lib/components/ui/textarea";
-import { FEEDBACK_COPY } from "@/src/lib/copy/feedback";
+import {
+	ToggleGroup,
+	ToggleGroupItem,
+} from "@/src/lib/components/ui/toggle-group";
+import { FEEDBACK_COPY, FEEDBACK_SUPPORT_EMAIL } from "@/src/lib/copy/feedback";
 import { toastUser } from "@/src/lib/copy/toast";
 import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
 import { feedbackFeatureAreaFromPath } from "@/src/lib/feedback/feature-area";
 import { useFeedback } from "@/src/lib/feedback/feedback-provider";
 import { recordFeedbackSubmission } from "@/src/lib/feedback/prefs-storage";
-import { cn } from "@/src/lib/utils";
 import { safeAsync } from "@/src/lib/utils/safe";
-
-const RATING_OPTIONS = [1, 2, 3, 4, 5] as const;
 
 export function FeedbackDialogMount() {
 	const titleId = useId();
-	const { dialogOpen, setDialogOpen, closeFeedback } = useFeedback();
+	const { dialogOpen, initialKind, setDialogOpen, closeFeedback } =
+		useFeedback();
 	const pathname = useRouterState({ select: (s) => s.location.pathname });
 	const activeOrgId = useActiveOrgId();
 	const submitFeedback = useSubmitFeedback();
 	const captureAppEvent = useCaptureAppEvent();
 
+	const [kind, setKind] = useState<FeedbackKind>("feedback");
 	const [featureArea, setFeatureArea] = useState<FeedbackFeatureArea>("other");
-	const [rating, setRating] = useState<number | null>(null);
 	const [message, setMessage] = useState("");
+
+	const kindCopy = FEEDBACK_COPY.kindDialog[kind];
 
 	useEffect(() => {
 		if (!dialogOpen) return;
+		setKind(initialKind);
 		setFeatureArea(feedbackFeatureAreaFromPath(pathname));
-		setRating(null);
 		setMessage("");
-	}, [dialogOpen, pathname]);
+	}, [dialogOpen, initialKind, pathname]);
 
 	const trimmedMessage = message.trim();
 	const canSubmit = trimmedMessage.length > 0 && !submitFeedback.isPending;
@@ -69,9 +76,9 @@ export function FeedbackDialogMount() {
 
 		const [result, error] = await safeAsync(() =>
 			submitFeedback.mutateAsync({
+				kind,
 				featureArea,
 				route: pathname,
-				rating,
 				message: trimmedMessage,
 				pieceCid: null,
 				promptType: "global",
@@ -90,8 +97,8 @@ export function FeedbackDialogMount() {
 
 		recordFeedbackSubmission();
 		captureAppEvent(CLIENT_ANALYTICS_EVENTS.feedbackSubmitted, {
+			feedback_kind: kind,
 			feature_area: featureArea,
-			rating,
 			prompt_type: "global",
 			trigger: null,
 		});
@@ -111,14 +118,37 @@ export function FeedbackDialogMount() {
 					<FeatureDialogClose />
 
 					<FeatureDialogHeader
-						badge={FEEDBACK_COPY.dialog.badge}
-						title={FEEDBACK_COPY.dialog.title}
+						title={kindCopy.title}
 						titleId={titleId}
-						description={FEEDBACK_COPY.dialog.description}
+						description={kindCopy.description}
 					/>
 
 					<FeatureDialogBody>
 						<div className="flex flex-col gap-5">
+							<div className="flex flex-col gap-2">
+								<Label>{FEEDBACK_COPY.dialog.kindLabel}</Label>
+								<ToggleGroup
+									value={[kind]}
+									onValueChange={(values: readonly string[]) => {
+										const parsed = zFeedbackKind.safeParse(values[0]);
+										if (parsed.success) setKind(parsed.data);
+									}}
+									variant="outline"
+									spacing={0}
+									className="flex w-full"
+								>
+									{FEEDBACK_KINDS.map((value) => (
+										<ToggleGroupItem
+											key={value}
+											value={value}
+											className="h-9 flex-1 text-xs font-normal text-muted-foreground/80 transition-all hover:text-foreground data-[state=on]:bg-muted/40 data-[state=on]:text-foreground"
+										>
+											{FEEDBACK_COPY.kindToggle[value]}
+										</ToggleGroupItem>
+									))}
+								</ToggleGroup>
+							</div>
+
 							<div className="flex flex-col gap-2">
 								<Label htmlFor="feedback-area">
 									{FEEDBACK_COPY.dialog.areaLabel}
@@ -146,30 +176,8 @@ export function FeedbackDialogMount() {
 							</div>
 
 							<div className="flex flex-col gap-2">
-								<Label>{FEEDBACK_COPY.dialog.ratingLabel}</Label>
-								<div className="flex flex-wrap gap-2">
-									{RATING_OPTIONS.map((value) => (
-										<Button
-											key={value}
-											type="button"
-											size="sm"
-											variant={rating === value ? "primary" : "outline"}
-											className={cn("min-w-10 rounded-full px-3")}
-											onClick={() =>
-												setRating((current) =>
-													current === value ? null : value,
-												)
-											}
-										>
-											{value}
-										</Button>
-									))}
-								</div>
-							</div>
-
-							<div className="flex flex-col gap-2">
 								<Label htmlFor="feedback-message">
-									{FEEDBACK_COPY.dialog.messageLabel}
+									{kindCopy.messageLabel}
 								</Label>
 								<Textarea
 									id="feedback-message"
@@ -177,7 +185,7 @@ export function FeedbackDialogMount() {
 									onChange={(event) =>
 										setMessage(event.target.value.slice(0, 500))
 									}
-									placeholder={FEEDBACK_COPY.dialog.messagePlaceholder}
+									placeholder={kindCopy.messagePlaceholder}
 									rows={5}
 									required
 								/>
@@ -196,9 +204,20 @@ export function FeedbackDialogMount() {
 							>
 								{submitFeedback.isPending
 									? FEEDBACK_COPY.dialog.submitting
-									: FEEDBACK_COPY.dialog.submit}
+									: kindCopy.submit}
 							</Button>
 						</FeatureDialogActions>
+
+						<p className="text-center text-xs leading-relaxed text-muted-foreground">
+							{FEEDBACK_COPY.dialog.followUpLead}{" "}
+							<a
+								href={`mailto:${FEEDBACK_SUPPORT_EMAIL}`}
+								className="font-medium text-foreground underline underline-offset-4"
+							>
+								{FEEDBACK_SUPPORT_EMAIL}
+							</a>{" "}
+							{FEEDBACK_COPY.dialog.followUpAction}
+						</p>
 					</FeatureDialogBody>
 				</FeatureDialogPanel>
 			</FeatureDialogContent>

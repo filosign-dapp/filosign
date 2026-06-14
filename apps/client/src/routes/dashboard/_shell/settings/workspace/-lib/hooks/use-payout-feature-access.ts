@@ -4,7 +4,8 @@ import {
 } from "@filosign/react/orgs";
 import { SETTLEMENT_FEATURE_TERMS_VERSION } from "@filosign/shared";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { localMutationErrorOptions } from "@/src/lib/errors";
 
 export type PayoutFeatureAccessStatus =
@@ -52,7 +53,7 @@ export function usePayoutFeatureAccess(args: {
 			},
 			localMutationErrorOptions({
 				onSuccess: () => {
-					toast.success("Payout attachment access requested");
+					toastUser.success(TOASTS.workspace.payoutAccessRequested);
 					setUseCase("");
 					setAcceptTerms(false);
 					setSanctionsSelfCert(false);

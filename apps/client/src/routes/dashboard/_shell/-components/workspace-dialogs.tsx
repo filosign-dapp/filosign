@@ -4,7 +4,6 @@ import {
 } from "@filosign/react/orgs";
 import type { FormEvent } from "react";
 import { useId, useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/src/lib/components/ui/button";
 import { Dialog } from "@/src/lib/components/ui/dialog";
 import {
@@ -18,6 +17,8 @@ import {
 } from "@/src/lib/components/ui/feature-dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 
@@ -37,7 +38,7 @@ export function CreateWorkspaceDialog(props: {
 			const res = await createOrg.mutateAsync({ name: name.trim() });
 			if (res?.organization?.id) {
 				setActiveOrg(res.organization.id);
-				toast.success("Workspace created!");
+				toastUser.success(TOASTS.workspace.created);
 				props.onOpenChange(false);
 				setName("");
 			}
@@ -119,7 +120,7 @@ export function InviteTeammateDialog(props: {
 		if (!email.trim()) return;
 		try {
 			await inviteMember.mutateAsync({ email: email.trim() });
-			toast.success("Teammate invited successfully!");
+			toastUser.success(TOASTS.workspace.teammateInvited);
 			setEmail("");
 			props.onOpenChange(false);
 		} catch {}

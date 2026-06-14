@@ -35,6 +35,8 @@ import {
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { InlineLoader } from "@/src/lib/components/ui/loader";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { buildCreateForm, uploadedFromDataUrl } from "@/src/lib/domains/drafts";
@@ -92,7 +94,7 @@ function TemplatesIndexPage() {
 		if (!t) return;
 
 		toast.promise(cloneTemplate.mutateAsync({ templateId }), {
-			loading: "Cloning template...",
+			loading: TOASTS.templates.cloning,
 			success: (res: OrgsTemplatesCloneOutput) => {
 				void (async () => {
 					const docMeta = res.document;
@@ -128,9 +130,9 @@ function TemplatesIndexPage() {
 					setCreateForm(draft);
 					void navigate({ to: "/dashboard/envelope/create/add-sign" });
 				})().catch((e) => console.error("Use template error:", e));
-				return "Template ready for use!";
+				return TOASTS.templates.readyForUse;
 			},
-			error: "Failed to load template",
+			error: TOASTS.templates.cloneFailed.title,
 		});
 	};
 
@@ -141,7 +143,7 @@ function TemplatesIndexPage() {
 				{ templateId: deleteTargetId },
 				suppressGlobalErrorToast(),
 			);
-			toast.success("Template deleted successfully");
+			toastUser.success(TOASTS.templates.deleted);
 		} catch (err) {
 			showAppErrorToast(err);
 		} finally {
@@ -152,7 +154,7 @@ function TemplatesIndexPage() {
 	const handleCreateTemplate = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!selectedDraftId || !newTemplateName.trim()) {
-			toast.error("Please select a draft and specify a name");
+			toastUser.error(TOASTS.templates.selectDraftAndName.title);
 			return;
 		}
 
@@ -188,7 +190,7 @@ function TemplatesIndexPage() {
 				suppressGlobalErrorToast(),
 			);
 
-			toast.success("Template created successfully!");
+			toastUser.success(TOASTS.templates.created);
 			setCreateOpen(false);
 			setSelectedDraftId("");
 			setNewTemplateName("");

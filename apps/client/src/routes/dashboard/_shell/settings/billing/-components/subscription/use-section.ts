@@ -10,7 +10,8 @@ import {
 	useWorkspaceBillingContext,
 } from "@filosign/react/billing";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { planDisplayName } from "@/src/lib/domains/billing/plan-seat-tiles";
 import { billingSettingsReturnUrl } from "@/src/lib/domains/billing/settings-path";
 import { useBillingSettings } from "@/src/lib/domains/billing/use-billing-settings";
@@ -150,19 +151,20 @@ export function useSubscriptionSection() {
 			syncedSeatCountRef.current = result.seatCount;
 			setSeatCount(result.seatCount);
 			if (result.pendingPayment) {
-				toast.error(
-					"Payment did not go through. Update your payment method in Manage Subscription, then try again.",
-				);
+				toastUser.error(TOASTS.billing.paymentFailed.title, {
+					hint: TOASTS.billing.paymentFailed.hint,
+				});
 				return;
 			}
 			if (!result.changed) {
-				toast.info(`This workspace is already on ${result.seatCount} seats.`);
+				const seatsCopy = TOASTS.billing.alreadyOnSeats(result.seatCount);
+				toastUser.info(seatsCopy.title);
 				return;
 			}
 			setAwaitingSeatSync(true);
-			toast.success(
-				"Seat change submitted. Your dashboard should update within 1–2 minutes.",
-			);
+			toastUser.success(TOASTS.billing.seatChangeSubmitted.title, {
+				hint: TOASTS.billing.seatChangeSubmitted.hint,
+			});
 		} catch {}
 	};
 
@@ -186,9 +188,9 @@ export function useSubscriptionSection() {
 			setPlanPreviewOpen(false);
 			if (!result.changed) return;
 			setAwaitingPlanSync(true);
-			toast.success(
-				"Plan change submitted. Your dashboard should update within 1–2 minutes.",
-			);
+			toastUser.success(TOASTS.billing.planChangeSubmitted.title, {
+				hint: TOASTS.billing.planChangeSubmitted.hint,
+			});
 		} catch {}
 	};
 

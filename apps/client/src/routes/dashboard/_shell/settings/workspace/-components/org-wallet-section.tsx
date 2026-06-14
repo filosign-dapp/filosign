@@ -5,7 +5,6 @@ import {
 } from "@filosign/react/orgs";
 import { WalletIcon } from "@phosphor-icons/react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Dialog,
@@ -15,6 +14,8 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/src/lib/components/ui/dialog";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
@@ -58,7 +59,7 @@ export function OrgWalletSection() {
 		try {
 			await login();
 			await linkOrgWallet.mutateAsync(activeOrgId, suppressGlobalErrorToast());
-			toast.success("Workspace treasury linked");
+			toastUser.success(TOASTS.workspace.treasuryLinked);
 			setConnectDialogOpen(false);
 		} catch (err) {
 			showAppErrorToast(err);
@@ -72,7 +73,7 @@ export function OrgWalletSection() {
 				activeOrgId,
 				suppressGlobalErrorToast(),
 			);
-			toast.success("Workspace treasury removed");
+			toastUser.success(TOASTS.workspace.treasuryRemoved);
 			setRemoveDialogOpen(false);
 		} catch (err) {
 			showAppErrorToast(err);

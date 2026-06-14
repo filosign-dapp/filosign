@@ -14,7 +14,6 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { type ReactNode, useState } from "react";
-import { toast } from "sonner";
 import { z } from "zod";
 import env from "@/src/env";
 import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
@@ -30,6 +29,8 @@ import {
 	SelectValue,
 } from "@/src/lib/components/ui/select";
 import { Textarea } from "@/src/lib/components/ui/textarea";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { formatInlineAppError } from "@/src/lib/errors";
 import { cn } from "@/src/lib/utils/index";
 import { AdminMetricsSection } from "@/src/routes/dashboard/_shell/admin/-components/admin-metrics-section";
@@ -172,7 +173,7 @@ function AdminPage() {
 					partnerName: data.note,
 				});
 				const label = data.note ? `${data.note} (${data.email})` : data.email;
-				toast.success(`Invite created for ${label}`);
+				toastUser.success(TOASTS.admin.inviteCreated(label));
 			}
 			void queryClient.invalidateQueries({
 				queryKey: rpcQuery.platformAdmin.invites.list.queryKey(),
@@ -202,11 +203,10 @@ function AdminPage() {
 			rpc.platformAdmin.invites.send({ inviteId }),
 		onSuccess: (data, inviteId) => {
 			if (data.emailSent && data.email) {
-				toast.success(`Invite sent to ${data.email}`);
+				toastUser.success(TOASTS.admin.inviteSent(data.email));
 			} else if (data.email) {
-				toast.success(
-					`Invite ready for ${data.email} (email delivery disabled)`,
-				);
+				const readyCopy = TOASTS.admin.inviteReadyNoEmail(data.email);
+				toastUser.success(readyCopy.title, { hint: readyCopy.hint });
 			}
 			if (pendingInvite?.id === inviteId) {
 				setPendingInvite(null);
@@ -233,9 +233,9 @@ function AdminPage() {
 				const label = variables.partnerName
 					? `${variables.partnerName} (${variables.email})`
 					: variables.email;
-				toast.success(`Invite reissued for ${label}`);
+				toastUser.success(TOASTS.admin.inviteReissued(label));
 			} else {
-				toast.success("Invite reissued");
+				toastUser.success(TOASTS.admin.inviteReissuedGeneric);
 			}
 			void queryClient.invalidateQueries({
 				queryKey: rpcQuery.platformAdmin.invites.list.queryKey(),

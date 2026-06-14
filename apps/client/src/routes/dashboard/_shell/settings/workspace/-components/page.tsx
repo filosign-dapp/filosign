@@ -10,7 +10,6 @@ import {
 	UserPlusIcon,
 } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Dialog,
@@ -22,6 +21,8 @@ import {
 } from "@/src/lib/components/ui/dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
@@ -52,7 +53,7 @@ function CreateWorkspaceDialog(props: {
 			);
 			if (res?.organization?.id) {
 				setActiveOrg(res.organization.id);
-				toast.success("Workspace created");
+				toastUser.success(TOASTS.workspace.created);
 				props.onOpenChange(false);
 				setName("");
 			}
@@ -119,7 +120,7 @@ function InviteTeammateDialog(props: {
 				{ email: email.trim() },
 				suppressGlobalErrorToast(),
 			);
-			toast.success("Invite sent");
+			toastUser.success(TOASTS.workspace.inviteSent);
 			setEmail("");
 			props.onOpenChange(false);
 		} catch (err) {
@@ -191,7 +192,7 @@ function WorkspaceDetailsSection() {
 				{ name: wsName.trim() },
 				suppressGlobalErrorToast(),
 			);
-			toast.success("Workspace name saved");
+			toastUser.success(TOASTS.workspace.nameSaved);
 			void orgDetail.refetch();
 		} catch (err) {
 			showAppErrorToast(err);

@@ -42,7 +42,9 @@ function ctxNumber(
 	key: string,
 ): number | undefined {
 	const value = context?.[key];
-	return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+	return typeof value === "number" && Number.isFinite(value)
+		? value
+		: undefined;
 }
 
 function ctxBoolean(
@@ -70,7 +72,9 @@ function formatTimestamp(timestamp: number | undefined): string {
 }
 
 function formatDetailLines(
-	lines: Array<[label: string, value: string | number | boolean | null | undefined]>,
+	lines: Array<
+		[label: string, value: string | number | boolean | null | undefined]
+	>,
 ): string[] {
 	const formatted: string[] = [];
 	for (const [label, value] of lines) {
@@ -228,7 +232,11 @@ function formatRpcDegraded(event: LoggerEvent): string {
 			["RPC", ctxString(context, "rpcUrl")],
 			[
 				"Fallback",
-				fallbackEnabled == null ? undefined : fallbackEnabled ? "enabled" : "disabled",
+				fallbackEnabled == null
+					? undefined
+					: fallbackEnabled
+						? "enabled"
+						: "disabled",
 			],
 			["Error", ctxString(context, "error")],
 		]),
@@ -304,7 +312,12 @@ export function formatTelegramMessage(event: LoggerEvent): string {
 		case "server.pgbackrest_failed":
 			return formatErrorContext(event, ["stanza", "container", "cmd"]);
 		case "server.bullmq_job_failed":
-			return formatErrorContext(event, ["queueName", "jobId", "outboxId", "error"]);
+			return formatErrorContext(event, [
+				"queueName",
+				"jobId",
+				"outboxId",
+				"error",
+			]);
 		case "server.worker_stale":
 			return formatErrorContext(event, [
 				"lastHeartbeatAt",

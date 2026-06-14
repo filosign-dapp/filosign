@@ -55,6 +55,7 @@ import {
 	validateEnvelopeDocuments,
 	validateEnvelopeRecipients,
 	validateRecipientProfiles,
+	validateSettlementDraftsForSend,
 	validateSettlementPayoutBalance,
 	validateSignerPlacementFields,
 } from "./validate";
@@ -231,6 +232,17 @@ export async function runEnvelopeSend(
 		setSendStatus,
 	);
 	if (attachmentComposeDrafts === null) {
+		closeSendProgress?.();
+		return;
+	}
+
+	const settlementDraftsFailure = validateSettlementDraftsForSend({
+		entitlements,
+		settlementDrafts: createForm.settlementDrafts,
+	});
+	if (settlementDraftsFailure) {
+		reportEnvelopeSendValidationFailure(settlementDraftsFailure);
+		failSend(setSendStatus);
 		closeSendProgress?.();
 		return;
 	}

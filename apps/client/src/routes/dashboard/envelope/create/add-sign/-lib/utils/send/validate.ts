@@ -1,36 +1,25 @@
-import type { EntitlementsSnapshot } from "@filosign/react/billing";
-import {
-	canSelectSupplementaryRecipients,
-	canUseConditionalAttachmentRelease,
-	canUseSupplementaryAttachments,
-} from "@filosign/react/files";
-import {
-	normalizePlacementRecipientEmail,
-	validateAttachmentPacketDraftsForSend,
-} from "@filosign/shared";
+import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import type { Address } from "viem";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
-import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
 import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
-import { validateAttachmentPacketComposeDrafts } from "@/src/lib/domains/files/validate-attachment-packets";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
 import { settlementPayoutExceedsBalance } from "@/src/lib/domains/settlements/payout-totals";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { fieldsWithUnknownSignerEmails } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
+import type { EnvelopeSendValidationFailure } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/validation-types";
 import {
 	isColdRecipient,
 	type RecipientWithEncryptionProfile,
 	recipientResolvedSignerAddress,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 
-export type EnvelopeSendValidationFailure = {
-	kind: "silent" | "toast";
-	message?: string;
-	title?: string;
-	hint?: string;
-};
+export {
+	validateAttachmentPacketsForSend,
+	validateSettlementDraftsForSend,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/entitlement-guards";
+export type { EnvelopeSendValidationFailure } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/validation-types";
 
 export function validateEnvelopeDocuments(
 	documents: { id: string }[] | undefined,
@@ -141,38 +130,6 @@ export function validateSettlementPayoutBalance(args: {
 		kind: "toast",
 		...TOASTS.send.payoutExceedsBalance,
 	};
-}
-
-export function validateAttachmentPacketsForSend(args: {
-	entitlements: EntitlementsSnapshot | undefined;
-	attachmentComposeDrafts: AttachmentPacketComposeDraft[];
-	rosterEmails: string[];
-}): EnvelopeSendValidationFailure | null {
-	if (args.attachmentComposeDrafts.length === 0) return null;
-
-	const attachmentIssues = [
-		...validateAttachmentPacketDraftsForSend({
-			supplementaryAttachments: canUseSupplementaryAttachments(
-				args.entitlements,
-			),
-			recipientSelect: canSelectSupplementaryRecipients(args.entitlements),
-			conditionalRelease: canUseConditionalAttachmentRelease(args.entitlements),
-			drafts: args.attachmentComposeDrafts,
-			rosterEmails: args.rosterEmails,
-		}),
-		...validateAttachmentPacketComposeDrafts({
-			drafts: args.attachmentComposeDrafts,
-		}),
-	];
-	if (attachmentIssues.length > 0) {
-		return {
-			kind: "toast",
-			title: "Check attached files",
-			hint: TOASTS.send.invalidSupplementaryFiles,
-		};
-	}
-
-	return null;
 }
 
 export function reportEnvelopeSendValidationFailure(

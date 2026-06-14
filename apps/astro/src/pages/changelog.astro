@@ -8,10 +8,10 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
 <BaseLayout
 	title="Changelog - What's new at Filosign"
-	description="Release notes for private signing, proof exports, team workflows, gated files, and payout packets on Filosign."
+	description="See what Filosign ships for modern teams: private signing, proof exports, payouts, workspaces, and new workflow improvements - updated often."
 >
 	<MarketingPageShell>
-		<ChangelogHeroIsland client:load />
+		<ChangelogHeroIsland client:load entries={ChangelogEntries} />
 		<ChangelogListIsland client:visible entries={ChangelogEntries} />
 	</MarketingPageShell>
 </BaseLayout>

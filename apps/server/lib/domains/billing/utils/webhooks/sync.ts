@@ -1,10 +1,7 @@
 import type { PlanId } from "@filosign/entitlements";
 import { eq } from "drizzle-orm";
 import type db from "@/lib/platform/db";
-import {
-	type SubscriptionStatus,
-	userSubscriptions,
-} from "@/lib/platform/db/schema/billing";
+import type { SubscriptionStatus } from "@/lib/platform/db/schema/billing";
 import { organizationSubscriptions } from "@/lib/platform/db/schema/organization";
 import { logger } from "@/lib/platform/pino";
 import {
@@ -59,39 +56,6 @@ export function mapDodoSubscriptionStatus(
 		default:
 			return "incomplete";
 	}
-}
-
-export function resolveWebhookUserPlanId(args: {
-	eventType: string;
-	mappedPlan: PlanId | null;
-	cancelAtNextBillingDate: boolean;
-	existingPlanId?: PlanId;
-}): "free" | "individual" {
-	if (shouldDowngradeToFree(args.eventType)) return "free";
-	if (
-		isImmediateCancellation({
-			eventType: args.eventType,
-			cancelAtNextBillingDate: args.cancelAtNextBillingDate,
-		})
-	) {
-		return "free";
-	}
-	if (
-		isScheduledCancellation({
-			eventType: args.eventType,
-			cancelAtNextBillingDate: args.cancelAtNextBillingDate,
-		})
-	) {
-		const kept =
-			args.mappedPlan === "individual"
-				? "individual"
-				: args.existingPlanId === "individual"
-					? "individual"
-					: "free";
-		return kept;
-	}
-	if (args.mappedPlan === "individual") return "individual";
-	return "free";
 }
 
 export function resolveWebhookOrgSync(args: {
@@ -217,51 +181,6 @@ export async function resolveSubscriptionQuantity(args: {
 		throw new Error("Unable to resolve subscription quantity");
 	}
 	return undefined;
-}
-
-export async function syncUserSubscription(
-	tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
-	args: {
-		walletAddress: `0x${string}`;
-		planId: "free" | "individual";
-		status: SubscriptionStatus;
-		payloadData: NonNullable<DodoWebhookEvent["data"]>;
-		dodoCustomerId: string | null;
-		dodoSubscriptionId: string | null;
-	},
-) {
-	await tx
-		.insert(userSubscriptions)
-		.values({
-			walletAddress: args.walletAddress,
-			provider: "dodo",
-			planId: args.planId,
-			status: args.status,
-			periodStart:
-				parseOptionalDate(args.payloadData.previous_billing_date) ?? new Date(),
-			periodEnd: parseOptionalDate(args.payloadData.next_billing_date),
-			cancelAtPeriodEnd: Boolean(args.payloadData.cancel_at_next_billing_date),
-			dodoCustomerId: args.dodoCustomerId ?? undefined,
-			dodoSubscriptionId: args.dodoSubscriptionId ?? undefined,
-		})
-		.onConflictDoUpdate({
-			target: userSubscriptions.walletAddress,
-			set: {
-				provider: "dodo",
-				planId: args.planId,
-				status: args.status,
-				periodStart:
-					parseOptionalDate(args.payloadData.previous_billing_date) ??
-					undefined,
-				periodEnd: parseOptionalDate(args.payloadData.next_billing_date),
-				cancelAtPeriodEnd: Boolean(
-					args.payloadData.cancel_at_next_billing_date,
-				),
-				dodoCustomerId: args.dodoCustomerId ?? undefined,
-				dodoSubscriptionId: args.dodoSubscriptionId ?? undefined,
-				updatedAt: new Date(),
-			},
-		});
 }
 
 export async function syncOrgSubscription(

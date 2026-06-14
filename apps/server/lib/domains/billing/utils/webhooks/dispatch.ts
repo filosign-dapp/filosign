@@ -1,10 +1,9 @@
 import type { PlanId } from "@filosign/entitlements";
 import type { PaidCheckoutPlanId } from "@filosign/shared";
-import { and, eq } from "drizzle-orm";
-import type { Address } from "viem";
+import { eq } from "drizzle-orm";
+import { getPersonalOrganizationId } from "@/lib/domains/orgs/workspace";
 import type { createEntitlementCacheInvalidation } from "@/lib/platform/cache";
 import type db from "@/lib/platform/db";
-import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import { organizationSubscriptions } from "@/lib/platform/db/schema/organization";
 import { platformAccessPending } from "@/lib/platform/db/schema/platform-access";
 import {
@@ -15,14 +14,13 @@ import {
 import {
 	isCheckoutFirstWithoutOrg,
 	prepareCheckoutFirstPaidAccessInTx,
+	prepareNewWorkspacePaidAccessInTx,
 } from "./checkout";
 import {
 	mapDodoSubscriptionStatus,
 	resolveSubscriptionQuantity,
 	resolveWebhookOrgSync,
-	resolveWebhookUserPlanId,
 	syncOrgSubscription,
-	syncUserSubscription,
 	webhookAllowsMissingProductId,
 } from "./sync";
 
@@ -44,6 +42,8 @@ export type WebhookPayloadContext = {
 	metadataWallet: `0x${string}` | null;
 	metadataSetupToken: string | null;
 	metadataCheckoutIntentId: string | null;
+	metadataPendingId: string | null;
+	metadataCheckoutKind: string | null;
 	metadataPlanId: PlanId | null;
 	customerEmail: string | null;
 	cancelAtNextBillingDate: boolean;
@@ -230,6 +230,8 @@ const WEBHOOK_HANDLERS: WebhookHandler[] = [
 		const { organizationId } = await resolveOrgContext(tx, ctx);
 		const checkoutFirstWithoutOrg = await isCheckoutFirstWithoutOrg(tx, {
 			metadataSetupToken: ctx.metadataSetupToken,
+			metadataPendingId: ctx.metadataPendingId,
+			metadataCheckoutKind: ctx.metadataCheckoutKind,
 			dodoSubscriptionId: ctx.payloadData.subscription_id ?? null,
 			organizationId,
 		});
@@ -259,6 +261,26 @@ const WEBHOOK_HANDLERS: WebhookHandler[] = [
 			return { handled: true, stop: true };
 		}
 
+		if (ctx.metadataCheckoutKind === "new_workspace" && ctx.metadataPendingId) {
+			const synced = await prepareNewWorkspacePaidAccessInTx(tx, {
+				eventType: ctx.eventType,
+				pendingId: ctx.metadataPendingId,
+				dodoSubscriptionId: ctx.payloadData.subscription_id ?? null,
+				dodoCustomerId:
+					ctx.payloadData.customer?.customer_id ??
+					ctx.payloadData.customer_id ??
+					null,
+				metadataPlanId: ctx.metadataPlanId,
+				mappedPlan: resolvePlanIdFromProductId(ctx.payloadData.product_id),
+				metadata: ctx.payloadData.metadata,
+				productId: ctx.payloadData.product_id,
+				payloadQuantity: ctx.payloadData.quantity,
+			});
+			if (synced) {
+				return { handled: true, stop: true, checkoutFirstEmail: null };
+			}
+		}
+
 		const checkoutFirstEmail = await prepareCheckoutFirstPaidAccessInTx(tx, {
 			eventType: ctx.eventType,
 			setupToken: ctx.metadataSetupToken,
@@ -280,84 +302,54 @@ const WEBHOOK_HANDLERS: WebhookHandler[] = [
 	},
 	async ({ tx, ctx, entitlementInvalidation }) => {
 		const mappedPlan = resolvePlanIdFromProductId(ctx.payloadData.product_id);
-		const { organizationId } = await resolveOrgContext(tx, ctx);
+		let { organizationId, existingOrgSub } = await resolveOrgContext(tx, ctx);
 
-		if (mappedPlan && isWorkspaceBillingPlanId(mappedPlan) && !organizationId) {
+		if (
+			mappedPlan &&
+			isWorkspaceBillingPlanId(mappedPlan) &&
+			mappedPlan !== "individual" &&
+			!organizationId
+		) {
 			throw new Error(
 				"Unable to route workspace plan webhook without organization",
 			);
 		}
 
-		const dodoCustomerId =
-			ctx.payloadData.customer?.customer_id ??
-			ctx.payloadData.customer_id ??
-			null;
-
-		let existingUserPlan: "free" | "individual" | undefined;
-		if (dodoCustomerId) {
-			const [subByCustomer] = await tx
-				.select({ planId: userSubscriptions.planId })
-				.from(userSubscriptions)
-				.where(
-					and(
-						eq(userSubscriptions.provider, "dodo"),
-						eq(userSubscriptions.dodoCustomerId, dodoCustomerId),
-					),
-				)
-				.limit(1);
-			if (
-				subByCustomer?.planId === "individual" ||
-				subByCustomer?.planId === "free"
-			) {
-				existingUserPlan = subByCustomer.planId;
+		if (!organizationId && ctx.metadataWallet) {
+			organizationId = await getPersonalOrganizationId(ctx.metadataWallet, tx);
+			if (organizationId && !existingOrgSub) {
+				const [row] = await tx
+					.select({
+						planId: organizationSubscriptions.planId,
+						seatCount: organizationSubscriptions.seatCount,
+					})
+					.from(organizationSubscriptions)
+					.where(eq(organizationSubscriptions.organizationId, organizationId))
+					.limit(1);
+				existingOrgSub = row;
 			}
 		}
 
-		const userPlanId = resolveWebhookUserPlanId({
-			eventType: ctx.eventType,
-			mappedPlan,
-			cancelAtNextBillingDate: ctx.cancelAtNextBillingDate,
-			existingPlanId: existingUserPlan,
-		});
-
-		let walletAddress: `0x${string}` | null = null;
-		if (dodoCustomerId) {
-			const [subByCustomer] = await tx
-				.select({ walletAddress: userSubscriptions.walletAddress })
-				.from(userSubscriptions)
-				.where(
-					and(
-						eq(userSubscriptions.provider, "dodo"),
-						eq(userSubscriptions.dodoCustomerId, dodoCustomerId),
-					),
-				)
-				.limit(1);
-			walletAddress = subByCustomer?.walletAddress ?? null;
-		}
-		if (!walletAddress && ctx.metadataWallet) {
-			walletAddress = ctx.metadataWallet;
+		if (!organizationId) {
+			return { handled: false };
 		}
 
-		if (!walletAddress) {
-			throw new Error("Unable to resolve wallet for webhook");
+		if (
+			mappedPlan === "individual" ||
+			mappedPlan === null ||
+			existingOrgSub?.planId === "individual" ||
+			isWorkspaceBillingPlanId(mappedPlan ?? "free")
+		) {
+			return trySyncOrgSubscription({
+				tx,
+				ctx,
+				entitlementInvalidation,
+				organizationId,
+				existingOrgSub,
+			});
 		}
 
-		const status = mapDodoSubscriptionStatus(
-			ctx.payloadData.status,
-			ctx.eventType,
-			ctx.cancelAtNextBillingDate,
-		);
-
-		await syncUserSubscription(tx, {
-			walletAddress,
-			planId: userPlanId,
-			status,
-			payloadData: ctx.payloadData,
-			dodoCustomerId,
-			dodoSubscriptionId: ctx.payloadData.subscription_id ?? null,
-		});
-		entitlementInvalidation.wallets.add(walletAddress as Address);
-		return { handled: true, stop: true };
+		return { handled: false };
 	},
 ];
 

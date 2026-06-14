@@ -4,6 +4,10 @@ import { isPaidCheckoutPlanId } from "@filosign/shared";
 import { and, eq } from "drizzle-orm";
 import { checkoutPlanLabel } from "@/lib/domains/billing/checkout-intents";
 import {
+	NEW_WORKSPACE_CHECKOUT_KIND,
+	syncNewWorkspacePendingFromWebhook,
+} from "@/lib/domains/billing/utils/new-workspace-checkout";
+import {
 	type PlatformAccessTx,
 	upsertPaidAccessPendingFromWebhook,
 } from "@/lib/domains/platform-access";
@@ -78,11 +82,24 @@ export async function isCheckoutFirstWithoutOrg(
 	tx: PlatformAccessTx,
 	args: {
 		metadataSetupToken: string | null;
+		metadataPendingId?: string | null;
+		metadataCheckoutKind?: string | null;
 		dodoSubscriptionId: string | null;
 		organizationId: string | null;
 	},
 ): Promise<boolean> {
 	if (args.organizationId) return false;
+	if (
+		args.metadataCheckoutKind === NEW_WORKSPACE_CHECKOUT_KIND &&
+		args.metadataPendingId
+	) {
+		const [pending] = await tx
+			.select({ id: platformAccessPending.id })
+			.from(platformAccessPending)
+			.where(eq(platformAccessPending.id, args.metadataPendingId))
+			.limit(1);
+		return Boolean(pending);
+	}
 	if (args.metadataSetupToken) return true;
 	if (!args.dodoSubscriptionId) return false;
 
@@ -98,6 +115,66 @@ export async function isCheckoutFirstWithoutOrg(
 		.limit(1);
 
 	return Boolean(pending);
+}
+
+export async function prepareNewWorkspacePaidAccessInTx(
+	tx: PlatformAccessTx,
+	args: {
+		eventType: string;
+		pendingId: string;
+		dodoSubscriptionId: string | null;
+		dodoCustomerId: string | null;
+		metadataPlanId: PlanId | null;
+		mappedPlan: PlanId | null;
+		metadata?: Record<string, unknown>;
+		productId?: string;
+		payloadQuantity?: number;
+	},
+): Promise<boolean> {
+	if (args.eventType !== "subscription.active") return false;
+
+	const planId = args.metadataPlanId ?? args.mappedPlan;
+	if (!planId || planId === "free" || planId === "enterprise") {
+		logger.error(
+			{ pendingId: args.pendingId, planId },
+			"new-workspace webhook missing plan id",
+		);
+		return false;
+	}
+
+	if (!isPaidCheckoutPlanId(planId)) {
+		logger.error(
+			{ pendingId: args.pendingId, planId },
+			"new-workspace webhook unsupported plan id",
+		);
+		return false;
+	}
+
+	if (!args.dodoSubscriptionId) {
+		logger.error(
+			{ pendingId: args.pendingId },
+			"new-workspace webhook missing subscription id",
+		);
+		return false;
+	}
+
+	const seatCount = resolveCheckoutFirstSeatCount({
+		metadata: args.metadata,
+		payloadQuantity: args.payloadQuantity,
+	});
+	const billingInterval = resolveCheckoutFirstBillingInterval({
+		metadata: args.metadata,
+		productId: args.productId,
+	});
+
+	return syncNewWorkspacePendingFromWebhook(tx, {
+		pendingId: args.pendingId,
+		dodoSubscriptionId: args.dodoSubscriptionId,
+		dodoCustomerId: args.dodoCustomerId,
+		planId,
+		seatCount,
+		billingInterval,
+	});
 }
 
 export async function prepareCheckoutFirstPaidAccessInTx(

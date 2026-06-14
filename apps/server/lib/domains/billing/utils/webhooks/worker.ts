@@ -79,6 +79,20 @@ function extractCheckoutIntentIdFromMetadata(
 	return typeof id === "string" && id.length > 0 ? id : null;
 }
 
+function extractPendingIdFromMetadata(
+	metadata: Record<string, unknown> | undefined,
+): string | null {
+	const id = metadata?.filosign_pending_id;
+	return typeof id === "string" && id.length > 0 ? id : null;
+}
+
+function extractCheckoutKindFromMetadata(
+	metadata: Record<string, unknown> | undefined,
+): string | null {
+	const kind = metadata?.filosign_checkout_kind;
+	return typeof kind === "string" && kind.length > 0 ? kind : null;
+}
+
 function extractPlanIdFromMetadata(
 	metadata: Record<string, unknown> | undefined,
 ): PlanId | null {
@@ -166,6 +180,10 @@ export async function processDodoWebhookJob(webhookId: string): Promise<void> {
 	const metadataCheckoutIntentId = extractCheckoutIntentIdFromMetadata(
 		payloadData.metadata,
 	);
+	const metadataPendingId = extractPendingIdFromMetadata(payloadData.metadata);
+	const metadataCheckoutKind = extractCheckoutKindFromMetadata(
+		payloadData.metadata,
+	);
 	const metadataPlanId = extractPlanIdFromMetadata(payloadData.metadata);
 	const customerEmail = payloadData.customer?.email ?? null;
 	const cancelAtNextBillingDate = Boolean(
@@ -179,6 +197,8 @@ export async function processDodoWebhookJob(webhookId: string): Promise<void> {
 		metadataWallet,
 		metadataSetupToken,
 		metadataCheckoutIntentId,
+		metadataPendingId,
+		metadataCheckoutKind,
 		metadataPlanId,
 		customerEmail,
 		cancelAtNextBillingDate,

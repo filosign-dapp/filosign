@@ -83,6 +83,7 @@ export const rpcOrgsCreateOutputSchema = z.object({
 
 export const rpcOrgsListMineOutputSchema = z.object({
 	organizations: z.array(rpcOrgListItemSchema),
+	requiresPaidPlanToCreate: z.boolean(),
 });
 
 export const rpcOrgsGetOutputSchema = z.object({

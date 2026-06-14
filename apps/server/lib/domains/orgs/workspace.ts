@@ -1,6 +1,6 @@
 import type { PlanId } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import { isWorkspaceBillingPlanId } from "@/lib/domains/billing/utils/policy";
@@ -8,13 +8,12 @@ import { effectivePlanIdFromStatus } from "@/lib/domains/entitlements";
 import db from "@/lib/platform/db";
 import {
 	organizationMembers,
-	organizationSubscriptions,
 	organizations,
 } from "@/lib/platform/db/schema/organization";
-
-const TEAM_PLANS = ["teams", "teams_pro"] as const satisfies PlanId[];
+import { platformAccessPending } from "@/lib/platform/db/schema/platform-access";
 
 type OrgDbClient = Pick<typeof db, "select">;
+type OrgDbTx = Pick<typeof db, "select" | "update">;
 
 export async function countOwnedOrganizations(
 	wallet: Address,
@@ -85,59 +84,35 @@ export async function assertUserOwnsOrganization(
 	}
 }
 
-export async function userCanCreateAdditionalWorkspaces(
-	wallet: Address,
-): Promise<boolean> {
-	const walletNorm = getAddress(wallet);
-	const rows = await db
-		.select({
-			planId: organizationSubscriptions.planId,
-			status: organizationSubscriptions.status,
-			cancelAtPeriodEnd: organizationSubscriptions.cancelAtPeriodEnd,
-			periodEnd: organizationSubscriptions.periodEnd,
-		})
-		.from(organizationMembers)
-		.innerJoin(
-			organizationSubscriptions,
-			eq(
-				organizationSubscriptions.organizationId,
-				organizationMembers.organizationId,
-			),
-		)
-		.where(
-			and(
-				eq(organizationMembers.walletAddress, walletNorm),
-				eq(organizationMembers.role, "owner"),
-				eq(organizationMembers.status, "active"),
-				inArray(organizationSubscriptions.planId, [...TEAM_PLANS]),
-			),
-		);
-
-	for (const row of rows) {
-		const effective = effectivePlanIdFromStatus({
-			planId: row.planId as PlanId,
-			status: row.status,
-			cancelAtPeriodEnd: row.cancelAtPeriodEnd,
-			periodEnd: row.periodEnd,
-		});
-		if (effective === "teams" || effective === "teams_pro") {
-			return true;
-		}
+export function assertPaidPlanPendingForAdditionalOrg(args: {
+	ownedCountBeforeCreate: number;
+	pendingBillingId?: string | null;
+}): void {
+	if (args.ownedCountBeforeCreate === 0) return;
+	if (!args.pendingBillingId?.trim()) {
+		throwAppError("WORKSPACE.PAID_PLAN_REQUIRED");
 	}
-	return false;
 }
 
-export async function assertCanCreateAdditionalWorkspace(
-	wallet: Address,
-): Promise<void> {
-	const owned = await countOwnedOrganizations(wallet);
-	if (owned === 0) return;
+export function assertOrgSubscriptionIsPaidAfterAttach(args: {
+	ownedCountBeforeCreate: number;
+	planId: PlanId;
+	status: string;
+	cancelAtPeriodEnd: boolean;
+	periodEnd: Date | null;
+}): void {
+	if (args.ownedCountBeforeCreate === 0) return;
 
-	if (await userCanCreateAdditionalWorkspaces(wallet)) {
-		return;
+	const effective = effectivePlanIdFromStatus({
+		planId: args.planId,
+		status: args.status,
+		cancelAtPeriodEnd: args.cancelAtPeriodEnd,
+		periodEnd: args.periodEnd,
+	});
+
+	if (!isWorkspaceBillingPlanId(effective) || effective === "individual") {
+		throwAppError("WORKSPACE.PAID_PLAN_REQUIRED");
 	}
-
-	throw throwAppError("ENTITLEMENT.LIMIT_EXCEEDED");
 }
 
 export function resolveIsPersonalForNewOrganization(
@@ -154,4 +129,43 @@ export function assertSeatCountForPlan(planId: PlanId, seatCount: number) {
 
 export function isPaidWorkspacePlan(planId: PlanId): boolean {
 	return isWorkspaceBillingPlanId(planId);
+}
+
+export async function loadValidatedPendingBillingForCreate(
+	tx: OrgDbTx,
+	args: {
+		wallet: Address;
+		pendingBillingId: string;
+	},
+) {
+	const walletNorm = getAddress(args.wallet);
+	const [pending] = await tx
+		.select()
+		.from(platformAccessPending)
+		.where(
+			and(
+				eq(platformAccessPending.id, args.pendingBillingId),
+				eq(platformAccessPending.linkedWallet, walletNorm),
+				eq(platformAccessPending.status, "linked"),
+				isNull(platformAccessPending.linkedOrganizationId),
+			),
+		)
+		.limit(1);
+
+	if (!pending?.dodoSubscriptionId) {
+		throwAppError("WORKSPACE.PAID_PLAN_REQUIRED");
+	}
+
+	if (
+		pending.planId === "individual" ||
+		!isWorkspaceBillingPlanId(pending.planId)
+	) {
+		throwAppError("WORKSPACE.PAID_PLAN_REQUIRED");
+	}
+
+	if (pending.expiresAt.getTime() <= Date.now()) {
+		throwAppError("WORKSPACE.PAID_PLAN_REQUIRED");
+	}
+
+	return pending;
 }

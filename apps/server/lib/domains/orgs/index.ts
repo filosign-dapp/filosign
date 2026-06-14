@@ -24,12 +24,13 @@ export {
 } from "./orgs";
 
 export {
-	assertCanCreateAdditionalWorkspace,
+	assertOrgSubscriptionIsPaidAfterAttach,
+	assertPaidPlanPendingForAdditionalOrg,
 	assertSeatCountForPlan,
 	assertUserOwnsOrganization,
 	countOwnedOrganizations,
 	getPersonalOrganizationId,
 	isPaidWorkspacePlan,
+	loadValidatedPendingBillingForCreate,
 	resolveIsPersonalForNewOrganization,
-	userCanCreateAdditionalWorkspaces,
 } from "./workspace";

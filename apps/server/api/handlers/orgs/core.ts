@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import type { PlanId } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
@@ -7,10 +8,12 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { writeAuditEvent } from "@/lib/domains/audit";
+import { reconcileNewWorkspacePendingFromDodo } from "@/lib/domains/billing";
 import {
 	type ActiveOrgContext,
-	assertCanCreateAdditionalWorkspace,
 	assertOrgPermission,
+	assertOrgSubscriptionIsPaidAfterAttach,
+	assertPaidPlanPendingForAdditionalOrg,
 	countOwnedOrganizations,
 	listOrgTemplatesCached,
 	listUserOrgsCached,
@@ -48,6 +51,7 @@ export const zOrgsCreateBody = z.object({
 	encryptionPublicKey: zHexString(),
 	wrappedOmkForCreator: zHexString(),
 	creatorWrapKemCiphertext: zHexString(),
+	pendingBillingId: z.uuid().optional(),
 });
 
 export async function orgsCreate(wallet: Address, body: unknown) {
@@ -57,11 +61,21 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 	}
 	const creator = getAddress(wallet);
 	const ownedBefore = await countOwnedOrganizations(creator);
-	await assertCanCreateAdditionalWorkspace(creator);
+	assertPaidPlanPendingForAdditionalOrg({
+		ownedCountBeforeCreate: ownedBefore,
+		pendingBillingId: parsed.data.pendingBillingId,
+	});
 	const isPersonal = resolveIsPersonalForNewOrganization(ownedBefore);
 	const slugBase = parsed.data.slug ?? slugifyOrgName(parsed.data.name);
 	const slug = `${slugBase}-${randomBytes(3).toString("hex")}`;
 	const linkedAt = new Date();
+
+	if (parsed.data.pendingBillingId) {
+		await reconcileNewWorkspacePendingFromDodo({
+			wallet: creator,
+			pendingBillingId: parsed.data.pendingBillingId,
+		});
+	}
 
 	const result = await tryCatch(
 		db.transaction(async (tx) => {
@@ -104,11 +118,36 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 			await attachPendingOrgBillingOnCreateWithTx(tx, {
 				creatorWallet: creator,
 				organizationId: org.id,
+				pendingBillingId: parsed.data.pendingBillingId,
+				isPersonalOrg: isPersonal,
 			});
 
-			await attachPartnerTrialOnOrgCreateWithTx(tx, {
-				creatorWallet: creator,
-				organizationId: org.id,
+			if (ownedBefore === 0) {
+				await attachPartnerTrialOnOrgCreateWithTx(tx, {
+					creatorWallet: creator,
+					organizationId: org.id,
+				});
+			}
+
+			const [orgSub] = await tx
+				.select({
+					planId: organizationSubscriptions.planId,
+					status: organizationSubscriptions.status,
+					cancelAtPeriodEnd: organizationSubscriptions.cancelAtPeriodEnd,
+					periodEnd: organizationSubscriptions.periodEnd,
+				})
+				.from(organizationSubscriptions)
+				.where(eq(organizationSubscriptions.organizationId, org.id))
+				.limit(1);
+
+			if (!orgSub) throwAppError("WORKSPACE.CREATE_FAILED");
+
+			assertOrgSubscriptionIsPaidAfterAttach({
+				ownedCountBeforeCreate: ownedBefore,
+				planId: orgSub.planId as PlanId,
+				status: orgSub.status,
+				cancelAtPeriodEnd: orgSub.cancelAtPeriodEnd,
+				periodEnd: orgSub.periodEnd,
 			});
 
 			const [creatorRow] = await tx
@@ -153,7 +192,12 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 }
 
 export async function orgsListMine(wallet: Address) {
-	return listUserOrgsCached(wallet);
+	const { organizations } = await listUserOrgsCached(wallet);
+	const ownedCount = organizations.filter((org) => org.role === "owner").length;
+	return {
+		organizations,
+		requiresPaidPlanToCreate: ownedCount >= 1,
+	};
 }
 
 export async function orgsGet(

@@ -159,6 +159,7 @@ export const platformAccessPending = t.pgTable(
 		planId: t.text({ enum: PLAN_IDS }).notNull(),
 		dodoSubscriptionId: t.text().unique(),
 		dodoCustomerId: t.text(),
+		dodoCheckoutSessionId: t.text(),
 		seatCount: t.integer().notNull().default(1),
 		billingInterval: t.text({ enum: ["monthly", "yearly"] }),
 		status: t

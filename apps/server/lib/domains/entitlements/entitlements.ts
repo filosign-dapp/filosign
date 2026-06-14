@@ -26,18 +26,11 @@ import {
 	defaultSerialize,
 } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
-import { userSubscriptions } from "@/lib/platform/db/schema/billing";
 import { files } from "@/lib/platform/db/schema/file";
 import { organizationSubscriptions } from "@/lib/platform/db/schema/organization";
 
 export type FetchEntitlementContextArgs = {
 	organizationId?: string | null;
-	/**
-	 * When resolving implicit personal org (no explicit orgId): fall back to
-	 * userSubscriptions if the personal org plan is free. Never applies to
-	 * explicit team/other workspace orgId.
-	 */
-	allowUserSubFallback?: boolean;
 };
 
 export function calendarMonthPeriod(now = new Date()): {
@@ -240,36 +233,10 @@ export async function fetchEntitlementContext(
 ): Promise<EntitlementContext> {
 	const walletNorm = getAddress(wallet);
 	const organizationId = args.organizationId?.trim() || null;
-	const allowUserSubFallback = args.allowUserSubFallback ?? false;
 	const { periodStart, periodEnd } = calendarMonthPeriod();
-	const [sub] = await db
-		.select({
-			planId: userSubscriptions.planId,
-			status: userSubscriptions.status,
-			cancelAtPeriodEnd: userSubscriptions.cancelAtPeriodEnd,
-			periodEnd: userSubscriptions.periodEnd,
-			featureOverrides: userSubscriptions.featureOverrides,
-		})
-		.from(userSubscriptions)
-		.where(eq(userSubscriptions.walletAddress, walletNorm))
-		.limit(1);
 
-	const userAccessInput = sub
-		? {
-				planId: sub.planId as PlanId,
-				status: sub.status,
-				cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
-				periodEnd: sub.periodEnd,
-			}
-		: undefined;
-	const userPlanId = effectivePlanIdFromStatus(userAccessInput);
-	const userOverrides =
-		sub && userPlanId === (sub.planId as PlanId) && userPlanId !== "free"
-			? sub.featureOverrides
-			: undefined;
-
-	let planId: PlanId = userPlanId;
-	let overrides = userOverrides;
+	let planId: PlanId = DEFAULT_PLAN_ID;
+	let overrides: EntitlementContext["overrides"];
 	let subject: EntitlementContext["subject"] = {
 		type: "user",
 		wallet: walletNorm,
@@ -306,11 +273,6 @@ export async function fetchEntitlementContext(
 
 		planId = orgPlanId;
 		overrides = orgOverrides;
-
-		if (allowUserSubFallback && orgPlanId === "free" && userPlanId !== "free") {
-			planId = userPlanId;
-			overrides = userOverrides;
-		}
 
 		if (
 			planId === "teams" ||
@@ -381,9 +343,6 @@ export async function resolveEntitlementContext(
 			fetch: () =>
 				fetchEntitlementContext(wallet, {
 					organizationId: resolvedOrgId,
-					// Legacy userSubscriptions trial when personal org row is still free.
-					allowUserSubFallback:
-						!explicitOrgId && resolvedOrgId === personalOrgId,
 				}),
 			serialize: serializeEntitlementContext,
 			deserialize: deserializeEntitlementContext,

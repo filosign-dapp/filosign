@@ -16,8 +16,30 @@ function resolveContainers(): ProdContext["containers"] {
 }
 
 export const STANZA = "filosign";
-export const PG_USER = "filosign";
-export const PG_DB = "filosign";
+
+const DEFAULT_PG_USER = "filosign";
+const DEFAULT_PG_DB = "filosign-prod";
+
+function envValue(...keys: string[]): string | undefined {
+	for (const key of keys) {
+		const value = process.env[key]?.trim();
+		if (value) return value;
+	}
+	return undefined;
+}
+
+/** Match Infisical `DB_NAME` / Dokploy `POSTGRES_DB` for remote psql probes. */
+export function resolveProdPgUser(): string {
+	return (
+		envValue("PROD_PG_USER", "POSTGRES_USER", "PG_USER") ?? DEFAULT_PG_USER
+	);
+}
+
+export function resolveProdPgDb(): string {
+	return (
+		envValue("PROD_PG_DB", "DB_NAME", "POSTGRES_DB", "PG_DB") ?? DEFAULT_PG_DB
+	);
+}
 
 function loadDeployEnv(root: string): void {
 	const envPath = path.join(root, "deploy/.env");
@@ -43,12 +65,15 @@ export function createProdContext(
 	const verbose = opts?.verbose ?? true;
 	const log = opts?.log ?? createProdLog(verbose);
 
+	const pgUser = resolveProdPgUser();
+	const pgDb = resolveProdPgDb();
+
 	return {
 		root,
 		ssh,
 		stanza: STANZA,
-		pgUser: PG_USER,
-		pgDb: PG_DB,
+		pgUser,
+		pgDb,
 		verbose,
 		log,
 		containers: resolveContainers(),

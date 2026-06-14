@@ -23,10 +23,8 @@ export function AnalyticsConsentBanner({
 		>
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<p className="text-xs leading-relaxed text-muted-foreground">
-					Filosign uses optional product analytics (PostHog) to improve
-					workflows. We do not sell personal data or use document contents for
-					analytics. Essential cookies and storage for sign-in and security are
-					always on. See our{" "}
+					Filosign uses optional product analytics to improve workflows. We do
+					not sell personal data or use document contents for analytics. See our{" "}
 					<a
 						href={privacyUrl}
 						target="_blank"
@@ -39,10 +37,10 @@ export function AnalyticsConsentBanner({
 				</p>
 				<div className="flex shrink-0 gap-2">
 					<Button type="button" variant="outline" size="sm" onClick={onDecline}>
-						Reject analytics
+						Reject Non-Essential
 					</Button>
-					<Button type="button" variant="outline" size="sm" onClick={onAccept}>
-						Allow analytics
+					<Button type="button" variant="primary" size="sm" onClick={onAccept}>
+						Accept All
 					</Button>
 				</div>
 			</div>

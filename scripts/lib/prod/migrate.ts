@@ -28,6 +28,10 @@ export async function migrateProd(
 	log.section("Drizzle migrate - production");
 	log.info(`ssh: ${ctx.ssh}`);
 	log.info(`postgres container: ${ctx.containers.postgres}`);
+	log.info(`postgres database: ${ctx.pgDb} (user ${ctx.pgUser})`);
+	log.detail(
+		"Set PROD_PG_DB in deploy/.env to match Infisical DB_NAME when not filosign",
+	);
 	log.detail(`server dir: ${server}`);
 
 	let journal: ReturnType<typeof readMigrationJournal>;

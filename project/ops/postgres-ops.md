@@ -18,29 +18,63 @@ App containers use `postgres` as DB host on Docker DNS. Your Mac cannot resolve 
 
 Schema history is a **single squashed migration**: [`apps/server/drizzle/0000_initial.sql`](../../apps/server/drizzle/0000_initial.sql). Future changes: `bun run --cwd apps/server db:generate` → commit → migrate.
 
-### First prod apply (or after squash reset)
+### Wipe production DB (pre-production only)
 
-Pre-production only - wipes app data. Take a pgBackRest backup first.
+**Deletes all app data** (users, files, settlements, etc.). R2 blobs and on-chain state are not cleared. Take a pgBackRest backup first when you might need to recover.
 
-If prod was ever migrated with the old multi-file history (or `push`), Drizzle’s journal no longer matches. **Reset the public schema**, then migrate:
+**Laptop `deploy/.env`:** `FILOSIGN_PROD_SSH`, container names from `docker ps` (see [`deploy/.env.example`](../../deploy/.env.example)), and **`PROD_PG_DB=filosign-prod`** (must match Infisical `DB_NAME`).
+
+1. **Stop app** (keep Postgres running):
 
 ```bash
-# SSH to VPS (or bun run prod -- --pg for tunnel + psql)
-docker exec -it filosign-postgres psql -U filosign -d filosign -c "
+docker stop "$CONTAINER_API" "$CONTAINER_WORKER"
+# e.g. filosign-prodapp-dfj8yb-api-1 filosign-prodapp-dfj8yb-worker-1
+```
+
+2. **Drop both schemas** on the VPS (`public` = app tables; `drizzle` = migration journal). Dropping only `public` leaves stale migration rows and `bun run prod -- --migrate` will skip creating tables.
+
+```bash
+docker exec -it "$CONTAINER_POSTGRES" psql -U filosign -d filosign-prod -c "
   DROP SCHEMA public CASCADE;
+  DROP SCHEMA IF EXISTS drizzle CASCADE;
   CREATE SCHEMA public;
   GRANT ALL ON SCHEMA public TO filosign;
   GRANT ALL ON SCHEMA public TO public;
 "
 ```
 
-Then from laptop:
+3. **Migrate from laptop** (before starting api/worker):
 
 ```bash
 bun run prod -- --migrate
 ```
 
-Verify: `head_snapshot_digest` exists on `envelope_drafts` and `drizzle.__drizzle_migrations` has one row (`0000_initial`).
+4. **Verify on VPS:**
+
+```bash
+docker exec "$CONTAINER_POSTGRES" psql -U filosign -d filosign-prod -c \
+  "SELECT to_regclass('public.job_outbox'); SELECT count(*) FROM drizzle.__drizzle_migrations;"
+```
+
+Expect `job_outbox` present and migration count matching [`apps/server/drizzle/meta/_journal.json`](../../apps/server/drizzle/meta/_journal.json).
+
+5. **Clear BullMQ cache** (recommended):
+
+```bash
+docker exec "$CONTAINER_DRAGONFLY" redis-cli FLUSHALL
+```
+
+6. **Start app:**
+
+```bash
+docker start "$CONTAINER_API" "$CONTAINER_WORKER"
+```
+
+Also use this flow after squash reset or when Drizzle’s journal no longer matches applied migrations.
+
+### First prod apply (or after squash reset)
+
+Same as **Wipe production DB** above when the database is empty or corrupt. Legacy stacks may use database name `filosign` instead of `filosign-prod`; set `PROD_PG_DB` accordingly.
 
 ### Routine migrate (after first apply)
 

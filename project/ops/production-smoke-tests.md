@@ -182,7 +182,7 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 
 ## GDPR migration preflight + rollout
 
-Run these checks before the **first** `bun run prod -- --migrate` on a database (squashed schema in `apps/server/drizzle/0000_initial.sql`). See [postgres-ops.md](postgres-ops.md) if prod still has a partial old schema - reset public schema first.
+Run these checks before the **first** `bun run prod -- --migrate` on a database (squashed schema in `apps/server/drizzle/0000_initial.sql`). See [postgres-ops.md](postgres-ops.md#wipe-production-db-pre-production-only) if prod still has a partial old schema - drop **both** `public` and `drizzle` schemas first.
 
 ### Preflight SQL checks
 

@@ -193,11 +193,28 @@
 	--radius-4xl: calc(var(--radius) * 2.6);
 
 	--animate-shimmer: shimmer 1.5s ease-in-out infinite;
+	--animate-text-shimmer: text-shimmer 2.4s ease-in-out infinite;
+	--animate-send-spinner-rotate: send-spinner-rotate 5.6s linear infinite;
 }
 
 @keyframes shimmer {
 	to {
 		transform: translateX(100%);
+	}
+}
+
+@keyframes text-shimmer {
+	0% {
+		background-position: 100% center;
+	}
+	100% {
+		background-position: -100% center;
+	}
+}
+
+@keyframes send-spinner-rotate {
+	to {
+		transform: rotate(360deg);
 	}
 }
 

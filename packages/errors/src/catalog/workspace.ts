@@ -294,6 +294,18 @@ export const workspaceErrors = {
 		severity: "warning",
 		defaultOrpcCode: "FORBIDDEN",
 	},
+	"WORKSPACE.PAID_PLAN_REQUIRED": {
+		title: "Paid plan required for new workspace",
+		description:
+			"Additional workspaces need their own Solo, Teams, or Teams Pro subscription before they can be created.",
+		steps: [
+			"Choose a plan and complete checkout for the new workspace.",
+			"Return to the app and enter a name to finish creating the workspace.",
+		],
+		audience: "user",
+		severity: "warning",
+		defaultOrpcCode: "FORBIDDEN",
+	},
 	"WORKSPACE.PLATFORM_ACCESS_REQUEST_NOT_FOUND": {
 		title: "Access request not found",
 		description: "The platform access request could not be located.",

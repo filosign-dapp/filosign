@@ -2,30 +2,6 @@ import { z } from "zod";
 import type { ErrorDefinition } from "../types";
 
 export const billingErrors = {
-	"BILLING.PERSONAL_BILLING_DISABLED": {
-		title: "Billing per workspace",
-		description:
-			"Personal and team subscriptions are managed per workspace. Open Workspace Settings to manage billing.",
-		steps: [
-			"Switch to an organization workspace context in the sidebar.",
-			"Navigate to Workspace Settings -> Billing & Plans.",
-		],
-		audience: "user",
-		severity: "warning",
-		defaultOrpcCode: "BAD_REQUEST",
-	},
-	"BILLING.PERSONAL_PORTAL_DISABLED": {
-		title: "Billing portal restricted",
-		description:
-			"Manage billing from Workspace Settings. Personal and team plans are billed per workspace.",
-		steps: [
-			"Navigate to Workspace Settings -> Billing & Plans.",
-			"Launch the billing portal from there.",
-		],
-		audience: "user",
-		severity: "warning",
-		defaultOrpcCode: "BAD_REQUEST",
-	},
 	"BILLING.INVALID_CHECKOUT_LINK": {
 		title: "Invalid checkout link",
 		description:

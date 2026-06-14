@@ -3,16 +3,16 @@ import { ChartLineUpIcon } from "@phosphor-icons/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import env from "@/src/env";
-import { useAnalyticsConsent } from "@/src/lib/analytics/consent-context";
-import { clearPostHogClientStorage } from "@/src/lib/analytics/consent-storage";
-import {
-	ANALYTICS_PRIVACY_POLICY_VERSION,
-	analyticsPrivacyPolicyUrl,
-} from "@/src/lib/analytics/policy";
-import { recordAnalyticsConsentOnServer } from "@/src/lib/analytics/record-consent";
 import { Switch } from "@/src/lib/components/ui/switch";
 import { clientAnalyticsConsentRequired } from "@/src/lib/deployment";
 import { showAppErrorToast } from "@/src/lib/errors";
+import { useAnalyticsConsent } from "@/src/lib/privacy-consent/consent-context";
+import { clearPostHogClientStorage } from "@/src/lib/privacy-consent/consent-storage";
+import {
+	ANALYTICS_PRIVACY_POLICY_VERSION,
+	analyticsPrivacyPolicyUrl,
+} from "@/src/lib/privacy-consent/policy";
+import { recordAnalyticsConsentOnServer } from "@/src/lib/privacy-consent/record-consent";
 import { safeAsync } from "@/src/lib/utils/safe";
 import { ProfileSection } from "./profile-section";
 

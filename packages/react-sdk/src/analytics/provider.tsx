@@ -49,7 +49,6 @@ export function FilosignAnalyticsProvider({
 			options={{
 				api_host: apiHost,
 				autocapture: false,
-				// Error tracking: separate from click autocapture (PostHog `capture_exceptions`).
 				capture_exceptions: true,
 				capture_pageview: false,
 				capture_pageleave: false,

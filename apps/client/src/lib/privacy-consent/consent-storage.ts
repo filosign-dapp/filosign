@@ -5,24 +5,48 @@ export const ANALYTICS_CONSENT_CHANGED_EVENT =
 
 export type LocalAnalyticsConsent = "accepted" | "declined";
 
+function safeLocalStorage(): Storage | null {
+	try {
+		return window.localStorage;
+	} catch {
+		return null;
+	}
+}
+
 export function readStoredAnalyticsConsent(): LocalAnalyticsConsent | null {
-	if (typeof window === "undefined") return null;
-	const value = window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY);
-	return value === "accepted" || value === "declined" ? value : null;
+	const storage = safeLocalStorage();
+	if (!storage) return null;
+	try {
+		const value = storage.getItem(ANALYTICS_CONSENT_STORAGE_KEY);
+		return value === "accepted" || value === "declined" ? value : null;
+	} catch {
+		return null;
+	}
 }
 
 export function writeStoredAnalyticsConsent(next: LocalAnalyticsConsent): void {
-	window.localStorage.setItem(ANALYTICS_CONSENT_STORAGE_KEY, next);
-	window.dispatchEvent(new CustomEvent(ANALYTICS_CONSENT_CHANGED_EVENT));
+	const storage = safeLocalStorage();
+	if (!storage) return;
+	try {
+		storage.setItem(ANALYTICS_CONSENT_STORAGE_KEY, next);
+		window.dispatchEvent(new CustomEvent(ANALYTICS_CONSENT_CHANGED_EVENT));
+	} catch {
+		// Storage blocked — consent UI still works for the session via React state.
+	}
 }
 
 /** Best-effort cleanup when user withdraws analytics consent. */
 export function clearPostHogClientStorage(): void {
-	if (typeof window === "undefined") return;
-	for (const key of Object.keys(window.localStorage)) {
-		if (key.startsWith("ph_")) {
-			window.localStorage.removeItem(key);
+	const storage = safeLocalStorage();
+	if (!storage) return;
+	try {
+		for (const key of Object.keys(storage)) {
+			if (key.startsWith("ph_")) {
+				storage.removeItem(key);
+			}
 		}
+	} catch {
+		// noop
 	}
 }
 

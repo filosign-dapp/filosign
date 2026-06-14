@@ -5,17 +5,17 @@ import { RouterProvider } from "@tanstack/react-router";
 import { type ReactNode, StrictMode } from "react";
 import { Toaster } from "sonner";
 import env from "@/src/env";
-import { AnalyticsConsentCoordinator } from "@/src/lib/analytics/analytics-consent-coordinator";
-import {
-	AnalyticsConsentProvider,
-	useAnalyticsConsent,
-} from "@/src/lib/analytics/consent-context";
 import { ErrorBoundary } from "@/src/lib/components/app/errors/error-boundary";
 import { HydrationLifecycleTracer } from "@/src/lib/components/app/hydration-lifecycle-tracer";
 import { ThemeProvider } from "@/src/lib/components/ui/theme-provider";
 import { clientAnalyticsConsentRequired } from "@/src/lib/deployment";
 import { FilosignProvider } from "@/src/lib/filosign/filosign-provider";
 import { QueryClientProvider } from "@/src/lib/filosign/query-client";
+import {
+	AnalyticsConsentProvider,
+	useAnalyticsConsent,
+} from "@/src/lib/privacy-consent/consent-context";
+import { PrivacyConsentCoordinator } from "@/src/lib/privacy-consent/consent-coordinator";
 import { Web3Provider } from "@/src/lib/web3/providers";
 import router from "@/src/router";
 
@@ -44,7 +44,7 @@ function AppAnalyticsShell({ children }: { children?: ReactNode }) {
 						}}
 					>
 						<HydrationLifecycleTracer />
-						<AnalyticsConsentCoordinator
+						<PrivacyConsentCoordinator
 							consentRequired={consentRequired}
 							posthogEnabled={posthogEnabled}
 						/>

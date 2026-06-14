@@ -2,7 +2,7 @@ import { useFilosignContext } from "@filosign/react";
 import { useIsLoggedIn } from "@filosign/react/auth";
 import { useCallback, useEffect, useRef } from "react";
 import { safeAsync } from "@/src/lib/utils/safe";
-import { AnalyticsConsentBanner } from "./analytics-consent-banner";
+import { AnalyticsConsentBanner } from "./consent-banner";
 import {
 	applyServerAnalyticsConsent,
 	useAnalyticsConsent,
@@ -14,7 +14,7 @@ import {
 } from "./consent-storage";
 import { recordAnalyticsConsentOnServer } from "./record-consent";
 
-export function AnalyticsConsentCoordinator({
+export function PrivacyConsentCoordinator({
 	consentRequired,
 	posthogEnabled,
 }: {

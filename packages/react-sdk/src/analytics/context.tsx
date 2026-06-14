@@ -76,11 +76,15 @@ export function usePostHogAnalyticsBridge(): AnalyticsContextValue {
 
 	const capture = useCallback<CaptureFn>(
 		(event, properties) => {
-			const pieceCid = properties?.[PIECE_CID_PROPERTY];
-			if (typeof pieceCid === "string" && pieceCid.trim()) {
-				posthog.group(POSTHOG_ENVELOPE_GROUP, pieceCid.trim());
+			try {
+				const pieceCid = properties?.[PIECE_CID_PROPERTY];
+				if (typeof pieceCid === "string" && pieceCid.trim()) {
+					posthog.group(POSTHOG_ENVELOPE_GROUP, pieceCid.trim());
+				}
+				posthog.capture(event, properties);
+			} catch {
+				// PostHog blocked or unavailable.
 			}
-			posthog.capture(event, properties);
 		},
 		[posthog],
 	);
@@ -88,17 +92,25 @@ export function usePostHogAnalyticsBridge(): AnalyticsContextValue {
 	const identify = useCallback<IdentifyFn>(
 		(wallet) => {
 			if (!wallet) return;
-			posthog.identify(wallet.toLowerCase());
+			try {
+				posthog.identify(wallet.toLowerCase());
+			} catch {
+				// noop
+			}
 		},
 		[posthog],
 	);
 
 	const captureException = useCallback<CaptureExceptionFn>(
 		(error, properties) => {
-			const scrubbed = properties
-				? scrubAnalyticsProperties(properties)
-				: undefined;
-			posthog.captureException(error, scrubbed);
+			try {
+				const scrubbed = properties
+					? scrubAnalyticsProperties(properties)
+					: undefined;
+				posthog.captureException(error, scrubbed);
+			} catch {
+				// noop
+			}
 		},
 		[posthog],
 	);

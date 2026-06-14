@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	localChoiceToServer,
 	serverChoiceToLocal,
-} from "@/src/lib/analytics/consent-storage";
+} from "@/src/lib/privacy-consent/consent-storage";
 
 describe("analytics consent storage mapping", () => {
 	test("maps server choices to local storage values", () => {

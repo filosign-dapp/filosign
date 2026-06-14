@@ -14,6 +14,7 @@ export const FEATURE_DIALOG_IMAGES = {
 	upgradePlanDialogSupplementaryAttachmentsLimit: "/images/ww/stock_18.webp",
 	postSendEnvelopeSentDialog: "/images/ww/stock_24.webp",
 	coldShareAccessDialog: "/images/ww/stock_24.webp",
+	feedbackDialog: "/images/stock_10.webp",
 } as const;
 
 export type FeatureDialogImageKey = keyof typeof FEATURE_DIALOG_IMAGES;

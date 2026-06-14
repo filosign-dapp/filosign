@@ -11,7 +11,8 @@ import type { FieldCompletionMap, PlacementField } from "@filosign/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/types";
 import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
@@ -24,6 +25,9 @@ export function useSignActions(options: {
 		| {
 				kemCiphertext?: string | null;
 				encryptedEncryptionKey?: string | null;
+				participantAccess?: {
+					acknowledged?: boolean;
+				} | null;
 		  }
 		| undefined;
 	user: { wallet?: { address?: string } } | null | undefined;
@@ -35,6 +39,8 @@ export function useSignActions(options: {
 		completions: FieldCompletionMap;
 		completedFieldIds: string[];
 	}>;
+	isSender?: boolean;
+	senderHasAssignedFields?: boolean;
 }) {
 	const {
 		pieceCid,
@@ -45,6 +51,8 @@ export function useSignActions(options: {
 		completedFieldIds,
 		fieldCompletions,
 		prepareForSign,
+		isSender = false,
+		senderHasAssignedFields = false,
 	} = options;
 
 	const navigate = useNavigate();
@@ -81,6 +89,20 @@ export function useSignActions(options: {
 		}) => {
 			if (!pieceCid) return;
 
+			if (
+				isSender &&
+				senderHasAssignedFields &&
+				!file?.participantAccess?.acknowledged
+			) {
+				const [, ackErr] = await safeAsync(() =>
+					acknowledgeFile.mutateAsync({ pieceCid }),
+				);
+				if (ackErr) {
+					showAppErrorToast(ackErr);
+					return;
+				}
+			}
+
 			let nextCompletions = fieldCompletions;
 			let nextCompletedFieldIds = completedFieldIds;
 
@@ -114,7 +136,9 @@ export function useSignActions(options: {
 				return;
 			}
 			if (!requiredOk || !hasLeaf) {
-				toast.error("Complete all required fields before signing.");
+				toastUser.error(TOASTS.sign.completeRequiredFields.title, {
+					hint: TOASTS.sign.completeRequiredFields.hint,
+				});
 				return;
 			}
 
@@ -143,6 +167,10 @@ export function useSignActions(options: {
 		},
 		[
 			pieceCid,
+			isSender,
+			senderHasAssignedFields,
+			file?.participantAccess?.acknowledged,
+			acknowledgeFile,
 			canSubmitPlacementSign,
 			myPlacementFields,
 			completedFieldIds,

@@ -1,3 +1,4 @@
+import { throwAppError } from "@filosign/errors/server";
 import type { PlacementManifest } from "@filosign/shared";
 import { zPlacementManifest } from "@filosign/shared";
 import { eq, sql } from "drizzle-orm";
@@ -146,14 +147,14 @@ export async function loadComplianceContext(args: {
 		.where(eq(files.pieceCid, pieceCid));
 
 	if (!fileRecord) {
-		throw new Error("File not found");
+		throwAppError("FILES.NOT_FOUND");
 	}
 
 	const manifestParsed = zPlacementManifest.safeParse(
 		fileRecord.placementManifestJson,
 	);
 	if (!manifestParsed.success) {
-		throw new Error("Invalid placement manifest on file record");
+		throwAppError("FILES.INVALID_PLACEMENT_MANIFEST");
 	}
 	const manifest = manifestParsed.data;
 

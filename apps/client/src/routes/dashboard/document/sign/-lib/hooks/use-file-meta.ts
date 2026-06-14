@@ -91,6 +91,7 @@ export function useSignSigningMeta(
 		signedTxExplorerUrl,
 		explorerLabel,
 		isSender,
+		senderHasAssignedFields,
 		canSign,
 	};
 }

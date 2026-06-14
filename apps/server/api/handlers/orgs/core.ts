@@ -78,7 +78,7 @@ export async function orgsCreate(wallet: Address, body: unknown) {
 				})
 				.returning();
 
-			if (!org) throw new Error("Failed to create organization");
+			if (!org) throwAppError("WORKSPACE.CREATE_FAILED");
 
 			await tx.insert(organizationMembers).values({
 				organizationId: org.id,

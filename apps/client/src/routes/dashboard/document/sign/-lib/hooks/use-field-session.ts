@@ -15,7 +15,8 @@ import {
 	fieldHasCompletionValue,
 } from "@filosign/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
 import { buildCheckboxCompletion } from "../utils/field-completion-builders";
 import { useFieldDraftSync } from "./use-field-draft-sync";
@@ -275,7 +276,9 @@ export function useSignFieldSession(options: {
 				const completion = await resolveFieldCompletion(field);
 				if (!completion) {
 					if (field.type === "signature" || field.type === "initial") {
-						toast.error("Could not apply your signature. Try again.");
+						toastUser.error(TOASTS.sign.signatureApplyFailed.title, {
+							hint: TOASTS.sign.signatureApplyFailed.hint,
+						});
 					}
 					return;
 				}

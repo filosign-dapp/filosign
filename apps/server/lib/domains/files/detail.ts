@@ -1,7 +1,6 @@
 import { check } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
 import { zEnvelopeMetadata, zPlacementManifest } from "@filosign/shared";
-import { ORPCError } from "@orpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -391,11 +390,8 @@ export async function pieceComplianceBundle(args: {
 		}),
 	);
 	if (bundleRes.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
-			message:
-				bundleRes.error instanceof Error
-					? bundleRes.error.message
-					: "Compliance bundle failed",
+		throwAppError("FILES.COMPLIANCE_EXPORT_FAILED", {
+			cause: bundleRes.error,
 		});
 	}
 	const bundleResult = bundleRes.data;
@@ -414,8 +410,8 @@ export async function pieceComplianceBundle(args: {
 		}),
 	);
 	if (logRes.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
-			message: "Failed to log compliance export",
+		throwAppError("FILES.COMPLIANCE_EXPORT_FAILED", {
+			cause: logRes.error,
 		});
 	}
 	const logResult = logRes.data;

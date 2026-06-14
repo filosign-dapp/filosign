@@ -78,6 +78,8 @@ export function useSignDocumentController() {
 		completedFieldIds: fieldSession.completedFieldIds,
 		fieldCompletions: fieldSession.fieldCompletions,
 		prepareForSign: fieldSession.prepareForSign,
+		isSender: signingMeta.isSender,
+		senderHasAssignedFields: signingMeta.senderHasAssignedFields,
 	});
 
 	return {

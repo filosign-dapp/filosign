@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { throwAppError } from "@filosign/errors/server";
 import { type Address, getAddress } from "viem";
 import env from "@/env";
 import {
@@ -72,7 +73,7 @@ async function fetchUserStatus(authToken: string): Promise<UserStatusResponse> {
 	});
 	if (!res.ok) {
 		const body = await res.text().catch(() => "Unknown error");
-		throw new Error(`Thirdweb auth verification failed: ${body}`);
+		throwAppError("USERS.THIRDWEB_SYNC_FAILED", { cause: body });
 	}
 	return (await res.json()) as UserStatusResponse;
 }
@@ -94,17 +95,13 @@ export async function verifyThirdwebAuthTokenWithWallet(
 			(addr) => getAddress(addr).toLowerCase() === normalizedExpected,
 		);
 		if (!match) {
-			throw new Error(
-				`Wallet address mismatch: thirdweb token wallets do not include expected ${expectedWalletAddress}`,
-			);
+			throwAppError("AUTH.UNAUTHORIZED");
 		}
 	}
 
 	const email = canonicalEmailFromLinkedAccounts(status.linkedAccounts);
 	if (!email) {
-		throw new Error(
-			"Email is required for registration. Please log in with email or Google.",
-		);
+		throwAppError("USERS.EMAIL_REQUIRED");
 	}
 
 	const walletAddress =
@@ -179,7 +176,7 @@ export async function verifyThirdwebSession(
 	const cached = await getCachedSession(authToken);
 	if (cached) {
 		if (getAddress(cached.wallet) !== wallet) {
-			throw new Error("Wallet mismatch");
+			throwAppError("AUTH.UNAUTHORIZED");
 		}
 		return cached;
 	}

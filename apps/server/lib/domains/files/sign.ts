@@ -1,7 +1,6 @@
 import { throwAppError } from "@filosign/errors/server";
 import { zFieldCompletionInputMap, zPlacementManifest } from "@filosign/shared";
 import { zHexString } from "@filosign/shared/zod";
-import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -109,9 +108,7 @@ export async function pieceSign(args: {
 		fileRecord.placementManifestJson,
 	);
 	if (!manifestParsed.success) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
-			message: "File placement manifest missing or invalid",
-		});
+		throwAppError("FILES.INVALID_PLACEMENT_MANIFEST");
 	}
 
 	const userWalletNorm = getAddress(args.userWallet);

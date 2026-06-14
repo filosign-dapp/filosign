@@ -1,4 +1,5 @@
 export * from "./activation";
+export * from "./feedback";
 export * from "./utils/attachment";
 export * from "./utils/attachment-packet-validation";
 export * from "./utils/compliance";

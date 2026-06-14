@@ -43,6 +43,13 @@
       "when": 1781352522769,
       "tag": "0005_platform_invite_email_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781403030604,
+      "tag": "0006_crazy_black_bird",
+      "breakpoints": true
     }
   ]
 }

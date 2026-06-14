@@ -3,6 +3,7 @@ import * as attachmentPackets from "./attachment-packets";
 import * as audit from "./audit";
 import * as billing from "./billing";
 import * as drafts from "./drafts";
+import * as feedback from "./feedback";
 import * as file from "./file";
 import * as foc from "./foc";
 import * as jobOutbox from "./job-outbox";
@@ -20,6 +21,7 @@ const schema = {
 	...audit,
 	...file,
 	...foc,
+	...feedback,
 	...attachmentPackets,
 	...settlementAccess,
 	...settlements,
@@ -37,6 +39,7 @@ export * from "./attachment-packets";
 export * from "./audit";
 export * from "./billing";
 export * from "./drafts";
+export * from "./feedback";
 export * from "./file";
 export * from "./foc";
 export * from "./job-outbox";

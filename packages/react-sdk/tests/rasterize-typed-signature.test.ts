@@ -13,24 +13,24 @@ describe("resolveSignatureRasterPixelRatio", () => {
 });
 
 describe("canvasToPngBytes", () => {
-	test("rejects invalid data URLs from empty canvas export", () => {
+	test("rejects invalid data URLs from empty canvas export", async () => {
 		const canvas = {
 			toDataURL: () => "not-a-data-url",
 		} as unknown as HTMLCanvasElement;
 
-		expect(() => canvasToPngBytes(canvas)).toThrow(
-			"Failed to export signature PNG",
-		);
+		await expect(canvasToPngBytes(canvas)).rejects.toThrow("Invalid data URL");
 	});
 
-	test("decodes base64 PNG data URLs", () => {
+	test("decodes base64 PNG data URLs", async () => {
 		const pngBytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
 		const base64 = btoa(String.fromCharCode(...pngBytes));
 		const canvas = {
 			toDataURL: () => `data:image/png;base64,${base64}`,
 		} as unknown as HTMLCanvasElement;
 
-		expect(Array.from(canvasToPngBytes(canvas))).toEqual(Array.from(pngBytes));
+		expect(Array.from(await canvasToPngBytes(canvas))).toEqual(
+			Array.from(pngBytes),
+		);
 	});
 });
 

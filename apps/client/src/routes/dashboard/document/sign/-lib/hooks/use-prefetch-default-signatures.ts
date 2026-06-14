@@ -1,10 +1,8 @@
 import { useFilosignContext } from "@filosign/react";
-import {
-	invalidateActivationProgress,
-	invalidateUserProfile,
-} from "@filosign/react/invalidate-queries";
+import { invalidateSignatureLibrary } from "@filosign/react/invalidate-queries";
 import {
 	prefetchDefaultTypedSignatures,
+	toSignaturePrefetchProfile,
 	useUserProfile,
 	useUserSignatures,
 } from "@filosign/react/users";
@@ -38,26 +36,13 @@ export function usePrefetchDefaultSignatures(options?: { enabled?: boolean }) {
 		void (async () => {
 			const { ensuredRoles } = await prefetchDefaultTypedSignatures({
 				rpcQuery,
-				profile: {
-					firstName: profile.firstName,
-					lastName: profile.lastName,
-					email: profile.email,
-					username: profile.username,
-					defaultSignatureId: profile.defaultSignatureId,
-					defaultInitialId: profile.defaultInitialId,
-				},
+				profile: toSignaturePrefetchProfile(profile),
 				signatures,
 			});
 
 			if (ensuredRoles.length === 0) return;
 
-			await Promise.all([
-				queryClient.invalidateQueries({
-					queryKey: rpcQuery.users.signatures.list.key(),
-				}),
-				invalidateUserProfile(queryClient, rpcQuery),
-				invalidateActivationProgress(queryClient, rpcQuery),
-			]);
+			await invalidateSignatureLibrary(queryClient, rpcQuery);
 		})();
 	}, [
 		enabled,

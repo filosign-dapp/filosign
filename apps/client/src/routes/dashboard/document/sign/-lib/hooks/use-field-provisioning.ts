@@ -1,10 +1,8 @@
 import { useFilosignContext } from "@filosign/react";
-import {
-	invalidateActivationProgress,
-	invalidateUserProfile,
-} from "@filosign/react/invalidate-queries";
+import { invalidateSignatureLibrary } from "@filosign/react/invalidate-queries";
 import {
 	ensureDefaultTypedSignatureArtifact,
+	toSignaturePrefetchProfile,
 	useUserProfile,
 	useUserSignatures,
 } from "@filosign/react/users";
@@ -41,13 +39,9 @@ export function useFieldProvisioning(options: {
 		profile?.defaultInitialId,
 	]);
 
-	const invalidateSignatureLibrary = useCallback(async () => {
+	const refreshSignatureLibrary = useCallback(async () => {
 		await Promise.all([
-			queryClient.invalidateQueries({
-				queryKey: rpcQuery.users.signatures.list.key(),
-			}),
-			invalidateUserProfile(queryClient, rpcQuery),
-			invalidateActivationProgress(queryClient, rpcQuery),
+			invalidateSignatureLibrary(queryClient, rpcQuery),
 			signDraftPieceCid
 				? queryClient.invalidateQueries({
 						queryKey: rpcQuery.files.piece.signDraftGet.queryKey({
@@ -85,14 +79,7 @@ export function useFieldProvisioning(options: {
 			try {
 				ensured = await ensureDefaultTypedSignatureArtifact({
 					rpcQuery,
-					profile: {
-						firstName: profile.firstName,
-						lastName: profile.lastName,
-						email: profile.email,
-						username: profile.username,
-						defaultSignatureId: profile.defaultSignatureId,
-						defaultInitialId: profile.defaultInitialId,
-					},
+					profile: toSignaturePrefetchProfile(profile),
 					role,
 					signatures: signaturesData?.signatures ?? [],
 				});
@@ -100,12 +87,12 @@ export function useFieldProvisioning(options: {
 				return null;
 			}
 
-			await invalidateSignatureLibrary();
+			await refreshSignatureLibrary();
 			return buildVisualCompletionFromArtifact(field, ensured);
 		},
 		[
 			defaultArtifacts,
-			invalidateSignatureLibrary,
+			refreshSignatureLibrary,
 			profile,
 			rpcQuery,
 			signaturesData?.signatures,

@@ -105,6 +105,20 @@ export function invalidateActivationProgress(
 	});
 }
 
+/** Signature library list, profile defaults, activation checklist. */
+export function invalidateSignatureLibrary(
+	queryClient: QueryClient,
+	rpcQuery: FilosignRpcQueryUtils,
+) {
+	return Promise.all([
+		queryClient.invalidateQueries({
+			queryKey: rpcQuery.users.signatures.list.key(),
+		}),
+		invalidateUserProfile(queryClient, rpcQuery),
+		invalidateActivationProgress(queryClient, rpcQuery),
+	]);
+}
+
 /** All org-domain queries (listMine, members, invites, …). */
 export function invalidateOrgsQueries(
 	queryClient: QueryClient,

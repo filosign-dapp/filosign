@@ -1,9 +1,10 @@
-import type { UserSignatureRole } from "@filosign/shared";
+import { dataUrlToBytes } from "./upload-user-signature";
 import {
 	fitSignatureRasterFontSize,
 	getSignatureFontRasterSpec,
 	measureCanvasTextBox,
 	SIGNATURE_RASTER_INK,
+	type UserSignatureRole,
 } from "@filosign/shared";
 
 /** Physical pixels per logical raster unit (sharp PDF + retina previews). */
@@ -135,24 +136,10 @@ export function trimCanvasToTextBounds(args: {
 }
 
 /** Safari-safe PNG export (toBlob callbacks can hang on WebKit). */
-export function canvasToPngBytes(canvas: HTMLCanvasElement): Uint8Array {
-	const dataUrl = canvas.toDataURL("image/png");
-	const commaIndex = dataUrl.indexOf(",");
-	if (commaIndex === -1 || !dataUrl.startsWith("data:")) {
-		throw new Error("Failed to export signature PNG");
-	}
-
-	const meta = dataUrl.slice("data:".length, commaIndex);
-	if (!meta.includes(";base64")) {
-		throw new Error("Failed to export signature PNG");
-	}
-
-	const payload = dataUrl.slice(commaIndex + 1);
-	const binary = atob(payload);
-	const bytes = new Uint8Array(binary.length);
-	for (let i = 0; i < binary.length; i++) {
-		bytes[i] = binary.charCodeAt(i);
-	}
+export async function canvasToPngBytes(
+	canvas: HTMLCanvasElement,
+): Promise<Uint8Array> {
+	const { bytes } = await dataUrlToBytes(canvas.toDataURL("image/png"));
 	return bytes;
 }
 
@@ -216,5 +203,5 @@ export async function rasterizeTypedSignature(args: {
 		boxHeight: dimensions.height,
 	});
 
-	return canvasToPngBytes(trimmed);
+	return await canvasToPngBytes(trimmed);
 }

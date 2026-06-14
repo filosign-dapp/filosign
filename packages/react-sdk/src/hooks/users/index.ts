@@ -13,6 +13,7 @@ export {
 	prefetchDefaultTypedSignatures,
 	type SignaturePrefetchProfile,
 	signatureRolesNeedingPrefetch,
+	toSignaturePrefetchProfile,
 } from "../../lib/prefetch-default-signatures";
 export { rasterizeTypedSignature } from "../../lib/rasterize-typed-signature";
 export {

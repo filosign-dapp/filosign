@@ -3,7 +3,7 @@ import {
 	CLIENT_ANALYTICS_EVENTS,
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
-import { invalidateUserProfile } from "@filosign/react/invalidate-queries";
+import { invalidateSignatureLibrary } from "@filosign/react/invalidate-queries";
 import {
 	useActiveOrgId,
 	useOrganizations,
@@ -11,8 +11,11 @@ import {
 } from "@filosign/react/orgs";
 import {
 	prefetchDefaultTypedSignatures,
+	toSignaturePrefetchProfile,
 	useUpdateUserProfile,
+	type UserProfile,
 } from "@filosign/react/users";
+import type { UserSignatureArtifact } from "@filosign/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -87,38 +90,32 @@ export function useOnboardingComplete() {
 				hasOnboarded: true,
 			});
 
-			await queryClient.refetchQueries({
-				queryKey: [
-					...rpcQuery.users.profile.me.key(),
-					wallet?.account.address ?? null,
-				],
-			});
+			const profileKey = [
+				...rpcQuery.users.profile.me.key(),
+				wallet?.account.address ?? null,
+			] as const;
+			const signaturesKey = rpcQuery.users.signatures.list.key();
+
+			await Promise.all([
+				queryClient.refetchQueries({ queryKey: profileKey }),
+				queryClient.refetchQueries({ queryKey: signaturesKey }),
+			]);
 
 			void (async () => {
 				try {
-					const [profile, signatureList] = await Promise.all([
-						rpcQuery.users.profile.me.call(),
-						rpcQuery.users.signatures.list.call(),
-					]);
+					const profile = queryClient.getQueryData<UserProfile>(profileKey);
+					const signatureList = queryClient.getQueryData<{
+						signatures?: UserSignatureArtifact[];
+					}>(signaturesKey);
+					if (!profile) return;
+
 					const { ensuredRoles } = await prefetchDefaultTypedSignatures({
 						rpcQuery,
-						profile: {
-							firstName: profile.firstName,
-							lastName: profile.lastName,
-							email: profile.email,
-							username: profile.username,
-							defaultSignatureId: profile.defaultSignatureId,
-							defaultInitialId: profile.defaultInitialId,
-						},
-						signatures: signatureList.signatures ?? [],
+						profile: toSignaturePrefetchProfile(profile),
+						signatures: signatureList?.signatures ?? [],
 					});
 					if (ensuredRoles.length === 0) return;
-					await Promise.all([
-						queryClient.invalidateQueries({
-							queryKey: rpcQuery.users.signatures.list.key(),
-						}),
-						invalidateUserProfile(queryClient, rpcQuery),
-					]);
+					await invalidateSignatureLibrary(queryClient, rpcQuery);
 				} catch {
 					// Non-blocking warmup before cold-sign navigation.
 				}

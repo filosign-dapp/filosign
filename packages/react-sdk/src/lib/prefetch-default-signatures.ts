@@ -17,6 +17,19 @@ export type SignaturePrefetchProfile = SignerProfileForTypedSignature & {
 	defaultInitialId?: string | null;
 };
 
+export function toSignaturePrefetchProfile(
+	profile: SignaturePrefetchProfile,
+): SignaturePrefetchProfile {
+	return {
+		firstName: profile.firstName,
+		lastName: profile.lastName,
+		email: profile.email,
+		username: profile.username,
+		defaultSignatureId: profile.defaultSignatureId,
+		defaultInitialId: profile.defaultInitialId,
+	};
+}
+
 export function signatureRolesNeedingPrefetch(
 	profile: SignaturePrefetchProfile,
 	signatures: UserSignatureArtifact[],

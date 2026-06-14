@@ -1,6 +1,7 @@
 import { PLAN_IDS } from "@filosign/entitlements";
 import {
 	zFeedbackFeatureArea,
+	zFeedbackKind,
 	zFeedbackPromptType,
 	zPlatformInviteEmailVariant,
 } from "@filosign/shared";
@@ -157,8 +158,8 @@ export const rpcPlatformAdminFeedbackRowSchema = z.object({
 	walletAddress: z.string(),
 	userEmail: z.string().nullable(),
 	featureArea: zFeedbackFeatureArea,
+	kind: zFeedbackKind,
 	route: z.string().nullable(),
-	rating: z.number().int().min(1).max(5).nullable(),
 	message: z.string().nullable(),
 	promptType: zFeedbackPromptType,
 	trigger: z.string().nullable(),

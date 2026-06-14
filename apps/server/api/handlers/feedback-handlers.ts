@@ -1,4 +1,8 @@
-import { zFeedbackFeatureArea, zFeedbackPromptType } from "@filosign/shared";
+import {
+	zFeedbackFeatureArea,
+	zFeedbackKind,
+	zFeedbackPromptType,
+} from "@filosign/shared";
 import type { Address } from "viem";
 import { z } from "zod";
 import type { zPlatformAdminFeedbackListInput } from "@/api/orpc/schemas/platform-admin-output";
@@ -14,9 +18,9 @@ export const zFeedbackSubmitOutput = z.object({
 });
 
 export const zFeedbackSubmitInput = z.object({
+	kind: zFeedbackKind.default("feedback"),
 	featureArea: zFeedbackFeatureArea,
 	route: z.string().max(500).nullable().optional(),
-	rating: z.number().int().min(1).max(5).nullable().optional(),
 	message: z
 		.string()
 		.trim()
@@ -50,9 +54,9 @@ export async function feedbackSubmit(
 	return submitProductFeedback({
 		walletAddress,
 		organizationId: input.organizationId ?? null,
+		kind: input.kind,
 		featureArea: input.featureArea,
 		route: input.route ?? null,
-		rating: input.rating ?? null,
 		message: input.message,
 		pieceCid: input.pieceCid ?? null,
 		promptType: input.promptType,

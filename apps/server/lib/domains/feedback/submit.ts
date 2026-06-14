@@ -1,4 +1,8 @@
-import type { FeedbackFeatureArea, FeedbackPromptType } from "@filosign/shared";
+import type {
+	FeedbackFeatureArea,
+	FeedbackKind,
+	FeedbackPromptType,
+} from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { and, eq, gte } from "drizzle-orm";
 import type { Address } from "viem";
@@ -11,9 +15,9 @@ const MAX_SUBMISSIONS_PER_HOUR = 10;
 export async function submitProductFeedback(args: {
 	walletAddress: Address;
 	organizationId: string | null;
+	kind: FeedbackKind;
 	featureArea: FeedbackFeatureArea;
 	route: string | null;
-	rating: number | null;
 	message: string;
 	pieceCid: string | null;
 	promptType: FeedbackPromptType;
@@ -50,23 +54,14 @@ export async function submitProductFeedback(args: {
 		});
 	}
 
-	if (
-		args.rating != null &&
-		(!Number.isInteger(args.rating) || args.rating < 1 || args.rating > 5)
-	) {
-		throw new ORPCError("BAD_REQUEST" /* error-audit-allow */, {
-			message: "Rating must be between 1 and 5.",
-		});
-	}
-
 	const submittedAt = new Date();
 
 	await db.insert(productFeedback).values({
 		walletAddress: args.walletAddress,
 		organizationId: args.organizationId,
+		kind: args.kind,
 		featureArea: args.featureArea,
 		route: args.route,
-		rating: args.rating,
 		message: trimmedMessage,
 		pieceCid: args.pieceCid,
 		promptType: args.promptType,
@@ -78,12 +73,14 @@ export async function submitProductFeedback(args: {
 
 	void notifyFeedbackSubmitted({
 		walletAddress: args.walletAddress,
+		organizationId: args.organizationId,
+		kind: args.kind,
 		featureArea: args.featureArea,
 		promptType: args.promptType,
-		rating: args.rating,
 		message: trimmedMessage,
 		route: args.route,
 		trigger: args.trigger,
+		pieceCid: args.pieceCid,
 	});
 
 	return { ok: true, submittedAt: submittedAt.toISOString() };

@@ -41,9 +41,9 @@ describe("submitProductFeedback", () => {
 		const result = await submitProductFeedback({
 			walletAddress: wallet,
 			organizationId: null,
+			kind: "feedback",
 			featureArea: "send",
 			route: "/dashboard/envelope/create/add-sign",
-			rating: 5,
 			message: "Smooth send flow",
 			pieceCid: null,
 			promptType: "contextual",
@@ -54,5 +54,12 @@ describe("submitProductFeedback", () => {
 		expect(result.ok).toBe(true);
 		expect(insertValues).toHaveBeenCalledTimes(1);
 		expect(notifyFeedbackSubmitted).toHaveBeenCalledTimes(1);
+		expect(notifyFeedbackSubmitted).toHaveBeenCalledWith(
+			expect.objectContaining({
+				kind: "feedback",
+				featureArea: "send",
+				message: "Smooth send flow",
+			}),
+		);
 	});
 });

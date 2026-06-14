@@ -27,10 +27,17 @@ export function alertSettlementRelayPayoutFailed(args: {
 	error: string;
 	txHash?: string;
 }): void {
+	const message =
+		args.status === "failed_insufficient"
+			? "Settlement payout failed (insufficient funds)"
+			: args.status === "failed_conditions"
+				? "Settlement payout failed (conditions not met)"
+				: "Settlement relay payout failed";
+
 	void emitCriticalPlatformEvent({
 		name: PLATFORM_ALERT_EVENTS.settlementsRelayPayoutFailed,
 		severity: "error",
-		message: "Settlement relay payout failed",
+		message,
 		context: {
 			onChainRuleId: args.onChainRuleId.toString(),
 			pieceCid: args.pieceCid,

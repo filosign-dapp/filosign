@@ -2,6 +2,7 @@ import type { PlanId } from "@filosign/entitlements";
 import type { PaidCheckoutPlanId } from "@filosign/shared";
 import { eq } from "drizzle-orm";
 import { getAddress } from "viem";
+import { emitBillingSubscriptionProblemPing } from "@/lib/platform/analytics";
 import {
 	createEntitlementCacheInvalidation,
 	flushEntitlementCacheInvalidation,
@@ -273,6 +274,18 @@ export async function processDodoWebhookJob(webhookId: string): Promise<void> {
 		}
 
 		await markEventStatus(webhookId, "processed");
+
+		if (
+			eventType === "subscription.failed" ||
+			eventType === "subscription.on_hold"
+		) {
+			void emitBillingSubscriptionProblemPing({
+				eventType,
+				organizationId: ackOrgId,
+				subscriptionId: dodoSubscriptionId,
+				customerEmail,
+			});
+		}
 	} catch (error) {
 		const message =
 			error instanceof Error

@@ -390,4 +390,21 @@ describe("settlement payout platform alerts", () => {
 			txHash: "0xabc",
 		});
 	});
+
+	test("alertSettlementRelayPayoutFailed emits for failed_insufficient", async () => {
+		const { alertSettlementRelayPayoutFailed } = await import(
+			"@/lib/domains/settlements/utils/execute/alerts"
+		);
+		alertSettlementRelayPayoutFailed({
+			onChainRuleId: 43n,
+			status: "failed_insufficient",
+			error: "insufficient allowance",
+		});
+		await flushPlatformAlerts();
+		expect(capturedTelegramEvents).toHaveLength(1);
+		expect(capturedTelegramEvents[0]?.context).toMatchObject({
+			status: "failed_insufficient",
+		});
+		expect(capturedTelegramEvents[0]?.message).toContain("insufficient funds");
+	});
 });

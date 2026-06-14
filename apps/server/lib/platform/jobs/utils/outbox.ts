@@ -1,5 +1,5 @@
 import type { InferInsertModel } from "drizzle-orm";
-import { and, asc, eq, inArray, isNotNull, isNull, lt } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { type Address, getAddress } from "viem";
 import z from "zod";
 import db from "@/lib/platform/db";
@@ -132,6 +132,42 @@ export async function markOutboxFailed(
 		.update(jobOutboxTable)
 		.set({ lastError: errorMessage.slice(0, 2000) })
 		.where(eq(jobOutboxTable.id, outboxId));
+}
+
+export async function summarizeStaleUnprocessedOutbox(args: {
+	olderThan: Date;
+}): Promise<{ count: number; oldestAgeMin: number } | null> {
+	const rows = await db
+		.select({ createdAt: jobOutboxTable.createdAt })
+		.from(jobOutboxTable)
+		.where(
+			and(
+				isNull(jobOutboxTable.processedAt),
+				lt(jobOutboxTable.createdAt, args.olderThan),
+			),
+		)
+		.orderBy(jobOutboxTable.createdAt)
+		.limit(1);
+
+	if (rows.length === 0) return null;
+
+	const [{ count }] = await db
+		.select({ count: sql<number>`count(*)::int` })
+		.from(jobOutboxTable)
+		.where(
+			and(
+				isNull(jobOutboxTable.processedAt),
+				lt(jobOutboxTable.createdAt, args.olderThan),
+			),
+		);
+
+	const oldest = rows[0]?.createdAt;
+	if (!oldest || count <= 0) return null;
+
+	return {
+		count,
+		oldestAgeMin: Math.round((Date.now() - oldest.getTime()) / 60_000),
+	};
 }
 
 export async function listStaleUnprocessedOutbox(args: {

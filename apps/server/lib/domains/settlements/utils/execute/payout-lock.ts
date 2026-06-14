@@ -97,7 +97,11 @@ export async function executePayoutLegsUnderLock(args: {
 				updatedAt: new Date(),
 			})
 			.where(ruleWhere);
-		if (status === "failed_relay") {
+		if (
+			status === "failed_relay" ||
+			status === "failed_insufficient" ||
+			status === "failed_conditions"
+		) {
 			alertSettlementRelayPayoutFailed({
 				onChainRuleId: args.onChainRuleId,
 				pieceCid: args.row.pieceCid,

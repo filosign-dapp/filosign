@@ -61,6 +61,7 @@ export {
 	runOutboxDrainerTick,
 	startOutboxDrainer,
 	stopOutboxDrainer,
+	summarizeStaleUnprocessedOutbox,
 } from "./utils/outbox";
 export {
 	processEmailFromOutbox,

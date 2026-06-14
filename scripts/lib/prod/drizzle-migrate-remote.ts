@@ -48,7 +48,15 @@ console.error(`[drizzle-migrate] target ${redactDatabaseUrl(databaseUrl)}`);
 const require = createRequire(
 	path.join(path.resolve(serverDir), "package.json"),
 );
-const { Client } = require("pg") as typeof import("pg");
+const { Client } = require("pg") as {
+	Client: new (config: {
+		connectionString: string;
+	}) => {
+		connect(): Promise<void>;
+		query<T>(sql: string): Promise<{ rows: T[] }>;
+		end(): Promise<void>;
+	};
+};
 
 function isMigrationJournalMissing(error: unknown): boolean {
 	const message = error instanceof Error ? error.message : String(error);

@@ -19,6 +19,7 @@
 		"check": "bun run scripts/check.ts",
 		"sanity": "bun run scripts/sanity.ts",
 		"sync:email-assets": "bun run scripts/sync-email-assets.ts",
+		"audit:toast-copy": "bun run scripts/audit-toast-copy.ts",
 		"purge": "./scripts/shell/purge.sh",
 		"prepare": "husky"
 	},

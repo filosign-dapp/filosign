@@ -1,6 +1,8 @@
 import { toast } from "sonner";
 import type { PresentedError } from "../types";
 
+const MAX_HINT_CHARS = 90;
+
 export type ShowErrorToastOptions = {
 	/** When true, append devDetail below description */
 	devMode?: boolean;
@@ -8,23 +10,34 @@ export type ShowErrorToastOptions = {
 	onSupportClick?: (url: string) => void;
 };
 
+function toastHint(
+	presented: PresentedError,
+	devMode: boolean | undefined,
+): string | undefined {
+	const hint = presented.description?.trim();
+	const devDetail =
+		devMode && presented.devDetail?.trim()
+			? `Details: ${presented.devDetail.trim()}`
+			: undefined;
+
+	if (hint && devDetail) {
+		return `${hint.slice(0, MAX_HINT_CHARS)}${hint.length > MAX_HINT_CHARS ? "…" : ""}\n${devDetail}`;
+	}
+	if (devDetail) return devDetail;
+	if (!hint) return undefined;
+	if (hint.length <= MAX_HINT_CHARS) return hint;
+	return `${hint.slice(0, MAX_HINT_CHARS)}…`;
+}
+
 export function showErrorToast(
 	presented: PresentedError,
 	options: ShowErrorToastOptions = {},
 ): void {
-	const lines = [presented.description];
-	if (presented.steps.length > 0) {
-		lines.push(presented.steps[0] ?? "");
-	}
-	if (options.devMode && presented.devDetail) {
-		lines.push(`Details: ${presented.devDetail}`);
-	}
-
-	const description = lines.filter(Boolean).join("\n");
+	const description = toastHint(presented, options.devMode);
 
 	toast.error(presented.title, {
 		id: presented.dedupeKey,
-		description,
+		...(description ? { description } : {}),
 		duration: 8000,
 		action: presented.supportUrl
 			? {

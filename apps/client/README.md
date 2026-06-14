@@ -181,11 +181,13 @@ Layouts do not fetch; hooks run in route `index.tsx` or `-lib/hooks/`.
 ## User-facing errors (`@filosign/errors`)
 
 - **Present / toast:** `presentAppError` and `showAppErrorToast` from [`src/lib/errors`](src/lib/errors/index.ts) - not `presentError` from the package (app injects `VITE_ASTRO_URL` + dev details).
+- **Inline toasts:** use `toastUser` from [`src/lib/copy/toast.ts`](src/lib/copy/toast.ts) with strings from [`src/lib/copy/toasts.ts`](src/lib/copy/toasts.ts). Title plus at most one hint line; no internal jargon; never paste raw `err.message`.
 - **Global mutation errors:** [`query-client.tsx`](src/lib/filosign/query-client.tsx) shows a catalog toast unless `meta.suppressErrorToast` is set.
 - **Local mutation handling:** use `localMutationErrorOptions()` when spreading into `mutate()` (suppresses global toast + catalog toast on failure). For `mutateAsync`, pass `suppressGlobalErrorToast()` as the second argument and call `showAppErrorToast(err)` in `catch`.
 - **Inline forms:** `formatInlineAppError(err)` for `setError` banners (admin, etc.).
-- **Send envelope:** ORPC/catalog failures use `showAppErrorToast`; on-chain settlement simulation failures still use `formatSettlementSimError` (partial self-sign success keeps its custom toast).
+- **Send envelope:** ORPC/catalog failures use `showAppErrorToast`; payout simulation failures use `formatSettlementSimError`.
 - **Validation:** oRPC/Zod field errors are not global-toasted; keep form-level UX.
+- **Audit:** `bun run scripts/audit-toast-copy.ts` bans jargon in toast literals.
 
 Catalog + help articles: [`packages/errors/README.md`](../../packages/errors/README.md).
 

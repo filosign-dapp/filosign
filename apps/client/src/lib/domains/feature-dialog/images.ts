@@ -1,17 +1,17 @@
 import type { UpgradePlanLimitReason } from "@filosign/react/billing";
 
 export const FEATURE_DIALOG_IMAGES = {
-	upgradePlanDialogTeamsProRouting: "/images/ww/stock_59.webp",
 	billingChangePreviewDialog: "/images/ww/stock_47.webp",
 	signSuccessProofPacketDialog: "/images/ww/stock_46.webp",
 	recoveryPhraseAndCryptoUnlockDialog: "/images/ww/stock_63.webp",
 	workspaceCreateInviteTrialDialog: "/images/ww/stock_44.webp",
 	signInOtpAndInviteUnlockDialog: "/images/ww/stock_26.webp",
-	upgradePlanDialogDocumentSendLimit: "/images/ww/stock_30.webp",
-	upgradePlanDialogRecipientLimit: "/images/ww/stock_24.webp",
-	upgradePlanDialogSettlementLimit: "/images/ww/stock_36.webp",
-	upgradePlanDialogSharedTemplatesLimit: "/images/ww/stock_40.webp",
-	upgradePlanDialogSupplementaryAttachmentsLimit: "/images/ww/stock_42.webp",
+	upgradePlanDialogTeamsProRouting: "/images/ww/stock_18.webp",
+	upgradePlanDialogDocumentSendLimit: "/images/ww/stock_18.webp",
+	upgradePlanDialogRecipientLimit: "/images/ww/stock_18.webp",
+	upgradePlanDialogSettlementLimit: "/images/ww/stock_18.webp",
+	upgradePlanDialogSharedTemplatesLimit: "/images/ww/stock_18.webp",
+	upgradePlanDialogSupplementaryAttachmentsLimit: "/images/ww/stock_18.webp",
 	postSendEnvelopeSentDialog: "/images/ww/stock_24.webp",
 	coldShareAccessDialog: "/images/ww/stock_24.webp",
 } as const;

@@ -1,6 +1,8 @@
 import { useDecryptDraftReviewCold } from "@filosign/react/drafts";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
+import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
 import { useDraftReviewWarmUnlock } from "@/src/routes/draft/review/-lib/hooks/use-draft-review-warm-unlock";
 import { useDraftReviewViewer } from "@/src/routes/draft/review/-lib/hooks/use-viewer";
 import type { DecryptedDraftReview } from "@/src/routes/draft/review/-lib/types";
@@ -54,7 +56,7 @@ export function useDraftReviewController(token: string) {
 				documents: data.documents,
 			});
 			if (res.documents.length === 0) {
-				toast.error("No documents found in draft");
+				toastUser.error(TOASTS.drafts.noDocumentsInDraft.title);
 				return;
 			}
 			setColdDecrypted({
@@ -62,9 +64,9 @@ export function useDraftReviewController(token: string) {
 				documents: res.documents,
 				reviewDek: res.reviewDek,
 			});
-			toast.success("Draft decrypted successfully");
+			toastUser.success(TOASTS.drafts.decrypted);
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Decryption failed");
+			showAppErrorToast(err);
 		}
 	}, [data, coldPhrase, decryptCold, trimmedToken]);
 

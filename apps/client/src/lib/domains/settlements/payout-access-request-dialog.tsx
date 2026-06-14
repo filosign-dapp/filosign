@@ -49,7 +49,6 @@ export function PayoutAccessRequestDialog(props: {
 					<FeatureDialogClose disabled={props.pending} />
 
 					<FeatureDialogHeader
-						badge={DIALOG_BADGE}
 						title="Request payout attachment access"
 						titleId={titleId}
 						description="Tell us how your workspace will use USDC payout instructions. Filosign reviews each request before you can attach payouts to envelopes."

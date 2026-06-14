@@ -150,10 +150,6 @@ export function UpgradePlanDialog({
 		}
 	})();
 
-	const planLabel = offeringsQuery.data?.effectivePlanId
-		? getPlanName(offeringsQuery.data.effectivePlanId)
-		: "Free";
-
 	const primaryPending = orgCheckout.isPending || changePlan.isPending;
 
 	return (
@@ -165,7 +161,6 @@ export function UpgradePlanDialog({
 					<FeatureDialogClose disabled={primaryPending} />
 
 					<FeatureDialogHeader
-						badge={`Current plan: ${planLabel}`}
 						title={copy.title}
 						titleId={titleId}
 						description={copy.description}

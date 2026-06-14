@@ -279,7 +279,6 @@ export function SignInOtpDialog({ gate, pricingUrl }: Props) {
 					<FeatureDialogClose disabled={gate.authPending} />
 
 					<FeatureDialogHeader
-						badge={badge}
 						title={title}
 						titleId={titleId}
 						description={

@@ -74,7 +74,6 @@ export function PartnerTrialWelcomeDialog({
 					<FeatureDialogClose />
 
 					<FeatureDialogHeader
-						badge="Your trial is active"
 						title={`Welcome to ${trial.planName}`}
 						titleId={titleId}
 						description={description}

@@ -85,7 +85,6 @@ export function RecoveryPhraseDialog({
 
 				<FeatureDialogPanel>
 					<FeatureDialogHeader
-						badge={badge}
 						title={resolvedCopy.title}
 						titleId={titleId}
 						description={resolvedCopy.description}

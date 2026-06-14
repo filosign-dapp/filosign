@@ -63,7 +63,6 @@ export function ColdShareDialog(props: {
 
 				<FeatureDialogPanel>
 					<FeatureDialogHeader
-						badge={badge}
 						title={title}
 						titleId={titleId}
 						description={description}

@@ -103,15 +103,15 @@ Domain modules that read `db.schema` should do so at **call time** (inside funct
 
 JSON API is **`/api/rpc`** - native outputs + **`ORPCError`** mapping. OpenAPI explorer: **`/api/api-reference`**. Avatar flow: **`storage.presignPut`** + browser **`fetch` PUT** to storage, then **`users.profile.update`** with **`avatarKey`**. **`runtime`** stays on **`rpc.runtime`**.
 
-Billing oRPC (two rails):
-- **Wallet (Solo):** `user_subscriptions` - `billing.getUserSummary`, `billing.createCheckoutSession` (`individual` only), `billing.createPortalSession`.
-- **Workspace (Teams / Teams Pro):** `organization_subscriptions` - `billing.getOrgSummary`, `billing.getWorkspaceBillingContext`, `billing.createOrgCheckoutSession`, `billing.changeOrgPlan`, seat preview/update, org portal.
-- **Upgrade UX:** `billing.getUpgradeOfferings` (feature gate + current plans → selectable checkout paths).
+Billing oRPC (org-scoped):
+- **Workspace billing:** `organization_subscriptions` - `billing.getOrgSummary`, `billing.getWorkspaceBillingContext`, `billing.createOrgCheckoutSession`, `billing.changeOrgPlan`, seat preview/update, org portal. Solo upgrades use the personal org checkout path.
+- **Additional workspace:** `billing.createNewWorkspaceCheckout` + `billing.getNewWorkspacePendingStatus` (pending slot → `orgs.create` attach).
+- **Upgrade UX:** `billing.getUpgradeOfferings` (feature gate + current plan → selectable checkout paths).
 - **Marketing:** `billing.previewMarketingCheckout` (public) then `billing.requestCheckoutLink`; preflight blocks duplicate Solo / paid workspace checkout for known emails.
 
 Billing security notes:
-- `billing.createCheckoutSession` rejects `teams` / `teams_pro` (use org checkout). `createOrgCheckoutSession` is org-scoped.
-- `billing.createCheckoutSession` validates `returnUrl` origin against `CLIENT_URL` plus optional `BILLING_RETURN_URL_ORIGINS`.
+- `billing.createOrgCheckoutSession` is org-scoped and rejects duplicate active paid subs on the same org.
+- Checkout `returnUrl` origin is validated against `CLIENT_URL` plus optional `BILLING_RETURN_URL_ORIGINS`.
 - Webhook processing is idempotent by `webhook-id` with event status (`received`/`processed`/`failed`) in `billing_webhook_events`. API invalidates org entitlements **before** HTTP 200 when `filosign_org_id` (or subscription lookup) resolves.
 
 ## Security notes

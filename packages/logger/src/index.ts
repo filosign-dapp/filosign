@@ -9,6 +9,7 @@ export {
 } from "./transports/posthog";
 export {
 	createTelegramTransport,
+	normalizeTelegramChatId,
 	type TelegramFetch,
 	type TelegramTransportDeps,
 	type TelegramTransportOptions,

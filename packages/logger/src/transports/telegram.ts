@@ -17,6 +17,18 @@ export type TelegramTransportDeps = {
 	fetch?: TelegramFetch;
 };
 
+/** Supergroup IDs are `-100…`; some tools omit the leading minus. */
+export function normalizeTelegramChatId(chatId: string): string {
+	const trimmed = chatId.trim();
+	if (trimmed.startsWith("-")) {
+		return trimmed;
+	}
+	if (/^100\d+$/.test(trimmed)) {
+		return `-${trimmed}`;
+	}
+	return trimmed;
+}
+
 function toTelegramText(event: LoggerEvent): string {
 	const stamp = new Date(event.timestamp ?? Date.now()).toISOString();
 	const meta = `${os.hostname()}:${process.pid}`;
@@ -38,18 +50,26 @@ export function createTelegramTransport(
 	return {
 		async send(event) {
 			if (!options.enabled) return;
-			await fetchFn(
+			const response = await fetchFn(
 				`https://api.telegram.org/bot${options.botToken}/sendMessage`,
 				{
 					method: "POST",
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({
-						chat_id: options.chatId,
+						chat_id: normalizeTelegramChatId(options.chatId),
 						text: toTelegramText(event),
 						disable_web_page_preview: true,
 					}),
 				},
 			);
+			if (!response.ok) {
+				const body = await response.text().catch(() => "");
+				console.error(
+					"[telegram] sendMessage failed:",
+					response.status,
+					body || response.statusText,
+				);
+			}
 		},
 	};
 }

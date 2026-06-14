@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
 	createTelegramTransport,
+	normalizeTelegramChatId,
 	type TelegramFetch,
 } from "../../src/transports/telegram";
 import type { LoggerEvent } from "../../src/types";
@@ -25,6 +26,20 @@ function createRecordingFetch(): {
 	};
 	return { fetch, calls };
 }
+
+describe("normalizeTelegramChatId", () => {
+	test("prefixes bare supergroup ids with a leading minus", () => {
+		expect(normalizeTelegramChatId("1003999299780")).toBe("-1003999299780");
+	});
+
+	test("leaves already-normalized ids unchanged", () => {
+		expect(normalizeTelegramChatId("-1003999299780")).toBe("-1003999299780");
+	});
+
+	test("leaves user dm ids unchanged", () => {
+		expect(normalizeTelegramChatId("123456789")).toBe("123456789");
+	});
+});
 
 describe("createTelegramTransport", () => {
 	test("does not call fetch when disabled", async () => {
@@ -66,5 +81,22 @@ describe("createTelegramTransport", () => {
 		expect(body.text).toContain("[CRITICAL] server.http_500");
 		expect(body.text).toContain("HTTP request returned 5xx");
 		expect(body.text).toContain('"method":"POST"');
+	});
+
+	test("normalizes bare supergroup chat ids before send", async () => {
+		const { fetch, calls } = createRecordingFetch();
+		const transport = createTelegramTransport(
+			{
+				enabled: true,
+				botToken: "bot123",
+				chatId: "1003999299780",
+			},
+			{ fetch },
+		);
+		await transport.send(sampleEvent);
+		const body = JSON.parse(String(calls[0]?.init?.body)) as {
+			chat_id: string;
+		};
+		expect(body.chat_id).toBe("-1003999299780");
 	});
 });

@@ -96,9 +96,7 @@ const parsedEnv = createEnv({
 		DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_3Y: z.string().min(1).optional(),
 		DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_5Y: z.string().min(1).optional(),
 		ARCHIVAL_EXPORT_GRACE_DAYS: z.coerce.number().int().min(1).default(30),
-		/** Days after envelope completion before FOC replicate job may run (R2 stays primary). */
 		R2_HOT_DAYS: z.coerce.number().int().min(1).default(30),
-		/** When true: FOC backup (Synapse replicate + FOC CDN downloads). When false: R2 only. */
 		TEST_FOC: z
 			.string()
 			.default("false")

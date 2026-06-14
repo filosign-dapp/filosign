@@ -73,7 +73,7 @@ Server-side product events via [`lib/platform/analytics/analytics.ts`](lib/platf
 
 ## Platform alerts (Telegram)
 
-Critical platform failures emit via [`lib/platform/analytics/alerts.ts`](lib/platform/analytics/alerts.ts) using [`@filosign/logger`](../../packages/logger) (Telegram transport). Requires `TG_ANALYTICS_BOT_TOKEN` and `TG_ANALYTICS_BOT_GROUP_ID`; delivery is gated by `TG_ANALYTICS=true`. On successful bootstrap, the server sends a one-time `server.started` info ping to the same group (api and worker each ping on their own restart).
+Critical platform failures emit via [`lib/platform/analytics/alerts.ts`](lib/platform/analytics/alerts.ts) using [`@filosign/logger`](../../packages/logger) (Telegram transport). Requires `TG_ANALYTICS_BOT_TOKEN` and `TG_ANALYTICS_BOT_GROUP_ID`; delivery is gated by `TG_ANALYTICS=true`. Supergroup chat IDs use a leading minus (e.g. `-1003999299780`); bare IDs copied without the minus are normalized automatically. On successful bootstrap, the server sends a one-time `server.started` info ping to the same group (api and worker each ping on their own restart).
 
 When `POSTHOG_ENABLED=true` (with `POSTHOG_HOST` and `POSTHOG_API_KEY`), the same alert is mirrored as a sanitized `platform_alert` PostHog event with the same 5-minute dedupe as Telegram. See [`alerts.ts`](lib/platform/analytics/alerts.ts) (`mirrorPlatformAlertToPostHog`) and [`project/posthog-integration.md`](../../project/posthog-integration.md).
 

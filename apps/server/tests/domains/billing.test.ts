@@ -1,4 +1,13 @@
-import { beforeAll, describe, expect, mock, test } from "bun:test";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	mock,
+	test,
+} from "bun:test";
+import { resolveDodoLiveMode } from "@/lib/domains/billing/utils/mode";
 import {
 	buildUpgradeOfferings,
 	resolveMarketingCheckoutPreview,
@@ -16,9 +25,8 @@ import {
 import {
 	mapDodoSubscriptionStatus,
 	resolveWebhookOrgSync,
-	resolveWebhookUserPlanId,
 } from "@/lib/domains/billing/utils/webhooks/sync";
-import { attachPendingOrgBillingOnCreateWithTx } from "@/lib/domains/platform-access";
+import { dbQueryResult } from "../support/db-query-result";
 
 describe("billing", () => {
 	describe("plan-transitions", () => {
@@ -26,9 +34,7 @@ describe("billing", () => {
 			test("solo workspace blocked from team feature sees teams and teams_pro only", () => {
 				const result = buildUpgradeOfferings({
 					reason: "features.shared_templates",
-					userPlanId: "free",
 					orgPlanId: "individual",
-					hasUserDodo: false,
 					hasOrgDodo: true,
 				});
 				const visible = result.offerings.map((o) => o.planId);
@@ -39,9 +45,7 @@ describe("billing", () => {
 			test("free workspace document quota can select solo", () => {
 				const result = buildUpgradeOfferings({
 					reason: "documents.sent.monthly",
-					userPlanId: "free",
 					orgPlanId: "free",
-					hasUserDodo: false,
 					hasOrgDodo: false,
 				});
 				const solo = result.offerings.find((o) => o.planId === "individual");
@@ -52,14 +56,67 @@ describe("billing", () => {
 			test("solo workspace document quota does not offer solo checkout again", () => {
 				const result = buildUpgradeOfferings({
 					reason: "documents.sent.monthly",
-					userPlanId: "free",
 					orgPlanId: "individual",
-					hasUserDodo: false,
 					hasOrgDodo: true,
 				});
 				const solo = result.offerings.find((o) => o.planId === "individual");
 				expect(solo).toBeUndefined();
 				expect(result.offerings.some((o) => o.planId === "teams")).toBe(true);
+			});
+
+			test("solo workspace team collaboration offers teams and teams_pro only", () => {
+				const result = buildUpgradeOfferings({
+					reason: "features.team_collaboration",
+					orgPlanId: "individual",
+					hasOrgDodo: true,
+				});
+				expect(result.offerings.map((o) => o.planId)).toEqual([
+					"teams",
+					"teams_pro",
+				]);
+			});
+
+			test("teams workspace signer replacement offers teams_pro only", () => {
+				const result = buildUpgradeOfferings({
+					reason: "features.signer_replacement",
+					orgPlanId: "teams",
+					hasOrgDodo: true,
+				});
+				expect(result.offerings.map((o) => o.planId)).toEqual(["teams_pro"]);
+			});
+
+			test("free workspace gated files can upgrade to solo", () => {
+				const result = buildUpgradeOfferings({
+					reason: "features.supplementary_attachments",
+					orgPlanId: "free",
+					hasOrgDodo: false,
+				});
+				const solo = result.offerings.find((o) => o.planId === "individual");
+				expect(solo?.selectable).toBe(true);
+			});
+
+			test("solo workspace recipient select offers teams and teams_pro only", () => {
+				const result = buildUpgradeOfferings({
+					reason: "features.supplementary_attachments.recipient_select",
+					orgPlanId: "individual",
+					hasOrgDodo: true,
+				});
+				expect(result.offerings.map((o) => o.planId)).toEqual([
+					"teams",
+					"teams_pro",
+				]);
+			});
+
+			test("solo workspace on gated files has handoff-specific no-upgrade message", () => {
+				const result = buildUpgradeOfferings({
+					reason: "features.supplementary_attachments",
+					orgPlanId: "individual",
+					hasOrgDodo: true,
+				});
+				expect(result.offerings).toHaveLength(0);
+				expect(result.noUpgradeMessage).toContain(
+					"Solo, which includes this feature",
+				);
 			});
 		});
 
@@ -72,7 +129,6 @@ describe("billing", () => {
 					requestedPlanId: "individual",
 					subscriber: {
 						hasUser: true,
-						walletPlanId: "free",
 						orgPlanId: "individual",
 						hasActiveSolo: true,
 						hasActiveOrgPlan: false,
@@ -92,7 +148,6 @@ describe("billing", () => {
 					requestedPlanId: "individual",
 					subscriber: {
 						hasUser: false,
-						walletPlanId: "free",
 						orgPlanId: null,
 						hasActiveSolo: false,
 						hasActiveOrgPlan: false,
@@ -156,19 +211,25 @@ describe("billing", () => {
 				expect(isOrgBillingPlanId("teams_pro")).toBe(true);
 				expect(isOrgBillingPlanId("individual")).toBe(false);
 			});
+		});
+	});
 
-			test("attachPendingOrgBillingOnCreateWithTx is exported", () => {
-				expect(typeof attachPendingOrgBillingOnCreateWithTx).toBe("function");
-			});
+	describe("resolveDodoLiveMode", () => {
+		test("production defaults to live when DODO_LIVE unset", () => {
+			expect(resolveDodoLiveMode({ deployment: "production" })).toBe(true);
 		});
 
-		describe("checkout-first routing contract", () => {
-			test("ackDodoWebhook module exports checkout-first seat helpers", async () => {
-				const mod = await import("@/lib/domains/billing/utils/webhooks");
-				expect(typeof mod.ackDodoWebhook).toBe("function");
-				expect(typeof mod.resolveCheckoutFirstSeatCount).toBe("function");
-				expect(typeof mod.resolveCheckoutFirstBillingInterval).toBe("function");
-			});
+		test("DODO_LIVE=false forces test on production", () => {
+			expect(
+				resolveDodoLiveMode({
+					deployment: "production",
+					dodoLiveEnv: "false",
+				}),
+			).toBe(false);
+		});
+
+		test("staging stays test when DODO_LIVE unset", () => {
+			expect(resolveDodoLiveMode({ deployment: "staging" })).toBe(false);
 		});
 	});
 
@@ -269,28 +330,228 @@ describe("billing", () => {
 				).toThrow();
 			});
 		});
+	});
 
-		describe("resolveWebhookUserPlanId", () => {
-			test("keeps individual on scheduled cancel", () => {
-				expect(
-					resolveWebhookUserPlanId({
-						eventType: "subscription.cancelled",
-						mappedPlan: null,
-						cancelAtNextBillingDate: true,
-						existingPlanId: "individual",
+	describe("org-billing-seats", () => {
+		const orgId = "00000000-0000-7000-8000-000000000001";
+		const subscriptionId = "sub_test_123";
+
+		const orgSubRow = {
+			organizationId: orgId,
+			planId: "teams_pro" as const,
+			seatCount: 3,
+			status: "active" as const,
+			billingInterval: "yearly" as const,
+			dodoSubscriptionId: subscriptionId,
+			dodoCustomerId: "cus_test",
+			cancelAtPeriodEnd: false,
+			periodEnd: null,
+			featureOverrides: {},
+		};
+
+		const changePlanMock = mock(async () => {});
+		const retrieveMock = mock(async () => ({ quantity: 2 }));
+		const previewChangePlanMock = mock(async () => ({
+			immediate_charge: {
+				effective_at: "2026-06-01T12:00:00.000Z",
+				summary: { total_amount: 100, currency: "USD" },
+			},
+			new_plan: { quantity: 3 },
+		}));
+
+		const dbUpdates: unknown[] = [];
+		let selectQueue: unknown[][] = [];
+
+		beforeAll(() => {
+			mock.module("@/lib/domains/billing/utils/policy", () => {
+				return {
+					requireDodoApiKey: () => "test-key",
+					createDodoClient: () => ({
+						subscriptions: {
+							retrieve: retrieveMock,
+							changePlan: changePlanMock,
+							previewChangePlan: previewChangePlanMock,
+						},
 					}),
-				).toBe("individual");
+					isWorkspaceBillingPlanId: (planId: string) => {
+						return (
+							planId === "individual" ||
+							planId === "teams" ||
+							planId === "teams_pro"
+						);
+					},
+					isOrgBillingPlanId: (planId: string) => {
+						return planId === "teams" || planId === "teams_pro";
+					},
+					isDodoLiveMode: () => false,
+					isAllowedReturnUrlOrigin: () => true,
+				};
 			});
 
-			test("downgrades individual on expire", () => {
-				expect(
-					resolveWebhookUserPlanId({
-						eventType: "subscription.expired",
-						mappedPlan: "individual",
-						cancelAtNextBillingDate: false,
-						existingPlanId: "individual",
+			mock.module("@/lib/platform/db", () => ({
+				default: {
+					schema: {
+						fileColdInvites: {},
+						organizationInvites: {},
+						userInvites: {},
+						organizationMembers: {},
+						organizationSubscriptions: {},
+					},
+					select: () => ({
+						from: () => ({
+							where: () => {
+								const rows = selectQueue.shift() ?? [];
+								return dbQueryResult(rows);
+							},
+						}),
 					}),
-				).toBe("free");
+					update: () => ({
+						set: (values: unknown) => ({
+							where: async () => {
+								dbUpdates.push(values);
+							},
+						}),
+					}),
+				},
+			}));
+		});
+
+		afterAll(() => {
+			mock.restore();
+		});
+
+		function queueOrgBillingSelects() {
+			selectQueue = [[orgSubRow], [{ count: 1 }], [{ count: 1 }]];
+		}
+
+		describe("org seat changes", () => {
+			beforeEach(() => {
+				changePlanMock.mockClear();
+				retrieveMock.mockClear();
+				previewChangePlanMock.mockClear();
+				dbUpdates.length = 0;
+				selectQueue = [];
+				orgSubRow.seatCount = 3;
+				retrieveMock.mockImplementation(async () => ({ quantity: 2 }));
+			});
+
+			test("preview rejects target equal to live Dodo quantity", async () => {
+				queueOrgBillingSelects();
+				const { previewOrgSeatChange } = await import(
+					"@/lib/domains/billing/utils/org"
+				);
+
+				await expect(
+					previewOrgSeatChange({ organizationId: orgId, seatCount: 2 }),
+				).rejects.toMatchObject({
+					code: "BAD_REQUEST",
+					message: "Seat count already on target",
+				});
+				expect(previewChangePlanMock).not.toHaveBeenCalled();
+			});
+
+			test("updateOrgSeats calls changePlan when DB lags behind Dodo", async () => {
+				queueOrgBillingSelects();
+				let retrieveCall = 0;
+				retrieveMock.mockImplementation(async () => {
+					retrieveCall++;
+					return { quantity: retrieveCall === 1 ? 2 : 3 };
+				});
+				const { updateOrgSeats } = await import(
+					"@/lib/domains/billing/utils/org"
+				);
+
+				const result = await updateOrgSeats({
+					organizationId: orgId,
+					seatCount: 3,
+				});
+
+				expect(result).toEqual({
+					seatCount: 3,
+					changed: true,
+					pendingPayment: false,
+				});
+				expect(changePlanMock).toHaveBeenCalledTimes(1);
+				expect(dbUpdates).toContainEqual({
+					seatCount: 3,
+					updatedAt: expect.any(Date),
+				});
+			});
+
+			test("updateOrgSeats no-ops when target matches Dodo and syncs stale DB", async () => {
+				queueOrgBillingSelects();
+				const { updateOrgSeats } = await import(
+					"@/lib/domains/billing/utils/org"
+				);
+
+				const result = await updateOrgSeats({
+					organizationId: orgId,
+					seatCount: 2,
+				});
+
+				expect(result).toEqual({
+					seatCount: 2,
+					changed: false,
+					pendingPayment: false,
+				});
+				expect(changePlanMock).not.toHaveBeenCalled();
+				expect(dbUpdates).toContainEqual({
+					seatCount: 2,
+					updatedAt: expect.any(Date),
+				});
+			});
+
+			test("updateOrgSeats reports pending payment when Dodo quantity unchanged after increase", async () => {
+				queueOrgBillingSelects();
+				retrieveMock.mockImplementation(async () => ({ quantity: 2 }));
+				const { updateOrgSeats } = await import(
+					"@/lib/domains/billing/utils/org"
+				);
+
+				const result = await updateOrgSeats({
+					organizationId: orgId,
+					seatCount: 3,
+				});
+
+				expect(result).toEqual({
+					seatCount: 2,
+					changed: false,
+					pendingPayment: true,
+				});
+				expect(changePlanMock).toHaveBeenCalledTimes(1);
+			});
+		});
+
+		describe("preview seat change response", () => {
+			beforeEach(() => {
+				previewChangePlanMock.mockClear();
+				retrieveMock.mockImplementation(async () => ({ quantity: 3 }));
+				selectQueue = [[orgSubRow], [{ count: 1 }], [{ count: 1 }]];
+			});
+
+			test("returns Dodo quantity as currentSeatCount with credit metadata", async () => {
+				previewChangePlanMock.mockImplementation(async () => ({
+					immediate_charge: {
+						effective_at: "2026-06-01T12:00:00.000Z",
+						summary: { total_amount: -100, currency: "USD" },
+					},
+					new_plan: { quantity: 2 },
+				}));
+
+				const { previewOrgSeatChange } = await import(
+					"@/lib/domains/billing/utils/org"
+				);
+
+				const preview = await previewOrgSeatChange({
+					organizationId: orgId,
+					seatCount: 2,
+				});
+
+				expect(preview.currentSeatCount).toBe(3);
+				expect(preview.seatCount).toBe(2);
+				expect(preview.deltaSeatCount).toBe(-1);
+				expect(preview.isCredit).toBe(true);
+				expect(preview.immediateChargeCents).toBe(-100);
 			});
 		});
 	});
@@ -344,6 +605,8 @@ describe("billing", () => {
 					metadataWallet: null,
 					metadataSetupToken: "setup-token",
 					metadataCheckoutIntentId: "intent-1",
+					metadataPendingId: null,
+					metadataCheckoutKind: null,
 					metadataPlanId: "teams",
 					customerEmail: "buyer@example.com",
 					cancelAtNextBillingDate: false,

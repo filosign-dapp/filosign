@@ -1,5 +1,5 @@
-import os from "node:os";
-import type { LoggerEvent, LoggerTransport } from "../types";
+import type { LoggerTransport } from "../types";
+import { formatTelegramMessage } from "./telegram-format";
 
 export type TelegramTransportOptions = {
 	botToken: string;
@@ -29,18 +29,6 @@ export function normalizeTelegramChatId(chatId: string): string {
 	return trimmed;
 }
 
-function toTelegramText(event: LoggerEvent): string {
-	const stamp = new Date(event.timestamp ?? Date.now()).toISOString();
-	const meta = `${os.hostname()}:${process.pid}`;
-	const payload = event.context ? JSON.stringify(event.context) : "{}";
-	return [
-		`[${event.severity.toUpperCase()}] ${event.name}`,
-		event.message,
-		`at=${stamp} source=${meta}`,
-		payload,
-	].join("\n");
-}
-
 export function createTelegramTransport(
 	options: TelegramTransportOptions,
 	deps: TelegramTransportDeps = {},
@@ -57,7 +45,8 @@ export function createTelegramTransport(
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({
 						chat_id: normalizeTelegramChatId(options.chatId),
-						text: toTelegramText(event),
+						text: formatTelegramMessage(event),
+						parse_mode: "HTML",
 						disable_web_page_preview: true,
 					}),
 				},

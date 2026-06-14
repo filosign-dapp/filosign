@@ -14,4 +14,5 @@ export {
 	type TelegramTransportDeps,
 	type TelegramTransportOptions,
 } from "./transports/telegram";
+export { formatTelegramMessage } from "./transports/telegram-format";
 export type { LoggerEvent, LoggerSeverity, LoggerTransport } from "./types";

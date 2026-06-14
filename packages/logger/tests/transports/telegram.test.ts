@@ -74,13 +74,15 @@ describe("createTelegramTransport", () => {
 		const body = JSON.parse(String(calls[0]?.init?.body)) as {
 			chat_id: string;
 			text: string;
+			parse_mode: string;
 			disable_web_page_preview: boolean;
 		};
 		expect(body.chat_id).toBe("group456");
+		expect(body.parse_mode).toBe("HTML");
 		expect(body.disable_web_page_preview).toBe(true);
-		expect(body.text).toContain("[CRITICAL] server.http_500");
+		expect(body.text).toContain("<b>CRITICAL · HTTP 500</b>");
 		expect(body.text).toContain("HTTP request returned 5xx");
-		expect(body.text).toContain('"method":"POST"');
+		expect(body.text).toContain("Request: POST /api/rpc");
 	});
 
 	test("normalizes bare supergroup chat ids before send", async () => {

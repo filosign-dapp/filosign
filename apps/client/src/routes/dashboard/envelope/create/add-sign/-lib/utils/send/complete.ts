@@ -4,7 +4,9 @@ import {
 } from "@filosign/react/analytics";
 import type { SendFileResult, SignFileArgs } from "@filosign/react/files";
 import type { UserProfile } from "@filosign/react/users";
-import { toast } from "sonner";
+import type { FieldCompletionMap } from "@filosign/shared";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import type {
 	CreateForm,
 	SignatureField,
@@ -14,11 +16,12 @@ import type {
 	ColdSharePackage,
 	WarmShareSummary,
 } from "@/src/lib/domains/invites/types";
-import { suppressGlobalErrorToast } from "@/src/lib/errors";
+import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import {
 	resolveSelfSignerOnRoster,
 	selfAssignedFieldIds,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
+import type { SendProgressEvent } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/progress";
 import { isColdRecipient } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 
 export async function selfSignAfterSend(args: {
@@ -32,9 +35,18 @@ export async function selfSignAfterSend(args: {
 			options?: ReturnType<typeof suppressGlobalErrorToast>,
 		) => Promise<boolean>;
 	};
+	ensureAcknowledged: (pieceCid: string) => Promise<void>;
+	prepareSelfSignCompletions: (input: {
+		pieceCid: string;
+		selfFieldIds: string[];
+	}) => Promise<{
+		completedFieldIds: string[];
+		fieldCompletions: FieldCompletionMap;
+	}>;
 	setSendStatus: (
 		status: "idle" | "loading" | "signing" | "success" | "error",
 	) => void;
+	onProgress?: (event: SendProgressEvent) => void;
 }): Promise<void> {
 	const selfOnRoster = resolveSelfSignerOnRoster(
 		args.createForm.recipients ?? [],
@@ -47,20 +59,29 @@ export async function selfSignAfterSend(args: {
 
 	if (selfFieldIds.length === 0 || !args.result.pieceCid) return;
 
+	args.onProgress?.({ phase: "self_sign", status: "start" });
 	args.setSendStatus("signing");
 	try {
+		await args.ensureAcknowledged(args.result.pieceCid);
+		const prepared = await args.prepareSelfSignCompletions({
+			pieceCid: args.result.pieceCid,
+			selfFieldIds,
+		});
 		await args.signFile.mutateAsync(
 			{
 				pieceCid: args.result.pieceCid,
-				completedFieldIds: selfFieldIds,
+				completedFieldIds: prepared.completedFieldIds,
+				fieldCompletions: prepared.fieldCompletions,
 			},
 			suppressGlobalErrorToast(),
 		);
+		args.onProgress?.({ phase: "self_sign", status: "done" });
 	} catch (signErr) {
 		console.error("Self-sign at send failed:", signErr);
-		toast.error(
-			"Document sent, but signing your fields failed. Open the document from your dashboard to finish signing.",
-		);
+		showAppErrorToast(signErr);
+		toastUser.message(TOASTS.send.selfSignPartialSuccess.title, {
+			hint: TOASTS.send.selfSignPartialSuccess.hint,
+		});
 	}
 }
 

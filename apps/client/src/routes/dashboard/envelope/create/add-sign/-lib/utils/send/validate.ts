@@ -8,14 +8,14 @@ import {
 	normalizePlacementRecipientEmail,
 	validateAttachmentPacketDraftsForSend,
 } from "@filosign/shared";
-import { toast } from "sonner";
 import type { Address } from "viem";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
 import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
 import { validateAttachmentPacketComposeDrafts } from "@/src/lib/domains/files/validate-attachment-packets";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
-import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements/payout-copy";
 import { settlementPayoutExceedsBalance } from "@/src/lib/domains/settlements/payout-totals";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { fieldsWithUnknownSignerEmails } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
@@ -28,6 +28,8 @@ import {
 export type EnvelopeSendValidationFailure = {
 	kind: "silent" | "toast";
 	message?: string;
+	title?: string;
+	hint?: string;
 };
 
 export function validateEnvelopeDocuments(
@@ -74,7 +76,7 @@ export function validateSignerPlacementFields(args: {
 		);
 		return {
 			kind: "toast",
-			message: `Fields assigned to ${orphanEmail} are not on this envelope's signer list. Add yourself as a signer on the form page, or reassign those fields.`,
+			...TOASTS.send.orphanFields(orphanEmail),
 		};
 	}
 
@@ -89,7 +91,7 @@ export function validateSignerPlacementFields(args: {
 		if (signerFields.length === 0) {
 			return {
 				kind: "toast",
-				message: `Add at least one field for required signer ${signerEmail}.`,
+				...TOASTS.send.missingFieldsForSigner(signerEmail),
 			};
 		}
 		if (!signerFields.some((f) => f.required)) {
@@ -137,7 +139,7 @@ export function validateSettlementPayoutBalance(args: {
 
 	return {
 		kind: "toast",
-		message: PAYOUT_EXCEEDS_BALANCE_MESSAGE,
+		...TOASTS.send.payoutExceedsBalance,
 	};
 }
 
@@ -165,7 +167,8 @@ export function validateAttachmentPacketsForSend(args: {
 	if (attachmentIssues.length > 0) {
 		return {
 			kind: "toast",
-			message: attachmentIssues[0]?.message ?? "Invalid supplementary files",
+			title: "Check attached files",
+			hint: TOASTS.send.invalidSupplementaryFiles,
 		};
 	}
 
@@ -175,8 +178,13 @@ export function validateAttachmentPacketsForSend(args: {
 export function reportEnvelopeSendValidationFailure(
 	failure: EnvelopeSendValidationFailure,
 ): void {
-	if (failure.kind === "toast" && failure.message) {
-		toast.error(failure.message);
+	if (failure.kind !== "toast") return;
+	if (failure.title) {
+		toastUser.error(failure.title, { hint: failure.hint });
+		return;
+	}
+	if (failure.message) {
+		toastUser.error(failure.message);
 	}
 }
 

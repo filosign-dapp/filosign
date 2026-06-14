@@ -8,7 +8,6 @@ import {
 	normalizePlacementRecipientEmail,
 	validateRegisterRoutingForSend,
 } from "@filosign/shared";
-import { toast } from "sonner";
 import type { Address } from "viem";
 import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
 import { toAttachmentPacketDraftsForSend } from "@/src/lib/domains/files/attachment-packet-compose";
@@ -21,6 +20,7 @@ import type {
 import type { PlacementFieldRect } from "@/src/lib/domains/files/field-box";
 import { countStoredSignablePdfPages } from "@/src/lib/domains/files/normalize-signable-document";
 import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
+import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { buildSettlementRulesForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/build-settlement-rules";
 import { signerEmailsForPlacementManifest } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
@@ -276,5 +276,5 @@ export async function buildEnvelopeSendPayload(args: {
 }
 
 export function reportRoutingValidationError(error: string): void {
-	toast.error(error);
+	showAppErrorToast(error);
 }

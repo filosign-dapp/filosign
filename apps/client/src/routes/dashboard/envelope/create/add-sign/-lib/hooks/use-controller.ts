@@ -3,7 +3,8 @@ import { useUserProfile } from "@filosign/react/users";
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import {
 	draftSyncModeFromSearch,
 	pruneSignatureFields,
@@ -43,6 +44,11 @@ import {
 	resolvePlacementFieldSize,
 	seedPlacementFieldPresetsFromFields,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-field-presets";
+import {
+	markSendProgressSuccess,
+	reduceSendProgress,
+	type SendProgressState,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/progress";
 import { recipientResolvedSignerAddress } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 
 const addSignRouteApi = getRouteApi("/dashboard/envelope/create/add-sign/");
@@ -101,11 +107,45 @@ export function useAddSignController() {
 	);
 	const [postSendWarmSummary, setPostSendWarmSummary] =
 		useState<WarmShareSummary | null>(null);
+	const [sendProgressOpen, setSendProgressOpen] = useState(false);
+	const [sendProgressState, setSendProgressState] =
+		useState<SendProgressState | null>(null);
+
+	const openSendProgress = useCallback((state: SendProgressState) => {
+		setSendProgressState(state);
+		setSendProgressOpen(true);
+	}, []);
+
+	const updateSendProgress = useCallback(
+		(event: Parameters<typeof reduceSendProgress>[1]) => {
+			setSendProgressState((prev) =>
+				prev ? reduceSendProgress(prev, event) : prev,
+			);
+		},
+		[],
+	);
+
+	const closeSendProgress = useCallback(() => {
+		setSendProgressOpen(false);
+		setSendProgressState(null);
+	}, []);
+
+	const markSendProgressComplete = useCallback(() => {
+		setSendProgressState((prev) =>
+			prev ? markSendProgressSuccess(prev) : prev,
+		);
+	}, []);
+
+	const dismissSendProgress = useCallback(() => {
+		closeSendProgress();
+		setSendStatus("idle");
+	}, [closeSendProgress]);
 
 	const suppressEmptyDraftRedirect =
 		sendStatus === "loading" ||
 		sendStatus === "signing" ||
 		sendStatus === "success" ||
+		sendProgressOpen ||
 		postSendDialogOpen ||
 		serverDraftLoadState === "loading" ||
 		serverDraftLoadState === "awaiting_crypto" ||
@@ -256,9 +296,9 @@ export function useAddSignController() {
 			const assignee = resolveActiveAssignee(assignees, activeAssigneeId);
 			if (!assignee || !currentDocumentId) return null;
 			if (!assignee.placementEnabled) {
-				toast.error(
-					'Turn on "I also need to sign" on the form page to place fields for yourself.',
-				);
+				toastUser.error(TOASTS.send.selfSignToggleRequired.title, {
+					hint: TOASTS.send.selfSignToggleRequired.hint,
+				});
 				return null;
 			}
 			const id = placeFieldRaw({
@@ -528,6 +568,10 @@ export function useAddSignController() {
 		setPostSendDialogOpen,
 		setPostSendShare,
 		setPostSendWarmSummary,
+		openSendProgress,
+		updateSendProgress,
+		closeSendProgress,
+		markSendProgressComplete,
 	});
 
 	const currentDocumentFields = useMemo(
@@ -571,6 +615,9 @@ export function useAddSignController() {
 		postSendDialogOpen,
 		postSendShare,
 		postSendWarmSummary,
+		sendProgressOpen,
+		sendProgressState,
+		dismissSendProgress,
 		suppressEmptyDraftRedirect,
 		selectedField,
 		selectedFieldIds,

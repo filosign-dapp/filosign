@@ -17,9 +17,10 @@ import type {
 	InferClientOutputs,
 } from "@filosign/react/orpc";
 import type { ProfileByAddress, UserProfile } from "@filosign/react/users";
-import { toast } from "sonner";
+import type { FieldCompletionMap } from "@filosign/shared";
 import type { Address } from "viem";
 import { BaseError } from "viem";
+import { toastUser } from "@/src/lib/copy/toast";
 import { hydrateAttachmentPacketDrafts } from "@/src/lib/domains/drafts";
 import type {
 	CreateForm,
@@ -30,7 +31,8 @@ import type {
 	ColdSharePackage,
 	WarmShareSummary,
 } from "@/src/lib/domains/invites/types";
-import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
+import { suppressGlobalErrorToast } from "@/src/lib/errors";
+import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { SendEnvelopeError } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 import {
@@ -45,6 +47,7 @@ import {
 	selfSignAfterSend,
 	trackEnvelopeSendSucceeded,
 } from "./complete";
+import type { SendProgressEvent } from "./progress";
 import {
 	reportEnvelopeSendValidationFailure,
 	rosterEmailsFromRecipients,
@@ -80,6 +83,14 @@ export type EnvelopeSendDeps = {
 		mutateAsync: (input: MarkDraftSentInput) => Promise<MarkDraftSentOutput>;
 	};
 	rpcQuery: FilosignRpcQueryUtils;
+	ensureAcknowledged: (pieceCid: string) => Promise<void>;
+	prepareSelfSignCompletions: (input: {
+		pieceCid: string;
+		selfFieldIds: string[];
+	}) => Promise<{
+		completedFieldIds: string[];
+		fieldCompletions: FieldCompletionMap;
+	}>;
 	captureAppEvent: CaptureAppEvent;
 	setCreateForm: (form: CreateForm) => void;
 	setSendStatus: (
@@ -89,6 +100,9 @@ export type EnvelopeSendDeps = {
 	setPostSendWarmSummary: (summary: WarmShareSummary | null) => void;
 	setPostSendDialogOpen: (open: boolean) => void;
 	isSendingRef: React.MutableRefObject<boolean>;
+	onProgress?: (event: SendProgressEvent) => void;
+	onSendProgressSuccess?: () => void;
+	closeSendProgress?: () => void;
 };
 
 export type RunEnvelopeSendArgs = EnvelopeSendDeps & {
@@ -129,11 +143,7 @@ async function hydrateAttachments(
 		setCreateForm({ ...createForm, attachmentPacketDrafts: drafts });
 		return drafts;
 	} catch (error) {
-		toast.error(
-			error instanceof Error
-				? error.message
-				: "Could not load supplementary files for send",
-		);
+		showAppErrorToast(error);
 		failSend(setSendStatus);
 		return null;
 	}
@@ -159,6 +169,8 @@ export async function runEnvelopeSend(
 		signFile,
 		markDraftSent,
 		rpcQuery,
+		ensureAcknowledged,
+		prepareSelfSignCompletions,
 		captureAppEvent,
 		setCreateForm,
 		setSendStatus,
@@ -166,17 +178,25 @@ export async function runEnvelopeSend(
 		setPostSendWarmSummary,
 		setPostSendDialogOpen,
 		isSendingRef,
+		onProgress,
+		onSendProgressSuccess,
+		closeSendProgress,
 	} = args;
+
+	const emit = (event: SendProgressEvent) => onProgress?.(event);
 
 	if (validateEnvelopeDocuments(createForm.documents)) {
 		failSend(setSendStatus);
+		closeSendProgress?.();
 		return;
 	}
 	if (validateEnvelopeRecipients(createForm.recipients)) {
 		failSend(setSendStatus);
+		closeSendProgress?.();
 		return;
 	}
 	if (recipientProfilesLoading) {
+		closeSendProgress?.();
 		return;
 	}
 
@@ -190,6 +210,7 @@ export async function runEnvelopeSend(
 	if (fieldFailure) {
 		reportEnvelopeSendValidationFailure(fieldFailure);
 		failSend(setSendStatus);
+		closeSendProgress?.();
 		return;
 	}
 
@@ -200,6 +221,7 @@ export async function runEnvelopeSend(
 	});
 	if (profileFailure) {
 		failSend(setSendStatus);
+		closeSendProgress?.();
 		return;
 	}
 
@@ -208,7 +230,10 @@ export async function runEnvelopeSend(
 		setCreateForm,
 		setSendStatus,
 	);
-	if (attachmentComposeDrafts === null) return;
+	if (attachmentComposeDrafts === null) {
+		closeSendProgress?.();
+		return;
+	}
 
 	const attachmentFailure = validateAttachmentPacketsForSend({
 		entitlements,
@@ -218,6 +243,7 @@ export async function runEnvelopeSend(
 	if (attachmentFailure) {
 		reportEnvelopeSendValidationFailure(attachmentFailure);
 		failSend(setSendStatus);
+		closeSendProgress?.();
 		return;
 	}
 
@@ -229,6 +255,7 @@ export async function runEnvelopeSend(
 	if (payoutBalanceFailure) {
 		reportEnvelopeSendValidationFailure(payoutBalanceFailure);
 		failSend(setSendStatus);
+		closeSendProgress?.();
 		return;
 	}
 
@@ -240,18 +267,34 @@ export async function runEnvelopeSend(
 	setSendStatus("loading");
 
 	try {
+		emit({ phase: "preparing_documents", status: "start" });
 		const docPayloads = await loadDocumentPayloads(createForm, signatureFields);
+		emit({ phase: "preparing_documents", status: "done" });
+
+		const hasSettlementDrafts = (createForm.settlementDrafts?.length ?? 0) > 0;
+		if (hasSettlementDrafts) {
+			emit({ phase: "resolving_payouts", status: "start" });
+		}
 		const resolvedSettlementDrafts = await resolveSettlementDrafts({
 			createForm,
 			rpcQuery,
 		});
 		if (!resolvedSettlementDrafts) {
+			emit({
+				phase: hasSettlementDrafts ? "resolving_payouts" : "building_payload",
+				status: "error",
+				errorMessage: "Could not prepare payout rules.",
+			});
 			setSendStatus("error");
 			isSendingRef.current = false;
 			scheduleSendIdle(setSendStatus);
 			return;
 		}
+		if (hasSettlementDrafts) {
+			emit({ phase: "resolving_payouts", status: "done" });
+		}
 
+		emit({ phase: "building_payload", status: "start" });
 		const built = await buildEnvelopeSendPayload({
 			createForm,
 			signatureFields,
@@ -269,14 +312,23 @@ export async function runEnvelopeSend(
 
 		if (built.routingValidationError) {
 			reportRoutingValidationError(built.routingValidationError);
+			emit({
+				phase: "building_payload",
+				status: "error",
+				errorMessage: "Envelope routing could not be validated.",
+			});
 			setSendStatus("error");
 			isSendingRef.current = false;
 			scheduleSendIdle(setSendStatus);
 			return;
 		}
+		emit({ phase: "building_payload", status: "done" });
 
 		const result = await sendFile.mutateAsync(
-			built.sendInput,
+			{
+				...built.sendInput,
+				onProgress: (event) => emit(event),
+			},
 			suppressGlobalErrorToast(),
 		);
 
@@ -286,9 +338,13 @@ export async function runEnvelopeSend(
 			selfProfile,
 			result,
 			signFile,
+			ensureAcknowledged,
+			prepareSelfSignCompletions,
 			setSendStatus,
+			onProgress: emit,
 		});
 
+		onSendProgressSuccess?.();
 		setSendStatus("success");
 
 		if (createForm.serverDraftId && result.success && result.pieceCid) {
@@ -306,9 +362,16 @@ export async function runEnvelopeSend(
 
 		setPostSendShare(buildPostSendShare(result));
 		setPostSendWarmSummary(buildPostSendWarmSummary(result, createForm));
+		closeSendProgress?.();
 		setPostSendDialogOpen(true);
 	} catch (error) {
 		setSendStatus("error");
+		emit({
+			phase: "send_failed",
+			status: "error",
+			errorMessage:
+				error instanceof Error ? error.message : "Failed to send envelope.",
+		});
 		if (
 			error instanceof Error &&
 			error.message === SendEnvelopeError.MISSING_DRAFT_DOCUMENT
@@ -317,7 +380,7 @@ export async function runEnvelopeSend(
 			return;
 		}
 		if (error instanceof BaseError) {
-			toast.error(formatSettlementSimError(error));
+			toastUser.error(formatSettlementSimError(error));
 		} else {
 			showAppErrorToast(error);
 		}

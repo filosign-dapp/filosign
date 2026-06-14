@@ -2,13 +2,19 @@ import { useFilosignContext } from "@filosign/react";
 import { useCaptureAppEvent } from "@filosign/react/analytics";
 import { useEntitlements } from "@filosign/react/billing";
 import { useMarkDraftSent } from "@filosign/react/drafts";
-import { useSendFile, useSignFile } from "@filosign/react/files";
+import {
+	ensureAcknowledged,
+	useSendFile,
+	useSignFile,
+} from "@filosign/react/files";
 import { useActiveOrganization } from "@filosign/react/orgs";
 import {
 	type ProfileByAddress,
 	useProfilesByAddresses,
 	useUserProfile,
+	useUserSignatures,
 } from "@filosign/react/users";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef } from "react";
 import type { Address } from "viem";
 import type {
@@ -23,6 +29,13 @@ import type {
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { useWalletUsdcBalance } from "@/src/lib/web3/use-wallet-usdc-balance";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
+import { prepareSelfSignCompletions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/prepare-self-sign";
+import {
+	buildSendProgressPlan,
+	createInitialSendProgressState,
+	type SendProgressEvent,
+	type SendProgressState,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/progress";
 import { runEnvelopeSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/run";
 import { recipientResolvedSignerAddress } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 
@@ -39,6 +52,10 @@ export function useSendEnvelope(args: {
 	setPostSendDialogOpen: (open: boolean) => void;
 	setPostSendShare: (share: ColdSharePackage | null) => void;
 	setPostSendWarmSummary: (summary: WarmShareSummary | null) => void;
+	openSendProgress: (state: SendProgressState) => void;
+	updateSendProgress: (event: SendProgressEvent) => void;
+	closeSendProgress: () => void;
+	markSendProgressComplete: () => void;
 }) {
 	const {
 		createForm,
@@ -50,6 +67,10 @@ export function useSendEnvelope(args: {
 		setPostSendDialogOpen,
 		setPostSendShare,
 		setPostSendWarmSummary,
+		openSendProgress,
+		updateSendProgress,
+		closeSendProgress,
+		markSendProgressComplete,
 	} = args;
 
 	const captureAppEvent = useCaptureAppEvent();
@@ -57,9 +78,11 @@ export function useSendEnvelope(args: {
 	const signFile = useSignFile();
 	const markDraftSent = useMarkDraftSent();
 	const { data: entitlements } = useEntitlements();
-	const { rpcQuery } = useFilosignContext();
+	const { rpcQuery, contracts, wallet } = useFilosignContext();
+	const queryClient = useQueryClient();
 	const activeOrg = useActiveOrganization();
 	const { data: selfProfile } = useUserProfile();
+	const { data: signaturesData } = useUserSignatures();
 	const setCreateForm = useStorePersist((s) => s.setCreateForm);
 	const isSendingRef = useRef(false);
 	const { address: walletAddress, balance: walletUsdcBalance } =
@@ -93,8 +116,68 @@ export function useSendEnvelope(args: {
 		return map;
 	}, [createForm?.recipients, recipientProfilesMap]);
 
+	const ensureAcknowledgedForSend = useCallback(
+		async (pieceCid: string) => {
+			if (!contracts || !wallet) {
+				throw new Error("Wallet connection required");
+			}
+			const authSubjectCommitment = selfProfile?.authSubjectCommitment;
+			if (!authSubjectCommitment) {
+				throw new Error(
+					"Profile missing Auth subject commitment; try re-login.",
+				);
+			}
+
+			await ensureAcknowledged(
+				{
+					contracts,
+					wallet,
+					rpcQuery,
+					authSubjectCommitment,
+				},
+				pieceCid,
+			);
+
+			void queryClient.invalidateQueries({
+				queryKey: rpcQuery.files.piece.detail.key({
+					input: { pieceCid },
+				}),
+			});
+		},
+		[
+			contracts,
+			queryClient,
+			rpcQuery,
+			selfProfile?.authSubjectCommitment,
+			wallet,
+		],
+	);
+
+	const prepareSelfSignForSend = useCallback(
+		async (input: { pieceCid: string; selfFieldIds: string[] }) => {
+			if (!selfProfile) {
+				throw new Error("Profile required for self-signing.");
+			}
+			return prepareSelfSignCompletions({
+				pieceCid: input.pieceCid,
+				selfFieldIds: input.selfFieldIds,
+				selfProfile,
+				signatures: signaturesData?.signatures ?? [],
+				rpcQuery,
+			});
+		},
+		[rpcQuery, selfProfile, signaturesData?.signatures],
+	);
+
 	const handleSend = useCallback(async () => {
 		if (isSendingRef.current || !createForm) return;
+
+		const plan = buildSendProgressPlan({
+			createForm,
+			signatureFields,
+			selfProfile,
+		});
+		openSendProgress(createInitialSendProgressState(plan));
 
 		await runEnvelopeSend({
 			createForm,
@@ -113,6 +196,8 @@ export function useSendEnvelope(args: {
 			signFile,
 			markDraftSent,
 			rpcQuery,
+			ensureAcknowledged: ensureAcknowledgedForSend,
+			prepareSelfSignCompletions: prepareSelfSignForSend,
 			captureAppEvent,
 			setCreateForm,
 			setSendStatus,
@@ -120,6 +205,9 @@ export function useSendEnvelope(args: {
 			setPostSendWarmSummary,
 			setPostSendDialogOpen,
 			isSendingRef,
+			onProgress: updateSendProgress,
+			onSendProgressSuccess: markSendProgressComplete,
+			closeSendProgress,
 		});
 	}, [
 		createForm,
@@ -138,12 +226,18 @@ export function useSendEnvelope(args: {
 		signFile,
 		markDraftSent,
 		rpcQuery,
+		ensureAcknowledgedForSend,
+		prepareSelfSignForSend,
 		captureAppEvent,
 		setCreateForm,
 		setSendStatus,
 		setPostSendShare,
 		setPostSendWarmSummary,
 		setPostSendDialogOpen,
+		openSendProgress,
+		updateSendProgress,
+		closeSendProgress,
+		markSendProgressComplete,
 	]);
 
 	return { handleSend, isSendingRef };

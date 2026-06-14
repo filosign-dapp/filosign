@@ -1,9 +1,9 @@
 import { and, eq, exists, isNull, lte, or } from "drizzle-orm";
 import env from "@/env";
 import { resolveFocRetentionUntil } from "@/lib/domains/foc/retention-policy";
+import { verifyFocCdnCiphertext } from "@/lib/domains/foc/utils/cdn-verify";
 import db from "@/lib/platform/db";
 import {
-	archivalCdnUrl,
 	dealIdFromUploadResult,
 	getOrCreatePlatformDataset,
 	getSynapse,
@@ -239,66 +239,76 @@ export async function runFocTransitionForPiece(
 		throw new Error("FOC transition: ciphertext on R2 is empty");
 	}
 
-	logFocSmoke("R2 ciphertext loaded; preparing Synapse upload", {
-		pieceCid,
-		byteLength: r2Bytes.byteLength,
-		r2Key,
-	});
-
 	const retentionUntil = await resolveFocRetentionUntil(row.organizationId);
-	const context = await getOrCreatePlatformDataset();
-	const prepared = await tryCatch(
-		getSynapse().storage.prepare({
-			context,
-			dataSize: BigInt(r2Bytes.byteLength),
-			extraRunwayEpochs: retentionEpochsFromUntil(retentionUntil),
-		}),
-	);
-	if (prepared.error) {
-		throw new Error("Synapse prepare failed before FOC transition", {
-			cause: prepared.error,
-		});
-	}
+	let dealId = row.dealId ?? undefined;
 
-	if (prepared.data.transaction) {
-		const executed = await tryCatch(prepared.data.transaction.execute());
-		if (executed.error) {
-			throw new Error("Synapse funding transaction failed", {
-				cause: executed.error,
+	if (dealId) {
+		logger.info(
+			{ pieceCid, dealId, organizationId: row.organizationId },
+			"foc-transition: resuming CDN verify (upload already committed)",
+		);
+	} else {
+		logFocSmoke("R2 ciphertext loaded; preparing Synapse upload", {
+			pieceCid,
+			byteLength: r2Bytes.byteLength,
+			r2Key,
+		});
+
+		const context = await getOrCreatePlatformDataset();
+		const prepared = await tryCatch(
+			getSynapse().storage.prepare({
+				context,
+				dataSize: BigInt(r2Bytes.byteLength),
+				extraRunwayEpochs: retentionEpochsFromUntil(retentionUntil),
+			}),
+		);
+		if (prepared.error) {
+			throw new Error("Synapse prepare failed before FOC transition", {
+				cause: prepared.error,
 			});
 		}
-	}
 
-	const uploaded = await tryCatch(
-		context.upload(r2Bytes, { pieceMetadata: {} }),
-	);
-	if (uploaded.error) {
-		throw new Error("Synapse upload to FOC failed", { cause: uploaded.error });
-	}
+		if (prepared.data.transaction) {
+			const executed = await tryCatch(prepared.data.transaction.execute());
+			if (executed.error) {
+				throw new Error("Synapse funding transaction failed", {
+					cause: executed.error,
+				});
+			}
+		}
 
-	if (uploaded.data.pieceCid.toString() !== pieceCid) {
-		throw new Error(`FOC piece CID mismatch for ${pieceCid}`);
-	}
+		const uploaded = await tryCatch(
+			context.upload(r2Bytes, { pieceMetadata: {} }),
+		);
+		if (uploaded.error) {
+			throw new Error("Synapse upload to FOC failed", {
+				cause: uploaded.error,
+			});
+		}
 
-	const dealId = dealIdFromUploadResult(uploaded.data);
-	logFocSmoke("Synapse upload ok; verifying FOC CDN bytes", {
-		pieceCid,
-		dealId,
-		cdnUrl: archivalCdnUrl(pieceCid),
-	});
-	const focRes = await tryCatch(fetch(archivalCdnUrl(pieceCid)));
-	if (focRes.error || !focRes.data.ok) {
-		throw new Error(`FOC CDN verify failed for ${pieceCid}`, {
-			cause: focRes.error,
+		if (uploaded.data.pieceCid.toString() !== pieceCid) {
+			throw new Error(`FOC piece CID mismatch for ${pieceCid}`);
+		}
+
+		dealId = dealIdFromUploadResult(uploaded.data);
+		const checkpointAt = new Date();
+		await db
+			.update(focObjects)
+			.set({
+				dealId,
+				byteLength: r2Bytes.byteLength,
+				retentionUntil,
+				updatedAt: checkpointAt,
+			})
+			.where(eq(focObjects.pieceCid, pieceCid));
+
+		logFocSmoke("Synapse upload ok; verifying FOC CDN bytes", {
+			pieceCid,
+			dealId,
 		});
 	}
-	const focBytes = new Uint8Array(await focRes.data.arrayBuffer());
-	if (
-		focBytes.byteLength !== r2Bytes.byteLength ||
-		!focBytes.every((b, i) => b === r2Bytes[i])
-	) {
-		throw new Error(`FOC bytes mismatch for ${pieceCid}`);
-	}
+
+	await verifyFocCdnCiphertext({ pieceCid, expectedBytes: r2Bytes });
 
 	const verifiedAt = new Date();
 	await db

@@ -17,7 +17,7 @@ After the envelope satisfies **on-chain routing** on `FSEnvelopeRegistry` (`quor
 
 The replicate job becomes eligible at `r2_evict_after` (`completed_at` + **`R2_HOT_DAYS`**, default **30**), or earlier if the sender exports a compliance packet during the hot window.
 
-At eligibility, the **`foc-transition`** job uploads to Filecoin, verifies bytes against R2 via CDN, and sets `replicate_status = replicated`. **R2 is not deleted** - both backends may hold the same ciphertext. App downloads prefer R2 presign; FOC CDN is fallback when R2 is missing (future cutover).
+At eligibility, the **`foc-transition`** job uploads to Filecoin, polls Filbeam CDN until bytes match R2, and sets `replicate_status = replicated`. **`dealId` is checkpointed after upload** so BullMQ retries skip re-upload and only resume CDN verify. **R2 is not deleted** - both backends may hold the same ciphertext. App downloads prefer R2 presign; FOC CDN is fallback when R2 is missing (future cutover).
 
 Env: `R2_HOT_DAYS=30`
 
@@ -55,7 +55,7 @@ Effective FOC horizon per object: **`max(workspace, archival)`** - see [`retenti
 | `r2Key` | text | e.g. `uploads/{pieceCid}` |
 | `byteLength` | int | Set at stub; updated on transition |
 | `replicateStatus` | enum | `pending` → `replicated` |
-| `dealId` | text | Set after successful FOC upload |
+| `dealId` | text | Set after Synapse upload commits (checkpoint before CDN verify) |
 | `retentionUntil` | timestamptz | Effective horizon (workspace ∪ archival) |
 | `completedAt` | timestamptz | When envelope routing completed on-chain |
 | `r2EvictAfter` | timestamptz | When replicate job may run (legacy column name) |
@@ -68,7 +68,7 @@ Stub rows are created when a **paid workspace** envelope is **routing-complete o
 ## Synapse SDK (`@filoz/synapse-sdk` ^0.41)
 
 - Client: [`lib/platform/foc/synapse.ts`](../lib/platform/foc/synapse.ts)
-- Transition: `prepare({ dataSize, extraRunwayEpochs })` → `upload()` → CDN verify (R2 retained)
+- Transition: `prepare({ dataSize, extraRunwayEpochs })` → `upload()` → checkpoint `deal_id` → CDN poll verify (R2 retained)
 - Extend: archival webhook → `prepare({ dataSize: 0n, extraRunwayEpochs })` - no re-upload
 
 ## Downloads

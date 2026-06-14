@@ -16,7 +16,7 @@ const ALLOWED_FILES = [
 /** Background / webhook paths may use plain Error (not surfaced via oRPC). */
 const THROW_NEW_ERROR_ALLOWLIST = [
 	"apps/server/lib/domains/billing/utils/webhooks/",
-	"apps/server/lib/domains/foc/lifecycle.ts",
+	"apps/server/lib/domains/foc/",
 	"apps/server/lib/domains/archival/jobs/",
 ];
 

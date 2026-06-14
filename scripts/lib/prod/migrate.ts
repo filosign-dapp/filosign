@@ -126,6 +126,9 @@ export async function migrateProd(
 				...process.env,
 				PROD_PG_LOCAL_PORT: String(localPort),
 				PROD_SERVER_DIR: server,
+				PROD_TARGET_DB: ctx.pgDb,
+				PROD_MIGRATE_EXPECTED_COUNT: String(journal.length),
+				PROD_SSH_PROBE_COUNT: String(before.length),
 			},
 		});
 		return (await proc.exited) ?? 1;
@@ -167,8 +170,7 @@ export async function migrateProd(
 	} else if (delta === 0 && pending.length > 0) {
 		log.fail(
 			`drizzle-kit reported success but "${ctx.pgDb}" still shows ${after.length} journal row(s) after ${pending.length} pending migration(s). ` +
-				`If VPS psql shows rows, the laptop SSH probe may be mis-quoting psql (check scripts/lib/prod/ssh.ts). ` +
-				`Otherwise PROD_PG_DB may differ from the database drizzle-kit migrated.`,
+				`See [drizzle-migrate] logs: tunnel may not reach VPS Postgres (local port 5433 in use, or SSH tunnel failed).`,
 		);
 		if (infisicalDbName && infisicalDbName !== ctx.pgDb) {
 			log.detail(

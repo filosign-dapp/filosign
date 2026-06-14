@@ -1,5 +1,5 @@
 {
-  "id": "7f0afd8e-c5b3-47d8-9f8d-b45ad9f35d4f",
+  "id": "09c18d8a-743e-45b8-a1df-56a71662176c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -390,6 +390,121 @@
             "wallet_address"
           ],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.notification_dismissals": {
+      "name": "notification_dismissals",
+      "schema": "",
+      "columns": {
+        "wallet": {
+          "name": "wallet",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dismissed_at": {
+          "name": "dismissed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "uidx_notification_dismissals_wallet_type_entity": {
+          "name": "uidx_notification_dismissals_wallet_type_entity",
+          "columns": [
+            {
+              "expression": "wallet",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "entity_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_notification_dismissals_wallet": {
+          "name": "idx_notification_dismissals_wallet",
+          "columns": [
+            {
+              "expression": "wallet",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "notification_dismissals_wallet_users_wallet_address_fk": {
+          "name": "notification_dismissals_wallet_users_wallet_address_fk",
+          "tableFrom": "notification_dismissals",
+          "tableTo": "users",
+          "columnsFrom": [
+            "wallet"
+          ],
+          "columnsTo": [
+            "wallet_address"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -959,6 +1074,27 @@
             },
             {
               "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_envelope_drafts_updated_id": {
+          "name": "idx_envelope_drafts_updated_id",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1806,6 +1942,151 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.file_field_completions": {
+      "name": "file_field_completions",
+      "schema": "",
+      "columns": {
+        "file_piece_cid": {
+          "name": "file_piece_cid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "field_id": {
+          "name": "field_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "signer": {
+          "name": "signer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value_kind": {
+          "name": "value_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_artifact_id": {
+          "name": "source_artifact_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "storage_key": {
+          "name": "storage_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "content_sha256": {
+          "name": "content_sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "text_value": {
+          "name": "text_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_field_completions_piece": {
+          "name": "idx_field_completions_piece",
+          "columns": [
+            {
+              "expression": "file_piece_cid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "file_field_completions_file_piece_cid_files_piece_cid_fk": {
+          "name": "file_field_completions_file_piece_cid_files_piece_cid_fk",
+          "tableFrom": "file_field_completions",
+          "tableTo": "files",
+          "columnsFrom": [
+            "file_piece_cid"
+          ],
+          "columnsTo": [
+            "piece_cid"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "file_field_completions_signer_users_wallet_address_fk": {
+          "name": "file_field_completions_signer_users_wallet_address_fk",
+          "tableFrom": "file_field_completions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "signer"
+          ],
+          "columnsTo": [
+            "wallet_address"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "file_field_completions_source_artifact_id_user_signatures_id_fk": {
+          "name": "file_field_completions_source_artifact_id_user_signatures_id_fk",
+          "tableFrom": "file_field_completions",
+          "tableTo": "user_signatures",
+          "columnsFrom": [
+            "source_artifact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pk_file_field_completions": {
+          "name": "pk_file_field_completions",
+          "columns": [
+            "file_piece_cid",
+            "field_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.file_participants": {
       "name": "file_participants",
       "schema": "",
@@ -2241,6 +2522,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "field_completions": {
+          "name": "field_completions",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -2404,6 +2692,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "metadata_json": {
+          "name": "metadata_json",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
         "warm_participant_count": {
           "name": "warm_participant_count",
           "type": "integer",
@@ -2473,6 +2767,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "is_practice": {
+          "name": "is_practice",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "created_at": {
           "name": "created_at",
@@ -2561,6 +2862,27 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "idx_files_updated_piece": {
+          "name": "idx_files_updated_piece",
+          "columns": [
+            {
+              "expression": "updated_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "piece_cid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2618,6 +2940,148 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.user_activation_milestones": {
+      "name": "user_activation_milestones",
+      "schema": "",
+      "columns": {
+        "wallet_address": {
+          "name": "wallet_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "milestone": {
+          "name": "milestone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "idx_user_activation_milestones_wallet": {
+          "name": "idx_user_activation_milestones_wallet",
+          "columns": [
+            {
+              "expression": "wallet_address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "user_activation_milestones_wallet_address_users_wallet_address_fk": {
+          "name": "user_activation_milestones_wallet_address_users_wallet_address_fk",
+          "tableFrom": "user_activation_milestones",
+          "tableTo": "users",
+          "columnsFrom": [
+            "wallet_address"
+          ],
+          "columnsTo": [
+            "wallet_address"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "user_activation_milestones_wallet_address_milestone_pk": {
+          "name": "user_activation_milestones_wallet_address_milestone_pk",
+          "columns": [
+            "wallet_address",
+            "milestone"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_activation_state": {
+      "name": "user_activation_state",
+      "schema": "",
+      "columns": {
+        "wallet_address": {
+          "name": "wallet_address",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "practice_piece_cid": {
+          "name": "practice_piece_cid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_activation_state_wallet_address_users_wallet_address_fk": {
+          "name": "user_activation_state_wallet_address_users_wallet_address_fk",
+          "tableFrom": "user_activation_state",
+          "tableTo": "users",
+          "columnsFrom": [
+            "wallet_address"
+          ],
+          "columnsTo": [
+            "wallet_address"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "user_activation_state_practice_piece_cid_files_piece_cid_fk": {
+          "name": "user_activation_state_practice_piece_cid_files_piece_cid_fk",
+          "tableFrom": "user_activation_state",
+          "tableTo": "files",
+          "columnsFrom": [
+            "practice_piece_cid"
+          ],
+          "columnsTo": [
+            "piece_cid"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.attachment_release_rules": {
       "name": "attachment_release_rules",
       "schema": "",
@@ -2657,6 +3121,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "release_tx_hash": {
+          "name": "release_tx_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -3011,6 +3481,18 @@
         },
         "register_rule_tx_hash": {
           "name": "register_rule_tx_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "org_kem_ciphertext": {
+          "name": "org_kem_ciphertext",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "org_encrypted_packet_dek": {
+          "name": "org_encrypted_packet_dek",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -3566,6 +4048,166 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.product_feedback": {
+      "name": "product_feedback",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "wallet_address": {
+          "name": "wallet_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "organization_id": {
+          "name": "organization_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "feature_area": {
+          "name": "feature_area",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'feedback'"
+        },
+        "route": {
+          "name": "route",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "piece_cid": {
+          "name": "piece_cid",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prompt_type": {
+          "name": "prompt_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'global'"
+        },
+        "trigger": {
+          "name": "trigger",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "idx_product_feedback_wallet": {
+          "name": "idx_product_feedback_wallet",
+          "columns": [
+            {
+              "expression": "wallet_address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_product_feedback_created_at": {
+          "name": "idx_product_feedback_created_at",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "product_feedback_wallet_address_users_wallet_address_fk": {
+          "name": "product_feedback_wallet_address_users_wallet_address_fk",
+          "tableFrom": "product_feedback",
+          "tableTo": "users",
+          "columnsFrom": [
+            "wallet_address"
+          ],
+          "columnsTo": [
+            "wallet_address"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "product_feedback_organization_id_organizations_id_fk": {
+          "name": "product_feedback_organization_id_organizations_id_fk",
+          "tableFrom": "product_feedback",
+          "tableTo": "organizations",
+          "columnsFrom": [
+            "organization_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.organization_archival": {
       "name": "organization_archival",
       "schema": "",
@@ -3698,178 +4340,6 @@
           ]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.organization_connections": {
-      "name": "organization_connections",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "organization_id": {
-          "name": "organization_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "recipient_wallet": {
-          "name": "recipient_wallet",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "label": {
-          "name": "label",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "added_by_wallet": {
-          "name": "added_by_wallet",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "anchor_sender_wallet": {
-          "name": "anchor_sender_wallet",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'active'"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "uidx_org_connections_org_recipient": {
-          "name": "uidx_org_connections_org_recipient",
-          "columns": [
-            {
-              "expression": "organization_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "recipient_wallet",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_org_connections_org_status": {
-          "name": "idx_org_connections_org_status",
-          "columns": [
-            {
-              "expression": "organization_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "status",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "organization_connections_organization_id_organizations_id_fk": {
-          "name": "organization_connections_organization_id_organizations_id_fk",
-          "tableFrom": "organization_connections",
-          "tableTo": "organizations",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "organization_connections_recipient_wallet_users_wallet_address_fk": {
-          "name": "organization_connections_recipient_wallet_users_wallet_address_fk",
-          "tableFrom": "organization_connections",
-          "tableTo": "users",
-          "columnsFrom": [
-            "recipient_wallet"
-          ],
-          "columnsTo": [
-            "wallet_address"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "organization_connections_added_by_wallet_users_wallet_address_fk": {
-          "name": "organization_connections_added_by_wallet_users_wallet_address_fk",
-          "tableFrom": "organization_connections",
-          "tableTo": "users",
-          "columnsFrom": [
-            "added_by_wallet"
-          ],
-          "columnsTo": [
-            "wallet_address"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "organization_connections_anchor_sender_wallet_users_wallet_address_fk": {
-          "name": "organization_connections_anchor_sender_wallet_users_wallet_address_fk",
-          "tableFrom": "organization_connections",
-          "tableTo": "users",
-          "columnsFrom": [
-            "anchor_sender_wallet"
-          ],
-          "columnsTo": [
-            "wallet_address"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -5699,6 +6169,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "dodo_checkout_session_id": {
+          "name": "dodo_checkout_session_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "seat_count": {
           "name": "seat_count",
           "type": "integer",
@@ -6034,6 +6510,19 @@
           "primaryKey": false,
           "notNull": false
         },
+        "email_body": {
+          "name": "email_body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email_variant": {
+          "name": "email_variant",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'warm'"
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -6333,128 +6822,45 @@
           "primaryKey": false,
           "notNull": true
         },
-        "data": {
-          "name": "data",
+        "kind": {
+          "name": "kind",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "user_signatures_wallet_address_users_wallet_address_fk": {
-          "name": "user_signatures_wallet_address_users_wallet_address_fk",
-          "tableFrom": "user_signatures",
-          "tableTo": "users",
-          "columnsFrom": [
-            "wallet_address"
-          ],
-          "columnsTo": [
-            "wallet_address"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.user_subscriptions": {
-      "name": "user_subscriptions",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "wallet_address": {
-          "name": "wallet_address",
+        "role": {
+          "name": "role",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "plan_id": {
-          "name": "plan_id",
+        "storage_key": {
+          "name": "storage_key",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'free'"
+          "notNull": true
         },
-        "status": {
-          "name": "status",
+        "content_type": {
+          "name": "content_type",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'active'"
+          "notNull": true
         },
-        "provider": {
-          "name": "provider",
+        "content_sha256": {
+          "name": "content_sha256",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'manual'"
+          "notNull": true
         },
-        "period_start": {
-          "name": "period_start",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "period_end": {
-          "name": "period_end",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "cancel_at_period_end": {
-          "name": "cancel_at_period_end",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "feature_overrides": {
-          "name": "feature_overrides",
+        "typed_meta": {
+          "name": "typed_meta",
           "type": "jsonb",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'{}'::jsonb"
-        },
-        "dodo_customer_id": {
-          "name": "dodo_customer_id",
-          "type": "text",
-          "primaryKey": false,
           "notNull": false
         },
-        "dodo_subscription_id": {
-          "name": "dodo_subscription_id",
-          "type": "text",
+        "intrinsic_aspect_ratio": {
+          "name": "intrinsic_aspect_ratio",
+          "type": "real",
           "primaryKey": false,
           "notNull": false
         },
@@ -6480,26 +6886,23 @@
         }
       },
       "indexes": {
-        "idx_user_subscriptions_plan": {
-          "name": "idx_user_subscriptions_plan",
+        "idx_user_signatures_wallet_role_sha": {
+          "name": "idx_user_signatures_wallet_role_sha",
           "columns": [
             {
-              "expression": "plan_id",
+              "expression": "wallet_address",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "idx_user_subscriptions_status": {
-          "name": "idx_user_subscriptions_status",
-          "columns": [
+            },
             {
-              "expression": "status",
+              "expression": "role",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "content_sha256",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -6512,9 +6915,9 @@
         }
       },
       "foreignKeys": {
-        "user_subscriptions_wallet_address_users_wallet_address_fk": {
-          "name": "user_subscriptions_wallet_address_users_wallet_address_fk",
-          "tableFrom": "user_subscriptions",
+        "user_signatures_wallet_address_users_wallet_address_fk": {
+          "name": "user_signatures_wallet_address_users_wallet_address_fk",
+          "tableFrom": "user_signatures",
           "tableTo": "users",
           "columnsFrom": [
             "wallet_address"
@@ -6522,27 +6925,12 @@
           "columnsTo": [
             "wallet_address"
           ],
-          "onDelete": "cascade",
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "user_subscriptions_walletAddress_unique": {
-          "name": "user_subscriptions_walletAddress_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "wallet_address"
-          ]
-        },
-        "user_subscriptions_dodoSubscriptionId_unique": {
-          "name": "user_subscriptions_dodoSubscriptionId_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "dodo_subscription_id"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -6623,6 +7011,18 @@
           "primaryKey": false,
           "notNull": false
         },
+        "default_signature_id": {
+          "name": "default_signature_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "default_initial_id": {
+          "name": "default_initial_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -6670,78 +7070,6 @@
           ]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.users_datasets": {
-      "name": "users_datasets",
-      "schema": "",
-      "columns": {
-        "wallet_address": {
-          "name": "wallet_address",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "data_set_id": {
-          "name": "data_set_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "provider_address": {
-          "name": "provider_address",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "total_deposited_base_units": {
-          "name": "total_deposited_base_units",
-          "type": "bigint",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "0"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "users_datasets_wallet_address_users_wallet_address_fk": {
-          "name": "users_datasets_wallet_address_users_wallet_address_fk",
-          "tableFrom": "users_datasets",
-          "tableTo": "users",
-          "columnsFrom": [
-            "wallet_address"
-          ],
-          "columnsTo": [
-            "wallet_address"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

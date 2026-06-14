@@ -39,6 +39,16 @@ CREATE TABLE "privacy_requests" (
 	"deleted_at" timestamp with time zone
 );
 --> statement-breakpoint
+CREATE TABLE "notification_dismissals" (
+	"wallet" text NOT NULL,
+	"type" text NOT NULL,
+	"entity_id" text NOT NULL,
+	"dismissed_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"deleted_at" timestamp with time zone
+);
+--> statement-breakpoint
 CREATE TABLE "draft_comments" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"draft_id" uuid NOT NULL,
@@ -167,6 +177,21 @@ CREATE TABLE "file_document_views" (
 	CONSTRAINT "pk_file_document_views" PRIMARY KEY("file_piece_cid","wallet")
 );
 --> statement-breakpoint
+CREATE TABLE "file_field_completions" (
+	"file_piece_cid" text NOT NULL,
+	"field_id" text NOT NULL,
+	"signer" text NOT NULL,
+	"value_kind" text NOT NULL,
+	"source_artifact_id" uuid,
+	"storage_key" text,
+	"content_sha256" text,
+	"text_value" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"deleted_at" timestamp with time zone,
+	CONSTRAINT "pk_file_field_completions" PRIMARY KEY("file_piece_cid","field_id")
+);
+--> statement-breakpoint
 CREATE TABLE "file_participants" (
 	"file_piece_cid" text NOT NULL,
 	"wallet" text NOT NULL,
@@ -195,21 +220,6 @@ CREATE TABLE "file_signatures" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"deleted_at" timestamp with time zone,
 	CONSTRAINT "pk_file_signatures" PRIMARY KEY("file_piece_cid","signer")
-);
---> statement-breakpoint
-CREATE TABLE "file_field_completions" (
-	"file_piece_cid" text NOT NULL,
-	"field_id" text NOT NULL,
-	"signer" text NOT NULL,
-	"value_kind" text NOT NULL,
-	"source_artifact_id" uuid,
-	"storage_key" text,
-	"content_sha256" text,
-	"text_value" text,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"deleted_at" timestamp with time zone,
-	CONSTRAINT "pk_file_field_completions" PRIMARY KEY("file_piece_cid","field_id")
 );
 --> statement-breakpoint
 CREATE TABLE "file_signer_amendments" (
@@ -262,10 +272,26 @@ CREATE TABLE "files" (
 	"revoked_by" text,
 	"completed_at" timestamp with time zone,
 	"revoke_onchain_tx_hash" text,
+	"is_practice" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"deleted_at" timestamp with time zone,
 	CONSTRAINT "files_onchainTxHash_unique" UNIQUE("onchain_tx_hash")
+);
+--> statement-breakpoint
+CREATE TABLE "user_activation_milestones" (
+	"wallet_address" text NOT NULL,
+	"milestone" text NOT NULL,
+	"completed_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "user_activation_milestones_wallet_address_milestone_pk" PRIMARY KEY("wallet_address","milestone")
+);
+--> statement-breakpoint
+CREATE TABLE "user_activation_state" (
+	"wallet_address" text PRIMARY KEY NOT NULL,
+	"practice_piece_cid" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"deleted_at" timestamp with time zone
 );
 --> statement-breakpoint
 CREATE TABLE "attachment_release_rules" (
@@ -275,6 +301,7 @@ CREATE TABLE "attachment_release_rules" (
 	"on_chain_rule_id" bigint NOT NULL,
 	"release_contract_address" text NOT NULL,
 	"packet_content_hash" text NOT NULL,
+	"release_tx_hash" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"deleted_at" timestamp with time zone
@@ -318,6 +345,8 @@ CREATE TABLE "envelope_attachment_packets" (
 	"on_chain_rule_id" bigint,
 	"release_contract_address" text,
 	"register_rule_tx_hash" text,
+	"org_kem_ciphertext" text,
+	"org_encrypted_packet_dek" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"deleted_at" timestamp with time zone
@@ -371,6 +400,23 @@ CREATE TABLE "organization_settlement_feature_access" (
 	"deleted_at" timestamp with time zone
 );
 --> statement-breakpoint
+CREATE TABLE "product_feedback" (
+	"id" uuid PRIMARY KEY NOT NULL,
+	"wallet_address" text NOT NULL,
+	"organization_id" uuid,
+	"feature_area" text NOT NULL,
+	"kind" text DEFAULT 'feedback' NOT NULL,
+	"route" text,
+	"message" text,
+	"piece_cid" text,
+	"prompt_type" text DEFAULT 'global' NOT NULL,
+	"trigger" text,
+	"metadata" jsonb DEFAULT '{}'::jsonb NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"deleted_at" timestamp with time zone
+);
+--> statement-breakpoint
 CREATE TABLE "organization_archival" (
 	"organization_id" uuid PRIMARY KEY NOT NULL,
 	"product_id" text NOT NULL,
@@ -384,19 +430,6 @@ CREATE TABLE "organization_archival" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"deleted_at" timestamp with time zone,
 	CONSTRAINT "organization_archival_dodoSubscriptionId_unique" UNIQUE("dodo_subscription_id")
-);
---> statement-breakpoint
-CREATE TABLE "organization_connections" (
-	"id" uuid PRIMARY KEY NOT NULL,
-	"organization_id" uuid NOT NULL,
-	"recipient_wallet" text NOT NULL,
-	"label" text,
-	"added_by_wallet" text NOT NULL,
-	"anchor_sender_wallet" text NOT NULL,
-	"status" text DEFAULT 'active' NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"deleted_at" timestamp with time zone
 );
 --> statement-breakpoint
 CREATE TABLE "organization_invites" (
@@ -593,6 +626,7 @@ CREATE TABLE "platform_access_pending" (
 	"plan_id" text NOT NULL,
 	"dodo_subscription_id" text,
 	"dodo_customer_id" text,
+	"dodo_checkout_session_id" text,
 	"seat_count" integer DEFAULT 1 NOT NULL,
 	"billing_interval" text,
 	"status" text DEFAULT 'pending_wallet' NOT NULL,
@@ -628,6 +662,8 @@ CREATE TABLE "platform_invites" (
 	"revoked_at" timestamp with time zone,
 	"created_by_admin_wallet" text,
 	"note" text,
+	"email_body" text,
+	"email_variant" text DEFAULT 'warm' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"deleted_at" timestamp with time zone,
@@ -675,25 +711,6 @@ CREATE TABLE "user_signatures" (
 	"deleted_at" timestamp with time zone
 );
 --> statement-breakpoint
-CREATE TABLE "user_subscriptions" (
-	"id" uuid PRIMARY KEY NOT NULL,
-	"wallet_address" text NOT NULL,
-	"plan_id" text DEFAULT 'free' NOT NULL,
-	"status" text DEFAULT 'active' NOT NULL,
-	"provider" text DEFAULT 'manual' NOT NULL,
-	"period_start" timestamp with time zone DEFAULT now() NOT NULL,
-	"period_end" timestamp with time zone,
-	"cancel_at_period_end" boolean DEFAULT false NOT NULL,
-	"feature_overrides" jsonb DEFAULT '{}'::jsonb NOT NULL,
-	"dodo_customer_id" text,
-	"dodo_subscription_id" text,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"deleted_at" timestamp with time zone,
-	CONSTRAINT "user_subscriptions_walletAddress_unique" UNIQUE("wallet_address"),
-	CONSTRAINT "user_subscriptions_dodoSubscriptionId_unique" UNIQUE("dodo_subscription_id")
-);
---> statement-breakpoint
 CREATE TABLE "users" (
 	"wallet_address" text PRIMARY KEY NOT NULL,
 	"keygen_data_json" jsonb,
@@ -717,20 +734,11 @@ CREATE TABLE "users" (
 	CONSTRAINT "users_username_unique" UNIQUE("username")
 );
 --> statement-breakpoint
-CREATE TABLE "users_datasets" (
-	"wallet_address" text PRIMARY KEY NOT NULL,
-	"data_set_id" integer NOT NULL,
-	"provider_address" text NOT NULL,
-	"total_deposited_base_units" bigint DEFAULT 0 NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"deleted_at" timestamp with time zone
-);
---> statement-breakpoint
 ALTER TABLE "analytics_consent_receipts" ADD CONSTRAINT "analytics_consent_receipts_wallet_address_users_wallet_address_fk" FOREIGN KEY ("wallet_address") REFERENCES "public"."users"("wallet_address") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "privacy_erasure_ledger" ADD CONSTRAINT "privacy_erasure_ledger_subject_wallet_address_users_wallet_address_fk" FOREIGN KEY ("subject_wallet_address") REFERENCES "public"."users"("wallet_address") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "privacy_requests" ADD CONSTRAINT "privacy_requests_subject_wallet_address_users_wallet_address_fk" FOREIGN KEY ("subject_wallet_address") REFERENCES "public"."users"("wallet_address") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "privacy_requests" ADD CONSTRAINT "privacy_requests_assignee_wallet_address_users_wallet_address_fk" FOREIGN KEY ("assignee_wallet_address") REFERENCES "public"."users"("wallet_address") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "notification_dismissals" ADD CONSTRAINT "notification_dismissals_wallet_users_wallet_address_fk" FOREIGN KEY ("wallet") REFERENCES "public"."users"("wallet_address") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "draft_comments" ADD CONSTRAINT "draft_comments_draft_id_envelope_drafts_id_fk" FOREIGN KEY ("draft_id") REFERENCES "public"."envelope_drafts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "draft_comments" ADD CONSTRAINT "draft_comments_author_wallet_users_wallet_address_fk" FOREIGN KEY ("author_wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "draft_external_shares" ADD CONSTRAINT "draft_external_shares_draft_id_envelope_drafts_id_fk" FOREIGN KEY ("draft_id") REFERENCES "public"."envelope_drafts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -747,18 +755,21 @@ ALTER TABLE "file_comments" ADD CONSTRAINT "file_comments_file_piece_cid_files_p
 ALTER TABLE "file_comments" ADD CONSTRAINT "file_comments_author_wallet_users_wallet_address_fk" FOREIGN KEY ("author_wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "file_document_views" ADD CONSTRAINT "file_document_views_file_piece_cid_files_piece_cid_fk" FOREIGN KEY ("file_piece_cid") REFERENCES "public"."files"("piece_cid") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "file_document_views" ADD CONSTRAINT "file_document_views_wallet_users_wallet_address_fk" FOREIGN KEY ("wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "file_field_completions" ADD CONSTRAINT "file_field_completions_file_piece_cid_files_piece_cid_fk" FOREIGN KEY ("file_piece_cid") REFERENCES "public"."files"("piece_cid") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "file_field_completions" ADD CONSTRAINT "file_field_completions_signer_users_wallet_address_fk" FOREIGN KEY ("signer") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "file_field_completions" ADD CONSTRAINT "file_field_completions_source_artifact_id_user_signatures_id_fk" FOREIGN KEY ("source_artifact_id") REFERENCES "public"."user_signatures"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "file_participants" ADD CONSTRAINT "file_participants_file_piece_cid_files_piece_cid_fk" FOREIGN KEY ("file_piece_cid") REFERENCES "public"."files"("piece_cid") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "file_participants" ADD CONSTRAINT "file_participants_wallet_users_wallet_address_fk" FOREIGN KEY ("wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "file_signatures" ADD CONSTRAINT "file_signatures_file_piece_cid_files_piece_cid_fk" FOREIGN KEY ("file_piece_cid") REFERENCES "public"."files"("piece_cid") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "file_signer_amendments" ADD CONSTRAINT "file_signer_amendments_file_piece_cid_files_piece_cid_fk" FOREIGN KEY ("file_piece_cid") REFERENCES "public"."files"("piece_cid") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "file_signer_drafts" ADD CONSTRAINT "file_signer_drafts_file_piece_cid_files_piece_cid_fk" FOREIGN KEY ("file_piece_cid") REFERENCES "public"."files"("piece_cid") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "file_signer_drafts" ADD CONSTRAINT "file_signer_drafts_wallet_users_wallet_address_fk" FOREIGN KEY ("wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "file_field_completions" ADD CONSTRAINT "file_field_completions_file_piece_cid_files_piece_cid_fk" FOREIGN KEY ("file_piece_cid") REFERENCES "public"."files"("piece_cid") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "file_field_completions" ADD CONSTRAINT "file_field_completions_signer_users_wallet_address_fk" FOREIGN KEY ("signer") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "file_field_completions" ADD CONSTRAINT "file_field_completions_source_artifact_id_user_signatures_id_fk" FOREIGN KEY ("source_artifact_id") REFERENCES "public"."user_signatures"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "files" ADD CONSTRAINT "files_sender_users_wallet_address_fk" FOREIGN KEY ("sender") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "files" ADD CONSTRAINT "files_created_by_wallet_users_wallet_address_fk" FOREIGN KEY ("created_by_wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "files" ADD CONSTRAINT "files_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_activation_milestones" ADD CONSTRAINT "user_activation_milestones_wallet_address_users_wallet_address_fk" FOREIGN KEY ("wallet_address") REFERENCES "public"."users"("wallet_address") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_activation_state" ADD CONSTRAINT "user_activation_state_wallet_address_users_wallet_address_fk" FOREIGN KEY ("wallet_address") REFERENCES "public"."users"("wallet_address") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_activation_state" ADD CONSTRAINT "user_activation_state_practice_piece_cid_files_piece_cid_fk" FOREIGN KEY ("practice_piece_cid") REFERENCES "public"."files"("piece_cid") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "attachment_release_rules" ADD CONSTRAINT "attachment_release_rules_packet_row_id_envelope_attachment_packets_id_fk" FOREIGN KEY ("packet_row_id") REFERENCES "public"."envelope_attachment_packets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "envelope_attachment_packet_cold_wraps" ADD CONSTRAINT "envelope_attachment_packet_cold_wraps_packet_row_id_envelope_attachment_packets_id_fk" FOREIGN KEY ("packet_row_id") REFERENCES "public"."envelope_attachment_packets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "envelope_attachment_packet_recipients" ADD CONSTRAINT "envelope_attachment_packet_recipients_packet_row_id_envelope_attachment_packets_id_fk" FOREIGN KEY ("packet_row_id") REFERENCES "public"."envelope_attachment_packets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -769,11 +780,9 @@ ALTER TABLE "file_settlement_recipient_acks" ADD CONSTRAINT "file_settlement_rec
 ALTER TABLE "file_settlement_recipient_acks" ADD CONSTRAINT "file_settlement_recipient_acks_signer_wallet_users_wallet_address_fk" FOREIGN KEY ("signer_wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "organization_settlement_feature_access" ADD CONSTRAINT "organization_settlement_feature_access_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "organization_settlement_feature_access" ADD CONSTRAINT "organization_settlement_feature_access_accepted_by_wallet_users_wallet_address_fk" FOREIGN KEY ("accepted_by_wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "product_feedback" ADD CONSTRAINT "product_feedback_wallet_address_users_wallet_address_fk" FOREIGN KEY ("wallet_address") REFERENCES "public"."users"("wallet_address") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "product_feedback" ADD CONSTRAINT "product_feedback_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "organization_archival" ADD CONSTRAINT "organization_archival_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "organization_connections" ADD CONSTRAINT "organization_connections_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "organization_connections" ADD CONSTRAINT "organization_connections_recipient_wallet_users_wallet_address_fk" FOREIGN KEY ("recipient_wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "organization_connections" ADD CONSTRAINT "organization_connections_added_by_wallet_users_wallet_address_fk" FOREIGN KEY ("added_by_wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "organization_connections" ADD CONSTRAINT "organization_connections_anchor_sender_wallet_users_wallet_address_fk" FOREIGN KEY ("anchor_sender_wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "organization_invites" ADD CONSTRAINT "organization_invites_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "organization_invites" ADD CONSTRAINT "organization_invites_claimed_by_wallet_users_wallet_address_fk" FOREIGN KEY ("claimed_by_wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "organization_invites" ADD CONSTRAINT "organization_invites_invited_by_users_wallet_address_fk" FOREIGN KEY ("invited_by") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -799,13 +808,13 @@ ALTER TABLE "user_history" ADD CONSTRAINT "user_history_wallet_address_users_wal
 ALTER TABLE "user_invites" ADD CONSTRAINT "user_invites_sender_users_wallet_address_fk" FOREIGN KEY ("sender") REFERENCES "public"."users"("wallet_address") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_invites" ADD CONSTRAINT "user_invites_claimed_by_wallet_users_wallet_address_fk" FOREIGN KEY ("claimed_by_wallet") REFERENCES "public"."users"("wallet_address") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_signatures" ADD CONSTRAINT "user_signatures_wallet_address_users_wallet_address_fk" FOREIGN KEY ("wallet_address") REFERENCES "public"."users"("wallet_address") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "user_subscriptions" ADD CONSTRAINT "user_subscriptions_wallet_address_users_wallet_address_fk" FOREIGN KEY ("wallet_address") REFERENCES "public"."users"("wallet_address") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "users_datasets" ADD CONSTRAINT "users_datasets_wallet_address_users_wallet_address_fk" FOREIGN KEY ("wallet_address") REFERENCES "public"."users"("wallet_address") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "idx_analytics_consent_wallet_created" ON "analytics_consent_receipts" USING btree ("wallet_address","created_at");--> statement-breakpoint
 CREATE INDEX "idx_privacy_erasure_ledger_subject_executed" ON "privacy_erasure_ledger" USING btree ("subject_wallet_address","executed_at");--> statement-breakpoint
 CREATE INDEX "idx_privacy_erasure_ledger_replay_required" ON "privacy_erasure_ledger" USING btree ("replay_required");--> statement-breakpoint
 CREATE INDEX "idx_privacy_requests_subject_created" ON "privacy_requests" USING btree ("subject_wallet_address","created_at");--> statement-breakpoint
 CREATE INDEX "idx_privacy_requests_status" ON "privacy_requests" USING btree ("status");--> statement-breakpoint
+CREATE UNIQUE INDEX "uidx_notification_dismissals_wallet_type_entity" ON "notification_dismissals" USING btree ("wallet","type","entity_id");--> statement-breakpoint
+CREATE INDEX "idx_notification_dismissals_wallet" ON "notification_dismissals" USING btree ("wallet");--> statement-breakpoint
 CREATE INDEX "idx_draft_comments_draft" ON "draft_comments" USING btree ("draft_id");--> statement-breakpoint
 CREATE INDEX "idx_draft_comments_draft_created" ON "draft_comments" USING btree ("draft_id","created_at");--> statement-breakpoint
 CREATE INDEX "idx_draft_external_shares_draft" ON "draft_external_shares" USING btree ("draft_id");--> statement-breakpoint
@@ -815,6 +824,7 @@ CREATE INDEX "idx_envelope_draft_documents_draft" ON "envelope_draft_documents" 
 CREATE INDEX "idx_envelope_drafts_org" ON "envelope_drafts" USING btree ("organization_id");--> statement-breakpoint
 CREATE INDEX "idx_envelope_drafts_creator" ON "envelope_drafts" USING btree ("created_by_wallet");--> statement-breakpoint
 CREATE INDEX "idx_envelope_drafts_org_status" ON "envelope_drafts" USING btree ("organization_id","status");--> statement-breakpoint
+CREATE INDEX "idx_envelope_drafts_updated_id" ON "envelope_drafts" USING btree ("updated_at","id");--> statement-breakpoint
 CREATE INDEX "idx_compliance_export_file_created" ON "compliance_export_logs" USING btree ("file_piece_cid","created_at");--> statement-breakpoint
 CREATE INDEX "idx_compliance_export_requester" ON "compliance_export_logs" USING btree ("requested_by");--> statement-breakpoint
 CREATE INDEX "idx_acknowledgements_file" ON "file_acknowledgements" USING btree ("file_piece_cid");--> statement-breakpoint
@@ -831,6 +841,7 @@ CREATE INDEX "idx_file_comments_piece" ON "file_comments" USING btree ("file_pie
 CREATE INDEX "idx_file_comments_piece_created" ON "file_comments" USING btree ("file_piece_cid","created_at");--> statement-breakpoint
 CREATE INDEX "idx_document_views_file" ON "file_document_views" USING btree ("file_piece_cid");--> statement-breakpoint
 CREATE INDEX "idx_document_views_wallet" ON "file_document_views" USING btree ("wallet");--> statement-breakpoint
+CREATE INDEX "idx_field_completions_piece" ON "file_field_completions" USING btree ("file_piece_cid");--> statement-breakpoint
 CREATE INDEX "idx_participants_wallet" ON "file_participants" USING btree ("wallet");--> statement-breakpoint
 CREATE INDEX "idx_participants_file" ON "file_participants" USING btree ("file_piece_cid");--> statement-breakpoint
 CREATE INDEX "idx_participants_file_email_commitment" ON "file_participants" USING btree ("file_piece_cid","email_commitment");--> statement-breakpoint
@@ -838,12 +849,12 @@ CREATE INDEX "idx_signatures_file" ON "file_signatures" USING btree ("file_piece
 CREATE INDEX "idx_file_signer_amendments_piece" ON "file_signer_amendments" USING btree ("file_piece_cid");--> statement-breakpoint
 CREATE INDEX "idx_file_signer_amendments_piece_status" ON "file_signer_amendments" USING btree ("file_piece_cid","status");--> statement-breakpoint
 CREATE INDEX "idx_signer_drafts_wallet" ON "file_signer_drafts" USING btree ("wallet");--> statement-breakpoint
-CREATE INDEX "idx_field_completions_piece" ON "file_field_completions" USING btree ("file_piece_cid");--> statement-breakpoint
-CREATE INDEX "idx_user_signatures_wallet_role_sha" ON "user_signatures" USING btree ("wallet_address","role","content_sha256");--> statement-breakpoint
 CREATE INDEX "idx_files_owner" ON "files" USING btree ("sender");--> statement-breakpoint
 CREATE INDEX "idx_files_sender_created" ON "files" USING btree ("sender","created_at");--> statement-breakpoint
 CREATE INDEX "idx_files_organization" ON "files" USING btree ("organization_id");--> statement-breakpoint
 CREATE INDEX "idx_files_registry_address" ON "files" USING btree ("registry_address");--> statement-breakpoint
+CREATE INDEX "idx_files_updated_piece" ON "files" USING btree ("updated_at","piece_cid");--> statement-breakpoint
+CREATE INDEX "idx_user_activation_milestones_wallet" ON "user_activation_milestones" USING btree ("wallet_address");--> statement-breakpoint
 CREATE UNIQUE INDEX "uq_attachment_release_rules_validator_rule" ON "attachment_release_rules" USING btree ("release_contract_address","on_chain_rule_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "uq_attachment_packet_cold_wrap" ON "envelope_attachment_packet_cold_wraps" USING btree ("packet_row_id","email");--> statement-breakpoint
 CREATE UNIQUE INDEX "uq_attachment_packet_recipient" ON "envelope_attachment_packet_recipients" USING btree ("packet_row_id","email");--> statement-breakpoint
@@ -855,10 +866,10 @@ CREATE UNIQUE INDEX "idx_foc_objects_piece_cid" ON "foc_objects" USING btree ("p
 CREATE INDEX "idx_settlement_recipient_acks_piece" ON "file_settlement_recipient_acks" USING btree ("file_piece_cid");--> statement-breakpoint
 CREATE INDEX "idx_org_settlement_access_status" ON "organization_settlement_feature_access" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "idx_org_settlement_access_accepted_by" ON "organization_settlement_feature_access" USING btree ("accepted_by_wallet");--> statement-breakpoint
+CREATE INDEX "idx_product_feedback_wallet" ON "product_feedback" USING btree ("wallet_address");--> statement-breakpoint
+CREATE INDEX "idx_product_feedback_created_at" ON "product_feedback" USING btree ("created_at");--> statement-breakpoint
 CREATE INDEX "idx_organization_archival_status" ON "organization_archival" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "idx_organization_archival_export_grace" ON "organization_archival" USING btree ("export_grace_until");--> statement-breakpoint
-CREATE UNIQUE INDEX "uidx_org_connections_org_recipient" ON "organization_connections" USING btree ("organization_id","recipient_wallet");--> statement-breakpoint
-CREATE INDEX "idx_org_connections_org_status" ON "organization_connections" USING btree ("organization_id","status");--> statement-breakpoint
 CREATE INDEX "idx_org_invites_org" ON "organization_invites" USING btree ("organization_id");--> statement-breakpoint
 CREATE INDEX "idx_org_invites_email" ON "organization_invites" USING btree ("email");--> statement-breakpoint
 CREATE INDEX "idx_org_invites_status_expires" ON "organization_invites" USING btree ("status","expires_at");--> statement-breakpoint
@@ -891,5 +902,4 @@ CREATE INDEX "idx_platform_invite_redemptions_wallet" ON "platform_invite_redemp
 CREATE INDEX "idx_platform_invites_token" ON "platform_invites" USING btree ("token");--> statement-breakpoint
 CREATE INDEX "idx_platform_invites_revoked" ON "platform_invites" USING btree ("revoked_at");--> statement-breakpoint
 CREATE INDEX "idx_user_invites_status_expires" ON "user_invites" USING btree ("status","expires_at");--> statement-breakpoint
-CREATE INDEX "idx_user_subscriptions_plan" ON "user_subscriptions" USING btree ("plan_id");--> statement-breakpoint
-CREATE INDEX "idx_user_subscriptions_status" ON "user_subscriptions" USING btree ("status");
+CREATE INDEX "idx_user_signatures_wallet_role_sha" ON "user_signatures" USING btree ("wallet_address","role","content_sha256");

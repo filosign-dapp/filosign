@@ -84,7 +84,9 @@ From repo root (`infisical login` once):
 bun run prod -- --migrate
 ```
 
-Opens SSH `-L 5433:<postgres-container-ip>:5432` (auto-detected via `docker inspect` on the VPS), runs Infisical `prod` + `/app`, rewrites `PG_URI` to `127.0.0.1:5433`, applies pending Drizzle migrations.
+Opens SSH `-L 5433:127.0.0.1:5432` on the VPS (loopback from `compose.data.yml`), runs Infisical `prod` + `/app`, builds an explicit tunnel URL to `DB_NAME`, applies pending Drizzle migrations via `drizzle.migrate.config.ts`, and verifies the journal row count through **the same tunnel URL** before exit.
+
+**Common pitfall:** drizzle-kit connects to `127.0.0.1:5433` on your laptop. If that port is already taken (local Postgres, a stale tunnel), SSH may fail silently and migrate hits the wrong database while the VPS `docker exec` probe still reads `filosign-prod`. The script now checks the tunnel is listening and compares tunnel vs VPS journal counts before applying.
 
 **Optional:** redeploy `filosign-data` with `127.0.0.1:5432:5432` in compose so the tunnel can use host loopback instead of the container IP.
 

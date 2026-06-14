@@ -41,6 +41,8 @@ try {
 	console.log("Connected to database");
 
 	await client.query("BEGIN");
+	console.log("Dropping drizzle migration journal...");
+	await client.query("DROP SCHEMA IF EXISTS drizzle CASCADE");
 	console.log("Dropping public schema...");
 	await client.query("DROP SCHEMA IF EXISTS public CASCADE");
 	console.log("Creating public schema...");

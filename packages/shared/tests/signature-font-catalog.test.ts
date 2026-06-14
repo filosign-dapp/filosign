@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
 	buildSignatureFontOptions,
+	DEFAULT_TYPED_SIGNATURE_FONT_ID,
 	deriveSignatureInitials,
 	getSignatureFontCatalogEntry,
 	getSignatureFontRasterSpec,
@@ -19,6 +20,10 @@ describe("signature-font-catalog", () => {
 	});
 
 	test("maps legacy font ids to canonical catalog ids", () => {
+		expect(resolveSignatureFontId(null)).toBe(DEFAULT_TYPED_SIGNATURE_FONT_ID);
+		expect(resolveSignatureFontId(undefined)).toBe(
+			DEFAULT_TYPED_SIGNATURE_FONT_ID,
+		);
 		expect(resolveSignatureFontId("homemade-apple")).toBe("dancing-script");
 		expect(resolveSignatureFontId("gloria-hallelujah")).toBe("great-vibes");
 		expect(resolveSignatureFontId("nothing-you-could-do")).toBe("caveat");

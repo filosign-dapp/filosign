@@ -1,6 +1,6 @@
 import type { UserSignatureRole } from "./signature-artifact";
 
-export const DEFAULT_TYPED_SIGNATURE_FONT_ID = "typed" as const;
+export const DEFAULT_TYPED_SIGNATURE_FONT_ID = "dancing-script" as const;
 
 export type SignerProfileForTypedSignature = {
 	firstName?: string | null;
@@ -186,13 +186,13 @@ const legacyIdToCanonical = new Map<string, SignatureFontId>(
 export function resolveSignatureFontId(
 	fontId: string | null | undefined,
 ): SignatureFontId {
-	if (!fontId) return "typed";
+	if (!fontId) return DEFAULT_TYPED_SIGNATURE_FONT_ID;
 	const legacy = legacyIdToCanonical.get(fontId);
 	if (legacy) return legacy;
 	if (catalogById.has(fontId as SignatureFontId)) {
 		return fontId as SignatureFontId;
 	}
-	return "typed";
+	return DEFAULT_TYPED_SIGNATURE_FONT_ID;
 }
 
 export function getSignatureFontCatalogEntry(

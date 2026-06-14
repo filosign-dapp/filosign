@@ -14,6 +14,7 @@ import {
 	useUserProfile,
 } from "@filosign/react/users";
 import type { UserSignatureRole } from "@filosign/shared";
+import { DEFAULT_TYPED_SIGNATURE_FONT_ID } from "@filosign/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
@@ -76,7 +77,7 @@ export function useSignatureCreateController(options?: {
 	const [signatureData, setSignatureData] = useState<string | null>(null);
 	const [initialsData, setInitialsData] = useState<string | null>(null);
 	const [selectedSignatureId, setSelectedSignatureId] = useState<string | null>(
-		null,
+		DEFAULT_TYPED_SIGNATURE_FONT_ID,
 	);
 	const [isSavingChoose, setIsSavingChoose] = useState(false);
 	const [savingRole, setSavingRole] = useState<UserSignatureRole | null>(null);
@@ -217,7 +218,9 @@ export function useSignatureCreateController(options?: {
 	};
 
 	const uploadTypedPair = async () => {
-		const fontId = resolveSignatureFontId(selectedSignatureId ?? "typed");
+		const fontId = resolveSignatureFontId(
+			selectedSignatureId ?? DEFAULT_TYPED_SIGNATURE_FONT_ID,
+		);
 
 		const [sigBytes, initBytes] = await Promise.all([
 			rasterizeTypedSignature({

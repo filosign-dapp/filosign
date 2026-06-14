@@ -1,9 +1,11 @@
 import type { InferClientInputs } from "@orpc/client";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import imageCompression from "browser-image-compression";
+import { useFilosignContext } from "../../context/useFilosignContext";
 import { useInvalidateUserProfile } from "../../lib/invalidate-user-profile";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 import type { AppRouterClient } from "../../orpc/app-router-types";
+import type { UserProfile } from "./useUserProfile";
 
 type ProfileUpdateInput =
 	InferClientInputs<AppRouterClient>["users"]["profile"]["update"];
@@ -13,7 +15,14 @@ type ProfileTextFields = Pick<
 	"email" | "username" | "firstName" | "lastName"
 >;
 
+type ProfileMutationContext = {
+	previous: UserProfile | undefined;
+	queryKey: readonly unknown[];
+};
+
 export function useUpdateUserProfile() {
+	const queryClient = useQueryClient();
+	const { wallet } = useFilosignContext();
 	const { rpcQuery, isAuthed } = useFilosignRpc();
 	const invalidateUser = useInvalidateUserProfile();
 
@@ -63,6 +72,41 @@ export function useUpdateUserProfile() {
 			}
 
 			return rpcQuery.users.profile.update.call(payload);
+		},
+		onMutate: async (args): Promise<ProfileMutationContext> => {
+			const walletAddress = wallet?.account.address ?? null;
+			const queryKey = [
+				...rpcQuery.users.profile.me.key(),
+				walletAddress,
+			] as const;
+
+			await queryClient.cancelQueries({ queryKey });
+
+			const previous = queryClient.getQueryData<UserProfile>(queryKey);
+			const hasTextPatch =
+				args.firstName !== undefined ||
+				args.lastName !== undefined ||
+				args.email !== undefined ||
+				args.username !== undefined;
+
+			if (previous && hasTextPatch) {
+				queryClient.setQueryData<UserProfile>(queryKey, {
+					...previous,
+					...(args.firstName !== undefined
+						? { firstName: args.firstName }
+						: {}),
+					...(args.lastName !== undefined ? { lastName: args.lastName } : {}),
+					...(args.email !== undefined ? { email: args.email } : {}),
+					...(args.username !== undefined ? { username: args.username } : {}),
+				});
+			}
+
+			return { previous, queryKey };
+		},
+		onError: (_error, _args, context) => {
+			if (context?.previous !== undefined) {
+				queryClient.setQueryData(context.queryKey, context.previous);
+			}
 		},
 		onSuccess: () => {
 			invalidateUser();

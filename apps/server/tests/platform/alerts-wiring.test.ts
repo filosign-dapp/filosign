@@ -117,6 +117,7 @@ describe("handlePoolError", () => {
 		clearCapturedTelegramEvents();
 		mock.module("@/env", () => ({
 			default: {
+				...testEnvStub,
 				TG_ANALYTICS: true,
 				TG_ANALYTICS_BOT_TOKEN: "bot",
 				TG_ANALYTICS_BOT_GROUP_ID: "group",

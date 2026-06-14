@@ -6,8 +6,8 @@ import {
 	archivalCdnUrl,
 	dealIdFromUploadResult,
 	getOrCreatePlatformDataset,
+	getSynapse,
 	retentionEpochsFromUntil,
-	synapse,
 } from "@/lib/platform/foc";
 import { logger } from "@/lib/platform/pino";
 import { bucket } from "@/lib/platform/s3/client";
@@ -248,7 +248,7 @@ export async function runFocTransitionForPiece(
 	const retentionUntil = await resolveFocRetentionUntil(row.organizationId);
 	const context = await getOrCreatePlatformDataset();
 	const prepared = await tryCatch(
-		synapse.storage.prepare({
+		getSynapse().storage.prepare({
 			context,
 			dataSize: BigInt(r2Bytes.byteLength),
 			extraRunwayEpochs: retentionEpochsFromUntil(retentionUntil),

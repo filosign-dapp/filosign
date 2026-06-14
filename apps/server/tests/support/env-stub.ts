@@ -1,3 +1,4 @@
+import { mock } from "bun:test";
 import { privateKeyToAccount } from "viem/accounts";
 
 const testRelayerKey =
@@ -41,3 +42,10 @@ export const testEnvStub = {
 	TEST_FOC: false,
 	WORKSPACE_CHURN_GRACE_DAYS: 90,
 };
+
+/** Re-apply preload env stub after `mock.restore()`. */
+export function restoreTestEnvMock(): void {
+	mock.module("@/env", () => ({
+		default: testEnvStub,
+	}));
+}

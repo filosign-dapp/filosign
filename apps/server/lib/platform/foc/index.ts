@@ -3,8 +3,8 @@ export {
 	archivalCdnUrl,
 	dealIdFromUploadResult,
 	getOrCreatePlatformDataset,
-	serverWallet,
-	synapse,
+	getServerWallet,
+	getSynapse,
 } from "./synapse";
 export {
 	FOC_FIL_ALERT_THRESHOLD_WEI,

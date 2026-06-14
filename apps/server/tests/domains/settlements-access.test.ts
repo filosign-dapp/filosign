@@ -136,7 +136,7 @@ describe("access", () => {
 		const wallet = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as const;
 
 		beforeAll(() => {
-			mock.module("@/lib/domains/orgs", () => ({
+			mock.module("@/lib/domains/orgs/orgs", () => ({
 				resolveActiveOrg: async () => ({
 					organizationId: orgId,
 					role: "owner",

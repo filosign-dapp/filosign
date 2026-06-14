@@ -17,7 +17,7 @@ import { and, eq, gte, lt, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import env from "@/env";
-import { getPersonalOrganizationId } from "@/lib/domains/orgs";
+import { getPersonalOrganizationId } from "@/lib/domains/orgs/workspace";
 import {
 	CACHE_TTL,
 	cacheAside,

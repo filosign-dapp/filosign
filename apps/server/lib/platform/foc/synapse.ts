@@ -1,10 +1,5 @@
 import type { UploadResult } from "@filoz/synapse-sdk";
-import {
-	calibration,
-	mainnet,
-	Synapse,
-	type SynapseOptions,
-} from "@filoz/synapse-sdk";
+import { calibration, mainnet, Synapse } from "@filoz/synapse-sdk";
 import { desc, isNotNull } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress, http } from "viem";
@@ -18,20 +13,34 @@ const SYNAPSE_SOURCE = "filosign";
 const WITH_CDN = true;
 const PLATFORM_DATASET_METADATA = { filosign_platform: "archival" } as const;
 
-const account = privateKeyToAccount(env.FC_SERVER_PRIVATE_KEY);
-export const serverWallet = getAddress(env.FC_SERVER_ADDRESS);
+type SynapseClient = ReturnType<typeof Synapse.create>;
 
-const synapseChain = env.CHAIN === "mainnet" ? mainnet : calibration;
+let synapseClient: SynapseClient | undefined;
 
-const synapseOptions: SynapseOptions = {
-	account,
-	chain: synapseChain,
-	transport: http(synapseChain.rpcUrls.default.http[0]),
-	source: SYNAPSE_SOURCE,
-	withCDN: WITH_CDN,
-};
+function ensureSynapseClient(): SynapseClient {
+	if (synapseClient) {
+		return synapseClient;
+	}
 
-export const synapse = Synapse.create(synapseOptions);
+	const synapseChain = env.CHAIN === "mainnet" ? mainnet : calibration;
+	const account = privateKeyToAccount(env.FC_SERVER_PRIVATE_KEY);
+	synapseClient = Synapse.create({
+		account,
+		chain: synapseChain,
+		transport: http(synapseChain.rpcUrls.default.http[0]),
+		source: SYNAPSE_SOURCE,
+		withCDN: WITH_CDN,
+	});
+	return synapseClient;
+}
+
+export function getServerWallet(): Address {
+	return getAddress(env.FC_SERVER_ADDRESS);
+}
+
+export function getSynapse(): SynapseClient {
+	return ensureSynapseClient();
+}
 
 const { focObjects } = db.schema;
 
@@ -69,7 +78,7 @@ export async function getOrCreatePlatformDataset() {
 
 	if (dataSetId !== undefined) {
 		const ctx = await tryCatch(
-			synapse.storage.createContext({
+			getSynapse().storage.createContext({
 				dataSetId,
 				metadata: PLATFORM_DATASET_METADATA,
 			}),
@@ -86,7 +95,7 @@ export async function getOrCreatePlatformDataset() {
 	}
 
 	const ctx = await tryCatch(
-		synapse.storage.createContext({
+		getSynapse().storage.createContext({
 			metadata: PLATFORM_DATASET_METADATA,
 		}),
 	);
@@ -112,7 +121,7 @@ export async function getOrCreatePlatformDataset() {
 
 export function archivalCdnUrl(pieceCid: string): string {
 	const network = env.CHAIN === "mainnet" ? "mainnet" : "calibration";
-	return `https://${serverWallet}.${network}.filbeam.io/${pieceCid}`;
+	return `https://${getServerWallet()}.${network}.filbeam.io/${pieceCid}`;
 }
 
 /** Stable id stored on `foc_objects.deal_id` from an upload result. */

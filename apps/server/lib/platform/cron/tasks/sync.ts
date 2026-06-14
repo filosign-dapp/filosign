@@ -19,7 +19,81 @@ import { CRON_LOCK_TTL, type CronHandle, registerLockedCron } from "../utils";
 export { runSyncSettlementRulesJob } from "@/lib/domains/settlements";
 
 // ==========================================
-// 1. Monitor Relayer Gas
+// 1. Sync Attachment Releases
+// ==========================================
+
+export const SYNC_ATTACHMENT_RELEASES_CRON = "15 0 * * *";
+
+export async function runSyncAttachmentReleasesCronTick(): Promise<void> {
+	const res = await tryCatch(runSyncAttachmentReleasesJob());
+	if (res.error) {
+		logger.error({ err: res.error }, "cron sync-attachment-releases failed");
+		void emitCriticalPlatformEvent({
+			name: PLATFORM_ALERT_EVENTS.serverCronJobFailed,
+			severity: "error",
+			message: "Cron sync-attachment-releases failed",
+			context: {
+				job: "sync-attachment-releases",
+				error:
+					res.error instanceof Error ? res.error.message : String(res.error),
+			},
+		});
+		return;
+	}
+	if (res.data.released > 0) {
+		logger.info(res.data, "cron sync-attachment-releases");
+	}
+}
+
+export function registerSyncAttachmentReleasesCron(): CronHandle {
+	return registerLockedCron({
+		jobName: "sync-attachment-releases",
+		schedule: SYNC_ATTACHMENT_RELEASES_CRON,
+		bucketGranularity: "day",
+		lockTtlSec: CRON_LOCK_TTL.daily,
+		tick: runSyncAttachmentReleasesCronTick,
+	});
+}
+
+// ==========================================
+// 2. Sync Settlement Rules
+// ==========================================
+
+export const SYNC_SETTLEMENT_RULES_CRON = "0 0 * * *";
+
+export async function runSyncSettlementRulesCronTick(): Promise<void> {
+	const res = await tryCatch(runSyncSettlementRulesJob());
+	if (res.error) {
+		logger.error({ err: res.error }, "cron sync-settlement-rules failed");
+		void emitCriticalPlatformEvent({
+			name: PLATFORM_ALERT_EVENTS.serverCronJobFailed,
+			severity: "error",
+			message: "Cron sync-settlement-rules failed",
+			context: {
+				job: "sync-settlement-rules",
+				error:
+					res.error instanceof Error ? res.error.message : String(res.error),
+			},
+		});
+		return;
+	}
+	if (res.data.synced > 0) {
+		logger.info(res.data, "cron sync-settlement-rules");
+	}
+}
+
+export function registerSyncSettlementRulesCron(): CronHandle {
+	return registerLockedCron({
+		jobName: "sync-settlement-rules",
+		schedule: SYNC_SETTLEMENT_RULES_CRON,
+		bucketGranularity: "day",
+		lockTtlSec: CRON_LOCK_TTL.daily,
+		tick: runSyncSettlementRulesCronTick,
+	});
+}
+
+// ==========================================
+// 3. Monitor relayer gas + FOC wallet balances
 // ==========================================
 
 export const MONITOR_RELAYER_GAS_CRON = "30 * * * *";
@@ -225,79 +299,5 @@ export function registerMonitorRelayerGasCron(): CronHandle {
 		bucketGranularity: "hour",
 		lockTtlSec: CRON_LOCK_TTL.hourly,
 		tick: runMonitorRelayerGasCronTick,
-	});
-}
-
-// ==========================================
-// 2. Sync Attachment Releases
-// ==========================================
-
-export const SYNC_ATTACHMENT_RELEASES_CRON = "15 0 * * *";
-
-export async function runSyncAttachmentReleasesCronTick(): Promise<void> {
-	const res = await tryCatch(runSyncAttachmentReleasesJob());
-	if (res.error) {
-		logger.error({ err: res.error }, "cron sync-attachment-releases failed");
-		void emitCriticalPlatformEvent({
-			name: PLATFORM_ALERT_EVENTS.serverCronJobFailed,
-			severity: "error",
-			message: "Cron sync-attachment-releases failed",
-			context: {
-				job: "sync-attachment-releases",
-				error:
-					res.error instanceof Error ? res.error.message : String(res.error),
-			},
-		});
-		return;
-	}
-	if (res.data.released > 0) {
-		logger.info(res.data, "cron sync-attachment-releases");
-	}
-}
-
-export function registerSyncAttachmentReleasesCron(): CronHandle {
-	return registerLockedCron({
-		jobName: "sync-attachment-releases",
-		schedule: SYNC_ATTACHMENT_RELEASES_CRON,
-		bucketGranularity: "day",
-		lockTtlSec: CRON_LOCK_TTL.daily,
-		tick: runSyncAttachmentReleasesCronTick,
-	});
-}
-
-// ==========================================
-// 3. Sync Settlement Rules
-// ==========================================
-
-export const SYNC_SETTLEMENT_RULES_CRON = "0 0 * * *";
-
-export async function runSyncSettlementRulesCronTick(): Promise<void> {
-	const res = await tryCatch(runSyncSettlementRulesJob());
-	if (res.error) {
-		logger.error({ err: res.error }, "cron sync-settlement-rules failed");
-		void emitCriticalPlatformEvent({
-			name: PLATFORM_ALERT_EVENTS.serverCronJobFailed,
-			severity: "error",
-			message: "Cron sync-settlement-rules failed",
-			context: {
-				job: "sync-settlement-rules",
-				error:
-					res.error instanceof Error ? res.error.message : String(res.error),
-			},
-		});
-		return;
-	}
-	if (res.data.synced > 0) {
-		logger.info(res.data, "cron sync-settlement-rules");
-	}
-}
-
-export function registerSyncSettlementRulesCron(): CronHandle {
-	return registerLockedCron({
-		jobName: "sync-settlement-rules",
-		schedule: SYNC_SETTLEMENT_RULES_CRON,
-		bucketGranularity: "day",
-		lockTtlSec: CRON_LOCK_TTL.daily,
-		tick: runSyncSettlementRulesCronTick,
 	});
 }

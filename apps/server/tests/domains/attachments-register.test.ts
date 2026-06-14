@@ -1,11 +1,9 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from "bun:test";
 import { ORPCError } from "@orpc/server";
 import { getAddress } from "viem";
-import {
-	assertEntitlement,
-	calendarMonthPeriod,
-} from "@/lib/domains/entitlements";
 import { dbQueryResult } from "../support/db-query-result";
+import { restoreTestEnvMock, testEnvStub } from "../support/env-stub";
+import { createMockRedis, mockSessionCacheRedis } from "../support/mock-redis";
 
 const wallet = getAddress("0x0000000000000000000000000000000000000001");
 
@@ -80,26 +78,57 @@ describe("attachments-register", () => {
 	});
 
 	describe("insertAttachmentPacketsForFile entitlement gates", () => {
+		const personalOrgId = "00000000-0000-7000-8000-000000000001";
+		let selectQueue: unknown[][] = [];
+		const { client: mockRedis, store: redisStore } = createMockRedis();
+
 		beforeAll(() => {
+			mockSessionCacheRedis(mockRedis);
 			mock.module("@/env", () => ({
-				default: { DEPLOYMENT: "production" },
+				default: { ...testEnvStub, DEPLOYMENT: "production" },
 			}));
-			mock.module("@/lib/domains/entitlements", () => ({
-				resolveEntitlementContext: async () => ({
-					subject: { type: "user", wallet },
-					planId: "individual",
-					periodStart: calendarMonthPeriod().periodStart,
-					usage: { "documents.sent.monthly": 0 },
-				}),
-				assertEntitlement,
+			mock.module("@/lib/platform/db", () => ({
+				default: {
+					schema: {
+						users: {},
+						userSubscriptions: {},
+						organizationSubscriptions: {},
+						files: {},
+					},
+					select: () => ({
+						from: () => ({
+							where: () => {
+								const rows = selectQueue.shift() ?? [];
+								return dbQueryResult(rows);
+							},
+						}),
+					}),
+				},
 			}));
 		});
 
 		afterAll(() => {
 			mock.restore();
+			restoreTestEnvMock();
 		});
 
 		test("throws ENTITLEMENT.FEATURE_DISABLED for partial roster on Solo", async () => {
+			redisStore.clear();
+			selectQueue = [
+				[],
+				[
+					{
+						planId: "individual",
+						status: "active",
+						seatCount: 1,
+						cancelAtPeriodEnd: false,
+						periodEnd: null,
+						featureOverrides: {},
+					},
+				],
+				[{ count: 0 }],
+			];
+
 			const { insertAttachmentPacketsForFile } = await import(
 				"@/lib/domains/attachments/register"
 			);
@@ -108,7 +137,7 @@ describe("attachments-register", () => {
 				await insertAttachmentPacketsForFile({
 					pieceCid: "piece-cid-abc12345",
 					sender: wallet,
-					organizationId: "00000000-0000-7000-8000-000000000001",
+					organizationId: personalOrgId,
 					rosterEmails: ["sender@example.com", "signer@example.com"],
 					coldInvites: [],
 					packets: [
@@ -153,6 +182,7 @@ describe("attachments-register", () => {
 
 		afterAll(() => {
 			mock.restore();
+			restoreTestEnvMock();
 		});
 
 		test("combines sender, cold invites, and warm participant emails", async () => {

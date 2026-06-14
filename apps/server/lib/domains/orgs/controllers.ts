@@ -8,14 +8,13 @@ import { fsContracts, fsEnvelopeRegistryAt } from "@/lib/platform/evm";
 import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
-const { organizationMembers } = db.schema;
-
 const CONTROLLER_ROLES = ["owner", "admin"] as const;
 
 /** Active org wallets that may void/amend/attachment-govern on-chain (owner + admin). */
 export async function listOrgControllerWallets(
 	organizationId: string,
 ): Promise<Address[]> {
+	const organizationMembers = db.schema.organizationMembers;
 	const rows = await db
 		.select({ walletAddress: organizationMembers.walletAddress })
 		.from(organizationMembers)

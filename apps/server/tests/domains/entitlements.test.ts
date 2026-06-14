@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from "bun:test";
-import { effectivePlanIdFromStatus } from "@/lib/domains/entitlements";
 import { dbQueryResult } from "../support/db-query-result";
+import { restoreTestEnvMock } from "../support/env-stub";
 import { createMockRedis, mockSessionCacheRedis } from "../support/mock-redis";
 
 describe("entitlements", () => {
@@ -8,11 +8,17 @@ describe("entitlements", () => {
 		describe("effectivePlanIdFromStatus", () => {
 			const now = new Date("2026-06-01T12:00:00.000Z");
 
-			test("returns free when subscription is missing", () => {
+			test("returns free when subscription is missing", async () => {
+				const { effectivePlanIdFromStatus } = await import(
+					"@/lib/domains/entitlements"
+				);
 				expect(effectivePlanIdFromStatus(undefined, now)).toBe("free");
 			});
 
-			test("keeps paid plan for active/trialing", () => {
+			test("keeps paid plan for active/trialing", async () => {
+				const { effectivePlanIdFromStatus } = await import(
+					"@/lib/domains/entitlements"
+				);
 				expect(
 					effectivePlanIdFromStatus({ planId: "teams", status: "active" }, now),
 				).toBe("teams");
@@ -24,7 +30,10 @@ describe("entitlements", () => {
 				).toBe("teams_pro");
 			});
 
-			test("keeps plan during cancel-at-period-end until period end", () => {
+			test("keeps plan during cancel-at-period-end until period end", async () => {
+				const { effectivePlanIdFromStatus } = await import(
+					"@/lib/domains/entitlements"
+				);
 				expect(
 					effectivePlanIdFromStatus(
 						{
@@ -38,7 +47,10 @@ describe("entitlements", () => {
 				).toBe("teams");
 			});
 
-			test("downgrades after cancel-at-period-end window", () => {
+			test("downgrades after cancel-at-period-end window", async () => {
+				const { effectivePlanIdFromStatus } = await import(
+					"@/lib/domains/entitlements"
+				);
 				expect(
 					effectivePlanIdFromStatus(
 						{
@@ -52,7 +64,10 @@ describe("entitlements", () => {
 				).toBe("free");
 			});
 
-			test("keeps plan while past_due (payment retry window)", () => {
+			test("keeps plan while past_due (payment retry window)", async () => {
+				const { effectivePlanIdFromStatus } = await import(
+					"@/lib/domains/entitlements"
+				);
 				expect(
 					effectivePlanIdFromStatus(
 						{ planId: "teams", status: "past_due" },
@@ -61,7 +76,10 @@ describe("entitlements", () => {
 				).toBe("teams");
 			});
 
-			test("downgrades incomplete subscriptions", () => {
+			test("downgrades incomplete subscriptions", async () => {
+				const { effectivePlanIdFromStatus } = await import(
+					"@/lib/domains/entitlements"
+				);
 				expect(
 					effectivePlanIdFromStatus(
 						{ planId: "teams", status: "incomplete" },
@@ -87,18 +105,17 @@ describe("entitlements", () => {
 		});
 	});
 
-	describe("entitlements-org-scope", () => {
+	describe("resolveEntitlementContext org scope", () => {
 		const orgId = "00000000-0000-7000-8000-000000000002";
 		const personalOrgId = "00000000-0000-7000-8000-000000000001";
 		const wallet = "0x0000000000000000000000000000000000000001";
 
 		let selectQueue: unknown[][] = [];
-
 		const { client: mockRedis, store: redisStore } = createMockRedis();
 
 		beforeAll(() => {
 			mockSessionCacheRedis(mockRedis);
-			mock.module("@/lib/domains/orgs", () => ({
+			mock.module("@/lib/domains/orgs/workspace", () => ({
 				getPersonalOrganizationId: async () => personalOrgId,
 			}));
 			mock.module("@/lib/platform/db", () => ({
@@ -123,144 +140,143 @@ describe("entitlements", () => {
 
 		afterAll(() => {
 			mock.restore();
+			restoreTestEnvMock();
 		});
 
-		describe("resolveEntitlementContext org scope", () => {
-			test("inherits teams_pro from org when user has no subscription", async () => {
-				redisStore.clear();
-				selectQueue = [
-					[],
-					[
-						{
-							planId: "teams_pro",
-							status: "active",
-							seatCount: 3,
-							cancelAtPeriodEnd: false,
-							periodEnd: null,
-							featureOverrides: {},
-						},
-					],
-					[{ count: 0 }],
-				];
+		test("inherits teams_pro from org when user has no subscription", async () => {
+			redisStore.clear();
+			selectQueue = [
+				[],
+				[
+					{
+						planId: "teams_pro",
+						status: "active",
+						seatCount: 3,
+						cancelAtPeriodEnd: false,
+						periodEnd: null,
+						featureOverrides: {},
+					},
+				],
+				[{ count: 0 }],
+			];
 
-				const { resolveEntitlementContext } = await import(
-					"@/lib/domains/entitlements"
-				);
+			const { resolveEntitlementContext } = await import(
+				"@/lib/domains/entitlements"
+			);
 
-				const ctx = await resolveEntitlementContext(wallet, orgId);
+			const ctx = await resolveEntitlementContext(wallet, orgId);
 
-				expect(ctx.planId).toBe("teams_pro");
-				expect(ctx.subject).toEqual({
-					type: "org_member",
-					orgId,
-					wallet,
-				});
-				expect(ctx.seatCount).toBe(3);
+			expect(ctx.planId).toBe("teams_pro");
+			expect(ctx.subject).toEqual({
+				type: "org_member",
+				orgId,
+				wallet,
 			});
+			expect(ctx.seatCount).toBe(3);
+		});
 
-			test("resolves individual from personal org when no org is passed", async () => {
-				redisStore.clear();
-				selectQueue = [
-					[],
-					[
-						{
-							planId: "individual",
-							status: "active",
-							seatCount: 1,
-							cancelAtPeriodEnd: false,
-							periodEnd: null,
-							featureOverrides: {},
-						},
-					],
-					[{ count: 2 }],
-				];
+		test("resolves individual from personal org when no org is passed", async () => {
+			redisStore.clear();
+			selectQueue = [
+				[],
+				[
+					{
+						planId: "individual",
+						status: "active",
+						seatCount: 1,
+						cancelAtPeriodEnd: false,
+						periodEnd: null,
+						featureOverrides: {},
+					},
+				],
+				[{ count: 2 }],
+			];
 
-				const { resolveEntitlementContext } = await import(
-					"@/lib/domains/entitlements"
-				);
+			const { resolveEntitlementContext } = await import(
+				"@/lib/domains/entitlements"
+			);
 
-				const ctx = await resolveEntitlementContext(wallet);
+			const ctx = await resolveEntitlementContext(wallet);
 
-				expect(ctx.planId).toBe("individual");
-				expect(ctx.subject).toEqual({
-					type: "org_member",
-					orgId: personalOrgId,
-					wallet,
-				});
-				expect(ctx.usage?.["documents.sent.monthly"]).toBe(2);
+			expect(ctx.planId).toBe("individual");
+			expect(ctx.subject).toEqual({
+				type: "org_member",
+				orgId: personalOrgId,
+				wallet,
 			});
+			expect(ctx.usage?.["documents.sent.monthly"]).toBe(2);
+		});
 
-			test("falls back to user subscription on free personal org", async () => {
-				redisStore.clear();
-				selectQueue = [
-					[
-						{
-							planId: "individual",
-							status: "active",
-							cancelAtPeriodEnd: false,
-							periodEnd: null,
-							featureOverrides: {},
-						},
-					],
-					[
-						{
-							planId: "free",
-							status: "active",
-							seatCount: 1,
-							cancelAtPeriodEnd: false,
-							periodEnd: null,
-							featureOverrides: {},
-						},
-					],
-					[{ count: 0 }],
-				];
+		test("falls back to user subscription on free personal org", async () => {
+			redisStore.clear();
+			selectQueue = [
+				[
+					{
+						planId: "individual",
+						status: "active",
+						cancelAtPeriodEnd: false,
+						periodEnd: null,
+						featureOverrides: {},
+					},
+				],
+				[
+					{
+						planId: "free",
+						status: "active",
+						seatCount: 1,
+						cancelAtPeriodEnd: false,
+						periodEnd: null,
+						featureOverrides: {},
+					},
+				],
+				[{ count: 0 }],
+			];
 
-				const { resolveEntitlementContext } = await import(
-					"@/lib/domains/entitlements"
-				);
+			const { resolveEntitlementContext } = await import(
+				"@/lib/domains/entitlements"
+			);
 
-				const ctx = await resolveEntitlementContext(wallet);
+			const ctx = await resolveEntitlementContext(wallet);
 
-				expect(ctx.planId).toBe("individual");
-			});
+			expect(ctx.planId).toBe("individual");
+		});
 
-			test("explicit team org does not inherit user solo plan", async () => {
-				redisStore.clear();
-				selectQueue = [
-					[
-						{
-							planId: "individual",
-							status: "active",
-							cancelAtPeriodEnd: false,
-							periodEnd: null,
-							featureOverrides: {},
-						},
-					],
-					[
-						{
-							planId: "free",
-							status: "active",
-							seatCount: 3,
-							cancelAtPeriodEnd: false,
-							periodEnd: null,
-							featureOverrides: {},
-						},
-					],
-					[{ count: 1 }],
-				];
+		test("explicit team org does not inherit user solo plan", async () => {
+			redisStore.clear();
+			selectQueue = [
+				[
+					{
+						planId: "individual",
+						status: "active",
+						cancelAtPeriodEnd: false,
+						periodEnd: null,
+						featureOverrides: {},
+					},
+				],
+				[
+					{
+						planId: "free",
+						status: "active",
+						seatCount: 3,
+						cancelAtPeriodEnd: false,
+						periodEnd: null,
+						featureOverrides: {},
+					},
+				],
+				[{ count: 1 }],
+			];
 
-				const { resolveEntitlementContext } = await import(
-					"@/lib/domains/entitlements"
-				);
+			const { resolveEntitlementContext } = await import(
+				"@/lib/domains/entitlements"
+			);
 
-				const ctx = await resolveEntitlementContext(wallet, orgId);
+			const ctx = await resolveEntitlementContext(wallet, orgId);
 
-				expect(ctx.planId).toBe("free");
-				expect(ctx.subject.type).toBe("org_member");
-				if (ctx.subject.type === "org_member") {
-					expect(ctx.subject.orgId).toBe(orgId);
-				}
-			});
+			expect(ctx.planId).toBe("free");
+			expect(ctx.subject.type).toBe("org_member");
+			if (ctx.subject.type === "org_member") {
+				expect(ctx.subject.orgId).toBe(orgId);
+			}
 		});
 	});
 });

@@ -4,8 +4,8 @@ import { resolveFocRetentionUntil } from "@/lib/domains/foc/retention-policy";
 import db from "@/lib/platform/db";
 import {
 	getOrCreatePlatformDataset,
+	getSynapse,
 	retentionEpochsFromUntil,
-	synapse,
 } from "@/lib/platform/foc";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
@@ -38,7 +38,7 @@ export async function queueFocExtendRetention(organizationId: string) {
 	if (extraRunwayEpochs > 0n) {
 		const context = await getOrCreatePlatformDataset();
 		const prepared = await tryCatch(
-			synapse.storage.prepare({
+			getSynapse().storage.prepare({
 				context,
 				dataSize: 0n,
 				extraRunwayEpochs,

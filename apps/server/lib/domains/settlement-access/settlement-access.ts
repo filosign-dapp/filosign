@@ -4,7 +4,7 @@ import { and, desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
-import { assertOrgPermission, resolveActiveOrg } from "@/lib/domains/orgs";
+import { assertOrgPermission, resolveActiveOrg } from "@/lib/domains/orgs/orgs";
 import type { PlatformAccessTx } from "@/lib/domains/platform-access/utils/shared";
 import { isPlatformAdminForWallet } from "@/lib/platform/admin";
 import db from "@/lib/platform/db";

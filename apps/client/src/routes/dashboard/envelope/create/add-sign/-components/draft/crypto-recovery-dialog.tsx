@@ -44,7 +44,6 @@ export function DraftCryptoRecoveryDialog({
 					<FeatureDialogClose disabled={cryptoRequired.recoveryPending} />
 
 					<FeatureDialogHeader
-						badge="Unlock keys"
 						title="Unlock encryption keys"
 						titleId={titleId}
 						description="Your wallet could not unlock this session automatically. Enter your 24-word recovery phrase to continue saving this draft."

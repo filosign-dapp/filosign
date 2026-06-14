@@ -58,7 +58,6 @@ export function SignSuccessDialog({
 
 				<FeatureDialogPanel>
 					<FeatureDialogHeader
-						badge="Signed"
 						title="Document signed"
 						titleId={titleId}
 						description={description}

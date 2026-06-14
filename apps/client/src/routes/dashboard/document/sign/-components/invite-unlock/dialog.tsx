@@ -45,7 +45,6 @@ export function SignInviteUnlockDialog({
 
 					<FeatureDialogPanel>
 						<FeatureDialogHeader
-							badge={meta.badge}
 							title={meta.title}
 							titleId={wizardTitleId}
 							description={meta.description}
@@ -64,7 +63,6 @@ export function SignInviteUnlockDialog({
 
 					<FeatureDialogPanel>
 						<FeatureDialogHeader
-							badge="Wrong account"
 							title="Switch account to continue"
 							titleId={switchTitleId}
 							description="This invite was sent to a different email than the account you are signed in with."

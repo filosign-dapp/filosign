@@ -110,7 +110,6 @@ export function ShareDraftDialog(props: {
 
 					<FeatureDialogPanel>
 						<FeatureDialogHeader
-							badge="Invites sent"
 							title="Review invites sent"
 							titleId={successTitleId}
 							description="Share each secret code separately. Recipients paste it after opening the link from their email."

@@ -112,7 +112,6 @@ function NewWorkspaceCheckoutDialog(props: {
 				<FeatureDialogPanel>
 					<FeatureDialogClose disabled={checkout.isPending} />
 					<FeatureDialogHeader
-						badge="New workspace"
 						title={copy.title}
 						titleId={titleId}
 						description={copy.description}
@@ -286,7 +285,6 @@ function ConfirmingWorkspacePaymentDialog(props: {
 						disabled={pendingStatus.isFetching && !timedOut}
 					/>
 					<FeatureDialogHeader
-						badge="New workspace"
 						title={
 							timedOut ? "Payment is still processing" : "Confirming payment…"
 						}
@@ -391,7 +389,6 @@ export function CreateWorkspaceDialog(props: {
 				<FeatureDialogPanel>
 					<FeatureDialogClose disabled={createOrg.isPending} />
 					<FeatureDialogHeader
-						badge="New workspace"
 						title="Name your workspace"
 						titleId={titleId}
 						description="Choose a name for your new workspace. Billing is already attached from checkout."
@@ -571,7 +568,6 @@ export function InviteTeammateDialog(props: {
 				<FeatureDialogPanel>
 					<FeatureDialogClose disabled={inviteMember.isPending} />
 					<FeatureDialogHeader
-						badge="Invite teammate"
 						title="Invite teammate to workspace"
 						titleId={titleId}
 						description="Enter your teammate's email address. Once they register or login, they will be automatically added to this workspace."

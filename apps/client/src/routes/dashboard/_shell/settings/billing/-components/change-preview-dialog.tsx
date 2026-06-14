@@ -59,7 +59,6 @@ export function BillingChangePreviewDialog(props: {
 					<FeatureDialogClose disabled={props.isConfirming} />
 
 					<FeatureDialogHeader
-						badge="Billing"
 						title={props.title}
 						titleId={titleId}
 						description={

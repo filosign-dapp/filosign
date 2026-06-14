@@ -16,9 +16,8 @@ export const entitlementErrors = {
 		defaultOrpcCode: "FORBIDDEN",
 	},
 	"ENTITLEMENT.QUOTA_EXCEEDED": {
-		title: "Plan usage limit reached",
-		description:
-			"You have used {{used}} of {{limit}} documents allowed on your plan.",
+		title: "Document limit reached",
+		description: "You've used {{used}} of {{limit}} documents on your plan.",
 		steps: [
 			"Open Workspace → Billing & Plans to review usage.",
 			"Upgrade your plan to send more envelopes.",

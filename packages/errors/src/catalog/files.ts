@@ -26,18 +26,16 @@ export const filesErrors = {
 		defaultOrpcCode: "FORBIDDEN",
 	},
 	"FILES.ENVELOPE_COMPLETE": {
-		title: "Envelope already completed",
-		description:
-			"This document envelope has already been fully signed and completed.",
+		title: "Document already completed",
+		description: "Everyone has signed. Download a copy from your dashboard.",
 		steps: ["View or download the final signed document from your dashboard."],
 		audience: "user",
 		severity: "warning",
 		defaultOrpcCode: "FORBIDDEN",
 	},
 	"FILES.ENVELOPE_VOIDED": {
-		title: "Envelope voided",
-		description:
-			"This document envelope has been voided by the sender and can no longer be signed.",
+		title: "Document cancelled",
+		description: "The sender cancelled this document. It can't be signed.",
 		steps: ["Contact the sender to request a new envelope."],
 		audience: "user",
 		severity: "warning",
@@ -115,9 +113,8 @@ export const filesErrors = {
 		defaultOrpcCode: "FORBIDDEN",
 	},
 	"FILES.COMPLIANCE_EXPORT_NOT_ALLOWED": {
-		title: "Compliance export not available",
-		description:
-			"Compliance export is available only after the envelope is fully executed or voided.",
+		title: "Export not ready yet",
+		description: "Wait until signing finishes or the document is cancelled.",
 		steps: [
 			"Wait for all signers to complete the document.",
 			"If the document is voided, you can export it then.",
@@ -125,6 +122,30 @@ export const filesErrors = {
 		audience: "user",
 		severity: "warning",
 		defaultOrpcCode: "FORBIDDEN",
+	},
+	"FILES.INVALID_PLACEMENT_MANIFEST": {
+		title: "Document data unavailable",
+		description:
+			"This document is missing required placement data and cannot be processed.",
+		steps: [
+			"Contact the sender to resend the envelope.",
+			"If you are the sender, recreate the envelope from your drafts.",
+		],
+		audience: "user",
+		severity: "error",
+		defaultOrpcCode: "INTERNAL_SERVER_ERROR",
+	},
+	"FILES.COMPLIANCE_EXPORT_FAILED": {
+		title: "Compliance export failed",
+		description:
+			"We could not generate the compliance export bundle. Try again shortly.",
+		steps: [
+			"Refresh the page and retry the export.",
+			"If the problem continues, contact support.",
+		],
+		audience: "user",
+		severity: "error",
+		defaultOrpcCode: "INTERNAL_SERVER_ERROR",
 	},
 	"DRAFTS.REVISION_CONFLICT": {
 		title: "Draft updated elsewhere",
@@ -178,21 +199,19 @@ export const filesErrors = {
 		}),
 	},
 	"FILES.REPLACEMENT_PENDING": {
-		title: "Signer replacement pending",
-		description:
-			"A signer replacement request is already pending for this document.",
+		title: "Signer change pending",
+		description: "Finish or cancel the signer change first.",
 		steps: [
-			"Wait for the current replacement request to be executed or cancelled.",
-			"Confirm the transaction status on-chain.",
+			"Wait for the current signer change to finish or cancel it.",
+			"Check that the update completed in your wallet.",
 		],
 		audience: "user",
 		severity: "warning",
 		defaultOrpcCode: "BAD_REQUEST",
 	},
 	"FILES.REPLACEMENT_RELAY_FAILED": {
-		title: "Signer replacement failed",
-		description:
-			"The on-chain signer replacement transaction failed: {{reason}}",
+		title: "Signer change failed",
+		description: "{{reason}}",
 		steps: [
 			"Check your network connection and wallet state.",
 			"Confirm you signed the authorization payload correctly.",
@@ -205,11 +224,10 @@ export const filesErrors = {
 		}),
 	},
 	"FILES.NO_PENDING_REPLACEMENT": {
-		title: "No pending signer replacement",
-		description:
-			"No pending signer replacement request was found for this document.",
+		title: "No pending signer change",
+		description: "No pending signer change was found for this document.",
 		steps: [
-			"Ensure the replacement request was proposed and is still pending review/on-chain sync.",
+			"Ensure a signer change was proposed and is still waiting to be applied.",
 		],
 		audience: "user",
 		severity: "warning",

@@ -3,8 +3,7 @@ import type { ErrorDefinition } from "../types";
 export const signingErrors = {
 	"SIGNING.VIEW_REQUIRED": {
 		title: "Open the document first",
-		description:
-			"Wait for the document to load on the sign page before you tap Sign.",
+		description: "Wait for the PDF to load, then sign again.",
 		steps: [
 			"Tap Accept file if you have not already.",
 			"Wait until the PDF appears (unlock your wallet if prompted).",
@@ -17,8 +16,7 @@ export const signingErrors = {
 	},
 	"SIGNING.ACK_REQUIRED": {
 		title: "Accept the file first",
-		description:
-			"Tap Accept file on the sign page before the document can open.",
+		description: "Tap Accept file on the sign page, then try again.",
 		steps: [
 			"Read the acceptance text on the sign page.",
 			"Tap Accept file.",
@@ -31,8 +29,7 @@ export const signingErrors = {
 	},
 	"SIGNING.VIEW_AFTER_ACK": {
 		title: "Open the document after accepting",
-		description:
-			"Filosign needs a view recorded after you accept the file, before signing.",
+		description: "View the PDF after you accept, then sign again.",
 		steps: [
 			"Tap Accept file if you have not already.",
 			"Wait until the PDF finishes loading on the sign page.",
@@ -45,8 +42,7 @@ export const signingErrors = {
 	},
 	"SIGNING.VIEW_BEFORE_SIGN": {
 		title: "Open the document first",
-		description:
-			"Wait for the document to load on the sign page before you tap Sign.",
+		description: "Wait for the PDF to load, then sign again.",
 		steps: [
 			"Tap Accept file if you have not already.",
 			"Wait until the PDF appears (unlock your wallet if prompted).",
@@ -58,8 +54,8 @@ export const signingErrors = {
 		defaultOrpcCode: "FORBIDDEN",
 	},
 	"SIGNING.NOT_REQUIRED": {
-		title: "You are not a signer on this document",
-		description: "This document does not list you as a signer.",
+		title: "You're not a signer",
+		description: "This document doesn't list you as a signer.",
 		steps: [
 			"Check that you used the correct invite link.",
 			"Contact the sender if you expected to sign.",
@@ -80,8 +76,7 @@ export const signingErrors = {
 	},
 	"SIGNING.EMAIL_REQUIRED": {
 		title: "Add your email to sign",
-		description:
-			"Your Filosign profile needs a primary email that matches this document.",
+		description: "Your account email must match this document.",
 		steps: [
 			"Open Profile in the sidebar (Account → Profile).",
 			"Add or verify your primary email.",
@@ -93,8 +88,8 @@ export const signingErrors = {
 		defaultOrpcCode: "BAD_REQUEST",
 	},
 	"SIGNING.PLACEMENT_INCOMPLETE": {
-		title: "Complete all required fields",
-		description: "Mark every required field on the document before signing.",
+		title: "Complete required fields",
+		description: "Fill every required field before signing.",
 		steps: [
 			"Tap each required field on the PDF (labeled Req until done).",
 			"When every required field shows Done, tap Sign.",
@@ -106,7 +101,7 @@ export const signingErrors = {
 	},
 	"SIGNING.FIELD_COMPLETION_MISSING": {
 		title: "Field value missing",
-		description: "A completed field is missing its applied value.",
+		description: "Tap the field again to apply your value.",
 		steps: ["Tap the field again to apply your signature or value."],
 		supportSlug: "signing-field-completion-missing",
 		audience: "user",
@@ -115,7 +110,7 @@ export const signingErrors = {
 	},
 	"SIGNING.FIELD_VISUAL_REQUIRED": {
 		title: "Signature image required",
-		description: "Signature and initial fields need a visual applied.",
+		description: "Apply your signature or initials to each field.",
 		steps: [
 			"Create a signature in your library if you have not already.",
 			"Tap each signature field to apply your default.",
@@ -126,8 +121,8 @@ export const signingErrors = {
 		defaultOrpcCode: "BAD_REQUEST",
 	},
 	"SIGNING.FIELD_AUTO_REQUIRED": {
-		title: "Auto-fill value required",
-		description: "Date, name, or email fields need a value before signing.",
+		title: "Fill date, name, or email fields",
+		description: "Tap each auto-fill field before signing.",
 		steps: ["Tap each auto-fill field to apply the value."],
 		supportSlug: "signing-field-auto-required",
 		audience: "user",
@@ -136,7 +131,7 @@ export const signingErrors = {
 	},
 	"SIGNING.FIELD_TEXT_REQUIRED": {
 		title: "Text field required",
-		description: "Enter text for each completed text field before signing.",
+		description: "Enter text for each text field before signing.",
 		steps: ["Tap text fields and enter the requested information."],
 		supportSlug: "signing-field-text-required",
 		audience: "user",
@@ -145,7 +140,7 @@ export const signingErrors = {
 	},
 	"SIGNING.FIELD_CHECKBOX_REQUIRED": {
 		title: "Checkbox required",
-		description: "Check each completed checkbox field before signing.",
+		description: "Check each required checkbox before signing.",
 		steps: ["Tap checkbox fields to mark them."],
 		supportSlug: "signing-field-checkbox-required",
 		audience: "user",
@@ -153,9 +148,8 @@ export const signingErrors = {
 		defaultOrpcCode: "BAD_REQUEST",
 	},
 	"SIGNING.SIGNATURE_INVALID": {
-		title: "Signature no longer valid",
-		description:
-			"Your signing request could not be verified on-chain. Sign again to continue.",
+		title: "Signature couldn't be verified",
+		description: "Sign again to continue.",
 		steps: [
 			"Return to the document and tap Sign again.",
 			"If this keeps happening, refresh the page and retry.",
@@ -166,9 +160,8 @@ export const signingErrors = {
 		defaultOrpcCode: "BAD_REQUEST",
 	},
 	"SIGNING.ROUTING_ORDER": {
-		title: "Not your turn to sign yet",
-		description:
-			"This envelope uses signing order. People ahead of you must sign first.",
+		title: "Not your turn yet",
+		description: "Wait for earlier signers to finish first.",
 		steps: [
 			"Check the Signing progress section on the sign page.",
 			"Return and tap Sign after earlier signers finish.",
@@ -179,12 +172,11 @@ export const signingErrors = {
 		defaultOrpcCode: "FORBIDDEN",
 	},
 	"SIGNING.REPLACEMENT_PENDING": {
-		title: "Signer replacement pending",
-		description:
-			"A signer replacement proposal is pending on-chain. Execute or cancel the proposal before signing.",
+		title: "Signer change pending",
+		description: "Finish or cancel the signer change before signing.",
 		steps: [
-			"Check pending proposals in document settings.",
-			"Wait for the administrator to execute or cancel the replacement.",
+			"Check pending changes in document settings.",
+			"Wait for the change to be applied or cancelled.",
 		],
 		audience: "user",
 		severity: "warning",

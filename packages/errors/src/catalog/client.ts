@@ -16,7 +16,7 @@ export const clientErrors = {
 	},
 	"CLIENT.CRYPTO.NO_SEED": {
 		title: "Signing keys not available",
-		description: "We could not load your signing keys in this session.",
+		description: "We couldn't load your signing keys in this session.",
 		steps: [
 			"Sign out and sign in again.",
 			"Complete wallet setup or recovery if prompted.",

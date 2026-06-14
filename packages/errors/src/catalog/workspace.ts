@@ -108,11 +108,10 @@ export const workspaceErrors = {
 		defaultOrpcCode: "FORBIDDEN",
 	},
 	"WORKSPACE.WALLET_CONTROLLER_MISMATCH": {
-		title: "Connect as the treasury wallet",
-		description:
-			"Your connected wallet must match the treasury address you are linking. Switch to that wallet in your browser or WalletConnect, then try again.",
+		title: "Connect the payment wallet",
+		description: "Switch to the wallet you're linking, then try again.",
 		steps: [
-			"Open the wallet picker and connect the treasury address (EOA or Safe).",
+			"Open the wallet picker and connect the payment wallet address (EOA or Safe).",
 			"Sign the link prompt from that same address.",
 		],
 		audience: "user",
@@ -328,5 +327,17 @@ export const workspaceErrors = {
 		audience: "user",
 		severity: "error",
 		defaultOrpcCode: "FORBIDDEN",
+	},
+	"WORKSPACE.CREATE_FAILED": {
+		title: "Could not create workspace",
+		description:
+			"We could not create the organization. Try again or contact support.",
+		steps: [
+			"Refresh the page and retry.",
+			"If the problem continues, contact support.",
+		],
+		audience: "user",
+		severity: "error",
+		defaultOrpcCode: "INTERNAL_SERVER_ERROR",
 	},
 } as const satisfies Record<string, ErrorDefinition>;

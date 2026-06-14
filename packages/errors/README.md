@@ -21,7 +21,7 @@ Internal failures: do not add user MDX; client shows `GENERIC.UNKNOWN`.
 
 ## Sonner surface
 
-`showErrorToast` shows **title**, **description**, and the **first** catalog step only. Write `description` and `steps[0]` so each stands alone in the toast.
+`showErrorToast` shows **title** plus an optional **one-line hint** from `description` (max ~90 chars). Catalog `steps` are for Help/support pages only, not appended to toasts. Write `description` as a short next action; keep steps detailed in MDX.
 
 Optional catalog `dedupeKey` overrides Sonner `id` (templates use `{{param}}` like `description`).
 

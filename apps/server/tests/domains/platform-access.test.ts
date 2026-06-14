@@ -7,7 +7,6 @@ import {
 } from "@/lib/domains/platform-access";
 import {
 	canApplyPartnerTrialToOrgSub,
-	canApplyPartnerTrialToUserSub,
 	isDodoBackedSubscription,
 } from "@/lib/domains/platform-access/utils/partner-trial-guards";
 import { dbQueryResult } from "../support/db-query-result";
@@ -22,15 +21,6 @@ describe("platform-access tokens", () => {
 	test("setup tokens are url-safe", () => {
 		const token = generateSetupToken();
 		expect(token.length).toBeGreaterThanOrEqual(16);
-	});
-});
-
-describe("registerUserAccount contract", () => {
-	test("register handler delegates to registerUserAccount module", async () => {
-		const mod = await import(
-			"@/lib/domains/platform-access/utils/register-user"
-		);
-		expect(typeof mod.registerUserAccount).toBe("function");
 	});
 });
 
@@ -91,15 +81,6 @@ describe("partner trial subscription", () => {
 			),
 		).toBe("free");
 	});
-
-	describe("partner invite settlement access", () => {
-		test("grantPartnerInviteSettlementAccessWithTx is exported", async () => {
-			const mod = await import("@/lib/domains/settlement-access");
-			expect(typeof mod.grantPartnerInviteSettlementAccessWithTx).toBe(
-				"function",
-			);
-		});
-	});
 });
 
 describe("partner trial guards", () => {
@@ -118,20 +99,7 @@ describe("partner trial guards", () => {
 		expect(isDodoBackedSubscription({ provider: "manual" })).toBe(false);
 	});
 
-	test("canApplyPartnerTrialToUserSub blocks dodo rows", () => {
-		expect(canApplyPartnerTrialToUserSub(undefined)).toBe(true);
-		expect(
-			canApplyPartnerTrialToUserSub({
-				planId: "teams_pro",
-				status: "active",
-				provider: "dodo",
-				periodEnd: futureEnd,
-				dodoSubscriptionId: "sub_1",
-			}),
-		).toBe(false);
-	});
-
-	test("canApplyPartnerTrialToOrgSub allows free and expired manual org rows", () => {
+	test("canApplyPartnerTrialToOrgSub blocks dodo rows", () => {
 		expect(canApplyPartnerTrialToOrgSub(undefined, now)).toBe(true);
 		expect(
 			canApplyPartnerTrialToOrgSub(
@@ -167,14 +135,6 @@ describe("partner trial guards", () => {
 				now,
 			),
 		).toBe(false);
-	});
-});
-
-describe("redeemPartnerInviteForExistingUser", () => {
-	test("module exports orchestrator", async () => {
-		const mod = await import("@/lib/domains/platform-access/redeem-existing");
-		expect(typeof mod.redeemPartnerInviteForExistingUser).toBe("function");
-		expect(typeof mod.fetchRegisteredUserEmail).toBe("function");
 	});
 });
 

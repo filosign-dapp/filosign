@@ -12,9 +12,13 @@ import { envelopeRoutingCompleteFromProgress } from "@/lib/domains/files/utils/p
 import {
 	isFocTransitionDiscoverable,
 	shouldDeferFocTransition,
+	shouldDeferFocTransitionForJob,
 } from "@/lib/domains/foc/lifecycle";
 import { retentionEpochsFromUntil } from "@/lib/platform/foc/retention";
-import { dealIdFromUploadResult } from "@/lib/platform/foc/synapse";
+import {
+	dataSetIdFromDealId,
+	dealIdFromUploadResult,
+} from "@/lib/platform/foc/synapse";
 import { focTransitionJobId } from "@/lib/platform/jobs/utils/idempotency";
 import { uploadResultStub } from "../support/upload-result-stub";
 
@@ -30,6 +34,16 @@ describe("foc", () => {
 				expect(retentionEpochsFromUntil(new Date(Date.now() - 60_000))).toBe(
 					0n,
 				);
+			});
+		});
+
+		describe("dataSetIdFromDealId", () => {
+			test("parses dataSetId prefix from deal_id", () => {
+				expect(dataSetIdFromDealId("14361:0")).toBe(14361n);
+			});
+
+			test("throws on invalid deal_id", () => {
+				expect(() => dataSetIdFromDealId("bad")).toThrow(/Invalid FOC deal_id/);
 			});
 		});
 
@@ -138,6 +152,16 @@ describe("foc", () => {
 						senderExported: false,
 					}),
 				).toBe(true);
+			});
+
+			test("TEST_FOC bypasses deferral during hot window", () => {
+				expect(
+					shouldDeferFocTransitionForJob({
+						inHotWindow: true,
+						senderExported: false,
+						testFocEnabled: true,
+					}),
+				).toBe(false);
 			});
 		});
 	});

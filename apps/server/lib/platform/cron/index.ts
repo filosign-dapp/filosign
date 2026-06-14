@@ -1,4 +1,5 @@
 import { registerPurgeLapsedArchivalCron } from "./tasks/archival";
+import { registerBillingWebhookSweeperCron } from "./tasks/billing-webhooks";
 import {
 	registerExpireCheckoutIntentsCron,
 	registerExpireInvitesCron,
@@ -118,6 +119,7 @@ export function startPlatformCron(): void {
 	activeJobs.push(registerMonitorRelayerGasCron());
 	activeJobs.push(registerOutboxSweeperCron());
 	activeJobs.push(registerOutboxPruneCron());
+	activeJobs.push(registerBillingWebhookSweeperCron());
 	activeJobs.push(registerOrphanUploadSweeperCron());
 	activeJobs.push(registerPurgeArchivedDraftsCron());
 	activeJobs.push(registerPurgeExpiredInvitesCron());

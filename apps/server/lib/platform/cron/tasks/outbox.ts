@@ -1,10 +1,13 @@
+import { emitEmailOutboxStuckAlert } from "@/lib/platform/analytics";
 import {
 	enqueueClaimedOutboxRows,
 	isEmailJobActive,
 	listStaleUnprocessedOutbox,
 	pruneProcessedOutboxOlderThan,
+	summarizeStaleUnprocessedOutbox,
 } from "@/lib/platform/jobs";
 import { logger } from "@/lib/platform/pino";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { CRON_LOCK_TTL, type CronHandle, registerLockedCron } from "../utils";
 
 // ==========================================
@@ -13,6 +16,7 @@ import { CRON_LOCK_TTL, type CronHandle, registerLockedCron } from "../utils";
 
 export const OUTBOX_SWEEPER_CRON = "*/5 * * * *";
 export const OUTBOX_SWEEPER_MIN_AGE_MS = 5 * 60 * 1000;
+export const OUTBOX_STUCK_ALERT_MIN_AGE_MS = 30 * 60 * 1000;
 const SWEEP_BATCH_SIZE = 100;
 
 export async function runOutboxSweeperJob(): Promise<number> {
@@ -28,13 +32,22 @@ export async function runOutboxSweeperJob(): Promise<number> {
 		if (!active) toEnqueue.push(row);
 	}
 
-	if (toEnqueue.length === 0) return 0;
+	let enqueued = 0;
+	if (toEnqueue.length > 0) {
+		enqueued = await enqueueClaimedOutboxRows(toEnqueue);
+		logger.info(
+			{ stale: stale.length, enqueued },
+			"outbox sweeper re-enqueued stale rows",
+		);
+	}
 
-	const enqueued = await enqueueClaimedOutboxRows(toEnqueue);
-	logger.info(
-		{ stale: stale.length, enqueued },
-		"outbox sweeper re-enqueued stale rows",
-	);
+	const stuckSummary = await summarizeStaleUnprocessedOutbox({
+		olderThan: new Date(Date.now() - OUTBOX_STUCK_ALERT_MIN_AGE_MS),
+	});
+	if (stuckSummary) {
+		await emitEmailOutboxStuckAlert(stuckSummary);
+	}
+
 	return enqueued;
 }
 
@@ -45,7 +58,10 @@ export function registerOutboxSweeperCron(): CronHandle {
 		bucketGranularity: "hour",
 		lockTtlSec: CRON_LOCK_TTL.hourly,
 		tick: async () => {
-			await runOutboxSweeperJob();
+			const res = await tryCatch(runOutboxSweeperJob());
+			if (res.error) {
+				logger.error({ err: res.error }, "cron outbox-sweeper failed");
+			}
 		},
 	});
 }

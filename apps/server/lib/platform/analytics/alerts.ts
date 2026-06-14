@@ -6,6 +6,11 @@ import {
 	type LoggerEvent,
 	type TelegramTransportOptions,
 } from "@filosign/logger";
+import type {
+	FeedbackFeatureArea,
+	FeedbackKind,
+	FeedbackPromptType,
+} from "@filosign/shared";
 import {
 	type AnalyticsProperties,
 	scrubAnalyticsProperties,
@@ -29,6 +34,12 @@ export const PLATFORM_ALERT_EVENTS = {
 	serverPgbackrestFailed: "server.pgbackrest_failed",
 	serverBullmqJobFailed: "server.bullmq_job_failed",
 	serverStarted: "server.started",
+	productFeedbackSubmitted: "product.feedback_submitted",
+	serverWorkerStale: "server.worker_stale",
+	billingWebhookStuck: "billing.webhook_stuck",
+	emailOutboxStuck: "email.outbox_stuck",
+	billingSubscriptionProblem: "billing.subscription_problem",
+	serverEmailDisabled: "server.email_disabled",
 } as const;
 
 export const PLATFORM_ALERT_POSTHOG_EVENT = "platform_alert" as const;
@@ -296,6 +307,146 @@ export function emitServerStartedPing(): Promise<void> {
 			hostname: os.hostname(),
 		},
 		timestamp: Date.now(),
+	});
+}
+
+/** Telegram ping when a user submits in-app product feedback (not mirrored to PostHog). */
+export function emitProductFeedbackPing(args: {
+	walletAddress: string;
+	organizationId: string | null;
+	kind: FeedbackKind;
+	featureArea: FeedbackFeatureArea;
+	promptType: FeedbackPromptType;
+	message: string;
+	route: string | null;
+	trigger: string | null;
+	pieceCid: string | null;
+}): Promise<void> {
+	if (!env.TG_ANALYTICS) {
+		return Promise.resolve();
+	}
+
+	return getRuntime().emit({
+		name: PLATFORM_ALERT_EVENTS.productFeedbackSubmitted,
+		severity: "info",
+		message:
+			args.kind === "bug"
+				? "New bug report"
+				: args.kind === "support"
+					? "New support request"
+					: "New user feedback",
+		context: {
+			wallet: args.walletAddress,
+			organizationId: args.organizationId,
+			kind: args.kind,
+			featureArea: args.featureArea,
+			promptType: args.promptType,
+			trigger: args.trigger,
+			route: args.route,
+			pieceCid: args.pieceCid,
+			message: args.message.trim().slice(0, 500),
+		},
+		timestamp: Date.now(),
+	});
+}
+
+function emitPlatformInfoEvent(args: {
+	name: string;
+	message: string;
+	context?: Record<string, unknown>;
+}): Promise<void> {
+	if (!env.TG_ANALYTICS) {
+		return Promise.resolve();
+	}
+	return getRuntime().emit({
+		name: args.name,
+		severity: "info",
+		message: args.message,
+		context: args.context,
+		timestamp: Date.now(),
+	});
+}
+
+export function emitWorkerStaleAlert(args: {
+	lastHeartbeatAt: string | null;
+	staleForSec: number;
+}): Promise<void> {
+	if (!env.TG_ANALYTICS) {
+		return Promise.resolve();
+	}
+	return getRuntime().emit({
+		name: PLATFORM_ALERT_EVENTS.serverWorkerStale,
+		severity: "error",
+		message: "Worker heartbeat is stale",
+		context: {
+			lastHeartbeatAt: args.lastHeartbeatAt,
+			staleForSec: args.staleForSec,
+			deployment: env.DEPLOYMENT,
+			serverRole: env.SERVER_ROLE,
+		},
+		timestamp: Date.now(),
+	});
+}
+
+export function emitBillingWebhookStuckAlert(args: {
+	receivedCount: number;
+	failedCount: number;
+	oldestReceivedAgeMin: number | null;
+	reEnqueued: number;
+}): Promise<void> {
+	if (!env.TG_ANALYTICS) {
+		return Promise.resolve();
+	}
+	return getRuntime().emit({
+		name: PLATFORM_ALERT_EVENTS.billingWebhookStuck,
+		severity: "error",
+		message: "Billing webhooks need attention",
+		context: args,
+		timestamp: Date.now(),
+	});
+}
+
+export function emitEmailOutboxStuckAlert(args: {
+	count: number;
+	oldestAgeMin: number;
+}): Promise<void> {
+	if (!env.TG_ANALYTICS) {
+		return Promise.resolve();
+	}
+	return getRuntime().emit({
+		name: PLATFORM_ALERT_EVENTS.emailOutboxStuck,
+		severity: "error",
+		message: "Outbound email is stuck",
+		context: args,
+		timestamp: Date.now(),
+	});
+}
+
+export function emitBillingSubscriptionProblemPing(args: {
+	eventType: string;
+	organizationId: string | null;
+	subscriptionId: string | null;
+	customerEmail: string | null;
+}): Promise<void> {
+	return emitPlatformInfoEvent({
+		name: PLATFORM_ALERT_EVENTS.billingSubscriptionProblem,
+		message:
+			args.eventType === "subscription.on_hold"
+				? "Subscription placed on hold"
+				: "Subscription payment failed",
+		context: args,
+	});
+}
+
+export function emitEmailDisabledWarning(): Promise<void> {
+	return emitPlatformInfoEvent({
+		name: PLATFORM_ALERT_EVENTS.serverEmailDisabled,
+		message: "Product email delivery is disabled",
+		context: {
+			deployment: env.DEPLOYMENT,
+			resendEnabled: env.RESEND_ENABLED,
+			sesEnabled: env.SES_ENABLED,
+		},
 	});
 }
 

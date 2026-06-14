@@ -1,6 +1,7 @@
 import env from "@/env";
 import { logFocSmoke } from "@/lib/domains/foc/smoke-log";
 import {
+	emitEmailDisabledWarning,
 	emitServerStartedPing,
 	shutdownPostHog,
 } from "@/lib/platform/analytics";
@@ -11,10 +12,15 @@ import {
 	shutdownJobsRuntime,
 	startJobsRuntime,
 } from "@/lib/platform/jobs";
+import { runsHttpServer, runsWorkerTasks } from "@/lib/platform/role";
 import {
 	startWorkerHeartbeat,
 	stopWorkerHeartbeat,
 } from "@/lib/platform/worker/heartbeat";
+import {
+	startWorkerLivenessMonitor,
+	stopWorkerLivenessMonitor,
+} from "@/lib/platform/worker/monitor";
 import { validateServerBootstrap } from "./validate-bootstrap";
 import { validateServerRoleForDeployment } from "./validate-role";
 
@@ -40,6 +46,15 @@ export async function bootstrapPlatformRuntime(
 	});
 	if (options.crons) startPlatformCron();
 	if (options.heartbeat) startWorkerHeartbeat();
+	if (runsHttpServer()) startWorkerLivenessMonitor();
+	if (
+		runsWorkerTasks() &&
+		env.DEPLOYMENT !== "local" &&
+		!env.RESEND_ENABLED &&
+		!env.SES_ENABLED
+	) {
+		void emitEmailDisabledWarning();
+	}
 	await emitServerStartedPing();
 }
 
@@ -47,6 +62,7 @@ export async function shutdownPlatformRuntime(
 	options: PlatformRuntimeOptions,
 ): Promise<void> {
 	if (options.heartbeat) stopWorkerHeartbeat();
+	stopWorkerLivenessMonitor();
 	if (options.crons) stopPlatformCron();
 	const jobs = resolveJobsRuntimeOptions();
 	await shutdownJobsRuntime({

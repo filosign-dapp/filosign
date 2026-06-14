@@ -6,6 +6,12 @@ export type SshResult = {
 	code: number;
 };
 
+/** Quote for remote `ssh host command` (single-quoted POSIX shell). */
+export function shellQuote(value: string): string {
+	if (/^[A-Za-z0-9._/@:+,=-]+$/.test(value)) return value;
+	return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
 export async function sshCapture(
 	ctx: ProdContext,
 	remote: string,
@@ -29,8 +35,8 @@ export async function dockerExec(
 	opts?: { user?: string },
 ): Promise<SshResult> {
 	const parts = ["docker", "exec"];
-	if (opts?.user) parts.push("-u", opts.user);
-	parts.push(container, ...args);
+	if (opts?.user) parts.push("-u", shellQuote(opts.user));
+	parts.push(shellQuote(container), ...args.map(shellQuote));
 	return sshCapture(ctx, parts.join(" "));
 }
 

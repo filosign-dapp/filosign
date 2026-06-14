@@ -15,6 +15,12 @@ export type AppliedMigrationRow = {
 	createdAtMs: number;
 };
 
+export type AppliedMigrationsProbe = {
+	rows: AppliedMigrationRow[];
+	/** Drizzle journal table/schema not present on this database. */
+	journalMissing: boolean;
+};
+
 export function readMigrationJournal(root: string): MigrationJournalEntry[] {
 	const journalPath = path.join(root, "apps/server/drizzle/meta/_journal.json");
 	const raw = JSON.parse(readFileSync(journalPath, "utf8")) as {
@@ -27,9 +33,25 @@ export function readMigrationJournal(root: string): MigrationJournalEntry[] {
 	}));
 }
 
+function parseAppliedMigrationStdout(stdout: string): AppliedMigrationRow[] {
+	return stdout
+		.split("\n")
+		.map((line) => line.trim())
+		.filter(Boolean)
+		.map((line) => {
+			const [idRaw, hash, createdRaw] = line.split("\t");
+			return {
+				id: Number(idRaw),
+				hash: hash ?? "",
+				createdAtMs: Number(createdRaw),
+			};
+		})
+		.filter((row) => Number.isFinite(row.id));
+}
+
 export async function listAppliedMigrations(
 	ctx: ProdContext,
-): Promise<AppliedMigrationRow[]> {
+): Promise<AppliedMigrationsProbe> {
 	const r = await dockerExec(ctx, ctx.containers.postgres, [
 		"psql",
 		"-U",
@@ -46,31 +68,35 @@ export async function listAppliedMigrations(
 
 	if (r.code !== 0) {
 		const msg = [r.stderr, r.stdout].filter(Boolean).join("\n").trim();
-		if (msg.includes("does not exist")) return [];
+		const databaseMissing =
+			/database\s+"[^"]+"\s+does not exist/i.test(msg) ||
+			/FATAL:\s+database\s+"[^"]+"\s+does not exist/i.test(msg);
+		if (databaseMissing) {
+			throw new Error(
+				`Postgres database "${ctx.pgDb}" does not exist on ${ctx.containers.postgres}. ` +
+					`Set PROD_PG_DB in deploy/.env to match Infisical DB_NAME.`,
+			);
+		}
+		if (msg.includes("does not exist")) {
+			return { rows: [], journalMissing: true };
+		}
 		throw new Error(msg || "Failed to read drizzle.__drizzle_migrations");
 	}
 
-	return r.stdout
-		.split("\n")
-		.map((line) => line.trim())
-		.filter(Boolean)
-		.map((line) => {
-			const [idRaw, hash, createdRaw] = line.split("\t");
-			return {
-				id: Number(idRaw),
-				hash: hash ?? "",
-				createdAtMs: Number(createdRaw),
-			};
-		})
-		.filter((row) => Number.isFinite(row.id));
+	return {
+		rows: parseAppliedMigrationStdout(r.stdout),
+		journalMissing: false,
+	};
 }
 
 export function pendingJournalTags(
 	journal: MigrationJournalEntry[],
 	applied: AppliedMigrationRow[],
 ): string[] {
-	const pendingCount = Math.max(0, journal.length - applied.length);
-	return journal.slice(-pendingCount).map((entry) => entry.tag);
+	const pendingCount = journal.length - applied.length;
+	if (pendingCount <= 0) return [];
+	// slice(applied.length), not slice(-pendingCount): slice(-0) === slice(0) → full array
+	return journal.slice(applied.length).map((entry) => entry.tag);
 }
 
 export function newlyAppliedMigrations(
@@ -97,4 +123,25 @@ export function inferTagsForNewMigrations(
 	if (newRows.length === 0) return [];
 	const start = before.length;
 	return journal.slice(start, start + newRows.length).map((entry) => entry.tag);
+}
+
+/** Infisical DB_NAME used by drizzle-kit migrate (child process). */
+export function resolveInfisicalDbName(root: string): string | null {
+	const proc = Bun.spawnSync({
+		cmd: [
+			"infisical",
+			"run",
+			"--env=prod",
+			"--path=/app",
+			"--",
+			"printenv",
+			"DB_NAME",
+		],
+		cwd: root,
+		stdout: "pipe",
+		stderr: "pipe",
+	});
+	if (proc.exitCode !== 0) return null;
+	const value = new TextDecoder().decode(proc.stdout).trim();
+	return value || null;
 }

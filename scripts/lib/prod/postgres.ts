@@ -75,10 +75,14 @@ SELECT count(*)::int AS migrations FROM drizzle.__drizzle_migrations;
 	if (ctx.verbose) {
 		try {
 			const journal = readMigrationJournal(ctx.root);
-			const applied = await listAppliedMigrations(ctx);
+			const appliedProbe = await listAppliedMigrations(ctx);
+			const applied = appliedProbe.rows;
 			parts.push(
 				"--- migrations ---",
 				`journal: ${journal.length} file(s), applied: ${applied.length}`,
+				...(appliedProbe.journalMissing
+					? ["drizzle.__drizzle_migrations: missing on this database"]
+					: []),
 				...applied.map((row) => formatAppliedMigration(row)),
 			);
 		} catch (error) {

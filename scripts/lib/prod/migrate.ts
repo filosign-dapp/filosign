@@ -9,6 +9,7 @@ import {
 	newlyAppliedMigrations,
 	pendingJournalTags,
 	readMigrationJournal,
+	resolveInfisicalDbName,
 } from "./migrations.ts";
 import { postgresContainerIp, withPostgresTunnel } from "./tunnel.ts";
 
@@ -32,7 +33,25 @@ export async function migrateProd(
 	log.detail(
 		"Set PROD_PG_DB in deploy/.env to match Infisical DB_NAME when not filosign",
 	);
-	log.detail(`server dir: ${server}`);
+
+	const infisicalDbName = resolveInfisicalDbName(root);
+	if (infisicalDbName) {
+		log.info(`infisical DB_NAME: ${infisicalDbName}`);
+		if (infisicalDbName !== ctx.pgDb) {
+			log.fail(
+				`probe database "${ctx.pgDb}" does not match Infisical DB_NAME "${infisicalDbName}". ` +
+					`drizzle-kit migrate targets Infisical; migration counts probe deploy/.env PROD_PG_DB.`,
+			);
+			log.detail(
+				`Set PROD_PG_DB=${infisicalDbName} in deploy/.env (see deploy/.env.example).`,
+			);
+			return 1;
+		}
+	} else {
+		log.warn(
+			"could not read Infisical DB_NAME (infisical login?). Probing PROD_PG_DB only.",
+		);
+	}
 
 	let journal: ReturnType<typeof readMigrationJournal>;
 	try {
@@ -46,9 +65,9 @@ export async function migrateProd(
 		return 1;
 	}
 
-	let before: Awaited<ReturnType<typeof listAppliedMigrations>>;
+	let beforeProbe: Awaited<ReturnType<typeof listAppliedMigrations>>;
 	try {
-		before = await listAppliedMigrations(ctx);
+		beforeProbe = await listAppliedMigrations(ctx);
 	} catch (error) {
 		log.fail(
 			`could not read remote migrations: ${error instanceof Error ? error.message : String(error)}`,
@@ -56,8 +75,15 @@ export async function migrateProd(
 		return 1;
 	}
 
+	const before = beforeProbe.rows;
 	const pending = pendingJournalTags(journal, before);
+
 	log.info(`remote applied: ${before.length} migration(s)`);
+	if (beforeProbe.journalMissing) {
+		log.warn(
+			`drizzle.__drizzle_migrations not found on "${ctx.pgDb}" (never migrated via drizzle-kit on this database, or wrong DB)`,
+		);
+	}
 	if (before.length > 0) {
 		log.detail(before.map(formatAppliedMigration));
 	}
@@ -110,9 +136,9 @@ export async function migrateProd(
 		return code;
 	}
 
-	let after: Awaited<ReturnType<typeof listAppliedMigrations>>;
+	let afterProbe: Awaited<ReturnType<typeof listAppliedMigrations>>;
 	try {
-		after = await listAppliedMigrations(ctx);
+		afterProbe = await listAppliedMigrations(ctx);
 	} catch (error) {
 		log.warn(
 			`migrate succeeded but could not re-read remote migrations: ${error instanceof Error ? error.message : String(error)}`,
@@ -121,6 +147,7 @@ export async function migrateProd(
 		return 0;
 	}
 
+	const after = afterProbe.rows;
 	const appliedTags = inferTagsForNewMigrations(journal, before, after);
 	const newRows = newlyAppliedMigrations(before, after);
 	const delta = after.length - before.length;
@@ -137,10 +164,20 @@ export async function migrateProd(
 				return row ? `${tag} - ${formatAppliedMigration(row)}` : tag;
 			}),
 		);
+	} else if (delta === 0 && pending.length > 0) {
+		log.fail(
+			`drizzle-kit reported success but "${ctx.pgDb}" still shows ${after.length} journal row(s) after ${pending.length} pending migration(s). ` +
+				`If VPS psql shows rows, the laptop SSH probe may be mis-quoting psql (check scripts/lib/prod/ssh.ts). ` +
+				`Otherwise PROD_PG_DB may differ from the database drizzle-kit migrated.`,
+		);
+		if (infisicalDbName && infisicalDbName !== ctx.pgDb) {
+			log.detail(
+				`Infisical DB_NAME=${infisicalDbName}, probe PROD_PG_DB=${ctx.pgDb}`,
+			);
+		}
+		return 1;
 	} else if (delta === 0) {
 		log.ok("no new rows in drizzle.__drizzle_migrations (already up to date)");
-	} else {
-		log.detail(newRows.map(formatAppliedMigration));
 	}
 
 	log.ok("migrate complete");

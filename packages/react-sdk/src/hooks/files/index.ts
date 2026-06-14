@@ -4,6 +4,10 @@ export type {
 	SettlementRuleUpdateInput,
 } from "@filosign/shared";
 export {
+	type EnsureAcknowledgedDeps,
+	ensureAcknowledged,
+} from "../../lib/ack-file/ensure-acknowledged";
+export {
 	type AttachmentPacketDraft,
 	decryptAttachmentPacketAccess,
 	unwrapAttachmentPacketDekForCold,
@@ -24,6 +28,11 @@ export {
 } from "../../lib/entitlements";
 export { buildValidatedRegisterRouting } from "../../lib/register-routing";
 export type { PieceFileDekSource } from "../../lib/resolve-piece-file-dek";
+export type {
+	SendFileProgressEvent,
+	SendFileProgressPhase,
+	SendFileProgressReporter,
+} from "../../lib/send-file/progress";
 export type { SendFileArgs, SendFileResult } from "../../lib/send-file/types";
 export {
 	formatSettlementSimError,

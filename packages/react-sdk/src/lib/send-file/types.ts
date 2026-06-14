@@ -6,6 +6,7 @@ import type { AppRouterClient } from "../../orpc/app-router-types";
 import type { AttachmentPacketDraft } from "../attachment-packets";
 import type { SettlementRuleDraft } from "../settlement-rules.ts";
 import type { FilosignWallet } from "../wallet";
+import type { SendFileProgressReporter } from "./progress";
 
 export type SendFileSigner = {
 	address: Address;
@@ -50,6 +51,8 @@ export type SendFileArgs = {
 	settlementRules?: SettlementRuleDraft[];
 	routing?: RegisterRoutingInput;
 	isPractice?: boolean;
+	/** Client-only progress callback; not sent to the server. */
+	onProgress?: SendFileProgressReporter;
 };
 
 export type SendFileUser = {

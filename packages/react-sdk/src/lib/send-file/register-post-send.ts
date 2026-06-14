@@ -9,6 +9,8 @@ import {
 	registerSettlementRulesOnChain,
 	type SettlementRuleDraft,
 } from "../settlement-rules.ts";
+import type { SendFileProgressReporter } from "./progress";
+import { emitSendFileProgress } from "./progress";
 import type { SendFileDeps } from "./types";
 
 function resolveAttachmentRuleReleaseParams(
@@ -29,16 +31,23 @@ export async function registerConditionalAttachments(args: {
 	pieceCid: string;
 	attachmentPacketDrafts: AttachmentPacketDraft[];
 	attachmentPackets: AttachmentPacketSendInput[];
+	onProgress?: SendFileProgressReporter;
 }): Promise<void> {
 	const conditionalDrafts = args.attachmentPacketDrafts.filter(
 		(d) => d.releaseMode === "conditional",
 	);
 	if (conditionalDrafts.length === 0) return;
 
+	emitSendFileProgress(args.onProgress, {
+		phase: "processing_attachments",
+		status: "start",
+	});
+
 	const registered = await registerAttachmentRulesOnChain({
 		wallet: args.deps.wallet,
 		contracts: args.deps.contracts,
 		pieceCid: args.pieceCid,
+		onProgress: args.onProgress,
 		rules: conditionalDrafts.map((draft): AttachmentRuleDraft => {
 			const packet = args.attachmentPackets.find(
 				(p) => p.packetId === draft.packetId,
@@ -76,6 +85,11 @@ export async function registerConditionalAttachments(args: {
 			packetContentHash: packet.packetContentHash,
 		});
 	}
+
+	emitSendFileProgress(args.onProgress, {
+		phase: "processing_attachments",
+		status: "done",
+	});
 }
 
 export async function registerSettlementRulesForFile(args: {
@@ -84,6 +98,7 @@ export async function registerSettlementRulesForFile(args: {
 	cidIdentifier: `0x${string}`;
 	settlementRules: SettlementRuleDraft[];
 	organizationId?: string;
+	onProgress?: SendFileProgressReporter;
 }): Promise<void> {
 	if (args.settlementRules.length === 0) return;
 
@@ -94,11 +109,20 @@ export async function registerSettlementRulesForFile(args: {
 		payer: args.deps.wallet.account.address,
 		cidIdentifier: args.cidIdentifier,
 		rules: args.settlementRules,
+		onProgress: args.onProgress,
 	});
 
+	emitSendFileProgress(args.onProgress, {
+		phase: "indexing_payout",
+		status: "start",
+	});
 	await args.deps.rpcQuery.settlements.registerForFile.call({
 		pieceCid: args.pieceCid,
 		...(args.organizationId ? { organizationId: args.organizationId } : {}),
 		rules: settlementRuleRecords,
+	});
+	emitSendFileProgress(args.onProgress, {
+		phase: "indexing_payout",
+		status: "done",
 	});
 }

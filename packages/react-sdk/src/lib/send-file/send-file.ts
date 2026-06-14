@@ -5,6 +5,7 @@ import { buildRegisterEnvelopeSignature } from "./build-register-signature";
 import { prepareColdInvites } from "./prepare-cold-invites";
 import { preparePieceCrypto } from "./prepare-piece-crypto";
 import { processAttachmentPackets } from "./process-attachment-packets";
+import { emitSendFileProgress } from "./progress";
 import {
 	registerConditionalAttachments,
 	registerSettlementRulesForFile,
@@ -65,7 +66,11 @@ export async function sendFile(
 		settlementRules = [],
 		routing,
 		isPractice,
+		onProgress,
 	} = args;
+
+	const emit = (event: Parameters<typeof emitSendFileProgress>[1]) =>
+		emitSendFileProgress(onProgress, event);
 
 	const validated = validateSendFileInput({
 		user: deps.user,
@@ -75,6 +80,7 @@ export async function sendFile(
 
 	const timestamp = await latestChainTimestamp(deps.contracts);
 
+	emit({ phase: "encrypting", status: "start" });
 	const piece = await preparePieceCrypto({
 		deps,
 		timestamp,
@@ -86,14 +92,18 @@ export async function sendFile(
 		organizationId,
 		orgEncryptionPublicKey,
 	});
+	emit({ phase: "encrypting", status: "done" });
 
+	emit({ phase: "uploading", status: "start" });
 	await uploadEncryptedPiece({
 		rpcQuery: deps.rpcQuery,
 		pieceCid: piece.pieceCid.toString(),
 		encryptedData: piece.encryptedData,
 		isPractice,
 	});
+	emit({ phase: "uploading", status: "done" });
 
+	emit({ phase: "wallet_sign_register", status: "wallet_prompt" });
 	const { signature, placementCommitment, cidIdentifier } =
 		await buildRegisterEnvelopeSignature({
 			contracts: deps.contracts,
@@ -108,6 +118,7 @@ export async function sendFile(
 			organizationId,
 			timestamp,
 		});
+	emit({ phase: "wallet_sign_register", status: "done" });
 
 	const coldInvitesPrepared = await prepareColdInvites({
 		coldInvites,
@@ -141,6 +152,7 @@ export async function sendFile(
 		);
 	}
 
+	emit({ phase: "registering_envelope", status: "start" });
 	await deps.rpcQuery.files.register.call({
 		pieceCid: piece.pieceCid.toString(),
 		participants: piece.participants,
@@ -164,12 +176,14 @@ export async function sendFile(
 		ciphertextByteLength: piece.encryptedData.byteLength,
 		...(isPractice ? { isPractice: true } : {}),
 	});
+	emit({ phase: "registering_envelope", status: "done" });
 
 	await registerConditionalAttachments({
 		deps,
 		pieceCid: piece.pieceCid.toString(),
 		attachmentPacketDrafts,
 		attachmentPackets,
+		onProgress,
 	});
 
 	await registerSettlementRulesForFile({
@@ -178,6 +192,7 @@ export async function sendFile(
 		cidIdentifier,
 		settlementRules,
 		organizationId,
+		onProgress,
 	});
 
 	return {

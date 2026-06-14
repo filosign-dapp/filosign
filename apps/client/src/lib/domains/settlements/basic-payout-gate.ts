@@ -1,5 +1,6 @@
 import type { BasicPayoutGate } from "@filosign/react/files";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import type { UpgradePlanLimitReason } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
 
 export const PAYOUT_ACCESS_SETTINGS_PATH = "/dashboard/settings/workspace";
@@ -18,29 +19,38 @@ export function handleBasicPayoutGateBlock(
 	return true;
 }
 
-export function basicPayoutGateMessage(gate: BasicPayoutGate): string | null {
+type PayoutGateToast = { title: string; hint: string };
+
+export function basicPayoutGateToast(
+	gate: BasicPayoutGate,
+): PayoutGateToast | null {
 	if (gate.allowed) return null;
 	switch (gate.reason) {
 		case "free_plan":
 			return null;
 		case "access_pending":
-			return "Payout attachment is pending Filosign review. Check Workspace settings for status.";
+			return TOASTS.payouts.accessPending;
 		case "access_rejected":
-			return "Payout attachment was not approved. Submit a new request in Workspace settings.";
+			return TOASTS.payouts.accessRejected;
 		case "terms_outdated":
-			return "Settlement terms were updated. Submit a new access request in Workspace settings.";
+			return TOASTS.payouts.termsOutdated;
 		case "access_none":
-			return "Request payout attachment access in Workspace settings before attaching payouts.";
+			return TOASTS.payouts.accessNone;
 		default:
-			return "Payout attachment access is required in Workspace settings.";
+			return TOASTS.payouts.accessRequired;
 	}
 }
 
+/** @deprecated Use basicPayoutGateToast for title + hint. */
+export function basicPayoutGateMessage(gate: BasicPayoutGate): string | null {
+	const toastCopy = basicPayoutGateToast(gate);
+	if (!toastCopy) return null;
+	return `${toastCopy.title}. ${toastCopy.hint}`;
+}
+
 export function notifyBasicPayoutGateBlocked(gate: BasicPayoutGate): boolean {
-	const message = basicPayoutGateMessage(gate);
-	if (!message) return false;
-	toast.error(message, {
-		description: "Settings → Workspace → Payout attachment access",
-	});
+	const copy = basicPayoutGateToast(gate);
+	if (!copy) return false;
+	toastUser.error(copy.title, { hint: copy.hint });
 	return true;
 }

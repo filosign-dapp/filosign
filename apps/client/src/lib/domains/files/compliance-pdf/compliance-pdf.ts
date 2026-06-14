@@ -4,7 +4,8 @@ import type { ViewFileResult } from "@filosign/react/files";
 import { useComplianceBundle } from "@filosign/react/files";
 import { useUserProfile } from "@filosign/react/users";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { complianceExportContext } from "./utils/export-context";
 import { safePieceCidDownloadBasename } from "./utils/zip-entries";
 
@@ -84,7 +85,9 @@ export function useCompliancePdfExports(options: {
 			);
 		} catch (e) {
 			console.error(e);
-			toast.error("Completion certificate export failed");
+			toastUser.error(TOASTS.exports.certificateFailed.title, {
+				hint: TOASTS.exports.certificateFailed.hint,
+			});
 		} finally {
 			setPdfExportBusy(false);
 		}
@@ -105,7 +108,9 @@ export function useCompliancePdfExports(options: {
 			});
 		} catch (e) {
 			console.error(e);
-			toast.error("Signed envelope export failed");
+			toastUser.error(TOASTS.exports.signedDocumentFailed.title, {
+				hint: TOASTS.exports.signedDocumentFailed.hint,
+			});
 		} finally {
 			setPdfExportBusy(false);
 		}
@@ -156,7 +161,9 @@ export function useCompliancePdfExports(options: {
 			});
 		} catch (e) {
 			console.error(e);
-			toast.error("Proof packet export failed");
+			toastUser.error(TOASTS.exports.proofDownloadFailed.title, {
+				hint: TOASTS.exports.proofDownloadFailed.hint,
+			});
 		} finally {
 			setPdfExportBusy(false);
 		}

@@ -12,7 +12,6 @@ import {
 import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useId, useMemo, useState } from "react";
-import { toast } from "sonner";
 import env from "@/src/env";
 import { Button } from "@/src/lib/components/ui/button";
 import { Dialog } from "@/src/lib/components/ui/dialog";
@@ -27,6 +26,8 @@ import {
 } from "@/src/lib/components/ui/feature-dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import {
 	BILLING_SETTINGS_PATH,
 	billingSettingsReturnUrl,
@@ -110,7 +111,7 @@ export function UpgradePlanDialog({
 		) {
 			try {
 				await changePlan.mutateAsync(selectedPlan, suppressGlobalErrorToast());
-				toast.success("Plan change submitted.");
+				toastUser.success(TOASTS.billing.planChangeSubmittedShort);
 				onOpenChange(false);
 			} catch (err) {
 				showAppErrorToast(err);

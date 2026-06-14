@@ -1,8 +1,9 @@
 import type { FileInfo } from "@filosign/react/files";
 import { useRemindSigners } from "@filosign/react/files";
 import { BellRingingIcon } from "@phosphor-icons/react";
-import { toast } from "sonner";
 import { Button } from "@/src/lib/components/ui/button";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { showAppErrorToast } from "@/src/lib/errors";
 
 const toolbarIconClass = "size-6 @md:size-7";
@@ -38,20 +39,16 @@ export function RemindSignersButton({
 				void remind.mutateAsync().then(
 					(result) => {
 						if (result.remindedCount > 0) {
-							toast.success(
-								result.remindedCount === 1
-									? "Reminder sent to 1 signer"
-									: `Reminders sent to ${result.remindedCount} signers`,
-							);
+							toastUser.success(TOASTS.reminders.sent(result.remindedCount));
 							return;
 						}
 						if (result.skippedCount > 0) {
-							toast.message(
-								"Reminders already sent today - try again tomorrow",
-							);
+							toastUser.message(TOASTS.reminders.alreadySentToday.title, {
+								hint: TOASTS.reminders.alreadySentToday.hint,
+							});
 							return;
 						}
-						toast.message("No unsigned signers to remind");
+						toastUser.message(TOASTS.reminders.noUnsignedSigners);
 					},
 					(error) => {
 						showAppErrorToast(error);

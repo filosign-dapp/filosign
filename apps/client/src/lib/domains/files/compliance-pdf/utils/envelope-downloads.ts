@@ -1,6 +1,7 @@
 import type { ViewFileResult } from "@filosign/react/files";
 import type { ComplianceBundle } from "@filosign/shared";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { buildSignedDocumentPdf } from "./build";
 import {
 	downloadZipEntries,
@@ -64,9 +65,8 @@ export async function downloadSignedEnvelopeZip(args: {
 	if (errors.length > 0) {
 		const preview = errors.slice(0, 3).join("; ");
 		const suffix = errors.length > 3 ? ` (+${errors.length - 3} more)` : "";
-		toast.warning("Some signed files were not included", {
-			description: `${preview}${suffix}`,
-		});
+		const skipped = TOASTS.exports.someSignedFilesSkipped(preview, suffix);
+		toastUser.warning(skipped.title, { hint: skipped.hint });
 	}
 
 	downloadZipEntries(

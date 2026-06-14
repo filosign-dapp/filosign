@@ -22,7 +22,8 @@ import {
 } from "@filosign/shared";
 import { zHexString } from "@filosign/shared/zod";
 import { zipSync } from "fflate";
-import { toast } from "sonner";
+import { toastUser } from "@/src/lib/copy/toast";
+import { TOASTS } from "@/src/lib/copy/toasts";
 import { downloadBlobBytes } from "./build";
 import { sanitizeZipSegment, uniqueZipEntryName } from "./zip-entries";
 
@@ -189,9 +190,8 @@ export async function warnDocumentMerkleMismatch(args: {
 	const root = args.expectedRoot.toLowerCase();
 	const recomputedRoot = args.fileData.registerDocumentSha256.toLowerCase();
 	if (recomputedRoot !== root) {
-		toast.warning("Document Merkle root mismatch", {
-			description:
-				"Recomputed root from decrypted documents does not match the register-time root.",
+		toastUser.warning(TOASTS.exports.verificationIssue.title, {
+			hint: TOASTS.exports.verificationIssue.hint,
 		});
 	}
 
@@ -210,9 +210,8 @@ export async function warnDocumentMerkleMismatch(args: {
 			expectedRoot: parseHexString(args.expectedRoot),
 		});
 		if (!ok) {
-			toast.warning(`Merkle proof failed for ${doc.name}`, {
-				description: `${doc.name} does not verify against the on-chain document Merkle root.`,
-			});
+			const copy = TOASTS.exports.proofFailedForDoc(doc.name);
+			toastUser.warning(copy.title, { hint: copy.hint });
 		}
 	}
 }
@@ -424,9 +423,8 @@ export async function downloadCompletionPacketZip(args: {
 			attachmentExportErrors.length > 3
 				? ` (+${attachmentExportErrors.length - 3} more)`
 				: "";
-		toast.warning("Some attachment files were not included", {
-			description: `${preview}${suffix}`,
-		});
+		const skipped = TOASTS.exports.someAttachmentsSkipped(preview, suffix);
+		toastUser.warning(skipped.title, { hint: skipped.hint });
 	}
 
 	const zipped = zipSync(zipEntries, { level: 6 });

@@ -5,13 +5,9 @@ export const FEATURE_DIALOG_IMAGES = {
 	signSuccessProofPacketDialog: "/images/ww/stock_46.webp",
 	recoveryPhraseAndCryptoUnlockDialog: "/images/ww/stock_63.webp",
 	workspaceCreateInviteTrialDialog: "/images/ww/stock_44.webp",
-	signInOtpAndInviteUnlockDialog: "/images/ww/stock_26.webp",
-	upgradePlanDialogTeamsProRouting: "/images/ww/stock_18.webp",
-	upgradePlanDialogDocumentSendLimit: "/images/ww/stock_18.webp",
-	upgradePlanDialogRecipientLimit: "/images/ww/stock_18.webp",
-	upgradePlanDialogSettlementLimit: "/images/ww/stock_18.webp",
-	upgradePlanDialogSharedTemplatesLimit: "/images/ww/stock_18.webp",
-	upgradePlanDialogSupplementaryAttachmentsLimit: "/images/ww/stock_18.webp",
+	signInOtpAndInviteUnlockDialog: "/images/ww/stock_40.webp",
+	upgradePlanDialog: "/images/ww/stock_18.webp",
+	payoutAccessRequestDialog: "/images/ww/stock_41.webp",
 	postSendEnvelopeSentDialog: "/images/ww/stock_24.webp",
 	coldShareAccessDialog: "/images/ww/stock_24.webp",
 	feedbackDialog: "/images/stock_10.webp",
@@ -23,39 +19,22 @@ export function upgradePlanLimitMedia(reason: UpgradePlanLimitReason): {
 	src: string;
 	badge: string;
 } {
+	const src = FEATURE_DIALOG_IMAGES.upgradePlanDialog;
+
 	switch (reason) {
 		case "documents.sent.monthly":
-			return {
-				src: FEATURE_DIALOG_IMAGES.upgradePlanDialogDocumentSendLimit,
-				badge: "Upgrade",
-			};
 		case "envelope.recipients.max":
-			return {
-				src: FEATURE_DIALOG_IMAGES.upgradePlanDialogRecipientLimit,
-				badge: "Upgrade",
-			};
 		case "features.settlement.basic":
 		case "features.settlement.advanced":
-			return {
-				src: FEATURE_DIALOG_IMAGES.upgradePlanDialogSettlementLimit,
-				badge: "Upgrade",
-			};
-		case "features.routing.advanced":
-			return {
-				src: FEATURE_DIALOG_IMAGES.upgradePlanDialogTeamsProRouting,
-				badge: "Teams Pro",
-			};
-		case "features.shared_templates":
-			return {
-				src: FEATURE_DIALOG_IMAGES.upgradePlanDialogSharedTemplatesLimit,
-				badge: "Teams",
-			};
 		case "features.supplementary_attachments":
 		case "features.supplementary_attachments.recipient_select":
 		case "features.supplementary_attachments.conditional_release":
-			return {
-				src: FEATURE_DIALOG_IMAGES.upgradePlanDialogSupplementaryAttachmentsLimit,
-				badge: "Upgrade",
-			};
+			return { src, badge: "Upgrade" };
+		case "features.routing.advanced":
+			return { src, badge: "Teams Pro" };
+		case "features.shared_templates":
+		case "features.team_drafts":
+		case "features.draft_comments":
+			return { src, badge: "Teams" };
 	}
 }

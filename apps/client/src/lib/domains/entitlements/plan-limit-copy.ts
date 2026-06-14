@@ -34,6 +34,16 @@ export const PLAN_LIMIT_COPY: Record<
 		description:
 			"Create and reuse shared document templates with your team. Upgrade to Teams or Teams Pro to build templates.",
 	},
+	"features.team_drafts": {
+		title: "Cloud draft save requires Teams plan",
+		description:
+			"Save encrypted envelope drafts to your workspace and pick up where you left off. Upgrade to Teams or Teams Pro to use cloud drafts.",
+	},
+	"features.draft_comments": {
+		title: "Draft comments require Teams plan",
+		description:
+			"Leave encrypted comments on shared envelope drafts while you prepare to send. Upgrade to Teams or Teams Pro to collaborate on drafts.",
+	},
 	"features.supplementary_attachments": {
 		title: "Gated file packets need Solo or higher",
 		description:

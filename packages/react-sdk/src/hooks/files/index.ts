@@ -22,8 +22,11 @@ export {
 	canUseAdvancedSettlements,
 	canUseBasicSettlements,
 	canUseConditionalAttachmentRelease,
+	canUseDraftComments,
 	canUseMetadataTags,
+	canUseSharedTemplates,
 	canUseSupplementaryAttachments,
+	canUseTeamDrafts,
 	resolveBasicPayoutGate,
 } from "../../lib/entitlements";
 export { buildValidatedRegisterRouting } from "../../lib/register-routing";

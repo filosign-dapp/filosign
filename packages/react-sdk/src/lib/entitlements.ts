@@ -98,3 +98,21 @@ export function canUseMetadataTags(
 ): boolean {
 	return featureEnabled(entitlements, "features.metadata.tags");
 }
+
+export function canUseDraftComments(
+	entitlements: EntitlementsSnapshot | undefined,
+): boolean {
+	return featureEnabled(entitlements, "features.draft_comments");
+}
+
+export function canUseTeamDrafts(
+	entitlements: EntitlementsSnapshot | undefined,
+): boolean {
+	return featureEnabled(entitlements, "features.team_drafts");
+}
+
+export function canUseSharedTemplates(
+	entitlements: EntitlementsSnapshot | undefined,
+): boolean {
+	return featureEnabled(entitlements, "features.shared_templates");
+}

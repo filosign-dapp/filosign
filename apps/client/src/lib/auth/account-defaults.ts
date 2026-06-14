@@ -13,5 +13,9 @@ export function isPersonalizationComplete(
 	profile: { firstName?: string | null } | undefined,
 ): boolean {
 	const first = profile?.firstName?.trim();
-	return Boolean(first && first !== DEFAULT_ACCOUNT_FIRST_NAME);
+	return Boolean(first && !isReservedAccountFirstName(first));
+}
+
+export function isReservedAccountFirstName(firstName: string): boolean {
+	return firstName.trim() === DEFAULT_ACCOUNT_FIRST_NAME;
 }

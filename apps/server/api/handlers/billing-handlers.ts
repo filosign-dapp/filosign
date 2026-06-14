@@ -6,13 +6,12 @@ import {
 	type BillingInterval,
 	CHECKOUT_PLAN_IDS,
 	changeOrgPlan,
-	createBillingCheckoutSession,
-	createBillingPortalSession,
+	createNewWorkspaceCheckoutSession,
 	createOrgBillingCheckoutSession,
 	createOrgBillingPortalSession,
+	getNewWorkspacePendingStatus,
 	getOrgBillingSummary,
-	getUpgradeOfferingsForWallet,
-	getUserBillingSummary,
+	getUpgradeOfferings,
 	getWorkspaceBillingContext,
 	type OrgCheckoutPlanId,
 	previewMarketingCheckout,
@@ -41,23 +40,6 @@ export async function billingEntitlements(
 	return buildEntitlementsSnapshot(ctx);
 }
 
-export async function billingCreateCheckoutSession(args: {
-	wallet: Address;
-	planId: "individual" | "teams" | "teams_pro";
-	interval: BillingInterval;
-	returnUrl: string;
-}) {
-	return createBillingCheckoutSession(args);
-}
-
-export async function billingCreatePortalSession(wallet: Address) {
-	return createBillingPortalSession({ wallet });
-}
-
-export async function billingGetUserSummary(wallet: Address) {
-	return getUserBillingSummary(getAddress(wallet));
-}
-
 export async function billingGetWorkspaceBillingContext(
 	wallet: Address,
 	activeOrg: ActiveOrgContext | null,
@@ -70,12 +52,10 @@ export async function billingGetWorkspaceBillingContext(
 }
 
 export async function billingGetUpgradeOfferings(
-	wallet: Address,
 	activeOrg: ActiveOrgContext | null,
 	reason: (typeof UPGRADE_LIMIT_REASONS)[number],
 ) {
-	return getUpgradeOfferingsForWallet({
-		wallet: getAddress(wallet),
+	return getUpgradeOfferings({
 		organizationId: activeOrg?.organizationId ?? null,
 		reason,
 	});
@@ -177,6 +157,32 @@ export async function billingChangeOrgPlan(args: {
 	return changeOrgPlan({
 		organizationId: org.organizationId,
 		planId: args.planId,
+	});
+}
+
+export async function billingCreateNewWorkspaceCheckoutSession(args: {
+	wallet: Address;
+	planId: OrgCheckoutPlanId;
+	interval: BillingInterval;
+	seatCount: number;
+	returnUrl: string;
+}) {
+	return createNewWorkspaceCheckoutSession({
+		wallet: getAddress(args.wallet),
+		planId: args.planId,
+		interval: args.interval,
+		seatCount: args.seatCount,
+		returnUrl: args.returnUrl,
+	});
+}
+
+export async function billingGetNewWorkspacePendingStatus(args: {
+	wallet: Address;
+	pendingBillingId: string;
+}) {
+	return getNewWorkspacePendingStatus({
+		wallet: getAddress(args.wallet),
+		pendingBillingId: args.pendingBillingId,
 	});
 }
 

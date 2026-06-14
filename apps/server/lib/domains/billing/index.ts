@@ -1,9 +1,6 @@
 export {
 	type BillingInterval,
-	createBillingCheckoutSession,
-	createBillingPortalSession,
-	getUpgradeOfferingsForWallet,
-	getUserBillingSummary,
+	getUpgradeOfferings,
 	getWorkspaceBillingContext,
 	resolveProductId,
 } from "./billing";
@@ -26,6 +23,11 @@ export {
 	previewMarketingCheckout,
 	subscriptionAccessFromRow,
 } from "./utils/marketing";
+export { createNewWorkspaceCheckoutSession } from "./utils/new-workspace-checkout";
+export {
+	getNewWorkspacePendingStatus,
+	reconcileNewWorkspacePendingFromDodo,
+} from "./utils/new-workspace-pending";
 export {
 	createOrgBillingCheckoutSession,
 	createOrgBillingPortalSession,

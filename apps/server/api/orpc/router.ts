@@ -20,14 +20,13 @@ import {
 } from "@/api/handlers/attachments";
 import {
 	billingChangeOrgPlan,
-	billingCreateCheckoutSession,
+	billingCreateNewWorkspaceCheckoutSession,
 	billingCreateOrgCheckoutSession,
 	billingCreateOrgPortalSession,
-	billingCreatePortalSession,
 	billingEntitlements,
+	billingGetNewWorkspacePendingStatus,
 	billingGetOrgSummary,
 	billingGetUpgradeOfferings,
-	billingGetUserSummary,
 	billingGetWorkspaceBillingContext,
 	billingPreviewMarketingCheckout,
 	billingPreviewOrgPlanChange,
@@ -819,32 +818,9 @@ export const appRouter = {
 			.handler(({ context }) =>
 				billingEntitlements(context.userWallet, context.activeOrg),
 			),
-		createCheckoutSession: authenticatedProcedure
-			.input(
-				z.object({
-					planId: z.enum(["individual", "teams", "teams_pro"]),
-					interval: z.enum(["monthly", "yearly"]).default("monthly"),
-					returnUrl: z.url(),
-				}),
-			)
-			.output(out.billing.createCheckoutSession)
-			.handler(({ context, input }) =>
-				billingCreateCheckoutSession({
-					wallet: context.userWallet,
-					planId: input.planId,
-					interval: input.interval,
-					returnUrl: input.returnUrl,
-				}),
-			),
-		createPortalSession: authenticatedProcedure
-			.output(out.billing.createPortalSession)
-			.handler(({ context }) => billingCreatePortalSession(context.userWallet)),
 		getOrgSummary: authenticatedProcedure
 			.output(out.billing.getOrgSummary)
 			.handler(({ context }) => billingGetOrgSummary(context.activeOrg)),
-		getUserSummary: authenticatedProcedure
-			.output(out.billing.getUserSummary)
-			.handler(({ context }) => billingGetUserSummary(context.userWallet)),
 		getWorkspaceBillingContext: authenticatedProcedure
 			.output(out.billing.getWorkspaceBillingContext)
 			.handler(({ context }) =>
@@ -857,11 +833,7 @@ export const appRouter = {
 			.input(z.object({ reason: z.enum(UPGRADE_LIMIT_REASONS) }))
 			.output(out.billing.getUpgradeOfferings)
 			.handler(({ context, input }) =>
-				billingGetUpgradeOfferings(
-					context.userWallet,
-					context.activeOrg,
-					input.reason,
-				),
+				billingGetUpgradeOfferings(context.activeOrg, input.reason),
 			),
 		previewMarketingCheckout: publicProcedure
 			.input(
@@ -892,6 +864,34 @@ export const appRouter = {
 					interval: input.interval,
 					seatCount: input.seatCount,
 					returnUrl: input.returnUrl,
+				}),
+			),
+		createNewWorkspaceCheckout: authenticatedProcedure
+			.input(
+				z.object({
+					planId: z.enum(["individual", "teams", "teams_pro"]),
+					interval: z.enum(["monthly", "yearly"]).default("monthly"),
+					seatCount: z.number().int().min(1),
+					returnUrl: z.url(),
+				}),
+			)
+			.output(out.billing.createNewWorkspaceCheckout)
+			.handler(({ context, input }) =>
+				billingCreateNewWorkspaceCheckoutSession({
+					wallet: context.userWallet,
+					planId: input.planId,
+					interval: input.interval,
+					seatCount: input.seatCount,
+					returnUrl: input.returnUrl,
+				}),
+			),
+		getNewWorkspacePendingStatus: authenticatedProcedure
+			.input(z.object({ pendingBillingId: z.uuid() }))
+			.output(out.billing.getNewWorkspacePendingStatus)
+			.handler(({ context, input }) =>
+				billingGetNewWorkspacePendingStatus({
+					wallet: context.userWallet,
+					pendingBillingId: input.pendingBillingId,
 				}),
 			),
 		previewOrgSeatChange: authenticatedProcedure

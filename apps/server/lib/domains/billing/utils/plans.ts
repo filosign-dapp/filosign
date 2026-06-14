@@ -13,6 +13,9 @@ export const UPGRADE_LIMIT_REASONS = [
 	"features.supplementary_attachments",
 	"features.supplementary_attachments.recipient_select",
 	"features.supplementary_attachments.conditional_release",
+	"features.signer_replacement",
+	"features.team_collaboration",
+	"features.workspace.create",
 ] as const;
 
 export type UpgradeLimitReason = (typeof UPGRADE_LIMIT_REASONS)[number];
@@ -51,8 +54,6 @@ export type WorkspaceAllowedActions = {
 	canCheckoutTeams: boolean;
 	canChangeOrgPlan: boolean;
 	alternateOrgPlanId: "teams" | "teams_pro" | null;
-	showPersonalPlanStrip: boolean;
-	showDualSubscriptionWarning: boolean;
 	showSoloOnWorkspace: boolean;
 };
 
@@ -71,6 +72,9 @@ const MIN_PLAN_FOR_REASON: Record<
 	"features.supplementary_attachments": "individual",
 	"features.supplementary_attachments.recipient_select": "teams",
 	"features.supplementary_attachments.conditional_release": "teams_pro",
+	"features.signer_replacement": "teams_pro",
+	"features.team_collaboration": "teams",
+	"features.workspace.create": "teams",
 };
 
 const CHECKOUT_PLANS: CheckoutPlanId[] = ["individual", "teams", "teams_pro"];
@@ -201,9 +205,7 @@ function buildOffering(args: {
 
 export function buildUpgradeOfferings(args: {
 	reason: UpgradeLimitReason;
-	userPlanId: PlanId;
 	orgPlanId: PlanId;
-	hasUserDodo: boolean;
 	hasOrgDodo: boolean;
 }): {
 	effectivePlanId: PlanId;
@@ -263,11 +265,11 @@ export function buildUpgradeOfferings(args: {
 }
 
 export function buildWorkspaceAllowedActions(args: {
-	userPlanId: PlanId;
 	orgPlanId: PlanId;
 	usedSeats: number;
 	hasOrgDodo: boolean;
 	orgProvider: string;
+	isPersonalOrg: boolean;
 }): WorkspaceAllowedActions {
 	const orgPaid = isPaidWorkspacePlan(args.orgPlanId);
 	const orgTeams = args.orgPlanId === "teams" || args.orgPlanId === "teams_pro";
@@ -278,7 +280,10 @@ export function buildWorkspaceAllowedActions(args: {
 
 	return {
 		canCheckoutSolo:
-			!orgPaid && args.orgPlanId === "free" && args.usedSeats <= 1,
+			args.isPersonalOrg &&
+			!orgPaid &&
+			args.orgPlanId === "free" &&
+			args.usedSeats <= 1,
 		canCheckoutTeams: !orgTeams,
 		canChangeOrgPlan:
 			orgPaid &&
@@ -287,10 +292,11 @@ export function buildWorkspaceAllowedActions(args: {
 			(alternateOrgPlanId !== null || args.orgPlanId === "individual"),
 		alternateOrgPlanId:
 			orgPaid && args.hasOrgDodo && orgTeams ? alternateOrgPlanId : null,
-		showPersonalPlanStrip: false,
-		showDualSubscriptionWarning: false,
 		showSoloOnWorkspace:
-			args.orgPlanId === "free" && args.usedSeats <= 1 && !orgPaid,
+			args.isPersonalOrg &&
+			args.orgPlanId === "free" &&
+			args.usedSeats <= 1 &&
+			!orgPaid,
 	};
 }
 

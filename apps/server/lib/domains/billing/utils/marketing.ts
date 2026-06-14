@@ -36,7 +36,6 @@ export type MarketingCheckoutPreview =
 
 export type MarketingSubscriberState = {
 	hasUser: boolean;
-	walletPlanId: PlanId;
 	orgPlanId: PlanId | null;
 	hasActiveSolo: boolean;
 	hasActiveOrgPlan: boolean;
@@ -183,7 +182,6 @@ async function loadSubscriberByEmail(
 	if (!user) {
 		return {
 			hasUser: false,
-			walletPlanId: "free",
 			orgPlanId: null,
 			hasActiveSolo: false,
 			hasActiveOrgPlan: false,
@@ -239,7 +237,6 @@ async function loadSubscriberByEmail(
 
 	return {
 		hasUser: true,
-		walletPlanId: "free",
 		orgPlanId: hasActiveSolo || hasActiveOrgPlan ? bestOrgPlan : null,
 		hasActiveSolo,
 		hasActiveOrgPlan,

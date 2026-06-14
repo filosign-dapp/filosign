@@ -1,5 +1,4 @@
-import { getPlanName, type PlanId } from "@filosign/entitlements";
-import { throwAppError } from "@filosign/errors/server";
+import type { PlanId } from "@filosign/entitlements";
 import { eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -7,12 +6,8 @@ import env from "@/env";
 import { resolveEntitlementContext } from "@/lib/domains/entitlements";
 import { resolvePartnerInviteTrialForWorkspace } from "@/lib/domains/platform-access/registration";
 import db from "@/lib/platform/db";
-import {
-	type SubscriptionPlanId,
-	type SubscriptionStatus,
-	userSubscriptions,
-} from "@/lib/platform/db/schema/billing";
-import { subscriptionAccessFromRow } from "./utils/marketing";
+import type { SubscriptionPlanId } from "@/lib/platform/db/schema/billing";
+import { organizations } from "@/lib/platform/db/schema/organization";
 import { getOrgBillingSummary } from "./utils/org";
 import {
 	buildUpgradeOfferings,
@@ -87,58 +82,19 @@ export function resolveProductId(
 		: DODO_TEST_PLAN_PRODUCT_IDS[planId];
 }
 
-export async function createBillingCheckoutSession(_args: {
-	wallet: Address;
-	planId: CheckoutPlanId;
-	interval: BillingInterval;
-	returnUrl: string;
-}): Promise<{ checkoutUrl: string; sessionId: string }> {
-	throwAppError("BILLING.PERSONAL_BILLING_DISABLED");
-}
-
-export async function createBillingPortalSession(_args: {
-	wallet: Address;
-}): Promise<{ url: string }> {
-	throwAppError("BILLING.PERSONAL_PORTAL_DISABLED");
-}
-
-export async function getUserBillingSummary(wallet: Address) {
-	const walletNorm = getAddress(wallet);
-	const [sub] = await db
-		.select()
-		.from(userSubscriptions)
-		.where(eq(userSubscriptions.walletAddress, walletNorm))
-		.limit(1);
-
-	const rawPlanId = (sub?.planId ?? "free") as PlanId;
-	const planId = subscriptionAccessFromRow({
-		planId: rawPlanId,
-		status: (sub?.status ?? "active") as SubscriptionStatus,
-		cancelAtPeriodEnd: sub?.cancelAtPeriodEnd ?? false,
-		periodEnd: sub?.periodEnd ?? null,
-	});
-
-	return {
-		planId,
-		planName: getPlanName(planId),
-		status: sub?.status ?? "active",
-		provider: sub?.provider ?? "manual",
-		billingInterval: null as "monthly" | "yearly" | null,
-		periodStart: sub?.periodStart?.toISOString() ?? null,
-		periodEnd: sub?.periodEnd?.toISOString() ?? null,
-		cancelAtPeriodEnd: sub?.cancelAtPeriodEnd ?? false,
-		hasDodoSubscription: Boolean(sub?.dodoSubscriptionId),
-	};
-}
-
 export async function getWorkspaceBillingContext(args: {
 	wallet: Address;
 	organizationId: string;
 }) {
 	const walletNorm = getAddress(args.wallet);
-	const [user, org] = await Promise.all([
-		getUserBillingSummary(walletNorm),
+	const [org, orgMeta] = await Promise.all([
 		getOrgBillingSummary(args.organizationId),
+		db
+			.select({ isPersonal: organizations.isPersonal })
+			.from(organizations)
+			.where(eq(organizations.id, args.organizationId))
+			.limit(1)
+			.then((rows) => rows[0]),
 	]);
 
 	const effectivePlanId = (
@@ -146,11 +102,11 @@ export async function getWorkspaceBillingContext(args: {
 	).planId as PlanId;
 
 	const allowedActions = buildWorkspaceAllowedActions({
-		userPlanId: user.planId,
 		orgPlanId: org.planId,
 		usedSeats: org.usedSeats,
 		hasOrgDodo: org.hasDodoSubscription,
 		orgProvider: org.provider,
+		isPersonalOrg: orgMeta?.isPersonal ?? false,
 	});
 
 	const partnerInviteTrial = await resolvePartnerInviteTrialForWorkspace({
@@ -159,7 +115,6 @@ export async function getWorkspaceBillingContext(args: {
 	});
 
 	return {
-		user,
 		org,
 		effectivePlanId,
 		allowedActions,
@@ -167,15 +122,12 @@ export async function getWorkspaceBillingContext(args: {
 	};
 }
 
-export async function getUpgradeOfferingsForWallet(args: {
-	wallet: Address;
+export async function getUpgradeOfferings(args: {
 	organizationId: string | null;
 	reason: UpgradeLimitReason;
 }) {
-	const walletNorm = getAddress(args.wallet);
 	const orgId = args.organizationId;
 
-	const user = await getUserBillingSummary(walletNorm);
 	const org = orgId
 		? await getOrgBillingSummary(orgId)
 		: {
@@ -187,9 +139,7 @@ export async function getUpgradeOfferingsForWallet(args: {
 
 	return buildUpgradeOfferings({
 		reason: args.reason,
-		userPlanId: user.planId,
 		orgPlanId,
-		hasUserDodo: user.hasDodoSubscription,
 		hasOrgDodo: "hasDodoSubscription" in org ? org.hasDodoSubscription : false,
 	});
 }

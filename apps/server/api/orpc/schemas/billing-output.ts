@@ -8,6 +8,9 @@ const limitSnapshotSchema = z.object({
 	allowed: z.boolean(),
 });
 
+const checkoutPlanIdSchema = z.enum(["individual", "teams", "teams_pro"]);
+const orgCheckoutPlanIdSchema = checkoutPlanIdSchema;
+
 export const rpcBillingEntitlementsOutputSchema = z.object({
 	planId: z.enum(PLAN_IDS),
 	planName: z.string(),
@@ -21,6 +24,18 @@ export const rpcBillingEntitlementsOutputSchema = z.object({
 export const rpcBillingCheckoutSessionOutputSchema = z.object({
 	checkoutUrl: z.url(),
 	sessionId: z.string().min(1),
+});
+
+export const rpcBillingNewWorkspaceCheckoutOutputSchema = z.object({
+	checkoutUrl: z.url(),
+	pendingBillingId: z.uuid(),
+});
+
+export const rpcBillingNewWorkspacePendingStatusOutputSchema = z.object({
+	ready: z.boolean(),
+	abandoned: z.boolean(),
+	planId: z.enum(PLAN_IDS),
+	expiresAt: z.iso.datetime(),
 });
 
 export const rpcBillingPortalSessionOutputSchema = z.object({
@@ -40,8 +55,6 @@ export const rpcBillingOrgSummaryOutputSchema = z.object({
 	cancelAtPeriodEnd: z.boolean(),
 	hasDodoSubscription: z.boolean(),
 });
-
-const orgCheckoutPlanIdSchema = z.enum(["individual", "teams", "teams_pro"]);
 
 export const rpcBillingOrgSeatPreviewOutputSchema = z.object({
 	planId: orgCheckoutPlanIdSchema.optional(),
@@ -67,19 +80,28 @@ export const rpcBillingOrgPlanChangeOutputSchema = z.object({
 	changed: z.boolean(),
 });
 
-export const rpcBillingUserSummaryOutputSchema = z.object({
-	planId: z.enum(PLAN_IDS),
-	planName: z.string(),
-	status: z.string(),
-	provider: z.string(),
-	billingInterval: z.enum(["monthly", "yearly"]).nullable(),
-	periodStart: z.iso.datetime().nullable(),
-	periodEnd: z.iso.datetime().nullable(),
-	cancelAtPeriodEnd: z.boolean(),
-	hasDodoSubscription: z.boolean(),
+export const rpcBillingWorkspaceAllowedActionsSchema = z.object({
+	canCheckoutSolo: z.boolean(),
+	canCheckoutTeams: z.boolean(),
+	canChangeOrgPlan: z.boolean(),
+	alternateOrgPlanId: z.enum(["teams", "teams_pro"]).nullable(),
+	showSoloOnWorkspace: z.boolean(),
 });
 
-const checkoutPlanIdSchema = z.enum(["individual", "teams", "teams_pro"]);
+export const rpcBillingPartnerInviteTrialSchema = z.object({
+	active: z.literal(true),
+	planId: z.enum(["teams", "teams_pro"]),
+	planName: z.string(),
+	trialDays: z.number().int(),
+	periodEnd: z.iso.datetime().nullable(),
+});
+
+export const rpcBillingWorkspaceContextOutputSchema = z.object({
+	org: rpcBillingOrgSummaryOutputSchema,
+	effectivePlanId: z.enum(PLAN_IDS),
+	allowedActions: rpcBillingWorkspaceAllowedActionsSchema,
+	partnerInviteTrial: rpcBillingPartnerInviteTrialSchema.nullable(),
+});
 
 export const rpcBillingPlanOfferingSchema = z.object({
 	planId: checkoutPlanIdSchema,
@@ -97,32 +119,6 @@ export const rpcBillingUpgradeOfferingsOutputSchema = z.object({
 	primaryCta: z.enum(["checkout", "workspace_billing", "change_plan", "none"]),
 	comparePlansUrl: z.string(),
 	noUpgradeMessage: z.string().nullable(),
-});
-
-export const rpcBillingWorkspaceAllowedActionsSchema = z.object({
-	canCheckoutSolo: z.boolean(),
-	canCheckoutTeams: z.boolean(),
-	canChangeOrgPlan: z.boolean(),
-	alternateOrgPlanId: z.enum(["teams", "teams_pro"]).nullable(),
-	showPersonalPlanStrip: z.boolean(),
-	showDualSubscriptionWarning: z.boolean(),
-	showSoloOnWorkspace: z.boolean(),
-});
-
-export const rpcBillingPartnerInviteTrialSchema = z.object({
-	active: z.literal(true),
-	planId: z.enum(["teams", "teams_pro"]),
-	planName: z.string(),
-	trialDays: z.number().int(),
-	periodEnd: z.iso.datetime().nullable(),
-});
-
-export const rpcBillingWorkspaceContextOutputSchema = z.object({
-	user: rpcBillingUserSummaryOutputSchema,
-	org: rpcBillingOrgSummaryOutputSchema,
-	effectivePlanId: z.enum(PLAN_IDS),
-	allowedActions: rpcBillingWorkspaceAllowedActionsSchema,
-	partnerInviteTrial: rpcBillingPartnerInviteTrialSchema.nullable(),
 });
 
 export const rpcBillingMarketingPreviewOutputSchema = z.discriminatedUnion(
@@ -146,7 +142,7 @@ export const rpcBillingMarketingPreviewOutputSchema = z.discriminatedUnion(
 		z.object({
 			action: z.literal("use_in_app"),
 			message: z.string(),
-			deepLink: z.enum(["profile", "workspace"]),
+			deepLink: z.literal("workspace"),
 			clientUrl: z.url(),
 		}),
 	],

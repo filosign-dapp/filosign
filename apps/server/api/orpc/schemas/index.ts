@@ -12,13 +12,14 @@ import {
 	rpcBillingCheckoutSessionOutputSchema,
 	rpcBillingEntitlementsOutputSchema,
 	rpcBillingMarketingPreviewOutputSchema,
+	rpcBillingNewWorkspaceCheckoutOutputSchema,
+	rpcBillingNewWorkspacePendingStatusOutputSchema,
 	rpcBillingOrgPlanChangeOutputSchema,
 	rpcBillingOrgSeatPreviewOutputSchema,
 	rpcBillingOrgSeatsOutputSchema,
 	rpcBillingOrgSummaryOutputSchema,
 	rpcBillingPortalSessionOutputSchema,
 	rpcBillingUpgradeOfferingsOutputSchema,
-	rpcBillingUserSummaryOutputSchema,
 	rpcBillingWorkspaceContextOutputSchema,
 } from "./billing-output";
 import { zDocumentsListInputSchema } from "./documents-input";
@@ -186,13 +187,15 @@ export const rpcOut = {
 	billing: {
 		entitlements: rpcBillingEntitlementsOutputSchema,
 		createCheckoutSession: rpcBillingCheckoutSessionOutputSchema,
+		createNewWorkspaceCheckout: rpcBillingNewWorkspaceCheckoutOutputSchema,
+		getNewWorkspacePendingStatus:
+			rpcBillingNewWorkspacePendingStatusOutputSchema,
 		createPortalSession: rpcBillingPortalSessionOutputSchema,
 		getOrgSummary: rpcBillingOrgSummaryOutputSchema,
 		previewOrgSeatChange: rpcBillingOrgSeatPreviewOutputSchema,
 		updateOrgSeats: rpcBillingOrgSeatsOutputSchema,
 		previewOrgPlanChange: rpcBillingOrgSeatPreviewOutputSchema,
 		changeOrgPlan: rpcBillingOrgPlanChangeOutputSchema,
-		getUserSummary: rpcBillingUserSummaryOutputSchema,
 		getWorkspaceBillingContext: rpcBillingWorkspaceContextOutputSchema,
 		getUpgradeOfferings: rpcBillingUpgradeOfferingsOutputSchema,
 		previewMarketingCheckout: rpcBillingMarketingPreviewOutputSchema,

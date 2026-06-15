@@ -1,3 +1,4 @@
+import { useFilosignContext } from "@filosign/react";
 import {
 	CLIENT_ANALYTICS_EVENTS,
 	useCaptureAppEvent,
@@ -12,6 +13,8 @@ import {
 	canUseBasicSettlements,
 	canUseSupplementaryAttachments,
 } from "@filosign/react/files";
+import { useUserProfile } from "@filosign/react/users";
+import { walletAccountAddress } from "@filosign/react/utils";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -24,10 +27,13 @@ import {
 	hasDraftContent,
 	hasEnvelopeFormContent,
 	hydrateAttachmentPacketDrafts,
+	normalizeCreateForm,
 	saveAttachmentPacketDrafts,
 } from "@/src/lib/domains/drafts";
 import { settlementPayoutExceedsBalance } from "@/src/lib/domains/settlements/payout-totals";
 import { useAttachedPayoutBalance } from "@/src/lib/domains/settlements/use-attached-payout-balance";
+import { resolveRecipientWallets } from "@/src/lib/domains/templates/resolve-recipient-wallets";
+import { finalizeTemplateUseAtComposeContinue } from "@/src/lib/domains/templates/template-composer";
 import {
 	useStorePersist,
 	useStorePersistHydrated,
@@ -41,6 +47,8 @@ const PERSIST_DEBOUNCE_MS = 400;
 
 export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 	const navigate = useNavigate();
+	const { rpcQuery, wallet } = useFilosignContext();
+	const { data: selfProfile } = useUserProfile();
 	const setCreateForm = useStorePersist((s) => s.setCreateForm);
 	const clearCreateForm = useStorePersist((s) => s.clearCreateForm);
 	const persistHydrated = useStorePersistHydrated();
@@ -119,7 +127,28 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 						}
 					: prev;
 
-				const draft = await buildCreateForm(value, prevWithAttachments);
+				let draft = prev?.templateUse
+					? await finalizeTemplateUseAtComposeContinue({
+							prev: prevWithAttachments ?? prev,
+							formRecipients: value.recipients,
+							emailSubject: value.emailSubject,
+							emailMessage: value.emailMessage,
+							settlementDrafts: value.settlementDrafts ?? [],
+						})
+					: await buildCreateForm(value, prevWithAttachments);
+
+				if (prev?.templateUse && wallet?.account) {
+					const walletAddress = walletAccountAddress(wallet.account);
+					const recipients = await resolveRecipientWallets({
+						recipients: draft.recipients,
+						lookupProfile: (email) =>
+							rpcQuery.users.profile.lookup.call({ query: email }),
+						selfEmail: selfProfile?.email,
+						selfWallet: walletAddress,
+					});
+					draft = normalizeCreateForm({ ...draft, recipients });
+				}
+
 				if (draft.attachmentPacketDrafts?.length) {
 					await saveAttachmentPacketDrafts(
 						draft.draftId,

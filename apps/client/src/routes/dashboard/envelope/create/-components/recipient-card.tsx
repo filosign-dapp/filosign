@@ -28,6 +28,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/src/lib/components/ui/select";
+import { recipientComposeEmailDisplay } from "@/src/lib/domains/templates/template-composer";
 import { initialsFromName } from "@/src/lib/utils/display-name";
 import { FilosignRecipientHoverCard } from "@/src/routes/dashboard/envelope/create/-components/filosign-recipient-hover-card";
 import {
@@ -149,6 +150,14 @@ export function RecipientCard({
 				)}
 
 				<div className="min-w-0 flex-1 space-y-3">
+					{recipient.templateRoleLabel ? (
+						<div className="flex items-center gap-2">
+							<Badge variant="secondary">{recipient.templateRoleLabel}</Badge>
+							<span className="text-xs text-muted-foreground">
+								Template role
+							</span>
+						</div>
+					) : null}
 					<div className="grid gap-3 sm:grid-cols-2">
 						<div className="space-y-1.5">
 							<Label
@@ -161,7 +170,7 @@ export function RecipientCard({
 								variant="field"
 								type="email"
 								id={`recipient-email-${index}`}
-								value={recipient.email}
+								value={recipientComposeEmailDisplay(recipient.email)}
 								onChange={(e) =>
 									updateRecipient(index, { email: e.target.value })
 								}

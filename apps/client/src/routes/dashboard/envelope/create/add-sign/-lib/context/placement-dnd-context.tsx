@@ -50,10 +50,12 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 		selectedFieldIds,
 		placeField,
 		applyFieldPatches,
-		setSelectedField,
 		setIsInteractingField,
 		resolvePlacementFieldSize,
+		interactionMode,
 	} = useAddSignDnd();
+
+	const readOnly = interactionMode === "view";
 
 	const dragContextRef = useRef<FieldDragContext | null>(null);
 	const [activeDrag, setActiveDrag] = useState<PlacementActiveDrag | null>(
@@ -61,8 +63,11 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 	);
 
 	const sensors = useSensors(
-		useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+		useSensor(PointerSensor, {
+			activationConstraint: { distance: 4 },
+		}),
 	);
+	const activeSensors = readOnly ? [] : sensors;
 
 	const baseViewport = useMemo(
 		() => ({
@@ -95,16 +100,9 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 			if (!raw) return;
 			const pageViewport = viewportForPage(hit.page);
 			const { x, y } = clampFieldAtPoint(raw.x, raw.y, size, pageViewport);
-			const id = placeField({ type, x, y, page: hit.page });
-			if (id) setSelectedField(id);
+			placeField({ type, x, y, page: hit.page });
 		},
-		[
-			pageRefs,
-			placeField,
-			setSelectedField,
-			viewportForPage,
-			resolvePlacementFieldSize,
-		],
+		[pageRefs, placeField, viewportForPage, resolvePlacementFieldSize],
 	);
 
 	const onDragStart = useCallback(
@@ -246,8 +244,8 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 
 	return (
 		<DndContext
-			sensors={sensors}
-			modifiers={[restrictToPageModifier]}
+			sensors={activeSensors}
+			modifiers={readOnly ? [] : [restrictToPageModifier]}
 			onDragStart={onDragStart}
 			onDragEnd={onDragEnd}
 			onDragCancel={onDragCancel}

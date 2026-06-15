@@ -34,8 +34,7 @@ export function templateSuppressEmptyDraftRedirect(args: {
 }): boolean {
 	return (
 		args.templateEditorLoadState === "loading" ||
-		args.templateEditorLoadState === "awaiting_crypto" ||
-		!args.draftReady
+		args.templateEditorLoadState === "awaiting_crypto"
 	);
 }
 
@@ -61,12 +60,17 @@ export function envelopeDocumentLoadingMessage(
 
 export function templateDocumentLoadingMessage(
 	templateEditorLoadState: TemplateEditorLoadState,
+	mode?: "create" | "edit" | "preview",
 ): string | null {
 	if (templateEditorLoadState === "loading") {
-		return "Loading template...";
+		return mode === "preview"
+			? "Loading template preview..."
+			: "Loading template...";
 	}
 	if (templateEditorLoadState === "awaiting_crypto") {
-		return "Unlock encryption keys to edit this template.";
+		return mode === "preview"
+			? "Unlock encryption keys to preview this template."
+			: "Unlock encryption keys to edit this template.";
 	}
 	return null;
 }

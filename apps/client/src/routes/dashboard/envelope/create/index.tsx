@@ -40,6 +40,15 @@ function CreateEnvelopeRouteContent() {
 
 		const draft = useStorePersist.getState().createForm;
 
+		if (draft?.templateContext) {
+			useStorePersist.getState().clearCreateForm();
+			setInitialValues(EMPTY_ENVELOPE_FORM);
+			setBootState("ready");
+			formShellReadyRef.current = true;
+			bootedDraftIdRef.current = null;
+			return;
+		}
+
 		if (!draft || !hasDraftContent(draft)) {
 			setInitialValues(EMPTY_ENVELOPE_FORM);
 			setBootState("ready");

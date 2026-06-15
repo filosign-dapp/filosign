@@ -69,6 +69,7 @@ type AddSignDndContextValue = Pick<
 	| "setSelectedField"
 	| "setIsInteractingField"
 	| "resolvePlacementFieldSize"
+	| "interactionMode"
 >;
 
 type AddSignChromeContextValue = Pick<
@@ -231,6 +232,7 @@ export function PlacementProvider({
 			setSelectedField: controller.setSelectedField,
 			setIsInteractingField: controller.setIsInteractingField,
 			resolvePlacementFieldSize: controller.resolvePlacementFieldSize,
+			interactionMode: controller.interactionMode,
 		}),
 		[
 			controller.signatureFields,
@@ -245,6 +247,7 @@ export function PlacementProvider({
 			controller.setSelectedField,
 			controller.setIsInteractingField,
 			controller.resolvePlacementFieldSize,
+			controller.interactionMode,
 		],
 	);
 

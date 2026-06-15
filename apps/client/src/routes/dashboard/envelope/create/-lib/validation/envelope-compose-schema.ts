@@ -1,3 +1,4 @@
+import { isTemplateRolePlaceholderEmail } from "@filosign/shared";
 import { z } from "zod";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 
@@ -26,7 +27,9 @@ export const composeRecipientsSchema = z
 	.min(1, { error: "Please add at least one recipient" })
 	.superRefine((recipients, ctx) => {
 		const hasInvalidEmail = recipients.some(
-			(r) => !isValidRecipientEmail(r.email ?? ""),
+			(r) =>
+				!isValidRecipientEmail(r.email ?? "") ||
+				isTemplateRolePlaceholderEmail(r.email ?? ""),
 		);
 		if (hasInvalidEmail) {
 			ctx.addIssue({

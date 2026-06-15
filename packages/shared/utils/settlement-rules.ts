@@ -189,6 +189,66 @@ export function settlementRuleTotalAmount(
 	return legs.reduce((sum, leg) => sum + BigInt(leg.amount), 0n);
 }
 
+const INACTIVE_SETTLEMENT_ALLOWANCE_STATUSES = new Set<SettlementRuleStatus>([
+	"executed",
+	"cancelled",
+	"partial",
+]);
+
+/** Rules that still count toward ERC-20 approval required for FSPaymentValidator. */
+export function isSettlementRuleAllowanceActive(
+	status: SettlementRuleStatus,
+): boolean {
+	return !INACTIVE_SETTLEMENT_ALLOWANCE_STATUSES.has(status);
+}
+
+export type SettlementAllowanceRuleInput = {
+	onChainRuleId: string;
+	validatorAddress: string;
+	tokenAddress: string;
+	status: SettlementRuleStatus;
+	legs: readonly Pick<SettlementPayoutLegInput, "amount">[];
+};
+
+/**
+ * Sum of active payout totals for one (token, validator) pair on a file.
+ * Use `replaceRuleId` + `legs` to preview post-update totals; `excludeRuleId` after cancel.
+ */
+export function settlementAllowanceRequired(
+	rules: readonly SettlementAllowanceRuleInput[],
+	opts: {
+		tokenAddress: string;
+		validatorAddress: string;
+		replaceRuleId?: string;
+		legs?: readonly Pick<SettlementPayoutLegInput, "amount">[];
+		excludeRuleId?: string;
+	},
+): bigint {
+	const token = opts.tokenAddress.toLowerCase();
+	const validator = opts.validatorAddress.toLowerCase();
+	let total = 0n;
+
+	for (const rule of rules) {
+		if (rule.tokenAddress.toLowerCase() !== token) continue;
+		if (rule.validatorAddress.toLowerCase() !== validator) continue;
+		if (opts.excludeRuleId && rule.onChainRuleId === opts.excludeRuleId) {
+			continue;
+		}
+		if (!isSettlementRuleAllowanceActive(rule.status)) continue;
+
+		if (opts.replaceRuleId && rule.onChainRuleId === opts.replaceRuleId) {
+			if (opts.legs) {
+				total += settlementRuleTotalAmount(opts.legs);
+			}
+			continue;
+		}
+
+		total += settlementRuleTotalAmount(rule.legs);
+	}
+
+	return total;
+}
+
 /** Top-level API fields derived from the first payout leg (convenience for list rows). */
 export function firstSettlementLeg(
 	legs: readonly SettlementPayoutLegInput[],

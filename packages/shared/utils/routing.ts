@@ -7,6 +7,7 @@ import {
 	sortedSignerCommitsForManifest,
 } from "./crypto";
 import type { PlacementManifest } from "./placement";
+import { normalizePlacementRecipientEmail } from "./placement";
 
 export type RegisterRoutingInput = {
 	routingMode?: 0 | 1;
@@ -196,4 +197,50 @@ export function validateRegisterRoutingCalldata(
 		return "quorumN requires quorumSet";
 	}
 	return null;
+}
+
+export type SignerRosterRow = {
+	email: string | null;
+	wallet: string;
+};
+
+/** Order roster signers for sequential routing; stable wallet sort otherwise. */
+export function orderSignersByRoutingEmails<T extends SignerRosterRow>(
+	signers: readonly T[],
+	opts: {
+		routingMode: number;
+		routingOrderEmails?: readonly string[] | null;
+	},
+): Array<T & { turnIndex: number | null }> {
+	if (opts.routingMode !== 1) {
+		return [...signers]
+			.sort((a, b) => a.wallet.localeCompare(b.wallet))
+			.map((signer) => ({ ...signer, turnIndex: null }));
+	}
+
+	const order = opts.routingOrderEmails ?? [];
+	const maxRank = Number.MAX_SAFE_INTEGER;
+	const rankByEmail = new Map(
+		order.map((email, index) => [email.trim().toLowerCase(), index]),
+	);
+
+	const rankFor = (signer: SignerRosterRow): number => {
+		if (!signer.email?.trim()) return maxRank;
+		const normalized = normalizePlacementRecipientEmail(
+			signer.email,
+		).toLowerCase();
+		return rankByEmail.get(normalized) ?? maxRank;
+	};
+
+	return [...signers]
+		.sort((a, b) => {
+			const rankA = rankFor(a);
+			const rankB = rankFor(b);
+			if (rankA !== rankB) return rankA - rankB;
+			return a.wallet.localeCompare(b.wallet);
+		})
+		.map((signer, index) => ({
+			...signer,
+			turnIndex: index + 1,
+		}));
 }

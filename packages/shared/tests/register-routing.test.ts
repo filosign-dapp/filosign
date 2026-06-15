@@ -3,6 +3,7 @@ import {
 	buildRegisterRoutingCalldata,
 	commitsForEmails,
 	hashNormalizedSignerEmail,
+	orderSignersByRoutingEmails,
 	type PlacementManifest,
 	sortedCommitsForEmails,
 	usesAdvancedRegisterRouting,
@@ -116,5 +117,43 @@ describe("register routing helpers", () => {
 		expect(calldata.routingOrder).toHaveLength(2);
 		expect(calldata.quorumSet).toHaveLength(2);
 		expect(validateRegisterRoutingCalldata(calldata)).toBeNull();
+	});
+});
+
+describe("orderSignersByRoutingEmails", () => {
+	const roster = [
+		{
+			wallet: "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+			name: "B",
+			email: "b@example.com",
+		},
+		{
+			wallet: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			name: "A",
+			email: "a@example.com",
+		},
+	];
+
+	it("orders signers by routingOrderEmails when sequential", () => {
+		const ordered = orderSignersByRoutingEmails(roster, {
+			routingMode: 1,
+			routingOrderEmails: ["a@example.com", "b@example.com"],
+		});
+		expect(ordered.map((s) => s.email)).toEqual([
+			"a@example.com",
+			"b@example.com",
+		]);
+		expect(ordered.map((s) => s.turnIndex)).toEqual([1, 2]);
+	});
+
+	it("falls back to wallet sort when routing is parallel", () => {
+		const ordered = orderSignersByRoutingEmails(roster, {
+			routingMode: 0,
+		});
+		expect(ordered.map((s) => s.wallet)).toEqual([
+			"0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+			"0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+		]);
+		expect(ordered.every((s) => s.turnIndex === null)).toBe(true);
 	});
 });

@@ -13,6 +13,7 @@ export * from "./usePrepareOrgTemplateCreate";
 export * from "./usePrepareOrgTemplateUpdate";
 export * from "./usePublishOrgMemberKeyWrap";
 export * from "./useRemoveOrgMember";
+export * from "./useSaveOrgTemplateDeps";
 export * from "./useSetOrgMemberRole";
 export * from "./useSettlementFeatureAccessGet";
 export * from "./useSubmitSettlementFeatureAccessRequest";

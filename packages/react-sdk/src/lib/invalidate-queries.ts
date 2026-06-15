@@ -69,8 +69,9 @@ export function invalidateDocumentsList(
 	queryClient: QueryClient,
 	rpcQuery: FilosignRpcQueryUtils,
 ) {
-	return queryClient.invalidateQueries({
+	return queryClient.refetchQueries({
 		queryKey: rpcQuery.documents.list.key(),
+		type: "all",
 	});
 }
 
@@ -79,8 +80,9 @@ export function invalidateNotificationsInbox(
 	queryClient: QueryClient,
 	rpcQuery: FilosignRpcQueryUtils,
 ) {
-	return queryClient.invalidateQueries({
+	return queryClient.refetchQueries({
 		queryKey: rpcQuery.notifications.inbox.key(),
+		type: "all",
 	});
 }
 

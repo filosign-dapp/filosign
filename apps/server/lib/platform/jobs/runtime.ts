@@ -3,6 +3,7 @@ import {
 	closeJobsQueues,
 	getBillingWebhookQueue,
 	getEmailQueue,
+	getFileRegisterQueue,
 	getFocTransitionQueue,
 	getIndexerQueue,
 	getPayoutQueue,
@@ -14,6 +15,8 @@ import {
 	closeAllWorkers,
 	startBillingWebhookWorker,
 	startEmailWorker,
+	startFileRegisterRetryWorker,
+	startFileRegisterWorker,
 	startFocTransitionWorker,
 	startIndexerWorker,
 	startPayoutWorker,
@@ -35,6 +38,7 @@ export function startJobsRuntime(options: JobsRuntimeOptions): void {
 		getIndexerQueue();
 		getBillingWebhookQueue();
 		getFocTransitionQueue();
+		getFileRegisterQueue();
 	}
 	if (options.worker) {
 		startEmailWorker();
@@ -43,6 +47,8 @@ export function startJobsRuntime(options: JobsRuntimeOptions): void {
 		startIndexerWorker();
 		startBillingWebhookWorker();
 		startFocTransitionWorker();
+		startFileRegisterWorker();
+		startFileRegisterRetryWorker();
 		startOutboxDrainer();
 	}
 }

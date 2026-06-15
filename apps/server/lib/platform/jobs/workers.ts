@@ -1,6 +1,7 @@
 import { Worker } from "bullmq";
 import { processDodoWebhookJob } from "@/lib/domains/billing";
 import { runFileRegisterRetryJob } from "@/lib/domains/files/utils/register-retry-job";
+import { executeRegisterJob } from "@/lib/domains/files/utils/register-worker";
 import { runPostSignRoutingCompleteJob } from "@/lib/domains/files/utils/sign/routing-complete";
 import { runFocTransitionForPiece } from "@/lib/domains/foc";
 import { tryExecuteSettlementRulesForPiece } from "@/lib/domains/settlements/utils/execute/payout";
@@ -11,6 +12,7 @@ import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import type {
 	BillingWebhookQueueJobData,
 	EmailQueueJobData,
+	FileRegisterQueueJobData,
 	FileRegisterRetryQueueJobData,
 	FocTransitionQueueJobData,
 	IndexerQueueJobData,
@@ -23,7 +25,9 @@ import {
 	attachWorkerFailedHandler,
 	BILLING_WEBHOOK_QUEUE_NAME,
 	EMAIL_QUEUE_NAME,
+	FILE_REGISTER_QUEUE_NAME,
 	FILE_REGISTER_RETRY_QUEUE_NAME,
+	FILE_REGISTER_WORKER_CONCURRENCY,
 	FOC_TRANSITION_QUEUE_NAME,
 	getBullmqPrefix,
 	INDEXER_QUEUE_NAME,
@@ -49,6 +53,7 @@ let postSignRoutingWorker: Worker<PostSignRoutingQueueJobData> | null = null;
 let indexerWorker: Worker<IndexerQueueJobData> | null = null;
 let billingWebhookWorker: Worker<BillingWebhookQueueJobData> | null = null;
 let focTransitionWorker: Worker<FocTransitionQueueJobData> | null = null;
+let fileRegisterWorker: Worker<FileRegisterQueueJobData> | null = null;
 let fileRegisterRetryWorker: Worker<FileRegisterRetryQueueJobData> | null =
 	null;
 
@@ -206,6 +211,27 @@ export function startFocTransitionWorker(): Worker<FocTransitionQueueJobData> {
 	return focTransitionWorker;
 }
 
+export function startFileRegisterWorker(): Worker<FileRegisterQueueJobData> {
+	if (fileRegisterWorker) return fileRegisterWorker;
+
+	fileRegisterWorker = new Worker<FileRegisterQueueJobData>(
+		FILE_REGISTER_QUEUE_NAME,
+		async (job) => {
+			await executeRegisterJob(job.data.pieceCid);
+		},
+		{
+			...commonWorkerOptions(),
+			concurrency: FILE_REGISTER_WORKER_CONCURRENCY,
+		},
+	);
+
+	attachWorkerFailedHandler(fileRegisterWorker, FILE_REGISTER_QUEUE_NAME, {
+		alertContext: (job) =>
+			job?.data?.pieceCid ? { pieceCid: job.data.pieceCid } : {},
+	});
+	return fileRegisterWorker;
+}
+
 export function startFileRegisterRetryWorker(): Worker<FileRegisterRetryQueueJobData> {
 	if (fileRegisterRetryWorker) return fileRegisterRetryWorker;
 
@@ -238,6 +264,7 @@ export function startAllWorkers(): void {
 	startIndexerWorker();
 	startBillingWebhookWorker();
 	startFocTransitionWorker();
+	startFileRegisterWorker();
 	startFileRegisterRetryWorker();
 }
 
@@ -283,6 +310,13 @@ export async function closeFocTransitionWorker(): Promise<void> {
 	}
 }
 
+export async function closeFileRegisterWorker(): Promise<void> {
+	if (fileRegisterWorker) {
+		await fileRegisterWorker.close();
+		fileRegisterWorker = null;
+	}
+}
+
 export async function closeFileRegisterRetryWorker(): Promise<void> {
 	if (fileRegisterRetryWorker) {
 		await fileRegisterRetryWorker.close();
@@ -298,6 +332,7 @@ export async function closeAllWorkers(): Promise<void> {
 		closeIndexerWorker(),
 		closeBillingWebhookWorker(),
 		closeFocTransitionWorker(),
+		closeFileRegisterWorker(),
 		closeFileRegisterRetryWorker(),
 	]);
 }

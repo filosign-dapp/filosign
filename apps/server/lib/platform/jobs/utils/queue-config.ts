@@ -16,7 +16,11 @@ export const POST_SIGN_ROUTING_QUEUE_NAME = "post-sign-routing";
 export const INDEXER_QUEUE_NAME = "transaction-indexing";
 export const BILLING_WEBHOOK_QUEUE_NAME = "billing-webhook";
 export const FOC_TRANSITION_QUEUE_NAME = "foc-transition";
+export const FILE_REGISTER_QUEUE_NAME = "file-register";
 export const FILE_REGISTER_RETRY_QUEUE_NAME = "file-register-retry";
+
+/** Primary register worker: match or exceed relayer pool size (N=2 at launch). */
+export const FILE_REGISTER_WORKER_CONCURRENCY = 2;
 
 /** Shared BullMQ job options (Sprint 4+). */
 export const DEFAULT_QUEUE_JOB_OPTIONS = {

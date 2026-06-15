@@ -4,6 +4,7 @@ import { getQueueConnection } from "./utils/connection";
 import {
 	billingWebhookJobId,
 	emailJobId,
+	fileRegisterJobId,
 	fileRegisterRetryJobId,
 	focTransitionJobId,
 	indexerJobId,
@@ -15,6 +16,7 @@ import {
 	BILLING_WEBHOOK_QUEUE_NAME,
 	DEFAULT_QUEUE_JOB_OPTIONS,
 	EMAIL_QUEUE_NAME,
+	FILE_REGISTER_QUEUE_NAME,
 	FILE_REGISTER_RETRY_QUEUE_NAME,
 	FOC_TRANSITION_QUEUE_NAME,
 	getBullmqPrefix,
@@ -49,6 +51,8 @@ export type BillingWebhookQueueJobData = { webhookId: string };
 
 export type FocTransitionQueueJobData = { pieceCid: string };
 
+export type FileRegisterQueueJobData = { pieceCid: string };
+
 export type FileRegisterRetryQueueJobData = { pieceCid: string };
 
 let emailQueue: Queue<EmailQueueJobData> | null = null;
@@ -57,6 +61,7 @@ let postSignRoutingQueue: Queue<PostSignRoutingQueueJobData> | null = null;
 let indexerQueue: Queue<IndexerQueueJobData> | null = null;
 let billingWebhookQueue: Queue<BillingWebhookQueueJobData> | null = null;
 let focTransitionQueue: Queue<FocTransitionQueueJobData> | null = null;
+let fileRegisterQueue: Queue<FileRegisterQueueJobData> | null = null;
 let fileRegisterRetryQueue: Queue<FileRegisterRetryQueueJobData> | null = null;
 
 function queueOptions() {
@@ -124,6 +129,16 @@ export function getFocTransitionQueue(): Queue<FocTransitionQueueJobData> {
 	return focTransitionQueue;
 }
 
+export function getFileRegisterQueue(): Queue<FileRegisterQueueJobData> {
+	if (!fileRegisterQueue) {
+		fileRegisterQueue = new Queue<FileRegisterQueueJobData>(
+			FILE_REGISTER_QUEUE_NAME,
+			queueOptions(),
+		);
+	}
+	return fileRegisterQueue;
+}
+
 export function getFileRegisterRetryQueue(): Queue<FileRegisterRetryQueueJobData> {
 	if (!fileRegisterRetryQueue) {
 		fileRegisterRetryQueue = new Queue<FileRegisterRetryQueueJobData>(
@@ -132,6 +147,14 @@ export function getFileRegisterRetryQueue(): Queue<FileRegisterRetryQueueJobData
 		);
 	}
 	return fileRegisterRetryQueue;
+}
+
+export async function enqueueFileRegister(pieceCid: string): Promise<void> {
+	await getFileRegisterQueue().add(
+		"register",
+		{ pieceCid },
+		{ jobId: fileRegisterJobId(pieceCid) },
+	);
 }
 
 export async function enqueueFileRegisterRetry(
@@ -274,6 +297,10 @@ export async function closeJobsQueues(): Promise<void> {
 	if (focTransitionQueue) {
 		closes.push(focTransitionQueue.close());
 		focTransitionQueue = null;
+	}
+	if (fileRegisterQueue) {
+		closes.push(fileRegisterQueue.close());
+		fileRegisterQueue = null;
 	}
 	if (fileRegisterRetryQueue) {
 		closes.push(fileRegisterRetryQueue.close());

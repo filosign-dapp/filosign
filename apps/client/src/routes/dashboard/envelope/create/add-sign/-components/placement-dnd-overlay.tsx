@@ -4,15 +4,15 @@ import {
 	SignatureFieldTypeIcon,
 	signatureFieldTypeLabel,
 } from "@/src/lib/domains/files/placement-field-display";
-import { useIsMobile } from "@/src/lib/utils/use-mobile";
-import { useAddSignDnd } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
-import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
-import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+import { useAddSignDnd } from "@/src/lib/domains/placement/context";
+import type { SignatureField } from "@/src/lib/domains/placement/types";
 import {
 	parsePaletteDraggableId,
 	resolveDragPageScale,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
-import type { PlacementFieldSize } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-field-presets";
+} from "@/src/lib/domains/placement/utils/placement-coordinates";
+import type { PlacementFieldSize } from "@/src/lib/domains/placement/utils/placement-field-presets";
+import { useIsMobile } from "@/src/lib/utils/use-mobile";
+import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
 
 export type PlacementActiveDrag = {
 	kind: "palette";

@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { DocumentPageContent as SharedDocumentPageContent } from "@/src/lib/domains/files/document-viewport";
-import type { Document } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+import type { PlacementDocument } from "@/src/lib/domains/placement/types";
 
 type DocumentPageContentProps = {
-	document: Document;
+	document: PlacementDocument;
 	documentWidth: number;
 	documentHeight: number;
 	layout: "single" | "strip";

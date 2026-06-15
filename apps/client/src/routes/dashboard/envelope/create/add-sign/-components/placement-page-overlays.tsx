@@ -1,5 +1,5 @@
 import { type MouseEvent, memo } from "react";
-import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+import type { SignatureField } from "@/src/lib/domains/placement/types";
 import { SignatureFieldOverlays } from "./field-overlays";
 
 type PlacementPageOverlaysProps = {

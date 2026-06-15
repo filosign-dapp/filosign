@@ -14,15 +14,15 @@ import {
 	type DocumentListRailItem,
 	DocumentSwitcherSheet,
 } from "@/src/lib/domains/files/document-viewport";
-import { useStorePersist } from "@/src/lib/filosign/use-store";
-import { cn } from "@/src/lib/utils/utils";
-import { SupplementaryPacketsSidebar } from "@/src/routes/dashboard/envelope/create/add-sign/-components/supplementary-packets-review";
 import {
 	useAddSignChrome,
 	useAddSignPlacement,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
+} from "@/src/lib/domains/placement/context";
+import { signatureFieldPalette } from "@/src/lib/domains/placement/utils/field-types";
+import { useStorePersist } from "@/src/lib/filosign/use-store";
+import { cn } from "@/src/lib/utils/utils";
+import { SupplementaryPacketsSidebar } from "@/src/routes/dashboard/envelope/create/add-sign/-components/supplementary-packets-review";
 import { paletteDraggableId } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-dnd-context";
-import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
 
 function DraggableMobilePaletteButton({
 	field,

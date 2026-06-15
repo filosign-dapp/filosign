@@ -25,16 +25,16 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/src/lib/components/ui/sheet";
+import { useAddSignPlacement } from "@/src/lib/domains/placement/context";
+import {
+	countFieldsByAssignee,
+	resolveActiveAssignee,
+} from "@/src/lib/domains/placement/utils/active-assignees";
+import { filterPlacedFieldsByAssignee } from "@/src/lib/domains/placement/utils/placed-fields";
 import { useIsMobile } from "@/src/lib/utils/use-mobile";
 import { cn } from "@/src/lib/utils/utils";
 import { ActiveAssigneeStrip } from "@/src/routes/dashboard/envelope/create/add-sign/-components/active-assignee-strip";
 import { PlacedFieldsIndex } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placed-fields-index";
-import { useAddSignPlacement } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
-import {
-	countFieldsByAssignee,
-	resolveActiveAssignee,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/active-assignees";
-import { filterPlacedFieldsByAssignee } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placed-fields";
 
 type PlacedFieldsSheetProps = {
 	variant?: "sidebar" | "toolbar";

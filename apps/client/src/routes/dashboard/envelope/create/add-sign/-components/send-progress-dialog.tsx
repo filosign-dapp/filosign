@@ -6,8 +6,8 @@ import {
 	WorkflowDialogBody,
 	WorkflowDialogContent,
 } from "@/src/lib/components/ui/workflow-dialog";
+import type { SendProgressState } from "@/src/lib/domains/placement/types";
 import { SendProgressStatus } from "@/src/routes/dashboard/envelope/create/add-sign/-components/send-progress-status";
-import type { SendProgressState } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/progress";
 
 export function SendProgressDialog(props: {
 	open: boolean;

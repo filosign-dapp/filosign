@@ -1,7 +1,7 @@
 import type {
 	ClickCoordinates,
 	SignatureField,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+} from "@/src/lib/domains/placement/types";
 import type { ClientRect } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/marquee-selection";
 
 type PlacementViewportCaptureProps = {

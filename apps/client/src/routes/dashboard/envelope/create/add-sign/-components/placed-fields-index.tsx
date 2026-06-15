@@ -3,10 +3,11 @@ import { signerAccentColor } from "@/src/lib/domains/files/field-box";
 import {
 	SignatureFieldTypeIcon,
 	signatureFieldTypeLabel,
+	signerDisplayName,
 } from "@/src/lib/domains/files/placement-field-display";
+import type { SignatureField } from "@/src/lib/domains/placement/types";
+import { groupPlacedFieldsByPage } from "@/src/lib/domains/placement/utils/placed-fields";
 import { cn } from "@/src/lib/utils/utils";
-import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
-import { groupPlacedFieldsByPage } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placed-fields";
 
 type PlacedFieldsIndexProps = {
 	fields: SignatureField[];
@@ -15,12 +16,6 @@ type PlacedFieldsIndexProps = {
 	onFocusField: (fieldId: string) => void;
 	emptyMessage?: string;
 };
-
-function signerDisplayName(field: SignatureField): string {
-	const name = field.assignedSignerName.trim();
-	if (name) return name;
-	return field.assignedSignerEmail.trim() || "Signer";
-}
 
 export function PlacedFieldsIndex({
 	fields,

@@ -1,9 +1,10 @@
-import { countFieldsForDocument } from "@filosign/shared";
+import { countFieldsForDocument, TEMPLATE_LIMITS } from "@filosign/shared";
 import { FilePdfIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react";
 import { useMemo, useRef, useState } from "react";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { Button } from "@/src/lib/components/ui/button";
 import { toastUser } from "@/src/lib/copy/toast";
+import { useAddSignChrome } from "@/src/lib/domains/placement/context";
 import {
 	appendDocumentsToCreateForm,
 	applyTemplateEditorMutation,
@@ -11,7 +12,6 @@ import {
 } from "@/src/lib/domains/templates/template-composer";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn } from "@/src/lib/utils/utils";
-import { useAddSignChrome } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 
 export function TemplateDocumentsPanel() {
 	const createForm = useStorePersist((s) => s.createForm);
@@ -42,6 +42,36 @@ export function TemplateDocumentsPanel() {
 		const invalid = files.find((file) => file.type !== "application/pdf");
 		if (invalid) {
 			toastUser.error("Upload PDF files only.");
+			return;
+		}
+
+		const totalCount = documents.length + files.length;
+		if (totalCount > TEMPLATE_LIMITS.MAX_TEMPLATE_DOCUMENTS) {
+			toastUser.error(
+				`A template can have at most ${TEMPLATE_LIMITS.MAX_TEMPLATE_DOCUMENTS} documents. Current: ${documents.length}, tried to add: ${files.length}.`,
+			);
+			return;
+		}
+
+		const oversized = files.filter(
+			(file) => file.size > TEMPLATE_LIMITS.MAX_FILE_SIZE,
+		);
+		if (oversized.length > 0) {
+			toastUser.error(
+				`Documents exceed the maximum file size of ${TEMPLATE_LIMITS.MAX_FILE_SIZE / (1024 * 1024)}MB: ${oversized.map((f) => f.name).join(", ")}`,
+			);
+			return;
+		}
+
+		const currentTotalBytes = documents.reduce((sum, doc) => sum + doc.size, 0);
+		const incomingBytes = files.reduce((sum, file) => sum + file.size, 0);
+		if (
+			currentTotalBytes + incomingBytes >
+			TEMPLATE_LIMITS.MAX_TEMPLATE_TOTAL_BYTES
+		) {
+			toastUser.error(
+				`Total size of template documents exceeds the limit of ${TEMPLATE_LIMITS.MAX_TEMPLATE_TOTAL_BYTES / (1024 * 1024)}MB.`,
+			);
 			return;
 		}
 

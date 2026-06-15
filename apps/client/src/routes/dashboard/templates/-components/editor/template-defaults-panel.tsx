@@ -4,7 +4,11 @@ import { Label } from "@/src/lib/components/ui/label";
 import { Textarea } from "@/src/lib/components/ui/textarea";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 
-export function TemplateDefaultsPanel() {
+type Props = {
+	hideHeader?: boolean;
+};
+
+export function TemplateDefaultsPanel({ hideHeader = false }: Props) {
 	const createForm = useStorePersist((s) => s.createForm);
 	const setCreateForm = useStorePersist((s) => s.setCreateForm);
 
@@ -12,10 +16,14 @@ export function TemplateDefaultsPanel() {
 
 	return (
 		<div className="space-y-3">
-			<div className="flex items-center gap-2">
-				<TextAlignLeftIcon className="size-4 text-muted-foreground" />
-				<h3 className="text-sm font-medium text-foreground">Default message</h3>
-			</div>
+			{hideHeader ? null : (
+				<div className="flex items-center gap-2">
+					<TextAlignLeftIcon className="size-4 text-muted-foreground" />
+					<h3 className="text-sm font-medium text-foreground">
+						Default message
+					</h3>
+				</div>
+			)}
 			<p className="text-xs text-muted-foreground">
 				Pre-fill the subject and message when someone uses this template.
 			</p>

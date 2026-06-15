@@ -1,5 +1,8 @@
 import type { TemplateRole } from "@filosign/shared";
-import { countFieldsForRole } from "@filosign/shared";
+import {
+	countFieldsForRole,
+	templateRolePlaceholderEmail,
+} from "@filosign/shared";
 import {
 	DotsThreeVerticalIcon,
 	PlusIcon,
@@ -14,11 +17,11 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/src/lib/components/ui/dropdown-menu";
+import { useAddSignPlacement } from "@/src/lib/domains/placement/context";
 import { templateEditorStateFromCreateForm } from "@/src/lib/domains/templates/template-composer";
 import { useTemplateRoles } from "@/src/lib/domains/templates/use-template-roles";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn } from "@/src/lib/utils/utils";
-import { useAddSignPlacement } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 import { TemplateRoleEditorDialog } from "./template-role-editor-dialog";
 
 export function TemplateRolesPanel() {
@@ -58,7 +61,8 @@ export function TemplateRolesPanel() {
 			</p>
 			<div className="space-y-2">
 				{roles.map((role) => {
-					const isActive = activeAssigneeId === role.roleId;
+					const assigneeId = templateRolePlaceholderEmail(role.roleId);
+					const isActive = activeAssigneeId === assigneeId;
 					const fieldCount = fieldCounts.get(role.roleId) ?? 0;
 					const placementEnabled = role.kind === "signer";
 					return (
@@ -77,7 +81,7 @@ export function TemplateRolesPanel() {
 								className="flex min-w-0 flex-1 items-center gap-2 text-left"
 								onClick={() => {
 									if (placementEnabled) {
-										setActiveAssigneeId(role.roleId);
+										setActiveAssigneeId(assigneeId);
 									}
 								}}
 								disabled={!placementEnabled}

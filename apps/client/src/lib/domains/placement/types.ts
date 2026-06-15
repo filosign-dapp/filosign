@@ -8,19 +8,12 @@ import type { ActiveAssignee } from "./utils/active-assignees";
 
 export type { SignatureField };
 
-export type SendProgressStep = {
-	id: string;
-	label: string;
-	detail?: string;
-};
+import type {
+	WorkflowProgressState as SendProgressState,
+	WorkflowProgressStep as SendProgressStep,
+} from "@/src/lib/domains/workflow-progress";
 
-export type SendProgressState = {
-	steps: SendProgressStep[];
-	activeStepId: string | null;
-	completedStepIds: string[];
-	error?: { stepId: string; message: string };
-	status: "running" | "success" | "error";
-};
+export type { SendProgressState, SendProgressStep };
 
 export type PlacementDocument = {
 	id: string;

@@ -90,9 +90,10 @@ function RecipientsSectionContent() {
 							<div className="flex shrink-0 flex-wrap items-center gap-3 sm:justify-end">
 								<DisabledTooltip
 									disabled={recipients.length === 0}
-									reason="Add recipients first."
+									reason="Add at least one recipient first."
+									side="top"
 								>
-									<div className="flex items-center gap-2 rounded-lg bg-background/50 px-3 py-1.5">
+									<div className="flex items-center gap-2 rounded-large">
 										<Switch
 											id="turn-order-enabled-recipients"
 											checked={turnOrderEnabled}

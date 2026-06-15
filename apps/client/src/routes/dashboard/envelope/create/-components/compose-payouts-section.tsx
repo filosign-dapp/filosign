@@ -10,7 +10,6 @@ import { useMemo, useState } from "react";
 import { SUPPORTED_TOKENS } from "@/src/constants";
 import { Image } from "@/src/lib/components/app/media/image";
 import { Button } from "@/src/lib/components/ui/button";
-import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
@@ -101,7 +100,6 @@ export function ComposePayoutsSection() {
 	);
 
 	const canManage = activeOrg?.role === "owner" || activeOrg?.role === "admin";
-	const addPayoutDisabled = recipients.length === 0;
 
 	const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
 	const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
@@ -121,6 +119,8 @@ export function ComposePayoutsSection() {
 		() => getRuleGroups(settlementDrafts),
 		[settlementDrafts],
 	);
+
+	if (recipients.length === 0) return null;
 
 	const editingLegs = editingRuleId
 		? getDraftsByRuleId(settlementDrafts, editingRuleId)
@@ -170,23 +170,17 @@ export function ComposePayoutsSection() {
 						<DocsLink href={DOCS_LINKS.payouts()}>Payouts guide</DocsLink>
 					</p>
 				</div>
-				<DisabledTooltip
-					disabled={addPayoutDisabled}
-					reason="Add recipients first."
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					className="gap-1.5 shrink-0"
+					onClick={openCreate}
 				>
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						className="gap-1.5"
-						onClick={openCreate}
-						disabled={addPayoutDisabled}
-					>
-						<PlusIcon className="size-4" weight="regular" />
-						Add payout
-						<ProFeatureMark size="xs" />
-					</Button>
-				</DisabledTooltip>
+					<PlusIcon className="size-4" weight="regular" />
+					Add payout
+					<ProFeatureMark size="xs" />
+				</Button>
 			</div>
 
 			{ruleGroups.length > 0 ? (

@@ -206,6 +206,7 @@ export function buildPieceDetailResponse(args: {
 						args.envelopeProgress.revokedBeforeCompletedAt,
 					revokedBy: args.envelopeProgress.revokedBy,
 					nextSignerEmail: args.envelopeProgress.nextSignerEmail,
+					routingOrderEmails: args.envelopeProgress.routingOrderEmails,
 					signerReplacementPending: p.signerReplacementBlocksSign,
 				}
 			: null,

@@ -123,19 +123,26 @@ async function insertPacketRecipients(
 	}
 
 	if (args.packet.warmWraps?.length) {
-		for (const w of args.packet.warmWraps) {
-			wrappedEmails.add(w.email.trim().toLowerCase());
+		const warmRows = args.packet.warmWraps.flatMap((w) => {
+			const email = w.email.trim().toLowerCase();
+			if (wrappedEmails.has(email)) {
+				return [];
+			}
+			wrappedEmails.add(email);
+			return [
+				{
+					packetRowId: args.packetRowId,
+					email,
+					emailCommitment: hashNormalizedSignerEmail(w.email),
+					deliveryKind: "warm" as const,
+					kemCiphertext: w.kemCiphertext as Hex,
+					encryptedPacketDek: w.encryptedPacketDek as Hex,
+				},
+			];
+		});
+		if (warmRows.length > 0) {
+			await tx.insert(envelopeAttachmentPacketRecipients).values(warmRows);
 		}
-		await tx.insert(envelopeAttachmentPacketRecipients).values(
-			args.packet.warmWraps.map((w) => ({
-				packetRowId: args.packetRowId,
-				email: w.email.trim().toLowerCase(),
-				emailCommitment: hashNormalizedSignerEmail(w.email),
-				deliveryKind: "warm" as const,
-				kemCiphertext: w.kemCiphertext as Hex,
-				encryptedPacketDek: w.encryptedPacketDek as Hex,
-			})),
-		);
 	}
 
 	if (args.packet.releaseMode === "review") {

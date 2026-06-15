@@ -75,6 +75,73 @@ describe("attachments-register", () => {
 				{ email: "b@example.com", inviteToken: "token-bbbbbbbbbbbbbbbb" },
 			]);
 		});
+
+		test("dedupes warm recipient when senderWrap uses the same email", async () => {
+			const recipientRows: { email: string }[] = [];
+			let packetInsertCount = 0;
+
+			const tx = {
+				insert: () => ({
+					values: (rows: unknown) => {
+						const arr = Array.isArray(rows) ? rows : [rows];
+						for (const row of arr) {
+							if (
+								row &&
+								typeof row === "object" &&
+								"email" in row &&
+								"deliveryKind" in row
+							) {
+								recipientRows.push({ email: String(row.email) });
+							}
+						}
+						packetInsertCount += 1;
+						if (packetInsertCount === 1) {
+							return {
+								returning: async () => [{ id: "packet-row-1" }],
+							};
+						}
+						return Promise.resolve(undefined);
+					},
+				}),
+			};
+
+			const { insertSingleAttachmentPacket } = await import(
+				"@/lib/domains/attachments/utils/insert-packet"
+			);
+
+			await insertSingleAttachmentPacket(tx as never, {
+				pieceCid: "piece-cid-self-sign",
+				packet: {
+					packetId: "p1",
+					releaseMode: "review",
+					recipientEmails: ["sender@example.com", "other@example.com"],
+					packetCid: `0x${"a".repeat(64)}`,
+					senderWrap: {
+						email: "sender@example.com",
+						kemCiphertext: `0x${"11".repeat(32)}`,
+						encryptedPacketDek: `0x${"22".repeat(32)}`,
+					},
+					warmWraps: [
+						{
+							email: "sender@example.com",
+							kemCiphertext: `0x${"33".repeat(32)}`,
+							encryptedPacketDek: `0x${"44".repeat(32)}`,
+						},
+						{
+							email: "other@example.com",
+							kemCiphertext: `0x${"55".repeat(32)}`,
+							encryptedPacketDek: `0x${"66".repeat(32)}`,
+						},
+					],
+				},
+				coldInvites: [],
+			});
+
+			expect(recipientRows).toEqual([
+				{ email: "sender@example.com" },
+				{ email: "other@example.com" },
+			]);
+		});
 	});
 
 	describe("insertAttachmentPacketsForFile entitlement gates", () => {

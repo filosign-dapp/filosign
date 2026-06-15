@@ -32,6 +32,7 @@ const envelopeProgressSchema = z.object({
 	revokedBeforeCompletedAt: z.number().int().nullable().optional(),
 	revokedBy: zEvmAddress().nullable().optional(),
 	nextSignerEmail: z.string().nullable(),
+	routingOrderEmails: z.array(z.string()).nullable().optional(),
 	signerReplacementPending: z.boolean().optional(),
 });
 

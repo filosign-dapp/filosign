@@ -1,4 +1,8 @@
-import type { PlacementManifest } from "@filosign/shared";
+import {
+	orderSignersByRoutingEmails,
+	type PlacementManifest,
+	type RegisterRoutingInput,
+} from "@filosign/shared";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import { primaryEmailForWallet } from "../../invites";
@@ -11,6 +15,7 @@ export async function buildPieceDetailSigners(args: {
 		| { success: boolean; data: PlacementManifest }
 		| { success: false };
 	senderEmail: string | null;
+	registerRouting?: RegisterRoutingInput | null;
 }): Promise<
 	Array<{ wallet: Address; name: string | null; email: string | null }>
 > {
@@ -40,7 +45,7 @@ export async function buildPieceDetailSigners(args: {
 			),
 	);
 
-	return [
+	const roster = [
 		...signerParticipants.map(rosterPerson),
 		...(senderHasAssignedFields &&
 		!signerParticipants.some((p) => getAddress(p.wallet) === senderWallet)
@@ -54,7 +59,12 @@ export async function buildPieceDetailSigners(args: {
 							},
 				]
 			: []),
-	].sort((a, b) => a.wallet.localeCompare(b.wallet));
+	];
+
+	return orderSignersByRoutingEmails(roster, {
+		routingMode: args.registerRouting?.routingMode ?? 0,
+		routingOrderEmails: args.registerRouting?.routingOrderEmails,
+	}).map(({ turnIndex: _turnIndex, ...signer }) => signer);
 }
 
 export function senderHasManifestFields(args: {

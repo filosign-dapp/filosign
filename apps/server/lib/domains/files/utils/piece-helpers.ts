@@ -47,6 +47,8 @@ export type EnvelopeRegistryProgress = {
 	revokedBy: Address | null;
 	/** Sequential: email of next signer who has not signed yet, if known. */
 	nextSignerEmail: string | null;
+	/** Sequential: signing order emails from register routing, when configured. */
+	routingOrderEmails: string[] | null;
 	/** False when sequential order blocks the given signer email. */
 	canSignByRouting: boolean;
 };
@@ -314,10 +316,14 @@ export async function readEnvelopeRegistryProgress(args: {
 				? getAddress(reg.revokedBy)
 				: null,
 		nextSignerEmail: null,
+		routingOrderEmails: null,
 		canSignByRouting: !isRevoked && !isComplete,
 	};
 
 	const routing = args.registerRouting;
+	if (routing?.routingMode === 1 && routing.routingOrderEmails?.length) {
+		progress.routingOrderEmails = [...routing.routingOrderEmails];
+	}
 	if (routing) {
 		await applySequentialNextSigner({
 			registry,

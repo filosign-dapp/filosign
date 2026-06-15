@@ -146,6 +146,7 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		sender: fileRecord.sender,
 		manifestParsed,
 		senderEmail,
+		registerRouting: fileRecord.registerRoutingJson ?? undefined,
 	});
 
 	const signerEmailForRouting =

@@ -55,6 +55,8 @@ type PendingSignerReplacementRow = {
 	newCommitment: Hash;
 	proposeTxHash: Hash;
 	createdAt: Date;
+	oldEmail?: string | null;
+	newEmail?: string | null;
 };
 
 type OrgDocumentReadAccess = Awaited<
@@ -216,6 +218,8 @@ export function buildPieceDetailResponse(args: {
 					newCommitment: args.pendingSignerReplacement.newCommitment,
 					proposeTxHash: args.pendingSignerReplacement.proposeTxHash,
 					createdAt: args.pendingSignerReplacement.createdAt,
+					oldEmail: args.pendingSignerReplacement.oldEmail ?? null,
+					newEmail: args.pendingSignerReplacement.newEmail ?? null,
 				}
 			: null,
 		...(args.conditionalAttachmentPackets

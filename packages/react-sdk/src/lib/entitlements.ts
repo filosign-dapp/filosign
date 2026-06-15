@@ -14,6 +14,12 @@ export function canUseAdvancedRouting(
 	return featureEnabled(entitlements, "features.routing.advanced");
 }
 
+export function canUseSignerReplacement(
+	entitlements: EntitlementsSnapshot | undefined,
+): boolean {
+	return featureEnabled(entitlements, "features.signer_replacement");
+}
+
 export function canUseAdvancedSettlements(
 	entitlements: EntitlementsSnapshot | undefined,
 ): boolean {

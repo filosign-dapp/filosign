@@ -47,6 +47,7 @@ import {
 const {
 	complianceExportLogs,
 	fileComments,
+	fileColdInvites,
 	fileParticipants,
 	fileSignatures,
 	files,
@@ -141,12 +142,28 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		senderEmailForManifest,
 	});
 
+	const coldSignerInvites = await db
+		.select({
+			email: fileColdInvites.email,
+			emailCommitment: fileColdInvites.emailCommitment,
+			claimedByWallet: fileColdInvites.claimedByWallet,
+		})
+		.from(fileColdInvites)
+		.where(
+			and(
+				eq(fileColdInvites.filePieceCid, pieceCid),
+				eq(fileColdInvites.isSigner, true),
+				eq(fileColdInvites.status, "pending"),
+			),
+		);
+
 	const signers = await buildPieceDetailSigners({
 		participants,
 		sender: fileRecord.sender,
 		manifestParsed,
 		senderEmail,
 		registerRouting: fileRecord.registerRoutingJson ?? undefined,
+		coldSignerInvites,
 	});
 
 	const signerEmailForRouting =

@@ -12,6 +12,7 @@ const rosterPersonSchema = z.object({
 	wallet: z.string(),
 	name: z.string().nullable(),
 	email: z.string().nullable(),
+	invitePending: z.boolean().optional(),
 });
 
 const participantAccessSchema = z.object({
@@ -62,6 +63,8 @@ export const rpcPieceDetailOutputSchema = z.object({
 			newCommitment: zHexString(),
 			proposeTxHash: zHexString(),
 			createdAt: z.union([z.string(), z.date()]),
+			oldEmail: z.string().nullable().optional(),
+			newEmail: z.string().nullable().optional(),
 		})
 		.nullable()
 		.optional(),

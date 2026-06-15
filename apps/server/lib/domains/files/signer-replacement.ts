@@ -153,6 +153,7 @@ export async function readPendingSignerReplacementForPiece(pieceCid: string) {
 			status: fileSignerAmendments.status,
 			proposeTxHash: fileSignerAmendments.proposeTxHash,
 			createdAt: fileSignerAmendments.createdAt,
+			pendingNewSignerJson: fileSignerAmendments.pendingNewSignerJson,
 		})
 		.from(fileSignerAmendments)
 		.where(
@@ -162,7 +163,25 @@ export async function readPendingSignerReplacementForPiece(pieceCid: string) {
 			),
 		)
 		.limit(1);
-	return row ?? null;
+	if (!row) return null;
+
+	const oldEmail = await resolveEmailForCommitment(pieceCid, row.oldCommitment);
+	let newEmail = await resolveEmailForCommitment(pieceCid, row.newCommitment);
+	if (!newEmail && row.pendingNewSignerJson) {
+		if (row.pendingNewSignerJson.kind === "cold") {
+			newEmail = normalizePlacementRecipientEmail(
+				row.pendingNewSignerJson.email,
+			);
+		} else {
+			newEmail = await primaryEmailForWallet(row.pendingNewSignerJson.wallet);
+		}
+	}
+
+	return {
+		...row,
+		oldEmail,
+		newEmail,
+	};
 }
 
 export async function isSignerReplacementPendingOnChain(

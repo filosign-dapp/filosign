@@ -25,6 +25,7 @@ export {
 	canUseDraftComments,
 	canUseMetadataTags,
 	canUseSharedTemplates,
+	canUseSignerReplacement,
 	canUseSupplementaryAttachments,
 	canUseTeamCollaboration,
 	canUseTeamDrafts,

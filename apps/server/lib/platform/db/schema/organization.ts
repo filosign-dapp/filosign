@@ -1,4 +1,4 @@
-import type { DraftPlacementManifest } from "@filosign/shared";
+import type { TemplateSnapshot } from "@filosign/shared";
 import { sql } from "drizzle-orm";
 import * as t from "drizzle-orm/pg-core";
 import { tEvmAddress, tHex, timestamps } from "@/lib/platform/db/helpers";
@@ -149,15 +149,38 @@ export const organizationTemplates = t.pgTable(
 			.notNull()
 			.references(() => organizations.id, { onDelete: "cascade" }),
 		name: t.text().notNull(),
-		s3Key: t.text().notNull(),
-		dekWrappedOmk: tHex().notNull(),
-		placementManifestJson: t.jsonb().$type<DraftPlacementManifest>().notNull(),
+		headDekWrappedOmk: tHex().notNull(),
+		headOmkKemCiphertext: tHex().notNull(),
+		snapshotJson: t.jsonb().$type<TemplateSnapshot>().notNull(),
 		createdByWallet: tEvmAddress()
 			.notNull()
 			.references(() => users.walletAddress),
 		...timestamps,
 	},
 	(table) => [t.index("idx_org_templates_org").on(table.organizationId)],
+);
+
+export const organizationTemplateDocuments = t.pgTable(
+	"organization_template_documents",
+	{
+		id: t.uuid().primaryKey().$defaultFn(randomUuidV7),
+		templateId: t
+			.uuid()
+			.notNull()
+			.references(() => organizationTemplates.id, { onDelete: "cascade" }),
+		docId: t.text().notNull(),
+		s3Key: t.text().notNull(),
+		name: t.text().notNull(),
+		size: t.integer().notNull(),
+		mimeType: t.text().notNull(),
+		...timestamps,
+	},
+	(table) => [
+		t
+			.uniqueIndex("uidx_org_template_documents_template_doc")
+			.on(table.templateId, table.docId),
+		t.index("idx_org_template_documents_template").on(table.templateId),
+	],
 );
 
 export const archivalProductIds = [

@@ -139,6 +139,9 @@ import {
 	zOrgsMembersRemoveBody,
 	zOrgsMembersSetRoleBody,
 	zOrgsTemplateCreateBody,
+	zOrgsTemplatePrepareCreateBody,
+	zOrgsTemplatePrepareUpdateBody,
+	zOrgsTemplateUpdateBody,
 	zOrgsUnlinkWalletBody,
 	zOrgsUpdateBody,
 	zUserProfilePutBody,
@@ -1204,6 +1207,21 @@ export const appRouter = {
 				),
 		},
 		templates: {
+			prepareCreate: authenticatedProcedure
+				.input(zOrgsTemplatePrepareCreateBody)
+				.output(out.orgs.templatePrepare)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsTemplatesPrepareCreate(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					);
+				}),
 			create: authenticatedProcedure
 				.input(zOrgsTemplateCreateBody)
 				.output(out.orgs.template)
@@ -1214,6 +1232,36 @@ export const appRouter = {
 						});
 					}
 					return orgsHandlers.orgsTemplatesCreate(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					);
+				}),
+			prepareUpdate: authenticatedProcedure
+				.input(zOrgsTemplatePrepareUpdateBody)
+				.output(out.orgs.templatePrepare)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsTemplatesPrepareUpdate(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					);
+				}),
+			update: authenticatedProcedure
+				.input(zOrgsTemplateUpdateBody)
+				.output(out.orgs.template)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsTemplatesUpdate(
 						context.userWallet,
 						context.activeOrg,
 						input,
@@ -1234,7 +1282,7 @@ export const appRouter = {
 				}),
 			get: authenticatedProcedure
 				.input(z.object({ templateId: z.uuid() }))
-				.output(out.orgs.template)
+				.output(out.orgs.templateGet)
 				.handler(({ context, input }) => {
 					if (!context.activeOrg) {
 						throw new ORPCError("BAD_REQUEST", {

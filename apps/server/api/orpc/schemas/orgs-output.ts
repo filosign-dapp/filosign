@@ -1,4 +1,4 @@
-import { zDraftPlacementManifest, zPlacementManifest } from "@filosign/shared";
+import { zTemplateSnapshot } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { z } from "zod";
 import { zDateWire } from "./rpc-wire";
@@ -53,7 +53,21 @@ export const rpcOrgTemplateSummarySchema = z.object({
 	id: z.uuid(),
 	name: z.string(),
 	createdAt: zDateWire,
+	updatedAt: zDateWire,
 	createdByWallet: z.string(),
+	roleCount: z.number().int().nonnegative(),
+	fieldCount: z.number().int().nonnegative(),
+	docCount: z.number().int().nonnegative(),
+});
+
+export const rpcOrgTemplateDocumentSchema = z.object({
+	docId: z.string(),
+	name: z.string(),
+	size: z.number().int().positive(),
+	mimeType: z.string(),
+	s3Key: z.string().optional(),
+	downloadUrl: z.url().optional(),
+	uploadUrl: z.url().optional(),
 });
 
 /** Full template row as returned from DB. */
@@ -64,9 +78,11 @@ export const rpcOrgTemplateWireSchema = z.object({
 	createdByWallet: z.string(),
 	createdAt: zDateWire,
 	updatedAt: zDateWire,
-	placementManifestJson: zDraftPlacementManifest,
-	s3Key: z.string(),
-	dekWrappedOmk: z.string(),
+	headDekWrappedOmk: zHexString(),
+	headOmkKemCiphertext: zHexString(),
+	snapshotJson: zTemplateSnapshot,
+	roleCount: z.number().int().nonnegative(),
+	fieldCount: z.number().int().nonnegative(),
 });
 
 export const rpcOrgInviteSchema = z.object({
@@ -120,13 +136,35 @@ export const rpcOrgsTemplateOutputSchema = z.object({
 	template: rpcOrgTemplateWireSchema,
 });
 
+export const rpcOrgsTemplateGetOutputSchema = z.object({
+	template: rpcOrgTemplateWireSchema,
+	documents: z.array(rpcOrgTemplateDocumentSchema),
+});
+
+export const rpcOrgsTemplatePrepareOutputSchema = z.object({
+	templateId: z.uuid(),
+	documents: z.array(
+		z.object({
+			docId: z.string(),
+			s3Key: z.string(),
+			uploadUrl: z.url(),
+		}),
+	),
+});
+
 export const rpcOrgsTemplatesCloneOutputSchema = z.object({
 	templateId: z.uuid(),
-	document: z.object({
-		id: z.uuid(),
-		name: z.string(),
-		type: z.string(),
-		dataUrl: z.url(),
-	}),
-	placementManifest: zPlacementManifest.optional().nullable(),
+	name: z.string(),
+	headDekWrappedOmk: zHexString(),
+	headOmkKemCiphertext: zHexString(),
+	snapshotJson: zTemplateSnapshot,
+	documents: z.array(
+		z.object({
+			docId: z.string(),
+			name: z.string(),
+			mimeType: z.string(),
+			size: z.number().int().positive(),
+			downloadUrl: z.url(),
+		}),
+	),
 });

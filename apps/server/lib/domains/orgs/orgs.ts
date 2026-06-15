@@ -1,5 +1,6 @@
 import { throwAppError } from "@filosign/errors/server";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { templateSnapshotCounts } from "@filosign/shared";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
 import {
@@ -15,13 +16,19 @@ import type {
 	OrgMemberStatus,
 } from "@/lib/platform/db/schema/organization";
 
-const { files, organizations, organizationMembers, organizationTemplates } =
-	db.schema;
+const {
+	files,
+	organizations,
+	organizationMembers,
+	organizationTemplates,
+	organizationTemplateDocuments,
+} = db.schema;
 
 export type OrgPermission =
 	| "org:manage"
 	| "members:invite"
 	| "members:remove"
+	| "templates:read"
 	| "templates:write"
 	| "templates:use"
 	| "documents:send"
@@ -36,6 +43,7 @@ const ROLE_PERMISSIONS: Record<OrgMemberRole, ReadonlySet<OrgPermission>> = {
 		"org:manage",
 		"members:invite",
 		"members:remove",
+		"templates:read",
 		"templates:write",
 		"templates:use",
 		"documents:send",
@@ -49,6 +57,7 @@ const ROLE_PERMISSIONS: Record<OrgMemberRole, ReadonlySet<OrgPermission>> = {
 		"org:manage",
 		"members:invite",
 		"members:remove",
+		"templates:read",
 		"templates:write",
 		"templates:use",
 		"documents:send",
@@ -59,6 +68,7 @@ const ROLE_PERMISSIONS: Record<OrgMemberRole, ReadonlySet<OrgPermission>> = {
 		"billing:manage",
 	]),
 	sender: new Set([
+		"templates:read",
 		"templates:use",
 		"documents:send",
 		"documents:read:org",
@@ -66,7 +76,7 @@ const ROLE_PERMISSIONS: Record<OrgMemberRole, ReadonlySet<OrgPermission>> = {
 		"drafts:write",
 		"drafts:share",
 	]),
-	viewer: new Set(["templates:use", "documents:read:org", "drafts:read"]),
+	viewer: new Set(["templates:read", "documents:read:org", "drafts:read"]),
 };
 
 export type ActiveOrgContext = {
@@ -90,11 +100,16 @@ export type OrgTemplateListRow = {
 	id: string;
 	name: string;
 	createdAt: Date;
+	updatedAt: Date;
 	createdByWallet: string;
+	roleCount: number;
+	fieldCount: number;
+	docCount: number;
 };
 
-type StoredTemplateRow = Omit<OrgTemplateListRow, "createdAt"> & {
+type StoredTemplateRow = Omit<OrgTemplateListRow, "createdAt" | "updatedAt"> & {
 	createdAt: string;
+	updatedAt: string;
 };
 
 export function orgRoleHasPermission(
@@ -279,6 +294,7 @@ function serializeTemplates(rows: OrgTemplateListRow[]): string {
 	const stored: StoredTemplateRow[] = rows.map((row) => ({
 		...row,
 		createdAt: row.createdAt.toISOString(),
+		updatedAt: row.updatedAt.toISOString(),
 	}));
 	return defaultSerialize(stored);
 }
@@ -288,22 +304,59 @@ function deserializeTemplates(raw: string): OrgTemplateListRow[] {
 	return stored.map((row) => ({
 		...row,
 		createdAt: new Date(row.createdAt),
+		updatedAt: new Date(row.updatedAt),
 	}));
 }
 
 export async function fetchOrgTemplatesList(
 	organizationId: string,
 ): Promise<OrgTemplateListRow[]> {
-	return db
+	const rows = await db
 		.select({
 			id: organizationTemplates.id,
 			name: organizationTemplates.name,
 			createdAt: organizationTemplates.createdAt,
+			updatedAt: organizationTemplates.updatedAt,
 			createdByWallet: organizationTemplates.createdByWallet,
+			snapshotJson: organizationTemplates.snapshotJson,
 		})
 		.from(organizationTemplates)
 		.where(eq(organizationTemplates.organizationId, organizationId))
-		.orderBy(desc(organizationTemplates.createdAt));
+		.orderBy(desc(organizationTemplates.updatedAt));
+
+	if (rows.length === 0) return [];
+
+	const docCounts = await db
+		.select({
+			templateId: organizationTemplateDocuments.templateId,
+			docCount: sql<number>`count(*)::int`,
+		})
+		.from(organizationTemplateDocuments)
+		.where(
+			inArray(
+				organizationTemplateDocuments.templateId,
+				rows.map((row) => row.id),
+			),
+		)
+		.groupBy(organizationTemplateDocuments.templateId);
+
+	const docCountByTemplate = new Map(
+		docCounts.map((row) => [row.templateId, row.docCount]),
+	);
+
+	return rows.map((row) => {
+		const counts = templateSnapshotCounts(row.snapshotJson);
+		return {
+			id: row.id,
+			name: row.name,
+			createdAt: row.createdAt,
+			updatedAt: row.updatedAt,
+			createdByWallet: row.createdByWallet,
+			roleCount: counts.roleCount,
+			fieldCount: counts.fieldCount,
+			docCount: docCountByTemplate.get(row.id) ?? 0,
+		};
+	});
 }
 
 export async function listOrgTemplatesCached(

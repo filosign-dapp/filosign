@@ -22,35 +22,103 @@ describe("org template permissions", () => {
 });
 
 describe("template create body validation", () => {
+	const baseSnapshot = {
+		version: 1 as const,
+		roles: [
+			{
+				roleId: "signer:alice@example.com",
+				label: "Signer 1",
+				kind: "signer" as const,
+				order: 0,
+			},
+		],
+		fields: [],
+	};
+
+	const baseDoc = {
+		docId: "doc-1",
+		s3Key:
+			"orgs/org-1/templates/00000000-0000-7000-8000-000000000001/doc-1.bin",
+		name: "nda.pdf",
+		size: 100,
+		mimeType: "application/pdf",
+		plaintextSha256: `0x${"ab".repeat(32)}`,
+	};
+
 	test("requires both crypto head fields", async () => {
 		const { zOrgsTemplateCreateBody } = await import(
-			"@/api/handlers/orgs/templates-schemas"
+			"@/lib/domains/orgs/templates"
 		);
 
 		const parsed = zOrgsTemplateCreateBody.safeParse({
 			templateId: "00000000-0000-7000-8000-000000000001",
 			name: "NDA",
 			headDekWrappedOmk: "0x01",
-			snapshot: {
-				version: 1,
-				roles: [
-					{
-						roleId: "signer:alice@example.com",
-						label: "Signer 1",
-						kind: "signer",
-						order: 0,
-					},
-				],
-				fields: [],
-			},
+			snapshot: baseSnapshot,
+			documents: [baseDoc],
+		});
+		expect(parsed.success).toBe(false);
+	});
+
+	test("rejects oversize single document", async () => {
+		const { zOrgsTemplateCreateBody } = await import(
+			"@/lib/domains/orgs/templates"
+		);
+		const { MAX_FILE_SIZE } = await import("@/constants");
+
+		const parsed = zOrgsTemplateCreateBody.safeParse({
+			templateId: "00000000-0000-7000-8000-000000000001",
+			name: "NDA",
+			headDekWrappedOmk: "0x01",
+			headOmkKemCiphertext: "0x02",
+			snapshot: baseSnapshot,
+			documents: [{ ...baseDoc, size: MAX_FILE_SIZE + 1 }],
+		});
+		expect(parsed.success).toBe(false);
+	});
+
+	test("rejects too many documents", async () => {
+		const { zOrgsTemplateCreateBody } = await import(
+			"@/lib/domains/orgs/templates"
+		);
+		const { MAX_TEMPLATE_DOCUMENTS } = await import("@/constants");
+
+		const parsed = zOrgsTemplateCreateBody.safeParse({
+			templateId: "00000000-0000-7000-8000-000000000001",
+			name: "NDA",
+			headDekWrappedOmk: "0x01",
+			headOmkKemCiphertext: "0x02",
+			snapshot: baseSnapshot,
+			documents: Array.from({ length: MAX_TEMPLATE_DOCUMENTS + 1 }, (_, i) => ({
+				...baseDoc,
+				docId: `doc-${i}`,
+				s3Key: `orgs/org-1/templates/00000000-0000-7000-8000-000000000001/doc-${i}.bin`,
+			})),
+		});
+		expect(parsed.success).toBe(false);
+	});
+
+	test("rejects aggregate size over cap", async () => {
+		const { zOrgsTemplateCreateBody } = await import(
+			"@/lib/domains/orgs/templates"
+		);
+		const { MAX_TEMPLATE_TOTAL_BYTES } = await import("@/constants");
+
+		const perDoc = Math.floor(MAX_TEMPLATE_TOTAL_BYTES / 2) + 1;
+		const parsed = zOrgsTemplateCreateBody.safeParse({
+			templateId: "00000000-0000-7000-8000-000000000001",
+			name: "NDA",
+			headDekWrappedOmk: "0x01",
+			headOmkKemCiphertext: "0x02",
+			snapshot: baseSnapshot,
 			documents: [
+				{ ...baseDoc, docId: "doc-1", size: perDoc },
 				{
-					docId: "doc-1",
+					...baseDoc,
+					docId: "doc-2",
 					s3Key:
-						"orgs/org-1/templates/00000000-0000-7000-8000-000000000001/doc-1.bin",
-					name: "nda.pdf",
-					size: 100,
-					mimeType: "application/pdf",
+						"orgs/org-1/templates/00000000-0000-7000-8000-000000000001/doc-2.bin",
+					size: perDoc,
 				},
 			],
 		});

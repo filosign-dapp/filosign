@@ -173,6 +173,7 @@ export const organizationTemplateDocuments = t.pgTable(
 		name: t.text().notNull(),
 		size: t.integer().notNull(),
 		mimeType: t.text().notNull(),
+		plaintextSha256: tHex().notNull(),
 		...timestamps,
 	},
 	(table) => [

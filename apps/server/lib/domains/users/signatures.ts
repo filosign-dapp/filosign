@@ -17,7 +17,6 @@ import db from "@/lib/platform/db";
 import { bucket } from "@/lib/platform/s3/client";
 import { presignObjectPreviewGet } from "@/lib/platform/s3/presign-preview";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
-import { userActivationOnSignatureReady } from "./activation";
 
 const { userSignatures, users, fileFieldCompletions } = db.schema;
 
@@ -206,10 +205,6 @@ export async function userSignatureSetDefault(wallet: Address, body: unknown) {
 		.update(users)
 		.set({ [column]: parsed.data.id, updatedAt: new Date() })
 		.where(eq(users.walletAddress, wallet));
-
-	if (parsed.data.role === "signature") {
-		await userActivationOnSignatureReady(wallet);
-	}
 
 	return {};
 }

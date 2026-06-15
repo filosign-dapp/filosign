@@ -23,6 +23,7 @@ CREATE TABLE "organization_template_documents" (
 	"name" text NOT NULL,
 	"size" integer NOT NULL,
 	"mime_type" text NOT NULL,
+	"plaintext_sha256" text NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );

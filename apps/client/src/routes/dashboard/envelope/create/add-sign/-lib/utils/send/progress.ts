@@ -4,10 +4,17 @@ import type {
 	CreateForm,
 	SignatureField,
 } from "@/src/lib/domains/files/envelope-form-types";
-import {
-	resolveSelfSignerOnRoster,
-	selfAssignedFieldIds,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
+import type {
+	SendProgressState,
+	SendProgressStep,
+} from "@/src/lib/domains/placement/types";
+import { resolveSelfSignerOnRoster } from "@/src/lib/domains/placement/utils/self-signer";
+import { selfAssignedFieldIds } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
+
+export type {
+	SendProgressState,
+	SendProgressStep,
+} from "@/src/lib/domains/placement/types";
 
 export type ClientSendProgressPhase =
 	| "preparing_documents"
@@ -23,20 +30,6 @@ export type SendProgressEvent =
 			status: "start" | "done" | "error";
 			errorMessage?: string;
 	  };
-
-export type SendProgressStep = {
-	id: string;
-	label: string;
-	detail?: string;
-};
-
-export type SendProgressState = {
-	steps: SendProgressStep[];
-	activeStepId: string | null;
-	completedStepIds: string[];
-	error?: { stepId: string; message: string };
-	status: "running" | "success" | "error";
-};
 
 function payoutApproveStepId(ruleIndex: number): string {
 	return `payout_${ruleIndex}_approve`;

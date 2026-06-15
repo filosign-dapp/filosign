@@ -1,28 +1,15 @@
 import type { ProfileByAddress } from "@filosign/react/users";
 import { parseHexString } from "@filosign/shared";
-import { type Address, getAddress, type Hex, isAddress } from "viem";
+import type { Address, Hex } from "viem";
 import { loadDocumentBytes } from "@/src/lib/domains/drafts";
 import { buildPlacementManifestForDocument } from "@/src/lib/domains/files/build-placement-manifest";
+import {
+	isColdRecipient,
+	recipientResolvedSignerAddress,
+} from "@/src/lib/domains/placement/utils/recipient-address";
 import type { Recipient, StoredDocument } from "../../../-lib/types";
 
-export function recipientResolvedSignerAddress(
-	recipient: Pick<Recipient, "walletAddress">,
-): Address | null {
-	const w = recipient.walletAddress?.trim();
-	if (!w || !isAddress(w)) return null;
-	try {
-		return getAddress(w);
-	} catch {
-		return null;
-	}
-}
-
-/** Email-only recipient (no resolved wallet) - cold invite + passphrase path. */
-export function isColdRecipient(recipient: Recipient): boolean {
-	const email = recipient.email?.trim();
-	if (!email) return false;
-	return recipientResolvedSignerAddress(recipient) === null;
-}
+export { isColdRecipient, recipientResolvedSignerAddress };
 
 export const SendEnvelopeError = {
 	MISSING_DRAFT_DOCUMENT: "MISSING_DRAFT_DOCUMENT",

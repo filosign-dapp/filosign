@@ -16,11 +16,9 @@ import type {
 	ColdSharePackage,
 	WarmShareSummary,
 } from "@/src/lib/domains/invites/types";
+import { resolveSelfSignerOnRoster } from "@/src/lib/domains/placement/utils/self-signer";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
-import {
-	resolveSelfSignerOnRoster,
-	selfAssignedFieldIds,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
+import { selfAssignedFieldIds } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
 import type { SendProgressEvent } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/progress";
 import { isColdRecipient } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 

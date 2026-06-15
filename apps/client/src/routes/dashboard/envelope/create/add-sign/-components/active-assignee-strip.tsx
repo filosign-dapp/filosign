@@ -1,11 +1,11 @@
 import { useUserProfile } from "@filosign/react/users";
 import { useMemo } from "react";
-import { useStorePersist } from "@/src/lib/filosign/use-store";
-import { cn } from "@/src/lib/utils/utils";
 import {
 	buildActiveAssignees,
 	countFieldsByAssignee,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/active-assignees";
+} from "@/src/lib/domains/placement/utils/active-assignees";
+import { useStorePersist } from "@/src/lib/filosign/use-store";
+import { cn } from "@/src/lib/utils/utils";
 
 type ActiveAssigneeStripProps = {
 	activeAssigneeId: string;

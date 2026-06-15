@@ -6,12 +6,12 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/src/lib/components/ui/collapsible";
+import { useAddSignPlacement } from "@/src/lib/domains/placement/context";
 import { PlacementFieldPaletteList } from "@/src/lib/domains/placement/field-palette";
+import { countFieldsByAssignee } from "@/src/lib/domains/placement/utils/active-assignees";
 import { cn } from "@/src/lib/utils/utils";
 import { ActiveAssigneeStrip } from "@/src/routes/dashboard/envelope/create/add-sign/-components/active-assignee-strip";
 import { PlacedFieldsSheet } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placed-fields-sheet";
-import { useAddSignPlacement } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
-import { countFieldsByAssignee } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/active-assignees";
 
 export default function SignatureFieldsSidebar() {
 	const {

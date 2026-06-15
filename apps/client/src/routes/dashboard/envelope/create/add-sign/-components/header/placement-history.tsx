@@ -6,7 +6,7 @@ import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
-import { useAddSignChrome } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
+import { useAddSignChrome } from "@/src/lib/domains/placement/context";
 
 function HistoryButton({
 	icon: Icon,

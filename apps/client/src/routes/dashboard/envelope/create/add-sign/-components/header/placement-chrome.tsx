@@ -9,6 +9,7 @@ import { SendPlaneIcon } from "@/src/lib/components/app/send-plane-icon";
 import { Button } from "@/src/lib/components/ui/button";
 import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
 import { InlineLoader } from "@/src/lib/components/ui/loader";
+import { useAddSignChrome } from "@/src/lib/domains/placement/context";
 import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements/payout-copy";
 import { useAttachedPayoutBalance } from "@/src/lib/domains/settlements/use-attached-payout-balance";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
@@ -16,7 +17,6 @@ import { cn } from "@/src/lib/utils/utils";
 import { AddSignDraftActions } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft/actions";
 import { PlacementHistoryButtons } from "@/src/routes/dashboard/envelope/create/add-sign/-components/header/placement-history";
 import { PlacedFieldsSheet } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placed-fields-sheet";
-import { useAddSignChrome } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 
 export function AddSignHeader() {
 	const { sendStatus, handleSend } = useAddSignChrome();

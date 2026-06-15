@@ -19,10 +19,9 @@ import { PlacementCheckboxField } from "@/src/lib/domains/files/placement-checkb
 import {
 	SignatureFieldTypeIcon,
 	signatureFieldTypeLabel,
+	signerDisplayName,
 } from "@/src/lib/domains/files/placement-field-display";
-import { cn } from "@/src/lib/utils/utils";
-import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
-import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+import type { SignatureField } from "@/src/lib/domains/placement/types";
 import {
 	dragTransformInPageSpace,
 	fieldDraggableId,
@@ -31,7 +30,9 @@ import {
 	PLACEMENT_FIELD_OVERLAY_CLASS,
 	pageScale,
 	placementRectFromField,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
+} from "@/src/lib/domains/placement/utils/placement-coordinates";
+import { cn } from "@/src/lib/utils/utils";
+import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
 
 type DraggableFieldOverlayProps = {
 	field: SignatureField;
@@ -259,7 +260,7 @@ function DraggableFieldOverlay({
 					</span>
 					<div className="min-w-0 flex-1 leading-none">
 						<div className="truncate placement-field-label">
-							{field.assignedSignerEmail}
+							{signerDisplayName(field)}
 						</div>
 					</div>
 					{field.required ? (

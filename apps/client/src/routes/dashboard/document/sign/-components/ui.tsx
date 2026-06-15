@@ -10,7 +10,9 @@ import { AttachSettlementDialog } from "@/src/routes/dashboard/document/sign/-co
 import { SignShellLayout } from "@/src/routes/dashboard/document/sign/-components/body";
 import { ClearEnvelopeSignaturesDialog } from "@/src/routes/dashboard/document/sign/-components/clear-envelope-signatures-dialog";
 import { RecallEnvelopeDialog } from "@/src/routes/dashboard/document/sign/-components/recall-envelope-dialog";
+import { SettlementChangeProgressDialog } from "@/src/routes/dashboard/document/sign/-components/settlement-change-progress-dialog";
 import { SettlementUpdateDialog } from "@/src/routes/dashboard/document/sign/-components/settlement-update-dialog";
+import { SignProgressDialog } from "@/src/routes/dashboard/document/sign/-components/sign-progress-dialog";
 import { SignSuccessDialog } from "@/src/routes/dashboard/document/sign/-components/success-dialog";
 import {
 	type SignDocumentContextValue,
@@ -59,6 +61,18 @@ function SignSuccessDialogSlot() {
 	);
 }
 
+function SignProgressDialogSlot() {
+	const { sign } = useSignDocumentContext();
+	return (
+		<SignProgressDialog
+			open={sign.signing.signProgressOpen}
+			state={sign.signing.signProgressState}
+			onRetry={sign.signing.retrySign}
+			onDismiss={sign.signing.dismissSignProgress}
+		/>
+	);
+}
+
 function SignSettlementDialogs() {
 	const { file } = useSignFile();
 	const settlements = useSignSettlements();
@@ -69,9 +83,18 @@ function SignSettlementDialogs() {
 			<SettlementUpdateDialog
 				open={settlements.updateDialogOpen}
 				onOpenChange={settlements.setUpdateDialogOpen}
+				allRules={settlements.allRules}
 				rule={settlements.updateRuleTarget}
 				onConfirm={settlements.onConfirmUpdateRule}
 				pending={settlements.updatePending}
+			/>
+
+			<SettlementChangeProgressDialog
+				open={settlements.changeProgressOpen}
+				state={settlements.changeProgressState}
+				mode={settlements.changeProgressMode}
+				onRetry={settlements.retryChangeProgress}
+				onDismiss={settlements.dismissChangeProgress}
 			/>
 
 			<AmendSignerDialog
@@ -131,6 +154,7 @@ export const Sign = {
 		return (
 			<>
 				<SignColdShareDialog />
+				<SignProgressDialogSlot />
 				<SignSuccessDialogSlot />
 				<SignSettlementDialogs />
 			</>

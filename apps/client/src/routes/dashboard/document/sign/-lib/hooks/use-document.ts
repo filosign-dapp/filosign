@@ -125,6 +125,10 @@ export function useSignDocumentController() {
 			signFile: actions.signFile,
 			handleSign: actions.handleSign,
 			mySignature: signingMeta.mySignature,
+			signProgressOpen: actions.signProgressOpen,
+			signProgressState: actions.signProgressState,
+			dismissSignProgress: actions.dismissSignProgress,
+			retrySign: actions.retrySign,
 		},
 		meta: {
 			isSender: signingMeta.isSender,

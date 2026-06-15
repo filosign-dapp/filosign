@@ -22,6 +22,7 @@ import {
 	useSignSigning,
 	useSignViewer,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
+import { isEnvelopeVoided } from "@/src/routes/dashboard/document/sign/-lib/utils/envelope-progress-display";
 
 export function SignViewer() {
 	const { file, fileQuery, acknowledge } = useSignFile();
@@ -73,6 +74,7 @@ export function SignViewer() {
 		stripScrollBridge,
 	} = useDocumentViewportCanvas();
 
+	const isRevoked = isEnvelopeVoided(file?.envelopeProgress);
 	const needsAck =
 		file?.participantAccess && !file.participantAccess.canDecrypt;
 
@@ -206,6 +208,18 @@ export function SignViewer() {
 						fileError instanceof Error ? fileError.message : "File not found"
 					}
 				/>
+			</div>
+		);
+	}
+
+	if (isRevoked && needsAck) {
+		return (
+			<div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+				<p className="text-sm font-medium text-destructive">Envelope voided</p>
+				<p className="max-w-md text-sm text-muted-foreground">
+					The sender voided this envelope before it was completed. You can no
+					longer accept or sign it.
+				</p>
 			</div>
 		);
 	}

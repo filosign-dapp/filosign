@@ -9,7 +9,14 @@ export type EnvelopeProgressLike = {
 	revokedBeforeCompletedAt?: number | null;
 	revokedBy?: Address | null;
 	nextSignerEmail: string | null;
+	routingOrderEmails?: string[] | null;
 };
+
+export function isEnvelopeVoided(
+	progress: EnvelopeProgressLike | null | undefined,
+): boolean {
+	return Boolean(progress?.revokedBeforeCompletedAt);
+}
 
 export function envelopeProgressTotals(progress: EnvelopeProgressLike): {
 	signedCount: number;

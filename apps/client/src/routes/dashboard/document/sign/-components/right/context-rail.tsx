@@ -9,6 +9,7 @@ import {
 	useSignMeta,
 	useSignSettlements,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
+import { isEnvelopeVoided } from "@/src/routes/dashboard/document/sign/-lib/utils/envelope-progress-display";
 
 export function SignContextRail() {
 	const { file } = useSignFile();
@@ -19,7 +20,7 @@ export function SignContextRail() {
 	const signers = file?.signers ?? [];
 	const envelopeProgress = file?.envelopeProgress;
 	const canSignByRouting = file?.participantAccess?.canSignByRouting;
-	const isRevoked = Boolean(envelopeProgress?.revokedBeforeCompletedAt);
+	const isRevoked = isEnvelopeVoided(envelopeProgress);
 	const isComplete = Boolean(envelopeProgress?.completedAt);
 	const signingStarted = (envelopeProgress?.requiredSignaturesCount ?? 0) > 0;
 	const canRecall = isSender && !isRevoked && !isComplete;
@@ -92,7 +93,7 @@ export function SignContextRail() {
 
 			{isRevoked ? (
 				<p className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs font-medium text-destructive">
-					This envelope was voided on-chain and can no longer be signed.
+					This envelope was voided and can no longer be signed.
 				</p>
 			) : null}
 

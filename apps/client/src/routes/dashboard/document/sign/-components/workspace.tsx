@@ -6,13 +6,15 @@ import { SignContextRail } from "@/src/routes/dashboard/document/sign/-component
 import { SignFieldsStickyFooter } from "@/src/routes/dashboard/document/sign/-components/right/fields-sticky-footer";
 import { SignViewer } from "@/src/routes/dashboard/document/sign/-components/viewer/sign-viewer";
 import { useSignFile } from "@/src/routes/dashboard/document/sign/-lib/context/context";
+import { isEnvelopeVoided } from "@/src/routes/dashboard/document/sign/-lib/utils/envelope-progress-display";
 
 export function SignDocumentWorkspace() {
 	const { pieceCid, file } = useSignFile();
 
+	const isRevoked = isEnvelopeVoided(file?.envelopeProgress);
 	const needsAck =
 		file?.participantAccess && !file.participantAccess.canDecrypt;
-	const showRails = !needsAck;
+	const showRails = !needsAck || isRevoked;
 
 	return (
 		<DocumentViewportProvider>

@@ -22,7 +22,12 @@ export {
 	userAvatarWebpKey,
 } from "./piece";
 export { filesRecallEnvelope, zRecallEnvelopeBody } from "./recall";
-export { filesRegister, zFileRegisterBody } from "./register";
+export {
+	filesRegister,
+	filesRegistrationStatus,
+	zFileRegisterBody,
+	zFileRegistrationStatusBody,
+} from "./register";
 export { filesRemindSigners, zRemindSignersBody } from "./remind";
 export { pieceSign } from "./sign";
 export {

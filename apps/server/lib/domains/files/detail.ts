@@ -43,6 +43,7 @@ import {
 	listConditionalAttachmentPacketsForSender,
 	readEnvelopeRegistryProgress,
 } from "./utils/piece-helpers";
+import { getRegisterState } from "./utils/register-state";
 
 const {
 	complianceExportLogs,
@@ -91,6 +92,15 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		.where(eq(fileParticipants.filePieceCid, pieceCid));
 
 	if (!fileRecord) {
+		const pending = await getRegisterState(pieceCid);
+		if (
+			pending &&
+			(pending.registrationStatus === "queued" ||
+				pending.registrationStatus === "registering" ||
+				pending.registrationStatus === "failed")
+		) {
+			throwAppError("FILES.REGISTRATION_PENDING");
+		}
 		throwAppError("FILES.NOT_FOUND");
 	}
 

@@ -1,11 +1,9 @@
-import { getAddress } from "viem";
-import { filesRegister } from "@/lib/domains/files/register";
 import { findRegisteredFileByPieceCid } from "@/lib/domains/files/utils/register-helpers";
 import {
 	clearRegisterState,
 	getRegisterState,
-	type StoredRegisterRetryPayload,
 } from "@/lib/domains/files/utils/register-state";
+import { executeRegisterJob } from "@/lib/domains/files/utils/register-worker";
 
 export async function runFileRegisterRetryJob(pieceCid: string): Promise<void> {
 	const existing = await findRegisteredFileByPieceCid(pieceCid);
@@ -23,10 +21,5 @@ export async function runFileRegisterRetryJob(pieceCid: string): Promise<void> {
 		return;
 	}
 
-	const payload = state.registerPayloadJson as StoredRegisterRetryPayload;
-	await filesRegister(
-		getAddress(payload.sender),
-		payload.rawBody,
-		payload.activeOrg,
-	);
+	await executeRegisterJob(pieceCid);
 }

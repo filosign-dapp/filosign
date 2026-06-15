@@ -5,115 +5,72 @@ import {
 	hashNormalizedSignerEmail,
 	hashOrgIdCommitment,
 	normalizePlacementRecipientEmail,
-	uniqueSignerEmailsFromManifest,
 	usesAdvancedRegisterRouting,
-	zAttachmentPacketSendInput,
-	zEnvelopeMetadata,
 	zPlacementManifest,
-	zRegisterRoutingInput,
 } from "@filosign/shared";
-import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { ORPCError } from "@orpc/server";
 import { eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { MAX_FILE_SIZE } from "@/constants";
-import { insertAttachmentPacketsForFile } from "@/lib/domains/attachments";
 import {
 	assertEntitlement,
 	recipientSlotCounts,
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
-import {
-	shouldEnforceSendQuota,
-	userActivationOnRealEnvelopeSent,
-	userActivationRecordPracticePiece,
-} from "@/lib/domains/users";
-import {
-	invalidateEntitlementsForFileSend,
-	invalidateNotificationsInbox,
-} from "@/lib/platform/cache";
+import { shouldEnforceSendQuota } from "@/lib/domains/users";
 import db from "@/lib/platform/db";
 import type { FileRegistrationStatus } from "@/lib/platform/db/schema/file";
-import { fsContracts } from "@/lib/platform/evm";
-import { withRegisterPieceLock } from "@/lib/platform/evm/register-piece-lock";
-import {
-	enqueueFileRegisterRetry,
-	enqueueOutboxByIds,
-	insertJobOutboxRows,
-} from "@/lib/platform/jobs";
+import { fsContracts, getActiveRelayerAddress } from "@/lib/platform/evm";
+import { enqueueFileRegister } from "@/lib/platform/jobs";
 import { bucket } from "@/lib/platform/s3/client";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { normalizedViewerEmailsForRegister } from "./invites";
+import { zFileRegisterBody } from "./utils/register-body";
 import {
-	buildRegisterEmailOutboxRows,
 	findRegisteredFileByPieceCid,
-	type PersistRegisteredFileArgs,
-	persistRegisteredFileInTx,
 	resolveRegisterRoutingCalldata,
-	trackRegisterAnalytics,
 } from "./utils/register-helpers";
-import { relayRegisterEnvelope } from "./utils/register-relay";
 import {
-	clearRegisterState,
-	markRegisterFailed,
-	upsertRegisteringState,
+	getRegisterState,
+	readRegistrationStatusSnapshot,
+	upsertQueuedState,
 } from "./utils/register-state";
-import { compileRegisterRosterEmails } from "./utils/roster-emails";
+
+/** Call-time schema access so Bun `mock.module("@/lib/platform/db")` stays effective across the shared test module cache. */
+function schema() {
+	return db.schema;
+}
 
 const { FSEnvelopeRegistry } = fsContracts;
 
-const { users } = db.schema;
-
-export const zFileRegisterBody = z.object({
-	pieceCid: z.string({ error: "pieceCid invalid" }),
-	participants: z.array(
-		z.object({
-			address: zEvmAddress(),
-			kemCiphertext: zHexString(),
-			encryptedEncryptionKey: zHexString(),
-			isSigner: z
-				.boolean({
-					error: "participants[n].isSigner must be boolean",
-				})
-				.optional(),
-		}),
-	),
-	signature: zHexString(),
-	senderEncryptedEncryptionKey: zHexString(),
-	senderKemCiphertext: zHexString(),
-	timestamp: z.number({ error: "timestamp must be a number" }),
-	placementCommitment: zHexString(),
-	documentSha256: zHexString(),
-	placementManifest: zPlacementManifest,
-	coldInvites: z
-		.array(
-			z.object({
-				email: z.email(),
-				inviteToken: z.string().min(16),
-				wrappedEncryptionKey: zHexString(),
-				isSigner: z.boolean(),
-			}),
-		)
-		.optional(),
-	organizationId: z.uuid(),
-	orgKemCiphertext: zHexString(),
-	orgEncryptedEncryptionKey: zHexString(),
-	displayName: z.string().min(1).max(512),
-	mimeType: z.string().min(1).max(255),
-	ciphertextByteLength: z.number().int().positive(),
-	routing: zRegisterRoutingInput.optional(),
-	attachmentPackets: z.array(zAttachmentPacketSendInput).max(3).optional(),
-	isPractice: z.boolean().optional(),
-	metadata: zEnvelopeMetadata.optional(),
-});
+export {
+	zFileRegisterBody,
+	zFileRegistrationStatusBody,
+} from "./utils/register-body";
 
 export type FilesRegisterResult = {
 	registrationStatus: FileRegistrationStatus;
 };
+
+export type FilesRegistrationStatusResult = {
+	registrationStatus: FileRegistrationStatus;
+	registerError: string | null;
+	onchainTxHash: `0x${string}` | null;
+};
+
+export async function filesRegistrationStatus(
+	pieceCid: string,
+): Promise<FilesRegistrationStatusResult> {
+	const snapshot = await readRegistrationStatusSnapshot(pieceCid);
+	if (!snapshot) {
+		throwAppError("FILES.NOT_FOUND");
+	}
+	return snapshot;
+}
 
 export async function filesRegister(
 	sender: Address,
@@ -125,33 +82,34 @@ export async function filesRegister(
 		throwZodBadRequest(parsedBody.error);
 	}
 
+	const { pieceCid } = parsedBody.data;
+
+	const existing = await findRegisteredFileByPieceCid(pieceCid);
+	if (existing) {
+		return { registrationStatus: "registered" as const };
+	}
+
+	const pending = await getRegisterState(pieceCid);
+	if (
+		pending &&
+		(pending.registrationStatus === "queued" ||
+			pending.registrationStatus === "registering")
+	) {
+		return { registrationStatus: pending.registrationStatus };
+	}
+
 	const {
-		pieceCid,
 		participants,
 		signature,
-		senderEncryptedEncryptionKey,
-		senderKemCiphertext,
 		timestamp,
 		placementCommitment,
 		documentSha256,
 		placementManifest: placementManifestRaw,
 		coldInvites = [],
 		organizationId,
-		orgKemCiphertext,
-		orgEncryptedEncryptionKey,
-		displayName,
-		mimeType,
-		ciphertextByteLength,
 		routing,
-		attachmentPackets = [],
 		isPractice = false,
-		metadata,
 	} = parsedBody.data;
-
-	const existing = await findRegisteredFileByPieceCid(pieceCid);
-	if (existing) {
-		return { registrationStatus: "registered" as const };
-	}
 
 	assertOrgPermission(activeOrg, "documents:send");
 	if (organizationId !== activeOrg.organizationId) {
@@ -208,11 +166,11 @@ export async function filesRegister(
 
 	const [senderUser] = await db
 		.select({
-			email: users.email,
-			authProviderId: users.authProviderId,
+			email: schema().users.email,
+			authProviderId: schema().users.authProviderId,
 		})
-		.from(users)
-		.where(eq(users.walletAddress, getAddress(sender)));
+		.from(schema().users)
+		.where(eq(schema().users.walletAddress, getAddress(sender)));
 
 	if (!senderUser) {
 		throwAppError("AUTH.UNAUTHORIZED");
@@ -292,10 +250,6 @@ export async function filesRegister(
 	}
 
 	const slotCounts = recipientSlotCounts({ participants, coldInvites });
-	const signerSlotCount = Math.max(
-		slotCounts.signerSlotCount,
-		uniqueSignerEmailsFromManifest(placementManifest).length,
-	);
 	const entitlementCtx = await resolveEntitlementContext(
 		getAddress(sender),
 		organizationId ?? null,
@@ -316,142 +270,14 @@ export async function filesRegister(
 		activeOrg,
 	};
 
-	try {
-		return await withRegisterPieceLock(pieceCid, async () => {
-			const persisted = await findRegisteredFileByPieceCid(pieceCid);
-			if (persisted) {
-				await clearRegisterState(pieceCid);
-				return { registrationStatus: "registered" as const };
-			}
+	await upsertQueuedState({
+		pieceCid,
+		sender,
+		payload: retryPayload,
+		assignedRelayerAddress: getActiveRelayerAddress(),
+	});
 
-			await upsertRegisteringState({
-				pieceCid,
-				sender,
-				payload: retryPayload,
-			});
+	await enqueueFileRegister(pieceCid);
 
-			const txHash = await relayRegisterEnvelope({
-				pieceCid,
-				sender,
-				requiredCommitments: routingRequiredCommitments,
-				optionalCommitments: optionalCommitmentsSorted,
-				viewerEmailCommitments: viewerEmailCommitmentsSorted,
-				senderEmailCommitment,
-				senderAuthSubjectCommitment,
-				orgIdCommitment,
-				routingMode,
-				routingOrder,
-				quorumN,
-				quorumSet,
-				timestamp,
-				signature,
-				placementCommitment,
-				documentSha256,
-			});
-
-			const persistedAfterRelay = await findRegisteredFileByPieceCid(pieceCid);
-			if (persistedAfterRelay) {
-				await clearRegisterState(pieceCid);
-				return { registrationStatus: "registered" as const };
-			}
-
-			const persistArgs: PersistRegisteredFileArgs = {
-				pieceCid,
-				sender,
-				organizationId,
-				orgKemCiphertext,
-				orgEncryptedEncryptionKey,
-				onchainTxHash: txHash,
-				registryAddress: getAddress(FSEnvelopeRegistry.address),
-				placementCommitment,
-				documentSha256,
-				placementManifest,
-				registerRouting: routing,
-				warmParticipantCount: slotCounts.warmParticipantCount,
-				coldInviteCount: slotCounts.coldInviteCount,
-				signerSlotCount,
-				recipientSlotCount: slotCounts.recipientSlotCount,
-				displayName,
-				mimeType,
-				ciphertextByteLength,
-				timestamp,
-				participants,
-				senderKemCiphertext,
-				senderEncryptedEncryptionKey,
-				coldInvites,
-				isPractice,
-				metadata,
-			};
-
-			const participantWallets = [
-				...new Set(participants.map((p) => getAddress(p.address))),
-			];
-
-			const outboxRows = await db.transaction(async (tx) => {
-				await persistRegisteredFileInTx(tx, persistArgs);
-				if (isPractice) {
-					return [];
-				}
-				const inserts = await buildRegisterEmailOutboxRows(tx, {
-					sender,
-					pieceCid,
-					documentTitle: displayName,
-					participantWallets,
-					coldInvites,
-				});
-				return insertJobOutboxRows(tx, inserts);
-			});
-
-			if (!isPractice) {
-				await invalidateEntitlementsForFileSend({ sender, organizationId });
-				const senderNorm = getAddress(sender);
-				await Promise.all(
-					participantWallets
-						.filter(
-							(w) => getAddress(w).toLowerCase() !== senderNorm.toLowerCase(),
-						)
-						.map((w) => invalidateNotificationsInbox(w)),
-				);
-			}
-
-			if (outboxRows.length > 0) {
-				await enqueueOutboxByIds(outboxRows.map((row) => row.id));
-			}
-
-			await insertAttachmentPacketsForFile({
-				pieceCid,
-				sender,
-				organizationId,
-				packets: attachmentPackets,
-				rosterEmails: await compileRegisterRosterEmails({
-					senderEmail: senderEmailRaw,
-					participants,
-					coldInvites,
-				}),
-				coldInvites: coldInvites.map((invite) => ({
-					email: invite.email,
-					inviteToken: invite.inviteToken,
-				})),
-			});
-
-			if (isPractice) {
-				await userActivationRecordPracticePiece(sender, pieceCid);
-			} else {
-				await userActivationOnRealEnvelopeSent(sender);
-				trackRegisterAnalytics({
-					sender,
-					pieceCid,
-					slotCounts: { ...slotCounts, signerSlotCount },
-				});
-			}
-
-			await clearRegisterState(pieceCid);
-			return { registrationStatus: "registered" as const };
-		});
-	} catch (err) {
-		const message = err instanceof Error ? err.message : String(err);
-		await markRegisterFailed(pieceCid, message);
-		await enqueueFileRegisterRetry(pieceCid);
-		throw err;
-	}
+	return { registrationStatus: "queued" as const };
 }

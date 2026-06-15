@@ -1,7 +1,7 @@
 import { zPlacementManifest } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { z } from "zod";
-import { rpcEmptyOutputSchema, zDateWire } from "./rpc-wire";
+import { zDateWire } from "./rpc-wire";
 
 export const rpcFilesUploadStartOutputSchema = z.object({
 	uploadUrl: z.string(),
@@ -45,7 +45,9 @@ export const rpcFilesRemindSignersOutputSchema = z.object({
 	skippedCount: z.number().int().min(0),
 });
 
-export const rpcFilesRegisterOutputSchema = rpcEmptyOutputSchema;
+export const rpcFilesRegisterOutputSchema = z.object({
+	registrationStatus: z.enum(["queued", "registering", "registered", "failed"]),
+});
 
 export const rpcFilesProposeSignerReplacementOutputSchema = z.object({
 	txHash: zHexString(),

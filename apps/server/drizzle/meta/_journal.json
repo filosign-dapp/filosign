@@ -15,6 +15,20 @@
       "when": 1781484449608,
       "tag": "0001_template_system",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781555696714,
+      "tag": "0002_template_deleted_at",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781600000000,
+      "tag": "0003_file_registration",
+      "breakpoints": true
     }
   ]
 }

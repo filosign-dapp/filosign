@@ -29,6 +29,14 @@ export type ColdInviteStatus = (typeof coldInviteStatuses)[number];
 export const fileParticipantRoles = ["sender", "viewer", "signer"] as const;
 export type FileParticipantRole = (typeof fileParticipantRoles)[number];
 
+export const fileRegistrationStatuses = [
+	"queued",
+	"registering",
+	"registered",
+	"failed",
+] as const;
+export type FileRegistrationStatus = (typeof fileRegistrationStatuses)[number];
+
 export const files = t.pgTable(
 	"files",
 	{
@@ -78,6 +86,12 @@ export const files = t.pgTable(
 		revokeOnchainTxHash: tBytes32(),
 		/** Practice/tutorial envelope - excluded from send quota and first-send metrics. */
 		isPractice: t.boolean().notNull().default(false),
+		registrationStatus: t
+			.text({ enum: fileRegistrationStatuses })
+			.notNull()
+			.default("registered"),
+		registerError: t.text(),
+		registerAttemptedAt: t.timestamp({ withTimezone: true }),
 
 		...timestamps,
 	},
@@ -89,6 +103,18 @@ export const files = t.pgTable(
 		t.index("idx_files_updated_piece").on(table.updatedAt, table.pieceCid),
 	],
 );
+
+export const fileRegisterStates = t.pgTable("file_register_states", {
+	pieceCid: t.text().notNull().primaryKey(),
+	sender: tEvmAddress().notNull(),
+	registrationStatus: t.text({ enum: fileRegistrationStatuses }).notNull(),
+	registerError: t.text(),
+	registerAttemptedAt: t
+		.timestamp({ withTimezone: true })
+		.notNull()
+		.defaultNow(),
+	registerPayloadJson: t.jsonb().notNull(),
+});
 
 export const fileParticipants = t.pgTable(
 	"file_participants",

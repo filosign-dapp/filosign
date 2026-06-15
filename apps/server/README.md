@@ -88,7 +88,7 @@ When `POSTHOG_ENABLED=true` (with `POSTHOG_HOST` and `POSTHOG_API_KEY`), the sam
 
 Unit tests: `bun test tests/` in this package; see [TESTING.md](../../TESTING.md) and `tests/platform/` for platform alerts.
 
-Domain modules that read `db.schema` should do so at **call time** (inside functions), not at module import, so `mock.module("@/lib/platform/db")` in tests is not pinned to a stale schema snapshot.
+Domain modules that read `db.schema` should do so at **call time** (inside functions), not at module import, so `mock.module("@/lib/platform/db")` in tests is not pinned to a stale schema snapshot. See [TESTING.md](../../TESTING.md) (Bun `mock.module` + single-process cache).
 
 ## Ops
 

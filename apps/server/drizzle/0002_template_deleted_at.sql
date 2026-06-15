@@ -1,0 +1,2 @@
+ALTER TABLE "organization_templates" ADD COLUMN "deleted_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "organization_template_documents" ADD COLUMN "deleted_at" timestamp with time zone;

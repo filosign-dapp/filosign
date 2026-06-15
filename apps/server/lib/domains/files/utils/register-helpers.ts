@@ -22,13 +22,17 @@ import type { JobOutboxInsert } from "@/lib/platform/jobs";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
-const { files, fileParticipants, fileColdInvites, users } = db.schema;
+/** Call-time schema access so Bun `mock.module("@/lib/platform/db")` stays effective across the shared test module cache. */
+function schema() {
+	return db.schema;
+}
 
 const envelopeRegisteredEvent = parseAbiItem(
 	"event EnvelopeRegistered(bytes32 indexed cidIdentifier, address indexed sender, uint48 timestamp)",
 );
 
 export async function findRegisteredFileByPieceCid(pieceCid: string) {
+	const { files } = schema();
 	const [row] = await db
 		.select({
 			pieceCid: files.pieceCid,
@@ -130,6 +134,7 @@ async function signerEmailCommitmentsByWallet(
 	const unique = [...new Set(wallets.map((w) => getAddress(w)))];
 	if (unique.length === 0) return new Map();
 
+	const { users } = schema();
 	const rows = await tx
 		.select({
 			walletAddress: users.walletAddress,
@@ -208,6 +213,7 @@ export async function persistRegisteredFileInTx(
 	tx: RegisterPersistTx,
 	args: PersistRegisteredFileArgs,
 ): Promise<void> {
+	const { files, fileParticipants, fileColdInvites } = schema();
 	await tx
 		.insert(files)
 		.values({
@@ -234,6 +240,9 @@ export async function persistRegisteredFileInTx(
 			ciphertextByteLength: args.ciphertextByteLength,
 			createdAt: new Date(args.timestamp * 1000),
 			isPractice: args.isPractice ?? false,
+			registrationStatus: "registered",
+			registerError: null,
+			registerAttemptedAt: new Date(),
 		})
 		.returning();
 
@@ -310,6 +319,7 @@ export async function buildRegisterEmailOutboxRows(
 		coldInvites: { email: string; inviteToken: string }[];
 	},
 ): Promise<JobOutboxInsert[]> {
+	const { users } = schema();
 	const senderNorm = getAddress(args.sender);
 	const walletList = [
 		...new Set(args.participantWallets.map((w) => getAddress(w))),

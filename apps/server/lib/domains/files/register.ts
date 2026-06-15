@@ -36,14 +36,14 @@ import {
 	invalidateNotificationsInbox,
 } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
-import { evmClient, fsContracts } from "@/lib/platform/evm";
-import { withRegistryWalletLock } from "@/lib/platform/evm/registry-wallet-lock";
+import type { FileRegistrationStatus } from "@/lib/platform/db/schema/file";
+import { fsContracts } from "@/lib/platform/evm";
+import { withRegisterPieceLock } from "@/lib/platform/evm/register-piece-lock";
 import {
-	createRelayReceiptWaiter,
-	relayWrite,
-} from "@/lib/platform/evm/relay-write";
-import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
-import { enqueueOutboxByIds, insertJobOutboxRows } from "@/lib/platform/jobs";
+	enqueueFileRegisterRetry,
+	enqueueOutboxByIds,
+	insertJobOutboxRows,
+} from "@/lib/platform/jobs";
 import { bucket } from "@/lib/platform/s3/client";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
@@ -53,17 +53,20 @@ import {
 	findRegisteredFileByPieceCid,
 	type PersistRegisteredFileArgs,
 	persistRegisteredFileInTx,
-	recoverRegisterEnvelopeTxHash,
 	resolveRegisterRoutingCalldata,
 	trackRegisterAnalytics,
 } from "./utils/register-helpers";
+import { relayRegisterEnvelope } from "./utils/register-relay";
+import {
+	clearRegisterState,
+	markRegisterFailed,
+	upsertRegisteringState,
+} from "./utils/register-state";
 import { compileRegisterRosterEmails } from "./utils/roster-emails";
 
 const { FSEnvelopeRegistry } = fsContracts;
 
 const { users } = db.schema;
-
-const waitForRelayReceipt = createRelayReceiptWaiter(evmClient);
 
 export const zFileRegisterBody = z.object({
 	pieceCid: z.string({ error: "pieceCid invalid" }),
@@ -108,6 +111,10 @@ export const zFileRegisterBody = z.object({
 	metadata: zEnvelopeMetadata.optional(),
 });
 
+export type FilesRegisterResult = {
+	registrationStatus: FileRegistrationStatus;
+};
+
 export async function filesRegister(
 	sender: Address,
 	rawBody: unknown,
@@ -143,7 +150,7 @@ export async function filesRegister(
 
 	const existing = await findRegisteredFileByPieceCid(pieceCid);
 	if (existing) {
-		return {};
+		return { registrationStatus: "registered" as const };
 	}
 
 	assertOrgPermission(activeOrg, "documents:send");
@@ -303,135 +310,148 @@ export async function filesRegister(
 		assertEntitlement(entitlementCtx, "features.routing.advanced");
 	}
 
-	const recoveredTxHash = await recoverRegisterEnvelopeTxHash({
-		pieceCid,
-		sender,
-	});
-
-	const txHash =
-		recoveredTxHash ??
-		(await withRelayerLock(() =>
-			withRegistryWalletLock(sender, () =>
-				relayWrite({
-					step: "registerEnvelope",
-					write: () =>
-						FSEnvelopeRegistry.write.registerEnvelope([
-							{
-								pieceCid,
-								sender,
-								requiredCommitments: routingRequiredCommitments,
-								optionalCommitments: optionalCommitmentsSorted,
-								viewerEmailCommitments: viewerEmailCommitmentsSorted,
-								senderEmailCommitment,
-								senderAuthSubjectCommitment,
-								orgIdCommitment,
-								routingMode,
-								routingOrder,
-								quorumN,
-								quorumSet,
-								timestamp: BigInt(timestamp),
-								signature,
-								placementCommitment,
-								documentSha256,
-							},
-						]),
-					waitForReceipt: waitForRelayReceipt,
-				}),
-			),
-		));
-
-	const persistedAfterRelay = await findRegisteredFileByPieceCid(pieceCid);
-	if (persistedAfterRelay) {
-		return {};
-	}
-
-	const persistArgs: PersistRegisteredFileArgs = {
-		pieceCid,
-		sender,
-		organizationId,
-		orgKemCiphertext,
-		orgEncryptedEncryptionKey,
-		onchainTxHash: txHash,
-		registryAddress: getAddress(FSEnvelopeRegistry.address),
-		placementCommitment,
-		documentSha256,
-		placementManifest,
-		registerRouting: routing,
-		warmParticipantCount: slotCounts.warmParticipantCount,
-		coldInviteCount: slotCounts.coldInviteCount,
-		signerSlotCount,
-		recipientSlotCount: slotCounts.recipientSlotCount,
-		displayName,
-		mimeType,
-		ciphertextByteLength,
-		timestamp,
-		participants,
-		senderKemCiphertext,
-		senderEncryptedEncryptionKey,
-		coldInvites,
-		isPractice,
-		metadata,
+	const retryPayload = {
+		sender: getAddress(sender),
+		rawBody: parsedBody.data,
+		activeOrg,
 	};
 
-	const participantWallets = [
-		...new Set(participants.map((p) => getAddress(p.address))),
-	];
+	try {
+		return await withRegisterPieceLock(pieceCid, async () => {
+			const persisted = await findRegisteredFileByPieceCid(pieceCid);
+			if (persisted) {
+				await clearRegisterState(pieceCid);
+				return { registrationStatus: "registered" as const };
+			}
 
-	const outboxRows = await db.transaction(async (tx) => {
-		await persistRegisteredFileInTx(tx, persistArgs);
-		if (isPractice) {
-			return [];
-		}
-		const inserts = await buildRegisterEmailOutboxRows(tx, {
-			sender,
-			pieceCid,
-			documentTitle: displayName,
-			participantWallets,
-			coldInvites,
+			await upsertRegisteringState({
+				pieceCid,
+				sender,
+				payload: retryPayload,
+			});
+
+			const txHash = await relayRegisterEnvelope({
+				pieceCid,
+				sender,
+				requiredCommitments: routingRequiredCommitments,
+				optionalCommitments: optionalCommitmentsSorted,
+				viewerEmailCommitments: viewerEmailCommitmentsSorted,
+				senderEmailCommitment,
+				senderAuthSubjectCommitment,
+				orgIdCommitment,
+				routingMode,
+				routingOrder,
+				quorumN,
+				quorumSet,
+				timestamp,
+				signature,
+				placementCommitment,
+				documentSha256,
+			});
+
+			const persistedAfterRelay = await findRegisteredFileByPieceCid(pieceCid);
+			if (persistedAfterRelay) {
+				await clearRegisterState(pieceCid);
+				return { registrationStatus: "registered" as const };
+			}
+
+			const persistArgs: PersistRegisteredFileArgs = {
+				pieceCid,
+				sender,
+				organizationId,
+				orgKemCiphertext,
+				orgEncryptedEncryptionKey,
+				onchainTxHash: txHash,
+				registryAddress: getAddress(FSEnvelopeRegistry.address),
+				placementCommitment,
+				documentSha256,
+				placementManifest,
+				registerRouting: routing,
+				warmParticipantCount: slotCounts.warmParticipantCount,
+				coldInviteCount: slotCounts.coldInviteCount,
+				signerSlotCount,
+				recipientSlotCount: slotCounts.recipientSlotCount,
+				displayName,
+				mimeType,
+				ciphertextByteLength,
+				timestamp,
+				participants,
+				senderKemCiphertext,
+				senderEncryptedEncryptionKey,
+				coldInvites,
+				isPractice,
+				metadata,
+			};
+
+			const participantWallets = [
+				...new Set(participants.map((p) => getAddress(p.address))),
+			];
+
+			const outboxRows = await db.transaction(async (tx) => {
+				await persistRegisteredFileInTx(tx, persistArgs);
+				if (isPractice) {
+					return [];
+				}
+				const inserts = await buildRegisterEmailOutboxRows(tx, {
+					sender,
+					pieceCid,
+					documentTitle: displayName,
+					participantWallets,
+					coldInvites,
+				});
+				return insertJobOutboxRows(tx, inserts);
+			});
+
+			if (!isPractice) {
+				await invalidateEntitlementsForFileSend({ sender, organizationId });
+				const senderNorm = getAddress(sender);
+				await Promise.all(
+					participantWallets
+						.filter(
+							(w) => getAddress(w).toLowerCase() !== senderNorm.toLowerCase(),
+						)
+						.map((w) => invalidateNotificationsInbox(w)),
+				);
+			}
+
+			if (outboxRows.length > 0) {
+				await enqueueOutboxByIds(outboxRows.map((row) => row.id));
+			}
+
+			await insertAttachmentPacketsForFile({
+				pieceCid,
+				sender,
+				organizationId,
+				packets: attachmentPackets,
+				rosterEmails: await compileRegisterRosterEmails({
+					senderEmail: senderEmailRaw,
+					participants,
+					coldInvites,
+				}),
+				coldInvites: coldInvites.map((invite) => ({
+					email: invite.email,
+					inviteToken: invite.inviteToken,
+				})),
+			});
+
+			if (isPractice) {
+				await userActivationRecordPracticePiece(sender, pieceCid);
+			} else {
+				await userActivationOnRealEnvelopeSent(sender);
+				trackRegisterAnalytics({
+					sender,
+					pieceCid,
+					slotCounts: { ...slotCounts, signerSlotCount },
+				});
+			}
+
+			await clearRegisterState(pieceCid);
+			return { registrationStatus: "registered" as const };
 		});
-		return insertJobOutboxRows(tx, inserts);
-	});
-
-	if (!isPractice) {
-		await invalidateEntitlementsForFileSend({ sender, organizationId });
-		const senderNorm = getAddress(sender);
-		await Promise.all(
-			participantWallets
-				.filter((w) => getAddress(w).toLowerCase() !== senderNorm.toLowerCase())
-				.map((w) => invalidateNotificationsInbox(w)),
-		);
+	} catch (err) {
+		const message = err instanceof Error ? err.message : String(err);
+		await markRegisterFailed(pieceCid, message);
+		await enqueueFileRegisterRetry(pieceCid);
+		throw err;
 	}
-
-	if (outboxRows.length > 0) {
-		await enqueueOutboxByIds(outboxRows.map((row) => row.id));
-	}
-
-	await insertAttachmentPacketsForFile({
-		pieceCid,
-		sender,
-		organizationId,
-		packets: attachmentPackets,
-		rosterEmails: await compileRegisterRosterEmails({
-			senderEmail: senderEmailRaw,
-			participants,
-			coldInvites,
-		}),
-		coldInvites: coldInvites.map((invite) => ({
-			email: invite.email,
-			inviteToken: invite.inviteToken,
-		})),
-	});
-
-	if (isPractice) {
-		await userActivationRecordPracticePiece(sender, pieceCid);
-	} else {
-		await userActivationOnRealEnvelopeSent(sender);
-		trackRegisterAnalytics({
-			sender,
-			pieceCid,
-			slotCounts: { ...slotCounts, signerSlotCount },
-		});
-	}
-
-	return {};
 }

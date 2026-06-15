@@ -37,6 +37,7 @@ async function buildRecipientWraps(args: {
 	warmByEmail: Map<string, SendFileWarmRecipient>;
 	coldEmailSet: Set<string>;
 	coldPhrase?: string;
+	senderEmail?: string | null;
 }): Promise<{
 	warmWraps: NonNullable<AttachmentPacketSendInput["warmWraps"]>;
 	coldWraps: NonNullable<AttachmentPacketSendInput["coldWraps"]>;
@@ -46,6 +47,9 @@ async function buildRecipientWraps(args: {
 
 	for (const email of args.draft.recipientEmails) {
 		const normalized = normalizePlacementRecipientEmail(email);
+		if (args.senderEmail && normalized === args.senderEmail) {
+			continue;
+		}
 		const warm = args.warmByEmail.get(normalized);
 		if (warm) {
 			const wrap = await wrapAttachmentPacketDekForWarm({
@@ -107,12 +111,17 @@ export async function processAttachmentPackets(args: {
 			rpc: args.rpc,
 			draft,
 		});
+		const senderEmail = args.sender?.email
+			? normalizePlacementRecipientEmail(args.sender.email)
+			: null;
+
 		const { warmWraps, coldWraps } = await buildRecipientWraps({
 			draft,
 			encryptedPacket,
 			warmByEmail,
 			coldEmailSet,
 			coldPhrase: args.coldPhrase,
+			senderEmail,
 		});
 
 		let senderWrap: AttachmentPacketSendInput["senderWrap"];
@@ -127,7 +136,8 @@ export async function processAttachmentPackets(args: {
 				},
 			});
 			senderWrap = {
-				email: normalizePlacementRecipientEmail(args.sender.email),
+				email:
+					senderEmail ?? normalizePlacementRecipientEmail(args.sender.email),
 				kemCiphertext: wrap.kemCiphertext,
 				encryptedPacketDek: wrap.encryptedPacketDek,
 			};

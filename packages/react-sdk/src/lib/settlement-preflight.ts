@@ -17,6 +17,8 @@ const SETTLEMENT_REVERT_MESSAGES: Record<string, string> = {
 		"This payout isn't ready yet. Wait until signing conditions are met, or check the cutoff date.",
 	RuleAlreadyExecuted: "This payout has already been sent.",
 	RuleAlreadyCancelled: "This payout was removed.",
+	InsufficientAllowance:
+		"Approve more USDC in your wallet before raising this payout amount.",
 	InsufficientTransferReceived:
 		"USDC didn't transfer. Check the sender's balance and wallet approval.",
 	UnauthorizedRuleRegistration:

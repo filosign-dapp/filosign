@@ -94,6 +94,10 @@ export async function registerAttachmentRulesOnChain(args: {
 		const registerReceipt = await waitForTxReceipt(
 			args.contracts,
 			registerHash,
+			{
+				label: "Attachment rule registration",
+				abi: release.abi,
+			},
 		);
 		const onChainRuleId = parseRuleIdFromReceipt({
 			receipt: registerReceipt,

@@ -29,6 +29,20 @@ type PieceDetail =
 
 type DilithiumInstance = Parameters<typeof signatures.keyGen>[0]["dl"];
 
+export type SignProgressPhase =
+	| "loading_document"
+	| "preparing_signature"
+	| "crypto_sign"
+	| "wallet_sign"
+	| "submitting_signature"
+	| "sign_failed";
+
+export type SignProgressEvent = {
+	phase: SignProgressPhase;
+	status: "start" | "done" | "error" | "wallet_prompt";
+	errorMessage?: string;
+};
+
 export type SignFileArgs = {
 	pieceCid: string;
 	completedFieldIds: string[];
@@ -37,6 +51,8 @@ export type SignFileArgs = {
 		termsVersion: string;
 		acceptedAt: number;
 	};
+	/** Client-only progress reporter; never sent to the server. */
+	onProgress?: (event: SignProgressEvent) => void;
 };
 
 export type SignFileDeps = {
@@ -47,6 +63,19 @@ export type SignFileDeps = {
 	profileEmail?: string | null;
 	authSubjectCommitment?: string | null;
 };
+
+function emitProgress(
+	onProgress: SignFileArgs["onProgress"],
+	event: SignProgressEvent,
+) {
+	onProgress?.(event);
+}
+
+function progressErrorMessage(error: unknown): string {
+	return error instanceof Error
+		? error.message
+		: "Something went wrong while signing.";
+}
 
 function validateAssignedFields(args: {
 	manifest: ReturnType<typeof zPlacementManifest.parse>;
@@ -103,152 +132,194 @@ export async function signFileWithSeed(
 		completedFieldIds,
 		fieldCompletions,
 		settlementRecipientAck,
+		onProgress,
 	} = args;
 	const textEncoder = new TextEncoder();
 
-	const fileResponse: PieceDetail = await deps.rpcQuery.files.piece.detail.call(
-		{
-			pieceCid,
-		},
-	);
+	try {
+		emitProgress(onProgress, {
+			phase: "loading_document",
+			status: "start",
+		});
+		const fileResponse: PieceDetail =
+			await deps.rpcQuery.files.piece.detail.call({
+				pieceCid,
+			});
+		emitProgress(onProgress, {
+			phase: "loading_document",
+			status: "done",
+		});
 
-	const {
-		sender,
-		registryAddress,
-		placementCommitment,
-		placementManifest: manifestRaw,
-	} = fileResponse;
-	const registry = envelopeRegistryAt(deps.contracts, registryAddress);
+		emitProgress(onProgress, {
+			phase: "preparing_signature",
+			status: "start",
+		});
 
-	if (manifestRaw == null) {
-		throw new Error(
-			"Document manifest unavailable; acknowledge and view the document first",
-		);
-	}
-	const manifest = zPlacementManifest.parse(manifestRaw);
-	const signerAddr = getAddress(deps.wallet.account.address);
+		const {
+			sender,
+			registryAddress,
+			placementCommitment,
+			placementManifest: manifestRaw,
+		} = fileResponse;
+		const registry = envelopeRegistryAt(deps.contracts, registryAddress);
 
-	const manifestAssignedEmails = [
-		...new Set(manifest.fields.map((f) => f.assignedRecipientEmail)),
-	];
-	const signerEmail = resolveSignerEmailForSigning({
-		signerWallet: signerAddr,
-		senderWallet: getAddress(sender),
-		fileSigners: fileResponse.signers.map((s) => ({
-			wallet: getAddress(s.wallet),
-			email: s.email,
-		})),
-		profileEmail: deps.profileEmail,
-		manifestAssignedEmails,
-	});
-	if (!signerEmail) {
-		throw new Error(
-			"Your Filosign profile must include an email to sign placed fields for this document",
-		);
-	}
-	const signerEmailCommitment = hashNormalizedSignerEmail(signerEmail);
+		if (manifestRaw == null) {
+			throw new Error(
+				"Document manifest unavailable; acknowledge and view the document first",
+			);
+		}
+		const manifest = zPlacementManifest.parse(manifestRaw);
+		const signerAddr = getAddress(deps.wallet.account.address);
 
-	if (!deps.authSubjectCommitment) {
-		throw new Error("Profile missing Auth subject commitment; try re-login.");
-	}
+		const manifestAssignedEmails = [
+			...new Set(manifest.fields.map((f) => f.assignedRecipientEmail)),
+		];
+		const signerEmail = resolveSignerEmailForSigning({
+			signerWallet: signerAddr,
+			senderWallet: getAddress(sender),
+			fileSigners: fileResponse.signers.map((s) => ({
+				wallet: getAddress(s.wallet),
+				email: s.email,
+			})),
+			profileEmail: deps.profileEmail,
+			manifestAssignedEmails,
+		});
+		if (!signerEmail) {
+			throw new Error(
+				"Your Filosign profile must include an email to sign placed fields for this document",
+			);
+		}
+		const signerEmailCommitment = hashNormalizedSignerEmail(signerEmail);
 
-	const fieldIds = validateAssignedFields({
-		manifest,
-		signerEmail,
-		completedFieldIds,
-	});
+		if (!deps.authSubjectCommitment) {
+			throw new Error("Profile missing Auth subject commitment; try re-login.");
+		}
 
-	const completionsRoot = completionsMerkleRootV1({
-		fieldIds,
-		placementCommitment,
-		pieceCid,
-		signer: signerAddr,
-	});
-
-	const cidIdentifier = computeCidIdentifier(pieceCid);
-	const reg = await registry.read.envelopeRegistrations([cidIdentifier]);
-	const signersCommitment = reg.signersCommitment;
-
-	const dl3SignatureMessage = jsonStringify({
-		pieceCid,
-		sender,
-		signer: deps.wallet.account.address,
-		timestamp,
-		completionsRoot,
-		leafSchemaVersion: LEAF_SCHEMA_VERSION_V1,
-	});
-	const dl3Keypair = await signatures.keyGen({
-		dl: deps.dilithium,
-		seed,
-	});
-	const dl3Signature = await signatures.sign({
-		dl: deps.dilithium,
-		privateKey: dl3Keypair.privateKey,
-		message: textEncoder.encode(dl3SignatureMessage),
-	});
-
-	const dl3SignatureCommitment = computeCommitment([toHex(dl3Signature)]);
-	const signature = await withRegistryWalletActionLock(
-		deps.wallet.account.address,
-		() =>
-			eip712signature(
-				deps.contracts,
-				"FSEnvelopeRegistry",
-				{
-					types: {
-						SignEnvelope: [
-							{ name: "cidIdentifier", type: "bytes32" },
-							{ name: "sender", type: "address" },
-							{ name: "signerWallet", type: "address" },
-							{ name: "signerEmailCommitment", type: "bytes32" },
-							{ name: "authSubjectCommitment", type: "bytes32" },
-							{ name: "dl3SignatureCommitment", type: "bytes20" },
-							{ name: "completionsRoot", type: "bytes32" },
-							{ name: "leafSchemaVersion", type: "uint8" },
-							{ name: "signersCommitment", type: "bytes20" },
-							{ name: "timestamp", type: "uint256" },
-						],
-					},
-					primaryType: "SignEnvelope",
-					message: {
-						cidIdentifier,
-						sender,
-						signerWallet: deps.wallet.account.address,
-						signerEmailCommitment,
-						authSubjectCommitment: deps.authSubjectCommitment,
-						dl3SignatureCommitment,
-						completionsRoot,
-						leafSchemaVersion: LEAF_SCHEMA_VERSION_V1,
-						signersCommitment,
-						timestamp: BigInt(timestamp),
-					},
-				},
-				{ verifyingContract: registry.address },
-			),
-	);
-
-	const settlementRules = await deps.rpcQuery.settlements.listByFile.call({
-		pieceCid,
-	});
-	const needsPayoutAck = assertSettlementAck({
-		settlementRules,
-		settlementRecipientAck,
-	});
-
-	await deps.rpcQuery.files.piece.sign.call({
-		pieceCid,
-		body: {
-			signature,
-			timestamp,
-			dl3Signature: toHex(dl3Signature),
+		const fieldIds = validateAssignedFields({
+			manifest,
+			signerEmail,
 			completedFieldIds,
-			...(fieldCompletions && Object.keys(fieldCompletions).length > 0
-				? {
-						fieldCompletions:
-							fieldCompletionInputMapFromStored(fieldCompletions),
-					}
-				: {}),
-			...(needsPayoutAck ? { settlementRecipientAck } : {}),
-		},
-	});
+		});
+
+		const completionsRoot = completionsMerkleRootV1({
+			fieldIds,
+			placementCommitment,
+			pieceCid,
+			signer: signerAddr,
+		});
+
+		const cidIdentifier = computeCidIdentifier(pieceCid);
+		const reg = await registry.read.envelopeRegistrations([cidIdentifier]);
+		const signersCommitment = reg.signersCommitment;
+
+		emitProgress(onProgress, {
+			phase: "preparing_signature",
+			status: "done",
+		});
+
+		emitProgress(onProgress, { phase: "crypto_sign", status: "start" });
+		const dl3SignatureMessage = jsonStringify({
+			pieceCid,
+			sender,
+			signer: deps.wallet.account.address,
+			timestamp,
+			completionsRoot,
+			leafSchemaVersion: LEAF_SCHEMA_VERSION_V1,
+		});
+		const dl3Keypair = await signatures.keyGen({
+			dl: deps.dilithium,
+			seed,
+		});
+		const dl3Signature = await signatures.sign({
+			dl: deps.dilithium,
+			privateKey: dl3Keypair.privateKey,
+			message: textEncoder.encode(dl3SignatureMessage),
+		});
+		emitProgress(onProgress, { phase: "crypto_sign", status: "done" });
+
+		const dl3SignatureCommitment = computeCommitment([toHex(dl3Signature)]);
+		emitProgress(onProgress, {
+			phase: "wallet_sign",
+			status: "wallet_prompt",
+		});
+		const signature = await withRegistryWalletActionLock(
+			deps.wallet.account.address,
+			() =>
+				eip712signature(
+					deps.contracts,
+					"FSEnvelopeRegistry",
+					{
+						types: {
+							SignEnvelope: [
+								{ name: "cidIdentifier", type: "bytes32" },
+								{ name: "sender", type: "address" },
+								{ name: "signerWallet", type: "address" },
+								{ name: "signerEmailCommitment", type: "bytes32" },
+								{ name: "authSubjectCommitment", type: "bytes32" },
+								{ name: "dl3SignatureCommitment", type: "bytes20" },
+								{ name: "completionsRoot", type: "bytes32" },
+								{ name: "leafSchemaVersion", type: "uint8" },
+								{ name: "signersCommitment", type: "bytes20" },
+								{ name: "timestamp", type: "uint256" },
+							],
+						},
+						primaryType: "SignEnvelope",
+						message: {
+							cidIdentifier,
+							sender,
+							signerWallet: deps.wallet.account.address,
+							signerEmailCommitment,
+							authSubjectCommitment: deps.authSubjectCommitment,
+							dl3SignatureCommitment,
+							completionsRoot,
+							leafSchemaVersion: LEAF_SCHEMA_VERSION_V1,
+							signersCommitment,
+							timestamp: BigInt(timestamp),
+						},
+					},
+					{ verifyingContract: registry.address },
+				),
+		);
+		emitProgress(onProgress, { phase: "wallet_sign", status: "done" });
+
+		const settlementRules = await deps.rpcQuery.settlements.listByFile.call({
+			pieceCid,
+		});
+		const needsPayoutAck = assertSettlementAck({
+			settlementRules,
+			settlementRecipientAck,
+		});
+
+		emitProgress(onProgress, {
+			phase: "submitting_signature",
+			status: "start",
+		});
+		await deps.rpcQuery.files.piece.sign.call({
+			pieceCid,
+			body: {
+				signature,
+				timestamp,
+				dl3Signature: toHex(dl3Signature),
+				completedFieldIds,
+				...(fieldCompletions && Object.keys(fieldCompletions).length > 0
+					? {
+							fieldCompletions:
+								fieldCompletionInputMapFromStored(fieldCompletions),
+						}
+					: {}),
+				...(needsPayoutAck ? { settlementRecipientAck } : {}),
+			},
+		});
+		emitProgress(onProgress, {
+			phase: "submitting_signature",
+			status: "done",
+		});
+	} catch (error) {
+		emitProgress(onProgress, {
+			phase: "sign_failed",
+			status: "error",
+			errorMessage: progressErrorMessage(error),
+		});
+		throw error;
+	}
 }

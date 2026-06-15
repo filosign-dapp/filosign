@@ -44,18 +44,26 @@ export {
 	simulateSettlementWrite,
 } from "../../lib/settlement-preflight.ts";
 export type {
+	SettlementChangeProgressEvent,
+	SettlementChangeProgressReporter,
 	SettlementRuleDraft,
 	SettlementRuleDraftLeg,
 } from "../../lib/settlement-rules.ts";
 export {
+	approveSettlementValidatorAllowance,
 	cancelSettlementRuleOnChain,
+	ensureSettlementValidatorAllowance,
 	executeSettlementPayoutOnChain,
+	readSettlementValidatorAllowance,
 	registerSettlementRulesOnChain,
 	revokeSettlementValidatorAllowance,
 	updateSettlementRuleOnChain,
 } from "../../lib/settlement-rules.ts";
 export type { SettlementRuleRow } from "../../lib/settlement-types.ts";
-export type { SignFileArgs } from "../../lib/sign-file/sign-file";
+export type {
+	SignFileArgs,
+	SignProgressEvent,
+} from "../../lib/sign-file/sign-file";
 export * from "./useAckFile";
 export * from "./useAttachSettlementForFile";
 export { useBasicPayoutAttachGate } from "./useBasicPayoutAttachGate";

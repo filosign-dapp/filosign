@@ -1,13 +1,20 @@
 import type { SettlementRuleKey } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useFilosignContext } from "../../context/useFilosignContext";
-import { cancelSettlementRuleOnChain } from "../../lib/settlement-rules";
+import {
+	cancelSettlementRuleOnChain,
+	type SettlementChangeProgressReporter,
+} from "../../lib/settlement-rules";
+import type { SettlementRuleRow } from "../../lib/settlement-types";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 
-export type CancelSettlementRuleInput = SettlementRuleKey;
+export type CancelSettlementRuleInput = SettlementRuleKey & {
+	allRules: SettlementRuleRow[];
+	onProgress?: SettlementChangeProgressReporter;
+};
 
 export function useCancelSettlementRule(pieceCid: string | undefined) {
-	const { wallet, contracts } = useFilosignContext();
+	const { wallet, contracts, runtime } = useFilosignContext();
 	const { rpcQuery, isAuthed } = useFilosignRpc();
 	const queryClient = useQueryClient();
 
@@ -21,8 +28,11 @@ export function useCancelSettlementRule(pieceCid: string | undefined) {
 			const { cancelRuleTxHash } = await cancelSettlementRuleOnChain({
 				wallet,
 				contracts,
+				chainKey: runtime.chainKey,
+				allRules: input.allRules,
 				onChainRuleId: input.onChainRuleId,
 				validatorAddress: input.validatorAddress,
+				onProgress: input.onProgress,
 			});
 
 			return rpcQuery.settlements.cancelRule.call({

@@ -6,6 +6,8 @@ import { Button } from "@/src/lib/components/ui/button";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
 import { useTemplateEditorSave } from "@/src/lib/domains/templates/use-template-editor-save";
+import { deriveTemplateDisplayName } from "@/src/lib/domains/templates/utils/display-name";
+import { missingTemplateSignerFieldRoleLabel } from "@/src/lib/domains/templates/utils/validate-save";
 import { showAppErrorToast } from "@/src/lib/errors";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { TemplateSaveDialog } from "./template-save-dialog";
@@ -44,6 +46,14 @@ export function TemplateEditorActions({
 				return;
 			}
 
+			const missingRoleLabel = missingTemplateSignerFieldRoleLabel(createForm);
+			if (missingRoleLabel) {
+				toastUser.error(
+					`Please place at least one field for ${missingRoleLabel}.`,
+				);
+				return;
+			}
+
 			try {
 				await saveTemplate({
 					createForm,
@@ -72,6 +82,18 @@ export function TemplateEditorActions({
 		],
 	);
 
+	const openSaveDialog = useCallback(() => {
+		if (!createForm) return;
+		const missingRoleLabel = missingTemplateSignerFieldRoleLabel(createForm);
+		if (missingRoleLabel) {
+			toastUser.error(
+				`Please place at least one field for ${missingRoleLabel}.`,
+			);
+			return;
+		}
+		setSaveDialogOpen(true);
+	}, [createForm]);
+
 	return (
 		<>
 			<Button
@@ -81,13 +103,7 @@ export function TemplateEditorActions({
 				className="gap-2"
 				disabled={saving || !createForm?.documents.length}
 				isLoading={saving}
-				onClick={() => {
-					if (mode === "edit" && templateName.trim()) {
-						void handleSave(templateName.trim());
-						return;
-					}
-					setSaveDialogOpen(true);
-				}}
+				onClick={openSaveDialog}
 			>
 				<FloppyDiskIcon className="size-4" />
 				<span className="hidden sm:inline">Save template</span>
@@ -95,7 +111,10 @@ export function TemplateEditorActions({
 			<TemplateSaveDialog
 				open={saveDialogOpen}
 				onOpenChange={setSaveDialogOpen}
-				defaultName={templateName || createForm?.emailSubject || ""}
+				defaultName={deriveTemplateDisplayName(
+					templateName || createForm?.emailSubject || "",
+					"",
+				)}
 				isSaving={saving}
 				onConfirm={(name) => {
 					void handleSave(name);

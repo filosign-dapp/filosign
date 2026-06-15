@@ -5,6 +5,10 @@ import {
 	PlacementWorkspaceSidebar,
 	PlacementWorkspaceViewer,
 } from "@/src/lib/domains/placement";
+import {
+	type TemplateEditorMode,
+	TemplateEditorModeProvider,
+} from "@/src/lib/domains/templates/template-editor-mode";
 import type { TemplateEditorController } from "@/src/lib/domains/templates/use-template-editor-controller";
 import { TemplateEditorHeader } from "./header";
 import { TemplateEditorMobileToolbar } from "./mobile-toolbar";
@@ -13,9 +17,11 @@ import { TemplateContextRail } from "./template-context-rail";
 
 type Props = {
 	controller: TemplateEditorController;
-	mode: "create" | "edit";
+	mode: TemplateEditorMode;
 	templateId: string;
 	templateName: string;
+	onUseTemplate?: () => void;
+	useTemplatePending?: boolean;
 };
 
 export function TemplateEditorPage({
@@ -23,24 +29,29 @@ export function TemplateEditorPage({
 	mode,
 	templateId,
 	templateName,
+	onUseTemplate,
+	useTemplatePending,
 }: Props) {
 	return (
-		<PlacementWorkspaceProvider controller={controller}>
-			<PlacementWorkspaceShell>
-				<TemplateEditorHeader
-					mode={mode}
-					templateId={templateId}
-					templateName={templateName}
-				/>
-				<PlacementWorkspaceRow>
-					<PlacementWorkspaceSidebar>
-						<TemplateEditorSidebar />
-					</PlacementWorkspaceSidebar>
-					<PlacementWorkspaceViewer />
-					<TemplateContextRail />
-				</PlacementWorkspaceRow>
-				<TemplateEditorMobileToolbar />
-			</PlacementWorkspaceShell>
-		</PlacementWorkspaceProvider>
+		<TemplateEditorModeProvider mode={mode}>
+			<PlacementWorkspaceProvider controller={controller}>
+				<PlacementWorkspaceShell>
+					<TemplateEditorHeader
+						templateId={templateId}
+						templateName={templateName}
+						onUseTemplate={onUseTemplate}
+						useTemplatePending={useTemplatePending}
+					/>
+					<PlacementWorkspaceRow>
+						<PlacementWorkspaceSidebar>
+							<TemplateEditorSidebar />
+						</PlacementWorkspaceSidebar>
+						<PlacementWorkspaceViewer />
+						<TemplateContextRail />
+					</PlacementWorkspaceRow>
+					<TemplateEditorMobileToolbar />
+				</PlacementWorkspaceShell>
+			</PlacementWorkspaceProvider>
+		</TemplateEditorModeProvider>
 	);
 }

@@ -8,11 +8,18 @@ import {
 	SheetTitle,
 	SheetTrigger,
 } from "@/src/lib/components/ui/sheet";
+import {
+	isTemplatePreviewMode,
+	useTemplateEditorMode,
+} from "@/src/lib/domains/templates/template-editor-mode";
 import MobileSignatureToolbar from "@/src/routes/dashboard/envelope/create/add-sign/-components/mobile-toolbar";
 import { TemplateContextRailMobileContent } from "./template-context-rail-content";
+import { TemplatePreviewContextRailContent } from "./template-preview-context-rail-content";
 
 export function TemplateEditorMobileToolbar() {
+	const mode = useTemplateEditorMode();
 	const [sheetOpen, setSheetOpen] = useState(false);
+	const isPreview = isTemplatePreviewMode(mode);
 
 	return (
 		<>
@@ -25,7 +32,7 @@ export function TemplateEditorMobileToolbar() {
 								variant="outline"
 								size="icon-lg"
 								className="rounded-full shadow-lg"
-								aria-label="Template setup"
+								aria-label={isPreview ? "Template details" : "Template setup"}
 							/>
 						}
 					>
@@ -36,15 +43,21 @@ export function TemplateEditorMobileToolbar() {
 						className="max-h-[85vh] overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
 					>
 						<SheetHeader>
-							<SheetTitle>Template setup</SheetTitle>
+							<SheetTitle>
+								{isPreview ? "Template preview" : "Template setup"}
+							</SheetTitle>
 						</SheetHeader>
 						<div className="mt-4">
-							<TemplateContextRailMobileContent />
+							{isPreview ? (
+								<TemplatePreviewContextRailContent />
+							) : (
+								<TemplateContextRailMobileContent />
+							)}
 						</div>
 					</SheetContent>
 				</Sheet>
 			</div>
-			<MobileSignatureToolbar />
+			{isPreview ? null : <MobileSignatureToolbar />}
 		</>
 	);
 }

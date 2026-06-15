@@ -69,6 +69,18 @@ export const TOASTS = {
 			hint: "Prior signatures were cleared. Signers must sign again.",
 		},
 		signerChangeCancelled: "Signer change cancelled",
+		payoutAmountsUpdated: {
+			title: "Payout amounts updated",
+			hint: "Your USDC approval now matches the new combined total.",
+		},
+		payoutRemoved: {
+			title: "Payout removed",
+			hint: "Your USDC approval now matches any remaining payouts.",
+		},
+		payoutApprovalRevoked: {
+			title: "Payout approval revoked",
+			hint: "No USDC can leave your wallet for attached payouts until you approve again.",
+		},
 		unlockRuleRemoved: "Unlock rule removed",
 		supplementaryDownloadSignIn: {
 			title: "Sign in to download files",

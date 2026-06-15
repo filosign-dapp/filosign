@@ -8,7 +8,7 @@ import {
 import { useSignHeaderUi } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-header-ui";
 
 export function SignHeaderDialogs() {
-	const { signFile, handleSign } = useSignSigning();
+	const { handleSign } = useSignSigning();
 	const { rules: settlementRules } = useSignSettlements();
 	const { executeRotateInvite, regenerateColdInvite } = useSignColdShare();
 	const {
@@ -23,9 +23,11 @@ export function SignHeaderDialogs() {
 			<SignConfirmDialog
 				open={signConfirmOpen}
 				onOpenChange={setSignConfirmOpen}
-				pending={signFile.isPending}
 				requiresPayoutAck={settlementRules.length > 0}
-				onConfirm={(result) => void handleSign(result)}
+				onConfirm={(result) => {
+					setSignConfirmOpen(false);
+					void handleSign(result);
+				}}
 			/>
 			<ConfirmAlertDialog
 				open={rotateInviteOpen}

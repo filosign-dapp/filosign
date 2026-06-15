@@ -15,9 +15,29 @@ import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
 import { buildColdInviteMagicLink } from "@/src/lib/domains/invites/cold-invite-search";
 import type { ColdSharePackage } from "@/src/lib/domains/invites/types";
-import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
+import { suppressGlobalErrorToast } from "@/src/lib/errors";
+import { presentAppError } from "@/src/lib/errors/present-app-error";
 import { safeAsync } from "@/src/lib/utils/safe";
+import {
+	buildSignProgressPlan,
+	createInitialSignProgressState,
+	reduceSignProgress,
+	type SignProgressEvent,
+	type SignProgressState,
+} from "@/src/routes/dashboard/document/sign/-lib/utils/sign/progress";
 import { placementFieldIsCompleteForSubmit } from "./use-placement-fields";
+
+type SignRequest = {
+	settlementRecipientAck?: {
+		termsVersion: string;
+		acceptedAt: number;
+	};
+};
+
+function progressErrorMessage(error: unknown): string {
+	const presented = presentAppError(error);
+	return presented.description || presented.title;
+}
 
 export function useSignActions(options: {
 	pieceCid: string | undefined;
@@ -67,10 +87,31 @@ export function useSignActions(options: {
 	const [coldShareDialogOpen, setColdShareDialogOpen] = useState(false);
 	const [coldShare, setColdShare] = useState<ColdSharePackage | null>(null);
 	const [signSuccessDialogOpen, setSignSuccessDialogOpen] = useState(false);
+	const [signProgressOpen, setSignProgressOpen] = useState(false);
+	const [signProgressState, setSignProgressState] =
+		useState<SignProgressState | null>(null);
+	const [lastSignRequest, setLastSignRequest] = useState<SignRequest | null>(
+		null,
+	);
 
 	const formatAddress = useCallback((address: string) => {
 		return `${address.slice(0, 6)}...${address.slice(-4)}`;
 	}, []);
+
+	const updateSignProgress = useCallback((event: SignProgressEvent) => {
+		setSignProgressState((prev) =>
+			prev ? reduceSignProgress(prev, event) : prev,
+		);
+	}, []);
+
+	const closeSignProgress = useCallback(() => {
+		setSignProgressOpen(false);
+		setSignProgressState(null);
+	}, []);
+
+	const dismissSignProgress = useCallback(() => {
+		closeSignProgress();
+	}, [closeSignProgress]);
 
 	const handleAcknowledge = useCallback(async () => {
 		if (!pieceCid) return;
@@ -81,42 +122,18 @@ export function useSignActions(options: {
 	}, [pieceCid, acknowledgeFile]);
 
 	const handleSign = useCallback(
-		async (opts?: {
-			settlementRecipientAck?: {
-				termsVersion: string;
-				acceptedAt: number;
-			};
-		}) => {
+		async (opts?: SignRequest) => {
 			if (!pieceCid) return;
 
-			if (
+			const needsAcknowledge = Boolean(
 				isSender &&
-				senderHasAssignedFields &&
-				!file?.participantAccess?.acknowledged
-			) {
-				const [, ackErr] = await safeAsync(() =>
-					acknowledgeFile.mutateAsync({ pieceCid }),
-				);
-				if (ackErr) {
-					showAppErrorToast(ackErr);
-					return;
-				}
-			}
+					senderHasAssignedFields &&
+					!file?.participantAccess?.acknowledged,
+			);
+			const needsPrepareFields = Boolean(prepareForSign);
 
 			let nextCompletions = fieldCompletions;
 			let nextCompletedFieldIds = completedFieldIds;
-
-			if (prepareForSign) {
-				const [, prepareErr] = await safeAsync(async () => {
-					const prepared = await prepareForSign();
-					nextCompletions = prepared.completions;
-					nextCompletedFieldIds = prepared.completedFieldIds;
-				});
-				if (prepareErr) {
-					showAppErrorToast(prepareErr);
-					return;
-				}
-			}
 
 			const requiredFields = myPlacementFields.filter(
 				(field) => field.required,
@@ -142,17 +159,65 @@ export function useSignActions(options: {
 				return;
 			}
 
+			setLastSignRequest(opts ?? null);
+			const plan = buildSignProgressPlan({
+				needsAcknowledge,
+				needsPrepareFields,
+			});
+			setSignProgressState(createInitialSignProgressState(plan));
+			setSignProgressOpen(true);
+
+			if (needsAcknowledge) {
+				updateSignProgress({ phase: "acknowledging", status: "start" });
+				const [, ackErr] = await safeAsync(() =>
+					acknowledgeFile.mutateAsync({ pieceCid }, suppressGlobalErrorToast()),
+				);
+				if (ackErr) {
+					updateSignProgress({
+						phase: "acknowledging",
+						status: "error",
+						errorMessage: progressErrorMessage(ackErr),
+					});
+					return;
+				}
+				updateSignProgress({ phase: "acknowledging", status: "done" });
+			}
+
+			if (prepareForSign) {
+				updateSignProgress({ phase: "preparing_fields", status: "start" });
+				const [, prepareErr] = await safeAsync(async () => {
+					const prepared = await prepareForSign();
+					nextCompletions = prepared.completions;
+					nextCompletedFieldIds = prepared.completedFieldIds;
+				});
+				if (prepareErr) {
+					updateSignProgress({
+						phase: "preparing_fields",
+						status: "error",
+						errorMessage: progressErrorMessage(prepareErr),
+					});
+					return;
+				}
+				updateSignProgress({ phase: "preparing_fields", status: "done" });
+			}
+
 			const [, err] = await safeAsync(() =>
-				signFile.mutateAsync({
-					pieceCid,
-					completedFieldIds: nextCompletedFieldIds,
-					fieldCompletions: nextCompletions,
-					...(opts?.settlementRecipientAck
-						? { settlementRecipientAck: opts.settlementRecipientAck }
-						: {}),
-				}),
+				signFile.mutateAsync(
+					{
+						pieceCid,
+						completedFieldIds: nextCompletedFieldIds,
+						fieldCompletions: nextCompletions,
+						...(opts?.settlementRecipientAck
+							? { settlementRecipientAck: opts.settlementRecipientAck }
+							: {}),
+						onProgress: updateSignProgress,
+					},
+					suppressGlobalErrorToast(),
+				),
 			);
 			if (err) return;
+
+			closeSignProgress();
 
 			const isPracticeSign =
 				pieceCid === activationQuery.data?.practicePieceCid?.trim();
@@ -177,12 +242,18 @@ export function useSignActions(options: {
 			fieldCompletions,
 			prepareForSign,
 			signFile,
+			updateSignProgress,
+			closeSignProgress,
 			activationQuery.data?.practicePieceCid,
 			queryClient,
 			rpcQuery,
 			navigate,
 		],
 	);
+
+	const retrySign = useCallback(() => {
+		void handleSign(lastSignRequest ?? undefined);
+	}, [handleSign, lastSignRequest]);
 
 	const executeRotateInvite = useCallback(async () => {
 		const walletAddress = user?.wallet?.address;
@@ -223,6 +294,10 @@ export function useSignActions(options: {
 		signFile,
 		signSuccessDialogOpen,
 		setSignSuccessDialogOpen,
+		signProgressOpen,
+		signProgressState,
+		dismissSignProgress,
+		retrySign,
 		coldShareDialogOpen,
 		setColdShareDialogOpen,
 		coldShare,

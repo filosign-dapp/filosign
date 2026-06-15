@@ -16,7 +16,6 @@ import {
 } from "@/src/lib/components/ui/alert-dialog";
 import { Checkbox } from "@/src/lib/components/ui/checkbox";
 import { Label } from "@/src/lib/components/ui/label";
-import { InlineLoader } from "@/src/lib/components/ui/loader";
 
 export type SignConfirmResult = {
 	settlementRecipientAck?: {
@@ -28,8 +27,7 @@ export type SignConfirmResult = {
 type SignConfirmDialogProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	onConfirm: (result: SignConfirmResult) => void | Promise<void>;
-	pending?: boolean;
+	onConfirm: (result: SignConfirmResult) => void;
 	requiresPayoutAck?: boolean;
 };
 
@@ -37,7 +35,6 @@ export function SignConfirmDialog({
 	open,
 	onOpenChange,
 	onConfirm,
-	pending,
 	requiresPayoutAck = false,
 }: SignConfirmDialogProps) {
 	const [payoutAckChecked, setPayoutAckChecked] = useState(false);
@@ -73,38 +70,24 @@ export function SignConfirmDialog({
 					</div>
 				) : null}
 				<AlertDialogFooter>
-					<AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+					<AlertDialogCancel>Cancel</AlertDialogCancel>
 					<AlertDialogAction
 						variant="primary"
-						disabled={pending || !canConfirm}
+						disabled={!canConfirm}
 						onClick={() => {
-							void (async () => {
-								try {
-									await onConfirm({
-										...(requiresPayoutAck
-											? {
-													settlementRecipientAck: {
-														termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
-														acceptedAt: Math.floor(Date.now() / 1000),
-													},
-												}
-											: {}),
-									});
-									onOpenChange(false);
-								} catch {
-									// Caller handles user feedback; keep dialog open on failure.
-								}
-							})();
+							onConfirm({
+								...(requiresPayoutAck
+									? {
+											settlementRecipientAck: {
+												termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+												acceptedAt: Math.floor(Date.now() / 1000),
+											},
+										}
+									: {}),
+							});
 						}}
 					>
-						{pending ? (
-							<>
-								<InlineLoader size="sm" className="text-current" />
-								Signing…
-							</>
-						) : (
-							"Sign envelope"
-						)}
+						Sign envelope
 					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>

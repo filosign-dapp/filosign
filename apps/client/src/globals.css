@@ -388,6 +388,10 @@
 	background-color: var(--placement-fill);
 }
 
+@utility signature-preview-shell {
+	@apply flex min-h-0 items-center justify-center overflow-hidden rounded-md border border-border bg-card px-3 py-1.5 text-foreground;
+}
+
 @utility placement-field-interactive-fill {
 	@apply flex h-full w-full items-center justify-center overflow-hidden rounded-sm px-1 text-xs text-placement-fill-interactive-foreground;
 	background-color: var(--placement-fill-interactive);

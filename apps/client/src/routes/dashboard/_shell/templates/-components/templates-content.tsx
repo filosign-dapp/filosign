@@ -32,7 +32,7 @@ type Props = {
 export function TemplatesContent({
 	templates,
 	hasAnyTemplates,
-	hasSearchQuery,
+	hasSearchQuery: _hasSearchQuery,
 	canManage,
 	canUse,
 	actionsBusy,

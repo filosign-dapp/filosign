@@ -38,3 +38,12 @@ export function documentRowGridSubtitle(row: DocumentListRow): string {
 	const subtitle = parts.join(" · ");
 	return party ? `${party} · ${subtitle}` : subtitle;
 }
+
+/** Grid cards show status in badges; subtitle is size and date only. */
+export function documentRowGridCardSubtitle(row: DocumentListRow): string {
+	const party = documentRowPartySubtitle(row);
+	const size = documentRowSizeLabel(row);
+	const updated = documentRowUpdatedLabel(row);
+	const meta = size === "-" ? updated : `${size} · ${updated}`;
+	return party ? `${party} · ${meta}` : meta;
+}

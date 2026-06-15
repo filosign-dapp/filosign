@@ -56,8 +56,8 @@ function CardIcon({
 	const className =
 		size === "grid"
 			? kind === "draft"
-				? "size-11 text-destructive/70 sm:size-12"
-				: "size-11 text-red-500 sm:size-12"
+				? "size-12 text-destructive/70 sm:size-14"
+				: "size-12 text-red-500 sm:size-14"
 			: kind === "draft"
 				? "size-8 text-destructive/70"
 				: "size-8 text-red-500";
@@ -252,47 +252,50 @@ function DocumentCardGrid(props: DocumentCardProps) {
 			busy={props.busy}
 			onOpen={props.onOpen}
 			className={cn(
-				"group relative flex h-full flex-col rounded-xl border border-border/80 bg-card/40 p-3 text-left transition-colors sm:p-4",
+				"group relative flex h-full flex-col overflow-hidden rounded-lg border border-border/80 bg-card/40 text-left transition-colors",
 				props.busy
 					? "cursor-wait opacity-70"
 					: "cursor-pointer hover:border-border hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
 			)}
 		>
-			{props.hideInlineActions ? null : (
-				<div className="absolute top-2 right-2 z-10 sm:top-3 sm:right-3">
-					<CardActions
-						kind={props.kind}
-						draftId={props.draftId}
-						busy={props.busy}
-						onOpen={handleOpen}
-						onDeleteDraft={props.onDeleteDraft}
-						deleteDisabled={props.deleteDisabled}
-					/>
-				</div>
-			)}
-			<div className="mb-3 flex min-h-30 flex-1 items-center justify-center rounded-lg bg-muted/80 p-5 sm:min-h-34 sm:p-6">
+			<div className="relative flex h-32 w-full shrink-0 items-center justify-center bg-muted/70 sm:h-48">
+				{props.hideInlineActions ? null : (
+					<div className="absolute top-1 right-1 z-10">
+						<CardActions
+							kind={props.kind}
+							draftId={props.draftId}
+							busy={props.busy}
+							onOpen={handleOpen}
+							onDeleteDraft={props.onDeleteDraft}
+							deleteDisabled={props.deleteDisabled}
+						/>
+					</div>
+				)}
 				{props.busy ? (
 					<InlineLoader size="sm" />
 				) : (
 					<CardIcon kind={props.kind} size="grid" />
 				)}
 			</div>
-			<div className="space-y-2">
+			<div className="flex min-h-0 flex-1 flex-col gap-3 border-t border-border/50 bg-card/60 px-4 py-4">
 				{props.statusRow ? (
 					<DocumentRowStatusBadge
 						row={props.statusRow}
 						showDirection={props.statusRow.kind === "envelope"}
+						className="gap-1.5"
 					/>
 				) : null}
-				<p
-					className="line-clamp-2 text-sm font-medium leading-snug sm:text-[0.9375rem]"
-					title={props.title}
-				>
-					{props.title}
-				</p>
-				<p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-					{props.subtitle}
-				</p>
+				<div className="space-y-2">
+					<p
+						className="line-clamp-2 text-sm font-medium leading-normal"
+						title={props.title}
+					>
+						{props.title}
+					</p>
+					<p className="line-clamp-1 text-xs leading-normal text-muted-foreground">
+						{props.subtitle}
+					</p>
+				</div>
 			</div>
 		</DocumentCardShell>
 	);

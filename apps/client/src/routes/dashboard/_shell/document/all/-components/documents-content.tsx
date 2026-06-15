@@ -11,7 +11,7 @@ import {
 	DocumentCard,
 	formatDocumentCardDate,
 } from "@/src/lib/domains/documents/document-card";
-import { documentRowGridSubtitle } from "@/src/lib/domains/documents/document-list-format";
+import { documentRowGridCardSubtitle } from "@/src/lib/domains/documents/document-list-format";
 import { DraftRenameDialog } from "@/src/lib/domains/documents/draft-rename-dialog";
 import { useDraftDelete } from "@/src/lib/domains/documents/use-draft-delete";
 import { useDraftRename } from "@/src/lib/domains/documents/use-draft-rename";
@@ -180,7 +180,7 @@ export function DocumentsContent() {
 							/>
 						</div>
 					) : (
-						<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 @lg:grid-cols-3 @2xl:grid-cols-4 @4xl:grid-cols-5">
+						<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 @lg:grid-cols-4 @2xl:grid-cols-5 @4xl:grid-cols-6">
 							{items.map((item) =>
 								item.kind === "draft" ? (
 									<DocumentCard
@@ -205,7 +205,7 @@ export function DocumentsContent() {
 										variant="grid"
 										hideInlineActions
 										title={item.title}
-										subtitle={documentRowGridSubtitle(item)}
+										subtitle={documentRowGridCardSubtitle(item)}
 										statusRow={item}
 										onOpen={() => handleFileClick(item.id)}
 									/>

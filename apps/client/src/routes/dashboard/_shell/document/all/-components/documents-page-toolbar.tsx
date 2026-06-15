@@ -1,8 +1,8 @@
 import { MotionReveal } from "@filosign/motion";
-import { MagnifyingGlassIcon, PlusIcon } from "@phosphor-icons/react";
+import { PlusIcon } from "@phosphor-icons/react";
+import { PageSearchInput } from "@/src/lib/components/app/page-search-input";
 import { ListGridViewToggle } from "@/src/lib/components/app/view/list-grid-view-toggle";
 import { Button } from "@/src/lib/components/ui/button";
-import { Input } from "@/src/lib/components/ui/input";
 import { TabsList, TabsTrigger } from "@/src/lib/components/ui/tabs";
 import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
 import { cn } from "@/src/lib/utils/index";
@@ -30,42 +30,33 @@ export function DocumentsPageToolbar() {
 			id="documents-page-toolbar"
 		>
 			<div className="flex flex-col gap-3 pb-3 sm:flex-row sm:items-center sm:justify-between">
-				<div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-					<h2 className="text-lg font-medium text-foreground">All Documents</h2>
-					<div className="relative w-full sm:max-w-xs">
-						<MagnifyingGlassIcon
-							className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-							aria-hidden
-						/>
-						<Input
-							type="search"
-							placeholder="Search by title…"
-							value={searchInput}
-							onChange={(e) => setSearchInput(e.target.value)}
-							className="w-full pl-8"
-							maxLength={100}
-							aria-label="Search documents by title"
-						/>
-					</div>
-				</div>
+				<h2 className="text-lg font-medium text-foreground">All Documents</h2>
 
-				<div className="flex shrink-0 items-center gap-3 sm:gap-4">
-					<div className="hidden md:block">
-						<ListGridViewToggle
-							value={viewMode}
-							onValueChange={handleViewModeChange}
-						/>
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3 md:gap-4">
+					<PageSearchInput
+						value={searchInput}
+						onChange={setSearchInput}
+						placeholder="Search by title…"
+						aria-label="Search documents by title"
+					/>
+					<div className="flex shrink-0 items-center gap-3 md:gap-4">
+						<div className="hidden md:block">
+							<ListGridViewToggle
+								value={viewMode}
+								onValueChange={handleViewModeChange}
+							/>
+						</div>
+						<Button
+							type="button"
+							variant="primary"
+							size="sm"
+							className="gap-2 group"
+							onClick={startNewEnvelope}
+						>
+							<PlusIcon className="size-4" weight="bold" />
+							<span className="hidden sm:inline">New Document</span>
+						</Button>
 					</div>
-					<Button
-						type="button"
-						variant="primary"
-						size="sm"
-						className="gap-2 group"
-						onClick={startNewEnvelope}
-					>
-						<PlusIcon className="size-4" weight="bold" />
-						<span className="hidden sm:inline">New Document</span>
-					</Button>
 				</div>
 			</div>
 

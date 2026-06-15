@@ -69,13 +69,18 @@ export function SkeletonCard({ className }: { className?: string }) {
 	return (
 		<div
 			className={cn(
-				"flex flex-col gap-3 rounded-xl border border-border/60 p-4",
+				"flex flex-col overflow-hidden rounded-lg border border-border/60",
 				className,
 			)}
 		>
-			<Skeleton className="aspect-4/3 w-full rounded-lg" />
-			<SkeletonText width="lg" />
-			<SkeletonText width="sm" />
+			<Skeleton className="h-32 w-full rounded-none sm:h-48" />
+			<div className="flex flex-col gap-3 border-t border-border/50 px-4 py-4">
+				<Skeleton className="h-5 w-24 rounded-full" />
+				<div className="space-y-2">
+					<SkeletonText width="lg" />
+					<SkeletonText width="sm" />
+				</div>
+			</div>
 		</div>
 	);
 }

@@ -3,14 +3,14 @@ import {
 	DocumentListRail,
 	type DocumentListRailItem,
 } from "@/src/lib/domains/files/document-viewport";
-import { SupplementaryPacketsSidebar } from "@/src/routes/dashboard/envelope/create/add-sign/-components/supplementary-packets-review";
 import type {
-	Document,
+	PlacementDocument,
 	SignatureField,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+} from "@/src/lib/domains/placement/types";
+import { SupplementaryPacketsSidebar } from "@/src/routes/dashboard/envelope/create/add-sign/-components/supplementary-packets-review";
 
 type DocumentThumbnailsSidebarProps = {
-	documents: Document[];
+	documents: PlacementDocument[];
 	currentDocumentId: string;
 	signatureFields: SignatureField[];
 	onDocumentSelect: (documentId: string) => void;

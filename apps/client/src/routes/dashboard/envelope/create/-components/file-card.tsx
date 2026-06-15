@@ -93,7 +93,7 @@ export default function FileCard({
 	if (variant === "grid") {
 		return (
 			<motion.div
-				className="relative group bg-background border border-border rounded-lg p-2 w-full"
+				className="group relative w-full overflow-hidden rounded-lg border border-border bg-background"
 				initial={{ opacity: 0, scale: 0.9 }}
 				animate={{ opacity: 1, scale: 1 }}
 				exit={{ opacity: 0, scale: 0.9 }}
@@ -104,43 +104,42 @@ export default function FileCard({
 					duration: 0.3,
 				}}
 			>
-				{/* Remove button */}
 				<Button
 					type="button"
 					variant="outline"
-					size="icon"
+					size="icon-sm"
 					onClick={() => onRemove(file.id)}
-					className="absolute top-4 right-4 size-6 p-0"
+					className="absolute top-1 right-1 z-10 size-6 bg-background/90 p-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+					aria-label={`Remove ${file.name}`}
 				>
-					<XIcon className="h-3 w-3" />
+					<XIcon className="size-3" />
 				</Button>
 
-				{/* Preview/Icon */}
-				<div className="aspect-square mb-3 bg-muted/20 rounded-lg flex items-center justify-center overflow-hidden">
+				<div className="relative flex h-32 w-full items-center justify-center overflow-hidden bg-muted/20 sm:h-48">
 					{shouldShowPreview ? (
 						<img
 							src={previewUrl}
 							alt={file.name}
-							className="w-full h-full object-cover"
+							className="size-full object-cover"
 							onError={() => setImageError(true)}
 						/>
+					) : isLoading && isImagePreviewable ? (
+						<Skeleton className="size-full rounded-none" />
 					) : (
-						<div className="flex items-center justify-center w-full h-full">
-							{isLoading && isImagePreviewable ? (
-								<Skeleton className="w-full h-full rounded-lg" />
-							) : (
-								<FileIconComponent className={cn("h-12 w-12", iconColor)} />
-							)}
-						</div>
+						<FileIconComponent
+							className={cn("size-12 sm:size-14", iconColor)}
+						/>
 					)}
 				</div>
 
-				{/* File info */}
-				<div className="space-y-1">
-					<p className="text-sm font-medium truncate" title={file.name}>
+				<div className="space-y-2 border-t border-border/50 px-4 py-4">
+					<p
+						className="truncate text-sm font-medium leading-normal"
+						title={file.name}
+					>
 						{file.name}
 					</p>
-					<p className="text-xs text-muted-foreground">
+					<p className="truncate text-xs leading-normal text-muted-foreground">
 						{formatFileSize(file.size)}
 					</p>
 				</div>

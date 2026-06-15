@@ -5,11 +5,11 @@ import {
 	isValidRecipientEmail,
 	recipientLookupEmail,
 } from "@/src/lib/domains/invites/recipient-email";
+import { recipientMatchesSelfProfile } from "@/src/lib/domains/placement/utils/self-signer";
 import { useDebouncedSearch } from "@/src/lib/utils/use-debounced-search";
 import { RECIPIENT_LOOKUP_DEBOUNCE_MS } from "@/src/routes/dashboard/envelope/create/-lib/constants/recipient-card";
 import { useComposeSelfProfile } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-compose-self-profile";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
-import { recipientMatchesSelfProfile } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
 
 export function useRecipientPayoutEligibility(
 	recipient: Recipient | undefined,

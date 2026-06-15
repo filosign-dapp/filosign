@@ -1,6 +1,14 @@
 import { useDroppable } from "@dnd-kit/core";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SkeletonDocumentCanvas } from "@/src/lib/components/app/skeletons";
+import {
+	useAddSignShell,
+	useAddSignViewer,
+} from "@/src/lib/domains/placement/context";
+import {
+	focusPagePointInStripCanvas,
+	PLACEMENT_CANVAS_DROPPABLE_ID,
+} from "@/src/lib/domains/placement/utils/placement-coordinates";
 import { cn } from "@/src/lib/utils/utils";
 import { PlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-canvas";
 import {
@@ -10,18 +18,10 @@ import {
 } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-layer";
 import { PlacementPageOverlays } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-page-overlays";
 import { PlacementSurface } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-surface";
-import {
-	useAddSignShell,
-	useAddSignViewer,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
 import { useMarqueeModifierHeld } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-marquee-modifier-held";
 import { useMarqueeSelection } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-marquee-selection";
 import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
 import { useDocumentViewerInteraction } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-viewer-interaction";
-import {
-	focusPagePointInStripCanvas,
-	PLACEMENT_CANVAS_DROPPABLE_ID,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
 import { DocumentPageContent } from "./page-content";
 
 function DocumentViewer() {

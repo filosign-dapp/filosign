@@ -1,16 +1,16 @@
 import type { ReactNode } from "react";
 import { ViewerChromeSkeleton } from "@/src/lib/components/app/skeletons";
 import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
-import { AddSignHeader } from "@/src/routes/dashboard/envelope/create/add-sign/-components/header";
-import { SendProgressDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/send-progress-dialog";
 import {
-	AddSignProvider,
+	PlacementProvider,
 	useAddSignChrome,
 	useAddSignShell,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
+} from "@/src/lib/domains/placement/context";
+import type { PlacementController } from "@/src/lib/domains/placement/types";
+import { AddSignHeader } from "@/src/routes/dashboard/envelope/create/add-sign/-components/header";
+import { SendProgressDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/send-progress-dialog";
 import { PlacementCanvasProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-canvas-context";
 import { PlacementDndProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-dnd-context";
-import type { AddSignController } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-controller";
 import FieldsSidebar from "./fields-sidebar";
 import MobileToolbar from "./mobile-toolbar";
 import { DocumentThumbnailsSidebar } from "./thumbnails";
@@ -20,10 +20,12 @@ function AddSignRoot({
 	controller,
 	children,
 }: {
-	controller: AddSignController;
+	controller: PlacementController;
 	children: ReactNode;
 }) {
-	return <AddSignProvider controller={controller}>{children}</AddSignProvider>;
+	return (
+		<PlacementProvider controller={controller}>{children}</PlacementProvider>
+	);
 }
 
 function AddSignPageShell({ children }: { children: ReactNode }) {

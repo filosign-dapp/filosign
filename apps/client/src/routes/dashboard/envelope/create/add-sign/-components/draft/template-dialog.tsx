@@ -1,10 +1,9 @@
 import {
 	useActiveOrganization,
 	useActiveOrgId,
-	useCreateOrgTemplate,
-	usePrepareOrgTemplateCreate,
+	useSaveOrgTemplateDeps,
 } from "@filosign/react/orgs";
-import { uploadOrgTemplateDocuments } from "@filosign/react/utils";
+import { saveOrgTemplateCreate } from "@filosign/react/utils";
 import { useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -19,9 +18,8 @@ import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
-import { loadDocumentBytes } from "@/src/lib/domains/drafts";
 import type { CreateForm } from "@/src/lib/domains/files/envelope-form-types";
-import { buildTemplateSnapshotFromComposer } from "@/src/lib/domains/templates/template-composer";
+import { buildTemplateSaveInput } from "@/src/lib/domains/templates/utils/save-input";
 import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
 
 type Props = {
@@ -39,8 +37,7 @@ export function DraftTemplateDialog({
 }: Props) {
 	const activeOrgId = useActiveOrgId();
 	const activeOrg = useActiveOrganization();
-	const prepareCreate = usePrepareOrgTemplateCreate();
-	const createTemplate = useCreateOrgTemplate();
+	const deps = useSaveOrgTemplateDeps();
 	const [templateName, setTemplateName] = useState(initialName);
 	const [templateSaving, setTemplateSaving] = useState(false);
 
@@ -99,47 +96,26 @@ export function DraftTemplateDialog({
 								toastUser.error("Select a workspace before saving a template.");
 								return;
 							}
+							if (!deps) {
+								toastUser.error(
+									"Connect your wallet before saving a template.",
+								);
+								return;
+							}
 
 							setTemplateSaving(true);
 							try {
 								const templateId = crypto.randomUUID();
-								const documentRows = await Promise.all(
-									createForm.documents.map(async (doc) => ({
-										docId: doc.id,
-										name: doc.name,
-										size: doc.size,
-										mimeType: doc.type,
-										bytes: await loadDocumentBytes(createForm.draftId, {
-											id: doc.id,
-											name: doc.name,
-											size: doc.size,
-											type: doc.type,
-										}),
-									})),
+								await saveOrgTemplateCreate(
+									deps,
+									await buildTemplateSaveInput({
+										createForm,
+										templateId,
+										templateName,
+										organizationId: activeOrgId,
+										orgEncryptionPublicKey: activeOrg.encryptionPublicKey,
+									}),
 								);
-								const snapshot = buildTemplateSnapshotFromComposer({
-									recipients: createForm.recipients,
-									signatureFields: createForm.signatureFields ?? [],
-									emailSubject: createForm.emailSubject,
-									emailMessage: createForm.emailMessage,
-									documents: createForm.documents.map((doc) => ({
-										id: doc.id,
-										name: doc.name,
-										size: doc.size,
-										type: doc.type,
-									})),
-								});
-
-								await uploadOrgTemplateDocuments({
-									templateId,
-									organizationId: activeOrgId,
-									orgEncryptionPublicKey: activeOrg.encryptionPublicKey,
-									name: templateName.trim(),
-									snapshot,
-									documents: documentRows,
-									prepareCreate: (body) => prepareCreate.mutateAsync(body),
-									create: (body) => createTemplate.mutateAsync(body),
-								});
 								toastUser.success(TOASTS.templates.saved);
 								onOpenChange(false);
 							} catch (err) {

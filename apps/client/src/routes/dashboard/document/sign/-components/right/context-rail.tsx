@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { Button } from "@/src/lib/components/ui/button";
 import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { ConditionalAttachmentsPanel } from "@/src/routes/dashboard/document/sign/-components/conditional-attachments-panel";
@@ -10,12 +12,14 @@ import {
 	useSignSettlements,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
 import { isEnvelopeVoided } from "@/src/routes/dashboard/document/sign/-lib/utils/envelope-progress-display";
+import { senderToolsClosedCopy } from "@/src/routes/dashboard/document/sign/-lib/utils/governance";
 
 export function SignContextRail() {
 	const { file } = useSignFile();
 	const { signerAddress } = useSignIdentity();
 	const { formatAddress, isSender } = useSignMeta();
 	const settlements = useSignSettlements();
+	const [executeReplacementOpen, setExecuteReplacementOpen] = useState(false);
 
 	const signers = file?.signers ?? [];
 	const envelopeProgress = file?.envelopeProgress;
@@ -25,19 +29,34 @@ export function SignContextRail() {
 	const signingStarted = (envelopeProgress?.requiredSignaturesCount ?? 0) > 0;
 	const canRecall = isSender && !isRevoked && !isComplete;
 	const canClearSignatures =
-		isSender && !isRevoked && !isComplete && signingStarted;
+		isSender &&
+		!isRevoked &&
+		!isComplete &&
+		signingStarted &&
+		!settlements.paidSettlementLegs;
+	const governanceClosedCopy = senderToolsClosedCopy({
+		envelopeProgress,
+		pendingSignerReplacement: Boolean(settlements.pendingSignerReplacement),
+	});
+	const pendingReplacement = settlements.pendingSignerReplacement;
+	const oldSignerEmail = pendingReplacement?.oldEmail ?? null;
+	const newSignerEmail = pendingReplacement?.newEmail ?? null;
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-5">
-			{settlements.pendingSignerReplacement ? (
+			{pendingReplacement ? (
 				<div className="rounded-large border border-amber-500/30 bg-amber-500/5 p-4 text-xs text-amber-900 dark:text-amber-100">
 					<p className="font-semibold text-amber-800 dark:text-amber-200">
 						Roster change pending
 					</p>
 					<p className="mt-1 leading-relaxed text-muted-foreground">
 						{isSender
-							? "Signing is frozen until you execute or cancel this change."
-							: "Signing is frozen until the sender executes or cancels this change."}
+							? oldSignerEmail && newSignerEmail
+								? `Replace ${oldSignerEmail} with ${newSignerEmail}. Signing is frozen until you execute or cancel.`
+								: "Signing is frozen until you execute or cancel this change."
+							: oldSignerEmail && newSignerEmail
+								? `Signer change from ${oldSignerEmail} to ${newSignerEmail} is pending. Signing is frozen until the sender finishes it.`
+								: "Signing is frozen until the sender executes or cancels this change."}
 					</p>
 					{isSender ? (
 						<div className="mt-3 flex flex-wrap gap-2">
@@ -47,11 +66,7 @@ export function SignContextRail() {
 								variant="primary"
 								className="h-7 text-[11px]"
 								disabled={settlements.executeSignerReplacementPending}
-								onClick={() =>
-									void settlements
-										.onExecuteSignerReplacement()
-										.catch(console.error)
-								}
+								onClick={() => setExecuteReplacementOpen(true)}
 							>
 								{settlements.executeSignerReplacementPending
 									? "Executing…"
@@ -75,6 +90,16 @@ export function SignContextRail() {
 							</Button>
 						</div>
 					) : null}
+					<ConfirmAlertDialog
+						open={executeReplacementOpen}
+						onOpenChange={setExecuteReplacementOpen}
+						title="Execute signer change?"
+						description="This clears every signature on the envelope. All signers must sign again before the envelope can complete."
+						confirmLabel="Execute change"
+						destructive
+						pending={settlements.executeSignerReplacementPending}
+						onConfirm={() => settlements.onExecuteSignerReplacement()}
+					/>
 				</div>
 			) : null}
 
@@ -88,6 +113,7 @@ export function SignContextRail() {
 					loading={!file}
 					envelopeProgress={envelopeProgress}
 					canSignByRouting={canSignByRouting}
+					pendingSignerReplacement={pendingReplacement}
 				/>
 			</SignSidebar.Section>
 
@@ -155,27 +181,52 @@ export function SignContextRail() {
 								Clear signatures
 							</Button>
 						) : null}
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							className="h-8 gap-1.5 text-xs"
-							onClick={() => settlements.openAttachDialog()}
-						>
-							Add payout
-							<ProFeatureMark size="xs" />
-						</Button>
-						<Button
-							type="button"
-							variant="outline"
-							size="sm"
-							className="h-8 gap-1.5 text-xs"
-							onClick={() => settlements.openAmendDialog()}
-						>
-							Change signer
-							<ProFeatureMark size="xs" />
-						</Button>
+						{settlements.envelopeOpenForSenderGovernance ? (
+							<>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="h-8 gap-1.5 text-xs"
+									onClick={() => settlements.openAttachDialog()}
+								>
+									Add payout
+									<ProFeatureMark size="xs" />
+								</Button>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="h-8 gap-1.5 text-xs"
+									disabled={!settlements.canChangeSigner}
+									onClick={() => settlements.openAmendDialog()}
+								>
+									Change signer
+									<ProFeatureMark size="xs" />
+								</Button>
+							</>
+						) : null}
 					</div>
+					{governanceClosedCopy ? (
+						<p className="mt-2 text-xs text-muted-foreground text-pretty">
+							{governanceClosedCopy}
+						</p>
+					) : null}
+					{settlements.envelopeOpenForSenderGovernance &&
+					!settlements.canChangeSigner &&
+					!settlements.paidSettlementLegs &&
+					settlements.unsignedAmendOptions.length === 0 ? (
+						<p className="mt-2 text-xs text-muted-foreground text-pretty">
+							Every signer has already signed. Use Clear signatures to reopen
+							roster changes.
+						</p>
+					) : null}
+					{settlements.envelopeOpenForSenderGovernance &&
+					settlements.paidSettlementLegs ? (
+						<p className="mt-2 text-xs text-muted-foreground text-pretty">
+							Change signer is unavailable after any payout leg has been paid.
+						</p>
+					) : null}
 					<ConditionalAttachmentsPanel
 						packets={file?.conditionalAttachmentPackets}
 						signingStarted={signingStarted}

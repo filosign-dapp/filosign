@@ -168,14 +168,8 @@ export function SettlementRuleRowView({
 							{signingStarted ? (
 								<p className="text-[11px] text-muted-foreground text-pretty">
 									Payout edits are locked after the first required signature.
-									Use Clear signatures in More details to reopen edits without
+									Use Clear signatures in Sender tools to reopen edits without
 									voiding the envelope.
-								</p>
-							) : null}
-							{state.partial ? (
-								<p className="text-[11px] text-muted-foreground text-pretty">
-									Cancelling stops only unpaid amounts. Money already sent
-									cannot be taken back.
 								</p>
 							) : null}
 							{!signingStarted ? (

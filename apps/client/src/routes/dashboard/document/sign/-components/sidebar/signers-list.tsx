@@ -1,17 +1,11 @@
-import {
-	normalizePlacementRecipientEmail,
-	orderSignersByRoutingEmails,
-} from "@filosign/shared";
-import {
-	ArrowSquareOutIcon,
-	CheckIcon,
-	ClockIcon,
-	UserIcon,
-} from "@phosphor-icons/react";
+import { orderSignersByRoutingEmails } from "@filosign/shared";
+import { UserIcon } from "@phosphor-icons/react";
 import { useMemo } from "react";
-import { defaultChain } from "@/src/constants";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
-import { cn } from "@/src/lib/utils";
+import {
+	SignerListRow,
+	signerListRowKey,
+} from "@/src/routes/dashboard/document/sign/-components/sidebar/signer-list-row";
 import { SignSidebarSignersProgress } from "@/src/routes/dashboard/document/sign/-components/sidebar/signers-progress";
 import type { EnvelopeProgressLike } from "@/src/routes/dashboard/document/sign/-lib/utils/envelope-progress-display";
 
@@ -21,17 +15,31 @@ type SignerRow =
 			wallet: string;
 			name: string | null;
 			email: string | null;
+			invitePending?: boolean;
 	  };
+
+type PendingSignerReplacement = {
+	oldCommitment: `0x${string}`;
+	newCommitment: `0x${string}`;
+	oldEmail?: string | null;
+	newEmail?: string | null;
+};
 
 function normalizeSignerRow(signer: SignerRow): {
 	wallet: string;
 	name: string | null;
 	email: string | null;
+	invitePending: boolean;
 } {
 	if (typeof signer === "string") {
-		return { wallet: signer, name: null, email: null };
+		return { wallet: signer, name: null, email: null, invitePending: false };
 	}
-	return signer;
+	return {
+		wallet: signer.wallet,
+		name: signer.name,
+		email: signer.email,
+		invitePending: signer.invitePending === true,
+	};
 }
 
 export function SignSidebarSignersList({
@@ -43,6 +51,7 @@ export function SignSidebarSignersList({
 	loading,
 	envelopeProgress,
 	canSignByRouting,
+	pendingSignerReplacement,
 }: {
 	signers: SignerRow[];
 	signatures:
@@ -54,6 +63,7 @@ export function SignSidebarSignersList({
 	loading?: boolean;
 	envelopeProgress?: EnvelopeProgressLike | null;
 	canSignByRouting?: boolean;
+	pendingSignerReplacement?: PendingSignerReplacement | null;
 }) {
 	const isSequential = envelopeProgress?.routingMode === 1;
 	const nextSignerEmail = envelopeProgress?.nextSignerEmail ?? null;
@@ -91,109 +101,21 @@ export function SignSidebarSignersList({
 							<Skeleton key={i} className="h-14 w-full rounded-lg" />
 						))
 					: null}
-				{orderedSigners.map((signer) => {
-					const signerWallet = signer.wallet;
-					const signature = signatures?.find(
-						(s) => s.signer.toLowerCase() === signerWallet.toLowerCase(),
-					);
-					const hasSigned = Boolean(signature);
-					const isYou =
-						signerAddress?.toLowerCase() === signerWallet.toLowerCase();
-					const signerName = signer.name;
-					const signerEmail = signer.email;
-					const displayName = signerName || formatAddress(signerWallet);
-					const signerEmailNorm = signerEmail
-						? normalizePlacementRecipientEmail(signerEmail).toLowerCase()
-						: null;
-					const nextSignerEmailNorm = nextSignerEmail
-						? normalizePlacementRecipientEmail(nextSignerEmail).toLowerCase()
-						: null;
-					const isUpNext =
-						isSequential &&
-						!hasSigned &&
-						!envelopeProgress?.completedAt &&
-						signerEmailNorm != null &&
-						signerEmailNorm === nextSignerEmailNorm;
-
-					return (
-						<div
-							key={signerWallet}
-							className={cn(
-								"flex items-center gap-3 rounded-lg border p-3",
-								hasSigned
-									? "border-primary/20 bg-primary/5"
-									: isUpNext
-										? "border-primary/30 bg-primary/5 ring-1 ring-primary/15"
-										: "border-border bg-muted/20",
-							)}
-						>
-							<div
-								className={cn(
-									"flex size-8 shrink-0 items-center justify-center rounded-full",
-									hasSigned
-										? "bg-primary text-primary-foreground"
-										: isUpNext
-											? "bg-primary/15 text-primary"
-											: "bg-muted text-muted-foreground",
-								)}
-							>
-								{hasSigned ? (
-									<CheckIcon className="size-4" weight="bold" />
-								) : signer.turnIndex != null ? (
-									<span className="text-xs font-semibold tabular-nums">
-										{signer.turnIndex}
-									</span>
-								) : (
-									<ClockIcon className="size-4" />
-								)}
-							</div>
-							<div className="min-w-0 flex-1">
-								<p className="truncate text-sm font-medium">
-									{displayName}
-									{isYou ? (
-										<span className="ml-1 text-xs text-muted-foreground">
-											(You)
-										</span>
-									) : null}
-								</p>
-								{signerEmail ? (
-									<p className="truncate text-xs text-muted-foreground">
-										{signerEmail}
-									</p>
-								) : null}
-								<p
-									className={cn(
-										"text-xs",
-										hasSigned
-											? "text-primary"
-											: isUpNext
-												? "font-medium text-primary"
-												: "text-muted-foreground",
-									)}
-								>
-									{hasSigned
-										? "Signed"
-										: isUpNext
-											? "Up next"
-											: isSequential
-												? "Waiting"
-												: "Pending"}
-								</p>
-							</div>
-							{signature?.onchainTxHash ? (
-								<a
-									href={`${defaultChain.blockExplorers?.default?.url}/tx/${signature.onchainTxHash}`}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="text-muted-foreground hover:text-foreground"
-									title="View on explorer"
-								>
-									<ArrowSquareOutIcon className="size-4" />
-								</a>
-							) : null}
-						</div>
-					);
-				})}
+				{orderedSigners.map((signer) => (
+					<SignerListRow
+						key={signerListRowKey(signer)}
+						signer={signer}
+						signature={signatures?.find(
+							(s) => s.signer.toLowerCase() === signer.wallet.toLowerCase(),
+						)}
+						signerAddress={signerAddress}
+						formatAddress={formatAddress}
+						isSequential={isSequential}
+						envelopeProgress={envelopeProgress}
+						nextSignerEmail={nextSignerEmail}
+						pendingSignerReplacement={pendingSignerReplacement}
+					/>
+				))}
 			</div>
 
 			{viewers && viewers.length > 0 ? (

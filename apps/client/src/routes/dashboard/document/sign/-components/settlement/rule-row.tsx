@@ -1,24 +1,17 @@
 import type { SettlementRuleRow } from "@filosign/react/files";
-import type { SettlementRuleStatus } from "@filosign/shared";
 import {
 	settlementReleaseTypeLabel,
 	settlementStatusLabel,
 } from "@filosign/shared";
-import {
-	ArrowSquareOutIcon,
-	CheckIcon,
-	ClockIcon,
-	WarningIcon,
-} from "@phosphor-icons/react";
+import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	buildSettlementRuleRowState,
-	settlementRuleIconClassName,
-	settlementRuleRowClassName,
-	settlementRuleStatusClassName,
-	settlementStatusIconKind,
+	settlementRuleAccentClassName,
+	settlementRuleStatusBadgeClassName,
 } from "@/src/lib/domains/settlements/rule-row-state";
 import {
 	formatSettlementAmountLine,
@@ -26,19 +19,6 @@ import {
 } from "@/src/lib/domains/settlements/settlement-display";
 import { cn } from "@/src/lib/utils";
 import { SettlementManageActions } from "@/src/routes/dashboard/document/sign/-components/settlement-manage-actions";
-
-function StatusIcon({ status }: { status: SettlementRuleStatus }) {
-	const kind = settlementStatusIconKind(status);
-	if (kind === "executed" || kind === "partial") {
-		return (
-			<CheckIcon className="size-4 text-secondary-foreground" weight="bold" />
-		);
-	}
-	if (kind === "failed") {
-		return <WarningIcon className="size-4 text-amber-700" weight="fill" />;
-	}
-	return <ClockIcon className="size-4 text-muted-foreground" />;
-}
 
 type Props = {
 	rule: SettlementRuleRow;
@@ -105,123 +85,128 @@ export function SettlementRuleRowView({
 	return (
 		<div
 			className={cn(
-				"flex items-start gap-3 p-3 rounded-lg border",
-				settlementRuleRowClassName(state),
+				"rounded-lg border border-border/50 bg-background/50 p-3 border-l-2",
+				settlementRuleAccentClassName(state, rule.status),
 			)}
 		>
-			<div
-				className={cn(
-					"size-8 rounded-full flex items-center justify-center shrink-0",
-					settlementRuleIconClassName(state),
-				)}
-			>
-				<StatusIcon status={rule.status} />
-			</div>
-			<div className="flex-1 min-w-0 space-y-0.5">
-				<p className="text-sm font-medium truncate">
-					{formatSettlementRecipientLine(rule, formatAddress)}
-				</p>
-				<p className="text-xs text-muted-foreground">
-					{formatSettlementAmountLine(rule, decimals)}
-					{state.legCount > 1
-						? state.partial
-							? ` · ${state.paidLegCount}/${state.legCount} recipients paid`
-							: ` · ${state.legCount} recipients`
-						: ""}{" "}
-					· {settlementReleaseTypeLabel(rule.releaseType)}
-				</p>
-				<p className={cn("text-xs", settlementRuleStatusClassName(state))}>
-					{settlementStatusLabel(rule.status)}
-					{rule.lastError && state.failed ? `: ${rule.lastError}` : null}
-				</p>
-				{state.canSettle ? (
-					<div className="mt-2 space-y-1.5">
-						<Button
-							type="button"
-							variant="default"
-							size="sm"
-							className="h-7 text-xs"
-							disabled={settlePending}
-							onClick={() =>
-								onTrySettleRule({
-									onChainRuleId: rule.onChainRuleId,
-									validatorAddress: getAddress(rule.validatorAddress),
-								})
-							}
-						>
-							{state.isTrying
-								? "Sending…"
-								: state.partial || state.failed
-									? "Retry payout"
-									: "Send payout"}
-						</Button>
-						<button
-							type="button"
+			<div className="flex items-start justify-between gap-2">
+				<div className="min-w-0 flex-1 space-y-1">
+					<div className="flex flex-wrap items-center gap-1.5">
+						<p className="min-w-0 truncate text-sm font-medium">
+							{formatSettlementRecipientLine(rule, formatAddress)}
+						</p>
+						<Badge
+							variant="outline"
 							className={cn(
-								"text-xs text-muted-foreground underline-offset-4 hover:underline disabled:opacity-50 disabled:pointer-events-none",
+								"shrink-0 text-[11px] font-medium",
+								settlementRuleStatusBadgeClassName(state, rule.status),
 							)}
-							disabled={settlePending}
-							onClick={() =>
-								onManualSettleRule({
-									onChainRuleId: rule.onChainRuleId,
-									validatorAddress: getAddress(rule.validatorAddress),
-								})
-							}
 						>
-							{state.isSettling && !state.isTrying
-								? "Sending from wallet…"
-								: "Send from my wallet instead"}
-						</button>
+							{settlementStatusLabel(rule.status)}
+						</Badge>
 					</div>
-				) : null}
-				{canManageSettlements &&
-				isSender &&
-				!state.paid &&
-				!state.cancelled &&
-				onCancelRule &&
-				onUpdateRule ? (
-					<div className="mt-2 space-y-2">
-						{signingStarted ? (
-							<p className="text-[11px] text-muted-foreground text-pretty">
-								Payout edits are locked after the first required signature. Use
-								Clear signatures in More details to reopen edits without voiding
-								the envelope.
-							</p>
-						) : null}
-						{state.partial ? (
-							<p className="text-[11px] text-muted-foreground text-pretty">
-								Cancelling stops only unpaid amounts. Money already sent cannot
-								be taken back.
-							</p>
-						) : null}
-						{!signingStarted ? (
-							<SettlementManageActions
-								rule={rule}
-								onCancel={() =>
-									onCancelRule({
+					<p className="text-xs text-muted-foreground">
+						{formatSettlementAmountLine(rule, decimals)}
+						{state.legCount > 1
+							? state.partial
+								? ` · ${state.paidLegCount}/${state.legCount} recipients paid`
+								: ` · ${state.legCount} recipients`
+							: ""}{" "}
+						· {settlementReleaseTypeLabel(rule.releaseType)}
+					</p>
+					{rule.lastError && state.failed ? (
+						<p className="text-[11px] text-destructive text-pretty">
+							{rule.lastError}
+						</p>
+					) : null}
+					{state.canSettle ? (
+						<div className="space-y-1.5 pt-1">
+							<Button
+								type="button"
+								variant="default"
+								size="sm"
+								className="h-7 text-xs"
+								disabled={settlePending}
+								onClick={() =>
+									onTrySettleRule({
 										onChainRuleId: rule.onChainRuleId,
 										validatorAddress: getAddress(rule.validatorAddress),
 									})
 								}
-								onUpdate={() => onUpdateRule(rule)}
-								cancelPending={cancelPending}
-								updatePending={updatePending}
-							/>
-						) : null}
-					</div>
+							>
+								{state.isTrying
+									? "Sending…"
+									: state.partial || state.failed
+										? "Retry payout"
+										: "Send payout"}
+							</Button>
+							<button
+								type="button"
+								className="text-xs text-muted-foreground underline-offset-4 hover:underline disabled:pointer-events-none disabled:opacity-50"
+								disabled={settlePending}
+								onClick={() =>
+									onManualSettleRule({
+										onChainRuleId: rule.onChainRuleId,
+										validatorAddress: getAddress(rule.validatorAddress),
+									})
+								}
+							>
+								{state.isSettling && !state.isTrying
+									? "Sending from wallet…"
+									: "Send from my wallet instead"}
+							</button>
+						</div>
+					) : null}
+					{canManageSettlements &&
+					isSender &&
+					!state.paid &&
+					!state.partial &&
+					!state.cancelled &&
+					onCancelRule &&
+					onUpdateRule ? (
+						<div className="space-y-2 pt-1">
+							{signingStarted ? (
+								<p className="text-[11px] text-muted-foreground text-pretty">
+									Payout edits are locked after the first required signature.
+									Use Clear signatures in More details to reopen edits without
+									voiding the envelope.
+								</p>
+							) : null}
+							{state.partial ? (
+								<p className="text-[11px] text-muted-foreground text-pretty">
+									Cancelling stops only unpaid amounts. Money already sent
+									cannot be taken back.
+								</p>
+							) : null}
+							{!signingStarted ? (
+								<SettlementManageActions
+									rule={rule}
+									onCancel={() =>
+										onCancelRule({
+											onChainRuleId: rule.onChainRuleId,
+											validatorAddress: getAddress(rule.validatorAddress),
+										})
+									}
+									onUpdate={() => onUpdateRule(rule)}
+									cancelPending={cancelPending}
+									updatePending={updatePending}
+								/>
+							) : null}
+						</div>
+					) : null}
+				</div>
+				{state.payoutUrl ? (
+					<a
+						href={state.payoutUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="shrink-0 text-muted-foreground hover:text-foreground"
+						title="View payout on explorer"
+					>
+						<ArrowSquareOutIcon className="size-4" />
+					</a>
 				) : null}
 			</div>
-			{state.payoutUrl ? (
-				<a
-					href={state.payoutUrl}
-					target="_blank"
-					rel="noopener noreferrer"
-					className="text-muted-foreground hover:text-foreground shrink-0"
-					title="View payout on explorer"
-				>
-					<ArrowSquareOutIcon className="size-4" />
-				</a>
-			) : null}
 		</div>
 	);
 }

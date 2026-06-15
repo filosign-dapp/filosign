@@ -26,7 +26,7 @@ export function SettlementManageActions({
 				disabled={updatePending || cancelPending}
 				onClick={onUpdate}
 			>
-				{updatePending ? "Saving…" : "Change amounts"}
+				{updatePending ? "Updating…" : "Change amounts"}
 				<ProFeatureMark size="xs" />
 			</Button>
 			<Button

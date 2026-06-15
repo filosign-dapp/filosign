@@ -24,7 +24,7 @@ type Props = {
 		validatorAddress: Address;
 	}) => void;
 	revokePending: boolean;
-	onRevokeAllowance: () => void;
+	onRevokeAllowance: () => void | Promise<void>;
 	canManageSettlements?: boolean;
 	onCancelRule?: (input: {
 		onChainRuleId: string;
@@ -86,11 +86,9 @@ export function SettlementStatusPanel({
 				)}
 				{isSender ? (
 					<p className="text-xs text-muted-foreground">
-						USDC stays in your wallet until each payout runs. We send it
-						automatically when signing is complete, using only what you&apos;ve
-						approved. Use Send payout below only if one didn&apos;t go through.
-						Revoke approval below to stop any unpaid payouts.{" "}
-						<DocsLink href={DOCS_LINKS.payouts()}>
+						USDC stays in your wallet until payout. Revoke approval to stop
+						unpaid payouts.{" "}
+						<DocsLink href={DOCS_LINKS.payouts()} className="mt-1">
 							Read the payouts guide
 						</DocsLink>
 					</p>

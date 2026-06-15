@@ -42,7 +42,7 @@ export function SettlementRevokeAllowanceButton({
 				open={open}
 				onOpenChange={setOpen}
 				title="Revoke payout approval?"
-				description="People can still sign, but no attached payouts can go out until you approve USDC in your wallet again."
+				description="This sets USDC approval to zero for all unpaid attached payouts on this document. People can still sign, but no payouts can go out until you approve USDC again."
 				confirmLabel="Revoke"
 				destructive
 				pending={revokePending}

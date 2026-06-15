@@ -5,7 +5,6 @@ import type {
 } from "@filosign/shared";
 import { settlementReleaseTypeLabel } from "@filosign/shared";
 import { useEffect, useState } from "react";
-import { SUPPORTED_TOKENS } from "@/src/constants";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Dialog,
@@ -17,15 +16,24 @@ import {
 } from "@/src/lib/components/ui/dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import {
+	resolveSettlementRuleLegs,
+	type SettlementAllowanceChangeStep,
+	settlementAllowanceChangeSummary,
+} from "@/src/lib/domains/settlements/allowance";
+import { useSettlementAllowancePreview } from "@/src/lib/domains/settlements/use-settlement-allowance-preview";
+import { formatUsdcAmount } from "@/src/lib/web3/format-usdc";
 
 type Props = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	allRules: SettlementRuleRow[];
 	rule: SettlementRuleRow | null;
 	onConfirm: (args: {
 		legs: { recipientWallet: `0x${string}`; amountUsdc: string }[];
 		releaseType: SettlementReleaseType;
 		releaseParams: SettlementRuleUpdateInput["releaseParams"];
+		changeStep: SettlementAllowanceChangeStep;
 	}) => Promise<void>;
 	pending?: boolean;
 };
@@ -33,17 +41,24 @@ type Props = {
 export function SettlementUpdateDialog({
 	open,
 	onOpenChange,
+	allRules,
 	rule,
 	onConfirm,
 	pending,
 }: Props) {
-	const decimals = SUPPORTED_TOKENS[0]?.decimals ?? 6;
 	const [amounts, setAmounts] = useState<string[]>([]);
+	const { decimals, currentAllowance, requiredAfter, loading, changeStep } =
+		useSettlementAllowancePreview({
+			open,
+			allRules,
+			rule,
+			draftAmounts: amounts,
+		});
 
 	useEffect(() => {
 		if (!open || !rule) return;
 		setAmounts(
-			(rule.legs?.length ? rule.legs : [{ amount: rule.amount }]).map((leg) => {
+			resolveSettlementRuleLegs(rule).map((leg) => {
 				const raw = Number(leg.amount) / 10 ** decimals;
 				return String(raw);
 			}),
@@ -52,15 +67,7 @@ export function SettlementUpdateDialog({
 
 	if (!rule) return null;
 
-	const legs = rule.legs?.length
-		? rule.legs
-		: [
-				{
-					recipientWallet: rule.recipientWallet as `0x${string}`,
-					recipientSource: rule.recipientSource,
-					amount: rule.amount,
-				},
-			];
+	const legs = resolveSettlementRuleLegs(rule);
 
 	const handleSave = async () => {
 		const nextLegs = legs.map((leg, index) => {
@@ -73,13 +80,18 @@ export function SettlementUpdateDialog({
 				amountUsdc: trimmed,
 			};
 		});
-		await onConfirm({
-			legs: nextLegs,
-			releaseType: rule.releaseType,
-			releaseParams:
-				rule.releaseParams as SettlementRuleUpdateInput["releaseParams"],
-		});
-		onOpenChange(false);
+		try {
+			await onConfirm({
+				legs: nextLegs,
+				releaseType: rule.releaseType,
+				releaseParams:
+					rule.releaseParams as SettlementRuleUpdateInput["releaseParams"],
+				changeStep,
+			});
+			onOpenChange(false);
+		} catch {
+			// Error surfaced by onConfirm.
+		}
 	};
 
 	return (
@@ -113,6 +125,24 @@ export function SettlementUpdateDialog({
 							/>
 						</div>
 					))}
+					<div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2 text-xs text-muted-foreground space-y-1">
+						<p>
+							Current approval:{" "}
+							{loading
+								? "Loading…"
+								: currentAllowance === null
+									? "Unavailable"
+									: `${formatUsdcAmount(currentAllowance, decimals)} USDC`}
+						</p>
+						<p>
+							Combined payout total after save:{" "}
+							{formatUsdcAmount(requiredAfter, decimals)} USDC
+						</p>
+						<p>{settlementAllowanceChangeSummary(changeStep)}</p>
+						<p>
+							To block all attached payouts, use Revoke payout approval instead.
+						</p>
+					</div>
 				</div>
 				<DialogFooter>
 					<Button
@@ -126,14 +156,12 @@ export function SettlementUpdateDialog({
 						type="button"
 						variant="primary"
 						disabled={pending}
-						onClick={() => void handleSave().catch(console.error)}
+						onClick={() => void handleSave().catch(() => {})}
 					>
-						{pending ? "Saving…" : "Save amounts"}
+						{pending ? "Updating…" : "Save amounts"}
 					</Button>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
 	);
 }
-
-export { legsToDraftAmounts } from "@/src/routes/dashboard/document/sign/-lib/utils/settlement-legs";

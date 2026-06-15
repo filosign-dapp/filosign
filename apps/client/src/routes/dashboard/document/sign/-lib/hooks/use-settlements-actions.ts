@@ -31,8 +31,17 @@ import { useCallback, useMemo, useState } from "react";
 import { type Address, getAddress } from "viem";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
+import type { SettlementAllowanceChangeStep } from "@/src/lib/domains/settlements/allowance";
+import {
+	buildSettlementCancelProgressPlan,
+	buildSettlementUpdateProgressPlan,
+} from "@/src/lib/domains/settlements/change-progress";
 import { useBasicPayoutGateActions } from "@/src/lib/domains/settlements/use-basic-payout-gate-actions";
-import { legsToDraftAmounts } from "@/src/routes/dashboard/document/sign/-lib/utils/settlement-legs";
+import { useSettlementChangeProgress } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-settlement-change-progress";
+import {
+	legsToDraftAmounts,
+	mapSettlementUpdateLegs,
+} from "@/src/routes/dashboard/document/sign/-lib/utils/settlement-legs";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 
 type SignFileMeta = {
@@ -93,6 +102,7 @@ export function useSignSettlementsActions(
 	const [clearSignaturesDialogOpen, setClearSignaturesDialogOpen] =
 		useState(false);
 	const [attachDialogOpen, setAttachDialogOpen] = useState(false);
+	const settlementChangeProgress = useSettlementChangeProgress();
 
 	const settlementRules = settlementsQuery.data ?? [];
 
@@ -143,19 +153,35 @@ export function useSignSettlementsActions(
 	const onRevokeAllowance = useCallback(async () => {
 		const rules = settlementsQuery.data ?? [];
 		const token = rules[0]?.tokenAddress;
-		if (!token) return;
-		try {
-			await revokeSettlementAllowance.mutateAsync(getAddress(token));
-		} catch {}
+		if (!token) {
+			throw new Error("No payout token found for this document.");
+		}
+		await revokeSettlementAllowance.mutateAsync(getAddress(token));
+		toastUser.success(TOASTS.sign.payoutApprovalRevoked.title, {
+			hint: TOASTS.sign.payoutApprovalRevoked.hint,
+		});
 	}, [revokeSettlementAllowance, settlementsQuery.data]);
 
 	const onCancelRule = useCallback(
 		async (input: { onChainRuleId: string; validatorAddress: Address }) => {
-			try {
-				await cancelSettlementRule.mutateAsync(input);
-			} catch {}
+			await settlementChangeProgress.run({
+				mode: "cancel",
+				plan: buildSettlementCancelProgressPlan(),
+				run: async (onProgress) => {
+					await cancelSettlementRule.mutateAsync({
+						...input,
+						allRules: settlementRules,
+						onProgress,
+					});
+				},
+				onSuccess: () => {
+					toastUser.success(TOASTS.sign.payoutRemoved.title, {
+						hint: TOASTS.sign.payoutRemoved.hint,
+					});
+				},
+			});
 		},
-		[cancelSettlementRule],
+		[cancelSettlementRule, settlementChangeProgress, settlementRules],
 	);
 
 	const onUpdateRule = useCallback((rule: SettlementRuleRow) => {
@@ -168,26 +194,41 @@ export function useSignSettlementsActions(
 			legs: { recipientWallet: `0x${string}`; amountUsdc: string }[];
 			releaseType: SettlementRuleRow["releaseType"];
 			releaseParams: SettlementRuleUpdateInput["releaseParams"];
+			changeStep: SettlementAllowanceChangeStep;
 		}) => {
 			if (!updateRuleTarget) return;
-			const draftLegs = legsToDraftAmounts(args.legs);
-			try {
-				await updateSettlementRule.mutateAsync({
-					onChainRuleId: updateRuleTarget.onChainRuleId,
-					validatorAddress: getAddress(updateRuleTarget.validatorAddress),
-					releaseType: args.releaseType,
-					releaseParams: args.releaseParams,
-					legs: draftLegs.map((leg, index) => ({
-						recipientWallet: leg.recipientWallet,
-						recipientSource:
-							updateRuleTarget.legs[index]?.recipientSource ??
-							updateRuleTarget.recipientSource,
-						amount: leg.amount,
-					})),
-				});
-			} catch {}
+			const legs = mapSettlementUpdateLegs(
+				updateRuleTarget,
+				legsToDraftAmounts(args.legs),
+			);
+
+			await settlementChangeProgress.run({
+				mode: "update",
+				plan: buildSettlementUpdateProgressPlan(args.changeStep),
+				run: async (onProgress) => {
+					await updateSettlementRule.mutateAsync({
+						allRules: settlementRules,
+						onChainRuleId: updateRuleTarget.onChainRuleId,
+						validatorAddress: getAddress(updateRuleTarget.validatorAddress),
+						releaseType: args.releaseType,
+						releaseParams: args.releaseParams,
+						legs,
+						onProgress,
+					});
+				},
+				onSuccess: () => {
+					toastUser.success(TOASTS.sign.payoutAmountsUpdated.title, {
+						hint: TOASTS.sign.payoutAmountsUpdated.hint,
+					});
+				},
+			});
 		},
-		[updateRuleTarget, updateSettlementRule],
+		[
+			updateRuleTarget,
+			updateSettlementRule,
+			settlementRules,
+			settlementChangeProgress,
+		],
 	);
 
 	const onConfirmClearEnvelopeSignatures = useCallback(
@@ -333,12 +374,22 @@ export function useSignSettlementsActions(
 		canManageSettlements,
 		onCancelRule,
 		onUpdateRule,
-		cancelPending: cancelSettlementRule.isPending,
-		updatePending: updateSettlementRule.isPending,
+		cancelPending:
+			cancelSettlementRule.isPending ||
+			settlementChangeProgress.isModeActive("cancel"),
+		updatePending:
+			updateSettlementRule.isPending ||
+			settlementChangeProgress.isModeActive("update"),
+		changeProgressOpen: settlementChangeProgress.open,
+		changeProgressState: settlementChangeProgress.state,
+		changeProgressMode: settlementChangeProgress.mode,
+		dismissChangeProgress: settlementChangeProgress.dismiss,
+		retryChangeProgress: settlementChangeProgress.retry,
 		updateDialogOpen,
 		setUpdateDialogOpen,
 		updateRuleTarget,
 		onConfirmUpdateRule,
+		allRules: settlementRules,
 		amendDialogOpen,
 		setAmendDialogOpen,
 		onConfirmAmendSigner,

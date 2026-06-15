@@ -15,6 +15,29 @@ export type SettlementRuleRowState = {
 	paidLegCount: number;
 };
 
+export type SettlementRuleStatusTone =
+	| "muted"
+	| "success"
+	| "warning"
+	| "primary"
+	| "destructive";
+
+const statusToneClass: Record<SettlementRuleStatusTone, string> = {
+	muted: "border-border/60 bg-muted/60 text-muted-foreground",
+	success: "border-border bg-secondary text-black",
+	warning: "border-warning/30 bg-warning/10 text-warning",
+	primary: "border-secondary/30 bg-secondary/5 text-secondary",
+	destructive: "border-destructive/30 bg-destructive/10 text-destructive",
+};
+
+const rowAccentClass: Record<SettlementRuleStatusTone, string> = {
+	muted: "border-l-muted-foreground/35",
+	success: "border-l-secondary",
+	warning: "border-l-warning",
+	primary: "border-l-primary",
+	destructive: "border-l-destructive/70",
+};
+
 export function canActOnSettlementRule(
 	rule: SettlementRuleRow,
 	walletAddress: `0x${string}` | undefined,
@@ -70,37 +93,28 @@ export function buildSettlementRuleRowState(args: {
 	};
 }
 
-export function settlementRuleRowClassName(
+export function settlementRuleStatusTone(
 	state: SettlementRuleRowState,
-): string {
-	if (state.paid || state.partial) return "bg-secondary/10 border-secondary/30";
-	if (state.failed) return "bg-amber-500/10 border-amber-500/30";
-	if (state.cancelled) return "bg-muted/20 border-border/80";
-	return "bg-muted/30 border-border";
-}
-
-export function settlementRuleIconClassName(
-	state: SettlementRuleRowState,
-): string {
-	if (state.paid) return "bg-secondary";
-	if (state.partial) return "bg-secondary/40";
-	if (state.failed) return "bg-amber-100 dark:bg-amber-950";
-	return "bg-muted";
-}
-
-export function settlementRuleStatusClassName(
-	state: SettlementRuleRowState,
-): string {
-	if (state.paid || state.partial) return "text-secondary-foreground";
-	if (state.failed) return "text-amber-800 dark:text-amber-200";
-	return "text-muted-foreground";
-}
-
-export function settlementStatusIconKind(
 	status: SettlementRuleStatus,
-): "executed" | "partial" | "failed" | "pending" {
-	if (status === "executed") return "executed";
-	if (status === "partial") return "partial";
-	if (status.startsWith("failed_")) return "failed";
-	return "pending";
+): SettlementRuleStatusTone {
+	if (state.paid) return "success";
+	if (state.partial) return "warning";
+	if (state.failed) return "destructive";
+	if (state.cancelled) return "muted";
+	if (status === "ready") return "primary";
+	return "muted";
+}
+
+export function settlementRuleAccentClassName(
+	state: SettlementRuleRowState,
+	status: SettlementRuleStatus,
+): string {
+	return rowAccentClass[settlementRuleStatusTone(state, status)];
+}
+
+export function settlementRuleStatusBadgeClassName(
+	state: SettlementRuleRowState,
+	status: SettlementRuleStatus,
+): string {
+	return statusToneClass[settlementRuleStatusTone(state, status)];
 }

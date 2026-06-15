@@ -46,6 +46,17 @@ export function draftDocumentInfo(draftId: string, docId: string): string {
 	return `filosign:draft-document:v1:${draftId}:${docId}`;
 }
 
+export function templateDekWrapOmkInfo(templateId: string): string {
+	return `filosign:template-dek-wrap:omk:v1:${templateId}`;
+}
+
+export function templateDocumentInfo(
+	templateId: string,
+	docId: string,
+): string {
+	return `filosign:template-document:v1:${templateId}:${docId}`;
+}
+
 export function draftCommentInfo(draftId: string, commentId: string): string {
 	return `filosign:draft-comment:v1:${draftId}:${commentId}`;
 }

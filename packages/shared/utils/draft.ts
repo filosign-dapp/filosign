@@ -29,6 +29,8 @@ const zSignatureField = z.object({
 	]),
 	x: z.number(),
 	y: z.number(),
+	width: z.number().optional(),
+	height: z.number().optional(),
 	page: z.number(),
 	documentId: z.string(),
 	assignedSignerWallet: z.string(),

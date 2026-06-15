@@ -27,6 +27,8 @@ export * from "./utils/signature-font-catalog";
 export * from "./utils/signature-raster-fit";
 export * from "./utils/supplementary-attachment-upload";
 export * from "./utils/supplementary-packet-unlock";
+export * from "./utils/template";
+export * from "./utils/template-editor";
 
 export function base64ToUint8(base64: string): Uint8Array {
 	const binary = atob(base64);

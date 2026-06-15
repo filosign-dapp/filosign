@@ -43,28 +43,28 @@ export const CHANGELOG_ERAS: ReadonlyArray<{
 	{
 		id: "acceleration",
 		label: "Shipping faster",
-		subtitle: "Jun 2026",
+		subtitle: "June 2026",
 		description:
-			"Plans, onboarding, team invites, and the polish modern teams expect - shipped in weeks, not quarters.",
+			"Plans, onboarding, team invites, and polish - a steady run of improvements for growing teams.",
 	},
 	{
 		id: "platform",
 		label: "Ready for teams",
-		subtitle: "Apr–May 2026",
+		subtitle: "Late May 2026",
 		description:
 			"Workspaces, payout packets, and drafts so agreements do not stop at the signature.",
 	},
 	{
 		id: "core",
 		label: "Everyday workflow",
-		subtitle: "Nov 2025–Mar 2026",
+		subtitle: "Early May 2026",
 		description:
 			"Proof you can share, signing from email, and field placement that feels familiar.",
 	},
 	{
 		id: "foundation",
 		label: "Where it started",
-		subtitle: "Sep–Oct 2025",
+		subtitle: "Mid Apr 2026",
 		description:
 			"Private documents, a first send-and-sign loop, and profiles your teammates recognize.",
 	},
@@ -74,7 +74,7 @@ export const CHANGELOG_ERAS: ReadonlyArray<{
 export const ChangelogEntries: ChangelogEntry[] = [
 	{
 		id: "29",
-		date: "Jun 14, 2026",
+		date: "Jun 15, 2026",
 		type: "Feature",
 		category: "Plans",
 		era: "acceleration",
@@ -97,7 +97,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "27",
-		date: "Jun 14, 2026",
+		date: "Jun 13, 2026",
 		type: "Feature",
 		category: "Workflow",
 		era: "acceleration",
@@ -108,7 +108,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "26",
-		date: "Jun 14, 2026",
+		date: "Jun 12, 2026",
 		type: "Feature",
 		category: "Privacy",
 		era: "acceleration",
@@ -119,7 +119,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "25",
-		date: "Jun 14, 2026",
+		date: "Jun 11, 2026",
 		type: "Feature",
 		category: "Signing",
 		era: "acceleration",
@@ -131,7 +131,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "24",
-		date: "Jun 14, 2026",
+		date: "Jun 10, 2026",
 		type: "Enhancement",
 		category: "Workflow",
 		era: "acceleration",
@@ -142,7 +142,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "23",
-		date: "Jun 14, 2026",
+		date: "Jun 9, 2026",
 		type: "Feature",
 		category: "Workflow",
 		era: "acceleration",
@@ -153,7 +153,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "22",
-		date: "Jun 14, 2026",
+		date: "Jun 8, 2026",
 		type: "Feature",
 		category: "Teams",
 		era: "acceleration",
@@ -165,7 +165,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "21",
-		date: "Jun 14, 2026",
+		date: "Jun 6, 2026",
 		type: "Enhancement",
 		category: "Workflow",
 		era: "acceleration",
@@ -176,7 +176,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "20",
-		date: "Jun 14, 2026",
+		date: "Jun 5, 2026",
 		type: "Enhancement",
 		category: "Signing",
 		era: "acceleration",
@@ -187,7 +187,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "19",
-		date: "Jun 14, 2026",
+		date: "Jun 4, 2026",
 		type: "Enhancement",
 		category: "Workflow",
 		era: "acceleration",
@@ -198,7 +198,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "18",
-		date: "Jun 14, 2026",
+		date: "Jun 2, 2026",
 		type: "Feature",
 		category: "Payouts",
 		era: "acceleration",
@@ -209,7 +209,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "17",
-		date: "Jun 12, 2026",
+		date: "Jun 1, 2026",
 		type: "Feature",
 		category: "Proof",
 		era: "acceleration",
@@ -220,7 +220,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "16",
-		date: "Jun 6, 2026",
+		date: "May 30, 2026",
 		type: "Feature",
 		category: "Plans",
 		era: "acceleration",
@@ -243,7 +243,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "14",
-		date: "May 18, 2026",
+		date: "May 24, 2026",
 		type: "Feature",
 		category: "Payouts",
 		era: "platform",
@@ -255,7 +255,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "13",
-		date: "May 10, 2026",
+		date: "May 21, 2026",
 		type: "Feature",
 		category: "Teams",
 		era: "platform",
@@ -267,7 +267,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "12",
-		date: "Apr 29, 2026",
+		date: "May 18, 2026",
 		type: "Feature",
 		category: "Workflow",
 		era: "platform",
@@ -279,7 +279,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "11",
-		date: "Apr 22, 2026",
+		date: "May 14, 2026",
 		type: "Feature",
 		category: "Proof",
 		era: "core",
@@ -291,7 +291,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "10",
-		date: "Apr 10, 2026",
+		date: "May 10, 2026",
 		type: "Enhancement",
 		category: "Proof",
 		era: "core",
@@ -302,7 +302,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "9",
-		date: "Mar 28, 2026",
+		date: "May 7, 2026",
 		type: "Feature",
 		category: "Signing",
 		era: "core",
@@ -313,7 +313,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "8",
-		date: "Mar 15, 2026",
+		date: "May 4, 2026",
 		type: "Feature",
 		category: "Signing",
 		era: "core",
@@ -324,7 +324,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "7",
-		date: "Feb 13, 2026",
+		date: "May 1, 2026",
 		type: "Enhancement",
 		category: "Signing",
 		era: "core",
@@ -335,7 +335,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "6",
-		date: "Nov 3, 2025",
+		date: "Apr 28, 2026",
 		type: "Enhancement",
 		category: "Workflow",
 		era: "core",
@@ -346,7 +346,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "5",
-		date: "Oct 25, 2025",
+		date: "Apr 25, 2026",
 		type: "Feature",
 		category: "Workflow",
 		era: "foundation",
@@ -357,7 +357,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "4",
-		date: "Oct 12, 2025",
+		date: "Apr 22, 2026",
 		type: "Feature",
 		category: "Signing",
 		era: "foundation",
@@ -368,7 +368,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "3",
-		date: "Oct 4, 2025",
+		date: "Apr 19, 2026",
 		type: "Feature",
 		category: "Signing",
 		era: "foundation",
@@ -380,7 +380,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "2",
-		date: "Sep 20, 2025",
+		date: "Apr 16, 2026",
 		type: "Feature",
 		category: "Signing",
 		era: "foundation",
@@ -392,7 +392,7 @@ export const ChangelogEntries: ChangelogEntry[] = [
 	},
 	{
 		id: "1",
-		date: "Sep 6, 2025",
+		date: "Apr 14, 2026",
 		type: "Feature",
 		category: "Workflow",
 		era: "foundation",
@@ -405,13 +405,15 @@ export const ChangelogEntries: ChangelogEntry[] = [
 ];
 
 export function changelogStats(entries: ChangelogEntry[]) {
-	const in2025 = entries.filter((entry) => entry.date.includes("2025")).length;
-	const inH12026 = entries.filter((entry) => {
+	const recent = entries.filter((entry) => {
 		const month = entry.date.slice(0, 3);
-		return entry.date.includes("2026") && month !== "Jul" && month !== "Aug";
+		return month === "May" || month === "Jun";
 	}).length;
+	const priorMonth = entries.filter((entry) =>
+		entry.date.includes("Apr"),
+	).length;
 
-	return { in2025, inH12026, total: entries.length };
+	return { priorMonth, recent, total: entries.length };
 }
 
 export function groupEntriesByEra(

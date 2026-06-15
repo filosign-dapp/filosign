@@ -76,8 +76,8 @@ export default function ChangelogListIsland({
 						</h2>
 						<p className="mt-3 font-manrope text-base leading-relaxed text-muted-foreground md:text-lg">
 							Every item below is something you can use in the product today. We
-							group by chapter so you can see how the story built - from first
-							send to team billing in under a year.
+							group by chapter so you can skim the last couple of months - from
+							first send to team billing, one step at a time.
 						</p>
 					</header>
 

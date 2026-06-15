@@ -164,7 +164,7 @@ export default function ChangelogGrowthTreeIsland({
 			</div>
 			<div className="md:hidden">
 				<p className="mb-3 text-center font-manrope text-xs font-medium text-muted-foreground">
-					Picking up speed through 2026
+					A little more each month
 				</p>
 				<DensityBar entries={entries} />
 			</div>

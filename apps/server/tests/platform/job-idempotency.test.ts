@@ -4,7 +4,7 @@ import {
 	indexerJobId,
 	payoutJobId,
 	postSignRoutingJobId,
-} from "@/lib/platform/jobs";
+} from "@/lib/platform/jobs/utils/idempotency";
 
 describe("job idempotency keys", () => {
 	test("stable payout and indexer job ids", () => {

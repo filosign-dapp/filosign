@@ -32,7 +32,10 @@ export function useCancelAttachmentRule() {
 					account: wallet.account,
 					chain: wallet.chain,
 				});
-				await waitForTxReceipt(contracts, hash);
+				await waitForTxReceipt(contracts, hash, {
+					label: "Attachment rule removal",
+					abi: release.abi,
+				});
 				return hash;
 			}
 			const hash = await (
@@ -42,7 +45,10 @@ export function useCancelAttachmentRule() {
 					) => Promise<`0x${string}`>;
 				}
 			).cancelAttachmentRule([BigInt(args.onChainRuleId)]);
-			await waitForTxReceipt(contracts, hash);
+			await waitForTxReceipt(contracts, hash, {
+				label: "Attachment rule removal",
+				abi: release.abi,
+			});
 			return hash;
 		},
 		onSuccess: () => {

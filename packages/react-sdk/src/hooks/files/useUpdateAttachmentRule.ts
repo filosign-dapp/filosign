@@ -60,7 +60,10 @@ export function useUpdateAttachmentRule() {
 				account: wallet.account,
 				chain: wallet.chain,
 			});
-			await waitForTxReceipt(contracts, hash);
+			await waitForTxReceipt(contracts, hash, {
+				label: "Attachment rule update",
+				abi: release.abi,
+			});
 			return hash;
 		},
 		onSuccess: () => {

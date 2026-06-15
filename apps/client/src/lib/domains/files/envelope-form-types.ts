@@ -1,9 +1,13 @@
+import type { TemplateSnapshot } from "@filosign/shared";
+
 export type Recipient = {
 	clientRowId?: string;
 	name: string;
 	email: string;
 	walletAddress?: string;
 	role: "signer" | "viewer";
+	/** Template role label (e.g. Signer 1) when row originates from a template. */
+	templateRoleLabel?: string;
 	/** When false on a signer, they are optional for registry quorum (Teams Pro). */
 	signerRequired?: boolean;
 	/** Set when added via compose "I also need to sign" toggle (removed when toggle off). */
@@ -107,4 +111,14 @@ export type CreateForm = {
 	registerRouting?: RegisterRoutingInput;
 	/** Teams+: encrypted supplementary file packets sent with the envelope. */
 	attachmentPacketDrafts?: AttachmentPacketComposeDraft[];
+	/** Active template editor session (create, edit, or preview). */
+	templateContext?: {
+		templateId: string;
+		mode: "create" | "edit" | "preview";
+	};
+	/** Envelope composed from a template until compose Continue remaps fields. */
+	templateUse?: {
+		templateId: string;
+		snapshotJson: TemplateSnapshot;
+	};
 };

@@ -3,6 +3,7 @@ import {
 	applyRoleAssignments,
 	type DraftSnapshot,
 	draftSnapshotToTemplateSnapshot,
+	isTemplateRolePlaceholderEmail,
 	removeTemplateDocument,
 	removeTemplateRole,
 	reorderTemplateRoles,
@@ -16,10 +17,13 @@ import {
 import {
 	buildCreateForm,
 	createFormToEnvelopeForm,
+	normalizeCreateForm,
 	pruneSignatureFields,
+	recipientFingerprint,
 } from "@/src/lib/domains/drafts/envelope-local-draft";
 import type {
 	CreateForm,
+	Recipient,
 	SignatureField,
 } from "@/src/lib/domains/files/envelope-form-types";
 
@@ -55,11 +59,12 @@ export function composerStateFromTemplateSnapshot(args: {
 			templateRolePlaceholderEmail(role.roleId),
 		]),
 	);
-	const recipients = args.snapshot.roles
+	const recipients: Recipient[] = args.snapshot.roles
 		.sort((a, b) => a.order - b.order)
 		.map((role) => ({
 			clientRowId: role.roleId,
-			name: role.label,
+			name: "",
+			templateRoleLabel: role.label,
 			email:
 				roleEmailById.get(role.roleId) ??
 				templateRolePlaceholderEmail(role.roleId),
@@ -92,11 +97,162 @@ export function composerStateFromTemplateSnapshot(args: {
 	);
 
 	return {
-		recipients,
+		recipients: recipients as DraftSnapshot["recipients"],
 		signatureFields,
 		emailSubject: args.snapshot.defaults?.emailSubject ?? "",
 		emailMessage: args.snapshot.defaults?.emailMessage ?? "",
 	};
+}
+
+export function recipientComposeEmailDisplay(email: string): string {
+	return isTemplateRolePlaceholderEmail(email) ? "" : email;
+}
+
+export async function hydrateCreateFormFromTemplateForCompose(args: {
+	templateId: string;
+	snapshot: TemplateSnapshot;
+	documents: Array<{
+		id: string;
+		name: string;
+		type: string;
+		bytes: Uint8Array;
+	}>;
+}): Promise<CreateForm> {
+	const composer = composerStateFromTemplateSnapshot({
+		snapshot: args.snapshot,
+	});
+	const files = args.documents.map((doc) => {
+		const file = new File([Uint8Array.from(doc.bytes)], doc.name, {
+			type: doc.type,
+		});
+		return {
+			id: doc.id,
+			file,
+			name: doc.name,
+			size: file.size,
+			type: doc.type,
+		};
+	});
+
+	const draft = await buildCreateForm(
+		{
+			documents: files,
+			recipients: composer.recipients as Recipient[],
+			emailMessage: composer.emailMessage,
+			emailSubject: composer.emailSubject,
+			settlementDrafts: [],
+		},
+		null,
+	);
+
+	return {
+		...draft,
+		signatureFields: composer.signatureFields,
+		templateUse: {
+			templateId: args.templateId,
+			snapshotJson: args.snapshot,
+		},
+	};
+}
+
+export async function finalizeTemplateUseAtComposeContinue(args: {
+	prev: CreateForm;
+	formRecipients: Recipient[];
+	emailSubject: string;
+	emailMessage: string;
+	settlementDrafts: CreateForm["settlementDrafts"];
+}): Promise<CreateForm> {
+	const templateUse = args.prev.templateUse;
+	if (!templateUse) {
+		throw new Error(
+			"finalizeTemplateUseAtComposeContinue requires templateUse",
+		);
+	}
+
+	const snapshot = templateUse.snapshotJson;
+	const sortedRoles = [...snapshot.roles].sort((a, b) => a.order - b.order);
+	const roleIds = new Set(sortedRoles.map((role) => role.roleId));
+
+	const assignments: Record<string, { name: string; email: string }> = {};
+	const presentRoleIds = new Set<string>();
+	for (const recipient of args.formRecipients) {
+		const roleId = recipient.clientRowId;
+		if (!roleId || !roleIds.has(roleId)) continue;
+		presentRoleIds.add(roleId);
+		assignments[roleId] = {
+			name: recipient.name.trim() || recipient.email.trim(),
+			email: recipient.email.trim(),
+		};
+	}
+
+	const activeSnapshot: TemplateSnapshot = {
+		...snapshot,
+		roles: sortedRoles.filter((role) => presentRoleIds.has(role.roleId)),
+		fields: snapshot.fields.filter((field) => presentRoleIds.has(field.roleId)),
+	};
+
+	const hydrated = applyRoleAssignments({
+		snapshot: activeSnapshot,
+		assignments,
+		documents: args.prev.documents.map((doc) => ({
+			id: doc.id,
+			name: doc.name,
+			sha256Plaintext: doc.plaintextSha256 ?? (`0x${"00".repeat(32)}` as const),
+			pageCount: doc.pageCount ?? 1,
+		})),
+	});
+
+	const templateRecipients: Recipient[] = [];
+	let hydratedIndex = 0;
+	for (const role of sortedRoles) {
+		const formRow = args.formRecipients.find(
+			(recipient) => recipient.clientRowId === role.roleId,
+		);
+		if (!formRow) continue;
+		const mapped = hydrated.recipients[hydratedIndex];
+		hydratedIndex += 1;
+		if (!mapped) continue;
+		templateRecipients.push({
+			clientRowId: role.roleId,
+			name: mapped.name,
+			email: mapped.email,
+			role: mapped.role,
+			walletAddress: formRow.walletAddress,
+			templateRoleLabel: formRow.templateRoleLabel ?? role.label,
+		});
+	}
+
+	const extraRecipients = args.formRecipients.filter(
+		(recipient) =>
+			!recipient.clientRowId || !roleIds.has(recipient.clientRowId),
+	);
+
+	const recipients = [...templateRecipients, ...extraRecipients];
+	const signatureFields = pruneSignatureFields(
+		hydrated.signatureFields,
+		recipients,
+	);
+
+	const envelopeForm = await createFormToEnvelopeForm({
+		...args.prev,
+		recipients,
+		signatureFields,
+		emailSubject: args.emailSubject,
+		emailMessage: args.emailMessage,
+		settlementDrafts: args.settlementDrafts ?? [],
+	});
+
+	const draft = await buildCreateForm(envelopeForm, {
+		...args.prev,
+		templateUse: undefined,
+	});
+
+	return normalizeCreateForm({
+		...draft,
+		recipients,
+		signatureFields,
+		recipientFingerprint: recipientFingerprint(recipients),
+	});
 }
 
 export async function hydrateCreateFormFromTemplate(args: {
@@ -149,7 +305,15 @@ export async function hydrateCreateFormFromTemplate(args: {
 	);
 	return {
 		...draft,
-		signatureFields: hydrated.signatureFields,
+		signatureFields: pruneSignatureFields(
+			hydrated.signatureFields,
+			hydrated.recipients.map((recipient) => ({
+				clientRowId: recipient.email,
+				name: recipient.name,
+				email: recipient.email,
+				role: recipient.role,
+			})),
+		),
 	};
 }
 

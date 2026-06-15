@@ -8,8 +8,15 @@ import type {
 	SendProgressState,
 	SendProgressStep,
 } from "@/src/lib/domains/placement/types";
-import { resolveSelfSignerOnRoster } from "@/src/lib/domains/placement/utils/self-signer";
-import { selfAssignedFieldIds } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
+import {
+	activateWorkflowStep,
+	completeWorkflowStep,
+	createInitialWorkflowProgressState,
+	getActiveWorkflowProgressDisplay,
+	markWorkflowProgressSuccess,
+	workflowProgressFailureState,
+} from "@/src/lib/domains/workflow-progress";
+import { resolveSelfSignAfterSendPlan } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/self-sign-eligibility";
 
 export type {
 	SendProgressState,
@@ -30,6 +37,25 @@ export type SendProgressEvent =
 			status: "start" | "done" | "error";
 			errorMessage?: string;
 	  };
+
+export const createInitialSendProgressState =
+	createInitialWorkflowProgressState;
+export const markSendProgressSuccess = markWorkflowProgressSuccess;
+
+export type SendProgressDisplay = {
+	label: string;
+	detail?: string;
+	isError: boolean;
+};
+
+export function getActiveSendProgressDisplay(
+	state: SendProgressState,
+): SendProgressDisplay {
+	return getActiveWorkflowProgressDisplay(state, {
+		fallbackLabel: "Sending envelope",
+		errorFallbackLabel: "Could not send envelope",
+	});
+}
 
 function payoutApproveStepId(ruleIndex: number): string {
 	return `payout_${ruleIndex}_approve`;
@@ -125,60 +151,17 @@ export function buildSendProgressPlan(args: {
 		});
 	}
 
-	const selfOnRoster = resolveSelfSignerOnRoster(
-		args.createForm.recipients ?? [],
-		args.selfProfile,
-	);
 	if (
-		selfOnRoster &&
-		selfAssignedFieldIds(args.signatureFields, selfOnRoster.email).length > 0
+		resolveSelfSignAfterSendPlan({
+			createForm: args.createForm,
+			signatureFields: args.signatureFields,
+			selfProfile: args.selfProfile,
+		})
 	) {
 		steps.push({ id: "self_sign", label: "Signing your fields" });
 	}
 
 	return steps;
-}
-
-export function createInitialSendProgressState(
-	steps: SendProgressStep[],
-): SendProgressState {
-	return {
-		steps,
-		activeStepId: steps[0]?.id ?? null,
-		completedStepIds: [],
-		status: "running",
-	};
-}
-
-function nextStepId(
-	steps: SendProgressStep[],
-	completedStepIds: string[],
-): string | null {
-	for (const step of steps) {
-		if (!completedStepIds.includes(step.id)) return step.id;
-	}
-	return null;
-}
-
-function completeStep(
-	state: SendProgressState,
-	stepId: string,
-): SendProgressState {
-	if (state.completedStepIds.includes(stepId)) return state;
-	const completedStepIds = [...state.completedStepIds, stepId];
-	return {
-		...state,
-		completedStepIds,
-		activeStepId: nextStepId(state.steps, completedStepIds),
-	};
-}
-
-function activateStep(
-	state: SendProgressState,
-	stepId: string,
-): SendProgressState {
-	if (!state.steps.some((step) => step.id === stepId)) return state;
-	return { ...state, activeStepId: stepId };
 }
 
 function resolveStepForEvent(event: SendProgressEvent): string | null {
@@ -239,14 +222,10 @@ export function reduceSendProgress(
 			"errorMessage" in event && event.errorMessage
 				? event.errorMessage
 				: "Something went wrong while sending.";
-		return {
-			...state,
-			status: "error",
-			error: {
-				stepId: state.activeStepId ?? state.steps[0]?.id ?? "send_failed",
-				message,
-			},
-		};
+		return workflowProgressFailureState(state, {
+			stepId: state.activeStepId ?? state.steps[0]?.id ?? "send_failed",
+			message,
+		});
 	}
 
 	if (!stepId) return state;
@@ -256,43 +235,45 @@ export function reduceSendProgress(
 			"errorMessage" in event && event.errorMessage
 				? event.errorMessage
 				: "Something went wrong while sending.";
-		return {
-			...state,
-			status: "error",
-			error: { stepId, message },
-		};
+		return workflowProgressFailureState(state, { stepId, message });
 	}
 
 	if (event.status === "start" || event.status === "wallet_prompt") {
-		return activateStep(state, stepId);
+		return activateWorkflowStep(state, stepId);
 	}
 
 	if (event.status === "confirming") {
 		if (event.phase === "confirming_transaction") {
 			if (event.txLabel === "USDC approval") {
 				const approveId = payoutApproveStepId(event.ruleIndex ?? 0);
-				return activateStep(completeStep(state, approveId), stepId);
+				return activateWorkflowStep(
+					completeWorkflowStep(state, approveId),
+					stepId,
+				);
 			}
 			if (event.txLabel === "payout registration") {
 				const registerId = payoutRegisterStepId(event.ruleIndex ?? 0);
-				return activateStep(completeStep(state, registerId), stepId);
+				return activateWorkflowStep(
+					completeWorkflowStep(state, registerId),
+					stepId,
+				);
 			}
 		}
-		return activateStep(state, stepId);
+		return activateWorkflowStep(state, stepId);
 	}
 
 	if (event.status === "done") {
-		let next = completeStep(state, stepId);
+		let next = completeWorkflowStep(state, stepId);
 		if (event.phase === "wallet_payout_approve") {
 			const confirmId = payoutConfirmApproveStepId(event.ruleIndex ?? 0);
 			if (!next.completedStepIds.includes(confirmId)) {
-				next = completeStep(next, confirmId);
+				next = completeWorkflowStep(next, confirmId);
 			}
 		}
 		if (event.phase === "wallet_payout_register") {
 			const confirmId = payoutConfirmRegisterStepId(event.ruleIndex ?? 0);
 			if (!next.completedStepIds.includes(confirmId)) {
-				next = completeStep(next, confirmId);
+				next = completeWorkflowStep(next, confirmId);
 			}
 		}
 		if (event.phase === "self_sign") {
@@ -302,64 +283,4 @@ export function reduceSendProgress(
 	}
 
 	return state;
-}
-
-export function markSendProgressSuccess(
-	state: SendProgressState,
-): SendProgressState {
-	const completedStepIds = state.steps.map((step) => step.id);
-	return {
-		...state,
-		completedStepIds,
-		activeStepId: null,
-		status: "success",
-	};
-}
-
-export type SendProgressDisplay = {
-	label: string;
-	detail?: string;
-	isError: boolean;
-};
-
-export function getActiveSendProgressDisplay(
-	state: SendProgressState,
-): SendProgressDisplay {
-	if (state.status === "error" && state.error) {
-		const failedStep = state.steps.find(
-			(step) => step.id === state.error?.stepId,
-		);
-		return {
-			label: failedStep?.label ?? "Could not send envelope",
-			detail: state.error.message,
-			isError: true,
-		};
-	}
-
-	const activeStep = state.activeStepId
-		? state.steps.find((step) => step.id === state.activeStepId)
-		: undefined;
-	if (activeStep) {
-		return {
-			label: activeStep.label,
-			detail: activeStep.detail,
-			isError: false,
-		};
-	}
-
-	const nextStep = state.steps.find(
-		(step) => !state.completedStepIds.includes(step.id),
-	);
-	if (nextStep) {
-		return {
-			label: nextStep.label,
-			detail: nextStep.detail,
-			isError: false,
-		};
-	}
-
-	return {
-		label: "Sending envelope",
-		isError: false,
-	};
 }

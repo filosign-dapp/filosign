@@ -16,10 +16,9 @@ import type {
 	ColdSharePackage,
 	WarmShareSummary,
 } from "@/src/lib/domains/invites/types";
-import { resolveSelfSignerOnRoster } from "@/src/lib/domains/placement/utils/self-signer";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
-import { selfAssignedFieldIds } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
 import type { SendProgressEvent } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/progress";
+import { resolveSelfSignAfterSendPlan } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/self-sign-eligibility";
 import { isColdRecipient } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 
 export async function selfSignAfterSend(args: {
@@ -46,16 +45,18 @@ export async function selfSignAfterSend(args: {
 	) => void;
 	onProgress?: (event: SendProgressEvent) => void;
 }): Promise<void> {
-	const selfOnRoster = resolveSelfSignerOnRoster(
-		args.createForm.recipients ?? [],
-		args.selfProfile,
-	);
-	const selfFieldIds =
-		args.result.success && args.result.pieceCid && selfOnRoster
-			? selfAssignedFieldIds(args.signatureFields, selfOnRoster.email)
-			: [];
+	const selfSignPlan =
+		args.result.success && args.result.pieceCid
+			? resolveSelfSignAfterSendPlan({
+					createForm: args.createForm,
+					signatureFields: args.signatureFields,
+					selfProfile: args.selfProfile,
+				})
+			: null;
 
-	if (selfFieldIds.length === 0 || !args.result.pieceCid) return;
+	if (!selfSignPlan || !args.result.pieceCid) return;
+
+	const { selfFieldIds } = selfSignPlan;
 
 	args.onProgress?.({ phase: "self_sign", status: "start" });
 	args.setSendStatus("signing");

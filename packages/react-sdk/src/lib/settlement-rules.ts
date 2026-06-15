@@ -9,15 +9,25 @@ import type {
 } from "@filosign/shared";
 import {
 	SETTLEMENT_RELEASE_TYPE_UINT,
+	settlementAllowanceRequired,
 	settlementRuleTotalAmount,
 } from "@filosign/shared";
-import { type Address, encodeFunctionData, type Hex } from "viem";
+import {
+	type Address,
+	createPublicClient,
+	encodeFunctionData,
+	getAddress,
+	getContract,
+	type Hex,
+	http,
+} from "viem";
 import type { SendFileProgressReporter } from "./send-file/progress";
 import { emitSendFileProgress } from "./send-file/progress";
 import {
 	paymentValidatorAt,
 	simulateSettlementWrite,
 } from "./settlement-preflight";
+import type { SettlementRuleRow } from "./settlement-types";
 import { parseRuleIdFromReceipt, waitForTxReceipt } from "./tx-receipt";
 import type { FilosignWallet } from "./wallet";
 
@@ -26,6 +36,30 @@ export type SettlementRuleDraftLeg = {
 	recipientSource: SettlementRecipientSource;
 	amount: bigint;
 };
+
+export type SettlementChangeProgressPhase =
+	| "approve"
+	| "update"
+	| "sync_approval"
+	| "cancel";
+
+export type SettlementChangeProgressStatus = "start" | "confirming" | "done";
+
+export type SettlementChangeProgressEvent = {
+	phase: SettlementChangeProgressPhase;
+	status: SettlementChangeProgressStatus;
+};
+
+export type SettlementChangeProgressReporter = (
+	event: SettlementChangeProgressEvent,
+) => void;
+
+function emitSettlementChangeProgress(
+	onProgress: SettlementChangeProgressReporter | undefined,
+	event: SettlementChangeProgressEvent,
+): void {
+	onProgress?.(event);
+}
 
 export type SettlementRuleDraft = {
 	legs: SettlementRuleDraftLeg[];
@@ -164,6 +198,205 @@ function erc20ApproveAbi(chainKey: ChainKey) {
 	}
 }
 
+function publicClientFor(contracts: FilosignContracts) {
+	const chain = contracts.$client.chain;
+	if (!chain) {
+		throw new Error(
+			"Chain config missing from Filosign contracts client; cannot read settlement allowance",
+		);
+	}
+	return createPublicClient({ chain, transport: http() });
+}
+
+function toAllowanceRuleInputs(
+	rules: readonly SettlementRuleRow[],
+): Parameters<typeof settlementAllowanceRequired>[0] {
+	return rules.map((rule) => ({
+		onChainRuleId: rule.onChainRuleId,
+		validatorAddress: rule.validatorAddress,
+		tokenAddress: rule.tokenAddress,
+		status: rule.status,
+		legs: rule.legs,
+	}));
+}
+
+export async function readSettlementValidatorAllowance(args: {
+	contracts: FilosignContracts;
+	chainKey: ChainKey;
+	tokenAddress: Address;
+	payer: Address;
+	validatorAddress?: Address;
+}): Promise<bigint> {
+	const validator = paymentValidatorAt(args.contracts, args.validatorAddress);
+	if (!validator) {
+		throw new Error(
+			"FSPaymentValidator is not deployed on this chain. Run contracts deploy/migrate first.",
+		);
+	}
+
+	const approveAbi = erc20ApproveAbi(args.chainKey);
+	const client = publicClientFor(args.contracts);
+	const token = getContract({
+		address: args.tokenAddress,
+		abi: approveAbi,
+		client,
+	});
+
+	return (await token.read.allowance([
+		args.payer,
+		validator.address,
+	])) as bigint;
+}
+
+export async function approveSettlementValidatorAllowance(args: {
+	wallet: FilosignWallet;
+	contracts: FilosignContracts;
+	chainKey: ChainKey;
+	tokenAddress: Address;
+	amount: bigint;
+	validatorAddress?: Address;
+	txLabel?: string;
+	onSent?: () => void;
+}): Promise<Hex> {
+	const validator = paymentValidatorAt(args.contracts, args.validatorAddress);
+	if (!validator) {
+		throw new Error(
+			"FSPaymentValidator is not deployed on this chain. Run contracts deploy/migrate first.",
+		);
+	}
+
+	const approveAbi = erc20ApproveAbi(args.chainKey);
+	const approveArgs = [validator.address, args.amount] as const;
+	const data = encodeFunctionData({
+		abi: approveAbi,
+		functionName: "approve",
+		args: [...approveArgs],
+	});
+
+	await simulateSettlementWrite({
+		contracts: args.contracts,
+		wallet: args.wallet,
+		address: args.tokenAddress,
+		abi: approveAbi,
+		functionName: "approve",
+		args: approveArgs,
+	});
+
+	const approveHash = await args.wallet.sendTransaction({
+		to: args.tokenAddress,
+		data,
+		account: args.wallet.account,
+		chain: args.wallet.chain,
+	});
+	args.onSent?.();
+	await waitForTxReceipt(args.contracts, approveHash, {
+		label: args.txLabel ?? "USDC approval",
+		abi: approveAbi,
+	});
+	return approveHash;
+}
+
+/** Sets ERC-20 allowance to `required` when it differs from the current value. */
+export async function ensureSettlementValidatorAllowance(args: {
+	wallet: FilosignWallet;
+	contracts: FilosignContracts;
+	chainKey: ChainKey;
+	tokenAddress: Address;
+	validatorAddress: Address;
+	payer: Address;
+	required: bigint;
+}): Promise<Hex | undefined> {
+	const current = await readSettlementValidatorAllowance({
+		contracts: args.contracts,
+		chainKey: args.chainKey,
+		tokenAddress: args.tokenAddress,
+		payer: args.payer,
+		validatorAddress: args.validatorAddress,
+	});
+	if (current === args.required) return undefined;
+
+	return approveSettlementValidatorAllowance({
+		wallet: args.wallet,
+		contracts: args.contracts,
+		chainKey: args.chainKey,
+		tokenAddress: args.tokenAddress,
+		amount: args.required,
+		validatorAddress: args.validatorAddress,
+	});
+}
+
+async function approveAllowanceWithProgress(args: {
+	wallet: FilosignWallet;
+	contracts: FilosignContracts;
+	chainKey: ChainKey;
+	tokenAddress: Address;
+	validatorAddress: Address;
+	amount: bigint;
+	phase: Extract<SettlementChangeProgressPhase, "approve" | "sync_approval">;
+	onProgress?: SettlementChangeProgressReporter;
+	txLabel?: string;
+}): Promise<Hex> {
+	emitSettlementChangeProgress(args.onProgress, {
+		phase: args.phase,
+		status: "start",
+	});
+
+	const approveHash = await approveSettlementValidatorAllowance({
+		wallet: args.wallet,
+		contracts: args.contracts,
+		chainKey: args.chainKey,
+		tokenAddress: args.tokenAddress,
+		amount: args.amount,
+		validatorAddress: args.validatorAddress,
+		txLabel: args.txLabel,
+		onSent: () => {
+			emitSettlementChangeProgress(args.onProgress, {
+				phase: args.phase,
+				status: "confirming",
+			});
+		},
+	});
+
+	emitSettlementChangeProgress(args.onProgress, {
+		phase: args.phase,
+		status: "done",
+	});
+
+	return approveHash;
+}
+
+async function trimSettlementValidatorAllowance(args: {
+	wallet: FilosignWallet;
+	contracts: FilosignContracts;
+	chainKey: ChainKey;
+	tokenAddress: Address;
+	validatorAddress: Address;
+	payer: Address;
+	required: bigint;
+	onProgress?: SettlementChangeProgressReporter;
+}): Promise<Hex | undefined> {
+	const current = await readSettlementValidatorAllowance({
+		contracts: args.contracts,
+		chainKey: args.chainKey,
+		tokenAddress: args.tokenAddress,
+		payer: args.payer,
+		validatorAddress: args.validatorAddress,
+	});
+	if (current <= args.required) return undefined;
+
+	return approveAllowanceWithProgress({
+		wallet: args.wallet,
+		contracts: args.contracts,
+		chainKey: args.chainKey,
+		tokenAddress: args.tokenAddress,
+		validatorAddress: args.validatorAddress,
+		amount: args.required,
+		phase: "sync_approval",
+		onProgress: args.onProgress,
+		txLabel: "USDC approval update",
+	});
+}
+
 function toRegistrationLegs(legs: SettlementRuleDraftLeg[]) {
 	return legs.map((leg) => ({
 		recipientWallet: leg.recipientWallet,
@@ -199,6 +432,7 @@ export async function registerSettlementRulesOnChain(args: {
 	const approveAbi = erc20ApproveAbi(args.chainKey);
 	const registered: SettlementRuleRegistrationInput[] = [];
 	const ruleCount = args.rules.length;
+	let cumulativeApproved = 0n;
 
 	for (let ruleIndex = 0; ruleIndex < args.rules.length; ruleIndex++) {
 		const rule = args.rules[ruleIndex];
@@ -214,12 +448,7 @@ export async function registerSettlementRulesOnChain(args: {
 		const { specificSignerCommitment, thresholdN, signerCommitments } =
 			releaseParamsToContractArgs(rule.releaseType, rule.releaseParams);
 		const contractLegs = toContractPayoutLegs(rule.legs);
-
-		const approveData = encodeFunctionData({
-			abi: approveAbi,
-			functionName: "approve",
-			args: [validator.address, totalAmount],
-		});
+		cumulativeApproved += totalAmount;
 
 		const registerData = encodeFunctionData({
 			abi: validatorAbi,
@@ -243,7 +472,7 @@ export async function registerSettlementRulesOnChain(args: {
 			address: rule.tokenAddress,
 			abi: approveAbi,
 			functionName: "approve",
-			args: [validator.address, totalAmount],
+			args: [validator.address, cumulativeApproved],
 		});
 
 		emitSendFileProgress(args.onProgress, {
@@ -255,7 +484,11 @@ export async function registerSettlementRulesOnChain(args: {
 
 		const approveHash = await args.wallet.sendTransaction({
 			to: rule.tokenAddress,
-			data: approveData,
+			data: encodeFunctionData({
+				abi: approveAbi,
+				functionName: "approve",
+				args: [validator.address, cumulativeApproved],
+			}),
 			account: args.wallet.account,
 			chain: args.wallet.chain,
 		});
@@ -266,7 +499,10 @@ export async function registerSettlementRulesOnChain(args: {
 			detail: payoutDetail,
 			txLabel: "USDC approval",
 		});
-		await waitForTxReceipt(args.contracts, approveHash);
+		await waitForTxReceipt(args.contracts, approveHash, {
+			label: "USDC approval",
+			abi: approveAbi,
+		});
 		emitSendFileProgress(args.onProgress, {
 			phase: "wallet_payout_approve",
 			status: "done",
@@ -316,6 +552,10 @@ export async function registerSettlementRulesOnChain(args: {
 		const registerReceipt = await waitForTxReceipt(
 			args.contracts,
 			registerHash,
+			{
+				label: "Payout registration",
+				abi: validatorAbi,
+			},
 		);
 		const onChainRuleId = parseRuleIdFromReceipt({
 			receipt: registerReceipt,
@@ -350,13 +590,19 @@ export async function registerSettlementRulesOnChain(args: {
 export async function updateSettlementRuleOnChain(args: {
 	wallet: FilosignWallet;
 	contracts: FilosignContracts;
+	chainKey: ChainKey;
+	allRules: readonly SettlementRuleRow[];
 	onChainRuleId: string;
 	releaseType: SettlementReleaseType;
 	releaseParams: SettlementRuleDraft["releaseParams"];
 	legs: SettlementRuleDraftLeg[];
 	expiresAt?: bigint;
 	validatorAddress?: Address;
-}): Promise<Pick<SettlementRuleUpdateInput, "updateRuleTxHash">> {
+	onProgress?: SettlementChangeProgressReporter;
+}): Promise<{
+	updateRuleTxHash: SettlementRuleUpdateInput["updateRuleTxHash"];
+	approveTxHashes: Hex[];
+}> {
 	const validator = paymentValidatorAt(args.contracts, args.validatorAddress);
 	if (!validator) {
 		throw new Error(
@@ -365,6 +611,51 @@ export async function updateSettlementRuleOnChain(args: {
 	}
 
 	assertSettlementLegs(args.legs);
+
+	const targetRule = args.allRules.find(
+		(rule) => rule.onChainRuleId === args.onChainRuleId,
+	);
+	if (!targetRule) {
+		throw new Error("Settlement rule not found for allowance sync.");
+	}
+
+	const allowanceOpts = {
+		tokenAddress: getAddress(targetRule.tokenAddress),
+		validatorAddress: validator.address,
+	};
+	const registrationLegs = toRegistrationLegs(args.legs);
+	const requiredAfter = settlementAllowanceRequired(
+		toAllowanceRuleInputs(args.allRules),
+		{
+			...allowanceOpts,
+			replaceRuleId: args.onChainRuleId,
+			legs: registrationLegs,
+		},
+	);
+
+	const payer = args.wallet.account.address;
+	const approveTxHashes: Hex[] = [];
+	const currentAllowance = await readSettlementValidatorAllowance({
+		contracts: args.contracts,
+		chainKey: args.chainKey,
+		tokenAddress: getAddress(targetRule.tokenAddress),
+		payer,
+		validatorAddress: validator.address,
+	});
+
+	if (currentAllowance < requiredAfter) {
+		const preApprove = await approveAllowanceWithProgress({
+			wallet: args.wallet,
+			contracts: args.contracts,
+			chainKey: args.chainKey,
+			tokenAddress: getAddress(targetRule.tokenAddress),
+			validatorAddress: validator.address,
+			amount: requiredAfter,
+			phase: "approve",
+			onProgress: args.onProgress,
+		});
+		approveTxHashes.push(preApprove);
+	}
 
 	const expiresAt = args.expiresAt ?? 0n;
 	const { specificSignerCommitment, thresholdN, signerCommitments } =
@@ -395,27 +686,69 @@ export async function updateSettlementRuleOnChain(args: {
 		args: updateArgs,
 	});
 
+	emitSettlementChangeProgress(args.onProgress, {
+		phase: "update",
+		status: "start",
+	});
+
 	const updateRuleTxHash = await args.wallet.sendTransaction({
 		to: validator.address,
 		data,
 		account: args.wallet.account,
 		chain: args.wallet.chain,
 	});
+	emitSettlementChangeProgress(args.onProgress, {
+		phase: "update",
+		status: "confirming",
+	});
+	await waitForTxReceipt(args.contracts, updateRuleTxHash, {
+		label: "Payout update",
+		abi: validator.abi,
+	});
+	emitSettlementChangeProgress(args.onProgress, {
+		phase: "update",
+		status: "done",
+	});
 
-	return { updateRuleTxHash };
+	const postTrim = await trimSettlementValidatorAllowance({
+		wallet: args.wallet,
+		contracts: args.contracts,
+		chainKey: args.chainKey,
+		tokenAddress: getAddress(targetRule.tokenAddress),
+		validatorAddress: validator.address,
+		payer,
+		required: requiredAfter,
+		onProgress: args.onProgress,
+	});
+	if (postTrim) approveTxHashes.push(postTrim);
+
+	return { updateRuleTxHash, approveTxHashes };
 }
 
 export async function cancelSettlementRuleOnChain(args: {
 	wallet: FilosignWallet;
 	contracts: FilosignContracts;
+	chainKey: ChainKey;
+	allRules: readonly SettlementRuleRow[];
 	onChainRuleId: string;
 	validatorAddress?: Address;
-}): Promise<Pick<SettlementRuleCancelInput, "cancelRuleTxHash">> {
+	onProgress?: SettlementChangeProgressReporter;
+}): Promise<{
+	cancelRuleTxHash: SettlementRuleCancelInput["cancelRuleTxHash"];
+	approveTxHashes: Hex[];
+}> {
 	const validator = paymentValidatorAt(args.contracts, args.validatorAddress);
 	if (!validator) {
 		throw new Error(
 			"FSPaymentValidator is not deployed on this chain. Run contracts deploy/migrate first.",
 		);
+	}
+
+	const targetRule = args.allRules.find(
+		(rule) => rule.onChainRuleId === args.onChainRuleId,
+	);
+	if (!targetRule) {
+		throw new Error("Settlement rule not found for allowance sync.");
 	}
 
 	const ruleId = BigInt(args.onChainRuleId);
@@ -434,14 +767,53 @@ export async function cancelSettlementRuleOnChain(args: {
 		args: [ruleId],
 	});
 
+	emitSettlementChangeProgress(args.onProgress, {
+		phase: "cancel",
+		status: "start",
+	});
+
 	const cancelRuleTxHash = await args.wallet.sendTransaction({
 		to: validator.address,
 		data,
 		account: args.wallet.account,
 		chain: args.wallet.chain,
 	});
+	emitSettlementChangeProgress(args.onProgress, {
+		phase: "cancel",
+		status: "confirming",
+	});
+	await waitForTxReceipt(args.contracts, cancelRuleTxHash, {
+		label: "Payout removal",
+		abi: validator.abi,
+	});
+	emitSettlementChangeProgress(args.onProgress, {
+		phase: "cancel",
+		status: "done",
+	});
 
-	return { cancelRuleTxHash };
+	const requiredAfter = settlementAllowanceRequired(
+		toAllowanceRuleInputs(args.allRules),
+		{
+			tokenAddress: getAddress(targetRule.tokenAddress),
+			validatorAddress: validator.address,
+			excludeRuleId: args.onChainRuleId,
+		},
+	);
+
+	const approveTxHashes: Hex[] = [];
+	const trimHash = await trimSettlementValidatorAllowance({
+		wallet: args.wallet,
+		contracts: args.contracts,
+		chainKey: args.chainKey,
+		tokenAddress: getAddress(targetRule.tokenAddress),
+		validatorAddress: validator.address,
+		payer: args.wallet.account.address,
+		required: requiredAfter,
+		onProgress: args.onProgress,
+	});
+	if (trimHash) approveTxHashes.push(trimHash);
+
+	return { cancelRuleTxHash, approveTxHashes };
 }
 
 async function listUnpaidSettlementLegIndicesOnChain(args: {
@@ -563,10 +935,15 @@ export async function revokeSettlementValidatorAllowance(args: {
 		args: approveArgs,
 	});
 
-	return args.wallet.sendTransaction({
+	const approveHash = await args.wallet.sendTransaction({
 		to: args.tokenAddress,
 		data,
 		account: args.wallet.account,
 		chain: args.wallet.chain,
 	});
+	await waitForTxReceipt(args.contracts, approveHash, {
+		label: "USDC approval revoke",
+		abi: approveAbi,
+	});
+	return approveHash;
 }

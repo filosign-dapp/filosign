@@ -91,9 +91,10 @@ export function SignatureArtifactPreview(props: {
 	}
 
 	if (props.artifact.previewUrl) {
-		const invertInDarkMode =
+		const invertInDarkMode = Boolean(
 			props.inPreviewShell &&
-			(props.artifact.kind === "typed" || props.artifact.kind === "drawn");
+				(props.artifact.kind === "typed" || props.artifact.kind === "drawn"),
+		);
 
 		if (props.inPreviewShell) {
 			return (

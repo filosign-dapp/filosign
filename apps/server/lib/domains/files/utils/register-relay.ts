@@ -31,7 +31,9 @@ export type RegisterEnvelopeRelayArgs = {
 };
 
 export async function relayRegisterEnvelope(
-	args: RegisterEnvelopeRelayArgs,
+	args: RegisterEnvelopeRelayArgs & {
+		onBroadcast?: (hash: Hex) => Promise<void>;
+	},
 ): Promise<Hex> {
 	const recoveredTxHash = await recoverRegisterEnvelopeTxHash({
 		pieceCid: args.pieceCid,
@@ -41,29 +43,33 @@ export async function relayRegisterEnvelope(
 		return recoveredTxHash;
 	}
 
+	const { onBroadcast, ...relayArgs } = args;
+
 	return withRelayerLock(getActiveRelayerAddress(), () =>
-		withRegistryWalletLock(args.sender, () =>
+		withRegistryWalletLock(relayArgs.sender, () =>
 			relayWrite({
 				step: "registerEnvelope",
+				onBroadcast,
 				write: () =>
 					FSEnvelopeRegistry.write.registerEnvelope([
 						{
-							pieceCid: args.pieceCid,
-							sender: args.sender,
-							requiredCommitments: args.requiredCommitments,
-							optionalCommitments: args.optionalCommitments,
-							viewerEmailCommitments: args.viewerEmailCommitments,
-							senderEmailCommitment: args.senderEmailCommitment,
-							senderAuthSubjectCommitment: args.senderAuthSubjectCommitment,
-							orgIdCommitment: args.orgIdCommitment,
-							routingMode: args.routingMode,
-							routingOrder: args.routingOrder,
-							quorumN: args.quorumN,
-							quorumSet: args.quorumSet,
-							timestamp: BigInt(args.timestamp),
-							signature: args.signature,
-							placementCommitment: args.placementCommitment,
-							documentSha256: args.documentSha256,
+							pieceCid: relayArgs.pieceCid,
+							sender: relayArgs.sender,
+							requiredCommitments: relayArgs.requiredCommitments,
+							optionalCommitments: relayArgs.optionalCommitments,
+							viewerEmailCommitments: relayArgs.viewerEmailCommitments,
+							senderEmailCommitment: relayArgs.senderEmailCommitment,
+							senderAuthSubjectCommitment:
+								relayArgs.senderAuthSubjectCommitment,
+							orgIdCommitment: relayArgs.orgIdCommitment,
+							routingMode: relayArgs.routingMode,
+							routingOrder: relayArgs.routingOrder,
+							quorumN: relayArgs.quorumN,
+							quorumSet: relayArgs.quorumSet,
+							timestamp: BigInt(relayArgs.timestamp),
+							signature: relayArgs.signature,
+							placementCommitment: relayArgs.placementCommitment,
+							documentSha256: relayArgs.documentSha256,
 						},
 					]),
 				waitForReceipt: waitForRelayReceipt,

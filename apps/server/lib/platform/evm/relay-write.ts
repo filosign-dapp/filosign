@@ -15,8 +15,12 @@ export async function relayWrite(args: {
 	write: () => Promise<Hash>;
 	waitForReceipt: WaitForReceipt;
 	step: string;
+	onBroadcast?: (hash: Hash) => Promise<void>;
 }): Promise<Hash> {
 	const hash = await args.write();
+	if (args.onBroadcast) {
+		await args.onBroadcast(hash);
+	}
 	const receipt = await args.waitForReceipt(hash);
 	if (receipt.status !== "success") {
 		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {

@@ -114,6 +114,8 @@ export const fileRegisterStates = t.pgTable("file_register_states", {
 		.notNull()
 		.defaultNow(),
 	registerPayloadJson: t.jsonb().notNull(),
+	assignedRelayerAddress: tEvmAddress(),
+	pendingTxHash: tBytes32(),
 });
 
 export const fileParticipants = t.pgTable(

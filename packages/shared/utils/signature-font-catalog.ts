@@ -53,7 +53,6 @@ export function resolveTypedSignatureText(args: {
 }
 
 export type SignatureFontId =
-	| "typed"
 	| "dancing-script"
 	| "great-vibes"
 	| "caveat"
@@ -79,21 +78,11 @@ export type SignatureFontCatalogEntry = {
 
 export const SIGNATURE_FONT_CATALOG: SignatureFontCatalogEntry[] = [
 	{
-		id: "typed",
-		label: "Typed",
-		cssFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-		legacyIds: [],
-		signatureTextClass: "font-mono text-sm",
-		initialTextClass: "font-mono text-xs",
-		signatureFontSize: 28,
-		initialFontSize: 16,
-	},
-	{
 		id: "dancing-script",
 		label: "Dancing Script",
 		cssFamily: '"Dancing Script", cursive',
 		fontsourcePackage: "@fontsource/dancing-script",
-		legacyIds: ["homemade-apple"],
+		legacyIds: ["homemade-apple", "typed"],
 		signatureTextClass: "text-2xl",
 		initialTextClass: "text-lg",
 		signatureFontSize: 44,

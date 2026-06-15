@@ -1,8 +1,9 @@
 import type { DraftSnapshot } from "./draft";
-import type {
-	TemplateRole,
-	TemplateRoleKind,
-	TemplateSnapshot,
+import {
+	type TemplateRole,
+	type TemplateRoleKind,
+	type TemplateSnapshot,
+	templateRolePlaceholderEmail,
 } from "./template";
 
 export type TemplateEditorRecipient = DraftSnapshot["recipients"][number];
@@ -55,10 +56,6 @@ function recipientsToRoles(
 	return roles;
 }
 
-function roleEmail(roleId: string): string {
-	return `${roleId}@template.filosign`;
-}
-
 export function addTemplateRole(args: {
 	state: TemplateEditorState;
 	kind?: TemplateRoleKind;
@@ -78,7 +75,7 @@ export function addTemplateRole(args: {
 			{
 				clientRowId: roleId,
 				name: label,
-				email: roleEmail(roleId),
+				email: templateRolePlaceholderEmail(roleId),
 				role: kind,
 			},
 		],
@@ -103,7 +100,7 @@ export function updateTemplateRole(args: {
 
 	let nextFields = args.state.signatureFields;
 	if (args.kind === "viewer") {
-		const email = roleEmail(args.roleId);
+		const email = templateRolePlaceholderEmail(args.roleId);
 		nextFields = args.state.signatureFields.filter(
 			(field) => field.assignedSignerEmail !== email,
 		);
@@ -129,7 +126,7 @@ export function removeTemplateRole(args: {
 		throw new Error("At least one signer role is required.");
 	}
 
-	const email = roleEmail(args.roleId);
+	const email = templateRolePlaceholderEmail(args.roleId);
 	return {
 		...args.state,
 		recipients: args.state.recipients.filter((row) => {
@@ -178,7 +175,7 @@ export function countFieldsForRole(args: {
 	state: TemplateEditorState;
 	roleId: string;
 }): number {
-	const email = roleEmail(args.roleId);
+	const email = templateRolePlaceholderEmail(args.roleId);
 	return args.state.signatureFields.filter(
 		(field) => field.assignedSignerEmail === email,
 	).length;

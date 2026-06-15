@@ -10,7 +10,7 @@ export const ACTIVATION_STEPS: Record<
 		section: "core",
 		title: "Create your signature",
 		description:
-			"Add a typed, drawn, or uploaded signature so you can sign documents.",
+			"Choose a signature style, draw one, or upload an image so you can sign documents.",
 		milestoneId: "signature_created",
 	},
 	sign_practice_agreement: {

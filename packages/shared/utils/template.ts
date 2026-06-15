@@ -1,11 +1,18 @@
 import { jsonStringify } from "@filosign/crypto-utils";
 import { z } from "zod";
+import { zHexString } from "../helpers/zod";
 import type { DraftSnapshot } from "./draft";
 import {
 	normalizePlacementRecipientEmail,
 	sortKeysDeep,
 	zRectNormalized,
 } from "./placement";
+
+export const TEMPLATE_LIMITS = {
+	MAX_FILE_SIZE: 30 * 1024 * 1024, // 30 MB
+	MAX_TEMPLATE_DOCUMENTS: 10,
+	MAX_TEMPLATE_TOTAL_BYTES: 50 * 1024 * 1024, // 50 MB
+} as const;
 
 export const zTemplateRoleKind = z.enum(["signer", "viewer"]);
 
@@ -41,6 +48,26 @@ export const zTemplateDefaults = z.object({
 	emailMessage: z.string(),
 	routingOrderRoleIds: z.array(z.string().min(1)).optional(),
 });
+
+/** SHA-256 of canonical signable document bytes (same format as placement manifests). */
+export const zTemplatePlaintextSha256 = zHexString().refine(
+	(val) => val.length === 66,
+	{ error: "Invalid plaintext SHA-256 digest" },
+);
+
+export type TemplatePlaintextSha256 = z.infer<typeof zTemplatePlaintextSha256>;
+
+export const zTemplatePrepareUpdateDocumentRow = z.object({
+	docId: z.string().min(1).max(128),
+	plaintextSha256: zTemplatePlaintextSha256,
+	name: z.string().min(1).max(512),
+	size: z.number().int().positive(),
+	mimeType: z.string().min(1).max(128),
+});
+
+export type TemplatePrepareUpdateDocumentRow = z.infer<
+	typeof zTemplatePrepareUpdateDocumentRow
+>;
 
 export const zTemplateSnapshot = z.object({
 	version: z.literal(1),
@@ -85,9 +112,40 @@ const DEFAULT_DOC_HEIGHT = 792;
 const DEFAULT_FIELD_WIDTH = 120;
 const DEFAULT_FIELD_HEIGHT = 40;
 
+export const TEMPLATE_ROLE_EMAIL_DOMAIN = "template.filosign";
+
+export function isTemplateRolePlaceholderEmail(email: string): boolean {
+	return email.endsWith(`@${TEMPLATE_ROLE_EMAIL_DOMAIN}`);
+}
+
+export function templateRolePlaceholderEmail(roleId: string): string {
+	return `${roleId}@${TEMPLATE_ROLE_EMAIL_DOMAIN}`;
+}
+
+export function parseRoleIdFromPlaceholderEmail(email: string): string {
+	const suffix = `@${TEMPLATE_ROLE_EMAIL_DOMAIN}`;
+	if (email.endsWith(suffix)) {
+		return email.slice(0, -suffix.length);
+	}
+	return email;
+}
+
 function roleIdForEmail(email: string, kind: TemplateRole["kind"]): string {
 	const normalized = normalizePlacementRecipientEmail(email);
 	return `${kind}:${normalized}`;
+}
+
+function resolveRoleIdFromRecipient(
+	recipient: DraftSnapshot["recipients"][number],
+): string {
+	if (recipient.clientRowId?.trim()) {
+		return recipient.clientRowId.trim();
+	}
+	const normalized = normalizePlacementRecipientEmail(recipient.email ?? "");
+	if (isTemplateRolePlaceholderEmail(normalized)) {
+		return parseRoleIdFromPlaceholderEmail(normalized);
+	}
+	return roleIdForEmail(normalized, recipient.role);
 }
 
 function signerLabel(order: number): string {
@@ -145,9 +203,10 @@ export function draftSnapshotToTemplateSnapshot(
 		const normalized = normalizePlacementRecipientEmail(email);
 		if (emailToRoleId.has(normalized)) continue;
 
+		const roleId = resolveRoleIdFromRecipient(recipient);
+
 		if (recipient.role === "signer") {
 			signerOrder += 1;
-			const roleId = roleIdForEmail(normalized, "signer");
 			roles.push({
 				roleId,
 				label: signerLabel(signerOrder),
@@ -159,7 +218,6 @@ export function draftSnapshotToTemplateSnapshot(
 		}
 
 		viewerOrder += 1;
-		const roleId = roleIdForEmail(normalized, "viewer");
 		roles.push({
 			roleId,
 			label: `Viewer ${viewerOrder}`,

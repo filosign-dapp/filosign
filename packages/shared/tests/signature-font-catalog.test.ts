@@ -14,9 +14,9 @@ import {
 } from "@filosign/shared";
 
 describe("signature-font-catalog", () => {
-	test("exports seven distinct font ids", () => {
-		expect(SIGNATURE_FONT_IDS).toHaveLength(7);
-		expect(new Set(SIGNATURE_FONT_IDS).size).toBe(7);
+	test("exports six distinct font ids", () => {
+		expect(SIGNATURE_FONT_IDS).toHaveLength(6);
+		expect(new Set(SIGNATURE_FONT_IDS).size).toBe(6);
 	});
 
 	test("maps legacy font ids to canonical catalog ids", () => {
@@ -24,6 +24,7 @@ describe("signature-font-catalog", () => {
 		expect(resolveSignatureFontId(undefined)).toBe(
 			DEFAULT_TYPED_SIGNATURE_FONT_ID,
 		);
+		expect(resolveSignatureFontId("typed")).toBe("dancing-script");
 		expect(resolveSignatureFontId("homemade-apple")).toBe("dancing-script");
 		expect(resolveSignatureFontId("gloria-hallelujah")).toBe("great-vibes");
 		expect(resolveSignatureFontId("nothing-you-could-do")).toBe("caveat");
@@ -82,8 +83,8 @@ describe("signature-font-catalog", () => {
 			signatureText: "Jane Doe",
 			initialsText: "JD",
 		});
-		expect(options).toHaveLength(7);
-		expect(options[1]?.label).toBe("Dancing Script");
+		expect(options).toHaveLength(6);
+		expect(options[0]?.label).toBe("Dancing Script");
 	});
 
 	test("preview and raster specs share one catalog entry", () => {

@@ -3,6 +3,7 @@ export type SendFileProgressPhase =
 	| "uploading"
 	| "wallet_sign_register"
 	| "registering_envelope"
+	| "register_failed"
 	| "processing_attachments"
 	| "wallet_attachment_rule"
 	| "wallet_payout_approve"

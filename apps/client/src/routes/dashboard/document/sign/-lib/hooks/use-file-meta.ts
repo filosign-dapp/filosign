@@ -1,31 +1,77 @@
-import { useFileInfo } from "@filosign/react/files";
+import { isOrpcErrorLike, readAppCodeFromOrpc } from "@filosign/errors";
+import { useFilosignContext } from "@filosign/react";
+import { useFileInfo, useRegistrationStatus } from "@filosign/react/files";
 import { useUserProfile } from "@filosign/react/users";
 import {
 	normalizePlacementRecipientEmail,
 	zPlacementManifest,
 } from "@filosign/shared";
-import { useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
 import { defaultChain } from "@/src/constants";
 import { useOptionalSignPieceFile } from "@/src/routes/dashboard/document/sign/-lib/context/piece-file-context";
 
 export function useSignFileMeta(pieceCid: string | undefined) {
 	const shared = useOptionalSignPieceFile();
 	const useShared = Boolean(shared && pieceCid && shared.pieceCid === pieceCid);
+	const { rpcQuery } = useFilosignContext();
+	const queryClient = useQueryClient();
 
 	const {
 		data: file,
 		isPending: filePending,
 		error: fileError,
+		isError: fileIsError,
 	} = useFileInfo({
 		pieceCid: useShared ? undefined : pieceCid,
 		refetchWhileSupplementaryPacketsLocked: true,
 	});
+
+	const registrationPendingError =
+		fileIsError &&
+		isOrpcErrorLike(fileError) &&
+		readAppCodeFromOrpc(fileError) === "FILES.REGISTRATION_PENDING";
+
+	const registrationQuery = useRegistrationStatus(
+		!useShared && registrationPendingError && pieceCid ? pieceCid : undefined,
+	);
+
+	useEffect(() => {
+		if (
+			registrationQuery.data?.registrationStatus !== "registered" ||
+			!pieceCid
+		) {
+			return;
+		}
+		void queryClient.invalidateQueries({
+			queryKey: rpcQuery.files.piece.detail.key({
+				input: { pieceCid },
+			}),
+		});
+	}, [
+		pieceCid,
+		queryClient,
+		registrationQuery.data?.registrationStatus,
+		rpcQuery.files.piece.detail,
+	]);
 
 	if (useShared && shared) {
 		return {
 			file: shared.file,
 			filePending: shared.filePending,
 			fileError: shared.fileError,
+		};
+	}
+
+	const registrationPending =
+		registrationQuery.data?.registrationStatus === "queued" ||
+		registrationQuery.data?.registrationStatus === "registering";
+
+	if (fileIsError && registrationPending) {
+		return {
+			file: undefined,
+			filePending: true,
+			fileError: null,
 		};
 	}
 

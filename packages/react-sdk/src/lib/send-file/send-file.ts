@@ -2,6 +2,7 @@ import { toHex } from "@filosign/crypto-utils";
 import z from "zod";
 import { latestChainTimestamp } from "../chain-time";
 import { buildRegisterEnvelopeSignature } from "./build-register-signature";
+import { pollRegistrationStatus } from "./poll-registration-status";
 import { prepareColdInvites } from "./prepare-cold-invites";
 import { preparePieceCrypto } from "./prepare-piece-crypto";
 import { processAttachmentPackets } from "./process-attachment-packets";
@@ -153,7 +154,7 @@ export async function sendFile(
 	}
 
 	emit({ phase: "registering_envelope", status: "start" });
-	await deps.rpcQuery.files.register.call({
+	const registerResult = await deps.rpcQuery.files.register.call({
 		pieceCid: piece.pieceCid.toString(),
 		participants: piece.participants,
 		signature,
@@ -176,6 +177,31 @@ export async function sendFile(
 		ciphertextByteLength: piece.encryptedData.byteLength,
 		...(isPractice ? { isPractice: true } : {}),
 	});
+
+	let registrationStatus = registerResult.registrationStatus;
+	if (registrationStatus === "queued" || registrationStatus === "registering") {
+		const polled = await pollRegistrationStatus({
+			rpcQuery: deps.rpcQuery,
+			pieceCid: piece.pieceCid.toString(),
+			initialStatus: registrationStatus,
+			onProgress: (snapshot) => {
+				if (snapshot.registrationStatus === "failed") {
+					emit({
+						phase: "register_failed",
+						status: "error",
+						detail: snapshot.registerError ?? "Registration failed on chain.",
+					});
+				}
+			},
+		});
+		registrationStatus = polled.registrationStatus;
+		if (registrationStatus === "failed") {
+			throw new Error(
+				polled.registerError ?? "Envelope registration failed on chain.",
+			);
+		}
+	}
+
 	emit({ phase: "registering_envelope", status: "done" });
 
 	await registerConditionalAttachments({

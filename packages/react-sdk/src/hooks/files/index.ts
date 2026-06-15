@@ -100,6 +100,7 @@ export * from "./useProposeSignerReplacement";
 export * from "./useRecallEnvelope";
 export * from "./useRecordDocumentView";
 export * from "./useRegenerateColdInvite";
+export * from "./useRegistrationStatus";
 export * from "./useRemindSigners";
 export * from "./useRevokeSettlementAllowance";
 export * from "./useSendFile";

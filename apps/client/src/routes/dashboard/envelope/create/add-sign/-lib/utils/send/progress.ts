@@ -104,7 +104,7 @@ export function buildSendProgressPlan(args: {
 		},
 		{
 			id: "registering_envelope",
-			label: "Saving envelope",
+			label: "Confirming on chain",
 		},
 	);
 
@@ -172,6 +172,7 @@ function resolveStepForEvent(event: SendProgressEvent): string | null {
 	if (event.phase === "uploading") return "uploading";
 	if (event.phase === "wallet_sign_register") return "wallet_sign_register";
 	if (event.phase === "registering_envelope") return "registering_envelope";
+	if (event.phase === "register_failed") return "registering_envelope";
 	if (event.phase === "processing_attachments") return "wallet_attachment_rule";
 	if (event.phase === "wallet_attachment_rule") return "wallet_attachment_rule";
 	if (event.phase === "indexing_payout") return "indexing_payout";

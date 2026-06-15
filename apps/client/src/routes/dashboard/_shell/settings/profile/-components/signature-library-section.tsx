@@ -26,12 +26,12 @@ import {
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { SignatureArtifactPreview } from "@/src/lib/domains/signatures/preview";
+import { SignaturePreviewShell } from "@/src/lib/domains/signatures/preview-shell";
 import "@/src/lib/domains/signatures/signature-fonts.css";
-import { cn } from "@/src/lib/utils";
 import { ProfileSection } from "./profile-section";
 
 function kindLabel(kind: UserSignatureArtifact["kind"]) {
-	if (kind === "typed") return "Typed";
+	if (kind === "typed") return "Style";
 	if (kind === "drawn") return "Drawn";
 	return "Uploaded";
 }
@@ -47,18 +47,13 @@ function SignatureLibraryRow(props: {
 
 	return (
 		<li className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:gap-4">
-			<div
-				className={cn(
-					"flex shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/50 bg-background px-3",
-					isInitial ? "h-10 w-28" : "h-12 w-44",
-				)}
-			>
+			<SignaturePreviewShell signatureRole={props.artifact.role}>
 				<SignatureArtifactPreview
 					artifact={props.artifact}
 					alt={isInitial ? "Initial" : "Signature"}
-					imgClassName="max-h-full max-w-full object-contain"
+					inPreviewShell
 				/>
-			</div>
+			</SignaturePreviewShell>
 
 			<div className="min-w-0 flex-1 space-y-1">
 				<div className="flex flex-wrap items-center gap-2">

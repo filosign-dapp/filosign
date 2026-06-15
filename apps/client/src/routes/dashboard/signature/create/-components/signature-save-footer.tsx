@@ -8,12 +8,18 @@ interface SignatureSaveFooterProps {
 export function SignatureSaveFooter({
 	saveDisabled,
 }: SignatureSaveFooterProps) {
-	const { handleCreateSignature, isSavingChoose } = useSignatureCreate();
+	const { handleCreateSignature, handleGoBack, isSavingChoose } =
+		useSignatureCreate();
 
 	return (
 		<div className="mx-auto flex w-full max-w-6xl justify-end gap-4">
-			<Button variant="ghost" size="lg" disabled={isSavingChoose}>
-				<p className="hidden sm:block">Cancel</p>
+			<Button
+				variant="ghost"
+				size="lg"
+				disabled={isSavingChoose}
+				onClick={handleGoBack}
+			>
+				Go Back
 			</Button>
 			<Button
 				variant="primary"

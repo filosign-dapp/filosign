@@ -11,13 +11,14 @@ import {
 	rasterizeTypedSignature,
 	resolveSignatureFontId,
 	useCreateUserSignature,
+	useMarkActivationMilestone,
 	useUserProfile,
 } from "@filosign/react/users";
 import type { UserSignatureRole } from "@filosign/shared";
 import { DEFAULT_TYPED_SIGNATURE_FONT_ID } from "@filosign/shared";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
 import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
@@ -35,6 +36,7 @@ export function useSignatureCreateController(options?: {
 	const { rpcQuery } = useFilosignContext();
 	const captureAppEvent = useCaptureAppEvent();
 	const createSignature = useCreateUserSignature();
+	const markActivationMilestone = useMarkActivationMilestone();
 	const { onboardingForm, setOnboardingForm } = useStorePersist();
 	const { data: profile } = useUserProfile({ enabled: !onboarding });
 
@@ -123,6 +125,15 @@ export function useSignatureCreateController(options?: {
 	const isChooseDisabled =
 		!selectedSignatureId || !hasSignableName || !initials.trim();
 
+	const recordSignatureCreatedMilestone = async () => {
+		await markActivationMilestone.mutateAsync("signature_created");
+		await invalidateActivationProgress(queryClient, rpcQuery);
+	};
+
+	const handleGoBack = useCallback(() => {
+		void navigate({ to: onboarding ? "/onboarding" : "/dashboard" });
+	}, [navigate, onboarding]);
+
 	const uploadDrawOrUploadRole = async (role: UserSignatureRole) => {
 		const data = role === "signature" ? signatureData : initialsData;
 		if (!data) {
@@ -161,6 +172,7 @@ export function useSignatureCreateController(options?: {
 
 		void safeAsync(async () => {
 			await uploadTypedPair();
+			await recordSignatureCreatedMilestone();
 			captureAppEvent(CLIENT_ANALYTICS_EVENTS.signatureCreated, {
 				source: "choose",
 			});
@@ -176,8 +188,7 @@ export function useSignatureCreateController(options?: {
 				return;
 			}
 
-			await invalidateActivationProgress(queryClient, rpcQuery);
-			await navigate({ to: "/dashboard" });
+			toastUser.success(TOASTS.signatures.saved("signature"));
 		}).then(([, err]) => {
 			setIsSavingChoose(false);
 			if (err) {
@@ -192,6 +203,9 @@ export function useSignatureCreateController(options?: {
 
 		void safeAsync(async () => {
 			await uploadDrawOrUploadRole(role);
+			if (role === "signature") {
+				await recordSignatureCreatedMilestone();
+			}
 			captureAppEvent(CLIENT_ANALYTICS_EVENTS.signatureCreated, {
 				source: activeTab,
 				role,
@@ -267,7 +281,9 @@ export function useSignatureCreateController(options?: {
 		setActiveTab(value);
 		setSignatureData(null);
 		setInitialsData(null);
-		setSelectedSignatureId(null);
+		setSelectedSignatureId(
+			value === "choose" ? DEFAULT_TYPED_SIGNATURE_FONT_ID : null,
+		);
 	};
 
 	return {
@@ -296,6 +312,7 @@ export function useSignatureCreateController(options?: {
 		handleCreateSignature,
 		handleSaveDrawOrUploadRole,
 		handleTabChange,
+		handleGoBack,
 		isSavingChoose,
 		savingRole,
 	};

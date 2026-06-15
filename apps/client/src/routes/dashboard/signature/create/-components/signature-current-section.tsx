@@ -5,7 +5,7 @@ import {
 } from "@filosign/shared";
 import { Link } from "@tanstack/react-router";
 import { SignatureArtifactPreview } from "@/src/lib/domains/signatures/preview";
-import { cn } from "@/src/lib/utils/utils";
+import { SignaturePreviewShell } from "@/src/lib/domains/signatures/preview-shell";
 import { useSignatureCreate } from "@/src/routes/dashboard/signature/create/-lib/context/context";
 
 function CurrentSignaturePreview({
@@ -15,25 +15,24 @@ function CurrentSignaturePreview({
 	artifact: UserSignatureArtifact | undefined;
 	label: string;
 }) {
-	const isInitial = artifact?.role === "initial";
+	const role = label === "Initials" ? "initial" : "signature";
 
 	return (
 		<div className="flex items-center gap-2.5">
 			<span className="w-16 shrink-0 text-xs text-muted-foreground">
 				{label}
 			</span>
-			<div
-				className={cn(
-					"flex h-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/60 bg-background px-3",
-					isInitial ? "w-28" : "w-56",
-				)}
-			>
+			<SignaturePreviewShell signatureRole={role}>
 				{artifact ? (
-					<SignatureArtifactPreview artifact={artifact} alt={label} />
+					<SignatureArtifactPreview
+						artifact={artifact}
+						alt={label}
+						inPreviewShell
+					/>
 				) : (
 					<span className="text-xs text-muted-foreground">Not set</span>
 				)}
-			</div>
+			</SignaturePreviewShell>
 		</div>
 	);
 }
@@ -110,8 +109,8 @@ export function SignatureCurrentSection() {
 				) : (
 					<>
 						<span>
-							Add your first name in profile settings to sign with a typed
-							signature.
+							Add your first name in profile settings to choose a signature
+							style.
 						</span>
 						<Link
 							to={profileSettingsHref}

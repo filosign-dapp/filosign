@@ -4,7 +4,6 @@ import {
 	TextAaIcon,
 	UploadIcon,
 } from "@phosphor-icons/react";
-import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import {
 	FullBleedMain,
@@ -33,7 +32,7 @@ import { SignatureDraw } from "./signature-draw";
 import { SignatureUpload } from "./signature-upload";
 
 export function SignatureCreatePage() {
-	const { onboarding, handleTabChange } = useSignatureCreate();
+	const { onboarding, handleTabChange, handleGoBack } = useSignatureCreate();
 
 	return (
 		<div className="min-h-screen">
@@ -60,7 +59,7 @@ export function SignatureCreatePage() {
 					variant="ghost"
 					size="lg"
 					className="self-start mb-4"
-					render={<Link to={onboarding ? "/onboarding" : "/dashboard"} />}
+					onClick={handleGoBack}
 				>
 					<CaretLeftIcon className="size-5" weight="bold" />
 					<p>Back</p>

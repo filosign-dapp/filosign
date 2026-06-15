@@ -1,5 +1,6 @@
 import { Worker } from "bullmq";
 import { processDodoWebhookJob } from "@/lib/domains/billing";
+import { runFileRegisterRetryJob } from "@/lib/domains/files/utils/register-retry-job";
 import { runPostSignRoutingCompleteJob } from "@/lib/domains/files/utils/sign/routing-complete";
 import { runFocTransitionForPiece } from "@/lib/domains/foc";
 import { tryExecuteSettlementRulesForPiece } from "@/lib/domains/settlements/utils/execute/payout";
@@ -10,6 +11,7 @@ import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import type {
 	BillingWebhookQueueJobData,
 	EmailQueueJobData,
+	FileRegisterRetryQueueJobData,
 	FocTransitionQueueJobData,
 	IndexerQueueJobData,
 	PayoutQueueJobData,
@@ -21,6 +23,7 @@ import {
 	attachWorkerFailedHandler,
 	BILLING_WEBHOOK_QUEUE_NAME,
 	EMAIL_QUEUE_NAME,
+	FILE_REGISTER_RETRY_QUEUE_NAME,
 	FOC_TRANSITION_QUEUE_NAME,
 	getBullmqPrefix,
 	INDEXER_QUEUE_NAME,
@@ -46,6 +49,8 @@ let postSignRoutingWorker: Worker<PostSignRoutingQueueJobData> | null = null;
 let indexerWorker: Worker<IndexerQueueJobData> | null = null;
 let billingWebhookWorker: Worker<BillingWebhookQueueJobData> | null = null;
 let focTransitionWorker: Worker<FocTransitionQueueJobData> | null = null;
+let fileRegisterRetryWorker: Worker<FileRegisterRetryQueueJobData> | null =
+	null;
 
 function commonWorkerOptions() {
 	return {
@@ -201,6 +206,31 @@ export function startFocTransitionWorker(): Worker<FocTransitionQueueJobData> {
 	return focTransitionWorker;
 }
 
+export function startFileRegisterRetryWorker(): Worker<FileRegisterRetryQueueJobData> {
+	if (fileRegisterRetryWorker) return fileRegisterRetryWorker;
+
+	fileRegisterRetryWorker = new Worker<FileRegisterRetryQueueJobData>(
+		FILE_REGISTER_RETRY_QUEUE_NAME,
+		async (job) => {
+			await runFileRegisterRetryJob(job.data.pieceCid);
+		},
+		{
+			...commonWorkerOptions(),
+			concurrency: 1,
+		},
+	);
+
+	attachWorkerFailedHandler(
+		fileRegisterRetryWorker,
+		FILE_REGISTER_RETRY_QUEUE_NAME,
+		{
+			alertContext: (job) =>
+				job?.data?.pieceCid ? { pieceCid: job.data.pieceCid } : {},
+		},
+	);
+	return fileRegisterRetryWorker;
+}
+
 export function startAllWorkers(): void {
 	startEmailWorker();
 	startPayoutWorker();
@@ -208,6 +238,7 @@ export function startAllWorkers(): void {
 	startIndexerWorker();
 	startBillingWebhookWorker();
 	startFocTransitionWorker();
+	startFileRegisterRetryWorker();
 }
 
 export async function closeEmailWorker(): Promise<void> {
@@ -252,6 +283,13 @@ export async function closeFocTransitionWorker(): Promise<void> {
 	}
 }
 
+export async function closeFileRegisterRetryWorker(): Promise<void> {
+	if (fileRegisterRetryWorker) {
+		await fileRegisterRetryWorker.close();
+		fileRegisterRetryWorker = null;
+	}
+}
+
 export async function closeAllWorkers(): Promise<void> {
 	await Promise.all([
 		closeEmailWorker(),
@@ -260,5 +298,6 @@ export async function closeAllWorkers(): Promise<void> {
 		closeIndexerWorker(),
 		closeBillingWebhookWorker(),
 		closeFocTransitionWorker(),
+		closeFileRegisterRetryWorker(),
 	]);
 }

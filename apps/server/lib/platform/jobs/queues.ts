@@ -4,6 +4,7 @@ import { getQueueConnection } from "./utils/connection";
 import {
 	billingWebhookJobId,
 	emailJobId,
+	fileRegisterRetryJobId,
 	focTransitionJobId,
 	indexerJobId,
 	payoutJobId,
@@ -14,6 +15,7 @@ import {
 	BILLING_WEBHOOK_QUEUE_NAME,
 	DEFAULT_QUEUE_JOB_OPTIONS,
 	EMAIL_QUEUE_NAME,
+	FILE_REGISTER_RETRY_QUEUE_NAME,
 	FOC_TRANSITION_QUEUE_NAME,
 	getBullmqPrefix,
 	INDEXER_QUEUE_NAME,
@@ -47,12 +49,15 @@ export type BillingWebhookQueueJobData = { webhookId: string };
 
 export type FocTransitionQueueJobData = { pieceCid: string };
 
+export type FileRegisterRetryQueueJobData = { pieceCid: string };
+
 let emailQueue: Queue<EmailQueueJobData> | null = null;
 let payoutQueue: Queue<PayoutQueueJobData> | null = null;
 let postSignRoutingQueue: Queue<PostSignRoutingQueueJobData> | null = null;
 let indexerQueue: Queue<IndexerQueueJobData> | null = null;
 let billingWebhookQueue: Queue<BillingWebhookQueueJobData> | null = null;
 let focTransitionQueue: Queue<FocTransitionQueueJobData> | null = null;
+let fileRegisterRetryQueue: Queue<FileRegisterRetryQueueJobData> | null = null;
 
 function queueOptions() {
 	return {
@@ -117,6 +122,26 @@ export function getFocTransitionQueue(): Queue<FocTransitionQueueJobData> {
 		);
 	}
 	return focTransitionQueue;
+}
+
+export function getFileRegisterRetryQueue(): Queue<FileRegisterRetryQueueJobData> {
+	if (!fileRegisterRetryQueue) {
+		fileRegisterRetryQueue = new Queue<FileRegisterRetryQueueJobData>(
+			FILE_REGISTER_RETRY_QUEUE_NAME,
+			queueOptions(),
+		);
+	}
+	return fileRegisterRetryQueue;
+}
+
+export async function enqueueFileRegisterRetry(
+	pieceCid: string,
+): Promise<void> {
+	await getFileRegisterRetryQueue().add(
+		"retry",
+		{ pieceCid },
+		{ jobId: fileRegisterRetryJobId(pieceCid) },
+	);
 }
 
 export async function enqueueFocTransition(pieceCid: string): Promise<void> {
@@ -249,6 +274,10 @@ export async function closeJobsQueues(): Promise<void> {
 	if (focTransitionQueue) {
 		closes.push(focTransitionQueue.close());
 		focTransitionQueue = null;
+	}
+	if (fileRegisterRetryQueue) {
+		closes.push(fileRegisterRetryQueue.close());
+		fileRegisterRetryQueue = null;
 	}
 	await Promise.all(closes);
 }

@@ -26,6 +26,10 @@ export function billingWebhookJobId(webhookId: string): string {
 	return `billing${JOB_ID_SEP}${webhookId}`;
 }
 
+export function fileRegisterRetryJobId(pieceCid: string): string {
+	return `register-retry${JOB_ID_SEP}${pieceCid}`;
+}
+
 export function focTransitionJobId(pieceCid: string): string {
 	return `foc${JOB_ID_SEP}${pieceCid}`;
 }

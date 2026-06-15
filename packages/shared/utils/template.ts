@@ -207,9 +207,12 @@ export function draftSnapshotToTemplateSnapshot(
 
 		if (recipient.role === "signer") {
 			signerOrder += 1;
+			const label = isTemplateRolePlaceholderEmail(normalized)
+				? recipient.name.trim() || signerLabel(signerOrder)
+				: signerLabel(signerOrder);
 			roles.push({
 				roleId,
-				label: signerLabel(signerOrder),
+				label,
 				kind: "signer",
 				order: signerOrder - 1,
 			});
@@ -218,9 +221,12 @@ export function draftSnapshotToTemplateSnapshot(
 		}
 
 		viewerOrder += 1;
+		const label = isTemplateRolePlaceholderEmail(normalized)
+			? recipient.name.trim() || `Viewer ${viewerOrder}`
+			: `Viewer ${viewerOrder}`;
 		roles.push({
 			roleId,
-			label: `Viewer ${viewerOrder}`,
+			label,
 			kind: "viewer",
 			order: viewerOrder - 1,
 		});

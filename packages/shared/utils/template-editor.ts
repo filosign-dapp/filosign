@@ -98,11 +98,18 @@ export function updateTemplateRole(args: {
 		};
 	});
 
+	const roleEmail = templateRolePlaceholderEmail(args.roleId);
 	let nextFields = args.state.signatureFields;
 	if (args.kind === "viewer") {
-		const email = templateRolePlaceholderEmail(args.roleId);
-		nextFields = args.state.signatureFields.filter(
-			(field) => field.assignedSignerEmail !== email,
+		nextFields = nextFields.filter(
+			(field) => field.assignedSignerEmail !== roleEmail,
+		);
+	} else if (args.label?.trim()) {
+		const newLabel = args.label.trim();
+		nextFields = nextFields.map((field) =>
+			field.assignedSignerEmail === roleEmail
+				? { ...field, assignedSignerName: newLabel }
+				: field,
 		);
 	}
 

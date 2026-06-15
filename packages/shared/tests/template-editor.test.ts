@@ -68,6 +68,10 @@ describe("template editor mutations", () => {
 			label: "Buyer",
 		});
 		expect(next.recipients[0]?.name).toBe("Buyer");
+		expect(next.signatureFields[0]?.assignedSignerName).toBe("Buyer");
+		expect(next.signatureFields[0]?.assignedSignerEmail).toBe(
+			"role_a@template.filosign",
+		);
 	});
 
 	test("updateTemplateRole to viewer removes fields", () => {

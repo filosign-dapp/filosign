@@ -136,6 +136,40 @@ describe("draftSnapshotToTemplateSnapshot", () => {
 		);
 	});
 
+	it("preserves custom role labels from template editor recipients on save", () => {
+		const roleId = "role_custom";
+		const snapshot = draftSnapshotToTemplateSnapshot({
+			...draftSnapshot,
+			recipients: [
+				{
+					clientRowId: roleId,
+					name: "Buyer",
+					email: templateRolePlaceholderEmail(roleId),
+					role: "signer",
+				},
+			],
+			signatureFields: [
+				{
+					id: "field-1",
+					type: "signature",
+					x: 100,
+					y: 200,
+					width: 120,
+					height: 40,
+					page: 1,
+					documentId: "doc-1",
+					assignedSignerWallet: "",
+					assignedSignerName: "Buyer",
+					assignedSignerEmail: templateRolePlaceholderEmail(roleId),
+					required: true,
+				},
+			],
+		});
+
+		expect(snapshot.roles).toHaveLength(1);
+		expect(snapshot.roles[0]?.label).toBe("Buyer");
+	});
+
 	it("parseRoleIdFromPlaceholderEmail preserves role ids with embedded @", () => {
 		const roleId = "signer:alice@example.com";
 		const placeholder = templateRolePlaceholderEmail(roleId);

@@ -38,6 +38,14 @@ Typecheck including tests: each workspace with `tests/` runs `tsc -p tsconfig.te
 
 **Server:** [`apps/server/bunfig.toml`](apps/server/bunfig.toml) preloads [`tests/preload.ts`](apps/server/tests/preload.ts) so `@/env` is stubbed before modules like `pino` load during unrelated domain tests.
 
+**Bun test runner (single process):** All server tests share one module cache ([Bun runtime behavior](https://bun.com/docs/test/runtime-behavior)). [`mock.module()`](https://bun.com/docs/test/mocks) updates live ESM bindings for `import db from "…"`, but **top-level** `const { files } = db.schema` snapshots table refs at first evaluation. When another test file loads the module first (e.g. via a jobs barrel → workers → domain graph), per-test mocks cannot fix that unless production code reads `db.schema` at **call time** (see [`apps/server/README.md`](apps/server/README.md)). Reference: [`register-helpers.test.ts`](apps/server/tests/domains/register-helpers.test.ts) + [`register-helpers.ts`](apps/server/lib/domains/files/utils/register-helpers.ts) (`schema()` helper).
+
+In tests:
+
+- Register `mock.module(...)` at **file top level** (or in preload) before the module under test is first imported in that file.
+- Avoid `beforeEach(mock.module)` + `afterEach(mock.restore())` for infra mocks; restore does not undo module overrides and fights the shared cache.
+- Prefer importing narrow paths (e.g. `@/lib/platform/jobs/utils/idempotency`) over barrels that pull workers and heavy domain graphs.
+
 ## Do not add
 
 Anti-patterns that add noise without exercising production behavior:

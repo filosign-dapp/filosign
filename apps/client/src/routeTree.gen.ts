@@ -18,6 +18,7 @@ import { Route as DashboardShellRouteRouteImport } from "./routes/dashboard/_she
 import { Route as OnboardingCreateSignatureIndexRouteImport } from "./routes/onboarding/create-signature/index"
 import { Route as DraftReviewIndexRouteImport } from "./routes/draft/review/index"
 import { Route as DashboardTemplatesNewIndexRouteImport } from "./routes/dashboard/templates/new/index"
+import { Route as DashboardTemplatesTemplateIdIndexRouteImport } from "./routes/dashboard/templates/$templateId/index"
 import { Route as DashboardSignatureCreateIndexRouteImport } from "./routes/dashboard/signature/create/index"
 import { Route as DashboardEnvelopeCreateIndexRouteImport } from "./routes/dashboard/envelope/create/index"
 import { Route as DashboardDocumentSignIndexRouteImport } from "./routes/dashboard/document/sign/index"
@@ -76,6 +77,12 @@ const DashboardTemplatesNewIndexRoute =
   DashboardTemplatesNewIndexRouteImport.update({
     id: "/templates/new/",
     path: "/templates/new/",
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
+const DashboardTemplatesTemplateIdIndexRoute =
+  DashboardTemplatesTemplateIdIndexRouteImport.update({
+    id: "/templates/$templateId/",
+    path: "/templates/$templateId/",
     getParentRoute: () => DashboardRouteRoute,
   } as any)
 const DashboardSignatureCreateIndexRoute =
@@ -171,6 +178,7 @@ export interface FileRoutesByFullPath {
   "/dashboard/document/sign/": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create/": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create/": typeof DashboardSignatureCreateIndexRoute
+  "/dashboard/templates/$templateId/": typeof DashboardTemplatesTemplateIdIndexRoute
   "/dashboard/templates/new/": typeof DashboardTemplatesNewIndexRoute
   "/dashboard/document/all/": typeof DashboardShellDocumentAllIndexRoute
   "/dashboard/settings/billing/": typeof DashboardShellSettingsBillingIndexRoute
@@ -192,6 +200,7 @@ export interface FileRoutesByTo {
   "/dashboard/document/sign": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create": typeof DashboardSignatureCreateIndexRoute
+  "/dashboard/templates/$templateId": typeof DashboardTemplatesTemplateIdIndexRoute
   "/dashboard/templates/new": typeof DashboardTemplatesNewIndexRoute
   "/dashboard/document/all": typeof DashboardShellDocumentAllIndexRoute
   "/dashboard/settings/billing": typeof DashboardShellSettingsBillingIndexRoute
@@ -217,6 +226,7 @@ export interface FileRoutesById {
   "/dashboard/document/sign/": typeof DashboardDocumentSignIndexRoute
   "/dashboard/envelope/create/": typeof DashboardEnvelopeCreateIndexRoute
   "/dashboard/signature/create/": typeof DashboardSignatureCreateIndexRoute
+  "/dashboard/templates/$templateId/": typeof DashboardTemplatesTemplateIdIndexRoute
   "/dashboard/templates/new/": typeof DashboardTemplatesNewIndexRoute
   "/dashboard/_shell/document/all/": typeof DashboardShellDocumentAllIndexRoute
   "/dashboard/_shell/settings/billing/": typeof DashboardShellSettingsBillingIndexRoute
@@ -242,6 +252,7 @@ export interface FileRouteTypes {
     | "/dashboard/document/sign/"
     | "/dashboard/envelope/create/"
     | "/dashboard/signature/create/"
+    | "/dashboard/templates/$templateId/"
     | "/dashboard/templates/new/"
     | "/dashboard/document/all/"
     | "/dashboard/settings/billing/"
@@ -263,6 +274,7 @@ export interface FileRouteTypes {
     | "/dashboard/document/sign"
     | "/dashboard/envelope/create"
     | "/dashboard/signature/create"
+    | "/dashboard/templates/$templateId"
     | "/dashboard/templates/new"
     | "/dashboard/document/all"
     | "/dashboard/settings/billing"
@@ -287,6 +299,7 @@ export interface FileRouteTypes {
     | "/dashboard/document/sign/"
     | "/dashboard/envelope/create/"
     | "/dashboard/signature/create/"
+    | "/dashboard/templates/$templateId/"
     | "/dashboard/templates/new/"
     | "/dashboard/_shell/document/all/"
     | "/dashboard/_shell/settings/billing/"
@@ -367,6 +380,13 @@ declare module "@tanstack/react-router" {
       path: "/templates/new"
       fullPath: "/dashboard/templates/new/"
       preLoaderRoute: typeof DashboardTemplatesNewIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    "/dashboard/templates/$templateId/": {
+      id: "/dashboard/templates/$templateId/"
+      path: "/templates/$templateId"
+      fullPath: "/dashboard/templates/$templateId/"
+      preLoaderRoute: typeof DashboardTemplatesTemplateIdIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
     "/dashboard/signature/create/": {
@@ -498,6 +518,7 @@ interface DashboardRouteRouteChildren {
   DashboardDocumentSignIndexRoute: typeof DashboardDocumentSignIndexRoute
   DashboardEnvelopeCreateIndexRoute: typeof DashboardEnvelopeCreateIndexRoute
   DashboardSignatureCreateIndexRoute: typeof DashboardSignatureCreateIndexRoute
+  DashboardTemplatesTemplateIdIndexRoute: typeof DashboardTemplatesTemplateIdIndexRoute
   DashboardTemplatesNewIndexRoute: typeof DashboardTemplatesNewIndexRoute
   DashboardEnvelopeCreateAddSignIndexRoute: typeof DashboardEnvelopeCreateAddSignIndexRoute
   DashboardTemplatesTemplateIdEditIndexRoute: typeof DashboardTemplatesTemplateIdEditIndexRoute
@@ -509,6 +530,8 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardDocumentSignIndexRoute: DashboardDocumentSignIndexRoute,
   DashboardEnvelopeCreateIndexRoute: DashboardEnvelopeCreateIndexRoute,
   DashboardSignatureCreateIndexRoute: DashboardSignatureCreateIndexRoute,
+  DashboardTemplatesTemplateIdIndexRoute:
+    DashboardTemplatesTemplateIdIndexRoute,
   DashboardTemplatesNewIndexRoute: DashboardTemplatesNewIndexRoute,
   DashboardEnvelopeCreateAddSignIndexRoute:
     DashboardEnvelopeCreateAddSignIndexRoute,

@@ -141,7 +141,7 @@ function TemplateRowActions({
 				<DropdownMenuContent align="end" className="min-w-36">
 					<DropdownMenuItem className="gap-2" disabled={busy} onClick={onOpen}>
 						<FileTextIcon className="size-4" aria-hidden />
-						View details
+						Preview
 					</DropdownMenuItem>
 					{canUse ? (
 						<DropdownMenuItem className="gap-2" disabled={busy} onClick={onUse}>
@@ -197,7 +197,7 @@ function TemplateContextMenuContent({
 		<ContextMenuContent className="min-w-36">
 			<ContextMenuItem className="gap-2" disabled={busy} onClick={onOpen}>
 				<FileTextIcon className="size-4" aria-hidden />
-				View details
+				Preview
 			</ContextMenuItem>
 			{canUse ? (
 				<ContextMenuItem className="gap-2" disabled={busy} onClick={onUse}>

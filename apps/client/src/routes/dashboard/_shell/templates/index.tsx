@@ -1,19 +1,12 @@
 import { MotionReveal } from "@filosign/motion";
-import { useFilosignContext } from "@filosign/react";
 import { useEntitlements } from "@filosign/react/billing";
 import { canUseSharedTemplates } from "@filosign/react/files";
 import {
-	type OrgsTemplatesCloneOutput,
 	useActiveOrganization,
 	useActiveOrgId,
-	useCloneOrgTemplateToEnvelope,
 	useDeleteOrgTemplate,
 	useOrganizationGet,
 } from "@filosign/react/orgs";
-import {
-	fetchCloneTemplatePayload,
-	walletAccountAddress,
-} from "@filosign/react/utils";
 import {
 	createTemplateRoleId,
 	TEMPLATE_LIMITS,
@@ -22,7 +15,6 @@ import {
 import { FileTextIcon } from "@phosphor-icons/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import { Button } from "@/src/lib/components/ui/button";
@@ -34,12 +26,11 @@ import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-d
 import {
 	canManageTemplates,
 	canUseTemplates,
-	hydrateCreateFormFromTemplate,
 } from "@/src/lib/domains/templates/template-composer";
+import { useTemplateUseFlow } from "@/src/lib/domains/templates/use-template-use-flow";
+import { deriveTemplateDisplayName } from "@/src/lib/domains/templates/utils/display-name";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
-import { TemplateDetailSheet } from "@/src/routes/dashboard/_shell/templates/-components/template-detail-sheet";
-import { TemplateRoleAssignmentDialog } from "@/src/routes/dashboard/_shell/templates/-components/template-role-assignment-dialog";
 import { TemplatesContent } from "@/src/routes/dashboard/_shell/templates/-components/templates-content";
 import { TemplatesPageSkeleton } from "@/src/routes/dashboard/_shell/templates/-components/templates-page-skeleton";
 import { TemplatesPageToolbar } from "@/src/routes/dashboard/_shell/templates/-components/templates-page-toolbar";
@@ -53,7 +44,6 @@ function TemplatesIndexPage() {
 	const navigate = useNavigate();
 	const activeOrgId = useActiveOrgId();
 	const activeOrg = useActiveOrganization();
-	const { rpcQuery, wallet } = useFilosignContext();
 	const setCreateForm = useStorePersist((s) => s.setCreateForm);
 	const uploadInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,17 +53,11 @@ function TemplatesIndexPage() {
 		activeOrgId ?? undefined,
 	);
 
-	const cloneTemplate = useCloneOrgTemplateToEnvelope();
 	const deleteTemplate = useDeleteOrgTemplate();
+	const { startUseTemplate, clonePending } = useTemplateUseFlow();
 
 	const [templatesUpgradeOpen, setTemplatesUpgradeOpen] = useState(true);
 	const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
-	const [detailTemplateId, setDetailTemplateId] = useState<string | null>(null);
-	const [roleAssignment, setRoleAssignment] = useState<{
-		templateId: string;
-		templateName: string;
-		clone: OrgsTemplatesCloneOutput;
-	} | null>(null);
 
 	const templates = useMemo(() => orgDetail?.templates ?? [], [orgDetail]);
 	const { searchInput, setSearchInput, filteredTemplates, hasSearchQuery } =
@@ -82,7 +66,7 @@ function TemplatesIndexPage() {
 	const manageTemplates = canManageTemplates(activeOrg?.role);
 	const useTemplates = canUseTemplates(activeOrg?.role);
 	const isTemplatesEnabled = canUseSharedTemplates(entitlements);
-	const actionsBusy = cloneTemplate.isPending || deleteTemplate.isPending;
+	const actionsBusy = clonePending || deleteTemplate.isPending;
 
 	const handleUploadTemplatePdf = async (
 		event: React.ChangeEvent<HTMLInputElement>,
@@ -122,8 +106,11 @@ function TemplatesIndexPage() {
 			return;
 		}
 
+		const templateId = crypto.randomUUID();
 		const roleId = createTemplateRoleId();
-		const defaultName = files[0].name.replace(/\.pdf$/i, "");
+		const defaultName = deriveTemplateDisplayName(
+			files[0].name.replace(/\.pdf$/i, ""),
+		);
 		const draft = await buildCreateForm(
 			{
 				documents: files.map((file) => ({
@@ -136,7 +123,8 @@ function TemplatesIndexPage() {
 				recipients: [
 					{
 						clientRowId: roleId,
-						name: "Signer 1",
+						name: "",
+						templateRoleLabel: "Signer 1",
 						email: templateRolePlaceholderEmail(roleId),
 						role: "signer",
 					},
@@ -147,60 +135,27 @@ function TemplatesIndexPage() {
 			},
 			null,
 		);
-		setCreateForm(draft);
+		setCreateForm({
+			...draft,
+			templateContext: { templateId, mode: "create" },
+		});
 		void navigate({
 			to: "/dashboard/templates/new",
 			search: { templateName: defaultName },
 		});
 	};
 
-	const handleUseTemplate = (templateId: string) => {
-		const template = templates.find((row) => row.id === templateId);
-		if (!template) return;
-
-		toast.promise(cloneTemplate.mutateAsync({ templateId }), {
-			loading: TOASTS.templates.cloning,
-			success: (clone) => {
-				setRoleAssignment({
-					templateId,
-					templateName: template.name,
-					clone,
-				});
-				return TOASTS.templates.readyForUse;
-			},
-			error: TOASTS.templates.cloneFailed.title,
+	const handleOpenTemplate = (templateId: string) => {
+		void navigate({
+			to: "/dashboard/templates/$templateId",
+			params: { templateId },
 		});
 	};
 
-	const handleConfirmRoleAssignment = async (
-		assignments: Record<string, { name: string; email: string }>,
-	) => {
-		if (!roleAssignment || !wallet?.account || !activeOrgId) return;
-		try {
-			const walletAddress = walletAccountAddress(wallet.account);
-			const myWrap = await rpcQuery.orgs.keys.wrapForMine.call({
-				organizationId: activeOrgId,
-			});
-			const payload = await fetchCloneTemplatePayload({
-				templateId: roleAssignment.clone.templateId,
-				headDekWrappedOmk: roleAssignment.clone.headDekWrappedOmk,
-				headOmkKemCiphertext: roleAssignment.clone.headOmkKemCiphertext,
-				snapshotJson: roleAssignment.clone.snapshotJson,
-				wallet: walletAddress,
-				myOrgWrap: myWrap,
-				documents: roleAssignment.clone.documents,
-			});
-			const draft = await hydrateCreateFormFromTemplate({
-				snapshot: payload.snapshotJson,
-				documents: payload.documents,
-				assignments,
-			});
-			setCreateForm(draft);
-			setRoleAssignment(null);
-			void navigate({ to: "/dashboard/envelope/create/add-sign" });
-		} catch (err) {
-			showAppErrorToast(err);
-		}
+	const handleUseTemplate = (templateId: string) => {
+		const template = templates.find((row) => row.id === templateId);
+		if (!template) return;
+		startUseTemplate(templateId, template.name);
 	};
 
 	const handleDeleteTemplate = async () => {
@@ -281,7 +236,7 @@ function TemplatesIndexPage() {
 				canUse={useTemplates}
 				actionsBusy={actionsBusy}
 				onClearSearch={() => setSearchInput("")}
-				onOpenTemplate={setDetailTemplateId}
+				onOpenTemplate={handleOpenTemplate}
 				onUseTemplate={handleUseTemplate}
 				onEditTemplate={(templateId) =>
 					void navigate({
@@ -292,29 +247,6 @@ function TemplatesIndexPage() {
 				onDeleteTemplate={setDeleteTargetId}
 				onCreateTemplate={() => uploadInputRef.current?.click()}
 			/>
-
-			<TemplateDetailSheet
-				templateId={detailTemplateId}
-				open={detailTemplateId !== null}
-				onOpenChange={(open) => {
-					if (!open) setDetailTemplateId(null);
-				}}
-			/>
-
-			{roleAssignment ? (
-				<TemplateRoleAssignmentDialog
-					open
-					onOpenChange={(open) => {
-						if (!open) setRoleAssignment(null);
-					}}
-					templateName={roleAssignment.templateName}
-					snapshot={roleAssignment.clone.snapshotJson}
-					docCount={roleAssignment.clone.documents.length}
-					fieldCount={roleAssignment.clone.snapshotJson.fields.length}
-					pending={cloneTemplate.isPending}
-					onConfirm={handleConfirmRoleAssignment}
-				/>
-			) : null}
 
 			<ConfirmAlertDialog
 				open={deleteTargetId !== null}

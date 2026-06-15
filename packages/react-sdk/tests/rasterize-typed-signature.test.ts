@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
 	canvasToPngBytes,
 	resolveSignatureRasterPixelRatio,
+	trimCanvasToInk,
 	trimCanvasToTextBounds,
 } from "../src/lib/rasterize-typed-signature";
 
@@ -34,59 +35,72 @@ describe("canvasToPngBytes", () => {
 	});
 });
 
-describe("trimCanvasToTextBounds", () => {
+function firstInkRow(canvas: HTMLCanvasElement): number {
+	const ctx = canvas.getContext("2d");
+	if (!ctx) throw new Error("canvas context missing");
+	const { width, height } = canvas;
+	const data = ctx.getImageData(0, 0, width, height).data;
+	for (let y = 0; y < height; y++) {
+		for (let x = 0; x < width; x++) {
+			const alpha = data[(y * width + x) * 4 + 3] ?? 0;
+			if (alpha > 8) return y;
+		}
+	}
+	return -1;
+}
+
+function lastInkRow(canvas: HTMLCanvasElement): number {
+	const ctx = canvas.getContext("2d");
+	if (!ctx) throw new Error("canvas context missing");
+	const { width, height } = canvas;
+	const data = ctx.getImageData(0, 0, width, height).data;
+	for (let y = height - 1; y >= 0; y--) {
+		for (let x = 0; x < width; x++) {
+			const alpha = data[(y * width + x) * 4 + 3] ?? 0;
+			if (alpha > 8) return y;
+		}
+	}
+	return -1;
+}
+
+function drawMiddleBaselineText(args: {
+	width: number;
+	height: number;
+	fontSize: number;
+	text: string;
+}) {
+	const source = document.createElement("canvas");
+	source.width = args.width;
+	source.height = args.height;
+	const ctx = source.getContext("2d");
+	if (!ctx) throw new Error("canvas context missing");
+
+	ctx.fillStyle = "#111827";
+	ctx.font = `${args.fontSize}px cursive`;
+	ctx.textAlign = "center";
+	ctx.textBaseline = "middle";
+	ctx.fillText(args.text, args.width / 2, args.height * 0.55);
+	return source;
+}
+
+describe("trimCanvasToInk", () => {
 	test.skipIf(typeof document === "undefined")(
-		"returns a smaller canvas than the source when text is narrower",
-		() => {
-			const source = document.createElement("canvas");
-			source.width = 400;
-			source.height = 120;
-			const ctx = source.getContext("2d");
-			if (!ctx) throw new Error("canvas context missing");
-
-			ctx.fillStyle = "#111827";
-			ctx.font = "48px cursive";
-			ctx.textAlign = "center";
-			ctx.textBaseline = "middle";
-			ctx.fillText("AB", 200, 66);
-
-			const trimmed = trimCanvasToTextBounds({
-				source,
-				pixelRatio: 1,
-				text: "AB",
-				fontSize: 48,
-				cssFamily: "cursive",
-				boxWidth: 400,
-				boxHeight: 120,
-			});
-
-			expect(trimmed.width).toBeLessThan(source.width);
-			expect(trimmed.height).toBeLessThanOrEqual(source.height);
-		},
-	);
-
-	test.skipIf(typeof document === "undefined")(
-		"preserves bottom ink for middle-baseline text (no vertical clip)",
+		"preserves top ink that measureText trim would clip",
 		() => {
 			const boxWidth = 520;
 			const boxHeight = 140;
 			const fontSize = 72;
-			const centerY = boxHeight * 0.55;
 			const text = "Kartik";
 
-			const source = document.createElement("canvas");
-			source.width = boxWidth;
-			source.height = boxHeight;
-			const ctx = source.getContext("2d");
-			if (!ctx) throw new Error("canvas context missing");
+			const source = drawMiddleBaselineText({
+				width: boxWidth,
+				height: boxHeight,
+				fontSize,
+				text,
+			});
 
-			ctx.fillStyle = "#111827";
-			ctx.font = `${fontSize}px cursive`;
-			ctx.textAlign = "center";
-			ctx.textBaseline = "middle";
-			ctx.fillText(text, boxWidth / 2, centerY);
-
-			const trimmed = trimCanvasToTextBounds({
+			const inkTrimmed = trimCanvasToInk(source, 6);
+			const metricsTrimmed = trimCanvasToTextBounds({
 				source,
 				pixelRatio: 1,
 				text,
@@ -97,22 +111,16 @@ describe("trimCanvasToTextBounds", () => {
 				padding: 6,
 			});
 
-			const trimmedCtx = trimmed.getContext("2d");
-			if (!trimmedCtx) throw new Error("canvas context missing");
+			expect(inkTrimmed.height).toBeGreaterThanOrEqual(metricsTrimmed.height);
 
-			const bottomRow = trimmedCtx.getImageData(
-				0,
-				trimmed.height - 1,
-				trimmed.width,
-				1,
-			).data;
-			const hasBottomInk = Array.from({ length: trimmed.width }, (_, x) => {
-				const alpha = bottomRow[x * 4 + 3] ?? 0;
-				return alpha > 8;
-			}).some(Boolean);
+			const inkTop = firstInkRow(inkTrimmed);
+			const metricsTop = firstInkRow(metricsTrimmed);
+			expect(inkTop).toBeGreaterThanOrEqual(0);
+			expect(inkTop).toBeLessThanOrEqual(metricsTop + 2);
 
-			expect(hasBottomInk).toBe(true);
-			expect(trimmed.height).toBeGreaterThan(fontSize * 0.5);
+			const topMargin = inkTop;
+			const bottomMargin = inkTrimmed.height - 1 - lastInkRow(inkTrimmed);
+			expect(Math.abs(topMargin - bottomMargin)).toBeLessThanOrEqual(8);
 		},
 	);
 });

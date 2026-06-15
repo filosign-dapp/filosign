@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { encryption, KEM, randomBytes, toHex } from "@filosign/crypto-utils";
-import { ORG_OMK_WRAP_INFO } from "@filosign/shared";
+import { ORG_OMK_WRAP_INFO, sha256PlaintextHex } from "@filosign/shared";
 import { getAddress } from "viem";
 import { setSessionSeed } from "../src/hooks/auth/session-seed";
 import { cloneTemplateDocumentsToPlaintext } from "../src/lib/clone-template-to-envelope";
@@ -37,6 +37,7 @@ describe("cloneTemplateDocumentsToPlaintext", () => {
 			orgEncryptionPublicKey: toHex(omkPublic),
 		});
 		const plaintext = new TextEncoder().encode("nda bytes");
+		const plaintextSha256 = await sha256PlaintextHex(plaintext);
 		const ciphertext = await encryptTemplateDocument({
 			dek,
 			templateId,
@@ -68,6 +69,7 @@ describe("cloneTemplateDocumentsToPlaintext", () => {
 						name: "nda.pdf",
 						mimeType: "application/pdf",
 						downloadUrl: "https://example.test/template-doc",
+						plaintextSha256,
 					},
 				],
 			});

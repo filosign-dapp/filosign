@@ -111,14 +111,16 @@ export function trimCanvasToTextBounds(args: {
 	const descent = Number.isFinite(metrics.actualBoundingBoxDescent)
 		? metrics.actualBoundingBoxDescent
 		: fontSize * 0.2;
+	const textHeight = ascent + descent;
 
 	const centerX = boxWidth / 2;
 	const centerY = boxHeight * 0.55;
 
 	const minX = Math.max(0, centerX - textWidth / 2 - padding);
-	const minY = Math.max(0, centerY - ascent - padding);
+	// fillText uses textBaseline "middle" at centerY, not alphabetic baseline.
+	const minY = Math.max(0, centerY - textHeight / 2 - padding);
 	const maxX = Math.min(boxWidth, centerX + textWidth / 2 + padding);
-	const maxY = Math.min(boxHeight, centerY + descent + padding);
+	const maxY = Math.min(boxHeight, centerY + textHeight / 2 + padding);
 
 	const cropW = Math.max(1, Math.round((maxX - minX) * pixelRatio));
 	const cropH = Math.max(1, Math.round((maxY - minY) * pixelRatio));

@@ -64,4 +64,55 @@ describe("trimCanvasToTextBounds", () => {
 			expect(trimmed.height).toBeLessThanOrEqual(source.height);
 		},
 	);
+
+	test.skipIf(typeof document === "undefined")(
+		"preserves bottom ink for middle-baseline text (no vertical clip)",
+		() => {
+			const boxWidth = 520;
+			const boxHeight = 140;
+			const fontSize = 72;
+			const centerY = boxHeight * 0.55;
+			const text = "Kartik";
+
+			const source = document.createElement("canvas");
+			source.width = boxWidth;
+			source.height = boxHeight;
+			const ctx = source.getContext("2d");
+			if (!ctx) throw new Error("canvas context missing");
+
+			ctx.fillStyle = "#111827";
+			ctx.font = `${fontSize}px cursive`;
+			ctx.textAlign = "center";
+			ctx.textBaseline = "middle";
+			ctx.fillText(text, boxWidth / 2, centerY);
+
+			const trimmed = trimCanvasToTextBounds({
+				source,
+				pixelRatio: 1,
+				text,
+				fontSize,
+				cssFamily: "cursive",
+				boxWidth,
+				boxHeight,
+				padding: 6,
+			});
+
+			const trimmedCtx = trimmed.getContext("2d");
+			if (!trimmedCtx) throw new Error("canvas context missing");
+
+			const bottomRow = trimmedCtx.getImageData(
+				0,
+				trimmed.height - 1,
+				trimmed.width,
+				1,
+			).data;
+			const hasBottomInk = Array.from({ length: trimmed.width }, (_, x) => {
+				const alpha = bottomRow[x * 4 + 3] ?? 0;
+				return alpha > 8;
+			}).some(Boolean);
+
+			expect(hasBottomInk).toBe(true);
+			expect(trimmed.height).toBeGreaterThan(fontSize * 0.5);
+		},
+	);
 });

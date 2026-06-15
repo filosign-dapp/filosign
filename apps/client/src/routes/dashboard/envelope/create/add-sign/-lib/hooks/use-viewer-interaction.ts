@@ -1,22 +1,22 @@
 import type * as React from "react";
 import { useCallback } from "react";
 import { isPdfDocument } from "@/src/lib/domains/files/document-kind";
-import { useDocumentDimensions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-dimensions";
-import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
 import type {
 	ClickCoordinates,
-	Document,
+	PlacementDocument,
 	SignatureField,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+} from "@/src/lib/domains/placement/types";
+import { useDocumentDimensions } from "@/src/lib/domains/placement/use-document-dimensions";
 import {
 	clampFieldAtPoint,
 	clientPointToPageCoords,
 	findPageAtClientPoint,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
-import type { PlacementFieldSize } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-field-presets";
+} from "@/src/lib/domains/placement/utils/placement-coordinates";
+import type { PlacementFieldSize } from "@/src/lib/domains/placement/utils/placement-field-presets";
+import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
 
 type UseDocumentViewerInteractionArgs = {
-	document: Document | null;
+	document: PlacementDocument | null;
 	isPlacingField: boolean;
 	pendingFieldType: SignatureField["type"] | null;
 	onPlaceAtCoords: (coords: { x: number; y: number; page: number }) => void;

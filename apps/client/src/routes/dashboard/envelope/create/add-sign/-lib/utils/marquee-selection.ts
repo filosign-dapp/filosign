@@ -1,4 +1,4 @@
-import { PLACEMENT_FIELD_OVERLAY_CLASS } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
+import { PLACEMENT_FIELD_OVERLAY_CLASS } from "@/src/lib/domains/placement/utils/placement-coordinates";
 
 export const MARQUEE_DRAG_THRESHOLD_PX = 4;
 

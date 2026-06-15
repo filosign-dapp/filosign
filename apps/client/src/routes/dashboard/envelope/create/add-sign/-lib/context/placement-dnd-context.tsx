@@ -9,14 +9,8 @@ import {
 } from "@dnd-kit/core";
 import type { ReactNode } from "react";
 import { useCallback, useMemo, useRef, useState } from "react";
-import {
-	type PlacementActiveDrag,
-	PlacementDndDragOverlay,
-	resolvePlacementActiveDrag,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-dnd-overlay";
-import { useAddSignDnd } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
-import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
-import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
+import { useAddSignDnd } from "@/src/lib/domains/placement/context";
+import type { SignatureField } from "@/src/lib/domains/placement/types";
 import {
 	clampFieldAtPoint,
 	clientPointToPageCoords,
@@ -28,12 +22,18 @@ import {
 	parseFieldDraggableId,
 	parsePaletteDraggableId,
 	placementRectFromField,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
+} from "@/src/lib/domains/placement/utils/placement-coordinates";
+import {
+	type PlacementActiveDrag,
+	PlacementDndDragOverlay,
+	resolvePlacementActiveDrag,
+} from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-dnd-overlay";
+import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
 
 export {
 	fieldDraggableId,
 	paletteDraggableId,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-coordinates";
+} from "@/src/lib/domains/placement/utils/placement-coordinates";
 
 type PlacementDndProviderProps = {
 	children: ReactNode;

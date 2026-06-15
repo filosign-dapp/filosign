@@ -50,9 +50,14 @@ export const fsContracts = getContracts({
 	chainKey: config.chainKey,
 });
 
-const waitForRelayReceipt = createRelayReceiptWaiter(evmClient);
+export const waitForRelayReceipt = createRelayReceiptWaiter(evmClient);
 
 const keyedClient = { public: evmClient, wallet: evmClient } as const;
+
+/** Phase 3 replaces this with relayer pool routing. */
+export function getActiveRelayerAddress(): Address {
+	return getAddress(env.FC_SERVER_ADDRESS);
+}
 
 export function fsEnvelopeRegistryAt(address?: string | null) {
 	if (!address) return fsContracts.FSEnvelopeRegistry;
@@ -118,7 +123,7 @@ export async function relayRegisterEnvelopeAck(
 	args: readonly unknown[],
 ): Promise<`0x${string}`> {
 	const viewerWallet = getAddress(args[2] as `0x${string}`);
-	return withRelayerLock(() =>
+	return withRelayerLock(getActiveRelayerAddress(), () =>
 		withRegistryWalletLock(viewerWallet, () =>
 			relayWrite({
 				step: "registerEnvelopeAck",
@@ -135,7 +140,7 @@ export async function relayRegisterEnvelopeSignature(
 	args: readonly unknown[],
 ): Promise<`0x${string}`> {
 	const signerWallet = getAddress(args[2] as `0x${string}`);
-	return withRelayerLock(() =>
+	return withRelayerLock(getActiveRelayerAddress(), () =>
 		withRegistryWalletLock(signerWallet, () =>
 			relayWrite({
 				step: "registerEnvelopeSignature",
@@ -152,7 +157,7 @@ export async function relayProposeSignerReplacement(
 	args: readonly unknown[],
 ): Promise<`0x${string}`> {
 	const recaller = getAddress(args[1] as `0x${string}`);
-	return withRelayerLock(() =>
+	return withRelayerLock(getActiveRelayerAddress(), () =>
 		withRegistryWalletLock(recaller, () =>
 			relayWrite({
 				step: "proposeSignerReplacement",
@@ -169,7 +174,7 @@ export async function relayExecuteSignerReplacement(
 	args: readonly unknown[],
 ): Promise<`0x${string}`> {
 	const recaller = getAddress(args[1] as `0x${string}`);
-	return withRelayerLock(() =>
+	return withRelayerLock(getActiveRelayerAddress(), () =>
 		withRegistryWalletLock(recaller, () =>
 			relayWrite({
 				step: "executeSignerReplacement",
@@ -186,7 +191,7 @@ export async function relayCancelSignerReplacement(
 	args: readonly unknown[],
 ): Promise<`0x${string}`> {
 	const recaller = getAddress(args[1] as `0x${string}`);
-	return withRelayerLock(() =>
+	return withRelayerLock(getActiveRelayerAddress(), () =>
 		withRegistryWalletLock(recaller, () =>
 			relayWrite({
 				step: "cancelSignerReplacement",
@@ -203,7 +208,7 @@ export async function relayRecallEnvelope(
 	args: readonly unknown[],
 ): Promise<`0x${string}`> {
 	const recaller = getAddress(args[1] as `0x${string}`);
-	return withRelayerLock(() =>
+	return withRelayerLock(getActiveRelayerAddress(), () =>
 		withRegistryWalletLock(recaller, () =>
 			relayWrite({
 				step: "recallEnvelope",
@@ -219,7 +224,7 @@ export async function relayClearEnvelopeSignatures(
 	args: readonly unknown[],
 ): Promise<`0x${string}`> {
 	const recaller = getAddress(args[1] as `0x${string}`);
-	return withRelayerLock(() =>
+	return withRelayerLock(getActiveRelayerAddress(), () =>
 		withRegistryWalletLock(recaller, () =>
 			relayWrite({
 				step: "clearEnvelopeSignatures",

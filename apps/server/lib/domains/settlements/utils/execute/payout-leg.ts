@@ -1,5 +1,10 @@
 import type { SettlementRuleStatus } from "@filosign/shared";
-import { evmClient, type fsPaymentValidatorAt } from "@/lib/platform/evm";
+import {
+	evmClient,
+	type fsPaymentValidatorAt,
+	waitForRelayReceipt,
+} from "@/lib/platform/evm";
+import { relayWrite } from "@/lib/platform/evm/relay-write";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { selectSettlementRule } from "../rule-lookup";
 import { syncSettlementPayoutFromChain } from "../sync-from-chain";
@@ -41,7 +46,12 @@ export async function executeSinglePayoutLeg(args: {
 
 	const writeValidator = args.validator.write as ExecutePayoutLegWrite;
 	const txRes = await tryCatch(
-		writeValidator.executePayoutLeg([args.onChainRuleId, legIdx]),
+		relayWrite({
+			step: "executePayoutLeg",
+			write: () =>
+				writeValidator.executePayoutLeg([args.onChainRuleId, legIdx]),
+			waitForReceipt: waitForRelayReceipt,
+		}),
 	);
 	if (txRes.error) {
 		const lastError =
@@ -54,17 +64,6 @@ export async function executeSinglePayoutLeg(args: {
 	}
 
 	const txHash = txRes.data;
-	const receiptRes = await tryCatch(
-		evmClient.waitForTransactionReceipt({ hash: txHash }),
-	);
-	if (receiptRes.error || receiptRes.data.status !== "success") {
-		const lastError = receiptRes.error
-			? receiptRes.error instanceof Error
-				? receiptRes.error.message
-				: "receipt_wait_failed"
-			: "payout_leg_tx_reverted";
-		return { kind: "failed", status: "failed_relay", message: lastError };
-	}
 
 	await syncSettlementPayoutFromChain(
 		args.onChainRuleId,

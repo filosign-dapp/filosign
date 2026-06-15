@@ -1,6 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { getAddress } from "viem";
-import env from "@/env";
+import { type Address, getAddress } from "viem";
 import { getRedis } from "@/lib/platform/cache/session";
 import { logger } from "@/lib/platform/pino";
 
@@ -30,8 +29,8 @@ else
 end
 `;
 
-export function relayerLockKey(): string {
-	return `fs:lock:relayer:${getAddress(env.FC_SERVER_ADDRESS).toLowerCase()}`;
+export function relayerLockKey(relayerAddress: Address): string {
+	return `fs:lock:relayer:${getAddress(relayerAddress).toLowerCase()}`;
 }
 
 function lockToken(): string {
@@ -42,8 +41,11 @@ function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function acquireRelayerLock(token: string): Promise<boolean> {
-	const key = relayerLockKey();
+async function acquireRelayerLock(
+	relayerAddress: Address,
+	token: string,
+): Promise<boolean> {
+	const key = relayerLockKey(relayerAddress);
 	for (let attempt = 0; attempt < MAX_ACQUIRE_ATTEMPTS; attempt += 1) {
 		const acquired = await getRedis().send("SET", [
 			key,
@@ -58,8 +60,11 @@ async function acquireRelayerLock(token: string): Promise<boolean> {
 	return false;
 }
 
-async function releaseRelayerLock(token: string): Promise<void> {
-	const key = relayerLockKey();
+async function releaseRelayerLock(
+	relayerAddress: Address,
+	token: string,
+): Promise<void> {
+	const key = relayerLockKey(relayerAddress);
 	try {
 		await getRedis().send("EVAL", [RELEASE_LOCK_SCRIPT, "1", key, token]);
 	} catch (err) {
@@ -67,8 +72,11 @@ async function releaseRelayerLock(token: string): Promise<void> {
 	}
 }
 
-async function extendRelayerLock(token: string): Promise<void> {
-	const key = relayerLockKey();
+async function extendRelayerLock(
+	relayerAddress: Address,
+	token: string,
+): Promise<void> {
+	const key = relayerLockKey(relayerAddress);
 	try {
 		await getRedis().send("EVAL", [
 			EXTEND_LOCK_SCRIPT,
@@ -83,23 +91,26 @@ async function extendRelayerLock(token: string): Promise<void> {
 }
 
 /**
- * Serializes all writes from FC_SERVER relayer to avoid EVM nonce collisions.
+ * Serializes all writes from one relayer wallet to avoid EVM nonce collisions.
  */
-export async function withRelayerLock<T>(run: () => Promise<T>): Promise<T> {
+export async function withRelayerLock<T>(
+	relayerAddress: Address,
+	run: () => Promise<T>,
+): Promise<T> {
 	const token = lockToken();
-	const acquired = await acquireRelayerLock(token);
+	const acquired = await acquireRelayerLock(relayerAddress, token);
 	if (!acquired) {
 		throw new Error("relayer lock unavailable after retries");
 	}
 	const startedAt = Date.now();
 	const heartbeat = setInterval(() => {
 		if (Date.now() - startedAt > RELAYER_LOCK_MAX_HOLD_MS) return;
-		void extendRelayerLock(token);
+		void extendRelayerLock(relayerAddress, token);
 	}, RELAYER_LOCK_HEARTBEAT_MS);
 	try {
 		return await run();
 	} finally {
 		clearInterval(heartbeat);
-		await releaseRelayerLock(token);
+		await releaseRelayerLock(relayerAddress, token);
 	}
 }

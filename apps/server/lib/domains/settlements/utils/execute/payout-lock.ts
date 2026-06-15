@@ -1,7 +1,10 @@
 import type { SettlementRuleStatus } from "@filosign/shared";
 import type { Address } from "viem";
 import db from "@/lib/platform/db";
-import type { fsPaymentValidatorAt } from "@/lib/platform/evm";
+import {
+	type fsPaymentValidatorAt,
+	getActiveRelayerAddress,
+} from "@/lib/platform/evm";
 import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 import { selectSettlementRule, settlementRuleWhere } from "../rule-lookup";
 import { alertSettlementRelayPayoutFailed } from "./alerts";
@@ -24,7 +27,7 @@ export async function executePayoutLegsUnderLock(args: {
 	txHash?: string;
 	skipped?: string;
 }> {
-	return withRelayerLock(async () => {
+	return withRelayerLock(getActiveRelayerAddress(), async () => {
 		let lastTxHash: `0x${string}` | undefined;
 		let anyLegPaid = false;
 		let lastFailureStatus: SettlementRuleStatus | undefined;

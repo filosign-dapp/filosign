@@ -1,7 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import db from "@/lib/platform/db";
-import { fsAttachmentReleaseAt } from "@/lib/platform/evm";
+import {
+	fsAttachmentReleaseAt,
+	getActiveRelayerAddress,
+	waitForRelayReceipt,
+} from "@/lib/platform/evm";
 import { relayContractWrite } from "@/lib/platform/evm/contract-write";
+import { relayWrite } from "@/lib/platform/evm/relay-write";
 import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
@@ -37,7 +42,13 @@ export async function tryExecuteAttachmentRelease(args: {
 
 	const write = relayContractWrite<AttachmentReleaseWrite>(release.write);
 	const txRes = await tryCatch(
-		withRelayerLock(() => write.executeAttachmentRelease([args.onChainRuleId])),
+		withRelayerLock(getActiveRelayerAddress(), () =>
+			relayWrite({
+				step: "executeAttachmentRelease",
+				write: () => write.executeAttachmentRelease([args.onChainRuleId]),
+				waitForReceipt: waitForRelayReceipt,
+			}),
+		),
 	);
 	if (txRes.error) {
 		logger.warn(

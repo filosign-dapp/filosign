@@ -4,7 +4,13 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import db from "@/lib/platform/db";
-import { fsContracts, fsEnvelopeRegistryAt } from "@/lib/platform/evm";
+import {
+	fsContracts,
+	fsEnvelopeRegistryAt,
+	getActiveRelayerAddress,
+	waitForRelayReceipt,
+} from "@/lib/platform/evm";
+import { relayWrite } from "@/lib/platform/evm/relay-write";
 import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
@@ -94,11 +100,16 @@ export async function syncOrgControllersOnChain(
 	if (wallets.length === 0) return;
 
 	const res = await tryCatch(
-		withRelayerLock(() =>
-			fsContracts.FSEnvelopeRegistry.write.setOrgControllers([
-				orgIdCommitment,
-				wallets,
-			]),
+		withRelayerLock(getActiveRelayerAddress(), () =>
+			relayWrite({
+				step: "setOrgControllers",
+				write: () =>
+					fsContracts.FSEnvelopeRegistry.write.setOrgControllers([
+						orgIdCommitment,
+						wallets,
+					]),
+				waitForReceipt: waitForRelayReceipt,
+			}),
 		),
 	);
 	if (res.error) {

@@ -8,6 +8,7 @@ Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-pack
 - Fix root causes; replace legacy code, unused dependencies, comments, and modules - don’t layer around them. 
 - Writing minimal code to implement a plan is ideal, followed by a cleanup and refactor sweep to rebalance and reorganise codebase, aiming for code maintainablity and readability. 
 - NEVER use em dashes anywhere.
+- **Before adding or changing tests:** read [TESTING.md](TESTING.md) (layout, grouping, Bun `mock.module` / shared module cache, run via [SCRIPTS.md](SCRIPTS.md) `bun run test`). Contract tests: [oss/packages/contracts/TESTING.md](oss/packages/contracts/TESTING.md).
 
 ## Read for context
 
@@ -28,7 +29,7 @@ Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-pack
 | `packages/test`         | [README](packages/test/README.md)                                         | Dev harness                                                           |
 | `oss/`                  | [README](oss/README.md)                                                   | OSS segment in-tree; `@filosign/protocol` in root workspaces; publish via subtree split |
 | Scripts / CI            | [SCRIPTS.md](SCRIPTS.md)                                                  | `dev`, `check`, `sanity`, `test`, `build`, `db`, `contracts`          |
-| Testing                 | [TESTING.md](TESTING.md)                                                  | `tests/` layout, `tests/support/`, grouping rules                     |
+| Testing                 | [TESTING.md](TESTING.md)                                                  | Read before writing tests: layout, `tests/support/`, Bun mocks, grouping |
 | Unsure                  | [README.md](README.md)                                                    | Product + repo map                                                    |
 
 
@@ -42,7 +43,7 @@ Multi-package work: read every relevant row, then [Vertical slice](#vertical-sli
 | [apps/web/patterns.mdc](.cursor/rules/apps/web/patterns.mdc)                         | `safe`/`tryCatch`, `respond`, Hono `Variables`           |
 | [app.mdc](.cursor/rules/app.mdc)                                                     | Never edit `definitions/` (generated)                    |
 | [apps/web/api-routes.mdc](.cursor/rules/apps/web/api-routes.mdc)                     | oRPC routes + client consumption                         |
-| [TESTING.md](TESTING.md)                                                             | `tests/` vs `lib/`, mocks in `tests/support/`            |
+| [TESTING.md](TESTING.md)                                                             | Before adding/changing Bun tests; `tests/` vs `lib/`, mocks in `tests/support/` |
 | [sprint-implementation-rulebook.md](.cursor/plans/sprint-implementation-rulebook.md) | Server infra Sprints 0–6 - layout, TDD, replace-not-shim |
 
 

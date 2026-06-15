@@ -4,6 +4,7 @@ export {
 } from "./document-list-rail";
 export { DocumentPageContent } from "./document-page-content";
 export { DocumentSurface, documentSurfaceVariants } from "./document-surface";
+export { DocumentSwitcherSheet } from "./document-switcher-sheet";
 export { PanZoomCanvas } from "./pan-zoom-canvas";
 export type { ViewportDocument } from "./types";
 export { usePageLayout } from "./use-page-layout";

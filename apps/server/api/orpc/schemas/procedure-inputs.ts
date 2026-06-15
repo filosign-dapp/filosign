@@ -12,12 +12,6 @@ export {
 	zOrgsInviteCreateBody,
 	zOrgsKeysPublishWrapBody,
 } from "@/api/handlers/orgs/invites-keys";
-export {
-	zOrgsTemplateCreateBody,
-	zOrgsTemplatePrepareCreateBody,
-	zOrgsTemplatePrepareUpdateBody,
-	zOrgsTemplateUpdateBody,
-} from "@/api/handlers/orgs/templates-schemas";
 export { zUserRegisterBody } from "@/api/handlers/users/register";
 export {
 	zUserSignatureCreateBody,
@@ -45,6 +39,12 @@ export {
 	zColdInviteRegenerateBody,
 } from "@/lib/domains/files/invites";
 export { zPieceAckBody } from "@/lib/domains/files/piece";
+export {
+	zOrgsTemplateCreateBody,
+	zOrgsTemplatePrepareCreateBody,
+	zOrgsTemplatePrepareUpdateBody,
+	zOrgsTemplateUpdateBody,
+} from "@/lib/domains/orgs/templates";
 export {
 	zUserProfilePutBody,
 	zUserSetPrimaryEmailBody,

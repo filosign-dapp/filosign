@@ -65,6 +65,7 @@ export const rpcOrgTemplateDocumentSchema = z.object({
 	name: z.string(),
 	size: z.number().int().positive(),
 	mimeType: z.string(),
+	plaintextSha256: zHexString(),
 	s3Key: z.string().optional(),
 	downloadUrl: z.url().optional(),
 	uploadUrl: z.url().optional(),
@@ -147,7 +148,8 @@ export const rpcOrgsTemplatePrepareOutputSchema = z.object({
 		z.object({
 			docId: z.string(),
 			s3Key: z.string(),
-			uploadUrl: z.url(),
+			needsUpload: z.boolean(),
+			uploadUrl: z.url().optional(),
 		}),
 	),
 });
@@ -164,6 +166,7 @@ export const rpcOrgsTemplatesCloneOutputSchema = z.object({
 			name: z.string(),
 			mimeType: z.string(),
 			size: z.number().int().positive(),
+			plaintextSha256: zHexString(),
 			downloadUrl: z.url(),
 		}),
 	),

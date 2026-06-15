@@ -2,6 +2,7 @@ import { useEntitlements } from "@filosign/react/billing";
 import {
 	buildNewSignerE2eeForAmend,
 	canUseAdvancedSettlements,
+	canUseSignerReplacement,
 	type SettlementRuleRow,
 	useAttachSettlementForFile,
 	useCancelSettlementRule,
@@ -38,6 +39,12 @@ import {
 } from "@/src/lib/domains/settlements/change-progress";
 import { useBasicPayoutGateActions } from "@/src/lib/domains/settlements/use-basic-payout-gate-actions";
 import { useSettlementChangeProgress } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-settlement-change-progress";
+import type { EnvelopeProgressLike } from "@/src/routes/dashboard/document/sign/-lib/utils/envelope-progress-display";
+import {
+	envelopeOpenForGovernance,
+	hasPaidSettlementLegs,
+	unsignedSignerOptionsFromFile,
+} from "@/src/routes/dashboard/document/sign/-lib/utils/governance";
 import {
 	legsToDraftAmounts,
 	mapSettlementUpdateLegs,
@@ -56,7 +63,11 @@ type SignFileMeta = {
 	pendingSignerReplacement?: {
 		oldCommitment: `0x${string}`;
 		newCommitment: `0x${string}`;
+		oldEmail?: string | null;
+		newEmail?: string | null;
 	} | null;
+	envelopeProgress?: EnvelopeProgressLike | null;
+	signatures?: { signer: string }[];
 };
 
 export function useSignSettlementsActions(
@@ -105,6 +116,23 @@ export function useSignSettlementsActions(
 	const settlementChangeProgress = useSettlementChangeProgress();
 
 	const settlementRules = settlementsQuery.data ?? [];
+	const pendingSignerReplacement = Boolean(file?.pendingSignerReplacement);
+	const envelopeOpenForSenderGovernance = envelopeOpenForGovernance({
+		isSender: true,
+		envelopeProgress: file?.envelopeProgress,
+		pendingSignerReplacement,
+	});
+	const paidSettlementLegs = hasPaidSettlementLegs(settlementRules);
+	const unsignedAmendOptions = useMemo(
+		() => unsignedSignerOptionsFromFile(file?.signers ?? [], file?.signatures),
+		[file?.signers, file?.signatures],
+	);
+	const canChangeSigner =
+		envelopeOpenForSenderGovernance &&
+		!paidSettlementLegs &&
+		unsignedAmendOptions.length > 0;
+	const canUseSignerReplacementEntitlement =
+		canUseSignerReplacement(entitlements);
 
 	const canSettleByRuleId = useMemo(() => {
 		const map = new Map<string, boolean>();
@@ -316,9 +344,10 @@ export function useSignSettlementsActions(
 		async (
 			rules: Parameters<typeof attachSettlementRules.mutateAsync>[0]["rules"],
 		) => {
-			try {
-				await attachSettlementRules.mutateAsync({ rules });
-			} catch {}
+			await attachSettlementRules.mutateAsync({ rules });
+			toastUser.success(TOASTS.sign.payoutAttached.title, {
+				hint: TOASTS.sign.payoutAttached.hint,
+			});
 		},
 		[attachSettlementRules],
 	);
@@ -344,17 +373,27 @@ export function useSignSettlementsActions(
 	}, [file]);
 
 	const openAttachDialog = useCallback(() => {
+		if (!envelopeOpenForSenderGovernance) return;
 		if (guardPayoutAttach()) return;
 		setAttachDialogOpen(true);
-	}, [guardPayoutAttach]);
+	}, [envelopeOpenForSenderGovernance, guardPayoutAttach]);
 
 	const openAmendDialog = useCallback(() => {
-		if (!canManageSettlements) {
+		if (!envelopeOpenForSenderGovernance) return;
+		if (!canUseSignerReplacementEntitlement) {
 			promptPlanUpgrade("features.signer_replacement");
 			return;
 		}
+		if (paidSettlementLegs) return;
+		if (unsignedAmendOptions.length === 0) return;
 		setAmendDialogOpen(true);
-	}, [canManageSettlements, promptPlanUpgrade]);
+	}, [
+		envelopeOpenForSenderGovernance,
+		canUseSignerReplacementEntitlement,
+		paidSettlementLegs,
+		unsignedAmendOptions.length,
+		promptPlanUpgrade,
+	]);
 
 	return {
 		rules: settlementRules,
@@ -411,6 +450,10 @@ export function useSignSettlementsActions(
 		setAttachDialogOpen,
 		openAttachDialog,
 		openAmendDialog,
+		envelopeOpenForSenderGovernance,
+		canChangeSigner,
+		paidSettlementLegs,
+		unsignedAmendOptions,
 		requestDialogOpen,
 		setRequestDialogOpen,
 		payoutAccess,

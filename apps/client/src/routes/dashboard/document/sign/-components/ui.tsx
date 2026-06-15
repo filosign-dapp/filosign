@@ -2,10 +2,7 @@ import type { ReactNode } from "react";
 import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import { payoutAccessRequestDialogProps } from "@/src/lib/domains/settlements/payout-access-controls";
 import { PayoutAccessRequestDialog } from "@/src/lib/domains/settlements/payout-access-request-dialog";
-import {
-	AmendSignerDialog,
-	signerOptionsFromFile,
-} from "@/src/routes/dashboard/document/sign/-components/amend-signer-dialog";
+import { AmendSignerDialog } from "@/src/routes/dashboard/document/sign/-components/amend-signer-dialog";
 import { AttachSettlementDialog } from "@/src/routes/dashboard/document/sign/-components/attach-settlement-dialog";
 import { SignShellLayout } from "@/src/routes/dashboard/document/sign/-components/body";
 import { ClearEnvelopeSignaturesDialog } from "@/src/routes/dashboard/document/sign/-components/clear-envelope-signatures-dialog";
@@ -22,6 +19,7 @@ import {
 	useSignFile,
 	useSignSettlements,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
+import { hasSpecificSignerPayout } from "@/src/routes/dashboard/document/sign/-lib/utils/governance";
 
 function SignRoot({
 	value,
@@ -76,7 +74,8 @@ function SignProgressDialogSlot() {
 function SignSettlementDialogs() {
 	const { file } = useSignFile();
 	const settlements = useSignSettlements();
-	const signerOptions = signerOptionsFromFile(file?.signers ?? []);
+	const signingStarted =
+		(file?.envelopeProgress?.requiredSignaturesCount ?? 0) > 0;
 
 	return (
 		<>
@@ -100,7 +99,9 @@ function SignSettlementDialogs() {
 			<AmendSignerDialog
 				open={settlements.amendDialogOpen}
 				onOpenChange={settlements.setAmendDialogOpen}
-				signers={signerOptions}
+				signers={settlements.unsignedAmendOptions}
+				signingStarted={signingStarted}
+				hasSpecificSignerPayout={hasSpecificSignerPayout(settlements.allRules)}
 				onConfirm={settlements.onConfirmAmendSigner}
 				pending={settlements.amendPending}
 			/>

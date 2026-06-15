@@ -2,7 +2,7 @@ import {
 	hashNormalizedSignerEmail,
 	normalizePlacementRecipientEmail,
 } from "@filosign/shared";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Hex } from "viem";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -24,7 +24,7 @@ import {
 } from "@/src/lib/components/ui/select";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 
-type SignerOption = {
+export type AmendSignerOption = {
 	email: string;
 	label: string;
 	commitment: Hex;
@@ -33,7 +33,9 @@ type SignerOption = {
 type Props = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	signers: SignerOption[];
+	signers: AmendSignerOption[];
+	signingStarted?: boolean;
+	hasSpecificSignerPayout?: boolean;
 	onConfirm: (args: {
 		oldCommitment: Hex;
 		newCommitment: Hex;
@@ -46,21 +48,21 @@ export function AmendSignerDialog({
 	open,
 	onOpenChange,
 	signers,
+	signingStarted = false,
+	hasSpecificSignerPayout = false,
 	onConfirm,
 	pending,
 }: Props) {
 	const [selectedEmail, setSelectedEmail] = useState("");
 	const [newEmail, setNewEmail] = useState("");
 
-	const options = useMemo(() => signers.filter((s) => s.email), [signers]);
-
 	useEffect(() => {
 		if (!open) return;
-		setSelectedEmail(options[0]?.email ?? "");
+		setSelectedEmail(signers[0]?.email ?? "");
 		setNewEmail("");
-	}, [open, options]);
+	}, [open, signers]);
 
-	const selected = options.find((s) => s.email === selectedEmail);
+	const selected = signers.find((s) => s.email === selectedEmail);
 	const newEmailValid = isValidRecipientEmail(newEmail.trim());
 
 	const handleConfirm = async () => {
@@ -82,40 +84,66 @@ export function AmendSignerDialog({
 				<DialogHeader>
 					<DialogTitle>Change a signer</DialogTitle>
 					<DialogDescription>
-						Replace one signer with a new email. If someone has already signed,
-						signing pauses until you execute the change; cleared signatures must
-						be collected again.
+						<div className="space-y-2">
+							<p>
+								Replace an unsigned roster slot with a new email. Signers who
+								already signed cannot be swapped directly.
+							</p>
+							{signingStarted ? (
+								<p>
+									Because signing has started, this change goes pending until
+									you execute it. Execute clears every signature and everyone
+									must sign again.
+								</p>
+							) : null}
+							{hasSpecificSignerPayout ? (
+								<p>
+									Attached payouts tied to a specific signer will remap their
+									release condition on-chain. USDC recipient wallets on payout
+									legs do not change automatically.
+								</p>
+							) : null}
+						</div>
 					</DialogDescription>
 				</DialogHeader>
 				<div className="grid gap-4 py-1">
-					<div className="grid gap-2">
-						<Label>Current signer</Label>
-						<Select
-							value={selectedEmail}
-							onValueChange={(value) => setSelectedEmail(value ?? "")}
-						>
-							<SelectTrigger>
-								<SelectValue placeholder="Select signer" />
-							</SelectTrigger>
-							<SelectContent>
-								{options.map((s) => (
-									<SelectItem key={s.email} value={s.email}>
-										{s.label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					</div>
-					<div className="grid gap-2">
-						<Label htmlFor="amend-signer-new-email">New email</Label>
-						<Input
-							id="amend-signer-new-email"
-							type="email"
-							value={newEmail}
-							onChange={(e) => setNewEmail(e.target.value)}
-							placeholder="signer@example.com"
-						/>
-					</div>
+					{signers.length === 0 ? (
+						<p className="text-sm text-muted-foreground">
+							Every signer has already signed. Use Clear signatures in Sender
+							tools to reopen roster changes.
+						</p>
+					) : (
+						<>
+							<div className="grid gap-2">
+								<Label>Current signer</Label>
+								<Select
+									value={selectedEmail}
+									onValueChange={(value) => setSelectedEmail(value ?? "")}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder="Select signer" />
+									</SelectTrigger>
+									<SelectContent>
+										{signers.map((s) => (
+											<SelectItem key={s.email} value={s.email}>
+												{s.label}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="grid gap-2">
+								<Label htmlFor="amend-signer-new-email">New email</Label>
+								<Input
+									id="amend-signer-new-email"
+									type="email"
+									value={newEmail}
+									onChange={(e) => setNewEmail(e.target.value)}
+									placeholder="signer@example.com"
+								/>
+							</div>
+						</>
+					)}
 				</div>
 				<DialogFooter>
 					<Button
@@ -128,7 +156,9 @@ export function AmendSignerDialog({
 					<Button
 						type="button"
 						variant="primary"
-						disabled={!selected || !newEmailValid || pending}
+						disabled={
+							signers.length === 0 || !selected || !newEmailValid || pending
+						}
 						onClick={() => void handleConfirm().catch(console.error)}
 					>
 						{pending ? "Saving…" : "Save change"}
@@ -137,22 +167,4 @@ export function AmendSignerDialog({
 			</DialogContent>
 		</Dialog>
 	);
-}
-
-export function signerOptionsFromFile(
-	signers: readonly {
-		email: string | null;
-		name: string | null;
-		wallet: string;
-	}[],
-): SignerOption[] {
-	return signers
-		.filter((s): s is typeof s & { email: string } => Boolean(s.email?.trim()))
-		.map((s) => ({
-			email: normalizePlacementRecipientEmail(s.email.trim()),
-			label: s.name?.trim() || s.email.trim(),
-			commitment: hashNormalizedSignerEmail(
-				normalizePlacementRecipientEmail(s.email.trim()),
-			),
-		}));
 }

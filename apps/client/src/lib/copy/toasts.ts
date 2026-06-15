@@ -77,6 +77,10 @@ export const TOASTS = {
 			title: "Payout removed",
 			hint: "Your USDC approval now matches any remaining payouts.",
 		},
+		payoutAttached: {
+			title: "Payout attached",
+			hint: "Approve USDC when prompted so payouts can run later.",
+		},
 		payoutApprovalRevoked: {
 			title: "Payout approval revoked",
 			hint: "No USDC can leave your wallet for attached payouts until you approve again.",

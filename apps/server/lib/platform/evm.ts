@@ -16,6 +16,10 @@ import {
 } from "@/lib/platform/chain-rpc";
 import { relayContractWrite } from "@/lib/platform/evm/contract-write";
 import { withRegistryWalletLock } from "@/lib/platform/evm/registry-wallet-lock";
+import {
+	createRelayReceiptWaiter,
+	relayWrite,
+} from "@/lib/platform/evm/relay-write";
 import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 
 const serverAccount = privateKeyToAccount(env.FC_SERVER_PRIVATE_KEY);
@@ -45,6 +49,8 @@ export const fsContracts = getContracts({
 	client: evmClient,
 	chainKey: config.chainKey,
 });
+
+const waitForRelayReceipt = createRelayReceiptWaiter(evmClient);
 
 const keyedClient = { public: evmClient, wallet: evmClient } as const;
 
@@ -114,7 +120,12 @@ export async function relayRegisterEnvelopeAck(
 	const viewerWallet = getAddress(args[2] as `0x${string}`);
 	return withRelayerLock(() =>
 		withRegistryWalletLock(viewerWallet, () =>
-			envelopeRegistryRelayWrite(registry).registerEnvelopeAck(args),
+			relayWrite({
+				step: "registerEnvelopeAck",
+				write: () =>
+					envelopeRegistryRelayWrite(registry).registerEnvelopeAck(args),
+				waitForReceipt: waitForRelayReceipt,
+			}),
 		),
 	);
 }
@@ -126,7 +137,12 @@ export async function relayRegisterEnvelopeSignature(
 	const signerWallet = getAddress(args[2] as `0x${string}`);
 	return withRelayerLock(() =>
 		withRegistryWalletLock(signerWallet, () =>
-			envelopeRegistryRelayWrite(registry).registerEnvelopeSignature(args),
+			relayWrite({
+				step: "registerEnvelopeSignature",
+				write: () =>
+					envelopeRegistryRelayWrite(registry).registerEnvelopeSignature(args),
+				waitForReceipt: waitForRelayReceipt,
+			}),
 		),
 	);
 }
@@ -138,7 +154,12 @@ export async function relayProposeSignerReplacement(
 	const recaller = getAddress(args[1] as `0x${string}`);
 	return withRelayerLock(() =>
 		withRegistryWalletLock(recaller, () =>
-			envelopeRegistryRelayWrite(registry).proposeSignerReplacement(args),
+			relayWrite({
+				step: "proposeSignerReplacement",
+				write: () =>
+					envelopeRegistryRelayWrite(registry).proposeSignerReplacement(args),
+				waitForReceipt: waitForRelayReceipt,
+			}),
 		),
 	);
 }
@@ -150,7 +171,12 @@ export async function relayExecuteSignerReplacement(
 	const recaller = getAddress(args[1] as `0x${string}`);
 	return withRelayerLock(() =>
 		withRegistryWalletLock(recaller, () =>
-			envelopeRegistryRelayWrite(registry).executeSignerReplacement(args),
+			relayWrite({
+				step: "executeSignerReplacement",
+				write: () =>
+					envelopeRegistryRelayWrite(registry).executeSignerReplacement(args),
+				waitForReceipt: waitForRelayReceipt,
+			}),
 		),
 	);
 }
@@ -162,7 +188,12 @@ export async function relayCancelSignerReplacement(
 	const recaller = getAddress(args[1] as `0x${string}`);
 	return withRelayerLock(() =>
 		withRegistryWalletLock(recaller, () =>
-			envelopeRegistryRelayWrite(registry).cancelSignerReplacement(args),
+			relayWrite({
+				step: "cancelSignerReplacement",
+				write: () =>
+					envelopeRegistryRelayWrite(registry).cancelSignerReplacement(args),
+				waitForReceipt: waitForRelayReceipt,
+			}),
 		),
 	);
 }
@@ -174,7 +205,11 @@ export async function relayRecallEnvelope(
 	const recaller = getAddress(args[1] as `0x${string}`);
 	return withRelayerLock(() =>
 		withRegistryWalletLock(recaller, () =>
-			envelopeRegistryRelayWrite(registry).recallEnvelope(args),
+			relayWrite({
+				step: "recallEnvelope",
+				write: () => envelopeRegistryRelayWrite(registry).recallEnvelope(args),
+				waitForReceipt: waitForRelayReceipt,
+			}),
 		),
 	);
 }
@@ -186,7 +221,12 @@ export async function relayClearEnvelopeSignatures(
 	const recaller = getAddress(args[1] as `0x${string}`);
 	return withRelayerLock(() =>
 		withRegistryWalletLock(recaller, () =>
-			envelopeRegistryRelayWrite(registry).clearEnvelopeSignatures(args),
+			relayWrite({
+				step: "clearEnvelopeSignatures",
+				write: () =>
+					envelopeRegistryRelayWrite(registry).clearEnvelopeSignatures(args),
+				waitForReceipt: waitForRelayReceipt,
+			}),
 		),
 	);
 }

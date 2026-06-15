@@ -5,6 +5,7 @@ import {
 	hashNormalizedSignerEmail,
 	hashOrgIdCommitment,
 	normalizePlacementRecipientEmail,
+	uniqueSignerEmailsFromManifest,
 	usesAdvancedRegisterRouting,
 	zAttachmentPacketSendInput,
 	zEnvelopeMetadata,
@@ -35,8 +36,12 @@ import {
 	invalidateNotificationsInbox,
 } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
-import { fsContracts } from "@/lib/platform/evm";
+import { evmClient, fsContracts } from "@/lib/platform/evm";
 import { withRegistryWalletLock } from "@/lib/platform/evm/registry-wallet-lock";
+import {
+	createRelayReceiptWaiter,
+	relayWrite,
+} from "@/lib/platform/evm/relay-write";
 import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 import { enqueueOutboxByIds, insertJobOutboxRows } from "@/lib/platform/jobs";
 import { bucket } from "@/lib/platform/s3/client";
@@ -45,8 +50,10 @@ import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { normalizedViewerEmailsForRegister } from "./invites";
 import {
 	buildRegisterEmailOutboxRows,
+	findRegisteredFileByPieceCid,
 	type PersistRegisteredFileArgs,
 	persistRegisteredFileInTx,
+	recoverRegisterEnvelopeTxHash,
 	resolveRegisterRoutingCalldata,
 	trackRegisterAnalytics,
 } from "./utils/register-helpers";
@@ -55,6 +62,8 @@ import { compileRegisterRosterEmails } from "./utils/roster-emails";
 const { FSEnvelopeRegistry } = fsContracts;
 
 const { users } = db.schema;
+
+const waitForRelayReceipt = createRelayReceiptWaiter(evmClient);
 
 export const zFileRegisterBody = z.object({
 	pieceCid: z.string({ error: "pieceCid invalid" }),
@@ -131,6 +140,11 @@ export async function filesRegister(
 		isPractice = false,
 		metadata,
 	} = parsedBody.data;
+
+	const existing = await findRegisteredFileByPieceCid(pieceCid);
+	if (existing) {
+		return {};
+	}
 
 	assertOrgPermission(activeOrg, "documents:send");
 	if (organizationId !== activeOrg.organizationId) {
@@ -271,6 +285,10 @@ export async function filesRegister(
 	}
 
 	const slotCounts = recipientSlotCounts({ participants, coldInvites });
+	const signerSlotCount = Math.max(
+		slotCounts.signerSlotCount,
+		uniqueSignerEmailsFromManifest(placementManifest).length,
+	);
 	const entitlementCtx = await resolveEntitlementContext(
 		getAddress(sender),
 		organizationId ?? null,
@@ -285,30 +303,47 @@ export async function filesRegister(
 		assertEntitlement(entitlementCtx, "features.routing.advanced");
 	}
 
-	const txHash = await withRelayerLock(() =>
-		withRegistryWalletLock(sender, () =>
-			FSEnvelopeRegistry.write.registerEnvelope([
-				{
-					pieceCid,
-					sender,
-					requiredCommitments: routingRequiredCommitments,
-					optionalCommitments: optionalCommitmentsSorted,
-					viewerEmailCommitments: viewerEmailCommitmentsSorted,
-					senderEmailCommitment,
-					senderAuthSubjectCommitment,
-					orgIdCommitment,
-					routingMode,
-					routingOrder,
-					quorumN,
-					quorumSet,
-					timestamp: BigInt(timestamp),
-					signature,
-					placementCommitment,
-					documentSha256,
-				},
-			]),
-		),
-	);
+	const recoveredTxHash = await recoverRegisterEnvelopeTxHash({
+		pieceCid,
+		sender,
+	});
+
+	const txHash =
+		recoveredTxHash ??
+		(await withRelayerLock(() =>
+			withRegistryWalletLock(sender, () =>
+				relayWrite({
+					step: "registerEnvelope",
+					write: () =>
+						FSEnvelopeRegistry.write.registerEnvelope([
+							{
+								pieceCid,
+								sender,
+								requiredCommitments: routingRequiredCommitments,
+								optionalCommitments: optionalCommitmentsSorted,
+								viewerEmailCommitments: viewerEmailCommitmentsSorted,
+								senderEmailCommitment,
+								senderAuthSubjectCommitment,
+								orgIdCommitment,
+								routingMode,
+								routingOrder,
+								quorumN,
+								quorumSet,
+								timestamp: BigInt(timestamp),
+								signature,
+								placementCommitment,
+								documentSha256,
+							},
+						]),
+					waitForReceipt: waitForRelayReceipt,
+				}),
+			),
+		));
+
+	const persistedAfterRelay = await findRegisteredFileByPieceCid(pieceCid);
+	if (persistedAfterRelay) {
+		return {};
+	}
 
 	const persistArgs: PersistRegisteredFileArgs = {
 		pieceCid,
@@ -324,7 +359,7 @@ export async function filesRegister(
 		registerRouting: routing,
 		warmParticipantCount: slotCounts.warmParticipantCount,
 		coldInviteCount: slotCounts.coldInviteCount,
-		signerSlotCount: slotCounts.signerSlotCount,
+		signerSlotCount,
 		recipientSlotCount: slotCounts.recipientSlotCount,
 		displayName,
 		mimeType,
@@ -391,7 +426,11 @@ export async function filesRegister(
 		await userActivationRecordPracticePiece(sender, pieceCid);
 	} else {
 		await userActivationOnRealEnvelopeSent(sender);
-		trackRegisterAnalytics({ sender, pieceCid, slotCounts });
+		trackRegisterAnalytics({
+			sender,
+			pieceCid,
+			slotCounts: { ...slotCounts, signerSlotCount },
+		});
 	}
 
 	return {};

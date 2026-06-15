@@ -8,7 +8,7 @@ import {
 } from "@filosign/shared";
 import { eq, inArray } from "drizzle-orm";
 import type { Address } from "viem";
-import { getAddress } from "viem";
+import { getAddress, parseAbiItem } from "viem";
 import { z } from "zod";
 import { inviteExpiresAt } from "@/lib/domains/invites";
 import {
@@ -17,10 +17,69 @@ import {
 } from "@/lib/platform/analytics";
 import db from "@/lib/platform/db";
 import { buildEmailIdempotencyKey } from "@/lib/platform/email";
+import { evmClient, fsContracts } from "@/lib/platform/evm";
 import type { JobOutboxInsert } from "@/lib/platform/jobs";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const { files, fileParticipants, fileColdInvites, users } = db.schema;
+
+const envelopeRegisteredEvent = parseAbiItem(
+	"event EnvelopeRegistered(bytes32 indexed cidIdentifier, address indexed sender, uint48 timestamp)",
+);
+
+export async function findRegisteredFileByPieceCid(pieceCid: string) {
+	const [row] = await db
+		.select({
+			pieceCid: files.pieceCid,
+			onchainTxHash: files.onchainTxHash,
+		})
+		.from(files)
+		.where(eq(files.pieceCid, pieceCid))
+		.limit(1);
+	return row ?? null;
+}
+
+export async function recoverRegisterEnvelopeTxHash(args: {
+	pieceCid: string;
+	sender: Address;
+}): Promise<`0x${string}` | null> {
+	const { FSEnvelopeRegistry } = fsContracts;
+	const registryAddress = getAddress(FSEnvelopeRegistry.address);
+	const sender = getAddress(args.sender);
+
+	const cidRes = await tryCatch(
+		FSEnvelopeRegistry.read.cidIdentifier([args.pieceCid]),
+	);
+	if (cidRes.error || !cidRes.data) {
+		return null;
+	}
+
+	const regRes = await tryCatch(
+		FSEnvelopeRegistry.read.envelopeRegistrations([cidRes.data]),
+	);
+	if (regRes.error || Number(regRes.data.timestamp) === 0) {
+		return null;
+	}
+
+	const logsRes = await tryCatch(
+		evmClient.getLogs({
+			address: registryAddress,
+			event: envelopeRegisteredEvent,
+			args: {
+				cidIdentifier: cidRes.data,
+				sender,
+			},
+			fromBlock: 0n,
+		}),
+	);
+	if (logsRes.error) {
+		return null;
+	}
+
+	const lastLog = logsRes.data.at(-1);
+	return lastLog?.transactionHash ?? null;
+}
 
 export type PersistRegisteredFileArgs = {
 	pieceCid: string;

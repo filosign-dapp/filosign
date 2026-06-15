@@ -1,4 +1,8 @@
-import { zEnvelopeMetadata } from "@filosign/shared";
+import {
+	uniqueSignerEmailsFromManifest,
+	zEnvelopeMetadata,
+	zPlacementManifest,
+} from "@filosign/shared";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import type { z } from "zod";
@@ -22,15 +26,34 @@ export function resolveEnvelopeLifecycle(args: {
 	return "active";
 }
 
+function resolveRequiredSignerCount(args: {
+	signerSlotCount: number | null | undefined;
+	placementManifestJson: unknown;
+}): number {
+	const parsed = zPlacementManifest.safeParse(args.placementManifestJson);
+	if (parsed.success) {
+		const fromManifest = uniqueSignerEmailsFromManifest(parsed.data).length;
+		if (fromManifest > 0) {
+			return fromManifest;
+		}
+	}
+	return args.signerSlotCount ?? 0;
+}
+
 function resolveSigning(args: {
 	signerSlotCount: number | null | undefined;
 	signedCount: number | null | undefined;
+	placementManifestJson: unknown;
 }): DocumentEnvelopeRow["signing"] {
-	const required = args.signerSlotCount ?? 0;
+	const required = resolveRequiredSignerCount({
+		signerSlotCount: args.signerSlotCount,
+		placementManifestJson: args.placementManifestJson,
+	});
 	if (required <= 0) return undefined;
+	const signed = Math.max(0, args.signedCount ?? 0);
 	return {
 		requiredCount: required,
-		signedCount: Math.max(0, args.signedCount ?? 0),
+		signedCount: Math.min(signed, required),
 	};
 }
 
@@ -47,6 +70,7 @@ export function mapEnvelopeListRow(args: {
 	metadataJson: unknown;
 	signerSlotCount?: number | null;
 	signedCount?: number | null;
+	placementManifestJson?: unknown;
 	senderProfile?: SenderProfileFields | null;
 }): DocumentEnvelopeRow {
 	const walletNorm = getAddress(args.wallet).toLowerCase();
@@ -67,6 +91,7 @@ export function mapEnvelopeListRow(args: {
 		signing: resolveSigning({
 			signerSlotCount: args.signerSlotCount,
 			signedCount: args.signedCount,
+			placementManifestJson: args.placementManifestJson,
 		}),
 	};
 

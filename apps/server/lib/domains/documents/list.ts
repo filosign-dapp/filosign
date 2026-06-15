@@ -78,6 +78,7 @@ type EnvelopeQueryRow = {
 	updatedAt: Date;
 	ciphertextByteLength: number | null;
 	metadataJson: unknown;
+	placementManifestJson: unknown;
 	signedByMe: boolean;
 	signerSlotCount: number;
 	signedCount: number;
@@ -99,6 +100,7 @@ function mapEnvelopeQueryRow(row: EnvelopeQueryRow, wallet: Address) {
 		ciphertextByteLength: row.ciphertextByteLength,
 		signedByMe: row.signedByMe,
 		metadataJson: row.metadataJson,
+		placementManifestJson: row.placementManifestJson,
 		signerSlotCount: row.signerSlotCount,
 		signedCount: row.signedCount,
 		senderProfile:
@@ -151,6 +153,7 @@ async function listSentEnvelopes(args: {
 			updatedAt: files.updatedAt,
 			ciphertextByteLength: files.ciphertextByteLength,
 			metadataJson: files.metadataJson,
+			placementManifestJson: files.placementManifestJson,
 			signedByMe: sql<boolean>`EXISTS (
 				SELECT 1 FROM ${fileSignatures}
 				WHERE ${fileSignatures.filePieceCid} = ${files.pieceCid}
@@ -187,6 +190,7 @@ async function listReceivedEnvelopes(args: {
 			updatedAt: files.updatedAt,
 			ciphertextByteLength: files.ciphertextByteLength,
 			metadataJson: files.metadataJson,
+			placementManifestJson: files.placementManifestJson,
 			signedByMe: sql<boolean>`${fileSignatures.signer} IS NOT NULL`,
 			...envelopeSigningSelect(),
 			...envelopeSenderProfileSelect(),
@@ -386,6 +390,7 @@ async function listVisibleEnvelopes(args: {
 			updatedAt: files.updatedAt,
 			ciphertextByteLength: files.ciphertextByteLength,
 			metadataJson: files.metadataJson,
+			placementManifestJson: files.placementManifestJson,
 			signedByMe: sql<boolean>`EXISTS (
 				SELECT 1 FROM ${fileSignatures}
 				WHERE ${fileSignatures.filePieceCid} = ${files.pieceCid}

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { zPlacementManifest } from "@filosign/shared";
 import { getAddress } from "viem";
 import {
 	decodeListCursor,
@@ -110,6 +111,60 @@ describe("documents.list", () => {
 		expect(sent.signedByMe).toBe(true);
 		expect(sent.signing).toEqual({ requiredCount: 3, signedCount: 1 });
 		expect(sent.party).toBeUndefined();
+	});
+
+	test("mapEnvelopeListRow uses placement manifest signer count for self-sign sends", () => {
+		const wallet = getAddress("0x1111111111111111111111111111111111111111");
+		const hex32 = `0x${"ab".repeat(32)}` as const;
+		const placementManifest = zPlacementManifest.parse({
+			version: 1,
+			documents: [
+				{
+					id: "doc1",
+					name: "contract.pdf",
+					sha256Plaintext: hex32,
+					pageCount: 1,
+				},
+			],
+			fields: [
+				{
+					id: "f1",
+					documentId: "doc1",
+					pageIndex: 0,
+					rect: { x: 0.1, y: 0.2, width: 0.3, height: 0.05 },
+					assignedRecipientEmail: "sender@example.com",
+					required: true,
+					type: "signature",
+				},
+				{
+					id: "f2",
+					documentId: "doc1",
+					pageIndex: 0,
+					rect: { x: 0.2, y: 0.3, width: 0.3, height: 0.05 },
+					assignedRecipientEmail: "other@example.com",
+					required: true,
+					type: "signature",
+				},
+			],
+		});
+
+		const sent = mapEnvelopeListRow({
+			pieceCid: "cid-self-sign",
+			displayName: "Contract",
+			sender: wallet,
+			wallet,
+			completedAt: null,
+			revokedBeforeCompletedAt: null,
+			updatedAt: new Date(),
+			ciphertextByteLength: 1024,
+			signedByMe: true,
+			metadataJson: null,
+			signerSlotCount: 1,
+			signedCount: 2,
+			placementManifestJson: placementManifest,
+		});
+
+		expect(sent.signing).toEqual({ requiredCount: 2, signedCount: 2 });
 	});
 
 	test("resolvePartyLabel prefers name, then email local-part, then wallet", () => {

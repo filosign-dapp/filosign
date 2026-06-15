@@ -83,6 +83,7 @@ describe("foc", () => {
 				revokedBeforeCompletedAt: null,
 				revokedBy: null,
 				nextSignerEmail: null,
+				routingOrderEmails: null,
 				canSignByRouting: true,
 				...overrides,
 			};

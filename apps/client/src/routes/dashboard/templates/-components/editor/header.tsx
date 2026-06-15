@@ -42,7 +42,9 @@ export function TemplateEditorHeader({
 				<div className="lg:hidden">
 					<PlacedFieldsSheet variant="toolbar" />
 				</div>
-				<PlacementHistoryButtons />
+				<div className="hidden sm:block">
+					<PlacementHistoryButtons />
+				</div>
 				<Button
 					type="button"
 					variant="outline"

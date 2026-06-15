@@ -3,13 +3,13 @@ import {
 	PlacementWorkspaceRow,
 	PlacementWorkspaceShell,
 	PlacementWorkspaceSidebar,
-	PlacementWorkspaceThumbnails,
 	PlacementWorkspaceViewer,
 } from "@/src/lib/domains/placement";
 import type { TemplateEditorController } from "@/src/lib/domains/templates/use-template-editor-controller";
 import { TemplateEditorHeader } from "./header";
 import { TemplateEditorMobileToolbar } from "./mobile-toolbar";
 import { TemplateEditorSidebar } from "./sidebar";
+import { TemplateContextRail } from "./template-context-rail";
 
 type Props = {
 	controller: TemplateEditorController;
@@ -37,7 +37,7 @@ export function TemplateEditorPage({
 						<TemplateEditorSidebar />
 					</PlacementWorkspaceSidebar>
 					<PlacementWorkspaceViewer />
-					<PlacementWorkspaceThumbnails />
+					<TemplateContextRail />
 				</PlacementWorkspaceRow>
 				<TemplateEditorMobileToolbar />
 			</PlacementWorkspaceShell>

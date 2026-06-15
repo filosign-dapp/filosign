@@ -6,13 +6,11 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/src/lib/components/ui/collapsible";
+import { useAddSignPlacement } from "@/src/lib/domains/placement/context";
 import { PlacementFieldPaletteList } from "@/src/lib/domains/placement/field-palette";
 import { cn } from "@/src/lib/utils/utils";
 import { PlacedFieldsSheet } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placed-fields-sheet";
-import { useAddSignPlacement } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
-import { TemplateDefaultsPanel } from "./template-defaults-panel";
-import { TemplateDocumentsPanel } from "./template-documents-panel";
-import { TemplateRolesPanel } from "./template-roles-panel";
+import { TemplateRoleAssigneeStrip } from "./template-role-assignee-strip";
 
 export function TemplateEditorSidebar() {
 	const {
@@ -30,11 +28,7 @@ export function TemplateEditorSidebar() {
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
-			<div className="flex-1 space-y-6 overflow-y-auto p-4">
-				<TemplateRolesPanel />
-				<TemplateDocumentsPanel />
-				<TemplateDefaultsPanel />
-
+			<div className="flex-1 space-y-4 overflow-y-auto p-4">
 				<Collapsible open={addFieldsOpen} onOpenChange={setAddFieldsOpen}>
 					<CollapsibleTrigger
 						render={
@@ -61,13 +55,17 @@ export function TemplateEditorSidebar() {
 					</CollapsibleTrigger>
 					<CollapsibleContent className="mt-3 space-y-4">
 						<p className="text-xs text-muted-foreground">
-							Select a signer role above, then drag a field onto the page.
+							Select a role, then drag a field onto the page.
 						</p>
+
+						<TemplateRoleAssigneeStrip />
+
 						{placementBlocked ? (
 							<p className="rounded border border-border/60 bg-muted/20 p-2 text-xs text-muted-foreground">
 								Viewer roles cannot receive fields. Select a signer role first.
 							</p>
 						) : null}
+
 						<PlacementFieldPaletteList
 							isPlacingField={isPlacingField}
 							pendingFieldType={pendingFieldType}

@@ -1,4 +1,4 @@
-import { ListIcon } from "@phosphor-icons/react";
+import { GearSixIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -9,14 +9,14 @@ import {
 	SheetTrigger,
 } from "@/src/lib/components/ui/sheet";
 import MobileSignatureToolbar from "@/src/routes/dashboard/envelope/create/add-sign/-components/mobile-toolbar";
-import { TemplateEditorSidebar } from "./sidebar";
+import { TemplateContextRailMobileContent } from "./template-context-rail-content";
 
 export function TemplateEditorMobileToolbar() {
 	const [sheetOpen, setSheetOpen] = useState(false);
 
 	return (
 		<>
-			<div className="fixed bottom-24 left-4 z-50 lg:hidden">
+			<div className="fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] right-4 z-50 lg:hidden">
 				<Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
 					<SheetTrigger
 						render={
@@ -25,17 +25,21 @@ export function TemplateEditorMobileToolbar() {
 								variant="outline"
 								size="icon-lg"
 								className="rounded-full shadow-lg"
+								aria-label="Template setup"
 							/>
 						}
 					>
-						<ListIcon className="size-5" weight="bold" />
+						<GearSixIcon className="size-5" weight="bold" />
 					</SheetTrigger>
-					<SheetContent side="left" className="w-[min(100vw-2rem,20rem)] p-0">
-						<SheetHeader className="border-b border-border px-4 py-3">
+					<SheetContent
+						side="bottom"
+						className="max-h-[85vh] overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+					>
+						<SheetHeader>
 							<SheetTitle>Template setup</SheetTitle>
 						</SheetHeader>
-						<div className="h-[calc(100%-3.5rem)] overflow-hidden">
-							<TemplateEditorSidebar />
+						<div className="mt-4">
+							<TemplateContextRailMobileContent />
 						</div>
 					</SheetContent>
 				</Sheet>

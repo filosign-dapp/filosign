@@ -55,6 +55,22 @@ describe("resolveDocumentRowStatus", () => {
 				envelopeRow({
 					direction: "sent",
 					lifecycle: "active",
+					signing: { signedCount: 2, requiredCount: 2 },
+				}),
+			),
+		).toMatchObject({
+			label: "2/2 signed",
+			tone: "warning",
+			directionLabel: "Sent",
+		});
+	});
+
+	test("sent active with partial signing progress is warning", () => {
+		expect(
+			resolveDocumentRowStatus(
+				envelopeRow({
+					direction: "sent",
+					lifecycle: "active",
 					signing: { signedCount: 2, requiredCount: 3 },
 				}),
 			),

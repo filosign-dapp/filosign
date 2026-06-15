@@ -20,6 +20,7 @@ import { cn } from "@/src/lib/utils/index";
 import { useIsMobile } from "@/src/lib/utils/use-mobile";
 import { useDocuments } from "@/src/routes/dashboard/_shell/document/all/-lib/context/context";
 import {
+	documentsCardGrid,
 	documentsPageBodyInset,
 	documentsTableCard,
 } from "@/src/routes/dashboard/_shell/document/all/-lib/documents-page-layout";
@@ -180,7 +181,7 @@ export function DocumentsContent() {
 							/>
 						</div>
 					) : (
-						<div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-5 @lg:grid-cols-4 @2xl:grid-cols-5 @4xl:grid-cols-6">
+						<div className={documentsCardGrid}>
 							{items.map((item) =>
 								item.kind === "draft" ? (
 									<DocumentCard

@@ -252,13 +252,13 @@ function DocumentCardGrid(props: DocumentCardProps) {
 			busy={props.busy}
 			onOpen={props.onOpen}
 			className={cn(
-				"group relative flex h-full flex-col overflow-hidden rounded-lg border border-border/80 bg-card/40 text-left transition-colors",
+				"group relative flex h-full min-w-0 w-full flex-col overflow-hidden rounded-lg border border-border/80 bg-card/40 text-left transition-colors",
 				props.busy
 					? "cursor-wait opacity-70"
 					: "cursor-pointer hover:border-border hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
 			)}
 		>
-			<div className="relative flex h-32 w-full shrink-0 items-center justify-center bg-muted/70 sm:h-48">
+			<div className="relative flex h-32 w-full shrink-0 items-center justify-center bg-muted/70 @md:h-48">
 				{props.hideInlineActions ? null : (
 					<div className="absolute top-1 right-1 z-10">
 						<CardActions

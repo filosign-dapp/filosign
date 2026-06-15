@@ -11,7 +11,11 @@ const registryAddress = getAddress(
 	"0x2222222222222222222222222222222222222222",
 );
 
-let fileRows: { pieceCid: string; onchainTxHash: `0x${string}` }[] = [];
+const relayer = getAddress("0x3333333333333333333333333333333333333333");
+
+const fileRows: { pieceCid: string; onchainTxHash: `0x${string}` }[] = [];
+const stateRows: Array<Record<string, unknown>> = [];
+let selectRows: unknown[] = [];
 let registrationTimestamp = 0;
 let logs: { transactionHash: Hash }[] = [];
 let cidReadFails = false;
@@ -25,19 +29,54 @@ mock.module("@/lib/platform/db", () => ({
 			files: {
 				pieceCid: "pieceCid",
 				onchainTxHash: "onchainTxHash",
+				registrationStatus: "registrationStatus",
+				registerError: "registerError",
+			},
+			fileRegisterStates: {
+				pieceCid: "pieceCid",
+				sender: "sender",
+				registrationStatus: "registrationStatus",
+				registerError: "registerError",
+				registerAttemptedAt: "registerAttemptedAt",
+				registerPayloadJson: "registerPayloadJson",
+				assignedRelayerAddress: "assignedRelayerAddress",
+				pendingTxHash: "pendingTxHash",
 			},
 		},
+		insert: () => ({
+			values: (row: Record<string, unknown>) => ({
+				onConflictDoUpdate: () => {
+					const existing = stateRows.find(
+						(entry) => entry.pieceCid === row.pieceCid,
+					);
+					if (existing) {
+						Object.assign(existing, row);
+						return;
+					}
+					stateRows.push({ ...row });
+				},
+			}),
+		}),
 		select: () => ({
 			from: () => ({
 				where: () => ({
-					limit: () => dbQueryResult(fileRows),
+					limit: () => dbQueryResult(selectRows),
 				}),
 			}),
+		}),
+		update: () => ({
+			set: () => ({
+				where: async () => {},
+			}),
+		}),
+		delete: () => ({
+			where: async () => {},
 		}),
 	},
 }));
 
 mock.module("@/lib/platform/evm", () => ({
+	getActiveRelayerAddress: () => relayer,
 	fsContracts: {
 		FSEnvelopeRegistry: {
 			address: registryAddress,
@@ -64,9 +103,11 @@ mock.module("@/lib/platform/evm", () => ({
 	},
 }));
 
-describe("register-helpers", () => {
+describe("register domain", () => {
 	beforeEach(() => {
-		fileRows = [];
+		fileRows.length = 0;
+		stateRows.length = 0;
+		selectRows = fileRows;
 		registrationTimestamp = 0;
 		logs = [];
 		cidReadFails = false;
@@ -75,7 +116,7 @@ describe("register-helpers", () => {
 
 	describe("findRegisteredFileByPieceCid", () => {
 		test("returns persisted row when pieceCid already exists", async () => {
-			fileRows = [{ pieceCid, onchainTxHash: recoveredHash }];
+			fileRows.push({ pieceCid, onchainTxHash: recoveredHash });
 			const { findRegisteredFileByPieceCid } = await import(
 				"@/lib/domains/files/utils/register-helpers"
 			);
@@ -152,6 +193,35 @@ describe("register-helpers", () => {
 			await expect(
 				recoverRegisterEnvelopeTxHash({ pieceCid, sender }),
 			).resolves.toBeNull();
+		});
+	});
+
+	describe("register-state", () => {
+		test("upsertQueuedState stores queued status and relayer pin", async () => {
+			selectRows = stateRows;
+			const { upsertQueuedState, getRegisterState } = await import(
+				"@/lib/domains/files/utils/register-state"
+			);
+
+			await upsertQueuedState({
+				pieceCid: "bafyqueued",
+				sender,
+				assignedRelayerAddress: relayer,
+				payload: {
+					sender,
+					rawBody: {},
+					activeOrg: {
+						organizationId: "00000000-0000-4000-8000-000000000001",
+						role: "owner",
+						encryptionPublicKey: `0x${"aa".repeat(32)}`,
+						signingMode: "acting_member",
+					},
+				},
+			});
+
+			const row = await getRegisterState("bafyqueued");
+			expect(row?.registrationStatus).toBe("queued");
+			expect(row?.assignedRelayerAddress).toBe(relayer);
 		});
 	});
 });

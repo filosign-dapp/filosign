@@ -14,6 +14,18 @@ export const filesErrors = {
 		severity: "error",
 		defaultOrpcCode: "NOT_FOUND",
 	},
+	"FILES.REGISTRATION_PENDING": {
+		title: "Document registration in progress",
+		description:
+			"This envelope is still being confirmed on chain. Try again in a moment.",
+		steps: [
+			"Wait for on-chain registration to finish.",
+			"If this persists, ask the sender to retry sending the envelope.",
+		],
+		audience: "user",
+		severity: "warning",
+		defaultOrpcCode: "CONFLICT",
+	},
 	"FILES.FORBIDDEN": {
 		title: "Access denied",
 		description: "You do not have permission to view or manage this document.",

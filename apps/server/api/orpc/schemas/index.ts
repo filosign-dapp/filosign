@@ -56,6 +56,7 @@ import {
 	rpcFilesProposeSignerReplacementOutputSchema,
 	rpcFilesRecallEnvelopeOutputSchema,
 	rpcFilesRegisterOutputSchema,
+	rpcFilesRegistrationStatusOutputSchema,
 	rpcFilesRemindSignersOutputSchema,
 	rpcFilesUploadStartOutputSchema,
 } from "./files-output";
@@ -156,6 +157,7 @@ export const rpcOut = {
 	files: {
 		uploadStart: rpcFilesUploadStartOutputSchema,
 		register: rpcFilesRegisterOutputSchema,
+		registrationStatus: rpcFilesRegistrationStatusOutputSchema,
 		proposeSignerReplacement: rpcFilesProposeSignerReplacementOutputSchema,
 		executeSignerReplacement: rpcFilesExecuteSignerReplacementOutputSchema,
 		cancelSignerReplacement: rpcFilesCancelSignerReplacementOutputSchema,

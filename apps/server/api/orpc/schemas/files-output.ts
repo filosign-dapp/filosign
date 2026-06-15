@@ -49,6 +49,12 @@ export const rpcFilesRegisterOutputSchema = z.object({
 	registrationStatus: z.enum(["queued", "registering", "registered", "failed"]),
 });
 
+export const rpcFilesRegistrationStatusOutputSchema = z.object({
+	registrationStatus: z.enum(["queued", "registering", "registered", "failed"]),
+	registerError: z.string().nullable(),
+	onchainTxHash: zHexString().nullable(),
+});
+
 export const rpcFilesProposeSignerReplacementOutputSchema = z.object({
 	txHash: zHexString(),
 	pending: z.boolean(),

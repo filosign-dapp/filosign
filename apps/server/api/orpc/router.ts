@@ -103,7 +103,11 @@ import {
 	zDraftCommentListByTokenBody,
 	zDraftCommentUpdateBody,
 } from "@/lib/domains/drafts";
-import { zFileCommentAppendBody, zFileRegisterBody } from "@/lib/domains/files";
+import {
+	zFileCommentAppendBody,
+	zFileRegisterBody,
+	zFileRegistrationStatusBody,
+} from "@/lib/domains/files";
 import { loadPlatformRuntime } from "@/lib/domains/runtime";
 import { resolveClientIpFromRequest } from "@/lib/platform/utils/client-ip";
 import { zIndexerTxBody } from "@/lib/platform/validation/tx-registration";
@@ -704,6 +708,12 @@ export const appRouter = {
 					input,
 					context.activeOrg ?? null,
 				),
+			),
+		registrationStatus: authenticatedProcedure
+			.input(zFileRegistrationStatusBody)
+			.output(out.files.registrationStatus)
+			.handler(({ input }) =>
+				fileHandlers.filesRegistrationStatus(input.pieceCid),
 			),
 		proposeSignerReplacement: authenticatedProcedure
 			.input(fileHandlers.zProposeSignerReplacementBody)

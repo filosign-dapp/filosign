@@ -49,6 +49,8 @@ function withTimeout<T>(
 	});
 }
 
+const TRIM_ALPHA_THRESHOLD = 8;
+
 /** Load one font descriptor; on timeout or failure, fall back to generic cursive. */
 export async function loadSignatureDrawFont(args: {
 	fontSize: number;
@@ -77,7 +79,55 @@ export async function loadSignatureDrawFont(args: {
 	}
 }
 
-/** Crop to measured text ink bounds (avoids full-canvas getImageData scan). */
+/** Crop to actual alpha ink bounds (measureText underestimates script ascenders). */
+export function trimCanvasToInk(
+	source: HTMLCanvasElement,
+	padding = TRIM_PADDING_PX,
+): HTMLCanvasElement {
+	const ctx = source.getContext("2d");
+	if (!ctx) return source;
+
+	const { width, height } = source;
+	const data = ctx.getImageData(0, 0, width, height).data;
+	let minX = width;
+	let minY = height;
+	let maxX = 0;
+	let maxY = 0;
+	let hasInk = false;
+
+	for (let y = 0; y < height; y++) {
+		for (let x = 0; x < width; x++) {
+			const alpha = data[(y * width + x) * 4 + 3] ?? 0;
+			if (alpha > TRIM_ALPHA_THRESHOLD) {
+				hasInk = true;
+				minX = Math.min(minX, x);
+				maxX = Math.max(maxX, x);
+				minY = Math.min(minY, y);
+				maxY = Math.max(maxY, y);
+			}
+		}
+	}
+
+	if (!hasInk) return source;
+
+	minX = Math.max(0, minX - padding);
+	minY = Math.max(0, minY - padding);
+	maxX = Math.min(width - 1, maxX + padding);
+	maxY = Math.min(height - 1, maxY + padding);
+
+	const cropW = maxX - minX + 1;
+	const cropH = maxY - minY + 1;
+	const cropped = document.createElement("canvas");
+	cropped.width = cropW;
+	cropped.height = cropH;
+	const croppedCtx = cropped.getContext("2d");
+	if (!croppedCtx) return source;
+
+	croppedCtx.drawImage(source, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+	return cropped;
+}
+
+/** @deprecated Prefer trimCanvasToInk; measureText bounds clip script font ascenders. */
 export function trimCanvasToTextBounds(args: {
 	source: HTMLCanvasElement;
 	pixelRatio: number;
@@ -195,15 +245,7 @@ export async function rasterizeTypedSignature(args: {
 	ctx.textBaseline = "middle";
 	ctx.fillText(args.text, dimensions.width / 2, dimensions.height * 0.55);
 
-	const trimmed = trimCanvasToTextBounds({
-		source: canvas,
-		pixelRatio,
-		text: args.text,
-		fontSize: fittedFontSize,
-		cssFamily: drawFamily,
-		boxWidth: dimensions.width,
-		boxHeight: dimensions.height,
-	});
+	const trimmed = trimCanvasToInk(canvas);
 
 	return await canvasToPngBytes(trimmed);
 }

@@ -47,13 +47,14 @@ export function useSignFile() {
 
 			return success;
 		},
-		onSuccess: (_data, variables) => {
-			void invalidateDocumentsAndNotifications(queryClient, rpcQuery);
+		onSuccess: async (_data, variables) => {
+			await invalidateDocumentsAndNotifications(queryClient, rpcQuery);
 			if (variables.pieceCid) {
-				void queryClient.invalidateQueries({
+				await queryClient.refetchQueries({
 					queryKey: rpcQuery.files.piece.detail.key({
 						input: { pieceCid: variables.pieceCid },
 					}),
+					type: "all",
 				});
 			}
 		},

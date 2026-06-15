@@ -3,11 +3,18 @@ import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 
 export function useGetOrgTemplate(templateId: string | undefined) {
 	const { rpcQuery, isAuthed } = useFilosignRpc();
+	const trimmedTemplateId = templateId?.trim();
 
 	return useQuery({
-		queryKey: [...rpcQuery.orgs.key(), "template", templateId],
-		enabled: isAuthed && Boolean(templateId?.trim()),
-		queryFn: () =>
-			rpcQuery.orgs.templates.get.call({ templateId: templateId!.trim() }),
+		queryKey: [...rpcQuery.orgs.key(), "template", trimmedTemplateId],
+		enabled: isAuthed && Boolean(trimmedTemplateId),
+		queryFn: () => {
+			if (!trimmedTemplateId) {
+				throw new Error("templateId required");
+			}
+			return rpcQuery.orgs.templates.get.call({
+				templateId: trimmedTemplateId,
+			});
+		},
 	});
 }

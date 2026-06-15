@@ -1,22 +1,10 @@
-import type { TemplateSnapshot } from "@filosign/shared";
+import type { InferClientInputs } from "@orpc/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { Hex } from "viem";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
+import type { AppRouterClient } from "../../orpc/app-router-types";
 
-export type UpdateOrgTemplateInput = {
-	templateId: string;
-	name?: string;
-	headDekWrappedOmk?: Hex;
-	headOmkKemCiphertext?: Hex;
-	snapshot: TemplateSnapshot;
-	documents: Array<{
-		docId: string;
-		s3Key: string;
-		name: string;
-		size: number;
-		mimeType: string;
-	}>;
-};
+export type UpdateOrgTemplateInput =
+	InferClientInputs<AppRouterClient>["orgs"]["templates"]["update"];
 
 export function useUpdateOrgTemplate() {
 	const { rpcQuery, isAuthed } = useFilosignRpc();

@@ -1,3 +1,4 @@
+import { isTemplateRolePlaceholderEmail } from "@filosign/shared";
 import {
 	CalendarIcon,
 	CheckSquareIcon,
@@ -11,6 +12,19 @@ import {
 import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
 import { cn } from "@/src/lib/utils/utils";
 
+type SignerLabelField = Pick<
+	SignatureField,
+	"assignedSignerName" | "assignedSignerEmail"
+>;
+
+export function signerDisplayName(field: SignerLabelField): string {
+	const name = field.assignedSignerName.trim();
+	if (name) return name;
+	const email = field.assignedSignerEmail.trim();
+	if (email && !isTemplateRolePlaceholderEmail(email)) return email;
+	return "Signer";
+}
+
 export const signatureFieldTypeDisplay = {
 	signature: { icon: SignatureIcon, label: "Signature" },
 	initial: { icon: TextAaIcon, label: "Initial" },
@@ -22,9 +36,12 @@ export const signatureFieldTypeDisplay = {
 } as const;
 
 export function fieldSignerAriaSnippet(field: SignatureField): string {
-	const name = field.assignedSignerName.trim() || "Signer";
+	const name = signerDisplayName(field);
 	const email = field.assignedSignerEmail.trim();
-	return email ? `${name}, ${email}` : name;
+	if (!email || isTemplateRolePlaceholderEmail(email) || email === name) {
+		return name;
+	}
+	return `${name}, ${email}`;
 }
 
 export function SignatureFieldTypeIcon({

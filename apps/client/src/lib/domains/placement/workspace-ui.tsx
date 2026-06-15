@@ -1,27 +1,27 @@
 import type { ReactNode } from "react";
 import { ViewerChromeSkeleton } from "@/src/lib/components/app/skeletons";
-import { DocumentThumbnailsSidebar } from "@/src/routes/dashboard/envelope/create/add-sign/-components/thumbnails";
-import DocumentViewer from "@/src/routes/dashboard/envelope/create/add-sign/-components/viewer";
 import {
-	AddSignProvider,
+	PlacementProvider,
 	useAddSignChrome,
 	useAddSignPlacement,
 	useAddSignShell,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
+} from "@/src/lib/domains/placement/context";
+import type { PlacementController } from "@/src/lib/domains/placement/types";
+import { DocumentThumbnailsSidebar } from "@/src/routes/dashboard/envelope/create/add-sign/-components/thumbnails";
+import DocumentViewer from "@/src/routes/dashboard/envelope/create/add-sign/-components/viewer";
 import { PlacementCanvasProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-canvas-context";
 import { PlacementDndProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-dnd-context";
-import type { AddSignController } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-controller";
-
-export type PlacementWorkspaceController = AddSignController;
 
 export function PlacementWorkspaceProvider({
 	controller,
 	children,
 }: {
-	controller: PlacementWorkspaceController;
+	controller: PlacementController;
 	children: ReactNode;
 }) {
-	return <AddSignProvider controller={controller}>{children}</AddSignProvider>;
+	return (
+		<PlacementProvider controller={controller}>{children}</PlacementProvider>
+	);
 }
 
 export function PlacementWorkspaceShell({ children }: { children: ReactNode }) {
@@ -69,6 +69,18 @@ export function PlacementWorkspaceViewer() {
 				<ViewerChromeSkeleton className="min-h-0 flex-1" />
 			)}
 		</main>
+	);
+}
+
+export function PlacementWorkspaceContextRail({
+	children,
+}: {
+	children: ReactNode;
+}) {
+	return (
+		<aside className="hidden h-full min-h-0 w-72 shrink-0 flex-col border-l border-border bg-muted/5 lg:flex">
+			{children}
+		</aside>
 	);
 }
 

@@ -1,10 +1,10 @@
 import { useDraggable } from "@dnd-kit/core";
 import { motion } from "motion/react";
 import { Button } from "@/src/lib/components/ui/button";
+import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
+import { signatureFieldPalette } from "@/src/lib/domains/placement/utils/field-types";
+import { paletteDraggableId } from "@/src/lib/domains/placement/utils/placement-coordinates";
 import { cn } from "@/src/lib/utils/utils";
-import { paletteDraggableId } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-dnd-context";
-import type { SignatureField } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/types";
-import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
 
 type SignatureFieldType = SignatureField["type"];
 

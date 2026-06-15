@@ -60,6 +60,7 @@ export type StoredDocument = {
 	type: string;
 	sourceMimeType?: string;
 	pageCount?: number;
+	plaintextSha256?: `0x${string}`;
 };
 
 export type SignatureField = {

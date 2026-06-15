@@ -1,20 +1,18 @@
+import { useFilosignContext } from "@filosign/react";
+import { useSaveOrgTemplateDeps } from "@filosign/react/orgs";
 import {
-	useCreateOrgTemplate,
-	usePrepareOrgTemplateCreate,
-	usePrepareOrgTemplateUpdate,
-	useUpdateOrgTemplate,
-} from "@filosign/react/orgs";
-import { uploadOrgTemplateDocuments } from "@filosign/react/utils";
+	saveOrgTemplateCreate,
+	saveOrgTemplateUpdate,
+} from "@filosign/react/utils";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
-import { loadDocumentBytes } from "@/src/lib/domains/drafts";
-import type { CreateForm } from "@/src/lib/domains/files/envelope-form-types";
-import { buildTemplateSnapshotFromComposer } from "@/src/lib/domains/templates/template-composer";
+import { buildTemplateSaveInput } from "@/src/lib/domains/templates/utils/save-input";
 import { showAppErrorToast } from "@/src/lib/errors";
 
 type SaveTemplateArgs = {
-	createForm: CreateForm;
+	createForm: Parameters<typeof buildTemplateSaveInput>[0]["createForm"];
 	templateId: string;
 	templateName: string;
 	organizationId: string;
@@ -23,78 +21,32 @@ type SaveTemplateArgs = {
 };
 
 export function useTemplateEditorSave() {
-	const prepareCreate = usePrepareOrgTemplateCreate();
-	const prepareUpdate = usePrepareOrgTemplateUpdate();
-	const createTemplate = useCreateOrgTemplate();
-	const updateTemplate = useUpdateOrgTemplate();
+	const { rpcQuery } = useFilosignContext();
+	const queryClient = useQueryClient();
+	const deps = useSaveOrgTemplateDeps();
 	const [saving, setSaving] = useState(false);
 
 	const saveTemplate = useCallback(
 		async (args: SaveTemplateArgs) => {
+			if (!deps) {
+				throw new Error("Connect your wallet before saving a template.");
+			}
+
 			setSaving(true);
 			try {
-				const documentRows = await Promise.all(
-					args.createForm.documents.map(async (doc) => ({
-						docId: doc.id,
-						name: doc.name,
-						size: doc.size,
-						mimeType: doc.type,
-						bytes: await loadDocumentBytes(args.createForm.draftId, {
-							id: doc.id,
-							name: doc.name,
-							size: doc.size,
-							type: doc.type,
-						}),
-					})),
-				);
-
-				const snapshot = buildTemplateSnapshotFromComposer({
-					recipients: args.createForm.recipients,
-					signatureFields: args.createForm.signatureFields ?? [],
-					emailSubject: args.createForm.emailSubject,
-					emailMessage: args.createForm.emailMessage,
-					documents: args.createForm.documents.map((doc) => ({
-						id: doc.id,
-						name: doc.name,
-						size: doc.size,
-						type: doc.type,
-					})),
-				});
+				const saveInput = await buildTemplateSaveInput(args);
 
 				if (args.mode === "create") {
-					await uploadOrgTemplateDocuments({
-						templateId: args.templateId,
-						organizationId: args.organizationId,
-						orgEncryptionPublicKey: args.orgEncryptionPublicKey,
-						name: args.templateName.trim(),
-						snapshot,
-						documents: documentRows,
-						prepareCreate: (body) => prepareCreate.mutateAsync(body),
-						create: (body) => createTemplate.mutateAsync(body),
-					});
+					await saveOrgTemplateCreate(deps, saveInput);
 					toastUser.success(TOASTS.templates.created);
-					return;
+				} else {
+					await saveOrgTemplateUpdate(deps, saveInput);
+					toastUser.success(TOASTS.templates.saved);
 				}
 
-				await uploadOrgTemplateDocuments({
-					templateId: args.templateId,
-					organizationId: args.organizationId,
-					orgEncryptionPublicKey: args.orgEncryptionPublicKey,
-					name: args.templateName.trim(),
-					snapshot,
-					documents: documentRows,
-					prepareCreate: (body) => prepareUpdate.mutateAsync(body),
-					create: (body) =>
-						updateTemplate.mutateAsync({
-							templateId: body.templateId,
-							name: body.name,
-							headDekWrappedOmk: body.headDekWrappedOmk,
-							headOmkKemCiphertext: body.headOmkKemCiphertext,
-							snapshot: body.snapshot,
-							documents: body.documents,
-						}),
+				await queryClient.invalidateQueries({
+					queryKey: rpcQuery.orgs.key(),
 				});
-				toastUser.success(TOASTS.templates.saved);
 			} catch (err) {
 				showAppErrorToast(err);
 				throw err;
@@ -102,7 +54,7 @@ export function useTemplateEditorSave() {
 				setSaving(false);
 			}
 		},
-		[createTemplate, prepareCreate, prepareUpdate, updateTemplate],
+		[deps, queryClient, rpcQuery],
 	);
 
 	return { saveTemplate, saving };

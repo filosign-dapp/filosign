@@ -9,6 +9,7 @@ import {
 	type TemplateEditorState,
 	type TemplateRoleKind,
 	type TemplateSnapshot,
+	templateRolePlaceholderEmail,
 	templateRoleRowsFromState,
 	updateTemplateRole,
 } from "@filosign/shared";
@@ -21,12 +22,6 @@ import type {
 	CreateForm,
 	SignatureField,
 } from "@/src/lib/domains/files/envelope-form-types";
-
-const TEMPLATE_ROLE_EMAIL_DOMAIN = "template.filosign";
-
-export function templateRoleEmail(roleId: string): string {
-	return `${roleId}@${TEMPLATE_ROLE_EMAIL_DOMAIN}`;
-}
 
 export function buildTemplateSnapshotFromComposer(args: {
 	recipients: DraftSnapshot["recipients"];
@@ -57,7 +52,7 @@ export function composerStateFromTemplateSnapshot(args: {
 	const roleEmailById = new Map(
 		args.snapshot.roles.map((role) => [
 			role.roleId,
-			templateRoleEmail(role.roleId),
+			templateRolePlaceholderEmail(role.roleId),
 		]),
 	);
 	const recipients = args.snapshot.roles
@@ -65,14 +60,17 @@ export function composerStateFromTemplateSnapshot(args: {
 		.map((role) => ({
 			clientRowId: role.roleId,
 			name: role.label,
-			email: roleEmailById.get(role.roleId) ?? templateRoleEmail(role.roleId),
+			email:
+				roleEmailById.get(role.roleId) ??
+				templateRolePlaceholderEmail(role.roleId),
 			role: role.kind,
 		}));
 
 	const signatureFields: SignatureField[] = args.snapshot.fields.map(
 		(field) => {
 			const email =
-				roleEmailById.get(field.roleId) ?? templateRoleEmail(field.roleId);
+				roleEmailById.get(field.roleId) ??
+				templateRolePlaceholderEmail(field.roleId);
 			const role = args.snapshot.roles.find(
 				(row) => row.roleId === field.roleId,
 			);

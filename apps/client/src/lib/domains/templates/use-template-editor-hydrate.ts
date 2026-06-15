@@ -5,6 +5,7 @@ import {
 	walletAccountAddress,
 } from "@filosign/react/utils";
 import { useEffect, useRef, useState } from "react";
+import { loadDocumentBytes } from "@/src/lib/domains/drafts";
 import { hydrateCreateFormFromTemplateEditor } from "@/src/lib/domains/templates/template-composer";
 import { showAppErrorToast } from "@/src/lib/errors";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
@@ -69,24 +70,47 @@ export function useTemplateEditorHydrate(args: {
 					}),
 				]);
 
+				const serverDocs = templateRow.documents.flatMap((doc) =>
+					doc.downloadUrl
+						? [
+								{
+									docId: doc.docId,
+									name: doc.name,
+									mimeType: doc.mimeType,
+									size: doc.size,
+									downloadUrl: doc.downloadUrl,
+									plaintextSha256: doc.plaintextSha256,
+								},
+							]
+						: [],
+				);
+
+				const localDraftId =
+					useStorePersist.getState().createForm?.draftId ?? null;
+
 				const documents = await cloneTemplateDocumentsToPlaintext({
 					templateId,
 					headDekWrappedOmk: templateRow.template.headDekWrappedOmk,
 					headOmkKemCiphertext: templateRow.template.headOmkKemCiphertext,
 					wallet: walletAddress,
 					myOrgWrap: myWrap,
-					documents: templateRow.documents.flatMap((doc) =>
-						doc.downloadUrl
-							? [
-									{
-										docId: doc.docId,
-										name: doc.name,
-										mimeType: doc.mimeType,
-										downloadUrl: doc.downloadUrl,
-									},
-								]
-							: [],
-					),
+					documents: serverDocs,
+					loadLocalBytes: localDraftId
+						? async (docId) => {
+								const row = serverDocs.find((doc) => doc.docId === docId);
+								if (!row) return null;
+								try {
+									return await loadDocumentBytes(localDraftId, {
+										id: docId,
+										name: row.name,
+										size: row.size,
+										type: row.mimeType,
+									});
+								} catch {
+									return null;
+								}
+							}
+						: undefined,
 				});
 
 				const draft = await hydrateCreateFormFromTemplateEditor({
@@ -95,7 +119,15 @@ export function useTemplateEditorHydrate(args: {
 				});
 
 				if (cancelled) return;
-				setCreateForm(draft);
+				setCreateForm({
+					...draft,
+					documents: draft.documents.map((doc) => {
+						const hydrated = documents.find((row) => row.id === doc.id);
+						return hydrated
+							? { ...doc, plaintextSha256: hydrated.plaintextSha256 }
+							: doc;
+					}),
+				});
 				lastHydrateRef.current = hydrateKey;
 				setLoadState("idle");
 			} catch (err) {

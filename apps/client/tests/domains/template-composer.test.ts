@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { createTemplateRoleId } from "@filosign/shared";
+import {
+	createTemplateRoleId,
+	templateRolePlaceholderEmail,
+} from "@filosign/shared";
 import type { CreateForm } from "../../src/lib/domains/files/envelope-form-types";
 import {
 	applyTemplateEditorMutation,
-	templateRoleEmail,
 	templateRolesFromCreateForm,
 } from "../../src/lib/domains/templates/template-composer";
 
@@ -14,7 +16,7 @@ function baseCreateForm(roleId = "role_a"): CreateForm {
 			{
 				clientRowId: roleId,
 				name: "Signer 1",
-				email: templateRoleEmail(roleId),
+				email: templateRolePlaceholderEmail(roleId),
 				role: "signer",
 			},
 		],

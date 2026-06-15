@@ -269,7 +269,7 @@ export function AddSignDraftActions() {
 					type="button"
 					variant="outline"
 					size="icon-lg"
-					className="relative gap-1"
+					className="relative hidden gap-1 sm:inline-flex"
 					disabled={!serverDraftId}
 					aria-label={badgeLabel ? `Comments, ${badgeLabel} total` : "Comments"}
 					onClick={handleCommentsClick}
@@ -299,6 +299,17 @@ export function AddSignDraftActions() {
 						<DotsThreeIcon className="size-4" weight="bold" />
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="w-52">
+						<DropdownMenuItem
+							disabled={!serverDraftId}
+							onClick={handleCommentsClick}
+							className="sm:hidden"
+						>
+							<ChatCircleIcon className="size-4" />
+							<span className="inline-flex items-center gap-2">
+								Comments
+								<ProFeatureMark size="xs" />
+							</span>
+						</DropdownMenuItem>
 						<DropdownMenuItem
 							disabled={shareDisabled}
 							onClick={handleShareClick}
@@ -360,7 +371,7 @@ export function AddSignDraftActions() {
 			<DraftTemplateDialog
 				open={templateDialogOpen}
 				onOpenChange={setTemplateDialogOpen}
-				serverDraftId={serverDraftId}
+				createForm={createForm}
 				initialName={createForm?.emailSubject || ""}
 			/>
 			<DraftCryptoRecoveryDialog

@@ -13,7 +13,7 @@ export function EnvelopeFormBody() {
 	useActivationEnvelopeStartedOnMount();
 
 	return (
-		<main className="p-8 mx-auto space-y-8 max-w-4xl">
+		<main className="p-4 sm:p-6 md:p-8 mx-auto space-y-8 max-w-4xl">
 			<EntitlementPlanHint />
 			<ActivationRouteHints />
 			<ComposeDocumentsField />

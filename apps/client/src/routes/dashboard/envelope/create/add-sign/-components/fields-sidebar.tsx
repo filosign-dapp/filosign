@@ -1,6 +1,4 @@
-import { useDraggable } from "@dnd-kit/core";
 import { CaretDownIcon, PenNibIcon } from "@phosphor-icons/react";
-import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -8,70 +6,12 @@ import {
 	CollapsibleContent,
 	CollapsibleTrigger,
 } from "@/src/lib/components/ui/collapsible";
+import { PlacementFieldPaletteList } from "@/src/lib/domains/placement/field-palette";
 import { cn } from "@/src/lib/utils/utils";
 import { ActiveAssigneeStrip } from "@/src/routes/dashboard/envelope/create/add-sign/-components/active-assignee-strip";
 import { PlacedFieldsSheet } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placed-fields-sheet";
 import { useAddSignPlacement } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/context";
-import { paletteDraggableId } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-dnd-context";
 import { countFieldsByAssignee } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/active-assignees";
-import { signatureFieldPalette } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/field-types";
-
-function DraggablePaletteItem({
-	field,
-	index,
-	isPlacingField,
-	pendingFieldType,
-	onAddField,
-}: {
-	field: (typeof signatureFieldPalette)[number];
-	index: number;
-	isPlacingField: boolean;
-	pendingFieldType: string | null | undefined;
-	onAddField: (type: (typeof signatureFieldPalette)[number]["type"]) => void;
-}) {
-	const { attributes, listeners, setNodeRef } = useDraggable({
-		id: paletteDraggableId(field.type, "sidebar"),
-	});
-
-	const IconComponent = field.icon;
-	const isActive = isPlacingField && pendingFieldType === field.type;
-
-	return (
-		<motion.div
-			ref={setNodeRef}
-			initial={{ opacity: 0 }}
-			animate={{ opacity: 1 }}
-			transition={{
-				duration: 0.15,
-				delay: index * 0.02,
-			}}
-			{...listeners}
-			{...attributes}
-		>
-			<Button
-				type="button"
-				variant="ghost"
-				className={cn(
-					"h-auto w-full justify-start p-3 transition-colors duration-100 touch-none hover:bg-muted/50",
-					isActive && "border bg-accent",
-				)}
-				onClick={() => onAddField(field.type)}
-			>
-				<div className="flex w-full items-center gap-3">
-					<div className="rounded-md bg-muted/30 p-2">
-						<IconComponent className="size-6 text-primary" weight="regular" />
-					</div>
-					<div className="flex-1 text-left">
-						<div className="text-sm font-medium">{field.label}</div>
-						<div className="text-xs text-muted-foreground">
-							{field.description}
-						</div>
-					</div>
-				</div>
-			</Button>
-		</motion.div>
-	);
-}
 
 export default function SignatureFieldsSidebar() {
 	const {
@@ -132,24 +72,12 @@ export default function SignatureFieldsSidebar() {
 							fieldCountsByAssigneeId={documentFieldCounts}
 						/>
 
-						<div className="space-y-2">
-							{signatureFieldPalette.map((field, index) => (
-								<DraggablePaletteItem
-									key={field.type}
-									field={field}
-									index={index}
-									isPlacingField={isPlacingField}
-									pendingFieldType={pendingFieldType}
-									onAddField={handleAddField}
-								/>
-							))}
-						</div>
-
-						{isPlacingField ? (
-							<div className="rounded border border-primary/20 bg-primary/5 p-2 text-xs text-primary">
-								Click the page to place {placementFieldTypeLabel}
-							</div>
-						) : null}
+						<PlacementFieldPaletteList
+							isPlacingField={isPlacingField}
+							pendingFieldType={pendingFieldType}
+							placementFieldTypeLabel={placementFieldTypeLabel}
+							onAddField={handleAddField}
+						/>
 					</CollapsibleContent>
 				</Collapsible>
 			</div>

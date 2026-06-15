@@ -237,10 +237,12 @@
 
 	html {
 		overflow-y: scroll;
+		overflow-x: clip;
 	}
 
 	body {
 		@apply bg-background text-foreground;
+		overflow-x: clip;
 	}
 
 	*::-webkit-scrollbar {

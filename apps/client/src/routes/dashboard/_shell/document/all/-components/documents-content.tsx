@@ -17,6 +17,7 @@ import { useDraftDelete } from "@/src/lib/domains/documents/use-draft-delete";
 import { useDraftRename } from "@/src/lib/domains/documents/use-draft-rename";
 import { useStartNewEnvelope } from "@/src/lib/domains/drafts";
 import { cn } from "@/src/lib/utils/index";
+import { useIsMobile } from "@/src/lib/utils/use-mobile";
 import { useDocuments } from "@/src/routes/dashboard/_shell/document/all/-lib/context/context";
 import {
 	documentsPageBodyInset,
@@ -86,6 +87,8 @@ export function DocumentsContent() {
 		confirmRename,
 		renamePending,
 	} = useDraftRename();
+	const isMobile = useIsMobile();
+	const effectiveViewMode = isMobile ? "grid" : viewMode;
 
 	return (
 		<MotionReveal
@@ -100,7 +103,7 @@ export function DocumentsContent() {
 		>
 			{isLoading ? (
 				<DocumentsContentSkeleton
-					variant={viewMode === "list" ? "table" : "cards"}
+					variant={effectiveViewMode === "list" ? "table" : "cards"}
 				/>
 			) : !hasAnyContent ? (
 				<MotionReveal
@@ -164,7 +167,7 @@ export function DocumentsContent() {
 				)
 			) : (
 				<div className="space-y-4">
-					{viewMode === "list" ? (
+					{effectiveViewMode === "list" ? (
 						<div className={documentsTableCard}>
 							<DocumentsTable
 								items={items}

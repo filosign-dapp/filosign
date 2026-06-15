@@ -1,5 +1,10 @@
-import { useFilosignContext } from "@filosign/react";
-import { useCreateOrgTemplate } from "@filosign/react/orgs";
+import {
+	useActiveOrganization,
+	useActiveOrgId,
+	useCreateOrgTemplate,
+	usePrepareOrgTemplateCreate,
+} from "@filosign/react/orgs";
+import { uploadOrgTemplateDocuments } from "@filosign/react/utils";
 import { useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -14,22 +19,27 @@ import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
+import { loadDocumentBytes } from "@/src/lib/domains/drafts";
+import type { CreateForm } from "@/src/lib/domains/files/envelope-form-types";
+import { buildTemplateSnapshotFromComposer } from "@/src/lib/domains/templates/template-composer";
 import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
 
 type Props = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	serverDraftId: string | undefined;
+	createForm: CreateForm | null;
 	initialName: string;
 };
 
 export function DraftTemplateDialog({
 	open,
 	onOpenChange,
-	serverDraftId,
+	createForm,
 	initialName,
 }: Props) {
-	const { rpc } = useFilosignContext();
+	const activeOrgId = useActiveOrgId();
+	const activeOrg = useActiveOrganization();
+	const prepareCreate = usePrepareOrgTemplateCreate();
 	const createTemplate = useCreateOrgTemplate();
 	const [templateName, setTemplateName] = useState(initialName);
 	const [templateSaving, setTemplateSaving] = useState(false);
@@ -44,20 +54,20 @@ export function DraftTemplateDialog({
 		>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
-					<DialogTitle>Save as Template</DialogTitle>
+					<DialogTitle>Save as template</DialogTitle>
 					<DialogDescription>
-						Create a reusable template for your workspace from this draft.
+						Create a reusable blueprint from this draft layout.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="space-y-4 pt-2">
 					<div className="space-y-2">
-						<Label htmlFor="designer-template-name">Template Name</Label>
+						<Label htmlFor="designer-template-name">Template name</Label>
 						<Input
 							id="designer-template-name"
 							placeholder="E.g. Standard NDA"
 							value={templateName}
-							onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-								setTemplateName(e.target.value)
+							onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+								setTemplateName(event.target.value)
 							}
 							maxLength={120}
 							autoFocus
@@ -81,38 +91,57 @@ export function DraftTemplateDialog({
 								toastUser.error(TOASTS.templates.nameRequired.title);
 								return;
 							}
+							if (!createForm?.documents.length) {
+								toastUser.error("Add at least one document before saving.");
+								return;
+							}
+							if (!activeOrgId || !activeOrg?.encryptionPublicKey) {
+								toastUser.error("Select a workspace before saving a template.");
+								return;
+							}
+
 							setTemplateSaving(true);
 							try {
-								const draftDetails = await rpc.drafts.get({
-									draftId: serverDraftId || "",
+								const templateId = crypto.randomUUID();
+								const documentRows = await Promise.all(
+									createForm.documents.map(async (doc) => ({
+										docId: doc.id,
+										name: doc.name,
+										size: doc.size,
+										mimeType: doc.type,
+										bytes: await loadDocumentBytes(createForm.draftId, {
+											id: doc.id,
+											name: doc.name,
+											size: doc.size,
+											type: doc.type,
+										}),
+									})),
+								);
+								const snapshot = buildTemplateSnapshotFromComposer({
+									recipients: createForm.recipients,
+									signatureFields: createForm.signatureFields ?? [],
+									emailSubject: createForm.emailSubject,
+									emailMessage: createForm.emailMessage,
+									documents: createForm.documents.map((doc) => ({
+										id: doc.id,
+										name: doc.name,
+										size: doc.size,
+										type: doc.type,
+									})),
 								});
-								if (
-									!draftDetails.documents ||
-									draftDetails.documents.length === 0
-								) {
-									throw new Error("This draft has no PDF document uploaded.");
-								}
-								if (!draftDetails.headDekWrappedOmk) {
-									throw new Error(
-										"Please save the draft first to generate encryption keys.",
-									);
-								}
-								const primaryDoc = draftDetails.documents[0];
-								const placementManifest = {
-									version: 1 as const,
-									documents: [],
-									fields: [],
-								};
 
-								await createTemplate.mutateAsync({
+								await uploadOrgTemplateDocuments({
+									templateId,
+									organizationId: activeOrgId,
+									orgEncryptionPublicKey: activeOrg.encryptionPublicKey,
 									name: templateName.trim(),
-									s3Key: primaryDoc.s3Key,
-									dekWrappedOmk: draftDetails.headDekWrappedOmk || "",
-									placementManifest,
+									snapshot,
+									documents: documentRows,
+									prepareCreate: (body) => prepareCreate.mutateAsync(body),
+									create: (body) => createTemplate.mutateAsync(body),
 								});
 								toastUser.success(TOASTS.templates.saved);
 								onOpenChange(false);
-								setTemplateName("");
 							} catch (err) {
 								showAppErrorToast(err);
 							} finally {
@@ -121,7 +150,7 @@ export function DraftTemplateDialog({
 						}}
 						disabled={templateSaving || !templateName.trim()}
 					>
-						{templateSaving ? "Saving..." : "Save Template"}
+						{templateSaving ? "Saving..." : "Save template"}
 					</Button>
 				</DialogFooter>
 			</DialogContent>

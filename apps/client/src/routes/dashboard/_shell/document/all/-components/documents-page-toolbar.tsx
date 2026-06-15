@@ -50,10 +50,12 @@ export function DocumentsPageToolbar() {
 				</div>
 
 				<div className="flex shrink-0 items-center gap-3 sm:gap-4">
-					<ListGridViewToggle
-						value={viewMode}
-						onValueChange={handleViewModeChange}
-					/>
+					<div className="hidden md:block">
+						<ListGridViewToggle
+							value={viewMode}
+							onValueChange={handleViewModeChange}
+						/>
+					</div>
 					<Button
 						type="button"
 						variant="primary"

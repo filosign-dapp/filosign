@@ -14,7 +14,7 @@ export function FullBleedPageHeader({
 	return (
 		<header
 			className={cn(
-				"flex sticky top-0 z-50 justify-between items-center px-8 h-16 border-b glass bg-background/50 border-border",
+				"flex sticky top-0 z-50 justify-between items-center px-4 sm:px-6 md:px-8 h-16 border-b glass bg-background/50 border-border",
 				className,
 			)}
 		>
@@ -33,7 +33,7 @@ export function FullBleedMain({
 	return (
 		<main
 			className={cn(
-				"p-8 mx-auto w-full max-w-5xl min-h-[calc(100dvh-4rem)]",
+				"p-4 sm:p-6 md:p-8 mx-auto w-full max-w-5xl min-h-[calc(100dvh-4rem)]",
 				className,
 			)}
 		>

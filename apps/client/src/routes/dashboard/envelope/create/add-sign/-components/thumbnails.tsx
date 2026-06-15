@@ -14,6 +14,7 @@ type DocumentThumbnailsSidebarProps = {
 	currentDocumentId: string;
 	signatureFields: SignatureField[];
 	onDocumentSelect: (documentId: string) => void;
+	showSupplementaryPackets?: boolean;
 };
 
 export function DocumentThumbnailsSidebar({
@@ -21,6 +22,7 @@ export function DocumentThumbnailsSidebar({
 	currentDocumentId,
 	signatureFields,
 	onDocumentSelect,
+	showSupplementaryPackets = true,
 }: DocumentThumbnailsSidebarProps) {
 	const railDocuments = useMemo((): DocumentListRailItem[] => {
 		const fieldCountByDoc = new Map<string, number>();
@@ -43,7 +45,9 @@ export function DocumentThumbnailsSidebar({
 			currentDocumentId={currentDocumentId}
 			onDocumentSelect={onDocumentSelect}
 			borderSide="right"
-			renderFooter={() => <SupplementaryPacketsSidebar />}
+			renderFooter={() =>
+				showSupplementaryPackets ? <SupplementaryPacketsSidebar /> : null
+			}
 		/>
 	);
 }

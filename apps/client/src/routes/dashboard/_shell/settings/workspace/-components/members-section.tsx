@@ -4,6 +4,7 @@ import { Button } from "@/src/lib/components/ui/button";
 import { BILLING_SETTINGS_PATH } from "@/src/lib/domains/billing/settings-path";
 import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { MemberRow } from "@/src/routes/dashboard/_shell/settings/workspace/-components/member-row";
+import { MemberRowCard } from "@/src/routes/dashboard/_shell/settings/workspace/-components/member-row-card";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
 import { WorkspaceSection } from "./workspace-section";
 
@@ -46,7 +47,17 @@ export function MembersSection(props: { onInviteClick?: () => void }) {
 				) : null
 			}
 		>
-			<div className="overflow-x-auto rounded-lg border border-border/80 bg-background/50">
+			<div className="space-y-3 md:hidden">
+				{members.map((m) => (
+					<MemberRowCard
+						key={m.walletAddress}
+						member={m}
+						myWalletNorm={myWalletNorm ?? undefined}
+						canInviteMembers={canInviteMembers}
+					/>
+				))}
+			</div>
+			<div className="hidden overflow-x-auto rounded-lg border border-border/80 bg-background/50 md:block">
 				<table className="min-w-full divide-y divide-border text-sm">
 					<thead>
 						<tr className="bg-muted/10 text-left text-xs font-medium text-muted-foreground">

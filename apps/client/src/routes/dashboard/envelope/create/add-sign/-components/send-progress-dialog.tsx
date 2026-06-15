@@ -23,7 +23,7 @@ export function SendProgressDialog(props: {
 		<Dialog open={open}>
 			<WorkflowDialogContent
 				aria-labelledby={titleId}
-				className="flex w-[min(100%-2rem,24rem)] flex-col sm:max-w-sm"
+				className="flex w-[min(100%-2rem,28rem)] flex-col sm:max-w-md"
 			>
 				<WorkflowDialogBody className="flex flex-col items-center px-6 pt-6 pb-2">
 					{state ? (

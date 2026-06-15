@@ -8,8 +8,8 @@ export const SEND_PROGRESS_TIPS = [
 	"Use undo and redo while placing fields. Small fixes beat starting over.",
 	"Double-check recipient emails now. After send, changes require a new envelope.",
 	"On the signer list too? Finish your fields as soon as sending completes.",
-	"Keep this tab open. Wallet prompts show up here and need your approval.",
-	"Approve each wallet request in order. Skipping one can stop the rest.",
+	"Keep this tab open. Signing happens here automatically.",
+	"Each on-chain step runs in order. Leaving early can interrupt sending.",
 	"Give your draft a clear name so you can find it quickly in your dashboard.",
 ] as const;
 

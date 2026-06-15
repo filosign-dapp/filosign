@@ -19,7 +19,7 @@ export function SendProgressStageFlip(props: {
 	const { reduced } = useMotionConfig();
 
 	return (
-		<div className="relative h-full w-full overflow-hidden [perspective:640px]">
+		<div className="relative h-full w-full overflow-hidden perspective-[640px]">
 			<AnimatePresence mode="sync" initial={false}>
 				<motion.div
 					key={props.stageKey}

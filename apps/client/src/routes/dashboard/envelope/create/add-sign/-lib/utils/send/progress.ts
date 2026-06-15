@@ -60,7 +60,7 @@ export function buildSendProgressPlan(args: {
 	selfProfile: UserProfile | undefined;
 }): SendProgressStep[] {
 	const steps: SendProgressStep[] = [
-		{ id: "preparing_documents", label: "Preparing your documents" },
+		{ id: "preparing_documents", label: "Preparing documents" },
 	];
 
 	const settlementCount = args.createForm.settlementDrafts?.length ?? 0;
@@ -69,16 +69,16 @@ export function buildSendProgressPlan(args: {
 	}
 
 	steps.push(
-		{ id: "building_payload", label: "Building your envelope" },
-		{ id: "encrypting", label: "Encrypting your envelope" },
-		{ id: "uploading", label: "Uploading your envelope" },
+		{ id: "building_payload", label: "Building envelope" },
+		{ id: "encrypting", label: "Encrypting envelope" },
+		{ id: "uploading", label: "Uploading envelope" },
 		{
 			id: "wallet_sign_register",
-			label: "Approve registration in your wallet",
+			label: "Approving registration",
 		},
 		{
 			id: "registering_envelope",
-			label: "Saving envelope to Filosign",
+			label: "Saving envelope",
 		},
 	);
 
@@ -88,7 +88,7 @@ export function buildSendProgressPlan(args: {
 	if (hasConditionalAttachments) {
 		steps.push({
 			id: "wallet_attachment_rule",
-			label: "Approve attachment rules in your wallet",
+			label: "Approving attachments",
 		});
 	}
 
@@ -97,22 +97,22 @@ export function buildSendProgressPlan(args: {
 		steps.push(
 			{
 				id: payoutApproveStepId(ruleIndex),
-				label: "Approve USDC in your wallet",
+				label: "Approving USDC",
 				detail,
 			},
 			{
 				id: payoutConfirmApproveStepId(ruleIndex),
-				label: "Waiting for confirmation",
+				label: "Confirming approval",
 				detail,
 			},
 			{
 				id: payoutRegisterStepId(ruleIndex),
-				label: "Registering payout on the network",
+				label: "Registering payout",
 				detail,
 			},
 			{
 				id: payoutConfirmRegisterStepId(ruleIndex),
-				label: "Waiting for confirmation",
+				label: "Confirming payout",
 				detail,
 			},
 		);
@@ -121,7 +121,7 @@ export function buildSendProgressPlan(args: {
 	if (settlementCount > 0) {
 		steps.push({
 			id: "indexing_payout",
-			label: "Saving payout to Filosign",
+			label: "Saving payout",
 		});
 	}
 
@@ -133,7 +133,7 @@ export function buildSendProgressPlan(args: {
 		selfOnRoster &&
 		selfAssignedFieldIds(args.signatureFields, selfOnRoster.email).length > 0
 	) {
-		steps.push({ id: "self_sign", label: "Completing your signature fields" });
+		steps.push({ id: "self_sign", label: "Signing your fields" });
 	}
 
 	return steps;
@@ -359,7 +359,7 @@ export function getActiveSendProgressDisplay(
 	}
 
 	return {
-		label: "Sending your envelope",
+		label: "Sending envelope",
 		isError: false,
 	};
 }

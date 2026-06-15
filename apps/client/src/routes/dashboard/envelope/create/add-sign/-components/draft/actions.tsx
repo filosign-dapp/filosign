@@ -275,10 +275,6 @@ export function AddSignDraftActions() {
 					onClick={handleCommentsClick}
 				>
 					<ChatCircleIcon className="size-4" />
-					<ProFeatureMark
-						size="xs"
-						className="absolute -bottom-0.5 -right-0.5"
-					/>
 					{badgeLabel ? (
 						<span className="absolute -top-1 -right-1 flex size-4 min-w-4 items-center justify-center rounded-full bg-secondary px-0.5 text-[10px] font-medium leading-none text-secondary-foreground">
 							{badgeLabel}
@@ -305,10 +301,7 @@ export function AddSignDraftActions() {
 							className="sm:hidden"
 						>
 							<ChatCircleIcon className="size-4" />
-							<span className="inline-flex items-center gap-2">
-								Comments
-								<ProFeatureMark size="xs" />
-							</span>
+							Comments
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							disabled={shareDisabled}

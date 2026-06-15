@@ -28,16 +28,16 @@ export function SendProgressStatus(props: {
 			<SendProgressIcon variant={display.isError ? "error" : "loading"} />
 
 			<div className="flex w-full flex-col items-center px-2">
-				<div className="relative h-8 w-full max-w-sm shrink-0">
+				<div className="relative h-7 w-full shrink-0">
 					<SendProgressStageFlip stageKey={display.label}>
 						<DialogTitle
 							id={props.titleId}
 							className={cn(
-								"font-manrope text-xl tracking-tight sm:text-2xl",
+								"whitespace-nowrap font-manrope text-base tracking-tight sm:text-lg",
 								display.isError && "text-destructive",
 							)}
 						>
-							<ShimmerText active={shimmerActive} className="block">
+							<ShimmerText active={shimmerActive} className="inline-block">
 								{display.label}
 							</ShimmerText>
 						</DialogTitle>

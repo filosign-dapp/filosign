@@ -36,7 +36,10 @@ export type SendChromeSlice = {
 	handlePostSendDone: () => void;
 };
 
+export type PlacementInteractionMode = "edit" | "view";
+
 export type PlacementControllerCore = {
+	interactionMode: PlacementInteractionMode;
 	persistHydrated: boolean;
 	draftReady: boolean;
 	documents: PlacementDocument[];

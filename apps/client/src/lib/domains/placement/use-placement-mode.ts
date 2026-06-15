@@ -33,10 +33,10 @@ export function usePlacementMode() {
 		setPendingFieldType(null);
 	}, []);
 
-	const finishPlacement = useCallback((fieldId: string) => {
+	const finishPlacement = useCallback(() => {
 		setIsPlacingField(false);
 		setPendingFieldType(null);
-		setSelectedFieldIds(new Set([fieldId]));
+		setSelectedFieldIds(new Set());
 	}, []);
 
 	const selectField = useCallback((fieldId: string, additive = false) => {

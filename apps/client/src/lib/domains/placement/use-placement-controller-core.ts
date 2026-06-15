@@ -47,12 +47,14 @@ export type PlacementControllerCoreArgs = {
 		suppressEmptyDraftRedirect: boolean;
 		documentLoadingMessage: string | null;
 	};
+	interactionMode?: "edit" | "view";
 };
 
 export function usePlacementControllerCore(
 	args: PlacementControllerCoreArgs,
 ): PlacementControllerCore {
 	const navigate = useNavigate();
+	const readOnly = args.interactionMode === "view";
 	const { redirectTo, suppressEmptyDraftRedirect, documentLoadingMessage } =
 		args.lifecycle;
 	const createForm = useStorePersist((s) => s.createForm);
@@ -99,11 +101,12 @@ export function usePlacementControllerCore(
 
 	const handleSignatureFieldsChange = useCallback(
 		(fields: SignatureField[]) => {
+			if (readOnly) return;
 			const prev = useStorePersist.getState().createForm;
 			if (!prev) return;
 			setCreateForm({ ...prev, signatureFields: fields });
 		},
-		[setCreateForm],
+		[readOnly, setCreateForm],
 	);
 
 	const { commitFields, undo, redo, canUndo, canRedo } = usePlacementHistory(
@@ -125,7 +128,6 @@ export function usePlacementControllerCore(
 		placeField: placeFieldRaw,
 		handleFieldUpdate: handleFieldUpdateRaw,
 		handleFieldRemove: handleFieldRemoveRaw,
-		handleBulkFieldUpdate,
 		handleBulkFieldRemove,
 		handleFieldDuplicate,
 		applyFieldPatches,
@@ -191,6 +193,7 @@ export function usePlacementControllerCore(
 			y: number;
 			page?: number;
 		}) => {
+			if (readOnly) return null;
 			const assignee = resolveActiveAssignee(assignees, activeAssigneeId);
 			if (!assignee || !currentDocumentId) return null;
 			if (!assignee.placementEnabled) {
@@ -208,11 +211,12 @@ export function usePlacementControllerCore(
 				assignee,
 			});
 			if (id && isPlacingField && pendingFieldType === placeArgs.type) {
-				finishPlacement(id);
+				finishPlacement();
 			}
 			return id;
 		},
 		[
+			readOnly,
 			assignees,
 			activeAssigneeId,
 			currentDocumentId,
@@ -226,6 +230,7 @@ export function usePlacementControllerCore(
 
 	const handleFieldUpdate = useCallback(
 		(fieldId: string, updates: Partial<SignatureField>) => {
+			if (readOnly) return;
 			const field = signatureFields.find((f) => f.id === fieldId);
 			handleFieldUpdateRaw(fieldId, updates);
 			if (!field) return;
@@ -235,11 +240,12 @@ export function usePlacementControllerCore(
 				height: updates.height ?? field.height,
 			});
 		},
-		[handleFieldUpdateRaw, signatureFields, rememberFieldSize],
+		[readOnly, handleFieldUpdateRaw, signatureFields, rememberFieldSize],
 	);
 
 	const handleFieldRemove = useCallback(
 		(fieldId: string) => {
+			if (readOnly) return;
 			handleFieldRemoveRaw(fieldId);
 			setSelectedFieldIds((prev) => {
 				if (!prev.has(fieldId)) return prev;
@@ -248,33 +254,19 @@ export function usePlacementControllerCore(
 				return next;
 			});
 		},
-		[handleFieldRemoveRaw, setSelectedFieldIds],
+		[readOnly, handleFieldRemoveRaw, setSelectedFieldIds],
 	);
 
 	const handleRemoveSelectedFields = useCallback(() => {
+		if (readOnly) return;
 		if (selectedFieldIds.size === 0) return;
 		handleBulkFieldRemove(selectedFieldIds);
 		clearFieldSelection();
-	}, [selectedFieldIds, handleBulkFieldRemove, clearFieldSelection]);
-
-	const handleSetActiveAssigneeId = useCallback(
-		(id: string) => {
-			setActiveAssigneeId(id);
-			if (selectedFieldIds.size === 0) return;
-			const assignee = resolveActiveAssignee(assignees, id);
-			if (!assignee) return;
-			handleBulkFieldUpdate(selectedFieldIds, {
-				assignedSignerWallet: assignee.walletAddress,
-				assignedSignerName: assignee.name,
-				assignedSignerEmail: assignee.email,
-				required: assignee.required,
-			});
-		},
-		[assignees, selectedFieldIds, handleBulkFieldUpdate],
-	);
+	}, [readOnly, selectedFieldIds, handleBulkFieldRemove, clearFieldSelection]);
 
 	const handlePlaceAtCoords = useCallback(
 		(coords: { x: number; y: number; page: number }) => {
+			if (readOnly) return;
 			if (!pendingFieldType || !currentDocumentId) return;
 			if (assignees.length === 0) {
 				cancelPlacement();
@@ -289,6 +281,7 @@ export function usePlacementControllerCore(
 			});
 		},
 		[
+			readOnly,
 			pendingFieldType,
 			currentDocumentId,
 			assignees,
@@ -346,10 +339,11 @@ export function usePlacementControllerCore(
 	}, []);
 
 	const handleClearAllFields = useCallback(() => {
+		if (readOnly) return;
 		if (signatureFields.length === 0) return;
 		commitFields([]);
 		clearFieldSelection();
-	}, [signatureFields.length, commitFields, clearFieldSelection]);
+	}, [readOnly, signatureFields.length, commitFields, clearFieldSelection]);
 
 	const recordPdfPageLayout = useCallback((page: number, height: number) => {
 		pageHeightsRef.current.set(page, height);
@@ -367,6 +361,7 @@ export function usePlacementControllerCore(
 	}, [clearFieldSelection]);
 
 	useEffect(() => {
+		if (readOnly) return;
 		const onKeyDown = (e: KeyboardEvent) => {
 			const mod = e.metaKey || e.ctrlKey;
 			if (mod && e.key === "z" && !e.shiftKey) {
@@ -397,6 +392,7 @@ export function usePlacementControllerCore(
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, [
+		readOnly,
 		undo,
 		redo,
 		selectedField,
@@ -475,6 +471,7 @@ export function usePlacementControllerCore(
 	);
 
 	return {
+		interactionMode: readOnly ? "view" : "edit",
 		persistHydrated,
 		draftReady,
 		documents,
@@ -491,7 +488,7 @@ export function usePlacementControllerCore(
 		pendingFieldType,
 		placementFieldTypeLabel,
 		activeAssigneeId,
-		setActiveAssigneeId: handleSetActiveAssigneeId,
+		setActiveAssigneeId,
 		assignees,
 		isInteractingField,
 		setIsInteractingField,
@@ -508,8 +505,8 @@ export function usePlacementControllerCore(
 		clearFieldFocusRequest,
 		focusFieldOnCanvas,
 		handleClearAllFields,
-		applyFieldPatches,
-		handleAddField,
+		applyFieldPatches: readOnly ? () => {} : applyFieldPatches,
+		handleAddField: readOnly ? () => {} : handleAddField,
 		placeField,
 		handlePlaceAtCoords,
 		handleFieldSelect,
@@ -517,7 +514,7 @@ export function usePlacementControllerCore(
 		handleCanvasDeselect,
 		handleFieldRemove,
 		handleFieldUpdate,
-		handleFieldDuplicate,
+		handleFieldDuplicate: readOnly ? () => {} : handleFieldDuplicate,
 		handleDocumentSelect,
 		documentLoadingMessage,
 		undo,

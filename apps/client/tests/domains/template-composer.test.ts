@@ -48,12 +48,32 @@ describe("template composer adapters", () => {
 	});
 
 	test("applyTemplateEditorMutation updateRole renames label", () => {
-		const next = applyTemplateEditorMutation(baseCreateForm(), {
+		const form = {
+			...baseCreateForm(),
+			signatureFields: [
+				{
+					id: "f1",
+					type: "signature" as const,
+					x: 10,
+					y: 20,
+					width: 120,
+					height: 40,
+					page: 1,
+					documentId: "doc-1",
+					assignedSignerWallet: "",
+					assignedSignerName: "Signer 1",
+					assignedSignerEmail: templateRolePlaceholderEmail("role_a"),
+					required: true,
+				},
+			],
+		};
+		const next = applyTemplateEditorMutation(form, {
 			type: "updateRole",
 			roleId: "role_a",
 			label: "Buyer",
 		});
 		expect(next.recipients[0]?.name).toBe("Buyer");
+		expect(next.signatureFields[0]?.assignedSignerName).toBe("Buyer");
 	});
 
 	test("applyTemplateEditorMutation removeDocument drops doc rows", () => {

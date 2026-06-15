@@ -48,13 +48,13 @@ describe("envelopeSuppressEmptyDraftRedirect", () => {
 });
 
 describe("templateSuppressEmptyDraftRedirect", () => {
-	it("suppresses empty template create draft", () => {
+	it("does not suppress when idle with empty draft", () => {
 		expect(
 			templateSuppressEmptyDraftRedirect({
 				templateEditorLoadState: "idle",
 				draftReady: false,
 			}),
-		).toBe(true);
+		).toBe(false);
 	});
 
 	it("suppresses while template is loading", () => {

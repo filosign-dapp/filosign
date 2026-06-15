@@ -254,7 +254,7 @@ export function recipientFingerprint(recipients: Recipient[]): string {
 	return recipients
 		.map(
 			(r) =>
-				`${r.role}:${normalizePlacementRecipientEmail(r.email?.trim() ?? "")}:${(r.walletAddress ?? "").toLowerCase()}`,
+				`${r.role}:${normalizePlacementRecipientEmail(r.email?.trim() ?? "")}`,
 		)
 		.sort()
 		.join("|");
@@ -284,6 +284,8 @@ export function withComposeOnlyFieldsFromPrev(
 		...next,
 		registerRouting: prev?.registerRouting,
 		attachmentPacketDrafts: prev?.attachmentPacketDrafts,
+		templateContext: prev?.templateContext,
+		templateUse: prev?.templateUse,
 	};
 }
 
@@ -426,9 +428,11 @@ export async function buildCreateForm(
 		pageCount: doc.pageCount,
 	}));
 
-	const signatureFields = fingerprintChanged
-		? []
-		: pruneSignatureFields(prev?.signatureFields ?? [], value.recipients);
+	const signatureFields = prev?.templateUse
+		? (prev.signatureFields ?? [])
+		: fingerprintChanged
+			? []
+			: pruneSignatureFields(prev?.signatureFields ?? [], value.recipients);
 
 	return withComposeOnlyFieldsFromPrev(
 		{

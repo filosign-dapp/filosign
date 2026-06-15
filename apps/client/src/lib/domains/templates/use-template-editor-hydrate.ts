@@ -5,7 +5,10 @@ import {
 	walletAccountAddress,
 } from "@filosign/react/utils";
 import { useEffect, useRef, useState } from "react";
-import { loadDocumentBytes } from "@/src/lib/domains/drafts";
+import {
+	loadDocumentBytes,
+	resolveCreateFormSnapshotDigest,
+} from "@/src/lib/domains/drafts";
 import { hydrateCreateFormFromTemplateEditor } from "@/src/lib/domains/templates/template-composer";
 import { showAppErrorToast } from "@/src/lib/errors";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
@@ -16,8 +19,21 @@ export type TemplateEditorLoadState =
 	| "awaiting_crypto"
 	| "error";
 
+function matchesTemplateEditorContext(
+	existing: NonNullable<
+		ReturnType<typeof useStorePersist.getState>["createForm"]
+	>,
+	templateId: string,
+	mode: "edit" | "preview",
+): boolean {
+	return (
+		existing.templateContext?.templateId === templateId &&
+		existing.templateContext.mode === mode
+	);
+}
+
 export function useTemplateEditorHydrate(args: {
-	templateMode: "create" | "edit" | undefined;
+	templateMode: "edit" | "preview" | undefined;
 	templateId: string | undefined;
 	cryptoReady: boolean;
 }) {
@@ -30,19 +46,26 @@ export function useTemplateEditorHydrate(args: {
 	useEffect(() => {
 		const mode = args.templateMode;
 		const templateId = args.templateId?.trim();
-		if (mode !== "edit" || !templateId) {
+		if (mode !== "edit" && mode !== "preview") {
 			setLoadState("idle");
 			return;
 		}
 
 		const hydrateKey = `${mode}:${templateId}`;
+		if (!templateId) {
+			setLoadState("idle");
+			return;
+		}
 		if (lastHydrateRef.current === hydrateKey) {
 			setLoadState("idle");
 			return;
 		}
 
 		const existing = useStorePersist.getState().createForm;
-		if (existing?.documents.length) {
+		if (
+			existing?.documents.length &&
+			matchesTemplateEditorContext(existing, templateId, mode)
+		) {
 			lastHydrateRef.current = hydrateKey;
 			setLoadState("idle");
 			return;
@@ -118,16 +141,20 @@ export function useTemplateEditorHydrate(args: {
 					documents,
 				});
 
-				if (cancelled) return;
-				setCreateForm({
+				const hydrated: typeof draft = {
 					...draft,
 					documents: draft.documents.map((doc) => {
-						const hydrated = documents.find((row) => row.id === doc.id);
-						return hydrated
-							? { ...doc, plaintextSha256: hydrated.plaintextSha256 }
-							: doc;
+						const row = documents.find((item) => item.id === doc.id);
+						return row ? { ...doc, plaintextSha256: row.plaintextSha256 } : doc;
 					}),
-				});
+					templateContext: { templateId, mode },
+					templateUse: undefined,
+				};
+				hydrated.lastSavedSnapshotDigest =
+					resolveCreateFormSnapshotDigest(hydrated);
+
+				if (cancelled) return;
+				setCreateForm(hydrated);
 				lastHydrateRef.current = hydrateKey;
 				setLoadState("idle");
 			} catch (err) {

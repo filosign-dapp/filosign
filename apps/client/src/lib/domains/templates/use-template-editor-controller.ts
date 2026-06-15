@@ -18,7 +18,7 @@ import { useTemplateEditorHydrate } from "@/src/lib/domains/templates/use-templa
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 
 export type TemplateEditorControllerArgs = {
-	mode: "create" | "edit";
+	mode: "create" | "edit" | "preview";
 	templateId: string;
 };
 
@@ -27,8 +27,8 @@ export function useTemplateEditorController(
 ): PlacementController {
 	const cryptoUnlocked = useCryptoUnlocked();
 	const { templateEditorLoadState } = useTemplateEditorHydrate({
-		templateMode: args.mode === "edit" ? "edit" : undefined,
-		templateId: args.mode === "edit" ? args.templateId : undefined,
+		templateMode: args.mode === "create" ? undefined : args.mode,
+		templateId: args.mode === "create" ? undefined : args.templateId,
 		cryptoReady: cryptoUnlocked.data === true,
 	});
 	const draftReady = Boolean(
@@ -56,8 +56,10 @@ export function useTemplateEditorController(
 			suppressEmptyDraftRedirect,
 			documentLoadingMessage: templateDocumentLoadingMessage(
 				templateEditorLoadState,
+				args.mode,
 			),
 		},
+		interactionMode: args.mode === "preview" ? "view" : "edit",
 	});
 
 	const handleSend = useCallback(async () => {}, []);

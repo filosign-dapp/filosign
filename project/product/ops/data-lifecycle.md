@@ -24,11 +24,11 @@ This is the engineer-facing deletion and retention policy for server/domain work
 - **FOC / hot R2**: prefer sender compliance export before `r2EvictAfter`; replication may proceed after the hot window even if the sender never exported.
 - **Users**: erase account by anonymizing PII and revoking sessions; do not delete user rows with legal references.
 
-## Schema guardrails (pending migration)
+## Schema guardrails (enforced)
 
-- `files.organizationId` currently uses `onDelete: "cascade"`. Recommendation: migrate to `onDelete: "restrict"` (or `set null` only if legally approved) and enforce organization deactivation/archive flow in domain code before any delete path.
-- `user_signatures.walletAddress` currently has no FK to `users.walletAddress`. Recommendation: add FK with `onDelete: "restrict"` so legal signature records cannot be orphaned or silently detached from identity references.
-- Keep these as explicit migrations (with backfill/check queries and deploy plan) rather than ad-hoc handler changes.
+- `files.organizationId` uses `onDelete: "restrict"` in schema + `0000_initial.sql` — org delete must use domain deactivation/archive flows, not cascade.
+- `user_signatures.walletAddress` has FK to `users.walletAddress` with `onDelete: "restrict"`.
+- First production migrate on a **legacy** DB: run preflight checks in [`production-smoke-tests.md`](production-smoke-tests.md) (orphan signatures, FK rollout).
 
 ## Guardrails for PRs
 
@@ -41,6 +41,17 @@ For any new list/get endpoint that reads lifecycle-managed tables:
 2. Avoid relying on cascades for product behavior. Use domain services.
 3. Never add API handlers that call `DELETE` on signed `files`.
 4. Never add org deletion behavior that can cascade-delete legal records.
+
+### PR checklist
+
+Use when touching `apps/server` handlers, domains, or schema:
+
+- [ ] List/get queries include explicit lifecycle filters (`status`, `revokedAt`, `expiresAt`).
+- [ ] No endpoint introduces hard delete for signed `files` data.
+- [ ] Org-level destructive operations are guarded against legal-record cascades.
+- [ ] New cleanup jobs are idempotent and safe to rerun.
+- [ ] If delete-like behavior is needed, corresponding `audit_events` write is included.
+- [ ] Storage cleanup is paired with DB cleanup where relevant (draft/template/avatar objects).
 
 ## Retention defaults
 

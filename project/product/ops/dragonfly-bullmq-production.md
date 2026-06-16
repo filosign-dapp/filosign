@@ -14,8 +14,8 @@ External references:
 | Use | Examples | Durability expectation |
 |-----|----------|------------------------|
 | **Cache** | Session cache (5m TTL), entitlements cache-aside (1h TTL) | Miss → DB; acceptable loss on restart with cold cache |
-| **Queue** | BullMQ email, webhooks, settlement sync (Sprint 4+) | Jobs must survive container restart |
-| **Locks** | Cron leader election, relayer lock (Sprint 5) | Must not duplicate across processes incorrectly |
+| **Queue** | BullMQ email, billing-webhook, payout-execution, file-register, post-sign-routing, foc-transition | Jobs must survive container restart |
+| **Locks** | Cron leader election, relayer lock | Must not duplicate across processes incorrectly |
 
 On a solo VPS, **one Dragonfly instance** serves all three. Split cache vs queue only if measured RAM contention (Tier D - not default).
 
@@ -85,7 +85,7 @@ BullMQ prefix and queue names use Redis hashtags so related keys land in one slo
 
 ```bash
 BULLMQ_PREFIX={filosign}
-# Queue examples: {filosign}:email, {filosign}:webhooks
+# Queue examples: {filosign}:email, {filosign}:billing-webhook
 ```
 
 Hashtag = substring inside `{...}` in the key name. With `--lock_on_hashtags`, each queue family gets dedicated thread locality.

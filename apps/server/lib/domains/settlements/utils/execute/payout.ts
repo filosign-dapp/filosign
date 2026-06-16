@@ -1,11 +1,12 @@
 import { and, eq, inArray } from "drizzle-orm";
 import type { Address } from "viem";
+import { isPieceWaitingForMoreSigners } from "@/lib/domains/files/utils/envelope-signing-progress";
 import db from "@/lib/platform/db";
 import { fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { executePayoutLegsUnderLock } from "./payout-lock";
 import { preflightSettlementPayout } from "./payout-preflight";
-import { isRetryablePayoutSkip } from "./payout-readiness";
+import { shouldRetryPayoutSkip } from "./payout-readiness";
 
 const { fileSettlementRules } = db.schema;
 
@@ -86,6 +87,7 @@ export async function tryExecuteSettlementRulesForPiece(
 
 	let retryable = false;
 	let retryReason: string | undefined;
+	const waitingForSigners = await isPieceWaitingForMoreSigners(pieceCid);
 
 	for (const row of rows) {
 		const result = await tryExecuteSettlementPayout({
@@ -106,7 +108,11 @@ export async function tryExecuteSettlementRulesForPiece(
 			);
 		}
 
-		if (isRetryablePayoutSkip(result.skipped, result)) {
+		if (
+			shouldRetryPayoutSkip(result.skipped, result, {
+				waitingForMoreSigners: waitingForSigners,
+			})
+		) {
 			retryable = true;
 			retryReason = result.partial
 				? "partial"

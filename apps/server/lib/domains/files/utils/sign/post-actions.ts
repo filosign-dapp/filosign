@@ -39,12 +39,20 @@ export async function runPostPieceSignSideEffects(args: {
 		},
 	);
 
-	void enqueuePayoutForPiece(args.pieceCid, chainJobOptions).catch((err) => {
-		logger.warn(
-			{ err, pieceCid: args.pieceCid },
-			"post-sign settlement enqueue failed; use Send payout or daily sync",
-		);
-	});
+	const { shouldEnqueuePayoutOnSign } = await import("./payout-enqueue");
+	void shouldEnqueuePayoutOnSign(args.pieceCid)
+		.then((enqueue) => {
+			if (!enqueue) {
+				return;
+			}
+			return enqueuePayoutForPiece(args.pieceCid, chainJobOptions);
+		})
+		.catch((err) => {
+			logger.warn(
+				{ err, pieceCid: args.pieceCid },
+				"post-sign settlement enqueue failed; use Send payout or daily sync",
+			);
+		});
 
 	void tryExecuteAttachmentReleasesForPiece(args.pieceCid).catch((err) => {
 		logger.warn(

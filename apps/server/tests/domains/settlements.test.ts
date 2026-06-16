@@ -14,6 +14,7 @@ import {
 import {
 	isRetryablePayoutSkip,
 	SettlementPayoutRetryableError,
+	shouldRetryPayoutSkip,
 } from "@/lib/domains/settlements/utils/execute/payout-readiness";
 import { dbQueryResult } from "../support/db-query-result";
 
@@ -111,6 +112,58 @@ describe("settlements", () => {
 				);
 				expect(err.pieceCid).toBe("bafyabc");
 				expect(err.reason).toBe("not_executable");
+			});
+
+			test("shouldRetryPayoutSkip gates not_executable when envelope incomplete", () => {
+				expect(
+					shouldRetryPayoutSkip(
+						"not_executable",
+						{},
+						{
+							waitingForMoreSigners: true,
+						},
+					),
+				).toBe(false);
+				expect(
+					shouldRetryPayoutSkip(
+						"not_executable",
+						{},
+						{
+							waitingForMoreSigners: false,
+						},
+					),
+				).toBe(true);
+			});
+
+			test("routing-complete enqueues payout after envelope completion", () => {
+				const src = readFileSync(
+					join(
+						import.meta.dir,
+						"../../lib/domains/files/utils/sign/routing-complete.ts",
+					),
+					"utf8",
+				);
+				expect(src).toContain("enqueuePayoutForPiece(args.pieceCid)");
+			});
+
+			test("post-actions gates payout enqueue while waiting for signers", () => {
+				const src = readFileSync(
+					join(
+						import.meta.dir,
+						"../../lib/domains/files/utils/sign/post-actions.ts",
+					),
+					"utf8",
+				);
+				expect(src).toContain("shouldEnqueuePayoutOnSign");
+			});
+
+			test("addPostSignChainJob removes failed or completed jobs before re-add", () => {
+				const src = readFileSync(
+					join(import.meta.dir, "../../lib/platform/jobs/queues.ts"),
+					"utf8",
+				);
+				expect(src).toContain('state === "completed" || state === "failed"');
+				expect(src).toContain("await existing.remove()");
 			});
 		});
 

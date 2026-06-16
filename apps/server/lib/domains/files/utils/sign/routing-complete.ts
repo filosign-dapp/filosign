@@ -12,6 +12,7 @@ import { evmClient } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { buildEnvelopeCompletedEmailOutboxRows } from "../completion-email";
+import { waitingForMoreSigners } from "../envelope-waiting";
 import {
 	type EnvelopeRegistryProgress,
 	isEnvelopeRoutingCompleteOnChain,
@@ -35,18 +36,6 @@ export class RoutingCompleteRetryableError extends Error {
 
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function waitingForMoreSigners(
-	progress: EnvelopeRegistryProgress | null,
-): boolean {
-	if (!progress || progress.completedAt != null) {
-		return false;
-	}
-	if (progress.quorumN > 0) {
-		return progress.requiredSignaturesCount < progress.quorumN;
-	}
-	return progress.requiredSignaturesCount < progress.requiredSignersCount;
 }
 
 function shouldRetryRoutingIncomplete(
@@ -188,6 +177,9 @@ async function handleEnvelopeRoutingComplete(args: {
 		organizationId: args.organizationId,
 		smokeMessage: "routing complete; creating FOC stub",
 	});
+
+	const { enqueuePayoutForPiece } = await import("@/lib/platform/jobs");
+	await enqueuePayoutForPiece(args.pieceCid);
 }
 
 /** BullMQ worker: wait for sign receipt, detect routing complete, run completion + FOC. */

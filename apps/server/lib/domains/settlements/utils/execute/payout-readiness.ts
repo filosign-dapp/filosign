@@ -36,6 +36,20 @@ export function isRetryablePayoutSkip(
 	return false;
 }
 
+export function shouldRetryPayoutSkip(
+	skip: string | undefined,
+	result: { partial?: boolean; executed?: boolean },
+	options?: { waitingForMoreSigners?: boolean },
+): boolean {
+	if (!isRetryablePayoutSkip(skip, result)) {
+		return false;
+	}
+	if (skip === "not_executable" && options?.waitingForMoreSigners) {
+		return false;
+	}
+	return true;
+}
+
 export async function pollCanExecute(args: {
 	validator: ReturnType<typeof fsPaymentValidatorAt>;
 	onChainRuleId: bigint;

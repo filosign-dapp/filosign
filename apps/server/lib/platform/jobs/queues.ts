@@ -213,6 +213,14 @@ async function addPostSignChainJob(
 	pieceCid: string,
 	options?: { signTxHash?: Hex },
 ): Promise<void> {
+	const existing = await queue.getJob(jobId);
+	if (existing) {
+		const state = await existing.getState();
+		if (state === "completed" || state === "failed") {
+			await existing.remove();
+		}
+	}
+
 	await queue.add(
 		name,
 		{

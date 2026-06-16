@@ -14,6 +14,7 @@ import {
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
+import { SIGN_SUCCESS_PROOF_PROCESSING_COPY } from "@/src/lib/domains/files/compliance-pdf/proof-export-state";
 import { buildProofPacketShareLinks } from "@/src/lib/domains/files/compliance-pdf/proof-share-links";
 import {
 	useSignCompliance,
@@ -31,15 +32,22 @@ export function SignSuccessDialog({
 	const titleId = useId();
 	const { pieceCid } = useSignDocumentContext();
 	const { fileData } = useSignViewer();
-	const { pdfExportBusy, exportsAllowed, handleDownloadCompletionPacket } =
-		useSignCompliance();
-	const shareLinks = exportsAllowed
+	const {
+		pdfExportBusy,
+		exportsAllowed,
+		proofExportPreferred,
+		handleDownloadCompletionPacket,
+	} = useSignCompliance();
+	const canDownloadProofFromDialog = exportsAllowed && proofExportPreferred;
+	const shareLinks = canDownloadProofFromDialog
 		? buildProofPacketShareLinks(pieceCid)
 		: null;
 
-	const description = exportsAllowed
-		? "Your workflow is complete. Download the proof packet for your records."
-		: "Your signature was recorded. Proof exports unlock when every required party has signed.";
+	const description = !exportsAllowed
+		? "Your signature was recorded. Proof exports unlock when every required party has signed."
+		: canDownloadProofFromDialog
+			? "Your workflow is complete. Download the proof packet for your records."
+			: "Your workflow is complete. Attached payouts or files are still processing.";
 
 	return (
 		<Dialog
@@ -64,7 +72,7 @@ export function SignSuccessDialog({
 					/>
 
 					<FeatureDialogBody>
-						{exportsAllowed ? (
+						{canDownloadProofFromDialog ? (
 							<>
 								<Button
 									type="button"
@@ -107,6 +115,15 @@ export function SignSuccessDialog({
 									</a>
 								</div>
 							</>
+						) : exportsAllowed ? (
+							<div className="space-y-3">
+								<p className="text-sm text-muted-foreground text-pretty">
+									{SIGN_SUCCESS_PROOF_PROCESSING_COPY}
+								</p>
+								<DocsLink href={DOCS_LINKS.completionPacket()}>
+									What is in the proof packet?
+								</DocsLink>
+							</div>
 						) : null}
 
 						<FeatureDialogActions>

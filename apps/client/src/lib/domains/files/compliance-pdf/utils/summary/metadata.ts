@@ -59,6 +59,15 @@ export function buildSummaryFields(input: SummaryFieldsInput) {
 			value:
 				bundle.executionStatus === "fully_executed" ? "Complete" : "Incomplete",
 		},
+		...(bundle.satelliteWorkflowStatus === "pending" &&
+		bundle.pendingSatelliteSummary
+			? [
+					{
+						label: "Satellite workflows",
+						value: `${bundle.pendingSatelliteSummary.payouts} payout(s) and ${bundle.pendingSatelliteSummary.attachments} attachment(s) still processing at export`,
+					},
+				]
+			: []),
 		{ label: "Generated", value: bundle.exportedAtIso },
 		{
 			label: "Document",

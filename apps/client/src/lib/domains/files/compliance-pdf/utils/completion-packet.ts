@@ -123,6 +123,14 @@ export function buildProofPacketReadme(args: {
 		"--------------",
 		"This packet is evidence of a Filosign workflow. It is not legal advice and",
 		"does not decide whether a document is valid for your jurisdiction or use case.",
+		...(args.bundle.satelliteWorkflowStatus === "pending"
+			? [
+					"",
+					"Some attached payouts or files were still processing when this export",
+					"was generated. Re-download later for updated payout transaction hashes",
+					"and release status.",
+				]
+			: []),
 		"",
 		"Technical identifiers",
 		"---------------------",

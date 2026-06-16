@@ -18,7 +18,7 @@ import { cn } from "@/src/lib/utils/index";
 import type { ProofDownloadExports } from "./compliance-pdf";
 
 type ProofDownloadButtonGroupProps = {
-	exports: ProofDownloadExports;
+	exports: Omit<ProofDownloadExports, "proofExportPreferred">;
 	fileDataReady: boolean;
 	/** When set, the main proof button opens this flow instead of downloading immediately. */
 	onMainProofClick?: () => void;
@@ -35,6 +35,7 @@ export function ProofDownloadButtonGroup({
 }: ProofDownloadButtonGroupProps) {
 	const {
 		exportsAllowed,
+		proofExportWarning,
 		pdfExportBusy,
 		handleDownloadOriginalFiles,
 		handleDownloadSignedEnvelope,
@@ -90,79 +91,94 @@ export function ProofDownloadButtonGroup({
 				: undefined;
 
 	return (
-		<ButtonGroup aria-label="Download proof" className={cn(className)}>
-			<Button
-				type="button"
-				variant="outline"
-				size={
-					density === "compact" ? "sm" : density === "header" ? "lg" : "default"
-				}
-				onClick={() =>
-					onMainProofClick
-						? onMainProofClick()
-						: void handleDownloadCompletionPacket()
-				}
-				disabled={proofDisabled}
-				title="Download proof packet (ZIP)"
-				className={mainButtonClass}
-				isLoading={pdfExportBusy}
-			>
-				<PackageIcon className="size-4" />
-				{density === "toolbar" ? (
-					<span className="hidden @lg:inline">Download proof</span>
-				) : density === "header" ? (
-					<span className="hidden sm:inline">Download proof</span>
-				) : (
-					<span>{density === "compact" ? "Proof" : "Download proof"}</span>
-				)}
-			</Button>
-			<DropdownMenu>
-				<DropdownMenuTrigger
-					render={
-						<Button
-							type="button"
-							variant="outline"
-							size={
-								density === "compact"
-									? "icon-sm"
-									: density === "header"
-										? "icon-lg"
-										: "icon"
-							}
-							aria-label="More download options"
-							disabled={proofDisabled}
-							className={density === "toolbar" ? "rounded-l-none" : undefined}
-						/>
+		<div className={cn("flex flex-col gap-1", className)}>
+			<ButtonGroup aria-label="Download proof">
+				<Button
+					type="button"
+					variant="outline"
+					size={
+						density === "compact"
+							? "sm"
+							: density === "header"
+								? "lg"
+								: "default"
 					}
+					onClick={() =>
+						onMainProofClick
+							? onMainProofClick()
+							: void handleDownloadCompletionPacket()
+					}
+					disabled={proofDisabled}
+					title={
+						proofExportWarning
+							? `${proofExportWarning} Download proof packet (ZIP).`
+							: "Download proof packet (ZIP)"
+					}
+					className={mainButtonClass}
+					isLoading={pdfExportBusy}
 				>
-					<CaretDownIcon className="size-4" />
-				</DropdownMenuTrigger>
-				<DropdownMenuContent align="end" className="w-64">
-					<DropdownMenuGroup>
-						<DropdownMenuItem
-							disabled={!fileDataReady || pdfExportBusy}
-							onClick={() => void handleDownloadOriginalFiles()}
-						>
-							<FileArrowDownIcon />
-							Download original files
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							disabled={proofDisabled}
-							onClick={() => void handleDownloadSignedEnvelope()}
-						>
-							<SealCheckIcon />
-							Download signed envelope
-						</DropdownMenuItem>
-						<DropdownMenuItem
-							disabled={proofDisabled}
-							onClick={() => void handleDownloadCompliancePdf()}
-						>
-							<CertificateIcon />
-							Download completion certificate
-						</DropdownMenuItem>
-					</DropdownMenuGroup>
-				</DropdownMenuContent>
-			</DropdownMenu>
-		</ButtonGroup>
+					<PackageIcon className="size-4" />
+					{density === "toolbar" ? (
+						<span className="hidden @lg:inline">Download proof</span>
+					) : density === "header" ? (
+						<span className="hidden sm:inline">Download proof</span>
+					) : (
+						<span>{density === "compact" ? "Proof" : "Download proof"}</span>
+					)}
+				</Button>
+				<DropdownMenu>
+					<DropdownMenuTrigger
+						render={
+							<Button
+								type="button"
+								variant="outline"
+								size={
+									density === "compact"
+										? "icon-sm"
+										: density === "header"
+											? "icon-lg"
+											: "icon"
+								}
+								aria-label="More download options"
+								disabled={proofDisabled}
+								className={density === "toolbar" ? "rounded-l-none" : undefined}
+							/>
+						}
+					>
+						<CaretDownIcon className="size-4" />
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end" className="w-64">
+						<DropdownMenuGroup>
+							<DropdownMenuItem
+								disabled={!fileDataReady || pdfExportBusy}
+								onClick={() => void handleDownloadOriginalFiles()}
+							>
+								<FileArrowDownIcon />
+								Download original files
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								disabled={proofDisabled}
+								onClick={() => void handleDownloadSignedEnvelope()}
+							>
+								<SealCheckIcon />
+								Download signed envelope
+							</DropdownMenuItem>
+							<DropdownMenuItem
+								disabled={proofDisabled}
+								onClick={() => void handleDownloadCompliancePdf()}
+							>
+								<CertificateIcon />
+								Download completion certificate
+							</DropdownMenuItem>
+						</DropdownMenuGroup>
+					</DropdownMenuContent>
+				</DropdownMenu>
+			</ButtonGroup>
+			{proofExportWarning && density === "header" ? (
+				<p className="max-w-xs text-[11px] leading-snug text-muted-foreground text-pretty">
+					{proofExportWarning}
+				</p>
+			) : null}
+		</div>
 	);
 }

@@ -7,7 +7,10 @@ import {
 	XIcon,
 } from "@phosphor-icons/react";
 import { Button } from "@/src/lib/components/ui/button";
-import { ProofDownloadButtonGroup } from "@/src/lib/domains/files/compliance-pdf";
+import {
+	ProofDownloadButtonGroup,
+	pickProofDownloadExports,
+} from "@/src/lib/domains/files/compliance-pdf";
 import {
 	EnvelopeCommentsBlock,
 	pieceDetailToDekSource,
@@ -21,6 +24,7 @@ const toolbarBtnClass =
 	"shrink-0 p-0 h-10 w-10 @md:h-11 @md:w-11 text-muted-foreground hover:text-primary-foreground hover:bg-primary/10";
 
 export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
+	const viewer = useFileViewer();
 	const {
 		file,
 		fileInfo,
@@ -29,22 +33,8 @@ export function FileViewerToolbar({ onClose }: { onClose: () => void }) {
 		zoom,
 		handleZoomIn,
 		handleZoomOut,
-		exportsAllowed,
-		pdfExportBusy,
-		handleDownloadOriginalFiles,
-		handleDownloadCompliancePdf,
-		handleDownloadSignedEnvelope,
-		handleDownloadCompletionPacket,
-	} = useFileViewer();
-
-	const proofExports = {
-		exportsAllowed,
-		pdfExportBusy,
-		handleDownloadOriginalFiles,
-		handleDownloadCompliancePdf,
-		handleDownloadSignedEnvelope,
-		handleDownloadCompletionPacket,
-	};
+	} = viewer;
+	const proofExports = pickProofDownloadExports(viewer);
 
 	return (
 		<div className="absolute top-0 left-0 right-0 z-50 shrink-0 border-b border-border bg-transparent px-4 py-3 @md:px-6 @md:py-4 glass">

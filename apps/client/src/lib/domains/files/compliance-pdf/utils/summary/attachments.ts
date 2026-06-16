@@ -1,4 +1,5 @@
 import type { ComplianceBundle } from "@filosign/shared";
+import { COMPLIANCE_EXPORT_PENDING_SATELLITES_LEAD } from "@filosign/shared";
 import type { CompliancePdfLine } from "../../compliance-pdf-types";
 import { explorerTxUrl } from "./metadata";
 
@@ -15,6 +16,13 @@ export function buildAttachmentLines(
 			},
 			{ text: "" },
 		);
+		if (bundle.satelliteWorkflowStatus === "pending") {
+			attachmentLines.push({
+				text: COMPLIANCE_EXPORT_PENDING_SATELLITES_LEAD,
+				textStyle: "emphasis",
+			});
+			attachmentLines.push({ text: "" });
+		}
 		for (let i = 0; i < bundle.attachments.length; i++) {
 			const a = bundle.attachments[i];
 			const label = a.label ? `"${a.label}"` : "Untitled Attachment";

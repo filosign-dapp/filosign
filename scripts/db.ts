@@ -5,6 +5,8 @@
  * Usage:
  *   bun run db -- push local|staging
  *   bun run db -- generate
+ *   bun run db -- migration-check [--skip-generate]
+ *   bun run db -- verify-migrations
  *   bun run db -- migrate local|staging|sandbox|production
  *   bun run db -- purge local|staging|sandbox
  *   bun run db -- grant-plan local|staging|sandbox
@@ -25,6 +27,8 @@ Filosign database orchestrator (@filosign/server)
   bun run db -- push local        drizzle-kit push (.env.local)
   bun run db -- push staging      drizzle-kit push (Infisical staging)
   bun run db -- generate          drizzle-kit generate - commit apps/server/drizzle/ before migrate
+  bun run db -- migration-check   journal/SQL/snapshot integrity + drizzle-kit check (CI gate)
+  bun run db -- verify-migrations apply full chain on fresh DB + smoke columns (needs local Postgres)
   bun run db -- migrate local     drizzle-kit migrate (.env.local) - optional; dev uses push
   bun run db -- migrate staging   drizzle-kit migrate (Infisical staging) - optional
   bun run db -- migrate sandbox   drizzle-kit migrate (Infisical sandbox)
@@ -40,7 +44,14 @@ local / staging: push (or purge → push). Sandbox/production: generate → comm
 Production migrate needs FILOSIGN_PROD_SSH + container names in deploy/.env (see deploy/.env.example).
 `.trim();
 
-type Action = "push" | "purge" | "grant-plan" | "migrate" | "generate";
+type Action =
+	| "push"
+	| "purge"
+	| "grant-plan"
+	| "migrate"
+	| "generate"
+	| "migration-check"
+	| "verify-migrations";
 type Profile = "local" | "staging" | "sandbox" | "production";
 type PushProfile = "local" | "staging";
 type PurgeProfile = "local" | "staging" | "sandbox";
@@ -105,9 +116,39 @@ runMain(async () => {
 		action !== "purge" &&
 		action !== "grant-plan" &&
 		action !== "migrate" &&
-		action !== "generate"
+		action !== "generate" &&
+		action !== "migration-check" &&
+		action !== "verify-migrations"
 	) {
 		die(`Unknown action: ${action}`);
+	}
+
+	if (action === "migration-check") {
+		const extra = argv.slice(1);
+		if (extra.some((arg) => arg !== "--skip-generate")) {
+			die(
+				'migration-check accepts only --skip-generate - use "bun run db -- migration-check"',
+			);
+		}
+		const cmd = packageRunCmd(rootDir, server, "db:migration:check");
+		if (extra.length > 0) {
+			cmd.push("--", ...extra);
+		}
+		await runInheritExit(rootDir, cmd);
+		return;
+	}
+
+	if (action === "verify-migrations") {
+		if (argv[1] !== undefined) {
+			die(
+				'verify-migrations takes no profile - use "bun run db -- verify-migrations"',
+			);
+		}
+		await runInheritExit(
+			rootDir,
+			packageRunCmd(rootDir, server, "db:verify-migrations"),
+		);
+		return;
 	}
 
 	if (action === "generate") {

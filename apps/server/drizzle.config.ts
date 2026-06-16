@@ -10,4 +10,5 @@ export default defineConfig({
 		url: env.PG_URI.replace(":dbname", env.DB_NAME),
 	},
 	casing: "snake_case",
+	strict: true,
 });

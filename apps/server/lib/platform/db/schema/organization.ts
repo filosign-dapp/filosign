@@ -48,6 +48,8 @@ export const organizations = t.pgTable(
 		orgWalletLinkedAt: t.timestamp({ withTimezone: true }),
 		/** Auto-created primary workspace; Free/Solo billing lives on this org only. */
 		isPersonal: t.boolean().notNull().default(false),
+		/** Relayer wallet pinned for org-scoped relays (setOrgControllers). */
+		assignedRelayerAddress: tEvmAddress(),
 		...timestamps,
 	},
 	(table) => [

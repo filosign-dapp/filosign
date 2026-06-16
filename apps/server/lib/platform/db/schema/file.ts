@@ -93,6 +93,9 @@ export const files = t.pgTable(
 		registerError: t.text(),
 		registerAttemptedAt: t.timestamp({ withTimezone: true }),
 
+		/** Relayer wallet pinned at register queue time; all piece-scoped relays use this address. */
+		assignedRelayerAddress: tEvmAddress(),
+
 		...timestamps,
 	},
 	(table) => [

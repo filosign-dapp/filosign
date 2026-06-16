@@ -40,6 +40,19 @@ export function settlementStatusLabel(
 	}
 }
 
+export function settlementStatusLabelForCompliance(
+	status: SettlementRuleStatus,
+	options: { envelopeSigningComplete: boolean },
+): string {
+	if (
+		options.envelopeSigningComplete &&
+		(status === "pending" || status === "ready")
+	) {
+		return "Payout processing";
+	}
+	return settlementStatusLabel(status);
+}
+
 export function settlementReleaseTypeLabel(
 	releaseType: SettlementReleaseType | string,
 ): string {

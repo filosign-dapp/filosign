@@ -4,6 +4,7 @@ export * from "./platform-invite";
 export * from "./utils/attachment";
 export * from "./utils/attachment-packet-validation";
 export * from "./utils/compliance";
+export * from "./utils/compliance-workflows";
 export * from "./utils/crypto";
 export * from "./utils/deployment";
 export * from "./utils/document-merkle";

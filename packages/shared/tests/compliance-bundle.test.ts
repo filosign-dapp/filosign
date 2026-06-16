@@ -37,6 +37,7 @@ describe("ComplianceBundle", () => {
 			chainId: 84532,
 			exportedAtIso: "2026-01-01T00:00:00.000Z",
 			executionStatus: "fully_executed" as const,
+			satelliteWorkflowStatus: "none" as const,
 			placementCommitment:
 				"0x0000000000000000000000000000000000000000000000000000000000000001",
 			placementManifest: minimalManifest,

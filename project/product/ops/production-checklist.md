@@ -44,11 +44,19 @@ This runs tests then deploys; regenerates `packages/evm/definitions/chains/mainn
 - [ ] `FSPaymentValidator` constructor args: correct registry address + `chainId` (8453)
 - [ ] `FSEnvelopeRegistry.setSatelliteContracts(paymentValidator, attachmentRelease)` called once in deploy script (write-once; verify `paymentValidator()` and `attachmentRelease()` non-zero)
 
-**Post-deploy:** commit updated `definitions/chains/**`, `definitions/abis/**`, and `definitions/generated/**` if addresses or ABIs changed. Run `bun run --cwd apps/server sync-org-controllers` against prod to re-sync org controllers on the new registry.
+**Post-deploy:** commit updated `definitions/chains/**`, `definitions/abis/**`, and `definitions/generated/**` if addresses or ABIs changed. Re-sync org controllers on the new registry (prod Infisical env):
+
+```bash
+bun run --cwd apps/server scripts/sync-org-controllers.ts
+```
+
+**Primary DB migrate on deploy:** app containers auto-migrate on start ([`dokploy-deploy.md`](dokploy-deploy.md)). Laptop fallback: `bun run prod -- --migrate`.
 
 ---
 
 ## 3. Production server + database
+
+App containers run migrations on start. Use laptop migrate only as fallback:
 
 ```bash
 bun run prod -- --migrate
@@ -109,7 +117,7 @@ Run on prod stack with a test wallet before GA:
 
 ## 5. Legal / ops gates
 
-See [`project/todo.md`](../todo.md) P0 section. Minimum before paid traffic:
+See [`../../todo.md`](../../todo.md) and [`legal/readiness-checklist.md`](legal/readiness-checklist.md). Minimum before paid traffic:
 
 - [ ] Terms of Service + Privacy published on Astro, linked from client sign-in
 - [ ] Support channel (email + status page)

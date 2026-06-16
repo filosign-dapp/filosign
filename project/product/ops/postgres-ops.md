@@ -1,12 +1,12 @@
 # Postgres ops (VPS + R2 backups)
 
-**One page.** Container: `filosign-postgres` · Stanza: `filosign` · Backups: Cloudflare R2.
+**One page.** Use container names from `deploy/.env` (`CONTAINER_POSTGRES`, `CONTAINER_API`, `CONTAINER_WORKER`, `CONTAINER_DRAGONFLY`) or `docker ps` on the VPS — Dokploy generates names (see [`deploy/.env.example`](../../deploy/.env.example)). Stanza: `filosign` · Backups: Cloudflare R2.
 
 **Rule:** every pgBackRest command uses `-u postgres`. One backup at a time.
 
 **Save these somewhere safe (password manager):** `POSTGRES_PASSWORD`, all `PGBACKREST_REPO1_*` vars, especially `**PGBACKREST_REPO1_CIPHER_PASS`**. No cipher pass = cannot read backups.
 
-ENVs are required in dokploy, a backup is stored in infisical (filosigndapp@gmail.com -> EU -> Filosign (data dir)) for recovery.
+Prod DB name: `filosign-prod` (set `PROD_PG_DB` in `deploy/.env`). Legacy stacks may use `filosign`.
 
 ---
 
@@ -103,12 +103,13 @@ Before migrate, the script prints **local journal** tags and **remote applied** 
 Run weekly (or before deploy/migrate). From laptop: `bun run prod` (see `bun run prod -- --help`).
 
 ```bash
-docker exec filosign-postgres pg_isready -U filosign -d filosign
-docker exec filosign-postgres psql -U filosign -d filosign -c \
+# Set from deploy/.env: CONTAINER_POSTGRES, PROD_PG_DB=filosign-prod
+docker exec "$CONTAINER_POSTGRES" pg_isready -U filosign -d "$PROD_PG_DB"
+docker exec "$CONTAINER_POSTGRES" psql -U filosign -d "$PROD_PG_DB" -c \
   "SELECT current_setting('archive_mode') AS archive_mode, current_setting('archive_timeout') AS archive_timeout, last_archived_wal, now() - last_archived_time AS archive_lag FROM pg_stat_archiver;"
-PGBACKREST_CONTAINER=filosign-postgres deploy/scripts/pgbackrest-backup.sh check-wal
-docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign check
-docker exec -u postgres filosign-postgres pgbackrest --stanza=filosign info
+PGBACKREST_CONTAINER="$CONTAINER_POSTGRES" deploy/scripts/pgbackrest-backup.sh check-wal
+docker exec -u postgres "$CONTAINER_POSTGRES" pgbackrest --stanza=filosign check
+docker exec -u postgres "$CONTAINER_POSTGRES" pgbackrest --stanza=filosign info
 ```
 
 **Good:**

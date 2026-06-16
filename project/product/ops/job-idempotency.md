@@ -20,6 +20,10 @@ BullMQ delivers **at least once**. Handlers must be safe to re-run.
 | `payout-execution` | `payout__{pieceCid}` |
 | `transaction-indexing` | `indexer__{txHash}` |
 | `billing-webhook` | `billing__{webhook-id}` |
+| `file-register` | stable id per enqueue site (see `lib/platform/jobs/`) |
+| `file-register-retry` | retry variant of file-register |
+| `post-sign-routing` | post-sign chain jobs after signature |
+| `foc-transition` | FOC / hot storage transition jobs |
 
 BullMQ custom `jobId` must not contain `:` (use `__` between namespace and key).
 

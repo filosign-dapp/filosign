@@ -1,28 +1,20 @@
 # Filosign Alliance Application Brief
 
-Purpose: working memo for the Alliance application. This is not a pitch deck. Use it to keep the story sharp, concise, and consistent when answering the actual form questions.
+Purpose: **form answers** for the Alliance application. Messaging SSOT: [`../../../../sales/strategy/positioning.md`](../../../../sales/strategy/positioning.md). Credibility and safe claims: [`../../../../sales/strategy/claims.md`](../../../../sales/strategy/claims.md).
 
 ## 1. Short Positioning
 
-### Best one-liner candidates
-
-1. **Private e-signatures with instant crypto payouts**
-2. **E-signatures that trigger instant USDC payouts**
-3. **Private signing and settlement for Web3 teams**
-4. **Encrypted agreements with automatic payouts**
-5. **DocuSign for crypto-native agreements**
-
-Recommendation: use **Private e-signatures with instant crypto payouts** unless Alliance asks for a stricter 50-character limit. It is understandable, crypto-relevant, and not buried in jargon.
+Use one-liners from [`positioning.md`](../../../../sales/strategy/positioning.md). Alliance default: **Private e-signatures with instant crypto payouts** (50-char limit: **E-signatures that trigger instant USDC payouts**).
 
 ## 2. What Filosign Is
 
 Filosign is a wallet-native document signing platform for encrypted agreements, verifiable signing records, and non-custodial stablecoin settlement.
 
-Users can send documents, invite recipients, collect signatures, export proof records, and optionally attach USDC payout rules that execute when signing conditions are met. Documents are encrypted in the browser, signing records are anchored on-chain, and payment settlement uses a pull-payment smart contract so Filosign never custodies funds.
+Users can send documents, invite recipients, collect signatures, export proof records, and optionally attach USDC payout rules that execute when signing conditions are met. Documents are encrypted in the browser, signing records are anchored on-chain, and payment settlement uses **non-custodial push** payouts (`transferFrom` per leg via `FSPaymentValidator`) so Filosign never custodies funds.
 
-Product link: <https://filosign.xyz>
+Product: [filosign.xyz](https://filosign.xyz) · Sandbox: [sandbox.filosign.xyz](https://sandbox.filosign.xyz)
 
-Current status: public beta / testnet product. No standalone product demo video yet; website has an embedded product video. Founder video will be uploaded separately.
+Current status: see [`../../../scope/roadmap.md`](../../../scope/roadmap.md) § Current Product Status.
 
 ## 3. The Crisp Pitch
 

@@ -1,6 +1,6 @@
-# Production smoke tests (Sprint 6)
+# Production smoke tests (staging)
 
-**Purpose:** Prove Sprints 0–5 mitigations on **staging** before production traffic.  
+**Purpose:** Prove production mitigations on **staging** before production traffic.  
 **Prereqs:** Staging VPS per [`dokploy-deploy.md`](dokploy-deploy.md), [`vps-host-setup.md`](vps-host-setup.md), `TG_ANALYTICS=true` for alert scenarios 7–8.
 
 **Related:** [`job-idempotency.md`](job-idempotency.md) · [`postgres-ops.md`](postgres-ops.md) · [`dragonfly-bullmq-production.md`](dragonfly-bullmq-production.md) · [`deploy/README.md`](../../deploy/README.md) (api/worker env parity)
@@ -180,9 +180,9 @@ Run on the **staging** stack. Record date, operator, and pass/fail. Do not enabl
 
 ---
 
-## GDPR migration preflight + rollout
+## First prod migrate preflight (legacy DB only)
 
-Run these checks before the **first** `bun run prod -- --migrate` on a database (squashed schema in `apps/server/drizzle/0000_initial.sql`). See [postgres-ops.md](postgres-ops.md#wipe-production-db-pre-production-only) if prod still has a partial old schema - drop **both** `public` and `drizzle` schemas first.
+Run before the **first** production apply of squashed schema `0000_initial.sql` on a **legacy** database that predates FK restrict. Greenfield prod (post-wipe) can skip orphan checks. See [postgres-ops.md](postgres-ops.md#wipe-production-db-pre-production-only).
 
 ### Preflight SQL checks
 

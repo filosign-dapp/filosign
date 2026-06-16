@@ -65,6 +65,8 @@ Use this as the clearest narrative for contractor/tax-form/payment workflows.
 
 ## Traction Wording
 
+Product phase and URLs: [`../../product/scope/roadmap.md`](../../product/scope/roadmap.md) § Current Product Status.
+
 Use:
 
 Filosign does not have mainnet usage or revenue yet. The product has strong ecosystem validation through Filecoin Alpha Cohort, Filecoin RetroPGF, DePIN Day, and warm design-partner potential.

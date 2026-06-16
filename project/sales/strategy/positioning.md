@@ -4,9 +4,11 @@ Source of truth for how to explain Filosign.
 
 ## Core Thesis
 
-Filosign is **private agreement workflow software**.
+Filosign is **private agreement workflow software** for **wallet-native** teams (connect wallet to sign).
 
 For crypto teams, signed agreements can also trigger **non-custodial USDC payouts**.
+
+Try the product: [sandbox.filosign.xyz](https://sandbox.filosign.xyz). Marketing: [filosign.xyz](https://filosign.xyz).
 
 The product should feel like normal e-signing. The blockchain layer should be invisible unless the user needs proof, verification, or settlement.
 
@@ -122,7 +124,7 @@ We are starting with Web3 teams because they already use stablecoins and feel th
 
 ## Source Links
 
-- Alliance application brief: `../alliance-application-brief.md`
-- Settlement non-custody: `../settlements/architecture-and-non-custody.md`
-- Pricing and entitlements: `../entitlements/entitlement_breakdown_report.md`
+- Alliance application brief: [`../../product/ops/legal/alliance-application-brief.md`](../../product/ops/legal/alliance-application-brief.md)
+- Settlement non-custody: [`../../product/settlements/settlements/architecture-and-non-custody.md`](../../product/settlements/settlements/architecture-and-non-custody.md)
+- Pricing and entitlements: [`../../product/packaging/pricing-and-packaging.md`](../../product/packaging/pricing-and-packaging.md)
 

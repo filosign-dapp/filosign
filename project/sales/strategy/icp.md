@@ -1,6 +1,6 @@
 # Customer & Use-Case Framework
 
-Source of truth for who Filosign should target first.
+Source of truth for who Filosign should target first. Pilot workflow list: [`../../product/scope/roadmap.md`](../../product/scope/roadmap.md) § Pilot Workflows.
 
 ## Primary ICP
 

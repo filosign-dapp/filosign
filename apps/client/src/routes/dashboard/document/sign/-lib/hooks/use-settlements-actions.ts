@@ -38,6 +38,7 @@ import {
 	buildSettlementUpdateProgressPlan,
 } from "@/src/lib/domains/settlements/change-progress";
 import { useBasicPayoutGateActions } from "@/src/lib/domains/settlements/use-basic-payout-gate-actions";
+import { useFirstCanExecuteAtByRuleId } from "@/src/lib/domains/settlements/use-first-can-execute-at";
 import { useSettlementChangeProgress } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-settlement-change-progress";
 import type { EnvelopeProgressLike } from "@/src/routes/dashboard/document/sign/-lib/utils/envelope-progress-display";
 import {
@@ -116,6 +117,8 @@ export function useSignSettlementsActions(
 	const settlementChangeProgress = useSettlementChangeProgress();
 
 	const settlementRules = settlementsQuery.data ?? [];
+	const firstCanExecuteAtByRuleId =
+		useFirstCanExecuteAtByRuleId(settlementRules);
 	const pendingSignerReplacement = Boolean(file?.pendingSignerReplacement);
 	const envelopeOpenForSenderGovernance = envelopeOpenForGovernance({
 		isSender: true,
@@ -399,6 +402,7 @@ export function useSignSettlementsActions(
 		rules: settlementRules,
 		isPending: settlementsQuery.isPending,
 		canSettleByRuleId,
+		firstCanExecuteAtByRuleId,
 		trySettlePending: trySettleSettlement.isPending,
 		manualSettlePending: manualSettlementPayout.isPending,
 		settlingRuleId: trySettleSettlement.isPending

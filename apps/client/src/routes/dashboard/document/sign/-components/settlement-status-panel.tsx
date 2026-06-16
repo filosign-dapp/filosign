@@ -12,6 +12,7 @@ type Props = {
 	isSender: boolean;
 	walletAddress: `0x${string}` | undefined;
 	canSettleByRuleId: Map<string, boolean>;
+	firstCanExecuteAtByRuleId: Map<string, number>;
 	trySettlePending: boolean;
 	manualSettlePending: boolean;
 	settlingRuleId: string | undefined;
@@ -50,6 +51,7 @@ export function SettlementStatusPanel({
 	isSender,
 	walletAddress,
 	canSettleByRuleId,
+	firstCanExecuteAtByRuleId,
 	trySettlePending,
 	manualSettlePending,
 	settlingRuleId,
@@ -86,16 +88,19 @@ export function SettlementStatusPanel({
 				)}
 				{isSender ? (
 					<p className="text-xs text-muted-foreground">
-						USDC stays in your wallet until payout. Revoke approval to stop
-						unpaid payouts.{" "}
+						USDC stays in your wallet until payout. Filosign sends payouts
+						automatically after signing completes. Retry manually if a transfer
+						fails or is still pending after several minutes. Revoke approval to
+						stop unpaid payouts.{" "}
 						<DocsLink href={DOCS_LINKS.payouts()} className="mt-1">
 							Read the payouts guide
 						</DocsLink>
 					</p>
 				) : (
 					<p className="text-xs text-muted-foreground">
-						Payouts run automatically after signing is complete. Use Retry
-						payout if a transfer failed. Signing this document does not
+						Filosign sends payouts automatically after signing completes,
+						usually within a few minutes. Use Retry payout manually if a
+						transfer failed or is still pending. Signing this document does not
 						guarantee payment.{" "}
 						<DocsLink href={DOCS_LINKS.payouts()}>
 							Read the payouts guide
@@ -113,6 +118,7 @@ export function SettlementStatusPanel({
 						isSender={isSender}
 						walletAddress={walletAddress}
 						canSettleByRuleId={canSettleByRuleId}
+						firstCanExecuteAtByRuleId={firstCanExecuteAtByRuleId}
 						trySettlePending={trySettlePending}
 						manualSettlePending={manualSettlePending}
 						settlingRuleId={settlingRuleId}

@@ -1,5 +1,6 @@
 import type { SettlementRuleRow } from "@filosign/react/files";
 import type { SettlementRuleStatus } from "@filosign/shared";
+import { SETTLEMENT_MANUAL_SETTLE_GRACE_MS } from "@/src/lib/domains/settlements/manual-settle-grace";
 import { isSettlementRecipient } from "@/src/lib/domains/settlements/settlement-display";
 
 export type SettlementRuleRowState = {
@@ -7,10 +8,11 @@ export type SettlementRuleRowState = {
 	partial: boolean;
 	cancelled: boolean;
 	failed: boolean;
+	autoPayoutPending: boolean;
 	payoutUrl: string | null;
 	isSettling: boolean;
 	isTrying: boolean;
-	canSettle: boolean;
+	canSettleManual: boolean;
 	legCount: number;
 	paidLegCount: number;
 };
@@ -53,6 +55,7 @@ export function buildSettlementRuleRowState(args: {
 	walletAddress: `0x${string}` | undefined;
 	isSender: boolean;
 	canSettleByRuleId: Map<string, boolean>;
+	firstCanExecuteAtByRuleId: Map<string, number>;
 	trySettlePending: boolean;
 	manualSettlePending: boolean;
 	settlingRuleId: string | undefined;
@@ -63,6 +66,7 @@ export function buildSettlementRuleRowState(args: {
 		walletAddress,
 		isSender,
 		canSettleByRuleId,
+		firstCanExecuteAtByRuleId,
 		trySettlePending,
 		manualSettlePending,
 		settlingRuleId,
@@ -74,20 +78,31 @@ export function buildSettlementRuleRowState(args: {
 	const cancelled = rule.status === "cancelled";
 	const failed = rule.status.startsWith("failed_");
 	const settlePending = trySettlePending || manualSettlePending;
+	const canExecuteOnChain = canSettleByRuleId.get(rule.onChainRuleId) === true;
+	const autoPayoutPending =
+		canExecuteOnChain && !paid && !partial && !failed && !cancelled;
+	const firstCanExecuteAt = firstCanExecuteAtByRuleId.get(rule.onChainRuleId);
+	const graceElapsed =
+		firstCanExecuteAt != null &&
+		Date.now() - firstCanExecuteAt >= SETTLEMENT_MANUAL_SETTLE_GRACE_MS;
+	const canAct = canActOnSettlementRule(rule, walletAddress, isSender);
+	const canSettleManual =
+		canAct &&
+		!paid &&
+		!cancelled &&
+		canExecuteOnChain &&
+		(failed || partial || graceElapsed);
 
 	return {
 		paid,
 		partial,
 		cancelled,
 		failed,
+		autoPayoutPending,
 		payoutUrl: rule.payoutTxHash ? explorerTxUrl(rule.payoutTxHash) : null,
 		isSettling: settlePending && settlingRuleId === rule.onChainRuleId,
 		isTrying: trySettlePending && settlingRuleId === rule.onChainRuleId,
-		canSettle:
-			!paid &&
-			!cancelled &&
-			canSettleByRuleId.get(rule.onChainRuleId) === true &&
-			canActOnSettlementRule(rule, walletAddress, isSender),
+		canSettleManual,
 		legCount: rule.legs?.length ?? 1,
 		paidLegCount: rule.legs?.filter((leg) => leg.paid === true).length ?? 0,
 	};
@@ -101,7 +116,7 @@ export function settlementRuleStatusTone(
 	if (state.partial) return "warning";
 	if (state.failed) return "destructive";
 	if (state.cancelled) return "muted";
-	if (status === "ready") return "primary";
+	if (state.autoPayoutPending || status === "ready") return "primary";
 	return "muted";
 }
 

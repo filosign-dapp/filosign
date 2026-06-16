@@ -27,6 +27,7 @@ type Props = {
 	isSender: boolean;
 	walletAddress: `0x${string}` | undefined;
 	canSettleByRuleId: Map<string, boolean>;
+	firstCanExecuteAtByRuleId: Map<string, number>;
 	trySettlePending: boolean;
 	manualSettlePending: boolean;
 	settlingRuleId: string | undefined;
@@ -57,6 +58,7 @@ export function SettlementRuleRowView({
 	isSender,
 	walletAddress,
 	canSettleByRuleId,
+	firstCanExecuteAtByRuleId,
 	trySettlePending,
 	manualSettlePending,
 	settlingRuleId,
@@ -75,6 +77,7 @@ export function SettlementRuleRowView({
 		walletAddress,
 		isSender,
 		canSettleByRuleId,
+		firstCanExecuteAtByRuleId,
 		trySettlePending,
 		manualSettlePending,
 		settlingRuleId,
@@ -102,7 +105,9 @@ export function SettlementRuleRowView({
 								settlementRuleStatusBadgeClassName(state, rule.status),
 							)}
 						>
-							{settlementStatusLabel(rule.status)}
+							{settlementStatusLabel(rule.status, {
+								autoPayoutPending: state.autoPayoutPending,
+							})}
 						</Badge>
 					</div>
 					<p className="text-xs text-muted-foreground">
@@ -119,11 +124,17 @@ export function SettlementRuleRowView({
 							{rule.lastError}
 						</p>
 					) : null}
-					{state.canSettle ? (
+					{state.autoPayoutPending ? (
+						<p className="text-[11px] text-muted-foreground text-pretty pt-1">
+							Filosign sends this automatically after signing completes. Usually
+							within a few minutes.
+						</p>
+					) : null}
+					{state.canSettleManual ? (
 						<div className="space-y-1.5 pt-1">
 							<Button
 								type="button"
-								variant="default"
+								variant={state.autoPayoutPending ? "outline" : "default"}
 								size="sm"
 								className="h-7 text-xs"
 								disabled={settlePending}
@@ -138,7 +149,9 @@ export function SettlementRuleRowView({
 									? "Sending…"
 									: state.partial || state.failed
 										? "Retry payout"
-										: "Send payout"}
+										: state.autoPayoutPending
+											? "Retry payout manually"
+											: "Send payout"}
 							</Button>
 							<button
 								type="button"

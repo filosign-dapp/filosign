@@ -70,13 +70,17 @@ export async function relayBoundSignerAckIfNeeded(args: {
 		throwAppError("SIGNING.SIGNATURE_INVALID");
 	}
 
-	await relayRegisterEnvelopeAck(registry, [
-		args.pieceCid,
-		args.sender,
-		args.signerWallet,
-		args.signerEmailCommitment,
-		args.authSubjectCommitment,
-		BigInt(args.ackTimestamp),
-		args.ackSignature,
-	]);
+	await relayRegisterEnvelopeAck(
+		registry,
+		[
+			args.pieceCid,
+			args.sender,
+			args.signerWallet,
+			args.signerEmailCommitment,
+			args.authSubjectCommitment,
+			BigInt(args.ackTimestamp),
+			args.ackSignature,
+		],
+		{ pieceCid: args.pieceCid },
+	);
 }

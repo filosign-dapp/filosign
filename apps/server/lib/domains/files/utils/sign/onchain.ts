@@ -111,5 +111,7 @@ export async function verifyAndRelayPieceSignature(args: {
 		throwAppError("SIGNING.SIGNATURE_INVALID");
 	}
 
-	return relayRegisterEnvelopeSignature(registry, registerSignatureArgs);
+	return relayRegisterEnvelopeSignature(registry, registerSignatureArgs, {
+		pieceCid: args.pieceCid,
+	});
 }

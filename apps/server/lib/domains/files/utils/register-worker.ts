@@ -21,6 +21,7 @@ import {
 import db from "@/lib/platform/db";
 import { fsContracts } from "@/lib/platform/evm";
 import { withRegisterPieceLock } from "@/lib/platform/evm/register-piece-lock";
+import { routeRelayerForPiece } from "@/lib/platform/evm/relayer-pool";
 import {
 	enqueueFileRegisterRetry,
 	enqueueOutboxByIds,
@@ -44,6 +45,7 @@ import {
 	markRegisteringState,
 	parseStoredRegisterRetryPayload,
 	setRegisterPendingTxHash,
+	updateRegisterStateRelayerAddress,
 } from "./register-state";
 import { compileRegisterRosterEmails } from "./roster-emails";
 
@@ -154,6 +156,10 @@ export async function executeRegisterJob(pieceCid: string): Promise<void> {
 		slotCounts.signerSlotCount,
 		uniqueSignerEmailsFromManifest(placementManifest).length,
 	);
+	const relayer = routeRelayerForPiece({
+		pieceCid,
+		pinnedRelayerAddress: state.assignedRelayerAddress,
+	});
 
 	try {
 		await withRegisterPieceLock(pieceCid, async () => {
@@ -165,9 +171,11 @@ export async function executeRegisterJob(pieceCid: string): Promise<void> {
 
 			await markRegisteringState(pieceCid);
 
-			const txHash = await relayRegisterEnvelope({
+			const relayResult = await relayRegisterEnvelope({
 				pieceCid,
 				sender,
+				primaryRelayer: relayer,
+				pendingTxHash: state.pendingTxHash,
 				requiredCommitments: routingRequiredCommitments,
 				optionalCommitments: optionalCommitmentsSorted,
 				viewerEmailCommitments: viewerEmailCommitmentsSorted,
@@ -188,6 +196,17 @@ export async function executeRegisterJob(pieceCid: string): Promise<void> {
 					await setRegisterPendingTxHash(pieceCid, hash);
 				},
 			});
+			const txHash = relayResult.txHash;
+			const winningRelayer = relayResult.relayer;
+
+			if (
+				winningRelayer.address.toLowerCase() !== relayer.address.toLowerCase()
+			) {
+				await updateRegisterStateRelayerAddress(
+					pieceCid,
+					winningRelayer.address,
+				);
+			}
 
 			const persistedAfterRelay = await findRegisteredFileByPieceCid(pieceCid);
 			if (persistedAfterRelay) {
@@ -221,6 +240,7 @@ export async function executeRegisterJob(pieceCid: string): Promise<void> {
 				coldInvites,
 				isPractice,
 				metadata,
+				assignedRelayerAddress: winningRelayer.address,
 			};
 
 			const participantWallets = [

@@ -23,7 +23,8 @@ import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
 import { shouldEnforceSendQuota } from "@/lib/domains/users";
 import db from "@/lib/platform/db";
 import type { FileRegistrationStatus } from "@/lib/platform/db/schema/file";
-import { fsContracts, getActiveRelayerAddress } from "@/lib/platform/evm";
+import { fsContracts } from "@/lib/platform/evm";
+import { routeRelayerForNewPiece } from "@/lib/platform/evm/relayer-pool";
 import { enqueueFileRegister } from "@/lib/platform/jobs";
 import { bucket } from "@/lib/platform/s3/client";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
@@ -270,11 +271,13 @@ export async function filesRegister(
 		activeOrg,
 	};
 
+	const relayer = routeRelayerForNewPiece(pieceCid);
+
 	await upsertQueuedState({
 		pieceCid,
 		sender,
 		payload: retryPayload,
-		assignedRelayerAddress: getActiveRelayerAddress(),
+		assignedRelayerAddress: relayer.address,
 	});
 
 	await enqueueFileRegister(pieceCid);

@@ -121,6 +121,7 @@ export type PersistRegisteredFileArgs = {
 	}[];
 	isPractice?: boolean;
 	metadata?: Record<string, string>;
+	assignedRelayerAddress: Address;
 };
 
 export type RegisterPersistTx = Parameters<
@@ -243,6 +244,7 @@ export async function persistRegisteredFileInTx(
 			registrationStatus: "registered",
 			registerError: null,
 			registerAttemptedAt: new Date(),
+			assignedRelayerAddress: getAddress(args.assignedRelayerAddress),
 		})
 		.returning();
 

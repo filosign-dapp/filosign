@@ -99,6 +99,27 @@ export async function markRegisteringState(pieceCid: string): Promise<void> {
 		.where(eq(fileRegisterStates.pieceCid, pieceCid));
 }
 
+export async function updateRegisterStateRelayerAddress(
+	pieceCid: string,
+	address: Address,
+): Promise<void> {
+	const { fileRegisterStates } = schema();
+	await db
+		.update(fileRegisterStates)
+		.set({ assignedRelayerAddress: getAddress(address) })
+		.where(eq(fileRegisterStates.pieceCid, pieceCid));
+}
+
+export async function clearRegisterPendingTxHash(
+	pieceCid: string,
+): Promise<void> {
+	const { fileRegisterStates } = schema();
+	await db
+		.update(fileRegisterStates)
+		.set({ pendingTxHash: null })
+		.where(eq(fileRegisterStates.pieceCid, pieceCid));
+}
+
 export async function setRegisterPendingTxHash(
 	pieceCid: string,
 	pendingTxHash: Hex,

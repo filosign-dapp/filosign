@@ -83,6 +83,7 @@ describe("compliance", () => {
 			chainId: 84532,
 			exportedAtIso: "2026-01-01T00:00:00.000Z",
 			executionStatus: "fully_executed",
+			satelliteWorkflowStatus: "none",
 			placementCommitment: `0x${"01".repeat(32)}`,
 			placementManifest: {
 				version: 1,

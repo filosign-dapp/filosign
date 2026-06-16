@@ -12,6 +12,7 @@ const bundleFixture = zComplianceBundle.parse({
 	chainId: 84532,
 	exportedAtIso: "2026-01-01T00:00:00.000Z",
 	executionStatus: "fully_executed",
+	satelliteWorkflowStatus: "none",
 	placementCommitment: `0x${"01".repeat(32)}`,
 	placementManifest: {
 		version: 1,
@@ -150,6 +151,39 @@ describe("insertComplianceExportLog", () => {
 		).rejects.toThrow(/hash mismatch/);
 
 		expect(writtenKey).toBeNull();
+	});
+
+	test("parses bundle with pending satellite workflows", () => {
+		const pending = zComplianceBundle.parse({
+			...bundleFixture,
+			satelliteWorkflowStatus: "pending",
+			pendingSatelliteSummary: { payouts: 1, attachments: 0 },
+			settlements: [
+				{
+					onChainRuleId: "1",
+					legs: [
+						{
+							recipientWallet: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+							amount: "1000000",
+						},
+					],
+					tokenAddress: "0x0000000000000000000000000000000000000abc",
+					validatorAddress: "0x0000000000000000000000000000000000000abc",
+					releaseType: "all_signed",
+					status: "ready",
+					registerRuleTxHash: `0x${"08".repeat(32)}`,
+					approveTxHash: `0x${"09".repeat(32)}`,
+					payoutTxHash: null,
+					executedAtIso: null,
+					lastError: null,
+				},
+			],
+		});
+		expect(pending.satelliteWorkflowStatus).toBe("pending");
+		expect(pending.pendingSatelliteSummary).toEqual({
+			payouts: 1,
+			attachments: 0,
+		});
 	});
 
 	test("persists when bundle hash matches canonical JSON", async () => {

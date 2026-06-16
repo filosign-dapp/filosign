@@ -4,6 +4,7 @@ import {
 	zFieldCompletionMap,
 	zFieldCompletionWireRow,
 	zPlacementManifest,
+	zSatelliteWorkflowSummary,
 } from "@filosign/shared";
 import { zEvmAddress, zHexString } from "@filosign/shared/zod";
 import { z } from "zod";
@@ -93,6 +94,7 @@ export const rpcPieceDetailOutputSchema = z.object({
 			}),
 		)
 		.optional(),
+	satelliteWorkflowSummary: zSatelliteWorkflowSummary.optional(),
 	kemCiphertext: zHexString().nullable(),
 	encryptedEncryptionKey: zHexString().nullable(),
 	organizationId: z.uuid().nullable().optional(),

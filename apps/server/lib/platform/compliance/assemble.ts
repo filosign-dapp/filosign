@@ -3,6 +3,10 @@ import type {
 	SettlementReleaseType,
 	SettlementRuleStatus,
 } from "@filosign/shared";
+import {
+	satelliteWorkflowStatusFromSummary,
+	summarizeSatelliteWorkflows,
+} from "@filosign/shared";
 import { getAddress } from "viem";
 import config from "@/config";
 import { listPieceFieldCompletions } from "@/lib/domains/files/utils/field-completions";
@@ -135,6 +139,10 @@ export async function assembleComplianceBundle(
 
 	const settlements = buildComplianceSettlements(ctx);
 	const attachments = await buildComplianceAttachments(ctx);
+	const satelliteSummary = summarizeSatelliteWorkflows({
+		settlements,
+		attachments,
+	});
 	const offChainEvidence = buildComplianceOffChainEvidence(ctx);
 	const fieldCompletions = await listPieceFieldCompletions(pieceCid);
 
@@ -144,6 +152,16 @@ export async function assembleComplianceBundle(
 		chainId,
 		exportedAtIso,
 		executionStatus,
+		satelliteWorkflowStatus:
+			satelliteWorkflowStatusFromSummary(satelliteSummary),
+		...(satelliteSummary.hasPending
+			? {
+					pendingSatelliteSummary: {
+						payouts: satelliteSummary.pendingPayoutCount,
+						attachments: satelliteSummary.pendingAttachmentCount,
+					},
+				}
+			: {}),
 		placementCommitment: fileRecord.placementCommitment,
 		placementManifest: ctx.manifest,
 		registration: {

@@ -1,4 +1,7 @@
-import type { FieldCompletionWireRow } from "@filosign/shared";
+import type {
+	FieldCompletionWireRow,
+	SatelliteWorkflowSummary,
+} from "@filosign/shared";
 import { zPlacementManifest } from "@filosign/shared";
 import type { Hash, Hex } from "viem";
 import type { RpcPieceDetailOutput } from "@/api/orpc/schemas/files-piece-output";
@@ -157,6 +160,7 @@ export function buildPieceDetailResponse(args: {
 	pendingSignerReplacement: PendingSignerReplacementRow | null;
 	conditionalAttachmentPackets?: ConditionalAttachmentPacketRow[];
 	mySupplementaryPackets: SupplementaryPacketForParticipant[];
+	satelliteWorkflowSummary: SatelliteWorkflowSummary;
 	focRow: PieceDetailFocRow | undefined;
 	latestExport:
 		| {
@@ -228,6 +232,7 @@ export function buildPieceDetailResponse(args: {
 		...(args.mySupplementaryPackets.length > 0
 			? { mySupplementaryPackets: args.mySupplementaryPackets }
 			: {}),
+		satelliteWorkflowSummary: args.satelliteWorkflowSummary,
 		kemCiphertext:
 			p.canDecryptParticipant && args.participantUser
 				? args.participantUser.kemCiphertext

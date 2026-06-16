@@ -50,7 +50,7 @@ Then: `sudo systemctl restart docker` (brief downtime for running containers).
 
 ## Relayer wallet
 
-- Fund `FC_SERVER_ADDRESS` with a **small** operational balance (gas only; settlements use user USDC).
+- Fund every `RELAYER_POOL` address with a **small** operational balance (gas only; settlements use user USDC).
 - Set alerts when balance drops (cron: `monitor-relayer-gas` in the API/worker).
 
 ## Related

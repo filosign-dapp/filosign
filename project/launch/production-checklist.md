@@ -25,7 +25,7 @@ cd oss/packages/contracts && slither . --exclude-dependencies   # triage per oss
 | Variable | Purpose |
 |----------|---------|
 | `FC_DEPLOYER_PRIVATE_KEY` | Deployer hot wallet |
-| `FC_SERVER_ADDRESS` | KMS relayer (`FSEnvelopeRegistry.server`) |
+| `RELAYER_POOL` | Comma-separated relayer addresses for `initialRelayers` (must match server `RELAYER_POOL`) |
 | `FC_OWNER_ADDRESS` | Optional cold owner (2-step handoff) |
 
 **Deploy:**
@@ -40,11 +40,11 @@ This runs tests then deploys; regenerates `packages/evm/definitions/chains/mainn
 
 - [ ] `FSEnvelopeRegistry.owner()` - cold owner if handoff started
 - [ ] Pending owner → cold wallet calls `acceptOwnership()`
-- [ ] `FSEnvelopeRegistry.server()` === `FC_SERVER_ADDRESS` in Infisical prod
+- [ ] Each `RELAYER_POOL` address has `FSEnvelopeRegistry.isRelayer(addr) === true` in Infisical prod
 - [ ] `FSPaymentValidator` constructor args: correct registry address + `chainId` (8453)
 - [ ] `FSEnvelopeRegistry.setSatelliteContracts(paymentValidator, attachmentRelease)` called once in deploy script (write-once; verify `paymentValidator()` and `attachmentRelease()` non-zero)
 
-**Post-deploy:** commit updated `definitions/chains/**`, `definitions/abis/**`, and `definitions/generated/**` if addresses or ABIs changed.
+**Post-deploy:** commit updated `definitions/chains/**`, `definitions/abis/**`, and `definitions/generated/**` if addresses or ABIs changed. Run `bun run --cwd apps/server sync-org-controllers` against prod to re-sync org controllers on the new registry.
 
 ---
 
@@ -65,6 +65,8 @@ Schema includes `organization_subscriptions` (Dodo IDs, `seatCount`, `billingInt
 | `DODO_API_KEY` | Live mode key |
 | `DODO_WEBHOOK_KEY` | Webhook signing secret |
 | `CLIENT_URL` | `https://app.filosign.xyz` |
+| `RELAYER_POOL` / `RELAYER_POOL_PRIVATE_KEYS` | N relayer wallets (production: N=2) |
+| `FOC_WALLET_ADDRESS` / `FOC_WALLET_PRIVATE_KEY` | Synapse storage payer (not in pool) |
 
 Product IDs are hardcoded in [`billing.ts`](../../apps/server/lib/domains/billing/billing.ts) / [`policy.ts`](../../apps/server/lib/domains/billing/policy.ts). Override with `DODO_PRODUCT_ID_*` env vars only if dashboard SKUs change.
 
@@ -75,7 +77,7 @@ Product IDs are hardcoded in [`billing.ts`](../../apps/server/lib/domains/billin
 
 **Relay funding:**
 
-- [ ] Fund `FC_SERVER_ADDRESS` with ETH on Base for `registerEnvelope`, `registerEnvelopeSignature`, `amendSigner`, and settlement relay gas
+- [ ] Fund every `RELAYER_POOL` address with ETH on Base for register, sign relay, settlement, and attachment gas
 - [ ] Hourly cron alerts via Telegram when balance &lt; 0.02 ETH (`server.relayer_gas_low`) on staging/production
 
 **Deploy stacks:**
@@ -83,7 +85,7 @@ Product IDs are hardcoded in [`billing.ts`](../../apps/server/lib/domains/billin
 - [ ] Server: Infisical `prod` machine identity
 - [ ] Client (Cloudflare Pages): `VITE_DEPLOYMENT=production`, `VITE_CHAIN=mainnet`, `VITE_SERVER_URL=https://api.filosign.xyz`
 
-**Startup validation (automatic):** `index.ts` awaits bootstrap before Bun serves traffic - relayer key ↔ `FC_SERVER_ADDRESS` ↔ `FSEnvelopeRegistry.server()` on-chain, then Dragonfly `PING`. `/health` returns 503 until ready.
+**Startup validation (automatic):** `index.ts` awaits bootstrap before Bun serves traffic - relayer pool key ↔ address ↔ `isRelayer` on-chain, FOC wallet consistency, then Dragonfly `PING`. `/health` returns 503 until ready.
 
 ---
 
@@ -113,5 +115,5 @@ See [`project/todo.md`](../todo.md) P0 section. Minimum before paid traffic:
 - [ ] Support channel (email + status page)
 - [ ] Monitoring + DB/R2 backups
 - [ ] Counsel review: e-sign claims, non-custodial USDC wording, GDPR if EU
-- [ ] Terms disclose registry **`onlyServer`** relay for register/sign/void/clear/amend (Filosign relayer executes after user EIP-712 authorization)
+- [ ] Terms disclose registry **`onlyRelayer`** relay for register/sign/void/clear/amend (Filosign relayer pool executes after user EIP-712 authorization)
 - [ ] Dodo merchant terms aligned with pricing page (refunds, countries)

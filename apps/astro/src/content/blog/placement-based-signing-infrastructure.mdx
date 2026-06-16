@@ -208,7 +208,7 @@ When a signer finalizes, the following happens:
    - Ensure field IDs match the signer's assigned fields in the manifest
    - Simulate the on-chain transaction (catches revert conditions)
 
-3. **On-chain registration** (KMS server relay, `onlyServer`):
+3. **On-chain registration** (relayer pool relay, `onlyRelayer`):
 
    ```solidity
    function registerFileSignature(
@@ -222,7 +222,7 @@ When a signer finalizes, the following happens:
      bytes calldata signature_,
      bytes32 completionsRoot_,
      uint8 leafSchemaVersion_
-   ) external onlyServer
+   ) external onlyRelayer
    ```
 
 4. **Database persistence:**

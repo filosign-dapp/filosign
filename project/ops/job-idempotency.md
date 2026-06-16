@@ -41,7 +41,7 @@ Without step 1, checkout redirect can read stale entitlements from cache.
 
 ## Relayer
 
-All `FC_SERVER` writes use `withRelayerLock` (Redis `fs:lock:relayer:{address}`, token + Lua release). Payout worker concurrency = **1**; still use lock for API `trySettle` and deploy overlap.
+All relayer-pool writes use `withRelayerLock` (Redis `fs:lock:relayer:{address}`, token + Lua release). Payout worker concurrency = **1**; still use lock for API `trySettle` and deploy overlap.
 
 ## Partial multi-leg payout
 

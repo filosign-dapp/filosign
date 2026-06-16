@@ -16,7 +16,7 @@ App containers use `postgres` as DB host on Docker DNS. Your Mac cannot resolve 
 
 **One-time:** `FILOSIGN_PROD_SSH=root@YOUR_VPS` in `deploy/.env` (gitignored).
 
-Schema history is a **single squashed migration**: [`apps/server/drizzle/0000_initial.sql`](../../apps/server/drizzle/0000_initial.sql). Future changes: `bun run --cwd apps/server db:generate` → commit → migrate.
+Schema history starts from [`apps/server/drizzle/0000_initial.sql`](../../apps/server/drizzle/0000_initial.sql) (squashed baseline). **Every schema change:** edit Drizzle schema → `bun run db -- generate` → commit `apps/server/drizzle/` (SQL + `meta/_journal.json` + snapshot). Do not add `.sql` files without a matching journal entry — `bun run prod -- --migrate` only applies tags listed in [`meta/_journal.json`](../../apps/server/drizzle/meta/_journal.json). Drift check: `bun run db -- migration-check`.
 
 ### Wipe production DB (pre-production only)
 
@@ -78,7 +78,9 @@ Same as **Wipe production DB** above when the database is empty or corrupt. Lega
 
 ### Routine migrate (after first apply)
 
-From repo root (`infisical login` once):
+**Primary (Dokploy):** api and worker containers run `./drizzle-migrate` on start via `container-start.sh` before `./server` / `./worker`. Redeploy `filosign-app` after committing `apps/server/drizzle/`.
+
+**Fallback (laptop SSH tunnel):** from repo root (`infisical login` once):
 
 ```bash
 bun run prod -- --migrate
@@ -86,11 +88,13 @@ bun run prod -- --migrate
 
 Opens SSH `-L 5433:127.0.0.1:5432` on the VPS (loopback from `compose.data.yml`), runs Infisical `prod` + `/app`, builds an explicit tunnel URL to `DB_NAME`, applies pending Drizzle migrations via `drizzle.migrate.config.ts`, and verifies the journal row count through **the same tunnel URL** before exit.
 
+Before migrate, the script prints **local journal** tags and **remote applied** count. If remote count equals local journal length, nothing runs. If you added a migration locally but journal length did not increase, run `bun run db -- generate` and commit before migrating.
+
 **Common pitfall:** drizzle-kit connects to `127.0.0.1:5433` on your laptop. If that port is already taken (local Postgres, a stale tunnel), SSH may fail silently and migrate hits the wrong database while the VPS `docker exec` probe still reads `filosign-prod`. The script now checks the tunnel is listening and compares tunnel vs VPS journal counts before applying.
 
 **Optional:** redeploy `filosign-data` with `127.0.0.1:5432:5432` in compose so the tunnel can use host loopback instead of the container IP.
 
-**On the VPS** (optional - same network as `postgres`): `infisical run --env=prod --path=/app -- bun run --cwd apps/server drizzle-kit:migrate` from a repo checkout.
+**Emergency manual SQL** on the VPS (when deploy migrate and laptop tunnel both fail): `docker exec -c` against Postgres - see wipe/verify sections above. Do not rely on a repo checkout on the VPS (Dokploy images have no git tree).
 
 ---
 

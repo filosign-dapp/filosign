@@ -87,8 +87,10 @@ No Filosign app secrets on the data project.
 | `PG_URI` | Infisical | Infisical | e.g. `postgresql://filosign:SECRET@postgres:5432/:dbname` - **not** compose-built |
 | `DB_NAME` | Infisical | Infisical | e.g. `filosign` - match data stack |
 | `POSTGRES_PASSWORD` | - | - | Only for **filosign-data** project; app stack does not need it in Dokploy if `PG_URI` is in Infisical |
-| `FC_SERVER_PRIVATE_KEY` | ✓ | ✓ | Relayer key - worker signs txs |
-| `FC_SERVER_ADDRESS` | ✓ | ✓ | Relayer address |
+| `RELAYER_POOL` | ✓ | ✓ | Comma-separated relayer addresses |
+| `RELAYER_POOL_PRIVATE_KEYS` | ✓ | ✓ | Matching private keys for pool wallets |
+| `FOC_WALLET_PRIVATE_KEY` | ✓ | ✓ | Synapse storage payer key |
+| `FOC_WALLET_ADDRESS` | ✓ | ✓ | Synapse storage payer address |
 | `DEPLOYMENT`, `CHAIN`, `SERVER_URL`, `CLIENT_URL`, `ASTRO_URL` | ✓ | ✓ | Tier config |
 | `S3_*`, `THIRDWEB_*`, `RESEND_*`, `DODO_*`, `POSTHOG_*` | ✓ | optional | API handles HTTP; worker may need subset for jobs |
 
@@ -112,7 +114,7 @@ Why:
 
 - Multiple worker containers share one relayer private key.
 - BullMQ `concurrency: 1` is **per process** - two containers = two concurrent relayer txs.
-- Production hardening adds Redis `fs:lock:relayer:{address}` (300s TTL) around all `FC_SERVER` writes, but **one worker replica** is still recommended to avoid duplicate cron ticks and duplicated job side effects.
+- Production hardening adds Redis `fs:lock:relayer:{address}` (300s TTL) around all relayer-pool writes, but **one worker replica** is still recommended to avoid duplicate cron ticks and duplicated job side effects.
 
 Compose sets `deploy.replicas: 1`, but **Dokploy UI scale overrides compose**. In Dokploy:
 
@@ -131,6 +133,18 @@ Compose sets `deploy.replicas: 1`, but **Dokploy UI scale overrides compose**. I
 6. Inject Infisical secrets; override `FILOSIGN_IMAGE` only when using a pre-built registry image instead of compose `build`.
 7. Lock worker replicas to **1**.
 8. Schedule pgBackRest cron jobs on data project (full / diff / check).
+
+## Database migrations on deploy
+
+The app image includes `drizzle/` and a compiled `./drizzle-migrate` binary. **api** and **worker** run migrations automatically on container start (`container-start.sh` → `drizzle-migrate` → `./server` or `./worker`) using Infisical `PG_URI` + `DB_NAME`.
+
+Workflow after a schema change:
+
+1. `bun run db -- generate` and commit `apps/server/drizzle/`.
+2. Rebuild and redeploy **filosign-app** (api + worker).
+3. Confirm startup logs show `[drizzle-migrate] complete`.
+
+Laptop `bun run prod -- --migrate` remains a fallback when deploy is blocked. See [`postgres-ops.md`](postgres-ops.md).
 
 ## Related docs
 

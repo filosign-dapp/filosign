@@ -56,7 +56,7 @@
 | `purge` | `shell/purge.sh` | rm all `node_modules` + `bun.lock` |
 | `sync:email-assets` | `sync-email-assets.ts` | Download 01-Barebone hero image into `apps/astro/public/emails/barebones/` |
 
-**Env profiles:** `local` → `.env.local` · server `staging`/`sandbox`/`production` → Infisical · client staging/sandbox → `.env.staging` / `.env.sandbox` · contracts testnet/mainnet → `packages/evm/.env.staging` / `.env.production`. See [`project/launch/environments.md`](project/launch/environments.md) and [`apps/server/SECRETS.md`](apps/server/SECRETS.md).
+**Env profiles:** `local` → `.env.local` · server `staging`/`sandbox`/`production` → Infisical · client staging/sandbox → `.env.staging` / `.env.sandbox` · contracts testnet/mainnet → `packages/evm/.env.staging` / `.env.production`. See [`project/product/ops/environments.md`](project/product/ops/environments.md) and [`apps/server/SECRETS.md`](apps/server/SECRETS.md).
 
 ## `dev`
 
@@ -113,7 +113,7 @@ Flags: `--client`, `--astro`, `--server`, `--harness` (`--test`), `--contracts`,
 
 **Local / staging:** edit schema → `push` (or `purge` → push). Generate/migrate only when promoting toward sandbox.
 
-Backups: [`project/ops/postgres-ops.md`](project/ops/postgres-ops.md) · local drill: [`deploy/README.md`](deploy/README.md).
+Backups: [`project/product/ops/postgres-ops.md`](project/product/ops/postgres-ops.md) · local drill: [`deploy/README.md`](deploy/README.md).
 
 ## `contracts`
 

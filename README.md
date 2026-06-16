@@ -35,13 +35,16 @@ It lets users send documents, invite recipients, collect signatures, and export 
 apps/
   client/             React web app
   server/             Hono API server
-  contracts/          Solidity contracts and deployment helpers
+  astro/              Marketing site
+oss/packages/
+  contracts/          Solidity source, Hardhat tests, public abis/chains
 packages/
+  evm/                Deploy ops, addresses, getContracts
   react-sdk/          React provider, API client, and hooks
   crypto-utils/       Encryption, KEM, signatures, hashing, encoding
   shared/             Shared schemas and helpers
   test/               Local SDK/protocol test harness
-project/              Committed project docs (e.g. scripts reference)
+project/              Company lifecycle docs — see project/README.md
 docs/                 Local-only notes (gitignored)
 ```
 
@@ -139,7 +142,7 @@ bun run test:dev
 
 Server configuration is defined in `apps/server/env.ts`. The main required values are:
 
-- `DEPLOYMENT` - `local` | `staging` | `sandbox` | `production` (drives billing, Dodo mode, entitlement policy; see [`project/launch/environments.md`](project/launch/environments.md))
+- `DEPLOYMENT` - `local` | `staging` | `sandbox` | `production` (drives billing, Dodo mode, entitlement policy; see [`project/product/ops/environments.md`](project/product/ops/environments.md))
 - `CHAIN` - must match `DEPLOYMENT` (`local`→`local`, `staging`/`sandbox`→`testnet`, `production`→`mainnet`); not auto-derived - set both explicitly
 - `SERVER_URL` - public API origin (no trailing slash).
 - `CLIENT_URL` - React app origin; email CTAs and CORS. Must not be `http://localhost` in deployed (`testnet` / `mainnet`) environments.

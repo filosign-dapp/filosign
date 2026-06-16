@@ -10,13 +10,13 @@
 | [`compose.app.yml`](compose.app.yml) | **Production app stack** - API + worker (`SERVER_ROLE`, worker replicas 1) |
 | [`compose.production.yml`](compose.production.yml) | **Optional all-in-one** - all five services for first solo VPS |
 
-Dokploy wiring: [`project/ops/dokploy-deploy.md`](../project/ops/dokploy-deploy.md).
+Dokploy wiring: [`project/product/ops/dokploy-deploy.md`](../project/product/ops/dokploy-deploy.md).
 
 ## Pinned infra images (Jun 2026)
 
 | Service | Default image | Notes |
 |---------|---------------|--------|
-| Postgres (VPS data) | `filosign-postgres-pgbackrest:18` (build [`postgres/Dockerfile`](postgres/Dockerfile)) | See [`postgres-ops.md`](../project/ops/postgres-ops.md) |
+| Postgres (VPS data) | `filosign-postgres-pgbackrest:18` (build [`postgres/Dockerfile`](postgres/Dockerfile)) | See [`postgres-ops.md`](../project/product/ops/postgres-ops.md) |
 | Postgres (local dev-full) | `postgres:18-alpine` | Volume mount **`/var/lib/postgresql`** (PG 18 layout) |
 | pgBackRest (dev-full sidecar only) | `percona/percona-pgbackrest:2.58.0-1` | Shared `postgres_data`; **no `pg1-host`** in conf |
 | Dragonfly | `docker.dragonflydb.io/dragonflydb/dragonfly:v1.37.2` | BullMQ flags in `compose.data.yml` |
@@ -70,7 +70,7 @@ SERVER_ROLE=api   # or worker - set in compose per service
 BULLMQ_PREFIX={filosign}
 ```
 
-Full secret list: [`project/ops/dokploy-deploy.md`](../project/ops/dokploy-deploy.md).
+Full secret list: [`project/product/ops/dokploy-deploy.md`](../project/product/ops/dokploy-deploy.md).
 
 ## API vs worker env parity (must match)
 
@@ -96,7 +96,7 @@ Both `api` and `worker` services run the same image with different `SERVER_ROLE`
 | `SERVER_ROLE` | `api` | `worker` |
 | HTTP port / `curl` healthcheck | yes | no (heartbeat + `./worker-healthcheck`) |
 
-**Pre-prod:** Run [`project/ops/production-smoke-tests.md`](../project/ops/production-smoke-tests.md) on staging after deploy.
+**Pre-prod:** Run [`project/product/ops/production-smoke-tests.md`](../project/product/ops/production-smoke-tests.md) on staging after deploy.
 
 ## App image build (api + worker)
 
@@ -104,7 +104,7 @@ Both services share one image built from [`deploy/Dockerfile`](Dockerfile) (`bun
 
 **Healthchecks** use exec-form `CMD` and **do not** run through the Infisical `ENTRYPOINT` (Docker behavior). API: `curl /health`. Worker: `./worker-healthcheck` (only needs `DRAGONFLY_URL` from compose - not the full `@/env` bundle).
 
-**API on Dokploy:** compose exposes container port `3000` only (no host publish). Add a **Domain** in Dokploy with container port `3000` - do not map host `:3000` (Dokploy panel uses it). See [`project/ops/dokploy-deploy.md`](../project/ops/dokploy-deploy.md).
+**API on Dokploy:** compose exposes container port `3000` only (no host publish). Add a **Domain** in Dokploy with container port `3000` - do not map host `:3000` (Dokploy panel uses it). See [`project/product/ops/dokploy-deploy.md`](../project/product/ops/dokploy-deploy.md).
 
 ```yaml
 x-filosign-image: &filosign-image
@@ -137,7 +137,7 @@ Dragonfly is **cache + queue + locks** - not a throwaway LRU cache.
 | LRU / allkeys eviction | Job keys evicted → lost or stuck work |
 | Separate Dragonfly for cache vs queue on solo VPS | Unnecessary unless RAM contention proven |
 
-Detail: [`project/ops/dragonfly-bullmq-production.md`](../project/ops/dragonfly-bullmq-production.md).
+Detail: [`project/product/ops/dragonfly-bullmq-production.md`](../project/product/ops/dragonfly-bullmq-production.md).
 
 ## RAM sizing
 

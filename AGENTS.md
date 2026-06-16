@@ -31,6 +31,7 @@ Cross-package map for agents. **Commands:** [SCRIPTS.md](SCRIPTS.md). **Per-pack
 | Scripts / CI            | [SCRIPTS.md](SCRIPTS.md)                                                  | `dev`, `check`, `sanity`, `test`, `build`, `db`, `contracts`          |
 | Testing                 | [TESTING.md](TESTING.md)                                                  | Read before writing tests: layout, `tests/support/`, Bun mocks, grouping |
 | Unsure                  | [README.md](README.md)                                                    | Product + repo map                                                    |
+| `project/`              | [README](project/README.md)                                               | Company lifecycle: launch, GTM, legal, ops (not implementation)     |
 
 
 Multi-package work: read every relevant row, then [Vertical slice](#vertical-slice).
@@ -57,12 +58,12 @@ Workspaces: `apps/*`, `packages/*`, `oss/packages/contracts`, `oss/packages/prot
 ## Boundaries
 
 - **HTTP (client):** `useFilosignContext().rpc` + `@filosign/react` hooks only. No `fetch`/axios to JSON API except: blob/doc bytes ([send-envelope.ts](apps/client/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope.ts)), static assets ([compliance-pdf/utils/images.ts](apps/client/src/lib/domains/files/compliance-pdf/utils/images.ts)), **PUT to `storage.presignPut` URLs** (no API body proxy).
-- **Settlements:** Server never custodies USDC. Client `registerRule` + `approve` on-chain; server indexes via `**settlements.registerForFile`**. Sign page **Send payout** → `settlements.trySettle` (server relay); wallet fallback **Send from my wallet instead** → `settlements.confirmSettlement`. Post-sign: BullMQ `payout-execution` worker with inline `canExecute` poll + 3 retries. Teams Pro: `updateRule` / `cancelRule` + post-send attach. `**files.proposeSignerReplacement` / `executeSignerReplacement` / `cancelSignerReplacement`** for signer swaps (pending + re-sign when partially signed). Daily cron syncs off-platform `executed` state. See `[lib/domains/settlements/](apps/server/lib/domains/settlements/)` and `[project/settlements/architecture-and-non-custody.md](project/settlements/architecture-and-non-custody.md)`.
+- **Settlements:** Server never custodies USDC. Client `registerRule` + `approve` on-chain; server indexes via `**settlements.registerForFile`**. Sign page **Send payout** → `settlements.trySettle` (server relay); wallet fallback **Send from my wallet instead** → `settlements.confirmSettlement`. Post-sign: BullMQ `payout-execution` worker with inline `canExecute` poll + 3 retries. Teams Pro: `updateRule` / `cancelRule` + post-send attach. `**files.proposeSignerReplacement` / `executeSignerReplacement` / `cancelSignerReplacement`** for signer swaps (pending + re-sign when partially signed). Daily cron syncs off-platform `executed` state. See `[lib/domains/settlements/](apps/server/lib/domains/settlements/)` and `[project/product/settlements/settlements/architecture-and-non-custody.md](project/product/settlements/settlements/architecture-and-non-custody.md)`.
 - **Logic:** UI `apps/client` | hooks/SDK `packages/react-sdk` | API/DB/relay `apps/server`.
 - **Imports:** App runtime uses `@filosign/evm` ([constants](apps/client/src/constants.ts)); OSS verify uses `@filosign/contracts/abis` and `/chains`.
-- **Contract manifests:** Never hand-edit `packages/evm/definitions/` (generated). Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy). Redeploy / rebrand ops: `[project/contracts/envelope-registry-migration.md](project/contracts/envelope-registry-migration.md)`.
+- **Contract manifests:** Never hand-edit `packages/evm/definitions/` (generated). Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy). Redeploy / address rotation: [`packages/evm/README.md`](packages/evm/README.md#redeploy--address-rotation).
 - **DB migrations:** Never hand-edit `apps/server/drizzle/` (SQL, `meta/_journal.json`, snapshots). Edit schema → `bun run db -- push local` → `bun run db -- generate`. **Agents never stage or commit `apps/server/drizzle/**`** — stop and tell the user to review SQL and commit migrations manually. Pre-commit blocks any staged drizzle path (no in-hook bypass). **Never** `git commit --no-verify`, `git push --no-verify`, or `HUSKY=0`. User-only after SQL review: `git commit --no-verify -m "db: …"`. Preview: `bun run db -- confirm-migration-commit --staged`. See [drizzle-migrations.mdc](.cursor/rules/drizzle-migrations.mdc) and [SCRIPTS.md](SCRIPTS.md#db).
-- **Contracts v1 (immutable):** `FSEnvelopeRegistry` + `FSPaymentValidator` only; KMS = `FSEnvelopeRegistry.server`; identity/E2EE off-chain. See `[oss/packages/contracts/ARCHITECTURE.md](oss/packages/contracts/ARCHITECTURE.md)` and `[project/contracts-future-scope.md](project/contracts-future-scope.md)`.
+- **Contracts v1 (immutable):** `FSEnvelopeRegistry` + `FSPaymentValidator` only; KMS = `FSEnvelopeRegistry.server`; identity/E2EE off-chain. See `[oss/packages/contracts/ARCHITECTURE.md](oss/packages/contracts/ARCHITECTURE.md)` and `[project/product/contracts/future-scope.md](project/product/contracts/future-scope.md)`.
 
 ## API & oRPC
 
@@ -169,7 +170,7 @@ Strict mode everywhere. [TS handbook - Do's and Don'ts](https://www.typescriptla
 
 **Avoid:** One file per tiny helper; repo-root `utils/` dumps; duplicating exports from both `index` and implementation files.
 
-**Reference:** `[lib/domains/settlements/](apps/server/lib/domains/settlements/)` - `settlements.ts` + `register.ts` + `crud.ts` + `utils/{execute-payout,sync-from-chain,verify-rules-on-chain,preflight,db-sync,entitlements}.ts`.
+**Reference:** `[lib/domains/settlements/](apps/server/lib/domains/settlements/)` - `settlements.ts` + `register.ts` + `crud.ts` + `utils/execute/payout.ts`, `utils/sync-from-chain.ts`, `utils/verify/`, `utils/entitlements.ts`, etc.
 
 **Also refactored:** `[lib/domains/files/](apps/server/lib/domains/files/)` - `piece.ts`, `sign.ts`, `register.ts`, `detail.ts`, `draft.ts`, `invites.ts`, `utils/{piece-helpers,register-helpers}.ts`.
 

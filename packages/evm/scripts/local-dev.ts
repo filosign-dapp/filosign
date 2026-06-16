@@ -16,8 +16,14 @@ export const MOCK_USDC_DEF_PATH = path.join(
 	"definitions/mock-usdc.ts",
 );
 
-export const HARDHAT_LOCAL_SERVER = getAddress(
+/** Hardhat account #1 - default first local relayer in RELAYER_POOL. */
+export const HARDHAT_LOCAL_RELAYER_1 = getAddress(
 	"0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+);
+
+/** Hardhat account #2 - default second local relayer when N=2 pool is deployed. */
+export const HARDHAT_LOCAL_RELAYER_2 = getAddress(
+	"0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
 );
 
 type MockUsdBundle = {
@@ -39,22 +45,22 @@ export function viemChainOverride(): { chain: typeof hardhat } | undefined {
 	return undefined;
 }
 
-export async function fundLocalServer(
+export async function fundLocalRelayer(
 	deployer: WalletDeployed,
 	publicClient: PublicClientDeployed,
-	serverAddress: `0x${string}`,
+	relayerAddress: `0x${string}`,
 ) {
 	const min = parseEther("1");
-	const balance = await publicClient.getBalance({ address: serverAddress });
+	const balance = await publicClient.getBalance({ address: relayerAddress });
 	if (balance >= min) return;
 
 	const hash = await deployer.sendTransaction({
 		account: deployer.account,
-		to: serverAddress,
+		to: relayerAddress,
 		value: parseEther("100"),
 	});
 	await publicClient.waitForTransactionReceipt({ hash });
-	console.log("Funded server relayer:", serverAddress);
+	console.log("Funded relayer:", relayerAddress);
 }
 
 export async function fundLocalMockUsdcRecipientForGas(

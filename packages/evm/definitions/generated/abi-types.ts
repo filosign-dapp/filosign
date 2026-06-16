@@ -4,9 +4,9 @@ const envelopeRegistryAbiValue = [
 	{
 		inputs: [
 			{
-				internalType: "address",
-				name: "server_",
-				type: "address",
+				internalType: "address[]",
+				name: "initialRelayers_",
+				type: "address[]",
 			},
 		],
 		stateMutability: "nonpayable",
@@ -20,6 +20,11 @@ const envelopeRegistryAbiValue = [
 	{
 		inputs: [],
 		name: "BadSignersLength",
+		type: "error",
+	},
+	{
+		inputs: [],
+		name: "CannotRemoveLastRelayer",
 		type: "error",
 	},
 	{
@@ -51,6 +56,11 @@ const envelopeRegistryAbiValue = [
 	{
 		inputs: [],
 		name: "ExceedsMaxOrgControllers",
+		type: "error",
+	},
+	{
+		inputs: [],
+		name: "ExceedsMaxRelayers",
 		type: "error",
 	},
 	{
@@ -115,7 +125,7 @@ const envelopeRegistryAbiValue = [
 	},
 	{
 		inputs: [],
-		name: "OnlyServer",
+		name: "OnlyRelayer",
 		type: "error",
 	},
 	{
@@ -152,17 +162,22 @@ const envelopeRegistryAbiValue = [
 	},
 	{
 		inputs: [],
+		name: "RelayerAlreadySet",
+		type: "error",
+	},
+	{
+		inputs: [],
+		name: "RelayerNotSet",
+		type: "error",
+	},
+	{
+		inputs: [],
 		name: "SatelliteAlreadyConfigured",
 		type: "error",
 	},
 	{
 		inputs: [],
 		name: "SequentialOrderViolation",
-		type: "error",
-	},
-	{
-		inputs: [],
-		name: "ServerUnchanged",
 		type: "error",
 	},
 	{
@@ -420,6 +435,44 @@ const envelopeRegistryAbiValue = [
 			{
 				indexed: true,
 				internalType: "address",
+				name: "relayer",
+				type: "address",
+			},
+			{
+				indexed: true,
+				internalType: "address",
+				name: "addedBy",
+				type: "address",
+			},
+		],
+		name: "RelayerAdded",
+		type: "event",
+	},
+	{
+		anonymous: false,
+		inputs: [
+			{
+				indexed: true,
+				internalType: "address",
+				name: "relayer",
+				type: "address",
+			},
+			{
+				indexed: true,
+				internalType: "address",
+				name: "removedBy",
+				type: "address",
+			},
+		],
+		name: "RelayerRemoved",
+		type: "event",
+	},
+	{
+		anonymous: false,
+		inputs: [
+			{
+				indexed: true,
+				internalType: "address",
 				name: "paymentValidator",
 				type: "address",
 			},
@@ -431,31 +484,6 @@ const envelopeRegistryAbiValue = [
 			},
 		],
 		name: "SatelliteContractsConfigured",
-		type: "event",
-	},
-	{
-		anonymous: false,
-		inputs: [
-			{
-				indexed: true,
-				internalType: "address",
-				name: "previousServer",
-				type: "address",
-			},
-			{
-				indexed: true,
-				internalType: "address",
-				name: "newServer",
-				type: "address",
-			},
-			{
-				indexed: true,
-				internalType: "address",
-				name: "changedBy",
-				type: "address",
-			},
-		],
-		name: "ServerUpdated",
 		type: "event",
 	},
 	{
@@ -578,7 +606,33 @@ const envelopeRegistryAbiValue = [
 	},
 	{
 		inputs: [],
+		name: "MAX_RELAYERS",
+		outputs: [
+			{
+				internalType: "uint8",
+				name: "",
+				type: "uint8",
+			},
+		],
+		stateMutability: "view",
+		type: "function",
+	},
+	{
+		inputs: [],
 		name: "acceptOwnership",
+		outputs: [],
+		stateMutability: "nonpayable",
+		type: "function",
+	},
+	{
+		inputs: [
+			{
+				internalType: "address",
+				name: "relayer_",
+				type: "address",
+			},
+		],
+		name: "addRelayer",
 		outputs: [],
 		stateMutability: "nonpayable",
 		type: "function",
@@ -1068,6 +1122,25 @@ const envelopeRegistryAbiValue = [
 	{
 		inputs: [
 			{
+				internalType: "address",
+				name: "",
+				type: "address",
+			},
+		],
+		name: "isRelayer",
+		outputs: [
+			{
+				internalType: "bool",
+				name: "",
+				type: "bool",
+			},
+		],
+		stateMutability: "view",
+		type: "function",
+	},
+	{
+		inputs: [
+			{
 				internalType: "bytes32",
 				name: "cidId",
 				type: "bytes32",
@@ -1451,6 +1524,32 @@ const envelopeRegistryAbiValue = [
 	},
 	{
 		inputs: [],
+		name: "relayerCount",
+		outputs: [
+			{
+				internalType: "uint8",
+				name: "",
+				type: "uint8",
+			},
+		],
+		stateMutability: "view",
+		type: "function",
+	},
+	{
+		inputs: [
+			{
+				internalType: "address",
+				name: "relayer_",
+				type: "address",
+			},
+		],
+		name: "removeRelayer",
+		outputs: [],
+		stateMutability: "nonpayable",
+		type: "function",
+	},
+	{
+		inputs: [],
 		name: "renounceOwnership",
 		outputs: [],
 		stateMutability: "nonpayable",
@@ -1470,19 +1569,6 @@ const envelopeRegistryAbiValue = [
 				internalType: "uint8",
 				name: "",
 				type: "uint8",
-			},
-		],
-		stateMutability: "view",
-		type: "function",
-	},
-	{
-		inputs: [],
-		name: "server",
-		outputs: [
-			{
-				internalType: "address",
-				name: "",
-				type: "address",
 			},
 		],
 		stateMutability: "view",
@@ -1520,19 +1606,6 @@ const envelopeRegistryAbiValue = [
 			},
 		],
 		name: "setSatelliteContracts",
-		outputs: [],
-		stateMutability: "nonpayable",
-		type: "function",
-	},
-	{
-		inputs: [
-			{
-				internalType: "address",
-				name: "newServer_",
-				type: "address",
-			},
-		],
-		name: "setServer",
 		outputs: [],
 		stateMutability: "nonpayable",
 		type: "function",

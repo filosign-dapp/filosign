@@ -2,9 +2,10 @@
  * Verify latest deployment on Basescan. Run after `hardhat run deploy.ts` completes
  * (not from inside deploy.ts - nested Hardhat CLI crashes under Bun source-map).
  */
+import { encodeAbiParameters, parseAbiParameters } from "viem";
 import type { ChainKey } from "../definitions/chain-key.js";
-import env from "../env.js";
 import { readLatestManifest } from "./lib/definitions/persist-deployment.js";
+import { parseRelayerPoolFromEnv } from "./lib/parse-relayer-pool.js";
 import { contractsPackageDir } from "./lib/repo-paths.js";
 
 const NETWORK_BY_CHAIN: Record<Exclude<ChainKey, "local">, string> = {
@@ -60,7 +61,11 @@ export async function verifyLatestDeployment(
 	const validator = manifest.contracts.FSPaymentValidator.address;
 	const attachment = manifest.contracts.FSAttachmentRelease.address;
 	const chainId = String(manifest.chainId);
-	const serverAddress = env.FC_SERVER_ADDRESS;
+	const initialRelayers = parseRelayerPoolFromEnv();
+	const registryCtorArgs = encodeAbiParameters(
+		parseAbiParameters("address[]"),
+		[initialRelayers],
+	);
 
 	console.log(
 		`Verifying ${chainKey} deployment ${manifest.deploymentId} on ${network}…`,
@@ -70,7 +75,7 @@ export async function verifyLatestDeployment(
 		{
 			label: "FSEnvelopeRegistry",
 			address: registry,
-			constructorArgs: [serverAddress],
+			constructorArgs: [registryCtorArgs],
 		},
 		{
 			label: "FSPaymentValidator",

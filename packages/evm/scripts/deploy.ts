@@ -15,11 +15,12 @@ import {
 	type DeployedContractBundle,
 	persistDeployment,
 } from "./lib/definitions/persist-deployment.js";
+import { parseRelayerPoolFromEnv } from "./lib/parse-relayer-pool.js";
 import { evmPackageDir } from "./lib/repo-paths.js";
 import {
 	deployAndFundLocalMockUsd,
 	fundLocalMockUsdcRecipientForGas,
-	fundLocalServer,
+	fundLocalRelayer,
 	LOCAL_MOCK_USDC_RECIPIENT,
 	type LocalMockUsdBundle,
 	viemChainOverride,
@@ -70,14 +71,15 @@ function requireDeployerPrivateKey(): `0x${string}` {
 	return env.FC_DEPLOYER_PRIVATE_KEY as `0x${string}`;
 }
 
-function resolveServerAddress(): `0x${string}` {
-	return getAddress(env.FC_SERVER_ADDRESS) as `0x${string}`;
+function resolveInitialRelayers(): `0x${string}`[] {
+	return parseRelayerPoolFromEnv();
 }
 
 function resolveOwnerAddress(
 	deployerAddress: `0x${string}`,
 ): `0x${string}` | null {
 	const raw = env.FC_OWNER_ADDRESS;
+	if (!raw) return null;
 	const owner = getAddress(raw);
 	if (owner === deployerAddress) return null;
 	return owner;
@@ -126,16 +128,16 @@ async function pauseBetweenLiveTxs(chainId: number) {
 
 async function deployEnvelopeRegistry(
 	deployer: WalletDeployed,
-	serverAddress: `0x${string}`,
+	initialRelayers: `0x${string}`[],
 	ownerAddress: `0x${string}` | null,
 ) {
 	const envelopeRegistry = await hre.viem.deployContract(
 		"FSEnvelopeRegistry",
-		[serverAddress],
+		[initialRelayers],
 		{ client: { wallet: deployer } },
 	);
 	console.log("FSEnvelopeRegistry deployed at:", envelopeRegistry.address, {
-		server: serverAddress,
+		initialRelayers,
 		deployer: deployer.account.address,
 	});
 
@@ -257,18 +259,18 @@ async function main() {
 	}
 
 	const deployer = await getDeployerWallet(chainId);
-	const serverAddress = resolveServerAddress();
+	const initialRelayers = resolveInitialRelayers();
 	const ownerAddress = resolveOwnerAddress(deployer.account.address);
 
 	console.log("Deploying contracts as", {
 		deployer: deployer.account.address,
-		server: serverAddress,
+		initialRelayers,
 		owner: ownerAddress ?? deployer.account.address,
 	});
 
 	const envelopeRegistry = await deployEnvelopeRegistry(
 		deployer,
-		serverAddress,
+		initialRelayers,
 		ownerAddress,
 	);
 	const publicClient = await assertBytecodeLive(envelopeRegistry.address);
@@ -309,7 +311,9 @@ async function main() {
 
 	let mockUsd: LocalMockUsdBundle | undefined;
 	if (chainId === CHAIN_ID.local) {
-		await fundLocalServer(deployer, publicClient, serverAddress);
+		for (const relayer of initialRelayers) {
+			await fundLocalRelayer(deployer, publicClient, relayer);
+		}
 		await fundLocalMockUsdcRecipientForGas(
 			deployer,
 			publicClient,

@@ -34,9 +34,9 @@ Use these facts:
 
 Source links:
 
-- Akindo WaveHack: <https://app.akindo.io/wave-hacks/1PRjgGzKaTqXaQBBl>
-- Akindo product page: <https://app.akindo.io/communities/xKW2AM4KzcqnR6o2/products/o64pjoeZDtw21WVQ>
-- DePIN Day: <https://depinspace.co/depinday/>
+- Akindo WaveHack: [https://app.akindo.io/wave-hacks/1PRjgGzKaTqXaQBBl](https://app.akindo.io/wave-hacks/1PRjgGzKaTqXaQBBl)
+- Akindo product page: [https://app.akindo.io/communities/xKW2AM4KzcqnR6o2/products/o64pjoeZDtw21WVQ](https://app.akindo.io/communities/xKW2AM4KzcqnR6o2/products/o64pjoeZDtw21WVQ)
+- DePIN Day: [https://depinspace.co/depinday/](https://depinspace.co/depinday/)
 
 ## Useful Feedback Themes
 
@@ -65,7 +65,7 @@ Use this as the clearest narrative for contractor/tax-form/payment workflows.
 
 ## Traction Wording
 
-Product phase and URLs: [`../../product/scope/roadmap.md`](../../product/scope/roadmap.md) § Current Product Status.
+Product phase and URLs: `[../../product/scope/roadmap.md](../../product/scope/roadmap.md)` § Current Product Status.
 
 Use:
 
@@ -143,4 +143,3 @@ Avoid:
 Filosign is built and available as a public beta/testnet product at `https://filosign.xyz`. It has no mainnet usage or revenue yet, but has strong ecosystem validation: #1 overall in the Filecoin Alpha Cohort, $6,000 USDC support, 4,000 FIL RetroPGF-3, and DePIN Day showcase during Devconnect 2025.
 
 The next milestone is mainnet launch and 10 design partners in Web3 grant, contractor, bounty, and contributor payout workflows.
-

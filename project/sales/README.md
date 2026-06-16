@@ -11,8 +11,7 @@ This is the central index for selling the product and customer acquisition, stru
 - **Claims audit:** [`strategy/claims.md`](strategy/claims.md) - Audit of site copy vs shipped product features to verify claims.
 
 ### 2. Outbound (Outreach)
-- **Sales Playbook:** [`outbound/playbook.md`](outbound/playbook.md) - Founder-led sales scripts, handling objections, and email templates.
-- **Outreach Playbook:** [`outbound/outreach-playbook.md`](outbound/outreach-playbook.md) - Startup outreach strategies.
+- **Sales Playbook:** [`outbound/playbook.md`](outbound/playbook.md) - Founder-led sales scripts, direct outreach playbooks, objection handling, and email templates.
 - **Lead Gen Agent:** [`outbound/lead-gen-agent-brief.md`](outbound/lead-gen-agent-brief.md) - Instructions for the AI lead-generation agent.
 
 ### 3. Pipeline & Leads
@@ -51,9 +50,8 @@ These custom agent skills are installed globally and must be leveraged by agents
 
 To prevent context pollution and focus your efforts, follow these directives:
 
-*   Use [`outbound/playbook.md`](outbound/playbook.md) for overall sales philosophy and call scripts.
-*   Use [`outbound/outreach-playbook.md`](outbound/outreach-playbook.md) for Web3 startup outreach templates.
-*   Use [`outbound/lead-gen-agent-brief.md`](outbound/lead-gen-agent-brief.md) for lead scoring rules.
+*   Use [`outbound/playbook.md`](outbound/playbook.md) for sales philosophy, cold outreach sequences, call scripts, and objection handling.
+*   Use [`outbound/lead-gen-agent-brief.md`](outbound/lead-gen-agent-brief.md) for lead scoring rules and search queries.
 
 *Directive:* Read the corresponding global skill in the router table **only** when requested to write new sequences or configure specific tool integrations.
 

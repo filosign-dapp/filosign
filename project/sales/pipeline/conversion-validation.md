@@ -34,7 +34,3 @@ Record WTP and whether they need collaboration vs workflow power only.
 - Fewer support tickets about “why can't I get payouts on Solo?”
 - Teams Pro attach rate stable or up among 3+ seat workspaces (Pro not diluted).
 
-## Deferred
-
-- **Solo Pro** fourth tier - only if Workflow add-on attach rate is high.
-- **Workflow add-on** on Solo - design in Dodo after interview data.

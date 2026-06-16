@@ -11,7 +11,7 @@ Filosign does **not** custody organization treasuries. Workspace payouts use **l
 ## Link flow (Teams Pro)
 
 1. Org **owner/admin** starts “Link workspace payout wallet”.
-2. **Proof of control:** sign a Filosign message with the proposed address, or verify via Safe Transaction Service / WalletConnect session to that Safe.
+2. **Proof of control:** sign a Filosign EIP-712/message with the proposed treasury address (WalletConnect to a Safe is supported in the client UI). **Not implemented:** Safe Transaction Service API verification.
 3. Server stores `orgWalletAddress` + `orgWalletLinkedAt`; no keys held by Filosign.
 
 ## RBAC (product layer)

@@ -28,7 +28,7 @@ Arbitrary external payer addresses are not offered in the product UI.
 - **Server:** `assertSettlementRulesVerifiedOnChain` - payer ∈ {sender, org treasury}, `cidId`, token, release type/params, and **each leg** must match on-chain `FSPaymentValidator.rules` plus successful `registerRule` / `approve` receipts.
 - **Server:** `assertOrganizationSettlementFeatureApproved` before register/update when `organizationId` is present.
 
-Multi-leg rules: allowlist is checked **per leg**. Product cap: **5 legs** per rule (`MAX_SETTLEMENT_LEGS_PRODUCT`); on-chain max **32**.
+Multi-leg rules: allowlist is checked **per leg**. Product cap: **32 legs** per rule (`MAX_SETTLEMENT_LEGS_PRODUCT`); matches on-chain max.
 
 ## On-chain bypass
 

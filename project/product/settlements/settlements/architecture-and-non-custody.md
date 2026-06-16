@@ -22,7 +22,7 @@ Release checks are enforced in the contract (`canExecute` / `RuleNotExecutable`)
 
 | Tier | Behavior |
 |------|----------|
-| **Auto** | After sign / hourly cron, server loops unpaid leg indices with `executePayoutLeg` |
+| **Auto** | After each signature, BullMQ `payout-execution` worker relays unpaid legs; **daily** `sync-settlement-rules` cron backfills `executed` from chain |
 | **Retry** | Sign page **Execute attached payout** → `settlements.trySettle` (server relay for all unpaid legs) |
 | **Direct** | **Run payout leg** or block explorer → wallet calls `executePayoutLeg`, then `settlements.confirmSettlement` syncs DB |
 
@@ -39,7 +39,7 @@ Post-send attach uses the same path: on-chain register + approve, then `settleme
 ## What Filosign does
 
 - Indexes payout packets in Postgres (`file_settlement_rules`, `legs` jsonb with optional per-leg `paid` / `payoutTxHash`) only after **`settlements.registerForFile`**, following on-chain verification.
-- Server relay attempts **each unpaid leg** after signatures and via hourly cron for indexed packets.
+- Server relay attempts **each unpaid leg** after signatures (BullMQ worker) and via **daily** cron chain sync for indexed packets.
 - Sign page **Execute attached payout** → `settlements.trySettle` (server relay + chain sync). Status may be `partial` until all legs succeed.
 - **Run payout leg** → payer/recipient calls `executePayoutLeg` for unpaid indices, then `settlements.confirmSettlement` (hash + leg sync).
 - **Teams Pro:** payer may `updatePayoutRule` / `cancelPayoutRule` on-chain via app; server syncs via `settlements.updateRule` / `settlements.cancelRule`.
@@ -58,10 +58,12 @@ The app does not offer arbitrary external payer addresses. Direct contract use o
 
 Before `settlements.registerForFile` or attach UI:
 
-- Envelope must be a **workspace send** (`files.organizationId` set). Personal sends cannot index payout rules even on Teams plans.
+- Workspace send (`files.organizationId` set). Solo and Teams plans include `settlement.basic` in catalog; workspace still requires manual payout feature approval.
 - Org admin accepts the [Settlement Feature Addendum](/legal/settlement-feature-addendum) when **requesting** access (not again at first attach).
 - Filosign **manually approves** the workspace (`organization_settlement_feature_access`).
 - Ops checklist: [payout-feature-approval-checklist.md](./payout-feature-approval-checklist.md).
+
+Recipient allowlist and payer rules: [`recipient-allowlist-policy.md`](recipient-allowlist-policy.md).
 
 ## Recipient disclosure at sign
 
@@ -75,15 +77,6 @@ When indexed payout rules exist, signers must accept the payout disclosure check
 | Indexed in DB / UI | Yes, when verified on-chain via Filosign | No, unless also sent via Filosign |
 | Server auto relay | Executes indexed unpaid legs when `canExecute` | Same |
 | Wallet screening (planned) | Filosign send + `registerForFile` path only | Not applied |
-
-## Recipient allowlist (product)
-
-When using Filosign software, each payout leg recipient must be:
-
-- A **signer or viewer** on the envelope, or
-- The organization **linked payout wallet** (`organizations.orgWalletAddress`).
-
-Arbitrary external addresses are not supported in the UI or server registration path. See [`recipient-allowlist-policy.md`](recipient-allowlist-policy.md).
 
 ## Cancelling a payout packet
 

@@ -122,53 +122,60 @@ Ask warm contacts for:
 
 ### “We do not need automated settlement.”
 
-That is fine. Filosign can still handle private signing, permissions, and proof packets. Settlement is optional.
+That is fine. Filosign handles private signing, viewer permissions, and cryptographic proof packets. Settlement is optional.
 
 ### “We cannot pay in crypto.”
 
-Use Filosign for document workflow and proof first. Fiat/on-ramp settlement can come later.
+Use Filosign for document workflow and proof first. Fiat/on-ramp settlement is planned for later.
 
 ### “We already use DocuSign.”
 
-DocuSign signs the document. Filosign connects the signed document to proof and, when useful, payout execution.
+DocuSign proves someone clicked a button. Filosign verifies signature identity, client-side encrypts the document, and generates a portable proof packet that connects directly to the business execution.
 
 ### “This sounds legally complex.”
 
-Filosign is designed for evidence, consent, timestamps, and document integrity. We do not claim QES or broad legal certification today.
+Filosign is designed for evidence, document integrity, and cryptographic proof. We do not claim QES or broad legal certification today.
 
 ### “Why blockchain?”
 
-Users do not need to care. The blockchain layer gives independent proof and optional settlement.
+Users do not need to care or know. The blockchain layer is used to verify signatures independently and support non-custodial payouts.
+
+## Seniority Targeting (ATL vs BTL)
+
+*   **ATL (Above-the-Line):** Executives, Founders, CFOs. Keep emails to 2-3 sentences. Focus on audit readiness, risk mitigation, and preventing payment leakage (paying before milestones are fully signed).
+*   **BTL (Below-the-Line):** DevRel, Program Managers, Operations. Keep emails to 3-4 sentences. Focus on daily workflows, time saved, and eliminating the manual pdf-to-wallet payment chase.
 
 ## Outreach Templates
 
-### Grant / Ecosystem Team
+### 1. ATL (Ecosystem Lead / Founder)
+*Target: Executives focusing on risk and audits.*
 
-Subject: Signed docs before grant payouts
-
-Hi [Name],
-
-I noticed [Company] runs [grant/ecosystem program]. How do you currently handle the step between “the milestone or agreement is signed” and “the payout is released”?
-
-I am building Filosign: private e-signing where a signed document can trigger a non-custodial USDC payout. It feels like normal e-signing, but gives Web3 teams encrypted docs, verifiable proof, and payment settlement in one flow.
-
-We ranked #1 in the Filecoin Alpha Cohort and are onboarding 10 design partners. Worth testing this on one grant or contributor payout workflow?
-
-Kartik
-
-### Contractor / Payroll Team
-
-Subject: Contractor forms + USDC payouts
+Subject: [Company] milestone audits
 
 Hi [Name],
 
-Do your customers handle contractor agreements, tax forms, or invoices before paying global contributors?
+I saw you recently updated the [Company] RFP page.
 
-Filosign combines private e-signing with optional USDC settlement, so teams can collect the required document and release payment after completion.
+How are you currently auditing the signed milestone paperwork before releasing the USDC payouts to your grantees?
 
-I would love to compare notes on whether this fits one contractor payout workflow.
+We help ecosystem leads combine the signing step and non-custodial payouts in one workflow.
 
-Kartik
+Worth exploring?
+
+### 2. BTL (Grants Manager / Program Coordinator)
+*Target: Operational roles dealing with manual execution.*
+
+Subject: grant payouts chase
+
+Hi [Name],
+
+I noticed you manage the [program_name] grants.
+
+How much time do you spend chasing grantees for signed milestone docs and tax forms before you can release their USDC payouts?
+
+We help Web3 program managers automate this chase by making the signed agreement the condition that releases the payout in one flow.
+
+Would this be useful for one of your active grantee cohorts?
 
 ## Agent Instructions
 

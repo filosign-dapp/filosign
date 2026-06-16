@@ -128,19 +128,21 @@ Deprioritize:
 ## Lead Quality Rubric
 
 High-quality lead:
-
-- signs agreements or forms regularly
-- pays external people or teams
-- uses stablecoins or crypto rails
-- has a clear trigger signal
-- has an identifiable ops/grants/finance buyer
-- can run a low-risk pilot
+- signs agreements or forms regularly (e.g. grant milestones, contributor agreements)
+- pays external people or teams in stablecoins (USDC/USDT)
+- team size of 10-100 FTEs (ideal mid-market startup size with operational overhead)
+- has a funded treasury or active grants budget (e.g. Seed/Series A or L1/L2 ecosystem fund)
+- operates cross-border with contributors across 2+ distinct legal jurisdictions
+- has a clear trigger signal (e.g. recently launched RFP or hackathon)
+- has an identifiable grants manager, ops lead, or program coordinator
+- can run a low-risk trial pilot
 
 Medium-quality lead:
+- has document workflows but manual fiat payouts or unclear stablecoin intent
+- team size <10 FTEs (often too small for workflow overhead) or >150 FTEs (long enterprise sales cycles)
+- could act as a distribution partner or ecosystem channel
+- needs deeper workflow discovery
 
-- has document workflows but unclear payout pain
-- could be a partner/channel
-- needs more discovery
 
 Low-quality lead:
 

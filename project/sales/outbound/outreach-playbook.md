@@ -300,35 +300,59 @@ Success is: they give you a real document/payment workflow and agree to test it.
 
 ---
 
-**Cold Email Template For Filosign**
+**The 4-Step Outbound Email Sequence**
 
-Subject: Signed docs before USDC payouts
+Below is the standard 4-email outbound sequence structure mapped to the `cold-email-4-sequence` cadence rules.
+
+### Email 1: First Touch (Observation + Pain)
+*Subject:* [Company] milestone audits  
+*Goal:* Identify the trigger and ask the diagnostic question.
 
 Hi [Name],
 
-I noticed [Company] runs [grant/contributor/ecosystem program]. I’m curious how you currently handle the step between “the agreement/milestone doc is signed” and “the payout is released.”
+I saw you recently updated the [Company] RFP page.
 
-I’m building Filosign: private e-signing where a signed document can trigger a non-custodial USDC payout. It feels like a normal e-signature tool, but gives Web3 teams encrypted docs, verifiable proof, and payment settlement in one flow.
+How are you currently auditing the signed milestone paperwork before releasing the USDC payouts to your grantees?
 
-We ranked #1 in the Filecoin Alpha Cohort and are onboarding 10 design partners for one-month pilots. Would it be useful to test this on one grant, contractor, or contributor payout workflow?
+We help Web3 ecosystem leads combine the signing step and non-custodial payouts in one workflow to prevent payment leakage.
+
+Worth exploring?
+
+### Email 2: Value & Case Study (3 Days Later)
+*Subject:* Re: [Company] milestone audits  
+*Goal:* Provide context and proof.
+
+Hi [Name],
+
+To give you more context, we recently helped Web3 teams in the Filecoin network automate their milestone sign-offs.
+
+Before, their grants team spent hours cross-referencing PDFs with multisig transactions. Now, the signed milestones trigger the payout rules automatically in a non-custodial vault.
+
+Would a similar proof trail be useful for your Q3 cohorts?
+
+### Email 3: The Short CTA (7 Days Later)
+*Subject:* Re: [Company] milestone audits  
+*Goal:* A low-friction, interest-based CTA.
+
+Hi [Name],
+
+I know you are busy running the program.
+
+Would you be open to seeing a 2-minute video showing how other Web3 leads structure sign-to-settle flows for remote contributors?
+
+If not, no worries at all.
+
+### Email 4: Breakup (14 Days Later)
+*Subject:* Re: [Company] milestone audits  
+*Goal:* Politely close the thread.
+
+Hi [Name],
+
+Since I haven’t heard back, I’ll assume milestone-to-payment automation isn’t a priority for [Company] right now.
+
+If that changes and you want to secure your audit trail later, you can reach me here.
 
 Best,  
-Kartik
-
----
-
-**Even Shorter Version**
-
-Subject: Grant payout workflow
-
-Hi [Name],
-
-How does [Company] currently handle signed milestone docs before releasing grant or contributor payouts?
-
-I’m building Filosign: private e-signing where the signed document can automatically release a non-custodial USDC payout. We ranked #1 in the Filecoin Alpha Cohort and are onboarding 10 Web3 teams for guided pilots.
-
-Worth comparing notes?
-
 Kartik
 
 ---

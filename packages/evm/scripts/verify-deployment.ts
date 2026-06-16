@@ -37,7 +37,9 @@ async function verifyContract(args: {
 	network: string;
 	step: VerifyStep;
 }): Promise<boolean> {
-	const modulePath = await writeConstructorArgsModule(args.step.constructorArgs);
+	const modulePath = await writeConstructorArgsModule(
+		args.step.constructorArgs,
+	);
 
 	try {
 		const proc = Bun.spawn({

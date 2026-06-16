@@ -212,7 +212,9 @@ async function transferRegistryOwnership(args: {
 				hash: txHash,
 			});
 			if (receipt.status !== "success") {
-				throw new Error(`transferOwnership reverted (status=${receipt.status})`);
+				throw new Error(
+					`transferOwnership reverted (status=${receipt.status})`,
+				);
 			}
 
 			const pendingOwner = await readPendingOwnerWithPoll({
@@ -246,8 +248,7 @@ async function transferRegistryOwnership(args: {
 
 	console.error("FSEnvelopeRegistry ownership transfer failed:", {
 		pendingOwner: args.ownerAddress,
-		error:
-			lastError instanceof Error ? lastError.message : String(lastError),
+		error: lastError instanceof Error ? lastError.message : String(lastError),
 	});
 	if (isLiveChainId(args.chainId)) {
 		process.exit(1);

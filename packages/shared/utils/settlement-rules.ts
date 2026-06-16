@@ -82,6 +82,22 @@ export function isCompletionGatedSettlementExpiry(
 	);
 }
 
+/** Release types that may satisfy on-chain conditions before the envelope is fully signed. */
+export function canSettlementReleaseBeforeEnvelopeComplete(
+	releaseType: SettlementReleaseType,
+): boolean {
+	switch (normalizeSettlementReleaseType(releaseType)) {
+		case "specific_signer":
+		case "at_least_n":
+		case "quorum_all":
+		case "quorum_set":
+		case "all_of_set":
+			return true;
+		default:
+			return false;
+	}
+}
+
 export const settlementRecipientSources = [
 	"signer",
 	"viewer",

@@ -13,7 +13,13 @@ export const SETTLEMENT_RECIPIENT_ACK_LABEL =
 export const SETTLEMENT_RECIPIENT_ACK_INTENT_VERSION =
 	`settlement-recipient-ack:${SETTLEMENT_FEATURE_TERMS_VERSION}` as const;
 
-export function settlementStatusLabel(status: SettlementRuleStatus): string {
+export function settlementStatusLabel(
+	status: SettlementRuleStatus,
+	options?: { autoPayoutPending?: boolean },
+): string {
+	if (options?.autoPayoutPending && status === "ready") {
+		return "Payout processing";
+	}
 	switch (status) {
 		case "pending":
 			return "Waiting for signatures";

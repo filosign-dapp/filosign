@@ -90,16 +90,24 @@ export function assertSnapshotChain(journal: JournalEntry[]): void {
 		readFileSync(snapshotPath(entry));
 	}
 
-	const first = readSnapshotMeta(journal[0]!);
+	const firstEntry = journal.at(0);
+	if (!firstEntry) {
+		return;
+	}
+
+	const first = readSnapshotMeta(firstEntry);
 	if (first.prevId !== FIRST_PREV_ID) {
 		throw new Error(
-			`snapshot ${journal[0]!.tag}: first migration prevId must be all-zero uuid`,
+			`snapshot ${firstEntry.tag}: first migration prevId must be all-zero uuid`,
 		);
 	}
 
 	let previousId = first.id;
 	for (let i = 1; i < journal.length; i++) {
-		const entry = journal[i]!;
+		const entry = journal.at(i);
+		if (!entry) {
+			continue;
+		}
 		const snapshot = readSnapshotMeta(entry);
 		if (snapshot.prevId !== previousId) {
 			throw new Error(

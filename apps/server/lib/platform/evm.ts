@@ -22,7 +22,7 @@ import {
 } from "@/lib/platform/evm/relayer-pool";
 
 const chainRpcArgs = serverChainRpcTransportArgs();
-const { transport: chainRpcTransport, summary: chainRpcSummary } =
+const { summary: chainRpcSummary } =
 	createServerChainRpcTransport(chainRpcArgs);
 
 console.log("chain rpc:", {

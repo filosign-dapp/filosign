@@ -2,6 +2,8 @@
 
 Source of truth for founder-led sales and sales agents.
 
+**Also read:** ICP detail [`../strategy/icp.md`](../strategy/icp.md) · outreach execution [`outreach-playbook.md`](outreach-playbook.md) · safe claims [`../strategy/claims.md`](../strategy/claims.md) · pilots on [sandbox.filosign.xyz](https://sandbox.filosign.xyz) with request-access flow.
+
 ## Sales Philosophy
 
 Early sales is diagnosis, not persuasion.

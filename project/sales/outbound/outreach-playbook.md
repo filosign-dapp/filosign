@@ -1,3 +1,7 @@
+# Startup outreach playbook
+
+Execution detail for founder-led outreach. Sales philosophy, templates, and 30-day plan: [`playbook.md`](playbook.md).
+
 I searched and compiled the practical advice. The core pattern is simple:
 
 **Your first customers will not come from “marketing.” They will come from founder-led, painfully specific outreach to people who already feel the problem.**

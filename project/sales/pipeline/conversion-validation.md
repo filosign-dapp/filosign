@@ -1,4 +1,4 @@
-# Entitlement packaging - conversion validation
+# Packaging conversion validation
 
 Checklist after aligning Solo / Teams / Teams Pro packaging (handoffs on Solo, collaboration on Teams, workflow control on Teams Pro).
 

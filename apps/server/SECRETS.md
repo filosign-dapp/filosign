@@ -14,7 +14,7 @@ Server secrets for deployed tiers live in [Infisical Cloud](https://app.infisica
 - Internal staging: [`apps/client/.env.staging.example`](../client/.env.staging.example) → `apps/client/.env.staging`
 - Public sandbox: [`apps/client/.env.sandbox.example`](../client/.env.sandbox.example) → `apps/client/.env.sandbox`
 
-Full matrix: [`project/launch/environments.md`](../../project/launch/environments.md).
+Full matrix: [`project/product/ops/environments.md`](../../project/product/ops/environments.md).
 
 Every server env must set **`DEPLOYMENT`** and an allowed **`CHAIN`** (`staging`/`sandbox` → `testnet`; `production` → `mainnet` or `testnet`).
 
@@ -42,7 +42,7 @@ Flow: every send tries Resend first. On retryable Resend errors (429, 5xx, timeo
 
 Verify the same From domain in [Resend](https://resend.com) and [Amazon SES](https://console.aws.amazon.com/ses/) (DKIM/SPF). Leave `SES_ENABLED=false` on local unless you are testing fallback.
 
-Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `RELAYER_POOL`, `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY` (see [`packages/evm/env.ts`](../../packages/evm/env.ts)). On-chain addresses for the app come from [`packages/evm/definitions/`](../../packages/evm/definitions/) via `CHAIN` - after redeploy, run migrate and ensure every `RELAYER_POOL` address is an on-chain relayer ([migration note](../../project/contracts/envelope-registry-migration.md)).
+Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `RELAYER_POOL`, `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY` (see [`packages/evm/env.ts`](../../packages/evm/env.ts)). On-chain addresses for the app come from [`packages/evm/definitions/`](../../packages/evm/definitions/) via `CHAIN` - after redeploy, run migrate and ensure every `RELAYER_POOL` address is an on-chain relayer ([`packages/evm/README.md` redeploy section](../../packages/evm/README.md#redeploy--address-rotation)).
 
 ### Relayer pool (on-chain txs)
 

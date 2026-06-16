@@ -27,7 +27,7 @@ import {
 
 const NEW_WORKSPACE_PENDING_TTL_DAYS = 30;
 
-/** Additional-workspace checkout: use Dodo products without a free trial (see project/billing/new-workspace-checkout.md). */
+/** Additional-workspace checkout: use Dodo products without a free trial (see project/product/billing/checkout.md). */
 export const NEW_WORKSPACE_CHECKOUT_KIND = "new_workspace" as const;
 
 function createBillingDodoClient() {

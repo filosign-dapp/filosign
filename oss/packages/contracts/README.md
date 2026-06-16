@@ -22,7 +22,7 @@ Wallet identity, keygen, and sharing approvals are **server-side** - not on-chai
 
 **Immutable v1:** deploy `FSEnvelopeRegistry(initialRelayers[])` then `FSPaymentValidator(envelopeRegistry, chainId)` and `FSAttachmentRelease(envelopeRegistry, chainId)`. No proxies. EIP-712 domain version **"4"** on the registry (`RegisterEnvelope` includes `orgIdCommitment`, not treasury wallet).
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) and [`project/contracts-future-scope.md`](../../project/contracts-future-scope.md).
+See [ARCHITECTURE.md](./ARCHITECTURE.md) and [`project/product/contracts/future-scope.md`](../../project/product/contracts/future-scope.md).
 
 ```mermaid
 flowchart TB
@@ -168,7 +168,7 @@ Pair both in product UX for clarity. The rule row may remain on-chain and in Pos
 
 After the payer registers rules on-chain (`registerRule` + `approve`), the server indexes them via **`settlements.registerForFile`**, verifying on-chain state with `assertSettlementRulesVerifiedOnChain` before inserting into `file_settlement_rules`. `files.register` does not write settlement rows. Rules created only outside the app are not indexed.
 
-See [`apps/server/README.md`](../server/README.md) and [`project/settlements/architecture-and-non-custody.md`](../../project/settlements/architecture-and-non-custody.md).
+See [`apps/server/README.md`](../server/README.md) and [`project/product/settlements/settlements/architecture-and-non-custody.md`](../../project/product/settlements/settlements/architecture-and-non-custody.md).
 
 ## FSAttachmentRelease
 

@@ -39,6 +39,19 @@ Schema: [`env.ts`](./env.ts). Required for live deploy: `FC_DEPLOYER_PRIVATE_KEY
 
 `RELAYER_POOL` must match `apps/server` `RELAYER_POOL` and every address must have `FSEnvelopeRegistry.isRelayer(addr) === true` after deploy.
 
+## Redeploy / address rotation
+
+Use when rotating registry or validator addresses on a chain (new deployment id; v1 bytecode stays immutable).
+
+1. **Green tests:** `bun run contracts -- test` (migrate refuses without this on testnet/mainnet).
+2. **Deploy:** `bun run contracts -- --migrate --testnet` or `--mainnet` (mainnet prompts for `confirm`).
+3. **Definitions:** migrate writes `definitions/chains/<chain>/deployments/<id>/manifest.json` and updates `latest.json`. Run `bun run gen:definitions` if you need to regenerate TS without redeploying.
+4. **Public verify export:** `bun run export:public` (or orchestrator equivalent) so `oss/packages/contracts/abis/` and `chains/manifest.json` match the new deployment.
+5. **Server alignment:** set Infisical `CHAIN` to match the chain key you deployed; ensure `RELAYER_POOL` lists every on-chain relayer (`isRelayer(addr) === true`).
+6. **Owner runbook:** verify `owner()`, `server()`, and Basescan for new addresses before production traffic. See [`oss/packages/contracts/ARCHITECTURE.md`](../../oss/packages/contracts/ARCHITECTURE.md) post-deploy steps.
+
+Policy for what may change on-chain vs off-chain: [`project/product/contracts/future-scope.md`](../../project/product/contracts/future-scope.md).
+
 ## Definitions model
 
 All paths resolve under **`packages/evm/definitions/`** (absolute at runtime; deploy `chdir`s here).

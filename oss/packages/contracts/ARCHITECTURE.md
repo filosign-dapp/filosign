@@ -77,7 +77,7 @@ Team workspaces use a **mapping-only** controller ACL on the registry (not per-e
 
 ## Future contract changes
 
-See [`project/contracts-future-scope.md`](../../project/contracts-future-scope.md).
+See [`project/product/contracts/future-scope.md`](../../project/product/contracts/future-scope.md).
 
 ## Deploy
 
@@ -87,7 +87,7 @@ bun run contracts -- --migrate --testnet   # test + deploy Base Sepolia
 bun run contracts -- --migrate --mainnet   # test + deploy Base
 ```
 
-**Redeploy:** See [`project/contracts/envelope-registry-migration.md`](../../project/contracts/envelope-registry-migration.md) for address rotation and definitions alignment.
+**Redeploy:** See [`packages/evm/README.md`](../../packages/evm/README.md#redeploy--address-rotation) for address rotation and definitions alignment.
 
 Local deploy: set `RELAYER_POOL` to Hardhat accounts (see `packages/evm/.env.example`); deploy funds each pool address with ETH.
 

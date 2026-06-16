@@ -79,6 +79,17 @@ export const settlementsErrors = {
 		severity: "warning",
 		defaultOrpcCode: "BAD_REQUEST",
 	},
+	"SETTLEMENTS.ENVELOPE_CLOSED": {
+		title: "Envelope is complete",
+		description:
+			"Payouts can only be attached while the envelope is still open for signing.",
+		steps: [
+			"Attach payouts before everyone has signed, or when sending the envelope.",
+		],
+		audience: "user",
+		severity: "warning",
+		defaultOrpcCode: "BAD_REQUEST",
+	},
 	"SETTLEMENTS.VERIFICATION_FAILED": {
 		title: "Payment verification failed",
 		description: "{{reason}}",

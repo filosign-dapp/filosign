@@ -14,7 +14,7 @@ Use payout packets when a signed agreement should trigger payment follow-up. The
 
 ## How it works
 
-1. Attach a payout packet while composing or after send.
+1. Attach a payout packet while composing or after send, **before everyone has signed** (while the envelope is still open).
 2. Pick the recipient, amount in USDC, and **Pay out when** condition. See [Release conditions](/docs/workflows/release-conditions/).
 3. Approve the total amount in your wallet so Filosign can transfer when the condition is met.
 4. After each signature, Filosign checks whether the condition is satisfied.
@@ -38,13 +38,13 @@ A dev agency sends a final acceptance document to a client. The agency attaches 
 
 ### Attach a payout
 
-1. Open **Add a payout** while composing, or **Attach payout** after send.
+1. Open **Add a payout** while composing, or **Attach payout** after send while the envelope is still open.
 2. Pick the **recipient** and **amount** in USDC.
 3. Choose **Pay out when**. See [Release conditions](/docs/workflows/release-conditions/) for every option.
 4. Optionally set a **Cutoff date** after which the payout cannot run.
 5. Approve the total amount in your wallet, then confirm.
 
-**Attach payout** after send adds one recipient at a time.
+**Attach payout** after send adds one recipient at a time. You cannot attach new payouts after the envelope is fully signed.
 
 ### Status messages
 

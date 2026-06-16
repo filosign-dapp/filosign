@@ -123,6 +123,8 @@ export async function settlementsRegisterForFile(
 			sender: files.sender,
 			organizationId: files.organizationId,
 			registryAddress: files.registryAddress,
+			completedAt: files.completedAt,
+			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
 		})
 		.from(files)
 		.where(eq(files.pieceCid, pieceCid))
@@ -132,6 +134,9 @@ export async function settlementsRegisterForFile(
 	}
 	if (getAddress(file.sender) !== getAddress(sender)) {
 		throw throwAppError("SETTLEMENTS.FORBIDDEN");
+	}
+	if (file.completedAt != null || file.revokedBeforeCompletedAt != null) {
+		throw throwAppError("SETTLEMENTS.ENVELOPE_CLOSED");
 	}
 
 	const entitlementCtx = await resolveEntitlementContext(

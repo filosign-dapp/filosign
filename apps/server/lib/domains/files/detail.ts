@@ -8,6 +8,7 @@ import { z } from "zod";
 import type { RpcPieceDetailOutput } from "@/api/orpc/schemas/files-piece-output";
 import { listSupplementaryPacketsForParticipant } from "@/lib/domains/attachments";
 import { resolveEntitlementContext } from "@/lib/domains/entitlements";
+import { syncSettlementPayoutFromChain } from "@/lib/domains/settlements/utils/sync-from-chain";
 import {
 	buildComplianceBundleAndHash,
 	insertComplianceExportLog,
@@ -44,12 +45,14 @@ import {
 	readEnvelopeRegistryProgress,
 } from "./utils/piece-helpers";
 import { getRegisterState } from "./utils/register-state";
+import { loadSatelliteWorkflowSummaryForPiece } from "./utils/satellite-workflow-summary";
 
 const {
 	complianceExportLogs,
 	fileComments,
 	fileColdInvites,
 	fileParticipants,
+	fileSettlementRules,
 	fileSignatures,
 	files,
 	focObjects,
@@ -271,6 +274,9 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 			? await listPieceFieldCompletions(pieceCid)
 			: undefined;
 
+	const satelliteWorkflowSummary =
+		await loadSatelliteWorkflowSummaryForPiece(pieceCid);
+
 	const response = buildPieceDetailResponse({
 		fileRecord,
 		participantUser: participantUser
@@ -287,6 +293,7 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		pendingSignerReplacement,
 		conditionalAttachmentPackets,
 		mySupplementaryPackets,
+		satelliteWorkflowSummary,
 		focRow,
 		latestExport:
 			latestExport?.documentSha256 != null &&
@@ -409,6 +416,19 @@ export async function pieceComplianceBundle(args: {
 		username: p.username,
 		authProviderId: p.authProviderId ?? null,
 	}));
+
+	const settlementRows = await db
+		.select({
+			onChainRuleId: fileSettlementRules.onChainRuleId,
+			validatorAddress: fileSettlementRules.validatorAddress,
+		})
+		.from(fileSettlementRules)
+		.where(eq(fileSettlementRules.pieceCid, pieceCid));
+	for (const row of settlementRows) {
+		await tryCatch(
+			syncSettlementPayoutFromChain(row.onChainRuleId, row.validatorAddress),
+		);
+	}
 
 	const bundleRes = await tryCatch(
 		buildComplianceBundleAndHash({

@@ -33,7 +33,7 @@
 | Prod migrate (SSH tunnel) | `bun run prod -- --migrate` |
 | Wipe DB | `bun run db -- purge local\|staging\|sandbox` (local/staging → push; sandbox → migrate) |
 | Generate migration SQL | `bun run --cwd apps/server db:generate` |
-| Schema ↔ migrations drift check | `bun run --cwd apps/server db:schema:check` (also in `bun run sanity -- --ci`) |
+| Schema ↔ migrations drift check | `bun run db -- migration-check` (also in `bun run sanity -- --ci`) |
 | Contracts ops | `bun run contracts -- …` |
 | Nuke deps | `bun run purge` then `bun install` |
 | Email package tests | `bun run test -- --emails` |
@@ -99,10 +99,14 @@ Flags: `--client`, `--astro`, `--server`, `--harness` (`--test`), `--contracts`,
 | Action | Profiles | Tool |
 |--------|----------|------|
 | `push` | `local`, `staging` | `drizzle-kit push` - fast dev sync (no generate) |
-| `migrate` | all profiles | `drizzle-kit migrate` - **required** for sandbox + production |
+| `migrate` | all profiles | `drizzle-kit migrate` - **required** for sandbox; production via deploy start or laptop tunnel |
+| `migration-check` | — | journal/SQL/snapshot integrity + `drizzle-kit check` |
+| `verify-migrations` | local Postgres | full chain on empty DB + column smoke |
 | `purge` | `local`, `staging`, `sandbox` | wipe schema; then **push** (local/staging) or **migrate** (sandbox) |
 
-**Sandbox / production:** never `push` (orchestrator blocks). After schema is stable on local/staging: `bun run --cwd apps/server db:generate` → commit `apps/server/drizzle/` → `bun run db -- migrate sandbox` → backup → `bun run prod -- --migrate`.
+**Sandbox / production:** never `push` (orchestrator blocks). After schema is stable on local/staging: `bun run db -- generate` → commit `apps/server/drizzle/` → `bun run db -- migrate sandbox` → backup → redeploy app (migrations run on container start) or `bun run prod -- --migrate` (laptop tunnel fallback).
+
+**Integrity / smoke:** `bun run db -- migration-check` (CI via `sanity --ci`) · `bun run db -- verify-migrations` (fresh DB + column smoke; needs local Postgres).
 
 **Local / staging:** edit schema → `push` (or `purge` → push). Generate/migrate only when promoting toward sandbox.
 

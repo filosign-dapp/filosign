@@ -149,7 +149,8 @@ Server configuration is defined in `apps/server/env.ts`. The main required value
 - `RESEND_ENABLED` - `true` (default) sends via Resend; set `false` to no-op outbound email
 - `PG_URI`
 - `DB_NAME`
-- `FC_SERVER_PRIVATE_KEY` / `FC_SERVER_ADDRESS` (on-chain relayer + Synapse; must match contracts deploy)
+- `RELAYER_POOL` / `RELAYER_POOL_PRIVATE_KEYS` - comma-separated on-chain relayer addresses and keys (must match `FSEnvelopeRegistry` `isRelayer` ACL after deploy)
+- `FOC_WALLET_PRIVATE_KEY` / `FOC_WALLET_ADDRESS` - Synapse storage payer only (not in relayer pool)
 - `DRAGONFLY_URL` - `redis://127.0.0.1:6379` with `docker compose -f deploy/compose.dev.yml up -d`
 - `THIRDWEB_CLIENT_ID` - same value as client `VITE_THIRDWEB_CLIENT_ID`
 - `THIRDWEB_SECRET_KEY` - project secret key (server only)

@@ -92,13 +92,13 @@ Stub rows are created when a **paid workspace** envelope is **routing-complete o
 - `TEST_FOC` (default `false`) - prod smoke: immediate replicate + FOC download verify
 - `WORKSPACE_CHURN_GRACE_DAYS` (default `90`)
 - `ARCHIVAL_EXPORT_GRACE_DAYS` (default `30`)
-- `FC_SERVER_*` - Synapse payer; fund with **USDFC** + **FIL**
+- `FOC_WALLET_*` - Synapse payer; fund with **USDFC** + **FIL**
 - `FC_SYNAPSE_DATASET_ID` (optional) - pin platform archival dataset; set from first Synapse create log or existing `foc_objects.deal_id`
 
 ## Prod smoke runbook
 
 1. Deploy code; set `TEST_FOC=true` in Infisical `prod`; redeploy **API + worker**.
-2. Confirm `FC_SERVER` wallet funded (USDFC + FIL on mainnet).
+2. Confirm `FOC_WALLET` wallet funded (USDFC + FIL on mainnet).
 3. Complete one **paid-org** test envelope.
 4. Worker log: `foc-transition: replicated (R2 retained)` with `dealId`.
 5. DB: `replicate_status = replicated`, `foc_verified_at` set, `r2_evicted_at` **NULL**.

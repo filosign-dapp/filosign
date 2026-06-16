@@ -42,11 +42,20 @@ Flow: every send tries Resend first. On retryable Resend errors (429, 5xx, timeo
 
 Verify the same From domain in [Resend](https://resend.com) and [Amazon SES](https://console.aws.amazon.com/ses/) (DKIM/SPF). Leave `SES_ENABLED=false` on local unless you are testing fallback.
 
-Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`, `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY` (see [`packages/evm/env.ts`](../../packages/evm/env.ts)). On-chain addresses for the app come from [`packages/evm/definitions/`](../../packages/evm/definitions/) via `CHAIN` - after redeploy, run migrate and align `FC_SERVER_ADDRESS` with `FSEnvelopeRegistry.server()` ([migration note](../../project/contracts/envelope-registry-migration.md)).
+Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `RELAYER_POOL`, `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY` (see [`packages/evm/env.ts`](../../packages/evm/env.ts)). On-chain addresses for the app come from [`packages/evm/definitions/`](../../packages/evm/definitions/) via `CHAIN` - after redeploy, run migrate and ensure every `RELAYER_POOL` address is an on-chain relayer ([migration note](../../project/contracts/envelope-registry-migration.md)).
+
+### Relayer pool (on-chain txs)
+
+| Env | Role |
+|-----|------|
+| `RELAYER_POOL` | Comma-separated relayer addresses (N=2 in production) |
+| `RELAYER_POOL_PRIVATE_KEYS` | Matching private keys; bootstrap checks key ↔ address and `isRelayer` on registry |
+
+Fund each pool wallet with ETH on Base for register, sign relay, settlement, and attachment gas.
 
 ### Filecoin / FOC (Synapse)
 
-`FC_SERVER_PRIVATE_KEY` and `FC_SERVER_ADDRESS` power [`@filoz/synapse-sdk`](https://docs.filecoin.cloud/) - **platform backup** for all **paid workspaces** (not only archival SKU). Fund with **USDFC** (Filecoin Pay) and **FIL** (gas). See [`docs/foc-storage-lifecycle.md`](docs/foc-storage-lifecycle.md).
+`FOC_WALLET_PRIVATE_KEY` and `FOC_WALLET_ADDRESS` power [`@filoz/synapse-sdk`](https://docs.filecoin.cloud/) - **platform backup** for all **paid workspaces** (not only archival SKU). Fund with **USDFC** (Filecoin Pay) and **FIL** (gas). See [`docs/foc-storage-lifecycle.md`](docs/foc-storage-lifecycle.md).
 
 | Env | Role |
 |-----|------|
@@ -79,7 +88,7 @@ Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`, `FC_OWNER_ADD
 
 Bootstrap env only: `INFISICAL_CLIENT_ID`, `INFISICAL_CLIENT_SECRET`, `INFISICAL_PROJECT_ID`, `INFISICAL_ENV`.
 
-Entrypoint: [`scripts/infisical-entrypoint.sh`](scripts/infisical-entrypoint.sh).
+Entrypoint: [`scripts/deploy/infisical-entrypoint.sh`](scripts/deploy/infisical-entrypoint.sh).
 
 ---
 

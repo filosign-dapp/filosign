@@ -1,0 +1,29 @@
+---
+description: Drizzle schema migrations - never hand-edit generated SQL or journal; use generate workflow
+globs:
+  - apps/server/drizzle/**
+  - apps/server/lib/platform/db/schema/**
+  - apps/server/lib/platform/db/migrations/**
+  - apps/server/drizzle.config.ts
+  - apps/server/drizzle.migrate.config.ts
+---
+
+# Drizzle migrations
+
+Never hand-edit [`apps/server/drizzle/*.sql`](apps/server/drizzle/) or [`apps/server/drizzle/meta/_journal.json`](apps/server/drizzle/meta/_journal.json). Same rule as generated `packages/evm/definitions/`.
+
+**Schema change workflow:**
+
+1. Edit [`apps/server/lib/platform/db/schema/`](apps/server/lib/platform/db/schema/)
+2. `bun run db -- push local` (dev sync)
+3. `bun run db -- generate` (prod artifact)
+4. Commit **all** files under `apps/server/drizzle/` (SQL + `meta/`)
+5. `bun run db -- migrate sandbox` before prod
+
+**Custom SQL / seeds:** `drizzle-kit generate --custom --name=<tag>` only.
+
+**If `generate` re-creates existing tables/columns:** stop - snapshot chain is broken; run integrity check, do not commit.
+
+**Profiles:** local/staging = `push`. sandbox/production = `generate` + `migrate` only (never `push`).
+
+Drift gate: `bun run db -- migration-check` (CI via `sanity --ci`).

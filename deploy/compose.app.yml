@@ -23,7 +23,7 @@ services:
   api:
     <<: *filosign-image
     restart: unless-stopped
-    command: ["./server"]
+    command: ["./container-start.sh", "./server"]
     environment:
       <<: *app-env
       SERVER_ROLE: api
@@ -48,7 +48,7 @@ services:
   worker:
     <<: *filosign-image
     restart: unless-stopped
-    command: ["./worker"]
+    command: ["./container-start.sh", "./worker"]
     deploy:
       replicas: 1
     # Dokploy: set max replicas / scale = 1 explicitly - UI scale overrides compose.

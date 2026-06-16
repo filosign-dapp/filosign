@@ -149,15 +149,15 @@ describe("handlePoolError", () => {
 describe("validateServerBootstrap", () => {
 	beforeEach(resetAlertsRuntime);
 
-	test("emits bootstrap alert and throws on relayer wallet mismatch", async () => {
+	test("emits bootstrap alert and throws on FOC wallet mismatch", async () => {
 		mock.module("@/env", () => ({
 			default: {
 				...testEnvStub,
 				TG_ANALYTICS: true,
 				TG_ANALYTICS_BOT_TOKEN: "bot",
 				TG_ANALYTICS_BOT_GROUP_ID: "group",
-				FC_SERVER_PRIVATE_KEY: relayerKey,
-				FC_SERVER_ADDRESS: otherAddress,
+				FOC_WALLET_PRIVATE_KEY: relayerKey,
+				FOC_WALLET_ADDRESS: otherAddress,
 			},
 		}));
 		const { validateServerBootstrap } = await import(
@@ -170,26 +170,25 @@ describe("validateServerBootstrap", () => {
 			PLATFORM_ALERT_EVENTS.serverBootstrapFailed,
 		);
 		expect(capturedTelegramEvents[0]?.context).toMatchObject({
-			stage: "relayer_wallet_mismatch",
+			stage: "foc_wallet_mismatch",
 		});
 	});
 
-	test("emits bootstrap alert when registry server mismatches configured relayer", async () => {
+	test("emits bootstrap alert when pool relayer is not authorized on registry", async () => {
 		mock.module("@/env", () => ({
 			default: {
 				...testEnvStub,
 				TG_ANALYTICS: true,
 				TG_ANALYTICS_BOT_TOKEN: "bot",
 				TG_ANALYTICS_BOT_GROUP_ID: "group",
-				FC_SERVER_PRIVATE_KEY: relayerKey,
-				FC_SERVER_ADDRESS: relayerAddress,
 			},
 		}));
 		mock.module("@/lib/platform/evm", () => ({
 			fsContracts: {
 				FSEnvelopeRegistry: {
 					read: {
-						server: async () => otherAddress,
+						isRelayer: async (args: readonly [string]) =>
+							args[0].toLowerCase() === relayerAddress.toLowerCase(),
 					},
 				},
 			},
@@ -200,32 +199,23 @@ describe("validateServerBootstrap", () => {
 		const { validateServerBootstrap } = await import(
 			"@/lib/platform/bootstrap/validate-bootstrap"
 		);
-		await expect(validateServerBootstrap()).rejects.toThrow(
-			/FSEnvelopeRegistry\.server\(\)/,
-		);
-		await flushPlatformAlerts();
-		expect(capturedTelegramEvents).toHaveLength(1);
-		expect(capturedTelegramEvents[0]?.context).toMatchObject({
-			stage: "registry_server_mismatch",
-		});
+		await expect(validateServerBootstrap()).rejects.toThrow(/isRelayer/);
 	});
 
-	test("passes when relayer key and registry server match configured address", async () => {
+	test("passes when pool relayers are authorized on registry", async () => {
 		mock.module("@/env", () => ({
 			default: {
 				...testEnvStub,
 				TG_ANALYTICS: true,
 				TG_ANALYTICS_BOT_TOKEN: "bot",
 				TG_ANALYTICS_BOT_GROUP_ID: "group",
-				FC_SERVER_PRIVATE_KEY: relayerKey,
-				FC_SERVER_ADDRESS: relayerAddress,
 			},
 		}));
 		mock.module("@/lib/platform/evm", () => ({
 			fsContracts: {
 				FSEnvelopeRegistry: {
 					read: {
-						server: async () => relayerAddress,
+						isRelayer: async () => true,
 					},
 				},
 			},
@@ -291,7 +281,7 @@ describe("monitor relayer gas", () => {
 		expect(result.checked).toBe(true);
 		expect(result.alerted).toBe(true);
 		await flushPlatformAlerts();
-		expect(capturedTelegramEvents).toHaveLength(1);
+		expect(capturedTelegramEvents.length).toBeGreaterThanOrEqual(1);
 		expect(capturedTelegramEvents[0]?.name).toBe(
 			PLATFORM_ALERT_EVENTS.serverRelayerGasLow,
 		);

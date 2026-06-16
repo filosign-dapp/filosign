@@ -82,7 +82,7 @@ Both `api` and `worker` services run the same image with different `SERVER_ROLE`
 | `BULLMQ_PREFIX` | Queue key namespace (default `{filosign}`) |
 | `PG_URI` / `DB_NAME` | Same Postgres |
 | `DEPLOYMENT` / chain env | Same contracts + RPC (`getRuntime`, relay) |
-| `FC_SERVER_*` / relayer KMS | Worker runs payout + settlement relay |
+| `RELAYER_POOL` / `RELAYER_POOL_PRIVATE_KEYS` | Worker runs on-chain relay (register, sign, settlement, attachment) |
 | `DODO_*` | Worker processes billing-webhook queue |
 | `TG_ANALYTICS`, `TG_ANALYTICS_BOT_*` | Worker emits BullMQ + cron alerts |
 | `POSTHOG_*` | Optional alert mirror on worker |
@@ -216,6 +216,6 @@ Plan headroom for BullMQ streams + cache keys on the same Dragonfly instance:
 ## Database policy
 
 - **local / staging:** `bun run db -- push <profile>` for fast schema sync
-- **sandbox / production:** `db:generate` → commit `apps/server/drizzle/` → `migrate` only
+- **sandbox / production:** `db:generate` → commit `apps/server/drizzle/` → redeploy app (migrations on container start) or `bun run prod -- --migrate`
 
 See [SCRIPTS.md](../SCRIPTS.md) and [project/ops/postgres-ops.md](../project/ops/postgres-ops.md).

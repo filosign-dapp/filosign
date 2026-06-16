@@ -3,6 +3,14 @@ import { privateKeyToAccount } from "viem/accounts";
 
 const testRelayerKey =
 	"0x0000000000000000000000000000000000000000000000000000000000000001";
+const testRelayerKey2 =
+	"0x0000000000000000000000000000000000000000000000000000000000000002";
+const testFocWalletKey =
+	"0x0000000000000000000000000000000000000000000000000000000000000003";
+
+const testRelayerAddress = privateKeyToAccount(testRelayerKey).address;
+const testRelayerAddress2 = privateKeyToAccount(testRelayerKey2).address;
+const testFocWalletAddress = privateKeyToAccount(testFocWalletKey).address;
 
 /** Minimal env stub for unit tests that must not load real `@/env` validation. */
 export const testEnvStub = {
@@ -14,8 +22,10 @@ export const testEnvStub = {
 	S3_ACCESS_KEY_ID: "test-key",
 	S3_BUCKET: "test-bucket",
 	S3_ENDPOINT: "https://s3.example.com",
-	FC_SERVER_PRIVATE_KEY: testRelayerKey,
-	FC_SERVER_ADDRESS: privateKeyToAccount(testRelayerKey).address,
+	RELAYER_POOL: `${testRelayerAddress},${testRelayerAddress2}`,
+	RELAYER_POOL_PRIVATE_KEYS: `${testRelayerKey},${testRelayerKey2}`,
+	FOC_WALLET_PRIVATE_KEY: testFocWalletKey,
+	FOC_WALLET_ADDRESS: testFocWalletAddress,
 	PG_URI: "postgresql://u:p@localhost:5432/:dbname",
 	DB_NAME: "test",
 	SERVER_URL: "https://server.example.com",

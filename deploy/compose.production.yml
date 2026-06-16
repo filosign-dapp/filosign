@@ -75,7 +75,7 @@ services:
   api:
     <<: *filosign-image
     restart: unless-stopped
-    command: ["./server"]
+    command: ["./container-start.sh", "./server"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -107,7 +107,7 @@ services:
   worker:
     <<: *filosign-image
     restart: unless-stopped
-    command: ["./worker"]
+    command: ["./container-start.sh", "./worker"]
     healthcheck:
       test: ["CMD", "./worker-healthcheck"]
       interval: 30s

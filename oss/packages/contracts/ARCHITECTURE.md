@@ -7,28 +7,28 @@ Frozen **immutable bytecode** for mainnet: two production contracts. No UUPS pro
 | Actor | Key | Role |
 | ----- | --- | ---- |
 | **Ledger** | `FC_DEPLOYER_PRIVATE_KEY` | Deploys `FSEnvelopeRegistry` and `FSPaymentValidator` |
-| **Owner (cold wallet recommended)** | deployer by default, optional `FC_OWNER_ADDRESS` handoff | Can rotate `FSEnvelopeRegistry.server` and ownership (2-step) |
-| **KMS / relayer** | `FC_SERVER_ADDRESS` → `FSEnvelopeRegistry.server` | `onlyServer` relay for `registerEnvelope` / `registerEnvelopeSignature` |
+| **Owner (cold wallet recommended)** | deployer by default, optional `FC_OWNER_ADDRESS` handoff | Can add/remove relayers (`addRelayer` / `removeRelayer`) and transfer ownership (2-step) |
+| **Relayer pool** | `RELAYER_POOL` (deploy + server) → `FSEnvelopeRegistry.isRelayer` | `onlyRelayer` relay for `registerEnvelope`, `registerEnvelopeSignature`, void/amend, and `setOrgControllers` |
 
-`server` is owner-rotatable via `setServer`. Ownership uses OpenZeppelin `Ownable2Step` (`transferOwnership` + `acceptOwnership`).
+Relayer ACL is owner-rotatable via `addRelayer` / `removeRelayer` (minimum one relayer). Ownership uses OpenZeppelin `Ownable2Step` (`transferOwnership` + `acceptOwnership`).
 
 ## Topology
 
 ```mermaid
 flowchart TB
   subgraph deploy [Deploy order]
-    FR[FSEnvelopeRegistry server]
+    FR[FSEnvelopeRegistry initialRelayers]
     PV[FSPaymentValidator envelopeRegistry chainId]
     FR --> PV
   end
   subgraph runtime [Runtime]
     Sender[Sender wallet]
-    Relay[KMS server relay]
+    Relay[Filosign relayer pool]
     Signers[Signers]
     Anyone[Anyone]
     Sender -->|registerEnvelope| FR
     Signers -->|registerEnvelopeSignature| FR
-    Relay -->|onlyServer writes| FR
+    Relay -->|onlyRelayer writes| FR
     Sender -->|registerRule approve USDC| PV
     Anyone -->|executePayout when canExecute| PV
     PV -->|reads sign state| FR
@@ -39,7 +39,7 @@ flowchart TB
   end
 ```
 
-1. **`FSEnvelopeRegistry(server)`** - permanent auditable send + sign trail (EIP-712 **v5** `SignEnvelope` (binds `signersCommitment`), `RegisterEnvelope`, required signers, parallel/sequential routing, quorum, `proposeSignerReplacement` / `executeSignerReplacement` / `cancelSignerReplacement`, org controller governance).
+1. **`FSEnvelopeRegistry(initialRelayers[])`** - permanent auditable send + sign trail (EIP-712 **v5** `SignEnvelope` (binds `signersCommitment`), `RegisterEnvelope`, required signers, parallel/sequential routing, quorum, `proposeSignerReplacement` / `executeSignerReplacement` / `cancelSignerReplacement`, org controller governance).
 2. **`FSPaymentValidator(envelopeRegistry, chainId)`** - permissionless pull settlement on sign; multi-leg rules, release types, payer CRUD, `expiresAt`; no custody.
 3. **`FSAttachmentRelease(envelopeRegistry, chainId)`** (Teams Pro) - supplementary packet release rules; sender or org controller may register/cancel.
 
@@ -82,17 +82,17 @@ See [`project/contracts-future-scope.md`](../../project/contracts-future-scope.m
 ## Deploy
 
 ```bash
-# Env: FC_DEPLOYER_PRIVATE_KEY (deployer), FC_SERVER_ADDRESS (KMS relayer), optional FC_OWNER_ADDRESS (cold owner)
+# Env: FC_DEPLOYER_PRIVATE_KEY (deployer), RELAYER_POOL (comma-separated relayer addresses), optional FC_OWNER_ADDRESS (cold owner)
 bun run contracts -- --migrate --testnet   # test + deploy Base Sepolia
 bun run contracts -- --migrate --mainnet   # test + deploy Base
 ```
 
 **Redeploy:** See [`project/contracts/envelope-registry-migration.md`](../../project/contracts/envelope-registry-migration.md) for address rotation and definitions alignment.
 
-Local deploy: `server` = `FC_SERVER_ADDRESS` (else Hardhat #1); deploy funds that address with 100 ETH.
+Local deploy: set `RELAYER_POOL` to Hardhat accounts (see `packages/evm/.env.example`); deploy funds each pool address with ETH.
 
 Post-deploy owner runbook:
 1. Deploy with `FC_DEPLOYER_PRIVATE_KEY` (hot/deployer wallet).
 2. Set `FC_OWNER_ADDRESS` during deploy to start 2-step ownership handoff.
 3. From owner wallet, call `acceptOwnership()`.
-4. Verify `owner()` and `server()` on-chain before enabling production traffic.
+4. Verify `owner()` and `isRelayer(addr)` for every `RELAYER_POOL` address before enabling production traffic.

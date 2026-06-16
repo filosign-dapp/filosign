@@ -119,14 +119,20 @@ async function deployCore(args: {
 	payout: WalletClient;
 	coSigner: WalletClient;
 	registerSenderKeygen: boolean;
+	extraRelayers?: WalletClient[];
 }): Promise<FullSystemFixture> {
 	const { deployer, server, sender, payout, registerSenderKeygen } = args;
 	const publicClient = await hre.viem.getPublicClient();
 	const chainId = await publicClient.getChainId();
+	const initialRelayers = [
+		walletAccount(server).address,
+		...(args.extraRelayers?.map((wallet) => walletAccount(wallet).address) ??
+			[]),
+	];
 
 	const envelopeRegistry = await hre.viem.deployContract(
 		"FSEnvelopeRegistry",
-		[walletAccount(server).address],
+		[initialRelayers],
 		{ client: { wallet: deployer } },
 	);
 
@@ -182,6 +188,32 @@ export async function deployFullSystem(): Promise<FullSystemFixture> {
 		coSigner,
 		registerSenderKeygen: false,
 	});
+}
+
+export async function deployFullSystemDualRelayer(): Promise<
+	FullSystemFixture & { secondRelayer: WalletClient }
+> {
+	const clients = await hre.viem.getWalletClients();
+	const deployer = clients[0];
+	const server = clients[1];
+	const coSigner = clients[2];
+	const sender = clients[3];
+	const payout = clients[4];
+	const secondRelayer = clients[6];
+	if (!deployer || !server || !coSigner || !sender || !payout || !secondRelayer) {
+		throw new Error("expected Hardhat wallet clients");
+	}
+
+	const ctx = await deployCore({
+		deployer,
+		server,
+		sender,
+		payout,
+		coSigner,
+		registerSenderKeygen: false,
+		extraRelayers: [secondRelayer],
+	});
+	return { ...ctx, secondRelayer };
 }
 
 export async function registerKeygenForWallet(

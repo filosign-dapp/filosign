@@ -3,7 +3,11 @@ pragma solidity ^0.8.26;
 
 import "./EFSCommon.sol";
 
-error OnlyServer();
+error OnlyRelayer();
+error RelayerAlreadySet();
+error RelayerNotSet();
+error CannotRemoveLastRelayer();
+error ExceedsMaxRelayers();
 error SignatureExpired();
 error SignatureFuture();
 error SenderNotRegistered();
@@ -18,7 +22,6 @@ error InvalidSender();
 error AlreadySigned();
 error InvalidSignature();
 error InvalidSignersCommitment();
-error ServerUnchanged();
 error ExceedsMaxSigners();
 error ExceedsMaxViewers();
 error DuplicateCommitment();

@@ -104,11 +104,8 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes32 indexed cidIdentifier,
         address indexed recaller
     );
-    event ServerUpdated(
-        address indexed previousServer,
-        address indexed newServer,
-        address indexed changedBy
-    );
+    event RelayerAdded(address indexed relayer, address indexed addedBy);
+    event RelayerRemoved(address indexed relayer, address indexed removedBy);
     event EnvelopeRevokedBeforeComplete(
         bytes32 indexed cidIdentifier,
         address indexed revokedBy,
@@ -151,29 +148,64 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
 
     mapping(bytes32 => PendingSignerReplacement) private _pendingReplacement;
 
-    address public server;
+    uint8 public constant MAX_RELAYERS = 16;
+    uint8 private _relayerCount;
+    mapping(address => bool) public isRelayer;
+
     address public paymentValidator;
     address public attachmentRelease;
 
-    modifier onlyServer() {
-        if (msg.sender != server) revert OnlyServer();
+    modifier onlyRelayer() {
+        if (!isRelayer[msg.sender]) revert OnlyRelayer();
         _;
     }
 
     constructor(
-        address server_
+        address[] memory initialRelayers_
     ) EIP712("FSEnvelopeRegistry", "2") Ownable(msg.sender) {
-        if (server_ == address(0)) revert ZeroAddress();
-        server = server_;
+        if (initialRelayers_.length == 0) revert ZeroAddress();
+        if (initialRelayers_.length > MAX_RELAYERS) revert ExceedsMaxRelayers();
+
+        for (uint256 i = 0; i < initialRelayers_.length; ) {
+            address relayer = initialRelayers_[i];
+            if (relayer == address(0)) revert ZeroAddress();
+            for (uint256 j = 0; j < i; ) {
+                if (initialRelayers_[j] == relayer) revert RelayerAlreadySet();
+                unchecked {
+                    ++j;
+                }
+            }
+            isRelayer[relayer] = true;
+            unchecked {
+                ++i;
+            }
+        }
+        _relayerCount = uint8(initialRelayers_.length);
     }
 
-    function setServer(address newServer_) external onlyOwner {
-        if (newServer_ == address(0)) revert ZeroAddress();
-        if (newServer_ == server) revert ServerUnchanged();
+    function relayerCount() external view returns (uint8) {
+        return _relayerCount;
+    }
 
-        address previousServer = server;
-        server = newServer_;
-        emit ServerUpdated(previousServer, newServer_, msg.sender);
+    function addRelayer(address relayer_) external onlyOwner {
+        if (relayer_ == address(0)) revert ZeroAddress();
+        if (isRelayer[relayer_]) revert RelayerAlreadySet();
+        if (_relayerCount >= MAX_RELAYERS) revert ExceedsMaxRelayers();
+        isRelayer[relayer_] = true;
+        unchecked {
+            ++_relayerCount;
+        }
+        emit RelayerAdded(relayer_, msg.sender);
+    }
+
+    function removeRelayer(address relayer_) external onlyOwner {
+        if (!isRelayer[relayer_]) revert RelayerNotSet();
+        if (_relayerCount <= 1) revert CannotRemoveLastRelayer();
+        isRelayer[relayer_] = false;
+        unchecked {
+            --_relayerCount;
+        }
+        emit RelayerRemoved(relayer_, msg.sender);
     }
 
     function setSatelliteContracts(
@@ -207,7 +239,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
     function setOrgControllers(
         bytes32 orgIdCommitment_,
         address[] calldata wallets_
-    ) external onlyServer {
+    ) external onlyRelayer {
         if (orgIdCommitment_ == bytes32(0)) revert ZeroOrgIdCommitment();
         if (wallets_.length > MAX_ORG_CONTROLLERS)
             revert ExceedsMaxOrgControllers();
@@ -376,7 +408,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
 
     function registerEnvelope(
         RegisterEnvelopeInput calldata input
-    ) external onlyServer {
+    ) external onlyRelayer {
         if (input.optionalCommitments.length > 0)
             revert OptionalSignersNotSupported();
 
@@ -575,7 +607,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes32[] calldata routingOrderAfter_,
         bytes32[] calldata quorumSetBefore_,
         bytes32[] calldata quorumSetAfter_
-    ) external onlyServer {
+    ) external onlyRelayer {
         _proposeSignerReplacement(
             FSCommitmentLib.cidIdentifier(pieceCid_),
             recaller_,
@@ -725,7 +757,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         address recaller_,
         bytes32[] calldata routingOrderAfter_,
         bytes32[] calldata quorumSetAfter_
-    ) external onlyServer {
+    ) external onlyRelayer {
         bytes32 cidId = FSCommitmentLib.cidIdentifier(pieceCid_);
         PendingSignerReplacement storage pending = _pendingReplacement[cidId];
         if (!pending.active) revert NoSignerReplacementPending();
@@ -783,7 +815,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         address recaller_,
         uint256 timestamp_,
         bytes calldata signature_
-    ) external onlyServer {
+    ) external onlyRelayer {
         bytes32 cidId = FSCommitmentLib.cidIdentifier(pieceCid_);
         PendingSignerReplacement storage pending = _pendingReplacement[cidId];
         if (!pending.active) revert NoSignerReplacementPending();
@@ -817,7 +849,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         address recaller_,
         uint256 timestamp_,
         bytes calldata signature_
-    ) external onlyServer {
+    ) external onlyRelayer {
         bytes32 cidId = FSCommitmentLib.cidIdentifier(pieceCid_);
         EnvelopeRegistration storage file = _envelopeRegistrations[cidId];
         if (file.timestamp == 0) revert FileNotRegistered();
@@ -858,7 +890,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         address recaller_,
         uint256 timestamp_,
         bytes calldata signature_
-    ) external onlyServer {
+    ) external onlyRelayer {
         bytes32 cidId = FSCommitmentLib.cidIdentifier(pieceCid_);
         EnvelopeRegistration storage file = _envelopeRegistrations[cidId];
         if (file.timestamp == 0) revert FileNotRegistered();
@@ -906,7 +938,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         uint8 leafSchemaVersion_,
         bytes32[] calldata routingOrder_,
         bytes32[] calldata quorumSet_
-    ) external onlyServer {
+    ) external onlyRelayer {
         bytes32 cidId = FSCommitmentLib.cidIdentifier(pieceCid_);
         EnvelopeRegistration storage file = _envelopeRegistrations[cidId];
 
@@ -993,7 +1025,7 @@ contract FSEnvelopeRegistry is EIP712, Ownable2Step {
         bytes32 authSubjectCommitment_,
         uint256 timestamp_,
         bytes calldata signature_
-    ) external onlyServer {
+    ) external onlyRelayer {
         bytes32 cidId = FSCommitmentLib.cidIdentifier(pieceCid_);
         EnvelopeRegistration storage file = _envelopeRegistrations[cidId];
         if (file.timestamp == 0) revert FileNotRegistered();

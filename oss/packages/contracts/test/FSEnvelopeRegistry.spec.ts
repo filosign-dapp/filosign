@@ -10,6 +10,7 @@ import {
 	defaultSenderAuth,
 	defaultSenderEmail,
 	deployFullSystem,
+	deployFullSystemDualRelayer,
 	registerEnvelopeOnly,
 	registerEnvelopeSignatureStep,
 	setOrgControllersForTest,
@@ -35,38 +36,157 @@ describe("FSEnvelopeRegistry", () => {
 		);
 	});
 
-	it("only owner can rotate server address", async () => {
+	it("only owner can add and remove relayers", async () => {
 		const ctx = await deployFullSystem();
 		const clients = await hre.viem.getWalletClients();
-		const newServer = clients[6];
-		if (!newServer)
+		const newRelayer = clients[6];
+		if (!newRelayer)
 			throw new Error("expected additional Hardhat wallet client");
 
 		await assert.rejects(
-			ctx.envelopeRegistry.write.setServer([walletAccount(newServer).address], {
-				account: walletAccount(ctx.server),
-			}),
+			ctx.envelopeRegistry.write.addRelayer(
+				[walletAccount(newRelayer).address],
+				{ account: walletAccount(ctx.server) },
+			),
 		);
 
-		await ctx.envelopeRegistry.write.setServer(
-			[walletAccount(newServer).address],
-			{
-				account: walletAccount(ctx.deployer),
-			},
+		await ctx.envelopeRegistry.write.addRelayer(
+			[walletAccount(newRelayer).address],
+			{ account: walletAccount(ctx.deployer) },
 		);
-		const server = await ctx.envelopeRegistry.read.server();
-		expect(server.toLowerCase()).to.equal(
-			walletAccount(newServer).address.toLowerCase(),
-		);
+		const isRelayer = await ctx.envelopeRegistry.read.isRelayer([
+			walletAccount(newRelayer).address,
+		]);
+		expect(isRelayer).to.equal(true);
 
 		const logs = await ctx.publicClient.getLogs({
 			address: ctx.envelopeRegistry.address,
 			fromBlock: "earliest",
 			event: parseAbiItem(
-				"event ServerUpdated(address indexed previousServer, address indexed newServer, address indexed changedBy)",
+				"event RelayerAdded(address indexed relayer, address indexed addedBy)",
 			),
 		});
 		expect(logs.length).to.be.greaterThan(0);
+	});
+
+	it("initial relayer is authorized for registerEnvelope", async () => {
+		const ctx = await deployFullSystem();
+		const isRelayer = await ctx.envelopeRegistry.read.isRelayer([
+			walletAccount(ctx.server).address,
+		]);
+		expect(isRelayer).to.equal(true);
+	});
+
+	describe("relayer ACL", () => {
+		it("removeRelayer revokes authorization", async () => {
+			const ctx = await deployFullSystem();
+			const clients = await hre.viem.getWalletClients();
+			const newRelayer = clients[6];
+			if (!newRelayer) {
+				throw new Error("expected additional Hardhat wallet client");
+			}
+			const newRelayerAddress = walletAccount(newRelayer).address;
+
+			await ctx.envelopeRegistry.write.addRelayer([newRelayerAddress], {
+				account: walletAccount(ctx.deployer),
+			});
+			expect(
+				await ctx.envelopeRegistry.read.isRelayer([newRelayerAddress]),
+			).to.equal(true);
+
+			await ctx.envelopeRegistry.write.removeRelayer([newRelayerAddress], {
+				account: walletAccount(ctx.deployer),
+			});
+			expect(
+				await ctx.envelopeRegistry.read.isRelayer([newRelayerAddress]),
+			).to.equal(false);
+		});
+
+		it("removeRelayer reverts CannotRemoveLastRelayer", async () => {
+			const ctx = await deployFullSystem();
+			await assert.rejects(
+				ctx.envelopeRegistry.write.removeRelayer(
+					[walletAccount(ctx.server).address],
+					{ account: walletAccount(ctx.deployer) },
+				),
+			);
+		});
+
+		it("addRelayer reverts ExceedsMaxRelayers at cap", async () => {
+			const clients = await hre.viem.getWalletClients();
+			const deployer = clients[0];
+			if (!deployer) throw new Error("expected Hardhat deployer wallet");
+			const initialRelayers = clients
+				.slice(1, 17)
+				.map((wallet) => walletAccount(wallet).address);
+			if (initialRelayers.length !== 16) {
+				throw new Error("expected 16 Hardhat wallet addresses for full pool");
+			}
+
+			const registry = await hre.viem.deployContract(
+				"FSEnvelopeRegistry",
+				[initialRelayers],
+				{ client: { wallet: deployer } },
+			);
+			const overflow = clients[17];
+			if (!overflow) {
+				throw new Error("expected Hardhat wallet client for overflow relayer");
+			}
+
+			await assert.rejects(
+				registry.write.addRelayer([walletAccount(overflow).address], {
+					account: walletAccount(deployer),
+				}),
+			);
+		});
+
+		it("constructor reverts ExceedsMaxRelayers when over 16 initial relayers", async () => {
+			const clients = await hre.viem.getWalletClients();
+			const deployer = clients[0];
+			if (!deployer) throw new Error("expected Hardhat deployer wallet");
+			const addresses = clients
+				.slice(1, 18)
+				.map((wallet) => walletAccount(wallet).address);
+			if (addresses.length !== 17) {
+				throw new Error("expected 17 Hardhat wallet addresses");
+			}
+
+			await assert.rejects(
+				hre.viem.deployContract("FSEnvelopeRegistry", [addresses], {
+					client: { wallet: deployer },
+				}),
+			);
+		});
+
+		it("setOrgControllers reverts when caller is not relayer", async () => {
+			const ctx = await deployFullSystem();
+			await assert.rejects(
+				ctx.envelopeRegistry.write.setOrgControllers(
+					[testOrgIdCommitment, [walletAccount(ctx.payout).address]],
+					{ account: walletAccount(ctx.sender) },
+				),
+			);
+		});
+
+		it("each initial relayer can registerEnvelope", async () => {
+			const ctx = await deployFullSystemDualRelayer();
+			const signer = `0x${"7d".repeat(32)}` as Hex;
+			const primaryInput = await buildRegisterEnvelopeInput(ctx, {
+				pieceCid: "dual-relayer-primary",
+				requiredCommitments: [signer],
+			});
+			await ctx.envelopeRegistry.write.registerEnvelope([primaryInput], {
+				account: walletAccount(ctx.server),
+			});
+
+			const secondaryInput = await buildRegisterEnvelopeInput(ctx, {
+				pieceCid: "dual-relayer-secondary",
+				requiredCommitments: [signer],
+			});
+			await ctx.envelopeRegistry.write.registerEnvelope([secondaryInput], {
+				account: walletAccount(ctx.secondRelayer),
+			});
+		});
 	});
 
 	it("supports two-step ownership transfer", async () => {
@@ -939,11 +1059,11 @@ describe("FSEnvelopeRegistry", () => {
 		);
 	});
 
-	it("registerEnvelope reverts when caller is not server", async () => {
+	it("registerEnvelope reverts when caller is not relayer", async () => {
 		const ctx = await deployFullSystem();
 		const signer = `0x${"78".repeat(32)}` as Hex;
 		const input = await buildRegisterEnvelopeInput(ctx, {
-			pieceCid: "not-server",
+			pieceCid: "not-relayer",
 			requiredCommitments: [signer],
 		});
 

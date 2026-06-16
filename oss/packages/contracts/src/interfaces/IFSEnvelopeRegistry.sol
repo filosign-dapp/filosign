@@ -61,7 +61,8 @@ interface IFSEnvelopeRegistry {
     event SignerReplacementProposed();
     event SignerReplacementExecuted();
     event SignerReplacementCancelled();
-    event ServerUpdated();
+    event RelayerAdded();
+    event RelayerRemoved();
     event EnvelopeRevokedBeforeComplete();
     event EnvelopeCompleted();
     event OrgControllersSet();
@@ -79,10 +80,13 @@ interface IFSEnvelopeRegistry {
         bytes20 signersCommitmentAfter;
     }
 
-    function server() external view returns (address);
+    function MAX_RELAYERS() external view returns (uint8);
+    function isRelayer(address key) external view returns (bool);
     function paymentValidator() external view returns (address);
     function attachmentRelease() external view returns (address);
-    function setServer(address newServer_) external;
+    function relayerCount() external view returns (uint8);
+    function addRelayer(address relayer_) external;
+    function removeRelayer(address relayer_) external;
     function setSatelliteContracts(address paymentValidator_, address attachmentRelease_) external;
     function isOrgController(bytes32 orgIdCommitment_, address wallet_) external view returns (bool);
     function getOrgControllers(bytes32 orgIdCommitment_) external view returns (address[] memory);

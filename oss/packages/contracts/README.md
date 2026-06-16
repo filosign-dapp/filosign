@@ -20,23 +20,23 @@ Wallet identity, keygen, and sharing approvals are **server-side** - not on-chai
 
 ## Architecture
 
-**Immutable v1:** deploy `FSEnvelopeRegistry(server)` then `FSPaymentValidator(envelopeRegistry, chainId)` and `FSAttachmentRelease(envelopeRegistry, chainId)`. No proxies. EIP-712 domain version **"4"** on the registry (`RegisterEnvelope` includes `orgIdCommitment`, not treasury wallet).
+**Immutable v1:** deploy `FSEnvelopeRegistry(initialRelayers[])` then `FSPaymentValidator(envelopeRegistry, chainId)` and `FSAttachmentRelease(envelopeRegistry, chainId)`. No proxies. EIP-712 domain version **"4"** on the registry (`RegisterEnvelope` includes `orgIdCommitment`, not treasury wallet).
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) and [`project/contracts-future-scope.md`](../../project/contracts-future-scope.md).
 
 ```mermaid
 flowchart TB
   subgraph deploy [Deployment]
-    FR[FSEnvelopeRegistry server]
+    FR[FSEnvelopeRegistry initialRelayers]
     PV[FSPaymentValidator envelopeRegistry chainId]
     FR --> PV
   end
   subgraph runtime [Runtime]
     Sender[Sender wallet]
-    Relay[Filosign server relay KMS]
+    Relay[Filosign relayer pool]
     Signers[Signers]
     Anyone[Any address]
-    Relay -->|onlyServer registerEnvelope registerEnvelopeSignature| FR
+    Relay -->|onlyRelayer registerEnvelope registerEnvelopeSignature| FR
     Sender -->|registerEnvelope via relay| FR
     Signers -->|signatures via relay| FR
     Sender -->|registerRule approve token| PV
@@ -63,7 +63,7 @@ Bytecode constants - not product tier limits. Entitlements + server enforce stri
 
 ## FSEnvelopeRegistry
 
-Permanent on-chain send + sign trail. Writes are **`onlyServer`** (KMS relayer); owner can rotate `server` via `Ownable2Step`.
+Permanent on-chain send + sign trail. Writes are **`onlyRelayer`** (authorized pool wallets); owner can add/remove relayers via `Ownable2Step`.
 
 ### RegisterEnvelope (EIP-712 v4)
 
@@ -187,8 +187,8 @@ After deploy, **`setSatelliteContracts(paymentValidator, attachmentRelease)`** o
 
 ## Trust model
 
-- **Server (`onlyServer` on registry):** Relays authenticated users’ register/sign/void/amend txs; syncs `setOrgControllers` from Postgres owner+admins; cannot move tokens without the payer’s on-chain `approve`.
-- **Owner (contract governance):** Rotates `FSEnvelopeRegistry.server` and ownership (2-step). Does not grant access to user settlement funds.
+- **Relayer pool (`onlyRelayer` on registry):** Relays authenticated users’ register/sign/void/amend txs; syncs `setOrgControllers` from Postgres owner+admins; cannot move tokens without the payer’s on-chain `approve`.
+- **Owner (contract governance):** Adds/removes registry relayers and transfers ownership (2-step). Does not grant access to user settlement funds.
 - **Org controllers (product governance):** Owner/admin wallets on the registry mapping may void/amend and manage attachment rules for that org’s envelopes.
 - **Relayers:** Any address may call `executePayout` once `canExecute` is true.
 - **Payer:** Must call `registerRule` / `updatePayoutRule` / `cancelPayoutRule` as `msg.sender == payer`; chooses token, recipients, and release params.
@@ -228,7 +228,7 @@ Optional hardening (product, not a Slither fix): **immutable USDC allowlist** at
 
 ### Org controller governance (Slither triage)
 
-- **`setOrgControllers` is `onlyServer`** - same trust model as other relay writes; duplicate-wallet and max-64 guards are on-chain validation only.
+- **`setOrgControllers` is `onlyRelayer`** - same trust model as other relay writes; duplicate-wallet and max-64 guards are on-chain validation only.
 - **`getOrgControllers`** - read-only; no state change.
 - **`FSAttachmentRelease`** - `UnauthorizedRuleRegistration` vs `UnauthorizedRuleCancellation` split for explorer clarity; ACL unchanged.
 
@@ -282,7 +282,7 @@ See [TESTING.md](./TESTING.md).
 
 ### Deploy env
 
-Env files: `packages/evm/.env.local` | `.env.staging` | `.env.production`. Keys: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS` (KMS relayer), optional `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY`. See [`packages/evm/README.md`](../../../packages/evm/README.md).
+Env files: `packages/evm/.env.local` | `.env.staging` | `.env.production`. Keys: `FC_DEPLOYER_PRIVATE_KEY`, `RELAYER_POOL`, optional `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY`. See [`packages/evm/README.md`](../../../packages/evm/README.md).
 
 ### Migrate
 

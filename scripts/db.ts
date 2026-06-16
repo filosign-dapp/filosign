@@ -6,6 +6,7 @@
  *   bun run db -- push local|staging
  *   bun run db -- generate
  *   bun run db -- migration-check [--skip-generate]
+ *   bun run db -- confirm-migration-commit --staged
  *   bun run db -- verify-migrations
  *   bun run db -- migrate local|staging|sandbox|production
  *   bun run db -- purge local|staging|sandbox
@@ -28,6 +29,7 @@ Filosign database orchestrator (@filosign/server)
   bun run db -- push staging      drizzle-kit push (Infisical staging)
   bun run db -- generate          drizzle-kit generate - commit apps/server/drizzle/ before migrate
   bun run db -- migration-check   journal/SQL/snapshot integrity + drizzle-kit check (CI gate)
+  bun run db -- confirm-migration-commit --staged  block commit when apps/server/drizzle/ is staged (pre-commit)
   bun run db -- verify-migrations apply full chain on fresh DB + smoke columns (needs local Postgres)
   bun run db -- migrate local     drizzle-kit migrate (.env.local) - optional; dev uses push
   bun run db -- migrate staging   drizzle-kit migrate (Infisical staging) - optional
@@ -51,6 +53,7 @@ type Action =
 	| "migrate"
 	| "generate"
 	| "migration-check"
+	| "confirm-migration-commit"
 	| "verify-migrations";
 type Profile = "local" | "staging" | "sandbox" | "production";
 type PushProfile = "local" | "staging";
@@ -118,6 +121,7 @@ runMain(async () => {
 		action !== "migrate" &&
 		action !== "generate" &&
 		action !== "migration-check" &&
+		action !== "confirm-migration-commit" &&
 		action !== "verify-migrations"
 	) {
 		die(`Unknown action: ${action}`);
@@ -134,6 +138,19 @@ runMain(async () => {
 		if (extra.length > 0) {
 			cmd.push("--", ...extra);
 		}
+		await runInheritExit(rootDir, cmd);
+		return;
+	}
+
+	if (action === "confirm-migration-commit") {
+		const extra = argv.slice(1);
+		if (extra.length !== 1 || extra[0] !== "--staged") {
+			die(
+				'confirm-migration-commit accepts only --staged - use "bun run db -- confirm-migration-commit --staged"',
+			);
+		}
+		const cmd = packageRunCmd(rootDir, server, "db:confirm-migration-commit");
+		cmd.push("--", "--staged");
 		await runInheritExit(rootDir, cmd);
 		return;
 	}

@@ -25,6 +25,7 @@
 		"db:migrate:sandbox": "infisical run --env=sandbox --path=/app -- bun run drizzle-kit:migrate",
 		"db:migrate:production": "infisical run --env=prod --path=/app -- bun run drizzle-kit:migrate",
 		"db:migration:check": "bun run scripts/db/check.ts",
+		"db:confirm-migration-commit": "bun run scripts/db/confirm-migration-commit.ts",
 		"db:verify-migrations": "bun run scripts/db/verify.ts",
 		"db:grant-plan:local": "bun run --env-file=.env.local scripts/grant-admin-plan.ts",
 		"db:grant-plan:staging": "infisical run --env=staging --path=/app -- bun run scripts/grant-admin-plan.ts",

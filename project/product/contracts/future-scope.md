@@ -23,7 +23,7 @@ Server, DB, client, and auth only: fields/placement manifest, **reminders/expira
 | New release types / tokens | New immutable validator per chain |
 | Multichain | Full v1 stack per chain in definitions |
 | QES / attestations | Sidecar + indexer |
-| Wallet screening | Server on `settlements.registerForFile` path ([`settlements/architecture-and-non-custody.md`](settlements/architecture-and-non-custody.md)) |
+| Wallet screening | Server on `settlements.registerForFile` path ([`../settlements/settlements/architecture-and-non-custody.md`](../settlements/settlements/architecture-and-non-custody.md)) |
 
 ## New registry address only if (rare)
 
@@ -38,4 +38,4 @@ Server, DB, client, and auth only: fields/placement manifest, **reminders/expira
 
 ## Reference
 
-Implementation and deploy: [`oss/packages/contracts/ARCHITECTURE.md`](../../oss/packages/contracts/ARCHITECTURE.md), [`oss/packages/contracts/README.md`](../../oss/packages/contracts/README.md), [`packages/evm/README.md`](../../packages/evm/README.md).
+Implementation and deploy: [`oss/packages/contracts/ARCHITECTURE.md`](../../../oss/packages/contracts/ARCHITECTURE.md), [`oss/packages/contracts/README.md`](../../../oss/packages/contracts/README.md), [`packages/evm/README.md`](../../../packages/evm/README.md).

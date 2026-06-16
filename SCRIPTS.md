@@ -39,7 +39,7 @@
 | Email package tests | `bun run test -- --emails` |
 | Re-embed welcome practice PDF (after editing `packages/shared/activation/assets/welcome-practice.pdf`) | `bun run --cwd packages/shared embed-welcome-practice-pdf` |
 
-**`check`** = Biome `--write` + types. **`sanity`** = `check --ci --types` + turbo unit tests + Hardhat (`contracts -- test`). **`test`** = all packages with tests (includes contracts). CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (`bun run sanity`, Node 25 - matches `engines.node` in root `package.json`). Pre-push (husky): `bun check --lint` then `bun sanity`.
+**`check`** = Biome `--write` + types. **`sanity`** = `check --ci --types` + turbo unit tests + Hardhat (`contracts -- test`). **`test`** = all packages with tests (includes contracts). CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (`bun run sanity`, Node 25 - matches `engines.node` in root `package.json`). Pre-commit (husky): migration commit guard + `bun check --lint`. Pre-push (husky): `bun run sanity -- --ci`.
 
 ## Entrypoints
 
@@ -101,10 +101,13 @@ Flags: `--client`, `--astro`, `--server`, `--harness` (`--test`), `--contracts`,
 | `push` | `local`, `staging` | `drizzle-kit push` - fast dev sync (no generate) |
 | `migrate` | all profiles | `drizzle-kit migrate` - **required** for sandbox; production via deploy start or laptop tunnel |
 | `migration-check` | — | journal/SQL/snapshot integrity + `drizzle-kit check` |
+| `confirm-migration-commit --staged` | — | pre-commit guard: blocks when `apps/server/drizzle/` is staged; prints SQL from git index |
 | `verify-migrations` | local Postgres | full chain on empty DB + column smoke |
 | `purge` | `local`, `staging`, `sandbox` | wipe schema; then **push** (local/staging) or **migrate** (sandbox) |
 
-**Sandbox / production:** never `push` (orchestrator blocks). After schema is stable on local/staging: `bun run db -- generate` → commit `apps/server/drizzle/` → `bun run db -- migrate sandbox` → backup → redeploy app (migrations run on container start) or `bun run prod -- --migrate` (laptop tunnel fallback).
+**Sandbox / production:** never `push` (orchestrator blocks). After schema is stable on local/staging: `bun run db -- generate` → **review SQL** → commit `apps/server/drizzle/` (see commit guard below) → `bun run db -- migrate sandbox` → backup → redeploy app (migrations run on container start) or `bun run prod -- --migrate` (laptop tunnel fallback).
+
+**Migration commit guard:** pre-commit runs `bun run db -- confirm-migration-commit --staged`. Any staged file under `apps/server/drizzle/` fails the hook and prints staged SQL. After you review, commit migrations yourself: `git commit --no-verify -m "db: …"`. Agents must not stage drizzle paths or use `--no-verify`.
 
 **Integrity / smoke:** `bun run db -- migration-check` (CI via `sanity --ci`) · `bun run db -- verify-migrations` (fresh DB + column smoke; needs local Postgres).
 

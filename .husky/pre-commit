@@ -1,1 +1,2 @@
+bun run db -- confirm-migration-commit --staged
 bun check --lint

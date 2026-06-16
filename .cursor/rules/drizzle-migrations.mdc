@@ -17,7 +17,7 @@ Never hand-edit [`apps/server/drizzle/*.sql`](apps/server/drizzle/) or [`apps/se
 1. Edit [`apps/server/lib/platform/db/schema/`](apps/server/lib/platform/db/schema/)
 2. `bun run db -- push local` (dev sync)
 3. `bun run db -- generate` (prod artifact)
-4. Commit **all** files under `apps/server/drizzle/` (SQL + `meta/`)
+4. **User commits** all files under `apps/server/drizzle/` (SQL + `meta/`) after manual SQL review (see commit guard below)
 5. `bun run db -- migrate sandbox` before prod
 
 **Custom SQL / seeds:** `drizzle-kit generate --custom --name=<tag>` only.
@@ -27,3 +27,13 @@ Never hand-edit [`apps/server/drizzle/*.sql`](apps/server/drizzle/) or [`apps/se
 **Profiles:** local/staging = `push`. sandbox/production = `generate` + `migrate` only (never `push`).
 
 Drift gate: `bun run db -- migration-check` (CI via `sanity --ci`).
+
+## Commit guard (agents)
+
+Pre-commit **always blocks** when anything under `apps/server/drizzle/` is staged. There is no in-hook bypass.
+
+- **Never** `git add` or commit paths under `apps/server/drizzle/**` unless the user explicitly says they will commit migrations themselves.
+- When schema work is done, **stop** and tell the user: migration files are ready under `apps/server/drizzle/`; please review and commit them manually.
+- **Never** `git commit --no-verify`, `git push --no-verify`, or `HUSKY=0` to skip hooks.
+
+**User workflow after review:** stage drizzle files, then `git commit --no-verify -m "db: …"`. Preview staged SQL anytime with `bun run db -- confirm-migration-commit --staged` (prints SQL from the git index, then exits 1 if drizzle is staged).

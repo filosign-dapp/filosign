@@ -27,6 +27,19 @@ export function envelopeProgressTotals(progress: EnvelopeProgressLike): {
 	return { signedCount, totalSigners };
 }
 
+export function willSignCompleteEnvelope(
+	progress: EnvelopeProgressLike | null | undefined,
+): boolean {
+	if (!progress || progress.completedAt) {
+		return false;
+	}
+	const nextSignatures = progress.requiredSignaturesCount + 1;
+	if (progress.quorumN > 0) {
+		return nextSignatures >= progress.quorumN;
+	}
+	return nextSignatures >= progress.requiredSignersCount;
+}
+
 export function envelopeProgressPercent(
 	signedCount: number,
 	totalSigners: number,

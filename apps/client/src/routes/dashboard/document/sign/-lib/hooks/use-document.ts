@@ -80,6 +80,8 @@ export function useSignDocumentController() {
 		prepareForSign: fieldSession.prepareForSign,
 		isSender: signingMeta.isSender,
 		senderHasAssignedFields: signingMeta.senderHasAssignedFields,
+		envelopeProgress: file?.envelopeProgress,
+		settlementRuleCount: settlements.rules.length,
 	});
 
 	return {

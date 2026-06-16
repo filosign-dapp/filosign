@@ -19,6 +19,10 @@ import { suppressGlobalErrorToast } from "@/src/lib/errors";
 import { presentAppError } from "@/src/lib/errors/present-app-error";
 import { safeAsync } from "@/src/lib/utils/safe";
 import {
+	type EnvelopeProgressLike,
+	willSignCompleteEnvelope,
+} from "@/src/routes/dashboard/document/sign/-lib/utils/envelope-progress-display";
+import {
 	buildSignProgressPlan,
 	createInitialSignProgressState,
 	reduceSignProgress,
@@ -61,6 +65,8 @@ export function useSignActions(options: {
 	}>;
 	isSender?: boolean;
 	senderHasAssignedFields?: boolean;
+	envelopeProgress?: EnvelopeProgressLike | null;
+	settlementRuleCount?: number;
 }) {
 	const {
 		pieceCid,
@@ -73,6 +79,8 @@ export function useSignActions(options: {
 		prepareForSign,
 		isSender = false,
 		senderHasAssignedFields = false,
+		envelopeProgress,
+		settlementRuleCount = 0,
 	} = options;
 
 	const navigate = useNavigate();
@@ -219,6 +227,15 @@ export function useSignActions(options: {
 
 			closeSignProgress();
 
+			if (
+				settlementRuleCount > 0 &&
+				willSignCompleteEnvelope(envelopeProgress)
+			) {
+				toastUser.message(TOASTS.sign.payoutProcessing.title, {
+					hint: TOASTS.sign.payoutProcessing.hint,
+				});
+			}
+
 			const isPracticeSign =
 				pieceCid === activationQuery.data?.practicePieceCid?.trim();
 
@@ -248,6 +265,8 @@ export function useSignActions(options: {
 			queryClient,
 			rpcQuery,
 			navigate,
+			envelopeProgress,
+			settlementRuleCount,
 		],
 	);
 

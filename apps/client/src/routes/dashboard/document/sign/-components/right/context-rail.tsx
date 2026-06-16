@@ -138,6 +138,7 @@ export function SignContextRail() {
 						isSender={isSender}
 						walletAddress={settlements.walletAddress}
 						canSettleByRuleId={settlements.canSettleByRuleId}
+						firstCanExecuteAtByRuleId={settlements.firstCanExecuteAtByRuleId}
 						trySettlePending={settlements.trySettlePending}
 						manualSettlePending={settlements.manualSettlePending}
 						settlingRuleId={settlements.settlingRuleId}

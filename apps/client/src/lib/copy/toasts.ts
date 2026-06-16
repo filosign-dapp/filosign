@@ -54,6 +54,10 @@ export const TOASTS = {
 			title: "Some payments sent",
 			hint: "Tap Retry for the rest.",
 		},
+		payoutProcessing: {
+			title: "Payout is processing automatically",
+			hint: "Usually within a few minutes. You can retry manually later if needed.",
+		},
 		signaturesCleared: {
 			title: "Signatures cleared",
 			hint: "Signers need to sign again.",

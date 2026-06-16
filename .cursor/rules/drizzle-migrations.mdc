@@ -28,6 +28,8 @@ Never hand-edit [`apps/server/drizzle/*.sql`](apps/server/drizzle/) or [`apps/se
 
 Drift gate: `bun run db -- migration-check` (CI via `sanity --ci`).
 
+Also in [AGENTS.md](../../AGENTS.md) (Boundaries + Commits): agents never stage/commit `apps/server/drizzle/**` or use `--no-verify` / `HUSKY=0`.
+
 ## Commit guard (agents)
 
 Pre-commit **always blocks** when anything under `apps/server/drizzle/` is staged. There is no in-hook bypass.

@@ -16,7 +16,7 @@ App containers use `postgres` as DB host on Docker DNS. Your Mac cannot resolve 
 
 **One-time:** `FILOSIGN_PROD_SSH=root@YOUR_VPS` in `deploy/.env` (gitignored).
 
-Schema history starts from [`apps/server/drizzle/0000_initial.sql`](../../apps/server/drizzle/0000_initial.sql) (squashed baseline). **Every schema change:** edit Drizzle schema → `bun run db -- generate` → commit `apps/server/drizzle/` (SQL + `meta/_journal.json` + snapshot). Do not add `.sql` files without a matching journal entry — `bun run prod -- --migrate` only applies tags listed in [`meta/_journal.json`](../../apps/server/drizzle/meta/_journal.json). Drift check: `bun run db -- migration-check`.
+Schema history starts from [`apps/server/drizzle/0000_initial.sql`](../../apps/server/drizzle/0000_initial.sql) (squashed baseline). **Every schema change:** edit Drizzle schema → `bun run db -- generate` → **review SQL** → user commits `apps/server/drizzle/` (SQL + `meta/_journal.json` + snapshot) with `git commit --no-verify` after review (pre-commit blocks staged drizzle on normal `git commit`; agents must not stage drizzle or use `--no-verify`). Do not add `.sql` files without a matching journal entry — `bun run prod -- --migrate` only applies tags listed in [`meta/_journal.json`](../../apps/server/drizzle/meta/_journal.json). Drift check: `bun run db -- migration-check`. Preview staged SQL: `bun run db -- confirm-migration-commit --staged`.
 
 ### Wipe production DB (pre-production only)
 

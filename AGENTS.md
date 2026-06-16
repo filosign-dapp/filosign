@@ -42,7 +42,7 @@ Multi-package work: read every relevant row, then [Vertical slice](#vertical-sli
 | [preamble.mdc](.cursor/rules/preamble.mdc)                                           | Discipline, verify before done                           |
 | [apps/web/patterns.mdc](.cursor/rules/apps/web/patterns.mdc)                         | `safe`/`tryCatch`, `respond`, Hono `Variables`           |
 | [app.mdc](.cursor/rules/app.mdc)                                                     | Never edit `definitions/` (generated)                    |
-| [drizzle-migrations.mdc](.cursor/rules/drizzle-migrations.mdc)                       | `apps/server/drizzle/` - generate only, never hand-edit SQL/journal |
+| [drizzle-migrations.mdc](.cursor/rules/drizzle-migrations.mdc)                       | `apps/server/drizzle/` - generate only, never hand-edit; agents never commit drizzle (pre-commit guard) |
 | [apps/web/api-routes.mdc](.cursor/rules/apps/web/api-routes.mdc)                     | oRPC routes + client consumption                         |
 | [TESTING.md](TESTING.md)                                                             | Before adding/changing Bun tests; `tests/` vs `lib/`, mocks in `tests/support/` |
 | [sprint-implementation-rulebook.md](.cursor/plans/sprint-implementation-rulebook.md) | Server infra Sprints 0–6 - layout, TDD, replace-not-shim |
@@ -61,7 +61,7 @@ Workspaces: `apps/*`, `packages/*`, `oss/packages/contracts`, `oss/packages/prot
 - **Logic:** UI `apps/client` | hooks/SDK `packages/react-sdk` | API/DB/relay `apps/server`.
 - **Imports:** App runtime uses `@filosign/evm` ([constants](apps/client/src/constants.ts)); OSS verify uses `@filosign/contracts/abis` and `/chains`.
 - **Contract manifests:** Never hand-edit `packages/evm/definitions/` (generated). Update via deploy only; `compile` = artifacts/interfaces. **No deploy/migrate without green contract tests** (`migrate` runs test before deploy). Redeploy / rebrand ops: `[project/contracts/envelope-registry-migration.md](project/contracts/envelope-registry-migration.md)`.
-- **DB migrations:** Never hand-edit `apps/server/drizzle/` (SQL, `meta/_journal.json`, snapshots). Edit schema → `bun run db -- push local` → `bun run db -- generate` → commit all of `drizzle/`. See [drizzle-migrations.mdc](.cursor/rules/drizzle-migrations.mdc).
+- **DB migrations:** Never hand-edit `apps/server/drizzle/` (SQL, `meta/_journal.json`, snapshots). Edit schema → `bun run db -- push local` → `bun run db -- generate`. **Agents never stage or commit `apps/server/drizzle/**`** — stop and tell the user to review SQL and commit migrations manually. Pre-commit blocks any staged drizzle path (no in-hook bypass). **Never** `git commit --no-verify`, `git push --no-verify`, or `HUSKY=0`. User-only after SQL review: `git commit --no-verify -m "db: …"`. Preview: `bun run db -- confirm-migration-commit --staged`. See [drizzle-migrations.mdc](.cursor/rules/drizzle-migrations.mdc) and [SCRIPTS.md](SCRIPTS.md#db).
 - **Contracts v1 (immutable):** `FSEnvelopeRegistry` + `FSPaymentValidator` only; KMS = `FSEnvelopeRegistry.server`; identity/E2EE off-chain. See `[oss/packages/contracts/ARCHITECTURE.md](oss/packages/contracts/ARCHITECTURE.md)` and `[project/contracts-future-scope.md](project/contracts-future-scope.md)`.
 
 ## API & oRPC
@@ -91,6 +91,8 @@ All commands: **[SCRIPTS.md](SCRIPTS.md)** (or `bun run <script> -- --help`). Pr
 ## Commits
 
 **Only when the user explicitly asks.** Atomic batches (~≤5 paths or file changes per commit). Subject: `[SPRINT] - SUBFEATURE (<area>): description` - brackets = initiative (not package shorthand), e.g. `[CONTRACT TEST SUITE] - Fixtures (oss/packages/contracts): shared deploy helpers`.
+
+**Drizzle migrations (`apps/server/drizzle/`):** never include in agent commits. Commit app/schema code without staging drizzle; user reviews generated SQL and commits migrations separately with `git commit --no-verify` (user only — agents must not use `--no-verify`). Pre-commit enforces the block via `bun run db -- confirm-migration-commit --staged`.
 
 ## Skills
 

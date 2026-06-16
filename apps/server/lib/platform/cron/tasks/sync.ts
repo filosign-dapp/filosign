@@ -7,6 +7,7 @@ import {
 	PLATFORM_ALERT_EVENTS,
 } from "@/lib/platform/analytics";
 import { evmClient } from "@/lib/platform/evm";
+import { relayerPoolAddresses } from "@/lib/platform/evm/relayer-pool";
 import {
 	FOC_FIL_ALERT_THRESHOLD_WEI,
 	FOC_USDFC_ALERT_THRESHOLD_WEI,
@@ -108,6 +109,7 @@ export async function runMonitorRelayerGasJob(): Promise<{
 	balanceWei: bigint;
 	thresholdWei: bigint;
 	alerted: boolean;
+	lowWallets: string[];
 }> {
 	const thresholdWei = RELAYER_GAS_ALERT_THRESHOLD_WEI;
 
@@ -117,44 +119,55 @@ export async function runMonitorRelayerGasJob(): Promise<{
 			balanceWei: 0n,
 			thresholdWei,
 			alerted: false,
+			lowWallets: [],
 		};
 	}
 
-	const balanceRes = await tryCatch(
-		evmClient.getBalance({ address: env.FC_SERVER_ADDRESS }),
-	);
-	if (balanceRes.error) {
-		throw balanceRes.error;
+	const lowWallets: string[] = [];
+	let minBalance = 2n ** 256n - 1n;
+
+	for (const wallet of relayerPoolAddresses()) {
+		const balanceRes = await tryCatch(
+			evmClient.getBalance({ address: wallet }),
+		);
+		if (balanceRes.error) {
+			throw balanceRes.error;
+		}
+		if (balanceRes.data < minBalance) {
+			minBalance = balanceRes.data;
+		}
+		if (balanceRes.data < thresholdWei) {
+			lowWallets.push(wallet);
+			void emitCriticalPlatformEvent({
+				name: PLATFORM_ALERT_EVENTS.serverRelayerGasLow,
+				severity: "critical",
+				message: "Relayer pool member native balance below threshold",
+				context: {
+					wallet,
+					balanceWei: balanceRes.data.toString(),
+					thresholdWei: thresholdWei.toString(),
+					deployment: env.DEPLOYMENT,
+					chain: env.CHAIN,
+				},
+			});
+			logger.warn(
+				{
+					wallet,
+					balanceWei: balanceRes.data.toString(),
+					thresholdWei: thresholdWei.toString(),
+				},
+				"relayer gas below threshold",
+			);
+		}
 	}
 
-	const balanceWei = balanceRes.data;
-	if (balanceWei >= thresholdWei) {
-		return { checked: true, balanceWei, thresholdWei, alerted: false };
-	}
-
-	void emitCriticalPlatformEvent({
-		name: PLATFORM_ALERT_EVENTS.serverRelayerGasLow,
-		severity: "critical",
-		message: "KMS relayer native balance below threshold",
-		context: {
-			wallet: env.FC_SERVER_ADDRESS,
-			balanceWei: balanceWei.toString(),
-			thresholdWei: thresholdWei.toString(),
-			deployment: env.DEPLOYMENT,
-			chain: env.CHAIN,
-		},
-	});
-
-	logger.warn(
-		{
-			wallet: env.FC_SERVER_ADDRESS,
-			balanceWei: balanceWei.toString(),
-			thresholdWei: thresholdWei.toString(),
-		},
-		"relayer gas below threshold",
-	);
-
-	return { checked: true, balanceWei, thresholdWei, alerted: true };
+	return {
+		checked: true,
+		balanceWei: minBalance === 2n ** 256n - 1n ? 0n : minBalance,
+		thresholdWei,
+		alerted: lowWallets.length > 0,
+		lowWallets,
+	};
 }
 
 export async function runMonitorFocWalletBalancesJob(): Promise<{
@@ -182,7 +195,7 @@ export async function runMonitorFocWalletBalancesJob(): Promise<{
 	}
 
 	const balanceRes = await tryCatch(
-		readFocWalletBalances(env.FC_SERVER_ADDRESS),
+		readFocWalletBalances(env.FOC_WALLET_ADDRESS),
 	);
 	if (balanceRes.error) {
 		throw balanceRes.error;
@@ -199,7 +212,7 @@ export async function runMonitorFocWalletBalancesJob(): Promise<{
 			severity: "critical",
 			message: "FOC wallet FIL balance below threshold",
 			context: {
-				wallet: env.FC_SERVER_ADDRESS,
+				wallet: env.FOC_WALLET_ADDRESS,
 				balanceWei: filBalanceWei.toString(),
 				thresholdWei: filThresholdWei.toString(),
 				deployment: env.DEPLOYMENT,
@@ -209,7 +222,7 @@ export async function runMonitorFocWalletBalancesJob(): Promise<{
 		});
 		logger.warn(
 			{
-				wallet: env.FC_SERVER_ADDRESS,
+				wallet: env.FOC_WALLET_ADDRESS,
 				balanceWei: filBalanceWei.toString(),
 				thresholdWei: filThresholdWei.toString(),
 			},
@@ -224,7 +237,7 @@ export async function runMonitorFocWalletBalancesJob(): Promise<{
 			severity: "critical",
 			message: "FOC wallet USDFC balance below threshold",
 			context: {
-				wallet: env.FC_SERVER_ADDRESS,
+				wallet: env.FOC_WALLET_ADDRESS,
 				balanceWei: usdfcBalanceWei.toString(),
 				thresholdWei: usdfcThresholdWei.toString(),
 				deployment: env.DEPLOYMENT,
@@ -234,7 +247,7 @@ export async function runMonitorFocWalletBalancesJob(): Promise<{
 		});
 		logger.warn(
 			{
-				wallet: env.FC_SERVER_ADDRESS,
+				wallet: env.FOC_WALLET_ADDRESS,
 				balanceWei: usdfcBalanceWei.toString(),
 				thresholdWei: usdfcThresholdWei.toString(),
 			},

@@ -131,6 +131,19 @@ describe("settlements", () => {
 				);
 			});
 
+			test("payout-leg uses pinned relayer wallet for simulate and write", () => {
+				const legSrc = readFileSync(
+					join(
+						import.meta.dir,
+						"../../lib/domains/settlements/utils/execute/payout-leg.ts",
+					),
+					"utf8",
+				);
+				expect(legSrc).toContain("fsPaymentValidatorForRelayer");
+				expect(legSrc).toContain("getRelayerWalletClient(args.relayerAddress)");
+				expect(legSrc).not.toContain("evmClient.account");
+			});
+
 			test("simulates executePayoutLeg before broadcasting write", () => {
 				const legSrc = readFileSync(
 					join(

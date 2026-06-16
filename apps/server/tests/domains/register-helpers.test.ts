@@ -76,7 +76,11 @@ mock.module("@/lib/platform/db", () => ({
 }));
 
 mock.module("@/lib/platform/evm", () => ({
-	getActiveRelayerAddress: () => relayer,
+	routeRelayerForNewPiece: () => ({
+		address: relayer,
+		privateKey: "0x01",
+		index: 0,
+	}),
 	fsContracts: {
 		FSEnvelopeRegistry: {
 			address: registryAddress,

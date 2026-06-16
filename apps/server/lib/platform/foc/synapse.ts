@@ -23,7 +23,7 @@ function ensureSynapseClient(): SynapseClient {
 	}
 
 	const synapseChain = env.CHAIN === "mainnet" ? mainnet : calibration;
-	const account = privateKeyToAccount(env.FC_SERVER_PRIVATE_KEY);
+	const account = privateKeyToAccount(env.FOC_WALLET_PRIVATE_KEY);
 	synapseClient = Synapse.create({
 		account,
 		chain: synapseChain,
@@ -34,8 +34,13 @@ function ensureSynapseClient(): SynapseClient {
 	return synapseClient;
 }
 
+export function getFocWalletAddress(): Address {
+	return getAddress(env.FOC_WALLET_ADDRESS);
+}
+
+/** @deprecated Use getFocWalletAddress */
 export function getServerWallet(): Address {
-	return getAddress(env.FC_SERVER_ADDRESS);
+	return getFocWalletAddress();
 }
 
 export function getSynapse(): SynapseClient {
@@ -72,7 +77,7 @@ async function resolvePlatformDataSetId(): Promise<bigint | undefined> {
 	return undefined;
 }
 
-/** Single platform dataset for archival uploads (USDFC paid from FC_SERVER wallet). */
+/** Single platform dataset for archival uploads (USDFC paid from FOC wallet). */
 export async function getOrCreatePlatformDataset() {
 	const dataSetId = await resolvePlatformDataSetId();
 
@@ -121,7 +126,7 @@ export async function getOrCreatePlatformDataset() {
 
 export function archivalCdnUrl(pieceCid: string): string {
 	const network = env.CHAIN === "mainnet" ? "mainnet" : "calibration";
-	return `https://${getServerWallet()}.${network}.filbeam.io/${pieceCid}`;
+	return `https://${getFocWalletAddress()}.${network}.filbeam.io/${pieceCid}`;
 }
 
 /** Stable id stored on `foc_objects.deal_id` from an upload result. */

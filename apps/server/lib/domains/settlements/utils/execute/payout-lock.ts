@@ -1,11 +1,17 @@
 import type { SettlementRuleStatus } from "@filosign/shared";
 import type { Address } from "viem";
-import db from "@/lib/platform/db";
 import {
-	type fsPaymentValidatorAt,
-	getActiveRelayerAddress,
-} from "@/lib/platform/evm";
+	readPieceRelayerPin,
+	writePieceRelayerPin,
+} from "@/lib/domains/files/utils/relayer-pin";
+import db from "@/lib/platform/db";
+import type { fsPaymentValidatorAt } from "@/lib/platform/evm";
+import {
+	signalRelayerRelayFailover,
+	withRelayerPoolFailover,
+} from "@/lib/platform/evm/relay-failover";
 import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
+import { routeRelayerForPiece } from "@/lib/platform/evm/relayer-pool";
 import { selectSettlementRule, settlementRuleWhere } from "../rule-lookup";
 import { alertSettlementRelayPayoutFailed } from "./alerts";
 import { executeSinglePayoutLeg, type LegExecutionResult } from "./payout-leg";
@@ -15,19 +21,31 @@ const { fileSettlementRules } = db.schema;
 
 type PayoutRow = NonNullable<Awaited<ReturnType<typeof selectSettlementRule>>>;
 
-export async function executePayoutLegsUnderLock(args: {
+const PAYOUT_FAILOVER_STATUSES = new Set<SettlementRuleStatus>([
+	"failed_relay",
+	"failed_insufficient",
+]);
+
+function isPayoutLegFailoverEligible(status: SettlementRuleStatus): boolean {
+	return PAYOUT_FAILOVER_STATUSES.has(status);
+}
+
+type PayoutLegRunResult = {
+	executed: boolean;
+	partial?: boolean;
+	txHash?: string;
+	skipped?: string;
+};
+
+async function runPayoutLegsForRelayer(args: {
 	validator: ReturnType<typeof fsPaymentValidatorAt>;
 	onChainRuleId: bigint;
 	validatorAddress: Address;
 	unpaidIndices: number[];
 	row: PayoutRow;
-}): Promise<{
-	executed: boolean;
-	partial?: boolean;
-	txHash?: string;
-	skipped?: string;
-}> {
-	return withRelayerLock(getActiveRelayerAddress(), async () => {
+	relayerAddress: Address;
+}): Promise<PayoutLegRunResult> {
+	return withRelayerLock(args.relayerAddress, async () => {
 		let lastTxHash: `0x${string}` | undefined;
 		let anyLegPaid = false;
 		let lastFailureStatus: SettlementRuleStatus | undefined;
@@ -40,15 +58,18 @@ export async function executePayoutLegsUnderLock(args: {
 
 		for (const legIndex of args.unpaidIndices) {
 			const result: LegExecutionResult = await executeSinglePayoutLeg({
-				validator: args.validator,
 				onChainRuleId: args.onChainRuleId,
 				validatorAddress: args.validatorAddress,
 				legIndex,
+				relayerAddress: args.relayerAddress,
 			});
 
 			if (result.kind === "failed") {
 				lastFailureStatus = result.status;
 				lastFailureMessage = result.message;
+				if (!anyLegPaid && isPayoutLegFailoverEligible(result.status)) {
+					signalRelayerRelayFailover(result.message);
+				}
 				continue;
 			}
 			if (result.kind === "skipped") continue;
@@ -92,6 +113,10 @@ export async function executePayoutLegsUnderLock(args: {
 
 		const status = lastFailureStatus ?? "failed_relay";
 		const lastError = lastFailureMessage ?? "execute_failed";
+		if (!anyLegPaid && isPayoutLegFailoverEligible(status)) {
+			signalRelayerRelayFailover(lastError);
+		}
+
 		await db
 			.update(fileSettlementRules)
 			.set({
@@ -114,4 +139,35 @@ export async function executePayoutLegsUnderLock(args: {
 		}
 		return { executed: false, skipped: status };
 	});
+}
+
+export async function executePayoutLegsUnderLock(args: {
+	validator: ReturnType<typeof fsPaymentValidatorAt>;
+	onChainRuleId: bigint;
+	validatorAddress: Address;
+	unpaidIndices: number[];
+	row: PayoutRow;
+}): Promise<PayoutLegRunResult> {
+	const pinnedRelayerAddress = await readPieceRelayerPin(args.row.pieceCid);
+	const primary = routeRelayerForPiece({
+		pieceCid: args.row.pieceCid,
+		pinnedRelayerAddress,
+	});
+
+	const failover = await withRelayerPoolFailover({
+		primary,
+		step: "executePayoutLegs",
+		context: { pieceCid: args.row.pieceCid },
+		run: (member) =>
+			runPayoutLegsForRelayer({
+				...args,
+				relayerAddress: member.address,
+			}),
+	});
+
+	await writePieceRelayerPin(args.row.pieceCid, failover.relayer.address).catch(
+		() => undefined,
+	);
+
+	return failover.result;
 }

@@ -65,6 +65,7 @@ type FileRow = {
 	sender: Address;
 	organizationId: string;
 	registryAddress: `0x${string}`;
+	assignedRelayerAddress: Address | null;
 	revokedBeforeCompletedAt: Date | null;
 	completedAt: Date | null;
 	placementManifestJson: PlacementManifest;
@@ -79,6 +80,7 @@ async function loadFileForReplacement(
 			sender: files.sender,
 			organizationId: files.organizationId,
 			registryAddress: files.registryAddress,
+			assignedRelayerAddress: files.assignedRelayerAddress,
 			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
 			completedAt: files.completedAt,
 			placementManifestJson: files.placementManifestJson,
@@ -457,8 +459,13 @@ export async function filesProposeSignerReplacement(
 		routingCalldata.quorumSet,
 	] as const;
 
+	const pieceRelay = {
+		pieceCid,
+		pinnedRelayerAddress: file.assignedRelayerAddress,
+	};
+
 	const txHash = await tryCatch(
-		relayProposeSignerReplacement(registry, proposeArgs),
+		relayProposeSignerReplacement(registry, proposeArgs, pieceRelay),
 	);
 	if (txHash.error) {
 		throw throwAppError("FILES.REPLACEMENT_RELAY_FAILED", {
@@ -575,14 +582,23 @@ export async function filesExecuteSignerReplacement(
 		registryAddress: file.registryAddress,
 	});
 
+	const pieceRelay = {
+		pieceCid,
+		pinnedRelayerAddress: file.assignedRelayerAddress,
+	};
+
 	const registry = fsEnvelopeRegistryAt(file.registryAddress);
 	const txHash = await tryCatch(
-		relayExecuteSignerReplacement(registry, [
-			pieceCid,
-			recaller,
-			routingCalldata.routingOrder,
-			routingCalldata.quorumSet,
-		]),
+		relayExecuteSignerReplacement(
+			registry,
+			[
+				pieceCid,
+				recaller,
+				routingCalldata.routingOrder,
+				routingCalldata.quorumSet,
+			],
+			pieceRelay,
+		),
 	);
 	if (txHash.error) {
 		throw throwAppError("FILES.REPLACEMENT_RELAY_FAILED", {
@@ -667,14 +683,18 @@ export async function filesCancelSignerReplacement(
 		registryAddress: file.registryAddress,
 	});
 
+	const pieceRelay = {
+		pieceCid,
+		pinnedRelayerAddress: file.assignedRelayerAddress,
+	};
+
 	const registry = fsEnvelopeRegistryAt(file.registryAddress);
 	const txHash = await tryCatch(
-		relayCancelSignerReplacement(registry, [
-			pieceCid,
-			recaller,
-			BigInt(timestamp),
-			signature,
-		]),
+		relayCancelSignerReplacement(
+			registry,
+			[pieceCid, recaller, BigInt(timestamp), signature],
+			pieceRelay,
+		),
 	);
 	if (txHash.error) {
 		throw throwAppError("FILES.REPLACEMENT_RELAY_FAILED", {

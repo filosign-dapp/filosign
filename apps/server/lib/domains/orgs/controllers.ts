@@ -3,15 +3,20 @@ import { hashOrgIdCommitment } from "@filosign/shared";
 import { and, eq, inArray } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
-import db from "@/lib/platform/db";
 import {
-	fsContracts,
-	fsEnvelopeRegistryAt,
-	getActiveRelayerAddress,
-	waitForRelayReceipt,
-} from "@/lib/platform/evm";
+	readOrgRelayerPin,
+	writeOrgRelayerPin,
+} from "@/lib/domains/files/utils/relayer-pin";
+import db from "@/lib/platform/db";
+import { fsEnvelopeRegistryAt, waitForRelayReceipt } from "@/lib/platform/evm";
+import { withRelayerPoolFailover } from "@/lib/platform/evm/relay-failover";
 import { relayWrite } from "@/lib/platform/evm/relay-write";
 import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
+import {
+	fsContractsForRelayer,
+	routeRelayerForOrg,
+	withOrgRelayLock,
+} from "@/lib/platform/evm/relayer-pool";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const CONTROLLER_ROLES = ["owner", "admin"] as const;
@@ -91,7 +96,7 @@ export async function assertOrgControllerMayRelay(args: {
 	}
 }
 
-/** Pushes owner+admin controller set to FSEnvelopeRegistry (onlyServer). */
+/** Pushes owner+admin controller set to FSEnvelopeRegistry (onlyRelayer). */
 export async function syncOrgControllersOnChain(
 	organizationId: string,
 ): Promise<void> {
@@ -99,20 +104,37 @@ export async function syncOrgControllersOnChain(
 	const wallets = await listOrgControllerWallets(organizationId);
 	if (wallets.length === 0) return;
 
+	const pinnedRelayerAddress = await readOrgRelayerPin(organizationId);
+	const primary = routeRelayerForOrg({
+		organizationId,
+		pinnedRelayerAddress,
+	});
+
 	const res = await tryCatch(
-		withRelayerLock(getActiveRelayerAddress(), () =>
-			relayWrite({
+		withOrgRelayLock(organizationId, () =>
+			withRelayerPoolFailover({
+				primary,
 				step: "setOrgControllers",
-				write: () =>
-					fsContracts.FSEnvelopeRegistry.write.setOrgControllers([
-						orgIdCommitment,
-						wallets,
-					]),
-				waitForReceipt: waitForRelayReceipt,
+				context: { organizationId },
+				run: (member) =>
+					withRelayerLock(member.address, () => {
+						const contracts = fsContractsForRelayer(member.address);
+						return relayWrite({
+							step: "setOrgControllers",
+							write: () =>
+								contracts.FSEnvelopeRegistry.write.setOrgControllers([
+									orgIdCommitment,
+									wallets,
+								]),
+							waitForReceipt: waitForRelayReceipt,
+						});
+					}),
 			}),
 		),
 	);
 	if (res.error) {
 		throw res.error;
 	}
+
+	await writeOrgRelayerPin(organizationId, res.data.relayer.address);
 }

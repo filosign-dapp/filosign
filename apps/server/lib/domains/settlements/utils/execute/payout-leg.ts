@@ -1,10 +1,13 @@
 import type { SettlementRuleStatus } from "@filosign/shared";
+import type { Address } from "viem";
 import {
-	evmClient,
-	type fsPaymentValidatorAt,
-	waitForRelayReceipt,
+	fsPaymentValidatorForRelayer,
+	getRelayerWalletClient,
 } from "@/lib/platform/evm";
-import { relayWrite } from "@/lib/platform/evm/relay-write";
+import {
+	createRelayReceiptWaiter,
+	relayWrite,
+} from "@/lib/platform/evm/relay-write";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { selectSettlementRule } from "../rule-lookup";
 import { syncSettlementPayoutFromChain } from "../sync-from-chain";
@@ -21,15 +24,21 @@ export type LegExecutionResult =
 	| { kind: "skipped" };
 
 export async function executeSinglePayoutLeg(args: {
-	validator: ReturnType<typeof fsPaymentValidatorAt>;
 	onChainRuleId: bigint;
 	validatorAddress: `0x${string}`;
 	legIndex: number;
+	relayerAddress: Address;
 }): Promise<LegExecutionResult> {
+	const relayerClient = getRelayerWalletClient(args.relayerAddress);
+	const validator = fsPaymentValidatorForRelayer(
+		args.validatorAddress,
+		args.relayerAddress,
+	);
+	const waitForReceipt = createRelayReceiptWaiter(relayerClient);
 	const legIdx = BigInt(args.legIndex);
 	const simRes = await tryCatch(
-		args.validator.simulate.executePayoutLeg([args.onChainRuleId, legIdx], {
-			account: evmClient.account,
+		validator.simulate.executePayoutLeg([args.onChainRuleId, legIdx], {
+			account: relayerClient.account,
 		}),
 	);
 	if (simRes.error) {
@@ -44,13 +53,13 @@ export async function executeSinglePayoutLeg(args: {
 		};
 	}
 
-	const writeValidator = args.validator.write as ExecutePayoutLegWrite;
+	const writeValidator = validator.write as ExecutePayoutLegWrite;
 	const txRes = await tryCatch(
 		relayWrite({
 			step: "executePayoutLeg",
 			write: () =>
 				writeValidator.executePayoutLeg([args.onChainRuleId, legIdx]),
-			waitForReceipt: waitForRelayReceipt,
+			waitForReceipt,
 		}),
 	);
 	if (txRes.error) {
@@ -77,7 +86,7 @@ export async function executeSinglePayoutLeg(args: {
 		args.validatorAddress,
 	);
 	const executed = await resolveLegPayoutExecuted({
-		validator: args.validator,
+		validator,
 		onChainRuleId: args.onChainRuleId,
 		validatorAddress: args.validatorAddress,
 		legCount: row?.legs.length ?? 1,

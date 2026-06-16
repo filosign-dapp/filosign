@@ -1,13 +1,22 @@
 import { and, eq } from "drizzle-orm";
-import db from "@/lib/platform/db";
 import {
-	fsAttachmentReleaseAt,
-	getActiveRelayerAddress,
-	waitForRelayReceipt,
-} from "@/lib/platform/evm";
+	readPieceRelayerPin,
+	writePieceRelayerPin,
+} from "@/lib/domains/files/utils/relayer-pin";
+import db from "@/lib/platform/db";
+import { fsAttachmentReleaseAt } from "@/lib/platform/evm";
 import { relayContractWrite } from "@/lib/platform/evm/contract-write";
-import { relayWrite } from "@/lib/platform/evm/relay-write";
+import { withRelayerPoolFailover } from "@/lib/platform/evm/relay-failover";
+import {
+	createRelayReceiptWaiter,
+	relayWrite,
+} from "@/lib/platform/evm/relay-write";
 import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
+import {
+	fsContractsForRelayer,
+	getRelayerWalletClient,
+	routeRelayerForPiece,
+} from "@/lib/platform/evm/relayer-pool";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
@@ -18,6 +27,7 @@ type AttachmentReleaseWrite = {
 };
 
 export async function tryExecuteAttachmentRelease(args: {
+	pieceCid: string;
 	onChainRuleId: bigint;
 	releaseContractAddress: `0x${string}`;
 }): Promise<{ released: boolean; txHash?: string; skipped?: string }> {
@@ -40,15 +50,40 @@ export async function tryExecuteAttachmentRelease(args: {
 		return { released: false, skipped: "not_releasable" };
 	}
 
-	const write = relayContractWrite<AttachmentReleaseWrite>(release.write);
+	const pinnedRelayerAddress = await readPieceRelayerPin(args.pieceCid);
+	const primary = routeRelayerForPiece({
+		pieceCid: args.pieceCid,
+		pinnedRelayerAddress,
+	});
+
 	const txRes = await tryCatch(
-		withRelayerLock(getActiveRelayerAddress(), () =>
-			relayWrite({
-				step: "executeAttachmentRelease",
-				write: () => write.executeAttachmentRelease([args.onChainRuleId]),
-				waitForReceipt: waitForRelayReceipt,
-			}),
-		),
+		withRelayerPoolFailover({
+			primary,
+			step: "executeAttachmentRelease",
+			context: { pieceCid: args.pieceCid },
+			run: async (member) => {
+				const relayerContracts = fsContractsForRelayer(member.address);
+				const releaseContract =
+					relayerContracts.FSAttachmentRelease?.address.toLowerCase() ===
+					args.releaseContractAddress.toLowerCase()
+						? relayerContracts.FSAttachmentRelease
+						: release;
+				const write = relayContractWrite<AttachmentReleaseWrite>(
+					releaseContract.write,
+				);
+				const waitForReceipt = createRelayReceiptWaiter(
+					getRelayerWalletClient(member.address),
+				);
+
+				return withRelayerLock(member.address, () =>
+					relayWrite({
+						step: "executeAttachmentRelease",
+						write: () => write.executeAttachmentRelease([args.onChainRuleId]),
+						waitForReceipt,
+					}),
+				);
+			},
+		}),
 	);
 	if (txRes.error) {
 		logger.warn(
@@ -58,10 +93,15 @@ export async function tryExecuteAttachmentRelease(args: {
 		return { released: false, skipped: "relay_failed" };
 	}
 
+	const txHash = txRes.data.result;
+	await writePieceRelayerPin(args.pieceCid, txRes.data.relayer.address).catch(
+		() => undefined,
+	);
+
 	await db
 		.update(attachmentReleaseRules)
 		.set({
-			releaseTxHash: txRes.data,
+			releaseTxHash: txHash,
 			updatedAt: new Date(),
 		})
 		.where(
@@ -74,7 +114,7 @@ export async function tryExecuteAttachmentRelease(args: {
 			),
 		);
 
-	return { released: true, txHash: txRes.data };
+	return { released: true, txHash };
 }
 
 export async function tryExecuteAttachmentReleasesForPiece(pieceCid: string) {
@@ -98,6 +138,7 @@ export async function tryExecuteAttachmentReleasesForPiece(pieceCid: string) {
 
 	for (const row of rows) {
 		const result = await tryExecuteAttachmentRelease({
+			pieceCid,
 			onChainRuleId: row.onChainRuleId,
 			releaseContractAddress: row.releaseContractAddress,
 		});
@@ -139,6 +180,7 @@ export async function runSyncAttachmentReleasesJob(): Promise<{
 		seen.add(key);
 
 		const result = await tryExecuteAttachmentRelease({
+			pieceCid: row.filePieceCid,
 			onChainRuleId: row.onChainRuleId,
 			releaseContractAddress: row.releaseContractAddress,
 		});

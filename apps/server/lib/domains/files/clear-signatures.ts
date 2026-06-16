@@ -44,6 +44,7 @@ export async function filesClearEnvelopeSignatures(
 			sender: files.sender,
 			organizationId: files.organizationId,
 			registryAddress: files.registryAddress,
+			assignedRelayerAddress: files.assignedRelayerAddress,
 			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
 			completedAt: files.completedAt,
 		})
@@ -91,12 +92,14 @@ export async function filesClearEnvelopeSignatures(
 	}
 
 	const txRes = await tryCatch(
-		relayClearEnvelopeSignatures(registry, [
-			pieceCid,
-			recaller,
-			BigInt(timestamp),
-			signature,
-		]),
+		relayClearEnvelopeSignatures(
+			registry,
+			[pieceCid, recaller, BigInt(timestamp), signature],
+			{
+				pieceCid,
+				pinnedRelayerAddress: file.assignedRelayerAddress,
+			},
+		),
 	);
 	if (txRes.error) {
 		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {

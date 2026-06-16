@@ -41,6 +41,7 @@ export async function filesRecallEnvelope(
 			sender: files.sender,
 			organizationId: files.organizationId,
 			registryAddress: files.registryAddress,
+			assignedRelayerAddress: files.assignedRelayerAddress,
 			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
 			completedAt: files.completedAt,
 		})
@@ -71,12 +72,14 @@ export async function filesRecallEnvelope(
 
 	const registry = fsEnvelopeRegistryAt(file.registryAddress);
 	const txRes = await tryCatch(
-		relayRecallEnvelope(registry, [
-			pieceCid,
-			recaller,
-			BigInt(timestamp),
-			signature,
-		]),
+		relayRecallEnvelope(
+			registry,
+			[pieceCid, recaller, BigInt(timestamp), signature],
+			{
+				pieceCid,
+				pinnedRelayerAddress: file.assignedRelayerAddress,
+			},
+		),
 	);
 	if (txRes.error) {
 		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {

@@ -1,5 +1,7 @@
 # Filosign Envelope Unit Economics & Cost Analysis
 
+> **Last validated:** 2026-06 (review after mainnet gas samples). Multi-leg settlements = **one relay tx per leg**, not one tx per packet.
+
 This report calculates the exact variable costs per envelope and structural fixed overheads for Filosign based on Base Mainnet gas metrics (assuming an Ethereum price of ~$2,014).
 
 ---
@@ -18,7 +20,7 @@ This report calculates the exact variable costs per envelope and structural fixe
 Filosign pays gas for both server-side operations and client-side sponsored transactions:
 * **Server Relayer Actions:**
   * File Registration: 150,000 gas units per document
-  * Payout Relay: 120,000 gas units per payout
+  * Payout relay: ~120,000 gas units **per leg** (`executePayoutLeg`)
 * **Sponsored Client Actions (via Thirdweb):**
   * ERC-20 `approve` (token allowance): 45,000 gas units
   * Smart Contract `registerRule` (on-chain rule): 120,000 gas units

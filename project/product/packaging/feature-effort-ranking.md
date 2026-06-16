@@ -1,6 +1,6 @@
 # Feature effort ranking (suggested roadmap)
 
-Ranked against the current codebase and [entitlement_breakdown_report.md](./entitlement_breakdown_report.md). Marketing tiers map to code plans in [`packages/entitlements/src/catalog/v1.ts`](../../packages/entitlements/src/catalog/v1.ts): `free`, `individual` (Solo), `teams`, `teams_pro`, `enterprise`. **Future:** Platform Starter, Platform Pro (not in catalog v1).
+Ranked against the current codebase and [pricing-and-packaging.md](./pricing-and-packaging.md). Marketing tiers map to code plans in [`packages/entitlements/src/catalog/v1.ts`](../../packages/entitlements/src/catalog/v1.ts): `free`, `individual` (Solo), `teams`, `teams_pro`, `enterprise`. **Future:** Platform Starter, Platform Pro (not in catalog v1).
 
 **Effort scale (relative):**
 
@@ -140,4 +140,4 @@ Ranked against the current codebase and [entitlement_breakdown_report.md](./enti
 | Anchor text placement | **none** | manual placement only |
 | Server WASM SDK | **partial** (internal) | `crypto-utils/node` |
 
-*Generated from codebase review aligned with entitlement_breakdown_report.md.*
+*Generated from codebase review aligned with pricing-and-packaging.md.*

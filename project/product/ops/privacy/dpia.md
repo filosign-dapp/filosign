@@ -19,7 +19,7 @@ Filosign signing workflows, identity/session handling, analytics, billing/access
 | Risk | Impact | Current control | Residual risk | Action |
 |---|---|---|---|---|
 | Unauthorized access to workflow metadata | confidentiality | private storage, role-based access, auth checks | medium | continue least-privilege and access audits |
-| Draft plaintext persistence | confidentiality | draft purge + retention controls | medium-high | remove plaintext DB snapshot path, keep digest-only metadata |
+| Draft plaintext persistence | confidentiality | digest-only draft metadata in schema; purge crons | low-medium | monitor; no plaintext column reliance in API outputs |
 | Erasure incompleteness across auxiliary tables | rights compliance | `userEraseAccount` coverage expanded | medium | DSAR export/status and retained-exception matrix |
 | International transfer ambiguity | transfer compliance | EU-first infrastructure posture | medium | maintain transfer register + safeguard evidence |
 | Breach response timing failure | regulator risk | platform alerts and logs | medium | formalize 72-hour incident runbook |
@@ -34,4 +34,4 @@ Filosign signing workflows, identity/session handling, analytics, billing/access
 ## Decision
 
 - Proceed with remediation roadmap.
-- Reassess after draft-plaintext removal, DSAR tooling, and transfer documentation completion.
+- Reassess after transfer documentation completion and backup-restore drill validation.

@@ -3,6 +3,8 @@
 Owner: Platform / Privacy  
 Last updated: 2026-06-02
 
+**Engineering delete/retention behavior:** [`../data-lifecycle.md`](../data-lifecycle.md).
+
 ## Principles
 
 - Preserve signed legal evidence and required billing/security records.

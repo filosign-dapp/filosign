@@ -1,3 +1,9 @@
+# GDPR Audit Status Matrix (archived)
+
+**Superseded:** June 2026. Use [`../gdpr-control-matrix.md`](../gdpr-control-matrix.md) as the living evidence index. This file is a pre-remediation audit snapshot retained for history only.
+
+---
+
 # GDPR Audit Status Matrix
 
 This matrix maps the external GDPR audit findings to current implementation status and evidence.
@@ -14,7 +20,7 @@ This matrix maps the external GDPR audit findings to current implementation stat
 |---|---|---|---|
 | Account erasure leaks in `user_history` / platform access tables | mitigated | `apps/server/api/handlers/users/profile.ts` | `userEraseAccount` deletes `user_history`, deletes/redacts `platform_invite_redemptions`, and redacts matching `access_requests`. |
 | Template storage object not deleted on template delete | mitigated | `apps/server/api/handlers/orgs/connections-templates.ts` | Best-effort `bucket.delete` added with warning-only fallback. |
-| `file_acknowledgements` not explicitly classified as immutable legal record | mitigated | `project/ops/data-lifecycle.md` | Explicitly listed as immutable legal record. |
+| `file_acknowledgements` not explicitly classified as immutable legal record | mitigated | `project/product/ops/data-lifecycle.md` | Explicitly listed as immutable legal record. |
 | Archived draft purge missing | mitigated | `apps/server/lib/platform/cron/purge-archived-drafts.ts` | Worker cron purges old archived drafts and related objects. |
 | Expired invite purge missing | mitigated | `apps/server/lib/platform/cron/purge-expired-invites.ts` | Worker cron purges stale expired unclaimed invites. |
 | Compliance metadata retention/redaction missing | mitigated | `apps/server/lib/platform/cron/redact-compliance-metadata.ts` | Redacts stale `requestIp`/`requestUserAgent`. |
@@ -28,4 +34,3 @@ This matrix maps the external GDPR audit findings to current implementation stat
 | Analytics consent receipts server-side | active | client consent only in app | Consent gating exists client-side; server evidence records still required. |
 | Breach register and 72-hour operational runbook | active | no dedicated runbook in repo | Add documented incident process and templates. |
 | Transfer safeguards evidence (SCC/IDTA/TIA) | active | no transfer register currently | Add vendor-level transfer register + legal artifacts index. |
-

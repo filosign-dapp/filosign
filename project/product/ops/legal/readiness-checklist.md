@@ -18,7 +18,7 @@ Source of truth for launch assumptions. This is not legal advice.
 
 ## Before paid production launch
 
-- **Counsel briefing packet:** [legal-counsel-brief.md](legal-counsel-brief.md) (attach current Terms, Privacy, subprocessors).
+- **Counsel briefing packet:** [counsel-brief.md](counsel-brief.md) (attach current Terms, Privacy, subprocessors).
 - Confirm public operator/entity details for Terms and Privacy (currently individual operator, Jaunpur, India).
 - Subprocessors page aligned to production stack: Hetzner (app + Postgres), Cloudflare R2, Resend, thirdweb, PostHog, Dodo MoR.
 - Route **privacy@filosign.xyz** to the grievance inbox (listed in Privacy Policy).
@@ -31,7 +31,7 @@ Source of truth for launch assumptions. This is not legal advice.
 - Decide whether to publish an unaudited-contract notice publicly or only in contextual settlement/security pages.
 - Get counsel review for ToS, Privacy, Acceptable Use, e-signature language, refunds, sanctions, payout attachment posture, and [Settlement Feature Addendum](/legal/settlement-feature-addendum).
 - Publish payout attachment legal pages: Terms §9, [non-custodial payout](/legal/non-custodial-settlement), [addendum](/legal/settlement-feature-addendum).
-- Ops runbook: [payout-feature-approval-checklist.md](settlements/payout-feature-approval-checklist.md).
+- Ops runbook: [`../../../settlements/settlements/payout-feature-approval-checklist.md`](../../../settlements/settlements/payout-feature-approval-checklist.md).
 
 ## Operational defaults
 

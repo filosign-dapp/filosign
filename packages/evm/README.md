@@ -35,9 +35,9 @@ Copy [`.env.example`](./.env.example) to:
 | `.env.staging` | Base Sepolia (staging + sandbox server) |
 | `.env.production` | Base mainnet |
 
-Schema: [`env.ts`](./env.ts). Required for live deploy: `FC_DEPLOYER_PRIVATE_KEY`, `FC_SERVER_ADDRESS`; optional `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY`.
+Schema: [`env.ts`](./env.ts). Required for live deploy: `FC_DEPLOYER_PRIVATE_KEY`, `RELAYER_POOL`; optional `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY`.
 
-`FC_SERVER_ADDRESS` must match `FSEnvelopeRegistry.server()` after deploy and align with the server relay key (`FC_SERVER_ADDRESS` / `FC_SERVER_PRIVATE_KEY` in `apps/server`).
+`RELAYER_POOL` must match `apps/server` `RELAYER_POOL` and every address must have `FSEnvelopeRegistry.isRelayer(addr) === true` after deploy.
 
 ## Definitions model
 

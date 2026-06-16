@@ -5,7 +5,7 @@ Filosign stores envelope registration and signatures on-chain. Export generation
 ## v1 envelopes (current)
 
 - Roster slots use email commitments on-chain
-- Server relay signs registrations and signatures (`onlyServer`)
+- Relayer pool signs registrations and signatures (`onlyRelayer`)
 - Wallet-to-slot binding is off-chain for v1; see wallet-identity plan for v2
 
 ## What independent verification proves

@@ -25,7 +25,7 @@ bun run check-types
 
 Hardhat + viem + TypeScript. Test what loses money or breaks trust:
 
-- Access control (`onlyServer`, payer-only `registerRule`, permissionless `executePayout`)
+- Access control (`onlyRelayer` relayer pool, payer-only `registerRule`, permissionless `executePayout`)
 - Reverts on bad inputs and release misconfiguration
 - Signature and registry paths
 - **FSPaymentValidator:** `canExecute` gating, `executePayout` transfer, double-execution prevention
@@ -36,7 +36,7 @@ Hardhat + viem + TypeScript. Test what loses money or breaks trust:
 | Path | Role |
 | ---- | ---- |
 | `test/*.spec.ts` | Behavior: reverts, balances, integration |
-| `test/fixtures.ts` | Direct `FSEnvelopeRegistry` + `FSPaymentValidator` deploy; `deployer` ≠ `server` (KMS); `coSigner` for multi-signer payout tests |
+| `test/fixtures.ts` | Direct `FSEnvelopeRegistry` + `FSPaymentValidator` deploy; `deployer` ≠ `server` (primary relayer); `coSigner` for multi-signer payout tests |
 | `test/helpers/signatures.ts` | EIP-712 signing aligned with Solidity |
 | `test/helpers/walletAccount.ts` | viem account helpers |
 | `test/helpers/chainTime.ts` | `latestBlockTimestamp`, `advanceBlockTime` (expiry tests) |

@@ -14,9 +14,9 @@
   },
   "84532": {
     "name": "Base Sepolia",
-    "registryAddress": "0x22dB0241799022ce61223d570b83C141A9508EFb",
-    "paymentValidatorAddress": "0xDBD9736c45b1bf981d479f4DaF4db641f5b1a79d",
-    "attachmentReleaseAddress": "0xB48021Def5a590eC400Ed0a7E9228efE9AA1cEfD",
+    "registryAddress": "0xd738E4756b0189Ba08D1F87961E1a3741a4AFEc1",
+    "paymentValidatorAddress": "0xac9312374361DA2a3eddeC8b31F6bbD226B2405c",
+    "attachmentReleaseAddress": "0x746BBd2BF0cEb9c58F596Ae04bd7B1318F99B7D1",
     "explorerTxUrl": "https://sepolia.basescan.org/tx/",
     "defaultRpcUrl": "https://sepolia.base.org"
   }

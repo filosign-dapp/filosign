@@ -10,5 +10,17 @@
 	"0xb48021def5a590ec400ed0a7e9228efe9aa1cefd": {
 		"deploymentId": "20260614T142938Z",
 		"contractName": "FSAttachmentRelease"
+	},
+	"0xd738e4756b0189ba08d1f87961e1a3741a4afec1": {
+		"deploymentId": "20260616T011320Z",
+		"contractName": "FSEnvelopeRegistry"
+	},
+	"0xac9312374361da2a3eddec8b31f6bbd226b2405c": {
+		"deploymentId": "20260616T011320Z",
+		"contractName": "FSPaymentValidator"
+	},
+	"0x746bbd2bf0ceb9c58f596ae04bd7b1318f99b7d1": {
+		"deploymentId": "20260616T011320Z",
+		"contractName": "FSAttachmentRelease"
 	}
 }

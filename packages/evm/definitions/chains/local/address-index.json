@@ -11,7 +11,7 @@
 		"deploymentId": "local",
 		"contractName": "FSAttachmentRelease"
 	},
-	"0x391342f5acacaac9de1dc4ec3e03f2678f7c78f1": {
+	"0x6d925938edb8a16b3035a4cf34faa090f490202a": {
 		"deploymentId": "local",
 		"contractName": "MockUSDC"
 	}

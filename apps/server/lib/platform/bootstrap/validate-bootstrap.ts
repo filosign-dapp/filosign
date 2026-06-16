@@ -1,10 +1,14 @@
-import { type Address, getAddress } from "viem";
+import { getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import env from "@/env";
 import {
 	emitCriticalPlatformEvent,
 	PLATFORM_ALERT_EVENTS,
 } from "@/lib/platform/analytics";
+import {
+	parseRelayerPool,
+	relayerPoolAddresses,
+} from "@/lib/platform/evm/relayer-pool";
 
 function failBootstrap(stage: string, error: string): never {
 	void emitCriticalPlatformEvent({
@@ -16,35 +20,43 @@ function failBootstrap(stage: string, error: string): never {
 	throw new Error(error);
 }
 
-/** Relayer key/address consistency at startup. */
-export function validateRelayerWallet(): void {
-	const relayerFromKey = getAddress(
-		privateKeyToAccount(env.FC_SERVER_PRIVATE_KEY).address,
+/** FOC Synapse wallet key/address consistency at startup. */
+export function validateFocWallet(): void {
+	const focFromKey = getAddress(
+		privateKeyToAccount(env.FOC_WALLET_PRIVATE_KEY).address,
 	);
-	if (relayerFromKey !== env.FC_SERVER_ADDRESS) {
+	if (focFromKey !== env.FOC_WALLET_ADDRESS) {
 		failBootstrap(
-			"relayer_wallet_mismatch",
-			`FC_SERVER_PRIVATE_KEY address ${relayerFromKey} does not match FC_SERVER_ADDRESS ${env.FC_SERVER_ADDRESS}`,
+			"foc_wallet_mismatch",
+			`FOC_WALLET_PRIVATE_KEY address ${focFromKey} does not match FOC_WALLET_ADDRESS ${env.FOC_WALLET_ADDRESS}`,
 		);
 	}
 }
 
-/** KMS relayer must match FSEnvelopeRegistry.server() on-chain. */
-export async function validateRegistryServer(): Promise<void> {
+/** Each pool member key must match its configured address. */
+export function validateRelayerPoolKeys(): void {
+	parseRelayerPool();
+}
+
+/** Pool members must be authorized relayers on FSEnvelopeRegistry. */
+export async function validateRelayerPoolOnChain(): Promise<void> {
 	const { fsContracts } = await import("@/lib/platform/evm");
-	const onChainServer = getAddress(
-		(await fsContracts.FSEnvelopeRegistry.read.server()) as Address,
-	);
-	const configured = getAddress(env.FC_SERVER_ADDRESS);
-	if (onChainServer !== configured) {
-		failBootstrap(
-			"registry_server_mismatch",
-			`FSEnvelopeRegistry.server() ${onChainServer} does not match FC_SERVER_ADDRESS ${configured}`,
-		);
+	const pool = relayerPoolAddresses();
+	for (const relayer of pool) {
+		const authorized = await fsContracts.FSEnvelopeRegistry.read.isRelayer([
+			relayer,
+		]);
+		if (!authorized) {
+			failBootstrap(
+				"registry_relayer_mismatch",
+				`FSEnvelopeRegistry.isRelayer(${relayer}) is false`,
+			);
+		}
 	}
 }
 
 export async function validateServerBootstrap(): Promise<void> {
-	validateRelayerWallet();
-	await validateRegistryServer();
+	validateFocWallet();
+	validateRelayerPoolKeys();
+	await validateRelayerPoolOnChain();
 }

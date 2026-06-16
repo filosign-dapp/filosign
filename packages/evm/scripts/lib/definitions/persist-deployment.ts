@@ -60,6 +60,7 @@ export async function persistDeployment(args: {
 	deployedAt?: string;
 	contracts: DeployedContractBundle[];
 	transactions?: DeploymentManifest["transactions"];
+	deploy?: DeploymentManifest["deploy"];
 }) {
 	const isLocal = args.chainKey === "local";
 	const deploymentId =
@@ -95,6 +96,7 @@ export async function persistDeployment(args: {
 		deployedAt,
 		contracts: manifestContracts as DeploymentManifest["contracts"],
 		...(args.transactions ? { transactions: args.transactions } : {}),
+		...(args.deploy ? { deploy: args.deploy } : {}),
 	};
 	parseDeploymentManifest(manifest);
 

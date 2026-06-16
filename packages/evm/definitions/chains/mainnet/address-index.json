@@ -1,1 +1,14 @@
-{}
+{
+	"0xa10e0cf637433f424bd19650907858a766f3b491": {
+		"deploymentId": "20260616T021630Z",
+		"contractName": "FSEnvelopeRegistry"
+	},
+	"0x30b7e130812dc39ead6a61b8c7f88eff1693d88d": {
+		"deploymentId": "20260616T021630Z",
+		"contractName": "FSPaymentValidator"
+	},
+	"0x1c5e6f95146f4cc5d9e0c600716f2e69e349b179": {
+		"deploymentId": "20260616T021630Z",
+		"contractName": "FSAttachmentRelease"
+	}
+}

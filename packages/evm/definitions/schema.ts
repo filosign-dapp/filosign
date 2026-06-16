@@ -45,6 +45,11 @@ export const zDeploymentManifest = z.object({
 				.optional(),
 		})
 		.optional(),
+	deploy: z
+		.object({
+			initialRelayers: z.array(zEvmAddress()).min(1),
+		})
+		.optional(),
 });
 
 export type DeploymentManifest = z.infer<typeof zDeploymentManifest>;

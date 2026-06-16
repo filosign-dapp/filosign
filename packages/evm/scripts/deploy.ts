@@ -1,7 +1,7 @@
 import "@nomicfoundation/hardhat-viem";
 import { $ } from "bun";
 import hre from "hardhat";
-import { createWalletClient, getAddress, http } from "viem";
+import { createPublicClient, createWalletClient, getAddress, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base, baseSepolia } from "viem/chains";
 import type { ChainKey } from "../definitions/chain-key.js";
@@ -40,9 +40,12 @@ const CHAIN_NUMBER_TO_KEY: Record<number, ChainKey> = {
 };
 
 type WalletDeployed = Awaited<ReturnType<typeof hre.viem.getWalletClient>>;
+type DeployPublicClient = Awaited<ReturnType<typeof hre.viem.getPublicClient>>;
 
 /** Alchemy free tier chokes on back-to-back sends from the same key. */
 const LIVE_TX_PAUSE_MS = 2_000;
+const OWNERSHIP_TRANSFER_MAX_ATTEMPTS = 3;
+const OWNERSHIP_TRANSFER_RETRY_BACKOFF_MS = [2_000, 4_000] as const;
 
 function isLiveChainId(chainId: number): boolean {
 	return chainId === CHAIN_ID.testnet || chainId === CHAIN_ID.mainnet;
@@ -100,6 +103,11 @@ function liveNetworkRpcUrl(chainId: number): string {
 	throw new Error(`No RPC URL for chainId ${chainId}`);
 }
 
+function liveViemChain(chainId: number) {
+	const chain = chainId === CHAIN_ID.testnet ? baseSepolia : base;
+	return { chain, transport: http(liveNetworkRpcUrl(chainId)) };
+}
+
 /**
  * Hardhat's address-only wallet client routes later txs through
  * `wallet_sendTransaction`, which Alchemy rejects. Local-account signing uses
@@ -112,12 +120,19 @@ async function getDeployerWallet(chainId: number): Promise<WalletDeployed> {
 		return hre.viem.getWalletClient(account.address, viemChainOverride());
 	}
 
-	const chain = chainId === CHAIN_ID.testnet ? baseSepolia : base;
-	return createWalletClient({
-		account,
-		chain,
-		transport: http(liveNetworkRpcUrl(chainId)),
-	}) as WalletDeployed;
+	const { chain, transport } = liveViemChain(chainId);
+	return createWalletClient({ account, chain, transport }) as WalletDeployed;
+}
+
+async function getPublicClientForChain(
+	chainId: number,
+): Promise<DeployPublicClient> {
+	if (!isLiveChainId(chainId)) {
+		return hre.viem.getPublicClient(viemChainOverride());
+	}
+
+	const { chain, transport } = liveViemChain(chainId);
+	return createPublicClient({ chain, transport }) as DeployPublicClient;
 }
 
 async function pauseBetweenLiveTxs(chainId: number) {
@@ -126,10 +141,124 @@ async function pauseBetweenLiveTxs(chainId: number) {
 	}
 }
 
+function isInFlightTransactionLimitError(error: unknown): boolean {
+	const message = error instanceof Error ? error.message : String(error);
+	return message.includes("in-flight transaction limit");
+}
+
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
+
+async function readPendingOwnerWithPoll(args: {
+	publicClient: DeployPublicClient;
+	registryAddress: `0x${string}`;
+	registryAbi: Awaited<
+		ReturnType<typeof hre.viem.deployContract<"FSEnvelopeRegistry">>
+	>["abi"];
+	expectedOwner: `0x${string}`;
+}): Promise<`0x${string}`> {
+	for (let attempt = 1; attempt <= 5; attempt++) {
+		const pendingOwner = getAddress(
+			(await args.publicClient.readContract({
+				address: args.registryAddress,
+				abi: args.registryAbi,
+				functionName: "pendingOwner",
+			})) as `0x${string}`,
+		);
+		if (pendingOwner === args.expectedOwner) {
+			return pendingOwner;
+		}
+		if (pendingOwner !== ZERO_ADDRESS) {
+			throw new Error(
+				`pendingOwner mismatch: expected ${args.expectedOwner}, got ${pendingOwner}`,
+			);
+		}
+		if (attempt < 5) {
+			await sleep(1_000);
+		}
+	}
+
+	throw new Error(
+		`pendingOwner mismatch: expected ${args.expectedOwner}, got ${ZERO_ADDRESS}`,
+	);
+}
+
+async function transferRegistryOwnership(args: {
+	envelopeRegistry: Awaited<
+		ReturnType<typeof hre.viem.deployContract<"FSEnvelopeRegistry">>
+	>;
+	deployer: WalletDeployed;
+	ownerAddress: `0x${string}`;
+	chainId: number;
+}): Promise<void> {
+	const publicClient = await getPublicClientForChain(args.chainId);
+	let lastError: unknown;
+
+	for (let attempt = 1; attempt <= OWNERSHIP_TRANSFER_MAX_ATTEMPTS; attempt++) {
+		if (attempt > 1) {
+			const backoffMs =
+				OWNERSHIP_TRANSFER_RETRY_BACKOFF_MS[attempt - 2] ?? 4_000;
+			await sleep(backoffMs);
+		}
+
+		try {
+			const txHash = await args.deployer.writeContract({
+				address: args.envelopeRegistry.address,
+				abi: args.envelopeRegistry.abi,
+				functionName: "transferOwnership",
+				args: [args.ownerAddress],
+				gas: 120_000n,
+			});
+			const receipt = await publicClient.waitForTransactionReceipt({
+				hash: txHash,
+			});
+			if (receipt.status !== "success") {
+				throw new Error(`transferOwnership reverted (status=${receipt.status})`);
+			}
+
+			const pendingOwner = await readPendingOwnerWithPoll({
+				publicClient,
+				registryAddress: args.envelopeRegistry.address,
+				registryAbi: args.envelopeRegistry.abi,
+				expectedOwner: args.ownerAddress,
+			});
+
+			console.log("FSEnvelopeRegistry ownership transfer started:", {
+				pendingOwner,
+				txHash,
+				note: "Pending owner must call acceptOwnership() from target wallet.",
+			});
+			return;
+		} catch (error) {
+			lastError = error;
+			const retryable =
+				isLiveChainId(args.chainId) &&
+				isInFlightTransactionLimitError(error) &&
+				attempt < OWNERSHIP_TRANSFER_MAX_ATTEMPTS;
+			if (retryable) {
+				console.warn(
+					`FSEnvelopeRegistry ownership transfer attempt ${attempt} hit in-flight limit; retrying…`,
+				);
+				continue;
+			}
+			break;
+		}
+	}
+
+	console.error("FSEnvelopeRegistry ownership transfer failed:", {
+		pendingOwner: args.ownerAddress,
+		error:
+			lastError instanceof Error ? lastError.message : String(lastError),
+	});
+	if (isLiveChainId(args.chainId)) {
+		process.exit(1);
+	}
+}
+
 async function deployEnvelopeRegistry(
 	deployer: WalletDeployed,
 	initialRelayers: `0x${string}`[],
 	ownerAddress: `0x${string}` | null,
+	chainId: number,
 ) {
 	const envelopeRegistry = await hre.viem.deployContract(
 		"FSEnvelopeRegistry",
@@ -142,52 +271,22 @@ async function deployEnvelopeRegistry(
 	});
 
 	if (ownerAddress) {
-		try {
-			const transferOwnership = envelopeRegistry.write.transferOwnership;
-			if (!transferOwnership) {
-				throw new Error("FSEnvelopeRegistry.transferOwnership unavailable");
-			}
-			const txHash = await transferOwnership([ownerAddress], {
-				account: deployer.account,
-				gas: 120_000n,
-			});
-			const publicClient = await hre.viem.getPublicClient(viemChainOverride());
-			const receipt = await publicClient.waitForTransactionReceipt({
-				hash: txHash,
-			});
-			if (receipt.status !== "success") {
-				console.error("FSEnvelopeRegistry ownership transfer failed:", {
-					pendingOwner: ownerAddress,
-					txHash,
-					status: receipt.status,
-					note: "Continuing deployment without stopping.",
-				});
-			} else {
-				const readPendingOwner = envelopeRegistry.read.pendingOwner;
-				if (!readPendingOwner) {
-					throw new Error("FSEnvelopeRegistry.pendingOwner unavailable");
-				}
-				const pendingOwner = await readPendingOwner();
-				console.log("FSEnvelopeRegistry ownership transfer started:", {
-					pendingOwner,
-					txHash,
-					note: "Pending owner must call acceptOwnership() from target wallet.",
-				});
-			}
-		} catch (error) {
-			console.error("FSEnvelopeRegistry ownership transfer failed:", {
-				pendingOwner: ownerAddress,
-				error: error instanceof Error ? error.message : String(error),
-				note: "Continuing deployment without stopping.",
-			});
-		}
+		await pauseBetweenLiveTxs(chainId);
+		await transferRegistryOwnership({
+			envelopeRegistry,
+			deployer,
+			ownerAddress,
+			chainId,
+		});
 	}
 	return envelopeRegistry;
 }
 
-async function assertBytecodeLive(address: `0x${string}`) {
+async function assertBytecodeLive(
+	publicClient: DeployPublicClient,
+	address: `0x${string}`,
+) {
 	await sleep(3000);
-	const publicClient = await hre.viem.getPublicClient(viemChainOverride());
 	const code = await publicClient.getCode({ address });
 	if (!code || code === "0x") {
 		console.error("Deployment failed - no code at", address);
@@ -272,8 +371,10 @@ async function main() {
 		deployer,
 		initialRelayers,
 		ownerAddress,
+		chainId,
 	);
-	const publicClient = await assertBytecodeLive(envelopeRegistry.address);
+	const publicClient = await getPublicClientForChain(chainId);
+	await assertBytecodeLive(publicClient, envelopeRegistry.address);
 	await pauseBetweenLiveTxs(chainId);
 	const paymentValidator = await deployPaymentValidator(
 		deployer,
@@ -288,14 +389,12 @@ async function main() {
 	);
 	await pauseBetweenLiveTxs(chainId);
 
-	const setSatelliteContracts = envelopeRegistry.write.setSatelliteContracts;
-	if (!setSatelliteContracts) {
-		throw new Error("FSEnvelopeRegistry.setSatelliteContracts unavailable");
-	}
-	const setSatellitesTx = await setSatelliteContracts(
-		[paymentValidator.address, attachmentRelease.address],
-		{ account: deployer.account },
-	);
+	const setSatellitesTx = await deployer.writeContract({
+		address: envelopeRegistry.address,
+		abi: envelopeRegistry.abi,
+		functionName: "setSatelliteContracts",
+		args: [paymentValidator.address, attachmentRelease.address],
+	});
 	const setSatellitesReceipt = await publicClient.waitForTransactionReceipt({
 		hash: setSatellitesTx,
 	});
@@ -354,6 +453,7 @@ async function main() {
 		chainId,
 		contracts: bundles,
 		transactions: { setSatelliteContracts: setSatellitesTx },
+		deploy: { initialRelayers },
 	});
 	console.log(`Deployment persisted: ${deploymentId}`);
 

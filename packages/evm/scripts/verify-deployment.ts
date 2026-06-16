@@ -2,10 +2,11 @@
  * Verify latest deployment on Basescan. Run after `hardhat run deploy.ts` completes
  * (not from inside deploy.ts - nested Hardhat CLI crashes under Bun source-map).
  */
-import { encodeAbiParameters, parseAbiParameters } from "viem";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import type { ChainKey } from "../definitions/chain-key.js";
 import { readLatestManifest } from "./lib/definitions/persist-deployment.js";
-import { parseRelayerPoolFromEnv } from "./lib/parse-relayer-pool.js";
 import { contractsPackageDir } from "./lib/repo-paths.js";
 
 const NETWORK_BY_CHAIN: Record<Exclude<ChainKey, "local">, string> = {
@@ -13,33 +14,54 @@ const NETWORK_BY_CHAIN: Record<Exclude<ChainKey, "local">, string> = {
 	mainnet: "base",
 };
 
-async function verifyContract(args: {
-	network: string;
+type VerifyStep = {
+	label: string;
 	address: string;
-	constructorArgs: string[];
-}): Promise<boolean> {
-	const proc = Bun.spawn({
-		cmd: [
-			"bunx",
-			"hardhat",
-			"verify",
-			"--network",
-			args.network,
-			args.address,
-			...args.constructorArgs,
-			"--force",
-		],
-		cwd: contractsPackageDir(),
-		stdout: "inherit",
-		stderr: "inherit",
-		env: process.env,
-	});
-	const code = (await proc.exited) ?? 1;
-	return code === 0;
+	constructorArgs: unknown[];
+};
+
+/** Hardhat cannot encode arrays from CLI; always pass a temp --constructor-args module. */
+async function writeConstructorArgsModule(
+	constructorArgs: unknown[],
+): Promise<string> {
+	const tempDir = await mkdtemp(path.join(os.tmpdir(), "filosign-verify-"));
+	const modulePath = path.join(tempDir, "constructor-args.cjs");
+	await writeFile(
+		modulePath,
+		`module.exports = ${JSON.stringify(constructorArgs)};\n`,
+	);
+	return modulePath;
 }
 
-function sleep(ms: number) {
-	return Bun.sleep(ms);
+async function verifyContract(args: {
+	network: string;
+	step: VerifyStep;
+}): Promise<boolean> {
+	const modulePath = await writeConstructorArgsModule(args.step.constructorArgs);
+
+	try {
+		const proc = Bun.spawn({
+			cmd: [
+				"bunx",
+				"hardhat",
+				"verify",
+				"--network",
+				args.network,
+				"--constructor-args",
+				modulePath,
+				args.step.address,
+				"--force",
+			],
+			cwd: contractsPackageDir(),
+			stdout: "inherit",
+			stderr: "inherit",
+			env: process.env,
+		});
+		const code = (await proc.exited) ?? 1;
+		return code === 0;
+	} finally {
+		await rm(path.dirname(modulePath), { recursive: true, force: true });
+	}
 }
 
 export async function verifyLatestDeployment(
@@ -56,26 +78,28 @@ export async function verifyLatestDeployment(
 		return false;
 	}
 
+	const initialRelayers = manifest.deploy?.initialRelayers;
+	if (!initialRelayers?.length) {
+		throw new Error(
+			`verify-deployment: manifest ${manifest.deploymentId} missing deploy.initialRelayers`,
+		);
+	}
+
 	const network = NETWORK_BY_CHAIN[chainKey];
 	const registry = manifest.contracts.FSEnvelopeRegistry.address;
 	const validator = manifest.contracts.FSPaymentValidator.address;
 	const attachment = manifest.contracts.FSAttachmentRelease.address;
 	const chainId = String(manifest.chainId);
-	const initialRelayers = parseRelayerPoolFromEnv();
-	const registryCtorArgs = encodeAbiParameters(
-		parseAbiParameters("address[]"),
-		[initialRelayers],
-	);
 
 	console.log(
 		`Verifying ${chainKey} deployment ${manifest.deploymentId} on ${network}…`,
 	);
 
-	const steps = [
+	const steps: VerifyStep[] = [
 		{
 			label: "FSEnvelopeRegistry",
 			address: registry,
-			constructorArgs: [registryCtorArgs],
+			constructorArgs: [initialRelayers],
 		},
 		{
 			label: "FSPaymentValidator",
@@ -87,20 +111,16 @@ export async function verifyLatestDeployment(
 			address: attachment,
 			constructorArgs: [registry, chainId],
 		},
-	] as const;
+	];
 
 	let failed = 0;
 	for (const step of steps) {
-		const ok = await verifyContract({
-			network,
-			address: step.address,
-			constructorArgs: [...step.constructorArgs],
-		});
+		const ok = await verifyContract({ network, step });
 		if (!ok) {
 			console.warn(`Failed to verify ${step.label} at ${step.address}`);
 			failed += 1;
 		}
-		await sleep(1000);
+		await Bun.sleep(1_000);
 	}
 	if (failed > 0) {
 		console.warn(

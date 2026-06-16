@@ -22,5 +22,53 @@
 	"0x746bbd2bf0ceb9c58f596ae04bd7b1318f99b7d1": {
 		"deploymentId": "20260616T011320Z",
 		"contractName": "FSAttachmentRelease"
+	},
+	"0x3e5c6798a4c36d201713a4c525e467265552f87e": {
+		"deploymentId": "20260616T015544Z",
+		"contractName": "FSEnvelopeRegistry"
+	},
+	"0x8051ae7d964c7289560965f5ae88e1400e00a344": {
+		"deploymentId": "20260616T015544Z",
+		"contractName": "FSPaymentValidator"
+	},
+	"0x5efbc123c180419f5386e538ff064d29e3f0eb81": {
+		"deploymentId": "20260616T015544Z",
+		"contractName": "FSAttachmentRelease"
+	},
+	"0xc55ae92508086886313b3087a936c2aa77bd125e": {
+		"deploymentId": "20260616T020615Z",
+		"contractName": "FSEnvelopeRegistry"
+	},
+	"0x460efc836f98c9a6bf4e0481aa62c1a856384061": {
+		"deploymentId": "20260616T020615Z",
+		"contractName": "FSPaymentValidator"
+	},
+	"0x4af007b2cab61f1832a3a96379dbbd0dacefd357": {
+		"deploymentId": "20260616T020615Z",
+		"contractName": "FSAttachmentRelease"
+	},
+	"0x92f8f4cefb4a390e3c9e6beb9e488b3fae2294c6": {
+		"deploymentId": "20260616T021027Z",
+		"contractName": "FSEnvelopeRegistry"
+	},
+	"0x042123c31554f8929563b23d839f4f81d932b620": {
+		"deploymentId": "20260616T021027Z",
+		"contractName": "FSPaymentValidator"
+	},
+	"0x4b2e6040f00d81c3818db37e7cb6a9f5c31144c3": {
+		"deploymentId": "20260616T021027Z",
+		"contractName": "FSAttachmentRelease"
+	},
+	"0x4340973aedebf2688ed2195fa01aa9b6cf0eb778": {
+		"deploymentId": "20260616T021453Z",
+		"contractName": "FSEnvelopeRegistry"
+	},
+	"0x9fce6c3c620a6c9743dc225de510726babec5806": {
+		"deploymentId": "20260616T021453Z",
+		"contractName": "FSPaymentValidator"
+	},
+	"0x3baa142556de6206dc19d01fad81971ffb8316e2": {
+		"deploymentId": "20260616T021453Z",
+		"contractName": "FSAttachmentRelease"
 	}
 }

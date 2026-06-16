@@ -31,12 +31,11 @@ RUN apt-get update \
 COPY --from=builder /app/apps/server/out/server .
 COPY --from=builder /app/apps/server/out/worker .
 COPY --from=builder /app/apps/server/out/worker-healthcheck .
-COPY --from=builder /app/apps/server/out/drizzle-migrate .
+COPY --from=builder --chmod=755 /app/apps/server/out/drizzle-migrate ./drizzle-migrate
 COPY --from=builder /app/apps/server/drizzle ./drizzle
 COPY --from=builder /app/packages/crypto-utils/assets/dilithium.wasm ./assets/dilithium.wasm
-COPY apps/server/scripts/deploy/container-start.sh ./container-start.sh
-COPY apps/server/scripts/deploy/infisical-entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh /container-start.sh ./drizzle-migrate
+COPY --from=builder --chmod=755 /app/apps/server/scripts/deploy/container-start.sh ./container-start.sh
+COPY --from=builder --chmod=755 /app/apps/server/scripts/deploy/infisical-entrypoint.sh /entrypoint.sh
 
 ENV NODE_ENV=production
 ENV INFISICAL_DISABLE_UPDATE_CHECK=true

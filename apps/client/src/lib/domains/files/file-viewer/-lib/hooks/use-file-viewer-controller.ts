@@ -31,10 +31,6 @@ export function useFileViewerController(
 		file: complianceFileRef
 			? {
 					pieceCid: complianceFileRef.pieceCid,
-					status:
-						"status" in complianceFileRef
-							? complianceFileRef.status
-							: undefined,
 					isFinalized: Boolean(
 						fileInfo?.envelopeProgress?.completedAt ||
 							fileInfo?.envelopeProgress?.revokedBeforeCompletedAt,
@@ -42,6 +38,7 @@ export function useFileViewerController(
 				}
 			: null,
 		fileData: decrypt.fileData,
+		satelliteWorkflowSummary: fileInfo?.satelliteWorkflowSummary,
 	});
 
 	return {

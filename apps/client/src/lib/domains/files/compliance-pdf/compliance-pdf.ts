@@ -3,15 +3,17 @@ import { getSessionSeed } from "@filosign/react/auth";
 import type { ViewFileResult } from "@filosign/react/files";
 import { useComplianceBundle } from "@filosign/react/files";
 import { useUserProfile } from "@filosign/react/users";
+import type { SatelliteWorkflowSummary } from "@filosign/shared";
+import { EMPTY_SATELLITE_WORKFLOW_SUMMARY } from "@filosign/shared";
 import { useCallback, useState } from "react";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
+import { resolveProofExportState } from "./proof-export-state";
 import { complianceExportContext } from "./utils/export-context";
 import { safePieceCidDownloadBasename } from "./utils/zip-entries";
 
 type ComplianceFileRef = {
 	pieceCid: string;
-	status?: string;
 	/** Envelope finalized: fully executed or voided before complete. */
 	isFinalized?: boolean;
 };
@@ -19,6 +21,8 @@ type ComplianceFileRef = {
 export type ProofDownloadExports = Pick<
 	ReturnType<typeof useCompliancePdfExports>,
 	| "exportsAllowed"
+	| "proofExportPreferred"
+	| "proofExportWarning"
 	| "pdfExportBusy"
 	| "handleDownloadOriginalFiles"
 	| "handleDownloadSignedEnvelope"
@@ -26,17 +30,36 @@ export type ProofDownloadExports = Pick<
 	| "handleDownloadCompliancePdf"
 >;
 
+export function pickProofDownloadExports(
+	exports: ReturnType<typeof useCompliancePdfExports>,
+): ProofDownloadExports {
+	return {
+		exportsAllowed: exports.exportsAllowed,
+		proofExportPreferred: exports.proofExportPreferred,
+		proofExportWarning: exports.proofExportWarning,
+		pdfExportBusy: exports.pdfExportBusy,
+		handleDownloadOriginalFiles: exports.handleDownloadOriginalFiles,
+		handleDownloadSignedEnvelope: exports.handleDownloadSignedEnvelope,
+		handleDownloadCompletionPacket: exports.handleDownloadCompletionPacket,
+		handleDownloadCompliancePdf: exports.handleDownloadCompliancePdf,
+	};
+}
+
 export function useCompliancePdfExports(options: {
 	file: ComplianceFileRef | null | undefined;
 	fileData: ViewFileResult | null;
+	satelliteWorkflowSummary?: SatelliteWorkflowSummary | null;
 }) {
-	const { file, fileData } = options;
+	const { file, fileData, satelliteWorkflowSummary } = options;
 	const { rpcQuery, wallet } = useFilosignContext();
 	const { data: userProfile } = useUserProfile();
 	const complianceBundle = useComplianceBundle();
 	const [pdfExportBusy, setPdfExportBusy] = useState(false);
 
 	const exportsAllowed = Boolean(file?.isFinalized);
+	const { proofExportPreferred, proofExportWarning } = resolveProofExportState(
+		satelliteWorkflowSummary ?? EMPTY_SATELLITE_WORKFLOW_SUMMARY,
+	);
 
 	const handleDownloadOriginalFiles = useCallback(async () => {
 		if (!fileData) return;
@@ -178,9 +201,10 @@ export function useCompliancePdfExports(options: {
 	]);
 
 	return {
-		complianceBundle,
 		pdfExportBusy,
 		exportsAllowed,
+		proofExportPreferred,
+		proofExportWarning,
 		handleDownloadOriginalFiles,
 		handleDownloadCompliancePdf,
 		handleDownloadSignedEnvelope,

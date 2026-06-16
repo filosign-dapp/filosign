@@ -1,6 +1,10 @@
 import { parsePlacementManifestForSigner } from "@filosign/shared";
 import { useMemo } from "react";
-import { useCompliancePdfExports } from "@/src/lib/domains/files/compliance-pdf";
+import {
+	pickProofDownloadExports,
+	useCompliancePdfExports,
+} from "@/src/lib/domains/files/compliance-pdf";
+import { resolveSatelliteWorkflowSummary } from "@/src/lib/domains/files/compliance-pdf/proof-export-state";
 import { useSignActions } from "./use-actions";
 import { useSignFieldSession } from "./use-field-session";
 import { useSignFileMeta, useSignSigningMeta } from "./use-file-meta";
@@ -49,11 +53,30 @@ export function useSignDocumentController() {
 		canSign: signingMeta.canSign,
 	});
 
+	const settlements = useSignSettlementsActions(
+		pieceCid,
+		file,
+		identity.user?.wallet?.address as `0x${string}` | undefined,
+	);
+
+	const satelliteWorkflowSummary = useMemo(
+		() =>
+			resolveSatelliteWorkflowSummary({
+				settlementRules: settlements.rules,
+				conditionalAttachmentPackets: file?.conditionalAttachmentPackets,
+				serverSummary: file?.satelliteWorkflowSummary,
+			}),
+		[
+			settlements.rules,
+			file?.conditionalAttachmentPackets,
+			file?.satelliteWorkflowSummary,
+		],
+	);
+
 	const compliance = useCompliancePdfExports({
 		file: file
 			? {
 					pieceCid: file.pieceCid,
-					status: file.status,
 					isFinalized: Boolean(
 						file.envelopeProgress?.completedAt ||
 							file.envelopeProgress?.revokedBeforeCompletedAt,
@@ -61,13 +84,8 @@ export function useSignDocumentController() {
 				}
 			: null,
 		fileData: viewer.fileData,
+		satelliteWorkflowSummary,
 	});
-
-	const settlements = useSignSettlementsActions(
-		pieceCid,
-		file,
-		identity.user?.wallet?.address as `0x${string}` | undefined,
-	);
 
 	const actions = useSignActions({
 		pieceCid,
@@ -138,14 +156,7 @@ export function useSignDocumentController() {
 			explorerLabel: signingMeta.explorerLabel,
 			formatAddress: actions.formatAddress,
 		},
-		compliance: {
-			pdfExportBusy: compliance.pdfExportBusy,
-			exportsAllowed: compliance.exportsAllowed,
-			handleDownloadOriginalFiles: compliance.handleDownloadOriginalFiles,
-			handleDownloadCompliancePdf: compliance.handleDownloadCompliancePdf,
-			handleDownloadSignedEnvelope: compliance.handleDownloadSignedEnvelope,
-			handleDownloadCompletionPacket: compliance.handleDownloadCompletionPacket,
-		},
+		compliance: pickProofDownloadExports(compliance),
 		coldShare: {
 			coldShareDialogOpen: actions.coldShareDialogOpen,
 			setColdShareDialogOpen: actions.setColdShareDialogOpen,

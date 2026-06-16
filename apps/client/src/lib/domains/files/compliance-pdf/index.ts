@@ -1,5 +1,8 @@
 export type { ProofDownloadExports } from "./compliance-pdf";
-export { useCompliancePdfExports } from "./compliance-pdf";
+export {
+	pickProofDownloadExports,
+	useCompliancePdfExports,
+} from "./compliance-pdf";
 export type {
 	CompliancePdfBundleOptions,
 	CompliancePdfLine,

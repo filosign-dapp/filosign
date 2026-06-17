@@ -26,6 +26,12 @@ export function canUseAdvancedSettlements(
 	return featureEnabled(entitlements, "features.settlement.advanced");
 }
 
+export function canUseWorkspaceTreasury(
+	entitlements: EntitlementsSnapshot | undefined,
+): boolean {
+	return featureEnabled(entitlements, "features.treasury.workspace_custom");
+}
+
 export function canUseBasicSettlements(
 	entitlements: EntitlementsSnapshot | undefined,
 ): boolean {

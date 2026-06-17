@@ -10,7 +10,6 @@ import type {
 import {
 	SETTLEMENT_RELEASE_TYPE_UINT,
 	settlementAllowanceRequired,
-	settlementRuleTotalAmount,
 } from "@filosign/shared";
 import {
 	type Address,
@@ -27,8 +26,14 @@ import {
 	paymentValidatorAt,
 	simulateSettlementWrite,
 } from "./settlement-preflight";
+import {
+	buildSettlementApproveCall,
+	buildSettlementRegisterRuleCall,
+	buildSettlementRuleRegistrationRecord,
+	settlementRuleApprovalTotal,
+} from "./settlement-rule-tx";
 import type { SettlementRuleRow } from "./settlement-types";
-import { parseRuleIdFromReceipt, waitForTxReceipt } from "./tx-receipt";
+import { waitForTxReceipt } from "./tx-receipt";
 import type { FilosignWallet } from "./wallet";
 
 export type SettlementRuleDraftLeg = {
@@ -218,6 +223,40 @@ function toAllowanceRuleInputs(
 		status: rule.status,
 		legs: rule.legs,
 	}));
+}
+
+export type SettlementPayerWalletResolver = (args: {
+	payer: Address;
+}) => Promise<FilosignWallet>;
+
+export function settlementRulePayerAddress(
+	rule: SettlementRuleRow,
+	fallback: Address,
+): Address {
+	const payer = rule.payerWallet;
+	if (typeof payer === "string" && payer.startsWith("0x")) {
+		return getAddress(payer);
+	}
+	return getAddress(fallback);
+}
+
+async function resolveSettlementApprovalWallet(args: {
+	payer: Address;
+	connectedWallet: FilosignWallet;
+	resolvePayerWallet?: SettlementPayerWalletResolver;
+}): Promise<FilosignWallet> {
+	if (
+		args.payer.toLowerCase() ===
+		args.connectedWallet.account.address.toLowerCase()
+	) {
+		return args.connectedWallet;
+	}
+	if (!args.resolvePayerWallet) {
+		throw new Error(
+			"This payout uses the workspace treasury. Connect your treasury wallet to continue.",
+		);
+	}
+	return args.resolvePayerWallet({ payer: args.payer });
 }
 
 export async function readSettlementValidatorAllowance(args: {
@@ -441,35 +480,33 @@ export async function registerSettlementRulesOnChain(args: {
 			ruleCount > 1 ? `Payout ${ruleIndex + 1} of ${ruleCount}` : undefined;
 
 		assertSettlementLegs(rule.legs);
-		const totalAmount = settlementRuleTotalAmount(
-			rule.legs.map((leg) => ({ amount: leg.amount.toString() })),
-		);
+		const totalAmount = settlementRuleApprovalTotal(rule.legs);
 		const expiresAt = rule.expiresAt ?? 0n;
-		const { specificSignerCommitment, thresholdN, signerCommitments } =
-			releaseParamsToContractArgs(rule.releaseType, rule.releaseParams);
-		const contractLegs = toContractPayoutLegs(rule.legs);
+		const releaseArgs = releaseParamsToContractArgs(
+			rule.releaseType,
+			rule.releaseParams,
+		);
 		cumulativeApproved += totalAmount;
 
-		const registerData = encodeFunctionData({
-			abi: validatorAbi,
-			functionName: "registerRule",
-			args: [
-				args.payer,
-				rule.tokenAddress,
-				args.cidIdentifier,
-				releaseTypeToUint8(rule.releaseType),
-				specificSignerCommitment,
-				thresholdN,
-				expiresAt,
-				signerCommitments,
-				contractLegs,
-			],
+		const approveCall = buildSettlementApproveCall({
+			chainKey: args.chainKey,
+			tokenAddress: rule.tokenAddress,
+			validatorAddress: validator.address,
+			cumulativeApproved,
+		});
+
+		const registerCall = buildSettlementRegisterRuleCall({
+			validatorAbi,
+			validatorAddress: validator.address,
+			payer: args.payer,
+			rule,
+			cidIdentifier: args.cidIdentifier,
 		});
 
 		await simulateSettlementWrite({
 			contracts: args.contracts,
 			wallet: args.wallet,
-			address: rule.tokenAddress,
+			address: approveCall.to,
 			abi: approveAbi,
 			functionName: "approve",
 			args: [validator.address, cumulativeApproved],
@@ -483,12 +520,8 @@ export async function registerSettlementRulesOnChain(args: {
 		});
 
 		const approveHash = await args.wallet.sendTransaction({
-			to: rule.tokenAddress,
-			data: encodeFunctionData({
-				abi: approveAbi,
-				functionName: "approve",
-				args: [validator.address, cumulativeApproved],
-			}),
+			to: approveCall.to,
+			data: approveCall.data,
 			account: args.wallet.account,
 			chain: args.wallet.chain,
 		});
@@ -513,7 +546,7 @@ export async function registerSettlementRulesOnChain(args: {
 		await simulateSettlementWrite({
 			contracts: args.contracts,
 			wallet: args.wallet,
-			address: validator.address,
+			address: registerCall.to,
 			abi: validatorAbi,
 			functionName: "registerRule",
 			args: [
@@ -521,11 +554,14 @@ export async function registerSettlementRulesOnChain(args: {
 				rule.tokenAddress,
 				args.cidIdentifier,
 				releaseTypeToUint8(rule.releaseType),
-				specificSignerCommitment,
-				thresholdN,
+				releaseArgs.specificSignerCommitment,
+				releaseArgs.thresholdN,
 				expiresAt,
-				signerCommitments,
-				contractLegs,
+				releaseArgs.signerCommitments,
+				rule.legs.map((leg) => ({
+					recipient: leg.recipientWallet,
+					amount: leg.amount,
+				})),
 			],
 		});
 
@@ -537,8 +573,8 @@ export async function registerSettlementRulesOnChain(args: {
 		});
 
 		const registerHash = await args.wallet.sendTransaction({
-			to: validator.address,
-			data: registerData,
+			to: registerCall.to,
+			data: registerCall.data,
 			account: args.wallet.account,
 			chain: args.wallet.chain,
 		});
@@ -557,24 +593,18 @@ export async function registerSettlementRulesOnChain(args: {
 				abi: validatorAbi,
 			},
 		);
-		const onChainRuleId = parseRuleIdFromReceipt({
-			receipt: registerReceipt,
-			emitter: validator.address,
-			abi: validatorAbi,
-			eventName: "PaymentRuleRegistered",
-		});
 
-		registered.push({
-			onChainRuleId,
-			legs: toRegistrationLegs(rule.legs),
-			tokenAddress: rule.tokenAddress,
-			cidIdentifier: args.cidIdentifier,
-			releaseType: rule.releaseType,
-			releaseParams: rule.releaseParams,
-			expiresAt: expiresAt === 0n ? undefined : expiresAt.toString(),
-			registerRuleTxHash: registerHash,
-			approveTxHash: approveHash,
-		});
+		registered.push(
+			buildSettlementRuleRegistrationRecord({
+				rule,
+				cidIdentifier: args.cidIdentifier,
+				validatorAddress: validator.address,
+				validatorAbi,
+				registerReceipt,
+				registerRuleTxHash: registerHash,
+				approveTxHash: approveHash,
+			}),
+		);
 
 		emitSendFileProgress(args.onProgress, {
 			phase: "wallet_payout_register",
@@ -599,6 +629,7 @@ export async function updateSettlementRuleOnChain(args: {
 	expiresAt?: bigint;
 	validatorAddress?: Address;
 	onProgress?: SettlementChangeProgressReporter;
+	resolvePayerWallet?: SettlementPayerWalletResolver;
 }): Promise<{
 	updateRuleTxHash: SettlementRuleUpdateInput["updateRuleTxHash"];
 	approveTxHashes: Hex[];
@@ -633,7 +664,15 @@ export async function updateSettlementRuleOnChain(args: {
 		},
 	);
 
-	const payer = args.wallet.account.address;
+	const payer = settlementRulePayerAddress(
+		targetRule,
+		args.wallet.account.address,
+	);
+	const approvalWallet = await resolveSettlementApprovalWallet({
+		payer,
+		connectedWallet: args.wallet,
+		resolvePayerWallet: args.resolvePayerWallet,
+	});
 	const approveTxHashes: Hex[] = [];
 	const currentAllowance = await readSettlementValidatorAllowance({
 		contracts: args.contracts,
@@ -645,7 +684,7 @@ export async function updateSettlementRuleOnChain(args: {
 
 	if (currentAllowance < requiredAfter) {
 		const preApprove = await approveAllowanceWithProgress({
-			wallet: args.wallet,
+			wallet: approvalWallet,
 			contracts: args.contracts,
 			chainKey: args.chainKey,
 			tokenAddress: getAddress(targetRule.tokenAddress),
@@ -711,7 +750,7 @@ export async function updateSettlementRuleOnChain(args: {
 	});
 
 	const postTrim = await trimSettlementValidatorAllowance({
-		wallet: args.wallet,
+		wallet: approvalWallet,
 		contracts: args.contracts,
 		chainKey: args.chainKey,
 		tokenAddress: getAddress(targetRule.tokenAddress),
@@ -733,6 +772,7 @@ export async function cancelSettlementRuleOnChain(args: {
 	onChainRuleId: string;
 	validatorAddress?: Address;
 	onProgress?: SettlementChangeProgressReporter;
+	resolvePayerWallet?: SettlementPayerWalletResolver;
 }): Promise<{
 	cancelRuleTxHash: SettlementRuleCancelInput["cancelRuleTxHash"];
 	approveTxHashes: Hex[];
@@ -801,13 +841,22 @@ export async function cancelSettlementRuleOnChain(args: {
 	);
 
 	const approveTxHashes: Hex[] = [];
+	const payer = settlementRulePayerAddress(
+		targetRule,
+		args.wallet.account.address,
+	);
+	const approvalWallet = await resolveSettlementApprovalWallet({
+		payer,
+		connectedWallet: args.wallet,
+		resolvePayerWallet: args.resolvePayerWallet,
+	});
 	const trimHash = await trimSettlementValidatorAllowance({
-		wallet: args.wallet,
+		wallet: approvalWallet,
 		contracts: args.contracts,
 		chainKey: args.chainKey,
 		tokenAddress: getAddress(targetRule.tokenAddress),
 		validatorAddress: validator.address,
-		payer: args.wallet.account.address,
+		payer,
 		required: requiredAfter,
 		onProgress: args.onProgress,
 	});
@@ -910,13 +959,22 @@ export async function revokeSettlementValidatorAllowance(args: {
 	contracts: FilosignContracts;
 	chainKey: ChainKey;
 	tokenAddress: Address;
+	payer: Address;
+	validatorAddress?: Address;
+	resolvePayerWallet?: SettlementPayerWalletResolver;
 }): Promise<Hex> {
-	const validator = args.contracts.FSPaymentValidator;
+	const validator = paymentValidatorAt(args.contracts, args.validatorAddress);
 	if (!validator) {
 		throw new Error(
 			"FSPaymentValidator is not deployed on this chain. Run contracts deploy/migrate first.",
 		);
 	}
+
+	const approvalWallet = await resolveSettlementApprovalWallet({
+		payer: args.payer,
+		connectedWallet: args.wallet,
+		resolvePayerWallet: args.resolvePayerWallet,
+	});
 
 	const approveAbi = erc20ApproveAbi(args.chainKey);
 	const approveArgs = [validator.address, 0n] as const;
@@ -928,18 +986,18 @@ export async function revokeSettlementValidatorAllowance(args: {
 
 	await simulateSettlementWrite({
 		contracts: args.contracts,
-		wallet: args.wallet,
+		wallet: approvalWallet,
 		address: args.tokenAddress,
 		abi: approveAbi,
 		functionName: "approve",
 		args: approveArgs,
 	});
 
-	const approveHash = await args.wallet.sendTransaction({
+	const approveHash = await approvalWallet.sendTransaction({
 		to: args.tokenAddress,
 		data,
-		account: args.wallet.account,
-		chain: args.wallet.chain,
+		account: approvalWallet.account,
+		chain: approvalWallet.chain,
 	});
 	await waitForTxReceipt(args.contracts, approveHash, {
 		label: "USDC approval revoke",

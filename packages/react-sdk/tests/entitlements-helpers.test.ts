@@ -5,6 +5,7 @@ import {
 	canUseSharedTemplates,
 	canUseTeamCollaboration,
 	canUseTeamDrafts,
+	canUseWorkspaceTreasury,
 } from "../src/lib/entitlements";
 
 function entitlements(
@@ -21,7 +22,7 @@ function entitlements(
 	} as unknown as EntitlementsSnapshot;
 }
 
-describe("draft entitlement helpers", () => {
+describe("entitlement helpers", () => {
 	it("canUseDraftComments reflects catalog flag", () => {
 		expect(
 			canUseDraftComments(entitlements({ "features.draft_comments": true })),
@@ -67,5 +68,19 @@ describe("draft entitlement helpers", () => {
 			),
 		).toBe(false);
 		expect(canUseTeamCollaboration(undefined)).toBe(false);
+	});
+
+	it("canUseWorkspaceTreasury reflects custom treasury flag", () => {
+		expect(
+			canUseWorkspaceTreasury(
+				entitlements({ "features.treasury.workspace_custom": true }),
+			),
+		).toBe(true);
+		expect(
+			canUseWorkspaceTreasury(
+				entitlements({ "features.treasury.workspace_custom": false }),
+			),
+		).toBe(false);
+		expect(canUseWorkspaceTreasury(undefined)).toBe(false);
 	});
 });

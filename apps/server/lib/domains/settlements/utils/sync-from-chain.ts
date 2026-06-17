@@ -7,13 +7,12 @@ import db from "@/lib/platform/db";
 import { fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { selectSettlementRule, settlementRuleWhere } from "./rule-lookup";
+import { settlementSchema } from "./schema";
 import {
 	mergeSettlementLegsWithPaidFlags,
 	readSettlementLegPaidFlags,
 	settlementPaidLegCount,
 } from "./sync-legs-from-chain";
-
-const { fileSettlementRules } = db.schema;
 
 function deriveStatusFromPaidFlags(
 	paidCount: number,
@@ -77,6 +76,7 @@ export async function syncSettlementPayoutFromChain(
 	}
 
 	const isTerminal = status === "executed" || status === "cancelled";
+	const { fileSettlementRules } = settlementSchema();
 	await db
 		.update(fileSettlementRules)
 		.set({

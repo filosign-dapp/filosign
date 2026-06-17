@@ -6,11 +6,10 @@ import type { fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { payerCanFundSettlement } from "../preflight";
 import { selectSettlementRule, settlementRuleWhere } from "../rule-lookup";
+import { settlementSchema } from "../schema";
 import { syncSettlementPayoutFromChain } from "../sync-from-chain";
 import { listUnpaidSettlementLegIndices } from "../sync-legs-from-chain";
 import { pollCanExecute } from "./payout-readiness";
-
-const { fileSettlementRules } = db.schema;
 
 export async function preflightSettlementPayout(args: {
 	onChainRuleId: bigint;
@@ -19,6 +18,7 @@ export async function preflightSettlementPayout(args: {
 }) {
 	const { onChainRuleId, validatorAddress, validator } = args;
 	const row = await selectSettlementRule(onChainRuleId, validatorAddress);
+	const { fileSettlementRules } = settlementSchema();
 
 	if (!row) return { skip: "rule_not_indexed" as const };
 
@@ -32,6 +32,17 @@ export async function preflightSettlementPayout(args: {
 	}
 
 	const executedOnChain = await tryCatch(validator.read.rules([onChainRuleId]));
+	let payerWallet = getAddress(row.payerWallet);
+	if (!executedOnChain.error && executedOnChain.data) {
+		const onChainPayer = getAddress(executedOnChain.data[0] as Address);
+		if (onChainPayer !== payerWallet) {
+			payerWallet = onChainPayer;
+			await db
+				.update(fileSettlementRules)
+				.set({ payerWallet: onChainPayer, updatedAt: new Date() })
+				.where(ruleWhere);
+		}
+	}
 	if (!executedOnChain.error && executedOnChain.data[8]) {
 		await syncSettlementPayoutFromChain(onChainRuleId, validatorAddress);
 		return { skip: "cancelled" as const };
@@ -71,7 +82,7 @@ export async function preflightSettlementPayout(args: {
 	const fundedRes = await tryCatch(
 		payerCanFundSettlement({
 			onChainRuleId,
-			payer: getAddress(row.payerWallet),
+			payer: payerWallet,
 			token: getAddress(row.tokenAddress),
 			amount: unpaidAmount,
 			validator: validatorAddress,

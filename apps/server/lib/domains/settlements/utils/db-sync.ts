@@ -3,14 +3,14 @@ import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import type { Address } from "viem";
 import db from "@/lib/platform/db";
 import { settlementRuleWhere } from "./rule-lookup";
-
-const { fileSettlementRules } = db.schema;
+import { settlementSchema } from "./schema";
 
 export async function markSettlementRuleCancelled(args: {
 	onChainRuleId: bigint;
 	validatorAddress: Address;
 	cancelRuleTxHash: `0x${string}`;
 }) {
+	const { fileSettlementRules } = settlementSchema();
 	await db
 		.update(fileSettlementRules)
 		.set({
@@ -43,6 +43,7 @@ export async function markSettlementRuleUpdated(args: {
 			},
 		});
 	}
+	const { fileSettlementRules } = settlementSchema();
 	await db
 		.update(fileSettlementRules)
 		.set({

@@ -13,11 +13,10 @@ import {
 import { withRelayerLock } from "@/lib/platform/evm/relayer-lock";
 import { routeRelayerForPiece } from "@/lib/platform/evm/relayer-pool";
 import { selectSettlementRule, settlementRuleWhere } from "../rule-lookup";
+import { settlementSchema } from "../schema";
 import { alertSettlementRelayPayoutFailed } from "./alerts";
 import { executeSinglePayoutLeg, type LegExecutionResult } from "./payout-leg";
 import { pollUntilRuleExecuted } from "./payout-readiness";
-
-const { fileSettlementRules } = db.schema;
 
 type PayoutRow = NonNullable<Awaited<ReturnType<typeof selectSettlementRule>>>;
 
@@ -46,6 +45,7 @@ async function runPayoutLegsForRelayer(args: {
 	relayerAddress: Address;
 }): Promise<PayoutLegRunResult> {
 	return withRelayerLock(args.relayerAddress, async () => {
+		const { fileSettlementRules } = settlementSchema();
 		let lastTxHash: `0x${string}` | undefined;
 		let anyLegPaid = false;
 		let lastFailureStatus: SettlementRuleStatus | undefined;
@@ -59,7 +59,7 @@ async function runPayoutLegsForRelayer(args: {
 		for (const legIndex of args.unpaidIndices) {
 			const result: LegExecutionResult = await executeSinglePayoutLeg({
 				onChainRuleId: args.onChainRuleId,
-				validatorAddress: args.validatorAddress,
+				validatorAddress: args.validatorAddress as `0x${string}`,
 				legIndex,
 				relayerAddress: args.relayerAddress,
 			});

@@ -4,11 +4,10 @@ import { isPieceWaitingForMoreSigners } from "@/lib/domains/files/utils/envelope
 import db from "@/lib/platform/db";
 import { fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { logger } from "@/lib/platform/pino";
+import { settlementSchema } from "../schema";
 import { executePayoutLegsUnderLock } from "./payout-lock";
 import { preflightSettlementPayout } from "./payout-preflight";
 import { shouldRetryPayoutSkip } from "./payout-readiness";
-
-const { fileSettlementRules } = db.schema;
 
 const EXECUTABLE_DB_STATUSES = [
 	"pending",
@@ -72,6 +71,7 @@ export async function tryExecuteSettlementPayout(args: {
 export async function tryExecuteSettlementRulesForPiece(
 	pieceCid: string,
 ): Promise<SettlementPiecePayoutOutcome> {
+	const { fileSettlementRules } = settlementSchema();
 	const rows = await db
 		.select({
 			onChainRuleId: fileSettlementRules.onChainRuleId,

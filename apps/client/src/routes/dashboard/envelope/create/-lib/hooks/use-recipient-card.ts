@@ -77,7 +77,7 @@ export function useRecipientCard(index: number) {
 		const patch: { walletAddress?: `0x${string}`; name?: string } = {};
 
 		if (profile.walletAddress && isAddress(profile.walletAddress)) {
-			const addr = getAddress(profile.walletAddress);
+			const addr = getAddress(profile.walletAddress) as `0x${string}`;
 			if (recipient.walletAddress?.toLowerCase() !== addr.toLowerCase()) {
 				patch.walletAddress = addr;
 			}

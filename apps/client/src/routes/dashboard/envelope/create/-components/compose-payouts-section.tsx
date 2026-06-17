@@ -1,3 +1,5 @@
+import { useEntitlements } from "@filosign/react/billing";
+import { canUseWorkspaceTreasury } from "@filosign/react/files";
 import { useActiveOrganization, useActiveOrgId } from "@filosign/react/orgs";
 import {
 	isAdvancedSettlementReleaseType,
@@ -6,17 +8,22 @@ import {
 } from "@filosign/shared";
 import { PlusIcon } from "@phosphor-icons/react";
 import { useStore } from "@tanstack/react-form";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SUPPORTED_TOKENS } from "@/src/constants";
 import { Image } from "@/src/lib/components/app/media/image";
 import { Button } from "@/src/lib/components/ui/button";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
-import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
-import { payoutAccessRequestDialogProps } from "@/src/lib/domains/settlements/payout-access-controls";
-import { PayoutAccessRequestDialog } from "@/src/lib/domains/settlements/payout-access-request-dialog";
-import { useBasicPayoutGateActions } from "@/src/lib/domains/settlements/use-basic-payout-gate-actions";
+import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
+import { useOrgWalletAddress } from "@/src/lib/domains/orgs/use-org-wallet-address";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements";
+import {
+	PayoutAccessRequestDialog,
+	payoutAccessRequestDialogProps,
+	useBasicPayoutGateActions,
+	usePayoutPayerBalance,
+} from "@/src/lib/domains/settlements";
 import { formatUsdcAmountString } from "@/src/lib/web3/format-usdc";
 import {
 	ComposeRuleCard,
@@ -90,19 +97,31 @@ function PayoutRuleCard({
 
 export function ComposePayoutsSection() {
 	const { form, payoutBalance } = useCreateEnvelope();
+	const { data: entitlements } = useEntitlements();
 	const activeOrgId = useActiveOrgId();
 	const activeOrg = useActiveOrganization();
+	const orgWalletAddress = useOrgWalletAddress();
 
 	const recipients = useStore(form.store, (state) => state.values.recipients);
 	const settlementDrafts = useStore(
 		form.store,
 		(state) => state.values.settlementDrafts ?? [],
 	);
-
-	const canManage = activeOrg?.role === "owner" || activeOrg?.role === "admin";
+	const payoutPayerSource = useStore(
+		form.store,
+		(state) => state.values.payoutPayerSource ?? "sender",
+	);
 
 	const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
 	const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+	const [treasuryUpgradeOpen, setTreasuryUpgradeOpen] = useState(false);
+	const canUseCustomTreasury = canUseWorkspaceTreasury(entitlements);
+
+	const payerBalance = usePayoutPayerBalance(payoutPayerSource, {
+		enabled: ruleDialogOpen,
+	});
+
+	const canManage = activeOrg?.role === "owner" || activeOrg?.role === "admin";
 
 	const {
 		canAttach,
@@ -119,6 +138,11 @@ export function ComposePayoutsSection() {
 		() => getRuleGroups(settlementDrafts),
 		[settlementDrafts],
 	);
+	useEffect(() => {
+		if (!canUseCustomTreasury && payoutPayerSource === "org_wallet") {
+			form.setFieldValue("payoutPayerSource", "sender");
+		}
+	}, [canUseCustomTreasury, form, payoutPayerSource]);
 
 	if (recipients.length === 0) return null;
 
@@ -182,6 +206,44 @@ export function ComposePayoutsSection() {
 					<ProFeatureMark size="xs" />
 				</Button>
 			</div>
+			<div className="rounded-lg border border-border/50 bg-background/50 p-3">
+				<p className="text-xs font-medium text-foreground">Payout payer</p>
+				<div className="mt-2 flex flex-wrap gap-2">
+					<Button
+						type="button"
+						size="sm"
+						variant={payoutPayerSource === "sender" ? "primary" : "outline"}
+						onClick={() => form.setFieldValue("payoutPayerSource", "sender")}
+					>
+						My connected wallet
+					</Button>
+					<Button
+						type="button"
+						size="sm"
+						variant={payoutPayerSource === "org_wallet" ? "primary" : "outline"}
+						disabled={!orgWalletAddress}
+						onClick={() => {
+							if (!canUseCustomTreasury) {
+								setTreasuryUpgradeOpen(true);
+								return;
+							}
+							form.setFieldValue("payoutPayerSource", "org_wallet");
+						}}
+					>
+						Workspace treasury
+					</Button>
+				</div>
+				<p className="mt-2 text-xs text-muted-foreground">
+					{payoutPayerSource === "org_wallet" && orgWalletAddress
+						? `Using treasury ${orgWalletAddress}.`
+						: "Using your connected account."}
+				</p>
+				{!canUseCustomTreasury ? (
+					<p className="mt-1 text-xs text-muted-foreground">
+						Custom workspace treasury payer requires Teams Pro or Enterprise.
+					</p>
+				) : null}
+			</div>
 
 			{ruleGroups.length > 0 ? (
 				<>
@@ -207,6 +269,7 @@ export function ComposePayoutsSection() {
 							balanceError={payoutBalance.balanceError}
 							walletConnected={Boolean(payoutBalance.walletAddress)}
 							exceedsBalance={payoutBalance.exceedsBalance}
+							payerLabel={payoutBalance.payerLabel}
 						/>
 					) : null}
 				</>
@@ -219,6 +282,7 @@ export function ComposePayoutsSection() {
 
 			{ruleDialogOpen ? (
 				<PayoutRuleDialog
+					key={payerBalance.payerAddress ?? payoutPayerSource}
 					open={ruleDialogOpen}
 					onOpenChange={(open) => {
 						setRuleDialogOpen(open);
@@ -228,6 +292,12 @@ export function ComposePayoutsSection() {
 					allSettlementDrafts={settlementDrafts}
 					existingRuleId={editingRuleId}
 					existingLegs={editingLegs}
+					payerWalletAddress={payerBalance.payerAddress}
+					payerLabel={payerBalance.payerLabel}
+					walletBalance={payerBalance.balance}
+					walletBalanceFormatted={payerBalance.formatted}
+					balancePending={payerBalance.isPending}
+					balanceError={payerBalance.isError}
 					onSave={handleSave}
 					onRemove={handleRemove}
 				/>
@@ -238,6 +308,11 @@ export function ComposePayoutsSection() {
 					{ open: requestDialogOpen, onOpenChange: setRequestDialogOpen },
 					payoutAccess,
 				)}
+			/>
+			<UpgradePlanDialog
+				open={treasuryUpgradeOpen}
+				onOpenChange={setTreasuryUpgradeOpen}
+				reason="features.treasury.workspace_custom"
 			/>
 		</section>
 	);

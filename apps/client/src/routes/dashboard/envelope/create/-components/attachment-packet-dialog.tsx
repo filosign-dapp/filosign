@@ -46,7 +46,7 @@ import type {
 	AttachmentPacketComposeFile,
 } from "@/src/lib/domains/files/attachment-packet-compose";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
-import { SettlementReleaseFields } from "@/src/lib/domains/settlements/settlement-release-fields";
+import { SettlementReleaseFields } from "@/src/lib/domains/settlements";
 import { createClientId } from "@/src/lib/utils/id";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";

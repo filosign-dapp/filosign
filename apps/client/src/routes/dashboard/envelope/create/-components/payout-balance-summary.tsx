@@ -1,6 +1,6 @@
 import { SUPPORTED_TOKENS } from "@/src/constants";
 import { Image } from "@/src/lib/components/app/media/image";
-import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements/payout-copy";
+import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements";
 import { cn } from "@/src/lib/utils/utils";
 
 const usdcToken = SUPPORTED_TOKENS[0];
@@ -12,6 +12,7 @@ type Props = {
 	balanceError: boolean;
 	walletConnected: boolean;
 	exceedsBalance: boolean;
+	payerLabel?: "treasury" | "wallet";
 };
 
 export function PayoutBalanceSummary({
@@ -21,6 +22,7 @@ export function PayoutBalanceSummary({
 	balanceError,
 	walletConnected,
 	exceedsBalance,
+	payerLabel = "wallet",
 }: Props) {
 	return (
 		<div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 rounded-lg border-t mt-4 border-border/50 bg-background/50 px-3 py-2.5 text-sm">
@@ -33,7 +35,9 @@ export function PayoutBalanceSummary({
 					<span>Balance unavailable</span>
 				) : (
 					<>
-						<span>Available</span>
+						<span>
+							Available{payerLabel === "treasury" ? " (treasury)" : ""}
+						</span>
 						<Image
 							src={usdcToken.icon}
 							alt=""

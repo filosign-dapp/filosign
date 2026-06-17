@@ -4,7 +4,7 @@ import { FullBleedPageHeader } from "@/src/lib/components/app/chrome/full-bleed-
 import Logo from "@/src/lib/components/app/chrome/logo";
 import { Button } from "@/src/lib/components/ui/button";
 import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
-import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements/payout-copy";
+import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements";
 import { UserDropdown } from "@/src/routes/dashboard/_shell/-components/user-dropdown";
 import { useCreateEnvelope } from "@/src/routes/dashboard/envelope/create/-lib/context/create-envelope-context";
 import { ClearEnvelopeFormButton } from "./clear-envelope-form-button";

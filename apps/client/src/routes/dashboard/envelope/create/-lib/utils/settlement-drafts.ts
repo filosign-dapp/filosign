@@ -1,6 +1,6 @@
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
 import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
-import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements";
 export type PayoutRuleGroup = {
 	ruleId: string;
 	legs: SettlementAttachmentDraft[];

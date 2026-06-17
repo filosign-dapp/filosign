@@ -30,15 +30,16 @@ import {
 	normalizeCreateForm,
 	saveAttachmentPacketDrafts,
 } from "@/src/lib/domains/drafts";
-import { settlementPayoutExceedsBalance } from "@/src/lib/domains/settlements/payout-totals";
-import { useAttachedPayoutBalance } from "@/src/lib/domains/settlements/use-attached-payout-balance";
+import {
+	settlementPayoutExceedsBalance,
+	useAttachedPayoutBalance,
+} from "@/src/lib/domains/settlements";
 import { resolveRecipientWallets } from "@/src/lib/domains/templates/resolve-recipient-wallets";
 import { finalizeTemplateUseAtComposeContinue } from "@/src/lib/domains/templates/template-composer";
 import {
 	useStorePersist,
 	useStorePersistHydrated,
 } from "@/src/lib/filosign/use-store";
-import { useWalletUsdcBalance } from "@/src/lib/web3/use-wallet-usdc-balance";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 import type { EnvelopeForm } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { resolveComposeAdvanceUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/utils/compose-advance-guards";
@@ -61,9 +62,9 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 	const { isWithinRecipientLimit } = useEnvelopeRecipientLimit();
 	const { isMonthlyQuotaExhausted } = useMonthlyDocumentQuota();
 	const [isAdvancing, setIsAdvancing] = useState(false);
-	const walletUsdc = useWalletUsdcBalance();
-	const walletUsdcRef = useRef(walletUsdc);
-	walletUsdcRef.current = walletUsdc;
+	const payoutBalanceRef = useRef<ReturnType<
+		typeof useAttachedPayoutBalance
+	> | null>(null);
 
 	const form = useForm({
 		defaultValues: initialValues,
@@ -103,7 +104,10 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 					return;
 				}
 
-				const { address, balance } = walletUsdcRef.current;
+				const payoutBalance = payoutBalanceRef.current;
+				if (!payoutBalance) return;
+				const { walletAddress: address, walletBalance: balance } =
+					payoutBalance;
 				if (
 					settlementPayoutExceedsBalance({
 						drafts: value.settlementDrafts ?? [],
@@ -174,7 +178,15 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 		form.store,
 		(state) => state.values.settlementDrafts ?? [],
 	);
-	const payoutBalance = useAttachedPayoutBalance(settlementDrafts);
+	const payoutPayerSource = useStore(
+		form.store,
+		(state) => state.values.payoutPayerSource ?? "sender",
+	);
+	const payoutBalance = useAttachedPayoutBalance(
+		settlementDrafts,
+		payoutPayerSource,
+	);
+	payoutBalanceRef.current = payoutBalance;
 
 	const showValidationErrors = useStore(
 		form.store,

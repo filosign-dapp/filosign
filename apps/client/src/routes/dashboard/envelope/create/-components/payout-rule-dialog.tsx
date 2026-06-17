@@ -25,16 +25,15 @@ import { Label } from "@/src/lib/components/ui/label";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
-import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
-import { handleBasicPayoutGateBlock } from "@/src/lib/domains/settlements/basic-payout-gate";
-import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements/payout-copy";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements";
 import {
+	handleBasicPayoutGateBlock,
+	PAYOUT_EXCEEDS_BALANCE_MESSAGE,
+	SettlementReleaseFields,
 	settlementPayoutExceedsBalance,
 	sumLegAmountStrings,
-} from "@/src/lib/domains/settlements/payout-totals";
-import { SettlementReleaseFields } from "@/src/lib/domains/settlements/settlement-release-fields";
+} from "@/src/lib/domains/settlements";
 import { createClientId } from "@/src/lib/utils/id";
-import { useWalletUsdcBalance } from "@/src/lib/web3/use-wallet-usdc-balance";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 import { useRecipientPayoutEligibility } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-recipient-payout-eligibility";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
@@ -56,6 +55,12 @@ type Props = {
 	allSettlementDrafts: SettlementAttachmentDraft[];
 	existingRuleId: string | null;
 	existingLegs: SettlementAttachmentDraft[];
+	payerWalletAddress?: `0x${string}`;
+	payerLabel: "treasury" | "wallet";
+	walletBalance: bigint;
+	walletBalanceFormatted: string;
+	balancePending: boolean;
+	balanceError: boolean;
 	onSave: (ruleId: string, legs: SettlementAttachmentDraft[]) => void;
 	onRemove: () => void;
 };
@@ -152,6 +157,12 @@ export function PayoutRuleDialog({
 	allSettlementDrafts,
 	existingRuleId,
 	existingLegs,
+	payerWalletAddress,
+	payerLabel,
+	walletBalance,
+	walletBalanceFormatted,
+	balancePending,
+	balanceError,
 	onSave,
 	onRemove,
 }: Props) {
@@ -166,13 +177,7 @@ export function PayoutRuleDialog({
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 	const [legAmounts, setLegAmounts] = useState<LegAmounts>({});
 
-	const {
-		address: walletAddress,
-		balance: walletBalance,
-		formatted: walletBalanceFormatted,
-		isPending: balancePending,
-		isError: balanceError,
-	} = useWalletUsdcBalance({ enabled: open });
+	const walletAddress = payerWalletAddress;
 
 	const signerOptions = useMemo(() => {
 		return recipients
@@ -374,6 +379,7 @@ export function PayoutRuleDialog({
 										className="size-3 rounded-full"
 									/>
 									{walletBalanceFormatted} available
+									{payerLabel === "treasury" ? " (treasury)" : null}
 								</span>
 							)}
 						</div>
@@ -412,7 +418,9 @@ export function PayoutRuleDialog({
 					</div>
 
 					<p className="text-xs text-muted-foreground">
-						You approve this payout from your wallet when you send the envelope.
+						{payerLabel === "treasury"
+							? "You approve this payout from the workspace treasury when you send. Filosign will prompt you to connect that treasury wallet separately from your signing wallet."
+							: "You approve this payout from your connected wallet when you send the envelope."}
 					</p>
 				</div>
 

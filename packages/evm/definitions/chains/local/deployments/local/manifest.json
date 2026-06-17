@@ -1,7 +1,7 @@
 {
 	"deploymentId": "local",
 	"chainId": 31337,
-	"deployedAt": "2026-06-16T01:38:44.829Z",
+	"deployedAt": "2026-06-17T11:15:16.992Z",
 	"contracts": {
 		"FSEnvelopeRegistry": {
 			"address": "0x73511669fd4dE447feD18BB79bAFeAC93aB7F31f",
@@ -22,5 +22,11 @@
 	},
 	"transactions": {
 		"setSatelliteContracts": "0x21c6e285e37edb2002bfe08210ebf164849eb4f97c8eeaa8a8ebe4e8e63b81ba"
+	},
+	"deploy": {
+		"initialRelayers": [
+			"0xcd4E9682172f67f2eA8cf0a9eCF199F3b78e57aD",
+			"0x8c11E74D92c6F75373E25802931Cd43bC337847C"
+		]
 	}
 }

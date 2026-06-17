@@ -62,6 +62,7 @@ export const zDraftSnapshot = z.object({
 	emailMessage: z.string(),
 	signatureFields: z.array(zSignatureField),
 	settlementDrafts: z.array(zSettlementDraft).default([]),
+	payoutPayerSource: z.enum(["sender", "org_wallet"]).optional(),
 	placementManifest: zDraftPlacementManifest,
 	documents: z.array(
 		z.object({

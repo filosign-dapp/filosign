@@ -19,6 +19,7 @@ export * from "./utils/platform-invite";
 export * from "./utils/pricing-media";
 export * from "./utils/render-typed-signature-svg";
 export * from "./utils/routing";
+export * from "./utils/safe-transaction-service";
 export * from "./utils/settlement-legal";
 export * from "./utils/settlement-rules";
 export * from "./utils/sign-field-session";

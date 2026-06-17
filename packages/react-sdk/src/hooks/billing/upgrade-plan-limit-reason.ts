@@ -11,6 +11,7 @@ export const UPGRADE_PLAN_LIMIT_REASONS = [
 	"features.supplementary_attachments",
 	"features.supplementary_attachments.recipient_select",
 	"features.supplementary_attachments.conditional_release",
+	"features.treasury.workspace_custom",
 	"features.signer_replacement",
 	"features.team_collaboration",
 	"features.workspace.create",

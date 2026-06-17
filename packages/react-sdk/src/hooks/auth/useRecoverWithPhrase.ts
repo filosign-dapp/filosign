@@ -16,7 +16,7 @@ export function useRecoverWithPhrase() {
 			if (!wallet || !rpc || !wasm.dilithium) {
 				throw new Error("unreachable");
 			}
-			const address = wallet.account.address;
+			const address = wallet.account.address as `0x${string}`;
 			const seed = await seedFromRecoveryPhrase(params.phrase);
 			const keygenData = await seedKeyGen(new Uint8Array(Array.from(seed)), {
 				dl: wasm.dilithium,

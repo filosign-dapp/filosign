@@ -7,6 +7,7 @@ import type { Address } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import {
 	type SettlementChangeProgressReporter,
+	type SettlementPayerWalletResolver,
 	type SettlementRuleDraftLeg,
 	updateSettlementRuleOnChain,
 } from "../../lib/settlement-rules";
@@ -28,6 +29,7 @@ export function useUpdateSettlementRule(pieceCid: string | undefined) {
 			legs: SettlementRuleDraftLeg[];
 			expiresAt?: bigint;
 			onProgress?: SettlementChangeProgressReporter;
+			resolvePayerWallet?: SettlementPayerWalletResolver;
 		}) => {
 			if (!wallet?.account || !contracts) {
 				throw new Error("Connect your wallet to update a settlement rule.");
@@ -46,6 +48,7 @@ export function useUpdateSettlementRule(pieceCid: string | undefined) {
 				legs: args.legs,
 				expiresAt: args.expiresAt,
 				onProgress: args.onProgress,
+				resolvePayerWallet: args.resolvePayerWallet,
 			});
 
 			return rpcQuery.settlements.updateRule.call({

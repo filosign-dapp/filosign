@@ -4,6 +4,7 @@ import { useFilosignContext } from "../../context/useFilosignContext";
 import {
 	cancelSettlementRuleOnChain,
 	type SettlementChangeProgressReporter,
+	type SettlementPayerWalletResolver,
 } from "../../lib/settlement-rules";
 import type { SettlementRuleRow } from "../../lib/settlement-types";
 import { useFilosignRpc } from "../../lib/use-filosign-rpc";
@@ -11,6 +12,7 @@ import { useFilosignRpc } from "../../lib/use-filosign-rpc";
 export type CancelSettlementRuleInput = SettlementRuleKey & {
 	allRules: SettlementRuleRow[];
 	onProgress?: SettlementChangeProgressReporter;
+	resolvePayerWallet?: SettlementPayerWalletResolver;
 };
 
 export function useCancelSettlementRule(pieceCid: string | undefined) {
@@ -33,6 +35,7 @@ export function useCancelSettlementRule(pieceCid: string | undefined) {
 				onChainRuleId: input.onChainRuleId,
 				validatorAddress: input.validatorAddress,
 				onProgress: input.onProgress,
+				resolvePayerWallet: input.resolvePayerWallet,
 			});
 
 			return rpcQuery.settlements.cancelRule.call({

@@ -1,7 +1,7 @@
 {
 	"deploymentId": "local",
 	"chainId": 31337,
-	"deployedAt": "2026-06-17T12:38:54.683Z",
+	"deployedAt": "2026-06-17T23:24:23.593Z",
 	"contracts": {
 		"FSEnvelopeRegistry": {
 			"address": "0x73511669fd4dE447feD18BB79bAFeAC93aB7F31f",

@@ -40,7 +40,21 @@ export function useTemplateEditorHydrate(args: {
 	const { rpcQuery, wallet } = useFilosignContext();
 	const activeOrgId = useActiveOrgId();
 	const setCreateForm = useStorePersist((s) => s.setCreateForm);
-	const [loadState, setLoadState] = useState<TemplateEditorLoadState>("idle");
+	const mode = args.templateMode;
+	const isHydrating = mode === "edit" || mode === "preview";
+	const [loadState, setLoadState] = useState<TemplateEditorLoadState>(() => {
+		if (!isHydrating || !mode) return "idle";
+		const templateId = args.templateId?.trim();
+		if (!templateId) return "idle";
+		const existing = useStorePersist.getState().createForm;
+		if (
+			existing?.documents.length &&
+			matchesTemplateEditorContext(existing, templateId, mode)
+		) {
+			return "idle";
+		}
+		return "loading";
+	});
 	const lastHydrateRef = useRef<string | null>(null);
 
 	useEffect(() => {

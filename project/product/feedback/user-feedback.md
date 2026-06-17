@@ -57,3 +57,16 @@ Captured feedback from design partners and early users. Use for prioritisation; 
 - Make cap visibility prominent in billing (plan limits and usage context).
 - Surface cap clearly on the create page before users send documents.
 - Add clearer usage messaging (for example, current usage vs cap) so limits are hard to miss.
+
+---
+
+## Localized currencies on pricing page
+
+**Report:** Pricing should show localized currencies so visitors can see the product price in their local value, not just USD.
+
+**Assessment:** Valid for international prospects. USD-only pricing adds friction for non-US buyers who have to mentally convert or may assume the product is US-only.
+
+**Future work:**
+
+- Show prices in the visitor's local currency on the marketing pricing page (with USD as fallback or source of truth).
+- Use a reliable FX or geo-based currency display approach; keep checkout/billing currency behavior aligned with what Dodo or billing actually charges.

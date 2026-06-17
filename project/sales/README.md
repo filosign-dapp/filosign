@@ -7,6 +7,7 @@ This is the central index for selling the product and customer acquisition, stru
 ### 1. Strategy
 - **GTM Roadmap:** [`strategy/sales-roadmap.md`](strategy/sales-roadmap.md) - 3-month founder-led sales campaigns and outbound sequence strategy.
 - **Positioning:** [`strategy/positioning.md`](strategy/positioning.md) - One-liners, value propositions, and competitor positioning.
+- **Wedges & Selling Points:** [`strategy/selling-points.md`](strategy/selling-points.md) - Full index of product capabilities, embedded wallets, email routing, and value propositions.
 - **ICP & Use cases:** [`strategy/icp.md`](strategy/icp.md) - Target profiles (foundations, DAOs, startups) and workflow examples.
 - **Claims audit:** [`strategy/claims.md`](strategy/claims.md) - Audit of site copy vs shipped product features to verify claims.
 

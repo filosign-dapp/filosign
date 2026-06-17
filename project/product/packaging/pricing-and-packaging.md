@@ -10,8 +10,8 @@
 |------|---------|-------------------|--------------|------------|--------------|-------------------|
 | **Free** | $0 | - | 3 (account) | 1 | - | - |
 | **Solo** (`individual`) | $20 | $15 | 10 (account) | 3 | USDC basic (`settlement.basic`) | - |
-| **Teams** | $35/user | $29/user | 15/seat (pooled) | 10 | USDC basic (`settlement.basic`) | - |
-| **Teams Pro** | $59/user | $49/user | 25/seat (pooled) | 15 | basic + multi-leg/update/cancel (`settlement.advanced`) | sequential/parallel routing, quorum |
+| **Teams** | $35/user | $29/user | 15/seat (pooled) | 5 | USDC basic (`settlement.basic`) | - |
+| **Teams Pro** | $59/user | $49/user | 25/seat (pooled) | 10 | basic + multi-leg/update/cancel (`settlement.advanced`) | sequential/parallel routing, quorum |
 | **Enterprise** | Custom | Custom | Unlimited | Unlimited | advanced | advanced |
 
 **Settlement gates:** `settlement.basic` / `advanced` in catalog; workspace orgs still require manual payout feature approval — see [`../settlements/payout-feature-approval-checklist.md`](../settlements/payout-feature-approval-checklist.md).

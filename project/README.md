@@ -21,6 +21,7 @@ Company lifecycle hub split into two primary areas:
 - **Sales Hub:** [`sales/README.md`](sales/README.md)
 - **Strategy & ICP:** [`sales/strategy/icp.md`](sales/strategy/icp.md)
 - **Positioning & Claims:** [`sales/strategy/positioning.md`](sales/strategy/positioning.md)
+- **Wedges & Selling Points:** [`sales/strategy/selling-points.md`](sales/strategy/selling-points.md)
 - **Outreach & Playbooks:** [`sales/outbound/playbook.md`](sales/outbound/playbook.md)
 - **Leads & Pipeline:** [`sales/pipeline/conversion-validation.md`](sales/pipeline/conversion-validation.md)
 

@@ -11,7 +11,7 @@ Filosign does **not** custody organization treasuries. Workspace payouts use **l
 ## Link flow (Teams Pro)
 
 1. Org **owner/admin** starts “Link workspace payout wallet”.
-2. **Proof of control:** sign a Filosign EIP-712/message with the proposed treasury address (WalletConnect to a Safe is supported in the client UI). **Not implemented:** Safe Transaction Service API verification.
+2. **Proof of control:** sign a Filosign EIP-712 message with the proposed treasury address via the isolated treasury connect flow (Reown AppKit, separate from Filosign sign-in). EOAs sign directly. Safes use EIP-1271 when immediately valid, otherwise Safe Transaction Service message polling until the Safe threshold is met (`proofType`: `eoa`, `safe_eip1271`, or `safe_service`).
 3. Server stores `orgWalletAddress` + `orgWalletLinkedAt`; no keys held by Filosign.
 
 ## RBAC (product layer)

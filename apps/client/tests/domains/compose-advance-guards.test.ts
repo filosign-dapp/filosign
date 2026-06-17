@@ -7,6 +7,9 @@ describe("resolveComposeAdvanceUpgrade", () => {
 		withinRecipientLimit: true,
 		settlementsAllowed: true,
 		supplementaryAttachmentsAllowed: true,
+		advancedRoutingAllowed: true,
+		workspaceTreasuryAllowed: true,
+		treasuryPayerOffered: true,
 	};
 
 	it("returns null when all gates pass", () => {
@@ -79,5 +82,59 @@ describe("resolveComposeAdvanceUpgrade", () => {
 				persistedAttachmentDraftCount: 0,
 			}),
 		).toBeNull();
+	});
+
+	it("blocks stale quorum routing without advanced routing entitlement", () => {
+		expect(
+			resolveComposeAdvanceUpgrade({
+				...allowed,
+				advancedRoutingAllowed: false,
+				recipientCount: 2,
+				settlementDraftCount: 0,
+				persistedAttachmentDraftCount: 0,
+				quorumN: 2,
+			}),
+		).toBe("features.routing.advanced");
+	});
+
+	it("blocks stale ordered signing without advanced routing entitlement", () => {
+		expect(
+			resolveComposeAdvanceUpgrade({
+				...allowed,
+				advancedRoutingAllowed: false,
+				recipientCount: 2,
+				settlementDraftCount: 0,
+				persistedAttachmentDraftCount: 0,
+				turnOrderEnabled: true,
+			}),
+		).toBe("features.routing.advanced");
+	});
+
+	it("blocks stale treasury payer without workspace treasury entitlement", () => {
+		expect(
+			resolveComposeAdvanceUpgrade({
+				...allowed,
+				workspaceTreasuryAllowed: false,
+				treasuryPayerOffered: false,
+				recipientCount: 1,
+				settlementDraftCount: 0,
+				persistedAttachmentDraftCount: 0,
+				payoutPayerSource: "org_wallet",
+			}),
+		).toBe("features.treasury.workspace_custom");
+	});
+
+	it("blocks org_wallet payer when treasury cannot be offered", () => {
+		expect(
+			resolveComposeAdvanceUpgrade({
+				...allowed,
+				workspaceTreasuryAllowed: true,
+				treasuryPayerOffered: false,
+				recipientCount: 1,
+				settlementDraftCount: 0,
+				persistedAttachmentDraftCount: 0,
+				payoutPayerSource: "org_wallet",
+			}),
+		).toBe("features.treasury.workspace_custom");
 	});
 });

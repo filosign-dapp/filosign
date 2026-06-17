@@ -1,3 +1,5 @@
+import { useEntitlements } from "@filosign/react/billing";
+import { canUseAdvancedRouting } from "@filosign/react/files";
 import { CaretDownIcon, UserIcon, UsersIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import { useState } from "react";
@@ -10,7 +12,6 @@ import {
 import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
 import { Label } from "@/src/lib/components/ui/label";
 import { Switch } from "@/src/lib/components/ui/switch";
-import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { cn } from "@/src/lib/utils/utils";
 import {
 	RecipientsProvider,
@@ -30,6 +31,8 @@ function RecipientsSectionContent() {
 		setSelfSignEnabled,
 		selfSignProfileEmail,
 	} = useRecipientsContext();
+	const { data: entitlements } = useEntitlements();
+	const advancedRouting = canUseAdvancedRouting(entitlements);
 	const [isRecipientsOpen, setIsRecipientsOpen] = useState(true);
 
 	return (
@@ -88,27 +91,28 @@ function RecipientsSectionContent() {
 							</div>
 
 							<div className="flex shrink-0 flex-wrap items-center gap-3 sm:justify-end">
-								<DisabledTooltip
-									disabled={recipients.length === 0}
-									reason="Add at least one recipient first."
-									side="top"
-								>
-									<div className="flex items-center gap-2 rounded-large">
-										<Switch
-											id="turn-order-enabled-recipients"
-											checked={turnOrderEnabled}
-											onCheckedChange={setTurnOrderEnabled}
-											disabled={recipients.length === 0}
-										/>
-										<Label
-											htmlFor="turn-order-enabled-recipients"
-											className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium"
-										>
-											Ordered Signing
-											<ProFeatureMark size="xs" />
-										</Label>
-									</div>
-								</DisabledTooltip>
+								{advancedRouting ? (
+									<DisabledTooltip
+										disabled={recipients.length === 0}
+										reason="Add at least one recipient first."
+										side="top"
+									>
+										<div className="flex items-center gap-2 rounded-large">
+											<Switch
+												id="turn-order-enabled-recipients"
+												checked={turnOrderEnabled}
+												onCheckedChange={setTurnOrderEnabled}
+												disabled={recipients.length === 0}
+											/>
+											<Label
+												htmlFor="turn-order-enabled-recipients"
+												className="cursor-pointer text-sm font-medium"
+											>
+												Ordered signing
+											</Label>
+										</div>
+									</DisabledTooltip>
+								) : null}
 
 								<Button
 									type="button"

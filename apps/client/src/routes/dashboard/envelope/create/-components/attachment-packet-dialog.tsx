@@ -367,7 +367,7 @@ export function AttachmentPacketDialog({
 							onReleaseTypeChange={setReleaseType}
 							canAdvanced={canAdvancedSettlements}
 							onRequireAdvanced={() =>
-								promptPlanUpgrade("features.routing.advanced")
+								promptPlanUpgrade("features.settlement.advanced")
 							}
 							specificSignerEmail={specificSignerEmail}
 							onSpecificSignerEmailChange={setSpecificSignerEmail}

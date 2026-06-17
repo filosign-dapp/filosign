@@ -13,16 +13,11 @@ import {
 } from "@/src/lib/filosign/use-store";
 import { CreateEnvelopePage } from "./-components/page";
 import { CreateEnvelopeProvider } from "./-lib/context/create-envelope-context";
-import { EntitlementUpgradeProvider } from "./-lib/context/entitlement-upgrade-context";
 import { useCreateEnvelopeController } from "./-lib/hooks/use-create-controller";
 import type { EnvelopeForm } from "./-lib/types";
 
 function CreateEnvelopeRoutePage() {
-	return (
-		<EntitlementUpgradeProvider>
-			<CreateEnvelopeRouteContent />
-		</EntitlementUpgradeProvider>
-	);
+	return <CreateEnvelopeRouteContent />;
 }
 
 function CreateEnvelopeRouteContent() {

@@ -1,13 +1,12 @@
 import { ActivationRouteHints } from "@/src/lib/domains/activation/route-hints";
 import { useActivationEnvelopeStartedOnMount } from "@/src/lib/domains/activation/use-mark-first-envelope-started";
 import { EntitlementPlanHint } from "@/src/lib/domains/entitlements/entitlement-plan-hint";
+import { ComposeAdvancedSection } from "@/src/routes/dashboard/envelope/create/-components/compose-advanced-section";
 import {
 	ComposeDocumentsField,
 	ComposeRecipientsField,
 } from "@/src/routes/dashboard/envelope/create/-components/compose-form-fields";
-import { ComposePayoutsSection } from "@/src/routes/dashboard/envelope/create/-components/compose-payouts-section";
-import { ComposeRoutingField } from "@/src/routes/dashboard/envelope/create/-components/compose-routing-field";
-import { ComposeSupplementaryFilesSection } from "@/src/routes/dashboard/envelope/create/-components/compose-supplementary-files-section";
+import { ComposeUpgradeFeaturesHint } from "@/src/routes/dashboard/envelope/create/-components/compose-upgrade-features-hint";
 
 export function EnvelopeFormBody() {
 	useActivationEnvelopeStartedOnMount();
@@ -18,9 +17,8 @@ export function EnvelopeFormBody() {
 			<ActivationRouteHints />
 			<ComposeDocumentsField />
 			<ComposeRecipientsField />
-			<ComposeRoutingField />
-			<ComposePayoutsSection />
-			<ComposeSupplementaryFilesSection />
+			<ComposeUpgradeFeaturesHint />
+			<ComposeAdvancedSection />
 		</main>
 	);
 }

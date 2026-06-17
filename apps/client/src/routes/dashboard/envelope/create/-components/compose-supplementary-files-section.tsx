@@ -7,24 +7,32 @@ import { Button } from "@/src/lib/components/ui/button";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import {
+	buildCreateForm,
 	hydrateAttachmentPacketDrafts,
 	saveAttachmentPacketDrafts,
 } from "@/src/lib/domains/drafts";
-import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import {
 	type AttachmentPacketComposeDraft,
 	removePacketById,
 	upsertPacketDraft,
 } from "@/src/lib/domains/files/attachment-packet-compose";
+import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { AttachmentPacketDialog } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-dialog";
 import {
 	AttachmentPacketEditRemoveActions,
 	AttachmentPacketSummaryCard,
 } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-summary-card";
+import { useCreateEnvelope } from "@/src/routes/dashboard/envelope/create/-lib/context/create-envelope-context";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 
-export function ComposeSupplementaryFilesSection() {
+export function ComposeSupplementaryFilesContent({
+	recipients,
+}: {
+	recipients: Recipient[];
+}) {
+	const { form } = useCreateEnvelope();
+	const formValues = form.state.values;
 	const createForm = useStorePersist((s) => s.createForm);
 	const setCreateForm = useStorePersist((s) => s.setCreateForm);
 	const { data: entitlements } = useEntitlements();
@@ -39,7 +47,14 @@ export function ComposeSupplementaryFilesSection() {
 
 	const drafts = createForm?.attachmentPacketDrafts ?? [];
 
-	if (!createForm) return null;
+	const ensureCreateForm = async () => {
+		let draft = createForm ?? useStorePersist.getState().createForm;
+		if (!draft) {
+			draft = await buildCreateForm(formValues, null);
+			setCreateForm(draft);
+		}
+		return draft;
+	};
 
 	const guardSupplementaryAccess = () => {
 		if (canUse) return false;
@@ -61,10 +76,11 @@ export function ComposeSupplementaryFilesSection() {
 
 	const openEdit = async (packetId: string) => {
 		if (guardSupplementaryAccess()) return;
-		const draft = drafts.find((d) => d.packetId === packetId);
-		if (!draft) return;
-		const [hydrated] = await hydrateAttachmentPacketDrafts(createForm.draftId, [
-			draft,
+		const draft = await ensureCreateForm();
+		const packet = drafts.find((d) => d.packetId === packetId);
+		if (!packet) return;
+		const [hydrated] = await hydrateAttachmentPacketDrafts(draft.draftId, [
+			packet,
 		]);
 		setEditingDraft(hydrated);
 		setEditingPacketId(packetId);
@@ -72,9 +88,10 @@ export function ComposeSupplementaryFilesSection() {
 	};
 
 	const persistDrafts = async (next: AttachmentPacketComposeDraft[]) => {
-		await saveAttachmentPacketDrafts(createForm.draftId, next);
+		const draft = await ensureCreateForm();
+		await saveAttachmentPacketDrafts(draft.draftId, next);
 		setCreateForm({
-			...createForm,
+			...draft,
 			attachmentPacketDrafts: next,
 		});
 	};
@@ -95,13 +112,10 @@ export function ComposeSupplementaryFilesSection() {
 		drafts.length >= SUPPLEMENTARY_ATTACHMENT_LIMITS.maxPacketsPerEnvelope;
 
 	return (
-		<section className="space-y-3 rounded-xl border border-border/60 bg-muted/5 p-5">
+		<>
 			<div className="flex items-start justify-between gap-3">
 				<div className="space-y-1">
-					<h2 className="inline-flex items-center gap-2 text-sm font-semibold">
-						Attached file packets
-						<ProFeatureMark size="xs" />
-					</h2>
+					<h3 className="text-sm font-semibold">Attached file packets</h3>
 					<p className="text-xs text-muted-foreground">
 						Send encrypted PDF packets with your envelope. Set unlock rules,
 						choose recipients, then add files.{" "}
@@ -120,7 +134,6 @@ export function ComposeSupplementaryFilesSection() {
 				>
 					<PlusIcon className="size-4" weight="regular" />
 					Add packet
-					<ProFeatureMark size="xs" />
 				</Button>
 			</div>
 
@@ -158,7 +171,7 @@ export function ComposeSupplementaryFilesSection() {
 							setEditingDraft(undefined);
 						}
 					}}
-					recipients={createForm.recipients}
+					recipients={recipients}
 					existingPacketId={editingPacketId}
 					existingDraft={editingDraft}
 					onSave={(draft) => void handleSave(draft)}
@@ -167,6 +180,6 @@ export function ComposeSupplementaryFilesSection() {
 					}}
 				/>
 			) : null}
-		</section>
+		</>
 	);
 }

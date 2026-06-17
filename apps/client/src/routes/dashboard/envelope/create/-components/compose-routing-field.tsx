@@ -10,18 +10,14 @@ import { Label } from "@/src/lib/components/ui/label";
 import { Switch } from "@/src/lib/components/ui/switch";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
-import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
+import { buildCreateForm } from "@/src/lib/domains/drafts";
+import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
+import { useCreateEnvelope } from "@/src/routes/dashboard/envelope/create/-lib/context/create-envelope-context";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 
-function signerEmailOptions(
-	recipients: {
-		role: string;
-		email: string;
-		name?: string | null;
-	}[],
-) {
+function signerEmailOptions(recipients: Recipient[]) {
 	const seen = new Set<string>();
 	const out: { email: string; label: string }[] = [];
 	for (const r of recipients) {
@@ -36,30 +32,43 @@ function signerEmailOptions(
 	return out;
 }
 
-export function ComposeRoutingField() {
+export function ComposeRoutingContent({
+	recipients,
+}: {
+	recipients: Recipient[];
+}) {
+	const { form } = useCreateEnvelope();
 	const createForm = useStorePersist((s) => s.createForm);
 	const setCreateForm = useStorePersist((s) => s.setCreateForm);
+	const formValues = form.state.values;
 	const { data: entitlements } = useEntitlements();
 	const promptPlanUpgrade = usePromptPlanUpgrade();
 	const advancedRouting = canUseAdvancedRouting(entitlements);
 
 	const signerOptions = useMemo(
-		() => signerEmailOptions(createForm?.recipients ?? []),
-		[createForm?.recipients],
+		() => signerEmailOptions(recipients),
+		[recipients],
 	);
 
-	if (!createForm) return null;
-
-	const routing = createForm.registerRouting ?? {};
+	const routing = createForm?.registerRouting ?? {};
 	const quorumEnabled = (routing.quorumN ?? 0) > 0;
 	const signerCount = signerOptions.length;
 	const quorumToggleDisabled = signerCount === 0;
 	const maxQuorum = Math.min(255, signerCount);
 
 	const patchRouting = (patch: Partial<RegisterRoutingInput>) => {
-		setCreateForm({
-			...createForm,
-			registerRouting: { ...routing, ...patch },
+		void (async () => {
+			let draft = createForm ?? useStorePersist.getState().createForm;
+			if (!draft) {
+				draft = await buildCreateForm(formValues, null);
+			}
+			const current = draft.registerRouting ?? {};
+			setCreateForm({
+				...draft,
+				registerRouting: { ...current, ...patch },
+			});
+		})().catch((error) => {
+			console.error("Failed to update routing:", error);
 		});
 	};
 
@@ -87,16 +96,10 @@ export function ComposeRoutingField() {
 	};
 
 	return (
-		<section className="space-y-3 rounded-xl border border-border/60 bg-muted/5 p-5">
+		<>
 			<div className="flex items-center justify-between gap-4">
 				<div className="min-w-0">
-					<Label
-						htmlFor="quorum-enabled"
-						className="inline-flex items-center gap-2 text-sm font-medium"
-					>
-						Minimum signatures
-						<ProFeatureMark size="xs" />
-					</Label>
+					<h3 className="text-sm font-semibold">Minimum signatures</h3>
 					<p className="text-xs text-muted-foreground">
 						All signers must sign unless you set a minimum below.
 					</p>
@@ -158,6 +161,6 @@ export function ComposeRoutingField() {
 			<DocsLink href={DOCS_LINKS.signingAndRouting()} className="text-xs">
 				Signing and routing guide
 			</DocsLink>
-		</section>
+		</>
 	);
 }

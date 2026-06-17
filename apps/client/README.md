@@ -109,7 +109,7 @@ No other top-level siblings under the route directory (`hooks/`, loose `*.ts`, e
 lib/
   components/ui/       # shadcn primitives
   components/app/      # chrome, errors, suspense, media
-  web3/                # config, providers, use-thirdweb (thirdweb + viemAdapter)
+  web3/                # config, providers, use-thirdweb; treasury/ (workspace Safe/EOA connect)
   filosign/            # filosign-provider, query-client, persisted-active-org, use-store
   auth/                # dashboard-protector, session gate, wallet unlock, connect
   query/               # client re-exports: query-keys
@@ -120,11 +120,13 @@ lib/
     files/             # PDF, file-viewer, compliance-pdf, placement-overlay, piece batch hooks
     invites/           # cold invite, share dialog
     entitlements/      # plan hints, upgrade dialog
+    orgs/              # org-scoped reads (e.g. linked treasury from orgs.get)
+    settlements/       # payout compose/sign UX (hooks/, utils/, components/, payout-access/)
     sharing/           # add-recipient dialog
   utils/               # cn, safe, logger, …
 ```
 
-**Import style:** `@/src/lib/web3/use-thirdweb`, `@/src/lib/web3/config`.
+**Import style:** `@/src/lib/web3/use-thirdweb`, `@/src/lib/web3/config`, `@/src/lib/web3/treasury`, `@/src/lib/domains/settlements`.
 
 ---
 

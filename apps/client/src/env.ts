@@ -8,12 +8,10 @@ const parsedEnv = createEnv({
 		VITE_DEPLOYMENT: z.enum(DEPLOYMENTS),
 		VITE_CHAIN: z.enum(["local", "testnet", "mainnet"]),
 		VITE_THIRDWEB_CLIENT_ID: z.string().min(1),
-		/** Production mainnet primary JSON-RPC for reads; ignored on other deployments. */
 		VITE_CHAIN_RPC_URL: z.url().optional(),
 		VITE_SERVER_URL: z.url(),
 		VITE_ASTRO_URL: z.url(),
 		VITE_CLIENT_URL: z.url(),
-		/** Independent proof packet verifier (drop-ZIP UI). Defaults in app code when unset. */
 		VITE_VERIFY_WEB_URL: z.url().optional(),
 		VITE_POSTHOG_KEY: z.string().min(1).optional(),
 		VITE_POSTHOG_HOST: z.url(),
@@ -26,6 +24,8 @@ const parsedEnv = createEnv({
 			.optional()
 			.transform((v) => v === "true" || v === "1"),
 		VITE_PIMLICO_API_KEY: z.string().min(1).optional(),
+		VITE_REOWN_PROJECT_ID: z.string().min(1).optional(),
+		VITE_WALLETCONNECT_PROJECT_ID: z.string().min(1).optional(),
 	},
 	runtimeEnv: import.meta.env,
 	emptyStringAsUndefined: true,

@@ -1,5 +1,5 @@
 import { LOCAL_MOCK_USDC_ADDRESS } from "@filosign/evm";
-import { getAddress } from "viem";
+import { parseEvmAddress } from "@filosign/shared";
 import { base, baseSepolia, hardhat } from "viem/chains";
 import env from "./env";
 
@@ -18,7 +18,7 @@ const USDC_BASE_SEPOLIA = "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as const;
 /** USDC (or local MockUSDC) used for invoice UI and balance reads. */
 function invoiceUsdcTokenAddress(): `0x${string}` {
 	if (env.VITE_CHAIN === "local" && LOCAL_MOCK_USDC_ADDRESS) {
-		return getAddress(LOCAL_MOCK_USDC_ADDRESS);
+		return parseEvmAddress(LOCAL_MOCK_USDC_ADDRESS);
 	}
 	if (defaultChain === base) {
 		return USDC_BASE_MAINNET;

@@ -1,12 +1,5 @@
-import { useContext } from "react";
-import { EntitlementUpgradeContext } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
+import { useEntitlementUpgrade } from "@/src/lib/domains/entitlements/use-entitlement-upgrade";
 
 export function usePromptPlanUpgrade() {
-	const ctx = useContext(EntitlementUpgradeContext);
-	if (!ctx) {
-		throw new Error(
-			"usePromptPlanUpgrade must be used within EntitlementUpgradeProvider",
-		);
-	}
-	return ctx.promptPlanUpgrade;
+	return useEntitlementUpgrade().promptPlanUpgrade;
 }

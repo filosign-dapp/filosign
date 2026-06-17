@@ -30,6 +30,7 @@ export function createFormToEnvelopeFormWithoutDocuments(
 		documents: [],
 		settlementDrafts: draft.settlementDrafts ?? [],
 		payoutPayerSource: draft.payoutPayerSource ?? "sender",
+		payoutPayerUserOverride: draft.payoutPayerUserOverride,
 	};
 }
 
@@ -449,6 +450,7 @@ export async function buildCreateForm(
 			documents,
 			settlementDrafts: value.settlementDrafts ?? [],
 			payoutPayerSource: value.payoutPayerSource ?? "sender",
+			payoutPayerUserOverride: value.payoutPayerUserOverride,
 			signatureFields,
 		},
 		prev,
@@ -466,6 +468,7 @@ export async function createFormToEnvelopeForm(
 		documents,
 		settlementDrafts: draft.settlementDrafts ?? [],
 		payoutPayerSource: draft.payoutPayerSource ?? "sender",
+		payoutPayerUserOverride: draft.payoutPayerUserOverride,
 	};
 }
 

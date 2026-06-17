@@ -10,8 +10,10 @@ import {
 	useRefetchEntitlementsOnMount,
 } from "@filosign/react/billing";
 import {
+	canUseAdvancedRouting,
 	canUseBasicSettlements,
 	canUseSupplementaryAttachments,
+	canUseWorkspaceTreasury,
 } from "@filosign/react/files";
 import { useUserProfile } from "@filosign/react/users";
 import { walletAccountAddress } from "@filosign/react/utils";
@@ -30,10 +32,12 @@ import {
 	normalizeCreateForm,
 	saveAttachmentPacketDrafts,
 } from "@/src/lib/domains/drafts";
+import { useOrgWalletAddress } from "@/src/lib/domains/orgs/use-org-wallet-address";
 import {
 	settlementPayoutExceedsBalance,
 	useAttachedPayoutBalance,
 } from "@/src/lib/domains/settlements";
+import { resolveTreasuryPayerOffer } from "@/src/lib/domains/settlements/utils/payout-payer-default";
 import { resolveRecipientWallets } from "@/src/lib/domains/templates/resolve-recipient-wallets";
 import { finalizeTemplateUseAtComposeContinue } from "@/src/lib/domains/templates/template-composer";
 import {
@@ -43,6 +47,7 @@ import {
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 import type { EnvelopeForm } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { resolveComposeAdvanceUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/utils/compose-advance-guards";
+import { isTurnOrderEnabled } from "@/src/routes/dashboard/envelope/create/-lib/utils/routing-turn-order";
 
 const PERSIST_DEBOUNCE_MS = 400;
 
@@ -58,6 +63,7 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 	const promptPlanUpgrade = usePromptPlanUpgrade();
 	const captureAppEvent = useCaptureAppEvent();
 	const { data: entitlements } = useEntitlements();
+	const orgWalletAddress = useOrgWalletAddress();
 	useRefetchEntitlementsOnMount();
 	const { isWithinRecipientLimit } = useEnvelopeRecipientLimit();
 	const { isMonthlyQuotaExhausted } = useMonthlyDocumentQuota();
@@ -88,6 +94,14 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 			setIsAdvancing(true);
 			try {
 				const prev = useStorePersist.getState().createForm;
+				const connectedWalletAddress = wallet?.account
+					? walletAccountAddress(wallet.account)
+					: undefined;
+				const treasuryOffer = resolveTreasuryPayerOffer({
+					entitlements,
+					orgWalletAddress,
+					connectedWalletAddress,
+				});
 				const upgradeReason = resolveComposeAdvanceUpgrade({
 					recipientCount: value.recipients.length,
 					settlementDraftCount: value.settlementDrafts?.length ?? 0,
@@ -98,6 +112,12 @@ export function useCreateEnvelopeController(initialValues: EnvelopeForm) {
 					settlementsAllowed: canUseBasicSettlements(entitlements),
 					supplementaryAttachmentsAllowed:
 						canUseSupplementaryAttachments(entitlements),
+					quorumN: prev?.registerRouting?.quorumN,
+					turnOrderEnabled: isTurnOrderEnabled(prev?.registerRouting),
+					advancedRoutingAllowed: canUseAdvancedRouting(entitlements),
+					payoutPayerSource: value.payoutPayerSource,
+					workspaceTreasuryAllowed: canUseWorkspaceTreasury(entitlements),
+					treasuryPayerOffered: treasuryOffer.canOfferTreasuryPayer,
 				});
 				if (upgradeReason) {
 					promptPlanUpgrade(upgradeReason);

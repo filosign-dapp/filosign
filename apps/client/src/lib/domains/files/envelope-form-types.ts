@@ -37,6 +37,7 @@ export type EnvelopeForm = {
 	documents: UploadedFile[];
 	settlementDrafts: SettlementAttachmentDraft[];
 	payoutPayerSource?: "sender" | "org_wallet";
+	payoutPayerUserOverride?: boolean;
 };
 
 export const ALLOWED_FILE_TYPES = [
@@ -108,6 +109,7 @@ export type CreateForm = {
 	documents: StoredDocument[];
 	settlementDrafts: SettlementAttachmentDraft[];
 	payoutPayerSource?: "sender" | "org_wallet";
+	payoutPayerUserOverride?: boolean;
 	signatureFields: SignatureField[];
 	/** Teams Pro: sequential routing and quorum (no optional signers on-chain). */
 	registerRouting?: RegisterRoutingInput;

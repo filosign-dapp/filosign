@@ -1,7 +1,7 @@
 import { useEntitlements } from "@filosign/react/billing";
 import { canUseAdvancedRouting } from "@filosign/react/files";
 import type { RegisterRoutingInput } from "@filosign/shared";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
@@ -40,6 +40,11 @@ export function useTurnOrderRouting(recipients: Recipient[] | undefined) {
 		promptPlanUpgrade("features.routing.advanced");
 		return false;
 	}, [advancedRouting, promptPlanUpgrade]);
+
+	useEffect(() => {
+		if (advancedRouting || !turnOrderEnabled) return;
+		patchRouting({ routingMode: 0, routingOrderEmails: [] });
+	}, [advancedRouting, patchRouting, turnOrderEnabled]);
 
 	const setTurnOrderEnabled = useCallback(
 		(enabled: boolean) => {

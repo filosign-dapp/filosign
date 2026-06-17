@@ -1,5 +1,4 @@
 import type { SettlementChangeProgressEvent } from "@filosign/react/files";
-import type { SettlementAllowanceChangeStep } from "@/src/lib/domains/settlements/allowance";
 import {
 	activateWorkflowStep,
 	completeWorkflowStep,
@@ -9,6 +8,7 @@ import {
 	type WorkflowProgressStep,
 	workflowProgressFailureState,
 } from "@/src/lib/domains/workflow-progress";
+import type { SettlementAllowanceChangeStep } from "../utils/allowance";
 
 export type SettlementChangeMode = "update" | "cancel";
 

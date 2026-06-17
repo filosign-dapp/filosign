@@ -8,7 +8,7 @@ import {
 import type { Hex } from "viem";
 import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
-import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
+import type { SettlementAttachmentDraft } from "./attachment-draft";
 
 function signerCommitmentsFromEmails(emails: string[]): Hex[] {
 	return emails

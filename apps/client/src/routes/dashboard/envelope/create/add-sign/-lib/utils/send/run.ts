@@ -19,7 +19,7 @@ import type {
 import type { ProfileByAddress, UserProfile } from "@filosign/react/users";
 import type { FieldCompletionMap } from "@filosign/shared";
 import type { Address } from "viem";
-import { BaseError } from "viem";
+import { BaseError, getAddress, isAddress } from "viem";
 import { toastUser } from "@/src/lib/copy/toast";
 import { hydrateAttachmentPacketDrafts } from "@/src/lib/domains/drafts";
 import type {
@@ -33,6 +33,7 @@ import type {
 } from "@/src/lib/domains/invites/types";
 import { suppressGlobalErrorToast } from "@/src/lib/errors";
 import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
+import { readSafePendingQueue, treasuryChainId } from "@/src/lib/web3/treasury";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { SendEnvelopeError } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 import {
@@ -47,15 +48,18 @@ import {
 	selfSignAfterSend,
 	trackEnvelopeSendSucceeded,
 } from "./complete";
+import {
+	validateAttachmentPacketsForSend,
+	validateSettlementDraftsForSend,
+	validateTreasuryPayerForSend,
+} from "./entitlement-guards";
 import type { SendProgressEvent } from "./progress";
 import {
 	reportEnvelopeSendValidationFailure,
 	rosterEmailsFromRecipients,
-	validateAttachmentPacketsForSend,
 	validateEnvelopeDocuments,
 	validateEnvelopeRecipients,
 	validateRecipientProfiles,
-	validateSettlementDraftsForSend,
 	validateSettlementPayoutBalance,
 	validateSignerPlacementFields,
 } from "./validate";
@@ -120,6 +124,9 @@ export type RunEnvelopeSendArgs = EnvelopeSendDeps & {
 	fieldBoxCss: PlacementFieldRect;
 	walletAddress: `0x${string}` | undefined;
 	walletUsdcBalance: bigint;
+	connectedWalletAddress?: Address;
+	registerSettlementRules?: SendFileArgs["registerSettlementRules"];
+	orgWalletAddress?: string | null;
 };
 
 function scheduleSendIdle(setSendStatus: RunEnvelopeSendArgs["setSendStatus"]) {
@@ -164,6 +171,9 @@ export async function runEnvelopeSend(
 		fieldBoxCss,
 		walletAddress,
 		walletUsdcBalance,
+		connectedWalletAddress,
+		registerSettlementRules,
+		orgWalletAddress,
 		activeOrg,
 		selfProfile,
 		sendFile,
@@ -271,6 +281,21 @@ export async function runEnvelopeSend(
 		return;
 	}
 
+	const treasuryPayerFailure = validateTreasuryPayerForSend({
+		payoutPayerSource: createForm.payoutPayerSource,
+		orgWalletAddress,
+		connectedWalletAddress,
+		registerSettlementRules,
+		hasSettlementDrafts: (createForm.settlementDrafts?.length ?? 0) > 0,
+		entitlements,
+	});
+	if (treasuryPayerFailure) {
+		reportEnvelopeSendValidationFailure(treasuryPayerFailure);
+		failSend(setSendStatus);
+		closeSendProgress?.();
+		return;
+	}
+
 	captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopeSendClicked, {
 		recipient_count: createForm.recipients?.length ?? 0,
 	});
@@ -336,9 +361,42 @@ export async function runEnvelopeSend(
 		}
 		emit({ phase: "building_payload", status: "done" });
 
+		if (
+			createForm.payoutPayerSource === "org_wallet" &&
+			orgWalletAddress &&
+			isAddress(orgWalletAddress) &&
+			walletAddress?.toLowerCase() !== orgWalletAddress.toLowerCase()
+		) {
+			const queue = await readSafePendingQueue(
+				getAddress(orgWalletAddress) as `0x${string}`,
+				treasuryChainId(),
+			);
+			if (queue.pendingCount > 0) {
+				const blocker =
+					queue.firstPendingNonce == null
+						? "Treasury has pending multisig transactions."
+						: `Treasury has pending nonce ${queue.firstPendingNonce}.`;
+				throw new Error(
+					queue.explorerUrl
+						? `${blocker} Resolve pending transactions in Safe first: ${queue.explorerUrl}`
+						: blocker,
+				);
+			}
+		}
+
+		const settlementPayerAddress =
+			createForm.payoutPayerSource === "org_wallet" &&
+			orgWalletAddress &&
+			isAddress(orgWalletAddress)
+				? getAddress(orgWalletAddress)
+				: walletAddress;
+
 		const result = await sendFile.mutateAsync(
 			{
 				...built.sendInput,
+				settlementPayerAddress,
+				payoutPayerSource: createForm.payoutPayerSource ?? "sender",
+				registerSettlementRules,
 				onProgress: (event) => emit(event),
 			},
 			suppressGlobalErrorToast(),

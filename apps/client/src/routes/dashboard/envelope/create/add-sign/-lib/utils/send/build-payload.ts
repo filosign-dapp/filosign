@@ -19,7 +19,7 @@ import type {
 } from "@/src/lib/domains/files/envelope-form-types";
 import type { PlacementFieldRect } from "@/src/lib/domains/files/field-box";
 import { countStoredSignablePdfPages } from "@/src/lib/domains/files/normalize-signable-document";
-import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements";
 import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { buildSettlementRulesForSend } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/build-settlement-rules";

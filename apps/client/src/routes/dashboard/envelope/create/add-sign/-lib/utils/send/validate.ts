@@ -4,8 +4,8 @@ import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
 import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
-import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
-import { settlementPayoutExceedsBalance } from "@/src/lib/domains/settlements/payout-totals";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements";
+import { settlementPayoutExceedsBalance } from "@/src/lib/domains/settlements";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { fieldsWithUnknownSignerEmails } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/placement-assignees";
 import type { EnvelopeSendValidationFailure } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/validation-types";
@@ -15,10 +15,6 @@ import {
 	recipientResolvedSignerAddress,
 } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 
-export {
-	validateAttachmentPacketsForSend,
-	validateSettlementDraftsForSend,
-} from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/entitlement-guards";
 export type { EnvelopeSendValidationFailure } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/validation-types";
 
 export function validateEnvelopeDocuments(

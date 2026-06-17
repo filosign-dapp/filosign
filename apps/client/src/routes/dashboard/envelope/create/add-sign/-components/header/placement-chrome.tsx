@@ -10,8 +10,10 @@ import { Button } from "@/src/lib/components/ui/button";
 import { DisabledTooltip } from "@/src/lib/components/ui/disabled-tooltip";
 import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { useAddSignChrome } from "@/src/lib/domains/placement/context";
-import { PAYOUT_EXCEEDS_BALANCE_MESSAGE } from "@/src/lib/domains/settlements/payout-copy";
-import { useAttachedPayoutBalance } from "@/src/lib/domains/settlements/use-attached-payout-balance";
+import {
+	PAYOUT_EXCEEDS_BALANCE_MESSAGE,
+	useAttachedPayoutBalance,
+} from "@/src/lib/domains/settlements";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn } from "@/src/lib/utils/utils";
 import { AddSignDraftActions } from "@/src/routes/dashboard/envelope/create/add-sign/-components/draft/actions";
@@ -23,6 +25,7 @@ export function AddSignHeader() {
 	const createForm = useStorePersist((s) => s.createForm);
 	const { exceedsBalance } = useAttachedPayoutBalance(
 		createForm?.settlementDrafts,
+		createForm?.payoutPayerSource,
 	);
 	const isLoading = sendStatus === "loading" || sendStatus === "signing";
 	const sendBlocked = isLoading || exceedsBalance;

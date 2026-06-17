@@ -14,6 +14,7 @@ import {
 	useUserProfile,
 	useUserSignatures,
 } from "@filosign/react/users";
+import { walletAccountAddress } from "@filosign/react/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef } from "react";
 import type { Address } from "viem";
@@ -26,8 +27,10 @@ import type {
 	ColdSharePackage,
 	WarmShareSummary,
 } from "@/src/lib/domains/invites/types";
+import { useOrgWalletAddress } from "@/src/lib/domains/orgs/use-org-wallet-address";
+import { usePayoutPayerBalance } from "@/src/lib/domains/settlements";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
-import { useWalletUsdcBalance } from "@/src/lib/web3/use-wallet-usdc-balance";
+import { useTreasurySettlementRegistrar } from "@/src/lib/web3/treasury";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import { prepareSelfSignCompletions } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/prepare-self-sign";
 import {
@@ -81,12 +84,23 @@ export function useSendEnvelope(args: {
 	const { rpcQuery, contracts, wallet } = useFilosignContext();
 	const queryClient = useQueryClient();
 	const activeOrg = useActiveOrganization();
+	const orgWalletAddress = useOrgWalletAddress();
 	const { data: selfProfile } = useUserProfile();
 	const { data: signaturesData } = useUserSignatures();
 	const setCreateForm = useStorePersist((s) => s.setCreateForm);
 	const isSendingRef = useRef(false);
+	const payoutPayerAddress = usePayoutPayerBalance(
+		createForm?.payoutPayerSource,
+	);
 	const { address: walletAddress, balance: walletUsdcBalance } =
-		useWalletUsdcBalance();
+		payoutPayerAddress;
+
+	const registerSettlementRules = useTreasurySettlementRegistrar(
+		createForm?.payoutPayerSource,
+	);
+	const connectedWalletAddress = wallet?.account
+		? walletAccountAddress(wallet.account)
+		: undefined;
 
 	const recipientAddresses = useMemo(
 		() =>
@@ -190,6 +204,9 @@ export function useSendEnvelope(args: {
 			fieldBoxCss,
 			walletAddress,
 			walletUsdcBalance,
+			connectedWalletAddress,
+			registerSettlementRules,
+			orgWalletAddress: orgWalletAddress ?? null,
 			activeOrg,
 			selfProfile,
 			sendFile,
@@ -220,6 +237,9 @@ export function useSendEnvelope(args: {
 		fieldBoxCss,
 		walletAddress,
 		walletUsdcBalance,
+		connectedWalletAddress,
+		registerSettlementRules,
+		orgWalletAddress,
 		activeOrg,
 		selfProfile,
 		sendFile,

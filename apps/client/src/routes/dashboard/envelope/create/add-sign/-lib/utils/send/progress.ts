@@ -120,6 +120,25 @@ export function buildSendProgressPlan(args: {
 
 	for (let ruleIndex = 0; ruleIndex < settlementCount; ruleIndex++) {
 		const detail = payoutDetail(ruleIndex, settlementCount);
+		if (args.createForm.payoutPayerSource === "org_wallet") {
+			if (ruleIndex === 0) {
+				steps.push(
+					{
+						id: "treasury_safe_propose",
+						label: "Proposing treasury transaction",
+					},
+					{
+						id: "treasury_safe_pending",
+						label: "Waiting for treasury Safe",
+					},
+					{
+						id: "treasury_safe_executed",
+						label: "Treasury transaction executed",
+					},
+				);
+			}
+			break;
+		}
 		steps.push(
 			{
 				id: payoutApproveStepId(ruleIndex),
@@ -176,6 +195,9 @@ function resolveStepForEvent(event: SendProgressEvent): string | null {
 	if (event.phase === "processing_attachments") return "wallet_attachment_rule";
 	if (event.phase === "wallet_attachment_rule") return "wallet_attachment_rule";
 	if (event.phase === "indexing_payout") return "indexing_payout";
+	if (event.phase === "treasury_safe_propose") return "treasury_safe_propose";
+	if (event.phase === "treasury_safe_pending") return "treasury_safe_pending";
+	if (event.phase === "treasury_safe_executed") return "treasury_safe_executed";
 	if (event.phase === "self_sign") return "self_sign";
 	if (event.phase === "send_failed") return null;
 
@@ -244,6 +266,12 @@ export function reduceSendProgress(
 	}
 
 	if (event.status === "confirming") {
+		if (event.phase === "treasury_safe_pending") {
+			return activateWorkflowStep(
+				completeWorkflowStep(state, "treasury_safe_propose"),
+				stepId,
+			);
+		}
 		if (event.phase === "confirming_transaction") {
 			if (event.txLabel === "USDC approval") {
 				const approveId = payoutApproveStepId(event.ruleIndex ?? 0);
@@ -265,6 +293,12 @@ export function reduceSendProgress(
 
 	if (event.status === "done") {
 		let next = completeWorkflowStep(state, stepId);
+		if (event.phase === "treasury_safe_executed") {
+			const pendingId = "treasury_safe_pending";
+			if (!next.completedStepIds.includes(pendingId)) {
+				next = completeWorkflowStep(next, pendingId);
+			}
+		}
 		if (event.phase === "wallet_payout_approve") {
 			const confirmId = payoutConfirmApproveStepId(event.ruleIndex ?? 0);
 			if (!next.completedStepIds.includes(confirmId)) {

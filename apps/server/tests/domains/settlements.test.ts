@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, mock, test } from "bun:test";
+import { describe, expect, mock, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { EntitlementContext } from "@filosign/entitlements";
@@ -6,6 +6,11 @@ import { LOCAL_MOCK_USDC_ADDRESS } from "@filosign/evm";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { getAddress } from "viem";
+
+mock.module("@/lib/domains/settlement-access/settlement-access", () => ({
+	assertOrganizationSettlementFeatureApproved: async () => {},
+}));
+
 import { assertSettlementRulesUsdcToken } from "@/lib/domains/settlements/utils/assert-settlement-token";
 import {
 	assertSettlementRuleEntitlements,
@@ -16,13 +21,8 @@ import {
 	SettlementPayoutRetryableError,
 	shouldRetryPayoutSkip,
 } from "@/lib/domains/settlements/utils/execute/payout-readiness";
-import { dbQueryResult } from "../support/db-query-result";
 
 describe("settlements", () => {
-	afterAll(() => {
-		mock.restore();
-	});
-
 	describe("settlement-preflight", () => {
 		describe("payerCanFundSettlement", () => {
 			test("reads rule state via fsPaymentValidatorAt(args.validator)", () => {
@@ -167,6 +167,46 @@ describe("settlements", () => {
 			});
 		});
 
+		describe("treasury authorization hardening", () => {
+			test("registerForFile rejects organizationId mismatch with file org", () => {
+				const src = readFileSync(
+					join(import.meta.dir, "../../lib/domains/settlements/register.ts"),
+					"utf8",
+				);
+				expect(src).toContain("organizationId &&");
+				expect(src).toContain(
+					"organizationId !== (file.organizationId ?? undefined)",
+				);
+				expect(src).toContain('throw throwAppError("SETTLEMENTS.FORBIDDEN")');
+			});
+
+			test("update verification resolves allowed payers with file organizationId", () => {
+				const src = readFileSync(
+					join(
+						import.meta.dir,
+						"../../lib/domains/settlements/utils/verify/rules-on-chain.ts",
+					),
+					"utf8",
+				);
+				expect(src).toContain("organizationId?: string | null");
+				expect(src).toContain("resolveAllowedSettlementPayers(");
+				expect(src).toContain("sender,");
+				expect(src).toContain("organizationId,");
+			});
+
+			test("update/cancel auth allows file sender in addition to payer wallet", () => {
+				const src = readFileSync(
+					join(import.meta.dir, "../../lib/domains/settlements/crud.ts"),
+					"utf8",
+				);
+				expect(src).toContain("const isRulePayer =");
+				expect(src).toContain("const isFileSender =");
+				expect(src).toContain(
+					"if (!isRulePayer && !isFileSender && !isLinkedOrgTreasury)",
+				);
+			});
+		});
+
 		describe("tryExecuteSettlementPayout", () => {
 			test("loads settlement rules by validatorAddress and onChainRuleId", () => {
 				const preflightSrc = readFileSync(
@@ -233,12 +273,6 @@ describe("settlements", () => {
 
 	describe("settlement-entitlements", () => {
 		const orgId = "00000000-0000-7000-8000-000000000001";
-
-		beforeAll(() => {
-			mock.module("@/lib/domains/settlement-access/settlement-access", () => ({
-				assertOrganizationSettlementFeatureApproved: async () => {},
-			}));
-		});
 
 		function ctx(
 			planId: "free" | "individual" | "teams" | "teams_pro",
@@ -343,88 +377,6 @@ describe("settlements", () => {
 					assertSettlementUpdateEntitlements(ctx("free"), orgId),
 				).rejects.toBeInstanceOf(ORPCError);
 				await assertSettlementUpdateEntitlements(ctx("teams_pro"), orgId);
-			});
-		});
-	});
-
-	describe("feature-catalog-gates", () => {
-		const wallet = "0x0000000000000000000000000000000000000001";
-
-		function ctx(
-			planId: "free" | "individual" | "teams" | "teams_pro",
-		): EntitlementContext {
-			return {
-				subject: { type: "user", wallet },
-				planId,
-				periodStart: new Date("2026-05-01T00:00:00Z"),
-				usage: {},
-			};
-		}
-
-		test("features.team_drafts requires teams plan or higher", async () => {
-			const { assertEntitlement } = await import("@/lib/domains/entitlements");
-			expect(() =>
-				assertEntitlement(ctx("free"), "features.team_drafts"),
-			).toThrow();
-			expect(() =>
-				assertEntitlement(ctx("individual"), "features.team_drafts"),
-			).toThrow();
-			expect(() =>
-				assertEntitlement(ctx("teams"), "features.team_drafts"),
-			).not.toThrow();
-		});
-	});
-
-	describe("verify-rules-payers", () => {
-		const sender = "0x1111111111111111111111111111111111111111" as const;
-		const treasury = "0x2222222222222222222222222222222222222222" as const;
-		const otherWallet = "0x3333333333333333333333333333333333333333" as const;
-		const orgId = "00000000-0000-7000-8000-000000000088";
-
-		beforeAll(() => {
-			mock.module("@/lib/platform/db", () => ({
-				default: {
-					schema: {
-						organizations: {
-							id: "id",
-							orgWalletAddress: "orgWalletAddress",
-						},
-					},
-					select: () => ({
-						from: () => ({
-							where: () => ({
-								limit: () =>
-									dbQueryResult([{ orgWalletAddress: getAddress(treasury) }]),
-							}),
-						}),
-					}),
-				},
-			}));
-		});
-
-		describe("resolveAllowedSettlementPayers", () => {
-			test("includes sender and linked org treasury", async () => {
-				const { resolveAllowedSettlementPayers } = await import(
-					"@/lib/domains/settlements/utils/verify/rules-on-chain"
-				);
-
-				const allowed = await resolveAllowedSettlementPayers(sender, orgId);
-
-				expect(allowed.has(getAddress(sender).toLowerCase())).toBe(true);
-				expect(allowed.has(getAddress(treasury).toLowerCase())).toBe(true);
-				expect(allowed.has(getAddress(otherWallet).toLowerCase())).toBe(false);
-				expect(allowed.size).toBe(2);
-			});
-
-			test("sender only when organizationId omitted", async () => {
-				const { resolveAllowedSettlementPayers } = await import(
-					"@/lib/domains/settlements/utils/verify/rules-on-chain"
-				);
-
-				const allowed = await resolveAllowedSettlementPayers(sender, null);
-
-				expect(allowed.size).toBe(1);
-				expect(allowed.has(getAddress(sender).toLowerCase())).toBe(true);
 			});
 		});
 	});

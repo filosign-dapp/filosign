@@ -10,6 +10,7 @@ import type { Address } from "viem";
 import { getAddress } from "viem";
 import { MAX_SETTLEMENT_LEGS_PRODUCT } from "@/constants";
 import { resolveEntitlementContext } from "@/lib/domains/entitlements";
+import { isOrgControllerWallet } from "@/lib/domains/orgs";
 import db from "@/lib/platform/db";
 import { evmClient, fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
@@ -24,9 +25,34 @@ import {
 	assertSettlementUpdateEntitlements,
 } from "./utils/entitlements";
 import { selectSettlementRule } from "./utils/rule-lookup";
+import { settlementSchema } from "./utils/schema";
 import { assertSettlementRuleUpdateOnChain } from "./utils/verify/rules-on-chain";
 
-const { files, fileParticipants } = db.schema;
+async function loadRuleFileContext(pieceCid: string) {
+	const { files } = settlementSchema();
+	const [file] = await db
+		.select({
+			pieceCid: files.pieceCid,
+			sender: files.sender,
+			organizationId: files.organizationId,
+			registryAddress: files.registryAddress,
+		})
+		.from(files)
+		.where(eq(files.pieceCid, pieceCid))
+		.limit(1);
+	return file ?? null;
+}
+
+async function resolveOrgWallet(organizationId: string | null | undefined) {
+	if (!organizationId) return null;
+	const { organizations } = settlementSchema();
+	const [org] = await db
+		.select({ orgWalletAddress: organizations.orgWalletAddress })
+		.from(organizations)
+		.where(eq(organizations.id, organizationId))
+		.limit(1);
+	return org?.orgWalletAddress ? getAddress(org.orgWalletAddress) : null;
+}
 
 async function loadPayerRule(
 	sender: Address,
@@ -40,7 +66,26 @@ async function loadPayerRule(
 	if (!rule) {
 		throw throwAppError("SETTLEMENTS.RULE_NOT_FOUND");
 	}
-	if (getAddress(rule.payerWallet) !== getAddress(sender)) {
+	const file = await loadRuleFileContext(rule.pieceCid);
+	if (!file) {
+		throw throwAppError("FILES.NOT_FOUND");
+	}
+	const senderAddress = getAddress(sender);
+	const payerWallet = getAddress(rule.payerWallet);
+	const isRulePayer = payerWallet === senderAddress;
+	const isFileSender = getAddress(file.sender) === senderAddress;
+	let isLinkedOrgTreasury = false;
+	if (file.organizationId) {
+		const orgWallet = await resolveOrgWallet(file.organizationId);
+		isLinkedOrgTreasury =
+			orgWallet !== null &&
+			orgWallet === payerWallet &&
+			(await isOrgControllerWallet({
+				organizationId: file.organizationId,
+				wallet: senderAddress,
+			}));
+	}
+	if (!isRulePayer && !isFileSender && !isLinkedOrgTreasury) {
 		throw throwAppError("SETTLEMENTS.FORBIDDEN");
 	}
 	if (rule.status === "executed" || rule.status === "cancelled") {
@@ -57,6 +102,7 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 	const input = parsed.data;
 	const ruleId = BigInt(input.onChainRuleId);
 	const rule = await loadPayerRule(sender, ruleId, input.validatorAddress);
+	const { files, fileParticipants } = settlementSchema();
 
 	if (input.legs.length > MAX_SETTLEMENT_LEGS_PRODUCT) {
 		throw throwAppError("ENTITLEMENT.LIMIT_EXCEEDED");
@@ -103,7 +149,9 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 		.from(fileParticipants)
 		.where(eq(fileParticipants.filePieceCid, rule.pieceCid));
 	await assertSettlementRecipientsAllowlisted({
-		participantWallets: participantRows.map((p) => getAddress(p.wallet)),
+		participantWallets: participantRows.map(
+			(p) => getAddress(p.wallet as Address) as `0x${string}`,
+		),
 		organizationId: file?.organizationId ?? undefined,
 		rules: [registrationRule],
 	});
@@ -113,8 +161,9 @@ export async function settlementsUpdateRule(sender: Address, rawBody: unknown) {
 		rule.pieceCid,
 		registrationRule,
 		input.updateRuleTxHash,
-		getAddress(rule.validatorAddress),
-		file?.registryAddress,
+		getAddress(rule.validatorAddress) as `0x${string}`,
+		(file?.registryAddress as `0x${string}` | null | undefined) ?? undefined,
+		file?.organizationId ?? null,
 	);
 
 	if (settlementRuleTotalAmount(input.legs) <= 0n) {
@@ -142,6 +191,7 @@ export async function settlementsCancelRule(sender: Address, rawBody: unknown) {
 	const input = parsed.data;
 	const ruleId = BigInt(input.onChainRuleId);
 	const rule = await loadPayerRule(sender, ruleId, input.validatorAddress);
+	const { files } = settlementSchema();
 
 	const [file] = await db
 		.select({ organizationId: files.organizationId })

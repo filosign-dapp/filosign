@@ -12,9 +12,8 @@ import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { tryExecuteSettlementPayout } from "./utils/execute/payout";
 import { selectSettlementRule } from "./utils/rule-lookup";
+import { settlementSchema } from "./utils/schema";
 import { syncSettlementPayoutFromChain } from "./utils/sync-from-chain";
-
-const { fileSettlementRules, files, fileParticipants } = db.schema;
 
 export {
 	settlementsCancelRule,
@@ -30,6 +29,7 @@ async function assertCanSettleSettlementRule(
 	onChainRuleId: bigint,
 	validatorAddress: Address,
 ) {
+	const { files } = settlementSchema();
 	const rule = await selectSettlementRule(
 		onChainRuleId,
 		getAddress(validatorAddress),
@@ -66,6 +66,7 @@ export async function settlementsListByFile(
 	userWallet: `0x${string}`,
 	pieceCid: string,
 ) {
+	const { fileSettlementRules, files, fileParticipants } = settlementSchema();
 	const rows = await db
 		.select()
 		.from(fileSettlementRules)
@@ -122,6 +123,7 @@ export async function settlementsListByFile(
 				totalAmount: settlementRuleTotalAmount(r.legs).toString(),
 				tokenAddress: r.tokenAddress,
 				validatorAddress: r.validatorAddress,
+				payerWallet: r.payerWallet,
 				releaseType: r.releaseType,
 				releaseParams: r.releaseParams,
 				expiresAt: r.expiresAt ?? null,
@@ -167,6 +169,7 @@ export async function settlementsTrySettle(
 		pieceCid: rule.pieceCid,
 	});
 
+	const { fileSettlementRules } = settlementSchema();
 	const [updated] = await db
 		.select({
 			status: fileSettlementRules.status,
@@ -263,6 +266,7 @@ export async function runSyncSettlementRulesJob(): Promise<{
 	scanned: number;
 	synced: number;
 }> {
+	const { fileSettlementRules } = settlementSchema();
 	const rows = await db
 		.select({
 			onChainRuleId: fileSettlementRules.onChainRuleId,

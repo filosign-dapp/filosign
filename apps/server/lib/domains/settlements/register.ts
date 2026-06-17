@@ -1,3 +1,4 @@
+import { check } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
 import { zSettlementRuleRegistrationInput } from "@filosign/shared";
@@ -6,15 +7,14 @@ import { type Address, getAddress } from "viem";
 import z from "zod";
 import { resolveEntitlementContext } from "@/lib/domains/entitlements";
 import db from "@/lib/platform/db";
-import { fsContracts } from "@/lib/platform/evm";
+import { fsContracts, fsPaymentValidatorAt } from "@/lib/platform/evm";
+import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 import { assertSettlementLegRecipientAllowlisted } from "./utils/assert-recipient-leg";
 import { assertSettlementRulesUsdcToken } from "./utils/assert-settlement-token";
 import { assertSettlementRuleEntitlements } from "./utils/entitlements";
+import { settlementSchema } from "./utils/schema";
 import { assertSettlementRulesVerifiedOnChain } from "./utils/verify/rules-on-chain";
-
-const { fileSettlementRules, files, fileParticipants, organizations } =
-	db.schema;
 
 export const zSettlementRulesRegisterBatch = z.array(
 	zSettlementRuleRegistrationInput,
@@ -26,17 +26,32 @@ type DbExecutor =
 	| typeof db
 	| Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+async function readOnChainPayerWallet(
+	validator: ReturnType<typeof fsPaymentValidatorAt>,
+	onChainRuleId: string,
+): Promise<`0x${string}`> {
+	const readRes = await tryCatch(validator.read.rules([BigInt(onChainRuleId)]));
+	if (readRes.error || !readRes.data) {
+		throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+			params: {
+				reason: `Settlement rule ${onChainRuleId} not found on-chain`,
+			},
+		});
+	}
+	return getAddress(readRes.data[0] as Address) as `0x${string}`;
+}
+
 export async function insertSettlementRulesForFile(
 	pieceCid: string,
-	payerWallet: `0x${string}`,
 	rules: z.infer<typeof zSettlementRulesRegisterBatch>,
 	validatorAddress: `0x${string}`,
 	executor: DbExecutor = db,
 ) {
 	if (rules.length === 0) return;
 
-	await executor.insert(fileSettlementRules).values(
-		rules.map((r) => {
+	const validator = fsPaymentValidatorAt(validatorAddress);
+	const rows = await Promise.all(
+		rules.map(async (r) => {
 			if (!r.legs[0]) {
 				throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
 					params: {
@@ -44,6 +59,10 @@ export async function insertSettlementRulesForFile(
 					},
 				});
 			}
+			const payerWallet = await readOnChainPayerWallet(
+				validator,
+				r.onChainRuleId,
+			);
 			return {
 				pieceCid,
 				onChainRuleId: BigInt(r.onChainRuleId),
@@ -61,6 +80,9 @@ export async function insertSettlementRulesForFile(
 			};
 		}),
 	);
+
+	const { fileSettlementRules } = settlementSchema();
+	await executor.insert(fileSettlementRules).values(rows);
 }
 
 function norm(addr: string) {
@@ -71,13 +93,15 @@ export async function assertSettlementRecipientsAllowlisted(args: {
 	participantWallets: `0x${string}`[];
 	organizationId?: string;
 	rules: SettlementRuleRegistrationInput[];
+	includeOrgWallet?: boolean;
 }) {
 	if (args.rules.length === 0) return;
 
 	const allowed = new Set(args.participantWallets.map((w) => norm(w)));
 
 	let orgWallet: `0x${string}` | null = null;
-	if (args.organizationId) {
+	if (args.organizationId && args.includeOrgWallet !== false) {
+		const { organizations } = settlementSchema();
 		const [org] = await db
 			.select({ orgWalletAddress: organizations.orgWalletAddress })
 			.from(organizations)
@@ -85,7 +109,7 @@ export async function assertSettlementRecipientsAllowlisted(args: {
 			.limit(1);
 
 		if (org?.orgWalletAddress) {
-			orgWallet = getAddress(org.orgWalletAddress);
+			orgWallet = getAddress(org.orgWalletAddress) as `0x${string}`;
 			allowed.add(norm(orgWallet));
 		}
 	}
@@ -118,6 +142,7 @@ export async function settlementsRegisterForFile(
 	}
 
 	const { pieceCid, organizationId, rules } = parsed.data;
+	const { files, fileParticipants } = settlementSchema();
 	const [file] = await db
 		.select({
 			sender: files.sender,
@@ -138,12 +163,19 @@ export async function settlementsRegisterForFile(
 	if (file.completedAt != null || file.revokedBeforeCompletedAt != null) {
 		throw throwAppError("SETTLEMENTS.ENVELOPE_CLOSED");
 	}
+	if (organizationId && organizationId !== (file.organizationId ?? undefined)) {
+		throw throwAppError("SETTLEMENTS.FORBIDDEN");
+	}
+	const orgId = file.organizationId ?? null;
 
 	const entitlementCtx = await resolveEntitlementContext(
 		getAddress(sender),
-		organizationId ?? file.organizationId ?? null,
+		orgId,
 	);
-	const orgId = organizationId ?? file.organizationId ?? null;
+	const canUseCustomTreasury = check(
+		entitlementCtx,
+		"features.treasury.workspace_custom",
+	).allowed;
 	for (const rule of rules) {
 		await assertSettlementRuleEntitlements(
 			entitlementCtx,
@@ -154,32 +186,33 @@ export async function settlementsRegisterForFile(
 	}
 	assertSettlementRulesUsdcToken(rules);
 
-	const validatorAddress = getAddress(fsContracts.FSPaymentValidator.address);
+	const validatorAddress = getAddress(
+		fsContracts.FSPaymentValidator.address,
+	) as `0x${string}`;
 
 	const participantRows = await db
 		.select({ wallet: fileParticipants.wallet })
 		.from(fileParticipants)
 		.where(eq(fileParticipants.filePieceCid, pieceCid));
 	await assertSettlementRecipientsAllowlisted({
-		participantWallets: participantRows.map((p) => getAddress(p.wallet)),
-		organizationId: organizationId ?? file.organizationId ?? undefined,
+		participantWallets: participantRows.map(
+			(p) => getAddress(p.wallet as Address) as `0x${string}`,
+		),
+		organizationId: orgId ?? undefined,
 		rules,
+		includeOrgWallet: canUseCustomTreasury,
 	});
 
 	await assertSettlementRulesVerifiedOnChain(
-		getAddress(sender),
+		getAddress(sender) as Address,
 		pieceCid,
 		rules,
 		validatorAddress,
-		file.registryAddress,
+		(file.registryAddress as `0x${string}` | null | undefined) ?? undefined,
+		orgId,
 	);
 
-	await insertSettlementRulesForFile(
-		pieceCid,
-		getAddress(sender),
-		rules,
-		validatorAddress,
-	);
+	await insertSettlementRulesForFile(pieceCid, rules, validatorAddress);
 
 	return { count: rules.length };
 }

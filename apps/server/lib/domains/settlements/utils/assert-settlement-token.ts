@@ -1,6 +1,9 @@
 import { throwAppError } from "@filosign/errors/server";
 import { LOCAL_MOCK_USDC_ADDRESS } from "@filosign/evm";
-import type { SettlementRuleRegistrationInput } from "@filosign/shared";
+import {
+	parseEvmAddress,
+	type SettlementRuleRegistrationInput,
+} from "@filosign/shared";
 import { getAddress } from "viem";
 import config from "@/config";
 
@@ -9,12 +12,12 @@ const USDC_BASE_SEPOLIA = "0x036CbD53842c5426634e7929541eC2318f3dCF7e" as const;
 
 function settlementUsdcTokenAddress(): `0x${string}` {
 	if (config.chainKey === "local" && LOCAL_MOCK_USDC_ADDRESS) {
-		return getAddress(LOCAL_MOCK_USDC_ADDRESS);
+		return parseEvmAddress(LOCAL_MOCK_USDC_ADDRESS);
 	}
 	if (config.chainKey === "mainnet") {
-		return getAddress(USDC_BASE_MAINNET);
+		return parseEvmAddress(USDC_BASE_MAINNET);
 	}
-	return getAddress(USDC_BASE_SEPOLIA);
+	return parseEvmAddress(USDC_BASE_SEPOLIA);
 }
 
 export function assertSettlementUsdcToken(tokenAddress: string) {

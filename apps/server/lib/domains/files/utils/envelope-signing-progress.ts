@@ -24,7 +24,7 @@ export async function readPieceEnvelopeProgress(pieceCid: string) {
 
 	return readEnvelopeRegistryProgress({
 		pieceCid,
-		registryAddress: getAddress(file.registryAddress),
+		registryAddress: getAddress(file.registryAddress) as `0x${string}`,
 		registerRouting: file.registerRoutingJson ?? undefined,
 	});
 }

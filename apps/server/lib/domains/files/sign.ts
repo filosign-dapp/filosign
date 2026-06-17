@@ -97,7 +97,7 @@ export async function pieceSign(args: {
 	}
 	if (
 		await isSignerReplacementPendingOnChain(
-			fileRecord.registryAddress,
+			fileRecord.registryAddress as `0x${string}`,
 			pieceCid,
 		)
 	) {
@@ -140,7 +140,7 @@ export async function pieceSign(args: {
 		completedFieldIdsStored,
 		placementCommitment: fileRecord.placementCommitment,
 		pieceCid,
-		signerWallet,
+		signerWallet: signerWallet as `0x${string}`,
 	});
 
 	const [{ signaturePublicKey: signerDl3PubKey }] = await db
@@ -156,7 +156,7 @@ export async function pieceSign(args: {
 	const txHash = await verifyAndRelayPieceSignature({
 		pieceCid,
 		sender: fileRecord.sender,
-		signerWallet,
+		signerWallet: signerWallet as `0x${string}`,
 		signerEmail,
 		authProviderId,
 		bindTimestamp: Math.floor(ackRow.acknowledgedAt.getTime() / 1000),
@@ -166,7 +166,7 @@ export async function pieceSign(args: {
 		dl3Signature,
 		completionsRoot,
 		signerDl3PubKey,
-		registryAddress: fileRecord.registryAddress,
+		registryAddress: fileRecord.registryAddress as `0x${string}`,
 		placementManifest: manifestParsed.data,
 		registerRoutingJson: fileRecord.registerRoutingJson,
 	});
@@ -189,7 +189,7 @@ export async function pieceSign(args: {
 	if (recipientAck) {
 		await recordSettlementRecipientAck({
 			pieceCid,
-			signerWallet,
+			signerWallet: signerWallet as `0x${string}`,
 			termsVersion: recipientAck.termsVersion,
 			acceptedAt: new Date(recipientAck.acceptedAt * 1000),
 			requestIp: args.requestIp,
@@ -208,7 +208,7 @@ export async function pieceSign(args: {
 
 	void runPostPieceSignSideEffects({
 		pieceCid,
-		signerWallet,
+		signerWallet: signerWallet as `0x${string}`,
 		fieldCount: completedFieldIdsStored.length,
 		signTxHash: txHash,
 	}).catch((err) => {

@@ -63,7 +63,7 @@ const {
 
 type FileRow = {
 	sender: Address;
-	organizationId: string;
+	organizationId: string | null;
 	registryAddress: `0x${string}`;
 	assignedRelayerAddress: Address | null;
 	revokedBeforeCompletedAt: Date | null;
@@ -103,6 +103,11 @@ async function loadFileForReplacement(
 	);
 	return {
 		...file,
+		sender: getAddress(file.sender) as Address,
+		registryAddress: getAddress(file.registryAddress) as `0x${string}`,
+		assignedRelayerAddress: file.assignedRelayerAddress
+			? (getAddress(file.assignedRelayerAddress) as Address)
+			: null,
 		placementManifestJson: manifestParsed.data,
 		registerRoutingJson: registerRoutingParsed.success
 			? registerRoutingParsed.data
@@ -420,6 +425,9 @@ export async function filesProposeSignerReplacement(
 	if (!file) {
 		throw throwAppError("FILES.NOT_FOUND");
 	}
+	if (!file.organizationId) {
+		throw throwAppError("FILES.FORBIDDEN");
+	}
 	await assertSignerReplacementEntitlements(wallet, file.organizationId);
 	assertFileOpenForReplacement(file);
 	await assertNoDbPendingAmendment(pieceCid);
@@ -490,7 +498,7 @@ export async function filesProposeSignerReplacement(
 				oldCommitment,
 				newCommitment,
 				status: "pending",
-				pendingNewSignerJson: newSignerE2ee,
+				pendingNewSignerJson: newSignerE2ee as PendingNewSignerJson,
 				proposeTxHash: txHash.data as `0x${string}`,
 			});
 			return;
@@ -500,7 +508,7 @@ export async function filesProposeSignerReplacement(
 			pieceCid,
 			oldCommitment,
 			newCommitment,
-			newSignerE2ee,
+			newSignerE2ee: newSignerE2ee as PendingNewSignerJson,
 			placementManifest: file.placementManifestJson,
 			registerRouting: file.registerRoutingJson,
 			routingCalldataAfter: routingCalldata,
@@ -511,7 +519,7 @@ export async function filesProposeSignerReplacement(
 			oldCommitment,
 			newCommitment,
 			status: "executed",
-			pendingNewSignerJson: newSignerE2ee,
+			pendingNewSignerJson: newSignerE2ee as PendingNewSignerJson,
 			proposeTxHash: txHash.data as `0x${string}`,
 			executeTxHash: txHash.data as `0x${string}`,
 		});
@@ -542,6 +550,9 @@ export async function filesExecuteSignerReplacement(
 	const file = await loadFileForReplacement(pieceCid);
 	if (!file) {
 		throw throwAppError("FILES.NOT_FOUND");
+	}
+	if (!file.organizationId) {
+		throw throwAppError("FILES.FORBIDDEN");
 	}
 	await assertSignerReplacementEntitlements(wallet, file.organizationId);
 	assertFileOpenForReplacement(file);
@@ -653,6 +664,9 @@ export async function filesCancelSignerReplacement(
 	const file = await loadFileForReplacement(pieceCid);
 	if (!file) {
 		throw throwAppError("FILES.NOT_FOUND");
+	}
+	if (!file.organizationId) {
+		throw throwAppError("FILES.FORBIDDEN");
 	}
 	assertFileOpenForReplacement(file);
 

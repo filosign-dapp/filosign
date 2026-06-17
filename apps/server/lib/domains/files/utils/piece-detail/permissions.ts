@@ -177,8 +177,8 @@ export function buildPieceDetailResponse(args: {
 	const p = args.permissions;
 	return {
 		pieceCid: args.fileRecord.pieceCid,
-		registryAddress: args.fileRecord.registryAddress,
-		sender: args.fileRecord.sender,
+		registryAddress: args.fileRecord.registryAddress as `0x${string}`,
+		sender: args.fileRecord.sender as `0x${string}`,
 		status: args.fileRecord.status,
 		onchainTxHash: args.fileRecord.onchainTxHash,
 		createdAt: args.fileRecord.createdAt,

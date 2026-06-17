@@ -187,7 +187,7 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		await readPendingSignerReplacementForPiece(pieceCid);
 	const envelopeProgress = await readEnvelopeRegistryProgress({
 		pieceCid,
-		registryAddress: fileRecord.registryAddress,
+		registryAddress: fileRecord.registryAddress as `0x${string}`,
 		registerRouting: fileRecord.registerRoutingJson ?? undefined,
 		signerEmail: signerEmailForRouting,
 	});
@@ -383,7 +383,7 @@ export async function pieceComplianceBundle(args: {
 	if (!exportAllowed) {
 		const envelopeProgress = await readEnvelopeRegistryProgress({
 			pieceCid,
-			registryAddress: getAddress(fileRecord.registryAddress),
+			registryAddress: getAddress(fileRecord.registryAddress) as `0x${string}`,
 			registerRouting: fileRecord.registerRoutingJson ?? undefined,
 		});
 		exportAllowed = isComplianceExportAllowed(fileRecord, envelopeProgress);

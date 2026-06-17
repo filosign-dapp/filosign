@@ -62,7 +62,7 @@ async function resolveRoutingCompleteAfterSign(args: {
 	routingComplete: boolean;
 	progress: EnvelopeRegistryProgress | null;
 }> {
-	const registryAddress = getAddress(args.registryAddress);
+	const registryAddress = getAddress(args.registryAddress) as `0x${string}`;
 	const readProgress = (blockNumber?: bigint) =>
 		readEnvelopeRegistryProgress({
 			pieceCid: args.pieceCid,
@@ -157,7 +157,7 @@ async function handleEnvelopeRoutingComplete(args: {
 	);
 	const completionOutbox = await buildEnvelopeCompletedEmailOutboxRows({
 		pieceCid: args.pieceCid,
-		sender: getAddress(args.sender),
+		sender: getAddress(args.sender) as `0x${string}`,
 	});
 	if (completionOutbox.length > 0) {
 		const inserted = await db.transaction(async (tx) =>
@@ -213,7 +213,7 @@ export async function runPostSignRoutingCompleteJob(args: {
 
 	const { routingComplete, progress } = await resolveRoutingCompleteAfterSign({
 		pieceCid: args.pieceCid,
-		registryAddress: file.registryAddress,
+		registryAddress: file.registryAddress as `0x${string}`,
 		registerRoutingJson: file.registerRoutingJson,
 		signTxHash: args.signTxHash,
 	});
@@ -221,7 +221,7 @@ export async function runPostSignRoutingCompleteJob(args: {
 	if (routingComplete) {
 		await handleEnvelopeRoutingComplete({
 			pieceCid: args.pieceCid,
-			sender: getAddress(file.sender),
+			sender: getAddress(file.sender) as `0x${string}`,
 			organizationId: file.organizationId,
 		});
 		return;

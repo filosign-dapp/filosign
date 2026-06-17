@@ -143,7 +143,7 @@ export async function pieceAck(args: {
 		authSubjectCommitment,
 		ackTimestamp: timestamp,
 		ackSignature: signature,
-		registryAddress: fileRecord.registryAddress,
+		registryAddress: fileRecord.registryAddress as `0x${string}`,
 	});
 
 	const acknowledgedAt = new Date(timestamp * 1000);

@@ -247,7 +247,7 @@ export async function listConditionalAttachmentPacketsForSender(
 			packetId: row.packetId,
 			label: row.label,
 			onChainRuleId: row.onChainRuleId.toString(),
-			releaseContractAddress: row.releaseContractAddress,
+			releaseContractAddress: row.releaseContractAddress as `0x${string}`,
 			released,
 			cancelled,
 		});
@@ -368,7 +368,7 @@ export async function isEnvelopeRoutingCompleteOnChain(
 
 	const progress = await readEnvelopeRegistryProgress({
 		pieceCid,
-		registryAddress: getAddress(registryAddress),
+		registryAddress: getAddress(registryAddress) as `0x${string}`,
 		registerRouting: file?.registerRoutingJson ?? undefined,
 	});
 

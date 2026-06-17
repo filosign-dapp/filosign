@@ -114,7 +114,7 @@ export async function relayRegisterEnvelope(
 			);
 
 			const txHash = await withRelayerLock(relayer, () =>
-				withRegistryWalletLock(relayArgs.sender, () =>
+				withRegistryWalletLock(relayArgs.sender as `0x${string}`, () =>
 					relayWrite({
 						step: "registerEnvelope",
 						onBroadcast,

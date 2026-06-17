@@ -8,3 +8,4 @@ export {
 	type PayoutAccessRequestIntent,
 	payoutAccessRequestIntent,
 } from "./intent";
+export { PayoutAccessStatusLine } from "./status-line";

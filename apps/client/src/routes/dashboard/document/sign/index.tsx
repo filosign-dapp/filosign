@@ -4,7 +4,6 @@ import { z } from "zod";
 import { usePersonalizationGateForSign } from "@/src/lib/auth/use-personalization-gate-for-sign";
 import { RoutePendingFallback } from "@/src/lib/components/app/suspense";
 import { usePrefetchDefaultSignatures } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-prefetch-default-signatures";
-import { EntitlementUpgradeProvider } from "@/src/routes/dashboard/envelope/create/-lib/context/entitlement-upgrade-context";
 import { SignInviteUnlockRoutePage } from "./-components/invite-unlock/page";
 import { SignDocumentPage } from "./-components/page";
 import { SignPieceFileProvider } from "./-lib/context/piece-file-context";
@@ -53,10 +52,6 @@ export const Route = createFileRoute("/dashboard/document/sign/")({
 		pieceCid: z.string().optional().default(""),
 		invite: z.string().optional().default(""),
 	}),
-	component: () => (
-		<EntitlementUpgradeProvider>
-			<SignDocumentRoutePage />
-		</EntitlementUpgradeProvider>
-	),
+	component: SignDocumentRoutePage,
 	pendingComponent: RoutePendingFallback,
 });

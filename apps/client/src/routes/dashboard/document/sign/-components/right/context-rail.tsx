@@ -124,14 +124,7 @@ export function SignContextRail() {
 			) : null}
 
 			{settlements.rules.length > 0 ? (
-				<SignSidebar.Section
-					title={
-						<span className="inline-flex items-center gap-2">
-							Attached payouts
-							<ProFeatureMark size="xs" />
-						</span>
-					}
-				>
+				<SignSidebar.Section title="Attached payouts">
 					<SettlementStatusPanel
 						rules={settlements.rules}
 						formatAddress={formatAddress}
@@ -188,11 +181,10 @@ export function SignContextRail() {
 									type="button"
 									variant="outline"
 									size="sm"
-									className="h-8 gap-1.5 text-xs"
+									className="h-8 text-xs"
 									onClick={() => settlements.openAttachDialog()}
 								>
 									Add payout
-									<ProFeatureMark size="xs" />
 								</Button>
 								<Button
 									type="button"

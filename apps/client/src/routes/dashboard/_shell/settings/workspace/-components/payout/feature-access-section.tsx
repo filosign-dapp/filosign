@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
-import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
 import {
 	PayoutAccessRequestDialog,
@@ -43,12 +42,7 @@ export function PayoutFeatureAccessSection() {
 				icon={
 					<CurrencyCircleDollarIcon className="size-4" aria-hidden="true" />
 				}
-				title={
-					<span className="inline-flex items-center gap-2">
-						Payout attachment access
-						<ProFeatureMark size="xs" />
-					</span>
-				}
+				title="Payout attachment access"
 				description="Optional USDC payout instructions on documents. Available on paid plans after Filosign review."
 			>
 				<DocsLink href={DOCS_LINKS.payoutAccess()} className="mb-4">
@@ -64,10 +58,8 @@ export function PayoutFeatureAccessSection() {
 							type="button"
 							variant="outline"
 							onClick={() => setUpgradeDialogOpen(true)}
-							className="gap-1.5"
 						>
 							Upgrade plan
-							<ProFeatureMark size="xs" />
 						</Button>
 					</div>
 				) : accessQuery.isPending ? (

@@ -37,6 +37,7 @@ export function useBasicPayoutGateActions(args: {
 
 	return {
 		canAttach,
+		gate,
 		requestDialogOpen,
 		setRequestDialogOpen,
 		payoutAccess,

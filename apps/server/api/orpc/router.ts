@@ -621,13 +621,16 @@ export const appRouter = {
 			.input(z.object({ pieceCid: z.string().min(1) }))
 			.output(out.settlements.listByFile)
 			.handler(({ context, input }) =>
-				settlementsListByFile(context.userWallet, input.pieceCid),
+				settlementsListByFile(
+					context.userWallet as `0x${string}`,
+					input.pieceCid,
+				),
 			),
 		trySettle: authenticatedProcedure
 			.input(zSettlementRuleKey)
 			.output(out.settlements.trySettle)
 			.handler(({ context, input }) =>
-				settlementsTrySettle(context.userWallet, {
+				settlementsTrySettle(context.userWallet as `0x${string}`, {
 					onChainRuleId: input.onChainRuleId,
 					validatorAddress: input.validatorAddress,
 				}),
@@ -635,12 +638,12 @@ export const appRouter = {
 		confirmSettlement: authenticatedProcedure
 			.input(
 				zSettlementRuleKey.extend({
-					payoutTxHash: zHexString,
+					payoutTxHash: zHexString(),
 				}),
 			)
 			.output(out.settlements.confirmSettlement)
 			.handler(({ context, input }) =>
-				settlementsConfirmSettlement(context.userWallet, {
+				settlementsConfirmSettlement(context.userWallet as `0x${string}`, {
 					onChainRuleId: input.onChainRuleId,
 					validatorAddress: input.validatorAddress,
 					payoutTxHash: input.payoutTxHash as `0x${string}`,

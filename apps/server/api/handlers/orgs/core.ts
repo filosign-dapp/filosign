@@ -10,6 +10,10 @@ import z from "zod";
 import { writeAuditEvent } from "@/lib/domains/audit";
 import { reconcileNewWorkspacePendingFromDodo } from "@/lib/domains/billing";
 import {
+	assertEntitlement,
+	resolveEntitlementContext,
+} from "@/lib/domains/entitlements";
+import {
 	type ActiveOrgContext,
 	assertOrgPermission,
 	assertOrgSubscriptionIsPaidAfterAttach,
@@ -21,7 +25,10 @@ import {
 	slugifyOrgName,
 	syncOrgControllersOnChain,
 } from "@/lib/domains/orgs";
-import { validateLinkOrgWalletSignature } from "@/lib/domains/orgs/utils/link-wallet";
+import {
+	validateLinkOrgWalletSignature,
+	validateSafeLinkOrgWalletSignature,
+} from "@/lib/domains/orgs/utils/link-wallet";
 import {
 	attachPartnerTrialOnOrgCreateWithTx,
 	attachPendingOrgBillingOnCreateWithTx,
@@ -44,6 +51,21 @@ const {
 	organizationSubscriptions,
 	users,
 } = db.schema;
+
+async function invalidateOrgMemberListCaches(
+	organizationId: string,
+): Promise<void> {
+	const members = await db
+		.select({ walletAddress: organizationMembers.walletAddress })
+		.from(organizationMembers)
+		.where(
+			and(
+				eq(organizationMembers.organizationId, organizationId),
+				eq(organizationMembers.status, "active"),
+			),
+		);
+	await Promise.all(members.map((m) => invalidateUserOrgs(m.walletAddress)));
+}
 
 export const zOrgsCreateBody = z.object({
 	name: z.string().min(1).max(120),
@@ -285,16 +307,7 @@ export async function orgsUpdate(
 		throwAppError("WORKSPACE.ORGANIZATION_NOT_FOUND");
 	}
 
-	const members = await db
-		.select({ walletAddress: organizationMembers.walletAddress })
-		.from(organizationMembers)
-		.where(
-			and(
-				eq(organizationMembers.organizationId, activeOrg.organizationId),
-				eq(organizationMembers.status, "active"),
-			),
-		);
-	await Promise.all(members.map((m) => invalidateUserOrgs(m.walletAddress)));
+	await invalidateOrgMemberListCaches(activeOrg.organizationId);
 
 	return { organization };
 }
@@ -479,6 +492,8 @@ export const zOrgsLinkWalletBody = z.object({
 	orgWalletAddress: zEvmAddress(),
 	timestamp: z.number().int().positive(),
 	signature: zHexString(),
+	proofType: z.enum(["eoa", "safe_eip1271", "safe_service"]).default("eoa"),
+	safeMessageHash: zHexString().optional(),
 });
 
 export async function orgsLinkOrgWallet(
@@ -494,19 +509,28 @@ export async function orgsLinkOrgWallet(
 	if (parsed.data.organizationId !== activeOrg.organizationId) {
 		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
+	const entitlementCtx = await resolveEntitlementContext(
+		wallet,
+		activeOrg.organizationId,
+	);
+	assertEntitlement(entitlementCtx, "features.treasury.workspace_custom");
 
 	const orgWallet = getAddress(parsed.data.orgWalletAddress);
-	const signer = getAddress(wallet);
-	if (orgWallet !== signer) {
-		throwAppError("WORKSPACE.WALLET_CONTROLLER_MISMATCH");
-	}
-
-	const valid = await validateLinkOrgWalletSignature({
-		walletAddress: orgWallet,
-		organizationId: parsed.data.organizationId,
-		timestamp: parsed.data.timestamp,
-		signature: parsed.data.signature,
-	});
+	const valid =
+		parsed.data.proofType === "eoa"
+			? await validateLinkOrgWalletSignature({
+					walletAddress: orgWallet,
+					organizationId: parsed.data.organizationId,
+					timestamp: parsed.data.timestamp,
+					signature: parsed.data.signature,
+				})
+			: await validateSafeLinkOrgWalletSignature({
+					walletAddress: orgWallet,
+					organizationId: parsed.data.organizationId,
+					timestamp: parsed.data.timestamp,
+					signature: parsed.data.signature,
+					safeMessageHash: parsed.data.safeMessageHash,
+				});
 	if (!valid) {
 		throwAppError("WORKSPACE.LINK_WALLET_SIGNATURE_INVALID");
 	}
@@ -531,7 +555,10 @@ export async function orgsLinkOrgWallet(
 		});
 	}
 
-	await invalidateOrgEntitlements(activeOrg.organizationId);
+	await Promise.all([
+		invalidateOrgEntitlements(activeOrg.organizationId),
+		invalidateOrgMemberListCaches(activeOrg.organizationId),
+	]);
 
 	return {
 		orgWalletAddress: org.orgWalletAddress,
@@ -544,7 +571,7 @@ export const zOrgsUnlinkWalletBody = z.object({
 });
 
 export async function orgsUnlinkOrgWallet(
-	_wallet: Address,
+	wallet: Address,
 	activeOrg: ActiveOrgContext,
 	body: unknown,
 ) {
@@ -556,6 +583,11 @@ export async function orgsUnlinkOrgWallet(
 	if (parsed.data.organizationId !== activeOrg.organizationId) {
 		throwAppError("WORKSPACE.ORGANIZATION_MISMATCH");
 	}
+	const entitlementCtx = await resolveEntitlementContext(
+		wallet,
+		activeOrg.organizationId,
+	);
+	assertEntitlement(entitlementCtx, "features.treasury.workspace_custom");
 
 	const clearedAt = new Date();
 	const [org] = await db
@@ -577,7 +609,10 @@ export async function orgsUnlinkOrgWallet(
 		});
 	}
 
-	await invalidateOrgEntitlements(activeOrg.organizationId);
+	await Promise.all([
+		invalidateOrgEntitlements(activeOrg.organizationId),
+		invalidateOrgMemberListCaches(activeOrg.organizationId),
+	]);
 
 	return {
 		orgWalletAddress: null,

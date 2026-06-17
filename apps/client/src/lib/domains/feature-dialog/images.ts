@@ -31,6 +31,7 @@ export function upgradePlanLimitMedia(reason: UpgradePlanLimitReason): {
 		case "features.supplementary_attachments.conditional_release":
 			return { src, badge: "Upgrade" };
 		case "features.routing.advanced":
+		case "features.treasury.workspace_custom":
 		case "features.signer_replacement":
 			return { src, badge: "Teams Pro" };
 		case "features.shared_templates":

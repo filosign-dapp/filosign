@@ -2,14 +2,14 @@ import { describe, expect, test } from "bun:test";
 import {
 	deriveSettlementAllowanceChangeStep,
 	settlementAllowanceChangeSummary,
-} from "@/src/lib/domains/settlements/allowance";
+} from "@/src/lib/domains/settlements/utils/allowance";
 import {
 	buildSettlementCancelProgressPlan,
 	buildSettlementUpdateProgressPlan,
 	createInitialSettlementChangeProgressState,
 	markSettlementChangeProgressSuccess,
 	reduceSettlementChangeProgress,
-} from "@/src/lib/domains/settlements/change-progress";
+} from "@/src/lib/domains/settlements/utils/change-progress";
 
 describe("settlement change progress plans", () => {
 	test("update plan includes approve steps when allowance increases", () => {

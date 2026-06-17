@@ -2,8 +2,8 @@ import type { AttachmentPacketDraft } from "@filosign/react/files";
 import type { SettlementReleaseType } from "@filosign/shared";
 import { settlementReleaseTypeLabel } from "@filosign/shared";
 import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
-import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
-import { buildReleaseParamsFromDraft } from "@/src/lib/domains/settlements/build-release-params";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements";
+import { buildReleaseParamsFromDraft } from "@/src/lib/domains/settlements";
 
 /** File row in compose UI; `bytes` in memory, `size` only when persisted to localStorage. */
 export type AttachmentPacketComposeFile = {

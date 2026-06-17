@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { payoutAccessRequestDialogProps } from "../../src/lib/domains/settlements/payout-access-controls";
-import { payoutAccessRequestIntent } from "../../src/lib/domains/settlements/payout-access-request-intent";
+import { payoutAccessRequestDialogProps } from "@/src/lib/domains/settlements/payout-access/controls";
+import { payoutAccessRequestIntent } from "@/src/lib/domains/settlements/payout-access/intent";
 
 describe("payoutAccessRequestIntent", () => {
 	it("opens the request dialog for workspace admins", () => {

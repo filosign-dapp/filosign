@@ -101,6 +101,7 @@ export function buildDraftSnapshotFromForm(args: {
 	emailMessage: string;
 	documents: { id: string; name: string; size: number; type: string }[];
 	settlementDrafts: CreateForm["settlementDrafts"];
+	payoutPayerSource?: CreateForm["payoutPayerSource"];
 	signatureFields: SignatureField[];
 	placementManifest: DraftSnapshot["placementManifest"];
 }): DraftSnapshot {
@@ -110,6 +111,7 @@ export function buildDraftSnapshotFromForm(args: {
 		emailMessage: args.emailMessage,
 		documents: args.documents,
 		settlementDrafts: args.settlementDrafts ?? [],
+		payoutPayerSource: args.payoutPayerSource ?? "sender",
 		signatureFields: args.signatureFields,
 		placementManifest: args.placementManifest,
 	};
@@ -130,6 +132,7 @@ export function digestCreateFormSnapshot(
 			type: d.type,
 		})),
 		settlementDrafts: form.settlementDrafts ?? [],
+		payoutPayerSource: form.payoutPayerSource ?? "sender",
 		signatureFields: form.signatureFields ?? [],
 		placementManifest,
 	});

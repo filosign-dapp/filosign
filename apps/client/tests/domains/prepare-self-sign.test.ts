@@ -11,9 +11,12 @@ const ensureDefaultMock = mock(async () => ({
 	previewUrl: null,
 }));
 
-mock.module("@filosign/react/users", () => ({
-	ensureDefaultTypedSignatureArtifact: ensureDefaultMock,
-}));
+mock.module(
+	"../../../../packages/react-sdk/src/lib/ensure-default-signature-artifact.ts",
+	() => ({
+		ensureDefaultTypedSignatureArtifact: ensureDefaultMock,
+	}),
+);
 
 const { prepareSelfSignCompletions } = await import(
 	"../../src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/prepare-self-sign"

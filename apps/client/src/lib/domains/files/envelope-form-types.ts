@@ -28,7 +28,7 @@ export type UploadedFile = {
 };
 
 import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
-import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements";
 
 export type EnvelopeForm = {
 	recipients: Recipient[];
@@ -36,6 +36,7 @@ export type EnvelopeForm = {
 	emailMessage: string;
 	documents: UploadedFile[];
 	settlementDrafts: SettlementAttachmentDraft[];
+	payoutPayerSource?: "sender" | "org_wallet";
 };
 
 export const ALLOWED_FILE_TYPES = [
@@ -106,6 +107,7 @@ export type CreateForm = {
 	emailMessage: string;
 	documents: StoredDocument[];
 	settlementDrafts: SettlementAttachmentDraft[];
+	payoutPayerSource?: "sender" | "org_wallet";
 	signatureFields: SignatureField[];
 	/** Teams Pro: sequential routing and quorum (no optional signers on-chain). */
 	registerRouting?: RegisterRoutingInput;

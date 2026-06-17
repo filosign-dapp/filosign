@@ -157,7 +157,7 @@ function registryAddressFromBundle(
 	const registrationTx = bundle.transactions.find(
 		(transaction) => transaction.kind === "file_registered",
 	);
-	return registrationTx?.contractAddress ?? null;
+	return (registrationTx?.contractAddress as `0x${string}` | undefined) ?? null;
 }
 
 function buildVerifyManifest(args: {

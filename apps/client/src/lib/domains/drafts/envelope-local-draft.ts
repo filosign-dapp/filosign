@@ -16,6 +16,7 @@ export const EMPTY_ENVELOPE_FORM: EnvelopeForm = {
 	emailSubject: "",
 	documents: [],
 	settlementDrafts: [],
+	payoutPayerSource: "sender",
 };
 
 /** Compose UI when IndexedDB blobs are missing but metadata exists in `createForm`. */
@@ -28,6 +29,7 @@ export function createFormToEnvelopeFormWithoutDocuments(
 		emailSubject: draft.emailSubject ?? "",
 		documents: [],
 		settlementDrafts: draft.settlementDrafts ?? [],
+		payoutPayerSource: draft.payoutPayerSource ?? "sender",
 	};
 }
 
@@ -446,6 +448,7 @@ export async function buildCreateForm(
 			emailSubject: value.emailSubject ?? "",
 			documents,
 			settlementDrafts: value.settlementDrafts ?? [],
+			payoutPayerSource: value.payoutPayerSource ?? "sender",
 			signatureFields,
 		},
 		prev,
@@ -462,6 +465,7 @@ export async function createFormToEnvelopeForm(
 		emailSubject: draft.emailSubject ?? "",
 		documents,
 		settlementDrafts: draft.settlementDrafts ?? [],
+		payoutPayerSource: draft.payoutPayerSource ?? "sender",
 	};
 }
 
@@ -483,7 +487,8 @@ export function hasEnvelopeFormContent(value: EnvelopeForm): boolean {
 		value.documents.length > 0 ||
 		value.recipients.length > 0 ||
 		value.emailMessage.trim().length > 0 ||
-		(value.settlementDrafts?.length ?? 0) > 0
+		(value.settlementDrafts?.length ?? 0) > 0 ||
+		(value.payoutPayerSource ?? "sender") !== "sender"
 	);
 }
 
@@ -493,7 +498,8 @@ export function hasDraftContent(draft: CreateForm | null | undefined): boolean {
 		draft.documents.length > 0 ||
 		draft.recipients.length > 0 ||
 		(draft.emailMessage?.trim().length ?? 0) > 0 ||
-		(draft.settlementDrafts?.length ?? 0) > 0
+		(draft.settlementDrafts?.length ?? 0) > 0 ||
+		(draft.payoutPayerSource ?? "sender") !== "sender"
 	);
 }
 

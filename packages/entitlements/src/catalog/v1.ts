@@ -27,9 +27,12 @@ const teamCollaborationFeatures = {
 const teamsProFeatures = {
 	"features.routing.advanced": { kind: "boolean", enabled: true },
 	"features.settlement.advanced": { kind: "boolean", enabled: true },
+	"features.treasury.workspace_custom": { kind: "boolean", enabled: true },
 } as const satisfies Pick<
 	PlanEntitlements,
-	"features.routing.advanced" | "features.settlement.advanced"
+	| "features.routing.advanced"
+	| "features.settlement.advanced"
+	| "features.treasury.workspace_custom"
 >;
 
 const proOnlyFeatures = {
@@ -58,6 +61,7 @@ const proOnlyFeatures = {
 const disabledProFeatures = {
 	"features.draft_comments": { kind: "boolean", enabled: false },
 	"features.comments": { kind: "boolean", enabled: false },
+	"features.treasury.workspace_custom": { kind: "boolean", enabled: false },
 	"features.integrations.custom": { kind: "boolean", enabled: false },
 	"features.quota_allocation": { kind: "boolean", enabled: false },
 	"features.bulk_send": { kind: "boolean", enabled: false },
@@ -69,6 +73,7 @@ const disabledProFeatures = {
 	PlanEntitlements,
 	| "features.draft_comments"
 	| "features.comments"
+	| "features.treasury.workspace_custom"
 	| "features.integrations.custom"
 	| "features.quota_allocation"
 	| "features.bulk_send"
@@ -221,7 +226,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 			period: "calendar_month",
 			scope: "per_seat",
 		},
-		"envelope.recipients.max": { kind: "max", limit: 10 },
+		"envelope.recipients.max": { kind: "max", limit: 5 },
 		...teamCollaborationFeatures,
 		"features.routing.advanced": { kind: "boolean", enabled: false },
 		"features.settlement.advanced": { kind: "boolean", enabled: false },
@@ -237,7 +242,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 			period: "calendar_month",
 			scope: "per_seat",
 		},
-		"envelope.recipients.max": { kind: "max", limit: 15 },
+		"envelope.recipients.max": { kind: "max", limit: 10 },
 		...teamCollaborationFeatures,
 		...teamsProFeatures,
 		...proOnlyFeatures,
@@ -260,7 +265,7 @@ export const catalogV1: Record<PlanId, PlanEntitlements> = {
 	},
 };
 
-export const CATALOG_VERSION = 3 as const;
+export const CATALOG_VERSION = 4 as const;
 
 export function catalogEntitlement(
 	planId: PlanId,

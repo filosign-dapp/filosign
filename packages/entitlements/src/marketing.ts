@@ -15,6 +15,7 @@ const MARKETING_LABELS: Record<FeatureKey, string> = {
 	"features.routing.advanced": "Advanced signing conditions",
 	"features.settlement.basic": "Payout packets",
 	"features.settlement.advanced": "Multi-recipient payout rules",
+	"features.treasury.workspace_custom": "Custom workspace treasury wallet",
 	"features.supplementary_attachments": "Gated file packets",
 	"features.supplementary_attachments.recipient_select":
 		"Per-packet recipient selection",

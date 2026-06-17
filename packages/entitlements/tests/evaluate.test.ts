@@ -41,7 +41,7 @@ function orgCtx(
 
 describe("catalog v1", () => {
 	test("catalog version bumps when quota semantics change", () => {
-		expect(CATALOG_VERSION).toBe(3);
+		expect(CATALOG_VERSION).toBe(4);
 	});
 
 	test("every plan defines every feature key", () => {
@@ -136,8 +136,8 @@ describe("max envelope.recipients.max", () => {
 	const limits: Record<PlanId, number | null> = {
 		free: 1,
 		individual: 3,
-		teams: 10,
-		teams_pro: 15,
+		teams: 5,
+		teams_pro: 10,
 		enterprise: null,
 	};
 
@@ -241,6 +241,18 @@ describe("boolean features", () => {
 		).toBe(true);
 		expect(
 			check(ctx("enterprise"), "features.settlement.advanced").allowed,
+		).toBe(true);
+	});
+
+	test("features.treasury.workspace_custom enabled on teams_pro and enterprise only", () => {
+		expect(
+			check(ctx("teams"), "features.treasury.workspace_custom").allowed,
+		).toBe(false);
+		expect(
+			check(ctx("teams_pro"), "features.treasury.workspace_custom").allowed,
+		).toBe(true);
+		expect(
+			check(ctx("enterprise"), "features.treasury.workspace_custom").allowed,
 		).toBe(true);
 	});
 

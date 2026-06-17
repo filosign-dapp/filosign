@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from "bun:test";
+import type { EntitlementContext } from "@filosign/entitlements";
 import { dbQueryResult } from "../support/db-query-result";
 import { restoreTestEnvMock } from "../support/env-stub";
 import { createMockRedis, mockSessionCacheRedis } from "../support/mock-redis";
@@ -231,6 +232,34 @@ describe("entitlements", () => {
 			if (ctx.subject.type === "org_member") {
 				expect(ctx.subject.orgId).toBe(orgId);
 			}
+		});
+	});
+
+	describe("feature-catalog-gates", () => {
+		const wallet = "0x0000000000000000000000000000000000000001";
+
+		function ctx(
+			planId: "free" | "individual" | "teams" | "teams_pro",
+		): EntitlementContext {
+			return {
+				subject: { type: "user", wallet },
+				planId,
+				periodStart: new Date("2026-05-01T00:00:00Z"),
+				usage: {},
+			};
+		}
+
+		test("features.team_drafts requires teams plan or higher", async () => {
+			const { assertEntitlement } = await import("@/lib/domains/entitlements");
+			expect(() =>
+				assertEntitlement(ctx("free"), "features.team_drafts"),
+			).toThrow();
+			expect(() =>
+				assertEntitlement(ctx("individual"), "features.team_drafts"),
+			).toThrow();
+			expect(() =>
+				assertEntitlement(ctx("teams"), "features.team_drafts"),
+			).not.toThrow();
 		});
 	});
 

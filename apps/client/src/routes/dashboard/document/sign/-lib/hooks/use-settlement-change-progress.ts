@@ -8,7 +8,7 @@ import {
 	type SettlementChangeMode,
 	type SettlementChangeProgressState,
 	settlementChangeProgressFailureState,
-} from "@/src/lib/domains/settlements/change-progress";
+} from "@/src/lib/domains/settlements";
 import type { WorkflowProgressStep } from "@/src/lib/domains/workflow-progress";
 import { showAppErrorToast } from "@/src/lib/errors";
 

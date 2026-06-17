@@ -20,8 +20,8 @@ import {
 	resolveSettlementRuleLegs,
 	type SettlementAllowanceChangeStep,
 	settlementAllowanceChangeSummary,
-} from "@/src/lib/domains/settlements/allowance";
-import { useSettlementAllowancePreview } from "@/src/lib/domains/settlements/use-settlement-allowance-preview";
+	useSettlementAllowancePreview,
+} from "@/src/lib/domains/settlements";
 import { formatUsdcAmount } from "@/src/lib/web3/format-usdc";
 
 type Props = {
@@ -47,13 +47,19 @@ export function SettlementUpdateDialog({
 	pending,
 }: Props) {
 	const [amounts, setAmounts] = useState<string[]>([]);
-	const { decimals, currentAllowance, requiredAfter, loading, changeStep } =
-		useSettlementAllowancePreview({
-			open,
-			allRules,
-			rule,
-			draftAmounts: amounts,
-		});
+	const {
+		decimals,
+		currentAllowance,
+		requiredAfter,
+		loading,
+		changeStep,
+		treasuryFunded,
+	} = useSettlementAllowancePreview({
+		open,
+		allRules,
+		rule,
+		draftAmounts: amounts,
+	});
 
 	useEffect(() => {
 		if (!open || !rule) return;
@@ -127,7 +133,8 @@ export function SettlementUpdateDialog({
 					))}
 					<div className="rounded-lg border border-border/50 bg-muted/20 px-3 py-2 text-xs text-muted-foreground space-y-1">
 						<p>
-							Current approval:{" "}
+							Current approval
+							{treasuryFunded ? " (treasury)" : ""}:{" "}
 							{loading
 								? "Loading…"
 								: currentAllowance === null
@@ -139,6 +146,12 @@ export function SettlementUpdateDialog({
 							{formatUsdcAmount(requiredAfter, decimals)} USDC
 						</p>
 						<p>{settlementAllowanceChangeSummary(changeStep)}</p>
+						{treasuryFunded ? (
+							<p>
+								Approval changes are signed from your workspace treasury wallet,
+								not your personal signing wallet.
+							</p>
+						) : null}
 						<p>
 							To block all attached payouts, use Revoke payout approval instead.
 						</p>

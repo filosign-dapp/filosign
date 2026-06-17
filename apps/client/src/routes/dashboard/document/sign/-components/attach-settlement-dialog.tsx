@@ -27,14 +27,14 @@ import {
 	SelectValue,
 } from "@/src/lib/components/ui/select";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
-import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
-import { handleBasicPayoutGateBlock } from "@/src/lib/domains/settlements/basic-payout-gate";
-import { buildReleaseParamsFromSignerEmails } from "@/src/lib/domains/settlements/build-release-params";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements";
 import {
+	buildReleaseParamsFromSignerEmails,
 	expiresAtFromDatetimeLocal,
+	handleBasicPayoutGateBlock,
 	SettlementExpiresAtField,
-} from "@/src/lib/domains/settlements/settlement-expires-at-field";
-import { SettlementReleaseFields } from "@/src/lib/domains/settlements/settlement-release-fields";
+	SettlementReleaseFields,
+} from "@/src/lib/domains/settlements";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
 
 type PayeeOption = {

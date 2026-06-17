@@ -10,13 +10,11 @@ import { Badge } from "@/src/lib/components/ui/badge";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	buildSettlementRuleRowState,
-	settlementRuleAccentClassName,
-	settlementRuleStatusBadgeClassName,
-} from "@/src/lib/domains/settlements/rule-row-state";
-import {
 	formatSettlementAmountLine,
 	formatSettlementRecipientLine,
-} from "@/src/lib/domains/settlements/settlement-display";
+	settlementRuleAccentClassName,
+	settlementRuleStatusBadgeClassName,
+} from "@/src/lib/domains/settlements";
 import { cn } from "@/src/lib/utils";
 import { SettlementManageActions } from "@/src/routes/dashboard/document/sign/-components/settlement-manage-actions";
 

@@ -4,7 +4,7 @@ import {
 	normalizePlacementRecipientEmail,
 } from "@filosign/shared";
 import type { Hex } from "viem";
-import { hasPaidSettlementLegs } from "@/src/lib/domains/settlements/paid-legs";
+import { hasPaidSettlementLegs } from "@/src/lib/domains/settlements/utils/paid-legs";
 import {
 	type EnvelopeProgressLike,
 	isEnvelopeVoided,

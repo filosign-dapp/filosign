@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
-import { payoutAccessRequestDialogProps } from "@/src/lib/domains/settlements/payout-access-controls";
-import { PayoutAccessRequestDialog } from "@/src/lib/domains/settlements/payout-access-request-dialog";
+import {
+	PayoutAccessRequestDialog,
+	payoutAccessRequestDialogProps,
+} from "@/src/lib/domains/settlements";
 import { AmendSignerDialog } from "@/src/routes/dashboard/document/sign/-components/amend-signer-dialog";
 import { AttachSettlementDialog } from "@/src/routes/dashboard/document/sign/-components/attach-settlement-dialog";
 import { SignShellLayout } from "@/src/routes/dashboard/document/sign/-components/body";

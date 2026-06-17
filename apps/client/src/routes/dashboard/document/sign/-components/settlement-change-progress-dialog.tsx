@@ -2,8 +2,8 @@ import { CoinsIcon } from "@phosphor-icons/react";
 import type {
 	SettlementChangeMode,
 	SettlementChangeProgressState,
-} from "@/src/lib/domains/settlements/change-progress";
-import { SETTLEMENT_CHANGE_PROGRESS_TIPS } from "@/src/lib/domains/settlements/change-progress-tips";
+} from "@/src/lib/domains/settlements";
+import { SETTLEMENT_CHANGE_PROGRESS_TIPS } from "@/src/lib/domains/settlements";
 import { WorkflowProgressDialog } from "@/src/lib/domains/workflow-progress";
 
 const PROGRESS_COPY: Record<

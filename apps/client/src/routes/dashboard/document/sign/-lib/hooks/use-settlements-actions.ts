@@ -3,7 +3,9 @@ import {
 	buildNewSignerE2eeForAmend,
 	canUseAdvancedSettlements,
 	canUseSignerReplacement,
+	canUseWorkspaceTreasury,
 	type SettlementRuleRow,
+	settlementRulePayerAddress,
 	useAttachSettlementForFile,
 	useCancelSettlementRule,
 	useCancelSignerReplacement,
@@ -32,13 +34,19 @@ import { useCallback, useMemo, useState } from "react";
 import { type Address, getAddress } from "viem";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
-import type { SettlementAllowanceChangeStep } from "@/src/lib/domains/settlements/allowance";
+import { useOrgWalletAddress } from "@/src/lib/domains/orgs/use-org-wallet-address";
+import type { SettlementAllowanceChangeStep } from "@/src/lib/domains/settlements";
 import {
 	buildSettlementCancelProgressPlan,
 	buildSettlementUpdateProgressPlan,
-} from "@/src/lib/domains/settlements/change-progress";
-import { useBasicPayoutGateActions } from "@/src/lib/domains/settlements/use-basic-payout-gate-actions";
-import { useFirstCanExecuteAtByRuleId } from "@/src/lib/domains/settlements/use-first-can-execute-at";
+	useBasicPayoutGateActions,
+	useFirstCanExecuteAtByRuleId,
+} from "@/src/lib/domains/settlements";
+import { showAppErrorToast } from "@/src/lib/errors";
+import {
+	createTreasuryPayerWalletResolver,
+	useTreasurySettlementRegistrar,
+} from "@/src/lib/web3/treasury";
 import { useSettlementChangeProgress } from "@/src/routes/dashboard/document/sign/-lib/hooks/use-settlement-change-progress";
 import type { EnvelopeProgressLike } from "@/src/routes/dashboard/document/sign/-lib/utils/envelope-progress-display";
 import {
@@ -91,10 +99,31 @@ export function useSignSettlementsActions(
 	const { data: entitlements } = useEntitlements();
 	const activeOrgId = useActiveOrgId();
 	const activeOrg = useActiveOrganization();
+	const orgWalletFromGet = useOrgWalletAddress();
 	const promptPlanUpgrade = usePromptPlanUpgrade();
 	const canManageSettlements = canUseAdvancedSettlements(entitlements);
+	const canUseCustomTreasury = canUseWorkspaceTreasury(entitlements);
+	const resolvePayerWallet = useMemo(
+		() => createTreasuryPayerWalletResolver(),
+		[],
+	);
 
 	const canManage = activeOrg?.role === "owner" || activeOrg?.role === "admin";
+	const orgWalletAddress = orgWalletFromGet?.startsWith("0x")
+		? getAddress(orgWalletFromGet)
+		: undefined;
+	const connectedWallet = userWallet ? getAddress(userWallet) : undefined;
+	const useOrgWalletForAttach =
+		canUseCustomTreasury &&
+		Boolean(orgWalletAddress) &&
+		Boolean(connectedWallet) &&
+		orgWalletAddress !== connectedWallet;
+	const attachPayoutPayerSource = useOrgWalletForAttach
+		? ("org_wallet" as const)
+		: ("sender" as const);
+	const treasuryAttachRegistrar = useTreasurySettlementRegistrar(
+		attachPayoutPayerSource,
+	);
 
 	const {
 		requestDialogOpen,
@@ -167,7 +196,9 @@ export function useSignSettlementsActions(
 						});
 					}
 				}
-			} catch {}
+			} catch (error) {
+				showAppErrorToast(error);
+			}
 		},
 		[trySettleSettlement, settlementRules],
 	);
@@ -176,22 +207,36 @@ export function useSignSettlementsActions(
 		async (input: { onChainRuleId: string; validatorAddress: Address }) => {
 			try {
 				await manualSettlementPayout.mutateAsync(input);
-			} catch {}
+			} catch (error) {
+				showAppErrorToast(error);
+			}
 		},
 		[manualSettlementPayout],
 	);
 
 	const onRevokeAllowance = useCallback(async () => {
 		const rules = settlementsQuery.data ?? [];
-		const token = rules[0]?.tokenAddress;
-		if (!token) {
+		const activeRule = rules.find((rule) => rule.status !== "executed");
+		const token = activeRule?.tokenAddress ?? rules[0]?.tokenAddress;
+		if (!token || !activeRule || !userWallet) {
 			throw new Error("No payout token found for this document.");
 		}
-		await revokeSettlementAllowance.mutateAsync(getAddress(token));
+		const payer = settlementRulePayerAddress(activeRule, userWallet);
+		await revokeSettlementAllowance.mutateAsync({
+			tokenAddress: getAddress(token),
+			payer,
+			validatorAddress: getAddress(activeRule.validatorAddress),
+			resolvePayerWallet,
+		});
 		toastUser.success(TOASTS.sign.payoutApprovalRevoked.title, {
 			hint: TOASTS.sign.payoutApprovalRevoked.hint,
 		});
-	}, [revokeSettlementAllowance, settlementsQuery.data]);
+	}, [
+		resolvePayerWallet,
+		revokeSettlementAllowance,
+		settlementsQuery.data,
+		userWallet,
+	]);
 
 	const onCancelRule = useCallback(
 		async (input: { onChainRuleId: string; validatorAddress: Address }) => {
@@ -203,6 +248,7 @@ export function useSignSettlementsActions(
 						...input,
 						allRules: settlementRules,
 						onProgress,
+						resolvePayerWallet,
 					});
 				},
 				onSuccess: () => {
@@ -212,7 +258,12 @@ export function useSignSettlementsActions(
 				},
 			});
 		},
-		[cancelSettlementRule, settlementChangeProgress, settlementRules],
+		[
+			cancelSettlementRule,
+			resolvePayerWallet,
+			settlementChangeProgress,
+			settlementRules,
+		],
 	);
 
 	const onUpdateRule = useCallback((rule: SettlementRuleRow) => {
@@ -245,6 +296,7 @@ export function useSignSettlementsActions(
 						releaseParams: args.releaseParams,
 						legs,
 						onProgress,
+						resolvePayerWallet,
 					});
 				},
 				onSuccess: () => {
@@ -255,6 +307,7 @@ export function useSignSettlementsActions(
 			});
 		},
 		[
+			resolvePayerWallet,
 			updateRuleTarget,
 			updateSettlementRule,
 			settlementRules,
@@ -347,12 +400,27 @@ export function useSignSettlementsActions(
 		async (
 			rules: Parameters<typeof attachSettlementRules.mutateAsync>[0]["rules"],
 		) => {
-			await attachSettlementRules.mutateAsync({ rules });
+			await attachSettlementRules.mutateAsync({
+				rules,
+				organizationId: activeOrgId ?? undefined,
+				payoutPayerSource: attachPayoutPayerSource,
+				settlementPayerAddress: useOrgWalletForAttach
+					? orgWalletAddress
+					: undefined,
+				registerSettlementRules: treasuryAttachRegistrar,
+			});
 			toastUser.success(TOASTS.sign.payoutAttached.title, {
 				hint: TOASTS.sign.payoutAttached.hint,
 			});
 		},
-		[attachSettlementRules],
+		[
+			activeOrgId,
+			attachPayoutPayerSource,
+			attachSettlementRules,
+			orgWalletAddress,
+			treasuryAttachRegistrar,
+			useOrgWalletForAttach,
+		],
 	);
 
 	const attachPayeeOptions = useMemo(() => {

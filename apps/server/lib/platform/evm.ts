@@ -172,7 +172,7 @@ async function relayPieceScopedRegistryWrite(args: {
 				getRelayerWalletClient(member.address),
 			);
 			return withRelayerLock(member.address, () =>
-				withRegistryWalletLock(args.walletLockAddress, () =>
+				withRegistryWalletLock(args.walletLockAddress as `0x${string}`, () =>
 					relayWrite({
 						step: args.step,
 						write: () =>

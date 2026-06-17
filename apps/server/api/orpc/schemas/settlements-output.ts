@@ -45,6 +45,7 @@ export const rpcSettlementsListByFileOutputSchema = z.array(
 		totalAmount: z.string(),
 		tokenAddress: z.string(),
 		validatorAddress: z.string(),
+		payerWallet: z.string(),
 		releaseType: z.enum(settlementReleaseTypes),
 		releaseParams: zSettlementReleaseParams,
 		expiresAt: z.string().nullable(),

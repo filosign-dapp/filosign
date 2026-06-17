@@ -127,7 +127,7 @@ export function AdminFeedbackSection(props: { enabled: boolean }) {
 									const note = row.message?.trim() ?? "";
 									const notePreview = note
 										? truncateText(note, NOTE_PREVIEW_LENGTH)
-										: "—";
+										: "N/A";
 
 									return (
 										<Fragment key={row.id}>
@@ -154,7 +154,7 @@ export function AdminFeedbackSection(props: { enabled: boolean }) {
 													{notePreview}
 												</TableCell>
 												<TableCell className="max-w-40 truncate">
-													{row.route ?? "—"}
+													{row.route ?? "N/A"}
 												</TableCell>
 											</TableRow>
 											{isExpanded && note ? (

@@ -41,8 +41,8 @@ type AdminInviteRow =
 type InviteEmailVariant = AdminInviteRow["emailVariant"];
 
 const INVITE_EMAIL_VARIANT_LABELS: Record<InviteEmailVariant, string> = {
-	warm: "Variant 1 — warm (already talked)",
-	cold: "Variant 2 — cold outreach",
+	warm: "Variant 1: warm (already talked)",
+	cold: "Variant 2: cold outreach",
 	custom: "Custom message",
 };
 type AdminUserRow =

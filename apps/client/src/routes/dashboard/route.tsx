@@ -4,6 +4,7 @@ import {
 	useRouterState,
 } from "@tanstack/react-router";
 import DashboardProtector from "@/src/lib/auth/dashboard-protector";
+import { EntitlementUpgradeProvider } from "@/src/lib/domains/entitlements/upgrade-context";
 import { FeedbackDialogMount } from "@/src/lib/feedback/feedback-dialog";
 import { FeedbackProvider } from "@/src/lib/feedback/feedback-provider";
 import { FloatingPromptHost } from "@/src/lib/feedback/floating-prompt-host";
@@ -23,10 +24,12 @@ function DashboardFeedbackMount() {
 export const Route = createFileRoute("/dashboard")({
 	component: () => (
 		<DashboardProtector>
-			<FeedbackProvider>
-				<Outlet />
-				<DashboardFeedbackMount />
-			</FeedbackProvider>
+			<EntitlementUpgradeProvider>
+				<FeedbackProvider>
+					<Outlet />
+					<DashboardFeedbackMount />
+				</FeedbackProvider>
+			</EntitlementUpgradeProvider>
 		</DashboardProtector>
 	),
 });

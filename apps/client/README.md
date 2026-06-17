@@ -54,7 +54,7 @@ Sign page (`/dashboard/document/sign`):
 - **`AttachSettlementDialog`** - post-send attach payout (**Teams+**).
 - **`AmendSignerDialog`** - replace signer email commitment before sign (**Teams Pro** sender).
 
-Entitlement gates use `@filosign/react/files` helpers + [`upgrade-plan-dialog.tsx`](src/lib/domains/entitlements/upgrade-plan-dialog.tsx).
+Entitlement gates use `@filosign/react/files` helpers + [`EntitlementFeatureSection`](src/lib/domains/entitlements/feature-section.tsx) (full UI vs one-line upgrade teaser) + hoisted [`EntitlementUpgradeProvider`](src/lib/domains/entitlements/upgrade-context.tsx) on the dashboard layout (`dashboard/route.tsx`).
 
 ---
 
@@ -97,7 +97,7 @@ No other top-level siblings under the route directory (`hooks/`, loose `*.ts`, e
 
 ### Layouts
 
-- `dashboard/route.tsx` - [`DashboardProtector`](src/lib/auth/dashboard-protector.tsx) + `Outlet`
+- `dashboard/route.tsx` - [`DashboardProtector`](src/lib/auth/dashboard-protector.tsx) + `EntitlementUpgradeProvider` + `Outlet`
 - `dashboard/_shell/route.tsx` - sidebar/nav shell + `Outlet`
 - Full-bleed flows (envelope create, sign, signature create) are **siblings** of `_shell/`, not children
 
@@ -119,7 +119,7 @@ lib/
     drafts/            # server draft hydrate/save, local IDB envelope, open/new
     files/             # PDF, file-viewer, compliance-pdf, placement-overlay, piece batch hooks
     invites/           # cold invite, share dialog
-    entitlements/      # plan hints, upgrade dialog
+    entitlements/      # plan hints, upgrade dialog, EntitlementFeatureSection, PlanFeatureTeaser
     orgs/              # org-scoped reads (e.g. linked treasury from orgs.get)
     settlements/       # payout compose/sign UX (hooks/, utils/, components/, payout-access/)
     sharing/           # add-recipient dialog

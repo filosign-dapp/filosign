@@ -13,7 +13,7 @@ A **treasury wallet** is an external wallet your workspace links for **USDC payo
 
 ## How it works
 
-1. Connect and link a wallet from **Workspace settings** → **Workspace treasury**.
+1. Connect and link a treasury wallet from **Workspace settings** → **Workspace treasury**.
 2. The linked address appears in payout compose options as the **organization payout wallet**.
 3. When you attach a payout leg to the org wallet, the **treasury wallet** must approve USDC spending for Filosign to execute the transfer.
 4. Recipients must still be on the envelope (or the linked org wallet) per payout policy.
@@ -35,9 +35,19 @@ A DAO links its Safe as the workspace treasury wallet. When sending contributor 
 ## How to link a treasury wallet in the app
 
 1. Open **Workspace settings** → **Workspace treasury**.
-2. Connect the wallet you want to link (must be able to sign).
-3. Confirm the link in the app.
-4. When composing payouts, pick the **organization payout wallet** as payer when appropriate.
+2. Connect the wallet you want to link (must be able to sign). This wallet connection is separate from your Filosign sign-in wallet.
+3. For a **multisig Safe**, Filosign proposes the link message to your Safe and waits while co-owners sign in the Safe app. Use the **Open Safe queue** link if you need to finish signatures.
+4. Confirm the link in the app.
+5. When composing payouts, pick the **organization payout wallet** as payer when appropriate.
+
+## Sending with a treasury payer
+
+When you send an envelope with the workspace treasury selected as payout payer:
+
+* Your personal Filosign wallet still registers the envelope on-chain.
+* Filosign opens your treasury wallet to approve USDC and register payout rules.
+* For a Safe treasury, you may need to collect multisig signatures before the batch executes. The send progress UI shows when Filosign is waiting on Safe.
+* Resolve any **pending Safe transactions** for the treasury before sending, or new payout registration may be blocked.
 
 ## Related guides
 

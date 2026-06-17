@@ -186,6 +186,11 @@ export function buildPricingComparisonRows(): ComparisonRow[] {
 			"features.settlement.advanced",
 		),
 		booleanRow(
+			"features.treasury.workspace_custom",
+			featureMarketingLabel("features.treasury.workspace_custom"),
+			"features.treasury.workspace_custom",
+		),
+		booleanRow(
 			"features.routing.advanced",
 			featureMarketingLabel("features.routing.advanced"),
 			"features.routing.advanced",

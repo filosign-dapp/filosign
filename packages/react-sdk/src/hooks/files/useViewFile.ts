@@ -165,7 +165,7 @@ export function useViewFile() {
 					mimeType: d.mimeType,
 					bytes: d.bytes,
 				})),
-				sender: parsedData.sender,
+				sender: parsedData.sender as `0x${string}`,
 				timestamp: parsedData.timestamp,
 				metadata: {
 					...parsedData.metadata,

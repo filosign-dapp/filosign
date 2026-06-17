@@ -32,7 +32,7 @@ export function useProposeSignerReplacement(pieceCid: string | undefined) {
 			if (!isAuthed) throw new Error("Not authenticated");
 
 			const timestamp = await latestChainTimestamp(contracts);
-			const recaller = wallet.account.address;
+			const recaller = wallet.account.address as `0x${string}`;
 			const signersCommitmentAfter = await previewSignersCommitmentAfter({
 				contracts,
 				requiredCommitments: args.requiredCommitments,

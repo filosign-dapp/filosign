@@ -18,7 +18,7 @@ export function useCancelSignerReplacement(pieceCid: string | undefined) {
 			if (!isAuthed) throw new Error("Not authenticated");
 
 			const timestamp = await latestChainTimestamp(contracts);
-			const recaller = wallet.account.address;
+			const recaller = wallet.account.address as `0x${string}`;
 			const signature = await signCancelSignerReplacement({
 				wallet,
 				contracts,

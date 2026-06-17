@@ -20,7 +20,8 @@ export function useClearEnvelopeSignatures(pieceCid: string | undefined) {
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 
-			const recaller = args.recaller ?? wallet.account.address;
+			const recaller = (args.recaller ??
+				wallet.account.address) as `0x${string}`;
 			const timestamp = await latestChainTimestamp(contracts);
 			const signature = await signClearEnvelopeSignatures({
 				wallet,

@@ -15,7 +15,8 @@ export async function signProposeSignerReplacement(args: {
 	timestamp: number;
 	recaller?: `0x${string}`;
 }): Promise<Hex> {
-	const recaller = args.recaller ?? args.wallet.account.address;
+	const recaller = (args.recaller ??
+		args.wallet.account.address) as `0x${string}`;
 	const cidIdentifier = computeCidIdentifier(args.pieceCid);
 
 	return withRegistryWalletActionLock(recaller, () =>
@@ -50,7 +51,8 @@ export async function signCancelSignerReplacement(args: {
 	timestamp: number;
 	recaller?: `0x${string}`;
 }): Promise<Hex> {
-	const recaller = args.recaller ?? args.wallet.account.address;
+	const recaller = (args.recaller ??
+		args.wallet.account.address) as `0x${string}`;
 	const cidIdentifier = computeCidIdentifier(args.pieceCid);
 
 	return withRegistryWalletActionLock(recaller, () =>
@@ -81,7 +83,8 @@ export async function signRecallEnvelope(args: {
 	registryAddress?: Address | string | null;
 	recaller?: `0x${string}`;
 }): Promise<Hex> {
-	const recaller = args.recaller ?? args.wallet.account.address;
+	const recaller = (args.recaller ??
+		args.wallet.account.address) as `0x${string}`;
 	const cidIdentifier = computeCidIdentifier(args.pieceCid);
 	const registry = envelopeRegistryAt(args.contracts, args.registryAddress);
 
@@ -106,7 +109,7 @@ export async function signRecallEnvelope(args: {
 					timestamp: BigInt(args.timestamp),
 				},
 			},
-			{ verifyingContract: registry.address },
+			{ verifyingContract: registry.address as `0x${string}` },
 		),
 	);
 }
@@ -119,7 +122,8 @@ export async function signClearEnvelopeSignatures(args: {
 	registryAddress?: Address | string | null;
 	recaller?: `0x${string}`;
 }): Promise<Hex> {
-	const recaller = args.recaller ?? args.wallet.account.address;
+	const recaller = (args.recaller ??
+		args.wallet.account.address) as `0x${string}`;
 	const cidIdentifier = computeCidIdentifier(args.pieceCid);
 	const registry = envelopeRegistryAt(args.contracts, args.registryAddress);
 
@@ -142,7 +146,7 @@ export async function signClearEnvelopeSignatures(args: {
 					timestamp: BigInt(args.timestamp),
 				},
 			},
-			{ verifyingContract: registry.address },
+			{ verifyingContract: registry.address as `0x${string}` },
 		),
 	);
 }

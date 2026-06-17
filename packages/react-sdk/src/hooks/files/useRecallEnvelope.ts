@@ -31,7 +31,8 @@ export function useRecallEnvelope(pieceCid: string | undefined) {
 			const registryAddress =
 				args.registryAddress ?? fileResponse.registryAddress;
 
-			const recaller = args.recaller ?? wallet.account.address;
+			const recaller = (args.recaller ??
+				wallet.account.address) as `0x${string}`;
 			const orgIdCommitment = organizationId
 				? hashOrgIdCommitment(organizationId)
 				: ZERO_ORG_ID_COMMITMENT;

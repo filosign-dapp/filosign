@@ -67,7 +67,7 @@ export async function buildNewSignerE2eeForAmend(args: {
 	const normalizedEmail = normalizePlacementRecipientEmail(args.newEmail);
 
 	if (args.newSignerWallet && args.newSignerEncryptionPublicKey) {
-		const recipientWallet = getAddress(args.newSignerWallet);
+		const recipientWallet = getAddress(args.newSignerWallet) as `0x${string}`;
 		const { ciphertext, sharedSecret } = await KEM.encapsulate({
 			publicKeyOther: toBytes(args.newSignerEncryptionPublicKey),
 		});

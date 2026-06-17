@@ -146,7 +146,7 @@ export async function performLogin(
 ): Promise<LoginResult> {
 	if (deps.isCryptoUnlocked) return { success: true };
 
-	const address = deps.wallet.account.address;
+	const address = deps.wallet.account.address as `0x${string}`;
 	let recoveryPhrase: string | undefined;
 
 	if (params.unlockOnly) {

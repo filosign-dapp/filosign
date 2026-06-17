@@ -243,7 +243,7 @@ export async function signFileWithSeed(
 			status: "wallet_prompt",
 		});
 		const signature = await withRegistryWalletActionLock(
-			deps.wallet.account.address,
+			deps.wallet.account.address as `0x${string}`,
 			() =>
 				eip712signature(
 					deps.contracts,
@@ -277,7 +277,7 @@ export async function signFileWithSeed(
 							timestamp: BigInt(timestamp),
 						},
 					},
-					{ verifyingContract: registry.address },
+					{ verifyingContract: registry.address as `0x${string}` },
 				),
 		);
 		emitProgress(onProgress, { phase: "wallet_sign", status: "done" });

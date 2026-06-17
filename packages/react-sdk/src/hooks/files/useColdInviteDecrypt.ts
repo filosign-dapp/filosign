@@ -62,7 +62,7 @@ export function useColdInviteDecrypt() {
 					mimeType: d.mimeType,
 					bytes: d.bytes,
 				})),
-				sender: parsed.sender,
+				sender: parsed.sender as `0x${string}`,
 				timestamp: parsed.timestamp,
 				metadata: parsed.metadata,
 				placementManifest: parsed.placementManifest,

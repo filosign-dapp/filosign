@@ -95,14 +95,14 @@ export async function ackFile(
 			message: {
 				cidIdentifier,
 				sender,
-				viewerWallet: deps.wallet.account.address,
+				viewerWallet: deps.wallet.account.address as `0x${string}`,
 				viewerEmailCommitment,
 				authSubjectCommitment: deps.authSubjectCommitment,
 				signersCommitment,
 				timestamp: BigInt(timestamp),
 			},
 		},
-		{ verifyingContract: registry.address },
+		{ verifyingContract: registry.address as `0x${string}` },
 	);
 
 	await deps.rpcQuery.files.piece.ack.call({

@@ -217,8 +217,11 @@ export async function sendFile(
 		pieceCid: piece.pieceCid.toString(),
 		cidIdentifier,
 		settlementRules,
+		settlementPayerAddress: args.settlementPayerAddress,
+		payoutPayerSource: args.payoutPayerSource,
 		organizationId,
 		onProgress,
+		registerSettlementRules: args.registerSettlementRules,
 	});
 
 	return {

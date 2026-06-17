@@ -29,14 +29,16 @@ export {
 	canUseSupplementaryAttachments,
 	canUseTeamCollaboration,
 	canUseTeamDrafts,
+	canUseWorkspaceTreasury,
 	resolveBasicPayoutGate,
 } from "../../lib/entitlements";
 export { buildValidatedRegisterRouting } from "../../lib/register-routing";
 export type { PieceFileDekSource } from "../../lib/resolve-piece-file-dek";
-export type {
-	SendFileProgressEvent,
-	SendFileProgressPhase,
-	SendFileProgressReporter,
+export {
+	emitSendFileProgress,
+	type SendFileProgressEvent,
+	type SendFileProgressPhase,
+	type SendFileProgressReporter,
 } from "../../lib/send-file/progress";
 export type { SendFileArgs, SendFileResult } from "../../lib/send-file/types";
 export {
@@ -44,9 +46,20 @@ export {
 	paymentValidatorAt,
 	simulateSettlementWrite,
 } from "../../lib/settlement-preflight.ts";
+export type { SettlementEncodedCall } from "../../lib/settlement-rule-tx";
+export {
+	buildSettlementApproveCall,
+	buildSettlementRegisterRuleCall,
+	buildSettlementRegistrationCalls,
+	buildSettlementRuleRegistrationRecord,
+	parseSettlementRuleIdFromReceipt,
+	parseSettlementRuleIdsFromReceipt,
+	settlementRuleApprovalTotal,
+} from "../../lib/settlement-rule-tx";
 export type {
 	SettlementChangeProgressEvent,
 	SettlementChangeProgressReporter,
+	SettlementPayerWalletResolver,
 	SettlementRuleDraft,
 	SettlementRuleDraftLeg,
 } from "../../lib/settlement-rules.ts";
@@ -58,6 +71,7 @@ export {
 	readSettlementValidatorAllowance,
 	registerSettlementRulesOnChain,
 	revokeSettlementValidatorAllowance,
+	settlementRulePayerAddress,
 	updateSettlementRuleOnChain,
 } from "../../lib/settlement-rules.ts";
 export type { SettlementRuleRow } from "../../lib/settlement-types.ts";
@@ -65,6 +79,7 @@ export type {
 	SignFileArgs,
 	SignProgressEvent,
 } from "../../lib/sign-file/sign-file";
+export { filosignPublicClient, waitForTxReceipt } from "../../lib/tx-receipt";
 export * from "./useAckFile";
 export * from "./useAttachSettlementForFile";
 export { useBasicPayoutAttachGate } from "./useBasicPayoutAttachGate";

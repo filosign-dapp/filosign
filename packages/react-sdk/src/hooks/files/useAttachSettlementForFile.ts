@@ -1,7 +1,9 @@
 import { computeCidIdentifier } from "@filosign/evm";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { type Address, isAddress } from "viem";
 import { useFilosignContext } from "../../context/useFilosignContext";
 import { invalidateEntitlements } from "../../lib/invalidate-entitlements";
+import type { SendFileArgs } from "../../lib/send-file/types";
 import {
 	registerSettlementRulesOnChain,
 	type SettlementRuleDraft,
@@ -21,21 +23,48 @@ export function useAttachSettlementForFile(pieceCid: string | undefined) {
 		mutationFn: async (args: {
 			rules: SettlementRuleDraft[];
 			organizationId?: string;
+			payoutPayerSource?: "sender" | "org_wallet";
+			settlementPayerAddress?: Address;
+			registerSettlementRules?: SendFileArgs["registerSettlementRules"];
 		}) => {
 			if (!pieceCid) throw new Error("pieceCid is required");
 			if (!wallet?.account || !contracts || !session.hasThirdwebSession()) {
 				throw new Error("Connect your wallet to attach a settlement.");
 			}
 
+			const payoutPayerSource = args.payoutPayerSource ?? "sender";
+			if (
+				args.settlementPayerAddress &&
+				!isAddress(args.settlementPayerAddress)
+			) {
+				throw new Error("Settlement payer address is invalid.");
+			}
 			const cidIdentifier = computeCidIdentifier(pieceCid);
-			const records = await registerSettlementRulesOnChain({
-				wallet,
-				contracts,
-				chainKey,
-				payer: wallet.account.address,
-				cidIdentifier,
-				rules: args.rules,
-			});
+			const payer = args.settlementPayerAddress ?? wallet.account.address;
+			const payerIsConnectedWallet =
+				payer.toLowerCase() === wallet.account.address.toLowerCase();
+			const records =
+				payoutPayerSource === "org_wallet" && !payerIsConnectedWallet
+					? await (() => {
+							if (!args.registerSettlementRules) {
+								throw new Error(
+									"Treasury payout registration requires treasury wallet execution flow.",
+								);
+							}
+							return args.registerSettlementRules({
+								payer,
+								cidIdentifier,
+								rules: args.rules,
+							});
+						})()
+					: await registerSettlementRulesOnChain({
+							wallet,
+							contracts,
+							chainKey,
+							payer,
+							cidIdentifier,
+							rules: args.rules,
+						});
 
 			await rpcQuery.settlements.registerForFile.call({
 				pieceCid,

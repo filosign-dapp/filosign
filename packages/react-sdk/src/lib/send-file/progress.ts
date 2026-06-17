@@ -8,6 +8,9 @@ export type SendFileProgressPhase =
 	| "wallet_attachment_rule"
 	| "wallet_payout_approve"
 	| "wallet_payout_register"
+	| "treasury_safe_propose"
+	| "treasury_safe_pending"
+	| "treasury_safe_executed"
 	| "confirming_transaction"
 	| "indexing_payout";
 

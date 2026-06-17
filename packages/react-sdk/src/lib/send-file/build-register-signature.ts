@@ -55,7 +55,7 @@ export async function buildRegisterEnvelopeSignature(args: {
 
 	const cidIdentifier = computeCidIdentifier(args.pieceCid);
 	const signature = await withRegistryWalletActionLock(
-		args.wallet.account.address,
+		args.wallet.account.address as `0x${string}`,
 		() =>
 			eip712signature(args.contracts, "FSEnvelopeRegistry", {
 				types: {

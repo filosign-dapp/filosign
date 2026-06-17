@@ -1,5 +1,9 @@
 import type { ChainKey, FilosignContracts } from "@filosign/evm";
-import type { PlacementManifest, RegisterRoutingInput } from "@filosign/shared";
+import type {
+	PlacementManifest,
+	RegisterRoutingInput,
+	SettlementRuleRegistrationInput,
+} from "@filosign/shared";
 import type { Address, Hex } from "viem";
 import type { FilosignRpcQueryUtils } from "../../context/FilosignContext";
 import type { AppRouterClient } from "../../orpc/app-router-types";
@@ -49,6 +53,15 @@ export type SendFileArgs = {
 	organizationId?: string;
 	orgEncryptionPublicKey?: Hex;
 	settlementRules?: SettlementRuleDraft[];
+	settlementPayerAddress?: Address;
+	payoutPayerSource?: "sender" | "org_wallet";
+	/** Treasury / external payer registration when payer !== connected wallet. */
+	registerSettlementRules?: (args: {
+		payer: Address;
+		cidIdentifier: Hex;
+		rules: SettlementRuleDraft[];
+		onProgress?: SendFileProgressReporter;
+	}) => Promise<SettlementRuleRegistrationInput[]>;
 	routing?: RegisterRoutingInput;
 	isPractice?: boolean;
 	/** Client-only progress callback; not sent to the server. */

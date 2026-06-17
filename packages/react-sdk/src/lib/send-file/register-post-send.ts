@@ -1,5 +1,7 @@
 import type { AttachmentPacketSendInput } from "@filosign/shared";
 import { parseHexString, zSettlementReleaseParams } from "@filosign/shared";
+import type { Address } from "viem";
+import { isAddress } from "viem";
 import type { AttachmentPacketDraft } from "../attachment-packets";
 import {
 	type AttachmentRuleDraft,
@@ -11,7 +13,7 @@ import {
 } from "../settlement-rules.ts";
 import type { SendFileProgressReporter } from "./progress";
 import { emitSendFileProgress } from "./progress";
-import type { SendFileDeps } from "./types";
+import type { SendFileArgs, SendFileDeps } from "./types";
 
 function resolveAttachmentRuleReleaseParams(
 	releaseType: NonNullable<AttachmentPacketSendInput["releaseType"]>,
@@ -97,20 +99,84 @@ export async function registerSettlementRulesForFile(args: {
 	pieceCid: string;
 	cidIdentifier: `0x${string}`;
 	settlementRules: SettlementRuleDraft[];
+	settlementPayerAddress?: Address;
+	payoutPayerSource?: "sender" | "org_wallet";
 	organizationId?: string;
 	onProgress?: SendFileProgressReporter;
+	registerSettlementRules?: SendFileArgs["registerSettlementRules"];
 }): Promise<void> {
 	if (args.settlementRules.length === 0) return;
 
-	const settlementRuleRecords = await registerSettlementRulesOnChain({
-		wallet: args.deps.wallet,
-		contracts: args.deps.contracts,
-		chainKey: args.deps.chainKey,
-		payer: args.deps.wallet.account.address,
-		cidIdentifier: args.cidIdentifier,
-		rules: args.settlementRules,
-		onProgress: args.onProgress,
-	});
+	const payoutPayerSource = args.payoutPayerSource ?? "sender";
+
+	if (payoutPayerSource === "org_wallet") {
+		if (
+			!args.settlementPayerAddress ||
+			!isAddress(args.settlementPayerAddress)
+		) {
+			throw new Error(
+				"Workspace treasury address is required for treasury payouts.",
+			);
+		}
+		if (!args.registerSettlementRules) {
+			throw new Error(
+				"Treasury payout registration requires treasury wallet execution flow.",
+			);
+		}
+
+		const settlementRuleRecords = await args.registerSettlementRules({
+			payer: args.settlementPayerAddress,
+			cidIdentifier: args.cidIdentifier,
+			rules: args.settlementRules,
+			onProgress: args.onProgress,
+		});
+
+		emitSendFileProgress(args.onProgress, {
+			phase: "indexing_payout",
+			status: "start",
+		});
+		await args.deps.rpcQuery.settlements.registerForFile.call({
+			pieceCid: args.pieceCid,
+			...(args.organizationId ? { organizationId: args.organizationId } : {}),
+			rules: settlementRuleRecords,
+		});
+		emitSendFileProgress(args.onProgress, {
+			phase: "indexing_payout",
+			status: "done",
+		});
+		return;
+	}
+
+	const payer = args.settlementPayerAddress ?? args.deps.wallet.account.address;
+	const payerIsConnectedWallet =
+		payer.toLowerCase() === args.deps.wallet.account.address.toLowerCase();
+
+	let settlementRuleRecords: Awaited<
+		ReturnType<typeof registerSettlementRulesOnChain>
+	>;
+
+	if (payerIsConnectedWallet) {
+		settlementRuleRecords = await registerSettlementRulesOnChain({
+			wallet: args.deps.wallet,
+			contracts: args.deps.contracts,
+			chainKey: args.deps.chainKey,
+			payer,
+			cidIdentifier: args.cidIdentifier,
+			rules: args.settlementRules,
+			onProgress: args.onProgress,
+		});
+	} else if (args.registerSettlementRules) {
+		settlementRuleRecords = await args.registerSettlementRules({
+			payer,
+			cidIdentifier: args.cidIdentifier,
+			rules: args.settlementRules,
+			onProgress: args.onProgress,
+		});
+	} else {
+		throw new Error(
+			"Treasury payout registration requires treasury wallet execution flow.",
+		);
+	}
 
 	emitSendFileProgress(args.onProgress, {
 		phase: "indexing_payout",

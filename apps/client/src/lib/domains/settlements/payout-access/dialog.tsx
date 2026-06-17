@@ -12,7 +12,7 @@ import {
 	FeatureDialogPanel,
 } from "@/src/lib/components/ui/feature-dialog";
 import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
-import { PayoutAccessRequestFields } from "@/src/lib/domains/settlements/payout-access-request-fields";
+import { PayoutAccessRequestFields } from "./fields";
 
 const DIALOG_BADGE = "Payout access";
 

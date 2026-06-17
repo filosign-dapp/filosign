@@ -6,9 +6,11 @@ import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
-import { payoutAccessRequestDialogProps } from "@/src/lib/domains/settlements/payout-access-controls";
-import { PayoutAccessRequestDialog } from "@/src/lib/domains/settlements/payout-access-request-dialog";
-import { usePayoutFeatureAccess } from "@/src/lib/domains/settlements/use-payout-feature-access";
+import {
+	PayoutAccessRequestDialog,
+	payoutAccessRequestDialogProps,
+	usePayoutFeatureAccess,
+} from "@/src/lib/domains/settlements";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
 import { WorkspaceSection } from "../workspace-section";
 import { PayoutAccessStatusContent } from "./status";

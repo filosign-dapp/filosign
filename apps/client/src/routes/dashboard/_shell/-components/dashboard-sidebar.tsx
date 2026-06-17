@@ -137,28 +137,6 @@ const groups: { label: string; items: NavItem[] }[] = [
 		],
 	},
 	{
-		label: "Support",
-		items: [
-			{
-				title: "Support Center",
-				url: "/dashboard/support/",
-				icon: QuestionIcon,
-				match: (p) => {
-					const n = p.endsWith("/") ? p.slice(0, -1) : p;
-					return n === "/dashboard/support";
-				},
-				tooltip: "Support Center",
-			},
-			{
-				title: "Tutorials",
-				url: "/dashboard/support/tutorials",
-				icon: BookOpenIcon,
-				match: (p) => matchPrefix(p, "/dashboard/support/tutorials"),
-				tooltip: "Tutorials and guides",
-			},
-		],
-	},
-	{
 		label: "Account",
 		items: [
 			{
@@ -181,6 +159,28 @@ const groups: { label: string; items: NavItem[] }[] = [
 				icon: BuildingsIcon,
 				match: (p) => matchPrefix(p, "/dashboard/settings/workspace"),
 				tooltip: "Workspace Settings",
+			},
+		],
+	},
+	{
+		label: "Support",
+		items: [
+			{
+				title: "Support Center",
+				url: "/dashboard/support/",
+				icon: QuestionIcon,
+				match: (p) => {
+					const n = p.endsWith("/") ? p.slice(0, -1) : p;
+					return n === "/dashboard/support";
+				},
+				tooltip: "Support Center",
+			},
+			{
+				title: "Tutorials",
+				url: "/dashboard/support/tutorials",
+				icon: BookOpenIcon,
+				match: (p) => matchPrefix(p, "/dashboard/support/tutorials"),
+				tooltip: "Tutorials and guides",
 			},
 		],
 	},

@@ -10,7 +10,7 @@ import { fetchKeyRegistrySnapshot } from "@filosign/react/auth";
 import type { AppRouterClient, FilosignSession } from "@filosign/react/orpc";
 import { ORG_OMK_WRAP_INFO } from "@filosign/shared";
 import type { QueryClient } from "@tanstack/react-query";
-import type { Hex } from "viem";
+import { getAddress, type Hex } from "viem";
 import {
 	DEFAULT_ACCOUNT_FIRST_NAME,
 	defaultWorkspaceName,
@@ -63,7 +63,9 @@ async function createOrganizationCall(args: {
 export async function bootstrapNewAccount(
 	args: BootstrapNewAccountArgs,
 ): Promise<void> {
-	const walletAddress = args.wallet.account.address;
+	const walletAddress = getAddress(
+		args.wallet.account.address,
+	) as `0x${string}`;
 	bindAuthedSession({
 		session: args.session,
 		walletAddress,

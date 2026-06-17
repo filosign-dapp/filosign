@@ -1,8 +1,6 @@
-import {
-	useLinkOrgWallet,
-	useOrganizationGet,
-	useUnlinkOrgWallet,
-} from "@filosign/react/orgs";
+import { useEntitlements } from "@filosign/react/billing";
+import { canUseWorkspaceTreasury } from "@filosign/react/files";
+import { useOrganizationGet, useUnlinkOrgWallet } from "@filosign/react/orgs";
 import { WalletIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
@@ -18,8 +16,11 @@ import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
+import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
+import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
-import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
+import { useTreasuryOrgLink } from "@/src/lib/web3/treasury";
+import { TreasurySafePendingPanel } from "@/src/routes/dashboard/_shell/settings/workspace/-components/treasury-safe-pending-panel";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
 import { WorkspaceSection } from "./workspace-section";
 
@@ -36,33 +37,32 @@ function formatLinkedAt(value: string | Date | null | undefined) {
 
 export function OrgWalletSection() {
 	const { activeOrgId, activeMembership } = useWorkspaceSettings();
+	const { data: entitlements } = useEntitlements();
 	const orgDetail = useOrganizationGet(activeOrgId ?? undefined);
-	const linkOrgWallet = useLinkOrgWallet();
 	const unlinkOrgWallet = useUnlinkOrgWallet();
-	const { login, walletAddress } = useThirdweb();
+	const { linkTreasury, isLinking, isPollingSafe, pendingSafeAddress } =
+		useTreasuryOrgLink();
 
-	const [connectDialogOpen, setConnectDialogOpen] = useState(false);
 	const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+	const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
 
 	const canManage =
 		activeMembership?.role === "owner" || activeMembership?.role === "admin";
 	const org = orgDetail.data?.organization;
 	if (!org) return null;
+	const canUseTreasury = canUseWorkspaceTreasury(entitlements);
 
 	const linked = Boolean(org.orgWalletAddress);
 	const linkedAtLabel = formatLinkedAt(org.orgWalletLinkedAt);
-	const isLinking = linkOrgWallet.isPending;
 	const isUnlinking = unlinkOrgWallet.isPending;
 
 	const handleConnectAndSign = async () => {
 		if (!activeOrgId) return;
 		try {
-			await login();
-			await linkOrgWallet.mutateAsync(activeOrgId, suppressGlobalErrorToast());
+			await linkTreasury({ organizationId: activeOrgId });
 			toastUser.success(TOASTS.workspace.treasuryLinked);
-			setConnectDialogOpen(false);
-		} catch (err) {
-			showAppErrorToast(err);
+		} catch {
+			// useTreasuryOrgLink already surfaces errors via toast.
 		}
 	};
 
@@ -91,6 +91,10 @@ export function OrgWalletSection() {
 					Treasury wallet guide
 				</DocsLink>
 
+				{canUseTreasury && isPollingSafe ? (
+					<TreasurySafePendingPanel safeAddress={pendingSafeAddress} />
+				) : null}
+
 				{linked ? (
 					<div className="space-y-2">
 						<p className="font-mono text-sm text-foreground break-all">
@@ -109,17 +113,40 @@ export function OrgWalletSection() {
 					</p>
 				)}
 
-				{canManage ? (
+				{!canUseTreasury ? (
+					<div className="mt-4 space-y-3">
+						<p className="text-sm text-muted-foreground">
+							Custom workspace treasury is available on Teams Pro or Enterprise.
+							Solo and Teams can attach payouts from the connected wallet.
+						</p>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							className="gap-1.5"
+							onClick={() => setUpgradeDialogOpen(true)}
+						>
+							Upgrade to Teams Pro
+							<ProFeatureMark size="xs" />
+						</Button>
+					</div>
+				) : canManage ? (
 					<div className="mt-4 flex flex-wrap gap-2">
 						<Button
 							type="button"
 							variant="outline"
 							size="sm"
 							className="touch-manipulation"
-							disabled={isLinking || isUnlinking || !activeOrgId}
-							onClick={() => setConnectDialogOpen(true)}
+							disabled={
+								isLinking || isPollingSafe || isUnlinking || !activeOrgId
+							}
+							onClick={() => void handleConnectAndSign()}
 						>
-							{linked ? "Change treasury wallet" : "Connect treasury wallet"}
+							{isLinking
+								? "Linking…"
+								: linked
+									? "Change treasury wallet"
+									: "Connect treasury wallet"}
 						</Button>
 						{linked ? (
 							<Button
@@ -127,7 +154,9 @@ export function OrgWalletSection() {
 								variant="outline"
 								size="sm"
 								className="touch-manipulation"
-								disabled={isLinking || isUnlinking || !activeOrgId}
+								disabled={
+									isLinking || isPollingSafe || isUnlinking || !activeOrgId
+								}
 								onClick={() => setRemoveDialogOpen(true)}
 							>
 								Remove treasury
@@ -136,44 +165,11 @@ export function OrgWalletSection() {
 					</div>
 				) : null}
 			</WorkspaceSection>
-
-			<Dialog open={connectDialogOpen} onOpenChange={setConnectDialogOpen}>
-				<DialogContent className="overscroll-contain">
-					<DialogHeader>
-						<DialogTitle>
-							{linked ? "Change treasury wallet" : "Connect treasury wallet"}
-						</DialogTitle>
-						<DialogDescription>
-							Connect the wallet that will pay team settlements - your EOA or an
-							external smart wallet (including a Safe via WalletConnect). You
-							will sign once to prove control of that address.
-						</DialogDescription>
-					</DialogHeader>
-					{walletAddress ? (
-						<p className="text-sm text-muted-foreground">
-							Currently connected:{" "}
-							<span className="font-mono text-foreground">{walletAddress}</span>
-						</p>
-					) : null}
-					<DialogFooter>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => setConnectDialogOpen(false)}
-						>
-							Cancel
-						</Button>
-						<Button
-							type="button"
-							variant="primary"
-							disabled={isLinking || !activeOrgId}
-							onClick={() => void handleConnectAndSign()}
-						>
-							{isLinking ? "Linking…" : "Choose wallet & sign"}
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			<UpgradePlanDialog
+				open={upgradeDialogOpen}
+				onOpenChange={setUpgradeDialogOpen}
+				reason="features.treasury.workspace_custom"
+			/>
 
 			<Dialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
 				<DialogContent className="overscroll-contain">

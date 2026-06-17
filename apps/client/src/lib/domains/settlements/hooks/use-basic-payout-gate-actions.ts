@@ -2,10 +2,10 @@ import { useBasicPayoutAttachGate } from "@filosign/react/files";
 import { useCallback, useState } from "react";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
-import { handleBasicPayoutGateBlock } from "@/src/lib/domains/settlements/basic-payout-gate";
-import { payoutAccessRequestIntent } from "@/src/lib/domains/settlements/payout-access-request-intent";
-import { usePayoutFeatureAccess } from "@/src/lib/domains/settlements/use-payout-feature-access";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
+import { payoutAccessRequestIntent } from "../payout-access/intent";
+import { handleBasicPayoutGateBlock } from "../utils/basic-payout-gate";
+import { usePayoutFeatureAccess } from "./use-payout-feature-access";
 
 export function useBasicPayoutGateActions(args: {
 	activeOrgId: string | undefined;

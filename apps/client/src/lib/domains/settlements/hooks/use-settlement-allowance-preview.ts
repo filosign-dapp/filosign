@@ -2,6 +2,7 @@ import { useFilosignContext } from "@filosign/react";
 import {
 	readSettlementValidatorAllowance,
 	type SettlementRuleRow,
+	settlementRulePayerAddress,
 } from "@filosign/react/files";
 import { useEffect, useMemo, useState } from "react";
 import { getAddress } from "viem";
@@ -10,7 +11,7 @@ import {
 	deriveSettlementAllowanceChangeStep,
 	type SettlementAllowanceChangeStep,
 	settlementAllowanceRequiredAfterUpdate,
-} from "@/src/lib/domains/settlements/allowance";
+} from "../utils/allowance";
 
 export type { SettlementAllowanceChangeStep };
 
@@ -29,7 +30,22 @@ export function useSettlementAllowancePreview({
 }: Args) {
 	const { wallet, contracts, runtime } = useFilosignContext();
 	const decimals = SUPPORTED_TOKENS[0]?.decimals ?? 6;
-	const payerAddress = wallet?.account?.address;
+	const connectedWalletAddress = wallet?.account?.address;
+	const payerAddress = useMemo(() => {
+		if (!rule) return undefined;
+		if (!rule.payerWallet?.startsWith("0x") && !connectedWalletAddress) {
+			return undefined;
+		}
+		return settlementRulePayerAddress(
+			rule,
+			connectedWalletAddress ?? "0x0000000000000000000000000000000000000000",
+		);
+	}, [connectedWalletAddress, rule]);
+	const treasuryFunded = useMemo(() => {
+		if (!payerAddress || !connectedWalletAddress) return false;
+		return payerAddress.toLowerCase() !== connectedWalletAddress.toLowerCase();
+	}, [connectedWalletAddress, payerAddress]);
+
 	const [currentAllowance, setCurrentAllowance] = useState<bigint | null>(null);
 	const [loading, setLoading] = useState(false);
 
@@ -84,5 +100,7 @@ export function useSettlementAllowancePreview({
 		requiredAfter,
 		loading,
 		changeStep,
+		payerAddress,
+		treasuryFunded,
 	};
 }

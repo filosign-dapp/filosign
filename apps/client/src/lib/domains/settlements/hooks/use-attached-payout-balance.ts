@@ -1,26 +1,28 @@
 import { useMemo } from "react";
 import { SUPPORTED_TOKENS } from "@/src/constants";
-import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/attachment-draft";
+import { formatUsdcAmount } from "@/src/lib/web3/format-usdc";
+import type { SettlementAttachmentDraft } from "../utils/attachment-draft";
 import {
 	settlementPayoutExceedsBalance,
 	sumSettlementDraftsUsdc,
-} from "@/src/lib/domains/settlements/payout-totals";
-import { formatUsdcAmount } from "@/src/lib/web3/format-usdc";
-import { useWalletUsdcBalance } from "@/src/lib/web3/use-wallet-usdc-balance";
+} from "../utils/payout-totals";
+import { usePayoutPayerBalance } from "./use-payout-payer-balance";
 
 const usdcToken = SUPPORTED_TOKENS[0];
 
 export function useAttachedPayoutBalance(
 	settlementDrafts: SettlementAttachmentDraft[] | undefined,
+	payoutPayerSource: "sender" | "org_wallet" | undefined,
 ) {
 	const drafts = settlementDrafts ?? [];
 	const {
-		address,
+		payerAddress: address,
+		payerLabel,
 		balance,
 		formatted: formattedBalance,
 		isPending: balancePending,
 		isError: balanceError,
-	} = useWalletUsdcBalance();
+	} = usePayoutPayerBalance(payoutPayerSource);
 
 	const totalWei = useMemo(() => sumSettlementDraftsUsdc(drafts), [drafts]);
 	const hasPayouts = totalWei > 0n;
@@ -35,6 +37,7 @@ export function useAttachedPayoutBalance(
 		hasPayouts,
 		totalWei,
 		formattedTotal,
+		payerLabel,
 		walletAddress: address,
 		walletBalance: balance,
 		formattedBalance,

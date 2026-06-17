@@ -6,8 +6,8 @@ import { SETTLEMENT_FEATURE_TERMS_VERSION } from "@filosign/shared";
 import { useState } from "react";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
-import type { PayoutFeatureAccessControls } from "@/src/lib/domains/settlements/payout-access-controls";
 import { localMutationErrorOptions } from "@/src/lib/errors";
+import type { PayoutFeatureAccessControls } from "../payout-access/controls";
 
 export type PayoutFeatureAccessStatus =
 	| "none"

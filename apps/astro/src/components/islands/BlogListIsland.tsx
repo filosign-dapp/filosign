@@ -194,7 +194,7 @@ export default function BlogListIsland({ posts }: BlogListIslandProps) {
 								Agreements that unlock the next step
 							</h3>
 							<p className="text-xs text-primary-foreground/80 leading-relaxed mb-6">
-								Solo, Teams, and Teams Pro include a 7-day free trial—private
+								Solo, Teams, and Teams Pro include a 7-day free trial: private
 								signing with proof exports, gated files, and payout packets.
 							</p>
 							<a

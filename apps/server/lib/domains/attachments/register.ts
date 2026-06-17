@@ -248,7 +248,7 @@ export async function linkAttachmentPacketOnChainRule(
 	if (!linkingExistingRuleToSamePacket) {
 		await assertAttachmentRuleSignersOnRoster({
 			pieceCid: input.pieceCid,
-			registryAddress: file.registryAddress,
+			registryAddress: file.registryAddress as `0x${string}`,
 			releaseContractAddress,
 			onChainRuleId,
 		});

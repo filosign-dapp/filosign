@@ -140,7 +140,7 @@ export async function tryExecuteAttachmentReleasesForPiece(pieceCid: string) {
 		const result = await tryExecuteAttachmentRelease({
 			pieceCid,
 			onChainRuleId: row.onChainRuleId,
-			releaseContractAddress: row.releaseContractAddress,
+			releaseContractAddress: row.releaseContractAddress as `0x${string}`,
 		});
 		if (result.released && result.txHash) {
 			logger.info(
@@ -182,7 +182,7 @@ export async function runSyncAttachmentReleasesJob(): Promise<{
 		const result = await tryExecuteAttachmentRelease({
 			pieceCid: row.filePieceCid,
 			onChainRuleId: row.onChainRuleId,
-			releaseContractAddress: row.releaseContractAddress,
+			releaseContractAddress: row.releaseContractAddress as `0x${string}`,
 		});
 		if (
 			result.released &&

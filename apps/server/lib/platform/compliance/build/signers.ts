@@ -56,7 +56,7 @@ export function buildComplianceSigners(
 
 		const sig = sigByWallet.get(walletKey);
 		const draftIds = draftByWallet.get(walletKey) ?? [];
-		const timeline = timelineForWallet(ctx, wallet);
+		const timeline = timelineForWallet(ctx, wallet as `0x${string}`);
 
 		if (sig) {
 			const completedFieldIds = sig.completedFieldIds;

@@ -53,7 +53,7 @@ function extractWalletFromMetadata(
 	const wallet = metadata?.filosign_wallet;
 	if (typeof wallet !== "string" || wallet.length === 0) return null;
 	try {
-		return getAddress(wallet);
+		return getAddress(wallet) as `0x${string}`;
 	} catch {
 		return null;
 	}

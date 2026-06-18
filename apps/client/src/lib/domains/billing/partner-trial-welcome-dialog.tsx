@@ -13,6 +13,7 @@ import {
 	FeatureDialogMedia,
 	FeatureDialogPanel,
 } from "@/src/lib/components/ui/feature-dialog";
+import { clientPublicCheckoutEnabled } from "@/src/lib/deployment";
 import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
 
 export type PartnerInviteTrialContext = NonNullable<
@@ -36,7 +37,7 @@ function formatTrialEnd(periodEnd: string | null): string | null {
 
 const TRIAL_HIGHLIGHTS = [
 	"Advanced signing order and routing for complex workflows",
-	"USDC payout attachments, already approved for your workspace",
+	"USDC payout attachments (request access in Workspace settings)",
 	"Shared templates and team workspace features",
 	"Higher monthly send limits while your trial is active",
 ] as const;
@@ -57,6 +58,7 @@ export function PartnerTrialWelcomeDialog({
 		() => formatTrialEnd(trial.periodEnd),
 		[trial.periodEnd],
 	);
+	const publicCheckoutEnabled = clientPublicCheckoutEnabled();
 
 	const description = trialEndLabel
 		? `Your ${trial.planName} trial runs for ${trial.trialDays} days, through ${trialEndLabel}. No credit card required.`
@@ -102,15 +104,17 @@ export function PartnerTrialWelcomeDialog({
 							>
 								Get started
 							</Button>
-							<a
-								href={pricingHref()}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="inline-flex w-full items-center justify-center gap-2 py-2 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-							>
-								View plans
-								<ArrowSquareOutIcon className="size-4" aria-hidden />
-							</a>
+							{publicCheckoutEnabled ? (
+								<a
+									href={pricingHref()}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="inline-flex w-full items-center justify-center gap-2 py-2 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+								>
+									View plans
+									<ArrowSquareOutIcon className="size-4" aria-hidden />
+								</a>
+							) : null}
 						</FeatureDialogActions>
 					</FeatureDialogBody>
 				</FeatureDialogPanel>

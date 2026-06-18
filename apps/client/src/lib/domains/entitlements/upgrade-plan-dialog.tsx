@@ -28,6 +28,7 @@ import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
+import { clientPublicCheckoutEnabled } from "@/src/lib/deployment";
 import {
 	BILLING_SETTINGS_PATH,
 	billingSettingsReturnUrl,
@@ -62,6 +63,7 @@ export function UpgradePlanDialog({
 	const offeringsQuery = useUpgradeOfferings(open ? reason : null);
 	const orgCheckout = useCreateOrgCheckoutSession();
 	const changePlan = useChangeOrgPlan();
+	const publicCheckoutEnabled = clientPublicCheckoutEnabled();
 	const copy = PLAN_LIMIT_COPY[reason];
 	const media = upgradePlanLimitMedia(reason);
 
@@ -119,6 +121,11 @@ export function UpgradePlanDialog({
 			return;
 		}
 
+		if (!publicCheckoutEnabled && selectedOffering.cta === "checkout") {
+			window.open(pricingHref(), "_blank", "noopener,noreferrer");
+			return;
+		}
+
 		const returnUrl = billingSettingsReturnUrl(window.location.origin);
 		try {
 			if (selectedPlan) {
@@ -146,7 +153,7 @@ export function UpgradePlanDialog({
 			case "change_plan":
 				return "Switch plan";
 			default:
-				return "Upgrade now";
+				return publicCheckoutEnabled ? "Upgrade now" : "Request access";
 		}
 	})();
 
@@ -284,7 +291,8 @@ export function UpgradePlanDialog({
 								onClick={() => void handlePrimary()}
 							>
 								{primaryPending ? "Working…" : primaryLabel}
-								{selectedOffering?.cta === "checkout" ? (
+								{publicCheckoutEnabled &&
+								selectedOffering?.cta === "checkout" ? (
 									<ArrowSquareOutIcon
 										className="size-4"
 										weight="bold"

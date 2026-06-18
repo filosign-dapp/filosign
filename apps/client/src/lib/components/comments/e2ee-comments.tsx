@@ -19,7 +19,7 @@ import {
 	InputGroupTextarea,
 } from "@/src/lib/components/ui/input-group";
 import { InlineLoader } from "@/src/lib/components/ui/loader";
-import { cn } from "@/src/lib/utils/utils";
+import { cn, useDelayedLoading } from "@/src/lib/utils/index";
 
 const COMMENT_GROUP_MS = 5 * 60 * 1000;
 
@@ -241,6 +241,7 @@ export function E2eeCommentsThread(props: {
 	const showLoading =
 		props.comments.isLoading ||
 		(props.comments.isPending && props.comments.data == null);
+	const showLoadingIndicator = useDelayedLoading(showLoading);
 	const errorMessage =
 		props.comments.error instanceof Error
 			? props.comments.error.message
@@ -257,7 +258,7 @@ export function E2eeCommentsThread(props: {
 			aria-live="polite"
 			aria-busy={showLoading}
 		>
-			{showLoading ? (
+			{showLoadingIndicator ? (
 				<div className="flex justify-center py-8">
 					<InlineLoader size="md" />
 					<span className="sr-only">Loading comments…</span>
@@ -325,6 +326,7 @@ export function E2eeCommentsComposer(props: {
 	const submittingRef = useRef(false);
 	const isEditing = Boolean(props.editingComment);
 	const isBusy = props.isPending || isSubmitting;
+	const showBusyIndicator = useDelayedLoading(isBusy);
 
 	useEffect(() => {
 		if (props.editingComment) {
@@ -406,7 +408,7 @@ export function E2eeCommentsComposer(props: {
 						onClick={handleSubmit}
 						aria-label={isEditing ? "Save comment" : "Send comment"}
 					>
-						{isBusy ? (
+						{showBusyIndicator ? (
 							<InlineLoader size="sm" />
 						) : (
 							<PaperPlaneRightIcon className="size-4" weight="fill" />

@@ -2,7 +2,7 @@
 
 import { useMotionConfig } from "@filosign/motion";
 import { motion } from "motion/react";
-import { cn } from "@/src/lib/utils/index";
+import { cn, useDelayedLoading } from "@/src/lib/utils/index";
 
 const LOADER_SIZES = {
 	sm: { barWidth: 2, barHeight: 12, gap: 3 },
@@ -81,6 +81,21 @@ export function InlineLoader({
 			<span className="sr-only">{label}</span>
 		</span>
 	);
+}
+
+export type DelayedInlineLoaderProps = InlineLoaderProps & {
+	show: boolean;
+	delayMs?: number;
+};
+
+export function DelayedInlineLoader({
+	show,
+	delayMs,
+	...props
+}: DelayedInlineLoaderProps) {
+	const visible = useDelayedLoading(show, delayMs);
+	if (!visible) return null;
+	return <InlineLoader {...props} />;
 }
 
 export type LoaderProps = {

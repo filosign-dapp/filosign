@@ -2,18 +2,26 @@
 
 import { throwAppError } from "@filosign/errors/server";
 import {
+	ACTIVE_PILOT_ADDENDUM_SHA256,
+	ACTIVE_PILOT_ADDENDUM_VERSION,
+	ACTIVE_PRIVACY_SHA256,
+	ACTIVE_PRIVACY_VERSION,
+	ACTIVE_TERMS_SHA256,
+	ACTIVE_TERMS_VERSION,
 	hashAuthSubjectCommitment,
 	zUserKeygenDataJson,
 } from "@filosign/shared";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import type { Address } from "viem";
 import { isAddress } from "viem";
 import { z } from "zod";
+import type { OrpcContext } from "@/api/orpc/context";
 import { writeAuditEvent } from "@/lib/domains/audit";
 import { userAvatarWebpKey } from "@/lib/domains/files";
 import { getRedis } from "@/lib/platform/cache/session";
 import db from "@/lib/platform/db";
 import { bucket } from "@/lib/platform/s3/client";
+import { resolveClientIpFromRequest } from "@/lib/platform/utils/client-ip";
 import {
 	verifiedLinkedEmailsForWallet,
 	verifiedThirdwebEmailForWallet,
@@ -28,6 +36,7 @@ const {
 	envelopeDrafts,
 	envelopeDraftDocuments,
 	platformInviteRedemptions,
+	platformInvites,
 	analyticsConsentReceipts,
 	fileParticipants,
 	fileSignatures,
@@ -38,9 +47,31 @@ const {
 	accessRequests,
 	privacyRequests,
 	privacyErasureLedger,
+	termsAcceptanceReceipts,
+	pilotAddendumAcceptanceReceipts,
 } = db.schema;
 
 const PRIVACY_REQUEST_TTL_DAYS = 30;
+
+async function userRedeemedPartnerTrialInvite(
+	wallet: Address,
+): Promise<boolean> {
+	const [row] = await db
+		.select({ id: platformInviteRedemptions.id })
+		.from(platformInviteRedemptions)
+		.innerJoin(
+			platformInvites,
+			eq(platformInviteRedemptions.inviteId, platformInvites.id),
+		)
+		.where(
+			and(
+				eq(platformInviteRedemptions.walletAddress, wallet),
+				eq(platformInvites.kind, "partner_trial"),
+			),
+		)
+		.limit(1);
+	return Boolean(row);
+}
 
 function defaultPrivacyRequestDueAt(requestedAt: Date): Date {
 	return new Date(
@@ -87,6 +118,23 @@ export async function userProfileMe(wallet: Address) {
 	const { defaultSignatureArtifactsForWallet } = await import("./signatures");
 	const defaults = await defaultSignatureArtifactsForWallet(wallet);
 
+	const [latestAcceptance] = await db
+		.select({ id: termsAcceptanceReceipts.id })
+		.from(termsAcceptanceReceipts)
+		.where(
+			and(
+				eq(termsAcceptanceReceipts.walletAddress, wallet),
+				eq(termsAcceptanceReceipts.termsVersion, ACTIVE_TERMS_VERSION),
+				eq(termsAcceptanceReceipts.privacyVersion, ACTIVE_PRIVACY_VERSION),
+				eq(termsAcceptanceReceipts.termsSha256, ACTIVE_TERMS_SHA256),
+				eq(termsAcceptanceReceipts.privacySha256, ACTIVE_PRIVACY_SHA256),
+				eq(termsAcceptanceReceipts.businessUseAttested, true),
+			),
+		)
+		.limit(1);
+
+	const needsTermsAcceptance = !latestAcceptance;
+
 	return {
 		...rest,
 		keygenData: keygenParsed.success ? keygenParsed.data : null,
@@ -94,6 +142,9 @@ export async function userProfileMe(wallet: Address) {
 		authSubjectCommitment,
 		defaultSignaturePreviewUrl: defaults.signature?.previewUrl ?? null,
 		defaultInitialPreviewUrl: defaults.initial?.previewUrl ?? null,
+		needsTermsAcceptance,
+		// Design Partner Addendum is accepted only at invite sign-up clickwrap.
+		needsPilotAddendumAcceptance: false,
 	};
 }
 
@@ -913,4 +964,94 @@ export async function userExportAccountData(wallet: Address) {
 		platformInviteRedemptions: platformRedemptions,
 		retainedRecordSummary,
 	};
+}
+
+export async function userAcceptTerms(
+	wallet: Address,
+	body: unknown,
+	context: OrpcContext,
+) {
+	const parsed = z
+		.object({
+			acceptTerms: z.literal(true),
+			businessUseAttestation: z.literal(true),
+			termsVersion: z.string().min(1),
+			privacyVersion: z.string().min(1),
+			termsSha256: z.string().length(64),
+			privacySha256: z.string().length(64),
+		})
+		.safeParse(body);
+
+	if (!parsed.success) {
+		throw throwZodBadRequest(parsed.error);
+	}
+
+	const { termsVersion, privacyVersion, termsSha256, privacySha256 } =
+		parsed.data;
+
+	if (
+		termsVersion !== ACTIVE_TERMS_VERSION ||
+		privacyVersion !== ACTIVE_PRIVACY_VERSION ||
+		termsSha256 !== ACTIVE_TERMS_SHA256 ||
+		privacySha256 !== ACTIVE_PRIVACY_SHA256
+	) {
+		throw throwAppError("USERS.INVALID_TERMS_VERSION");
+	}
+
+	await db.insert(termsAcceptanceReceipts).values({
+		walletAddress: wallet,
+		termsVersion,
+		privacyVersion,
+		termsSha256,
+		privacySha256,
+		businessUseAttested: true,
+		acceptanceAction: "clickwrap_reaccept",
+		ipAddress: resolveClientIpFromRequest(context.hono.req),
+		userAgent: context.hono.req.header("user-agent"),
+	});
+
+	return {};
+}
+
+export async function userAcceptPilotAddendum(
+	wallet: Address,
+	body: unknown,
+	context: OrpcContext,
+) {
+	const parsed = z
+		.object({
+			acceptPilotAddendum: z.literal(true),
+			addendumVersion: z.string().min(1),
+			addendumSha256: z.string().length(64),
+		})
+		.safeParse(body);
+
+	if (!parsed.success) {
+		throw throwZodBadRequest(parsed.error);
+	}
+
+	const { addendumVersion, addendumSha256 } = parsed.data;
+
+	if (
+		addendumVersion !== ACTIVE_PILOT_ADDENDUM_VERSION ||
+		addendumSha256 !== ACTIVE_PILOT_ADDENDUM_SHA256
+	) {
+		throw throwAppError("USERS.INVALID_PILOT_ADDENDUM_VERSION");
+	}
+
+	const isPartnerTrialUser = await userRedeemedPartnerTrialInvite(wallet);
+	if (!isPartnerTrialUser) {
+		throw throwAppError("USERS.PILOT_ADDENDUM_REQUIRED");
+	}
+
+	await db.insert(pilotAddendumAcceptanceReceipts).values({
+		walletAddress: wallet,
+		addendumVersion,
+		addendumSha256,
+		acceptanceAction: "clickwrap_reaccept",
+		ipAddress: resolveClientIpFromRequest(context.hono.req),
+		userAgent: context.hono.req.header("user-agent"),
+	});
+
+	return {};
 }

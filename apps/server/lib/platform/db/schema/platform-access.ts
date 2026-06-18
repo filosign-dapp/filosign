@@ -132,6 +132,7 @@ export const accessRequests = t.pgTable(
 		name: t.text(),
 		company: t.text(),
 		message: t.text(),
+		planId: t.text({ enum: PLAN_IDS }),
 		status: t
 			.text({ enum: accessRequestStatuses })
 			.notNull()

@@ -96,3 +96,50 @@ export const privacyErasureLedger = t.pgTable(
 			.on(table.replayRequired),
 	],
 );
+
+export const termsAcceptanceReceipts = t.pgTable(
+	"terms_acceptance_receipts",
+	{
+		id: t.uuid().defaultRandom().primaryKey(),
+		walletAddress: tEvmAddress()
+			.notNull()
+			.references(() => users.walletAddress, { onDelete: "cascade" }),
+		termsVersion: t.text().notNull(),
+		privacyVersion: t.text().notNull(),
+		termsSha256: t.text().notNull(),
+		privacySha256: t.text().notNull(),
+		businessUseAttested: t.boolean().notNull(),
+		acceptanceAction: t.text().notNull(),
+		ipAddress: t.text(),
+		userAgent: t.text(),
+		acceptedAt: t.timestamp({ withTimezone: true }).notNull().defaultNow(),
+		...timestamps,
+	},
+	(table) => [
+		t
+			.index("idx_terms_acceptance_wallet_created")
+			.on(table.walletAddress, table.acceptedAt),
+	],
+);
+
+export const pilotAddendumAcceptanceReceipts = t.pgTable(
+	"pilot_addendum_acceptance_receipts",
+	{
+		id: t.uuid().defaultRandom().primaryKey(),
+		walletAddress: tEvmAddress()
+			.notNull()
+			.references(() => users.walletAddress, { onDelete: "cascade" }),
+		addendumVersion: t.text().notNull(),
+		addendumSha256: t.text().notNull(),
+		acceptanceAction: t.text().notNull(),
+		ipAddress: t.text(),
+		userAgent: t.text(),
+		acceptedAt: t.timestamp({ withTimezone: true }).notNull().defaultNow(),
+		...timestamps,
+	},
+	(table) => [
+		t
+			.index("idx_pilot_addendum_wallet_created")
+			.on(table.walletAddress, table.acceptedAt),
+	],
+);

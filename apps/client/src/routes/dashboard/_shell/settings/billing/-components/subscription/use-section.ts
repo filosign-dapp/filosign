@@ -12,6 +12,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
+import { clientPublicCheckoutEnabled } from "@/src/lib/deployment";
 import { planDisplayName } from "@/src/lib/domains/billing/plan-seat-tiles";
 import { billingSettingsReturnUrl } from "@/src/lib/domains/billing/settings-path";
 import { useBillingSettings } from "@/src/lib/domains/billing/use-billing-settings";
@@ -119,8 +120,10 @@ export function useSubscriptionSection() {
 	}, [billingSyncPending, summary.refetch]);
 
 	const returnUrl = billingSettingsReturnUrl(window.location.origin);
+	const publicCheckoutEnabled = clientPublicCheckoutEnabled();
 
 	const startCheckout = async () => {
+		if (!publicCheckoutEnabled) return;
 		try {
 			const checkoutSeats =
 				planId === "individual" ? 1 : Math.max(seatCount, minSeats);
@@ -229,6 +232,7 @@ export function useSubscriptionSection() {
 		allowed,
 		alternatePlanId,
 		canUpgradeSoloToTeams,
+		publicCheckoutEnabled,
 		checkout,
 		updateSeats,
 		changePlan,

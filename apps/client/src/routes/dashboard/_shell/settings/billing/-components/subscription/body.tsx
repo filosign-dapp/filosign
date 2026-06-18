@@ -1,3 +1,4 @@
+import env from "@/src/env";
 import { SettingsSyncNotice } from "@/src/lib/components/settings/section";
 import { Badge } from "@/src/lib/components/ui/badge";
 import {
@@ -10,6 +11,8 @@ import { SubscriptionPaidControls } from "./paid-controls";
 import type { useSubscriptionSection } from "./use-section";
 
 type SectionState = ReturnType<typeof useSubscriptionSection>;
+
+const pricingHref = `${env.VITE_ASTRO_URL.replace(/\/$/, "")}/pricing`;
 
 export function SubscriptionSectionBody({ state }: { state: SectionState }) {
 	const { data } = state;
@@ -94,7 +97,7 @@ export function SubscriptionSectionBody({ state }: { state: SectionState }) {
 					portalPending={state.portal.isPending}
 					openPortal={state.openPortal}
 				/>
-			) : (
+			) : state.publicCheckoutEnabled ? (
 				<SubscriptionCheckoutForm
 					allowed={state.allowed}
 					planId={state.planId}
@@ -111,6 +114,21 @@ export function SubscriptionSectionBody({ state }: { state: SectionState }) {
 					checkoutPending={state.checkout.isPending}
 					startCheckout={state.startCheckout}
 				/>
+			) : (
+				<div className="space-y-3 border-t border-border/60 pt-6 text-sm text-muted-foreground">
+					<p>
+						Self-serve checkout is not open yet. Request access and we will
+						follow up with an invite link.
+					</p>
+					<a
+						href={pricingHref}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex font-medium text-foreground underline-offset-4 hover:underline"
+					>
+						Request access on pricing
+					</a>
+				</div>
 			)}
 		</div>
 	);

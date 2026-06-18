@@ -33,6 +33,7 @@ import { TOASTS } from "@/src/lib/copy/toasts";
 import { useDraftCommentCount, useDraftSaveUi } from "@/src/lib/domains/drafts";
 import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
+import { useDelayedLoading } from "@/src/lib/utils/use-delayed-loading";
 import { cn } from "@/src/lib/utils/utils";
 import { ShareDraftDialog } from "@/src/routes/dashboard/envelope/create/-components/share-draft-dialog";
 import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-prompt-plan-upgrade";
@@ -233,6 +234,7 @@ export function AddSignDraftActions() {
 		showSavedState,
 		hasServerDraft: Boolean(serverDraftId),
 	});
+	const showSavingIndicator = useDelayedLoading(isSaving);
 
 	return (
 		<>
@@ -242,7 +244,7 @@ export function AddSignDraftActions() {
 						"hidden h-10 gap-2 border-border/60 bg-muted/30 px-2.5 text-xs font-normal text-muted-foreground shadow-none sm:flex",
 					)}
 				>
-					{isSaving ? (
+					{showSavingIndicator ? (
 						<InlineLoader size="sm" />
 					) : (
 						<span

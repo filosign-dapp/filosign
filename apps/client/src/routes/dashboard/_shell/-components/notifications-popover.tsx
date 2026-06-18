@@ -13,11 +13,13 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/src/lib/components/ui/popover";
+import { useDelayedLoading } from "@/src/lib/utils/use-delayed-loading";
 import { useNotificationsController } from "@/src/routes/dashboard/_shell/-lib/hooks/use-notifications-controller";
 import { NotificationItem } from "./notification-item";
 
 export function NotificationsPopover() {
 	const n = useNotificationsController();
+	const showLoading = useDelayedLoading(n.isLoading);
 
 	return (
 		<Popover open={n.open} onOpenChange={n.setOpen}>
@@ -66,7 +68,7 @@ export function NotificationsPopover() {
 				</div>
 
 				<div className="max-h-96 overflow-y-auto">
-					{n.isLoading && (
+					{showLoading && (
 						<div className="p-8 text-center">
 							<InlineLoader size="md" className="mx-auto mb-3" />
 							<p className="text-sm text-muted-foreground">
@@ -97,7 +99,7 @@ export function NotificationsPopover() {
 						</div>
 					)}
 
-					{n.notificationCount === 0 && !n.isLoading && (
+					{n.notificationCount === 0 && !showLoading && (
 						<AppEmptyState
 							preset="inline"
 							variant="muted"

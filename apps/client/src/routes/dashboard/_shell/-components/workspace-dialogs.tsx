@@ -12,6 +12,7 @@ import {
 import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useId, useState } from "react";
+import env from "@/src/env";
 import { Button } from "@/src/lib/components/ui/button";
 import { Dialog } from "@/src/lib/components/ui/dialog";
 import {
@@ -27,6 +28,7 @@ import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
+import { clientPublicCheckoutEnabled } from "@/src/lib/deployment";
 import { PLAN_LIMIT_COPY } from "@/src/lib/domains/entitlements/plan-limit-copy";
 import { upgradePlanLimitMedia } from "@/src/lib/domains/feature-dialog/images";
 import {
@@ -41,6 +43,10 @@ import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persiste
 import { cn } from "@/src/lib/utils/index";
 
 const CHECKOUT_PLANS: OrgCheckoutPlanId[] = ["teams", "teams_pro"];
+
+function pricingHref(): string {
+	return `${env.VITE_ASTRO_URL.replace(/\/$/, "")}/pricing`;
+}
 
 export function useCreateWorkspacePendingFromUrl() {
 	const [pendingBillingId, setPendingBillingId] = useState<string | null>(null);
@@ -73,6 +79,7 @@ function NewWorkspaceCheckoutDialog(props: {
 	onOpenChange: (open: boolean) => void;
 }) {
 	const titleId = useId();
+	const publicCheckoutEnabled = clientPublicCheckoutEnabled();
 	const checkout = useCreateNewWorkspaceCheckoutSession();
 	const copy = PLAN_LIMIT_COPY["features.workspace.create"];
 	const media = upgradePlanLimitMedia("features.workspace.create");
@@ -114,97 +121,130 @@ function NewWorkspaceCheckoutDialog(props: {
 					<FeatureDialogHeader
 						title={copy.title}
 						titleId={titleId}
-						description={copy.description}
+						description={
+							publicCheckoutEnabled
+								? copy.description
+								: "Self-serve checkout is not open yet. Request access and we will follow up with an invite link."
+						}
 					/>
 					<FeatureDialogBody className="overflow-y-auto">
-						<div className="mx-auto flex max-w-60 justify-center rounded-lg border border-border/60 bg-muted/40 p-1">
-							{(["monthly", "yearly"] as const).map((value) => (
-								<button
-									key={value}
-									type="button"
-									onClick={() => setInterval(value)}
-									className={cn(
-										"flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition",
-										interval === value
-											? "bg-background text-foreground shadow-xs"
-											: "text-muted-foreground hover:text-foreground",
-									)}
+						{publicCheckoutEnabled ? (
+							<>
+								<div className="mx-auto flex max-w-60 justify-center rounded-lg border border-border/60 bg-muted/40 p-1">
+									{(["monthly", "yearly"] as const).map((value) => (
+										<button
+											key={value}
+											type="button"
+											onClick={() => setInterval(value)}
+											className={cn(
+												"flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition",
+												interval === value
+													? "bg-background text-foreground shadow-xs"
+													: "text-muted-foreground hover:text-foreground",
+											)}
+										>
+											{value === "yearly" ? "Yearly (-15%)" : "Monthly"}
+										</button>
+									))}
+								</div>
+								<div className="space-y-2">
+									{CHECKOUT_PLANS.map((planId) => (
+										<button
+											key={planId}
+											type="button"
+											onClick={() => setSelectedPlan(planId)}
+											className={cn(
+												"flex w-full items-center justify-between rounded-xl border p-3.5 text-left transition",
+												selectedPlan === planId
+													? "border-primary bg-primary/5 ring-1 ring-primary"
+													: "border-border/60 hover:border-border hover:bg-muted/10",
+											)}
+										>
+											<div>
+												<span className="text-sm font-semibold">
+													{getPlanName(planId)}
+												</span>
+												<span className="mt-0.5 block text-xs text-muted-foreground">
+													Billed on this workspace
+												</span>
+											</div>
+											<span className="text-sm font-bold tabular-nums">
+												${getPrice(planId)}/mo
+											</span>
+										</button>
+									))}
+								</div>
+								<div className="space-y-2 rounded-xl border border-border/40 bg-muted/10 p-4">
+									<Label htmlFor="new-ws-seats">Workspace seats</Label>
+									<Input
+										id="new-ws-seats"
+										type="number"
+										min={1}
+										max={100}
+										value={seatCount}
+										onChange={(e) =>
+											setSeatCount(
+												Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+											)
+										}
+										className="h-9 w-20"
+									/>
+								</div>
+								<FeatureDialogActions>
+									<Button
+										type="button"
+										variant="primary"
+										size="lg"
+										className="w-full gap-1.5"
+										disabled={checkout.isPending}
+										isLoading={checkout.isPending}
+										onClick={() => void handleCheckout()}
+									>
+										Continue to checkout
+										<ArrowSquareOutIcon
+											className="size-4"
+											weight="bold"
+											aria-hidden
+										/>
+									</Button>
+									<Button
+										type="button"
+										variant="outline"
+										size="lg"
+										className="w-full"
+										onClick={() => props.onOpenChange(false)}
+										disabled={checkout.isPending}
+									>
+										Cancel
+									</Button>
+								</FeatureDialogActions>
+							</>
+						) : (
+							<FeatureDialogActions>
+								<a
+									href={pricingHref()}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground"
 								>
-									{value === "yearly" ? "Yearly (-15%)" : "Monthly"}
-								</button>
-							))}
-						</div>
-						<div className="space-y-2">
-							{CHECKOUT_PLANS.map((planId) => (
-								<button
-									key={planId}
+									Request access
+									<ArrowSquareOutIcon
+										className="size-4"
+										weight="bold"
+										aria-hidden
+									/>
+								</a>
+								<Button
 									type="button"
-									onClick={() => setSelectedPlan(planId)}
-									className={cn(
-										"flex w-full items-center justify-between rounded-xl border p-3.5 text-left transition",
-										selectedPlan === planId
-											? "border-primary bg-primary/5 ring-1 ring-primary"
-											: "border-border/60 hover:border-border hover:bg-muted/10",
-									)}
+									variant="outline"
+									size="lg"
+									className="w-full"
+									onClick={() => props.onOpenChange(false)}
 								>
-									<div>
-										<span className="text-sm font-semibold">
-											{getPlanName(planId)}
-										</span>
-										<span className="mt-0.5 block text-xs text-muted-foreground">
-											Billed on this workspace
-										</span>
-									</div>
-									<span className="text-sm font-bold tabular-nums">
-										${getPrice(planId)}/mo
-									</span>
-								</button>
-							))}
-						</div>
-						<div className="space-y-2 rounded-xl border border-border/40 bg-muted/10 p-4">
-							<Label htmlFor="new-ws-seats">Workspace seats</Label>
-							<Input
-								id="new-ws-seats"
-								type="number"
-								min={1}
-								max={100}
-								value={seatCount}
-								onChange={(e) =>
-									setSeatCount(
-										Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-									)
-								}
-								className="h-9 w-20"
-							/>
-						</div>
-						<FeatureDialogActions>
-							<Button
-								type="button"
-								variant="primary"
-								size="lg"
-								className="w-full gap-1.5"
-								disabled={checkout.isPending}
-								isLoading={checkout.isPending}
-								onClick={() => void handleCheckout()}
-							>
-								Continue to checkout
-								<ArrowSquareOutIcon
-									className="size-4"
-									weight="bold"
-									aria-hidden
-								/>
-							</Button>
-							<Button
-								type="button"
-								variant="outline"
-								size="lg"
-								className="w-full"
-								onClick={() => props.onOpenChange(false)}
-								disabled={checkout.isPending}
-							>
-								Cancel
-							</Button>
-						</FeatureDialogActions>
+									Cancel
+								</Button>
+							</FeatureDialogActions>
+						)}
 					</FeatureDialogBody>
 				</FeatureDialogPanel>
 			</FeatureDialogContent>

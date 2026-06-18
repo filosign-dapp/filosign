@@ -2,7 +2,7 @@ import { getPlanName, type PlanId } from "@filosign/entitlements";
 import { MotionReveal } from "@filosign/motion";
 import { useFilosignContext } from "@filosign/react";
 import type { AppRouterClient, InferClientOutputs } from "@filosign/react/orpc";
-import { platformInviteEmailVariants } from "@filosign/shared";
+import { isoCountryName, platformInviteEmailVariants } from "@filosign/shared";
 import {
 	ArrowLeftIcon,
 	CurrencyCircleDollarIcon,
@@ -95,6 +95,112 @@ function AdminSection(props: {
 			</div>
 			<div className="p-6">{props.children}</div>
 		</section>
+	);
+}
+
+function AdminSettlementAccessRequestRow(props: {
+	row: AdminSettlementAccessRow;
+	approveSettlementAccess: {
+		mutate: (organizationId: string) => void;
+		isPending: boolean;
+		variables?: string;
+	};
+	rejectSettlementAccess: {
+		mutate: (organizationId: string) => void;
+		isPending: boolean;
+		variables?: string;
+	};
+}) {
+	const { row, approveSettlementAccess, rejectSettlementAccess } = props;
+	const organizationId = String(row.organizationId ?? "");
+	const status = String(row.status ?? "none");
+
+	return (
+		<li className="rounded-lg border border-border/60 bg-muted/5 p-4 text-sm space-y-3">
+			<div className="flex items-center justify-between gap-4">
+				<span className="font-semibold text-foreground">
+					{String(row.organizationName ?? organizationId)}
+				</span>
+				<Badge variant="secondary" className="capitalize">
+					{status}
+				</Badge>
+			</div>
+			{row.useCase ? (
+				<p className="text-xs text-muted-foreground whitespace-pre-wrap border border-border/40 bg-muted/10 p-2.5 rounded-md">
+					{String(row.useCase)}
+				</p>
+			) : null}
+			{row.organizationLegalName || row.organizationCountry ? (
+				<div className="text-xs text-muted-foreground space-y-1 border border-border/40 bg-muted/10 p-2.5 rounded-md">
+					{row.organizationLegalName ? (
+						<p>
+							<span className="font-medium text-foreground">Legal name:</span>{" "}
+							{String(row.organizationLegalName)}
+						</p>
+					) : null}
+					{row.organizationCountry ? (
+						<p>
+							<span className="font-medium text-foreground">Country:</span>{" "}
+							{isoCountryName(String(row.organizationCountry)) ??
+								String(row.organizationCountry)}
+						</p>
+					) : null}
+				</div>
+			) : null}
+			{row.requesterName || row.requesterRole ? (
+				<p className="text-xs text-muted-foreground">
+					Requester{" "}
+					<span className="text-foreground">
+						{String(row.requesterName ?? "–")}
+					</span>
+					{row.requesterRole ? ` · ${String(row.requesterRole)}` : ""}
+				</p>
+			) : null}
+			{row.requestIp || row.requestUserAgent ? (
+				<p className="text-xs text-muted-foreground font-mono break-all">
+					{row.requestIp ? `IP ${String(row.requestIp)}` : null}
+					{row.requestIp && row.requestUserAgent ? " · " : null}
+					{row.requestUserAgent ? String(row.requestUserAgent) : null}
+				</p>
+			) : null}
+			<p className="text-xs text-muted-foreground">
+				Accepted by{" "}
+				<span className="font-mono text-foreground">
+					{String(row.acceptedByWallet ?? "–")}
+				</span>
+				· terms {String(row.termsVersion ?? "–")}
+			</p>
+			{status === "pending" ? (
+				<div className="flex gap-2 pt-1 border-t border-border/30 pt-3">
+					<Button
+						size="sm"
+						variant="primary"
+						onClick={() => approveSettlementAccess.mutate(organizationId)}
+						isLoading={
+							approveSettlementAccess.isPending &&
+							approveSettlementAccess.variables === organizationId
+						}
+					>
+						Approve
+					</Button>
+					<Button
+						size="sm"
+						variant="outline"
+						onClick={() => rejectSettlementAccess.mutate(organizationId)}
+						isLoading={
+							rejectSettlementAccess.isPending &&
+							rejectSettlementAccess.variables === organizationId
+						}
+					>
+						Reject
+					</Button>
+				</div>
+			) : row.reviewNote ? (
+				<p className="text-xs text-muted-foreground italic">
+					Review note: {String(row.reviewNote)}
+				</p>
+			) : null}
+		</li>
 	);
 }
 
@@ -245,8 +351,13 @@ function AdminPage() {
 	});
 
 	const approveAccessRequest = useMutation({
-		mutationFn: (requestId: string) =>
-			rpc.platformAdmin.accessRequests.approve({ requestId }),
+		mutationFn: (request: AdminAccessRequestRow) =>
+			rpc.platformAdmin.accessRequests.approve({
+				requestId: request.id,
+				...(request.planId === "teams" || request.planId === "teams_pro"
+					? { planId: request.planId }
+					: {}),
+			}),
 		onSuccess: (data) => {
 			setLastInviteUrl(String(data.inviteUrl));
 			void queryClient.invalidateQueries({
@@ -736,6 +847,15 @@ function AdminPage() {
 											<span className="font-medium text-foreground">
 												{String(request.company ?? "–")}
 											</span>
+											{request.planId ? (
+												<>
+													{" "}
+													· Plan:{" "}
+													<span className="font-medium text-foreground">
+														{String(request.planId)}
+													</span>
+												</>
+											) : null}
 										</div>
 										{request.message ? (
 											<p className="text-xs text-muted-foreground italic bg-muted/10 border border-border/40 p-2.5 rounded-md whitespace-pre-wrap">
@@ -747,10 +867,10 @@ function AdminPage() {
 												<Button
 													size="sm"
 													variant="primary"
-													onClick={() => approveAccessRequest.mutate(id)}
+													onClick={() => approveAccessRequest.mutate(request)}
 													isLoading={
 														approveAccessRequest.isPending &&
-														approveAccessRequest.variables === id
+														approveAccessRequest.variables?.id === id
 													}
 												>
 													Approve + Invite
@@ -788,71 +908,14 @@ function AdminPage() {
 						<AdminSectionEmpty title="No workspace payout requests yet." />
 					) : (
 						<ul className="space-y-3">
-							{settlementAccessRequests.map((row) => {
-								const organizationId = String(row.organizationId ?? "");
-								const status = String(row.status ?? "none");
-								return (
-									<li
-										key={organizationId}
-										className="rounded-lg border border-border/60 bg-muted/5 p-4 text-sm space-y-3"
-									>
-										<div className="flex items-center justify-between gap-4">
-											<span className="font-semibold text-foreground">
-												{String(row.organizationName ?? organizationId)}
-											</span>
-											<Badge variant="secondary" className="capitalize">
-												{status}
-											</Badge>
-										</div>
-										{row.useCase ? (
-											<p className="text-xs text-muted-foreground whitespace-pre-wrap border border-border/40 bg-muted/10 p-2.5 rounded-md">
-												{String(row.useCase)}
-											</p>
-										) : null}
-										<p className="text-xs text-muted-foreground">
-											Accepted by{" "}
-											<span className="font-mono text-foreground">
-												{String(row.acceptedByWallet ?? "–")}
-											</span>
-											· terms {String(row.termsVersion ?? "–")}
-										</p>
-										{status === "pending" ? (
-											<div className="flex gap-2 pt-1 border-t border-border/30 pt-3">
-												<Button
-													size="sm"
-													variant="primary"
-													onClick={() =>
-														approveSettlementAccess.mutate(organizationId)
-													}
-													isLoading={
-														approveSettlementAccess.isPending &&
-														approveSettlementAccess.variables === organizationId
-													}
-												>
-													Approve
-												</Button>
-												<Button
-													size="sm"
-													variant="outline"
-													onClick={() =>
-														rejectSettlementAccess.mutate(organizationId)
-													}
-													isLoading={
-														rejectSettlementAccess.isPending &&
-														rejectSettlementAccess.variables === organizationId
-													}
-												>
-													Reject
-												</Button>
-											</div>
-										) : row.reviewNote ? (
-											<p className="text-xs text-muted-foreground italic">
-												Review note: {String(row.reviewNote)}
-											</p>
-										) : null}
-									</li>
-								);
-							})}
+							{settlementAccessRequests.map((row) => (
+								<AdminSettlementAccessRequestRow
+									key={String(row.organizationId ?? "")}
+									row={row}
+									approveSettlementAccess={approveSettlementAccess}
+									rejectSettlementAccess={rejectSettlementAccess}
+								/>
+							))}
 						</ul>
 					)}
 				</AdminSection>

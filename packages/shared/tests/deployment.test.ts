@@ -3,7 +3,10 @@ import {
 	allowedChainsForDeployment,
 	assertDeploymentChain,
 	dodoLive,
+	effectiveSignupPolicyIsGated,
 	requiredChainForDeployment,
+	resolveEffectiveSignupPolicy,
+	resolvePublicCheckoutEnabled,
 	sandboxEntitlementsOpen,
 	signupPolicyIsGated,
 } from "..";
@@ -49,5 +52,39 @@ describe("deployment policy", () => {
 		expect(signupPolicyIsGated("local")).toBe(false);
 		expect(signupPolicyIsGated("staging")).toBe(false);
 		expect(signupPolicyIsGated("sandbox")).toBe(false);
+	});
+
+	test("resolvePublicCheckoutEnabled defaults and explicit override", () => {
+		expect(resolvePublicCheckoutEnabled({ deployment: "production" })).toBe(
+			false,
+		);
+		expect(resolvePublicCheckoutEnabled({ deployment: "local" })).toBe(true);
+		expect(
+			resolvePublicCheckoutEnabled({
+				deployment: "production",
+				explicit: true,
+			}),
+		).toBe(true);
+		expect(
+			resolvePublicCheckoutEnabled({
+				deployment: "local",
+				explicit: false,
+			}),
+		).toBe(false);
+	});
+
+	test("resolveEffectiveSignupPolicy env override", () => {
+		expect(
+			resolveEffectiveSignupPolicy({
+				deployment: "production",
+				publicSignupEnabled: true,
+			}),
+		).toBe("open");
+		expect(
+			effectiveSignupPolicyIsGated({
+				deployment: "local",
+				publicSignupEnabled: false,
+			}),
+		).toBe(true);
 	});
 });

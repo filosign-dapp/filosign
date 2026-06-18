@@ -49,4 +49,18 @@ describe("presentError", () => {
 		});
 		expect(presented.dedupeKey).toBe("3-5");
 	});
+
+	test("drops devDetail when ORPC message echoes catalog title", () => {
+		const presented = presentError(
+			{
+				code: "FORBIDDEN",
+				message: "Email mismatch for platform access",
+				data: { appCode: "WORKSPACE.PLATFORM_EMAIL_MISMATCH" },
+			},
+			{ devMode: true },
+		);
+		expect(presented.title).toBe("Email mismatch for platform access");
+		expect(presented.description).toContain("registered email");
+		expect(presented.devDetail).toBeUndefined();
+	});
 });

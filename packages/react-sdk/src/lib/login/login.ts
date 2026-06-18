@@ -2,6 +2,10 @@ import type { signatures } from "@filosign/crypto-utils";
 import { toHex, walletKeyGen } from "@filosign/crypto-utils";
 import type { FilosignContracts } from "@filosign/evm";
 import { filosignRegistrationSignature } from "@filosign/evm";
+import {
+	isCurrentLegalAssent,
+	type RegistrationLegalAssent,
+} from "@filosign/shared";
 import type { QueryClient } from "@tanstack/react-query";
 import type { FilosignRpcQueryUtils } from "../../context/FilosignContext";
 import {
@@ -22,11 +26,15 @@ export interface RegistrationAccessGate {
 	coldRecipientEmail?: string;
 }
 
+export type { RegistrationLegalAssent };
+
 export interface LoginParams {
 	idToken?: string;
 	/** Only unlock in-memory seed for an already registered user. */
 	unlockOnly?: boolean;
 	accessGate?: RegistrationAccessGate;
+	/** Required for new-user registration; must match active legal constants. */
+	legalAssent?: RegistrationLegalAssent;
 }
 
 export type LoginResult =
@@ -83,6 +91,15 @@ async function registerNewUser(
 		);
 	}
 
+	const assent = params.legalAssent;
+	if (
+		!assent?.acceptTerms ||
+		!assent.businessUseAttestation ||
+		!isCurrentLegalAssent(assent)
+	) {
+		throw new Error("Terms acceptance required before registration.");
+	}
+
 	const keygenData = await walletKeyGen(deps.wallet, {
 		dl: deps.wasm.dilithium,
 	});
@@ -121,6 +138,12 @@ async function registerNewUser(
 		signaturePublicKey: toHex(keygenData.sigKeypair.publicKey),
 		walletAddress: deps.wallet.account.address,
 		idToken,
+		acceptTerms: assent.acceptTerms,
+		businessUseAttestation: assent.businessUseAttestation,
+		termsVersion: assent.termsVersion,
+		privacyVersion: assent.privacyVersion,
+		termsSha256: assent.termsSha256,
+		privacySha256: assent.privacySha256,
 		...(params.accessGate?.platformInviteToken
 			? { platformInviteToken: params.accessGate.platformInviteToken }
 			: {}),
@@ -132,6 +155,13 @@ async function registerNewUser(
 			: {}),
 		...(params.accessGate?.coldRecipientEmail
 			? { coldRecipientEmail: params.accessGate.coldRecipientEmail }
+			: {}),
+		...(assent.pilotAddendum
+			? {
+					acceptPilotAddendum: assent.pilotAddendum.acceptPilotAddendum,
+					addendumVersion: assent.pilotAddendum.addendumVersion,
+					addendumSha256: assent.pilotAddendum.addendumSha256,
+				}
 			: {}),
 	});
 

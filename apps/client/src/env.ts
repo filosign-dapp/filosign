@@ -26,6 +26,20 @@ const parsedEnv = createEnv({
 		VITE_PIMLICO_API_KEY: z.string().min(1).optional(),
 		VITE_REOWN_PROJECT_ID: z.string().min(1).optional(),
 		VITE_WALLETCONNECT_PROJECT_ID: z.string().min(1).optional(),
+		/** Unset → disabled on production, enabled on other deployments. */
+		VITE_PUBLIC_CHECKOUT_ENABLED: z
+			.enum(["true", "false", "1", "0"])
+			.optional()
+			.transform((v) =>
+				v === undefined ? undefined : v === "true" || v === "1",
+			),
+		/** Unset → deployment default signup policy. */
+		VITE_PUBLIC_SIGNUP_ENABLED: z
+			.enum(["true", "false", "1", "0"])
+			.optional()
+			.transform((v) =>
+				v === undefined ? undefined : v === "true" || v === "1",
+			),
 	},
 	runtimeEnv: import.meta.env,
 	emptyStringAsUndefined: true,

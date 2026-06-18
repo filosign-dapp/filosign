@@ -13,14 +13,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 			<LegalDocument
 				title="Subprocessors"
 				description="Third-party providers that process personal data to operate Filosign. Subscription checkout data may also be processed by Dodo Payments as Merchant of Record under Dodo's privacy policy."
-				lastUpdated="May 2026"
+				lastUpdated="June 19, 2026"
 			>
 				<h2>Overview</h2>
 				<p>
-					Filosign uses service providers ("Subprocessors") to host the Service, deliver email,
-					authenticate users, store encrypted files, run analytics, and process subscriptions.
-					We review security and privacy practices before engaging providers. This list reflects
-					our production stack as of the date above.
+					Filosign uses service providers ("Subprocessors") to host the Service, deliver email, authenticate users, store encrypted files, run analytics, and process subscriptions. This list reflects providers present in the current codebase. It is not a representation that every provider is active in every environment or that required transfer safeguards have been completed.
 				</p>
 				<p>
 					<strong>Merchant of Record:</strong> {DODO_PAYMENTS.name} processes subscription checkout
@@ -53,30 +50,48 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 								<td>Site traffic, encrypted document blobs, and storage metadata</td>
 								<td>Global / EU regions (as configured)</td>
 							</tr>
-							<tr>
-								<td>Hetzner Online GmbH</td>
-								<td>Application and database hosting</td>
-								<td>Account data, document metadata, audit logs, application and API logs</td>
-								<td>Germany / Finland (EU)</td>
-							</tr>
-							<tr>
-								<td>Resend, Inc.</td>
+						<tr>
+							<td>Hetzner Online GmbH</td>
+							<td>Application, database, and cache hosting (including Dragonfly session cache where deployed)</td>
+							<td>Account data, document metadata, audit logs, application and API logs, session cache entries</td>
+							<td>Germany / Finland (EU)</td>
+						</tr>
+						<tr>
+							<td>Resend, Inc.</td>
 								<td>Transactional email delivery</td>
 								<td>Recipient names, email addresses, and delivery events</td>
 								<td>US / Global</td>
-							</tr>
+						</tr>
+						<tr>
+							<td>Amazon Web Services (SES)</td>
+							<td>Optional fallback transactional email delivery</td>
+							<td>Recipient names, email addresses, message content, and delivery events</td>
+							<td>Configured AWS region / Global support access</td>
+						</tr>
 							<tr>
 								<td>thirdweb, Inc.</td>
 								<td>Wallet authentication, embedded wallets, and RPC</td>
 								<td>Wallet addresses, auth identifiers, and chain interaction logs</td>
 								<td>US / Global</td>
 							</tr>
-							<tr>
-								<td>PostHog, Inc.</td>
+						<tr>
+							<td>PostHog, Inc.</td>
 								<td>Product analytics (consent-gated where required)</td>
 								<td>Usage events, device/browser metadata, and session identifiers</td>
 								<td>EU (Frankfurt, Germany) when EU hosting is enabled</td>
-							</tr>
+						</tr>
+						<tr>
+							<td>Filecoin Onchain Cloud / Synapse storage providers</td>
+							<td>Optional encrypted document replication and purchased archival</td>
+							<td>Encrypted document blobs, content identifiers, storage-deal metadata, and payer wallet records</td>
+							<td>Decentralized storage network / Global</td>
+						</tr>
+						<tr>
+							<td>Telegram Bot API</td>
+							<td>Restricted operator alerts and support notifications when enabled</td>
+							<td>Sanitized operational alert context and submitted feedback previews</td>
+							<td>Global</td>
+						</tr>
 							<tr>
 								<td>{DODO_PAYMENTS.name}</td>
 								<td>Merchant of Record: subscription checkout, tax, and billing</td>
@@ -86,6 +101,9 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 						</tbody>
 					</table>
 				</div>
+				<p>
+					Cloudflare may also process aggregate marketing-site traffic through Cloudflare Web Analytics when enabled. Public blockchain networks independently process public wallet addresses, transaction data, and contract events and are not controlled subprocessors.
+				</p>
 
 				<h2>Changes</h2>
 				<p>

@@ -1,3 +1,8 @@
+import {
+	isOrpcErrorLike,
+	presentError,
+	readAppCodeFromOrpc,
+} from "@filosign/errors";
 import { useFilosignContext } from "@filosign/react";
 import { useIsRegistered, useLogin } from "@filosign/react/auth";
 import { useActiveOrgId, useOrganizations } from "@filosign/react/orgs";
@@ -20,7 +25,13 @@ import { TOASTS } from "@/src/lib/copy/toasts";
 import { showAppErrorToast } from "@/src/lib/errors";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import {
+	clearStoredLegalAssent,
+	LEGAL_ASSENT_REQUIRED_MESSAGE,
+	readStoredLegalAssent,
+} from "@/src/lib/web3/legal-assent-session";
+import {
 	isPermanentPartnerInviteRedeemError,
+	shouldClearAccessGateAfterPartnerRedeemError,
 	shouldPreservePartnerInviteGate,
 } from "@/src/lib/web3/partner-invite-redeem-errors";
 import {
@@ -37,7 +48,12 @@ export type AutoRegisterStatus =
 	| { status: "bootstrapping" }
 	| { status: "redeeming" }
 	| { status: "completed" }
-	| { status: "failed"; phase: AutoRegisterPhase; error: string };
+	| {
+			status: "failed";
+			phase: AutoRegisterPhase;
+			error: string;
+			appCode?: string;
+	  };
 
 type AutoRegisterContextValue = {
 	status: AutoRegisterStatus;
@@ -48,6 +64,21 @@ type AutoRegisterContextValue = {
 const AutoRegisterContext = createContext<AutoRegisterContextValue | null>(
 	null,
 );
+
+function autoRegisterFailureFromError(
+	error: unknown,
+	fallback: string,
+): { error: string; appCode?: string } {
+	const presented = presentError(error);
+	const message =
+		presented.description ||
+		(error instanceof Error ? error.message : fallback);
+	const rawCode = isOrpcErrorLike(error) ? readAppCodeFromOrpc(error) : null;
+	return {
+		error: message,
+		...(rawCode ? { appCode: rawCode } : {}),
+	};
+}
 
 export function useAutoRegisterOptional() {
 	return useContext(AutoRegisterContext);
@@ -112,11 +143,17 @@ export function AutoRegisterProvider({ children }: { children: ReactNode }) {
 		if (!token) {
 			throw new Error("Authentication token required");
 		}
+		const legalAssent = readStoredLegalAssent();
+		if (!legalAssent) {
+			throw new Error(LEGAL_ASSENT_REQUIRED_MESSAGE);
+		}
 		setStatus({ status: "registering" });
 		await login.mutateAsync({
 			idToken: token,
 			accessGate: readStoredAccessGate() ?? undefined,
+			legalAssent,
 		});
+		clearStoredLegalAssent();
 		clearStoredAccessGate();
 	}, [login, token]);
 
@@ -151,7 +188,9 @@ export function AutoRegisterProvider({ children }: { children: ReactNode }) {
 		} catch (error) {
 			if (isPermanentPartnerInviteRedeemError(error)) {
 				showAppErrorToast(error);
-				clearStoredAccessGate();
+				if (shouldClearAccessGateAfterPartnerRedeemError(error)) {
+					clearStoredAccessGate();
+				}
 			} else if (!shouldPreservePartnerInviteGate(error)) {
 				showAppErrorToast(error);
 			} else {
@@ -160,10 +199,12 @@ export function AutoRegisterProvider({ children }: { children: ReactNode }) {
 				});
 			}
 
-			const message =
-				error instanceof Error ? error.message : "Partner invite redeem failed";
+			const failure = autoRegisterFailureFromError(
+				error,
+				"Partner invite redeem failed",
+			);
 			lastFailedPhaseRef.current = "redeem";
-			setStatus({ status: "failed", phase: "redeem", error: message });
+			setStatus({ status: "failed", phase: "redeem", ...failure });
 		} finally {
 			inFlightRef.current = false;
 		}
@@ -188,10 +229,12 @@ export function AutoRegisterProvider({ children }: { children: ReactNode }) {
 				lastFailedPhaseRef.current = null;
 				setStatus({ status: "completed" });
 			} catch (error) {
-				const message =
-					error instanceof Error ? error.message : "Account setup failed";
+				const failure = autoRegisterFailureFromError(
+					error,
+					"Account setup failed",
+				);
 				lastFailedPhaseRef.current = phase;
-				setStatus({ status: "failed", phase, error: message });
+				setStatus({ status: "failed", phase, ...failure });
 			} finally {
 				inFlightRef.current = false;
 			}
@@ -234,6 +277,14 @@ export function AutoRegisterProvider({ children }: { children: ReactNode }) {
 		}
 
 		if (isRegistered.data === false) {
+			if (!readStoredLegalAssent()) {
+				setStatus({
+					status: "failed",
+					phase: "register",
+					error: LEGAL_ASSENT_REQUIRED_MESSAGE,
+				});
+				return;
+			}
 			void runFlow(false);
 		}
 	}, [

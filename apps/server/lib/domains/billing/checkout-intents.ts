@@ -25,6 +25,7 @@ import {
 	sendCheckoutContinueEmail,
 	sendPaidSetupEmail,
 } from "@/lib/platform/email";
+import { assertPublicCheckoutEnabled } from "@/lib/platform/public-fences";
 
 const CHECKOUT_INTENT_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -128,6 +129,7 @@ export async function requestCheckoutLink(args: {
 	interval: BillingInterval;
 	seatCount?: number;
 }): Promise<{ ok: true }> {
+	assertPublicCheckoutEnabled();
 	const email = normalizeEmail(args.email);
 	const seatCount = resolveCheckoutSeatCount({
 		planId: args.planId,
@@ -169,6 +171,7 @@ export async function requestCheckoutLink(args: {
 export async function continueCheckoutFromToken(args: {
 	token: string;
 }): Promise<{ checkoutUrl: string }> {
+	assertPublicCheckoutEnabled();
 	const token = args.token.trim();
 	if (token.length < 8) {
 		throwAppError("BILLING.INVALID_CHECKOUT_LINK");

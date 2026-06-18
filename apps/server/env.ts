@@ -79,6 +79,16 @@ const parsedEnv = createEnv({
 		ADMIN_WALLETS: z.string().optional(),
 		PLATFORM_ADMIN_EMAILS: z.string().optional(),
 		INVITE_TTL_DAYS: z.coerce.number().int().min(1).default(7),
+		/** Unset → disabled on production, enabled on other deployments. */
+		PUBLIC_CHECKOUT_ENABLED: z
+			.enum(["true", "false"])
+			.optional()
+			.transform((v) => (v === undefined ? undefined : v === "true")),
+		/** Unset → deployment default signup policy. */
+		PUBLIC_SIGNUP_ENABLED: z
+			.enum(["true", "false"])
+			.optional()
+			.transform((v) => (v === undefined ? undefined : v === "true")),
 		/** Unset → live on `production`, test elsewhere. `false` → test_mode always. */
 		DODO_LIVE: z.enum(["true", "false"]).optional(),
 		DODO_API_KEY: z.string().min(1).optional(),

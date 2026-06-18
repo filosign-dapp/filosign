@@ -1,12 +1,9 @@
 import { getPlanName, type PlanId } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
-import { signupPolicyIsGated } from "@filosign/shared";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
-import env from "@/env";
 import { isOrgBillingPlanId } from "@/lib/domains/billing/utils/policy";
-import { grantPartnerInviteSettlementAccessWithTx } from "@/lib/domains/settlement-access/settlement-access";
 import { trackPlatformInviteRedeemed } from "@/lib/platform/analytics";
 import {
 	CACHE_TTL,
@@ -23,6 +20,7 @@ import {
 	platformInvites,
 } from "@/lib/platform/db/schema/platform-access";
 import { users } from "@/lib/platform/db/schema/user";
+import { serverSignupPolicyIsGated } from "@/lib/platform/public-fences";
 import { assertNoOwnedActiveDodoSubscriptions } from "./utils/partner-trial-guards";
 import {
 	inviteIsActive,
@@ -375,11 +373,6 @@ async function copyActivePartnerTrialToOrgWithTx(
 			),
 		);
 
-	await grantPartnerInviteSettlementAccessWithTx(tx, {
-		organizationId: args.organizationId,
-		creatorWallet: wallet,
-	});
-
 	return true;
 }
 
@@ -503,7 +496,7 @@ export async function linkPaidSetupOnRegister(args: {
 export async function assertRegistrationComplete(
 	wallet: Address,
 ): Promise<void> {
-	if (!signupPolicyIsGated(env.DEPLOYMENT)) return;
+	if (!serverSignupPolicyIsGated()) return;
 
 	const walletNorm = getAddress(wallet);
 	if (!(await isUserRegistered(walletNorm))) {

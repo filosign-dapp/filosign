@@ -7,8 +7,8 @@ export {
 	previewPlatformInvite,
 	previewReturningUserLogin,
 	type RegistrationAccessGate,
+	resolvePlatformInviteKind,
 } from "./gates";
-
 export {
 	expirePartnerTrialsJob,
 	grantAdminOrgTeamsProIfEligibleWithTx,
@@ -16,7 +16,6 @@ export {
 	setOrgPlanManualWithTx,
 	upsertPaidAccessPendingFromWebhook,
 } from "./grants";
-
 export {
 	createPlatformInvite,
 	getPlatformInviteById,
@@ -47,7 +46,6 @@ export {
 	redeemPlatformInviteOnRegisterWithTx,
 	resolvePartnerInviteTrialForWorkspace,
 } from "./registration";
-
 export {
 	approveAccessRequest,
 	listAccessRequestsForAdmin,

@@ -1,17 +1,20 @@
 import type { PlanId } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
-import { signupPolicyIsGated } from "@filosign/shared";
 import { and, eq, gt, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
-import env from "@/env";
 import { allowsPlatformAdminAccess } from "@/lib/platform/admin";
 import db from "@/lib/platform/db";
 import {
+	type PlatformInviteKind,
 	platformAccessPending,
 	platformInvites,
 } from "@/lib/platform/db/schema/platform-access";
 import { users } from "@/lib/platform/db/schema/user";
+import {
+	serverPublicCheckoutEnabled,
+	serverSignupPolicyIsGated,
+} from "@/lib/platform/public-fences";
 import {
 	inviteIsActive,
 	normalizeEmail,
@@ -19,21 +22,32 @@ import {
 	planLabel,
 } from "./utils/shared";
 
-export async function previewPlatformInvite(args: {
-	token: string;
-}): Promise<PlatformGatePreview> {
-	const token = args.token.trim();
-	if (token.length < 8) {
-		return { valid: false, reason: "Invalid invite link" };
-	}
+async function loadActivePlatformInvite(token: string) {
+	const trimmed = token.trim();
+	if (trimmed.length < 8) return null;
 
 	const [row] = await db
 		.select()
 		.from(platformInvites)
-		.where(eq(platformInvites.token, token))
+		.where(eq(platformInvites.token, trimmed))
 		.limit(1);
 
-	if (!row || !inviteIsActive(row)) {
+	if (!row || !inviteIsActive(row)) return null;
+	return row;
+}
+
+export async function resolvePlatformInviteKind(
+	token: string,
+): Promise<PlatformInviteKind | null> {
+	const invite = await loadActivePlatformInvite(token);
+	return invite?.kind ?? null;
+}
+
+export async function previewPlatformInvite(args: {
+	token: string;
+}): Promise<PlatformGatePreview> {
+	const row = await loadActivePlatformInvite(args.token);
+	if (!row) {
 		return { valid: false, reason: "Invite not found or expired" };
 	}
 
@@ -44,6 +58,7 @@ export async function previewPlatformInvite(args: {
 		planLabel: planLabel(row.planId as PlanId),
 		trialDays: row.trialDays,
 		expiresAt: row.expiresAt?.toISOString() ?? null,
+		inviteKind: row.kind,
 	};
 }
 
@@ -171,7 +186,7 @@ export async function canStartEmailAuth(args: {
 	coldInvite?: string;
 	coldPieceCid?: string;
 }): Promise<PlatformGatePreview> {
-	if (!signupPolicyIsGated(env.DEPLOYMENT)) {
+	if (!serverSignupPolicyIsGated()) {
 		const email = args.email?.trim();
 		return {
 			valid: true,
@@ -207,7 +222,9 @@ export async function canStartEmailAuth(args: {
 
 	return {
 		valid: false,
-		reason: "Open the link from your email or purchase a plan to get started",
+		reason: serverPublicCheckoutEnabled()
+			? "Open the link from your email or purchase a plan to get started"
+			: "Open the link from your email or request access to get started",
 	};
 }
 
@@ -223,7 +240,7 @@ export async function assertRegistrationAllowed(args: {
 	email: string;
 	gate?: RegistrationAccessGate;
 }): Promise<void> {
-	if (!signupPolicyIsGated(env.DEPLOYMENT)) return;
+	if (!serverSignupPolicyIsGated()) return;
 
 	const emailNorm = normalizeEmail(args.email);
 

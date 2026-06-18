@@ -1,33 +1,83 @@
-import { type SubmitEvent, useState } from "react";
-import { cn } from "../../lib/cn";
-import { useFilosignRpc } from "../../lib/filosign-rpc";
 import {
-	marketingGhostLgClass,
-	marketingPrimaryMdClass,
-} from "../../lib/marketing-button";
+	isPaidCheckoutPlanId,
+	type PaidCheckoutPlanId,
+} from "@filosign/shared";
+import { type SubmitEvent, useEffect, useId, useRef, useState } from "react";
+import { useFilosignRpc } from "../../lib/filosign-rpc";
+import { PlanDialogShell } from "./plan-dialog-shell";
+import {
+	RequestAccessFormContent,
+	RequestAccessSentContent,
+} from "./request-access-dialog-content";
 
 interface RequestAccessDialogProps {
 	open: boolean;
 	onClose: () => void;
 	planName?: string;
+	planId?: "individual" | "teams" | "teams_pro";
+}
+
+function RequestAccessContextChip({ planName }: { planName: string }) {
+	return (
+		<p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground font-manrope">
+			{planName}
+			<span className="mx-1.5 text-border">·</span>
+			Invite-only
+		</p>
+	);
+}
+
+function resolveDialogPlan(args: {
+	planName?: string;
+	planId?: RequestAccessDialogProps["planId"];
+}): { planName: string; planId: PaidCheckoutPlanId } {
+	const planId: PaidCheckoutPlanId =
+		args.planId && isPaidCheckoutPlanId(args.planId) ? args.planId : "teams";
+	return {
+		planName: args.planName?.trim() || "Filosign",
+		planId,
+	};
 }
 
 export default function RequestAccessDialog({
 	open,
 	onClose,
 	planName,
+	planId,
 }: RequestAccessDialogProps) {
 	const rpc = useFilosignRpc();
+	const titleId = useId();
+	const emailInputId = useId();
+	const companyInputId = useId();
+	const messageInputId = useId();
+	const panelRef = useRef<HTMLDivElement>(null);
 	const [email, setEmail] = useState("");
-	const [name, setName] = useState("");
 	const [company, setCompany] = useState("");
 	const [message, setMessage] = useState("");
 	const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">(
 		"idle",
 	);
 	const [error, setError] = useState<string | null>(null);
+	const dialogPlan = resolveDialogPlan({ planName, planId });
 
-	if (!open) return null;
+	useEffect(() => {
+		if (open) return;
+		setEmail("");
+		setCompany("");
+		setMessage("");
+		setStatus("idle");
+		setError(null);
+	}, [open]);
+
+	useEffect(() => {
+		if (!open || status === "sent") return;
+		const frame = window.requestAnimationFrame(() => {
+			panelRef.current
+				?.querySelector<HTMLInputElement>("input[type='email']")
+				?.focus();
+		});
+		return () => window.cancelAnimationFrame(frame);
+	}, [open, status]);
 
 	const handleSubmit = async (event: SubmitEvent) => {
 		event.preventDefault();
@@ -36,12 +86,9 @@ export default function RequestAccessDialog({
 		try {
 			await rpc.platformAccess.submitAccessRequest({
 				email: email.trim(),
-				name: name.trim() || undefined,
-				company: company.trim() || undefined,
-				message:
-					[planName ? `Plan interest: ${planName}` : null, message.trim()]
-						.filter(Boolean)
-						.join("\n") || undefined,
+				company: company.trim(),
+				planId,
+				message: message.trim(),
 			});
 			setStatus("sent");
 		} catch (err) {
@@ -50,102 +97,39 @@ export default function RequestAccessDialog({
 		}
 	};
 
-	return (
-		<div
-			className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="access-dialog-title"
-		>
-			<div className="w-full max-w-md rounded-3xl border border-border/60 bg-background p-6 shadow-xl">
-				<h2
-					id="access-dialog-title"
-					className="text-lg font-medium font-manrope text-foreground"
-				>
-					Request access
-				</h2>
-				<p className="mt-2 text-sm text-muted-foreground font-manrope leading-relaxed">
-					Team plans are invite-only while we onboard design partners. Tell us
-					about your team and we&apos;ll follow up with an invite link.
-				</p>
+	const isLoading = status === "loading";
 
-				{status === "sent" ? (
-					<div className="mt-6 space-y-4">
-						<p className="text-sm text-foreground font-manrope">
-							Thanks. We received your request for{" "}
-							<strong>{email.trim()}</strong>.
-						</p>
-						<button
-							type="button"
-							className={cn(marketingPrimaryMdClass, "w-full")}
-							onClick={onClose}
-						>
-							Close
-						</button>
-					</div>
-				) : (
-					<form className="mt-6 space-y-3" onSubmit={handleSubmit}>
-						<label className="block space-y-2">
-							<span className="text-sm font-medium font-manrope">Email</span>
-							<input
-								type="email"
-								required
-								value={email}
-								onChange={(event) => setEmail(event.target.value)}
-								className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-manrope"
-							/>
-						</label>
-						<label className="block space-y-2">
-							<span className="text-sm font-medium font-manrope">Name</span>
-							<input
-								type="text"
-								value={name}
-								onChange={(event) => setName(event.target.value)}
-								className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-manrope"
-							/>
-						</label>
-						<label className="block space-y-2">
-							<span className="text-sm font-medium font-manrope">Company</span>
-							<input
-								type="text"
-								value={company}
-								onChange={(event) => setCompany(event.target.value)}
-								className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-manrope"
-							/>
-						</label>
-						<label className="block space-y-2">
-							<span className="text-sm font-medium font-manrope">
-								Anything else?
-							</span>
-							<textarea
-								value={message}
-								onChange={(event) => setMessage(event.target.value)}
-								rows={3}
-								className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm font-manrope"
-							/>
-						</label>
-						{error ? (
-							<p className="text-sm text-destructive font-manrope">{error}</p>
-						) : null}
-						<div className="flex gap-3 pt-2">
-							<button
-								type="button"
-								className={cn(marketingGhostLgClass, "flex-1")}
-								onClick={onClose}
-							>
-								Cancel
-							</button>
-							<button
-								type="submit"
-								disabled={status === "loading"}
-								className={cn(marketingPrimaryMdClass, "flex-1")}
-							>
-								{status === "loading" ? "Submitting…" : "Submit request"}
-							</button>
-						</div>
-					</form>
-				)}
-			</div>
-		</div>
+	return (
+		<PlanDialogShell
+			open={open}
+			onClose={onClose}
+			planName={dialogPlan.planName}
+			planId={dialogPlan.planId}
+			titleId={titleId}
+			panelRef={panelRef}
+			contextChip={<RequestAccessContextChip planName={dialogPlan.planName} />}
+			title="Request invite"
+			description="We're onboarding design partners invite-by-invite. Share your work email, company, and how you'd use Filosign. We'll follow up with an invite link."
+		>
+			{status === "sent" ? (
+				<RequestAccessSentContent email={email} onClose={onClose} />
+			) : (
+				<RequestAccessFormContent
+					emailInputId={emailInputId}
+					companyInputId={companyInputId}
+					messageInputId={messageInputId}
+					email={email}
+					company={company}
+					message={message}
+					onEmailChange={setEmail}
+					onCompanyChange={setCompany}
+					onMessageChange={setMessage}
+					error={error}
+					isLoading={isLoading}
+					onSubmit={handleSubmit}
+					onClose={onClose}
+				/>
+			)}
+		</PlanDialogShell>
 	);
 }

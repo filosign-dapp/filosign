@@ -1,17 +1,13 @@
-import { AnimatePresence, motion, SPRING_TOKENS } from "@filosign/motion";
 import type { AppRouterClient, InferClientOutputs } from "@filosign/react/orpc";
-import { pricingCheckoutDialogImagePath } from "@filosign/shared";
-import { XIcon } from "@phosphor-icons/react";
 import { type SubmitEvent, useEffect, useId, useRef, useState } from "react";
-import { cn } from "../../lib/cn";
 import { useFilosignRpc } from "../../lib/filosign-rpc";
-import { marketingButtonFocus } from "../../lib/marketing-button";
 import { YEARLY_DISCOUNT_RATE } from "../../lib/pricing-display";
 import {
 	CheckoutBlockedContent,
 	CheckoutFormContent,
 	CheckoutSentContent,
 } from "./checkout-dialog-content";
+import { PlanDialogShell } from "./plan-dialog-shell";
 
 type BillingInterval = "monthly" | "yearly";
 
@@ -24,35 +20,6 @@ interface PricingCheckoutDialogProps {
 	planName: string;
 	planId: "individual" | "teams" | "teams_pro";
 	billingInterval: BillingInterval;
-}
-
-function CheckoutImageColumn({
-	planName,
-	planId,
-}: {
-	planName: string;
-	planId: PricingCheckoutDialogProps["planId"];
-}) {
-	return (
-		<div className="relative aspect-3/2 w-full shrink-0 overflow-hidden lg:aspect-auto lg:min-h-full">
-			<img
-				src={pricingCheckoutDialogImagePath(planId)}
-				alt=""
-				width={640}
-				height={480}
-				className="absolute inset-0 size-full object-cover"
-			/>
-			<div
-				className="absolute inset-0 bg-linear-to-t from-foreground/50 via-foreground/10 to-transparent"
-				aria-hidden="true"
-			/>
-			<div className="absolute inset-x-0 bottom-0 flex p-5 sm:p-6">
-				<span className="rounded-full border border-border/40 bg-background/90 px-3 py-1 text-xs font-medium font-manrope text-foreground backdrop-blur-sm">
-					{planName}
-				</span>
-			</div>
-		</div>
-	);
 }
 
 function BillingContextChip({
@@ -91,6 +58,7 @@ export default function PricingCheckoutDialog({
 	const rpc = useFilosignRpc();
 	const emailInputId = useId();
 	const seatStepperId = useId();
+	const titleId = useId();
 	const panelRef = useRef<HTMLDivElement>(null);
 	const [email, setEmail] = useState("");
 	const isTeamPlan = planId === "teams" || planId === "teams_pro";
@@ -102,25 +70,16 @@ export default function PricingCheckoutDialog({
 	const [blocked, setBlocked] = useState<PreviewResult | null>(null);
 
 	useEffect(() => {
-		if (!open) return;
-
-		const previousOverflow = document.body.style.overflow;
-		document.body.style.overflow = "hidden";
-
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.key === "Escape") onClose();
-		};
-
-		window.addEventListener("keydown", handleKeyDown);
-
-		return () => {
-			document.body.style.overflow = previousOverflow;
-			window.removeEventListener("keydown", handleKeyDown);
-		};
-	}, [open, onClose]);
+		if (open) return;
+		setEmail("");
+		setSeatCount(1);
+		setStatus("idle");
+		setError(null);
+		setBlocked(null);
+	}, [open]);
 
 	useEffect(() => {
-		if (!open) return;
+		if (!open || status === "sent" || status === "blocked") return;
 		const frame = window.requestAnimationFrame(() => {
 			panelRef.current
 				?.querySelector<HTMLInputElement>("input[type='email']")
@@ -164,87 +123,41 @@ export default function PricingCheckoutDialog({
 	const isLoading = status === "loading";
 
 	return (
-		<AnimatePresence>
-			{open ? (
-				<div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
-					<motion.button
-						type="button"
-						aria-label="Close dialog"
-						className="absolute inset-0 bg-foreground/40 backdrop-blur-[2px]"
-						initial={{ opacity: 0 }}
-						animate={{ opacity: 1 }}
-						exit={{ opacity: 0 }}
-						transition={{ duration: 0.2 }}
-						onClick={onClose}
-					/>
-					<motion.div
-						ref={panelRef}
-						role="dialog"
-						aria-modal="true"
-						aria-labelledby="checkout-dialog-title"
-						className="relative z-10 grid max-h-[90dvh] w-full max-w-[min(56rem,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-border/60 bg-background shadow-2xl lg:grid-cols-[2fr_3fr]"
-						initial={{ opacity: 0, y: 24, scale: 0.98 }}
-						animate={{ opacity: 1, y: 0, scale: 1 }}
-						exit={{ opacity: 0, y: 16, scale: 0.98 }}
-						transition={SPRING_TOKENS.snappy}
-					>
-						<CheckoutImageColumn planName={planName} planId={planId} />
-
-						<div className="@container/checkout-form relative flex min-h-0 flex-col overflow-y-auto p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:p-8 lg:p-10">
-							<button
-								type="button"
-								className={cn(
-									"absolute top-4 right-4 inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground",
-									marketingButtonFocus,
-								)}
-								onClick={onClose}
-								aria-label="Close"
-							>
-								<XIcon className="size-5" aria-hidden />
-							</button>
-
-							<div className="flex flex-col gap-6 pt-2 pr-10">
-								<div className="space-y-3">
-									<BillingContextChip
-										planName={planName}
-										billingInterval={billingInterval}
-									/>
-									<h2
-										id="checkout-dialog-title"
-										className="text-2xl font-medium tracking-tight text-foreground font-inter"
-									>
-										Start {planName}
-									</h2>
-									<p className="text-sm leading-relaxed text-muted-foreground font-manrope">
-										We&apos;ll email a link to start your 7-day free trial. The
-										link expires in 24 hours.
-									</p>
-								</div>
-
-								{status === "sent" ? (
-									<CheckoutSentContent email={email} onClose={onClose} />
-								) : status === "blocked" && blocked ? (
-									<CheckoutBlockedContent blocked={blocked} onClose={onClose} />
-								) : (
-									<CheckoutFormContent
-										emailInputId={emailInputId}
-										seatStepperId={seatStepperId}
-										email={email}
-										onEmailChange={setEmail}
-										isTeamPlan={isTeamPlan}
-										seatCount={seatCount}
-										onSeatCountChange={setSeatCount}
-										error={error}
-										isLoading={isLoading}
-										onSubmit={handleSubmit}
-										onClose={onClose}
-									/>
-								)}
-							</div>
-						</div>
-					</motion.div>
-				</div>
-			) : null}
-		</AnimatePresence>
+		<PlanDialogShell
+			open={open}
+			onClose={onClose}
+			planName={planName}
+			planId={planId}
+			titleId={titleId}
+			panelRef={panelRef}
+			contextChip={
+				<BillingContextChip
+					planName={planName}
+					billingInterval={billingInterval}
+				/>
+			}
+			title={`Start ${planName}`}
+			description="We'll email a link to start your 7-day free trial. The link expires in 24 hours."
+		>
+			{status === "sent" ? (
+				<CheckoutSentContent email={email} onClose={onClose} />
+			) : status === "blocked" && blocked ? (
+				<CheckoutBlockedContent blocked={blocked} onClose={onClose} />
+			) : (
+				<CheckoutFormContent
+					emailInputId={emailInputId}
+					seatStepperId={seatStepperId}
+					email={email}
+					onEmailChange={setEmail}
+					isTeamPlan={isTeamPlan}
+					seatCount={seatCount}
+					onSeatCountChange={setSeatCount}
+					error={error}
+					isLoading={isLoading}
+					onSubmit={handleSubmit}
+					onClose={onClose}
+				/>
+			)}
+		</PlanDialogShell>
 	);
 }

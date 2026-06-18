@@ -11,7 +11,7 @@ export const LEGAL_OPERATOR = {
 
 /** Privacy Policy operator disclosure only - do not use on other public pages. */
 export function operatorIdentitySentence(): string {
-	return `${LEGAL_OPERATOR.legalName}, an individual residing in ${LEGAL_OPERATOR.location}, doing business as ${LEGAL_OPERATOR.tradingName}`;
+	return `${LEGAL_OPERATOR.legalName}, trading as ${LEGAL_OPERATOR.tradingName}`;
 }
 
 export const DODO_PAYMENTS = {

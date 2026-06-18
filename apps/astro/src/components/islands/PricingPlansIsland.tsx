@@ -36,6 +36,7 @@ import { MarketingPageBody, MarketingPageShell } from "./MarketingPageSequence";
 import { MotionProvider } from "./MotionProvider";
 import PricingCheckoutDialog from "./PricingCheckoutDialog";
 import PricingFaqIsland from "./PricingFaqIsland";
+import RequestAccessDialog from "./RequestAccessDialog";
 
 const PRICING_HERO_TOP_COUNT = 3;
 
@@ -217,13 +218,27 @@ function PricingPlanCard({
 	billingInterval,
 	index,
 	onCheckout,
+	onRequestAccess,
+	publicCheckoutEnabled,
 }: {
 	plan: PricingPlan;
 	billingInterval: BillingInterval;
 	index: number;
 	onCheckout: (plan: PricingPlan) => void;
+	onRequestAccess: (plan: PricingPlan) => void;
+	publicCheckoutEnabled: boolean;
 }) {
 	const isSandbox = plan.sandbox === true;
+	const ctaLabel = publicCheckoutEnabled ? plan.cta : "Request invite";
+
+	const handlePrimary = () => {
+		if (publicCheckoutEnabled) {
+			if (isSandbox) return;
+			onCheckout(plan);
+			return;
+		}
+		onRequestAccess(plan);
+	};
 
 	return (
 		<motion.div
@@ -262,20 +277,30 @@ function PricingPlanCard({
 					whileHover={MARKETING_PRESSABLE_HOVER}
 					whileTap={MARKETING_PRESSABLE_TAP}
 				>
-					{isSandbox ? (
+					{isSandbox && publicCheckoutEnabled ? (
 						<a
 							href={MARKETING_CTA.getStartedHref}
+							target={
+								MARKETING_CTA.getStartedHref.startsWith("http")
+									? "_blank"
+									: undefined
+							}
+							rel={
+								MARKETING_CTA.getStartedHref.startsWith("http")
+									? "noopener noreferrer"
+									: undefined
+							}
 							className={cn(marketingPrimaryMdClass, "w-full")}
 						>
-							{plan.cta}
+							{ctaLabel}
 						</a>
 					) : (
 						<button
 							type="button"
 							className={cn(marketingPrimaryMdClass, "w-full")}
-							onClick={() => onCheckout(plan)}
+							onClick={handlePrimary}
 						>
-							{plan.cta}
+							{ctaLabel}
 						</button>
 					)}
 				</Pressable>
@@ -391,6 +416,9 @@ function PricingPlansContent({
 	const [billingInterval, setBillingInterval] =
 		useState<BillingInterval>("yearly");
 	const [checkoutPlan, setCheckoutPlan] = useState<PricingPlan | null>(null);
+	const [accessRequestPlan, setAccessRequestPlan] =
+		useState<PricingPlan | null>(null);
+	const publicCheckoutEnabled = MARKETING_CTA.publicCheckoutEnabled;
 	const savePercentLabel = `${Math.round(YEARLY_DISCOUNT_RATE * 100)}%`;
 
 	return (
@@ -415,6 +443,8 @@ function PricingPlansContent({
 								billingInterval={billingInterval}
 								index={index}
 								onCheckout={setCheckoutPlan}
+								onRequestAccess={setAccessRequestPlan}
+								publicCheckoutEnabled={publicCheckoutEnabled}
 							/>
 						))}
 					</div>
@@ -471,13 +501,21 @@ function PricingPlansContent({
 					</p>
 				</MarketingPageBody>
 			</section>
-			{checkoutPlan?.planId ? (
+			{publicCheckoutEnabled && checkoutPlan?.planId ? (
 				<PricingCheckoutDialog
 					open
 					onClose={() => setCheckoutPlan(null)}
 					planName={checkoutPlan.name}
 					planId={checkoutPlan.planId}
 					billingInterval={billingInterval}
+				/>
+			) : null}
+			{accessRequestPlan ? (
+				<RequestAccessDialog
+					open
+					onClose={() => setAccessRequestPlan(null)}
+					planName={accessRequestPlan.name}
+					planId={accessRequestPlan.planId}
 				/>
 			) : null}
 		</MarketingPageShell>

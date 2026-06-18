@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { InlineLoader } from "@/src/lib/components/ui/loader";
+import { DelayedInlineLoader } from "@/src/lib/components/ui/loader";
 import {
 	createFormToEnvelopeForm,
 	createFormToEnvelopeFormWithoutDocuments,
@@ -98,7 +98,10 @@ function CreateEnvelopeRouteContent() {
 	if (!persistHydrated || bootState === "loading") {
 		return (
 			<div className="flex min-h-[50vh] items-center justify-center">
-				<InlineLoader size="md" />
+				<DelayedInlineLoader
+					size="md"
+					show={!persistHydrated || bootState === "loading"}
+				/>
 			</div>
 		);
 	}

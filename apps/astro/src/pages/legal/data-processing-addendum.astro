@@ -6,43 +6,47 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 ---
 
 <BaseLayout
-	title="Data Processing Addendum - Filosign"
-	description="Filosign data processing terms for customer envelope workflows."
+	title="Data Processing Overview - Filosign"
+	description="Filosign data processing practices and principles."
 >
 	<MarketingPageShell>
 		<LegalDocument
-			title="Data Processing Addendum (DPA)"
-			description="This DPA describes processor terms for customer envelope workflows where Filosign processes personal data on customer instructions."
-			lastUpdated="June 2026"
+			title="Data Processing Overview"
+			description="An overview of how processor terms for customer envelope workflows are handled where we process personal data on your instructions."
+			lastUpdated="June 19, 2026"
 		>
+			<div class="bg-destructive/10 text-destructive border border-destructive/20 rounded-lg p-4 my-4 text-xs font-medium">
+				<strong>Important:</strong> This page is informational and is not a contractually binding Data Processing Addendum. We do not currently offer a standard DPA, Standard Contractual Clauses, or a UK transfer addendum. Do not upload personal data or create a workflow where applicable law requires those agreements until we confirm in writing that the required agreements and safeguards are in place.
+			</div>
+
 			<h2>1. Scope</h2>
 			<p>
-				This DPA applies when Filosign processes customer-controlled envelope, recipient, and signing workflow data as a processor.
+				This overview describes our practices when we process customer-controlled envelope, recipient, and signing workflow data on customer instructions.
 			</p>
 
 			<h2>2. Roles</h2>
 			<p>
-				Customer is controller and Filosign is processor for covered workflow data, except where applicable law requires independent controller treatment for specific processing.
+				A customer commonly acts as controller for recipient and envelope data it supplies, while the Operator commonly acts as processor for that customer-directed processing. The Operator acts as an independent controller for account security, billing administration, legal compliance, service protection, and other purposes it determines. Actual roles depend on the facts and applicable law.
 			</p>
 
-			<h2>3. Processing Terms</h2>
+			<h2>3. Processing Principles</h2>
 			<ul>
-				<li>Process only on documented customer instructions.</li>
-				<li>Apply confidentiality and least-privilege access controls.</li>
-				<li>Maintain appropriate technical and organizational security measures.</li>
-				<li>Assist with data-subject requests where legally required.</li>
-				<li>Notify customer controllers of relevant security incidents without undue delay.</li>
-				<li>Support deletion/return handling subject to legal-retention exceptions.</li>
+				<li>We use customer workflow data to provide the requested workflow and for limited security, legal, and service-integrity purposes described in the Privacy Policy.</li>
+				<li>We apply confidentiality and least-privilege access controls.</li>
+				<li>We aim to maintain appropriate technical and organizational security measures.</li>
+				<li>We assist customer controllers with data-subject requests where feasible and legally required.</li>
+				<li>We notify customer controllers of verified security incidents affecting their data without undue delay.</li>
+				<li>We support deletion/return handling subject to our data retention schedule and legal exceptions.</li>
 			</ul>
 
-			<h2>4. Subprocessors And Transfers</h2>
+			<h2>4. Subprocessors and Transfers</h2>
 			<p>
-				Current subprocessors are listed on <a href="/subprocessors" class="underline">/subprocessors</a>. International transfer safeguards are applied where required.
+				Current service providers are listed on <a href="/subprocessors" class="underline">the Subprocessors page</a>. The list does not itself provide contractual authorization or a lawful international-transfer mechanism.
 			</p>
 
 			<h2>5. Contact</h2>
 			<p>
-				For DPA requests, contact
+				For questions regarding data processing, contact
 				<a href={`mailto:${LEGAL_OPERATOR.privacyEmail}`} class="underline"
 					>{LEGAL_OPERATOR.privacyEmail}</a
 				>.

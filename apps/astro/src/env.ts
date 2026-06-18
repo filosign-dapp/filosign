@@ -1,3 +1,4 @@
+import { DEPLOYMENTS } from "@filosign/shared";
 import { createEnv } from "@t3-oss/env-core";
 import { z } from "zod";
 
@@ -7,10 +8,17 @@ export const env = createEnv({
 		PUBLIC_ASTRO_URL: z.url().default("https://filosign.xyz"),
 		PUBLIC_CLIENT_URL: z.url().default("http://localhost:3001"),
 		PUBLIC_SERVER_URL: z.url().default("http://localhost:3000"),
+		PUBLIC_DEPLOYMENT: z.enum(DEPLOYMENTS).optional(),
+		PUBLIC_CHECKOUT_ENABLED: z
+			.enum(["true", "false"])
+			.optional()
+			.transform((v) => (v === undefined ? undefined : v === "true")),
 	},
 	runtimeEnv: {
 		PUBLIC_ASTRO_URL: import.meta.env.PUBLIC_ASTRO_URL,
 		PUBLIC_CLIENT_URL: import.meta.env.PUBLIC_CLIENT_URL,
 		PUBLIC_SERVER_URL: import.meta.env.PUBLIC_SERVER_URL,
+		PUBLIC_DEPLOYMENT: import.meta.env.PUBLIC_DEPLOYMENT,
+		PUBLIC_CHECKOUT_ENABLED: import.meta.env.PUBLIC_CHECKOUT_ENABLED,
 	},
 });

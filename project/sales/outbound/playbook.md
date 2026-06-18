@@ -156,3 +156,33 @@ Sales agents must follow these guidelines:
 * Cite source URLs for every trigger signal.
 * Write personalization around direct operational pain, avoiding fake flattery.
 * Never claim mainnet traction or QES legal certification.
+
+---
+
+## 8. Battle-Tested Pitch Tips (Mistakes to Avoid)
+
+These tips were compiled from actual founder-led roleplay simulations:
+
+1. **Eliminate "Guessing" Language:**
+   * *Avoid:* "probably," "I suppose," "I think." It projects uncertainty.
+   * *Use:* Authoritative phrasing. Frame assumptions as standard market observations: *"Usually, teams tell us they spend hours..."* or *"What we typically see is..."*
+
+2. **Define Ambiguous Terms (Be Precise):**
+   * *Avoid:* General terms like "contract" which can mean a legal agreement document or a smart contract in Web3.
+   * *Use:* Specific terms: *"milestone agreement document"* or *"Solidity smart contract."*
+
+3. **Never Give the Buyer Homework:**
+   * *Avoid:* Asking the prospect to verify or audit things themselves (e.g. *"I hope your security team can verify our code"*). Busy executives do not have time.
+   * *Use:* Deliver the proof directly or offer to walk their team through it: *"Here is a 1-page summary of our security architecture, or I can walk your lead engineer through it in 5 minutes."*
+
+4. **When They Say Yes, Stop Selling:**
+   * *Avoid:* Over-selling or pitching unrelated programs after they agree to a meeting.
+   * *Use:* Take the win, stop pitching, and send the booking link immediately: *"Awesome. I'll drop the calendar link in our thread right now."*
+
+5. **Structure a Zero-Effort Pilot:**
+   * *Avoid:* Leaving the logistics of a pilot up to the buyer's imagination.
+   * *Use:* Propose a single-milestone pilot and offer to handle all the template setup and invite configuration ourselves so they have zero operational overhead.
+
+6. **Address the Business and Security Realities Early:**
+   * *Avoid:* Getting bogged down in technical webhooks without explaining organization key management (e.g. shared organization access keys) and commercial pricing tiers (Teams vs Teams Pro).
+   * *Use:* Show how the product handles shared team access securely and how the SaaS seat-based model fits their budget.

@@ -38,7 +38,7 @@ A payer may still call `registerRule` directly on-chain to any address. Filosign
 
 ## Organization payout wallet
 
-Stored on `organizations.orgWalletAddress`. Intended for a team-controlled Safe. See [org-wallet-linking.md](./org-wallet-linking.md) for link flow and RBAC. Payout execution uses permissionless `executePayoutLeg` per leg (non-custodial push); see [architecture-and-non-custody.md](./architecture-and-non-custody.md).
+Stored on `organizations.orgWalletAddress`. Intended for a team-controlled Safe. See [org-wallet-linking.md](./org-wallet-linking.md) for link flow and RBAC. Payout execution uses permissionless `executePayoutLeg` per leg (non-custodial allowance-based transfer); see [architecture-and-non-custody.md](./architecture-and-non-custody.md).
 
 ## Wallet screening (planned)
 

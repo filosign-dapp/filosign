@@ -1,6 +1,6 @@
 # Organization wallet linking (product spec)
 
-Filosign does **not** custody organization treasuries. Workspace payouts use **linked external addresses** (typically a Safe) as payer or recipient. On-chain behavior is always **non-custodial push**: `approve` + `transferFrom(payer, recipient)` per leg via `FSPaymentValidator.executePayoutLeg`.
+Filosign does **not** custody organization treasuries. Workspace payouts use **linked external addresses** (typically a Safe) as payer or recipient. On-chain behavior is a **non-custodial allowance-based transfer**: `approve` + `transferFrom(payer, recipient)` per leg via `FSPaymentValidator.executePayoutLeg`.
 
 ## Data model
 

@@ -5,6 +5,11 @@ import PricingPlansIsland, {
 } from "../components/islands/PricingPlansIsland";
 import MarketingPageShell from "../components/MarketingPageShell.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { astroPublicCheckoutEnabled } from "../lib/public-access";
+
+const publicCheckoutEnabled = astroPublicCheckoutEnabled();
+const planCta = (startLabel: string) =>
+	publicCheckoutEnabled ? startLabel : "Request invite";
 
 const plans = [
 	{
@@ -20,7 +25,7 @@ const plans = [
 			"USDC payout packets (workspace approval required)",
 			"Draft review links for clients",
 		],
-		cta: "Start Solo",
+		cta: planCta("Start Solo"),
 		highlight: false,
 		planId: "individual",
 	},
@@ -39,7 +44,7 @@ const plans = [
 			"Per-packet recipient selection for gated files",
 			"All Solo handoff features for team sends",
 		],
-		cta: "Start Teams",
+		cta: planCta("Start Teams"),
 		highlight: true,
 		badge: "Best Value",
 		planId: "teams",
@@ -65,7 +70,7 @@ const plans = [
 			// "Custom branding on sign pages",
 			// "Webhooks and metadata tags",
 		],
-		cta: "Start Teams Pro",
+		cta: planCta("Start Teams Pro"),
 		highlight: false,
 		planId: "teams_pro",
 	},

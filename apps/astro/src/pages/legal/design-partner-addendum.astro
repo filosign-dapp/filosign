@@ -1,0 +1,87 @@
+---
+import { ACTIVE_PILOT_ADDENDUM_VERSION } from "@filosign/shared";
+import LegalDocument from "../../components/LegalDocument.astro";
+import MarketingPageShell from "../../components/MarketingPageShell.astro";
+import { LEGAL_OPERATOR } from "../../config/legal-content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+	title="Design Partner Addendum - Filosign"
+	description="Additional terms for Filosign design partner pilot access. Not legal advice."
+>
+	<MarketingPageShell>
+		<LegalDocument
+			title="Design Partner Addendum"
+			description="Accept at sign-in when you join through a design partner invite. This addendum supplements the public Terms of Service."
+			lastUpdated="June 20, 2026"
+		>
+			<p class="text-sm text-muted-foreground">Version {ACTIVE_PILOT_ADDENDUM_VERSION}</p>
+
+			<div class="rounded-lg border border-border bg-muted/30 p-4 my-4 text-sm">
+				<strong>Design partner pilot.</strong> Filosign is operated by {LEGAL_OPERATOR.legalName}, trading as {LEGAL_OPERATOR.tradingName}, as a sole proprietor pending incorporation in India. Access during this pilot is invite-only. Software, infrastructure, and payout attachment may change or stop without notice.
+			</div>
+
+			<h2>1. Scope and precedence</h2>
+			<p>
+				This Design Partner Addendum (the "<strong>Addendum</strong>") supplements the <a href="/terms" class="underline">Terms of Service</a>, <a href="/privacy" class="underline">Privacy Policy</a>, and <a href="/acceptable-use" class="underline">Acceptable Use Policy</a>. If this Addendum conflicts with the public Terms on pilot-specific matters (including liability caps, data deletion, geography, and payout attachment), <strong>this Addendum controls</strong> for your design partner access.
+			</p>
+
+			<h2>2. Eligibility</h2>
+			<p>
+				This Addendum applies only if you register or continue using the Service through an active design partner invite issued by the Operator. You represent that you use the Service solely for commercial, business, professional, trade, or freelance or sole-proprietor purposes.
+			</p>
+
+			<h2>3. Archival duty</h2>
+			<p>
+				You must download and keep your own copies of documents, proof packets, and compliance exports promptly after signing or export. The Operator does not warrant long-term availability of pilot data in the Service.
+			</p>
+
+			<h2>4. Data deletion</h2>
+			<p>
+				The Operator may delete, reset, or wipe pilot accounts, workspaces, documents, metadata, and operational data at any time, with or without notice, for security, legal, technical, or business reasons.
+			</p>
+
+			<h2>5. Geography and personal data</h2>
+			<p>
+				You must not create workflows or upload personal data subject to EEA, UK, or Canadian international-transfer or representative requirements unless the Operator confirms required agreements in writing. You warrant that your use complies with applicable data-protection law for every recipient and jurisdiction you involve.
+			</p>
+
+			<h2>6. Electronic signature reliance</h2>
+			<p>
+				Filosign provides evidence and workflow tools only. You do not rely on Filosign to decide legal suitability, enforceability, or counterparty identity. You remain solely responsible for whether each workflow meets your legal standard.
+			</p>
+
+			<h2>7. Blockchain and payout attachment</h2>
+			<p>
+				You assume all risk from public blockchains, gas, tokens, smart contracts, wallet security, relay failures, and optional USDC payout attachment. Payout attachment requires manual approval and acceptance of the <a href="/legal/settlement-feature-addendum" class="underline">Payout attachment addendum</a>. The Operator does not guarantee execution, indexing, or recovery of on-chain transfers.
+			</p>
+
+			<h2>8. Indemnification</h2>
+			<p>
+				To the maximum extent permitted by law, you will defend, indemnify, and hold harmless the Operator and its personnel from claims, damages, losses, and expenses (including reasonable legal fees) arising from your content, your use of the Service during the pilot, your breach of this Addendum or the public Terms, or your violation of applicable law or third-party rights, <strong>except to the extent directly caused by the Operator's proven fraud</strong>.
+			</p>
+
+			<h2>9. Limitation of liability</h2>
+			<p>
+				To the maximum extent permitted by law, the Operator's total aggregate liability for claims arising out of or relating to the pilot or this Addendum is limited to the lesser of (a) amounts you paid for the Service in the twelve (12) months before the event giving rise to liability, or (b) ten U.S. dollars (USD $10).
+			</p>
+			<p>
+				The disclaimers, exclusions, and mandatory carve-outs in the public Terms apply to the extent they are not superseded by this Addendum. Nothing limits liability where applicable law prohibits limitation.
+			</p>
+
+			<h2>10. Disputes</h2>
+			<p>
+				Disputes are governed by the public Terms (India law and arbitration in {LEGAL_OPERATOR.location}), except that you and the Operator agree that each may bring claims only in an individual capacity, and not as a plaintiff or class member in any purported class, collective, representative, or mass action or proceeding, to the maximum extent permitted by law.
+			</p>
+			<p>
+				Any claim arising out of or relating to the pilot or this Addendum must be filed within twelve (12) months after the event giving rise to the claim, or within twelve (12) months after you knew or reasonably should have known of the facts giving rise to the claim, whichever is earlier, unless a longer period is required by mandatory law.
+			</p>
+
+			<h2>11. Contact</h2>
+			<p>
+				<a href={`mailto:${LEGAL_OPERATOR.supportEmail}`} class="underline">{LEGAL_OPERATOR.supportEmail}</a>.
+			</p>
+		</LegalDocument>
+	</MarketingPageShell>
+</BaseLayout>

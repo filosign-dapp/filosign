@@ -1,4 +1,5 @@
 ---
+import { ACTIVE_PRIVACY_VERSION } from "@filosign/shared";
 import LegalDocument from "../components/LegalDocument.astro";
 import MarketingPageShell from "../components/MarketingPageShell.astro";
 import {
@@ -19,8 +20,9 @@ const operator = operatorIdentitySentence();
 			<LegalDocument
 				title="Privacy Policy"
 				description="This policy describes how Filosign processes personal data for encrypted document workflows, wallet-based signing, analytics, billing, and payout packets."
-				lastUpdated="May 2026"
+				lastUpdated="June 20, 2026"
 			>
+				<p class="text-sm text-muted-foreground">Version {ACTIVE_PRIVACY_VERSION}</p>
 				<h2>1. Who operates Filosign</h2>
 				<p>
 					The Service is operated by {operator}. Contact:
@@ -32,15 +34,14 @@ const operator = operatorIdentitySentence();
 					> (support).
 				</p>
 
-				<h2>2. Data Fiduciary, Processor, and Merchant of Record roles</h2>
+				<h2>2. Data Fiduciary and Merchant of Record roles</h2>
 				<p>
 					Under applicable data protection frameworks, including the India Digital Personal Data
-					Protection (DPDP) Act, 2023 and the EU/UK General Data Protection Regulation (GDPR),
-					different parties may process personal data as follows:
+					Protection (DPDP) Act, 2023, different parties may process personal data as follows:
 				</p>
 				<ul>
 					<li>
-						<strong>Filosign as Data Fiduciary (DPDP) / Data Controller (GDPR):</strong> We act as controller for personal data needed to operate the Service, including account registration, display profiles, workspace and signing metadata, security and operation logs, support communications, and non-essential product analytics (where consent applies).
+						<strong>Filosign as Data Fiduciary (DPDP):</strong> We act as fiduciary for personal data needed to operate the Service, including account registration, display profiles, workspace and signing metadata, security and operation logs, support communications, and non-essential product analytics (where consent applies).
 					</li>
 					<li>
 						<strong>{DODO_PAYMENTS.name} as Merchant of Record:</strong> When you purchase a paid subscription, {DODO_PAYMENTS.name} is the legal seller and acts as an <strong>independent controller</strong> for checkout and payment data (such as payment method details, billing address where collected, tax identifiers, fraud signals, and transaction records). That processing is described in <a
@@ -51,7 +52,7 @@ const operator = operatorIdentitySentence();
 						>. We receive limited billing identifiers and subscription status from Dodo to provision your plan.
 					</li>
 					<li>
-						<strong>Filosign as Data Processor:</strong> When a customer uploads encrypted documents, recipient details, and signer inputs to run an envelope, we process that data on the customer's instructions. The customer initiating the workflow remains the controller for their recipients and signers unless applicable law treats us as an independent controller for specific processing (for example, providing the Service directly to signers).
+						<strong>Filosign as Processor:</strong> When a customer uploads encrypted documents, recipient details, and signer inputs to run an envelope, we process that data on the customer's instructions. The customer initiating the workflow remains the data fiduciary/controller for their recipients and signers.
 					</li>
 				</ul>
 
@@ -59,7 +60,7 @@ const operator = operatorIdentitySentence();
 				<p>
 					This policy applies to individuals whose personal data is processed by Filosign
 					websites, applications, and APIs ("Service"). In these terms, individuals are referred to as 
-					"Data Principals" (under the DPDP Act) or "Data Subjects" (under the GDPR).
+					"Data Principals" (under the DPDP Act).
 				</p>
 
 				<h2>4. Data we process</h2>
@@ -101,13 +102,19 @@ const operator = operatorIdentitySentence();
 					</li>
 				</ul>
 
-				<h2>5. Legal bases (GDPR)</h2>
-				<p>
-					Where GDPR applies, we rely on appropriate legal bases such as contract
-					(operating your account and workflows), legitimate interests (security,
-					abuse prevention, and product improvement, balanced against your rights),
-					legal obligation, and consent where required (for example, non-essential analytics).
-				</p>
+			<h2>5. Purposes of processing</h2>
+			<ul>
+				<li><strong>Contract performance:</strong> account authentication, requested signing workflows, workspace administration, support, and subscription provisioning.</li>
+				<li><strong>Legitimate business interests:</strong> service security, fraud and abuse prevention, reliability, limited operational analytics, and establishment or defense of legal claims.</li>
+				<li><strong>Legal obligation:</strong> tax, accounting, regulatory, sanctions, lawful-request, and incident-response duties that apply to us.</li>
+				<li><strong>Consent:</strong> non-essential browser analytics and other processing for which applicable law requires consent. Consent can be withdrawn without affecting earlier lawful processing.</li>
+			</ul>
+			<p>
+				Account, authentication, and workflow data marked as required are necessary to provide the requested Service. Without them, we may be unable to create an account, authenticate you, deliver a document, or complete a requested workflow.
+			</p>
+			<p>
+				We may receive recipient names, email addresses, roles, and workflow instructions from the customer or sender rather than directly from the recipient. We may also receive authentication and wallet data from thirdweb, billing status from Dodo, delivery events from email providers, and public transaction data from blockchain networks.
+			</p>
 
 				<h2>6. Encrypted document content</h2>
 				<p>
@@ -150,8 +157,7 @@ const operator = operatorIdentitySentence();
 					We use service providers for hosting, storage, email, analytics,
 					authentication, billing, blockchain infrastructure, and support. See
 					our <a href="/subprocessors" class="underline">Subprocessors</a> page
-					for the current register. For processor terms covering customer envelope
-					processing, see our <a href="/legal/data-processing-addendum" class="underline">Data Processing Addendum</a>.
+				for the current register. For our current processor posture, see the <a href="/legal/data-processing-addendum" class="underline">Data Processing Overview</a>. It is not a binding data processing agreement.
 				</p>
 
 				<h2>10. Analytics and cookies</h2>
@@ -173,23 +179,58 @@ const operator = operatorIdentitySentence();
 					storage may break parts of the app.
 				</p>
 
-				<h2>11. Retention, export, and deletion</h2>
+				<h2>11. Data Retention Schedule</h2>
 				<p>
-					Production document retention is plan-based. We generally retain
-					encrypted documents and proof records while your subscription or
-					workspace remains active, then provide a reasonable export or grace
-					period before deletion where feasible. Optional archival storage may
-					have separate retention terms.
+					We process and retain different categories of personal data according to the following schedule:
 				</p>
+				<div class="overflow-x-auto -mx-1 px-1 pb-1">
+					<table class="w-full min-w-160 border-collapse text-left text-xs my-4">
+						<thead>
+							<tr class="border-b border-border">
+								<th class="py-2 pr-3 font-semibold">Data Category</th>
+								<th class="py-2 pr-3 font-semibold">Retention Period</th>
+								<th class="py-2 font-semibold">Action Post-Retention</th>
+							</tr>
+						</thead>
+						<tbody class="[&_tr]:border-b [&_tr]:border-border/60 [&_td]:py-2 [&_td]:pr-3 [&_td]:align-top">
+						<tr>
+							<td><strong>Document Envelopes (Ciphertext)</strong></td>
+							<td>While needed to provide the active workspace, signing, export, and purchased retention or archival service, plus any stated export period.</td>
+							<td>Deleted from operator-controlled storage when the applicable service and retention period ends, subject to legal holds, backup handling, and decentralized archival commitments.</td>
+						</tr>
+						<tr>
+							<td><strong>Active Hot Storage Cache</strong></td>
+							<td>While the envelope is active and through the hot-storage window that begins when routing completes (not a fixed calendar period). Replication to archival storage may proceed after that window even if the sender has not exported a compliance packet.</td>
+							<td>Deleted from hot object storage after verified replication or when no continuing retention applies.</td>
+						</tr>
+						<tr>
+							<td><strong>Signed Evidence and Proof Metadata</strong></td>
+							<td>For the applicable legal-claims, dispute, security, and recordkeeping period. Public blockchain data follows the network&apos;s own retention.</td>
+							<td>Core evidence may be retained while directly identifying metadata is redacted or minimized where lawful.</td>
+						</tr>
+						<tr>
+							<td><strong>Account Profile & Metadata</strong></td>
+							<td>Retained while your account remains active.</td>
+							<td>Deleted or anonymized after a valid erasure request and operational processing, except where retention is legally permitted or required.</td>
+						</tr>
+						<tr>
+							<td><strong>Archived Drafts and Expired Invites</strong></td>
+							<td>Archived draft artifacts are scheduled for purge after 30 days. Expired unclaimed invitations are scheduled for purge after 90 days.</td>
+							<td>Eligible database rows and operator-controlled objects are deleted by lifecycle jobs.</td>
+						</tr>
+						<tr>
+							<td><strong>Security Logs, Request Metadata, and Backups</strong></td>
+							<td>According to operational need, provider schedules, and legal obligations. Compliance request IP and user-agent metadata is scheduled for redaction after 365 days.</td>
+							<td>Rotated, redacted, or overwritten. If erased data is restored from backup, the erasure or anonymization process is reapplied before normal operation resumes.</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
 				<p>
-					You may request export or deletion of account data, encrypted
-					documents, metadata, and stored files where feasible. We may retain
-					records needed for security, billing, taxes, fraud prevention, dispute
-					handling, legal obligations, backups, or service integrity. Public
-					blockchain records cannot be deleted by Filosign.
+					You may request export or deletion of your account data, encrypted documents, metadata, and stored files where feasible. We may retain records needed for security, billing, taxes, fraud prevention, dispute handling, legal obligations, or backups. Please note that we cannot delete or modify data recorded on a public blockchain, such as smart contract calls, transaction hashes, or wallet balances.
 				</p>
 
-				<h2>12. Rights of Data Principals (EEA, UK, India, US)</h2>
+				<h2>12. Rights of Data Principals (India, US)</h2>
 				<p>
 					Depending on your location, you may have rights such as access, correction,
 					deletion, restriction, objection, portability, withdrawal of consent, nomination
@@ -204,6 +245,9 @@ const operator = operatorIdentitySentence();
 					<li><strong>Portability / objection / restriction:</strong> Available where required by applicable law.</li>
 					<li><strong>Nomination (India):</strong> Nominate another individual to exercise your rights upon death or incapacity, as permitted by law.</li>
 				</ul>
+			<p>
+				We do not currently make decisions producing legal or similarly significant effects solely through automated processing. Automated entitlement, fraud, abuse, and access checks may restrict a feature or route a matter for review, but do not determine the validity of an agreement between users.
+			</p>
 
 				<h2>13. Grievance Redressal and Contact Details</h2>
 				<p>
@@ -220,13 +264,10 @@ const operator = operatorIdentitySentence();
 					you may escalate to the Data Protection Board of India or your local data protection authority where applicable.
 				</p>
 
-				<h2>14. International transfers</h2>
-				<p>
-					Filosign may process data using infrastructure and service providers
-					in multiple jurisdictions. Where required, we rely on appropriate
-					transfer mechanisms, contractual protections, or other lawful bases
-					for international data transfers.
-				</p>
+			<h2>14. Regional restrictions (EEA, UK, Canada)</h2>
+			<p>
+				<strong>Strict Exclusion:</strong> The Service is not intended for and must not be used by individuals or organizations located in the European Economic Area (EEA), the United Kingdom (UK), or Canada. We do not represent or claim compliance with the GDPR or PIPEDA. Customers are strictly prohibited from creating workflows subject to those laws or uploading personal data governed by them.
+			</p>
 
 				<h2>15. Children</h2>
 				<p>

@@ -1,10 +1,9 @@
 ---
+import { ACTIVE_TERMS_VERSION } from "@filosign/shared";
 import LegalDocument from "../../components/LegalDocument.astro";
 import MarketingPageShell from "../../components/MarketingPageShell.astro";
 import { LEGAL_OPERATOR } from "../../config/legal-content";
 import BaseLayout from "../../layouts/BaseLayout.astro";
-
-const TERMS_VERSION = "2026-05-01";
 ---
 
 <BaseLayout
@@ -14,37 +13,28 @@ const TERMS_VERSION = "2026-05-01";
 	<MarketingPageShell>
 		<LegalDocument
 			title="Payout attachment addendum"
-			description="Accept when your workspace requests programmatic payout attachment in the app. Counsel should review before production launch."
-			lastUpdated="May 2026"
+			description="Accept when your workspace requests programmatic payout attachment in the app."
+			lastUpdated="June 20, 2026"
 		>
 			<p class="text-sm text-muted-foreground">
-				Version {TERMS_VERSION}. Part of the
+				Version {ACTIVE_TERMS_VERSION}. Part of the
 				<a href="/terms" class="underline">Terms of Service</a>. Overview:
-				<a href="/legal/non-custodial-settlement" class="underline"
-					>Payout attachment</a
-				>.
+				<a href="/legal/non-custodial-settlement" class="underline">Payout attachment</a>.
 			</p>
 
 			<h2>1. What this is</h2>
 			<p>
-				Filosign provides software that helps an authorized workspace
-				admin attach optional USDC transfer instructions to documents sent through Filosign.
-				When transfers occur, they move between user-controlled wallets on public
-				blockchains. We record public on-chain events and may export audit trails.
+				Filosign provides software that helps an authorized workspace admin attach optional USDC transfer instructions to documents sent through Filosign. When transfers occur, they move between user-controlled wallets on public blockchains. We record public on-chain events and may export audit trails.
 			</p>
 
 			<h2>2. What this is not</h2>
 			<p>
-				Filosign is not a bank, money transmitter, escrow agent, payment processor, or
-				payment guarantor. We do not hold, pool, custody, or control user funds. We do not
-				guarantee that any attached payout will run, finish in full, or reach any recipient.
-				We do not resolve payment disputes between senders and recipients.
+				Filosign is not a bank, escrow agent, payment processor, or payment guarantor. We do not hold, pool, custody, or control user funds. We do not guarantee that any attached payout will run, finish in full, or reach any recipient. We do not resolve payment disputes between senders and recipients.
 			</p>
 
 			<h2>3. Workspace obligations</h2>
 			<p>
-				By requesting payout attachment access, you confirm you can bind the workspace and
-				accept sole responsibility for:
+				By requesting payout attachment access, you confirm you can bind the workspace, represent that the workspace is used solely for commercial, business, professional, trade, or freelance/sole proprietor purposes (and not for consumer use), and accept sole responsibility for:
 			</p>
 			<ul>
 				<li>Registering payout rules and token approvals from the payer wallet you use;</li>
@@ -53,51 +43,36 @@ const TERMS_VERSION = "2026-05-01";
 				<li>Cancel, revoke, or partial execution of attached payouts.</li>
 			</ul>
 			<p>
-				Disputes about whether, when, or how much to pay are solely between the payer and
-				recipient wallets - not Filosign.
+				Disputes about whether, when, or how much to pay are solely between the payer and recipient wallets, not the Operator.
 			</p>
 
 			<h2>4. What recipients should expect</h2>
 			<ul>
 				<li>
-					The payer may cancel unpaid legs or revoke token approval before further legs
-					run.
+					The payer may cancel unpaid legs while the envelope has no required signatures, or revoke token approval before further legs run. A supported signer amendment that validly clears signatures may reopen cancellation before any leg is paid.
 				</li>
-				<li>
-					Signing does not ensure payment. Legs may execute independently; some may succeed
-					while others fail.
-				</li>
-				<li>
-					After the first required signer signs on-chain, the payer cannot change payout
-					terms through the validator; paid legs cannot be reversed.
-				</li>
+				<li>Signing does not ensure payment. Legs may execute independently; some may succeed while others fail.</li>
+				<li>After required signing begins on-chain, the payer cannot change payout terms through the validator; paid legs cannot be reversed.</li>
 			</ul>
 
 			<h2>5. Approval</h2>
 			<p>
-				Payout attachment requires manual Filosign approval. We may deny, suspend, or revoke
-				access for security, sanctions, fraud, legal, or operational reasons without
-				affecting wallet balances.
+				Payout attachment requires manual Filosign approval. We may deny, suspend, or revoke access for security, sanctions, fraud, legal, or operational reasons without affecting wallet balances.
 			</p>
 
 			<h2>6. Supported payers in the app</h2>
 			<p>
-				On the supported path, payout rules may only be registered from your Filosign-linked
-				sender wallet or your workspace linked treasury address - not arbitrary external payer
-				addresses.
+				On the supported path, payout rules may only be registered from your Filosign-linked sender wallet or your workspace linked treasury address, not arbitrary external payer addresses.
 			</p>
 
 			<h2>7. Indemnity and liability cap</h2>
 			<p>
-				Payout attachment is subject to the indemnity, disclaimer, and liability limits in the
-				<a href="/terms" class="underline">Terms of Service</a>, incorporated by reference.
+				Payout attachment is subject to the indemnity, disclaimer, and liability limits in the <a href="/terms" class="underline">Terms of Service</a>, incorporated by reference.
 			</p>
 
 			<h2>8. Contact</h2>
 			<p>
-				<a href={`mailto:${LEGAL_OPERATOR.supportEmail}`} class="underline"
-					>{LEGAL_OPERATOR.supportEmail}</a
-				>.
+				<a href={`mailto:${LEGAL_OPERATOR.supportEmail}`} class="underline">{LEGAL_OPERATOR.supportEmail}</a>.
 			</p>
 		</LegalDocument>
 	</MarketingPageShell>

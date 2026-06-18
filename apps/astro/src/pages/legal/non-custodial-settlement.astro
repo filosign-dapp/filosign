@@ -12,13 +12,13 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 		<LegalDocument
 			title="Payout attachment"
 			description="Optional sender-attached USDC instructions on a document workflow. Filosign records public events; it does not hold funds or guarantee payment."
-			lastUpdated="May 2026"
+			lastUpdated="June 20, 2026"
 		>
 			<h2>Summary</h2>
 			<p>
 				<strong>Payout attachment</strong> lets a sender link USDC transfer instructions to
 				the same on-chain file registration as an agreement. Funds stay in the sender&apos;s
-				wallet until a public validator contract pulls them to recipients when release
+				wallet until a public validator contract uses the payer&apos;s token allowance to transfer funds directly to recipients when release
 				conditions are met. Filosign provides software, optional transaction relay, and
 				audit exports. We are not a bank, escrow, payment processor, or party to transfers
 				between users.
@@ -76,12 +76,10 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 					further legs run (paid legs stay paid).
 				</li>
 				<li>
-					<strong>Cancel rule</strong> - stop remaining unpaid legs; completed transfers
-					cannot be reversed on-chain.
+					<strong>Cancel rule</strong> - stop remaining unpaid legs while the envelope has no required signatures. After required signing begins, cancellation stays locked unless signatures are validly cleared through the supported amendment process before any leg is paid. Completed transfers cannot be reversed.
 				</li>
 				<li>
-					<strong>Update terms</strong> - blocked after the first required signer signs
-					on-chain (and after any leg is paid).
+					<strong>Update terms</strong> - subject to the same signature lock and permanently blocked after any leg is paid.
 				</li>
 			</ul>
 

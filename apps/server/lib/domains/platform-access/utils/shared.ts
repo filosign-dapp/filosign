@@ -35,6 +35,7 @@ export type PlatformGatePreview =
 			planLabel: string | null;
 			trialDays: number | null;
 			expiresAt: string | null;
+			inviteKind?: "partner_trial" | "manual_paid";
 	  }
 	| {
 			valid: false;

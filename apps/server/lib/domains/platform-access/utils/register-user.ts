@@ -1,10 +1,7 @@
 import { throwAppError } from "@filosign/errors/server";
-import { signupPolicyIsGated } from "@filosign/shared";
 import { and, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
-import env from "@/env";
-
 import {
 	assertRegistrationAllowed,
 	linkPaidSetupOnRegisterWithTx,
@@ -26,7 +23,12 @@ import {
 	platformAccessPending,
 	platformInviteRedemptions,
 } from "@/lib/platform/db/schema/platform-access";
+import {
+	pilotAddendumAcceptanceReceipts,
+	termsAcceptanceReceipts,
+} from "@/lib/platform/db/schema/privacy";
 import { users } from "@/lib/platform/db/schema/user";
+import { serverSignupPolicyIsGated } from "@/lib/platform/public-fences";
 
 export type RegisterUserAccountInput = {
 	wallet: Address;
@@ -42,6 +44,17 @@ export type RegisterUserAccountInput = {
 		commitmentSig: string;
 	};
 	gate?: RegistrationAccessGate;
+	termsVersion: string;
+	privacyVersion: string;
+	termsSha256: string;
+	privacySha256: string;
+	businessUseAttested: boolean;
+	ipAddress?: string;
+	userAgent?: string;
+	pilotAddendum?: {
+		addendumVersion: string;
+		addendumSha256: string;
+	};
 };
 
 function normalizeEmail(email: string): string {
@@ -100,7 +113,7 @@ async function completeExistingUserRegistration(args: {
 	email: string;
 	gate?: RegistrationAccessGate;
 }): Promise<void> {
-	if (!signupPolicyIsGated(env.DEPLOYMENT)) {
+	if (!serverSignupPolicyIsGated()) {
 		return;
 	}
 
@@ -202,6 +215,29 @@ export async function registerUserAccount(
 			signaturePublicKey: input.signaturePublicKey,
 			keygenDataJson: input.keygenDataJson,
 		});
+
+		await tx.insert(termsAcceptanceReceipts).values({
+			walletAddress: wallet,
+			termsVersion: input.termsVersion,
+			privacyVersion: input.privacyVersion,
+			termsSha256: input.termsSha256,
+			privacySha256: input.privacySha256,
+			businessUseAttested: input.businessUseAttested,
+			acceptanceAction: "clickwrap_register",
+			ipAddress: input.ipAddress ?? null,
+			userAgent: input.userAgent ?? null,
+		});
+
+		if (input.pilotAddendum) {
+			await tx.insert(pilotAddendumAcceptanceReceipts).values({
+				walletAddress: wallet,
+				addendumVersion: input.pilotAddendum.addendumVersion,
+				addendumSha256: input.pilotAddendum.addendumSha256,
+				acceptanceAction: "clickwrap_register",
+				ipAddress: input.ipAddress ?? null,
+				userAgent: input.userAgent ?? null,
+			});
+		}
 
 		if (input.gate?.platformInviteToken?.trim()) {
 			await redeemPlatformInviteOnRegisterWithTx(tx, {

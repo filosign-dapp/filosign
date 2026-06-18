@@ -11,11 +11,19 @@ import { sendAccessRequestApprovedEmail } from "@/lib/platform/email";
 import { createPlatformInvite } from "./invites";
 import { normalizeEmail, planLabel } from "./utils/shared";
 
+function partnerTrialPlanFromRequest(
+	planId: string | null | undefined,
+): PlanId | undefined {
+	if (planId === "teams" || planId === "teams_pro") return planId;
+	return undefined;
+}
+
 export async function submitAccessRequest(args: {
 	email: string;
 	name?: string | null;
 	company?: string | null;
 	message?: string | null;
+	planId?: PlanId | null;
 }): Promise<{ ok: true }> {
 	const email = normalizeEmail(args.email);
 	if (!email) {
@@ -44,6 +52,7 @@ export async function submitAccessRequest(args: {
 		name: args.name?.trim() || null,
 		company: args.company?.trim() || null,
 		message: args.message?.trim() || null,
+		planId: args.planId ?? null,
 	});
 
 	return { ok: true };
@@ -57,6 +66,7 @@ export async function listAccessRequestsForAdmin() {
 			name: accessRequests.name,
 			company: accessRequests.company,
 			message: accessRequests.message,
+			planId: accessRequests.planId,
 			status: accessRequests.status,
 			reviewedAt: accessRequests.reviewedAt,
 			createdInviteId: accessRequests.createdInviteId,
@@ -92,7 +102,8 @@ export async function approveAccessRequest(args: {
 	const invite = await createPlatformInvite({
 		adminWallet: args.adminWallet,
 		kind: "partner_trial",
-		planId: args.planId ?? "teams_pro",
+		planId:
+			args.planId ?? partnerTrialPlanFromRequest(request.planId) ?? "teams_pro",
 		trialDays: args.trialDays ?? 30,
 		email: request.email,
 		note: request.company

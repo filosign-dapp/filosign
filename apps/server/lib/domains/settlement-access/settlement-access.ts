@@ -1,6 +1,9 @@
 import { throwAppError } from "@filosign/errors/server";
-import { SETTLEMENT_FEATURE_TERMS_VERSION } from "@filosign/shared";
-import { and, desc, eq } from "drizzle-orm";
+import {
+	SETTLEMENT_FEATURE_TERMS_VERSION,
+	zIsoCountryCode,
+} from "@filosign/shared";
+import { desc, eq } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
@@ -9,13 +12,8 @@ import {
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
 import { assertOrgPermission, resolveActiveOrg } from "@/lib/domains/orgs/orgs";
-import type { PlatformAccessTx } from "@/lib/domains/platform-access/utils/shared";
 import { isPlatformAdminForWallet } from "@/lib/platform/admin";
 import db from "@/lib/platform/db";
-import {
-	platformInviteRedemptions,
-	platformInvites,
-} from "@/lib/platform/db/schema/platform-access";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 function settlementAccessSchema() {
@@ -25,92 +23,20 @@ function settlementAccessSchema() {
 
 export { SETTLEMENT_FEATURE_TERMS_VERSION };
 
-export const PARTNER_INVITE_SETTLEMENT_USE_CASE =
-	"Partner invite trial workspace" as const;
-
-export const PARTNER_INVITE_SETTLEMENT_REVIEW_NOTE =
-	"Auto-approved with partner invite trial" as const;
-
-/** Pre-approve payout attachment when the creator redeemed a partner_trial invite. */
-export async function grantPartnerInviteSettlementAccessWithTx(
-	tx: PlatformAccessTx,
-	args: {
-		organizationId: string;
-		creatorWallet: Address;
-	},
-): Promise<boolean> {
-	const wallet = getAddress(args.creatorWallet);
-	const now = new Date();
-
-	const [redemption] = await tx
-		.select({
-			createdByAdminWallet: platformInvites.createdByAdminWallet,
-		})
-		.from(platformInviteRedemptions)
-		.innerJoin(
-			platformInvites,
-			eq(platformInviteRedemptions.inviteId, platformInvites.id),
-		)
-		.where(
-			and(
-				eq(platformInviteRedemptions.walletAddress, wallet),
-				eq(platformInvites.kind, "partner_trial"),
-			),
-		)
-		.limit(1);
-
-	if (!redemption) {
-		return false;
-	}
-
-	const { organizationSettlementFeatureAccess } = settlementAccessSchema();
-	const [existing] = await tx
-		.select({ status: organizationSettlementFeatureAccess.status })
-		.from(organizationSettlementFeatureAccess)
-		.where(
-			eq(
-				organizationSettlementFeatureAccess.organizationId,
-				args.organizationId,
-			),
-		)
-		.limit(1);
-
-	if (existing?.status === "approved") {
-		return true;
-	}
-
-	await tx
-		.insert(organizationSettlementFeatureAccess)
-		.values({
-			organizationId: args.organizationId,
-			status: "approved",
-			termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
-			acceptedAt: now,
-			acceptedByWallet: wallet,
-			useCase: PARTNER_INVITE_SETTLEMENT_USE_CASE,
-			sanctionsSelfCertAt: now,
-			reviewedAt: now,
-			reviewedByAdminWallet: redemption.createdByAdminWallet ?? null,
-			reviewNote: PARTNER_INVITE_SETTLEMENT_REVIEW_NOTE,
-		})
-		.onConflictDoUpdate({
-			target: organizationSettlementFeatureAccess.organizationId,
-			set: {
-				status: "approved",
-				termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
-				acceptedAt: now,
-				acceptedByWallet: wallet,
-				useCase: PARTNER_INVITE_SETTLEMENT_USE_CASE,
-				sanctionsSelfCertAt: now,
-				reviewedAt: now,
-				reviewedByAdminWallet: redemption.createdByAdminWallet ?? null,
-				reviewNote: PARTNER_INVITE_SETTLEMENT_REVIEW_NOTE,
-				updatedAt: now,
-			},
-		});
-
-	return true;
-}
+export const zSettlementFeatureAccessSubmitBody = z.object({
+	acceptTerms: z.literal(true, {
+		error: "You must accept the Settlement Feature Addendum",
+	}),
+	sanctionsSelfCert: z.literal(true, {
+		error: "You must confirm sanctions and export compliance",
+	}),
+	useCase: z.string().min(10).max(2000),
+	termsVersion: z.string().min(1),
+	organizationLegalName: z.string().trim().min(1).max(500),
+	organizationCountry: zIsoCountryCode,
+	requesterName: z.string().trim().min(1).max(200),
+	requesterRole: z.string().trim().min(1).max(200),
+});
 
 export function settlementFeatureAccessApprovedForPlatformAdmin() {
 	return {
@@ -173,6 +99,10 @@ export async function submitOrganizationSettlementFeatureRequest(args: {
 	wallet: Address;
 	organizationId: string;
 	body: unknown;
+	audit: {
+		requestIp: string;
+		requestUserAgent: string | null;
+	};
 }) {
 	const activeOrg = await resolveActiveOrg(args.wallet, args.organizationId);
 	assertOrgPermission(activeOrg, "billing:manage");
@@ -183,18 +113,7 @@ export async function submitOrganizationSettlementFeatureRequest(args: {
 	);
 	assertEntitlement(entitlementCtx, "features.settlement.basic");
 
-	const parsed = z
-		.object({
-			acceptTerms: z.literal(true, {
-				error: "You must accept the Settlement Feature Addendum",
-			}),
-			sanctionsSelfCert: z.literal(true, {
-				error: "You must confirm sanctions and export compliance",
-			}),
-			useCase: z.string().min(10).max(2000),
-			termsVersion: z.string().min(1),
-		})
-		.safeParse(args.body);
+	const parsed = zSettlementFeatureAccessSubmitBody.safeParse(args.body);
 
 	if (!parsed.success) {
 		throw throwZodBadRequest(parsed.error);
@@ -225,6 +144,15 @@ export async function submitOrganizationSettlementFeatureRequest(args: {
 		throw throwAppError("SETTLEMENTS.ACCESS_REQUEST_PENDING");
 	}
 
+	const intake = {
+		organizationLegalName: parsed.data.organizationLegalName,
+		organizationCountry: parsed.data.organizationCountry,
+		requesterName: parsed.data.requesterName,
+		requesterRole: parsed.data.requesterRole,
+		requestIp: args.audit.requestIp,
+		requestUserAgent: args.audit.requestUserAgent,
+	};
+
 	await db
 		.insert(organizationSettlementFeatureAccess)
 		.values({
@@ -235,6 +163,7 @@ export async function submitOrganizationSettlementFeatureRequest(args: {
 			acceptedByWallet: getAddress(args.wallet),
 			useCase: parsed.data.useCase.trim(),
 			sanctionsSelfCertAt: now,
+			...intake,
 			reviewedAt: null,
 			reviewedByAdminWallet: null,
 			reviewNote: null,
@@ -248,6 +177,7 @@ export async function submitOrganizationSettlementFeatureRequest(args: {
 				acceptedByWallet: getAddress(args.wallet),
 				useCase: parsed.data.useCase.trim(),
 				sanctionsSelfCertAt: now,
+				...intake,
 				reviewedAt: null,
 				reviewedByAdminWallet: null,
 				reviewNote: null,
@@ -290,6 +220,14 @@ export async function listSettlementFeatureAccessForAdmin() {
 			acceptedAt: organizationSettlementFeatureAccess.acceptedAt,
 			acceptedByWallet: organizationSettlementFeatureAccess.acceptedByWallet,
 			useCase: organizationSettlementFeatureAccess.useCase,
+			organizationLegalName:
+				organizationSettlementFeatureAccess.organizationLegalName,
+			organizationCountry:
+				organizationSettlementFeatureAccess.organizationCountry,
+			requesterName: organizationSettlementFeatureAccess.requesterName,
+			requesterRole: organizationSettlementFeatureAccess.requesterRole,
+			requestIp: organizationSettlementFeatureAccess.requestIp,
+			requestUserAgent: organizationSettlementFeatureAccess.requestUserAgent,
 			reviewedAt: organizationSettlementFeatureAccess.reviewedAt,
 			reviewedByAdminWallet:
 				organizationSettlementFeatureAccess.reviewedByAdminWallet,

@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from "bun:test";
 import { SETTLEMENT_FEATURE_TERMS_VERSION } from "@filosign/shared";
 import { dbQueryResult } from "../support/db-query-result";
+import { createMockRedis, mockSessionCacheRedis } from "../support/mock-redis";
 
 describe("access", () => {
 	describe("settlement-access-admin", () => {
@@ -254,8 +255,11 @@ describe("access", () => {
 		const orgId = "00000000-0000-7000-8000-0000000000aa";
 		const wallet = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" as const;
 		let inserted: unknown[] = [];
+		let selectQueue: unknown[][] = [];
+		const { client: mockRedis, store: redisStore } = createMockRedis();
 
 		beforeAll(() => {
+			mockSessionCacheRedis(mockRedis);
 			mock.module("@/lib/domains/orgs/orgs", () => ({
 				resolveActiveOrg: async () => ({
 					organizationId: orgId,
@@ -263,21 +267,20 @@ describe("access", () => {
 				}),
 				assertOrgPermission: () => {},
 			}));
-			mock.module("@/lib/domains/entitlements", () => ({
-				resolveEntitlementContext: async () => ({}),
-				assertEntitlement: () => {},
-			}));
 			mock.module("@/lib/platform/db", () => ({
 				default: {
 					schema: {
 						organizationSettlementFeatureAccess: {},
 						organizations: {},
+						organizationSubscriptions: {},
+						files: {},
 					},
 					select: () => ({
 						from: () => ({
-							where: () => ({
-								limit: () => dbQueryResult([]),
-							}),
+							where: () => {
+								const rows = selectQueue.shift() ?? [];
+								return dbQueryResult(rows);
+							},
 						}),
 					}),
 					insert: () => ({
@@ -297,7 +300,22 @@ describe("access", () => {
 		});
 
 		test("submit persists intake fields and request audit metadata", async () => {
+			redisStore.clear();
 			inserted = [];
+			selectQueue = [
+				[
+					{
+						planId: "teams_pro",
+						status: "active",
+						seatCount: 3,
+						cancelAtPeriodEnd: false,
+						periodEnd: null,
+						featureOverrides: {},
+					},
+				],
+				[{ count: 0 }],
+				[],
+			];
 			const { submitOrganizationSettlementFeatureRequest } = await import(
 				"@/lib/domains/settlement-access/settlement-access"
 			);

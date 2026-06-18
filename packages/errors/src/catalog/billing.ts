@@ -2,6 +2,18 @@ import { z } from "zod";
 import type { ErrorDefinition } from "../types";
 
 export const billingErrors = {
+	"BILLING.PUBLIC_CHECKOUT_DISABLED": {
+		title: "Checkout unavailable",
+		description:
+			"Self-serve checkout is not open yet. Request access and we will follow up with an invite.",
+		steps: [
+			"Use Request access on the pricing page.",
+			"Contact support if you already have an invite or setup link.",
+		],
+		audience: "user",
+		severity: "warning",
+		defaultOrpcCode: "FORBIDDEN",
+	},
 	"BILLING.INVALID_CHECKOUT_LINK": {
 		title: "Invalid checkout link",
 		description:

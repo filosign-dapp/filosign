@@ -66,6 +66,14 @@ function presentFromDefinition(
 	const steps = effectiveDef.steps.map((step) =>
 		interpolateTemplate(step, params),
 	);
+	const normalizedDevDetail = (() => {
+		const detail = devDetail?.trim();
+		if (!detail) return undefined;
+		if (detail === title.trim() || detail === description.trim()) {
+			return undefined;
+		}
+		return detail;
+	})();
 	const helpBase = options.helpBaseUrl ?? "";
 	const supportUrl =
 		helpBase && effectiveDef.supportSlug && effectiveDef.audience === "user"
@@ -82,7 +90,7 @@ function presentFromDefinition(
 		supportUrl,
 		severity: effectiveDef.severity,
 		dedupeKey: interpolateTemplate(dedupeTemplate, params),
-		devDetail: options.devMode ? devDetail : undefined,
+		devDetail: options.devMode ? normalizedDevDetail : undefined,
 	};
 }
 

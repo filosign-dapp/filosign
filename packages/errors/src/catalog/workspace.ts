@@ -267,6 +267,7 @@ export const workspaceErrors = {
 		description:
 			"Your registered email does not match the email authorized for this invite or paid setup.",
 		steps: [
+			"Use Switch account on the sign-in screen, then sign in with the invited email.",
 			"Verify that you are using the email address linked to the purchase or invite.",
 		],
 		audience: "user",

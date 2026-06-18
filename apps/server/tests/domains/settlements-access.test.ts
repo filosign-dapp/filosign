@@ -236,4 +236,102 @@ describe("access", () => {
 			});
 		});
 	});
+
+	describe("partner-trial-payout-decouple", () => {
+		test("registration does not auto-grant settlement access on partner trial attach", async () => {
+			const src = await Bun.file(
+				new URL(
+					"../../lib/domains/platform-access/registration.ts",
+					import.meta.url,
+				),
+			).text();
+
+			expect(src).not.toContain("grantPartnerInviteSettlementAccessWithTx");
+		});
+	});
+
+	describe("settlement-access-submit", () => {
+		const orgId = "00000000-0000-7000-8000-0000000000aa";
+		const wallet = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" as const;
+		let inserted: unknown[] = [];
+
+		beforeAll(() => {
+			mock.module("@/lib/domains/orgs/orgs", () => ({
+				resolveActiveOrg: async () => ({
+					organizationId: orgId,
+					permissions: ["billing:manage"],
+				}),
+				assertOrgPermission: () => {},
+			}));
+			mock.module("@/lib/domains/entitlements", () => ({
+				resolveEntitlementContext: async () => ({}),
+				assertEntitlement: () => {},
+			}));
+			mock.module("@/lib/platform/db", () => ({
+				default: {
+					schema: {
+						organizationSettlementFeatureAccess: {},
+						organizations: {},
+					},
+					select: () => ({
+						from: () => ({
+							where: () => ({
+								limit: () => dbQueryResult([]),
+							}),
+						}),
+					}),
+					insert: () => ({
+						values: (row: unknown) => {
+							inserted.push(row);
+							return {
+								onConflictDoUpdate: () => Promise.resolve(),
+							};
+						},
+					}),
+				},
+			}));
+		});
+
+		afterAll(() => {
+			mock.restore();
+		});
+
+		test("submit persists intake fields and request audit metadata", async () => {
+			inserted = [];
+			const { submitOrganizationSettlementFeatureRequest } = await import(
+				"@/lib/domains/settlement-access/settlement-access"
+			);
+
+			await submitOrganizationSettlementFeatureRequest({
+				wallet,
+				organizationId: orgId,
+				body: {
+					acceptTerms: true,
+					sanctionsSelfCert: true,
+					useCase: "USDC bonuses for signed contractor SOWs",
+					termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+					organizationLegalName: "Acme Labs LLC",
+					organizationCountry: "US",
+					requesterName: "Jane Doe",
+					requesterRole: "Founder",
+				},
+				audit: {
+					requestIp: "203.0.113.42",
+					requestUserAgent: "FilosignTest/1.0",
+				},
+			});
+
+			expect(inserted).toHaveLength(1);
+			expect(inserted[0]).toMatchObject({
+				organizationId: orgId,
+				status: "pending",
+				organizationLegalName: "Acme Labs LLC",
+				organizationCountry: "US",
+				requesterName: "Jane Doe",
+				requesterRole: "Founder",
+				requestIp: "203.0.113.42",
+				requestUserAgent: "FilosignTest/1.0",
+			});
+		});
+	});
 });

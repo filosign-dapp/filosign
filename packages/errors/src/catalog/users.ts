@@ -141,4 +141,40 @@ export const usersErrors = {
 		severity: "error",
 		defaultOrpcCode: "NOT_FOUND",
 	},
+	"USERS.INVALID_TERMS_VERSION": {
+		title: "Outdated Terms of Service version",
+		description:
+			"The Terms of Service or Privacy Policy version you accepted is outdated or invalid.",
+		steps: [
+			"Refresh the page to view and accept the latest Terms of Service.",
+			"If the issue persists, clear your browser cache.",
+		],
+		audience: "user",
+		severity: "error",
+		defaultOrpcCode: "BAD_REQUEST",
+	},
+	"USERS.INVALID_PILOT_ADDENDUM_VERSION": {
+		title: "Outdated design partner addendum",
+		description:
+			"The Design Partner Addendum version you accepted is outdated or invalid.",
+		steps: [
+			"Refresh the page to view and accept the latest addendum.",
+			"If the issue persists, clear your browser cache.",
+		],
+		audience: "user",
+		severity: "error",
+		defaultOrpcCode: "BAD_REQUEST",
+	},
+	"USERS.PILOT_ADDENDUM_REQUIRED": {
+		title: "Design Partner Addendum required",
+		description:
+			"Design partner invites require acceptance of the Design Partner Addendum before registration.",
+		steps: [
+			"Return to the sign-in page and accept the Design Partner Addendum checkbox.",
+			"Open the addendum link to review it before accepting.",
+		],
+		audience: "user",
+		severity: "error",
+		defaultOrpcCode: "BAD_REQUEST",
+	},
 } as const satisfies Record<string, ErrorDefinition>;

@@ -5,7 +5,7 @@ import { filosignContactEmail } from "../contact-emails";
 export type PartnerInviteEmailVariant = PlatformInviteEmailVariant;
 
 export const PARTNER_INVITE_WARM_MIDDLE =
-	"Glad to have you on board! I would personally love to get you started with your first workflow. Just let me know what is your primary goal and I will outline a customized guide for you.";
+	"Glad to have you on board! I would personally love to get you started with your first workflow.";
 
 export const PARTNER_INVITE_COLD_MIDDLE =
 	"You are invited to try filosign as a design partner. This is a personal invite, not from a waitlist or signup form. If it resonates, use the link below to create your account and explore the product on our best plan.";

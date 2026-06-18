@@ -1,6 +1,6 @@
 # Payout packets - architecture and non-custody
 
-Filosign is a **software provider** for document signing. Optional USDC **payout packets** use a **non-custodial push** model on `FSPaymentValidator`; Filosign does not custody user funds.
+Filosign is a **software provider** for document signing. Optional USDC **payout packets** use a **non-custodial allowance-based transfer** model on `FSPaymentValidator`; Filosign does not custody user funds.
 
 Public terms: [Terms of Service](/terms) and [Privacy Policy](/privacy) on the marketing site.
 
@@ -18,7 +18,7 @@ Release checks are enforced in the contract (`canExecute` / `RuleNotExecutable`)
 
 **Filosign does not control or screen, and hence is not responsible for, all on-chain payouts.** Product policy and indexing apply to the supported send path only.
 
-## Settle UX (three tiers, all push)
+## Settle UX (three execution paths)
 
 | Tier | Behavior |
 |------|----------|

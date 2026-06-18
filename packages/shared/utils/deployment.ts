@@ -73,6 +73,32 @@ export function signupPolicyIsGated(deployment: Deployment): boolean {
 	return signupPolicy(deployment) === "invite_or_paid";
 }
 
+/** Env override wins; otherwise production blocks public self-serve checkout pre-launch. */
+export function resolvePublicCheckoutEnabled(args: {
+	deployment: Deployment;
+	explicit?: boolean | undefined;
+}): boolean {
+	if (args.explicit !== undefined) return args.explicit;
+	return args.deployment !== "production";
+}
+
+/** Env override wins; otherwise deployment default signup policy applies. */
+export function resolveEffectiveSignupPolicy(args: {
+	deployment: Deployment;
+	publicSignupEnabled?: boolean | undefined;
+}): SignupPolicy {
+	if (args.publicSignupEnabled === true) return "open";
+	if (args.publicSignupEnabled === false) return "invite_or_paid";
+	return signupPolicy(args.deployment);
+}
+
+export function effectiveSignupPolicyIsGated(args: {
+	deployment: Deployment;
+	publicSignupEnabled?: boolean | undefined;
+}): boolean {
+	return resolveEffectiveSignupPolicy(args) === "invite_or_paid";
+}
+
 export function deploymentBannerMessage(deployment: Deployment): string | null {
 	switch (deployment) {
 		case "staging":

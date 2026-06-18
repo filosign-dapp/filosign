@@ -36,6 +36,27 @@
       "when": 1781572206015,
       "tag": "0004_relayer_pool_pins",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781787923586,
+      "tag": "0005_smiling_zombie",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781812005315,
+      "tag": "0006_happy_deathbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781818927772,
+      "tag": "0007_robust_mordo",
+      "breakpoints": true
     }
   ]
 }

@@ -27,6 +27,7 @@ import {
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
 import { type ActiveOrgContext, assertOrgPermission } from "@/lib/domains/orgs";
+import { assertPublicCheckoutEnabled } from "@/lib/platform/public-fences";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 export async function billingEntitlements(
@@ -62,6 +63,7 @@ export async function billingGetUpgradeOfferings(
 }
 
 export async function billingPreviewMarketingCheckout(body: unknown) {
+	assertPublicCheckoutEnabled();
 	const parsed = z
 		.object({
 			email: z.email(),
@@ -98,6 +100,7 @@ export async function billingCreateOrgCheckoutSession(args: {
 	seatCount: number;
 	returnUrl: string;
 }) {
+	assertPublicCheckoutEnabled();
 	const org = requireOrgBilling(args.activeOrg);
 	return createOrgBillingCheckoutSession({
 		organizationId: org.organizationId,
@@ -167,6 +170,7 @@ export async function billingCreateNewWorkspaceCheckoutSession(args: {
 	seatCount: number;
 	returnUrl: string;
 }) {
+	assertPublicCheckoutEnabled();
 	return createNewWorkspaceCheckoutSession({
 		wallet: getAddress(args.wallet),
 		planId: args.planId,
@@ -187,6 +191,7 @@ export async function billingGetNewWorkspacePendingStatus(args: {
 }
 
 export async function billingRequestCheckoutLink(body: unknown) {
+	assertPublicCheckoutEnabled();
 	const parsed = z
 		.object({
 			email: z.email(),

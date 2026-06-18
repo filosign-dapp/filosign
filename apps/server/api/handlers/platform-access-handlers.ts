@@ -49,6 +49,7 @@ export const zGatePreviewOutput = z.object({
 	planLabel: z.string().nullable().optional(),
 	trialDays: z.number().nullable().optional(),
 	expiresAt: z.string().nullable().optional(),
+	inviteKind: z.enum(["partner_trial", "manual_paid"]).optional(),
 	reason: z.string().optional(),
 });
 
@@ -82,6 +83,7 @@ export async function platformAccessPreviewGate(body: unknown) {
 		planLabel: result.planLabel,
 		trialDays: result.trialDays,
 		expiresAt: result.expiresAt,
+		inviteKind: result.inviteKind,
 	};
 }
 
@@ -96,6 +98,7 @@ export async function platformAccessPreviewPlatformInvite(token: string) {
 		planLabel: result.planLabel,
 		trialDays: result.trialDays,
 		expiresAt: result.expiresAt,
+		inviteKind: result.inviteKind,
 	};
 }
 
@@ -367,6 +370,7 @@ export async function platformAccessSubmitAccessRequest(body: unknown) {
 			name: z.string().max(120).optional(),
 			company: z.string().max(120).optional(),
 			message: z.string().max(2000).optional(),
+			planId: z.enum(["individual", "teams", "teams_pro"]).optional(),
 		})
 		.safeParse(body);
 

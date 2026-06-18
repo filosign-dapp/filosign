@@ -23,11 +23,16 @@ export async function settlementAccessSubmitRequest(
 	wallet: Address,
 	organizationId: string,
 	body: unknown,
+	audit: {
+		requestIp: string;
+		requestUserAgent: string | null;
+	},
 ) {
 	return submitOrganizationSettlementFeatureRequest({
 		wallet,
 		organizationId,
 		body,
+		audit,
 	});
 }
 

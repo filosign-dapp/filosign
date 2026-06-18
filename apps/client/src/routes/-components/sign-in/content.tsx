@@ -25,6 +25,9 @@ export function SignInContent() {
 		autoRegisterStatus,
 		autoRegisterFailedPhase,
 		retryAutoRegister,
+		partnerInviteEmailMismatch,
+		partnerInvitePilotAddendumRequired,
+		requiresPilotAddendum,
 		login,
 		signInGate,
 	} = useSignIn();
@@ -47,6 +50,11 @@ export function SignInContent() {
 						retryAutoRegister={retryAutoRegister}
 						isRegistered={isRegistered}
 						autoRegisterFailedPhase={autoRegisterFailedPhase}
+						partnerInviteEmailMismatch={partnerInviteEmailMismatch}
+						partnerInvitePilotAddendumRequired={
+							partnerInvitePilotAddendumRequired
+						}
+						requiresPilotAddendum={requiresPilotAddendum}
 					/>
 				) : isProgressView(view) ? (
 					<SignInProgressView

@@ -14,6 +14,7 @@ import {
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
 import { OtpInput } from "@/src/lib/components/ui/otp-input";
+import { clientPublicCheckoutEnabled } from "@/src/lib/deployment";
 import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
 import { cn } from "@/src/lib/utils";
 import type {
@@ -48,8 +49,9 @@ function stepMeta(
 			return {
 				badge: "Get started",
 				title: "Account not found",
-				description:
-					"This email isn't registered yet. Purchase a plan to get started, then finish setup from your email.",
+				description: clientPublicCheckoutEnabled()
+					? "This email isn't registered yet. Purchase a plan to get started, then finish setup from your email."
+					: "This email isn't registered yet. Request access on our pricing page and we will follow up with an invite.",
 			};
 	}
 }
@@ -212,6 +214,7 @@ function NotRegisteredContent({
 	gate: SignInGateController;
 	pricingUrl: string;
 }) {
+	const checkoutEnabled = clientPublicCheckoutEnabled();
 	return (
 		<motion.div
 			key="not_registered"
@@ -231,7 +234,7 @@ function NotRegisteredContent({
 							"w-full",
 						)}
 					>
-						View plans
+						{checkoutEnabled ? "View plans" : "Request access"}
 					</a>
 					<Button
 						type="button"

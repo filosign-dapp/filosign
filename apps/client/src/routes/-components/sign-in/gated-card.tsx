@@ -1,7 +1,11 @@
+import { useState } from "react";
 import env from "@/src/env";
 import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/loader";
+import { clientPublicCheckoutEnabled } from "@/src/lib/deployment";
+import { storeLegalAssent } from "@/src/lib/web3/legal-assent-session";
 import type { SignInController } from "@/src/routes/-lib/hooks/use-sign-in-controller";
+import { requiresDesignPartnerAddendum } from "@/src/routes/-lib/utils/pilot-addendum-sign-in";
 import { SignInCardShell } from "./card-shell";
 import { signInGatedCardSubtitle } from "./gated-subtitle";
 import { SignInTermsFooter } from "./terms-footer";
@@ -9,7 +13,15 @@ import { SignInTermsFooter } from "./terms-footer";
 type GateState = SignInController["signInGate"]["gateState"];
 type SignInGate = SignInController["signInGate"];
 
-const pricingUrl = `${env.VITE_ASTRO_URL.replace(/\/$/, "")}/pricing`;
+interface CardProps {
+	signInGate: SignInGate;
+	termsChecked: boolean;
+	setTermsChecked: (v: boolean) => void;
+}
+
+const pricingUrl = `${env.VITE_ASTRO_URL.replace(/\/$/, "")}/pricing${
+	clientPublicCheckoutEnabled() ? "" : "#pricing"
+}`;
 
 function SignInGateLoadingCard() {
 	return (
@@ -24,12 +36,20 @@ function SignInGateLoadingCard() {
 	);
 }
 
-function SignInGateFetchingCard() {
+function SignInGateFetchingCard({
+	termsChecked,
+	setTermsChecked,
+}: Omit<CardProps, "signInGate">) {
 	return (
 		<SignInCardShell
 			title="Complete sign up"
 			description="Confirming your payment. This usually takes a few seconds."
-			footer={<SignInTermsFooter />}
+			footer={
+				<SignInTermsFooter
+					checked={termsChecked}
+					onCheckedChange={setTermsChecked}
+				/>
+			}
 		>
 			<Button
 				type="button"
@@ -45,19 +65,28 @@ function SignInGateFetchingCard() {
 	);
 }
 
-function SignInGateBlockedCard({ signInGate }: { signInGate: SignInGate }) {
+function SignInGateBlockedCard({
+	signInGate,
+	termsChecked,
+	setTermsChecked,
+}: CardProps) {
 	return (
 		<SignInCardShell
 			title="Finish setting up Filosign"
 			description="We are still confirming your payment. Check your email for setup instructions. It is sent automatically once payment clears."
-			footer={<SignInTermsFooter />}
+			footer={
+				<SignInTermsFooter
+					checked={termsChecked}
+					onCheckedChange={setTermsChecked}
+				/>
+			}
 		>
 			<Button
 				type="button"
 				variant="default"
 				size="lg"
 				className="w-full"
-				disabled={signInGate.authPending}
+				disabled={signInGate.authPending || !termsChecked}
 				isLoading={signInGate.authPending}
 				onClick={() => void signInGate.refetchGate()}
 			>
@@ -67,14 +96,18 @@ function SignInGateBlockedCard({ signInGate }: { signInGate: SignInGate }) {
 	);
 }
 
-function SignInGateLoginHomeCard({ signInGate }: { signInGate: SignInGate }) {
+function SignInGateLoginHomeCard({
+	signInGate,
+	termsChecked,
+	setTermsChecked,
+}: CardProps) {
 	return (
 		<SignInCardShell
 			title="Sign in to Filosign"
 			description="Sign in with the email on your account."
 			footer={
 				<>
-					<p className="text-center text-xs text-muted-foreground">
+					<p className="text-center text-xs text-muted-foreground my-2">
 						New user?{" "}
 						<a
 							href={pricingUrl}
@@ -82,10 +115,15 @@ function SignInGateLoginHomeCard({ signInGate }: { signInGate: SignInGate }) {
 							rel="noopener noreferrer"
 							className="font-medium text-primary underline-offset-4 hover:underline"
 						>
-							Browse our plans here
+							{clientPublicCheckoutEnabled()
+								? "Browse our plans here"
+								: "Request access"}
 						</a>
 					</p>
-					<SignInTermsFooter />
+					<SignInTermsFooter
+						checked={termsChecked}
+						onCheckedChange={setTermsChecked}
+					/>
 				</>
 			}
 		>
@@ -94,9 +132,12 @@ function SignInGateLoginHomeCard({ signInGate }: { signInGate: SignInGate }) {
 				variant="default"
 				size="lg"
 				className="w-full"
-				disabled={signInGate.authPending}
+				disabled={signInGate.authPending || !termsChecked}
 				isLoading={signInGate.authPending}
-				onClick={() => signInGate.beginLogin()}
+				onClick={() => {
+					storeLegalAssent();
+					signInGate.beginLogin();
+				}}
 			>
 				Login
 			</Button>
@@ -107,12 +148,14 @@ function SignInGateLoginHomeCard({ signInGate }: { signInGate: SignInGate }) {
 function SignInGateCompleteSignupCard({
 	signInGate,
 	gateState,
-}: {
-	signInGate: SignInGate;
+	termsChecked,
+	setTermsChecked,
+}: CardProps & {
 	gateState: Extract<GateState, { status: "ready" }>;
 }) {
 	const isPaidSetup = gateState.gate === "paid_setup";
 	const isPlatformInvite = gateState.gate === "platform_invite";
+	const requiresPilotAddendum = requiresDesignPartnerAddendum(signInGate);
 
 	return (
 		<SignInCardShell
@@ -135,16 +178,27 @@ function SignInGateCompleteSignupCard({
 							needsEmailInput: gateState.needsEmailInput,
 						})
 			}
-			footer={<SignInTermsFooter />}
+			footer={
+				<SignInTermsFooter
+					checked={termsChecked}
+					onCheckedChange={setTermsChecked}
+					requiresPilotAddendum={requiresPilotAddendum}
+				/>
+			}
 		>
 			<Button
 				type="button"
 				variant="default"
 				size="lg"
 				className="w-full"
-				disabled={signInGate.authPending}
+				disabled={signInGate.authPending || !termsChecked}
 				isLoading={signInGate.authPending}
-				onClick={() => void signInGate.beginEmailAuth()}
+				onClick={() => {
+					storeLegalAssent({
+						includePilotAddendum: requiresPilotAddendum,
+					});
+					void signInGate.beginEmailAuth();
+				}}
 			>
 				{signInGate.isReturningUser
 					? "Sign in"
@@ -158,24 +212,44 @@ function SignInGateCompleteSignupCard({
 
 export function SignInGatedCard({ signInGate }: { signInGate: SignInGate }) {
 	const { gateState } = signInGate;
+	const [termsChecked, setTermsChecked] = useState(false);
 
 	if (gateState.status === "loading") {
 		return <SignInGateLoadingCard />;
 	}
 	if (gateState.status === "fetching_setup") {
-		return <SignInGateFetchingCard />;
+		return (
+			<SignInGateFetchingCard
+				termsChecked={termsChecked}
+				setTermsChecked={setTermsChecked}
+			/>
+		);
 	}
 	if (gateState.status === "blocked") {
-		return <SignInGateBlockedCard signInGate={signInGate} />;
+		return (
+			<SignInGateBlockedCard
+				signInGate={signInGate}
+				termsChecked={termsChecked}
+				setTermsChecked={setTermsChecked}
+			/>
+		);
 	}
 	if (signInGate.showLoginHome) {
-		return <SignInGateLoginHomeCard signInGate={signInGate} />;
+		return (
+			<SignInGateLoginHomeCard
+				signInGate={signInGate}
+				termsChecked={termsChecked}
+				setTermsChecked={setTermsChecked}
+			/>
+		);
 	}
 	if (gateState.status === "ready") {
 		return (
 			<SignInGateCompleteSignupCard
 				signInGate={signInGate}
 				gateState={gateState}
+				termsChecked={termsChecked}
+				setTermsChecked={setTermsChecked}
 			/>
 		);
 	}

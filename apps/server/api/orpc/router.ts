@@ -109,6 +109,7 @@ import {
 	zFileRegistrationStatusBody,
 } from "@/lib/domains/files";
 import { loadPlatformRuntime } from "@/lib/domains/runtime";
+import { zSettlementFeatureAccessSubmitBody } from "@/lib/domains/settlement-access";
 import { resolveClientIpFromRequest } from "@/lib/platform/utils/client-ip";
 import { zIndexerTxBody } from "@/lib/platform/validation/tx-registration";
 import {
@@ -163,6 +164,7 @@ const platformRuntimeSchema = z.object({
 	chainKey: z.enum(["local", "testnet", "mainnet"]),
 	deployment: z.enum(DEPLOYMENTS),
 	signupPolicy: z.enum(SIGNUP_POLICIES),
+	publicCheckoutEnabled: z.boolean(),
 });
 
 export const appRouter = {
@@ -177,6 +179,7 @@ export const appRouter = {
 			chainKey: r.chainKey,
 			deployment: r.deployment,
 			signupPolicy: r.signupPolicy,
+			publicCheckoutEnabled: r.publicCheckoutEnabled,
 		};
 	}),
 	platformAccess: {
@@ -199,6 +202,7 @@ export const appRouter = {
 					name: z.string().max(120).optional(),
 					company: z.string().max(120).optional(),
 					message: z.string().max(2000).optional(),
+					planId: z.enum(["individual", "teams", "teams_pro"]).optional(),
 				}),
 			)
 			.output(z.object({ ok: z.literal(true) }))
@@ -1098,12 +1102,8 @@ export const appRouter = {
 				),
 			submitRequest: authenticatedProcedure
 				.input(
-					z.object({
+					zSettlementFeatureAccessSubmitBody.extend({
 						organizationId: z.uuid(),
-						acceptTerms: z.literal(true),
-						sanctionsSelfCert: z.literal(true),
-						useCase: z.string().min(10).max(2000),
-						termsVersion: z.string().min(1),
 					}),
 				)
 				.output(out.platformAdmin.settlementAccessDecision)
@@ -1112,6 +1112,10 @@ export const appRouter = {
 						context.userWallet,
 						input.organizationId,
 						input,
+						{
+							requestIp: resolveClientIpFromRequest(context.hono.req),
+							requestUserAgent: context.hono.req.header("user-agent") ?? null,
+						},
 					),
 				),
 		},
@@ -1344,7 +1348,40 @@ export const appRouter = {
 		register: publicProcedure
 			.input(zUserRegisterBody)
 			.output(out.users.register)
-			.handler(({ input }) => userHandlers.userRegister(input)),
+			.handler(({ context, input }) =>
+				userHandlers.userRegister(context, input),
+			),
+		acceptTerms: authenticatedProcedure
+			.input(
+				z.object({
+					acceptTerms: z.literal(true),
+					businessUseAttestation: z.literal(true),
+					termsVersion: z.string().min(1),
+					privacyVersion: z.string().min(1),
+					termsSha256: z.string().length(64),
+					privacySha256: z.string().length(64),
+				}),
+			)
+			.output(out.users.acceptTerms)
+			.handler(({ context, input }) =>
+				userHandlers.userAcceptTerms(context.userWallet, input, context),
+			),
+		acceptPilotAddendum: authenticatedProcedure
+			.input(
+				z.object({
+					acceptPilotAddendum: z.literal(true),
+					addendumVersion: z.string().min(1),
+					addendumSha256: z.string().length(64),
+				}),
+			)
+			.output(out.users.acceptPilotAddendum)
+			.handler(({ context, input }) =>
+				userHandlers.userAcceptPilotAddendum(
+					context.userWallet,
+					input,
+					context,
+				),
+			),
 		registrationSnapshot: publicProcedure
 			.input(z.object({ walletAddress: z.string() }))
 			.output(out.users.registrationSnapshot)

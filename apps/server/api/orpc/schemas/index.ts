@@ -121,6 +121,8 @@ import {
 import { rpcStoragePresignPutOutputSchema } from "./storage-output";
 import { rpcTxProcessIndexerHashOutputSchema } from "./tx-output";
 import {
+	rpcUserAcceptPilotAddendumOutputSchema,
+	rpcUserAcceptTermsOutputSchema,
 	rpcUserActivationGetOutputSchema,
 	rpcUserActivationMarkOutputSchema,
 	rpcUserActivationUnmarkOutputSchema,
@@ -277,6 +279,8 @@ export const rpcOut = {
 	},
 	users: {
 		register: rpcUserRegisterOutputSchema,
+		acceptTerms: rpcUserAcceptTermsOutputSchema,
+		acceptPilotAddendum: rpcUserAcceptPilotAddendumOutputSchema,
 		registrationSnapshot: rpcUserRegistrationSnapshotOutputSchema,
 		profileMe: rpcUserProfileMeOutputSchema,
 		profileUpdate: rpcUserProfileUpdateOutputSchema,

@@ -39,6 +39,8 @@ export const rpcUserProfileMeOutputSchema = z.object({
 	defaultInitialId: z.uuid().nullable().optional(),
 	defaultSignaturePreviewUrl: z.string().nullable().optional(),
 	defaultInitialPreviewUrl: z.string().nullable().optional(),
+	needsTermsAcceptance: z.boolean(),
+	needsPilotAddendumAcceptance: z.boolean(),
 });
 
 export const rpcUserProfileUpdateOutputSchema = rpcEmptyOutputSchema;
@@ -249,5 +251,9 @@ export const rpcUserActivationGetOutputSchema = z.object({
 
 export const rpcUserActivationMarkOutputSchema = rpcEmptyOutputSchema;
 export const rpcUserActivationUnmarkOutputSchema = rpcEmptyOutputSchema;
+
+export const rpcUserAcceptTermsOutputSchema = rpcEmptyOutputSchema;
+
+export const rpcUserAcceptPilotAddendumOutputSchema = rpcEmptyOutputSchema;
 
 export { zUserSignatureCreateInput as rpcUserSignaturesCreateInputSchema };

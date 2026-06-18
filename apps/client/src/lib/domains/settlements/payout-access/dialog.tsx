@@ -1,3 +1,4 @@
+import type { IsoCountryCode } from "@filosign/shared";
 import type { FormEvent } from "react";
 import { useId } from "react";
 import { Button } from "@/src/lib/components/ui/button";
@@ -19,6 +20,14 @@ const DIALOG_BADGE = "Payout access";
 export function PayoutAccessRequestDialog(props: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	organizationLegalName: string;
+	onOrganizationLegalNameChange: (v: string) => void;
+	organizationCountry: IsoCountryCode | "";
+	onOrganizationCountryChange: (v: IsoCountryCode) => void;
+	requesterName: string;
+	onRequesterNameChange: (v: string) => void;
+	requesterRole: string;
+	onRequesterRoleChange: (v: string) => void;
 	useCase: string;
 	onUseCaseChange: (v: string) => void;
 	acceptTerms: boolean;
@@ -57,6 +66,16 @@ export function PayoutAccessRequestDialog(props: {
 					<FeatureDialogBody>
 						<form onSubmit={handleSubmit} className="space-y-4">
 							<PayoutAccessRequestFields
+								organizationLegalName={props.organizationLegalName}
+								onOrganizationLegalNameChange={
+									props.onOrganizationLegalNameChange
+								}
+								organizationCountry={props.organizationCountry}
+								onOrganizationCountryChange={props.onOrganizationCountryChange}
+								requesterName={props.requesterName}
+								onRequesterNameChange={props.onRequesterNameChange}
+								requesterRole={props.requesterRole}
+								onRequesterRoleChange={props.onRequesterRoleChange}
 								useCase={props.useCase}
 								onUseCaseChange={props.onUseCaseChange}
 								acceptTerms={props.acceptTerms}

@@ -2,7 +2,10 @@ import {
 	useSettlementFeatureAccessGet,
 	useSubmitSettlementFeatureAccessRequest,
 } from "@filosign/react/orgs";
-import { SETTLEMENT_FEATURE_TERMS_VERSION } from "@filosign/shared";
+import {
+	type IsoCountryCode,
+	SETTLEMENT_FEATURE_TERMS_VERSION,
+} from "@filosign/shared";
 import { useState } from "react";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
@@ -16,6 +19,24 @@ export type PayoutFeatureAccessStatus =
 	| "rejected"
 	| "suspended";
 
+function resetPayoutAccessForm(setters: {
+	setOrganizationLegalName: (v: string) => void;
+	setOrganizationCountry: (v: IsoCountryCode | "") => void;
+	setRequesterName: (v: string) => void;
+	setRequesterRole: (v: string) => void;
+	setUseCase: (v: string) => void;
+	setAcceptTerms: (v: boolean) => void;
+	setSanctionsSelfCert: (v: boolean) => void;
+}) {
+	setters.setOrganizationLegalName("");
+	setters.setOrganizationCountry("");
+	setters.setRequesterName("");
+	setters.setRequesterRole("");
+	setters.setUseCase("");
+	setters.setAcceptTerms(false);
+	setters.setSanctionsSelfCert(false);
+}
+
 export function usePayoutFeatureAccess(args: {
 	activeOrgId: string | undefined;
 	canManage: boolean;
@@ -24,6 +45,12 @@ export function usePayoutFeatureAccess(args: {
 	const accessQuery = useSettlementFeatureAccessGet(args.activeOrgId);
 	const submitRequest = useSubmitSettlementFeatureAccessRequest();
 
+	const [organizationLegalName, setOrganizationLegalName] = useState("");
+	const [organizationCountry, setOrganizationCountry] = useState<
+		IsoCountryCode | ""
+	>("");
+	const [requesterName, setRequesterName] = useState("");
+	const [requesterRole, setRequesterRole] = useState("");
 	const [useCase, setUseCase] = useState("");
 	const [acceptTerms, setAcceptTerms] = useState(false);
 	const [sanctionsSelfCert, setSanctionsSelfCert] = useState(false);
@@ -39,12 +66,16 @@ export function usePayoutFeatureAccess(args: {
 	const canSubmitRequest =
 		Boolean(args.activeOrgId) &&
 		args.canManage &&
+		organizationLegalName.trim().length > 0 &&
+		organizationCountry.length > 0 &&
+		requesterName.trim().length > 0 &&
+		requesterRole.trim().length > 0 &&
 		useCase.trim().length >= 10 &&
 		acceptTerms &&
 		sanctionsSelfCert;
 
 	const submitAccessRequest = () => {
-		if (!args.activeOrgId) return;
+		if (!args.activeOrgId || !organizationCountry) return;
 		submitRequest.mutate(
 			{
 				organizationId: args.activeOrgId,
@@ -52,13 +83,23 @@ export function usePayoutFeatureAccess(args: {
 				sanctionsSelfCert: true,
 				useCase: useCase.trim(),
 				termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+				organizationLegalName: organizationLegalName.trim(),
+				organizationCountry,
+				requesterName: requesterName.trim(),
+				requesterRole: requesterRole.trim(),
 			},
 			localMutationErrorOptions({
 				onSuccess: () => {
 					toastUser.success(TOASTS.workspace.payoutAccessRequested);
-					setUseCase("");
-					setAcceptTerms(false);
-					setSanctionsSelfCert(false);
+					resetPayoutAccessForm({
+						setOrganizationLegalName,
+						setOrganizationCountry,
+						setRequesterName,
+						setRequesterRole,
+						setUseCase,
+						setAcceptTerms,
+						setSanctionsSelfCert,
+					});
 					args.onSubmitted?.();
 				},
 			}),
@@ -70,6 +111,14 @@ export function usePayoutFeatureAccess(args: {
 		status,
 		termsCurrent,
 		reviewNote,
+		organizationLegalName,
+		setOrganizationLegalName,
+		organizationCountry,
+		setOrganizationCountry,
+		requesterName,
+		setRequesterName,
+		requesterRole,
+		setRequesterRole,
 		useCase,
 		setUseCase,
 		acceptTerms,

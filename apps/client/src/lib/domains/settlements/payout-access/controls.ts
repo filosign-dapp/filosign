@@ -1,4 +1,14 @@
+import type { IsoCountryCode } from "@filosign/shared";
+
 export type PayoutFeatureAccessControls = {
+	organizationLegalName: string;
+	setOrganizationLegalName: (value: string) => void;
+	organizationCountry: IsoCountryCode | "";
+	setOrganizationCountry: (value: IsoCountryCode | "") => void;
+	requesterName: string;
+	setRequesterName: (value: string) => void;
+	requesterRole: string;
+	setRequesterRole: (value: string) => void;
 	useCase: string;
 	setUseCase: (value: string) => void;
 	acceptTerms: boolean;
@@ -20,6 +30,14 @@ export function payoutAccessRequestDialogProps(
 	return {
 		open: dialog.open,
 		onOpenChange: dialog.onOpenChange,
+		organizationLegalName: access.organizationLegalName,
+		onOrganizationLegalNameChange: access.setOrganizationLegalName,
+		organizationCountry: access.organizationCountry,
+		onOrganizationCountryChange: access.setOrganizationCountry,
+		requesterName: access.requesterName,
+		onRequesterNameChange: access.setRequesterName,
+		requesterRole: access.requesterRole,
+		onRequesterRoleChange: access.setRequesterRole,
 		useCase: access.useCase,
 		onUseCaseChange: access.setUseCase,
 		acceptTerms: access.acceptTerms,

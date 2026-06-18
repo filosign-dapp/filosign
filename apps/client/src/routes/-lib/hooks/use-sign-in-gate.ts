@@ -7,7 +7,10 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useConnect } from "thirdweb/react";
-import { clientSignupPolicyIsGated } from "@/src/lib/deployment";
+import {
+	clientPublicCheckoutEnabled,
+	clientSignupPolicyIsGated,
+} from "@/src/lib/deployment";
 import type { ColdInviteEntrySearch } from "@/src/lib/domains/invites/cold-invite-search";
 import {
 	connectFilosignInAppWalletWithEmailOtp,
@@ -29,6 +32,7 @@ export type SignInGateState =
 			lockedEmail: string;
 			planLabel: string | null;
 			needsEmailInput: boolean;
+			inviteKind?: "partner_trial" | "manual_paid";
 	  };
 
 export type SignInOtpDialogStep = "email" | "otp" | "not_registered";
@@ -123,7 +127,9 @@ export function useSignInGate(search: ColdInviteEntrySearch) {
 				status: "blocked",
 				reason:
 					data?.reason ??
-					"Open the link from your email or purchase a plan to get started.",
+					(clientPublicCheckoutEnabled()
+						? "Open the link from your email or purchase a plan to get started."
+						: "Open the link from your email or request access to get started."),
 			};
 		}
 		const lockedEmail = data.lockedEmail?.trim() ?? "";
@@ -134,6 +140,7 @@ export function useSignInGate(search: ColdInviteEntrySearch) {
 			lockedEmail,
 			planLabel: data.planLabel ?? null,
 			needsEmailInput,
+			inviteKind: data.inviteKind,
 		};
 	}, [
 		gated,

@@ -1,5 +1,8 @@
+import { useState } from "react";
 import env from "@/src/env";
 import { Button } from "@/src/lib/components/ui/button";
+import { clientPublicCheckoutEnabled } from "@/src/lib/deployment";
+import { storeLegalAssent } from "@/src/lib/web3/legal-assent-session";
 import type { SignInController } from "@/src/routes/-lib/hooks/use-sign-in-controller";
 import { SignInCardShell } from "./card-shell";
 import { SignInGatedCard } from "./gated-card";
@@ -11,7 +14,9 @@ type Props = Pick<
 	"coldReturn" | "buttonLoading" | "login" | "signInGate"
 >;
 
-const pricingUrl = `${env.VITE_ASTRO_URL.replace(/\/$/, "")}/pricing`;
+const pricingUrl = `${env.VITE_ASTRO_URL.replace(/\/$/, "")}/pricing${
+	clientPublicCheckoutEnabled() ? "" : "#pricing"
+}`;
 
 export function SignInWelcomeView({
 	coldReturn,
@@ -19,6 +24,8 @@ export function SignInWelcomeView({
 	login,
 	signInGate,
 }: Props) {
+	const [termsChecked, setTermsChecked] = useState(false);
+
 	return (
 		<div className="space-y-8">
 			<div className="space-y-2">
@@ -38,16 +45,24 @@ export function SignInWelcomeView({
 				<SignInCardShell
 					title="Login to Filosign"
 					description="Continue with your email or social account."
-					footer={<SignInTermsFooter />}
+					footer={
+						<SignInTermsFooter
+							checked={termsChecked}
+							onCheckedChange={setTermsChecked}
+						/>
+					}
 				>
 					<Button
 						type="button"
 						variant="default"
 						size="lg"
 						className="w-full"
-						disabled={buttonLoading}
+						disabled={buttonLoading || !termsChecked}
 						isLoading={buttonLoading}
-						onClick={() => void login()}
+						onClick={() => {
+							storeLegalAssent();
+							void login();
+						}}
 					>
 						Sign in
 					</Button>

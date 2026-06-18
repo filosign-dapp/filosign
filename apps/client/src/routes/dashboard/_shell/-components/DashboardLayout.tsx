@@ -8,6 +8,7 @@ import { DeploymentBanner } from "@/src/lib/components/app/deployment-banner";
 import { Loader } from "@/src/lib/components/ui/loader";
 import { SidebarInset, SidebarProvider } from "@/src/lib/components/ui/sidebar";
 import { TooltipProvider } from "@/src/lib/components/ui/tooltip";
+import { clientPublicCheckoutEnabled } from "@/src/lib/deployment";
 import { PartnerTrialWelcomeDialog } from "@/src/lib/domains/billing/partner-trial-welcome-dialog";
 import { usePartnerTrialWelcome } from "@/src/lib/domains/billing/use-partner-trial-welcome";
 import { SupportNavigationProvider } from "@/src/lib/errors/support-navigation-provider";
@@ -62,6 +63,8 @@ export default function DashboardLayout({
 			// Clean URL params to prevent repeated triggers
 			const cleanUrl = window.location.pathname;
 			window.history.replaceState({}, "", cleanUrl);
+
+			if (!clientPublicCheckoutEnabled()) return;
 
 			createOrgCheckoutSession({
 				planId: upgradePlan as "individual" | "teams" | "teams_pro",

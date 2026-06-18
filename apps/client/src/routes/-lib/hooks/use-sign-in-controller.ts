@@ -14,6 +14,7 @@ import { useColdInviteRecipientWarning } from "@/src/lib/domains/invites/use-col
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 import { useSignInGate } from "@/src/routes/-lib/hooks/use-sign-in-gate";
+import { requiresDesignPartnerAddendum } from "@/src/routes/-lib/utils/pilot-addendum-sign-in";
 import { executeSwitchAccountLogout } from "@/src/routes/onboarding/-components/OnboardingSwitchAccountLink";
 
 export type SignInView =
@@ -164,6 +165,13 @@ export function useSignInController() {
 			autoRegister?.status.status === "failed"
 				? autoRegister.status.error
 				: null,
+		partnerInviteEmailMismatch:
+			autoRegister?.status.status === "failed" &&
+			autoRegister.status.appCode === "WORKSPACE.PLATFORM_EMAIL_MISMATCH",
+		partnerInvitePilotAddendumRequired:
+			autoRegister?.status.status === "failed" &&
+			autoRegister.status.appCode === "USERS.PILOT_ADDENDUM_REQUIRED",
+		requiresPilotAddendum: requiresDesignPartnerAddendum(signInGate),
 		retryAutoRegister: autoRegister?.retry,
 		handleSwitchAccountFromSignIn,
 		login,

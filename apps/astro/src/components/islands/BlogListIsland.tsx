@@ -199,6 +199,16 @@ export default function BlogListIsland({ posts }: BlogListIslandProps) {
 							</p>
 							<a
 								href={MARKETING_CTA.getStartedHref}
+								target={
+									MARKETING_CTA.getStartedHref.startsWith("http")
+										? "_blank"
+										: undefined
+								}
+								rel={
+									MARKETING_CTA.getStartedHref.startsWith("http")
+										? "noopener noreferrer"
+										: undefined
+								}
 								className="inline-flex w-full items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm hover:bg-white/95 transition-all duration-200 gap-1.5 group/link"
 							>
 								<span>{MARKETING_CTA.getStartedLabel}</span>

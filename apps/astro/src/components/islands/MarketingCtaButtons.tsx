@@ -46,8 +46,8 @@ export default function MarketingCtaButtons({
 	return (
 		<div
 			className={cn(
-				"flex items-stretch sm:items-center gap-2",
-				layout === "col" ? "flex-col" : "flex-col sm:flex-row",
+				"flex items-stretch gap-2",
+				layout === "col" ? "flex-col" : "flex-col sm:flex-row sm:items-center",
 				className,
 			)}
 		>
@@ -58,11 +58,15 @@ export default function MarketingCtaButtons({
 			>
 				<a
 					href={primaryHref}
+					target={primaryHref.startsWith("http") ? "_blank" : undefined}
+					rel={
+						primaryHref.startsWith("http") ? "noopener noreferrer" : undefined
+					}
 					onClick={onLinkClick}
 					className={cn(
 						primaryClass,
 						"flex items-center justify-center gap-2 group",
-						layout === "col" && "w-full min-h-11",
+						layout === "col" && "w-full sm:w-full min-h-11",
 					)}
 				>
 					{primaryLabel}
@@ -89,7 +93,7 @@ export default function MarketingCtaButtons({
 						className={cn(
 							secondaryClass,
 							"flex items-center justify-center gap-2",
-							layout === "col" && "w-full min-h-11",
+							layout === "col" && "w-full sm:w-full min-h-11",
 						)}
 					>
 						{secondaryLabel}

@@ -1,0 +1,16 @@
+---
+description: Workflow for implementing master-index legal/pilot phases end-to-end with cleanup
+alwaysApply: false
+---
+
+# Phased plan implementation
+
+When executing a plan from `.cursor/plans/legal-phase-*.plan.md` (or the master index):
+
+1. **Read first:** root `AGENTS.md`, `TESTING.md`, touched package READMEs, and the phase plan. Client work: apply `vercel-react-best-practices` and `vercel-composition-patterns`.
+2. **TDD:** failing test → minimal code → green → refactor. Server domain logic in `apps/server/tests/domains/`.
+3. **Scope:** only what the phase plan lists. No Astro legal copy unless the phase says so.
+4. **Drizzle:** schema edit → `bun run db -- push local` → `bun run db -- generate`. Never stage or commit `apps/server/drizzle/**`; tell the user to review SQL.
+5. **Cleanup pass (required):** after the phase is green, remove dead code, legacy shims, and hardcoded bypasses introduced by the old path. Replace, do not layer.
+6. **Verify:** `bun check`, `bun tsc`, `bun run test` (or `sanity --fast` when contracts untouched).
+7. **Mark plan todos** in the phase `.plan.md` when done.

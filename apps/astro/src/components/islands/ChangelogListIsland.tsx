@@ -169,6 +169,16 @@ export default function ChangelogListIsland({
 								</p>
 								<a
 									href={MARKETING_CTA.getStartedHref}
+									target={
+										MARKETING_CTA.getStartedHref.startsWith("http")
+											? "_blank"
+											: undefined
+									}
+									rel={
+										MARKETING_CTA.getStartedHref.startsWith("http")
+											? "noopener noreferrer"
+											: undefined
+									}
 									className="relative inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm transition-all duration-200 hover:bg-white/95"
 								>
 									<span>{MARKETING_CTA.getStartedLabel}</span>

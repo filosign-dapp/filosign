@@ -168,10 +168,12 @@ export default function LandingNavbar({ pace = "page" }: LandingNavbarProps) {
 							whileTap={MARKETING_PRESSABLE_TAP}
 						>
 							<a
-								href={MARKETING_CTA.getStartedHref}
+								href={MARKETING_CTA.navLaunchHref}
+								target="_blank"
+								rel="noopener noreferrer"
 								className={marketingNavCtaClass}
 							>
-								{MARKETING_CTA.getStartedLabel}
+								{MARKETING_CTA.navLaunchLabel}
 							</a>
 						</Pressable>
 					</div>
@@ -243,11 +245,13 @@ export default function LandingNavbar({ pace = "page" }: LandingNavbarProps) {
 									whileTap={MARKETING_PRESSABLE_TAP}
 								>
 									<a
-										href={MARKETING_CTA.getStartedHref}
+										href={MARKETING_CTA.navLaunchHref}
+										target="_blank"
+										rel="noopener noreferrer"
 										className={cn(marketingPrimaryMdClass, "w-full min-h-11")}
 										onClick={() => setMenuOpen(false)}
 									>
-										{MARKETING_CTA.getStartedLabel}
+										{MARKETING_CTA.navLaunchLabel}
 									</a>
 								</Pressable>
 							</div>

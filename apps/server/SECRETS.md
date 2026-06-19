@@ -29,18 +29,29 @@ When set on production, the server uses `fallback([primary, public default])` wh
 
 **Client (optional):** `VITE_CHAIN_RPC_URL` in production Pages env only - same production-only rule; not required for launch (server relayer is the critical path).
 
-### Email delivery (Resend + SES fallback)
+### Email delivery (SES primary, Resend optional fallback)
 
 | Variable | Role |
 |----------|------|
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_FROM_NAME`, `RESEND_ENABLED` | **Primary** sender (`RESEND_FROM_NAME` sets inbox display name, e.g. `Filosign`) |
-| `SES_ENABLED`, `SES_REGION`, `SES_FROM_EMAIL` | **Fallback** only when all are set - any deployment (Infisical prod recommended) |
+| `EMAIL_PROVIDER` | `ses` (default) or `resend` - primary transport |
+| `SES_ENABLED`, `SES_REGION`, `SES_FROM_EMAIL`, `SES_FROM_NAME` | **Primary** sender when `EMAIL_PROVIDER=ses` |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | Optional if the host uses an IAM role for SES |
-| `SES_CONFIGURATION_SET` | Optional tracking |
+| `SES_CONFIGURATION_SET` | Optional tracking / bounce events |
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_FROM_NAME`, `RESEND_ENABLED` | **Fallback** when `RESEND_ENABLED=true` (retryable primary failures only) |
 
-Flow: every send tries Resend first. On retryable Resend errors (429, 5xx, timeouts), the server attempts SES once if configured. Validation errors (4xx) do not trigger SES.
+Flow: every send uses `EMAIL_PROVIDER` first. On retryable errors (429, 5xx, timeouts), the server attempts the other provider once if configured. Validation errors (4xx) do not trigger fallback.
 
-Verify the same From domain in [Resend](https://resend.com) and [Amazon SES](https://console.aws.amazon.com/ses/) (DKIM/SPF). Leave `SES_ENABLED=false` on local unless you are testing fallback.
+Verify the From domain in [Amazon SES](https://console.aws.amazon.com/ses/) (DKIM/SPF). Optional Resend domain verify if fallback stays enabled. Leave `SES_ENABLED=false` and `RESEND_ENABLED=false` on local to skip outbound email.
+
+**Production Infisical `prod` checklist:**
+
+1. AWS SES: domain `filosign.xyz` verified, DKIM CNAMEs published, production access active
+2. IAM user or role with `ses:SendEmail` / `ses:SendRawEmail` in your SES region
+3. Set `EMAIL_PROVIDER=ses`, `SES_ENABLED=true`, `SES_REGION`, `SES_FROM_EMAIL`, `SES_FROM_NAME=Filosign`
+4. Optional: `SES_CONFIGURATION_SET` + SNS bounce/complaint topics
+5. Optional fallback: `RESEND_ENABLED=true` + Resend keys for 1-2 weeks, then disable
+6. Apply the same vars on **API and worker** containers (worker sends outbox email)
+7. Smoke test: partner invite or envelope send; logs show `[email] sent { provider: "ses", ... }`
 
 Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `RELAYER_POOL`, `FC_OWNER_ADDRESS`, `ALCHEMY_API_KEY`, `ETHERSCAN_API_KEY` (see [`packages/evm/env.ts`](../../packages/evm/env.ts)). On-chain addresses for the app come from [`packages/evm/definitions/`](../../packages/evm/definitions/) via `CHAIN` - after redeploy, run migrate and ensure every `RELAYER_POOL` address is an on-chain relayer ([`packages/evm/README.md` redeploy section](../../packages/evm/README.md#redeploy--address-rotation)).
 

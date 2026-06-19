@@ -147,9 +147,10 @@ Server configuration is defined in `apps/server/env.ts`. The main required value
 - `SERVER_URL` - public API origin (no trailing slash).
 - `CLIENT_URL` - React app origin; email CTAs and CORS. Must not be `http://localhost` in deployed (`testnet` / `mainnet`) environments.
 - `ASTRO_URL` - marketing site origin; email static assets (`/logo.webp`, `/icons/*`).
-- `RESEND_API_KEY`
-- `RESEND_FROM_EMAIL`
-- `RESEND_ENABLED` - `true` (default) sends via Resend; set `false` to no-op outbound email
+- `EMAIL_PROVIDER` - `ses` (default) or `resend`
+- `SES_ENABLED`, `SES_REGION`, `SES_FROM_EMAIL`, `SES_FROM_NAME` - primary when `EMAIL_PROVIDER=ses`
+- `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` - SES credentials when not using IAM role
+- `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_ENABLED` - optional Resend fallback
 - `PG_URI`
 - `DB_NAME`
 - `RELAYER_POOL` / `RELAYER_POOL_PRIVATE_KEYS` - comma-separated on-chain relayer addresses and keys (must match `FSEnvelopeRegistry` `isRelayer` ACL after deploy)

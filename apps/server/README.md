@@ -120,8 +120,8 @@ Billing security notes:
 
 - **`tx.processIndexerHash`** - **`authenticatedProcedure`** (thirdweb session). Enqueues indexer job; does not wait for receipt on the API thread.
 - **`DEBUG=true`** - verbose request/indexer logging (does not affect email).
-- **`RESEND_ENABLED=false`** - skip all outbound product email (default `true`).
-- **Email delivery** - Resend primary via [`lib/platform/email/email.ts`](lib/platform/email/email.ts); optional SES fallback when `SES_ENABLED` + `SES_REGION` + `SES_FROM_EMAIL` are set (retryable Resend failures only). See [`SECRETS.md`](SECRETS.md).
+- **`RESEND_ENABLED=false`** and **`SES_ENABLED=false`** - skip all outbound product email.
+- **Email delivery** - `EMAIL_PROVIDER` selects primary (`ses` default) via [`lib/platform/email/email.ts`](lib/platform/email/email.ts); optional fallback on retryable failures. See [`SECRETS.md`](SECRETS.md).
 
 ## Object storage (S3-compatible / R2)
 

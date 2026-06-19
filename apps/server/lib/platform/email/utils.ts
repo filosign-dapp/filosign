@@ -65,7 +65,42 @@ export function getAstroUrl(): string {
 /** Resend From header: `Name <email>` when RESEND_FROM_NAME is set. */
 export function resendFromAddress(): string {
 	const email = env.RESEND_FROM_EMAIL;
+	if (!email) {
+		throw new Error("RESEND_FROM_EMAIL is not set");
+	}
 	const name = env.RESEND_FROM_NAME?.trim();
 	if (name) return `${name} <${email}>`;
 	return email;
+}
+
+/** SES From header: `Name <email>` when SES_FROM_NAME is set. */
+export function sesFromAddress(): string {
+	const email = env.SES_FROM_EMAIL;
+	if (!email) {
+		throw new Error("SES_FROM_EMAIL is not set");
+	}
+	const name = env.SES_FROM_NAME?.trim();
+	if (name) return `${name} <${email}>`;
+	return email;
+}
+
+/** Default reply-to when a template does not set one. */
+export function defaultReplyToEmail(): string {
+	return env.SES_FROM_EMAIL ?? env.RESEND_FROM_EMAIL ?? "";
+}
+
+/** From address for the configured primary email provider. */
+export function outboundFromAddress(): string {
+	if (env.EMAIL_PROVIDER === "ses") {
+		return sesFromAddress();
+	}
+	return resendFromAddress();
+}
+
+export function outboundEmailDefaults(msg: OutboundEmail): OutboundEmail {
+	return {
+		...msg,
+		from: msg.from || outboundFromAddress(),
+		replyTo: msg.replyTo || defaultReplyToEmail() || undefined,
+	};
 }

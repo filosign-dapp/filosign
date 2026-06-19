@@ -7,17 +7,32 @@ import {
 import { Resend } from "resend";
 import env from "@/env";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
-import type { EmailDeliveryResult, OutboundEmail } from "./utils";
-import { resendFromAddress } from "./utils";
+import type {
+	EmailDeliveryProvider,
+	EmailDeliveryResult,
+	OutboundEmail,
+} from "./utils";
+import { outboundEmailDefaults, sesFromAddress } from "./utils";
 
 // ==========================================
-// 1. SES Configurations
+// 1. Provider readiness
 // ==========================================
 export function isSesDeliveryConfigured(): boolean {
 	if (!env.SES_ENABLED) return false;
 	if (!env.SES_REGION?.trim()) return false;
 	if (!env.SES_FROM_EMAIL?.trim()) return false;
 	return true;
+}
+
+export function isResendDeliveryConfigured(): boolean {
+	if (!env.RESEND_ENABLED) return false;
+	if (!env.RESEND_API_KEY?.trim()) return false;
+	if (!env.RESEND_FROM_EMAIL?.trim()) return false;
+	return true;
+}
+
+export function isOutboundEmailConfigured(): boolean {
+	return isSesDeliveryConfigured() || isResendDeliveryConfigured();
 }
 
 export function warnIfSesMisconfigured(): void {
@@ -27,15 +42,16 @@ export function warnIfSesMisconfigured(): void {
 	if (!env.SES_FROM_EMAIL?.trim()) missing.push("SES_FROM_EMAIL");
 	if (missing.length === 0) return;
 	console.warn(
-		`[email] SES_ENABLED=true but missing ${missing.join(", ")}; SES fallback is disabled until configured.`,
+		`[email] SES_ENABLED=true but missing ${missing.join(", ")}; SES delivery is disabled until configured.`,
 	);
 }
 
 // ==========================================
-// 2. Resend Error Mapping & Classifier
+// 2. Retryable failure classifiers
 // ==========================================
 const RETRYABLE_HINTS = [
 	"rate limit",
+	"throttl",
 	"429",
 	"timeout",
 	"timed out",
@@ -50,28 +66,52 @@ const RETRYABLE_HINTS = [
 	"service unavailable",
 	"gateway timeout",
 	"internal server error",
+	"too many requests",
+	"serviceunavailableexception",
+	"throttling",
 ] as const;
 
-export type ResendFailureLike = {
+export type ProviderFailureLike = {
 	statusCode?: number | null;
 	message?: string;
 	name?: string;
+	$metadata?: { httpStatusCode?: number };
 };
+
+function failureText(error: unknown): string {
+	if (!error || typeof error !== "object") return "";
+	const e = error as ProviderFailureLike;
+	const httpStatus = e.$metadata?.httpStatusCode;
+	const parts = [e.name, e.message]
+		.filter((v): v is string => typeof v === "string")
+		.concat(typeof httpStatus === "number" ? [String(httpStatus)] : []);
+	return parts.join(" ").toLowerCase();
+}
+
+function isRetryableProviderFailure(error: unknown): boolean {
+	if (!error || typeof error !== "object") return false;
+	const e = error as ProviderFailureLike;
+	const status =
+		typeof e.statusCode === "number"
+			? e.statusCode
+			: e.$metadata?.httpStatusCode;
+	if (typeof status === "number") {
+		if (status === 429) return true;
+		if (status >= 500) return true;
+		if (status >= 400 && status < 500) return false;
+	}
+	const text = failureText(error);
+	return RETRYABLE_HINTS.some((hint) => text.includes(hint));
+}
 
 /** Classify Resend/API failures eligible for SES fallback (not validation 4xx). */
 export function isRetryableResendFailure(error: unknown): boolean {
-	if (!error || typeof error !== "object") return false;
-	const e = error as ResendFailureLike;
-	if (typeof e.statusCode === "number") {
-		if (e.statusCode === 429) return true;
-		if (e.statusCode >= 500) return true;
-		if (e.statusCode >= 400 && e.statusCode < 500) return false;
-	}
-	const text = [e.name, e.message]
-		.filter((v): v is string => typeof v === "string")
-		.join(" ")
-		.toLowerCase();
-	return RETRYABLE_HINTS.some((hint) => text.includes(hint));
+	return isRetryableProviderFailure(error);
+}
+
+/** Classify SES failures eligible for Resend fallback (not validation 4xx). */
+export function isRetryableSesFailure(error: unknown): boolean {
+	return isRetryableProviderFailure(error);
 }
 
 export function toResendFailureError(error: {
@@ -87,13 +127,17 @@ export function toResendFailureError(error: {
 }
 
 // ==========================================
-// 3. Resend Transport Client
+// 3. Resend transport
 // ==========================================
 let resendClient: Resend | null = null;
 
 function getResendClient(): Resend {
+	const apiKey = env.RESEND_API_KEY?.trim();
+	if (!apiKey) {
+		throw new Error("RESEND_API_KEY is not set");
+	}
 	if (!resendClient) {
-		resendClient = new Resend(env.RESEND_API_KEY);
+		resendClient = new Resend(apiKey);
 	}
 	return resendClient;
 }
@@ -131,7 +175,7 @@ export async function sendViaResend(
 }
 
 // ==========================================
-// 4. SES Transport Client
+// 4. SES transport
 // ==========================================
 let sesClient: SESv2Client | null = null;
 
@@ -163,10 +207,7 @@ export function resetSesClientForTests(): void {
 }
 
 export async function sendViaSes(msg: OutboundEmail): Promise<{ id: string }> {
-	const from = env.SES_FROM_EMAIL?.trim();
-	if (!from) {
-		throw new Error("SES_FROM_EMAIL is not set");
-	}
+	const from = msg.from?.trim() || sesFromAddress();
 	const input: SendEmailCommandInput = {
 		FromEmailAddress: from,
 		Destination: { ToAddresses: [msg.to] },
@@ -200,16 +241,8 @@ export async function sendViaSes(msg: OutboundEmail): Promise<{ id: string }> {
 }
 
 // ==========================================
-// 5. Consolidated Delivery Orchestration
+// 5. Delivery orchestration
 // ==========================================
-function outboundFromResendDefaults(msg: OutboundEmail): OutboundEmail {
-	return {
-		...msg,
-		from: msg.from || resendFromAddress(),
-		replyTo: msg.replyTo ?? env.RESEND_FROM_EMAIL,
-	};
-}
-
 function recipientFingerprint(to: string | string[]): string[] {
 	const list = Array.isArray(to) ? to : [to];
 	return list.map((entry) =>
@@ -217,54 +250,110 @@ function recipientFingerprint(to: string | string[]): string[] {
 	);
 }
 
+function resolvePrimaryProvider(): EmailDeliveryProvider {
+	const preferred = env.EMAIL_PROVIDER;
+	if (preferred === "ses" && isSesDeliveryConfigured()) return "ses";
+	if (preferred === "resend" && isResendDeliveryConfigured()) return "resend";
+	if (isSesDeliveryConfigured()) return "ses";
+	if (isResendDeliveryConfigured()) return "resend";
+	throw new Error("No email delivery provider is configured");
+}
+
+function fallbackProvider(
+	primary: EmailDeliveryProvider,
+): EmailDeliveryProvider | null {
+	if (primary === "ses" && isResendDeliveryConfigured()) return "resend";
+	if (primary === "resend" && isSesDeliveryConfigured()) return "ses";
+	return null;
+}
+
+async function sendWithProvider(
+	provider: EmailDeliveryProvider,
+	msg: OutboundEmail,
+): Promise<{ id: string }> {
+	if (provider === "ses") return sendViaSes(msg);
+	return sendViaResend(msg);
+}
+
+function formatDeliveryError(
+	primary: EmailDeliveryProvider,
+	primaryError: unknown,
+	fallback: EmailDeliveryProvider | null,
+	fallbackError?: unknown,
+): Error {
+	const primaryLabel = primary === "ses" ? "SES" : "Resend";
+	const primaryMsg =
+		primaryError instanceof Error ? primaryError.message : String(primaryError);
+	if (!fallback || fallbackError === undefined) {
+		return primaryError instanceof Error ? primaryError : new Error(primaryMsg);
+	}
+	const fallbackLabel = fallback === "ses" ? "SES" : "Resend";
+	const fallbackMsg =
+		fallbackError instanceof Error
+			? fallbackError.message
+			: String(fallbackError);
+	return new Error(
+		`Email delivery failed (${primaryLabel}: ${primaryMsg}; ${fallbackLabel} fallback: ${fallbackMsg})`,
+	);
+}
+
+function isRetryableForFallback(
+	provider: EmailDeliveryProvider,
+	error: unknown,
+): boolean {
+	if (provider === "ses") return isRetryableSesFailure(error);
+	return isRetryableResendFailure(error);
+}
+
 /**
- * Primary: Resend. Fallback: SES when configured and Resend failed retryably.
+ * Primary: EMAIL_PROVIDER (SES or Resend). Fallback: the other provider on retryable failure.
  * All product email should call this (via invites.ts), not transports directly.
  */
 export async function deliverOutboundEmail(
 	msg: OutboundEmail,
 ): Promise<EmailDeliveryResult> {
-	const outbound = outboundFromResendDefaults(msg);
+	const outbound = outboundEmailDefaults(msg);
+	const primary = resolvePrimaryProvider();
+	const fallback = fallbackProvider(primary);
 
-	const resendRes = await tryCatch(sendViaResend(outbound));
-	if (!resendRes.error) {
+	const primaryRes = await tryCatch(sendWithProvider(primary, outbound));
+	if (!primaryRes.error) {
 		console.info("[email] sent", {
-			provider: "resend",
-			id: resendRes.data.id,
+			provider: primary,
+			id: primaryRes.data.id,
 			recipientHashes: recipientFingerprint(outbound.to),
 		});
-		return { provider: "resend", id: resendRes.data.id };
+		return { provider: primary, id: primaryRes.data.id };
 	}
 
-	const resendError = resendRes.error;
-	if (!isRetryableResendFailure(resendError) || !isSesDeliveryConfigured()) {
-		throw resendError;
+	const primaryError = primaryRes.error;
+	if (!fallback || !isRetryableForFallback(primary, primaryError)) {
+		throw formatDeliveryError(primary, primaryError, null);
 	}
 
-	console.warn("[email] Resend failed; attempting SES fallback", {
+	console.warn(`[email] ${primary} failed; attempting ${fallback} fallback`, {
 		recipientHashes: recipientFingerprint(outbound.to),
 		error:
-			resendError instanceof Error ? resendError.message : String(resendError),
+			primaryError instanceof Error
+				? primaryError.message
+				: String(primaryError),
 	});
 
-	const sesRes = await tryCatch(sendViaSes(outbound));
-	if (sesRes.error) {
-		const primary =
-			resendError instanceof Error ? resendError.message : String(resendError);
-		const secondary =
-			sesRes.error instanceof Error
-				? sesRes.error.message
-				: String(sesRes.error);
-		throw new Error(
-			`Email delivery failed (Resend: ${primary}; SES fallback: ${secondary})`,
+	const fallbackRes = await tryCatch(sendWithProvider(fallback, outbound));
+	if (fallbackRes.error) {
+		throw formatDeliveryError(
+			primary,
+			primaryError,
+			fallback,
+			fallbackRes.error,
 		);
 	}
 
 	console.info("[email] sent", {
-		provider: "ses",
-		id: sesRes.data.id,
+		provider: fallback,
+		id: fallbackRes.data.id,
 		recipientHashes: recipientFingerprint(outbound.to),
 		fallback: true,
 	});
-	return { provider: "ses", id: sesRes.data.id };
+	return { provider: fallback, id: fallbackRes.data.id };
 }

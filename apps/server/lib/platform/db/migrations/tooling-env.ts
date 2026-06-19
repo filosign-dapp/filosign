@@ -37,6 +37,7 @@ export function loadToolingEnv(): void {
 		RESEND_FROM_NAME: "Filosign",
 		RESEND_ENABLED: "false",
 		SES_ENABLED: "false",
+		EMAIL_PROVIDER: "resend",
 		CHAIN: "local",
 		DRAGONFLY_URL: "redis://localhost:6379",
 		THIRDWEB_CLIENT_ID: "drizzle-tooling",

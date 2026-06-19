@@ -1,6 +1,9 @@
 export {
 	deliverOutboundEmail,
+	isOutboundEmailConfigured,
+	isResendDeliveryConfigured,
 	isRetryableResendFailure,
+	isRetryableSesFailure,
 	isSesDeliveryConfigured,
 	resetResendClientForTests,
 	resetSesClientForTests,
@@ -27,4 +30,5 @@ export {
 	getClientUrl,
 	getServerUrl,
 	type OutboundEmail,
+	outboundFromAddress,
 } from "./utils";

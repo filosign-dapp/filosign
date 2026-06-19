@@ -13,26 +13,27 @@ import {
 } from "@filosign/emails";
 import type { PaidCheckoutPlanId } from "@filosign/shared";
 import type { Address } from "viem";
-import env from "@/env";
-import { deliverOutboundEmail } from "./email";
+import { deliverOutboundEmail, isOutboundEmailConfigured } from "./email";
 import { recipientDisplayNameFromEmail } from "./recipient-name";
 import {
 	buildEmailIdempotencyKey,
 	escapeHtml,
 	getClientUrl,
-	resendFromAddress,
+	outboundFromAddress,
 } from "./utils";
 
 /**
  * All outbound product email is sent through this file (`deliverOutboundEmail`).
- * Transport: Resend primary, optional SES fallback - see `email.ts`.
+ * Transport: EMAIL_PROVIDER primary, optional fallback - see `email.ts`.
  */
 function shouldSkipEmail(): boolean {
-	if (!env.RESEND_ENABLED) {
-		console.info("[email] Skipping email send (RESEND_ENABLED=false)");
-		return true;
+	if (isOutboundEmailConfigured()) {
+		return false;
 	}
-	return false;
+	console.info(
+		"[email] Skipping email send (no provider enabled: set SES_ENABLED or RESEND_ENABLED with credentials)",
+	);
+	return true;
 }
 
 function formatAddress(address: Address) {
@@ -64,7 +65,7 @@ async function deliverEmail(args: {
 	from?: string;
 }) {
 	await deliverOutboundEmail({
-		from: args.from ?? resendFromAddress(),
+		from: args.from ?? outboundFromAddress(),
 		to: args.to,
 		subject: args.subject,
 		text: args.text,

@@ -7,6 +7,7 @@ import {
 	PLATFORM_ALERT_EVENTS,
 } from "@/lib/platform/analytics";
 import { validateDeploymentEnv } from "@/lib/platform/validate-deployment-env";
+import { validateEmailEnv } from "@/lib/platform/validate-email-env";
 
 const parsedEnv = createEnv({
 	server: {
@@ -33,19 +34,21 @@ const parsedEnv = createEnv({
 		SERVER_URL: z.url(),
 		CLIENT_URL: z.url(),
 		ASTRO_URL: z.url(),
-		RESEND_API_KEY: z.string().min(1),
-		RESEND_FROM_EMAIL: z.email(),
+		EMAIL_PROVIDER: z.enum(["ses", "resend"]).default("ses"),
+		RESEND_API_KEY: z.string().min(1).optional(),
+		RESEND_FROM_EMAIL: z.email().optional(),
 		RESEND_FROM_NAME: z.string().min(1).optional(),
 		RESEND_ENABLED: z
 			.string()
-			.default("true")
+			.default("false")
 			.transform((v) => v === "true"),
 		SES_ENABLED: z
 			.string()
-			.default("false")
+			.default("true")
 			.transform((v) => v === "true"),
 		SES_REGION: z.string().min(1).optional(),
 		SES_FROM_EMAIL: z.email().optional(),
+		SES_FROM_NAME: z.string().min(1).optional(),
 		SES_CONFIGURATION_SET: z.string().min(1).optional(),
 		AWS_ACCESS_KEY_ID: z.string().min(1).optional(),
 		AWS_SECRET_ACCESS_KEY: z.string().min(1).optional(),
@@ -135,6 +138,7 @@ const parsedEnv = createEnv({
 
 try {
 	validateDeploymentEnv(parsedEnv);
+	validateEmailEnv(parsedEnv);
 } catch (error) {
 	const message =
 		error instanceof Error ? error.message : "Invalid deployment configuration";

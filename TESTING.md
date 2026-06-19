@@ -45,6 +45,7 @@ In tests:
 - Register `mock.module(...)` at **file top level** (or in preload) before the module under test is first imported in that file.
 - Avoid `beforeEach(mock.module)` + `afterEach(mock.restore())` for infra mocks; restore does not undo module overrides and fights the shared cache.
 - Prefer importing narrow paths (e.g. `@/lib/platform/jobs/utils/idempotency`) over barrels that pull workers and heavy domain graphs.
+- **Email transport tests:** one file [`tests/platform/email-delivery.test.ts`](apps/server/tests/platform/email-delivery.test.ts) + shared mocks in [`tests/support/mock-email.ts`](apps/server/tests/support/mock-email.ts). Do not register duplicate `mock.module("resend")` / `mock.module("@aws-sdk/client-sesv2")` in a second file; use `resetEmailTransportMocks()` in `beforeEach` instead of `mock.restore()`.
 
 ## Do not add
 

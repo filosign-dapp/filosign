@@ -516,6 +516,7 @@ function PricingPlansContent({
 					onClose={() => setAccessRequestPlan(null)}
 					planName={accessRequestPlan.name}
 					planId={accessRequestPlan.planId}
+					billingInterval={billingInterval}
 				/>
 			) : null}
 		</MarketingPageShell>

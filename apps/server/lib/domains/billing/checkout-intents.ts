@@ -123,13 +123,12 @@ function resolveCheckoutSeatCount(args: {
 	return seatCount;
 }
 
-export async function requestCheckoutLink(args: {
+export async function createCheckoutIntentAndEmail(args: {
 	email: string;
 	planId: CheckoutIntentPlanId;
 	interval: BillingInterval;
 	seatCount?: number;
-}): Promise<{ ok: true }> {
-	assertPublicCheckoutEnabled();
+}): Promise<{ checkoutIntentId: string; continueUrl: string }> {
 	const email = normalizeEmail(args.email);
 	const seatCount = resolveCheckoutSeatCount({
 		planId: args.planId,
@@ -165,13 +164,28 @@ export async function requestCheckoutLink(args: {
 		planLabel: checkoutPlanLabel(args.planId),
 	});
 
+	return { checkoutIntentId: row.id, continueUrl };
+}
+
+export async function requestCheckoutLink(args: {
+	email: string;
+	planId: CheckoutIntentPlanId;
+	interval: BillingInterval;
+	seatCount?: number;
+}): Promise<{ ok: true }> {
+	assertPublicCheckoutEnabled();
+	await createCheckoutIntentAndEmail({
+		email: args.email,
+		planId: args.planId,
+		interval: args.interval,
+		seatCount: args.seatCount,
+	});
 	return { ok: true };
 }
 
 export async function continueCheckoutFromToken(args: {
 	token: string;
 }): Promise<{ checkoutUrl: string }> {
-	assertPublicCheckoutEnabled();
 	const token = args.token.trim();
 	if (token.length < 8) {
 		throwAppError("BILLING.INVALID_CHECKOUT_LINK");
@@ -277,4 +291,4 @@ export async function markCheckoutIntentCompleted(args: {
 		.where(eq(checkoutIntents.id, args.checkoutIntentId));
 }
 
-export { CHECKOUT_PLAN_IDS, checkoutPlanLabel };
+export { CHECKOUT_PLAN_IDS, checkoutPlanLabel, resolveCheckoutSeatCount };

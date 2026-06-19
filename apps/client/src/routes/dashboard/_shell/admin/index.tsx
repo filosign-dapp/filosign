@@ -354,12 +354,24 @@ function AdminPage() {
 		mutationFn: (request: AdminAccessRequestRow) =>
 			rpc.platformAdmin.accessRequests.approve({
 				requestId: request.id,
-				...(request.planId === "teams" || request.planId === "teams_pro"
+				...(request.planId &&
+				(request.planId === "individual" ||
+					request.planId === "teams" ||
+					request.planId === "teams_pro")
 					? { planId: request.planId }
 					: {}),
+				...(request.billingInterval === "monthly" ||
+				request.billingInterval === "yearly"
+					? { interval: request.billingInterval }
+					: {}),
+				...(typeof request.seatCount === "number" && request.seatCount > 1
+					? { seatCount: request.seatCount }
+					: {}),
 			}),
-		onSuccess: (data) => {
-			setLastInviteUrl(String(data.inviteUrl));
+		onSuccess: (_data, request) => {
+			toastUser.success(
+				TOASTS.admin.checkoutLinkSent(String(request.email ?? "")),
+			);
 			void queryClient.invalidateQueries({
 				queryKey: rpcQuery.platformAdmin.accessRequests.list.queryKey(),
 			});
@@ -856,6 +868,25 @@ function AdminPage() {
 													</span>
 												</>
 											) : null}
+											{request.billingInterval ? (
+												<>
+													{" "}
+													· Billing:{" "}
+													<span className="font-medium text-foreground">
+														{String(request.billingInterval)}
+													</span>
+												</>
+											) : null}
+											{typeof request.seatCount === "number" &&
+											request.seatCount > 1 ? (
+												<>
+													{" "}
+													· Seats:{" "}
+													<span className="font-medium text-foreground">
+														{String(request.seatCount)}
+													</span>
+												</>
+											) : null}
 										</div>
 										{request.message ? (
 											<p className="text-xs text-muted-foreground italic bg-muted/10 border border-border/40 p-2.5 rounded-md whitespace-pre-wrap">
@@ -873,7 +904,7 @@ function AdminPage() {
 														approveAccessRequest.variables?.id === id
 													}
 												>
-													Approve + Invite
+													Approve + Send checkout link
 												</Button>
 												<Button
 													size="sm"

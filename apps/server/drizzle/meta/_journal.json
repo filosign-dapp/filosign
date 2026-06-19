@@ -57,6 +57,13 @@
       "when": 1781818927772,
       "tag": "0007_robust_mordo",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1781870856339,
+      "tag": "0008_lush_vertigo",
+      "breakpoints": true
     }
   ]
 }

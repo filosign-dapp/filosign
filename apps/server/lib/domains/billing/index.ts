@@ -10,9 +10,11 @@ export {
 	type CheckoutIntentPlanId,
 	checkoutPlanLabel,
 	continueCheckoutFromToken,
+	createCheckoutIntentAndEmail,
 	markCheckoutIntentCompleted,
 	requestCheckoutLink,
 	resendPaidSetupLink,
+	resolveCheckoutSeatCount,
 } from "./checkout-intents";
 export {
 	assertMarketingCheckoutAllowed,

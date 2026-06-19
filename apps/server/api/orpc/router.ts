@@ -203,6 +203,8 @@ export const appRouter = {
 					company: z.string().max(120).optional(),
 					message: z.string().max(2000).optional(),
 					planId: z.enum(["individual", "teams", "teams_pro"]).optional(),
+					interval: z.enum(["monthly", "yearly"]).optional(),
+					seatCount: z.number().int().min(1).optional(),
 				}),
 			)
 			.output(z.object({ ok: z.literal(true) }))
@@ -293,18 +295,12 @@ export const appRouter = {
 				.input(
 					z.object({
 						requestId: z.uuid(),
-						planId: z
-							.enum(["free", "individual", "teams", "teams_pro", "enterprise"])
-							.optional(),
-						trialDays: z.number().int().min(1).max(365).optional(),
+						planId: z.enum(["individual", "teams", "teams_pro"]).optional(),
+						interval: z.enum(["monthly", "yearly"]).optional(),
+						seatCount: z.number().int().min(1).optional(),
 					}),
 				)
-				.output(
-					z.object({
-						inviteToken: z.string(),
-						inviteUrl: z.string(),
-					}),
-				)
+				.output(z.object({ ok: z.literal(true) }))
 				.handler(({ context, input }) =>
 					platformAdminAccessRequestsApprove(context.userWallet, input),
 				),

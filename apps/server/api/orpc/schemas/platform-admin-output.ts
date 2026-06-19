@@ -111,9 +111,12 @@ export const rpcPlatformAdminAccessRequestRowSchema = z.object({
 	company: z.string().nullable(),
 	message: z.string().nullable(),
 	planId: z.enum(PLAN_IDS).nullable(),
+	billingInterval: z.enum(["monthly", "yearly"]).nullable(),
+	seatCount: z.number().int(),
 	status: z.string(),
 	reviewedAt: z.string().nullable(),
 	createdInviteId: z.uuid().nullable(),
+	createdCheckoutIntentId: z.uuid().nullable(),
 	createdAt: z.string(),
 });
 

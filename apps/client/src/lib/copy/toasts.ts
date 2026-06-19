@@ -279,6 +279,7 @@ export const TOASTS = {
 		}),
 		inviteReissued: (label: string) => `Invite reissued for ${label}`,
 		inviteReissuedGeneric: "Invite reissued",
+		checkoutLinkSent: (email: string) => `Checkout link sent to ${email}`,
 	},
 	auth: {
 		partnerTrialFailed: {

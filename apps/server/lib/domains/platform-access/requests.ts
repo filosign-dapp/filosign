@@ -1,21 +1,34 @@
 import type { PlanId } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
+import { isPaidCheckoutPlanId } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { and, eq, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
-import env from "@/env";
+import type { BillingInterval } from "@/lib/domains/billing/billing";
+import {
+	type CheckoutIntentPlanId,
+	createCheckoutIntentAndEmail,
+	resolveCheckoutSeatCount,
+} from "@/lib/domains/billing/checkout-intents";
+import { assertMarketingCheckoutAllowed } from "@/lib/domains/billing/utils/marketing";
 import db from "@/lib/platform/db";
 import { accessRequests } from "@/lib/platform/db/schema/platform-access";
-import { sendAccessRequestApprovedEmail } from "@/lib/platform/email";
-import { createPlatformInvite } from "./invites";
-import { normalizeEmail, planLabel } from "./utils/shared";
+import { normalizeEmail } from "./utils/shared";
 
-function partnerTrialPlanFromRequest(
+function resolvePaidCheckoutPlanId(
 	planId: string | null | undefined,
-): PlanId | undefined {
-	if (planId === "teams" || planId === "teams_pro") return planId;
+): CheckoutIntentPlanId | undefined {
+	if (planId && isPaidCheckoutPlanId(planId)) {
+		return planId;
+	}
 	return undefined;
+}
+
+function resolveBillingInterval(
+	interval: string | null | undefined,
+): BillingInterval {
+	return interval === "monthly" ? "monthly" : "yearly";
 }
 
 export async function submitAccessRequest(args: {
@@ -24,6 +37,8 @@ export async function submitAccessRequest(args: {
 	company?: string | null;
 	message?: string | null;
 	planId?: PlanId | null;
+	interval?: BillingInterval | null;
+	seatCount?: number | null;
 }): Promise<{ ok: true }> {
 	const email = normalizeEmail(args.email);
 	if (!email) {
@@ -31,6 +46,18 @@ export async function submitAccessRequest(args: {
 			message: "Email is required",
 		});
 	}
+
+	const planId = resolvePaidCheckoutPlanId(args.planId);
+	const billingInterval = args.interval
+		? resolveBillingInterval(args.interval)
+		: null;
+	const seatCount =
+		planId !== undefined
+			? resolveCheckoutSeatCount({
+					planId,
+					seatCount: args.seatCount ?? undefined,
+				})
+			: 1;
 
 	const [existingPending] = await db
 		.select({ id: accessRequests.id })
@@ -43,16 +70,27 @@ export async function submitAccessRequest(args: {
 		)
 		.limit(1);
 
+	const values = {
+		name: args.name?.trim() || null,
+		company: args.company?.trim() || null,
+		message: args.message?.trim() || null,
+		planId: planId ?? null,
+		billingInterval,
+		seatCount,
+		updatedAt: new Date(),
+	};
+
 	if (existingPending) {
+		await db
+			.update(accessRequests)
+			.set(values)
+			.where(eq(accessRequests.id, existingPending.id));
 		return { ok: true };
 	}
 
 	await db.insert(accessRequests).values({
 		email,
-		name: args.name?.trim() || null,
-		company: args.company?.trim() || null,
-		message: args.message?.trim() || null,
-		planId: args.planId ?? null,
+		...values,
 	});
 
 	return { ok: true };
@@ -67,9 +105,12 @@ export async function listAccessRequestsForAdmin() {
 			company: accessRequests.company,
 			message: accessRequests.message,
 			planId: accessRequests.planId,
+			billingInterval: accessRequests.billingInterval,
+			seatCount: accessRequests.seatCount,
 			status: accessRequests.status,
 			reviewedAt: accessRequests.reviewedAt,
 			createdInviteId: accessRequests.createdInviteId,
+			createdCheckoutIntentId: accessRequests.createdCheckoutIntentId,
 			createdAt: accessRequests.createdAt,
 		})
 		.from(accessRequests)
@@ -86,9 +127,10 @@ export async function listAccessRequestsForAdmin() {
 export async function approveAccessRequest(args: {
 	adminWallet: Address;
 	requestId: string;
-	planId?: PlanId;
-	trialDays?: number;
-}): Promise<{ inviteToken: string; inviteUrl: string }> {
+	planId?: CheckoutIntentPlanId;
+	interval?: BillingInterval;
+	seatCount?: number;
+}): Promise<{ ok: true }> {
 	const [request] = await db
 		.select()
 		.from(accessRequests)
@@ -99,16 +141,31 @@ export async function approveAccessRequest(args: {
 		throwAppError("WORKSPACE.PLATFORM_ACCESS_REQUEST_NOT_FOUND");
 	}
 
-	const invite = await createPlatformInvite({
-		adminWallet: args.adminWallet,
-		kind: "partner_trial",
-		planId:
-			args.planId ?? partnerTrialPlanFromRequest(request.planId) ?? "teams_pro",
-		trialDays: args.trialDays ?? 30,
+	const planId =
+		args.planId ?? resolvePaidCheckoutPlanId(request.planId) ?? undefined;
+	if (!planId) {
+		throw new ORPCError("BAD_REQUEST" /* error-audit-allow */, {
+			message: "Access request must include a paid plan before approval",
+		});
+	}
+
+	const interval =
+		args.interval ?? resolveBillingInterval(request.billingInterval);
+	const seatCount = resolveCheckoutSeatCount({
+		planId,
+		seatCount: args.seatCount ?? request.seatCount ?? undefined,
+	});
+
+	await assertMarketingCheckoutAllowed({
+		email: normalizeEmail(request.email),
+		planId,
+	});
+
+	const { checkoutIntentId } = await createCheckoutIntentAndEmail({
 		email: request.email,
-		note: request.company
-			? `Approved waitlist: ${request.company}`
-			: "Approved waitlist request",
+		planId,
+		interval,
+		seatCount,
 	});
 
 	await db
@@ -117,21 +174,12 @@ export async function approveAccessRequest(args: {
 			status: "approved",
 			reviewedAt: new Date(),
 			reviewedByAdminWallet: getAddress(args.adminWallet),
-			createdInviteId: invite.id,
+			createdCheckoutIntentId: checkoutIntentId,
 			updatedAt: new Date(),
 		})
 		.where(eq(accessRequests.id, request.id));
 
-	const inviteUrl = `${env.CLIENT_URL.replace(/\/$/, "")}/?platformInvite=${encodeURIComponent(invite.token)}`;
-
-	await sendAccessRequestApprovedEmail({
-		to: normalizeEmail(request.email),
-		inviteUrl,
-		planLabel: planLabel(invite.planId as PlanId),
-		trialDays: invite.trialDays,
-	});
-
-	return { inviteToken: invite.token, inviteUrl };
+	return { ok: true };
 }
 
 export async function rejectAccessRequest(args: {

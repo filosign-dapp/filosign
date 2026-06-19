@@ -15,6 +15,7 @@ interface RequestAccessDialogProps {
 	onClose: () => void;
 	planName?: string;
 	planId?: "individual" | "teams" | "teams_pro";
+	billingInterval?: "monthly" | "yearly";
 }
 
 function RequestAccessContextChip({ planName }: { planName: string }) {
@@ -44,6 +45,7 @@ export default function RequestAccessDialog({
 	onClose,
 	planName,
 	planId,
+	billingInterval = "yearly",
 }: RequestAccessDialogProps) {
 	const rpc = useFilosignRpc();
 	const titleId = useId();
@@ -87,7 +89,9 @@ export default function RequestAccessDialog({
 			await rpc.platformAccess.submitAccessRequest({
 				email: email.trim(),
 				company: company.trim(),
-				planId,
+				planId: dialogPlan.planId,
+				interval: billingInterval,
+				seatCount: 1,
 				message: message.trim(),
 			});
 			setStatus("sent");
@@ -109,7 +113,7 @@ export default function RequestAccessDialog({
 			panelRef={panelRef}
 			contextChip={<RequestAccessContextChip planName={dialogPlan.planName} />}
 			title="Request invite"
-			description="We're onboarding design partners invite-by-invite. Share your work email, company, and how you'd use Filosign. We'll follow up with an invite link."
+			description="Share your work email, company, and how you'd use Filosign. We'll follow up with a checkout link for your selected plan."
 		>
 			{status === "sent" ? (
 				<RequestAccessSentContent email={email} onClose={onClose} />

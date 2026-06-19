@@ -123,7 +123,7 @@ export const accessRequestStatuses = [
 
 export type AccessRequestStatus = (typeof accessRequestStatuses)[number];
 
-/** Phase 3 - marketing waitlist before admin issues partner invite. */
+/** Phase 3 - marketing waitlist; admin approval sends paid checkout link for requested plan. */
 export const accessRequests = t.pgTable(
 	"access_requests",
 	{
@@ -133,6 +133,8 @@ export const accessRequests = t.pgTable(
 		company: t.text(),
 		message: t.text(),
 		planId: t.text({ enum: PLAN_IDS }),
+		billingInterval: t.text({ enum: ["monthly", "yearly"] }),
+		seatCount: t.integer().notNull().default(1),
 		status: t
 			.text({ enum: accessRequestStatuses })
 			.notNull()
@@ -142,6 +144,9 @@ export const accessRequests = t.pgTable(
 		createdInviteId: t
 			.uuid()
 			.references(() => platformInvites.id, { onDelete: "set null" }),
+		createdCheckoutIntentId: t
+			.uuid()
+			.references(() => checkoutIntents.id, { onDelete: "set null" }),
 		...timestamps,
 	},
 	(table) => [

@@ -371,6 +371,8 @@ export async function platformAccessSubmitAccessRequest(body: unknown) {
 			company: z.string().max(120).optional(),
 			message: z.string().max(2000).optional(),
 			planId: z.enum(["individual", "teams", "teams_pro"]).optional(),
+			interval: z.enum(["monthly", "yearly"]).optional(),
+			seatCount: z.number().int().min(1).optional(),
 		})
 		.safeParse(body);
 
@@ -395,8 +397,9 @@ export async function platformAdminAccessRequestsApprove(
 	const parsed = z
 		.object({
 			requestId: z.uuid(),
-			planId: z.enum(PLAN_IDS).optional(),
-			trialDays: z.number().int().min(1).max(365).optional(),
+			planId: z.enum(["individual", "teams", "teams_pro"]).optional(),
+			interval: z.enum(["monthly", "yearly"]).optional(),
+			seatCount: z.number().int().min(1).optional(),
 		})
 		.safeParse(body);
 	if (parsed.error) {
@@ -405,8 +408,9 @@ export async function platformAdminAccessRequestsApprove(
 	return approveAccessRequest({
 		adminWallet,
 		requestId: parsed.data.requestId,
-		planId: parsed.data.planId as PlanId | undefined,
-		trialDays: parsed.data.trialDays,
+		planId: parsed.data.planId,
+		interval: parsed.data.interval,
+		seatCount: parsed.data.seatCount,
 	});
 }
 

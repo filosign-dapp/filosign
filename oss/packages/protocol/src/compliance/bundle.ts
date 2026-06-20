@@ -179,6 +179,13 @@ export const zComplianceBundle = z.object({
 	chainId: z.number().int(),
 	exportedAtIso: z.string(),
 	executionStatus: z.enum(["fully_executed", "partially_executed"]),
+	satelliteWorkflowStatus: z.enum(["none", "pending", "terminal"]),
+	pendingSatelliteSummary: z
+		.object({
+			payouts: z.number().int().nonnegative(),
+			attachments: z.number().int().nonnegative(),
+		})
+		.optional(),
 	placementCommitment: zHexString(),
 	placementManifest: zPlacementManifest,
 	registration: z.object({

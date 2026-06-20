@@ -211,6 +211,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "catalog:",
+        "@filosign/shared": "workspace:*",
         "@types/bun": "catalog:",
         "typescript": "catalog:",
       },

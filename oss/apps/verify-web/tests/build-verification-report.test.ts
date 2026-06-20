@@ -15,6 +15,7 @@ const bundle = {
 	chainId: 31337,
 	exportedAtIso: "2026-01-01T00:00:00.000Z",
 	executionStatus: "fully_executed" as const,
+	satelliteWorkflowStatus: "none" as const,
 	placementCommitment: `0x${"ee".repeat(32)}` as `0x${string}`,
 	placementManifest: {
 		version: 1 as const,

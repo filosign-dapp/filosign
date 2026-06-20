@@ -35,6 +35,7 @@ const minimalBundle = {
 	chainId: 84532,
 	exportedAtIso: "2026-01-01T00:00:00.000Z",
 	executionStatus: "fully_executed",
+	satelliteWorkflowStatus: "none",
 	placementCommitment: computePlacementCommitment(placementManifest),
 	placementManifest,
 	registration: {
@@ -92,5 +93,10 @@ describe("@filosign/verify local checks", () => {
 				(result) => result.id === "local.bundle.sha256.sidecar",
 			)?.status,
 		).toBe("fail");
+		expect(
+			summary.results.find(
+				(result) => result.id === "local.bundle.sha256.sidecar",
+			)?.message,
+		).toBe("bundle.sha256 does not match canonical bundle JSON");
 	});
 });

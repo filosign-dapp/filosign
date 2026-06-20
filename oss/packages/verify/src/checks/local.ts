@@ -31,13 +31,17 @@ export async function runLocalChecks(args: {
 
 	const computedHash = await complianceBundleSha256Hex(bundle);
 	if (args.bundleSha256Sidecar) {
+		const sidecarMatches =
+			normalizeHex(args.bundleSha256Sidecar) === normalizeHex(computedHash);
 		results.push(
 			compareCheck({
 				id: "local.bundle.sha256.sidecar",
 				tier: "local",
 				expected: args.bundleSha256Sidecar,
 				actual: computedHash,
-				message: "bundle.sha256 matches canonical bundle JSON",
+				message: sidecarMatches
+					? "bundle.sha256 matches canonical bundle JSON"
+					: "bundle.sha256 does not match canonical bundle JSON",
 			}),
 		);
 	} else {
@@ -52,23 +56,32 @@ export async function runLocalChecks(args: {
 	}
 
 	if (args.manifest) {
+		const manifestMatches =
+			normalizeHex(args.manifest.bundleSha256) === normalizeHex(computedHash);
 		results.push(
 			compareCheck({
 				id: "local.manifest.bundleSha256",
 				tier: "local",
 				expected: args.manifest.bundleSha256,
 				actual: computedHash,
-				message: "verify-manifest.json bundleSha256 matches bundle",
+				message: manifestMatches
+					? "verify-manifest.json bundleSha256 matches bundle"
+					: "verify-manifest.json bundleSha256 does not match bundle",
 			}),
 		);
 		if (args.bundleSha256Sidecar) {
+			const sidecarManifestMatch =
+				normalizeHex(args.manifest.bundleSha256) ===
+				normalizeHex(args.bundleSha256Sidecar);
 			results.push(
 				compareCheck({
 					id: "local.manifest.sidecarMatch",
 					tier: "local",
 					expected: args.manifest.bundleSha256,
 					actual: args.bundleSha256Sidecar,
-					message: "Manifest hash matches bundle.sha256 sidecar",
+					message: sidecarManifestMatch
+						? "Manifest hash matches bundle.sha256 sidecar"
+						: "Manifest hash does not match bundle.sha256 sidecar",
 				}),
 			);
 		}

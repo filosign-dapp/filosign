@@ -32,6 +32,7 @@ export const minimalBundle = {
 	chainId: 84532,
 	exportedAtIso: "2026-01-01T00:00:00.000Z",
 	executionStatus: "fully_executed",
+	satelliteWorkflowStatus: "none",
 	placementCommitment: computePlacementCommitment(placementManifest),
 	placementManifest,
 	registration: {

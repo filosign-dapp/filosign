@@ -1,5 +1,6 @@
 import type { PDFFont, RGB } from "pdf-lib";
 import { rgb } from "pdf-lib";
+import { measureTextWidth, sanitizeTextForWinAnsiPdf } from "../text";
 
 export type FieldInnerRect = {
 	x: number;
@@ -48,12 +49,13 @@ export function fillContentFontSize(
 	text: string,
 	minSize = 6,
 ): number {
+	const safe = sanitizeTextForWinAnsiPdf(text, font, inner.height * 0.62);
 	const maxHeight = inner.height * 0.72;
 	const maxWidth = inner.width * 0.92;
 	let size = inner.height * 0.62;
 	while (size > minSize) {
 		if (
-			font.widthOfTextAtSize(text, size) <= maxWidth &&
+			measureTextWidth(font, safe, size) <= maxWidth &&
 			font.heightAtSize(size) <= maxHeight
 		) {
 			return size;
@@ -86,7 +88,8 @@ export function textXCentered(
 	text: string,
 	size: number,
 ): number {
-	const textWidth = font.widthOfTextAtSize(text, size);
+	const safe = sanitizeTextForWinAnsiPdf(text, font, size);
+	const textWidth = measureTextWidth(font, safe, size);
 	return inner.x + (inner.width - textWidth) / 2;
 }
 

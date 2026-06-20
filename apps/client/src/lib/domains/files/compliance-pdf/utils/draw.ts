@@ -16,7 +16,13 @@ import { A4 } from "../compliance-pdf-types";
 import type { ComplianceGlossaryEntry } from "./copy";
 import { embedComplianceLogo } from "./images";
 import { buildCompliancePdfSummaryFromBundle } from "./summary/assemble";
-import { lineHeightAt, wrapLines } from "./text";
+import {
+	drawPdfText,
+	lineHeightAt,
+	measureTextWidth,
+	sanitizeTextForWinAnsiPdf,
+	wrapLines,
+} from "./text";
 
 const PDF_BRAND = {
 	pageBg: rgb(252 / 255, 253 / 255, 250 / 255),
@@ -75,13 +81,13 @@ function splitDetailForBudget(
 	size: number,
 ): [string, string] {
 	if (budget <= 0) return ["", detail];
-	const d = detail.trimStart();
+	const d = sanitizeTextForWinAnsiPdf(detail, font, size).trimStart();
 	if (!d) return ["", ""];
 	const words = d.split(/\s+/);
 	let line = "";
 	for (const w of words) {
 		const cand = line ? `${line} ${w}` : w;
-		if (font.widthOfTextAtSize(cand, size) <= budget) line = cand;
+		if (measureTextWidth(font, cand, size) <= budget) line = cand;
 		else break;
 	}
 	if (line) {
@@ -116,14 +122,14 @@ function drawGlossaryEntryLine(
 
 	const termLines = wrapLines(entry.term, maxW, bold, size);
 	const termFirst = termLines[0] ?? "";
-	const termFirstW = bold.widthOfTextAtSize(termFirst, size);
-	const sepW = body.widthOfTextAtSize(sep, size);
+	const termFirstW = measureTextWidth(bold, termFirst, size);
+	const sepW = measureTextWidth(body, sep, size);
 	const inlineOk = termLines.length === 1 && termFirstW + sepW <= maxW;
 
 	if (!inlineOk) {
 		for (const tl of termLines) {
 			ensureSpace(ctx, lh + 10);
-			ctx.page.drawText(tl, {
+			drawPdfText(ctx.page, tl, {
 				x,
 				y: ctx.y,
 				size,
@@ -135,7 +141,7 @@ function drawGlossaryEntryLine(
 		const wrapped = wrapLines(`: ${entry.detail}`, maxW, body, size);
 		for (const wln of wrapped) {
 			ensureSpace(ctx, lh + 10);
-			ctx.page.drawText(wln, {
+			drawPdfText(ctx.page, wln, {
 				x,
 				y: ctx.y,
 				size,
@@ -158,7 +164,7 @@ function drawGlossaryEntryLine(
 
 	if (dFirst === "") {
 		ensureSpace(ctx, lh + 10);
-		ctx.page.drawText(termFirst, {
+		drawPdfText(ctx.page, termFirst, {
 			x,
 			y: ctx.y,
 			size,
@@ -169,7 +175,7 @@ function drawGlossaryEntryLine(
 		const wrapped = wrapLines(`: ${entry.detail}`, maxW, body, size);
 		for (const wln of wrapped) {
 			ensureSpace(ctx, lh + 10);
-			ctx.page.drawText(wln, {
+			drawPdfText(ctx.page, wln, {
 				x,
 				y: ctx.y,
 				size,
@@ -184,7 +190,7 @@ function drawGlossaryEntryLine(
 
 	ensureSpace(ctx, lh + 10);
 	let cx = x;
-	ctx.page.drawText(termFirst, {
+	drawPdfText(ctx.page, termFirst, {
 		x: cx,
 		y: ctx.y,
 		size,
@@ -200,7 +206,7 @@ function drawGlossaryEntryLine(
 		color: fg,
 	});
 	cx += sepW;
-	ctx.page.drawText(dFirst, {
+	drawPdfText(ctx.page, dFirst, {
 		x: cx,
 		y: ctx.y,
 		size,
@@ -212,7 +218,7 @@ function drawGlossaryEntryLine(
 	if (dRem) {
 		for (const dl of wrapLines(dRem, maxW, body, size)) {
 			ensureSpace(ctx, lh + 10);
-			ctx.page.drawText(dl, {
+			drawPdfText(ctx.page, dl, {
 				x,
 				y: ctx.y,
 				size,
@@ -245,7 +251,7 @@ function addUriLink(
 	font: PDFFont,
 	uri: string,
 ): void {
-	const w = font.widthOfTextAtSize(text, size);
+	const w = measureTextWidth(font, text, size);
 	const h = font.heightAtSize(size);
 	const context = page.doc.context;
 	const action = PDFDict.withContext(context);
@@ -362,7 +368,7 @@ function drawWrappedLine(
 
 	for (const ln of lines) {
 		ensureSpace(ctx, lh + 10);
-		ctx.page.drawText(ln, {
+		drawPdfText(ctx.page, ln, {
 			x,
 			y: ctx.y,
 			size: r.size,
@@ -588,7 +594,7 @@ export async function drawComplianceReport(
 		options.chainName,
 		`exported ${options.bundle.exportedAtIso}`,
 	];
-	ctx.page.drawText(subParts.join(" - "), {
+	drawPdfText(ctx.page, subParts.join(" - "), {
 		x: PDF_M.margin,
 		y: ctx.y,
 		size: 9,
@@ -636,7 +642,7 @@ export async function drawComplianceReport(
 		// Bottom-align label and value block within the row (baseline of last value line)
 		const bottomBaseline = ctx.y - rowH + bodyLh;
 
-		ctx.page.drawText(row.label, {
+		drawPdfText(ctx.page, row.label, {
 			x: PDF_M.margin,
 			y: bottomBaseline,
 			size: PDF_M.labelSize,
@@ -647,7 +653,7 @@ export async function drawComplianceReport(
 		let vy = bottomBaseline + (vLines.length - 1) * bodyLh;
 		for (const vl of vLines) {
 			const vc = row.linkUri ? PDF_BRAND.link : PDF_BRAND.foreground;
-			ctx.page.drawText(vl, {
+			drawPdfText(ctx.page, vl, {
 				x: PDF_M.valueX,
 				y: vy,
 				size: PDF_M.bodySize,

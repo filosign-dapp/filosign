@@ -2,6 +2,7 @@ import type { FieldCompletionWireRow } from "@filosign/shared";
 import type { PDFDocument, PDFFont } from "pdf-lib";
 import { rgb } from "pdf-lib";
 import { resolveImageMime, supersampleImageBytesForPdfEmbed } from "../images";
+import { drawPdfText } from "../text";
 import {
 	type FieldInnerRect,
 	fillContentFontSize,
@@ -105,7 +106,7 @@ export function drawCompletionTextOnField(
 	}
 
 	const size = fillContentFontSize(inner, font, completion.textValue);
-	page.drawText(completion.textValue, {
+	drawPdfText(page, completion.textValue, {
 		x: textXCentered(inner, font, completion.textValue, size),
 		y: textBaselineY(inner, font, size),
 		size,

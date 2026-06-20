@@ -1,6 +1,6 @@
 import type { PDFDocument, PDFFont, RGB } from "pdf-lib";
 import { rgb } from "pdf-lib";
-import { lineHeightAt } from "../text";
+import { drawPdfText, lineHeightAt } from "../text";
 import { drawRecipientFieldChrome } from "./chrome";
 import { recipientAccentWidth } from "./layout";
 import {
@@ -86,7 +86,7 @@ export function drawPlaceholderOverlay(
 
 	for (const [index, seg] of segments.entries()) {
 		if (baseline < yPdf + pad) break;
-		page.drawText(seg.text, {
+		drawPdfText(page, seg.text, {
 			x: innerX,
 			y: baseline,
 			size: seg.size,

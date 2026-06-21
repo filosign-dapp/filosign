@@ -1,7 +1,8 @@
-import { ArrowLeftIcon } from "@phosphor-icons/react";
+import { ArrowLeftIcon, PencilSimpleIcon } from "@phosphor-icons/react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import Logo from "@/src/lib/components/app/chrome/logo";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
+import { Button } from "@/src/lib/components/ui/button";
 import {
 	TEMPLATE_EDITOR_MODE_LABEL,
 	useTemplateEditorMode,
@@ -18,15 +19,25 @@ import { TemplateEditorHeaderActions } from "./header-actions";
 type Props = {
 	templateId: string;
 	templateName: string;
+	canManage?: boolean;
+	onRename?: () => void;
 	onUseTemplate?: () => void;
 	useTemplatePending?: boolean;
+	systemTemplateMeta?: {
+		category?: string;
+		documentVersion?: string;
+		tags?: string[];
+	};
 };
 
 export function TemplateEditorHeader({
 	templateId,
 	templateName,
+	canManage = false,
+	onRename,
 	onUseTemplate,
 	useTemplatePending,
+	systemTemplateMeta,
 }: Props) {
 	const navigate = useNavigate();
 	const mode = useTemplateEditorMode();
@@ -44,6 +55,7 @@ export function TemplateEditorHeader({
 	);
 	const headerTitle = truncateTemplateHeaderTitle(displayName);
 	const modeLabel = TEMPLATE_EDITOR_MODE_LABEL[mode];
+	const showRename = canManage && !systemTemplateMeta && onRename != null;
 
 	return (
 		<>
@@ -63,6 +75,18 @@ export function TemplateEditorHeader({
 					/>
 					<div className="min-w-0">
 						<div className="flex min-w-0 items-center gap-2">
+							{showRename ? (
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon-sm"
+									className="shrink-0 text-muted-foreground hover:text-foreground"
+									aria-label="Rename template"
+									onClick={onRename}
+								>
+									<PencilSimpleIcon className="size-4" aria-hidden />
+								</Button>
+							) : null}
 							<h1
 								className="truncate text-base font-semibold text-foreground"
 								title={displayName}
@@ -108,6 +132,7 @@ export function TemplateEditorHeader({
 						templateName={templateName}
 						onUseTemplate={onUseTemplate}
 						useTemplatePending={useTemplatePending}
+						systemTemplateMeta={systemTemplateMeta}
 					/>
 				</div>
 			</header>

@@ -25,13 +25,17 @@ import { Route as DashboardDocumentSignIndexRouteImport } from "./routes/dashboa
 import { Route as DashboardShellTemplatesIndexRouteImport } from "./routes/dashboard/_shell/templates/index"
 import { Route as DashboardShellSupportIndexRouteImport } from "./routes/dashboard/_shell/support/index"
 import { Route as DashboardShellAdminIndexRouteImport } from "./routes/dashboard/_shell/admin/index"
+import { Route as DashboardTemplatesLibrarySystemTemplateIdIndexRouteImport } from "./routes/dashboard/templates/library/$systemTemplateId/index"
 import { Route as DashboardTemplatesTemplateIdEditIndexRouteImport } from "./routes/dashboard/templates/$templateId/edit/index"
 import { Route as DashboardEnvelopeCreateAddSignIndexRouteImport } from "./routes/dashboard/envelope/create/add-sign/index"
+import { Route as DashboardAdminSystemTemplatesNewIndexRouteImport } from "./routes/dashboard/admin/system-templates/new/index"
 import { Route as DashboardShellSupportTutorialsIndexRouteImport } from "./routes/dashboard/_shell/support/tutorials/index"
 import { Route as DashboardShellSettingsWorkspaceIndexRouteImport } from "./routes/dashboard/_shell/settings/workspace/index"
 import { Route as DashboardShellSettingsProfileIndexRouteImport } from "./routes/dashboard/_shell/settings/profile/index"
 import { Route as DashboardShellSettingsBillingIndexRouteImport } from "./routes/dashboard/_shell/settings/billing/index"
 import { Route as DashboardShellDocumentAllIndexRouteImport } from "./routes/dashboard/_shell/document/all/index"
+import { Route as DashboardShellAdminSystemTemplatesIndexRouteImport } from "./routes/dashboard/_shell/admin/system-templates/index"
+import { Route as DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRouteImport } from "./routes/dashboard/admin/system-templates/$systemTemplateId/edit/index"
 
 const OnboardingRouteRoute = OnboardingRouteRouteImport.update({
   id: "/onboarding",
@@ -121,6 +125,12 @@ const DashboardShellAdminIndexRoute =
     path: "/admin/",
     getParentRoute: () => DashboardShellRouteRoute,
   } as any)
+const DashboardTemplatesLibrarySystemTemplateIdIndexRoute =
+  DashboardTemplatesLibrarySystemTemplateIdIndexRouteImport.update({
+    id: "/templates/library/$systemTemplateId/",
+    path: "/templates/library/$systemTemplateId/",
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
 const DashboardTemplatesTemplateIdEditIndexRoute =
   DashboardTemplatesTemplateIdEditIndexRouteImport.update({
     id: "/templates/$templateId/edit/",
@@ -131,6 +141,12 @@ const DashboardEnvelopeCreateAddSignIndexRoute =
   DashboardEnvelopeCreateAddSignIndexRouteImport.update({
     id: "/envelope/create/add-sign/",
     path: "/envelope/create/add-sign/",
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
+const DashboardAdminSystemTemplatesNewIndexRoute =
+  DashboardAdminSystemTemplatesNewIndexRouteImport.update({
+    id: "/admin/system-templates/new/",
+    path: "/admin/system-templates/new/",
     getParentRoute: () => DashboardRouteRoute,
   } as any)
 const DashboardShellSupportTutorialsIndexRoute =
@@ -163,6 +179,18 @@ const DashboardShellDocumentAllIndexRoute =
     path: "/document/all/",
     getParentRoute: () => DashboardShellRouteRoute,
   } as any)
+const DashboardShellAdminSystemTemplatesIndexRoute =
+  DashboardShellAdminSystemTemplatesIndexRouteImport.update({
+    id: "/admin/system-templates/",
+    path: "/admin/system-templates/",
+    getParentRoute: () => DashboardShellRouteRoute,
+  } as any)
+const DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRoute =
+  DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRouteImport.update({
+    id: "/admin/system-templates/$systemTemplateId/edit/",
+    path: "/admin/system-templates/$systemTemplateId/edit/",
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
@@ -180,13 +208,17 @@ export interface FileRoutesByFullPath {
   "/dashboard/signature/create/": typeof DashboardSignatureCreateIndexRoute
   "/dashboard/templates/$templateId/": typeof DashboardTemplatesTemplateIdIndexRoute
   "/dashboard/templates/new/": typeof DashboardTemplatesNewIndexRoute
+  "/dashboard/admin/system-templates/": typeof DashboardShellAdminSystemTemplatesIndexRoute
   "/dashboard/document/all/": typeof DashboardShellDocumentAllIndexRoute
   "/dashboard/settings/billing/": typeof DashboardShellSettingsBillingIndexRoute
   "/dashboard/settings/profile/": typeof DashboardShellSettingsProfileIndexRoute
   "/dashboard/settings/workspace/": typeof DashboardShellSettingsWorkspaceIndexRoute
   "/dashboard/support/tutorials/": typeof DashboardShellSupportTutorialsIndexRoute
+  "/dashboard/admin/system-templates/new/": typeof DashboardAdminSystemTemplatesNewIndexRoute
   "/dashboard/envelope/create/add-sign/": typeof DashboardEnvelopeCreateAddSignIndexRoute
   "/dashboard/templates/$templateId/edit/": typeof DashboardTemplatesTemplateIdEditIndexRoute
+  "/dashboard/templates/library/$systemTemplateId/": typeof DashboardTemplatesLibrarySystemTemplateIdIndexRoute
+  "/dashboard/admin/system-templates/$systemTemplateId/edit/": typeof DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRoute
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
@@ -202,13 +234,17 @@ export interface FileRoutesByTo {
   "/dashboard/signature/create": typeof DashboardSignatureCreateIndexRoute
   "/dashboard/templates/$templateId": typeof DashboardTemplatesTemplateIdIndexRoute
   "/dashboard/templates/new": typeof DashboardTemplatesNewIndexRoute
+  "/dashboard/admin/system-templates": typeof DashboardShellAdminSystemTemplatesIndexRoute
   "/dashboard/document/all": typeof DashboardShellDocumentAllIndexRoute
   "/dashboard/settings/billing": typeof DashboardShellSettingsBillingIndexRoute
   "/dashboard/settings/profile": typeof DashboardShellSettingsProfileIndexRoute
   "/dashboard/settings/workspace": typeof DashboardShellSettingsWorkspaceIndexRoute
   "/dashboard/support/tutorials": typeof DashboardShellSupportTutorialsIndexRoute
+  "/dashboard/admin/system-templates/new": typeof DashboardAdminSystemTemplatesNewIndexRoute
   "/dashboard/envelope/create/add-sign": typeof DashboardEnvelopeCreateAddSignIndexRoute
   "/dashboard/templates/$templateId/edit": typeof DashboardTemplatesTemplateIdEditIndexRoute
+  "/dashboard/templates/library/$systemTemplateId": typeof DashboardTemplatesLibrarySystemTemplateIdIndexRoute
+  "/dashboard/admin/system-templates/$systemTemplateId/edit": typeof DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -228,13 +264,17 @@ export interface FileRoutesById {
   "/dashboard/signature/create/": typeof DashboardSignatureCreateIndexRoute
   "/dashboard/templates/$templateId/": typeof DashboardTemplatesTemplateIdIndexRoute
   "/dashboard/templates/new/": typeof DashboardTemplatesNewIndexRoute
+  "/dashboard/_shell/admin/system-templates/": typeof DashboardShellAdminSystemTemplatesIndexRoute
   "/dashboard/_shell/document/all/": typeof DashboardShellDocumentAllIndexRoute
   "/dashboard/_shell/settings/billing/": typeof DashboardShellSettingsBillingIndexRoute
   "/dashboard/_shell/settings/profile/": typeof DashboardShellSettingsProfileIndexRoute
   "/dashboard/_shell/settings/workspace/": typeof DashboardShellSettingsWorkspaceIndexRoute
   "/dashboard/_shell/support/tutorials/": typeof DashboardShellSupportTutorialsIndexRoute
+  "/dashboard/admin/system-templates/new/": typeof DashboardAdminSystemTemplatesNewIndexRoute
   "/dashboard/envelope/create/add-sign/": typeof DashboardEnvelopeCreateAddSignIndexRoute
   "/dashboard/templates/$templateId/edit/": typeof DashboardTemplatesTemplateIdEditIndexRoute
+  "/dashboard/templates/library/$systemTemplateId/": typeof DashboardTemplatesLibrarySystemTemplateIdIndexRoute
+  "/dashboard/admin/system-templates/$systemTemplateId/edit/": typeof DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -254,13 +294,17 @@ export interface FileRouteTypes {
     | "/dashboard/signature/create/"
     | "/dashboard/templates/$templateId/"
     | "/dashboard/templates/new/"
+    | "/dashboard/admin/system-templates/"
     | "/dashboard/document/all/"
     | "/dashboard/settings/billing/"
     | "/dashboard/settings/profile/"
     | "/dashboard/settings/workspace/"
     | "/dashboard/support/tutorials/"
+    | "/dashboard/admin/system-templates/new/"
     | "/dashboard/envelope/create/add-sign/"
     | "/dashboard/templates/$templateId/edit/"
+    | "/dashboard/templates/library/$systemTemplateId/"
+    | "/dashboard/admin/system-templates/$systemTemplateId/edit/"
   fileRoutesByTo: FileRoutesByTo
   to:
     | "/"
@@ -276,13 +320,17 @@ export interface FileRouteTypes {
     | "/dashboard/signature/create"
     | "/dashboard/templates/$templateId"
     | "/dashboard/templates/new"
+    | "/dashboard/admin/system-templates"
     | "/dashboard/document/all"
     | "/dashboard/settings/billing"
     | "/dashboard/settings/profile"
     | "/dashboard/settings/workspace"
     | "/dashboard/support/tutorials"
+    | "/dashboard/admin/system-templates/new"
     | "/dashboard/envelope/create/add-sign"
     | "/dashboard/templates/$templateId/edit"
+    | "/dashboard/templates/library/$systemTemplateId"
+    | "/dashboard/admin/system-templates/$systemTemplateId/edit"
   id:
     | "__root__"
     | "/"
@@ -301,13 +349,17 @@ export interface FileRouteTypes {
     | "/dashboard/signature/create/"
     | "/dashboard/templates/$templateId/"
     | "/dashboard/templates/new/"
+    | "/dashboard/_shell/admin/system-templates/"
     | "/dashboard/_shell/document/all/"
     | "/dashboard/_shell/settings/billing/"
     | "/dashboard/_shell/settings/profile/"
     | "/dashboard/_shell/settings/workspace/"
     | "/dashboard/_shell/support/tutorials/"
+    | "/dashboard/admin/system-templates/new/"
     | "/dashboard/envelope/create/add-sign/"
     | "/dashboard/templates/$templateId/edit/"
+    | "/dashboard/templates/library/$systemTemplateId/"
+    | "/dashboard/admin/system-templates/$systemTemplateId/edit/"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -431,6 +483,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardShellAdminIndexRouteImport
       parentRoute: typeof DashboardShellRouteRoute
     }
+    "/dashboard/templates/library/$systemTemplateId/": {
+      id: "/dashboard/templates/library/$systemTemplateId/"
+      path: "/templates/library/$systemTemplateId"
+      fullPath: "/dashboard/templates/library/$systemTemplateId/"
+      preLoaderRoute: typeof DashboardTemplatesLibrarySystemTemplateIdIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     "/dashboard/templates/$templateId/edit/": {
       id: "/dashboard/templates/$templateId/edit/"
       path: "/templates/$templateId/edit"
@@ -443,6 +502,13 @@ declare module "@tanstack/react-router" {
       path: "/envelope/create/add-sign"
       fullPath: "/dashboard/envelope/create/add-sign/"
       preLoaderRoute: typeof DashboardEnvelopeCreateAddSignIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    "/dashboard/admin/system-templates/new/": {
+      id: "/dashboard/admin/system-templates/new/"
+      path: "/admin/system-templates/new"
+      fullPath: "/dashboard/admin/system-templates/new/"
+      preLoaderRoute: typeof DashboardAdminSystemTemplatesNewIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
     "/dashboard/_shell/support/tutorials/": {
@@ -480,6 +546,20 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardShellDocumentAllIndexRouteImport
       parentRoute: typeof DashboardShellRouteRoute
     }
+    "/dashboard/_shell/admin/system-templates/": {
+      id: "/dashboard/_shell/admin/system-templates/"
+      path: "/admin/system-templates"
+      fullPath: "/dashboard/admin/system-templates/"
+      preLoaderRoute: typeof DashboardShellAdminSystemTemplatesIndexRouteImport
+      parentRoute: typeof DashboardShellRouteRoute
+    }
+    "/dashboard/admin/system-templates/$systemTemplateId/edit/": {
+      id: "/dashboard/admin/system-templates/$systemTemplateId/edit/"
+      path: "/admin/system-templates/$systemTemplateId/edit"
+      fullPath: "/dashboard/admin/system-templates/$systemTemplateId/edit/"
+      preLoaderRoute: typeof DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
   }
 }
 
@@ -487,6 +567,7 @@ interface DashboardShellRouteRouteChildren {
   DashboardShellAdminIndexRoute: typeof DashboardShellAdminIndexRoute
   DashboardShellSupportIndexRoute: typeof DashboardShellSupportIndexRoute
   DashboardShellTemplatesIndexRoute: typeof DashboardShellTemplatesIndexRoute
+  DashboardShellAdminSystemTemplatesIndexRoute: typeof DashboardShellAdminSystemTemplatesIndexRoute
   DashboardShellDocumentAllIndexRoute: typeof DashboardShellDocumentAllIndexRoute
   DashboardShellSettingsBillingIndexRoute: typeof DashboardShellSettingsBillingIndexRoute
   DashboardShellSettingsProfileIndexRoute: typeof DashboardShellSettingsProfileIndexRoute
@@ -498,6 +579,8 @@ const DashboardShellRouteRouteChildren: DashboardShellRouteRouteChildren = {
   DashboardShellAdminIndexRoute: DashboardShellAdminIndexRoute,
   DashboardShellSupportIndexRoute: DashboardShellSupportIndexRoute,
   DashboardShellTemplatesIndexRoute: DashboardShellTemplatesIndexRoute,
+  DashboardShellAdminSystemTemplatesIndexRoute:
+    DashboardShellAdminSystemTemplatesIndexRoute,
   DashboardShellDocumentAllIndexRoute: DashboardShellDocumentAllIndexRoute,
   DashboardShellSettingsBillingIndexRoute:
     DashboardShellSettingsBillingIndexRoute,
@@ -520,8 +603,11 @@ interface DashboardRouteRouteChildren {
   DashboardSignatureCreateIndexRoute: typeof DashboardSignatureCreateIndexRoute
   DashboardTemplatesTemplateIdIndexRoute: typeof DashboardTemplatesTemplateIdIndexRoute
   DashboardTemplatesNewIndexRoute: typeof DashboardTemplatesNewIndexRoute
+  DashboardAdminSystemTemplatesNewIndexRoute: typeof DashboardAdminSystemTemplatesNewIndexRoute
   DashboardEnvelopeCreateAddSignIndexRoute: typeof DashboardEnvelopeCreateAddSignIndexRoute
   DashboardTemplatesTemplateIdEditIndexRoute: typeof DashboardTemplatesTemplateIdEditIndexRoute
+  DashboardTemplatesLibrarySystemTemplateIdIndexRoute: typeof DashboardTemplatesLibrarySystemTemplateIdIndexRoute
+  DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRoute: typeof DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
@@ -533,10 +619,16 @@ const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardTemplatesTemplateIdIndexRoute:
     DashboardTemplatesTemplateIdIndexRoute,
   DashboardTemplatesNewIndexRoute: DashboardTemplatesNewIndexRoute,
+  DashboardAdminSystemTemplatesNewIndexRoute:
+    DashboardAdminSystemTemplatesNewIndexRoute,
   DashboardEnvelopeCreateAddSignIndexRoute:
     DashboardEnvelopeCreateAddSignIndexRoute,
   DashboardTemplatesTemplateIdEditIndexRoute:
     DashboardTemplatesTemplateIdEditIndexRoute,
+  DashboardTemplatesLibrarySystemTemplateIdIndexRoute:
+    DashboardTemplatesLibrarySystemTemplateIdIndexRoute,
+  DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRoute:
+    DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRoute,
 }
 
 const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(

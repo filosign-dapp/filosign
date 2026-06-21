@@ -146,9 +146,11 @@ export const TOASTS = {
 			hint: "Try again.",
 		},
 		deleted: "Template deleted",
+		renamed: "Template renamed",
 		selectDraftAndName: {
 			title: "Pick a draft and name",
 		},
+		catalogInstalled: "Catalog template added to workspace",
 		created: "Template created",
 		cloning: "Copying template…",
 		cloned: "Template copied",

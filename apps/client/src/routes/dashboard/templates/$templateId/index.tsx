@@ -1,6 +1,10 @@
 import { useActiveOrganization } from "@filosign/react/orgs";
 import { createFileRoute } from "@tanstack/react-router";
-import { canUseTemplates } from "@/src/lib/domains/templates/template-composer";
+import { OrgTemplateCatalogUpdate } from "@/src/lib/domains/templates/catalog";
+import {
+	canManageTemplates,
+	canUseTemplates,
+} from "@/src/lib/domains/templates/template-composer";
 import { useTemplateEditorController } from "@/src/lib/domains/templates/use-template-editor-controller";
 import { useTemplateName } from "@/src/lib/domains/templates/use-template-name";
 import { useTemplateUseFlow } from "@/src/lib/domains/templates/use-template-use-flow";
@@ -19,6 +23,7 @@ function TemplatePreviewRoutePage() {
 	const { startUseTemplate, clonePending } = useTemplateUseFlow();
 
 	const canUse = canUseTemplates(activeOrg?.role);
+	const canManage = canManageTemplates(activeOrg?.role);
 
 	return (
 		<TemplateEditorPage
@@ -26,10 +31,17 @@ function TemplatePreviewRoutePage() {
 			mode="preview"
 			templateId={templateId}
 			templateName={templateName}
+			canManage={canManage}
 			onUseTemplate={
 				canUse ? () => startUseTemplate(templateId, templateName) : undefined
 			}
 			useTemplatePending={clonePending}
+			previewRailPrefix={
+				<OrgTemplateCatalogUpdate
+					templateId={templateId}
+					canManage={canManage}
+				/>
+			}
 		/>
 	);
 }

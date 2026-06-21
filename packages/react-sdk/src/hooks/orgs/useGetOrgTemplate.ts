@@ -6,15 +6,9 @@ export function useGetOrgTemplate(templateId: string | undefined) {
 	const trimmedTemplateId = templateId?.trim();
 
 	return useQuery({
-		queryKey: [...rpcQuery.orgs.key(), "template", trimmedTemplateId],
+		...rpcQuery.orgs.templates.get.queryOptions({
+			input: { templateId: trimmedTemplateId ?? "" },
+		}),
 		enabled: isAuthed && Boolean(trimmedTemplateId),
-		queryFn: () => {
-			if (!trimmedTemplateId) {
-				throw new Error("templateId required");
-			}
-			return rpcQuery.orgs.templates.get.call({
-				templateId: trimmedTemplateId,
-			});
-		},
 	});
 }

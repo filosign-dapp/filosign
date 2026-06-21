@@ -8,6 +8,8 @@ import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
 import { writeAuditEvent } from "@/lib/domains/audit";
+import { assertCatalogSourceOnOrgTemplateCreate } from "@/lib/domains/catalog";
+import { resolveCatalogUpdateForOrgTemplate } from "@/lib/domains/catalog/utils/org-template-catalog-update";
 import {
 	assertEntitlement,
 	resolveEntitlementContext,
@@ -198,6 +200,13 @@ export async function createOrgTemplate(args: {
 		})),
 	});
 
+	if (args.snapshot.catalogSource) {
+		await assertCatalogSourceOnOrgTemplateCreate({
+			organizationId: args.organizationId,
+			catalogSource: args.snapshot.catalogSource,
+		});
+	}
+
 	const row = await db.transaction(async (tx) => {
 		const [inserted] = await tx
 			.insert(organizationTemplates)
@@ -257,6 +266,9 @@ export async function getOrgTemplate(args: {
 		templateId: args.templateId,
 	});
 	const documents = await loadTemplateDocuments(args.templateId);
+	const catalogUpdate = await resolveCatalogUpdateForOrgTemplate(
+		row.snapshotJson,
+	);
 	return {
 		template: wireTemplateRow(row),
 		documents: documents.map((doc) => ({
@@ -271,6 +283,7 @@ export async function getOrgTemplate(args: {
 				expiresIn: 300,
 			}),
 		})),
+		catalogUpdate: catalogUpdate ?? undefined,
 	};
 }
 
@@ -538,4 +551,45 @@ export async function deleteOrgTemplate(args: {
 	});
 	await invalidateOrgTemplates(args.organizationId);
 	return { template: wireTemplateRow(deleted) };
+}
+
+export async function renameOrgTemplate(args: {
+	wallet: Address;
+	organizationId: string;
+	templateId: string;
+	name: string;
+}) {
+	const existing = await loadTemplateOrThrow({
+		organizationId: args.organizationId,
+		templateId: args.templateId,
+	});
+	const name = args.name.trim();
+	const now = new Date();
+
+	const [updated] = await db
+		.update(organizationTemplates)
+		.set({ name, updatedAt: now })
+		.where(
+			and(
+				eq(organizationTemplates.id, args.templateId),
+				eq(organizationTemplates.organizationId, args.organizationId),
+			),
+		)
+		.returning();
+
+	if (!updated) throwAppError("WORKSPACE.TEMPLATE_NOT_FOUND");
+
+	await writeAuditEvent({
+		actorWallet: getAddress(args.wallet),
+		organizationId: args.organizationId,
+		action: "template.renamed",
+		resourceType: "organization_template",
+		resourceId: args.templateId,
+		metadata: {
+			previousName: existing.name,
+			name,
+		},
+	});
+	await invalidateOrgTemplates(args.organizationId);
+	return { template: wireTemplateRow(updated) };
 }

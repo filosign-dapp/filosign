@@ -49,6 +49,13 @@ export const rpcOrgMemberSchema = z.object({
 	email: z.string().nullable().optional(),
 });
 
+export const rpcOrgTemplateCatalogUpdateSchema = z.object({
+	newerVersionAvailable: z.boolean(),
+	installedCatalogVersionLabel: z.string(),
+	currentCatalogVersionLabel: z.string().optional(),
+	systemTemplateId: z.uuid(),
+});
+
 export const rpcOrgTemplateSummarySchema = z.object({
 	id: z.uuid(),
 	name: z.string(),
@@ -58,6 +65,8 @@ export const rpcOrgTemplateSummarySchema = z.object({
 	roleCount: z.number().int().nonnegative(),
 	fieldCount: z.number().int().nonnegative(),
 	docCount: z.number().int().nonnegative(),
+	catalogVersionLabel: z.string().optional(),
+	catalogSystemTemplateId: z.uuid().optional(),
 });
 
 export const rpcOrgTemplateDocumentSchema = z.object({
@@ -140,6 +149,7 @@ export const rpcOrgsTemplateOutputSchema = z.object({
 export const rpcOrgsTemplateGetOutputSchema = z.object({
 	template: rpcOrgTemplateWireSchema,
 	documents: z.array(rpcOrgTemplateDocumentSchema),
+	catalogUpdate: rpcOrgTemplateCatalogUpdateSchema.optional(),
 });
 
 export const rpcOrgsTemplatePrepareOutputSchema = z.object({

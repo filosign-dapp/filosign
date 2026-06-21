@@ -125,3 +125,30 @@ describe("template create body validation", () => {
 		expect(parsed.success).toBe(false);
 	});
 });
+
+describe("template rename body validation", () => {
+	test("requires non-empty name up to 120 chars", async () => {
+		const { zOrgsTemplateRenameBody } = await import(
+			"@/lib/domains/orgs/templates"
+		);
+
+		expect(
+			zOrgsTemplateRenameBody.safeParse({
+				templateId: "00000000-0000-7000-8000-000000000001",
+				name: "",
+			}).success,
+		).toBe(false);
+		expect(
+			zOrgsTemplateRenameBody.safeParse({
+				templateId: "00000000-0000-7000-8000-000000000001",
+				name: "a".repeat(121),
+			}).success,
+		).toBe(false);
+		expect(
+			zOrgsTemplateRenameBody.safeParse({
+				templateId: "00000000-0000-7000-8000-000000000001",
+				name: "DePIN Day",
+			}).success,
+		).toBe(true);
+	});
+});

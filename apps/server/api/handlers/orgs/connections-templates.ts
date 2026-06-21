@@ -10,10 +10,12 @@ import {
 	listOrgTemplates,
 	prepareOrgTemplateCreate,
 	prepareOrgTemplateUpdate,
+	renameOrgTemplate,
 	updateOrgTemplate,
 	zOrgsTemplateCreateBody,
 	zOrgsTemplatePrepareCreateBody,
 	zOrgsTemplatePrepareUpdateBody,
+	zOrgsTemplateRenameBody,
 	zOrgsTemplateUpdateBody,
 } from "@/lib/domains/orgs/templates";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
@@ -22,6 +24,7 @@ export {
 	zOrgsTemplateCreateBody,
 	zOrgsTemplatePrepareCreateBody,
 	zOrgsTemplatePrepareUpdateBody,
+	zOrgsTemplateRenameBody,
 	zOrgsTemplateUpdateBody,
 } from "@/lib/domains/orgs/templates";
 
@@ -116,6 +119,23 @@ export async function orgsTemplatesUpdate(
 		headOmkKemCiphertext: parsed.data.headOmkKemCiphertext,
 		snapshot: parsed.data.snapshot,
 		documents: parsed.data.documents,
+	});
+}
+
+export async function orgsTemplatesRename(
+	wallet: Address,
+	activeOrg: ActiveOrgContext,
+	body: unknown,
+) {
+	await assertOrgTemplatesAccess(wallet, activeOrg, "templates:write");
+	const parsed = zOrgsTemplateRenameBody.safeParse(body);
+	if (!parsed.success) throwZodBadRequest(parsed.error);
+
+	return renameOrgTemplate({
+		wallet,
+		organizationId: activeOrg.organizationId,
+		templateId: parsed.data.templateId,
+		name: parsed.data.name,
 	});
 }
 

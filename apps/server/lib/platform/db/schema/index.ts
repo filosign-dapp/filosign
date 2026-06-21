@@ -13,6 +13,7 @@ import * as platformAccess from "./platform-access";
 import * as privacy from "./privacy";
 import * as settlementAccess from "./settlement-access";
 import * as settlements from "./settlements";
+import * as systemTemplates from "./system-templates";
 import * as user from "./user";
 
 const schema = {
@@ -25,6 +26,7 @@ const schema = {
 	...attachmentPackets,
 	...settlementAccess,
 	...settlements,
+	...systemTemplates,
 	...billing,
 	...organization,
 	...drafts,
@@ -49,6 +51,7 @@ export * from "./platform-access";
 export * from "./privacy";
 export * from "./settlement-access";
 export * from "./settlements";
+export * from "./system-templates";
 export * from "./user";
 
 export default schema;

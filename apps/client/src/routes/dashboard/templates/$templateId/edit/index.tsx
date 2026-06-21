@@ -40,6 +40,7 @@ function TemplateEditEditorRoutePage() {
 			mode="edit"
 			templateId={templateId}
 			templateName={templateName}
+			canManage={canManageTemplates(activeOrg?.role)}
 		/>
 	);
 }

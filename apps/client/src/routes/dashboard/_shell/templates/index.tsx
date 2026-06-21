@@ -7,45 +7,58 @@ import {
 	useDeleteOrgTemplate,
 	useOrganizationGet,
 } from "@filosign/react/orgs";
-import {
-	createTemplateRoleId,
-	TEMPLATE_LIMITS,
-	templateRolePlaceholderEmail,
-} from "@filosign/shared";
 import { FileTextIcon } from "@phosphor-icons/react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import {
+	createFileRoute,
+	getRouteApi,
+	useNavigate,
+} from "@tanstack/react-router";
+import { useRef, useState } from "react";
+import { z } from "zod";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { AppEmptyState } from "@/src/lib/components/app/empty-state";
 import { Button } from "@/src/lib/components/ui/button";
+import { Tabs } from "@/src/lib/components/ui/tabs";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
-import { buildCreateForm } from "@/src/lib/domains/drafts";
 import { PLAN_LIMIT_COPY } from "@/src/lib/domains/entitlements/plan-limit-copy";
 import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
+import { useBootstrapTemplateFromPdfUpload } from "@/src/lib/domains/templates/hooks/use-bootstrap-template-from-pdf";
 import {
 	canManageTemplates,
 	canUseTemplates,
 } from "@/src/lib/domains/templates/template-composer";
 import { useTemplateUseFlow } from "@/src/lib/domains/templates/use-template-use-flow";
-import { deriveTemplateDisplayName } from "@/src/lib/domains/templates/utils/display-name";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
-import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { TemplatesContent } from "@/src/routes/dashboard/_shell/templates/-components/templates-content";
+import { TemplatesLibraryContent } from "@/src/routes/dashboard/_shell/templates/-components/templates-library-content";
 import { TemplatesPageSkeleton } from "@/src/routes/dashboard/_shell/templates/-components/templates-page-skeleton";
 import { TemplatesPageToolbar } from "@/src/routes/dashboard/_shell/templates/-components/templates-page-toolbar";
 import { useTemplatesListController } from "@/src/routes/dashboard/_shell/templates/-lib/hooks/use-templates-list-controller";
+import {
+	parseTemplatesTab,
+	type TemplatesTab,
+} from "@/src/routes/dashboard/_shell/templates/-lib/templates-tab";
+
+const templatesRouteSearchSchema = z.object({
+	tab: z.enum(["yours", "library"]).optional(),
+});
+
+const templatesRouteApi = getRouteApi("/dashboard/_shell/templates/");
 
 export const Route = createFileRoute("/dashboard/_shell/templates/")({
+	validateSearch: templatesRouteSearchSchema,
 	component: TemplatesIndexPage,
 });
 
 function TemplatesIndexPage() {
 	const navigate = useNavigate();
+	const { tab: tabSearch } = templatesRouteApi.useSearch();
+	const activeTab: TemplatesTab = parseTemplatesTab(tabSearch ?? "") ?? "yours";
 	const activeOrgId = useActiveOrgId();
 	const activeOrg = useActiveOrganization();
-	const setCreateForm = useStorePersist((s) => s.setCreateForm);
 	const uploadInputRef = useRef<HTMLInputElement>(null);
+	const { bootstrapFromPdfFiles } = useBootstrapTemplateFromPdfUpload();
 
 	const { data: entitlements, isLoading: entitlementsLoading } =
 		useEntitlements();
@@ -59,7 +72,16 @@ function TemplatesIndexPage() {
 	const [templatesUpgradeOpen, setTemplatesUpgradeOpen] = useState(true);
 	const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
-	const templates = useMemo(() => orgDetail?.templates ?? [], [orgDetail]);
+	const setActiveTab = (tab: TemplatesTab) => {
+		setSearchInput("");
+		void navigate({
+			to: "/dashboard/templates",
+			search: tab === "yours" ? {} : { tab },
+			replace: true,
+		});
+	};
+
+	const templates = orgDetail?.templates ?? [];
 	const { searchInput, setSearchInput, filteredTemplates, hasSearchQuery } =
 		useTemplatesListController(templates);
 
@@ -75,73 +97,12 @@ function TemplatesIndexPage() {
 		event.target.value = "";
 		if (files.length === 0) return;
 
-		const invalid = files.find((file) => file.type !== "application/pdf");
-		if (invalid) {
-			toastUser.error("Upload PDF files only.");
-			return;
-		}
-
-		if (files.length > TEMPLATE_LIMITS.MAX_TEMPLATE_DOCUMENTS) {
-			toastUser.error(
-				`You can upload a maximum of ${TEMPLATE_LIMITS.MAX_TEMPLATE_DOCUMENTS} documents.`,
-			);
-			return;
-		}
-
-		const oversized = files.filter(
-			(file) => file.size > TEMPLATE_LIMITS.MAX_FILE_SIZE,
-		);
-		if (oversized.length > 0) {
-			toastUser.error(
-				`Documents exceed the maximum file size of ${TEMPLATE_LIMITS.MAX_FILE_SIZE / (1024 * 1024)}MB: ${oversized.map((f) => f.name).join(", ")}`,
-			);
-			return;
-		}
-
-		const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
-		if (totalBytes > TEMPLATE_LIMITS.MAX_TEMPLATE_TOTAL_BYTES) {
-			toastUser.error(
-				`Total size of documents exceeds the limit of ${TEMPLATE_LIMITS.MAX_TEMPLATE_TOTAL_BYTES / (1024 * 1024)}MB.`,
-			);
-			return;
-		}
-
 		const templateId = crypto.randomUUID();
-		const roleId = createTemplateRoleId();
-		const defaultName = deriveTemplateDisplayName(
-			files[0].name.replace(/\.pdf$/i, ""),
-		);
-		const draft = await buildCreateForm(
-			{
-				documents: files.map((file) => ({
-					id: crypto.randomUUID(),
-					file,
-					name: file.name,
-					size: file.size,
-					type: file.type,
-				})),
-				recipients: [
-					{
-						clientRowId: roleId,
-						name: "",
-						templateRoleLabel: "Signer 1",
-						email: templateRolePlaceholderEmail(roleId),
-						role: "signer",
-					},
-				],
-				emailMessage: "",
-				emailSubject: defaultName,
-				settlementDrafts: [],
-			},
-			null,
-		);
-		setCreateForm({
-			...draft,
+		await bootstrapFromPdfFiles({
+			files,
+			templateId,
+			navigateTo: { to: "/dashboard/templates/new" },
 			templateContext: { templateId, mode: "create" },
-		});
-		void navigate({
-			to: "/dashboard/templates/new",
-			search: { templateName: defaultName },
 		});
 	};
 
@@ -213,7 +174,14 @@ function TemplatesIndexPage() {
 	}
 
 	return (
-		<div className="flex min-h-0 flex-1 flex-col bg-background @container">
+		<Tabs
+			value={activeTab}
+			onValueChange={(val) => {
+				const tab = parseTemplatesTab(val);
+				if (tab) setActiveTab(tab);
+			}}
+			className="flex min-h-0 flex-1 flex-col bg-background @container"
+		>
 			<input
 				ref={uploadInputRef}
 				type="file"
@@ -227,26 +195,31 @@ function TemplatesIndexPage() {
 				onSearchChange={setSearchInput}
 				canManage={manageTemplates}
 				onNewTemplate={() => uploadInputRef.current?.click()}
+				activeTab={activeTab}
 			/>
-			<TemplatesContent
-				templates={filteredTemplates}
-				hasAnyTemplates={templates.length > 0}
-				hasSearchQuery={hasSearchQuery}
-				canManage={manageTemplates}
-				canUse={useTemplates}
-				actionsBusy={actionsBusy}
-				onClearSearch={() => setSearchInput("")}
-				onOpenTemplate={handleOpenTemplate}
-				onUseTemplate={handleUseTemplate}
-				onEditTemplate={(templateId) =>
-					void navigate({
-						to: "/dashboard/templates/$templateId/edit",
-						params: { templateId },
-					})
-				}
-				onDeleteTemplate={setDeleteTargetId}
-				onCreateTemplate={() => uploadInputRef.current?.click()}
-			/>
+			{activeTab === "library" ? (
+				<TemplatesLibraryContent searchQuery={searchInput} />
+			) : (
+				<TemplatesContent
+					templates={filteredTemplates}
+					hasAnyTemplates={templates.length > 0}
+					hasSearchQuery={hasSearchQuery}
+					canManage={manageTemplates}
+					canUse={useTemplates}
+					actionsBusy={actionsBusy}
+					onClearSearch={() => setSearchInput("")}
+					onOpenTemplate={handleOpenTemplate}
+					onUseTemplate={handleUseTemplate}
+					onEditTemplate={(templateId) =>
+						void navigate({
+							to: "/dashboard/templates/$templateId/edit",
+							params: { templateId },
+						})
+					}
+					onDeleteTemplate={setDeleteTargetId}
+					onCreateTemplate={() => uploadInputRef.current?.click()}
+				/>
+			)}
 
 			<ConfirmAlertDialog
 				open={deleteTargetId !== null}
@@ -260,6 +233,6 @@ function TemplatesIndexPage() {
 				pending={deleteTemplate.isPending}
 				onConfirm={() => void handleDeleteTemplate()}
 			/>
-		</div>
+		</Tabs>
 	);
 }

@@ -7,6 +7,7 @@ export type TemplateListItem = {
 	roleCount: number;
 	fieldCount: number;
 	docCount: number;
+	catalogVersionLabel?: string;
 };
 
 export function useTemplatesListController(templates: TemplateListItem[]) {

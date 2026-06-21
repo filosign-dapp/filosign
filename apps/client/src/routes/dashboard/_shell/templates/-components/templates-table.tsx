@@ -27,6 +27,12 @@ import {
 	TableRow,
 } from "@/src/lib/components/ui/table";
 import { formatDocumentCardDate } from "@/src/lib/domains/documents/document-card";
+import {
+	templateMetaSubtitle,
+	templatesTableCellClass,
+	templatesTableHeadClass,
+	templatesTableRowClass,
+} from "@/src/lib/domains/templates/utils/templates-table-styles";
 import { cn } from "@/src/lib/utils/utils";
 import type { TemplateListItem } from "@/src/routes/dashboard/_shell/templates/-lib/hooks/use-templates-list-controller";
 
@@ -41,14 +47,16 @@ type Props = {
 	onDelete: (templateId: string) => void;
 };
 
-const tableHeadClass =
-	"h-9 px-4 text-xs font-normal text-muted-foreground first:pl-5 last:pr-5";
-const tableCellClass = "px-4 py-3 first:pl-5 last:pr-5";
-const tableRowClass =
-	"cursor-pointer border-b border-border/40 last:border-0 hover:bg-muted/30";
+const tableHeadClass = templatesTableHeadClass;
+const tableCellClass = templatesTableCellClass;
+const tableRowClass = templatesTableRowClass;
 
 function templateMeta(template: TemplateListItem) {
-	return `${template.roleCount} roles · ${template.fieldCount} fields · ${template.docCount} docs`;
+	return templateMetaSubtitle(template);
+}
+
+function templateVersionLabel(template: TemplateListItem) {
+	return template.catalogVersionLabel ?? "—";
 }
 
 function TemplateRowActions({
@@ -246,6 +254,9 @@ export function TemplatesTable({
 					<TableHead className={cn(tableHeadClass, "hidden sm:table-cell")}>
 						Updated
 					</TableHead>
+					<TableHead className={cn(tableHeadClass, "hidden md:table-cell")}>
+						Version
+					</TableHead>
 					<TableHead className={cn(tableHeadClass, "text-right")}>
 						{showActions ? "Actions" : <span className="sr-only">Actions</span>}
 					</TableHead>
@@ -272,7 +283,7 @@ export function TemplatesTable({
 										"max-w-[320px] whitespace-normal",
 									)}
 								>
-									<div className="min-w-0">
+									<div className="min-w-0 space-y-1">
 										<p className="truncate font-medium">{template.name}</p>
 										<p className="truncate text-xs text-muted-foreground">
 											{templateMeta(template)}
@@ -290,6 +301,14 @@ export function TemplatesTable({
 									)}
 								>
 									{updatedLabel}
+								</TableCell>
+								<TableCell
+									className={cn(
+										tableCellClass,
+										"hidden whitespace-nowrap text-sm text-muted-foreground md:table-cell",
+									)}
+								>
+									{templateVersionLabel(template)}
 								</TableCell>
 								<TableCell className={cn(tableCellClass, "text-right")}>
 									<TemplateRowActions

@@ -3,6 +3,7 @@ export * from "./feedback";
 export * from "./platform-invite";
 export * from "./utils/attachment";
 export * from "./utils/attachment-packet-validation";
+export * from "./utils/catalog-meta";
 export * from "./utils/compliance";
 export * from "./utils/compliance-workflows";
 export * from "./utils/crypto";
@@ -31,6 +32,7 @@ export * from "./utils/signature-font-catalog";
 export * from "./utils/signature-raster-fit";
 export * from "./utils/supplementary-attachment-upload";
 export * from "./utils/supplementary-packet-unlock";
+export * from "./utils/system-template";
 export * from "./utils/template";
 export * from "./utils/template-editor";
 

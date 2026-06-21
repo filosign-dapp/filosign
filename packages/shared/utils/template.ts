@@ -69,11 +69,27 @@ export type TemplatePrepareUpdateDocumentRow = z.infer<
 	typeof zTemplatePrepareUpdateDocumentRow
 >;
 
+export const zContentFingerprint = z
+	.string()
+	.regex(/^0x[0-9a-fA-F]{64}$/, { error: "Invalid content fingerprint" });
+
+export type ContentFingerprint = z.infer<typeof zContentFingerprint>;
+
+export const zCatalogSource = z.object({
+	systemTemplateId: z.uuid(),
+	installedAtIso: z.iso.datetime(),
+	systemContentFingerprint: zContentFingerprint,
+	catalogVersionLabel: z.string().min(1).max(64),
+});
+
+export type CatalogSource = z.infer<typeof zCatalogSource>;
+
 export const zTemplateSnapshot = z.object({
 	version: z.literal(1),
 	roles: z.array(zTemplateRole).min(1),
 	fields: z.array(zTemplateField),
 	defaults: zTemplateDefaults.optional(),
+	catalogSource: zCatalogSource.optional(),
 });
 
 export type TemplateRole = z.infer<typeof zTemplateRole>;

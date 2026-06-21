@@ -3,6 +3,7 @@ import { clientErrors } from "./client";
 import { entitlementErrors } from "./entitlements";
 import { filesErrors } from "./files";
 import { genericErrors } from "./generic";
+import { platformErrors } from "./platform";
 import { settlementsErrors } from "./settlements";
 import { signingErrors } from "./signing";
 import { usersErrors } from "./users";
@@ -18,6 +19,7 @@ export const ERROR_CATALOG = {
 	...filesErrors,
 	...settlementsErrors,
 	...usersErrors,
+	...platformErrors,
 } as const;
 
 export type ErrorCatalog = typeof ERROR_CATALOG;

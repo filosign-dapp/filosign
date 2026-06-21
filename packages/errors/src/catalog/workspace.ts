@@ -248,6 +248,30 @@ export const workspaceErrors = {
 		severity: "error",
 		defaultOrpcCode: "NOT_FOUND",
 	},
+	"WORKSPACE.CATALOG_VERSION_ALREADY_INSTALLED": {
+		title: "Catalog version already in workspace",
+		description:
+			"This Library template version is already installed in your workspace.",
+		steps: [
+			"Open Your templates to use the existing copy.",
+			"If a newer Library version exists, add that version instead.",
+		],
+		audience: "user",
+		severity: "warning",
+		defaultOrpcCode: "CONFLICT",
+	},
+	"WORKSPACE.CATALOG_INSTALL_STALE": {
+		title: "Catalog version changed",
+		description:
+			"This Library template was updated while you were installing it. Refresh and try again.",
+		steps: [
+			"Return to the Library preview and install again.",
+			"If a newer Library version exists, open the template to install it.",
+		],
+		audience: "user",
+		severity: "warning",
+		defaultOrpcCode: "CONFLICT",
+	},
 	"WORKSPACE.PLATFORM_INVITE_REQUIRED": {
 		title: "Access invite required",
 		description: "{{reason}}",

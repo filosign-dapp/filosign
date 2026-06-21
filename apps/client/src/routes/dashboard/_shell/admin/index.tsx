@@ -507,6 +507,16 @@ function AdminPage() {
 				</p>
 			</header>
 
+			<div className="flex justify-end">
+				<Button
+					variant="outline"
+					size="sm"
+					render={<Link to="/dashboard/admin/system-templates" />}
+				>
+					System templates
+				</Button>
+			</div>
+
 			<MotionReveal
 				preset="soft"
 				delay={0.2}

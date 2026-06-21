@@ -16,7 +16,11 @@ import MobileSignatureToolbar from "@/src/routes/dashboard/envelope/create/add-s
 import { TemplateContextRailMobileContent } from "./template-context-rail-content";
 import { TemplatePreviewContextRailContent } from "./template-preview-context-rail-content";
 
-export function TemplateEditorMobileToolbar() {
+export function TemplateEditorMobileToolbar({
+	previewRailPrefix,
+}: {
+	previewRailPrefix?: React.ReactNode;
+}) {
 	const mode = useTemplateEditorMode();
 	const [sheetOpen, setSheetOpen] = useState(false);
 	const isPreview = isTemplatePreviewMode(mode);
@@ -49,7 +53,10 @@ export function TemplateEditorMobileToolbar() {
 						</SheetHeader>
 						<div className="mt-4">
 							{isPreview ? (
-								<TemplatePreviewContextRailContent />
+								<>
+									{previewRailPrefix}
+									<TemplatePreviewContextRailContent />
+								</>
 							) : (
 								<TemplateContextRailMobileContent />
 							)}

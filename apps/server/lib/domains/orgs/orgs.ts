@@ -3,6 +3,7 @@ import { templateSnapshotCounts } from "@filosign/shared";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
+import { readCatalogListFieldsFromSnapshot } from "@/lib/domains/catalog/utils/org-template-catalog-update";
 import {
 	CACHE_TTL,
 	cacheAside,
@@ -105,6 +106,8 @@ export type OrgTemplateListRow = {
 	roleCount: number;
 	fieldCount: number;
 	docCount: number;
+	catalogVersionLabel?: string;
+	catalogSystemTemplateId?: string;
 };
 
 type StoredTemplateRow = Omit<OrgTemplateListRow, "createdAt" | "updatedAt"> & {
@@ -355,6 +358,7 @@ export async function fetchOrgTemplatesList(
 			roleCount: counts.roleCount,
 			fieldCount: counts.fieldCount,
 			docCount: docCountByTemplate.get(row.id) ?? 0,
+			...readCatalogListFieldsFromSnapshot(row.snapshotJson),
 		};
 	});
 }

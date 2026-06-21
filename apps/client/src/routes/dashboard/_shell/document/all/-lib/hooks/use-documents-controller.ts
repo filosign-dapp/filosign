@@ -25,10 +25,29 @@ export type { DocumentListRow };
 
 const SEARCH_DEBOUNCE_MS = 300;
 
+function documentAllSearch(args: {
+	tab?: DocumentTab;
+	q?: string;
+	upgrade?: string;
+	interval?: string;
+}) {
+	return {
+		upgrade: args.upgrade,
+		interval: args.interval,
+		q: args.q,
+		tab: args.tab && args.tab !== "all" ? args.tab : undefined,
+	};
+}
+
 export function useDocumentsController() {
 	const viewMode = useStorePersist((s) => s.documentsViewMode);
 	const setDocumentsViewMode = useStorePersist((s) => s.setDocumentsViewMode);
-	const { tab: tabSearch, q: qSearch } = documentAllRouteApi.useSearch();
+	const {
+		tab: tabSearch,
+		q: qSearch,
+		upgrade,
+		interval,
+	} = documentAllRouteApi.useSearch();
 	const activeTab = parseDocumentTab(tabSearch ?? "") ?? "all";
 	const navigate = useNavigate();
 	const { openDraft } = useOpenDraft();
@@ -48,26 +67,30 @@ export function useDocumentsController() {
 		if ((qSearch ?? undefined) === nextQ) return;
 		void navigate({
 			to: "/dashboard/document/all",
-			search: (prev) => ({
-				...prev,
+			search: documentAllSearch({
+				tab: activeTab,
 				q: nextQ,
+				upgrade,
+				interval,
 			}),
 			replace: true,
 		});
-	}, [debouncedQuery, navigate, qSearch]);
+	}, [activeTab, debouncedQuery, interval, navigate, qSearch, upgrade]);
 
 	const setActiveTab = useCallback(
 		(tab: DocumentTab) => {
 			void navigate({
 				to: "/dashboard/document/all",
-				search: (prev) => ({
-					...prev,
-					tab: tab === "all" ? undefined : tab,
+				search: documentAllSearch({
+					tab,
+					q: qSearch,
+					upgrade,
+					interval,
 				}),
 				replace: true,
 			});
 		},
-		[navigate],
+		[interval, navigate, qSearch, upgrade],
 	);
 
 	const listQuery = useDocumentsListInfinite({

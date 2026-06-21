@@ -1,4 +1,6 @@
 import type { ServerDraftLoadState } from "@/src/lib/domains/drafts";
+import type { TemplateEditorMode } from "@/src/lib/domains/templates/template-editor-mode";
+import type { SystemTemplateEditorLoadState } from "@/src/lib/domains/templates/use-system-template-editor-hydrate";
 
 export type TemplateEditorLoadState =
 	| "idle"
@@ -29,7 +31,9 @@ export function envelopeSuppressEmptyDraftRedirect(args: {
 }
 
 export function templateSuppressEmptyDraftRedirect(args: {
-	templateEditorLoadState: TemplateEditorLoadState;
+	templateEditorLoadState:
+		| TemplateEditorLoadState
+		| SystemTemplateEditorLoadState;
 	draftReady: boolean;
 }): boolean {
 	return (
@@ -46,6 +50,10 @@ export function templateEmptyDraftRedirectTarget(): string {
 	return "/dashboard/templates";
 }
 
+export function systemTemplateEmptyDraftRedirectTarget(): string {
+	return "/dashboard/admin/system-templates";
+}
+
 export function envelopeDocumentLoadingMessage(
 	serverDraftLoadState: ServerDraftLoadState,
 ): string | null {
@@ -59,8 +67,10 @@ export function envelopeDocumentLoadingMessage(
 }
 
 export function templateDocumentLoadingMessage(
-	templateEditorLoadState: TemplateEditorLoadState,
-	mode?: "create" | "edit" | "preview",
+	templateEditorLoadState:
+		| TemplateEditorLoadState
+		| SystemTemplateEditorLoadState,
+	mode?: TemplateEditorMode,
 ): string | null {
 	if (templateEditorLoadState === "loading") {
 		return mode === "preview"

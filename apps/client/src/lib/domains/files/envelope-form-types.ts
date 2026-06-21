@@ -118,7 +118,8 @@ export type CreateForm = {
 	/** Active template editor session (create, edit, or preview). */
 	templateContext?: {
 		templateId: string;
-		mode: "create" | "edit" | "preview";
+		mode: "create" | "edit" | "preview" | "system-create" | "system-edit";
+		systemTemplateId?: string;
 	};
 	/** Envelope composed from a template until compose Continue remaps fields. */
 	templateUse?: {

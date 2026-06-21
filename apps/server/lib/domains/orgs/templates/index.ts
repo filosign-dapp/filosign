@@ -3,6 +3,7 @@ export {
 	zOrgsTemplateCreateBody,
 	zOrgsTemplatePrepareCreateBody,
 	zOrgsTemplatePrepareUpdateBody,
+	zOrgsTemplateRenameBody,
 	zOrgsTemplateUpdateBody,
 } from "./schemas";
 export {
@@ -24,5 +25,6 @@ export {
 	listOrgTemplates,
 	prepareOrgTemplateCreate,
 	prepareOrgTemplateUpdate,
+	renameOrgTemplate,
 	updateOrgTemplate,
 } from "./templates";

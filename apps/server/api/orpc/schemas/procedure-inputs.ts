@@ -43,8 +43,15 @@ export {
 	zOrgsTemplateCreateBody,
 	zOrgsTemplatePrepareCreateBody,
 	zOrgsTemplatePrepareUpdateBody,
+	zOrgsTemplateRenameBody,
 	zOrgsTemplateUpdateBody,
 } from "@/lib/domains/orgs/templates";
+export {
+	zSystemTemplateCreateBody,
+	zSystemTemplatePrepareCreateBody,
+	zSystemTemplatePrepareUpdateBody,
+	zSystemTemplateUpdateBody,
+} from "@/lib/domains/platform/system-templates";
 export {
 	zUserProfilePutBody,
 	zUserSetPrimaryEmailBody,

@@ -22,6 +22,15 @@ import {
 	rpcBillingUpgradeOfferingsOutputSchema,
 	rpcBillingWorkspaceContextOutputSchema,
 } from "./billing-output";
+import {
+	rpcCatalogGetOutputSchema,
+	rpcCatalogListOutputSchema,
+	rpcCatalogPrepareInstallOutputSchema,
+	rpcSystemTemplateGetOutputSchema,
+	rpcSystemTemplateOutputSchema,
+	rpcSystemTemplatePrepareOutputSchema,
+	rpcSystemTemplatesListOutputSchema,
+} from "./catalog-output";
 import { zDocumentsListInputSchema } from "./documents-input";
 import { rpcDocumentsListOutputSchema } from "./documents-output";
 import {
@@ -249,6 +258,15 @@ export const rpcOut = {
 		settlementAccessDecision:
 			rpcPlatformAdminSettlementAccessDecisionOutputSchema,
 		feedbackList: rpcPlatformAdminFeedbackListOutputSchema,
+		systemTemplatesList: rpcSystemTemplatesListOutputSchema,
+		systemTemplateGet: rpcSystemTemplateGetOutputSchema,
+		systemTemplate: rpcSystemTemplateOutputSchema,
+		systemTemplatePrepare: rpcSystemTemplatePrepareOutputSchema,
+	},
+	catalog: {
+		list: rpcCatalogListOutputSchema,
+		get: rpcCatalogGetOutputSchema,
+		prepareInstall: rpcCatalogPrepareInstallOutputSchema,
 	},
 	documents: {
 		list: rpcDocumentsListOutputSchema,

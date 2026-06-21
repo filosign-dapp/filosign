@@ -35,6 +35,7 @@ import {
 	billingResendSetupLink,
 	billingUpdateOrgSeats,
 } from "@/api/handlers/billing-handlers";
+import * as catalogHandlers from "@/api/handlers/catalog";
 import * as documentHandlers from "@/api/handlers/documents";
 import * as draftHandlers from "@/api/handlers/drafts";
 import {
@@ -68,6 +69,7 @@ import {
 	platformAdminUsersSetPlan,
 	zGatePreviewOutput,
 } from "@/api/handlers/platform-access-handlers";
+import * as platformAdminSystemTemplateHandlers from "@/api/handlers/platform-admin-system-templates";
 import {
 	settlementAccessGetForOrg,
 	settlementAccessSubmitRequest,
@@ -146,9 +148,14 @@ import {
 	zOrgsTemplateCreateBody,
 	zOrgsTemplatePrepareCreateBody,
 	zOrgsTemplatePrepareUpdateBody,
+	zOrgsTemplateRenameBody,
 	zOrgsTemplateUpdateBody,
 	zOrgsUnlinkWalletBody,
 	zOrgsUpdateBody,
+	zSystemTemplateCreateBody,
+	zSystemTemplatePrepareCreateBody,
+	zSystemTemplatePrepareUpdateBody,
+	zSystemTemplateUpdateBody,
 	zUserProfilePutBody,
 	zUserRegisterBody,
 	zUserSetPrimaryEmailBody,
@@ -349,6 +356,87 @@ export const appRouter = {
 				.output(out.platformAdmin.feedbackList)
 				.handler(({ context, input }) =>
 					platformAdminFeedbackList(context.userWallet, input),
+				),
+		},
+		systemTemplates: {
+			list: authenticatedProcedure
+				.output(out.platformAdmin.systemTemplatesList)
+				.handler(({ context }) =>
+					platformAdminSystemTemplateHandlers.platformAdminSystemTemplatesList(
+						context.userWallet,
+					),
+				),
+			get: authenticatedProcedure
+				.input(z.object({ systemTemplateId: z.uuid() }))
+				.output(out.platformAdmin.systemTemplateGet)
+				.handler(({ context, input }) =>
+					platformAdminSystemTemplateHandlers.platformAdminSystemTemplatesGet(
+						context.userWallet,
+						input.systemTemplateId,
+					),
+				),
+			prepareCreate: authenticatedProcedure
+				.input(zSystemTemplatePrepareCreateBody)
+				.output(out.platformAdmin.systemTemplatePrepare)
+				.handler(({ context, input }) =>
+					platformAdminSystemTemplateHandlers.platformAdminSystemTemplatesPrepareCreate(
+						context.userWallet,
+						input,
+					),
+				),
+			create: authenticatedProcedure
+				.input(zSystemTemplateCreateBody)
+				.output(out.platformAdmin.systemTemplate)
+				.handler(({ context, input }) =>
+					platformAdminSystemTemplateHandlers.platformAdminSystemTemplatesCreate(
+						context.userWallet,
+						input,
+					),
+				),
+			prepareUpdate: authenticatedProcedure
+				.input(zSystemTemplatePrepareUpdateBody)
+				.output(out.platformAdmin.systemTemplatePrepare)
+				.handler(({ context, input }) =>
+					platformAdminSystemTemplateHandlers.platformAdminSystemTemplatesPrepareUpdate(
+						context.userWallet,
+						input,
+					),
+				),
+			update: authenticatedProcedure
+				.input(zSystemTemplateUpdateBody)
+				.output(out.platformAdmin.systemTemplate)
+				.handler(({ context, input }) =>
+					platformAdminSystemTemplateHandlers.platformAdminSystemTemplatesUpdate(
+						context.userWallet,
+						input,
+					),
+				),
+			publish: authenticatedProcedure
+				.input(z.object({ systemTemplateId: z.uuid() }))
+				.output(out.platformAdmin.systemTemplate)
+				.handler(({ context, input }) =>
+					platformAdminSystemTemplateHandlers.platformAdminSystemTemplatesPublish(
+						context.userWallet,
+						input.systemTemplateId,
+					),
+				),
+			archive: authenticatedProcedure
+				.input(z.object({ systemTemplateId: z.uuid() }))
+				.output(out.platformAdmin.systemTemplate)
+				.handler(({ context, input }) =>
+					platformAdminSystemTemplateHandlers.platformAdminSystemTemplatesArchive(
+						context.userWallet,
+						input.systemTemplateId,
+					),
+				),
+			delete: authenticatedProcedure
+				.input(z.object({ systemTemplateId: z.uuid() }))
+				.output(out.platformAdmin.systemTemplate)
+				.handler(({ context, input }) =>
+					platformAdminSystemTemplateHandlers.platformAdminSystemTemplatesDelete(
+						context.userWallet,
+						input.systemTemplateId,
+					),
 				),
 		},
 	},
@@ -1280,6 +1368,21 @@ export const appRouter = {
 						input,
 					);
 				}),
+			rename: authenticatedProcedure
+				.input(zOrgsTemplateRenameBody)
+				.output(out.orgs.template)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsTemplatesRename(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					);
+				}),
 			list: authenticatedProcedure
 				.output(out.orgs.templatesList)
 				.handler(({ context }) => {
@@ -1338,7 +1441,44 @@ export const appRouter = {
 						input.templateId,
 					);
 				}),
+			prepareInstallFromSystem: authenticatedProcedure
+				.input(z.object({ systemTemplateId: z.uuid() }))
+				.output(out.catalog.prepareInstall)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return catalogHandlers.orgsTemplatesPrepareInstallFromSystem(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					);
+				}),
 		},
+	},
+	catalog: {
+		list: authenticatedProcedure
+			.input(
+				z.object({ category: z.string().min(1).max(64).optional() }).optional(),
+			)
+			.output(out.catalog.list)
+			.handler(({ context, input }) =>
+				catalogHandlers.catalogListHandler(
+					context.activeOrg ?? undefined,
+					input ?? {},
+				),
+			),
+		get: authenticatedProcedure
+			.input(z.object({ systemTemplateId: z.uuid() }))
+			.output(out.catalog.get)
+			.handler(({ context, input }) =>
+				catalogHandlers.catalogGetHandler(
+					context.activeOrg ?? undefined,
+					input,
+				),
+			),
 	},
 	users: {
 		register: publicProcedure

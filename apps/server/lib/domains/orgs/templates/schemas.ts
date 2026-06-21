@@ -77,4 +77,9 @@ export const zOrgsTemplateUpdateBody = z.object({
 	documents: zTemplateDocumentsArray,
 });
 
+export const zOrgsTemplateRenameBody = z.object({
+	templateId: z.uuid(),
+	name: z.string().min(1).max(120),
+});
+
 export type OrgsTemplateDocumentRow = z.infer<typeof zTemplateDocumentRow>;

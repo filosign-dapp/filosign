@@ -2,7 +2,6 @@ import type { RegisterRoutingInput } from "@filosign/shared";
 import { eq } from "drizzle-orm";
 import type { Hex } from "viem";
 import { getAddress } from "viem";
-import env from "@/env";
 import {
 	SERVER_ANALYTICS_EVENTS,
 	trackServerEvent,
@@ -122,18 +121,10 @@ async function resolveRoutingCompleteAfterSign(args: {
 async function tryFocStubForRoutingCompletePiece(args: {
 	pieceCid: string;
 	organizationId: string | null;
-	smokeMessage?: string;
 }): Promise<void> {
-	if (!env.TEST_FOC || !args.organizationId) {
+	const { isFocBackupEnabled } = await import("@/lib/domains/foc/enabled");
+	if (!isFocBackupEnabled() || !args.organizationId) {
 		return;
-	}
-
-	if (args.smokeMessage) {
-		const { logFocSmoke } = await import("@/lib/domains/foc");
-		logFocSmoke(args.smokeMessage, {
-			pieceCid: args.pieceCid,
-			organizationId: args.organizationId,
-		});
 	}
 
 	const { tryFocForRoutingCompletePiece } = await import(
@@ -175,7 +166,6 @@ async function handleEnvelopeRoutingComplete(args: {
 	await tryFocStubForRoutingCompletePiece({
 		pieceCid: args.pieceCid,
 		organizationId: args.organizationId,
-		smokeMessage: "routing complete; creating FOC stub",
 	});
 
 	const { enqueuePayoutForPiece } = await import("@/lib/platform/jobs");
@@ -228,16 +218,6 @@ export async function runPostSignRoutingCompleteJob(args: {
 	}
 
 	if (waitingForMoreSigners(progress)) {
-		if (env.TEST_FOC) {
-			const { logFocSmoke } = await import("@/lib/domains/foc");
-			logFocSmoke("sign recorded; routing not complete yet (no FOC stub)", {
-				pieceCid: args.pieceCid,
-				requiredSignersCount: progress?.requiredSignersCount,
-				requiredSignaturesCount: progress?.requiredSignaturesCount,
-				quorumN: progress?.quorumN,
-				completedAt: progress?.completedAt,
-			});
-		}
 		return;
 	}
 

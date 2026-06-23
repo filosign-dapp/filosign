@@ -25,6 +25,7 @@ export {
 	invalidateUserOrgs,
 } from "./invalidate";
 export { CACHE_TTL, cacheKeys } from "./keys";
+export { assertPimlicoProxyRateLimit } from "./pimlico-proxy-rate-limit";
 export {
 	assertVerifyRateLimit,
 	type CachedSession,

@@ -149,6 +149,34 @@ describe("handlePoolError", () => {
 describe("validateServerBootstrap", () => {
 	beforeEach(resetAlertsRuntime);
 
+	test("skips FOC wallet validation when FOC_BACKUP_ENABLED is false", async () => {
+		mock.module("@/env", () => ({
+			default: {
+				...testEnvStub,
+				TG_ANALYTICS: true,
+				TG_ANALYTICS_BOT_TOKEN: "bot",
+				TG_ANALYTICS_BOT_GROUP_ID: "group",
+				FOC_BACKUP_ENABLED: false,
+				FOC_WALLET_PRIVATE_KEY: relayerKey,
+				FOC_WALLET_ADDRESS: otherAddress,
+			},
+		}));
+		mock.module("@/lib/platform/evm", () => ({
+			fsContracts: {
+				FSEnvelopeRegistry: {
+					read: {
+						isRelayer: async () => true,
+					},
+				},
+			},
+		}));
+		const { validateServerBootstrap } = await import(
+			"@/lib/platform/bootstrap/validate-bootstrap"
+		);
+		await expect(validateServerBootstrap()).resolves.toBeUndefined();
+		expect(capturedTelegramEvents).toHaveLength(0);
+	});
+
 	test("emits bootstrap alert and throws on FOC wallet mismatch", async () => {
 		mock.module("@/env", () => ({
 			default: {
@@ -156,6 +184,7 @@ describe("validateServerBootstrap", () => {
 				TG_ANALYTICS: true,
 				TG_ANALYTICS_BOT_TOKEN: "bot",
 				TG_ANALYTICS_BOT_GROUP_ID: "group",
+				FOC_BACKUP_ENABLED: true,
 				FOC_WALLET_PRIVATE_KEY: relayerKey,
 				FOC_WALLET_ADDRESS: otherAddress,
 			},
@@ -308,6 +337,24 @@ describe("monitor FOC wallet balances", () => {
 		expect(result.usdfcAlerted).toBe(false);
 	});
 
+	test("skips balance check when FOC_BACKUP_ENABLED is false on production", async () => {
+		mock.module("@/env", () => ({
+			default: {
+				...testEnvStub,
+				DEPLOYMENT: "production",
+				CHAIN: "mainnet",
+				FOC_BACKUP_ENABLED: false,
+			},
+		}));
+		const { runMonitorFocWalletBalancesJob } = await import(
+			"@/lib/platform/cron/tasks/sync"
+		);
+		const result = await runMonitorFocWalletBalancesJob();
+		expect(result.checked).toBe(false);
+		expect(result.filAlerted).toBe(false);
+		expect(result.usdfcAlerted).toBe(false);
+	});
+
 	test("emits critical alerts when FIL and USDFC are below threshold", async () => {
 		mock.module("@/env", () => ({
 			default: {
@@ -317,6 +364,7 @@ describe("monitor FOC wallet balances", () => {
 				TG_ANALYTICS_BOT_GROUP_ID: "group",
 				DEPLOYMENT: "production",
 				CHAIN: "mainnet",
+				FOC_BACKUP_ENABLED: true,
 			},
 		}));
 		mock.module("@/lib/platform/foc/wallet-balances", () => ({

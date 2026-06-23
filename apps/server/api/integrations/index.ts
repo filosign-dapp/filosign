@@ -5,11 +5,12 @@ import {
 	captureServerException,
 	shouldCaptureServerException,
 } from "@/lib/platform/analytics";
+import { pimlicoProxyRouter } from "./pimlico-proxy";
 
 /** Non-oRPC `/api/integrations/*` routes (webhooks, partner callbacks). */
-export const integrationsRouter = new Hono().post(
-	"/integrations/dodo/webhook",
-	async (c) => {
+export const integrationsRouter = new Hono()
+	.route("/", pimlicoProxyRouter)
+	.post("/integrations/dodo/webhook", async (c) => {
 		try {
 			const webhookId = c.req.header("webhook-id");
 			const webhookTimestamp = c.req.header("webhook-timestamp");
@@ -61,5 +62,4 @@ export const integrationsRouter = new Hono().post(
 				error: "Unexpected webhook processing error",
 			});
 		}
-	},
-);
+	});

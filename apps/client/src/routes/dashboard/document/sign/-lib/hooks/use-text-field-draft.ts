@@ -2,8 +2,6 @@ import type { FieldCompletionMap, PlacementField } from "@filosign/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { buildTextCompletion } from "../utils/field-completion-builders";
 
-const IDLE_COMMIT_MS = 800;
-
 type UseTextFieldDraftOptions = {
 	pieceCid: string | undefined;
 	alreadySigned: boolean;
@@ -29,9 +27,6 @@ export function useTextFieldDraft(options: UseTextFieldDraftOptions) {
 	const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
 	const textDraftsRef = useRef(textDrafts);
 	textDraftsRef.current = textDrafts;
-	const idleCommitTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-		undefined,
-	);
 
 	useEffect(() => {
 		setTextDrafts({});
@@ -137,8 +132,6 @@ export function useTextFieldDraft(options: UseTextFieldDraftOptions) {
 		[fieldCompletions, textDrafts],
 	);
 
-	const editingDraft = editingFieldId ? textDrafts[editingFieldId] : undefined;
-
 	const flushAllTextDrafts = useCallback(
 		(
 			baseCompletions: FieldCompletionMap,
@@ -195,32 +188,6 @@ export function useTextFieldDraft(options: UseTextFieldDraftOptions) {
 		},
 		[alreadySigned, editingFieldId, myPlacementFields],
 	);
-
-	useEffect(() => {
-		if (!editingFieldId || alreadySigned) return;
-
-		if (idleCommitTimerRef.current) {
-			clearTimeout(idleCommitTimerRef.current);
-		}
-
-		idleCommitTimerRef.current = setTimeout(() => {
-			commitTextDraft(editingFieldId);
-		}, IDLE_COMMIT_MS);
-
-		return () => {
-			if (idleCommitTimerRef.current) {
-				clearTimeout(idleCommitTimerRef.current);
-			}
-		};
-	}, [alreadySigned, commitTextDraft, editingFieldId, editingDraft]);
-
-	useEffect(() => {
-		return () => {
-			if (idleCommitTimerRef.current) {
-				clearTimeout(idleCommitTimerRef.current);
-			}
-		};
-	}, []);
 
 	return {
 		getTextFieldValue,

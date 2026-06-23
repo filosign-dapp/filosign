@@ -1,5 +1,5 @@
 import { parsePlacementManifestForSigner } from "@filosign/shared";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import {
 	pickProofDownloadExports,
 	useCompliancePdfExports,
@@ -33,6 +33,14 @@ export function useSignDocumentController() {
 		[placementManifest, identity.signerPlacementEmail],
 	);
 
+	const getPlacementLayout = useCallback(
+		() => ({
+			width: viewer.documentWidth,
+			height: viewer.getPageHeight(1),
+		}),
+		[viewer],
+	);
+
 	const fieldSession = useSignFieldSession({
 		pieceCid,
 		canPersistDraft:
@@ -42,6 +50,7 @@ export function useSignDocumentController() {
 		signedFieldCompletions: file?.fieldCompletions,
 		signerAddress: identity.signerAddress,
 		myPlacementFields: placementParsed.myFields,
+		getPlacementLayout,
 	});
 
 	const placement = useSignPlacementFields({
@@ -132,6 +141,8 @@ export function useSignDocumentController() {
 			handleTextFocus: fieldSession.handleTextFocus,
 			handleTextBlur: fieldSession.handleTextBlur,
 			handleCheckboxToggle: fieldSession.handleCheckboxToggle,
+			fillRequiredAutoFields: fieldSession.fillRequiredAutoFields,
+			isFillingRequiredAutoFields: fieldSession.isFillingRequiredAutoFields,
 			isMyPlacementFieldDone: fieldSession.isMyPlacementFieldDone,
 			canSubmitPlacementSign: placement.canSubmitPlacementSign,
 			signerPlacementEmail: identity.signerPlacementEmail,

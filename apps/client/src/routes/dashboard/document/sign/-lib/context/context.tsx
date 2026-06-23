@@ -11,6 +11,8 @@ const SignDocumentContext = createContext<SignDocumentContextValue | null>(
 	null,
 );
 
+export { SignDocumentContext };
+
 export function SignDocumentProvider({
 	value,
 	children,

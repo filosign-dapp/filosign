@@ -17,6 +17,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
+import type { PlacementLayout } from "@/src/lib/domains/files/use-placement-layout";
 import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
 import { buildCheckboxCompletion } from "../utils/field-completion-builders";
 import { useFieldDraftSync } from "./use-field-draft-sync";
@@ -37,6 +38,7 @@ export function useSignFieldSession(options: {
 	signedFieldCompletions?: FieldCompletionWireRow[];
 	signerAddress?: `0x${string}`;
 	myPlacementFields: PlacementField[];
+	getPlacementLayout: () => PlacementLayout;
 }) {
 	const {
 		pieceCid,
@@ -45,6 +47,7 @@ export function useSignFieldSession(options: {
 		signedFieldCompletions,
 		signerAddress,
 		myPlacementFields,
+		getPlacementLayout,
 	} = options;
 	const signDraftPieceCid = canPersistDraft ? pieceCid : undefined;
 	const captureAppEvent = useCaptureAppEvent();
@@ -111,12 +114,14 @@ export function useSignFieldSession(options: {
 	]);
 
 	const { resolveFieldCompletion } = useFieldProvisioning({
-		signDraftPieceCid,
+		getPlacementLayout,
 	});
 
 	const [provisioningFieldIds, setProvisioningFieldIds] = useState<Set<string>>(
 		() => new Set(),
 	);
+	const [isFillingRequiredAutoFields, setIsFillingRequiredAutoFields] =
+		useState(false);
 
 	useEffect(() => {
 		setProvisioningFieldIds(new Set());
@@ -308,6 +313,48 @@ export function useSignFieldSession(options: {
 		],
 	);
 
+	const fillRequiredAutoFields = useCallback(async () => {
+		if (alreadySigned) return;
+
+		setIsFillingRequiredAutoFields(true);
+		try {
+			let nextCompletions = { ...fieldCompletions };
+			let nextCompleted = [...completedFieldIds];
+			let filled = 0;
+
+			for (const field of myPlacementFields) {
+				if (!field.required) continue;
+				if (field.type === "text") continue;
+				if (fieldHasCompletion(field, nextCompletions)) continue;
+
+				const completion = await resolveFieldCompletion(field);
+				if (!completion) continue;
+
+				nextCompletions = { ...nextCompletions, [field.id]: completion };
+				if (!nextCompleted.includes(field.id)) {
+					nextCompleted = [...nextCompleted, field.id];
+				}
+				filled += 1;
+			}
+
+			if (filled > 0) {
+				setFieldCompletions(nextCompletions);
+				setCompletedFieldIds(nextCompleted);
+				persistDraft(nextCompleted, nextCompletions);
+			}
+		} finally {
+			setIsFillingRequiredAutoFields(false);
+		}
+	}, [
+		alreadySigned,
+		completedFieldIds,
+		fieldCompletions,
+		fieldHasCompletion,
+		myPlacementFields,
+		persistDraft,
+		resolveFieldCompletion,
+	]);
+
 	const ensureRequiredVisualCompletions = useCallback(
 		async (base?: {
 			completions: FieldCompletionMap;
@@ -383,6 +430,8 @@ export function useSignFieldSession(options: {
 		togglePlacementField,
 		clearPlacementField,
 		prepareForSign,
+		fillRequiredAutoFields,
+		isFillingRequiredAutoFields,
 		getTextFieldValue: textFieldDraft.getTextFieldValue,
 		handleTextDraftChange: textFieldDraft.handleTextDraftChange,
 		handleTextFocus: textFieldDraft.handleTextFocus,

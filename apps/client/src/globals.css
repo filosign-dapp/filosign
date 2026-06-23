@@ -339,8 +339,29 @@
 }
 
 /* PDF / document placement field overlays (sign page + add-sign canvas) */
+@utility placement-field-radius {
+	@apply rounded-[1px];
+}
+
+@utility placement-field-editor-selected {
+	@apply border-2 border-secondary;
+}
+
+@utility placement-field-editor-selected-overlay {
+	@apply pointer-events-none absolute inset-0 z-[1] placement-field-radius bg-secondary/25;
+}
+
+@utility placement-field-chrome-editor {
+	@apply flex h-full w-full items-center gap-1.5 placement-field-radius border px-1.5 shadow-md touch-manipulation;
+	@apply transition-[background-color,filter,box-shadow] duration-150;
+	@apply outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0;
+	background-color: var(--placement-chrome);
+	color: var(--placement-chrome-foreground);
+	border-color: var(--placement-chrome-border);
+}
+
 @utility placement-field-chrome {
-	@apply flex h-full w-full items-center gap-1.5 rounded-sm border px-1.5 shadow-md touch-manipulation;
+	@apply flex h-full w-full items-center gap-1.5 placement-field-radius border px-1.5 shadow-md touch-manipulation;
 	@apply transition-[background-color,filter,box-shadow] duration-150;
 	@apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1;
 	background-color: var(--placement-chrome);
@@ -353,7 +374,7 @@
 }
 
 @utility placement-field-chrome-muted {
-	@apply flex h-full w-full items-center gap-1.5 rounded-sm border px-1.5 shadow-sm touch-manipulation;
+	@apply flex h-full w-full items-center gap-1.5 placement-field-radius border px-1.5 shadow-sm touch-manipulation;
 	background-color: color-mix(
 		in oklab,
 		var(--placement-chrome) 84%,
@@ -377,14 +398,24 @@
 }
 
 @utility placement-field-applied-shell {
-	@apply overflow-hidden rounded-sm border p-[1.5px] shadow-md touch-manipulation;
+	@apply overflow-hidden placement-field-radius border p-[1.5px] shadow-md touch-manipulation;
 	@apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1;
 	background-color: var(--placement-chrome);
 	border-color: var(--placement-chrome-border);
 }
 
+@utility placement-field-applied-shell-minimal {
+	@apply overflow-hidden placement-field-radius border border-placement-chrome-border p-0 shadow-none touch-manipulation;
+	background-color: var(--placement-chrome);
+}
+
 @utility placement-field-applied-fill {
-	@apply flex h-full w-full items-center justify-center overflow-hidden rounded-sm p-[2px] text-xs text-placement-fill-foreground;
+	@apply flex h-full w-full items-center justify-center overflow-hidden placement-field-radius p-[2px] text-xs text-placement-fill-foreground;
+	background-color: var(--placement-fill);
+}
+
+@utility placement-field-applied-fill-minimal {
+	@apply flex h-full min-h-0 w-full items-center justify-center overflow-hidden placement-field-radius p-0;
 	background-color: var(--placement-fill);
 }
 
@@ -393,6 +424,10 @@
 }
 
 @utility placement-field-interactive-fill {
-	@apply flex h-full w-full items-center justify-center overflow-hidden rounded-sm px-1 text-xs text-placement-fill-interactive-foreground;
+	@apply flex h-full w-full items-center justify-center overflow-hidden placement-field-radius px-1 text-xs text-placement-fill-interactive-foreground;
 	background-color: var(--placement-fill-interactive);
+}
+
+@utility placement-field-text-fill {
+	@apply flex h-full min-h-0 w-full items-center overflow-hidden px-1 text-left text-xs text-placement-fill-interactive-foreground;
 }

@@ -1,5 +1,5 @@
 import { CaretDownIcon, PenNibIcon } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import {
 	Collapsible,
@@ -8,6 +8,7 @@ import {
 } from "@/src/lib/components/ui/collapsible";
 import { useAddSignPlacement } from "@/src/lib/domains/placement/context";
 import { PlacementFieldPaletteList } from "@/src/lib/domains/placement/field-palette";
+import { resolvePaletteHighlightedFieldType } from "@/src/lib/domains/placement/utils/palette-selection";
 import {
 	isTemplatePreviewMode,
 	useTemplateEditorMode,
@@ -29,17 +30,25 @@ function TemplateEditorSidebarPreview() {
 
 function TemplateEditorSidebarEdit() {
 	const {
-		handleAddField,
+		handlePaletteTypeClick,
+		cancelPlacement,
 		isPlacingField,
 		pendingFieldType,
 		placementFieldTypeLabel,
 		assignees,
 		activeAssigneeId,
+		selectedFieldIds,
+		signatureFields,
 	} = useAddSignPlacement();
 	const [addFieldsOpen, setAddFieldsOpen] = useState(true);
 
 	const activeAssignee = assignees.find((row) => row.id === activeAssigneeId);
 	const placementBlocked = activeAssignee && !activeAssignee.placementEnabled;
+
+	const highlightedFieldType = useMemo(
+		() => resolvePaletteHighlightedFieldType(selectedFieldIds, signatureFields),
+		[selectedFieldIds, signatureFields],
+	);
 
 	return (
 		<Collapsible open={addFieldsOpen} onOpenChange={setAddFieldsOpen}>
@@ -82,8 +91,11 @@ function TemplateEditorSidebarEdit() {
 				<PlacementFieldPaletteList
 					isPlacingField={isPlacingField}
 					pendingFieldType={pendingFieldType}
+					highlightedFieldType={highlightedFieldType}
+					selectedFieldCount={selectedFieldIds.size}
 					placementFieldTypeLabel={placementFieldTypeLabel}
-					onAddField={handleAddField}
+					onPaletteTypeClick={handlePaletteTypeClick}
+					onCancelPlacement={cancelPlacement}
 				/>
 			</CollapsibleContent>
 		</Collapsible>

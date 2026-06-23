@@ -1,6 +1,5 @@
-import { useRouterState } from "@tanstack/react-router";
+import { useDashboardShellLayout } from "@/src/lib/components/app/suspense/dashboard-shell-layout";
 import { StartHereFloating } from "@/src/lib/domains/activation/start-here-floating";
-import { isDashboardShellRoute } from "@/src/lib/feedback/feature-area";
 import { FeedbackInviteCard } from "@/src/lib/feedback/feedback-prompt-cards";
 import {
 	useFeedbackPromptHost,
@@ -8,9 +7,9 @@ import {
 } from "@/src/lib/feedback/use-feedback-prompt";
 
 export function FloatingPromptHost() {
-	const pathname = useRouterState({ select: (s) => s.location.pathname });
+	const shellLayout = useDashboardShellLayout();
 	const startHereVisible = useStartHereSlotVisible();
-	const startHereActive = isDashboardShellRoute(pathname) && startHereVisible;
+	const startHereActive = shellLayout && startHereVisible;
 	const feedback = useFeedbackPromptHost({ startHereActive });
 
 	if (startHereActive) {

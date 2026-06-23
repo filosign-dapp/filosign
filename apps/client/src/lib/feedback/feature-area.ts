@@ -19,10 +19,3 @@ export function feedbackFeatureAreaFromPath(
 	}
 	return "other";
 }
-
-export function isDashboardShellRoute(pathname: string): boolean {
-	if (pathname.startsWith("/dashboard/document/sign")) return false;
-	if (pathname.startsWith("/dashboard/envelope/create")) return false;
-	if (pathname.startsWith("/dashboard/signature/create")) return false;
-	return pathname.startsWith("/dashboard/");
-}

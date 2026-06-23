@@ -1,5 +1,18 @@
 import { describe, expect, test } from "bun:test";
-import { fitSignatureRasterFontSize } from "../utils/signature-raster-fit";
+import {
+	fitSignatureRasterFontSize,
+	resolveSignatureRasterMinFontSize,
+} from "../utils/signature-raster-fit";
+
+describe("resolveSignatureRasterMinFontSize", () => {
+	test("caps min font at 12 for catalog-height boxes", () => {
+		expect(resolveSignatureRasterMinFontSize(140)).toBe(12);
+	});
+
+	test("allows font down to 6 for very short boxes", () => {
+		expect(resolveSignatureRasterMinFontSize(14)).toBe(6);
+	});
+});
 
 describe("fitSignatureRasterFontSize", () => {
 	test("scales up short initials to fill the raster box", () => {
@@ -26,5 +39,17 @@ describe("fitSignatureRasterFontSize", () => {
 
 		expect(size).toBeLessThan(44);
 		expect(size).toBeGreaterThanOrEqual(12);
+	});
+
+	test("uses dynamic min font floor when scale would go lower", () => {
+		const size = fitSignatureRasterFontSize({
+			measuredWidth: 800,
+			measuredHeight: 80,
+			preferredFontSize: 44,
+			boxWidth: 100,
+			boxHeight: 14,
+		});
+
+		expect(size).toBe(6);
 	});
 });

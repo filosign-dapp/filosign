@@ -143,4 +143,85 @@ describe("formatTelegramMessage", () => {
 		expect(text).toContain("<b>ERROR · custom · event</b>");
 		expect(text).toContain("Detail: value");
 	});
+
+	test("formats relayer gas low balance in ETH instead of wei", () => {
+		const text = formatTelegramMessage({
+			name: "server.relayer_gas_low",
+			severity: "critical",
+			message: "Relayer pool member native balance below threshold",
+			context: {
+				wallet: "0x1111111111111111111111111111111111111111",
+				balanceWei: "10000000000000000",
+				thresholdWei: "20000000000000000",
+				deployment: "production",
+				chain: "mainnet",
+			},
+			timestamp: Date.UTC(2026, 5, 14, 12, 30),
+		});
+
+		expect(text).toContain("Balance: 0.01 ETH");
+		expect(text).toContain("Threshold: 0.02 ETH");
+		expect(text).not.toContain("wei");
+	});
+
+	test("formats FOC FIL balance low in FIL instead of wei", () => {
+		const text = formatTelegramMessage({
+			name: "server.foc_fil_low",
+			severity: "critical",
+			message: "FOC wallet FIL balance below threshold",
+			context: {
+				wallet: "0x1111111111111111111111111111111111111111",
+				balanceWei: "1",
+				thresholdWei: "50000000000000000",
+				deployment: "production",
+				chain: "mainnet",
+				token: "FIL",
+			},
+			timestamp: Date.UTC(2026, 5, 14, 12, 30),
+		});
+
+		expect(text).toContain("Balance: 0.000000000000000001 FIL");
+		expect(text).toContain("Threshold: 0.05 FIL");
+		expect(text).not.toContain("wei");
+	});
+
+	test("formats FOC USDFC balance low in USDFC instead of wei", () => {
+		const text = formatTelegramMessage({
+			name: "server.foc_usdfc_low",
+			severity: "critical",
+			message: "FOC wallet USDFC balance below threshold",
+			context: {
+				wallet: "0x1111111111111111111111111111111111111111",
+				balanceWei: "1",
+				thresholdWei: "5000000000000000000",
+				deployment: "production",
+				chain: "mainnet",
+				token: "USDFC",
+			},
+			timestamp: Date.UTC(2026, 5, 14, 12, 30),
+		});
+
+		expect(text).toContain("Balance: 0.000000000000000001 USDFC");
+		expect(text).toContain("Threshold: 5 USDFC");
+		expect(text).not.toContain("wei");
+	});
+
+	test("falls back to raw wei string when balance value is invalid", () => {
+		const text = formatTelegramMessage({
+			name: "server.relayer_gas_low",
+			severity: "critical",
+			message: "Relayer pool member native balance below threshold",
+			context: {
+				wallet: "0x1111111111111111111111111111111111111111",
+				balanceWei: "not-a-number",
+				thresholdWei: "20000000000000000",
+				deployment: "production",
+				chain: "mainnet",
+			},
+			timestamp: Date.UTC(2026, 5, 14, 12, 30),
+		});
+
+		expect(text).toContain("Balance: not-a-number ETH");
+		expect(text).toContain("Threshold: 0.02 ETH");
+	});
 });

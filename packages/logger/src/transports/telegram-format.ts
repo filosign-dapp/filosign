@@ -1,5 +1,8 @@
 import os from "node:os";
 import type { LoggerEvent, LoggerSeverity } from "../types";
+import { readCtxBoolean, readCtxNumber, readCtxString } from "../utils/context";
+import { formatWeiWithSymbol, truncateEvmAddress } from "../utils/display";
+import { escapeHtml } from "../utils/html";
 
 const EVENT_TITLES: Record<string, string> = {
 	"server.started": "Server started",
@@ -22,45 +25,16 @@ const EVENT_TITLES: Record<string, string> = {
 	"server.email_disabled": "Email delivery disabled",
 };
 
-function escapeHtml(value: string): string {
-	return value
-		.replaceAll("&", "&amp;")
-		.replaceAll("<", "&lt;")
-		.replaceAll(">", "&gt;");
-}
+const FEEDBACK_KIND_LABELS = {
+	bug: { title: "Bug report", type: "Bug report" },
+	support: { title: "Support request", type: "Support ticket" },
+	feedback: { title: "User feedback", type: "Feedback" },
+} as const;
 
-function ctxString(
-	context: Record<string, unknown> | undefined,
-	key: string,
-): string | undefined {
-	const value = context?.[key];
-	return typeof value === "string" && value.length > 0 ? value : undefined;
-}
-
-function ctxNumber(
-	context: Record<string, unknown> | undefined,
-	key: string,
-): number | undefined {
-	const value = context?.[key];
-	return typeof value === "number" && Number.isFinite(value)
-		? value
-		: undefined;
-}
-
-function ctxBoolean(
-	context: Record<string, unknown> | undefined,
-	key: string,
-): boolean | undefined {
-	const value = context?.[key];
-	return typeof value === "boolean" ? value : undefined;
-}
-
-function shortAddress(value: string): string {
-	if (!value.startsWith("0x") || value.length <= 12) {
-		return value;
-	}
-	return `${value.slice(0, 6)}…${value.slice(-4)}`;
-}
+type DetailEntry = readonly [
+	label: string,
+	value: string | number | boolean | null | undefined,
+];
 
 function formatTimestamp(timestamp: number | undefined): string {
 	const date = new Date(timestamp ?? Date.now());
@@ -71,11 +45,7 @@ function formatTimestamp(timestamp: number | undefined): string {
 	});
 }
 
-function formatDetailLines(
-	lines: Array<
-		[label: string, value: string | number | boolean | null | undefined]
-	>,
-): string[] {
+function formatDetailLines(lines: DetailEntry[]): string[] {
 	const formatted: string[] = [];
 	for (const [label, value] of lines) {
 		if (value == null || value === "") continue;
@@ -97,139 +67,157 @@ function formatTitle(event: LoggerEvent): string {
 	return prefix ? `${prefix} · ${label}` : label;
 }
 
+function utcTimestampFooter(timestamp: number | undefined): string {
+	return `\nTime (UTC): ${escapeHtml(formatTimestamp(timestamp))}`;
+}
+
+function buildTelegramBlock(options: {
+	title: string;
+	message?: string;
+	details?: DetailEntry[];
+	timestamp?: number;
+	notes?: string;
+}): string {
+	return [
+		`<b>${escapeHtml(options.title)}</b>`,
+		options.message ? escapeHtml(options.message) : "",
+		...formatDetailLines(options.details ?? []),
+		options.notes ? `\nNotes:\n${escapeHtml(options.notes)}` : "",
+		utcTimestampFooter(options.timestamp),
+	]
+		.filter((line) => line.length > 0)
+		.join("\n");
+}
+
+function feedbackLabels(kind: string | undefined) {
+	const labels =
+		kind != null && kind in FEEDBACK_KIND_LABELS
+			? FEEDBACK_KIND_LABELS[kind as keyof typeof FEEDBACK_KIND_LABELS]
+			: FEEDBACK_KIND_LABELS.feedback;
+	return {
+		title: labels.title,
+		type: labels.type,
+	};
+}
+
 function formatServerStarted(event: LoggerEvent): string {
 	const context = event.context;
 	return [
 		`<b>${escapeHtml(formatTitle(event))}</b>`,
 		escapeHtml(event.message),
 		...formatDetailLines([
-			["Deployment", ctxString(context, "deployment")],
-			["Chain", ctxString(context, "chain")],
-			["Role", ctxString(context, "serverRole")],
-			["Host", ctxString(context, "hostname") ?? os.hostname()],
+			["Deployment", readCtxString(context, "deployment")],
+			["Chain", readCtxString(context, "chain")],
+			["Role", readCtxString(context, "serverRole")],
+			["Host", readCtxString(context, "hostname") ?? os.hostname()],
 			["Time (UTC)", formatTimestamp(event.timestamp)],
 		]),
 	].join("\n");
 }
 
-function feedbackKindTitle(kind: string | undefined): string {
-	switch (kind) {
-		case "bug":
-			return "Bug report";
-		case "support":
-			return "Support request";
-		case "feedback":
-			return EVENT_TITLES["product.feedback_submitted"] ?? "User feedback";
-		default:
-			return EVENT_TITLES["product.feedback_submitted"] ?? "User feedback";
-	}
-}
-
-function feedbackKindTypeLabel(kind: string | undefined): string | undefined {
-	switch (kind) {
-		case "bug":
-			return "Bug report";
-		case "support":
-			return "Support ticket";
-		case "feedback":
-			return "Feedback";
-		default:
-			return kind;
-	}
-}
-
 function formatProductFeedback(event: LoggerEvent): string {
 	const context = event.context;
-	const kind = ctxString(context, "kind");
-	const wallet = ctxString(context, "wallet");
-	const notes = ctxString(context, "message");
+	const kind = readCtxString(context, "kind");
+	const wallet = readCtxString(context, "wallet");
+	const { title, type } = feedbackLabels(kind);
 
-	return [
-		`<b>${escapeHtml(feedbackKindTitle(kind))}</b>`,
-		...formatDetailLines([
-			["Type", feedbackKindTypeLabel(kind)],
-			["Area", ctxString(context, "featureArea")],
-			["Prompt", ctxString(context, "promptType")],
-			["Wallet", wallet ? shortAddress(wallet) : undefined],
-			["Route", ctxString(context, "route")],
-			["Trigger", ctxString(context, "trigger")],
-			["Piece", ctxString(context, "pieceCid")],
-			["Org", ctxString(context, "organizationId")],
-		]),
-		notes ? `\nNotes:\n${escapeHtml(notes)}` : "",
-		`\nTime (UTC): ${escapeHtml(formatTimestamp(event.timestamp))}`,
-	]
-		.filter((line) => line.length > 0)
-		.join("\n");
+	return buildTelegramBlock({
+		title,
+		details: [
+			["Type", type],
+			["Area", readCtxString(context, "featureArea")],
+			["Prompt", readCtxString(context, "promptType")],
+			["Wallet", wallet ? truncateEvmAddress(wallet) : undefined],
+			["Route", readCtxString(context, "route")],
+			["Trigger", readCtxString(context, "trigger")],
+			["Piece", readCtxString(context, "pieceCid")],
+			["Org", readCtxString(context, "organizationId")],
+		],
+		notes: readCtxString(context, "message"),
+		timestamp: event.timestamp,
+	});
 }
 
 function formatHttp500(event: LoggerEvent): string {
 	const context = event.context;
-	const durationMs = ctxNumber(context, "durationMs");
-	return [
-		`<b>${escapeHtml(formatTitle(event))}</b>`,
-		escapeHtml(event.message),
-		...formatDetailLines([
-			[
-				"Request",
-				ctxString(context, "method") && ctxString(context, "path")
-					? `${ctxString(context, "method")} ${ctxString(context, "path")}`
-					: undefined,
-			],
-			["Status", ctxNumber(context, "status")],
+	const method = readCtxString(context, "method");
+	const path = readCtxString(context, "path");
+	const durationMs = readCtxNumber(context, "durationMs");
+
+	return buildTelegramBlock({
+		title: formatTitle(event),
+		message: event.message,
+		details: [
+			["Request", method && path ? `${method} ${path}` : undefined],
+			["Status", readCtxNumber(context, "status")],
 			["Duration", durationMs != null ? `${durationMs} ms` : undefined],
-		]),
-		`\nTime (UTC): ${escapeHtml(formatTimestamp(event.timestamp))}`,
-	].join("\n");
+		],
+		timestamp: event.timestamp,
+	});
 }
 
 function formatErrorContext(event: LoggerEvent, detailKeys: string[]): string {
 	const context = event.context;
-	const lines = formatDetailLines(
-		detailKeys.map((key) => {
+	return buildTelegramBlock({
+		title: formatTitle(event),
+		message: event.message,
+		details: detailKeys.map((key) => {
 			const label = key.charAt(0).toUpperCase() + key.slice(1);
-			return [label, ctxString(context, key)] as const;
+			return [label, readCtxString(context, key)] as const;
 		}),
-	);
+		timestamp: event.timestamp,
+	});
+}
 
-	return [
-		`<b>${escapeHtml(formatTitle(event))}</b>`,
-		escapeHtml(event.message),
-		...lines,
-		`\nTime (UTC): ${escapeHtml(formatTimestamp(event.timestamp))}`,
-	].join("\n");
+function balanceAlertSymbol(event: LoggerEvent): string {
+	switch (event.name) {
+		case "server.relayer_gas_low":
+			return "ETH";
+		case "server.foc_fil_low":
+			return readCtxString(event.context, "token") ?? "FIL";
+		case "server.foc_usdfc_low":
+			return readCtxString(event.context, "token") ?? "USDFC";
+		default:
+			return readCtxString(event.context, "token") ?? "ETH";
+	}
 }
 
 function formatBalanceAlert(event: LoggerEvent): string {
 	const context = event.context;
-	const token = ctxString(context, "token");
-	const wallet = ctxString(context, "wallet");
+	const wallet = readCtxString(context, "wallet");
+	const symbol = balanceAlertSymbol(event);
 
-	return [
-		`<b>${escapeHtml(formatTitle(event))}</b>`,
-		escapeHtml(event.message),
-		...formatDetailLines([
-			["Token", token],
-			["Wallet", wallet ? shortAddress(wallet) : undefined],
-			["Balance (wei)", ctxString(context, "balanceWei")],
-			["Threshold (wei)", ctxString(context, "thresholdWei")],
-			["Deployment", ctxString(context, "deployment")],
-			["Chain", ctxString(context, "chain")],
-		]),
-		`\nTime (UTC): ${escapeHtml(formatTimestamp(event.timestamp))}`,
-	].join("\n");
+	return buildTelegramBlock({
+		title: formatTitle(event),
+		message: event.message,
+		details: [
+			["Token", readCtxString(context, "token")],
+			["Wallet", wallet ? truncateEvmAddress(wallet) : undefined],
+			[
+				"Balance",
+				formatWeiWithSymbol(readCtxString(context, "balanceWei"), symbol),
+			],
+			[
+				"Threshold",
+				formatWeiWithSymbol(readCtxString(context, "thresholdWei"), symbol),
+			],
+			["Deployment", readCtxString(context, "deployment")],
+			["Chain", readCtxString(context, "chain")],
+		],
+		timestamp: event.timestamp,
+	});
 }
 
 function formatRpcDegraded(event: LoggerEvent): string {
 	const context = event.context;
-	const fallbackEnabled = ctxBoolean(context, "fallbackEnabled");
+	const fallbackEnabled = readCtxBoolean(context, "fallbackEnabled");
 
-	return [
-		`<b>${escapeHtml(formatTitle(event))}</b>`,
-		escapeHtml(event.message),
-		...formatDetailLines([
-			["Chain", ctxString(context, "chainKey")],
-			["RPC", ctxString(context, "rpcUrl")],
+	return buildTelegramBlock({
+		title: formatTitle(event),
+		message: event.message,
+		details: [
+			["Chain", readCtxString(context, "chainKey")],
+			["RPC", readCtxString(context, "rpcUrl")],
 			[
 				"Fallback",
 				fallbackEnabled == null
@@ -238,53 +226,51 @@ function formatRpcDegraded(event: LoggerEvent): string {
 						? "enabled"
 						: "disabled",
 			],
-			["Error", ctxString(context, "error")],
-		]),
-		`\nTime (UTC): ${escapeHtml(formatTimestamp(event.timestamp))}`,
-	].join("\n");
+			["Error", readCtxString(context, "error")],
+		],
+		timestamp: event.timestamp,
+	});
 }
 
 function formatSettlementPayoutFailed(event: LoggerEvent): string {
 	const context = event.context;
-	return [
-		`<b>${escapeHtml(formatTitle(event))}</b>`,
-		escapeHtml(event.message),
-		...formatDetailLines([
-			["Rule", ctxString(context, "onChainRuleId")],
-			["Status", ctxString(context, "status")],
-			["Piece", ctxString(context, "pieceCid")],
-			["Tx", ctxString(context, "txHash")],
-			["Error", ctxString(context, "error")],
-		]),
-		`\nTime (UTC): ${escapeHtml(formatTimestamp(event.timestamp))}`,
-	].join("\n");
+	return buildTelegramBlock({
+		title: formatTitle(event),
+		message: event.message,
+		details: [
+			["Rule", readCtxString(context, "onChainRuleId")],
+			["Status", readCtxString(context, "status")],
+			["Piece", readCtxString(context, "pieceCid")],
+			["Tx", readCtxString(context, "txHash")],
+			["Error", readCtxString(context, "error")],
+		],
+		timestamp: event.timestamp,
+	});
 }
 
 function formatGeneric(event: LoggerEvent): string {
 	const context = event.context;
-	const detailLines =
+	const details =
 		context == null
 			? []
-			: formatDetailLines(
-					Object.entries(context).map(([key, value]) => {
-						const label = key.charAt(0).toUpperCase() + key.slice(1);
-						if (
-							typeof value === "string" ||
-							typeof value === "number" ||
-							typeof value === "boolean"
-						) {
-							return [label, value] as const;
-						}
-						return [label, JSON.stringify(value)] as const;
-					}),
-				);
+			: Object.entries(context).map(([key, value]) => {
+					const label = key.charAt(0).toUpperCase() + key.slice(1);
+					if (
+						typeof value === "string" ||
+						typeof value === "number" ||
+						typeof value === "boolean"
+					) {
+						return [label, value] as const;
+					}
+					return [label, JSON.stringify(value)] as const;
+				});
 
-	return [
-		`<b>${escapeHtml(formatTitle(event))}</b>`,
-		escapeHtml(event.message),
-		...detailLines,
-		`\nTime (UTC): ${escapeHtml(formatTimestamp(event.timestamp))}`,
-	].join("\n");
+	return buildTelegramBlock({
+		title: formatTitle(event),
+		message: event.message,
+		details,
+		timestamp: event.timestamp,
+	});
 }
 
 export function formatTelegramMessage(event: LoggerEvent): string {

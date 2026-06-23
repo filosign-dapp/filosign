@@ -1,8 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import {
 	type ComplianceBundle,
+	canonicalComplianceBundleJson,
 	complianceBundleSha256Hex,
 	computePlacementCommitment,
+	zComplianceBundle,
 } from "@filosign/protocol";
 import { verifyLocal } from "../src/index";
 
@@ -98,5 +100,65 @@ describe("@filosign/verify local checks", () => {
 				(result) => result.id === "local.bundle.sha256.sidecar",
 			)?.message,
 		).toBe("bundle.sha256 does not match canonical bundle JSON");
+	});
+
+	it("canonical JSON parse round-trip matches sidecar hash", async () => {
+		const bundleHash = await complianceBundleSha256Hex(minimalBundle);
+		const canonical = canonicalComplianceBundleJson(minimalBundle);
+		const reparsed = zComplianceBundle.parse(JSON.parse(canonical));
+		const recomputed = await complianceBundleSha256Hex(reparsed);
+		expect(recomputed).toBe(bundleHash);
+
+		const summary = await verifyLocal({
+			bundle: reparsed,
+			bundleSha256Sidecar: bundleHash,
+		});
+		expect(
+			summary.results.find(
+				(result) => result.id === "local.bundle.sha256.sidecar",
+			)?.status,
+		).toBe("pass");
+	});
+
+	it("canonical hash ignores ephemeral fieldCompletions previewUrl", async () => {
+		const withPreview = zComplianceBundle.parse({
+			...minimalBundle,
+			fieldCompletions: [
+				{
+					fieldId: "f1",
+					valueKind: "visual",
+					sourceArtifactId: "00000000-0000-4000-8000-000000000001",
+					storageKey: "signatures/artifact-1",
+					contentSha256: `${"dd".repeat(32)}`,
+					textValue: null,
+					previewUrl: "https://cdn.example.com/presigned?expires=1",
+					signer: "0x0000000000000000000000000000000000000001",
+				},
+			],
+		});
+		const withoutPreview = zComplianceBundle.parse({
+			...minimalBundle,
+			fieldCompletions: [
+				{
+					fieldId: "f1",
+					valueKind: "visual",
+					sourceArtifactId: "00000000-0000-4000-8000-000000000001",
+					storageKey: "signatures/artifact-1",
+					contentSha256: `${"dd".repeat(32)}`,
+					textValue: null,
+					previewUrl: null,
+					signer: "0x0000000000000000000000000000000000000001",
+				},
+			],
+		});
+
+		const hashWith = await complianceBundleSha256Hex(withPreview);
+		const hashWithout = await complianceBundleSha256Hex(withoutPreview);
+		expect(hashWith).toBe(hashWithout);
+
+		const canonical = canonicalComplianceBundleJson(withPreview);
+		const reparsed = zComplianceBundle.parse(JSON.parse(canonical));
+		expect(reparsed.fieldCompletions?.[0]?.previewUrl).toBeNull();
+		expect(await complianceBundleSha256Hex(reparsed)).toBe(hashWith);
 	});
 });

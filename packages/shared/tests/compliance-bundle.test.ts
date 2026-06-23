@@ -127,4 +127,67 @@ describe("ComplianceBundle", () => {
 	it("COMPLIANCE_CHAIN_TX_KINDS covers all lifecycle labels", () => {
 		expect(COMPLIANCE_CHAIN_TX_KINDS.length).toBe(9);
 	});
+
+	it("canonical hash ignores ephemeral fieldCompletions previewUrl", () => {
+		const raw = {
+			version: 1 as const,
+			pieceCid: "bafyTEST",
+			chainId: 84532,
+			exportedAtIso: "2026-01-01T00:00:00.000Z",
+			executionStatus: "fully_executed" as const,
+			satelliteWorkflowStatus: "none" as const,
+			placementCommitment:
+				"0x0000000000000000000000000000000000000000000000000000000000000001",
+			placementManifest: minimalManifest,
+			registration: {
+				sender: "0x0000000000000000000000000000000000000001",
+				registrationTxHash:
+					"0x0000000000000000000000000000000000000000000000000000000000000002",
+				createdAtIso: "2026-01-01T00:00:00.000Z",
+				registerDocumentSha256:
+					"0x1212121212121212121212121212121212121212121212121212121212121212",
+			},
+			parties: [],
+			onchainRegistration: null,
+			transactions: [],
+			signers: [],
+			settlements: [],
+			attachments: [],
+			offChainEvidence: {
+				acknowledgements: [],
+				documentViews: [],
+				coldInviteClaims: [],
+				payoutRecipientAcknowledgements: [],
+			},
+			fieldCompletions: [
+				{
+					fieldId: "f1",
+					valueKind: "visual" as const,
+					sourceArtifactId: "00000000-0000-4000-8000-000000000001",
+					storageKey: "signatures/artifact-1",
+					contentSha256: `${"ab".repeat(32)}`,
+					textValue: null,
+					previewUrl: "https://cdn.example.com/presigned?expires=1",
+					signer: "0x0000000000000000000000000000000000000002",
+				},
+			],
+		};
+		const withPreview = zComplianceBundle.parse(raw);
+		const withoutPreview = zComplianceBundle.parse({
+			...raw,
+			fieldCompletions: [
+				{
+					...raw.fieldCompletions[0],
+					previewUrl: null,
+				},
+			],
+		});
+		expect(canonicalComplianceBundleJson(withPreview)).toBe(
+			canonicalComplianceBundleJson(withoutPreview),
+		);
+		expect(
+			JSON.parse(canonicalComplianceBundleJson(withPreview)).fieldCompletions[0]
+				.previewUrl,
+		).toBeNull();
+	});
 });

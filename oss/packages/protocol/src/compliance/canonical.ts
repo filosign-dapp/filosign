@@ -15,10 +15,28 @@ function sortKeysDeep(value: unknown): unknown {
 	return sorted;
 }
 
+/** Presigned preview URLs expire; omit them from hashed bundle.json for stable re-exports. */
+function complianceBundleForCanonicalHash(
+	bundle: ComplianceBundle,
+): ComplianceBundle {
+	if (!bundle.fieldCompletions?.length) {
+		return bundle;
+	}
+	return {
+		...bundle,
+		fieldCompletions: bundle.fieldCompletions.map((row) => ({
+			...row,
+			previewUrl: null,
+		})),
+	};
+}
+
 export function canonicalComplianceBundleJson(
 	bundle: ComplianceBundle,
 ): string {
-	const sorted = sortKeysDeep(bundle) as ComplianceBundle;
+	const sorted = sortKeysDeep(
+		complianceBundleForCanonicalHash(bundle),
+	) as ComplianceBundle;
 	return JSON.stringify(sorted);
 }
 

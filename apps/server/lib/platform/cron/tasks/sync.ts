@@ -1,6 +1,7 @@
 import { parseEther } from "viem";
 import env from "@/env";
 import { runSyncAttachmentReleasesJob } from "@/lib/domains/attachments";
+import { isFocBackupEnabled } from "@/lib/domains/foc/enabled";
 import { runSyncSettlementRulesJob } from "@/lib/domains/settlements";
 import {
 	emitCriticalPlatformEvent,
@@ -182,7 +183,7 @@ export async function runMonitorFocWalletBalancesJob(): Promise<{
 	const filThresholdWei = FOC_FIL_ALERT_THRESHOLD_WEI;
 	const usdfcThresholdWei = FOC_USDFC_ALERT_THRESHOLD_WEI;
 
-	if (!relayerGasMonitoringEnabled()) {
+	if (!relayerGasMonitoringEnabled() || !isFocBackupEnabled()) {
 		return {
 			checked: false,
 			filBalanceWei: 0n,
@@ -194,9 +195,14 @@ export async function runMonitorFocWalletBalancesJob(): Promise<{
 		};
 	}
 
-	const balanceRes = await tryCatch(
-		readFocWalletBalances(env.FOC_WALLET_ADDRESS),
-	);
+	const walletAddress = env.FOC_WALLET_ADDRESS;
+	if (!walletAddress) {
+		throw new Error(
+			"FOC_BACKUP_ENABLED=true requires FOC_WALLET_ADDRESS for balance monitoring",
+		);
+	}
+
+	const balanceRes = await tryCatch(readFocWalletBalances(walletAddress));
 	if (balanceRes.error) {
 		throw balanceRes.error;
 	}
@@ -212,7 +218,7 @@ export async function runMonitorFocWalletBalancesJob(): Promise<{
 			severity: "critical",
 			message: "FOC wallet FIL balance below threshold",
 			context: {
-				wallet: env.FOC_WALLET_ADDRESS,
+				wallet: walletAddress,
 				balanceWei: filBalanceWei.toString(),
 				thresholdWei: filThresholdWei.toString(),
 				deployment: env.DEPLOYMENT,
@@ -222,7 +228,7 @@ export async function runMonitorFocWalletBalancesJob(): Promise<{
 		});
 		logger.warn(
 			{
-				wallet: env.FOC_WALLET_ADDRESS,
+				wallet: walletAddress,
 				balanceWei: filBalanceWei.toString(),
 				thresholdWei: filThresholdWei.toString(),
 			},
@@ -237,7 +243,7 @@ export async function runMonitorFocWalletBalancesJob(): Promise<{
 			severity: "critical",
 			message: "FOC wallet USDFC balance below threshold",
 			context: {
-				wallet: env.FOC_WALLET_ADDRESS,
+				wallet: walletAddress,
 				balanceWei: usdfcBalanceWei.toString(),
 				thresholdWei: usdfcThresholdWei.toString(),
 				deployment: env.DEPLOYMENT,
@@ -247,7 +253,7 @@ export async function runMonitorFocWalletBalancesJob(): Promise<{
 		});
 		logger.warn(
 			{
-				wallet: env.FOC_WALLET_ADDRESS,
+				wallet: walletAddress,
 				balanceWei: usdfcBalanceWei.toString(),
 				thresholdWei: usdfcThresholdWei.toString(),
 			},

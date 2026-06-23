@@ -1,5 +1,5 @@
-import { and, eq, exists, isNull, lte, or } from "drizzle-orm";
-import env from "@/env";
+import { and, eq, isNull } from "drizzle-orm";
+import { isFocBackupEnabled } from "@/lib/domains/foc/enabled";
 import { resolveFocRetentionUntil } from "@/lib/domains/foc/retention-policy";
 import { verifyFocCdnCiphertext } from "@/lib/domains/foc/utils/cdn-verify";
 import db from "@/lib/platform/db";
@@ -12,37 +12,17 @@ import {
 import { logger } from "@/lib/platform/pino";
 import { bucket } from "@/lib/platform/s3/client";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
-import { isFocEnabled } from "./enabled";
-import { logFocSmoke } from "./smoke-log";
 
-const { complianceExportLogs, files, focObjects } = db.schema;
+const { files, focObjects } = db.schema;
 
 const uploadsKey = (pieceCid: string) => `uploads/${pieceCid}`;
 
-/** Defer FOC replication while hot window is active and sender has not exported. */
-export function shouldDeferFocTransition(args: {
-	inHotWindow: boolean;
-	senderExported: boolean;
+/** Pending row is eligible for immediate FOC transition. */
+export function isFocTransitionDue(row: {
+	replicateStatus: string;
+	r2EvictedAt: Date | null;
 }): boolean {
-	return args.inHotWindow && !args.senderExported;
-}
-
-/** Job runner deferral - bypassed when `TEST_FOC` smoke flag is enabled. */
-export function shouldDeferFocTransitionForJob(args: {
-	inHotWindow: boolean;
-	senderExported: boolean;
-	testFocEnabled: boolean;
-}): boolean {
-	if (args.testFocEnabled) return false;
-	return shouldDeferFocTransition(args);
-}
-
-/** Pending row is eligible for cron discovery (hot window ended or sender exported). */
-export function isFocTransitionDiscoverable(args: {
-	inHotWindow: boolean;
-	senderExported: boolean;
-}): boolean {
-	return !args.inHotWindow || args.senderExported;
+	return row.replicateStatus === "pending" && row.r2EvictedAt == null;
 }
 
 /** Bun S3 `file().size` is unset until read; prefer DB, then R2 bytes. */
@@ -74,7 +54,7 @@ export async function createFocStubForCompletedEnvelope(
 	pieceCid: string,
 	organizationId: string,
 ): Promise<void> {
-	if (!isFocEnabled()) {
+	if (!isFocBackupEnabled()) {
 		return;
 	}
 
@@ -85,10 +65,6 @@ export async function createFocStubForCompletedEnvelope(
 		.limit(1);
 
 	if (existing) {
-		logFocSmoke("stub already exists; skipping insert", {
-			pieceCid,
-			organizationId,
-		});
 		return;
 	}
 
@@ -110,16 +86,7 @@ export async function createFocStubForCompletedEnvelope(
 		replicateStatus: "pending",
 		retentionUntil: await resolveFocRetentionUntil(organizationId),
 		completedAt,
-		r2EvictAfter: completedAt,
 		lifecycle: "active",
-	});
-
-	logFocSmoke("stub created (replicate_status=pending)", {
-		pieceCid,
-		organizationId,
-		r2Key,
-		byteLength,
-		r2EvictAfter: completedAt.toISOString(),
 	});
 }
 
@@ -127,7 +94,7 @@ export async function createFocStubForCompletedEnvelope(
 export async function tryFocForRoutingCompletePiece(
 	pieceCid: string,
 ): Promise<void> {
-	if (!isFocEnabled()) {
+	if (!isFocBackupEnabled()) {
 		return;
 	}
 
@@ -145,7 +112,6 @@ export async function tryFocForRoutingCompletePiece(
 		await createFocStubForCompletedEnvelope(pieceCid, file.organizationId);
 		const { enqueueFocTransition } = await import("@/lib/platform/jobs");
 		await enqueueFocTransition(pieceCid);
-		logFocSmoke("enqueued foc-transition job", { pieceCid });
 	} catch (err) {
 		logger.warn(
 			{ err, pieceCid, organizationId: file.organizationId },
@@ -154,79 +120,31 @@ export async function tryFocForRoutingCompletePiece(
 	}
 }
 
-async function senderHasComplianceExport(pieceCid: string): Promise<boolean> {
-	const [row] = await db
-		.select({ id: complianceExportLogs.id })
-		.from(complianceExportLogs)
-		.innerJoin(files, eq(files.pieceCid, complianceExportLogs.filePieceCid))
-		.where(
-			and(
-				eq(complianceExportLogs.filePieceCid, pieceCid),
-				eq(complianceExportLogs.requestedBy, files.sender),
-			),
-		)
-		.limit(1);
-	return Boolean(row);
+async function verifyFocCiphertext(args: {
+	pieceCid: string;
+	expectedBytes: Uint8Array;
+}): Promise<void> {
+	await verifyFocCdnCiphertext({
+		pieceCid: args.pieceCid,
+		expectedBytes: args.expectedBytes,
+	});
 }
 
 export async function runFocTransitionForPiece(
 	pieceCid: string,
 ): Promise<void> {
-	if (!isFocEnabled()) {
-		logFocSmoke("transition skipped (FOC disabled)", { pieceCid });
+	if (!isFocBackupEnabled()) {
 		return;
 	}
 
-	const now = new Date();
 	const [row] = await db
 		.select()
 		.from(focObjects)
 		.where(eq(focObjects.pieceCid, pieceCid))
 		.limit(1);
 
-	if (!row) {
-		logFocSmoke("transition skipped (no foc_objects row)", { pieceCid });
+	if (!row || !isFocTransitionDue(row)) {
 		return;
-	}
-	if (row.replicateStatus === "replicated") {
-		logFocSmoke("transition skipped (already replicated)", {
-			pieceCid,
-			dealId: row.dealId,
-		});
-		return;
-	}
-	if (row.r2EvictedAt) {
-		logFocSmoke("transition skipped (r2 evicted)", { pieceCid });
-		return;
-	}
-
-	logFocSmoke("transition starting", {
-		pieceCid,
-		organizationId: row.organizationId,
-		byteLength: row.byteLength,
-		testFoc: env.TEST_FOC,
-	});
-
-	const inHotWindow = row.r2EvictAfter > now;
-	const senderExported = await senderHasComplianceExport(pieceCid);
-	if (
-		shouldDeferFocTransitionForJob({
-			inHotWindow,
-			senderExported,
-			testFocEnabled: env.TEST_FOC,
-		})
-	) {
-		logger.info(
-			{ pieceCid, organizationId: row.organizationId },
-			"foc-transition: deferred until sender exports compliance packet",
-		);
-		return;
-	}
-	if (!senderExported && !inHotWindow) {
-		logger.warn(
-			{ pieceCid, organizationId: row.organizationId },
-			"foc-transition: proceeding without sender export after r2EvictAfter",
-		);
 	}
 
 	const r2Key = row.r2Key;
@@ -245,15 +163,9 @@ export async function runFocTransitionForPiece(
 	if (dealId) {
 		logger.info(
 			{ pieceCid, dealId, organizationId: row.organizationId },
-			"foc-transition: resuming CDN verify (upload already committed)",
+			"foc-transition: resuming verify (upload already committed)",
 		);
 	} else {
-		logFocSmoke("R2 ciphertext loaded; preparing Synapse upload", {
-			pieceCid,
-			byteLength: r2Bytes.byteLength,
-			r2Key,
-		});
-
 		const context = await getOrCreatePlatformDataset();
 		const prepared = await tryCatch(
 			getSynapse().storage.prepare({
@@ -301,14 +213,9 @@ export async function runFocTransitionForPiece(
 				updatedAt: checkpointAt,
 			})
 			.where(eq(focObjects.pieceCid, pieceCid));
-
-		logFocSmoke("Synapse upload ok; verifying FOC CDN bytes", {
-			pieceCid,
-			dealId,
-		});
 	}
 
-	await verifyFocCdnCiphertext({ pieceCid, expectedBytes: r2Bytes });
+	await verifyFocCiphertext({ pieceCid, expectedBytes: r2Bytes });
 
 	const verifiedAt = new Date();
 	await db
@@ -330,21 +237,9 @@ export async function runFocTransitionForPiece(
 }
 
 export async function listFocTransitionsDue(limit = 50): Promise<string[]> {
-	if (!isFocEnabled()) {
+	if (!isFocBackupEnabled()) {
 		return [];
 	}
-
-	const now = new Date();
-	const senderExportExists = db
-		.select({ id: complianceExportLogs.id })
-		.from(complianceExportLogs)
-		.innerJoin(files, eq(files.pieceCid, complianceExportLogs.filePieceCid))
-		.where(
-			and(
-				eq(complianceExportLogs.filePieceCid, focObjects.pieceCid),
-				eq(complianceExportLogs.requestedBy, files.sender),
-			),
-		);
 
 	const rows = await db
 		.select({ pieceCid: focObjects.pieceCid })
@@ -353,7 +248,6 @@ export async function listFocTransitionsDue(limit = 50): Promise<string[]> {
 			and(
 				eq(focObjects.replicateStatus, "pending"),
 				isNull(focObjects.r2EvictedAt),
-				or(lte(focObjects.r2EvictAfter, now), exists(senderExportExists)),
 			),
 		)
 		.limit(limit);

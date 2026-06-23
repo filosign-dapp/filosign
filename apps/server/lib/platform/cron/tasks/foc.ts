@@ -1,4 +1,4 @@
-import { isFocEnabled, listFocTransitionsDue } from "@/lib/domains/foc";
+import { isFocBackupEnabled, listFocTransitionsDue } from "@/lib/domains/foc";
 import { enqueueFocTransition } from "@/lib/platform/jobs";
 import { logger } from "@/lib/platform/pino";
 import { CRON_LOCK_TTL, type CronHandle, registerLockedCron } from "../utils";
@@ -6,7 +6,7 @@ import { CRON_LOCK_TTL, type CronHandle, registerLockedCron } from "../utils";
 export const FOC_TRANSITION_CRON = "15 */6 * * *";
 
 export async function runFocTransitionCronJob(): Promise<{ enqueued: number }> {
-	if (!isFocEnabled()) {
+	if (!isFocBackupEnabled()) {
 		return { enqueued: 0 };
 	}
 

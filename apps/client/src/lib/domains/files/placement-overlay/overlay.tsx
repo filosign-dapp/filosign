@@ -2,8 +2,11 @@ import type {
 	FieldCompletionMap,
 	FieldCompletionWireRow,
 	PlacementField,
+	UserSignatureArtifact,
 } from "@filosign/shared";
+import { placementFieldPixelRect } from "@filosign/shared";
 import { memo } from "react";
+import { usePlacementLayout } from "@/src/lib/domains/files/use-placement-layout";
 import { PlacementFieldOverlayItem } from "./overlay-field-item";
 import {
 	deriveOverlayFieldState,
@@ -27,6 +30,7 @@ type PlacementOverlayProps = {
 	/** When mode is readonly, render muted placeholders for fields without completions. */
 	showPlaceholders?: boolean;
 	provisioningFieldIds?: ReadonlySet<string>;
+	signatureArtifactsById?: ReadonlyMap<string, UserSignatureArtifact>;
 };
 
 export const PlacementOverlay = memo(function PlacementOverlay({
@@ -43,7 +47,9 @@ export const PlacementOverlay = memo(function PlacementOverlay({
 	overlayClassName = "z-10",
 	showPlaceholders = false,
 	provisioningFieldIds,
+	signatureArtifactsById,
 }: PlacementOverlayProps) {
+	const placementLayout = usePlacementLayout();
 	const pageFields = fields.filter((f) => f.pageIndex === pageIndex);
 
 	return (
@@ -58,6 +64,14 @@ export const PlacementOverlay = memo(function PlacementOverlay({
 					provisioningFieldIds,
 				});
 
+				const fieldHeightPx = placementLayout
+					? placementFieldPixelRect(
+							field,
+							placementLayout.width,
+							placementLayout.height,
+						).height
+					: undefined;
+
 				return (
 					<PlacementFieldOverlayItem
 						key={field.id}
@@ -71,6 +85,8 @@ export const PlacementOverlay = memo(function PlacementOverlay({
 						}
 						overlayClassName={overlayClassName}
 						alreadySigned={alreadySigned}
+						fieldHeightPx={fieldHeightPx}
+						signatureArtifactsById={signatureArtifactsById}
 						onToggleField={onToggleField}
 						getTextFieldValue={getTextFieldValue}
 						onTextDraftChange={onTextDraftChange}

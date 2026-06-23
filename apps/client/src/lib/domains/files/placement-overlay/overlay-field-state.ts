@@ -141,7 +141,10 @@ function deriveInteractiveOverlayFieldState(
 	if (
 		fieldHasDisplayCompletion(field, completion) &&
 		completion?.textValue &&
-		(field.type === "date" || field.type === "name" || field.type === "email")
+		(field.type === "text" ||
+			field.type === "date" ||
+			field.type === "name" ||
+			field.type === "email")
 	) {
 		return {
 			kind: "interactive-applied-text",

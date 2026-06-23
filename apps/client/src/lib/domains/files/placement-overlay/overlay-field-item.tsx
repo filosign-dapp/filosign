@@ -2,12 +2,19 @@ import type {
 	FieldCompletion,
 	FieldCompletionWireRow,
 	PlacementField,
+	UserSignatureArtifact,
 } from "@filosign/shared";
+import { typedSignatureArtifactPreviewSrc } from "@filosign/shared";
 import { Input } from "@/src/lib/components/ui/input";
 import { Skeleton } from "@/src/lib/components/ui/skeleton";
 import { signerAccentColor } from "@/src/lib/domains/files/field-box";
 import { PlacementCheckboxField } from "@/src/lib/domains/files/placement-checkbox-field";
 import { PlacementFieldChrome } from "@/src/lib/domains/files/placement-field-chrome";
+import {
+	compactFieldTextStyle,
+	PlacementFieldCompactText,
+	shouldUseCompactFieldDisplay,
+} from "@/src/lib/domains/files/placement-field-compact";
 import { signatureFieldTypeLabel } from "@/src/lib/domains/files/placement-field-display";
 import { normalizedRectToCssPercentStyle } from "@/src/lib/domains/files/placement-viewport";
 import { cn } from "@/src/lib/utils";
@@ -16,27 +23,78 @@ import type {
 	OverlayFieldRenderPlan,
 } from "./overlay-field-state";
 
+function resolveVisualArtifact(
+	completion: FieldCompletion | FieldCompletionWireRow,
+	signatureArtifactsById?: ReadonlyMap<string, UserSignatureArtifact>,
+): Pick<
+	UserSignatureArtifact,
+	"kind" | "role" | "typedMeta" | "previewUrl"
+> | null {
+	if (!completion.sourceArtifactId || !signatureArtifactsById) return null;
+	return signatureArtifactsById.get(completion.sourceArtifactId) ?? null;
+}
+
+function resolveVisualPreviewSrc(
+	completion: FieldCompletion | FieldCompletionWireRow,
+	signatureArtifactsById?: ReadonlyMap<string, UserSignatureArtifact>,
+): string | null {
+	const artifact = resolveVisualArtifact(completion, signatureArtifactsById);
+	if (artifact) {
+		return typedSignatureArtifactPreviewSrc({ artifact });
+	}
+	return completion.previewUrl;
+}
+
 function VisualPreviewContent({
 	completion,
+	signatureArtifactsById,
 }: {
 	completion: FieldCompletion | FieldCompletionWireRow;
+	signatureArtifactsById?: ReadonlyMap<string, UserSignatureArtifact>;
 }) {
-	if (completion.previewUrl) {
+	const previewSrc = resolveVisualPreviewSrc(
+		completion,
+		signatureArtifactsById,
+	);
+
+	if (previewSrc) {
 		return (
 			<img
-				src={completion.previewUrl}
+				src={previewSrc}
 				alt=""
-				className="max-h-full max-w-full object-contain"
+				className="block h-full w-auto max-w-full min-h-0 object-contain"
 			/>
 		);
 	}
 
-	return <Skeleton className="size-full min-h-0 rounded-sm" />;
+	return <Skeleton className="size-full min-h-0 placement-field-radius" />;
+}
+
+function AppliedTextContent({
+	text,
+	fieldHeightPx,
+}: {
+	text: string;
+	fieldHeightPx?: number;
+}) {
+	if (
+		shouldUseCompactFieldDisplay(fieldHeightPx) &&
+		fieldHeightPx !== undefined
+	) {
+		return (
+			<PlacementFieldCompactText text={text} fieldHeightPx={fieldHeightPx} />
+		);
+	}
+
+	return <span className="block w-full truncate text-left">{text}</span>;
 }
 
 function fieldAccent(field: PlacementField): string {
 	return signerAccentColor(field.assignedRecipientEmail ?? "");
 }
+
+const placementFieldInputClassName =
+	"h-full min-w-0 w-full overflow-x-auto rounded-none border-0 bg-transparent text-left text-placement-fill-interactive-foreground shadow-none placeholder:text-placement-chrome-muted-foreground focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
 
 type PlacementFieldOverlayItemProps = {
 	field: PlacementField;
@@ -45,6 +103,8 @@ type PlacementFieldOverlayItemProps = {
 	completion: CompletionSource;
 	overlayClassName: string;
 	alreadySigned: boolean;
+	fieldHeightPx?: number;
+	signatureArtifactsById?: ReadonlyMap<string, UserSignatureArtifact>;
 	onToggleField?: (field: PlacementField) => void;
 	getTextFieldValue?: (fieldId: string) => string;
 	onTextDraftChange?: (fieldId: string, value: string) => void;
@@ -59,6 +119,8 @@ export function PlacementFieldOverlayItem({
 	completion,
 	overlayClassName,
 	alreadySigned,
+	fieldHeightPx,
+	signatureArtifactsById,
 	onToggleField,
 	getTextFieldValue,
 	onTextDraftChange,
@@ -67,6 +129,7 @@ export function PlacementFieldOverlayItem({
 }: PlacementFieldOverlayItemProps) {
 	const style = normalizedRectToCssPercentStyle(field.rect);
 	const accent = fieldAccent(field);
+	const compact = shouldUseCompactFieldDisplay(fieldHeightPx);
 
 	switch (plan.kind) {
 		case "placeholder":
@@ -85,6 +148,7 @@ export function PlacementFieldOverlayItem({
 						required={field.required}
 						accentColor={accent}
 						variant="muted"
+						fieldHeightPx={fieldHeightPx}
 					/>
 				</div>
 			);
@@ -104,8 +168,12 @@ export function PlacementFieldOverlayItem({
 						accentColor={accent}
 						variant="applied"
 						contentFill="preview"
+						fieldHeightPx={fieldHeightPx}
 					>
-						<VisualPreviewContent completion={plan.completion} />
+						<VisualPreviewContent
+							completion={plan.completion}
+							signatureArtifactsById={signatureArtifactsById}
+						/>
 					</PlacementFieldChrome>
 				</div>
 			);
@@ -125,10 +193,12 @@ export function PlacementFieldOverlayItem({
 						accentColor={accent}
 						variant="pending"
 						contentFill="interactive"
+						fieldHeightPx={fieldHeightPx}
 					>
-						<span className="block w-full truncate text-center">
-							{plan.text}
-						</span>
+						<AppliedTextContent
+							text={plan.text}
+							fieldHeightPx={fieldHeightPx}
+						/>
 					</PlacementFieldChrome>
 				</div>
 			);
@@ -150,6 +220,7 @@ export function PlacementFieldOverlayItem({
 						required={field.required}
 						accentColor={accent}
 						variant="muted"
+						fieldHeightPx={fieldHeightPx}
 					/>
 				</div>
 			);
@@ -167,28 +238,56 @@ export function PlacementFieldOverlayItem({
 					)}
 					style={style}
 				>
-					<PlacementFieldChrome
-						type={field.type}
-						primaryLabel={typeLabel}
-						accentColor={accent}
-						variant="pending"
-						className="p-0 shadow-md"
-					>
-						<Input
-							value={
-								getTextFieldValue?.(field.id) ?? completion?.textValue ?? ""
-							}
-							onChange={(e) => onTextDraftChange?.(field.id, e.target.value)}
-							onFocus={() => onTextFocus?.(field.id)}
-							onBlur={() => onTextBlur?.(field.id)}
-							placeholder={field.required ? "Required…" : "Optional…"}
-							name={`placement-field-${field.id}`}
-							autoComplete="off"
-							spellCheck={false}
-							className="h-full min-w-0 w-full overflow-x-auto border-0 bg-transparent text-center text-xs text-placement-fill-interactive-foreground shadow-none placeholder:text-placement-chrome-muted-foreground focus-visible:ring-0"
-							aria-label={`${typeLabel}, page ${field.pageIndex + 1}`}
-						/>
-					</PlacementFieldChrome>
+					{compact && fieldHeightPx !== undefined ? (
+						<PlacementFieldChrome
+							type={field.type}
+							primaryLabel={typeLabel}
+							accentColor={accent}
+							variant="pending"
+							className="p-0 shadow-md"
+							fieldHeightPx={fieldHeightPx}
+						>
+							<Input
+								value={
+									getTextFieldValue?.(field.id) ?? completion?.textValue ?? ""
+								}
+								onChange={(e) => onTextDraftChange?.(field.id, e.target.value)}
+								onFocus={() => onTextFocus?.(field.id)}
+								onBlur={() => onTextBlur?.(field.id)}
+								placeholder={field.required ? "Required…" : "Optional…"}
+								name={`placement-field-${field.id}`}
+								autoComplete="off"
+								spellCheck={false}
+								className={cn(placementFieldInputClassName, "px-0.5")}
+								style={compactFieldTextStyle(fieldHeightPx)}
+								aria-label={`${typeLabel}, page ${field.pageIndex + 1}`}
+							/>
+						</PlacementFieldChrome>
+					) : (
+						<PlacementFieldChrome
+							type={field.type}
+							primaryLabel={typeLabel}
+							accentColor={accent}
+							variant="pending"
+							className="p-0 shadow-md"
+							fieldHeightPx={fieldHeightPx}
+						>
+							<Input
+								value={
+									getTextFieldValue?.(field.id) ?? completion?.textValue ?? ""
+								}
+								onChange={(e) => onTextDraftChange?.(field.id, e.target.value)}
+								onFocus={() => onTextFocus?.(field.id)}
+								onBlur={() => onTextBlur?.(field.id)}
+								placeholder={field.required ? "Required…" : "Optional…"}
+								name={`placement-field-${field.id}`}
+								autoComplete="off"
+								spellCheck={false}
+								className={cn(placementFieldInputClassName, "text-xs")}
+								aria-label={`${typeLabel}, page ${field.pageIndex + 1}`}
+							/>
+						</PlacementFieldChrome>
+					)}
 				</div>
 			);
 
@@ -207,7 +306,11 @@ export function PlacementFieldOverlayItem({
 					aria-label={`${typeLabel}${plan.checked ? ", checked" : ""}, page ${field.pageIndex + 1}`}
 					aria-pressed={plan.checked}
 				>
-					<PlacementCheckboxField checked={plan.checked} accentColor={accent} />
+					<PlacementCheckboxField
+						checked={plan.checked}
+						accentColor={accent}
+						fieldHeightPx={fieldHeightPx}
+					/>
 				</button>
 			);
 
@@ -236,8 +339,12 @@ export function PlacementFieldOverlayItem({
 						accentColor={accent}
 						variant="applied"
 						contentFill="preview"
+						fieldHeightPx={fieldHeightPx}
 					>
-						<VisualPreviewContent completion={plan.completion} />
+						<VisualPreviewContent
+							completion={plan.completion}
+							signatureArtifactsById={signatureArtifactsById}
+						/>
 					</PlacementFieldChrome>
 				</button>
 			);
@@ -267,10 +374,12 @@ export function PlacementFieldOverlayItem({
 						accentColor={accent}
 						variant="pending"
 						contentFill="interactive"
+						fieldHeightPx={fieldHeightPx}
 					>
-						<span className="block w-full truncate text-center">
-							{plan.text}
-						</span>
+						<AppliedTextContent
+							text={plan.text}
+							fieldHeightPx={fieldHeightPx}
+						/>
 					</PlacementFieldChrome>
 				</button>
 			);
@@ -289,6 +398,7 @@ export function PlacementFieldOverlayItem({
 						primaryLabel={plan.typeLabel}
 						accentColor={accent}
 						variant="complete"
+						fieldHeightPx={fieldHeightPx}
 					/>
 				</div>
 			);
@@ -311,6 +421,7 @@ export function PlacementFieldOverlayItem({
 						required={field.required}
 						accentColor={accent}
 						variant="pending"
+						fieldHeightPx={fieldHeightPx}
 					/>
 				</button>
 			);
@@ -335,6 +446,7 @@ export function PlacementFieldOverlayItem({
 						accentColor={accent}
 						variant="pending"
 						loading
+						fieldHeightPx={fieldHeightPx}
 					/>
 				</div>
 			);

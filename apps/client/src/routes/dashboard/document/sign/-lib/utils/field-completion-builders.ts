@@ -1,5 +1,4 @@
 import type { FieldCompletion, PlacementField } from "@filosign/shared";
-import { buildVisualCompletionFromArtifact } from "@filosign/shared";
 
 export function autoFillValue(
 	fieldType: PlacementField["type"],
@@ -24,6 +23,46 @@ export function autoFillValue(
 		default:
 			return "";
 	}
+}
+
+export function buildAutoFieldCompletion(
+	field: PlacementField,
+	profile:
+		| {
+				firstName?: string | null;
+				lastName?: string | null;
+				email?: string | null;
+		  }
+		| null
+		| undefined,
+): FieldCompletion | null {
+	const textValue = autoFillValue(field.type, {
+		firstName: profile?.firstName,
+		lastName: profile?.lastName,
+		email: profile?.email,
+	});
+	if (!textValue) return null;
+	return {
+		fieldId: field.id,
+		valueKind: "auto",
+		sourceArtifactId: null,
+		storageKey: null,
+		contentSha256: null,
+		textValue,
+		previewUrl: null,
+	};
+}
+
+export function buildCheckboxFieldCompletion(fieldId: string): FieldCompletion {
+	return {
+		fieldId,
+		valueKind: "checkbox",
+		sourceArtifactId: null,
+		storageKey: null,
+		contentSha256: null,
+		textValue: "true",
+		previewUrl: null,
+	};
 }
 
 export function buildTextCompletion(
@@ -55,70 +94,4 @@ export function buildCheckboxCompletion(
 		textValue: checked ? "false" : "true",
 		previewUrl: null,
 	};
-}
-
-export function buildSyncFieldCompletion(
-	field: PlacementField,
-	defaultArtifacts: {
-		signature: {
-			id: string;
-			storageKey: string;
-			contentSha256: string;
-			previewUrl: string | null;
-		} | null;
-		initial: {
-			id: string;
-			storageKey: string;
-			contentSha256: string;
-			previewUrl: string | null;
-		} | null;
-	},
-	profile:
-		| {
-				firstName?: string | null;
-				lastName?: string | null;
-				email?: string | null;
-		  }
-		| null
-		| undefined,
-): FieldCompletion | null {
-	if (field.type === "signature" && defaultArtifacts.signature) {
-		return buildVisualCompletionFromArtifact(field, defaultArtifacts.signature);
-	}
-	if (field.type === "initial" && defaultArtifacts.initial) {
-		return buildVisualCompletionFromArtifact(field, defaultArtifacts.initial);
-	}
-	if (
-		field.type === "date" ||
-		field.type === "name" ||
-		field.type === "email"
-	) {
-		const textValue = autoFillValue(field.type, {
-			firstName: profile?.firstName,
-			lastName: profile?.lastName,
-			email: profile?.email,
-		});
-		if (!textValue) return null;
-		return {
-			fieldId: field.id,
-			valueKind: "auto",
-			sourceArtifactId: null,
-			storageKey: null,
-			contentSha256: null,
-			textValue,
-			previewUrl: null,
-		};
-	}
-	if (field.type === "checkbox") {
-		return {
-			fieldId: field.id,
-			valueKind: "checkbox",
-			sourceArtifactId: null,
-			storageKey: null,
-			contentSha256: null,
-			textValue: "true",
-			previewUrl: null,
-		};
-	}
-	return null;
 }

@@ -1,16 +1,11 @@
 import type { FilosignRpcQueryUtils } from "@filosign/react";
 import type { UserProfile } from "@filosign/react/users";
-import { ensureDefaultTypedSignatureArtifact } from "@filosign/react/users";
 import type {
 	FieldCompletionMap,
-	PlacementField,
 	UserSignatureArtifact,
 } from "@filosign/shared";
-import {
-	buildVisualCompletionFromArtifact,
-	zPlacementManifest,
-} from "@filosign/shared";
-import { buildSyncFieldCompletion } from "@/src/routes/dashboard/document/sign/-lib/utils/field-completion-builders";
+import { defaultPlacementLayout, zPlacementManifest } from "@filosign/shared";
+import { resolvePlacementFieldCompletion } from "@/src/routes/dashboard/document/sign/-lib/utils/resolve-placement-field-completion";
 
 export async function prepareSelfSignCompletions(args: {
 	pieceCid: string;
@@ -53,16 +48,18 @@ export async function prepareSelfSignCompletions(args: {
 			) ?? null,
 	};
 
+	const layout = defaultPlacementLayout();
 	const fieldCompletions: FieldCompletionMap = {};
 	const completedFieldIds: string[] = [];
 
 	for (const field of myFields) {
-		const completion = await resolveSelfFieldCompletion({
+		const completion = await resolvePlacementFieldCompletion({
 			field,
 			defaultArtifacts,
-			selfProfile: args.selfProfile,
-			signatures: args.signatures,
+			profile: args.selfProfile,
+			layout,
 			rpcQuery: args.rpcQuery,
+			signatures: args.signatures,
 		});
 		if (!completion) {
 			if (field.required) {
@@ -84,45 +81,4 @@ export async function prepareSelfSignCompletions(args: {
 	}
 
 	return { completedFieldIds, fieldCompletions };
-}
-
-async function resolveSelfFieldCompletion(args: {
-	field: PlacementField;
-	defaultArtifacts: {
-		signature: UserSignatureArtifact | null;
-		initial: UserSignatureArtifact | null;
-	};
-	selfProfile: UserProfile;
-	signatures: UserSignatureArtifact[];
-	rpcQuery: FilosignRpcQueryUtils;
-}) {
-	const syncCompletion = buildSyncFieldCompletion(
-		args.field,
-		args.defaultArtifacts,
-		args.selfProfile,
-	);
-	if (syncCompletion) {
-		return syncCompletion;
-	}
-
-	if (args.field.type !== "signature" && args.field.type !== "initial") {
-		return null;
-	}
-
-	const role = args.field.type;
-	const ensured = await ensureDefaultTypedSignatureArtifact({
-		rpcQuery: args.rpcQuery,
-		profile: {
-			firstName: args.selfProfile.firstName,
-			lastName: args.selfProfile.lastName,
-			email: args.selfProfile.email,
-			username: args.selfProfile.username,
-			defaultSignatureId: args.selfProfile.defaultSignatureId,
-			defaultInitialId: args.selfProfile.defaultInitialId,
-		},
-		role,
-		signatures: args.signatures,
-	});
-
-	return buildVisualCompletionFromArtifact(args.field, ensured);
 }

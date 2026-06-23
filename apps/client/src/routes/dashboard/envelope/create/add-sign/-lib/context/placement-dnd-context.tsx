@@ -22,6 +22,7 @@ import {
 	parseFieldDraggableId,
 	parsePaletteDraggableId,
 	placementRectFromField,
+	syncStoredFieldRectIfClamped,
 } from "@/src/lib/domains/placement/utils/placement-coordinates";
 import {
 	type PlacementActiveDrag,
@@ -64,7 +65,7 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
-			activationConstraint: { distance: 4 },
+			activationConstraint: { distance: 1 },
 		}),
 	);
 	const activeSensors = readOnly ? [] : sensors;
@@ -115,21 +116,41 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 			const existing = signatureFields.find((f) => f.id === fieldId);
 			if (!existing) return;
 			const pageViewport = viewportForPage(existing.page);
+			const initialRect = placementRectFromField(
+				{
+					x: existing.x,
+					y: existing.y,
+					width: existing.width,
+					height: existing.height,
+				},
+				pageViewport,
+			);
+			const syncPatch = syncStoredFieldRectIfClamped({
+				stored: existing,
+				viewport: pageViewport,
+			});
+			if (syncPatch) {
+				applyFieldPatches(new Map([[fieldId, syncPatch]]));
+			}
+			const activator = event.activatorEvent;
+			const skipSnap =
+				activator instanceof MouseEvent || activator instanceof PointerEvent
+					? activator.shiftKey
+					: false;
 			dragContextRef.current = {
-				initialRect: placementRectFromField(
-					{
-						x: existing.x,
-						y: existing.y,
-						width: existing.width,
-						height: existing.height,
-					},
-					pageViewport,
-				),
+				initialRect,
 				viewport: pageViewport,
 				pageEl: getPageEl(existing.page),
+				skipSnap,
 			};
 		},
-		[signatureFields, getPageEl, viewportForPage, setIsInteractingField],
+		[
+			signatureFields,
+			getPageEl,
+			viewportForPage,
+			setIsInteractingField,
+			applyFieldPatches,
+		],
 	);
 
 	const finishDrag = useCallback(() => {
@@ -140,6 +161,7 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 
 	const onDragEnd = useCallback(
 		(event: DragEndEvent) => {
+			const skipSnap = dragContextRef.current?.skipSnap ?? false;
 			finishDrag();
 			const { active, delta } = event;
 			const activeId = String(active.id);
@@ -210,12 +232,11 @@ export function PlacementDndProvider({ children }: PlacementDndProviderProps) {
 					pageEl,
 					viewport: pageViewport,
 					otherFieldsOnPage: othersOnPage,
+					skipSnap,
 				});
 				patches.set(id, {
 					x: next.x,
 					y: next.y,
-					width: next.width,
-					height: next.height,
 				});
 			}
 

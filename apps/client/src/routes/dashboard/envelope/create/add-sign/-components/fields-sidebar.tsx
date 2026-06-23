@@ -1,4 +1,4 @@
-import { CaretDownIcon, PenNibIcon } from "@phosphor-icons/react";
+import { CaretDownIcon, FilePdfIcon, PenNibIcon } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -9,13 +9,16 @@ import {
 import { useAddSignPlacement } from "@/src/lib/domains/placement/context";
 import { PlacementFieldPaletteList } from "@/src/lib/domains/placement/field-palette";
 import { countFieldsByAssignee } from "@/src/lib/domains/placement/utils/active-assignees";
+import { resolvePaletteHighlightedFieldType } from "@/src/lib/domains/placement/utils/palette-selection";
 import { cn } from "@/src/lib/utils/utils";
 import { ActiveAssigneeStrip } from "@/src/routes/dashboard/envelope/create/add-sign/-components/active-assignee-strip";
 import { PlacedFieldsSheet } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placed-fields-sheet";
+import { usePdfAcroformImportUi } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/pdf-acroform-import-context";
 
 export default function SignatureFieldsSidebar() {
 	const {
-		handleAddField,
+		handlePaletteTypeClick,
+		cancelPlacement,
 		isPlacingField,
 		pendingFieldType,
 		placementFieldTypeLabel,
@@ -23,13 +26,22 @@ export default function SignatureFieldsSidebar() {
 		setActiveAssigneeId,
 		assignees,
 		currentDocumentFields,
+		selectedFieldIds,
+		signatureFields,
 	} = useAddSignPlacement();
+	const { canImportAcroform, detectedCount, detecting, openImportPrompt } =
+		usePdfAcroformImportUi();
 
 	const [addFieldsOpen, setAddFieldsOpen] = useState(true);
 
 	const documentFieldCounts = useMemo(
 		() => countFieldsByAssignee(currentDocumentFields, assignees),
 		[currentDocumentFields, assignees],
+	);
+
+	const highlightedFieldType = useMemo(
+		() => resolvePaletteHighlightedFieldType(selectedFieldIds, signatureFields),
+		[selectedFieldIds, signatureFields],
 	);
 
 	return (
@@ -75,15 +87,35 @@ export default function SignatureFieldsSidebar() {
 						<PlacementFieldPaletteList
 							isPlacingField={isPlacingField}
 							pendingFieldType={pendingFieldType}
+							highlightedFieldType={highlightedFieldType}
+							selectedFieldCount={selectedFieldIds.size}
 							placementFieldTypeLabel={placementFieldTypeLabel}
-							onAddField={handleAddField}
+							onPaletteTypeClick={handlePaletteTypeClick}
+							onCancelPlacement={cancelPlacement}
 						/>
 					</CollapsibleContent>
 				</Collapsible>
 			</div>
 
-			<div className="hidden shrink-0 border-t border-border p-3 lg:block">
+			<div className="hidden shrink-0 space-y-2 border-t border-border p-3 lg:block">
 				<PlacedFieldsSheet variant="sidebar" />
+				{canImportAcroform ? (
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						className="h-auto w-full justify-start gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+						disabled={detecting}
+						onClick={openImportPrompt}
+					>
+						<FilePdfIcon className="size-3.5 shrink-0" weight="regular" />
+						<span className="text-left">
+							{detecting
+								? "Scanning PDF form fields…"
+								: `Import ${detectedCount} PDF form field${detectedCount === 1 ? "" : "s"}`}
+						</span>
+					</Button>
+				) : null}
 			</div>
 		</div>
 	);

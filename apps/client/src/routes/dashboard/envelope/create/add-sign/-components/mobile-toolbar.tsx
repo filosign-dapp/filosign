@@ -18,7 +18,9 @@ import {
 	useAddSignChrome,
 	useAddSignPlacement,
 } from "@/src/lib/domains/placement/context";
+import { usePlacementPaletteTypeClicks } from "@/src/lib/domains/placement/field-palette";
 import { signatureFieldPalette } from "@/src/lib/domains/placement/utils/field-types";
+import { resolvePaletteHighlightedFieldType } from "@/src/lib/domains/placement/utils/palette-selection";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { cn } from "@/src/lib/utils/utils";
 import { SupplementaryPacketsSidebar } from "@/src/routes/dashboard/envelope/create/add-sign/-components/supplementary-packets-review";
@@ -29,13 +31,17 @@ function DraggableMobilePaletteButton({
 	index,
 	isPlacingField,
 	pendingFieldType,
-	onAddField,
+	highlightedFieldType,
+	onPaletteTypeClick,
 }: {
 	field: (typeof signatureFieldPalette)[number];
 	index: number;
 	isPlacingField: boolean;
 	pendingFieldType: string | null | undefined;
-	onAddField: (type: (typeof signatureFieldPalette)[number]["type"]) => void;
+	highlightedFieldType: (typeof signatureFieldPalette)[number]["type"] | null;
+	onPaletteTypeClick: (
+		type: (typeof signatureFieldPalette)[number]["type"],
+	) => void;
 }) {
 	const { attributes, listeners, setNodeRef } = useDraggable({
 		id: paletteDraggableId(field.type, "mobile"),
@@ -63,11 +69,11 @@ function DraggableMobilePaletteButton({
 				className={cn(
 					"w-full aspect-square p-2 transition-all duration-200 active:scale-95 active:bg-secondary/50 rounded-main touch-manipulation",
 					"hover:scale-105 hover:bg-secondary/30 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2",
-					isPlacingField &&
-						pendingFieldType === field.type &&
+					((isPlacingField && pendingFieldType === field.type) ||
+						highlightedFieldType === field.type) &&
 						"bg-secondary border border-primary/20 scale-105",
 				)}
-				onClick={() => onAddField(field.type)}
+				onClick={() => onPaletteTypeClick(field.type)}
 				aria-label={`Add ${field.type} field`}
 			>
 				<IconComponent
@@ -80,20 +86,25 @@ function DraggableMobilePaletteButton({
 }
 
 export default function MobileSignatureToolbar() {
-	const { handleAddField, isPlacingField, pendingFieldType } =
-		useAddSignPlacement();
+	const {
+		handlePaletteTypeClick,
+		isPlacingField,
+		pendingFieldType,
+		selectedFieldIds,
+		signatureFields,
+	} = useAddSignPlacement();
 	const {
 		documents,
 		currentDocumentId,
 		handleDocumentSelect,
-		signatureFields,
+		signatureFields: chromeSignatureFields,
 	} = useAddSignChrome();
 	const createForm = useStorePersist((s) => s.createForm);
 	const packetCount = createForm?.attachmentPacketDrafts?.length ?? 0;
 
 	const railDocuments = useMemo((): DocumentListRailItem[] => {
 		const fieldCountByDoc = new Map<string, number>();
-		for (const field of signatureFields) {
+		for (const field of chromeSignatureFields) {
 			fieldCountByDoc.set(
 				field.documentId,
 				(fieldCountByDoc.get(field.documentId) ?? 0) + 1,
@@ -104,7 +115,20 @@ export default function MobileSignatureToolbar() {
 			name: doc.name,
 			fieldCount: fieldCountByDoc.get(doc.id) ?? 0,
 		}));
-	}, [documents, signatureFields]);
+	}, [documents, chromeSignatureFields]);
+
+	const highlightedFieldType = useMemo(
+		() => resolvePaletteHighlightedFieldType(selectedFieldIds, signatureFields),
+		[selectedFieldIds, signatureFields],
+	);
+
+	const { handlePaletteItemClick, changeTypeDialog } =
+		usePlacementPaletteTypeClicks({
+			isPlacingField,
+			highlightedFieldType,
+			selectedFieldCount: selectedFieldIds.size,
+			onPaletteTypeClick: handlePaletteTypeClick,
+		});
 
 	return (
 		<motion.div
@@ -165,11 +189,13 @@ export default function MobileSignatureToolbar() {
 							index={index}
 							isPlacingField={isPlacingField}
 							pendingFieldType={pendingFieldType}
-							onAddField={handleAddField}
+							highlightedFieldType={highlightedFieldType}
+							onPaletteTypeClick={handlePaletteItemClick}
 						/>
 					))}
 				</div>
 			</div>
+			{changeTypeDialog}
 		</motion.div>
 	);
 }

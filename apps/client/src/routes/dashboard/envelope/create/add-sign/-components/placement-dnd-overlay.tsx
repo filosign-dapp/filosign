@@ -1,5 +1,6 @@
 import { DragOverlay } from "@dnd-kit/core";
 import { signerAccentColor } from "@/src/lib/domains/files/field-box";
+import { PlacementChromeScaled } from "@/src/lib/domains/files/placement-chrome-scaled";
 import {
 	SignatureFieldTypeIcon,
 	signatureFieldTypeLabel,
@@ -56,24 +57,32 @@ function PaletteDragPreview({
 			}}
 		>
 			<div
-				className="placement-field-chrome box-border"
+				className="box-border"
 				style={{
 					width: size.width,
 					height: size.height,
-					borderLeftWidth: 3,
-					borderLeftColor: accent,
 					transform: `scale(${safeScale})`,
 					transformOrigin: "top left",
 				}}
 			>
-				<span className="shrink-0">
-					<SignatureFieldTypeIcon type={fieldType} isMobile={isMobile} />
-				</span>
-				<div className="min-w-0 flex-1 leading-none">
-					<div className="truncate placement-field-label">
-						{signatureFieldTypeLabel(fieldType)}
+				<PlacementChromeScaled fieldHeightPx={size.height}>
+					<div
+						className="placement-field-chrome flex h-full w-full items-center"
+						style={{
+							borderLeftWidth: 3,
+							borderLeftColor: accent,
+						}}
+					>
+						<span className="shrink-0">
+							<SignatureFieldTypeIcon type={fieldType} isMobile={isMobile} />
+						</span>
+						<div className="min-w-0 flex-1 leading-none">
+							<div className="truncate placement-field-label">
+								{signatureFieldTypeLabel(fieldType)}
+							</div>
+						</div>
 					</div>
-				</div>
+				</PlacementChromeScaled>
 			</div>
 		</div>
 	);

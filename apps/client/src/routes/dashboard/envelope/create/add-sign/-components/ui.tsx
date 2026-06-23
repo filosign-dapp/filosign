@@ -9,6 +9,7 @@ import {
 import type { PlacementController } from "@/src/lib/domains/placement/types";
 import { AddSignHeader } from "@/src/routes/dashboard/envelope/create/add-sign/-components/header";
 import { SendProgressDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/send-progress-dialog";
+import { PdfAcroformImportProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/pdf-acroform-import-context";
 import { PlacementCanvasProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-canvas-context";
 import { PlacementDndProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-dnd-context";
 import FieldsSidebar from "./fields-sidebar";
@@ -32,7 +33,9 @@ function AddSignPageShell({ children }: { children: ReactNode }) {
 	return (
 		<div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
 			<PlacementCanvasProvider>
-				<PlacementDndProvider>{children}</PlacementDndProvider>
+				<PlacementDndProvider>
+					<PdfAcroformImportProvider>{children}</PdfAcroformImportProvider>
+				</PlacementDndProvider>
 			</PlacementCanvasProvider>
 		</div>
 	);

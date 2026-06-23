@@ -1,32 +1,19 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import {
-	AsteriskIcon,
-	CircleIcon,
-	CopyIcon,
-	DotsSixVerticalIcon,
-	TrashIcon,
-} from "@phosphor-icons/react";
 import { memo, useCallback, useRef } from "react";
 import {
 	clampFieldHeight,
 	clampFieldWidth,
-	defaultPlacementFieldRect,
-	fieldSupportsFreeformResize,
 	signerAccentColor,
 } from "@/src/lib/domains/files/field-box";
 import { PlacementCheckboxField } from "@/src/lib/domains/files/placement-checkbox-field";
-import {
-	SignatureFieldTypeIcon,
-	signatureFieldTypeLabel,
-	signerDisplayName,
-} from "@/src/lib/domains/files/placement-field-display";
+import { signatureFieldTypeLabel } from "@/src/lib/domains/files/placement-field-display";
+import { PlacementFieldEditorChrome } from "@/src/lib/domains/files/placement-field-editor-chrome";
 import type { SignatureField } from "@/src/lib/domains/placement/types";
 import {
 	dragTransformInPageSpace,
 	fieldDraggableId,
 	finalizePlacementRectAfterFreeformResize,
-	finalizePlacementRectAfterResize,
 	PLACEMENT_FIELD_OVERLAY_CLASS,
 	pageScale,
 	placementRectFromField,
@@ -101,8 +88,6 @@ function DraggableFieldOverlay({
 	);
 
 	const accent = signerAccentColor(field.assignedSignerEmail);
-	const defaults = defaultPlacementFieldRect(field.type, isMobile);
-	const freeformResize = fieldSupportsFreeformResize(field.type);
 
 	const otherRects = otherFieldsOnPage
 		.filter((f) => f.id !== field.id)
@@ -150,25 +135,17 @@ function DraggableFieldOverlay({
 					isMobile,
 				);
 				const deltaY = (ev.clientY - start.startY) / scale;
-				const next = freeformResize
-					? finalizePlacementRectAfterFreeformResize({
-							initial,
-							newWidth,
-							newHeight: clampFieldHeight(
-								field.type,
-								start.height + deltaY,
-								isMobile,
-							),
-							viewport,
-							otherFieldsOnPage: otherRects,
-						})
-					: finalizePlacementRectAfterResize({
-							initial,
-							newWidth,
-							aspectRatio: defaults.aspectRatio,
-							viewport,
-							otherFieldsOnPage: otherRects,
-						});
+				const next = finalizePlacementRectAfterFreeformResize({
+					initial,
+					newWidth,
+					newHeight: clampFieldHeight(
+						field.type,
+						start.height + deltaY,
+						isMobile,
+					),
+					viewport,
+					otherFieldsOnPage: otherRects,
+				});
 				onFieldUpdate(field.id, {
 					x: next.x,
 					y: next.y,
@@ -189,8 +166,6 @@ function DraggableFieldOverlay({
 		},
 		[
 			field,
-			defaults.aspectRatio,
-			freeformResize,
 			isMobile,
 			isPlacingField,
 			onFieldUpdate,
@@ -218,7 +193,7 @@ function DraggableFieldOverlay({
 			data-field-id={field.id}
 			className={cn(
 				PLACEMENT_FIELD_OVERLAY_CLASS,
-				"absolute box-border select-none group z-30 touch-none",
+				"absolute box-border select-none group z-30 touch-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0",
 				isPlacingField ? "pointer-events-none cursor-default" : "cursor-move",
 				isDragging && "z-40 opacity-90 shadow-lg",
 			)}
@@ -227,89 +202,49 @@ function DraggableFieldOverlay({
 				top: rect.y,
 				width: rect.width,
 				height: rect.height,
-				...(field.type !== "checkbox"
-					? { borderLeftWidth: 3, borderLeftColor: accent }
-					: null),
 				...dragStyle,
 			}}
 			onClick={(e) => onFieldClick(field.id, e)}
 			{...(!isPlacingField ? listeners : undefined)}
-			{...(!isPlacingField ? attributes : undefined)}
+			{...(!isPlacingField ? { ...attributes, tabIndex: -1 } : undefined)}
 		>
 			{field.type === "checkbox" ? (
-				<PlacementCheckboxField
-					checked={false}
-					accentColor={accent}
-					className={cn(isSelected && "ring-2 ring-ring/60")}
-				/>
-			) : (
-				<div
-					className={cn(
-						"placement-field-chrome h-full w-full",
-						isSelected && "ring-2 ring-ring/60",
-					)}
-				>
-					{!isPlacingField ? (
-						<DotsSixVerticalIcon
-							className="size-3 shrink-0 opacity-60"
-							weight="bold"
+				<div className="relative h-full w-full">
+					{isSelected ? (
+						<div
+							className="placement-field-editor-selected-overlay"
+							aria-hidden
 						/>
 					) : null}
-					<span className="shrink-0 text-placement-chrome-foreground">
-						<SignatureFieldTypeIcon type={field.type} isMobile={isMobile} />
-					</span>
-					<div className="min-w-0 flex-1 leading-none">
-						<div className="truncate placement-field-label">
-							{signerDisplayName(field)}
-						</div>
-					</div>
-					{field.required ? (
-						<AsteriskIcon
-							className="size-3 shrink-0 text-amber-400"
-							weight="bold"
-						/>
-					) : (
-						<CircleIcon
-							className="size-3 shrink-0 opacity-50"
-							weight="regular"
-						/>
-					)}
-					{isPrimarySelected ? (
-						<div className="flex shrink-0 items-center gap-0.5">
-							<button
-								type="button"
-								className="rounded p-0.5 hover:bg-placement-chrome-foreground/15"
-								onClick={(e) => {
-									e.stopPropagation();
-									onFieldDuplicate(field.id);
-								}}
-								aria-label="Duplicate field"
-							>
-								<CopyIcon className="size-3" />
-							</button>
-							<button
-								type="button"
-								className="rounded p-0.5 hover:bg-placement-chrome-foreground/15"
-								onClick={(e) => {
-									e.stopPropagation();
-									onFieldRemove(field.id);
-								}}
-								aria-label="Remove field"
-							>
-								<TrashIcon className="size-3" />
-							</button>
-						</div>
-					) : null}
+					<PlacementCheckboxField
+						checked={false}
+						accentColor={accent}
+						fieldHeightPx={rect.height}
+						className={cn(
+							"outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0",
+							isSelected && "placement-field-editor-selected",
+						)}
+						showResizeHandle={isPrimarySelected && !isPlacingField}
+						onResizePointerDown={handleResizePointerDown}
+					/>
 				</div>
-			)}
-			{isPrimarySelected && !isPlacingField ? (
-				<button
-					type="button"
-					className="absolute -bottom-1 -right-1 size-3 cursor-se-resize rounded-sm border border-placement-chrome-border bg-placement-chrome touch-none"
-					aria-label="Resize field"
-					onPointerDown={handleResizePointerDown}
+			) : (
+				<PlacementFieldEditorChrome
+					field={field}
+					fieldHeightPx={rect.height}
+					accentColor={accent}
+					isMobile={isMobile}
+					isPlacingField={isPlacingField}
+					isSelected={isSelected}
+					isPrimarySelected={isPrimarySelected}
+					onDuplicate={() => onFieldDuplicate(field.id)}
+					onRemove={() => onFieldRemove(field.id)}
+					onToggleRequired={() =>
+						onFieldUpdate(field.id, { required: !field.required })
+					}
+					onResizePointerDown={handleResizePointerDown}
 				/>
-			) : null}
+			)}
 		</div>
 	);
 }

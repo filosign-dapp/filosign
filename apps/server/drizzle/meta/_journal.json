@@ -71,6 +71,13 @@
       "when": 1781995984839,
       "tag": "0009_illegal_mauler",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1782242252313,
+      "tag": "0010_absurd_marvex",
+      "breakpoints": true
     }
   ]
 }

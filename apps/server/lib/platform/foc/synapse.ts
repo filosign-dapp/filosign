@@ -133,9 +133,16 @@ export async function getOrCreatePlatformDataset() {
 	return ctx.data;
 }
 
+/** FilBeam retrieval host per FOC docs: mainnet has no network label in the domain. */
+export function filbeamRetrievalHost(
+	chain: "local" | "testnet" | "mainnet",
+): string {
+	return chain === "mainnet" ? "filbeam.io" : "calibration.filbeam.io";
+}
+
 export function archivalCdnUrl(pieceCid: string): string {
-	const network = env.CHAIN === "mainnet" ? "mainnet" : "calibration";
-	return `https://${getFocWalletAddress()}.${network}.filbeam.io/${pieceCid}`;
+	const host = filbeamRetrievalHost(env.CHAIN);
+	return `https://${getFocWalletAddress()}.${host}/${pieceCid}`;
 }
 
 /** Stable id stored on `foc_objects.deal_id` from an upload result. */

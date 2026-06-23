@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { privateKeyToAccount } from "viem/accounts";
 import { testEnvStub } from "../support/env-stub";
 
@@ -55,6 +55,10 @@ describe("resolveCiphertextDownloadUrl", () => {
 	beforeEach(() => {
 		existsResult = true;
 		focRow = null;
+		envOverrides = {};
+	});
+
+	afterEach(() => {
 		envOverrides = {};
 	});
 

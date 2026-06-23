@@ -145,6 +145,7 @@ export const rpcPieceDownloadUrlOutputSchema = z.object({
 export const rpcPieceComplianceBundleOutputSchema = z.object({
 	exportId: z.uuid(),
 	bundleHash: zHexString(),
+	bundleCanonicalJson: z.string().min(1),
 	bundle: zComplianceBundle,
 });
 

@@ -467,6 +467,7 @@ export async function pieceComplianceBundle(args: {
 	return {
 		exportId: logResult.exportId,
 		bundleHash: bundleResult.bundleHash,
+		bundleCanonicalJson: bundleResult.bundleCanonicalJson,
 		bundle: bundleResult.bundle,
 	};
 }

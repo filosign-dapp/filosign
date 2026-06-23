@@ -153,6 +153,65 @@ describe("insertComplianceExportLog", () => {
 		expect(writtenKey).toBeNull();
 	});
 
+	test("persists when bundle hash matches canonical JSON", async () => {
+		const { insertComplianceExportLog } = await import(
+			"@/lib/platform/compliance/export-log"
+		);
+		const db = (await import("@/lib/platform/db")).default;
+		writtenKey = null;
+
+		const result = await insertComplianceExportLog({
+			db,
+			pieceCid: bundleFixture.pieceCid,
+			requestedBy: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+			bundle: bundleFixture,
+			bundleHash,
+			exportKind: "zip",
+			documentSha256: bundleFixture.registration.registerDocumentSha256,
+		});
+
+		expect(result.exportId).toBe("export-id-1");
+		expect(writtenKey).toMatch(/^compliance-exports\//);
+	});
+});
+
+describe("compliance bundle canonical export bytes", () => {
+	test("bundleCanonicalJson hashes to bundleHash", () => {
+		const canonical = canonicalComplianceBundleJson(bundleFixture);
+		expect(sha256HexUtf8(canonical)).toBe(bundleHash);
+	});
+
+	test("bundleCanonicalJson omits ephemeral fieldCompletions previewUrl", () => {
+		const fieldCompletion = {
+			fieldId: "f1",
+			valueKind: "visual" as const,
+			sourceArtifactId: "00000000-0000-4000-8000-000000000001",
+			storageKey: "signatures/artifact-1",
+			contentSha256: `${"ab".repeat(32)}`,
+			textValue: null,
+			previewUrl: "https://cdn.example.com/presigned?expires=1",
+			signer: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+		};
+		const withPreview = zComplianceBundle.parse({
+			...bundleFixture,
+			fieldCompletions: [fieldCompletion],
+		});
+		const withoutPreview = zComplianceBundle.parse({
+			...bundleFixture,
+			fieldCompletions: [{ ...fieldCompletion, previewUrl: null }],
+		});
+		const canonical = canonicalComplianceBundleJson(withPreview);
+		const parsed = JSON.parse(canonical) as {
+			fieldCompletions: Array<{ previewUrl: string | null }>;
+		};
+		expect(parsed.fieldCompletions[0]?.previewUrl).toBeNull();
+		expect(sha256HexUtf8(canonical)).toBe(
+			sha256HexUtf8(canonicalComplianceBundleJson(withoutPreview)),
+		);
+	});
+});
+
+describe("insertComplianceExportLog pending satellite", () => {
 	test("parses bundle with pending satellite workflows", () => {
 		const pending = zComplianceBundle.parse({
 			...bundleFixture,
@@ -184,26 +243,5 @@ describe("insertComplianceExportLog", () => {
 			payouts: 1,
 			attachments: 0,
 		});
-	});
-
-	test("persists when bundle hash matches canonical JSON", async () => {
-		const { insertComplianceExportLog } = await import(
-			"@/lib/platform/compliance/export-log"
-		);
-		const db = (await import("@/lib/platform/db")).default;
-		writtenKey = null;
-
-		const result = await insertComplianceExportLog({
-			db,
-			pieceCid: bundleFixture.pieceCid,
-			requestedBy: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-			bundle: bundleFixture,
-			bundleHash,
-			exportKind: "zip",
-			documentSha256: bundleFixture.registration.registerDocumentSha256,
-		});
-
-		expect(result.exportId).toBe("export-id-1");
-		expect(writtenKey).toMatch(/^compliance-exports\//);
 	});
 });

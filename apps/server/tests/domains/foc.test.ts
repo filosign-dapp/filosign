@@ -16,14 +16,36 @@ import {
 import { isFocTransitionDue } from "@/lib/domains/foc/lifecycle";
 import { retentionEpochsFromUntil } from "@/lib/platform/foc/retention";
 import {
+	archivalCdnUrl,
 	dataSetIdFromDealId,
 	dealIdFromUploadResult,
+	filbeamRetrievalHost,
 } from "@/lib/platform/foc/synapse";
 import { focTransitionJobId } from "@/lib/platform/jobs/utils/idempotency";
+import { testEnvStub } from "../support/env-stub";
 import { uploadResultStub } from "../support/upload-result-stub";
 
 describe("foc", () => {
 	describe("foc-synapse", () => {
+		describe("filbeamRetrievalHost", () => {
+			test("mainnet uses wallet.filbeam.io (no mainnet subdomain label)", () => {
+				expect(filbeamRetrievalHost("mainnet")).toBe("filbeam.io");
+			});
+
+			test("testnet and local use calibration.filbeam.io", () => {
+				expect(filbeamRetrievalHost("testnet")).toBe("calibration.filbeam.io");
+				expect(filbeamRetrievalHost("local")).toBe("calibration.filbeam.io");
+			});
+		});
+
+		describe("archivalCdnUrl", () => {
+			test("uses calibration host when CHAIN is local (test stub)", () => {
+				expect(archivalCdnUrl("bafkzcibexample")).toBe(
+					`https://${testEnvStub.FOC_WALLET_ADDRESS}.calibration.filbeam.io/bafkzcibexample`,
+				);
+			});
+		});
+
 		describe("retentionEpochsFromUntil", () => {
 			test("returns positive epochs for future retention", () => {
 				const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);

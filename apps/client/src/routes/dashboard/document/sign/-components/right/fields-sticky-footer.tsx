@@ -15,6 +15,8 @@ export function SignFieldsStickyFooter() {
 		clearPlacementField,
 		isFieldComplete,
 		canSubmitPlacementSign,
+		fillRequiredAutoFields,
+		isFillingRequiredAutoFields,
 	} = useSignPlacement();
 	const { canSign, alreadySigned } = useSignSigning();
 	const { requestFieldFocus, setCurrentDocumentId } = useSignViewer();
@@ -39,11 +41,14 @@ export function SignFieldsStickyFooter() {
 			setCurrentDocumentId(field.documentId);
 			requestFieldFocus(field.id);
 		},
+		onFillRequiredAutoFields: fillRequiredAutoFields,
+		isFillingRequiredAutoFields,
+		scrollableList: true,
 	};
 
 	return (
-		<div className="shrink-0 border-t border-border bg-background/95 p-4 backdrop-blur-sm">
-			<header className="mb-3 space-y-1">
+		<div className="flex max-h-[50%] min-h-0 shrink-0 flex-col border-t border-border bg-background/95 backdrop-blur-sm">
+			<header className="shrink-0 space-y-1 px-4 pb-2 pt-4">
 				<h3 className="font-manrope text-sm font-semibold text-foreground">
 					Your fields
 				</h3>
@@ -53,7 +58,9 @@ export function SignFieldsStickyFooter() {
 						: "Complete each assigned field on the document before signing."}
 				</p>
 			</header>
-			<SignSidebar.FieldsChecklist {...fieldsChecklistProps} />
+			<div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
+				<SignSidebar.FieldsChecklist {...fieldsChecklistProps} />
+			</div>
 		</div>
 	);
 }

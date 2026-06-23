@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ConfirmAlertDialog } from "@/src/lib/components/app/confirm-alert-dialog";
 import { Button } from "@/src/lib/components/ui/button";
-import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { ConditionalAttachmentsPanel } from "@/src/routes/dashboard/document/sign/-components/conditional-attachments-panel";
 import { SettlementStatusPanel } from "@/src/routes/dashboard/document/sign/-components/settlement-status-panel";
 import { SignSidebar } from "@/src/routes/dashboard/document/sign/-components/sidebar";
@@ -190,12 +189,11 @@ export function SignContextRail() {
 									type="button"
 									variant="outline"
 									size="sm"
-									className="h-8 gap-1.5 text-xs"
+									className="h-8 text-xs"
 									disabled={!settlements.canChangeSigner}
 									onClick={() => settlements.openAmendDialog()}
 								>
 									Change signer
-									<ProFeatureMark size="xs" />
 								</Button>
 							</>
 						) : null}

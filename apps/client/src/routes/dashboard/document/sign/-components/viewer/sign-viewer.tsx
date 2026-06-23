@@ -14,6 +14,7 @@ import {
 	useDocumentViewportCanvas,
 } from "@/src/lib/domains/files/document-viewport";
 import { FileViewerFieldOverlay } from "@/src/lib/domains/files/file-viewer/-components/field-overlay";
+import { PLACEMENT_SIGNER_PREVIEW_OVERLAY_CLASSNAME } from "@/src/lib/domains/files/placement-overlay";
 import { cn } from "@/src/lib/utils";
 import { PlacementFieldOverlay } from "@/src/routes/dashboard/document/sign/-components/placement-field-overlay";
 import {
@@ -157,7 +158,10 @@ export function SignViewer() {
 					fields={otherVisibleFields}
 					completions={envelopeFieldCompletions}
 					showPlaceholders
-					overlayClassName="z-[5]"
+					overlayClassName={cn(
+						"z-[5]",
+						PLACEMENT_SIGNER_PREVIEW_OVERLAY_CLASSNAME,
+					)}
 				/>
 				<PlacementFieldOverlay
 					pageIndex={pageIndex}

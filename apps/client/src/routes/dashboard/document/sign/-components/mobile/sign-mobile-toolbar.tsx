@@ -48,6 +48,8 @@ export function SignMobileToolbar() {
 		clearPlacementField,
 		isFieldComplete,
 		canSubmitPlacementSign,
+		fillRequiredAutoFields,
+		isFillingRequiredAutoFields,
 	} = useSignPlacement();
 	const { canSign, alreadySigned } = useSignSigning();
 	const compliance = useSignCompliance();
@@ -67,6 +69,8 @@ export function SignMobileToolbar() {
 			setCurrentDocumentId(field.documentId);
 			requestFieldFocus(field.id);
 		},
+		onFillRequiredAutoFields: fillRequiredAutoFields,
+		isFillingRequiredAutoFields,
 	};
 
 	const railDocuments = useMemo((): DocumentListRailItem[] => {

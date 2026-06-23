@@ -35,6 +35,7 @@ mock.module("viem", () => ({
 mock.module("@/config", () => ({
 	default: {
 		runtimeChain: { id: 84_532 },
+		http: { cors: { origin: ["https://app.example.com"] } },
 	},
 }));
 

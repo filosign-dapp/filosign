@@ -6,36 +6,24 @@ Org-wide archival billing ([archival pricing catalog](../../.cursor/plans/archiv
 
 | Product | What it does |
 |---------|----------------|
-| **Paid workspace** (Solo / Teams) | **FOC platform backup** after envelope **completion** (all signers signed) - independent of archival SKU |
+| **Workspace** (Free / Solo / Teams) | **FOC cold backup** after envelope **routing completes on-chain** when `FOC_BACKUP_ENABLED=true` |
 | **Archival SKU** (Dodo, org-wide) | **Extends** Filecoin payment runway on **replicated** `foc_objects` - never the trigger for first upload |
-
-**Free** workspace: R2 only; no `foc_objects` stub.
 
 ### R2 primary + FOC parallel backup
 
-After the envelope satisfies **on-chain routing** on `FSEnvelopeRegistry` (`quorumMet` when `quorumN > 0`, else `allRequiredSigned`), paid workspaces get a `foc_objects` stub with `replicate_status = pending`. Ciphertext stays on **R2** (primary; free egress) until the FOC replicate job runs.
+After the envelope satisfies **on-chain routing** on `FSEnvelopeRegistry` (`quorumMet` when `quorumN > 0`, else `allRequiredSigned`), all workspaces get a `foc_objects` stub with `replicate_status = pending` and **`foc-transition`** is enqueued immediately.
 
-The replicate job becomes eligible at `r2_evict_after` (`completed_at` + **`R2_HOT_DAYS`**, default **30**), or earlier if the sender exports a compliance packet during the hot window.
+The job uploads to Filecoin via Synapse (FilBeam CDN), verifies bytes against R2 over CDN, and sets `replicate_status = replicated`. **`dealId` is checkpointed after upload** so BullMQ retries skip re-upload and only resume verify. **R2 is not deleted** - both backends may hold the same ciphertext.
 
-At eligibility, the **`foc-transition`** job uploads to Filecoin, polls Filbeam CDN until bytes match R2, and sets `replicate_status = replicated`. **`dealId` is checkpointed after upload** so BullMQ retries skip re-upload and only resume CDN verify. **R2 is not deleted** - both backends may hold the same ciphertext. App downloads prefer R2 presign; FOC CDN is fallback when R2 is missing (future cutover).
-
-Env: `R2_HOT_DAYS=30`
-
-### `TEST_FOC` (prod smoke only)
-
-Set `TEST_FOC=true` in Infisical `prod` for a short smoke test:
-
-- Immediate FOC replicate on envelope completion (no 30-day wait, no export deferral)
-- Download resolver prefers FOC CDN when replicated (proves retrieval without deleting R2)
-- **Remove after test** - triggers real Synapse spend per completed paid envelope
+App downloads always use **R2 presign**; FOC is cold backup only.
 
 ### Workspace retention (default)
 
 - **Active paid subscription:** retain through current billing `periodEnd` (or platform fallback horizon).
-- **Canceled / lapsed:** `periodEnd` + **`WORKSPACE_CHURN_GRACE_DAYS`** (default **90**) before deletion policy applies.
-- Env: `WORKSPACE_CHURN_GRACE_DAYS=90`
+- **Free / canceled / lapsed:** fallback horizon per [`retention-policy.ts`](../lib/domains/foc/retention-policy.ts) (Free: +1 year default when no SaaS/archival window).
+- **Canceled paid:** `periodEnd` + **`WORKSPACE_CHURN_GRACE_DAYS`** (default **90**).
 
-Distinct from `R2_HOT_DAYS`: churn grace is org-level after subscription ends; hot window is per envelope before FOC replicate.
+Env: `WORKSPACE_CHURN_GRACE_DAYS=90`
 
 ### Archival retention (optional add-on)
 
@@ -55,31 +43,30 @@ Effective FOC horizon per object: **`max(workspace, archival)`** - see [`retenti
 | `r2Key` | text | e.g. `uploads/{pieceCid}` |
 | `byteLength` | int | Set at stub; updated on transition |
 | `replicateStatus` | enum | `pending` → `replicated` |
-| `dealId` | text | Set after Synapse upload commits (checkpoint before CDN verify) |
+| `dealId` | text | Set after Synapse upload commits (checkpoint before verify) |
 | `retentionUntil` | timestamptz | Effective horizon (workspace ∪ archival) |
 | `completedAt` | timestamptz | When envelope routing completed on-chain |
-| `r2EvictAfter` | timestamptz | When replicate job may run (legacy column name) |
 | `r2EvictedAt` | timestamptz | Null unless R2 was explicitly evicted (future cutover) |
 | `focVerifiedAt` | timestamptz | After FOC bytes verified vs R2 |
 | `lifecycle` | enum | `active`, `pending_deletion`, `deleted` |
 
-Stub rows are created when a **paid workspace** envelope is **routing-complete on-chain** (see [`isEnvelopeRoutingCompleteOnChain`](../lib/domains/files/utils/piece-helpers.ts)). Archival purchase **extends** retention on existing rows (and funds Synapse); it does not gate the stub.
+Stub rows are created when any workspace envelope is **routing-complete on-chain** (see [`isEnvelopeRoutingCompleteOnChain`](../lib/domains/files/utils/piece-helpers.ts)). Archival purchase **extends** retention on existing rows (and funds Synapse); it does not gate the stub.
 
 ## Synapse SDK (`@filoz/synapse-sdk` ^0.41)
 
 - Client: [`lib/platform/foc/synapse.ts`](../lib/platform/foc/synapse.ts)
-- Transition: `prepare({ dataSize, extraRunwayEpochs })` → `upload()` → checkpoint `deal_id` → CDN poll verify (R2 retained)
+- Transition: `prepare({ dataSize, extraRunwayEpochs })` → `upload()` → checkpoint `deal_id` → verify (R2 retained)
 - Extend: archival webhook → `prepare({ dataSize: 0n, extraRunwayEpochs })` - no re-upload
 
 ## Downloads
 
-[`resolveCiphertextDownloadUrl`](../lib/domains/foc/ciphertext-locator.ts): R2 presign first; FOC CDN when R2 missing (or prefer FOC when `TEST_FOC=true` and replicated). Wired into `pieceDownloadUrl` and cold-invite flows.
+[`resolveCiphertextDownloadUrl`](../lib/domains/foc/ciphertext-locator.ts): **R2 presign** by default. When `FOC_RETRIEVAL=true` and the `foc_objects` row is `replicated` with `focVerifiedAt` set, returns the **FilBeam CDN URL** (requires `FOC_BACKUP_ENABLED=true`). Wired into `pieceDownloadUrl` and cold-invite flows.
 
 ## Jobs
 
 ### `foc-transition` (BullMQ + cron)
 
-- **Stub / transition:** [`lib/domains/foc/lifecycle.ts`](../lib/domains/foc/lifecycle.ts) - stub on routing-complete sign; cron enqueues due transitions (`15 */6 * * *` UTC).
+- **Stub / transition:** [`lib/domains/foc/lifecycle.ts`](../lib/domains/foc/lifecycle.ts) - stub on routing-complete sign; cron enqueues pending transitions (`15 */6 * * *` UTC).
 
 ### `foc-extend-retention`
 
@@ -88,26 +75,29 @@ Stub rows are created when a **paid workspace** envelope is **routing-complete o
 
 ## Env
 
-- `R2_HOT_DAYS` (default `30`) - delay before FOC replicate job may run
-- `TEST_FOC` (default `false`) - prod smoke: immediate replicate + FOC download verify
-- `WORKSPACE_CHURN_GRACE_DAYS` (default `90`)
-- `ARCHIVAL_EXPORT_GRACE_DAYS` (default `30`)
-- `FOC_WALLET_*` - Synapse payer; fund with **USDFC** + **FIL**
-- `FC_SYNAPSE_DATASET_ID` (optional) - pin platform archival dataset; set from first Synapse create log or existing `foc_objects.deal_id`
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `FOC_BACKUP_ENABLED` | `false` | Master switch: stubs, worker, cron, archival Synapse extend |
+| `FOC_RETRIEVAL` | `false` | Download from FilBeam for replicated objects (requires backup) |
+| `FOC_WALLET_*` | optional | Required when `FOC_BACKUP_ENABLED=true`; Synapse payer (USDFC + FIL) |
+| `FC_SYNAPSE_DATASET_ID` | optional | Pin platform dataset; set from first create log or `deal_id` |
+| `WORKSPACE_CHURN_GRACE_DAYS` | `90` | Post-cancel workspace retention |
+| `ARCHIVAL_EXPORT_GRACE_DAYS` | `30` | Post-archival-lapse export window |
 
-## Prod smoke runbook
+When `FOC_BACKUP_ENABLED=false`, `FOC_WALLET_*` may be omitted (local/staging). Bootstrap skips FOC wallet validation; FOC worker and wallet balance cron do not run.
 
-1. Deploy code; set `TEST_FOC=true` in Infisical `prod`; redeploy **API + worker**.
-2. Confirm `FOC_WALLET` wallet funded (USDFC + FIL on mainnet).
-3. Complete one **paid-org** test envelope.
+## Mainnet rollout
+
+1. Deploy code; set `FOC_BACKUP_ENABLED=true`, `CHAIN=mainnet` in Infisical `prod`; redeploy **API + worker**.
+2. Confirm `FOC_WALLET` funded (USDFC + FIL on mainnet).
+3. Complete one test envelope (Free or paid org).
 4. Worker log: `foc-transition: replicated (R2 retained)` with `dealId`.
 5. DB: `replicate_status = replicated`, `foc_verified_at` set, `r2_evicted_at` **NULL**.
-6. Open document in app (download via FOC while `TEST_FOC=true`); decrypt succeeds.
-7. Set `TEST_FOC=false`, redeploy - downloads return to R2-primary.
+6. App download still uses R2.
 
 ## Implementation status
 
-- Completed-envelope stub + delayed transition + Synapse upload/extend: **implemented**
-- Parallel backup (R2 retained) + ciphertext locator: **implemented**
-- FIL/USDFC wallet balance alerts (hourly cron, staging/production): **implemented** — [`sync.ts`](../lib/platform/cron/tasks/sync.ts), [`wallet-balances.ts`](../lib/platform/foc/wallet-balances.ts)
+- Routing-complete stub + immediate transition + Synapse upload/extend: **implemented**
+- Parallel backup (R2 retained) + R2-only ciphertext locator: **implemented**
+- FIL/USDFC wallet balance alerts when backup enabled (hourly cron, staging/production): **implemented**
 - Attachment replication: **not yet** (parent FOC plan)

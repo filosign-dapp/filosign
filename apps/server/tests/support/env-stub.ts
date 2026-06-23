@@ -53,9 +53,11 @@ export const testEnvStub = {
 	POSTHOG_HOST: "https://posthog.example.com",
 	DODO_API_KEY: "dodo-test",
 	DODO_WEBHOOK_KEY: "dodo-webhook-test",
+	PIMLICO_API_KEY: "pimlico-test",
+	PIMLICO_SPONSORSHIP_ENABLED: true,
 	ARCHIVAL_EXPORT_GRACE_DAYS: 30,
-	R2_HOT_DAYS: 30,
-	TEST_FOC: false,
+	FOC_BACKUP_ENABLED: false,
+	FOC_RETRIEVAL: false,
 	WORKSPACE_CHURN_GRACE_DAYS: 90,
 };
 

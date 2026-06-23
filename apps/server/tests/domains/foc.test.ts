@@ -10,10 +10,10 @@ import {
 import type { EnvelopeRegistryProgress } from "@/lib/domains/files/utils/piece-helpers";
 import { envelopeRoutingCompleteFromProgress } from "@/lib/domains/files/utils/piece-helpers";
 import {
-	isFocTransitionDiscoverable,
-	shouldDeferFocTransition,
-	shouldDeferFocTransitionForJob,
-} from "@/lib/domains/foc/lifecycle";
+	isFocBackupEnabled,
+	isFocRetrievalEnabled,
+} from "@/lib/domains/foc/enabled";
+import { isFocTransitionDue } from "@/lib/domains/foc/lifecycle";
 import { retentionEpochsFromUntil } from "@/lib/platform/foc/retention";
 import {
 	dataSetIdFromDealId,
@@ -109,58 +109,40 @@ describe("foc", () => {
 	});
 
 	describe("foc-lifecycle", () => {
-		describe("FOC transition policy", () => {
-			test("defers in hot window until sender exports", () => {
-				expect(
-					shouldDeferFocTransition({
-						inHotWindow: true,
-						senderExported: false,
-					}),
-				).toBe(true);
-				expect(
-					shouldDeferFocTransition({ inHotWindow: true, senderExported: true }),
-				).toBe(false);
+		describe("FOC feature flags", () => {
+			test("isFocBackupEnabled reads env default false from stub", () => {
+				expect(isFocBackupEnabled()).toBe(false);
 			});
 
-			test("does not defer after hot window", () => {
-				expect(
-					shouldDeferFocTransition({
-						inHotWindow: false,
-						senderExported: false,
-					}),
-				).toBe(false);
+			test("isFocRetrievalEnabled reads env default false from stub", () => {
+				expect(isFocRetrievalEnabled()).toBe(false);
 			});
+		});
 
-			test("discovers early when sender exported during hot window", () => {
+		describe("isFocTransitionDue", () => {
+			test("pending without r2 eviction is due", () => {
 				expect(
-					isFocTransitionDiscoverable({
-						inHotWindow: true,
-						senderExported: true,
-					}),
-				).toBe(true);
-				expect(
-					isFocTransitionDiscoverable({
-						inHotWindow: true,
-						senderExported: false,
-					}),
-				).toBe(false);
-			});
-
-			test("discovers after hot window regardless of export", () => {
-				expect(
-					isFocTransitionDiscoverable({
-						inHotWindow: false,
-						senderExported: false,
+					isFocTransitionDue({
+						replicateStatus: "pending",
+						r2EvictedAt: null,
 					}),
 				).toBe(true);
 			});
 
-			test("TEST_FOC bypasses deferral during hot window", () => {
+			test("replicated is not due", () => {
 				expect(
-					shouldDeferFocTransitionForJob({
-						inHotWindow: true,
-						senderExported: false,
-						testFocEnabled: true,
+					isFocTransitionDue({
+						replicateStatus: "replicated",
+						r2EvictedAt: null,
+					}),
+				).toBe(false);
+			});
+
+			test("r2 evicted pending is not due", () => {
+				expect(
+					isFocTransitionDue({
+						replicateStatus: "pending",
+						r2EvictedAt: new Date(),
 					}),
 				).toBe(false);
 			});

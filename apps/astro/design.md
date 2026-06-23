@@ -150,7 +150,7 @@ Tiers and features mapped from [pricing.astro](file:///Users/styles/Styles/Code/
 
 | Plan | Pricing | Documents / Month | Signers / Doc | Unique Features Included |
 |---|---|---|---|---|
-| **Solo** (`individual`) | $20/mo (billed yearly) | 10 (account) | Max 3 | Browser encryption, full proof packet, extended 1y/5y/10y archival storage, draft review links. |
+| **Solo** (`individual`) | $20/mo (billed yearly) | 10 (account) | Max 3 | Browser encryption, full proof packet, optional 1y/3y archival storage, draft review links. |
 | **Teams** (`teams`) | $35/user/mo (billed yearly) | 15 per user (pooled) | Max 5 | Everything in Solo, plus: shared templates, team envelope drafts, team envelope visibility, attached basic USDC payouts. |
 | **Teams Pro** (`teams_pro`) | $59/user/mo (billed yearly) | 25 per user (pooled) | Max 10 | Everything in Teams, plus: custom integrations, seat allocation, bulk send from CSV, custom branding, webhooks, metadata tags, advanced routing, and advanced settlement rules. |
 | **Enterprise** | Custom by request | Unlimited | Custom | SLA support terms, custom security reviews, procurement-friendly contracts. |

@@ -32,9 +32,7 @@ function archivalPlanDescription(productId: string): string {
 		case "archival_year":
 			return "Renews annually. Best when you want flexibility without a long commitment.";
 		case "archival_bundle_3y":
-			return "Three-year retention with auto-renew. Lower effective yearly cost than monthly billing.";
-		case "archival_bundle_5y":
-			return "Five-year horizon for compliance-heavy teams. Lowest effective yearly cost.";
+			return "Three-year retention with auto-renew. Lowest effective yearly cost.";
 		default:
 			return "Org-wide Filecoin retention for all signed documents in this workspace.";
 	}
@@ -141,7 +139,7 @@ function ArchivalPlanPicker(props: {
 
 			<div className="space-y-2">
 				<Label>Storage plan</Label>
-				<div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 					{props.products.map((product) => {
 						const isSelected = props.selectedProductId === product.productId;
 						const effectiveYearly = effectiveYearlyUsd(
@@ -165,7 +163,7 @@ function ArchivalPlanPicker(props: {
 									<span className="text-sm font-semibold text-foreground">
 										{archivalPlanTitle(product.termYears)}
 									</span>
-									{product.productId === "archival_bundle_5y" ? (
+									{product.productId === "archival_bundle_3y" ? (
 										<Badge
 											variant="secondary"
 											className="text-[9px] px-1.5 py-0 h-4 uppercase font-bold tracking-wider"
@@ -261,7 +259,7 @@ export function ArchivalSection() {
 		<SettingsSection
 			icon={<HardDrivesIcon className="size-4" aria-hidden="true" />}
 			title="Archival storage"
-			description="Optional yearly plan to keep signed documents in this workspace for 1, 3, or 5 years."
+			description="Optional plan to keep signed documents in this workspace for 1 or 3 years."
 		>
 			<DocsLink href={DOCS_LINKS.storageRetention()} className="mb-4">
 				Keeping documents long term

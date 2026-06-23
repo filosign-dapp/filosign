@@ -189,7 +189,6 @@ export const organizationTemplateDocuments = t.pgTable(
 export const archivalProductIds = [
 	"archival_year",
 	"archival_bundle_3y",
-	"archival_bundle_5y",
 ] as const;
 export type ArchivalProductId = (typeof archivalProductIds)[number];
 

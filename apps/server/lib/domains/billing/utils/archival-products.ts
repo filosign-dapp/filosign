@@ -4,7 +4,6 @@ import { isDodoLiveMode } from "./policy";
 export const ARCHIVAL_PRODUCT_IDS = [
 	"archival_year",
 	"archival_bundle_3y",
-	"archival_bundle_5y",
 ] as const;
 
 export type ArchivalProductId = (typeof ARCHIVAL_PRODUCT_IDS)[number];
@@ -16,7 +15,6 @@ export function isArchivalProductId(value: string): value is ArchivalProductId {
 const ARCHIVAL_TERM_YEARS: Record<ArchivalProductId, number> = {
 	archival_year: 1,
 	archival_bundle_3y: 3,
-	archival_bundle_5y: 5,
 };
 
 export function archivalTermYears(productId: ArchivalProductId): number {
@@ -39,32 +37,25 @@ export const ARCHIVAL_LIST_PRICES_USD: Record<
 	}
 > = {
 	archival_year: {
-		amountUsd: 99,
+		amountUsd: 49,
 		label: "Yearly Filecoin retention (auto-renew)",
 		billingModel: "subscription",
 	},
 	archival_bundle_3y: {
-		amountUsd: 199,
+		amountUsd: 99,
 		label: "3-year Filecoin retention (auto-renew)",
-		billingModel: "subscription",
-	},
-	archival_bundle_5y: {
-		amountUsd: 299,
-		label: "5-year Filecoin retention (auto-renew)",
 		billingModel: "subscription",
 	},
 };
 
 const DODO_TEST_ARCHIVAL_PRODUCT_IDS: Record<ArchivalProductId, string> = {
-	archival_year: "pdt_archival_year_test",
-	archival_bundle_3y: "pdt_archival_bundle_3y_test",
-	archival_bundle_5y: "pdt_archival_bundle_5y_test",
+	archival_year: "pdt_0NgMNUvCPUVHCwwTyW2m9",
+	archival_bundle_3y: "pdt_0NgMNh7e1JVDEcvpio6YA",
 };
 
 const DODO_LIVE_ARCHIVAL_PRODUCT_IDS: Record<ArchivalProductId, string> = {
-	archival_year: "pdt_0NgMNUvCPUVHCwwTyW2m9",
-	archival_bundle_3y: "pdt_0NgMNh7e1JVDEcvpio6YA",
-	archival_bundle_5y: "pdt_0NgMNlhTy8EOF4WyPh9Bj",
+	archival_year: "pdt_0NhfzjA2HBxXSAniOOz4c",
+	archival_bundle_3y: "pdt_0NhfzqhROk5bLAJAc6JyZ",
 };
 
 const DODO_PRODUCT_ID_TO_ARCHIVAL: Record<string, ArchivalProductId> = {};
@@ -74,13 +65,14 @@ function registerArchivalProductMappings() {
 		const envKey = {
 			archival_year: env.DODO_PRODUCT_ID_ARCHIVAL_YEAR,
 			archival_bundle_3y: env.DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_3Y,
-			archival_bundle_5y: env.DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_5Y,
 		}[productId];
-		const fallback = isDodoLiveMode()
-			? DODO_LIVE_ARCHIVAL_PRODUCT_IDS[productId]
-			: DODO_TEST_ARCHIVAL_PRODUCT_IDS[productId];
-		const dodoId = envKey ?? fallback;
-		DODO_PRODUCT_ID_TO_ARCHIVAL[dodoId] = productId;
+		if (envKey) {
+			DODO_PRODUCT_ID_TO_ARCHIVAL[envKey] = productId;
+		}
+		DODO_PRODUCT_ID_TO_ARCHIVAL[DODO_LIVE_ARCHIVAL_PRODUCT_IDS[productId]] =
+			productId;
+		DODO_PRODUCT_ID_TO_ARCHIVAL[DODO_TEST_ARCHIVAL_PRODUCT_IDS[productId]] =
+			productId;
 	}
 }
 
@@ -92,7 +84,6 @@ export function resolveDodoProductIdForArchival(
 	const fromEnv = {
 		archival_year: env.DODO_PRODUCT_ID_ARCHIVAL_YEAR,
 		archival_bundle_3y: env.DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_3Y,
-		archival_bundle_5y: env.DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_5Y,
 	}[productId];
 	if (fromEnv) return fromEnv;
 	return isDodoLiveMode()

@@ -74,7 +74,7 @@ Fund each pool wallet with ETH on Base for register, sign relay, settlement, and
 | `TEST_FOC` | Prod smoke only: immediate FOC replicate + prefer FOC download when replicated. **Unset after test.** |
 | `WORKSPACE_CHURN_GRACE_DAYS` | After workspace sub ends, retain blobs (default **90**) |
 | `ARCHIVAL_EXPORT_GRACE_DAYS` | After **archival** sub lapses, export window (default **30**) |
-| `DODO_PRODUCT_ID_ARCHIVAL_*` | Separate Filecoin retention product |
+| `DODO_PRODUCT_ID_ARCHIVAL_YEAR` / `DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_3Y` | Optional override for Filecoin retention SKUs |
 
 ---
 

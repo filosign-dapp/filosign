@@ -183,19 +183,42 @@ describe("foc", () => {
 
 	describe("archival-catalog", () => {
 		describe("archival products catalog", () => {
-			test("lists three SKUs without 10y tier", () => {
+			test("lists two SKUs", () => {
 				const products = listArchivalCatalogProducts();
-				expect(products).toHaveLength(3);
+				expect(products).toHaveLength(2);
 				expect(products.map((p) => p.productId).sort()).toEqual(
 					[...ARCHIVAL_PRODUCT_IDS].sort(),
 				);
-				expect(products.some((p) => p.productId.includes("10"))).toBe(false);
 			});
 
-			test("term years match product ids", () => {
+			test("term years and list prices match product ids", () => {
 				expect(archivalTermYears("archival_year")).toBe(1);
 				expect(archivalTermYears("archival_bundle_3y")).toBe(3);
-				expect(archivalTermYears("archival_bundle_5y")).toBe(5);
+				const products = listArchivalCatalogProducts();
+				expect(
+					products.find((p) => p.productId === "archival_year")?.amountUsd,
+				).toBe(49);
+				expect(
+					products.find((p) => p.productId === "archival_bundle_3y")?.amountUsd,
+				).toBe(99);
+			});
+
+			test("live archival Dodo ids map to catalog products", () => {
+				expect(
+					resolveArchivalProductIdFromDodoProduct("pdt_0NhfzjA2HBxXSAniOOz4c"),
+				).toBe("archival_year");
+				expect(
+					resolveArchivalProductIdFromDodoProduct("pdt_0NhfzqhROk5bLAJAc6JyZ"),
+				).toBe("archival_bundle_3y");
+			});
+
+			test("test archival Dodo ids map to catalog products", () => {
+				expect(
+					resolveArchivalProductIdFromDodoProduct("pdt_0NgMNUvCPUVHCwwTyW2m9"),
+				).toBe("archival_year");
+				expect(
+					resolveArchivalProductIdFromDodoProduct("pdt_0NgMNh7e1JVDEcvpio6YA"),
+				).toBe("archival_bundle_3y");
 			});
 
 			test("archival Dodo products do not map to workspace plans", () => {

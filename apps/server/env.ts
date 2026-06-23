@@ -109,7 +109,6 @@ const parsedEnv = createEnv({
 		DODO_PRODUCT_ID_TEAMS_PRO_YEARLY: z.string().min(1).optional(),
 		DODO_PRODUCT_ID_ARCHIVAL_YEAR: z.string().min(1).optional(),
 		DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_3Y: z.string().min(1).optional(),
-		DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_5Y: z.string().min(1).optional(),
 		ARCHIVAL_EXPORT_GRACE_DAYS: z.coerce.number().int().min(1).default(30),
 		R2_HOT_DAYS: z.coerce.number().int().min(1).default(30),
 		TEST_FOC: z

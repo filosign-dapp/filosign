@@ -3,7 +3,6 @@ export {
 	archivalCdnUrl,
 	dealIdFromUploadResult,
 	getOrCreatePlatformDataset,
-	getServerWallet,
 	getSynapse,
 } from "./synapse";
 export {

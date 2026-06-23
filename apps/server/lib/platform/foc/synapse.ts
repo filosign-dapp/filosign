@@ -10,8 +10,8 @@ import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
 const SYNAPSE_SOURCE = "filosign";
-const WITH_CDN = true;
 const PLATFORM_DATASET_METADATA = { filosign_platform: "archival" } as const;
+const WITH_CDN = true;
 
 type SynapseClient = ReturnType<typeof Synapse.create>;
 
@@ -22,8 +22,16 @@ function ensureSynapseClient(): SynapseClient {
 		return synapseClient;
 	}
 
+	const privateKey = env.FOC_WALLET_PRIVATE_KEY;
+	const address = env.FOC_WALLET_ADDRESS;
+	if (!privateKey || !address) {
+		throw new Error(
+			"Synapse client requested but FOC_WALLET_* is not configured",
+		);
+	}
+
 	const synapseChain = env.CHAIN === "mainnet" ? mainnet : calibration;
-	const account = privateKeyToAccount(env.FOC_WALLET_PRIVATE_KEY);
+	const account = privateKeyToAccount(privateKey);
 	synapseClient = Synapse.create({
 		account,
 		chain: synapseChain,
@@ -35,12 +43,11 @@ function ensureSynapseClient(): SynapseClient {
 }
 
 export function getFocWalletAddress(): Address {
-	return getAddress(env.FOC_WALLET_ADDRESS);
-}
-
-/** @deprecated Use getFocWalletAddress */
-export function getServerWallet(): Address {
-	return getFocWalletAddress();
+	const address = env.FOC_WALLET_ADDRESS;
+	if (!address) {
+		throw new Error("FOC_WALLET_ADDRESS is not configured");
+	}
+	return getAddress(address);
 }
 
 export function getSynapse(): SynapseClient {
@@ -86,6 +93,7 @@ export async function getOrCreatePlatformDataset() {
 			getSynapse().storage.createContext({
 				dataSetId,
 				metadata: PLATFORM_DATASET_METADATA,
+				withCDN: WITH_CDN,
 			}),
 		);
 
@@ -102,6 +110,7 @@ export async function getOrCreatePlatformDataset() {
 	const ctx = await tryCatch(
 		getSynapse().storage.createContext({
 			metadata: PLATFORM_DATASET_METADATA,
+			withCDN: WITH_CDN,
 		}),
 	);
 

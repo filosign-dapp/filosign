@@ -1,7 +1,6 @@
 import { throwAppError } from "@filosign/errors/server";
 import { eq } from "drizzle-orm";
-import { isFocEnabled } from "@/lib/domains/foc/enabled";
-import { logFocSmoke } from "@/lib/domains/foc/smoke-log";
+import { isFocRetrievalEnabled } from "@/lib/domains/foc/enabled";
 import db from "@/lib/platform/db";
 import { archivalCdnUrl } from "@/lib/platform/foc";
 import { bucket } from "@/lib/platform/s3/client";
@@ -34,33 +33,23 @@ async function loadFocRow(pieceCid: string): Promise<FocRow | null> {
 	return row ?? null;
 }
 
-/** R2-only when FOC disabled; when enabled, prefer FOC CDN if replicated else R2. */
+/** R2 presign by default; FOC FilBeam URL when `FOC_RETRIEVAL` and object is replicated. */
 export async function resolveCiphertextDownloadUrl(
 	pieceCid: string,
 ): Promise<string> {
-	const r2Key = uploadsKey(pieceCid);
-	const focEnabled = isFocEnabled();
-
-	if (focEnabled) {
+	if (isFocRetrievalEnabled()) {
 		const focRow = await loadFocRow(pieceCid);
-		const focReady = focRow != null && isFocRetrievable(focRow);
-		if (focReady) {
-			const url = archivalCdnUrl(pieceCid);
-			logFocSmoke("download via FOC CDN (FOC enabled)", { pieceCid, url });
-			return url;
+		if (focRow != null && isFocRetrievable(focRow)) {
+			return archivalCdnUrl(pieceCid);
 		}
 	}
 
+	const r2Key = uploadsKey(pieceCid);
 	if (await bucket.exists(r2Key)) {
-		const url = bucket.presign(r2Key, {
+		return bucket.presign(r2Key, {
 			method: "GET",
 			expiresIn: PRESIGN_EXPIRES_SEC,
 		});
-		logFocSmoke("download via R2 presign", {
-			pieceCid,
-			focEnabled,
-		});
-		return url;
 	}
 
 	throwAppError("FILES.NOT_FOUND");

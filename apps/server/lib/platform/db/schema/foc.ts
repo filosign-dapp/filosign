@@ -35,7 +35,6 @@ export const focObjects = t.pgTable(
 		dealId: t.text(),
 		retentionUntil: t.timestamp({ withTimezone: true }).notNull(),
 		completedAt: t.timestamp({ withTimezone: true }).notNull(),
-		r2EvictAfter: t.timestamp({ withTimezone: true }).notNull(),
 		r2EvictedAt: t.timestamp({ withTimezone: true }),
 		focVerifiedAt: t.timestamp({ withTimezone: true }),
 		lifecycle: t
@@ -50,7 +49,7 @@ export const focObjects = t.pgTable(
 			.on(table.organizationId, table.lifecycle),
 		t
 			.index("idx_foc_objects_transition_due")
-			.on(table.replicateStatus, table.r2EvictAfter),
+			.on(table.replicateStatus, table.r2EvictedAt),
 		t.uniqueIndex("idx_foc_objects_piece_cid").on(table.pieceCid),
 	],
 );

@@ -168,8 +168,8 @@ export async function enqueueFileRegisterRetry(
 }
 
 export async function enqueueFocTransition(pieceCid: string): Promise<void> {
-	const { isFocEnabled } = await import("@/lib/domains/foc/enabled");
-	if (!isFocEnabled()) {
+	const { isFocBackupEnabled } = await import("@/lib/domains/foc/enabled");
+	if (!isFocBackupEnabled()) {
 		return;
 	}
 

@@ -1,6 +1,7 @@
 import { getAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import env from "@/env";
+import { isFocBackupEnabled } from "@/lib/domains/foc/enabled";
 import {
 	emitCriticalPlatformEvent,
 	PLATFORM_ALERT_EVENTS,
@@ -22,13 +23,24 @@ function failBootstrap(stage: string, error: string): never {
 
 /** FOC Synapse wallet key/address consistency at startup. */
 export function validateFocWallet(): void {
-	const focFromKey = getAddress(
-		privateKeyToAccount(env.FOC_WALLET_PRIVATE_KEY).address,
-	);
-	if (focFromKey !== env.FOC_WALLET_ADDRESS) {
+	if (!isFocBackupEnabled()) {
+		return;
+	}
+
+	const privateKey = env.FOC_WALLET_PRIVATE_KEY;
+	const address = env.FOC_WALLET_ADDRESS;
+	if (!privateKey || !address) {
+		failBootstrap(
+			"foc_wallet_missing",
+			"FOC_BACKUP_ENABLED=true requires FOC_WALLET_PRIVATE_KEY and FOC_WALLET_ADDRESS",
+		);
+	}
+
+	const focFromKey = getAddress(privateKeyToAccount(privateKey).address);
+	if (focFromKey !== address) {
 		failBootstrap(
 			"foc_wallet_mismatch",
-			`FOC_WALLET_PRIVATE_KEY address ${focFromKey} does not match FOC_WALLET_ADDRESS ${env.FOC_WALLET_ADDRESS}`,
+			`FOC_WALLET_PRIVATE_KEY address ${focFromKey} does not match FOC_WALLET_ADDRESS ${address}`,
 		);
 	}
 }

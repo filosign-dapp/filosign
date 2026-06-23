@@ -1,5 +1,4 @@
 import env from "@/env";
-import { logFocSmoke } from "@/lib/domains/foc/smoke-log";
 import {
 	emitEmailDisabledWarning,
 	emitServerStartedPing,
@@ -34,10 +33,6 @@ export async function bootstrapPlatformRuntime(
 ): Promise<void> {
 	validateServerRoleForDeployment();
 	await validateServerBootstrap();
-	logFocSmoke("server bootstrap ok (TEST_FOC smoke logging enabled)", {
-		serverRole: env.SERVER_ROLE,
-		chain: env.CHAIN,
-	});
 	await initCache();
 	const jobs = resolveJobsRuntimeOptions();
 	startJobsRuntime({

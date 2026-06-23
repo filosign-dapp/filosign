@@ -1,3 +1,4 @@
+import { isFocBackupEnabled } from "@/lib/domains/foc/enabled";
 import { runsHttpServer, runsWorkerTasks } from "@/lib/platform/role";
 import {
 	closeJobsQueues,
@@ -37,7 +38,9 @@ export function startJobsRuntime(options: JobsRuntimeOptions): void {
 		getPostSignRoutingQueue();
 		getIndexerQueue();
 		getBillingWebhookQueue();
-		getFocTransitionQueue();
+		if (isFocBackupEnabled()) {
+			getFocTransitionQueue();
+		}
 		getFileRegisterQueue();
 	}
 	if (options.worker) {
@@ -46,7 +49,9 @@ export function startJobsRuntime(options: JobsRuntimeOptions): void {
 		startPostSignRoutingWorker();
 		startIndexerWorker();
 		startBillingWebhookWorker();
-		startFocTransitionWorker();
+		if (isFocBackupEnabled()) {
+			startFocTransitionWorker();
+		}
 		startFileRegisterWorker();
 		startFileRegisterRetryWorker();
 		startOutboxDrainer();

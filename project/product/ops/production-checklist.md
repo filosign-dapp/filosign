@@ -74,7 +74,9 @@ Schema includes `organization_subscriptions` (Dodo IDs, `seatCount`, `billingInt
 | `DODO_WEBHOOK_KEY` | Webhook signing secret |
 | `CLIENT_URL` | `https://app.filosign.xyz` |
 | `RELAYER_POOL` / `RELAYER_POOL_PRIVATE_KEYS` | N relayer wallets (production: N=2) |
-| `FOC_WALLET_ADDRESS` / `FOC_WALLET_PRIVATE_KEY` | Synapse storage payer (not in pool) |
+| `FOC_BACKUP_ENABLED` | `true` — cold backup to Filecoin on envelope routing complete |
+| `FOC_WALLET_ADDRESS` / `FOC_WALLET_PRIVATE_KEY` | Synapse storage payer (not in pool); required when `FOC_BACKUP_ENABLED=true` |
+| `FC_SYNAPSE_DATASET_ID` | Pin after first mainnet upload logs dataset ID |
 
 Product IDs are hardcoded in [`billing.ts`](../../apps/server/lib/domains/billing/billing.ts) / [`policy.ts`](../../apps/server/lib/domains/billing/policy.ts). Override with `DODO_PRODUCT_ID_*` env vars only if dashboard SKUs change.
 
@@ -93,7 +95,13 @@ Product IDs are hardcoded in [`billing.ts`](../../apps/server/lib/domains/billin
 - [ ] Server: Infisical `prod` machine identity
 - [ ] Client (Cloudflare Pages): `VITE_DEPLOYMENT=production`, `VITE_CHAIN=mainnet`, `VITE_SERVER_URL=https://api.filosign.xyz`
 
-**Startup validation (automatic):** `index.ts` awaits bootstrap before Bun serves traffic - relayer pool key ↔ address ↔ `isRelayer` on-chain, FOC wallet consistency, then Dragonfly `PING`. `/health` returns 503 until ready.
+**Startup validation (automatic):** `index.ts` awaits bootstrap before Bun serves traffic - relayer pool key ↔ address ↔ `isRelayer` on-chain, FOC wallet consistency when `FOC_BACKUP_ENABLED=true`, then Dragonfly `PING`. `/health` returns 503 until ready.
+
+**FOC cold backup (when enabled):**
+
+- [ ] Fund `FOC_WALLET` with USDFC (storage runway) + FIL (gas) on mainnet
+- [ ] Complete test envelope; worker log: `foc-transition: replicated (R2 retained)`
+- [ ] App downloads still use R2; `foc_objects.replicate_status = replicated`, `r2_evicted_at` NULL
 
 ---
 

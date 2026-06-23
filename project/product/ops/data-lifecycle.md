@@ -21,7 +21,7 @@ This is the engineer-facing deletion and retention policy for server/domain work
 - **Org members**: use `status = "removed"`, keep historical rows.
 - **Invites**: expire by status; optional delayed purge for stale expired invites.
 - **Compliance exports**: preserve legal evidence while redacting old request metadata. Export allowed when envelope is fully executed or voided (`completedAt` or `revokedBeforeCompletedAt`). On-chain `documentSha256` is the Merkle root of per-document file hashes.
-- **FOC / hot R2**: prefer sender compliance export before `r2EvictAfter`; replication may proceed after the hot window even if the sender never exported.
+- **FOC cold backup**: replicate encrypted ciphertext to Filecoin immediately after on-chain routing completes (`FOC_BACKUP_ENABLED`); R2 remains the download path until an explicit R2 eviction cutover.
 - **Users**: erase account by anonymizing PII and revoking sessions; do not delete user rows with legal references.
 
 ## Schema guardrails (enforced)

@@ -16,8 +16,8 @@ Last updated: 2026-06-02
 | Class | Example tables/objects | Retention | Deletion mode | Notes |
 |---|---|---|---|---|
 | Signed legal evidence | `files`, `file_signatures`, `file_signer_amendments`, `file_acknowledgements`, `compliance_export_logs` | legal/claims retention | immutable core; selective metadata redaction windows where lawful | never add product API hard delete |
-| Customer export duty | `compliance_export_logs`, completion packet (ZIP) | operational + legal | sender export preferred before FOC during hot window | On-chain `documentSha256` = Merkle root of SHA-256(raw bytes) per signable document (leaves sorted by doc id); ZIP includes per-doc Merkle proofs |
-| Encrypted ciphertext | R2 `uploads/{pieceCid}`, then FOC after replicate+verify | tiered (`r2EvictAfter`, org retention) | delete R2 only after FOC verify | FOC deferred until sender export while `now <= r2EvictAfter`; may proceed after hot window without export |
+| Customer export duty | `compliance_export_logs`, completion packet (ZIP) | operational + legal | sender should export proof packet for own records | On-chain `documentSha256` = Merkle root of SHA-256(raw bytes) per signable document (leaves sorted by doc id); ZIP includes per-doc Merkle proofs |
+| Encrypted ciphertext | R2 `uploads/{pieceCid}` + FOC cold backup after replicate+verify | org retention (`retentionUntil`) | delete R2 only after explicit eviction cutover (future) | FOC backup runs immediately on routing complete; app downloads use R2 |
 | Draft artifacts | `envelope_drafts` (`archived`), `envelope_draft_documents`, draft snapshot/doc objects | 30 days after archive | hard delete (scheduled job) | preserve sent-envelope evidence separately |
 | Invite lifecycle | `file_cold_invites`, `organization_invites` | expire by status; purge expired unclaimed after 90 days | hard delete for eligible rows | claimed/legal-linked records handled per legal basis |
 | Platform access queue | `access_requests`, `checkout_intents`, `platform_access_pending` | operational retention + periodic cleanup | redact or delete based on workflow/state | DSAR redaction path required |

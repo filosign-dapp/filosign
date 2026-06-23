@@ -16,7 +16,9 @@ export {
 	toSignaturePrefetchProfile,
 } from "../../lib/prefetch-default-signatures";
 export { rasterizeTypedSignature } from "../../lib/rasterize-typed-signature";
+export { buildVisualCompletionForPlacementField } from "../../lib/typed-signature-field-preview";
 export {
+	bytesToDataUrl,
 	dataUrlToBytes,
 	intrinsicAspectRatioFromBytes,
 	svgStringToBytes,

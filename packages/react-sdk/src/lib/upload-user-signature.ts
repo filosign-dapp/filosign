@@ -110,6 +110,15 @@ export async function dataUrlToBytes(dataUrl: string): Promise<{
 	return { bytes, contentType };
 }
 
+export function bytesToDataUrl(bytes: Uint8Array, contentType: string): string {
+	let binary = "";
+	for (const byte of bytes) {
+		binary += String.fromCharCode(byte);
+	}
+	const base64 = btoa(binary);
+	return `data:${contentType};base64,${base64}`;
+}
+
 export function svgStringToBytes(svg: string): Uint8Array {
 	return new TextEncoder().encode(svg);
 }

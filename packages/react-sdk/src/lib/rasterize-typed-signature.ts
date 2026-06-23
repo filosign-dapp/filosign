@@ -199,11 +199,15 @@ export async function rasterizeTypedSignature(args: {
 	text: string;
 	fontId: string;
 	role: UserSignatureRole;
+	boxWidth?: number;
+	boxHeight?: number;
 }): Promise<Uint8Array> {
 	const { cssFamily, dimensions, fontSize } = getSignatureFontRasterSpec(
 		args.fontId,
 		args.role,
 	);
+	const boxWidth = args.boxWidth ?? dimensions.width;
+	const boxHeight = args.boxHeight ?? dimensions.height;
 
 	const probe = document.createElement("canvas").getContext("2d");
 	if (!probe) {
@@ -215,8 +219,8 @@ export async function rasterizeTypedSignature(args: {
 		measuredWidth: measured.width,
 		measuredHeight: measured.height,
 		preferredFontSize: fontSize,
-		boxWidth: dimensions.width,
-		boxHeight: dimensions.height,
+		boxWidth,
+		boxHeight,
 	});
 
 	const drawFamily = await loadSignatureDrawFont({
@@ -229,8 +233,8 @@ export async function rasterizeTypedSignature(args: {
 	);
 
 	const canvas = document.createElement("canvas");
-	canvas.width = Math.round(dimensions.width * pixelRatio);
-	canvas.height = Math.round(dimensions.height * pixelRatio);
+	canvas.width = Math.round(boxWidth * pixelRatio);
+	canvas.height = Math.round(boxHeight * pixelRatio);
 
 	const ctx = canvas.getContext("2d");
 	if (!ctx) {
@@ -238,12 +242,12 @@ export async function rasterizeTypedSignature(args: {
 	}
 
 	ctx.scale(pixelRatio, pixelRatio);
-	ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+	ctx.clearRect(0, 0, boxWidth, boxHeight);
 	ctx.fillStyle = SIGNATURE_RASTER_INK;
 	ctx.font = `${fittedFontSize}px ${drawFamily}`;
 	ctx.textAlign = "center";
 	ctx.textBaseline = "middle";
-	ctx.fillText(args.text, dimensions.width / 2, dimensions.height * 0.55);
+	ctx.fillText(args.text, boxWidth / 2, boxHeight * 0.55);
 
 	const trimmed = trimCanvasToInk(canvas);
 

@@ -25,7 +25,11 @@ import {
 } from "@/src/lib/domains/placement/utils/active-assignees";
 import { signatureFieldPalette } from "@/src/lib/domains/placement/utils/field-types";
 import { sortPlacedFields } from "@/src/lib/domains/placement/utils/placed-fields";
-import { SELF_ASSIGNEE_ID } from "@/src/lib/domains/placement/utils/placement-coordinates";
+import {
+	buildPlacementFieldNudgePatches,
+	placementKeyboardNudgeDelta,
+	SELF_ASSIGNEE_ID,
+} from "@/src/lib/domains/placement/utils/placement-coordinates";
 import {
 	type PlacementFieldPresetStore,
 	rememberPlacementFieldSize,
@@ -127,10 +131,12 @@ export function usePlacementControllerCore(
 	const {
 		placeField: placeFieldRaw,
 		handleFieldUpdate: handleFieldUpdateRaw,
+		handleBulkFieldUpdate,
 		handleFieldRemove: handleFieldRemoveRaw,
 		handleBulkFieldRemove,
 		handleFieldDuplicate,
 		applyFieldPatches,
+		importSignatureFields,
 	} = usePlacementFields(commitFields, signatureFields, resolveFieldSize);
 
 	const rememberFieldSize = useCallback(
@@ -298,6 +304,33 @@ export function usePlacementControllerCore(
 		);
 	}, [pendingFieldType]);
 
+	const handlePaletteTypeClick = useCallback(
+		(type: SignatureField["type"]) => {
+			if (readOnly) return;
+			cancelPlacement();
+			if (selectedFieldIds.size === 1) {
+				const fieldId = [...selectedFieldIds][0];
+				if (fieldId) {
+					handleFieldUpdateRaw(fieldId, { type });
+				}
+				return;
+			}
+			if (selectedFieldIds.size > 1) {
+				handleBulkFieldUpdate(selectedFieldIds, { type });
+				return;
+			}
+			handleAddField(type);
+		},
+		[
+			readOnly,
+			cancelPlacement,
+			selectedFieldIds,
+			handleFieldUpdateRaw,
+			handleBulkFieldUpdate,
+			handleAddField,
+		],
+	);
+
 	const handleFieldSelect = useCallback(
 		(fieldId: string, options?: { additive?: boolean }) => {
 			cancelPlacement();
@@ -360,10 +393,60 @@ export function usePlacementControllerCore(
 		clearFieldSelection();
 	}, [clearFieldSelection]);
 
+	const nudgeSelectedFields = useCallback(
+		(deltaX: number, deltaY: number) => {
+			if (readOnly || selectedFieldIds.size === 0) return;
+
+			const patches = buildPlacementFieldNudgePatches({
+				fieldIds: selectedFieldIds,
+				fields: signatureFields,
+				currentDocumentId,
+				deltaX,
+				deltaY,
+				viewportForPage: (page) => ({
+					docWidth,
+					margin,
+					docHeight: getPageHeight(page),
+				}),
+			});
+
+			if (patches.size > 0) {
+				applyFieldPatches(patches);
+			}
+		},
+		[
+			readOnly,
+			selectedFieldIds,
+			signatureFields,
+			currentDocumentId,
+			docWidth,
+			margin,
+			getPageHeight,
+			applyFieldPatches,
+		],
+	);
+
+	const isPlacementKeyboardTarget = (target: EventTarget | null) => {
+		if (!(target instanceof HTMLElement)) return true;
+		if (target instanceof HTMLInputElement) return false;
+		if (target instanceof HTMLTextAreaElement) return false;
+		if (target.isContentEditable) return false;
+		return true;
+	};
+
 	useEffect(() => {
 		if (readOnly) return;
 		const onKeyDown = (e: KeyboardEvent) => {
 			const mod = e.metaKey || e.ctrlKey;
+			if (
+				e.key === "Escape" &&
+				isPlacingField &&
+				isPlacementKeyboardTarget(e.target)
+			) {
+				e.preventDefault();
+				cancelPlacement();
+				return;
+			}
 			if (mod && e.key === "z" && !e.shiftKey) {
 				e.preventDefault();
 				undo();
@@ -382,11 +465,23 @@ export function usePlacementControllerCore(
 			if (
 				(e.key === "Backspace" || e.key === "Delete") &&
 				selectedFieldIds.size > 0 &&
-				!(e.target instanceof HTMLInputElement) &&
-				!(e.target instanceof HTMLTextAreaElement)
+				isPlacementKeyboardTarget(e.target)
 			) {
 				e.preventDefault();
 				handleRemoveSelectedFields();
+				return;
+			}
+			if (
+				!mod &&
+				!isPlacingField &&
+				selectedFieldIds.size > 0 &&
+				isPlacementKeyboardTarget(e.target)
+			) {
+				const delta = placementKeyboardNudgeDelta(e.key, e.shiftKey);
+				if (delta) {
+					e.preventDefault();
+					nudgeSelectedFields(delta.deltaX, delta.deltaY);
+				}
 			}
 		};
 		window.addEventListener("keydown", onKeyDown);
@@ -399,6 +494,9 @@ export function usePlacementControllerCore(
 		selectedFieldIds,
 		handleFieldDuplicate,
 		handleRemoveSelectedFields,
+		isPlacingField,
+		cancelPlacement,
+		nudgeSelectedFields,
 	]);
 
 	const documents: PlacementDocument[] = useMemo(
@@ -507,6 +605,8 @@ export function usePlacementControllerCore(
 		handleClearAllFields,
 		applyFieldPatches: readOnly ? () => {} : applyFieldPatches,
 		handleAddField: readOnly ? () => {} : handleAddField,
+		handlePaletteTypeClick: readOnly ? () => {} : handlePaletteTypeClick,
+		cancelPlacement: readOnly ? () => {} : cancelPlacement,
 		placeField,
 		handlePlaceAtCoords,
 		handleFieldSelect,
@@ -515,6 +615,7 @@ export function usePlacementControllerCore(
 		handleFieldRemove,
 		handleFieldUpdate,
 		handleFieldDuplicate: readOnly ? () => {} : handleFieldDuplicate,
+		importSignatureFields: readOnly ? () => {} : importSignatureFields,
 		handleDocumentSelect,
 		documentLoadingMessage,
 		undo,

@@ -8,13 +8,14 @@ import {
 	pageScale,
 	pageStripOffsetX,
 	transformStateFromRef,
-} from "@/src/lib/domains/files/document-viewport";
+} from "@/src/lib/domains/files/document-viewport/viewport-coordinates";
 import {
 	clampRectToViewport,
 	PLACEMENT_PAGE_STRIP_GAP_PX,
 	type PlacementRectPx,
 	type PlacementViewport,
 	placementRectAfterFreeformResize,
+	placementSnapThreshold,
 	snapPlacementRect,
 } from "@/src/lib/domains/files/placement-viewport";
 
@@ -86,7 +87,43 @@ export type FieldDragContext = {
 	initialRect: PlacementRectPx;
 	viewport: PlacementViewport;
 	pageEl: HTMLElement | null;
+	skipSnap: boolean;
 };
+
+export function placementRectAfterClampedDrag(args: {
+	initial: PlacementRectPx;
+	deltaX: number;
+	deltaY: number;
+	pageEl: HTMLElement | null;
+	viewport: PlacementViewport;
+}): PlacementRectPx {
+	const scale = args.pageEl ? pageScale(args.pageEl) : 1;
+	const clamped = clampDragTransformToPage({
+		transform: { x: args.deltaX, y: args.deltaY },
+		initialRect: args.initial,
+		viewport: args.viewport,
+		pageScaleFactor: scale,
+	});
+	return clampRectToViewport(
+		{
+			...args.initial,
+			x: args.initial.x + clamped.x / scale,
+			y: args.initial.y + clamped.y / scale,
+		},
+		args.viewport,
+	);
+}
+
+export function syncStoredFieldRectIfClamped(args: {
+	stored: { x: number; y: number; width: number; height: number };
+	viewport: PlacementViewport;
+}): Partial<{ x: number; y: number }> | null {
+	const clamped = placementRectFromField(args.stored, args.viewport);
+	if (clamped.x === args.stored.x && clamped.y === args.stored.y) {
+		return null;
+	}
+	return { x: clamped.x, y: clamped.y };
+}
 
 export function createRestrictToPageModifier(
 	getDragContext: () => FieldDragContext | null,
@@ -114,16 +151,21 @@ export function finalizePlacementRectAfterMove(args: {
 	viewport: PlacementViewport;
 	otherFieldsOnPage: PlacementRectPx[];
 	snapThreshold?: number;
+	skipSnap?: boolean;
 }): PlacementRectPx {
-	const moved = placementRectAfterDrag(
-		args.initial,
-		args.deltaX,
-		args.deltaY,
-		args.pageEl,
-		args.viewport,
-	);
+	const moved = placementRectAfterClampedDrag({
+		initial: args.initial,
+		deltaX: args.deltaX,
+		deltaY: args.deltaY,
+		pageEl: args.pageEl,
+		viewport: args.viewport,
+	});
+	const threshold = args.skipSnap
+		? 0
+		: (args.snapThreshold ?? placementSnapThreshold(moved));
 	return snapPlacementRect(moved, args.viewport, args.otherFieldsOnPage, {
-		threshold: args.snapThreshold ?? 8,
+		threshold,
+		initial: args.initial,
 	});
 }
 
@@ -142,7 +184,8 @@ export function finalizePlacementRectAfterResize(args: {
 		args.viewport,
 	);
 	return snapPlacementRect(resized, args.viewport, args.otherFieldsOnPage, {
-		threshold: args.snapThreshold ?? 8,
+		threshold: args.snapThreshold ?? placementSnapThreshold(resized),
+		initial: args.initial,
 	});
 }
 
@@ -163,7 +206,8 @@ export function finalizePlacementRectAfterFreeformResize(args: {
 		args.viewport,
 	);
 	return snapPlacementRect(resized, args.viewport, args.otherFieldsOnPage, {
-		threshold: args.snapThreshold ?? 8,
+		threshold: args.snapThreshold ?? placementSnapThreshold(resized),
+		initial: args.initial,
 	});
 }
 
@@ -227,6 +271,89 @@ export function placementRectFromField(
 		},
 		viewport,
 	);
+}
+
+export const PLACEMENT_KEYBOARD_NUDGE_STEP_PX = 1;
+export const PLACEMENT_KEYBOARD_NUDGE_SHIFT_STEP_PX = 8;
+
+export function placementRectAfterKeyboardNudge(
+	initial: PlacementRectPx,
+	deltaX: number,
+	deltaY: number,
+	viewport: PlacementViewport,
+): PlacementRectPx {
+	return clampRectToViewport(
+		{
+			...initial,
+			x: initial.x + deltaX,
+			y: initial.y + deltaY,
+		},
+		viewport,
+	);
+}
+
+export type PlacementNudgeField = {
+	id: string;
+	documentId: string;
+	page: number;
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+};
+
+export function buildPlacementFieldNudgePatches(args: {
+	fieldIds: Iterable<string>;
+	fields: PlacementNudgeField[];
+	currentDocumentId: string;
+	deltaX: number;
+	deltaY: number;
+	viewportForPage: (page: number) => PlacementViewport;
+}): Map<string, { x: number; y: number }> {
+	const moveIds = new Set(args.fieldIds);
+	const patches = new Map<string, { x: number; y: number }>();
+
+	for (const field of args.fields) {
+		if (!moveIds.has(field.id)) continue;
+		if (field.documentId !== args.currentDocumentId) continue;
+
+		const viewport = args.viewportForPage(field.page);
+		const initial = placementRectFromField(field, viewport);
+		const next = placementRectAfterKeyboardNudge(
+			initial,
+			args.deltaX,
+			args.deltaY,
+			viewport,
+		);
+
+		if (next.x !== field.x || next.y !== field.y) {
+			patches.set(field.id, { x: next.x, y: next.y });
+		}
+	}
+
+	return patches;
+}
+
+export function placementKeyboardNudgeDelta(
+	key: string,
+	shiftKey: boolean,
+): { deltaX: number; deltaY: number } | null {
+	const step = shiftKey
+		? PLACEMENT_KEYBOARD_NUDGE_SHIFT_STEP_PX
+		: PLACEMENT_KEYBOARD_NUDGE_STEP_PX;
+
+	switch (key) {
+		case "ArrowUp":
+			return { deltaX: 0, deltaY: -step };
+		case "ArrowDown":
+			return { deltaX: 0, deltaY: step };
+		case "ArrowLeft":
+			return { deltaX: -step, deltaY: 0 };
+		case "ArrowRight":
+			return { deltaX: step, deltaY: 0 };
+		default:
+			return null;
+	}
 }
 
 export function placementRectAfterDrag(

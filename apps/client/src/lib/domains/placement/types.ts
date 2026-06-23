@@ -75,6 +75,8 @@ export type PlacementControllerCore = {
 	handleClearAllFields: () => void;
 	applyFieldPatches: (patches: Map<string, Partial<SignatureField>>) => void;
 	handleAddField: (type: SignatureField["type"]) => void;
+	handlePaletteTypeClick: (type: SignatureField["type"]) => void;
+	cancelPlacement: () => void;
 	placeField: (args: {
 		type: SignatureField["type"];
 		x: number;
@@ -94,6 +96,7 @@ export type PlacementControllerCore = {
 		updates: Partial<SignatureField>,
 	) => void;
 	handleFieldDuplicate: (fieldId: string) => void;
+	importSignatureFields: (fields: SignatureField[]) => void;
 	handleDocumentSelect: (documentId: string) => void;
 	documentLoadingMessage: string | null;
 	undo: () => void;

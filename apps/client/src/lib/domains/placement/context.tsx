@@ -40,6 +40,8 @@ type AddSignViewerContextValue = Pick<
 type AddSignPlacementContextValue = Pick<
 	PlacementController,
 	| "handleAddField"
+	| "handlePaletteTypeClick"
+	| "cancelPlacement"
 	| "isPlacingField"
 	| "pendingFieldType"
 	| "placementFieldTypeLabel"
@@ -70,6 +72,7 @@ type AddSignDndContextValue = Pick<
 	| "setIsInteractingField"
 	| "resolvePlacementFieldSize"
 	| "interactionMode"
+	| "importSignatureFields"
 >;
 
 type AddSignChromeContextValue = Pick<
@@ -186,6 +189,8 @@ export function PlacementProvider({
 	const placementValue = useMemo(
 		(): AddSignPlacementContextValue => ({
 			handleAddField: controller.handleAddField,
+			handlePaletteTypeClick: controller.handlePaletteTypeClick,
+			cancelPlacement: controller.cancelPlacement,
 			isPlacingField: controller.isPlacingField,
 			pendingFieldType: controller.pendingFieldType,
 			placementFieldTypeLabel: controller.placementFieldTypeLabel,
@@ -202,6 +207,8 @@ export function PlacementProvider({
 		}),
 		[
 			controller.handleAddField,
+			controller.handlePaletteTypeClick,
+			controller.cancelPlacement,
 			controller.isPlacingField,
 			controller.pendingFieldType,
 			controller.placementFieldTypeLabel,
@@ -233,6 +240,7 @@ export function PlacementProvider({
 			setIsInteractingField: controller.setIsInteractingField,
 			resolvePlacementFieldSize: controller.resolvePlacementFieldSize,
 			interactionMode: controller.interactionMode,
+			importSignatureFields: controller.importSignatureFields,
 		}),
 		[
 			controller.signatureFields,
@@ -248,6 +256,7 @@ export function PlacementProvider({
 			controller.setIsInteractingField,
 			controller.resolvePlacementFieldSize,
 			controller.interactionMode,
+			controller.importSignatureFields,
 		],
 	);
 

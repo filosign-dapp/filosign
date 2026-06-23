@@ -120,6 +120,14 @@ export function usePlacementFields(
 		[handleSignatureFieldsChange, signatureFields],
 	);
 
+	const importSignatureFields = useCallback(
+		(newFields: SignatureField[]) => {
+			if (newFields.length === 0) return;
+			handleSignatureFieldsChange([...signatureFields, ...newFields]);
+		},
+		[handleSignatureFieldsChange, signatureFields],
+	);
+
 	return {
 		placeField,
 		handleFieldUpdate,
@@ -128,5 +136,6 @@ export function usePlacementFields(
 		handleFieldRemove,
 		handleBulkFieldRemove,
 		handleFieldDuplicate,
+		importSignatureFields,
 	};
 }

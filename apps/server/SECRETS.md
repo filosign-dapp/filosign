@@ -64,14 +64,29 @@ Contract env keys: `FC_DEPLOYER_PRIVATE_KEY`, `RELAYER_POOL`, `FC_OWNER_ADDRESS`
 
 Fund each pool wallet with ETH on Base for register, sign relay, settlement, and attachment gas.
 
-### Filecoin / FOC (Synapse)
-
-`FOC_WALLET_PRIVATE_KEY` and `FOC_WALLET_ADDRESS` power [`@filoz/synapse-sdk`](https://docs.filecoin.cloud/) - **platform backup** for all **paid workspaces** (not only archival SKU). Fund with **USDFC** (Filecoin Pay) and **FIL** (gas). See [`docs/foc-storage-lifecycle.md`](docs/foc-storage-lifecycle.md).
+### Pimlico gas sponsorship (server proxy)
 
 | Env | Role |
 |-----|------|
-| `R2_HOT_DAYS` | Days after envelope completion before FOC replicate (default **30**); R2 stays primary |
-| `TEST_FOC` | Prod smoke only: immediate FOC replicate + prefer FOC download when replicated. **Unset after test.** |
+| `PIMLICO_API_KEY` | **Server only** (Infisical `staging` / `sandbox` / `prod`). Powers `POST /api/integrations/pimlico/v2/:chainId/rpc` — never set as `VITE_*` on Cloudflare Pages. |
+| `PIMLICO_SPONSORSHIP_ENABLED` | Default `true`. Set `false` to disable the proxy without removing the key. |
+
+Required when `CHAIN` is `testnet` or `mainnet` and sponsorship is enabled. Not used on `local` (client uses EOA mode).
+
+**Pimlico dashboard (after deploy):**
+
+1. Configure **sponsorship policies** — per-sender caps, global budget, contract allowlists (USDC, `FSPaymentValidator`, registry methods).
+2. Restrict or rotate any API key previously exposed in the client bundle.
+3. Use a dedicated server-only key with paymaster + bundler scopes for the proxy.
+
+### Filecoin / FOC (Synapse)
+
+`FOC_WALLET_PRIVATE_KEY` and `FOC_WALLET_ADDRESS` power [`@filoz/synapse-sdk`](https://docs.filecoin.cloud/) when **`FOC_BACKUP_ENABLED=true`**. Fund with **USDFC** (Filecoin Pay) and **FIL** (gas). Omit wallet keys when backup is disabled (local dev). See [`docs/foc-storage-lifecycle.md`](docs/foc-storage-lifecycle.md).
+
+| Env | Role |
+|-----|------|
+| `FOC_BACKUP_ENABLED` | Master switch for FOC cold backup (default **false** locally) |
+| `FOC_RETRIEVAL` | Serve downloads from FilBeam when replicated (default **false**; requires backup) |
 | `WORKSPACE_CHURN_GRACE_DAYS` | After workspace sub ends, retain blobs (default **90**) |
 | `ARCHIVAL_EXPORT_GRACE_DAYS` | After **archival** sub lapses, export window (default **30**) |
 | `DODO_PRODUCT_ID_ARCHIVAL_YEAR` / `DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_3Y` | Optional override for Filecoin retention SKUs |

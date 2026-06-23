@@ -53,6 +53,10 @@ export const defaultThirdwebChain = thirdwebChainFromViem(defaultChain);
 
 const appOrigin = env.VITE_CLIENT_URL.replace(/\/$/, "");
 
+function pimlicoProxyRpcUrl(chainId: number): string {
+	return `${env.VITE_SERVER_URL}/api/integrations/pimlico/v2/${chainId}/rpc`;
+}
+
 function filosignInAppAuthOptions(): string[] {
 	if (env.VITE_DEPLOYMENT === "production") return ["email"];
 	return ["email", "google"];
@@ -78,14 +82,10 @@ export const filosignInAppWalletOptions: Record<string, unknown> = {
 			: {
 					mode: "EIP7702",
 					sponsorGas: true,
-					...(env.VITE_PIMLICO_API_KEY
-						? {
-								overrides: {
-									bundlerUrl: `https://api.pimlico.io/v2/${defaultChain.id}/rpc?apikey=${env.VITE_PIMLICO_API_KEY}`,
-									paymasterUrl: `https://api.pimlico.io/v2/${defaultChain.id}/rpc?apikey=${env.VITE_PIMLICO_API_KEY}`,
-								},
-							}
-						: {}),
+					overrides: {
+						bundlerUrl: pimlicoProxyRpcUrl(defaultChain.id),
+						paymasterUrl: pimlicoProxyRpcUrl(defaultChain.id),
+					},
 				},
 	hidePrivateKeyExport: true,
 };

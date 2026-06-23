@@ -23,7 +23,6 @@ const parsedEnv = createEnv({
 			.enum(["true", "false", "1", "0"])
 			.optional()
 			.transform((v) => v === "true" || v === "1"),
-		VITE_PIMLICO_API_KEY: z.string().min(1).optional(),
 		VITE_REOWN_PROJECT_ID: z.string().min(1).optional(),
 		VITE_WALLETCONNECT_PROJECT_ID: z.string().min(1).optional(),
 		/** Unset → disabled on production, enabled on other deployments. */

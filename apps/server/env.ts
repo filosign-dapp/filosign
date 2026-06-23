@@ -26,8 +26,17 @@ const parsedEnv = createEnv({
 		S3_ENDPOINT: z.url(),
 		RELAYER_POOL: z.string().min(1),
 		RELAYER_POOL_PRIVATE_KEYS: z.string().min(1),
-		FOC_WALLET_PRIVATE_KEY: zEvmPrivateKey(),
-		FOC_WALLET_ADDRESS: zEvmAddress(),
+		FOC_BACKUP_ENABLED: z
+			.string()
+			.default("false")
+			.transform((v) => v === "true"),
+		/** When true, downloads use FilBeam for replicated FOC objects instead of R2 presign. */
+		FOC_RETRIEVAL: z
+			.string()
+			.default("false")
+			.transform((v) => v === "true"),
+		FOC_WALLET_PRIVATE_KEY: zEvmPrivateKey().optional(),
+		FOC_WALLET_ADDRESS: zEvmAddress().optional(),
 		FC_SYNAPSE_DATASET_ID: z.coerce.number().int().positive().optional(),
 		PG_URI: z.string().min(1),
 		DB_NAME: z.string().min(1),
@@ -53,6 +62,13 @@ const parsedEnv = createEnv({
 		AWS_ACCESS_KEY_ID: z.string().min(1).optional(),
 		AWS_SECRET_ACCESS_KEY: z.string().min(1).optional(),
 		CHAIN: z.enum(["local", "testnet", "mainnet"]),
+		/** Pimlico API key for server-side bundler/paymaster proxy (not exposed to client). */
+		PIMLICO_API_KEY: z.string().min(1).optional(),
+		/** When false, gas sponsorship proxy is disabled even if PIMLICO_API_KEY is set. */
+		PIMLICO_SPONSORSHIP_ENABLED: z
+			.string()
+			.default("true")
+			.transform((v) => v === "true"),
 		/** Production mainnet primary JSON-RPC; public Base URL is automatic fallback. Ignored on other deployments. */
 		CHAIN_RPC_URL: z.url().optional(),
 		PORT: z
@@ -110,12 +126,7 @@ const parsedEnv = createEnv({
 		DODO_PRODUCT_ID_ARCHIVAL_YEAR: z.string().min(1).optional(),
 		DODO_PRODUCT_ID_ARCHIVAL_BUNDLE_3Y: z.string().min(1).optional(),
 		ARCHIVAL_EXPORT_GRACE_DAYS: z.coerce.number().int().min(1).default(30),
-		R2_HOT_DAYS: z.coerce.number().int().min(1).default(30),
-		TEST_FOC: z
-			.string()
-			.default("false")
-			.transform((v) => v === "true"),
-		/** Days to retain data after workspace subscription ends (FOC + hot storage policy). */
+		/** Days to retain data after workspace subscription ends (FOC retention policy). */
 		WORKSPACE_CHURN_GRACE_DAYS: z.coerce.number().int().min(1).default(90),
 	},
 	runtimeEnv: Bun.env,

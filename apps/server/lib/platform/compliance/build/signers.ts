@@ -1,4 +1,4 @@
-import type { ComplianceBundle } from "@filosign/shared";
+import type { ComplianceBundle, PlacementManifest } from "@filosign/shared";
 import {
 	completionsMerkleProofsV1,
 	fieldIdsForRecipientEmail,
@@ -6,9 +6,57 @@ import {
 	normalizePlacementRecipientEmail,
 	requiredFieldIdsForRecipientEmail,
 } from "@filosign/shared";
-import { getAddress } from "viem";
+import { type Address, getAddress } from "viem";
+import { senderHasManifestFields } from "@/lib/domains/files/utils/piece-detail/signers";
 import type { ComplianceLoadContext } from "../load-context";
+import type { ParticipantRow } from "../types";
 import { displayNameFromUser } from "../types";
+
+/** Signer roster for compliance export (incl. sender-as-signer when manifest assigns fields). */
+export function listComplianceSignerParticipants(args: {
+	participantRows: ParticipantRow[];
+	manifest: PlacementManifest;
+	senderNorm: Address;
+}): ParticipantRow[] {
+	const signerParticipants = args.participantRows.filter(
+		(p) => p.role === "signer",
+	);
+	const senderParticipant = args.participantRows.find(
+		(p) => p.role === "sender" && getAddress(p.wallet) === args.senderNorm,
+	);
+	const senderEmail = senderParticipant?.email?.trim();
+	const senderEmailForManifest = senderEmail
+		? normalizePlacementRecipientEmail(senderEmail)
+		: null;
+	const senderAlreadySigner = signerParticipants.some(
+		(p) => getAddress(p.wallet).toLowerCase() === args.senderNorm.toLowerCase(),
+	);
+	const includeSender =
+		!senderAlreadySigner &&
+		senderParticipant != null &&
+		senderHasManifestFields({
+			manifestParsed: { success: true, data: args.manifest },
+			senderEmailForManifest,
+		});
+
+	if (includeSender) {
+		return [...signerParticipants, senderParticipant];
+	}
+	return signerParticipants;
+}
+
+export function complianceExecutionStatus(
+	signerParticipants: ParticipantRow[],
+	sigByWallet: ComplianceLoadContext["sigByWallet"],
+): ComplianceBundle["executionStatus"] {
+	const totalSigners = signerParticipants.length;
+	const signedCount = signerParticipants.filter((p) =>
+		sigByWallet.has(getAddress(p.wallet).toLowerCase()),
+	).length;
+	return totalSigners > 0 && signedCount === totalSigners
+		? "fully_executed"
+		: "partially_executed";
+}
 
 function timelineForWallet(
 	ctx: ComplianceLoadContext,
@@ -32,9 +80,7 @@ export function buildComplianceSigners(
 	ctx: ComplianceLoadContext,
 ): ComplianceBundle["signers"] {
 	const { pieceCid, manifest, fileRecord, draftByWallet, sigByWallet } = ctx;
-	const signerParticipants = ctx.participantRows.filter(
-		(p) => p.role === "signer",
-	);
+	const signerParticipants = listComplianceSignerParticipants(ctx);
 
 	return signerParticipants.map((p) => {
 		const wallet = getAddress(p.wallet);

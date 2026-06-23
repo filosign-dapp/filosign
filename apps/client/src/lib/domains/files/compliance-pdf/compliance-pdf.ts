@@ -144,7 +144,7 @@ export function useCompliancePdfExports(options: {
 		setPdfExportBusy(true);
 		try {
 			const exportCtx = complianceExportContext(fileData);
-			const { bundle, bundleHash, exportId } =
+			const { bundle, bundleCanonicalJson, bundleHash, exportId } =
 				await fetchComplianceBundle("zip");
 			const { buildCompliancePdfOnly, buildDocumentPlusCompliancePdf } =
 				await import("./utils/build");
@@ -169,6 +169,7 @@ export function useCompliancePdfExports(options: {
 
 			await downloadCompletionPacketZip({
 				bundle,
+				bundleCanonicalJson,
 				bundleHash,
 				exportId,
 				fileData,

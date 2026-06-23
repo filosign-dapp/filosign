@@ -13,7 +13,6 @@ import type {
 	DocumentMerkleLeafProofV1,
 } from "@filosign/shared";
 import {
-	canonicalComplianceBundleJson,
 	documentsMerkleProofsV1,
 	merkleRootFromLeafAndSiblings,
 	parseHexString,
@@ -226,6 +225,7 @@ export async function warnDocumentMerkleMismatch(args: {
 
 export async function downloadCompletionPacketZip(args: {
 	bundle: ComplianceBundle;
+	bundleCanonicalJson: string;
 	bundleHash: `0x${string}`;
 	exportId: string;
 	fileData: ViewFileResult;
@@ -265,7 +265,7 @@ export async function downloadCompletionPacketZip(args: {
 		registerDocumentMerkleRoot: registerRoot,
 	});
 
-	const bundleJson = canonicalComplianceBundleJson(args.bundle);
+	const bundleJson = args.bundleCanonicalJson;
 	const verifyManifest = buildVerifyManifest({
 		bundle: args.bundle,
 		bundleHash: args.bundleHash,

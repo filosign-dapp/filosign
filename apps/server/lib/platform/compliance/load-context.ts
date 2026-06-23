@@ -22,6 +22,10 @@ import {
 } from "@/lib/platform/db/schema/file";
 import { fileSettlementRules } from "@/lib/platform/db/schema/settlements";
 import { users } from "@/lib/platform/db/schema/user";
+import {
+	complianceExecutionStatus,
+	listComplianceSignerParticipants,
+} from "./build/signers";
 import { loadOnchainRegistration } from "./load-onchain-registration";
 import type { ParticipantRow } from "./types";
 
@@ -244,19 +248,18 @@ export async function loadComplianceContext(args: {
 		sigRowsNormalized.map((s) => [s.signer.toLowerCase(), s]),
 	);
 
-	const signerParticipants = participantRows.filter((p) => p.role === "signer");
-	const totalSigners = signerParticipants.length;
-	const signedCount = signerParticipants.filter((p) =>
-		sigByWallet.has(getAddress(p.wallet).toLowerCase()),
-	).length;
-
-	const executionStatus =
-		totalSigners > 0 && signedCount === totalSigners
-			? ("fully_executed" as const)
-			: ("partially_executed" as const);
+	const senderNorm = getAddress(fileRecord.sender);
+	const signerParticipants = listComplianceSignerParticipants({
+		participantRows,
+		manifest,
+		senderNorm,
+	});
+	const executionStatus = complianceExecutionStatus(
+		signerParticipants,
+		sigByWallet,
+	);
 
 	const exportedAtIso = new Date().toISOString();
-	const senderNorm = getAddress(fileRecord.sender);
 	const onchainRegistration = await loadOnchainRegistration({
 		pieceCid,
 		registryAddress: fileRecord.registryAddress,

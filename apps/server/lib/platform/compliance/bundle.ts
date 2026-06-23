@@ -17,10 +17,12 @@ export async function buildComplianceBundleAndHash(args: {
 }): Promise<{
 	bundle: import("@filosign/shared").ComplianceBundle;
 	bundleHash: `0x${string}`;
+	bundleCanonicalJson: string;
 }> {
 	const ctx = await loadComplianceContext(args);
 	const raw = await assembleComplianceBundle(ctx);
 	const bundle = zComplianceBundle.parse(raw);
-	const bundleHash = sha256HexUtf8(canonicalComplianceBundleJson(bundle));
-	return { bundle, bundleHash };
+	const bundleCanonicalJson = canonicalComplianceBundleJson(bundle);
+	const bundleHash = sha256HexUtf8(bundleCanonicalJson);
+	return { bundle, bundleHash, bundleCanonicalJson };
 }

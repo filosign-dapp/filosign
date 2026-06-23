@@ -1,7 +1,7 @@
 import { ListPageSkeleton } from "@/src/lib/components/app/skeletons/layouts/list-page";
 import { cn } from "@/src/lib/utils/index";
 
-/** Generic dashboard outlet placeholder while a child route chunk loads. */
+/** Content-area placeholder while a shell child route chunk loads (inside DashboardLayout). */
 export function DashboardOutletSkeleton({ className }: { className?: string }) {
 	return (
 		<ListPageSkeleton

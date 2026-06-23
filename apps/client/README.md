@@ -97,8 +97,8 @@ No other top-level siblings under the route directory (`hooks/`, loose `*.ts`, e
 
 ### Layouts
 
-- `dashboard/route.tsx` - [`DashboardProtector`](src/lib/auth/dashboard-protector.tsx) + `EntitlementUpgradeProvider` + `Outlet`
-- `dashboard/_shell/route.tsx` - sidebar/nav shell + `Outlet`
+- `dashboard/route.tsx` - [`DashboardProtector`](src/lib/auth/dashboard-protector.tsx) + `EntitlementUpgradeProvider` + conditional [`DashboardLayout`](src/routes/dashboard/_shell/-components/DashboardLayout.tsx) for `_shell` matches + `Outlet`
+- `dashboard/_shell/route.tsx` - pathless route group (`Outlet` only); groups shell pages in the file tree
 - Full-bleed flows (envelope create, sign, signature create) are **siblings** of `_shell/`, not children
 
 ---

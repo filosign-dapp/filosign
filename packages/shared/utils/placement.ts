@@ -64,6 +64,33 @@ export type DraftPlacementManifest = z.infer<typeof zDraftPlacementManifest>;
 export type PlacementField = z.infer<typeof zPlacementField>;
 export type PlacementDocument = z.infer<typeof zPlacementDocument>;
 
+/** Canonical placement editor / sign overlay layout width in px. */
+export const PLACEMENT_CANONICAL_LAYOUT_WIDTH = 600;
+
+/** Default page layout height at canonical width (matches desktop viewport fallback). */
+export const PLACEMENT_CANONICAL_LAYOUT_HEIGHT = 800;
+
+export function defaultPlacementLayout(): {
+	width: number;
+	height: number;
+} {
+	return {
+		width: PLACEMENT_CANONICAL_LAYOUT_WIDTH,
+		height: PLACEMENT_CANONICAL_LAYOUT_HEIGHT,
+	};
+}
+
+export function placementFieldPixelRect(
+	field: Pick<PlacementField, "rect">,
+	layoutWidth: number,
+	layoutHeight: number,
+): { width: number; height: number } {
+	return {
+		width: Math.max(1, Math.round(field.rect.width * layoutWidth)),
+		height: Math.max(1, Math.round(field.rect.height * layoutHeight)),
+	};
+}
+
 export function sortKeysDeep(value: unknown): unknown {
 	if (value === null || typeof value !== "object") {
 		return value;

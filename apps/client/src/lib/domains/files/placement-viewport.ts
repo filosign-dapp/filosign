@@ -153,13 +153,34 @@ export function placementManifestRectFromField(args: {
 }
 
 /** Snap field edges to page margins and other fields on the same page. */
+export function placementSnapThreshold(
+	rect: PlacementRectPx,
+	base = 8,
+): number {
+	const minDim = Math.min(rect.width, rect.height);
+	return Math.min(base, Math.max(2, minDim * 0.4));
+}
+
+function shouldSnapToTarget(args: {
+	currentDistance: number;
+	initialDistance: number;
+	threshold: number;
+	initial?: PlacementRectPx;
+}): boolean {
+	if (args.currentDistance > args.threshold) return false;
+	if (!args.initial) return true;
+	return args.currentDistance < args.initialDistance;
+}
+
+/** Snap field edges to page margins and other fields on the same page. */
 export function snapPlacementRect(
 	rect: PlacementRectPx,
 	viewport: PlacementViewport,
 	otherFields: PlacementRectPx[],
-	options?: { threshold?: number },
+	options?: { threshold?: number; initial?: PlacementRectPx },
 ): PlacementRectPx {
-	const threshold = options?.threshold ?? 8;
+	const threshold = options?.threshold ?? placementSnapThreshold(rect);
+	const initial = options?.initial;
 	const margin = viewport.margin ?? 0;
 	let { x, y, width, height } = rect;
 
@@ -176,16 +197,56 @@ export function snapPlacementRect(
 	}
 
 	for (const target of xSnapTargets) {
-		if (Math.abs(x - target) <= threshold) x = target;
+		if (
+			shouldSnapToTarget({
+				currentDistance: Math.abs(x - target),
+				initialDistance: initial ? Math.abs(initial.x - target) : 0,
+				threshold,
+				initial,
+			})
+		) {
+			x = target;
+		}
 	}
 	for (const target of ySnapTargets) {
-		if (Math.abs(y - target) <= threshold) y = target;
+		if (
+			shouldSnapToTarget({
+				currentDistance: Math.abs(y - target),
+				initialDistance: initial ? Math.abs(initial.y - target) : 0,
+				threshold,
+				initial,
+			})
+		) {
+			y = target;
+		}
 	}
 	for (const target of rightSnapTargets) {
-		if (Math.abs(x + width - target) <= threshold) x = target - width;
+		if (
+			shouldSnapToTarget({
+				currentDistance: Math.abs(x + width - target),
+				initialDistance: initial
+					? Math.abs(initial.x + initial.width - target)
+					: 0,
+				threshold,
+				initial,
+			})
+		) {
+			x = target - width;
+		}
 	}
 	for (const target of bottomSnapTargets) {
-		if (Math.abs(y + height - target) <= threshold) y = target - height;
+		if (
+			shouldSnapToTarget({
+				currentDistance: Math.abs(y + height - target),
+				initialDistance: initial
+					? Math.abs(initial.y + initial.height - target)
+					: 0,
+				threshold,
+				initial,
+			})
+		) {
+			y = target - height;
+		}
 	}
 
 	return clampRectToViewport({ x, y, width, height }, viewport);

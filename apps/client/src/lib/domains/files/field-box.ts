@@ -2,16 +2,10 @@ import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types
 
 export type PlacementFieldType = SignatureField["type"];
 
-export const PLACEMENT_FIELD_SCALE_MIN = 0.5;
+export const PLACEMENT_FIELD_SCALE_MIN = 0.15;
 export const PLACEMENT_FIELD_SCALE_MAX = 3;
 
-const FIELD_MIN_HEIGHT: Partial<Record<PlacementFieldType, number>> = {
-	text: 28,
-	date: 28,
-	name: 28,
-	email: 28,
-	checkbox: 24,
-};
+const FIELD_MIN_HEIGHT_PX = 8;
 
 export type PlacementFieldRect = {
 	width: number;
@@ -30,10 +24,6 @@ const DESKTOP_RECTS: Record<PlacementFieldType, PlacementFieldRect> = {
 };
 
 const MOBILE_SCALE = 0.85;
-
-export function fieldSupportsFreeformResize(type: PlacementFieldType): boolean {
-	return type === "text";
-}
 
 export function defaultPlacementFieldRect(
 	type: PlacementFieldType,
@@ -68,8 +58,7 @@ export function clampFieldHeight(
 	const minH = defaults.height * PLACEMENT_FIELD_SCALE_MIN;
 	const maxH = defaults.height * PLACEMENT_FIELD_SCALE_MAX;
 	const scaled = Math.max(minH, Math.min(height, maxH));
-	const floor = FIELD_MIN_HEIGHT[type] ?? 0;
-	return Math.max(floor, scaled);
+	return Math.max(FIELD_MIN_HEIGHT_PX, scaled);
 }
 
 export function fieldRectFromWidth(
@@ -99,15 +88,10 @@ export function normalizeSignatureFieldDimensions(
 			? clampFieldWidth(field.type, field.width, isMobile)
 			: defaults.width;
 
-	if (fieldSupportsFreeformResize(field.type)) {
-		const height =
-			field.height && field.height > 0
-				? clampFieldHeight(field.type, field.height, isMobile)
-				: fieldRectFromWidth(field.type, width, isMobile).height;
-		return { ...field, width, height };
-	}
-
-	const { height } = fieldRectFromWidth(field.type, width, isMobile);
+	const height =
+		field.height && field.height > 0
+			? clampFieldHeight(field.type, field.height, isMobile)
+			: fieldRectFromWidth(field.type, width, isMobile).height;
 	return { ...field, width, height };
 }
 

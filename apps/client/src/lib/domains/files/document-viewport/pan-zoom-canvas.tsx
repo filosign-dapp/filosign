@@ -4,7 +4,7 @@ import {
 	MagnifyingGlassPlusIcon,
 } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	type ReactZoomPanPinchRef,
 	TransformComponent,
@@ -28,7 +28,7 @@ function PanZoomControls() {
 				variant="ghost"
 				size="sm"
 				className="size-8 p-0"
-				onClick={() => zoomOut()}
+				onClick={() => zoomOut(0.25)}
 				title="Zoom out"
 			>
 				<MagnifyingGlassMinusIcon className="size-4" />
@@ -38,7 +38,7 @@ function PanZoomControls() {
 				variant="ghost"
 				size="sm"
 				className="size-8 p-0"
-				onClick={() => zoomIn()}
+				onClick={() => zoomIn(0.25)}
 				title="Zoom in"
 			>
 				<MagnifyingGlassPlusIcon className="size-4" />
@@ -87,10 +87,24 @@ export function PanZoomCanvas({
 	const { panPinchRef, setWrapperEl, setPanZoomTransform } =
 		useDocumentViewportCanvas();
 	const viewportRef = useRef<HTMLDivElement | null>(null);
+	const [isPanning, setIsPanning] = useState(false);
 
 	useEffect(() => {
 		setWrapperEl(viewportRef.current);
 	}, [setWrapperEl]);
+
+	useEffect(() => {
+		if (disablePan) setIsPanning(false);
+	}, [disablePan]);
+
+	const showPanCursor = !disablePan && !crosshairCursor && !placementCapture;
+	const panCursorClass = showPanCursor
+		? isPanning
+			? "!cursor-grabbing"
+			: "!cursor-grab"
+		: crosshairCursor
+			? "!cursor-crosshair"
+			: undefined;
 
 	const setRef = (instance: ReactZoomPanPinchRef | null) => {
 		panPinchRef.current = instance;
@@ -105,7 +119,7 @@ export function PanZoomCanvas({
 				ref={setRef}
 				initialScale={1}
 				minScale={0.5}
-				maxScale={3}
+				maxScale={6}
 				centerOnInit
 				limitToBounds={false}
 				wheel={{ step: 0.002 }}
@@ -126,13 +140,18 @@ export function PanZoomCanvas({
 						scale: state.scale,
 					});
 				}}
+				onPanningStart={() => setIsPanning(true)}
+				onPanningStop={() => setIsPanning(false)}
 			>
 				{showZoomControls ? <PanZoomControls /> : null}
 				<TransformComponent
-					wrapperClass="!flex-1 !h-full !w-full !overflow-hidden !bg-muted/10"
+					wrapperClass={cn(
+						"!flex-1 !h-full !w-full !overflow-hidden !bg-muted/10",
+						panCursorClass,
+					)}
 					contentClass={cn(
 						"!relative !flex !min-h-full !min-w-full !items-start !justify-center !p-8",
-						crosshairCursor && "!cursor-crosshair",
+						panCursorClass,
 					)}
 				>
 					{placementCapture ? (

@@ -1,0 +1,3 @@
+ALTER TABLE "organization_settlement_feature_access" ADD COLUMN "external_wallet_access_enabled" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "organization_settlement_feature_access" ADD COLUMN "external_wallet_access_enabled_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "organization_settlement_feature_access" ADD COLUMN "external_wallet_access_enabled_by_admin_wallet" text;

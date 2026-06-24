@@ -62,7 +62,7 @@ export function buildSignProgressPlan(args: {
 		{ id: "loading_document", label: "Loading document" },
 		{ id: "preparing_signature", label: "Preparing signature" },
 		{ id: "crypto_sign", label: "Creating cryptographic signature" },
-		{ id: "wallet_sign", label: "Confirm in wallet" },
+		{ id: "wallet_sign", label: "Authorizing signature" },
 		{ id: "submitting_signature", label: "Submitting signature" },
 	);
 

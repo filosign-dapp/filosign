@@ -4,6 +4,7 @@ import { useActiveOrganization, useActiveOrgId } from "@filosign/react/orgs";
 import {
 	isAdvancedSettlementReleaseType,
 	normalizeSettlementReleaseType,
+	type ReleaseCopyContext,
 	settlementReleaseTypeLabel,
 } from "@filosign/shared";
 import { PlusIcon } from "@phosphor-icons/react";
@@ -14,7 +15,12 @@ import { Image } from "@/src/lib/components/app/media/image";
 import { Button } from "@/src/lib/components/ui/button";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
+import { mergeEnvelopeFormIntoCreateForm } from "@/src/lib/domains/drafts";
 import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
+import {
+	PayoutRuleDialog,
+	routingContextFromCompose,
+} from "@/src/lib/domains/satellites";
 import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements";
 import {
 	PayoutAccessRequestDialog,
@@ -25,13 +31,13 @@ import {
 	usePayoutPayerBalance,
 	usePayoutPayerPreference,
 } from "@/src/lib/domains/settlements";
+import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { formatUsdcAmountString } from "@/src/lib/web3/format-usdc";
 import {
 	ComposeRuleCard,
 	ComposeRuleCardEditRemoveActions,
 } from "@/src/routes/dashboard/envelope/create/-components/compose-rule-card";
 import { PayoutBalanceSummary } from "@/src/routes/dashboard/envelope/create/-components/payout-balance-summary";
-import { PayoutRuleDialog } from "@/src/routes/dashboard/envelope/create/-components/payout-rule-dialog";
 import { useCreateEnvelope } from "@/src/routes/dashboard/envelope/create/-lib/context/create-envelope-context";
 import {
 	getDraftsByRuleId,
@@ -44,10 +50,12 @@ const usdcToken = SUPPORTED_TOKENS[0];
 
 function PayoutRuleCard({
 	legs,
+	routingContext,
 	onEdit,
 	onRemove,
 }: {
 	legs: SettlementAttachmentDraft[];
+	routingContext: ReleaseCopyContext;
 	onEdit: () => void;
 	onRemove: () => void;
 }) {
@@ -69,7 +77,9 @@ function PayoutRuleCard({
 			}
 		>
 			<p className="inline-flex items-center gap-2 text-sm font-medium">
-				{settlementReleaseTypeLabel(releaseType)}
+				{settlementReleaseTypeLabel(releaseType, routingContext, {
+					thresholdN: first.thresholdN,
+				})}
 				{isProRelease ? <ProFeatureMark size="xs" /> : null}
 			</p>
 			<ul className="space-y-0.5 text-xs text-muted-foreground">
@@ -98,11 +108,13 @@ function PayoutRuleCard({
 
 export function ComposePayoutsContent() {
 	const { form, payoutBalance } = useCreateEnvelope();
+	const setCreateForm = useStorePersist((s) => s.setCreateForm);
 	const { data: entitlements } = useEntitlements();
 	const activeOrgId = useActiveOrgId();
 	const activeOrg = useActiveOrganization();
 	const settlementsEnabled = canUseBasicSettlements(entitlements);
 
+	const createForm = useStorePersist((s) => s.createForm);
 	const recipients = useStore(form.store, (state) => state.values.recipients);
 	const settlementDrafts = useStore(
 		form.store,
@@ -115,6 +127,11 @@ export function ComposePayoutsContent() {
 	const payoutPayerUserOverride = useStore(
 		form.store,
 		(state) => state.values.payoutPayerUserOverride,
+	);
+
+	const routingContext = useMemo(
+		() => routingContextFromCompose(recipients, createForm?.registerRouting),
+		[recipients, createForm?.registerRouting],
 	);
 
 	const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
@@ -174,6 +191,16 @@ export function ComposePayoutsContent() {
 		form.setFieldValue("settlementDrafts", next);
 	};
 
+	const persistSettlementDrafts = async (next: typeof settlementDrafts) => {
+		onSettlementDraftsChange(next);
+		const prev = useStorePersist.getState().createForm;
+		const merged = await mergeEnvelopeFormIntoCreateForm(
+			{ ...form.state.values, settlementDrafts: next },
+			prev,
+		);
+		setCreateForm(merged);
+	};
+
 	const openCreate = () => {
 		if (guardPayoutAttach()) return;
 		setEditingRuleId(null);
@@ -186,14 +213,19 @@ export function ComposePayoutsContent() {
 		setRuleDialogOpen(true);
 	};
 
-	const handleSave = (ruleId: string, legs: SettlementAttachmentDraft[]) => {
-		onSettlementDraftsChange(upsertRuleDrafts(settlementDrafts, ruleId, legs));
+	const handleSave = async (
+		ruleId: string,
+		legs: SettlementAttachmentDraft[],
+	) => {
+		await persistSettlementDrafts(
+			upsertRuleDrafts(settlementDrafts, ruleId, legs),
+		);
 		setEditingRuleId(null);
 	};
 
-	const handleRemove = () => {
+	const handleRemove = async () => {
 		if (!editingRuleId) return;
-		onSettlementDraftsChange(
+		await persistSettlementDrafts(
 			removeDraftsByRuleId(settlementDrafts, editingRuleId),
 		);
 		setEditingRuleId(null);
@@ -206,7 +238,7 @@ export function ComposePayoutsContent() {
 					<h3 className="text-sm font-semibold">Attached payouts</h3>
 					<p className="text-xs text-muted-foreground">
 						Pre-authorize stablecoin payouts for Filosign recipients when
-						signing conditions are met. Funds stay in your wallet until each
+						signing conditions are met. Funds stay in your account until each
 						payout executes.{" "}
 						<DocsLink href={DOCS_LINKS.payouts()}>Payouts guide</DocsLink>
 					</p>
@@ -240,9 +272,10 @@ export function ComposePayoutsContent() {
 							<PayoutRuleCard
 								key={ruleId}
 								legs={legs}
+								routingContext={routingContext}
 								onEdit={() => openEdit(ruleId)}
 								onRemove={() =>
-									onSettlementDraftsChange(
+									void persistSettlementDrafts(
 										removeDraftsByRuleId(settlementDrafts, ruleId),
 									)
 								}
@@ -283,6 +316,7 @@ export function ComposePayoutsContent() {
 						if (!open) setEditingRuleId(null);
 					}}
 					recipients={recipients}
+					routingContext={routingContext}
 					allSettlementDrafts={settlementDrafts}
 					existingRuleId={editingRuleId}
 					existingLegs={editingLegs}

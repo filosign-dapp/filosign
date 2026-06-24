@@ -1,6 +1,7 @@
 import {
 	isAdvancedSettlementReleaseType,
 	normalizeSettlementReleaseType,
+	type ReleaseCopyContext,
 } from "@filosign/shared";
 import { PaperclipIcon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
@@ -17,6 +18,7 @@ import {
 type AttachmentPacketSummaryCardProps = {
 	draft: AttachmentPacketComposeDraft;
 	reviewLabel?: string;
+	routingContext?: ReleaseCopyContext;
 	compact?: boolean;
 	showRecipientCount?: boolean;
 	actions: ReactNode;
@@ -25,13 +27,18 @@ type AttachmentPacketSummaryCardProps = {
 export function AttachmentPacketSummaryBody({
 	draft,
 	reviewLabel,
+	routingContext,
 	compact = false,
 	showRecipientCount = false,
 }: Pick<
 	AttachmentPacketSummaryCardProps,
-	"draft" | "reviewLabel" | "compact" | "showRecipientCount"
+	"draft" | "reviewLabel" | "routingContext" | "compact" | "showRecipientCount"
 >) {
-	const releaseLabel = attachmentPacketSummaryLabel(draft, reviewLabel);
+	const releaseLabel = attachmentPacketSummaryLabel(
+		draft,
+		reviewLabel,
+		routingContext,
+	);
 	const showProMark =
 		draft.releaseMode === "conditional" ||
 		isAdvancedSettlementReleaseType(
@@ -74,6 +81,7 @@ export function AttachmentPacketSummaryBody({
 export function AttachmentPacketSummaryCard({
 	draft,
 	reviewLabel,
+	routingContext,
 	compact,
 	showRecipientCount,
 	actions,
@@ -83,6 +91,7 @@ export function AttachmentPacketSummaryCard({
 			<AttachmentPacketSummaryBody
 				draft={draft}
 				reviewLabel={reviewLabel}
+				routingContext={routingContext}
 				compact={compact}
 				showRecipientCount={showRecipientCount}
 			/>

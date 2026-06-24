@@ -10,7 +10,7 @@ import { Label } from "@/src/lib/components/ui/label";
 import { Switch } from "@/src/lib/components/ui/switch";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
-import { buildCreateForm } from "@/src/lib/domains/drafts";
+import { mergeEnvelopeFormIntoCreateForm } from "@/src/lib/domains/drafts";
 import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
 import { isValidRecipientEmail } from "@/src/lib/domains/invites/recipient-email";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
@@ -58,15 +58,12 @@ export function ComposeRoutingContent({
 
 	const patchRouting = (patch: Partial<RegisterRoutingInput>) => {
 		void (async () => {
-			let draft = createForm ?? useStorePersist.getState().createForm;
-			if (!draft) {
-				draft = await buildCreateForm(formValues, null);
-			}
-			const current = draft.registerRouting ?? {};
-			setCreateForm({
-				...draft,
+			const prev = createForm ?? useStorePersist.getState().createForm;
+			const current = prev?.registerRouting ?? {};
+			const merged = await mergeEnvelopeFormIntoCreateForm(formValues, prev, {
 				registerRouting: { ...current, ...patch },
 			});
+			setCreateForm(merged);
 		})().catch((error) => {
 			console.error("Failed to update routing:", error);
 		});

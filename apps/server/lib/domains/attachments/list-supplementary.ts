@@ -2,7 +2,7 @@ import {
 	normalizePlacementRecipientEmail,
 	supplementaryPacketUnlockSummary,
 } from "@filosign/shared";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import { z } from "zod";
@@ -56,7 +56,10 @@ export async function listSupplementaryPacketsForParticipant(args: {
 
 	const isSender = getAddress(file.sender) === userWallet;
 	const [participant] = await db
-		.select({ wallet: fileParticipants.wallet })
+		.select({
+			wallet: fileParticipants.wallet,
+			emailCommitment: fileParticipants.emailCommitment,
+		})
 		.from(fileParticipants)
 		.where(
 			and(
@@ -69,6 +72,16 @@ export async function listSupplementaryPacketsForParticipant(args: {
 	if (!isSender && !participant) {
 		return [];
 	}
+
+	const recipientMatch = participant?.emailCommitment
+		? or(
+				eq(envelopeAttachmentPacketRecipients.email, emailKey),
+				eq(
+					envelopeAttachmentPacketRecipients.emailCommitment,
+					participant.emailCommitment,
+				),
+			)
+		: eq(envelopeAttachmentPacketRecipients.email, emailKey);
 
 	const rows = await db
 		.select({
@@ -91,10 +104,7 @@ export async function listSupplementaryPacketsForParticipant(args: {
 			),
 		)
 		.where(
-			and(
-				eq(envelopeAttachmentPackets.filePieceCid, pieceCid),
-				eq(envelopeAttachmentPacketRecipients.email, emailKey),
-			),
+			and(eq(envelopeAttachmentPackets.filePieceCid, pieceCid), recipientMatch),
 		);
 
 	if (rows.length === 0) {
@@ -129,6 +139,13 @@ export async function listSupplementaryPacketsForParticipant(args: {
 		}
 
 		if (cancelled) {
+			continue;
+		}
+
+		// Only show packets this recipient can decrypt (has a personal DEK wrap).
+		// Review-mode roster rows without wraps are omitted so non-recipients do not
+		// see download UI for packets dedicated to someone else.
+		if (!row.kemCiphertext || !row.encryptedPacketDek) {
 			continue;
 		}
 

@@ -8,7 +8,7 @@ import {
 	zAttachmentPacketSendInput,
 } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import type { Address, Hex } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
@@ -20,6 +20,7 @@ import {
 	assertCommitmentsOnEnvelopeRoster,
 	collectOnChainReleaseSignerCommitments,
 } from "@/lib/domains/files/utils/assert-roster-commitments";
+import { compileRegisterRosterEmails } from "@/lib/domains/files/utils/roster-emails";
 import db from "@/lib/platform/db";
 import {
 	fsAttachmentReleaseAt,
@@ -32,10 +33,23 @@ import {
 	insertSingleAttachmentPacket,
 } from "./utils/insert-packet";
 
-const { files, envelopeAttachmentPackets, attachmentReleaseRules } = db.schema;
+const {
+	files,
+	envelopeAttachmentPackets,
+	attachmentReleaseRules,
+	fileParticipants,
+	fileColdInvites,
+	users,
+} = db.schema;
 const zAttachmentPacketsRegister = z
 	.array(zAttachmentPacketSendInput)
 	.max(SUPPLEMENTARY_ATTACHMENT_LIMITS.maxPacketsPerEnvelope);
+
+export const zAttachmentsRegisterForFileInput = z.object({
+	pieceCid: z.string().min(8),
+	organizationId: z.uuid().optional(),
+	packets: zAttachmentPacketsRegister.min(1),
+});
 
 export const zLinkAttachmentOnChainRuleInput = z.object({
 	pieceCid: z.string().min(8),
@@ -328,6 +342,107 @@ export async function linkAttachmentPacketOnChainRule(
 			releaseContractAddress,
 			packetContentHash: input.packetContentHash as `0x${string}`,
 		});
+	});
+
+	return { ok: true as const };
+}
+
+export async function attachmentsRegisterForFile(
+	sender: Address,
+	body: unknown,
+) {
+	const parsed = zAttachmentsRegisterForFileInput.safeParse(body);
+	if (parsed.error) {
+		throw throwZodBadRequest(parsed.error);
+	}
+	const { pieceCid, organizationId, packets } = parsed.data;
+
+	const [file] = await db
+		.select({
+			sender: files.sender,
+			organizationId: files.organizationId,
+			completedAt: files.completedAt,
+			revokedBeforeCompletedAt: files.revokedBeforeCompletedAt,
+		})
+		.from(files)
+		.where(eq(files.pieceCid, pieceCid))
+		.limit(1);
+	if (!file) {
+		throw throwAppError("FILES.NOT_FOUND");
+	}
+	if (getAddress(file.sender) !== getAddress(sender)) {
+		throw throwAppError("ATTACHMENTS.FORBIDDEN");
+	}
+	if (file.completedAt != null || file.revokedBeforeCompletedAt != null) {
+		throw throwAppError("SETTLEMENTS.ENVELOPE_CLOSED");
+	}
+	if (organizationId && organizationId !== (file.organizationId ?? undefined)) {
+		throw throwAppError("ATTACHMENTS.FORBIDDEN");
+	}
+
+	const [{ packetCount }] = await db
+		.select({ packetCount: count() })
+		.from(envelopeAttachmentPackets)
+		.where(eq(envelopeAttachmentPackets.filePieceCid, pieceCid));
+	if (
+		Number(packetCount) + packets.length >
+		SUPPLEMENTARY_ATTACHMENT_LIMITS.maxPacketsPerEnvelope
+	) {
+		throw throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: `At most ${SUPPLEMENTARY_ATTACHMENT_LIMITS.maxPacketsPerEnvelope} file packets per envelope`,
+					path: ["packets"],
+				},
+			]),
+		);
+	}
+
+	const [senderUser] = await db
+		.select({ email: users.email })
+		.from(users)
+		.where(eq(users.walletAddress, getAddress(sender)))
+		.limit(1);
+	const senderEmail = senderUser?.email?.trim();
+	if (!senderEmail) {
+		throw throwAppError("ATTACHMENTS.FORBIDDEN");
+	}
+
+	const participantRows = await db
+		.select({ wallet: fileParticipants.wallet })
+		.from(fileParticipants)
+		.where(eq(fileParticipants.filePieceCid, pieceCid));
+
+	const coldInviteRows = await db
+		.select({
+			email: fileColdInvites.email,
+			inviteToken: fileColdInvites.inviteToken,
+		})
+		.from(fileColdInvites)
+		.where(eq(fileColdInvites.filePieceCid, pieceCid));
+
+	const coldInviteRefs = coldInviteRows.flatMap((invite) =>
+		invite.inviteToken
+			? [{ email: invite.email, inviteToken: invite.inviteToken }]
+			: [],
+	);
+
+	const rosterEmails = await compileRegisterRosterEmails({
+		senderEmail,
+		participants: participantRows.map((row) => ({
+			address: getAddress(row.wallet as Address),
+		})),
+		coldInvites: coldInviteRefs,
+	});
+
+	await insertAttachmentPacketsForFile({
+		pieceCid,
+		sender,
+		organizationId: file.organizationId ?? null,
+		packets,
+		rosterEmails,
+		coldInvites: coldInviteRefs,
 	});
 
 	return { ok: true as const };

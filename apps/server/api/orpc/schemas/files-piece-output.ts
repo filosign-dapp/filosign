@@ -25,7 +25,7 @@ const participantAccessSchema = z.object({
 	canSignByRouting: z.boolean().optional(),
 });
 
-const envelopeProgressSchema = z.object({
+export const rpcEnvelopeProgressSchema = z.object({
 	routingMode: z.number().int(),
 	requiredSignersCount: z.number().int(),
 	requiredSignaturesCount: z.number().int(),
@@ -37,6 +37,10 @@ const envelopeProgressSchema = z.object({
 	routingOrderEmails: z.array(z.string()).nullable().optional(),
 	signerReplacementPending: z.boolean().optional(),
 });
+
+export type RpcEnvelopeProgress = z.infer<typeof rpcEnvelopeProgressSchema>;
+
+const envelopeProgressSchema = rpcEnvelopeProgressSchema;
 
 export const rpcPieceDetailOutputSchema = z.object({
 	pieceCid: z.string(),

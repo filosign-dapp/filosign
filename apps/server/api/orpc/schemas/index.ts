@@ -6,6 +6,7 @@ import {
 import {
 	rpcAttachmentsLinkOnChainRuleOutputSchema,
 	rpcAttachmentsPacketAccessOutputSchema,
+	rpcAttachmentsRegisterForFileOutputSchema,
 	rpcAttachmentsUploadStartOutputSchema,
 } from "./attachments-output";
 import {
@@ -238,6 +239,7 @@ export const rpcOut = {
 		uploadStart: rpcAttachmentsUploadStartOutputSchema,
 		packetAccess: rpcAttachmentsPacketAccessOutputSchema,
 		linkOnChainRule: rpcAttachmentsLinkOnChainRuleOutputSchema,
+		registerForFile: rpcAttachmentsRegisterForFileOutputSchema,
 	},
 	settlements: {
 		listByFile: rpcSettlementsListByFileOutputSchema,

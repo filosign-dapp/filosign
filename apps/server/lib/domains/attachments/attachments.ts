@@ -132,13 +132,36 @@ export async function attachmentsPacketAccess(args: {
 
 	let kemCiphertext: string | null = null;
 	let encryptedPacketDek: string | null = null;
+	let dekRecipientEmail: string | null = null;
 
 	if (access.isSender || access.recipientRow) {
 		kemCiphertext = access.recipientRow?.kemCiphertext ?? null;
 		encryptedPacketDek = access.recipientRow?.encryptedPacketDek ?? null;
+		dekRecipientEmail = access.recipientRow?.email ?? null;
 	} else if (access.isOrgMember) {
 		kemCiphertext = packet.orgKemCiphertext;
 		encryptedPacketDek = packet.orgEncryptedPacketDek;
+	}
+
+	if (access.isSender && (!kemCiphertext || !encryptedPacketDek)) {
+		const [senderRecipientRow] = await db
+			.select()
+			.from(envelopeAttachmentPacketRecipients)
+			.where(
+				and(
+					eq(envelopeAttachmentPacketRecipients.packetRowId, packet.id),
+					eq(envelopeAttachmentPacketRecipients.email, emailKey),
+				),
+			)
+			.limit(1);
+		if (
+			senderRecipientRow?.kemCiphertext &&
+			senderRecipientRow.encryptedPacketDek
+		) {
+			kemCiphertext = senderRecipientRow.kemCiphertext;
+			encryptedPacketDek = senderRecipientRow.encryptedPacketDek;
+			dekRecipientEmail = senderRecipientRow.email;
+		}
 	}
 
 	const storageKey = await assertAttachmentObjectExists(packet.packetCid);
@@ -152,6 +175,7 @@ export async function attachmentsPacketAccess(args: {
 			? {
 					kemCiphertext,
 					encryptedPacketDek,
+					...(dekRecipientEmail ? { dekRecipientEmail } : {}),
 				}
 			: {}),
 	};

@@ -30,7 +30,7 @@ export function PayoutPayerControl({
 					className="h-auto p-0 text-xs font-medium"
 					onClick={onUseConnectedWallet}
 				>
-					Use my connected wallet instead
+					Use my account instead
 				</Button>
 			</p>
 		);
@@ -38,7 +38,7 @@ export function PayoutPayerControl({
 
 	return (
 		<p className="text-xs text-muted-foreground">
-			Paying from your connected wallet.{" "}
+			Paying from your account.{" "}
 			<Button
 				type="button"
 				variant="link"

@@ -1,4 +1,5 @@
 import type { PlatformInviteEmailVariant } from "@filosign/shared";
+import { DEFAULT_PARTNER_TRIAL_DAYS } from "@filosign/shared";
 import { Text } from "@react-email/components";
 import { partnerInviteCopy } from "../src/copy/partner-invite";
 import { filosignEmailAssets } from "../src/email-assets";
@@ -53,6 +54,6 @@ export default function PartnerInviteEmail({
 PartnerInviteEmail.PreviewProps = {
 	recipientName: "Jordan Lee",
 	planLabel: "Teams Pro",
-	trialDays: 30,
+	trialDays: DEFAULT_PARTNER_TRIAL_DAYS,
 	ctaHref: "https://app.filosign.com/?platformInvite=example",
 } satisfies PartnerInviteEmailProps;

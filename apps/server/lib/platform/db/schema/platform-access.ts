@@ -1,5 +1,6 @@
 import { PLAN_IDS } from "@filosign/entitlements";
 import {
+	DEFAULT_PARTNER_TRIAL_DAYS,
 	type PlatformInviteEmailVariant,
 	platformInviteEmailVariants,
 } from "@filosign/shared";
@@ -33,7 +34,7 @@ export const platformInvites = t.pgTable(
 		kind: t.text({ enum: platformInviteKinds }).notNull(),
 		email: t.text(),
 		planId: t.text({ enum: PLAN_IDS }).notNull().default("teams_pro"),
-		trialDays: t.integer().notNull().default(30),
+		trialDays: t.integer().notNull().default(DEFAULT_PARTNER_TRIAL_DAYS),
 		featureOverrides: t
 			.jsonb()
 			.$type<SubscriptionFeatureOverrides>()

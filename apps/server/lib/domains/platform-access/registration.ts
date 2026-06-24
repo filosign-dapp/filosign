@@ -21,7 +21,7 @@ import {
 } from "@/lib/platform/db/schema/platform-access";
 import { users } from "@/lib/platform/db/schema/user";
 import { serverSignupPolicyIsGated } from "@/lib/platform/public-fences";
-import { assertNoOwnedActiveDodoSubscriptions } from "./utils/partner-trial-guards";
+import { assertWalletEligibleForPartnerTrial } from "./utils/partner-trial-guards";
 import {
 	inviteIsActive,
 	normalizeEmail,
@@ -111,7 +111,7 @@ export async function redeemPlatformInviteOnRegisterWithTx(
 		return;
 	}
 
-	await assertNoOwnedActiveDodoSubscriptions(tx, wallet);
+	await assertWalletEligibleForPartnerTrial(tx, wallet);
 
 	await tx.insert(platformInviteRedemptions).values({
 		inviteId: invite.id,

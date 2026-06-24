@@ -1,9 +1,9 @@
 import type { PlanId } from "@filosign/entitlements";
 import { PLAN_IDS } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
-import { zPlatformInviteEmailVariant } from "@filosign/shared";
 import type { Address } from "viem";
 import { z } from "zod";
+import type { PlatformAdminInviteCreateInput } from "@/api/orpc/schemas/platform-admin-output";
 import env from "@/env";
 import {
 	approveAccessRequest,
@@ -144,31 +144,11 @@ export async function platformAdminInvitesList(adminWallet: Address) {
 
 export async function platformAdminInvitesCreate(
 	adminWallet: Address,
-	body: unknown,
+	input: PlatformAdminInviteCreateInput,
 ) {
 	await assertPlatformAdmin(adminWallet);
-	const parsed = z
-		.object({
-			kind: z.enum(["partner_trial", "manual_paid"]).default("partner_trial"),
-			planId: z.enum(PLAN_IDS).default("teams_pro"),
-			trialDays: z.number().int().min(1).max(365).default(30),
-			email: z.email().optional().nullable(),
-			featureOverrides: z
-				.record(z.string(), z.union([z.number(), z.boolean()]))
-				.optional(),
-			maxRedemptions: z.number().int().min(1).max(100).default(1),
-			expiresAt: z.iso.datetime().optional().nullable(),
-			note: z.string().max(500).optional().nullable(),
-			emailBody: z.string().max(2000).optional().nullable(),
-			emailVariant: zPlatformInviteEmailVariant.default("warm"),
-		})
-		.safeParse(body);
 
-	if (parsed.error) {
-		throwZodBadRequest(parsed.error);
-	}
-
-	if (parsed.data.emailVariant === "custom" && !parsed.data.emailBody?.trim()) {
+	if (input.emailVariant === "custom" && !input.emailBody?.trim()) {
 		throwZodBadRequest(
 			new z.ZodError([
 				{
@@ -182,16 +162,16 @@ export async function platformAdminInvitesCreate(
 
 	const invite = await createPlatformInvite({
 		adminWallet,
-		kind: parsed.data.kind,
-		planId: parsed.data.planId as PlanId,
-		trialDays: parsed.data.trialDays,
-		email: parsed.data.email,
-		featureOverrides: parsed.data.featureOverrides,
-		maxRedemptions: parsed.data.maxRedemptions,
-		expiresAt: parsed.data.expiresAt ? new Date(parsed.data.expiresAt) : null,
-		note: parsed.data.note,
-		emailBody: parsed.data.emailBody,
-		emailVariant: parsed.data.emailVariant,
+		kind: input.kind,
+		planId: input.planId as PlanId,
+		trialDays: input.trialDays,
+		email: input.email,
+		featureOverrides: input.featureOverrides,
+		maxRedemptions: input.maxRedemptions,
+		expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+		note: input.note,
+		emailBody: input.emailBody,
+		emailVariant: input.emailVariant,
 	});
 
 	return {

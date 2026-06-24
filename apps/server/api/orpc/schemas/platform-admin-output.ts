@@ -1,5 +1,6 @@
 import { PLAN_IDS } from "@filosign/entitlements";
 import {
+	DEFAULT_PARTNER_TRIAL_DAYS,
 	zFeedbackFeatureArea,
 	zFeedbackKind,
 	zFeedbackPromptType,
@@ -10,7 +11,12 @@ import { z } from "zod";
 export const zPlatformAdminInviteCreateInput = z.object({
 	kind: z.enum(["partner_trial", "manual_paid"]).default("partner_trial"),
 	planId: z.enum(PLAN_IDS).default("teams_pro"),
-	trialDays: z.number().int().min(1).max(365).default(30),
+	trialDays: z
+		.number()
+		.int()
+		.min(1)
+		.max(365)
+		.default(DEFAULT_PARTNER_TRIAL_DAYS),
 	email: z.email().optional().nullable(),
 	featureOverrides: z
 		.record(z.string(), z.union([z.number(), z.boolean()]))
@@ -21,6 +27,10 @@ export const zPlatformAdminInviteCreateInput = z.object({
 	emailBody: z.string().max(2000).optional().nullable(),
 	emailVariant: zPlatformInviteEmailVariant.default("warm"),
 });
+
+export type PlatformAdminInviteCreateInput = z.infer<
+	typeof zPlatformAdminInviteCreateInput
+>;
 
 const platformInviteRedemptionSchema = z.object({
 	walletAddress: z.string(),
@@ -141,6 +151,11 @@ export const rpcPlatformAdminSettlementAccessRowSchema = z.object({
 	reviewedAt: z.string().nullable(),
 	reviewedByAdminWallet: z.string().nullable(),
 	reviewNote: z.string().nullable(),
+	externalWalletAccessEnabled: z.boolean(),
+	externalWalletAccessEnabledAt: z.string().nullable(),
+	externalWalletAccessRequested: z.boolean(),
+	externalWalletUseCase: z.string().nullable(),
+	externalWalletComplianceCertAt: z.string().nullable(),
 });
 
 export const rpcPlatformAdminSettlementAccessListOutputSchema = z.object({
@@ -157,6 +172,11 @@ export const rpcPlatformAdminSettlementAccessDecisionOutputSchema = z.object({
 	reviewedAt: z.string().nullable().optional(),
 	reviewNote: z.string().nullable().optional(),
 	termsCurrent: z.boolean().optional(),
+	externalWalletAccessEnabled: z.boolean().optional(),
+	externalWalletAccessEnabledAt: z.string().nullable().optional(),
+	externalWalletAccessRequested: z.boolean().optional(),
+	externalWalletUseCase: z.string().nullable().optional(),
+	externalWalletComplianceCertAt: z.string().nullable().optional(),
 });
 
 export const zPlatformAdminFeedbackListInput = z.object({

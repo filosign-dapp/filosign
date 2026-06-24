@@ -9,7 +9,9 @@ import {
 	renderEnvelopeCompleted,
 	renderPaidSetup,
 	renderPartnerInvite,
+	renderSignerTurn,
 	replyToForTransactionalEmail,
+	signerTurnSubject,
 } from "@filosign/emails";
 import type { PaidCheckoutPlanId } from "@filosign/shared";
 import type { Address } from "viem";
@@ -46,7 +48,7 @@ type SendDocumentEmailBaseArgs = {
 	pieceCid: string;
 	senderName?: string | null;
 	documentTitle?: string | null;
-	intent?: "initial" | "reminder";
+	intent?: "initial" | "reminder" | "rotated";
 };
 
 type SendColdDocumentInviteEmailArgs = SendDocumentEmailBaseArgs & {
@@ -84,7 +86,7 @@ export async function sendDocumentSharedEmail(args: {
 	ctaHref: string;
 	idempotencyPrefix: string;
 	idempotencyExtra?: string[];
-	intent?: "initial" | "reminder";
+	intent?: "initial" | "reminder" | "rotated";
 	context?: "sign" | "draft_review";
 	documentTitle?: string | null;
 }) {
@@ -172,6 +174,67 @@ export async function sendDocumentReceivedEmail(
 		ctaHref: documentUrl,
 		idempotencyPrefix: "doc-received",
 		intent: args.intent,
+	});
+}
+
+export async function sendSignerTurnEmail(args: {
+	to: string;
+	senderWallet: Address;
+	pieceCid: string;
+	senderName?: string | null;
+	documentTitle?: string | null;
+	variant: "warm" | "cold";
+	inviteToken?: string;
+}) {
+	if (shouldSkipEmail()) return;
+
+	const senderLabel =
+		args.senderName?.trim() || formatAddress(args.senderWallet);
+	const escapedSenderLabel = escapeHtml(senderLabel);
+	const escapedDocumentTitle = args.documentTitle?.trim()
+		? escapeHtml(args.documentTitle.trim())
+		: undefined;
+
+	const appUrl = getClientUrl();
+	let ctaHref: string;
+	const idempotencyExtra: string[] = [];
+	if (args.variant === "cold") {
+		const token = args.inviteToken?.trim();
+		if (!token) {
+			throw new Error("signer_turn cold variant requires inviteToken");
+		}
+		const signUrl = new URL("/", appUrl);
+		signUrl.searchParams.set("coldPieceCid", args.pieceCid);
+		signUrl.searchParams.set("coldInvite", token);
+		signUrl.searchParams.set("email", args.to.trim().toLowerCase());
+		ctaHref = signUrl.toString();
+		idempotencyExtra.push(token);
+	} else {
+		ctaHref = `${appUrl}/dashboard/document/sign?pieceCid=${encodeURIComponent(args.pieceCid)}`;
+	}
+
+	const subject = signerTurnSubject({ senderLabelRaw: senderLabel });
+
+	const { html, text } = await renderSignerTurn({
+		senderLabel: escapedSenderLabel,
+		ctaHref,
+		variant: args.variant,
+		documentTitle: escapedDocumentTitle,
+	});
+
+	await deliverEmail({
+		to: args.to,
+		subject,
+		text,
+		html,
+		kind: "signer_turn",
+		idempotencySegments: [
+			"signer-turn",
+			args.to.trim().toLowerCase(),
+			args.pieceCid,
+			args.senderWallet.toLowerCase(),
+			...idempotencyExtra,
+		],
 	});
 }
 

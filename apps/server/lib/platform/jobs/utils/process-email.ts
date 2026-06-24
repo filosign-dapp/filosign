@@ -6,6 +6,7 @@ import {
 	sendColdDocumentInviteEmail,
 	sendDocumentReceivedEmail,
 	sendEnvelopeCompletedEmail,
+	sendSignerTurnEmail,
 } from "@/lib/platform/email";
 import { logger } from "@/lib/platform/pino";
 import type { EmailQueueJobData } from "../queues";
@@ -49,6 +50,20 @@ export async function processEmailFromOutbox(
 			pieceCid: parsed.pieceCid,
 			senderName: parsed.senderName,
 			envelopeName: parsed.envelopeName,
+		});
+		return;
+	}
+
+	if (kind === "signer_turn") {
+		const parsed = parseOutboxPayload(kind, payload);
+		await sendSignerTurnEmail({
+			to: parsed.to,
+			senderWallet: parsed.senderWallet,
+			pieceCid: parsed.pieceCid,
+			senderName: parsed.senderName,
+			documentTitle: parsed.documentTitle,
+			variant: parsed.variant,
+			inviteToken: parsed.inviteToken,
 		});
 		return;
 	}

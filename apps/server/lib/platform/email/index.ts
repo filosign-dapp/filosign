@@ -19,6 +19,7 @@ export {
 	sendEnvelopeCompletedEmail,
 	sendPaidSetupEmail,
 	sendPartnerInviteEmail,
+	sendSignerTurnEmail,
 } from "./invites";
 export { recipientDisplayNameFromEmail } from "./recipient-name";
 export {

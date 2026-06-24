@@ -16,7 +16,9 @@ export type JobOutboxPayload = Record<string, unknown>;
 
 const zAddress = z.string().transform((v) => getAddress(v as Address));
 
-const zEmailIntent = z.enum(["initial", "reminder"]).default("initial");
+const zEmailIntent = z
+	.enum(["initial", "reminder", "rotated"])
+	.default("initial");
 
 export const zDocReceivedOutboxPayload = z.object({
 	to: z.email(),
@@ -45,6 +47,16 @@ export const zEnvelopeCompletedOutboxPayload = z.object({
 	envelopeName: z.string().min(1),
 });
 
+export const zSignerTurnOutboxPayload = z.object({
+	to: z.email(),
+	senderWallet: zAddress,
+	pieceCid: z.string().min(1),
+	senderName: z.string().optional(),
+	documentTitle: z.string().min(1).optional(),
+	variant: z.enum(["warm", "cold"]),
+	inviteToken: z.string().min(16).optional(),
+});
+
 export type DocReceivedOutboxPayload = z.infer<
 	typeof zDocReceivedOutboxPayload
 >;
@@ -54,6 +66,7 @@ export type ColdDocInviteOutboxPayload = z.infer<
 export type EnvelopeCompletedOutboxPayload = z.infer<
 	typeof zEnvelopeCompletedOutboxPayload
 >;
+export type SignerTurnOutboxPayload = z.infer<typeof zSignerTurnOutboxPayload>;
 
 export function parseOutboxPayload(
 	kind: "doc_received",
@@ -68,17 +81,25 @@ export function parseOutboxPayload(
 	payload: Record<string, unknown>,
 ): EnvelopeCompletedOutboxPayload;
 export function parseOutboxPayload(
+	kind: "signer_turn",
+	payload: Record<string, unknown>,
+): SignerTurnOutboxPayload;
+export function parseOutboxPayload(
 	kind: JobOutboxKind,
 	payload: Record<string, unknown>,
 ):
 	| DocReceivedOutboxPayload
 	| ColdDocInviteOutboxPayload
-	| EnvelopeCompletedOutboxPayload {
+	| EnvelopeCompletedOutboxPayload
+	| SignerTurnOutboxPayload {
 	if (kind === "doc_received") {
 		return zDocReceivedOutboxPayload.parse(payload);
 	}
 	if (kind === "envelope_completed") {
 		return zEnvelopeCompletedOutboxPayload.parse(payload);
+	}
+	if (kind === "signer_turn") {
+		return zSignerTurnOutboxPayload.parse(payload);
 	}
 	return zColdDocInviteOutboxPayload.parse(payload);
 }

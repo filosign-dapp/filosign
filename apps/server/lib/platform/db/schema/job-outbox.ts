@@ -5,6 +5,7 @@ export const jobOutboxKinds = [
 	"doc_received",
 	"cold_doc_invite",
 	"envelope_completed",
+	"signer_turn",
 ] as const;
 export type JobOutboxKind = (typeof jobOutboxKinds)[number];
 

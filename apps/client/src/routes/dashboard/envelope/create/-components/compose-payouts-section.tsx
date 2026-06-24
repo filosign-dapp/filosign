@@ -1,5 +1,8 @@
 import { useEntitlements } from "@filosign/react/billing";
-import { canUseBasicSettlements } from "@filosign/react/files";
+import {
+	canUseBasicSettlements,
+	useBasicPayoutAttachGate,
+} from "@filosign/react/files";
 import { useActiveOrganization, useActiveOrgId } from "@filosign/react/orgs";
 import {
 	isAdvancedSettlementReleaseType,
@@ -110,6 +113,7 @@ export function ComposePayoutsContent() {
 	const { form, payoutBalance } = useCreateEnvelope();
 	const setCreateForm = useStorePersist((s) => s.setCreateForm);
 	const { data: entitlements } = useEntitlements();
+	const { canUseExternalRecipients } = useBasicPayoutAttachGate();
 	const activeOrgId = useActiveOrgId();
 	const activeOrg = useActiveOrganization();
 	const settlementsEnabled = canUseBasicSettlements(entitlements);
@@ -237,11 +241,19 @@ export function ComposePayoutsContent() {
 				<div className="space-y-1">
 					<h3 className="text-sm font-semibold">Attached payouts</h3>
 					<p className="text-xs text-muted-foreground">
-						Pre-authorize stablecoin payouts for Filosign recipients when
+						Pre-authorize stablecoin payouts for Filosign recipients
+						{canUseExternalRecipients ? " or external wallets" : ""} when
 						signing conditions are met. Funds stay in your account until each
 						payout executes.{" "}
 						<DocsLink href={DOCS_LINKS.payouts()}>Payouts guide</DocsLink>
 					</p>
+					{canAttach ? (
+						<p className="text-xs text-muted-foreground">
+							Attached payouts use a small amount of ETH from your paying
+							account to register rules on Base. Keep a little ETH there, not
+							just USDC.
+						</p>
+					) : null}
 				</div>
 				{canAttach ? (
 					<Button
@@ -296,8 +308,8 @@ export function ComposePayoutsContent() {
 				</>
 			) : canAttach ? (
 				<p className="text-xs text-muted-foreground">
-					No payouts yet. Add a rule and choose Filosign recipients with linked
-					wallets.
+					No payouts yet. Add a rule and choose Filosign recipients
+					{canUseExternalRecipients ? " or an external wallet address" : ""}.
 				</p>
 			) : (
 				<PayoutAccessStatusLine

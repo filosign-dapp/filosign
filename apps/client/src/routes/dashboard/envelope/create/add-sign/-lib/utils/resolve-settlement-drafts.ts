@@ -22,6 +22,20 @@ export async function resolveSettlementDraftsForSend(args: {
 
 	return Promise.all(
 		active.map(async (draft) => {
+			if (draft.recipientSource === "external") {
+				const wallet = draft.recipientWallet?.trim();
+				if (!wallet || !isAddress(wallet)) {
+					throw new Error(
+						`Cannot attach USDC settlement to ${draft.recipientLabel}: wallet address is missing or invalid.`,
+					);
+				}
+				return {
+					...draft,
+					recipientWallet: getAddress(wallet),
+					recipientSource: "external" as const,
+				};
+			}
+
 			const recipient = draft.recipientClientRowId
 				? recipients.find((r) => r.clientRowId === draft.recipientClientRowId)
 				: undefined;

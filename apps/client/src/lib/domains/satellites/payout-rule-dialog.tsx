@@ -11,6 +11,7 @@ import {
 	validateReleaseParamsForRouting,
 } from "@filosign/shared";
 import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { getAddress, isAddress, parseUnits } from "viem";
 import { SUPPORTED_TOKENS } from "@/src/constants";
 import { Image } from "@/src/lib/components/app/media/image";
 import { Button } from "@/src/lib/components/ui/button";
@@ -42,6 +43,7 @@ import { usePromptPlanUpgrade } from "@/src/routes/dashboard/envelope/create/-li
 import { useRecipientPayoutEligibility } from "@/src/routes/dashboard/envelope/create/-lib/hooks/use-recipient-payout-eligibility";
 import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import {
+	buildLegDraftFromExternalWallet,
 	buildLegDraftFromRecipient,
 	recipientSettlementLabel,
 	ruleIdForDraft,
@@ -54,6 +56,12 @@ const EMPTY_SETTLEMENT_DRAFTS: SettlementAttachmentDraft[] = [];
 const EMPTY_SETTLEMENT_LEGS: SettlementAttachmentDraft[] = [];
 
 type LegAmounts = Record<string, string>;
+
+type ExternalLegDraft = {
+	id: string;
+	address: string;
+	amount: string;
+};
 
 type Props = {
 	open: boolean;
@@ -143,11 +151,48 @@ function PayoutRecipientLegRow({
 	);
 }
 
+function sumPositiveUsdcFromExternalLegs(legs: ExternalLegDraft[]): bigint {
+	let total = 0n;
+	for (const leg of legs) {
+		const trimmed = leg.amount.trim();
+		if (!trimmed || Number(trimmed) <= 0) continue;
+		try {
+			const amount = parseUnits(trimmed, usdcToken.decimals);
+			if (amount > 0n) total += amount;
+		} catch {}
+	}
+	return total;
+}
+
+function externalLegIsValid(
+	leg: ExternalLegDraft,
+	payerWallet?: `0x${string}`,
+): boolean {
+	const trimmed = leg.amount.trim();
+	if (!trimmed || Number(trimmed) <= 0) return false;
+	if (!isAddress(leg.address)) return false;
+	if (!payerWallet) return true;
+	return getAddress(leg.address) !== getAddress(payerWallet);
+}
+
+function initialExternalLegs(
+	existingLegs: SettlementAttachmentDraft[],
+): ExternalLegDraft[] {
+	return existingLegs
+		.filter((leg) => leg.recipientSource === "external")
+		.map((leg) => ({
+			id: leg.id,
+			address: leg.recipientWallet ?? "",
+			amount: leg.amountUsdc,
+		}));
+}
+
 function initialLegAmounts(
 	existingLegs: SettlementAttachmentDraft[],
 ): LegAmounts {
 	const amounts: LegAmounts = {};
 	for (const leg of existingLegs) {
+		if (leg.recipientSource === "external") continue;
 		if (leg.recipientClientRowId) {
 			amounts[leg.recipientClientRowId] = leg.amountUsdc;
 		}
@@ -160,9 +205,93 @@ function initialSelectedIds(
 ): Set<string> {
 	return new Set(
 		existingLegs
+			.filter((leg) => leg.recipientSource !== "external")
 			.map((leg) => leg.recipientClientRowId)
 			.filter((id): id is string => Boolean(id)),
 	);
+}
+
+function releaseThresholdForDraft(
+	normalizedReleaseType: SettlementReleaseType,
+	resolvedThresholdN: number | undefined,
+	thresholdN: string,
+): number | undefined {
+	if (
+		normalizedReleaseType === "at_least_n" ||
+		normalizedReleaseType === "quorum_required" ||
+		normalizedReleaseType === "quorum_set" ||
+		normalizedReleaseType === "quorum_all"
+	) {
+		return resolvedThresholdN ?? (Number(thresholdN) || 1);
+	}
+	return undefined;
+}
+
+function buildPayoutRuleLegs(args: {
+	ruleId: string;
+	normalizedReleaseType: SettlementReleaseType;
+	specificSignerEmail: string;
+	thresholdN: string;
+	resolvedThresholdN: number | undefined;
+	expiresAtUnix?: number;
+	selectedRecipients: Recipient[];
+	legAmounts: LegAmounts;
+	existingLegs: SettlementAttachmentDraft[];
+	configuredExternalLegs: ExternalLegDraft[];
+}): SettlementAttachmentDraft[] {
+	const legs: SettlementAttachmentDraft[] = [];
+	const threshold = releaseThresholdForDraft(
+		args.normalizedReleaseType,
+		args.resolvedThresholdN,
+		args.thresholdN,
+	);
+
+	for (const recipient of args.selectedRecipients) {
+		const clientRowId = recipient.clientRowId;
+		if (!clientRowId) continue;
+		const amount = args.legAmounts[clientRowId]?.trim();
+		if (!amount) continue;
+
+		const existingLeg = args.existingLegs.find(
+			(leg) => leg.recipientClientRowId === clientRowId,
+		);
+
+		const draft = buildLegDraftFromRecipient(recipient, {
+			ruleId: args.ruleId,
+			id: existingLeg?.id,
+			amountUsdc: amount,
+			releaseType: args.normalizedReleaseType,
+			specificSignerEmail:
+				args.normalizedReleaseType === "specific_signer"
+					? args.specificSignerEmail
+					: undefined,
+			thresholdN: threshold,
+			expiresAtUnix: args.expiresAtUnix,
+		});
+		if (draft) legs.push(draft);
+	}
+
+	for (const externalLeg of args.configuredExternalLegs) {
+		const amount = externalLeg.amount.trim();
+		if (!amount) continue;
+
+		const draft = buildLegDraftFromExternalWallet({
+			ruleId: args.ruleId,
+			id: externalLeg.id,
+			address: externalLeg.address.trim(),
+			amountUsdc: amount,
+			releaseType: args.normalizedReleaseType,
+			specificSignerEmail:
+				args.normalizedReleaseType === "specific_signer"
+					? args.specificSignerEmail
+					: undefined,
+			thresholdN: threshold,
+			expiresAtUnix: args.expiresAtUnix,
+		});
+		if (draft) legs.push(draft);
+	}
+
+	return legs;
 }
 
 export function PayoutRuleDialog({
@@ -186,7 +315,8 @@ export function PayoutRuleDialog({
 }: Props) {
 	const isAttachMode = Boolean(onAttachLegs);
 	const promptPlanUpgrade = usePromptPlanUpgrade();
-	const { entitlements, gate } = useBasicPayoutAttachGate();
+	const { entitlements, gate, canUseExternalRecipients } =
+		useBasicPayoutAttachGate();
 	const canAdvanced = canUseAdvancedSettlements(entitlements);
 
 	const [releaseType, setReleaseType] =
@@ -197,6 +327,7 @@ export function PayoutRuleDialog({
 	);
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 	const [legAmounts, setLegAmounts] = useState<LegAmounts>({});
+	const [externalLegs, setExternalLegs] = useState<ExternalLegDraft[]>([]);
 
 	const walletAddress = payerWalletAddress;
 
@@ -239,6 +370,7 @@ export function PayoutRuleDialog({
 		);
 		setSelectedIds(initialSelectedIds(existingLegs));
 		setLegAmounts(initialLegAmounts(existingLegs));
+		setExternalLegs(initialExternalLegs(existingLegs));
 	}, [open, existingLegs, firstLeg, signerOptions, routingContext]);
 
 	useEffect(() => {
@@ -263,9 +395,14 @@ export function PayoutRuleDialog({
 		);
 	}, [allSettlementDrafts, existingRuleId]);
 
+	const externalRuleWei = useMemo(
+		() => sumPositiveUsdcFromExternalLegs(externalLegs),
+		[externalLegs],
+	);
+
 	const currentRuleWei = useMemo(
-		() => sumLegAmountStrings(legAmounts, selectedIds),
-		[legAmounts, selectedIds],
+		() => sumLegAmountStrings(legAmounts, selectedIds) + externalRuleWei,
+		[legAmounts, selectedIds, externalRuleWei],
 	);
 
 	const exceedsBalance =
@@ -286,9 +423,30 @@ export function PayoutRuleDialog({
 		return Boolean(trimmed) && Number(trimmed) > 0;
 	});
 
+	const configuredExternalLegs = useMemo(
+		() =>
+			canUseExternalRecipients
+				? externalLegs.filter(
+						(leg) =>
+							leg.address.trim().length > 0 || leg.amount.trim().length > 0,
+					)
+				: [],
+		[externalLegs, canUseExternalRecipients],
+	);
+
+	const externalLegsValid =
+		configuredExternalLegs.length === 0 ||
+		configuredExternalLegs.every((leg) =>
+			externalLegIsValid(leg, walletAddress),
+		);
+
+	const hasRecipients =
+		selectedRecipients.length > 0 || configuredExternalLegs.length > 0;
+
 	const canSave =
-		selectedRecipients.length > 0 &&
-		legsValid &&
+		hasRecipients &&
+		(selectedRecipients.length === 0 || legsValid) &&
+		externalLegsValid &&
 		!exceedsBalance &&
 		!(
 			releaseType === "specific_signer" &&
@@ -319,38 +477,18 @@ export function PayoutRuleDialog({
 
 		const ruleId = existingRuleId ?? createClientId();
 		const normalizedReleaseType = normalizeSettlementReleaseType(releaseType);
-		const legs: SettlementAttachmentDraft[] = [];
-
-		for (const recipient of selectedRecipients) {
-			const clientRowId = recipient.clientRowId;
-			if (!clientRowId) continue;
-			const amount = legAmounts[clientRowId]?.trim();
-			if (!amount) continue;
-
-			const existingLeg = existingLegs.find(
-				(leg) => leg.recipientClientRowId === clientRowId,
-			);
-
-			const draft = buildLegDraftFromRecipient(recipient, {
-				ruleId,
-				id: existingLeg?.id,
-				amountUsdc: amount,
-				releaseType: normalizedReleaseType,
-				specificSignerEmail:
-					normalizedReleaseType === "specific_signer"
-						? specificSignerEmail
-						: undefined,
-				thresholdN:
-					normalizedReleaseType === "at_least_n" ||
-					normalizedReleaseType === "quorum_required" ||
-					normalizedReleaseType === "quorum_set" ||
-					normalizedReleaseType === "quorum_all"
-						? (resolvedThresholdN ?? (Number(thresholdN) || 1))
-						: undefined,
-				expiresAtUnix: firstLeg?.expiresAtUnix,
-			});
-			if (draft) legs.push(draft);
-		}
+		const legs = buildPayoutRuleLegs({
+			ruleId,
+			normalizedReleaseType,
+			specificSignerEmail,
+			thresholdN,
+			resolvedThresholdN,
+			expiresAtUnix: firstLeg?.expiresAtUnix,
+			selectedRecipients,
+			legAmounts,
+			existingLegs,
+			configuredExternalLegs,
+		});
 
 		if (legs.length === 0) return;
 
@@ -401,8 +539,9 @@ export function PayoutRuleDialog({
 								: "Add payout"}
 					</DialogTitle>
 					<DialogDescription>
-						Set when USDC is released, then choose Filosign recipients and
-						amounts. Funds stay in your account until conditions are met.{" "}
+						Set when USDC is released, then choose Filosign recipients or
+						external wallet addresses and amounts. Funds stay in your account
+						until conditions are met.{" "}
 						<DocsLink href={DOCS_LINKS.payouts()}>Payouts guide</DocsLink>
 					</DialogDescription>
 				</DialogHeader>
@@ -454,8 +593,10 @@ export function PayoutRuleDialog({
 							)}
 						</div>
 						<p className="text-xs text-muted-foreground">
-							Only envelope recipients with a Filosign account and linked wallet
-							can receive payouts.
+							Filosign recipients need a linked wallet.
+							{canUseExternalRecipients
+								? " External wallets can be any valid Base address."
+								: null}
 						</p>
 						<div className="space-y-2">
 							{recipients.map((recipient, index) => {
@@ -487,10 +628,127 @@ export function PayoutRuleDialog({
 						) : null}
 					</div>
 
+					{canUseExternalRecipients ? (
+						<div className="grid gap-2">
+							<div className="flex items-center justify-between gap-3">
+								<Label>External wallet</Label>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={() =>
+										setExternalLegs((prev) => [
+											...prev,
+											{ id: createClientId(), address: "", amount: "" },
+										])
+									}
+								>
+									Add wallet
+								</Button>
+							</div>
+							{externalLegs.length > 0 ? (
+								<div className="space-y-2">
+									{externalLegs.map((leg) => (
+										<div
+											key={leg.id}
+											className="flex flex-col gap-2 rounded-lg border border-border/50 bg-background/50 p-3 sm:flex-row sm:items-start"
+										>
+											<div className="min-w-0 flex-1 space-y-2">
+												<Input
+													variant="field"
+													value={leg.address}
+													onChange={(e) =>
+														setExternalLegs((prev) =>
+															prev.map((row) =>
+																row.id === leg.id
+																	? { ...row, address: e.target.value }
+																	: row,
+															),
+														)
+													}
+													placeholder="0x…"
+													aria-label="External wallet address"
+												/>
+												{leg.address.trim() &&
+												!isAddress(leg.address.trim()) ? (
+													<p className="text-xs text-destructive">
+														Enter a valid wallet address.
+													</p>
+												) : null}
+												{walletAddress &&
+												isAddress(leg.address.trim()) &&
+												getAddress(leg.address.trim()) ===
+													getAddress(walletAddress) ? (
+													<p className="text-xs text-destructive">
+														The payer can't also be a recipient on the same
+														payout.
+													</p>
+												) : null}
+											</div>
+											<div className="flex items-start gap-2">
+												<div className="relative w-full max-w-48 sm:w-40">
+													<Input
+														variant="field"
+														inputMode="decimal"
+														value={leg.amount}
+														onChange={(e) =>
+															setExternalLegs((prev) =>
+																prev.map((row) =>
+																	row.id === leg.id
+																		? { ...row, amount: e.target.value }
+																		: row,
+																),
+															)
+														}
+														placeholder="0.00"
+														aria-label="Amount for external wallet"
+														className="pr-19"
+													/>
+													<span className="pointer-events-none absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-1 text-xs font-medium text-muted-foreground">
+														<Image
+															src={usdcToken.icon}
+															alt=""
+															width={14}
+															height={14}
+															className="size-3.5 rounded-full"
+														/>
+														USDC
+													</span>
+												</div>
+												<Button
+													type="button"
+													variant="ghost"
+													size="sm"
+													className="text-destructive"
+													onClick={() =>
+														setExternalLegs((prev) =>
+															prev.filter((row) => row.id !== leg.id),
+														)
+													}
+												>
+													Remove
+												</Button>
+											</div>
+										</div>
+									))}
+								</div>
+							) : (
+								<p className="text-xs text-muted-foreground">
+									Add a wallet address to pay someone who is not on this
+									envelope.
+								</p>
+							)}
+						</div>
+					) : null}
+
 					<p className="text-xs text-muted-foreground">
 						{payerLabel === "treasury"
 							? "You approve this payout from the workspace treasury when you send. Treasury authorization uses a separate account from your personal signing account."
 							: "You approve this payout from your account when you send the envelope."}
+					</p>
+					<p className="text-xs text-muted-foreground">
+						Requires ETH on Base for USDC approval and payout registration when
+						you send.
 					</p>
 				</div>
 

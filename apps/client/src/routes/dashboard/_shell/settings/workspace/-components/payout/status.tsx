@@ -26,9 +26,12 @@ export function PayoutAccessStatusContent({
 }: Props) {
 	if (status === "approved" && termsCurrent) {
 		return (
-			<p className="text-sm text-muted-foreground">
-				Active for this workspace. You can attach payout rules on envelopes now.
-			</p>
+			<div className="space-y-2">
+				<p className="text-sm bg-secondary p-4 rounded-sm text-black">
+					Active for this workspace. You can attach payout rules on new
+					envelopes.
+				</p>
+			</div>
 		);
 	}
 

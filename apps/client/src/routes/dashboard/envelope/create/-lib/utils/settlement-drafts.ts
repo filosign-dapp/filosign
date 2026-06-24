@@ -1,4 +1,5 @@
 import { normalizePlacementRecipientEmail } from "@filosign/shared";
+import { getAddress, isAddress } from "viem";
 import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
 import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements";
 export type PayoutRuleGroup = {
@@ -65,6 +66,43 @@ export function recipientSettlementLabel(recipient: Recipient): string {
 	const name = recipient.name?.trim();
 	if (name && email) return `${name} (${email})`;
 	return name || email || "Recipient";
+}
+
+export function externalClientRowId(address: string): string {
+	return `ext:${getAddress(address).toLowerCase()}`;
+}
+
+export function formatExternalWalletLabel(address: string): string {
+	const normalized = getAddress(address);
+	return `${normalized.slice(0, 6)}…${normalized.slice(-4)}`;
+}
+
+export function buildLegDraftFromExternalWallet(args: {
+	ruleId: string;
+	address: string;
+	amountUsdc: string;
+	releaseType: SettlementAttachmentDraft["releaseType"];
+	specificSignerEmail?: string;
+	thresholdN?: number;
+	expiresAtUnix?: number;
+	id?: string;
+}): SettlementAttachmentDraft | null {
+	if (!isAddress(args.address)) return null;
+	const wallet = getAddress(args.address);
+
+	return {
+		id: args.id ?? crypto.randomUUID(),
+		ruleId: args.ruleId,
+		recipientClientRowId: externalClientRowId(wallet),
+		recipientSource: "external",
+		recipientLabel: formatExternalWalletLabel(wallet),
+		recipientWallet: wallet,
+		amountUsdc: args.amountUsdc,
+		releaseType: args.releaseType,
+		specificSignerEmail: args.specificSignerEmail,
+		thresholdN: args.thresholdN,
+		expiresAtUnix: args.expiresAtUnix,
+	};
 }
 
 export function buildLegDraftFromRecipient(

@@ -70,6 +70,9 @@ export function PayoutBalanceSummary({
 					{formattedTotal} USDC
 				</span>
 			</div>
+			<p className="w-full text-xs text-muted-foreground">
+				Setup uses ETH for network fees (usually under $0.05 on Base).
+			</p>
 		</div>
 	);
 }

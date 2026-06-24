@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
+import { DEFAULT_PARTNER_TRIAL_DAYS } from "@filosign/shared";
 import { getAddress } from "viem";
 import { testEnvStub } from "../support/env-stub";
 import {
@@ -176,7 +177,7 @@ describe("email delivery", () => {
 				to: "partner@acme.com",
 				inviteUrl: "https://app.example.com/?platformInvite=abc",
 				planLabel: "Teams Pro",
-				trialDays: 14,
+				trialDays: DEFAULT_PARTNER_TRIAL_DAYS,
 				recipientName: "Jordan Lee",
 			});
 
@@ -193,7 +194,7 @@ describe("email delivery", () => {
 				to: "partner@acme.com",
 				inviteUrl: "https://app.example.com/?platformInvite=abc",
 				planLabel: "Teams Pro",
-				trialDays: 14,
+				trialDays: DEFAULT_PARTNER_TRIAL_DAYS,
 				recipientName: "Jordan Lee",
 				emailVariant: "warm",
 			});
@@ -217,7 +218,7 @@ describe("email delivery", () => {
 				to: "partner@acme.com",
 				inviteUrl: "https://app.example.com/?platformInvite=abc",
 				planLabel: "Teams Pro",
-				trialDays: 14,
+				trialDays: DEFAULT_PARTNER_TRIAL_DAYS,
 				recipientName: "Jordan Lee",
 				emailVariant: "cold",
 			});
@@ -239,7 +240,7 @@ describe("email delivery", () => {
 				to: "partner@acme.com",
 				inviteUrl: "https://app.example.com/?platformInvite=abc",
 				planLabel: "Teams Pro",
-				trialDays: 14,
+				trialDays: DEFAULT_PARTNER_TRIAL_DAYS,
 				recipientName: "Jordan Lee",
 				emailVariant: "custom",
 				customBody: "Looking forward to mapping your first workflow together.",

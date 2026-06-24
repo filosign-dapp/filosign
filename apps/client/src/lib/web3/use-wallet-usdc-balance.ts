@@ -82,7 +82,8 @@ function useConnectedWalletUsdcBalance(options?: {
 
 	return {
 		balance,
-		isPending: queryEnabled && (isPending || isFetching),
+		isPending: queryEnabled && isPending,
+		isFetching: queryEnabled && isFetching,
 		isError: queryEnabled && isError,
 		refetch,
 	};
@@ -111,7 +112,8 @@ function useExplicitWalletUsdcBalance(options: {
 
 	return {
 		balance,
-		isPending: queryEnabled && (isPending || isFetching),
+		isPending: queryEnabled && isPending,
+		isFetching: queryEnabled && isFetching,
 		isError: queryEnabled && isError,
 		refetch,
 	};
@@ -143,6 +145,7 @@ export function useWalletUsdcBalance(options?: UseWalletUsdcBalanceOptions) {
 		balance,
 		formatted: formatUsdcAmount(balance, usdc.decimals),
 		isPending: source.isPending,
+		isFetching: source.isFetching,
 		isError: source.isError,
 		refetch: source.refetch,
 	};

@@ -224,4 +224,109 @@ describe("formatTelegramMessage", () => {
 		expect(text).toContain("Balance: not-a-number ETH");
 		expect(text).toContain("Threshold: 0.02 ETH");
 	});
+
+	test("formats platform access request with readable labels", () => {
+		const text = formatTelegramMessage({
+			name: "platform.access_request_submitted",
+			severity: "info",
+			message: "New platform access request",
+			context: {
+				email: "founder@example.com",
+				name: "Alex",
+				company: "Acme",
+				planId: "teams_pro",
+				billingInterval: "yearly",
+				seatCount: 5,
+				message: "Need Teams for our legal team",
+				adminPath: "/admin/access-requests",
+			},
+			timestamp: Date.UTC(2026, 5, 14, 12, 30),
+		});
+
+		expect(text).toContain("<b>Platform access request</b>");
+		expect(text).toContain("Plan: Teams Pro · yearly · 5 seats");
+		expect(text).toContain("Email: founder@example.com");
+		expect(text).toContain("Review: /admin/access-requests");
+		expect(text).toContain("Need Teams for our legal team");
+		expect(text).not.toContain("planId");
+	});
+
+	test("formats payout access request with use case notes", () => {
+		const text = formatTelegramMessage({
+			name: "platform.payout_access_request_submitted",
+			severity: "info",
+			message: "New payout access request",
+			context: {
+				wallet: "0x1111111111111111111111111111111111111111",
+				organizationId: "00000000-0000-4000-8000-000000000001",
+				organizationLegalName: "Acme LLC",
+				organizationCountry: "US",
+				requesterName: "Alex",
+				requesterRole: "Founder",
+				useCase: "Pay contractors after signed NDAs",
+				adminPath: "/admin/payout-access",
+			},
+			timestamp: Date.UTC(2026, 5, 14, 12, 30),
+		});
+
+		expect(text).toContain("<b>Payout access request</b>");
+		expect(text).toContain("Organization: Acme LLC (US)");
+		expect(text).toContain("Requester: Alex · Founder");
+		expect(text).toContain("Wallet: 0x1111…1111");
+		expect(text).toContain("Pay contractors after signed NDAs");
+		expect(text).not.toContain("organizationLegalName");
+	});
+
+	test("formats payout access request with external wallet intent", () => {
+		const text = formatTelegramMessage({
+			name: "platform.payout_access_request_submitted",
+			severity: "info",
+			message: "New payout access request",
+			context: {
+				wallet: "0x1111111111111111111111111111111111111111",
+				organizationId: "00000000-0000-4000-8000-000000000001",
+				organizationLegalName: "Acme LLC",
+				organizationCountry: "US",
+				requesterName: "Alex",
+				requesterRole: "Founder",
+				useCase: "USDC bonuses on signed SOWs",
+				externalWalletAccessRequested: true,
+				externalWalletUseCase:
+					"Pay verified contractors who are not envelope signers.",
+				adminPath: "/admin/payout-access",
+			},
+			timestamp: Date.UTC(2026, 5, 14, 12, 30),
+		});
+
+		expect(text).toContain("External wallets: Requested");
+		expect(text).toContain(
+			"Pay verified contractors who are not envelope signers.",
+		);
+	});
+
+	test("formats partner invite redeemed with readable labels", () => {
+		const text = formatTelegramMessage({
+			name: "platform.partner_invite_redeemed",
+			severity: "info",
+			message: "Partner invite redeemed",
+			context: {
+				wallet: "0x2222222222222222222222222222222222222222",
+				email: "partner@example.com",
+				inviteId: "00000000-0000-4000-8000-000000000002",
+				inviteKind: "partner_trial",
+				emailVariant: "partner_a",
+				planId: "teams_pro",
+				trialDays: 30,
+				adminPath: "/admin/invites",
+			},
+			timestamp: Date.UTC(2026, 5, 14, 12, 30),
+		});
+
+		expect(text).toContain("<b>Partner invite redeemed</b>");
+		expect(text).toContain("Email: partner@example.com");
+		expect(text).toContain("Plan: Teams Pro · 30-day trial");
+		expect(text).toContain("Invite: partner_trial · partner_a");
+		expect(text).toContain("Review: /admin/invites");
+		expect(text).not.toContain("inviteKind");
+	});
 });

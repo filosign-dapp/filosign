@@ -23,6 +23,9 @@ const EVENT_TITLES: Record<string, string> = {
 	"email.outbox_stuck": "Email outbox stuck",
 	"billing.subscription_problem": "Subscription payment issue",
 	"server.email_disabled": "Email delivery disabled",
+	"platform.access_request_submitted": "Platform access request",
+	"platform.payout_access_request_submitted": "Payout access request",
+	"platform.partner_invite_redeemed": "Partner invite redeemed",
 };
 
 const FEEDBACK_KIND_LABELS = {
@@ -134,6 +137,117 @@ function formatProductFeedback(event: LoggerEvent): string {
 			["Org", readCtxString(context, "organizationId")],
 		],
 		notes: readCtxString(context, "message"),
+		timestamp: event.timestamp,
+	});
+}
+
+function formatPlanLabel(planId: string | undefined): string | undefined {
+	if (!planId) return undefined;
+	return planId
+		.split("_")
+		.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+		.join(" ");
+}
+
+function formatPlatformAccessRequest(event: LoggerEvent): string {
+	const context = event.context;
+	const planId = readCtxString(context, "planId");
+	const billingInterval = readCtxString(context, "billingInterval");
+	const seatCount = readCtxNumber(context, "seatCount");
+	const planParts = [
+		formatPlanLabel(planId),
+		billingInterval,
+		seatCount != null ? `${seatCount} seats` : undefined,
+	].filter(Boolean);
+
+	return buildTelegramBlock({
+		title: formatTitle(event),
+		details: [
+			["Plan", planParts.length > 0 ? planParts.join(" · ") : undefined],
+			["Email", readCtxString(context, "email")],
+			["Name", readCtxString(context, "name")],
+			["Company", readCtxString(context, "company")],
+			["Review", readCtxString(context, "adminPath")],
+		],
+		notes: readCtxString(context, "message"),
+		timestamp: event.timestamp,
+	});
+}
+
+function formatPayoutAccessRequest(event: LoggerEvent): string {
+	const context = event.context;
+	const wallet = readCtxString(context, "wallet");
+	const country = readCtxString(context, "organizationCountry");
+	const legalName = readCtxString(context, "organizationLegalName");
+	const organization =
+		legalName && country ? `${legalName} (${country})` : (legalName ?? country);
+	const requesterName = readCtxString(context, "requesterName");
+	const requesterRole = readCtxString(context, "requesterRole");
+	const requester =
+		requesterName && requesterRole
+			? `${requesterName} · ${requesterRole}`
+			: (requesterName ?? requesterRole);
+	const externalRequested = readCtxBoolean(
+		context,
+		"externalWalletAccessRequested",
+	);
+
+	const details: DetailEntry[] = [
+		["Organization", organization],
+		["Requester", requester],
+		["Wallet", wallet ? truncateEvmAddress(wallet) : undefined],
+		["Org ID", readCtxString(context, "organizationId")],
+		["Review", readCtxString(context, "adminPath")],
+	];
+
+	if (externalRequested === true) {
+		details.push(["External wallets", "Requested"]);
+	}
+
+	const useCase = readCtxString(context, "useCase");
+	const externalUseCase = readCtxString(context, "externalWalletUseCase");
+	const notes = [
+		useCase ? `Use case:\n${useCase}` : null,
+		externalUseCase ? `External use case:\n${externalUseCase}` : null,
+	]
+		.filter(Boolean)
+		.join("\n\n");
+
+	return buildTelegramBlock({
+		title: formatTitle(event),
+		details,
+		notes: notes || undefined,
+		timestamp: event.timestamp,
+	});
+}
+
+function formatPartnerInviteRedeemed(event: LoggerEvent): string {
+	const context = event.context;
+	const wallet = readCtxString(context, "wallet");
+	const planId = readCtxString(context, "planId");
+	const trialDays = readCtxNumber(context, "trialDays");
+	const inviteKind = readCtxString(context, "inviteKind");
+	const emailVariant = readCtxString(context, "emailVariant");
+	const inviteLabel = [inviteKind, emailVariant].filter(Boolean).join(" · ");
+
+	return buildTelegramBlock({
+		title: formatTitle(event),
+		details: [
+			["Email", readCtxString(context, "email")],
+			["Wallet", wallet ? truncateEvmAddress(wallet) : undefined],
+			[
+				"Plan",
+				[
+					formatPlanLabel(planId) ?? planId,
+					trialDays != null ? `${trialDays}-day trial` : undefined,
+				]
+					.filter(Boolean)
+					.join(" · "),
+			],
+			["Invite", inviteLabel || undefined],
+			["Invite ID", readCtxString(context, "inviteId")],
+			["Review", readCtxString(context, "adminPath")],
+		],
 		timestamp: event.timestamp,
 	});
 }
@@ -333,6 +447,12 @@ export function formatTelegramMessage(event: LoggerEvent): string {
 				"resendEnabled",
 				"sesEnabled",
 			]);
+		case "platform.access_request_submitted":
+			return formatPlatformAccessRequest(event);
+		case "platform.payout_access_request_submitted":
+			return formatPayoutAccessRequest(event);
+		case "platform.partner_invite_redeemed":
+			return formatPartnerInviteRedeemed(event);
 		default:
 			return formatGeneric(event);
 	}

@@ -22,6 +22,7 @@ import {
 } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-layer";
 import { PlacementPageOverlays } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-page-overlays";
 import { PlacementSurface } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placement-surface";
+import { useCanvasDeselect } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-canvas-deselect";
 import { useMarqueeModifierHeld } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-marquee-modifier-held";
 import { useMarqueeSelection } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-marquee-selection";
 import { usePlacementCanvas } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/hooks/use-placement-canvas";
@@ -144,6 +145,12 @@ function DocumentViewer() {
 		container: canvasContainer,
 		onSelect: onMarqueeSelect,
 		onActiveChange: setIsInteractingField,
+	});
+
+	const handleCanvasPointerDownCapture = useCanvasDeselect({
+		enabled: !isViewMode && !isPlacingField,
+		onDeselect: handleCanvasDeselect,
+		suppressNextRef: suppressCanvasClickRef,
 	});
 
 	const {
@@ -288,8 +295,6 @@ function DocumentViewer() {
 					placing={isPlacingField}
 				>
 					<div ref={setCanvasRef}>
-						{/* biome-ignore lint/a11y/noStaticElementInteractions: canvas deselect on background click */}
-						{/* biome-ignore lint/a11y/useKeyWithClickEvents: keyboard canvas navigation is out of scope */}
 						<div
 							ref={(el) => {
 								setCanvasContainer(el);
@@ -309,17 +314,7 @@ function DocumentViewer() {
 										}
 									: undefined
 							}
-							onClick={
-								!useStripLayout && !isPlacingField
-									? () => {
-											if (suppressCanvasClickRef.current) {
-												suppressCanvasClickRef.current = false;
-												return;
-											}
-											handleCanvasDeselect();
-										}
-									: undefined
-							}
+							onPointerDownCapture={handleCanvasPointerDownCapture}
 						>
 							{docRendering ? (
 								<div className="absolute inset-0 z-40 bg-background/80">

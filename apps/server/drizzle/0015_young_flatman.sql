@@ -1,0 +1,1 @@
+ALTER TABLE "platform_invites" ALTER COLUMN "trial_days" SET DEFAULT 30;

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page } from "react-pdf";
+import { PLACEMENT_FIELD_OVERLAY_CLASS } from "@/src/lib/domains/files/document-viewport/viewport-coordinates";
 import type { PanZoomScrollBridge } from "@/src/lib/domains/files/pdf/pan-zoom-scroll-offset";
 import { PdfStripVirtual } from "@/src/lib/domains/files/pdf/pdf-strip-virtual";
 import { cn } from "@/src/lib/utils";
@@ -96,7 +97,14 @@ const PdfPageWrap = memo(function PdfPageWrap({
 				}
 			/>
 			{renderPageOverlay ? (
-				<div className="pointer-events-none absolute inset-0 z-20 [&_button]:pointer-events-auto [&_[role=button]]:pointer-events-auto">
+				<div
+					className={cn(
+						"pointer-events-none absolute inset-0 z-20",
+						"[&_button]:pointer-events-auto",
+						"[&_[role=button]]:pointer-events-auto",
+						`[&_.${PLACEMENT_FIELD_OVERLAY_CLASS}]:pointer-events-auto`,
+					)}
+				>
 					{renderPageOverlay(pageNumber - 1)}
 				</div>
 			) : null}

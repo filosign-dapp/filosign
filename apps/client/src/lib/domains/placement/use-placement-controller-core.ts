@@ -438,14 +438,16 @@ export function usePlacementControllerCore(
 		if (readOnly) return;
 		const onKeyDown = (e: KeyboardEvent) => {
 			const mod = e.metaKey || e.ctrlKey;
-			if (
-				e.key === "Escape" &&
-				isPlacingField &&
-				isPlacementKeyboardTarget(e.target)
-			) {
+			if (e.key === "Escape" && isPlacementKeyboardTarget(e.target)) {
 				e.preventDefault();
-				cancelPlacement();
-				return;
+				if (isPlacingField) {
+					cancelPlacement();
+					return;
+				}
+				if (selectedFieldIds.size > 0) {
+					clearFieldSelection();
+					return;
+				}
 			}
 			if (mod && e.key === "z" && !e.shiftKey) {
 				e.preventDefault();
@@ -496,6 +498,7 @@ export function usePlacementControllerCore(
 		handleRemoveSelectedFields,
 		isPlacingField,
 		cancelPlacement,
+		clearFieldSelection,
 		nudgeSelectedFields,
 	]);
 

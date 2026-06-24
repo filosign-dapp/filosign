@@ -1,4 +1,4 @@
-import { WalletIcon } from "@phosphor-icons/react";
+import { ArrowClockwiseIcon, WalletIcon } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import { useActiveAccount, useWalletDetailsModal } from "thirdweb/react";
 import { defaultChain, SUPPORTED_TOKENS } from "@/src/constants";
@@ -7,6 +7,7 @@ import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
 import { Image } from "@/src/lib/components/app/media/image";
 import { Button } from "@/src/lib/components/ui/button";
 import { useTheme } from "@/src/lib/components/ui/theme-provider";
+import { cn } from "@/src/lib/utils";
 import { thirdwebWalletModalOptions } from "@/src/lib/web3/config";
 import { formatUsdcAmountParts } from "@/src/lib/web3/format-usdc";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
@@ -23,7 +24,8 @@ export function WalletUsdcBalanceCard() {
 	const [topUpLoading, setTopUpLoading] = useState(false);
 
 	const address = account?.address;
-	const { balance, isPending, isError, refetch } = useWalletUsdcBalance();
+	const { balance, isPending, isFetching, isError, refetch } =
+		useWalletUsdcBalance();
 
 	const onrampEnabled = env.VITE_CHAIN === "mainnet";
 	const faucetUrl = usdc.faucets[0]?.url;
@@ -53,6 +55,10 @@ export function WalletUsdcBalanceCard() {
 		});
 	};
 
+	const refreshBalance = () => {
+		void refetch();
+	};
+
 	return (
 		<ProfileSection
 			icon={<WalletIcon className="size-4" aria-hidden="true" />}
@@ -71,9 +77,24 @@ export function WalletUsdcBalanceCard() {
 					) : isPending ? (
 						<p className="text-sm text-muted-foreground">Loading…</p>
 					) : isError ? (
-						<p className="text-sm text-muted-foreground">
-							Balance unavailable. Try again later.
-						</p>
+						<div className="flex items-center gap-2">
+							<p className="text-sm text-muted-foreground">
+								Balance unavailable. Try again later.
+							</p>
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								className="shrink-0 text-muted-foreground hover:text-foreground"
+								onClick={refreshBalance}
+								disabled={isFetching}
+								aria-label="Refresh USDC balance"
+							>
+								<ArrowClockwiseIcon
+									className={cn("size-4", isFetching && "animate-spin")}
+								/>
+							</Button>
+						</div>
 					) : (
 						<>
 							<span className="mb-1.5 inline-flex shrink-0">
@@ -88,6 +109,19 @@ export function WalletUsdcBalanceCard() {
 							<span className="font-manrope font-semibold text-4xl leading-none tracking-tight text-foreground sm:text-5xl">
 								{parts.whole}.{parts.fraction}
 							</span>
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon-sm"
+								className="mb-1.5 shrink-0 text-muted-foreground hover:text-foreground"
+								onClick={refreshBalance}
+								disabled={isFetching}
+								aria-label="Refresh USDC balance"
+							>
+								<ArrowClockwiseIcon
+									className={cn("size-4", isFetching && "animate-spin")}
+								/>
+							</Button>
 						</>
 					)}
 				</div>

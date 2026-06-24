@@ -1,5 +1,6 @@
 import { getPlanName, type PlanId } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
+import { DEFAULT_PARTNER_TRIAL_SEAT_COUNT } from "@filosign/shared";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
@@ -371,7 +372,7 @@ async function copyActivePartnerTrialToOrgWithTx(
 		.update(organizationSubscriptions)
 		.set({
 			planId: redemption.planId,
-			seatCount: 1,
+			seatCount: DEFAULT_PARTNER_TRIAL_SEAT_COUNT,
 			status: "trialing",
 			provider: "manual",
 			periodStart,

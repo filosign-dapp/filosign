@@ -277,6 +277,8 @@ export async function submitOrganizationSettlementFeatureRequest(args: {
 		useCase: parsed.data.useCase,
 		requesterName: parsed.data.requesterName,
 		requesterRole: parsed.data.requesterRole,
+		externalWalletAccessRequested: parsed.data.externalWalletAccessRequested,
+		externalWalletUseCase: parsed.data.externalWalletUseCase,
 	});
 
 	return getOrganizationSettlementFeatureAccess(args.organizationId);

@@ -8,4 +8,7 @@ export type PlatformInviteEmailVariant =
 export const zPlatformInviteEmailVariant = z.enum(platformInviteEmailVariants);
 
 /** Default trial length for design partner (`partner_trial`) platform invites. */
-export const DEFAULT_PARTNER_TRIAL_DAYS = 14;
+export const DEFAULT_PARTNER_TRIAL_DAYS = 30;
+
+/** Default workspace seat count when a design partner trial is applied. */
+export const DEFAULT_PARTNER_TRIAL_SEAT_COUNT = 3;

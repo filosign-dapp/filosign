@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { DEFAULT_PARTNER_TRIAL_DAYS } from "@filosign/shared";
 import {
 	envelopeAnalyticsContext,
 	PIECE_CID_PROPERTY,
@@ -145,7 +146,7 @@ describe("trackPlatformInviteCreated", () => {
 			inviteId: "invite-1",
 			emailVariant: "warm",
 			planId: "teams_pro",
-			trialDays: 14,
+			trialDays: DEFAULT_PARTNER_TRIAL_DAYS,
 			inviteKind: "partner_trial",
 		});
 		expect(posthogCaptures).toHaveLength(1);
@@ -157,7 +158,7 @@ describe("trackPlatformInviteCreated", () => {
 			email_variant: "warm",
 			invite_id: "invite-1",
 			plan_id: "teams_pro",
-			trial_days: 14,
+			trial_days: DEFAULT_PARTNER_TRIAL_DAYS,
 			invite_kind: "partner_trial",
 		});
 	});
@@ -170,7 +171,7 @@ describe("trackPlatformInviteCreated", () => {
 			inviteId: "invite-2",
 			emailVariant: "custom",
 			planId: "teams_pro",
-			trialDays: 14,
+			trialDays: DEFAULT_PARTNER_TRIAL_DAYS,
 			inviteKind: "partner_trial",
 		});
 		expect(posthogCaptures[0]?.distinctId).toBe("system:platform-invites");
@@ -188,7 +189,7 @@ describe("trackPlatformInviteRedeemed", () => {
 			inviteId: "invite-3",
 			emailVariant: "cold",
 			planId: "teams_pro",
-			trialDays: 14,
+			trialDays: DEFAULT_PARTNER_TRIAL_DAYS,
 			inviteKind: "partner_trial",
 		});
 		expect(posthogCaptures).toHaveLength(1);

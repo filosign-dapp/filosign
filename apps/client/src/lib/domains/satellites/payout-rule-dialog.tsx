@@ -13,6 +13,7 @@ import {
 import { type KeyboardEvent, useEffect, useMemo, useState } from "react";
 import { getAddress, isAddress, parseUnits } from "viem";
 import { SUPPORTED_TOKENS } from "@/src/constants";
+import { CopyButton } from "@/src/lib/components/app/chrome/copy-button";
 import { Image } from "@/src/lib/components/app/media/image";
 import { Button } from "@/src/lib/components/ui/button";
 import { Checkbox } from "@/src/lib/components/ui/checkbox";
@@ -547,6 +548,23 @@ export function PayoutRuleDialog({
 				</DialogHeader>
 
 				<div className="grid max-h-[60vh] gap-4 overflow-y-auto py-1">
+					{walletAddress ? (
+						<div className="space-y-1.5">
+							<Label className="text-xs font-normal text-muted-foreground">
+								{payerLabel === "treasury"
+									? "Treasury wallet"
+									: "Paying account"}
+							</Label>
+							<div className="flex items-center gap-2 overflow-hidden rounded-md border border-border/40 bg-muted/10 px-3 h-9 font-mono text-xs text-foreground/80">
+								<span className="min-w-0 flex-1 truncate">{walletAddress}</span>
+								<CopyButton
+									text={walletAddress}
+									className="shrink-0 text-muted-foreground hover:text-foreground"
+								/>
+							</div>
+						</div>
+					) : null}
+
 					<SettlementReleaseFields
 						releaseSelectId="payout-rule-release"
 						releaseType={releaseType}

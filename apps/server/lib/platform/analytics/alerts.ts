@@ -348,6 +348,8 @@ export function emitPayoutAccessRequestPing(args: {
 	useCase: string;
 	requesterName: string;
 	requesterRole: string;
+	externalWalletAccessRequested?: boolean;
+	externalWalletUseCase?: string | null;
 }): Promise<void> {
 	return emitPlatformInfoEvent({
 		name: PLATFORM_ALERT_EVENTS.payoutAccessRequestSubmitted,
@@ -360,6 +362,11 @@ export function emitPayoutAccessRequestPing(args: {
 			requesterName: args.requesterName,
 			requesterRole: args.requesterRole,
 			useCase: args.useCase.trim().slice(0, 500),
+			externalWalletAccessRequested:
+				args.externalWalletAccessRequested === true,
+			externalWalletUseCase: args.externalWalletAccessRequested
+				? (args.externalWalletUseCase?.trim().slice(0, 500) ?? null)
+				: null,
 			adminPath: "/admin/payout-access",
 		},
 	});

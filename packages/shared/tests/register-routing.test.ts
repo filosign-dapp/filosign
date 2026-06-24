@@ -157,3 +157,24 @@ describe("orderSignersByRoutingEmails", () => {
 		expect(ordered.every((s) => s.turnIndex === null)).toBe(true);
 	});
 });
+
+describe("sortedCommitsForEmails (attachment recipients)", () => {
+	it("returns strictly ascending commitments regardless of input order", () => {
+		const commits = sortedCommitsForEmails([
+			"z-last@example.com",
+			"a-first@example.com",
+			"m-mid@example.com",
+		]);
+		expect(commits.length).toBe(3);
+		for (let i = 1; i < commits.length; i++) {
+			expect(commits[i - 1]! < commits[i]!).toBe(true);
+		}
+	});
+
+	it("differs from unsorted commitsForEmails when roster order is not sorted", () => {
+		const emails = ["z-last@example.com", "a-first@example.com"];
+		const sorted = sortedCommitsForEmails(emails);
+		const unsorted = commitsForEmails(emails);
+		expect(sorted).not.toEqual(unsorted);
+	});
+});

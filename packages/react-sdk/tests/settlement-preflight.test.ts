@@ -23,4 +23,12 @@ describe("formatSettlementSimError", () => {
 			"custom failure",
 		);
 	});
+
+	test("maps thirdweb delegation 401 to wallet infra guidance", () => {
+		expect(
+			formatSettlementSimError(
+				new Error("Failed to fetch delegation contract: 401"),
+			),
+		).toContain("thirdweb");
+	});
 });

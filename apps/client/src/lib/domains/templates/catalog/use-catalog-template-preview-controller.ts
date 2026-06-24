@@ -51,6 +51,7 @@ export function useCatalogTemplatePreviewController(args: {
 	});
 
 	const handleSend = useCallback(async () => {}, []);
+	const handleRetrySend = useCallback(async () => {}, []);
 	const handlePostSendDone = useCallback(() => {}, []);
 	const dismissSendProgress = useCallback(() => {}, []);
 
@@ -60,10 +61,13 @@ export function useCatalogTemplatePreviewController(args: {
 		postSendDialogOpen,
 		postSendShare,
 		postSendWarmSummary,
+		postSendIncompleteSteps: null,
 		sendProgressOpen,
 		sendProgressState,
 		dismissSendProgress,
 		handleSend,
+		handleRetrySend,
+		envelopeRegisteredInSession: false,
 		handlePostSendDone,
 	} satisfies PlacementController;
 }

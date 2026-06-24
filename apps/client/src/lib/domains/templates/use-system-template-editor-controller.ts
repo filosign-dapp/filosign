@@ -53,6 +53,7 @@ export function useSystemTemplateEditorController(args: {
 	});
 
 	const handleSend = useCallback(async () => {}, []);
+	const handleRetrySend = useCallback(async () => {}, []);
 	const handlePostSendDone = useCallback(() => {}, []);
 	const dismissSendProgress = useCallback(() => {}, []);
 
@@ -62,10 +63,13 @@ export function useSystemTemplateEditorController(args: {
 		postSendDialogOpen,
 		postSendShare,
 		postSendWarmSummary,
+		postSendIncompleteSteps: null,
 		sendProgressOpen,
 		sendProgressState,
 		dismissSendProgress,
 		handleSend,
+		handleRetrySend,
+		envelopeRegisteredInSession: false,
 		handlePostSendDone,
 	};
 }

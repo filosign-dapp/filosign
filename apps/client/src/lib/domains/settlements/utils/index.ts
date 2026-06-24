@@ -12,6 +12,11 @@ export type {
 } from "./attachment-draft";
 export { handleBasicPayoutGateBlock } from "./basic-payout-gate";
 export {
+	buildSettlementAttachRules,
+	createSettlementProfileLookup,
+	type SettlementProfileLookup,
+} from "./build-attach-rules";
+export {
 	buildReleaseParamsFromDraft,
 	buildReleaseParamsFromSignerEmails,
 } from "./build-release-params";

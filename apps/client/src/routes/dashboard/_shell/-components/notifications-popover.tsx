@@ -105,7 +105,7 @@ export function NotificationsPopover() {
 							variant="muted"
 							icon={CheckCircleIcon}
 							title="All caught up!"
-							description="No new documents at this time."
+							description="No new envelopes at this time."
 							className="border-transparent py-8"
 						/>
 					)}

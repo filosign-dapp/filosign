@@ -41,8 +41,8 @@ type AdminInviteRow =
 type InviteEmailVariant = AdminInviteRow["emailVariant"];
 
 const INVITE_EMAIL_VARIANT_LABELS: Record<InviteEmailVariant, string> = {
-	warm: "Variant 1: warm (already talked)",
-	cold: "Variant 2: cold outreach",
+	warm: "Warm outreach",
+	cold: "Cold outreach",
 	custom: "Custom message",
 };
 type AdminUserRow =
@@ -98,6 +98,76 @@ function AdminSection(props: {
 	);
 }
 
+function AdminSettlementExternalWalletRequest(props: {
+	requested: boolean;
+	useCase: string | null | undefined;
+}) {
+	if (!props.requested) return null;
+	return (
+		<div className="space-y-2">
+			<Badge variant="outline">External wallet request: Yes</Badge>
+			{props.useCase ? (
+				<p className="text-xs text-muted-foreground whitespace-pre-wrap border border-border/40 bg-muted/10 p-2.5 rounded-md">
+					<span className="font-medium text-foreground block mb-1">
+						External wallet use case
+					</span>
+					{String(props.useCase)}
+				</p>
+			) : null}
+		</div>
+	);
+}
+
+function AdminSettlementExternalWalletGrant(props: {
+	organizationId: string;
+	enabled: boolean;
+	requested: boolean;
+	reviewNote: string | null | undefined;
+	setExternalWalletAccess: {
+		mutate: (args: { organizationId: string; enabled: boolean }) => void;
+		isPending: boolean;
+		variables?: { organizationId: string; enabled: boolean };
+	};
+}) {
+	return (
+		<div className="space-y-3 border-t border-border/30 pt-3">
+			<div className="flex flex-wrap items-center gap-2">
+				<Badge variant={props.enabled ? "default" : "secondary"}>
+					External wallets: {props.enabled ? "On" : "Off"}
+				</Badge>
+			</div>
+			{!props.requested && !props.enabled ? (
+				<p className="text-xs text-amber-700 dark:text-amber-400">
+					No external wallet request on file. Confirm use case by email before
+					granting.
+				</p>
+			) : null}
+			<Button
+				size="sm"
+				variant="outline"
+				onClick={() =>
+					props.setExternalWalletAccess.mutate({
+						organizationId: props.organizationId,
+						enabled: !props.enabled,
+					})
+				}
+				isLoading={
+					props.setExternalWalletAccess.isPending &&
+					props.setExternalWalletAccess.variables?.organizationId ===
+						props.organizationId
+				}
+			>
+				{props.enabled ? "Revoke external wallets" : "Allow external wallets"}
+			</Button>
+			{props.reviewNote ? (
+				<p className="text-xs text-muted-foreground italic">
+					Review note: {String(props.reviewNote)}
+				</p>
+			) : null}
+		</div>
+	);
+}
+
 function AdminSettlementAccessRequestRow(props: {
 	row: AdminSettlementAccessRow;
 	approveSettlementAccess: {
@@ -110,10 +180,23 @@ function AdminSettlementAccessRequestRow(props: {
 		isPending: boolean;
 		variables?: string;
 	};
+	setExternalWalletAccess: {
+		mutate: (args: { organizationId: string; enabled: boolean }) => void;
+		isPending: boolean;
+		variables?: { organizationId: string; enabled: boolean };
+	};
 }) {
-	const { row, approveSettlementAccess, rejectSettlementAccess } = props;
+	const {
+		row,
+		approveSettlementAccess,
+		rejectSettlementAccess,
+		setExternalWalletAccess,
+	} = props;
 	const organizationId = String(row.organizationId ?? "");
 	const status = String(row.status ?? "none");
+	const externalWalletAccessEnabled = row.externalWalletAccessEnabled === true;
+	const externalWalletAccessRequested =
+		row.externalWalletAccessRequested === true;
 
 	return (
 		<li className="rounded-lg border border-border/60 bg-muted/5 p-4 text-sm space-y-3">
@@ -130,6 +213,10 @@ function AdminSettlementAccessRequestRow(props: {
 					{String(row.useCase)}
 				</p>
 			) : null}
+			<AdminSettlementExternalWalletRequest
+				requested={externalWalletAccessRequested}
+				useCase={row.externalWalletUseCase}
+			/>
 			{row.organizationLegalName || row.organizationCountry ? (
 				<div className="text-xs text-muted-foreground space-y-1 border border-border/40 bg-muted/10 p-2.5 rounded-md">
 					{row.organizationLegalName ? (
@@ -163,15 +250,25 @@ function AdminSettlementAccessRequestRow(props: {
 					{row.requestUserAgent ? String(row.requestUserAgent) : null}
 				</p>
 			) : null}
-			<p className="text-xs text-muted-foreground">
-				Accepted by{" "}
-				<span className="font-mono text-foreground">
-					{String(row.acceptedByWallet ?? "–")}
-				</span>
-				· terms {String(row.termsVersion ?? "–")}
-			</p>
+			{row.acceptedByWallet ? (
+				<div className="space-y-1 text-xs text-muted-foreground">
+					<div className="flex flex-wrap items-center gap-1">
+						<span>Requester wallet</span>
+						<span className="font-mono text-foreground break-all">
+							{String(row.acceptedByWallet)}
+						</span>
+						<CopyButton text={String(row.acceptedByWallet)} />
+					</div>
+					<p>Send a small amount of ETH on Base if they will attach payouts.</p>
+					<p>Terms {String(row.termsVersion ?? "–")}</p>
+				</div>
+			) : (
+				<p className="text-xs text-muted-foreground">
+					Accepted by – · terms {String(row.termsVersion ?? "–")}
+				</p>
+			)}
 			{status === "pending" ? (
-				<div className="flex gap-2 pt-1 border-t border-border/30 pt-3">
+				<div className="flex gap-2 border-t border-border/30 pt-3">
 					<Button
 						size="sm"
 						variant="primary"
@@ -195,6 +292,16 @@ function AdminSettlementAccessRequestRow(props: {
 						Reject
 					</Button>
 				</div>
+			) : status === "approved" ? (
+				<AdminSettlementExternalWalletGrant
+					organizationId={organizationId}
+					enabled={externalWalletAccessEnabled}
+					requested={externalWalletAccessRequested}
+					reviewNote={
+						typeof row.reviewNote === "string" ? row.reviewNote : null
+					}
+					setExternalWalletAccess={setExternalWalletAccess}
+				/>
 			) : row.reviewNote ? (
 				<p className="text-xs text-muted-foreground italic">
 					Review note: {String(row.reviewNote)}
@@ -263,7 +370,6 @@ function AdminPage() {
 			rpc.platformAdmin.invites.create({
 				kind: "partner_trial",
 				planId: "teams_pro",
-				trialDays: 30,
 				email: input.email,
 				note: input.partnerName,
 				emailVariant: input.emailVariant,
@@ -416,32 +522,27 @@ function AdminPage() {
 		},
 	});
 
+	const setExternalWalletAccess = useMutation({
+		meta: { suppressErrorToast: true },
+		mutationFn: (args: { organizationId: string; enabled: boolean }) =>
+			rpc.platformAdmin.settlementFeatureAccess.setExternalWalletAccess(args),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({
+				queryKey:
+					rpcQuery.platformAdmin.settlementFeatureAccess.list.queryKey(),
+			});
+		},
+		onError: (err) => {
+			setError(formatInlineAppError(err));
+		},
+	});
+
 	const rejectAccessRequest = useMutation({
 		mutationFn: (requestId: string) =>
 			rpc.platformAdmin.accessRequests.reject({ requestId }),
 		onSuccess: () => {
 			void queryClient.invalidateQueries({
 				queryKey: rpcQuery.platformAdmin.accessRequests.list.queryKey(),
-			});
-		},
-	});
-
-	const toggleSettlement = useMutation({
-		mutationFn: (args: {
-			walletAddress: string;
-			enabled: boolean;
-			current: Record<string, unknown>;
-		}) =>
-			rpc.platformAdmin.users.setFeatureOverrides({
-				wallet: args.walletAddress,
-				featureOverrides: {
-					...args.current,
-					"features.settlement.basic": args.enabled,
-				},
-			}),
-		onSuccess: () => {
-			void queryClient.invalidateQueries({
-				queryKey: rpcQuery.platformAdmin.users.list.queryKey(),
 			});
 		},
 	});
@@ -464,10 +565,7 @@ function AdminPage() {
 						Access Restricted
 					</h1>
 					<p className="text-sm text-muted-foreground text-pretty">
-						This page is restricted to platform admins. Your account email must
-						be listed in the server's <code>PLATFORM_ADMIN_EMAILS</code>{" "}
-						configuration or your wallet address must be in{" "}
-						<code>ADMIN_WALLETS</code>.
+						This page is restricted to platform admins.
 					</p>
 				</div>
 				<Button variant="outline" size="sm" render={<Link to="/dashboard" />}>
@@ -955,6 +1053,7 @@ function AdminPage() {
 									row={row}
 									approveSettlementAccess={approveSettlementAccess}
 									rejectSettlementAccess={rejectSettlementAccess}
+									setExternalWalletAccess={setExternalWalletAccess}
 								/>
 							))}
 						</ul>
@@ -965,7 +1064,7 @@ function AdminPage() {
 				<AdminSection
 					icon={<UsersIcon className="size-4" aria-hidden="true" />}
 					title="Registered Users"
-					description="Review database users, subscription plans, and settlement feature overrides."
+					description="Review database users and subscription plans."
 				>
 					{usersQuery.isPending ? (
 						<p className="text-sm text-muted-foreground">Loading…</p>
@@ -975,14 +1074,8 @@ function AdminPage() {
 						<ul className="divide-y divide-border/50">
 							{users.map((user) => {
 								const wallet = String(user.walletAddress);
-								const overrides = user.featureOverrides;
-								const settlementOn =
-									overrides["features.settlement.basic"] !== false;
 								return (
-									<li
-										key={wallet}
-										className="flex flex-col md:flex-row md:items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
-									>
+									<li key={wallet} className="py-3 first:pt-0 last:pb-0">
 										<div className="min-w-0 space-y-1">
 											<div className="flex flex-wrap items-center gap-2">
 												<span className="font-medium text-foreground truncate max-w-50 md:max-w-none">
@@ -1007,32 +1100,6 @@ function AdminPage() {
 													className="text-muted-foreground hover:text-foreground shrink-0"
 												/>
 											</div>
-										</div>
-										<div className="flex shrink-0 items-center gap-2">
-											<Badge
-												variant={settlementOn ? "secondary" : "outline"}
-												className="h-7 px-2.5"
-											>
-												Settlement {settlementOn ? "Active" : "Disabled"}
-											</Badge>
-											<Button
-												size="sm"
-												variant={settlementOn ? "outline" : "primary"}
-												disabled={toggleSettlement.isPending}
-												onClick={() =>
-													toggleSettlement.mutate({
-														walletAddress: wallet,
-														enabled: !settlementOn,
-														current: overrides,
-													})
-												}
-												isLoading={
-													toggleSettlement.isPending &&
-													toggleSettlement.variables?.walletAddress === wallet
-												}
-											>
-												{settlementOn ? "Disable" : "Enable"}
-											</Button>
 										</div>
 									</li>
 								);

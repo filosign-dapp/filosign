@@ -30,6 +30,12 @@ export function PayoutAccessRequestDialog(props: {
 	onRequesterRoleChange: (v: string) => void;
 	useCase: string;
 	onUseCaseChange: (v: string) => void;
+	externalWalletAccessRequested: boolean;
+	onExternalWalletAccessRequestedChange: (v: boolean) => void;
+	externalWalletUseCase: string;
+	onExternalWalletUseCaseChange: (v: string) => void;
+	externalWalletComplianceCert: boolean;
+	onExternalWalletComplianceCertChange: (v: boolean) => void;
 	acceptTerms: boolean;
 	onAcceptTermsChange: (v: boolean) => void;
 	sanctionsSelfCert: boolean;
@@ -78,6 +84,22 @@ export function PayoutAccessRequestDialog(props: {
 								onRequesterRoleChange={props.onRequesterRoleChange}
 								useCase={props.useCase}
 								onUseCaseChange={props.onUseCaseChange}
+								externalWalletAccessRequested={
+									props.externalWalletAccessRequested
+								}
+								onExternalWalletAccessRequestedChange={
+									props.onExternalWalletAccessRequestedChange
+								}
+								externalWalletUseCase={props.externalWalletUseCase}
+								onExternalWalletUseCaseChange={
+									props.onExternalWalletUseCaseChange
+								}
+								externalWalletComplianceCert={
+									props.externalWalletComplianceCert
+								}
+								onExternalWalletComplianceCertChange={
+									props.onExternalWalletComplianceCertChange
+								}
 								acceptTerms={props.acceptTerms}
 								onAcceptTermsChange={props.onAcceptTermsChange}
 								sanctionsSelfCert={props.sanctionsSelfCert}

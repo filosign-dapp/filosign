@@ -11,6 +11,12 @@ export type PayoutFeatureAccessControls = {
 	setRequesterRole: (value: string) => void;
 	useCase: string;
 	setUseCase: (value: string) => void;
+	externalWalletAccessRequested: boolean;
+	setExternalWalletAccessRequested: (value: boolean) => void;
+	externalWalletUseCase: string;
+	setExternalWalletUseCase: (value: string) => void;
+	externalWalletComplianceCert: boolean;
+	setExternalWalletComplianceCert: (value: boolean) => void;
 	acceptTerms: boolean;
 	setAcceptTerms: (value: boolean) => void;
 	sanctionsSelfCert: boolean;
@@ -40,6 +46,14 @@ export function payoutAccessRequestDialogProps(
 		onRequesterRoleChange: access.setRequesterRole,
 		useCase: access.useCase,
 		onUseCaseChange: access.setUseCase,
+		externalWalletAccessRequested: access.externalWalletAccessRequested,
+		onExternalWalletAccessRequestedChange:
+			access.setExternalWalletAccessRequested,
+		externalWalletUseCase: access.externalWalletUseCase,
+		onExternalWalletUseCaseChange: access.setExternalWalletUseCase,
+		externalWalletComplianceCert: access.externalWalletComplianceCert,
+		onExternalWalletComplianceCertChange:
+			access.setExternalWalletComplianceCert,
 		acceptTerms: access.acceptTerms,
 		onAcceptTermsChange: access.setAcceptTerms,
 		sanctionsSelfCert: access.sanctionsSelfCert,

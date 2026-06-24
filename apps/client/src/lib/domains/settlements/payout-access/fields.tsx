@@ -24,6 +24,12 @@ export function PayoutAccessRequestFields(props: {
 	onRequesterRoleChange: (v: string) => void;
 	useCase: string;
 	onUseCaseChange: (v: string) => void;
+	externalWalletAccessRequested: boolean;
+	onExternalWalletAccessRequestedChange: (v: boolean) => void;
+	externalWalletUseCase: string;
+	onExternalWalletUseCaseChange: (v: string) => void;
+	externalWalletComplianceCert: boolean;
+	onExternalWalletComplianceCertChange: (v: boolean) => void;
 	acceptTerms: boolean;
 	onAcceptTermsChange: (v: boolean) => void;
 	sanctionsSelfCert: boolean;
@@ -107,6 +113,76 @@ export function PayoutAccessRequestFields(props: {
 					disabled={props.disabled}
 				/>
 			</div>
+
+			<div className="space-y-3 rounded-lg border border-border/50 bg-muted/10 p-3">
+				<p className="text-sm font-medium text-foreground">
+					External wallet payouts (optional)
+				</p>
+				<p className="text-sm text-muted-foreground leading-snug">
+					By default, payouts can only go to people on the envelope who have a
+					Filosign account and linked wallet.{" "}
+					<span className="text-foreground">External wallet payouts</span> let
+					you send USDC to a wallet address you type in (for example a
+					contractor who is not a signer).
+				</p>
+				<div className="flex items-start gap-2">
+					<Checkbox
+						id="payout-external-requested"
+						checked={props.externalWalletAccessRequested}
+						onCheckedChange={(v) =>
+							props.onExternalWalletAccessRequestedChange(v === true)
+						}
+						disabled={props.disabled}
+					/>
+					<Label
+						htmlFor="payout-external-requested"
+						className="text-sm font-normal leading-snug"
+					>
+						We need to pay external wallet addresses (not on the envelope)
+					</Label>
+				</div>
+				{props.externalWalletAccessRequested ? (
+					<>
+						<div className="space-y-2">
+							<Label htmlFor="payout-external-use-case">
+								Why do you need external wallet payouts?
+							</Label>
+							<Textarea
+								id="payout-external-use-case"
+								placeholder="Who gets paid, how you verify them, typical amounts, and why they cannot be envelope recipients…"
+								value={props.externalWalletUseCase}
+								onChange={(e) =>
+									props.onExternalWalletUseCaseChange(e.target.value)
+								}
+								rows={3}
+								disabled={props.disabled}
+							/>
+						</div>
+						<div className="flex items-start gap-2">
+							<Checkbox
+								id="payout-external-compliance"
+								checked={props.externalWalletComplianceCert}
+								onCheckedChange={(v) =>
+									props.onExternalWalletComplianceCertChange(v === true)
+								}
+								disabled={props.disabled}
+							/>
+							<Label
+								htmlFor="payout-external-compliance"
+								className="text-sm font-normal leading-snug"
+							>
+								We will screen recipients and wallet addresses for sanctions and
+								AML compliance before each payout, and we accept sole
+								responsibility for lawful use of external wallet payouts.
+							</Label>
+						</div>
+					</>
+				) : null}
+				<p className="text-xs text-muted-foreground">
+					Filosign will review after payout access is approved.
+				</p>
+			</div>
+
 			<div className="flex items-start gap-2">
 				<Checkbox
 					id="payout-accept-terms"

@@ -2,13 +2,14 @@ import type { FilosignContracts } from "@filosign/evm";
 import { computeCidIdentifier } from "@filosign/evm";
 import type { SettlementReleaseType } from "@filosign/shared";
 import {
-	hashNormalizedSignerEmail,
 	SETTLEMENT_RELEASE_TYPE_UINT,
+	sortedCommitsForEmails,
 } from "@filosign/shared";
 import type { Address, Hex } from "viem";
 import { encodeFunctionData } from "viem";
 import type { SendFileProgressReporter } from "./send-file/progress";
 import { emitSendFileProgress } from "./send-file/progress";
+import { simulateSettlementWrite } from "./settlement-preflight";
 import { releaseParamsToContractArgs } from "./settlement-rules";
 import { parseRuleIdFromReceipt, waitForTxReceipt } from "./tx-receipt";
 import type { FilosignWallet } from "./wallet";
@@ -54,8 +55,8 @@ export async function registerAttachmentRulesOnChain(args: {
 		if (!rule) continue;
 		const { specificSignerCommitment, thresholdN, signerCommitments } =
 			releaseParamsToContractArgs(rule.releaseType, rule.releaseParams);
-		const recipientEmailCommitments = rule.recipientEmails.map((email) =>
-			hashNormalizedSignerEmail(email),
+		const recipientEmailCommitments = sortedCommitsForEmails(
+			rule.recipientEmails,
 		);
 		const expiresAt = rule.expiresAt ?? 0n;
 
@@ -78,6 +79,24 @@ export async function registerAttachmentRulesOnChain(args: {
 			phase: "wallet_attachment_rule",
 			status: "wallet_prompt",
 			ruleIndex,
+		});
+
+		await simulateSettlementWrite({
+			contracts: args.contracts,
+			wallet: args.wallet,
+			address: release.address,
+			abi: release.abi,
+			functionName: "registerAttachmentRule",
+			args: [
+				cidIdentifier,
+				rule.packetContentHash,
+				SETTLEMENT_RELEASE_TYPE_UINT[rule.releaseType],
+				specificSignerCommitment,
+				thresholdN,
+				expiresAt,
+				signerCommitments,
+				recipientEmailCommitments,
+			],
 		});
 
 		const registerHash = await args.wallet.sendTransaction({

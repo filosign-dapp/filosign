@@ -86,9 +86,7 @@ async function registerNewUser(
 ): Promise<string> {
 	const { idToken } = params;
 	if (!idToken?.trim()) {
-		throw new Error(
-			"Authentication token required. Please sign in with your wallet first.",
-		);
+		throw new Error("Authentication token required. Sign in first.");
 	}
 
 	const assent = params.legalAssent;

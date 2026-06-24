@@ -20,7 +20,7 @@ export function useRevokeSettlementAllowance(_pieceCid: string | undefined) {
 			resolvePayerWallet?: SettlementPayerWalletResolver;
 		}) => {
 			if (!wallet?.account || !contracts) {
-				throw new Error("Connect your wallet to revoke payout approval.");
+				throw new Error("Sign in to revoke payout approval.");
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 			return revokeSettlementValidatorAllowance({

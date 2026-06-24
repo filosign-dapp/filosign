@@ -1,7 +1,7 @@
 import type { SettlementReleaseType } from "@filosign/shared";
 import {
-	hashNormalizedSignerEmail,
 	SETTLEMENT_RELEASE_TYPE_UINT,
+	sortedCommitsForEmails,
 } from "@filosign/shared";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Address, Hex } from "viem";
@@ -25,7 +25,7 @@ export function useUpdateAttachmentRule() {
 			expiresAt?: bigint;
 		}) => {
 			if (!wallet?.account || !contracts) {
-				throw new Error("Connect your wallet to update an attachment rule.");
+				throw new Error("Sign in to update an attachment rule.");
 			}
 			const release = contracts.FSAttachmentRelease;
 			if (!release) {
@@ -34,8 +34,8 @@ export function useUpdateAttachmentRule() {
 
 			const { specificSignerCommitment, thresholdN, signerCommitments } =
 				releaseParamsToContractArgs(args.releaseType, args.releaseParams);
-			const recipientEmailCommitments = args.recipientEmails.map((email) =>
-				hashNormalizedSignerEmail(email),
+			const recipientEmailCommitments = sortedCommitsForEmails(
+				args.recipientEmails,
 			);
 			const expiresAt = args.expiresAt ?? 0n;
 			const address = args.releaseContractAddress;

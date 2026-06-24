@@ -126,7 +126,7 @@ export function useLinkOrgWallet() {
 			}
 
 			if (!wallet?.account || !contracts) {
-				throw new Error("Connect your wallet to link the workspace treasury.");
+				throw new Error("Sign in to link the workspace treasury.");
 			}
 
 			const timestamp = await latestChainTimestamp(contracts);

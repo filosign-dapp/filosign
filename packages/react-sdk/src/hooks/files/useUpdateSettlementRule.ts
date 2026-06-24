@@ -32,7 +32,7 @@ export function useUpdateSettlementRule(pieceCid: string | undefined) {
 			resolvePayerWallet?: SettlementPayerWalletResolver;
 		}) => {
 			if (!wallet?.account || !contracts) {
-				throw new Error("Connect your wallet to update a settlement rule.");
+				throw new Error("Sign in to update this payout.");
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 

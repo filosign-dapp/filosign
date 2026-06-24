@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
+import { getAddress } from "viem";
 import { testEnvStub } from "../support/env-stub";
 import {
 	resendSend,
@@ -249,6 +250,53 @@ describe("email delivery", () => {
 					html: expect.stringContaining(
 						"Looking forward to mapping your first workflow together.",
 					),
+				}),
+				expect.any(Object),
+			);
+		});
+	});
+
+	describe("document invite emails", () => {
+		test("rotated cold invite uses updated access link subject", async () => {
+			const { sendColdDocumentInviteEmail } = await import(
+				"@/lib/platform/email/invites"
+			);
+
+			await sendColdDocumentInviteEmail({
+				to: "cold@example.com",
+				senderWallet: getAddress("0x1111111111111111111111111111111111111111"),
+				pieceCid: "bafyROTATE",
+				inviteToken: "new-token-abcdefghijklmnop",
+				senderName: "Alex Chen",
+				documentTitle: "Vendor Agreement",
+				intent: "rotated",
+			});
+
+			expect(resendSend).toHaveBeenCalledWith(
+				expect.objectContaining({
+					subject: "Updated access link from Alex Chen",
+				}),
+				expect.any(Object),
+			);
+		});
+
+		test("signer turn email uses sender-ready subject", async () => {
+			const { sendSignerTurnEmail } = await import(
+				"@/lib/platform/email/invites"
+			);
+
+			await sendSignerTurnEmail({
+				to: "signer@example.com",
+				senderWallet: getAddress("0x1111111111111111111111111111111111111111"),
+				pieceCid: "bafyTURN",
+				senderName: "Alex Chen",
+				documentTitle: "Vendor Agreement",
+				variant: "warm",
+			});
+
+			expect(resendSend).toHaveBeenCalledWith(
+				expect.objectContaining({
+					subject: "Alex Chen is ready for your signature",
 				}),
 				expect.any(Object),
 			);

@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { ORPCError } from "@orpc/server";
 import { getAddress } from "viem";
 import { dbQueryResult } from "../support/db-query-result";
@@ -224,6 +226,22 @@ describe("attachments-register", () => {
 				>;
 				expect(orpcError.data?.appCode).toBe("ENTITLEMENT.FEATURE_DISABLED");
 			}
+		});
+	});
+
+	describe("attachmentsRegisterForFile", () => {
+		test("rejects non-sender and closed envelopes", () => {
+			const src = readFileSync(
+				join(import.meta.dir, "../../lib/domains/attachments/register.ts"),
+				"utf8",
+			);
+			expect(src).toContain("attachmentsRegisterForFile");
+			expect(src).toContain('throw throwAppError("ATTACHMENTS.FORBIDDEN")');
+			expect(src).toContain(
+				'throw throwAppError("SETTLEMENTS.ENVELOPE_CLOSED")',
+			);
+			expect(src).toContain("fileColdInvites");
+			expect(src).toContain("insertAttachmentPacketsForFile");
 		});
 	});
 

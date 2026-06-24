@@ -7,13 +7,14 @@ import type {
 import { placementFieldPixelRect } from "@filosign/shared";
 import { memo } from "react";
 import { usePlacementLayout } from "@/src/lib/domains/files/use-placement-layout";
+import type { PlacementPlaceholderPresentation } from "./constants";
 import { PlacementFieldOverlayItem } from "./overlay-field-item";
 import {
 	deriveOverlayFieldState,
 	type PlacementOverlayMode,
 } from "./overlay-field-state";
 
-export type { PlacementOverlayMode };
+export type { PlacementOverlayMode, PlacementPlaceholderPresentation };
 
 type PlacementOverlayProps = {
 	pageIndex: number;
@@ -29,6 +30,8 @@ type PlacementOverlayProps = {
 	overlayClassName?: string;
 	/** When mode is readonly, render muted placeholders for fields without completions. */
 	showPlaceholders?: boolean;
+	/** How empty readonly placeholders look: recipient (muted + email) or signer (pending + type label). */
+	placeholderPresentation?: PlacementPlaceholderPresentation;
 	provisioningFieldIds?: ReadonlySet<string>;
 	signatureArtifactsById?: ReadonlyMap<string, UserSignatureArtifact>;
 };
@@ -46,6 +49,7 @@ export const PlacementOverlay = memo(function PlacementOverlay({
 	onTextBlur,
 	overlayClassName = "z-10",
 	showPlaceholders = false,
+	placeholderPresentation = "recipient",
 	provisioningFieldIds,
 	signatureArtifactsById,
 }: PlacementOverlayProps) {
@@ -84,6 +88,7 @@ export const PlacementOverlay = memo(function PlacementOverlay({
 								: completions?.[field.id]
 						}
 						overlayClassName={overlayClassName}
+						placeholderPresentation={placeholderPresentation}
 						alreadySigned={alreadySigned}
 						fieldHeightPx={fieldHeightPx}
 						signatureArtifactsById={signatureArtifactsById}

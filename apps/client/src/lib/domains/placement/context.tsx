@@ -79,6 +79,8 @@ type AddSignChromeContextValue = Pick<
 	PlacementController,
 	| "sendStatus"
 	| "handleSend"
+	| "handleRetrySend"
+	| "envelopeRegisteredInSession"
 	| "documents"
 	| "currentDocumentId"
 	| "handleDocumentSelect"
@@ -86,6 +88,7 @@ type AddSignChromeContextValue = Pick<
 	| "postSendDialogOpen"
 	| "postSendShare"
 	| "postSendWarmSummary"
+	| "postSendIncompleteSteps"
 	| "handlePostSendDone"
 	| "sendProgressOpen"
 	| "sendProgressState"
@@ -264,6 +267,8 @@ export function PlacementProvider({
 		(): AddSignChromeContextValue => ({
 			sendStatus: controller.sendStatus,
 			handleSend: controller.handleSend,
+			handleRetrySend: controller.handleRetrySend,
+			envelopeRegisteredInSession: controller.envelopeRegisteredInSession,
 			documents: controller.documents,
 			currentDocumentId: controller.currentDocumentId,
 			handleDocumentSelect: controller.handleDocumentSelect,
@@ -271,6 +276,7 @@ export function PlacementProvider({
 			postSendDialogOpen: controller.postSendDialogOpen,
 			postSendShare: controller.postSendShare,
 			postSendWarmSummary: controller.postSendWarmSummary,
+			postSendIncompleteSteps: controller.postSendIncompleteSteps,
 			handlePostSendDone: controller.handlePostSendDone,
 			sendProgressOpen: controller.sendProgressOpen,
 			sendProgressState: controller.sendProgressState,
@@ -283,6 +289,8 @@ export function PlacementProvider({
 		[
 			controller.sendStatus,
 			controller.handleSend,
+			controller.handleRetrySend,
+			controller.envelopeRegisteredInSession,
 			controller.documents,
 			controller.currentDocumentId,
 			controller.handleDocumentSelect,
@@ -290,6 +298,7 @@ export function PlacementProvider({
 			controller.postSendDialogOpen,
 			controller.postSendShare,
 			controller.postSendWarmSummary,
+			controller.postSendIncompleteSteps,
 			controller.handlePostSendDone,
 			controller.sendProgressOpen,
 			controller.sendProgressState,

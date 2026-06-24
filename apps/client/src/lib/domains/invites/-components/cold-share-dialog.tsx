@@ -2,6 +2,7 @@ import {
 	CLIENT_ANALYTICS_EVENTS,
 	useCaptureAppEvent,
 } from "@filosign/react/analytics";
+import type { SendFileIncompleteStep } from "@filosign/react/files";
 import { useEffect, useId } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { Dialog } from "@/src/lib/components/ui/dialog";
@@ -13,6 +14,7 @@ import {
 	FeatureDialogMedia,
 	FeatureDialogPanel,
 } from "@/src/lib/components/ui/feature-dialog";
+import { postSendIncompleteStepsMessage } from "@/src/lib/copy/send";
 import { FEATURE_DIALOG_IMAGES } from "@/src/lib/domains/feature-dialog/images";
 import { ColdSharePanel } from "@/src/lib/domains/invites/-components/cold-share-panel";
 import { WarmSharePanel } from "@/src/lib/domains/invites/-components/warm-share-panel";
@@ -30,6 +32,7 @@ export function ColdShareDialog(props: {
 	open: boolean;
 	share: ColdSharePackage | null;
 	warmSummary?: WarmShareSummary | null;
+	incompleteSteps?: SendFileIncompleteStep[];
 	onDone: () => void;
 }) {
 	const titleId = useId();
@@ -47,6 +50,9 @@ export function ColdShareDialog(props: {
 		}
 	}, [props.open, share, captureAppEvent]);
 
+	const incompleteMessage = props.incompleteSteps?.length
+		? postSendIncompleteStepsMessage(props.incompleteSteps)
+		: null;
 	const title = isColdVariant ? "Share access" : "Envelope sent";
 	const description = isColdVariant
 		? "First-time recipients get the link by email. Share the secret code so they can paste it after opening the link."
@@ -69,6 +75,14 @@ export function ColdShareDialog(props: {
 					/>
 
 					<FeatureDialogBody>
+						{incompleteMessage ? (
+							<div className="flex items-start gap-3 rounded-large border border-amber-500/30 bg-amber-500/5 p-4">
+								<p className="text-xs leading-relaxed text-muted-foreground">
+									{incompleteMessage}
+								</p>
+							</div>
+						) : null}
+
 						{isColdVariant && share ? (
 							<ColdSharePanel share={share} warmSummary={warmSummary} />
 						) : warmSummary ? (

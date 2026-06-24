@@ -1,3 +1,4 @@
+import type { SendFileIncompleteStep } from "@filosign/react/files";
 import type { SignatureField } from "@/src/lib/domains/files/envelope-form-types";
 import type { PlacementFieldType } from "@/src/lib/domains/files/field-box";
 import type {
@@ -29,10 +30,13 @@ export type SendChromeSlice = {
 	postSendDialogOpen: boolean;
 	postSendShare: ColdSharePackage | null;
 	postSendWarmSummary: WarmShareSummary | null;
+	postSendIncompleteSteps: SendFileIncompleteStep[] | null;
 	sendProgressOpen: boolean;
 	sendProgressState: SendProgressState | null;
 	dismissSendProgress: () => void;
 	handleSend: () => void | Promise<void>;
+	handleRetrySend: () => void | Promise<void>;
+	envelopeRegisteredInSession: boolean;
 	handlePostSendDone: () => void;
 };
 

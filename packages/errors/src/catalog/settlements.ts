@@ -161,4 +161,16 @@ export const settlementsErrors = {
 		severity: "error",
 		defaultOrpcCode: "NOT_FOUND",
 	},
+	"SETTLEMENTS.EXTERNAL_WALLET_ACCESS_REQUIRED": {
+		title: "External wallet payouts not enabled",
+		description:
+			"This workspace cannot send payouts to external wallet addresses yet.",
+		steps: [
+			"Use Filosign recipients on this envelope instead.",
+			"Contact Filosign support if your workspace needs external wallet payouts.",
+		],
+		audience: "user",
+		severity: "warning",
+		defaultOrpcCode: "FORBIDDEN",
+	},
 } as const satisfies Record<string, ErrorDefinition>;

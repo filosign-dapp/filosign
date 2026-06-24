@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { type Address, getAddress } from "viem";
 import z from "zod";
 import { resolveEntitlementContext } from "@/lib/domains/entitlements";
+import { assertOrganizationExternalWalletAccessEnabled } from "@/lib/domains/settlement-access";
 import db from "@/lib/platform/db";
 import { fsContracts, fsPaymentValidatorAt } from "@/lib/platform/evm";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
@@ -194,6 +195,18 @@ export async function settlementsRegisterForFile(
 		.select({ wallet: fileParticipants.wallet })
 		.from(fileParticipants)
 		.where(eq(fileParticipants.filePieceCid, pieceCid));
+
+	if (
+		orgId &&
+		rules.some((rule) =>
+			rule.legs.some((leg) => leg.recipientSource === "external"),
+		)
+	) {
+		await assertOrganizationExternalWalletAccessEnabled(orgId, {
+			callerWallet: getAddress(sender),
+		});
+	}
+
 	await assertSettlementRecipientsAllowlisted({
 		participantWallets: participantRows.map(
 			(p) => getAddress(p.wallet as Address) as `0x${string}`,

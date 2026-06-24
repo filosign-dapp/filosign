@@ -7,10 +7,13 @@
 | `signer` | Envelope signer wallet |
 | `viewer` | Envelope viewer wallet |
 | `org_wallet` | Organization-linked payout wallet (e.g. team Safe) |
+| `external` | Manually entered wallet address (not on the envelope); requires admin grant `externalWalletAccessEnabled` on the workspace payout access row |
 
-## Not allowed
+## External wallet grant
 
-- `external` - removed; free-form addresses are not supported.
+`external` recipients are **not** available to every workspace with payout access. Filosign platform admin must set `organization_settlement_feature_access.externalWalletAccessEnabled = true` after payout access is approved. Default is `false`.
+
+Workspaces may declare intent on the payout access request form (`externalWalletAccessRequested`, `externalWalletUseCase`, `externalWalletComplianceCertAt`). Admin should read `externalWalletUseCase` and align it with the base `useCase` before granting external access.
 
 ## Payer allowlist (supported path)
 
@@ -23,8 +26,9 @@ Arbitrary external payer addresses are not offered in the product UI.
 
 ## Enforcement
 
-- **Client:** Payout attach UI only offers envelope participants and org payout wallet (when linked); payer is the connected sender wallet (org treasury when product supports treasury registration).
-- **Server:** `assertSettlementRecipientsAllowlisted` on **`settlements.registerForFile`** (each leg in `legs[]`).
+- **Client:** Payout attach UI offers envelope participants and org payout wallet (when linked). External wallet address entry is shown only when `externalWalletAccessEnabled` is true for the workspace.
+- **Server:** `assertSettlementRecipientsAllowlisted` on **`settlements.registerForFile`** (each leg in `legs[]`). `external` legs skip envelope allowlist; address format is validated.
+- **Server:** `assertOrganizationExternalWalletAccessEnabled` before register when any leg has `recipientSource: external`.
 - **Server:** `assertSettlementRulesVerifiedOnChain` - payer ∈ {sender, org treasury}, `cidId`, token, release type/params, and **each leg** must match on-chain `FSPaymentValidator.rules` plus successful `registerRule` / `approve` receipts.
 - **Server:** `assertOrganizationSettlementFeatureApproved` before register/update when `organizationId` is present.
 

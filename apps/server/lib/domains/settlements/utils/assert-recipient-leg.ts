@@ -1,6 +1,6 @@
 import { throwAppError } from "@filosign/errors/server";
 import type { SettlementRuleRegistrationInput } from "@filosign/shared";
-import { getAddress } from "viem";
+import { getAddress, isAddress } from "viem";
 
 function norm(addr: string) {
 	return getAddress(addr).toLowerCase();
@@ -12,6 +12,17 @@ export function assertSettlementLegRecipientAllowlisted(args: {
 	orgWallet: `0x${string}` | null;
 	participantWallets: `0x${string}`[];
 }): void {
+	if (args.leg.recipientSource === "external") {
+		if (!isAddress(args.leg.recipientWallet)) {
+			throw throwAppError("SETTLEMENTS.VERIFICATION_FAILED", {
+				params: {
+					reason: "External payout recipient must be a valid wallet address",
+				},
+			});
+		}
+		return;
+	}
+
 	const recipient = norm(args.leg.recipientWallet);
 
 	if (!args.allowed.has(recipient)) {

@@ -11,14 +11,14 @@ describe("platformInviteAnalyticsProperties", () => {
 				inviteId: "invite-123",
 				emailVariant: "cold",
 				planId: "teams_pro",
-				trialDays: 30,
+				trialDays: 14,
 				inviteKind: "partner_trial",
 			}),
 		).toEqual({
 			[PLATFORM_INVITE_ANALYTICS_KEYS.emailVariant]: "cold",
 			[PLATFORM_INVITE_ANALYTICS_KEYS.inviteId]: "invite-123",
 			[PLATFORM_INVITE_ANALYTICS_KEYS.planId]: "teams_pro",
-			[PLATFORM_INVITE_ANALYTICS_KEYS.trialDays]: 30,
+			[PLATFORM_INVITE_ANALYTICS_KEYS.trialDays]: 14,
 			[PLATFORM_INVITE_ANALYTICS_KEYS.inviteKind]: "partner_trial",
 		});
 	});

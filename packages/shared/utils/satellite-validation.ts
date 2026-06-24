@@ -381,7 +381,7 @@ function validatePayoutDraftsForSend(args: {
 			if (hasConfiguredLegs && resolvedLegs.length === 0) {
 				return fail(
 					"payout",
-					"Payout recipients need a linked wallet. Each recipient must have a Filosign account with a wallet, or remove the payout.",
+					"Filosign payout recipients need a linked wallet, or add an external wallet address with a valid amount.",
 				);
 			}
 			return fail("payout", legsIssue);

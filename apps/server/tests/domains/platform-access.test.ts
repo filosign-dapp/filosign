@@ -99,6 +99,21 @@ describe("partner trial guards", () => {
 		expect(isDodoBackedSubscription({ provider: "manual" })).toBe(false);
 	});
 
+	test("canApplyPartnerTrialToOrgSub allows free plan with stale dodo provider from abandoned checkout", () => {
+		expect(
+			canApplyPartnerTrialToOrgSub(
+				{
+					planId: "free",
+					status: "active",
+					provider: "dodo",
+					periodEnd: null,
+					dodoSubscriptionId: null,
+				},
+				now,
+			),
+		).toBe(true);
+	});
+
 	test("canApplyPartnerTrialToOrgSub blocks dodo rows", () => {
 		expect(canApplyPartnerTrialToOrgSub(undefined, now)).toBe(true);
 		expect(
@@ -184,7 +199,7 @@ describe("resolvePartnerInviteTrialForWorkspace", () => {
 	});
 
 	test("returns active trial context when redemption and org sub match", async () => {
-		redemptionRows = [{ trialDays: 30 }];
+		redemptionRows = [{ trialDays: 14 }];
 		orgSubRows = [
 			{
 				planId: "teams_pro",
@@ -208,13 +223,13 @@ describe("resolvePartnerInviteTrialForWorkspace", () => {
 			active: true,
 			planId: "teams_pro",
 			planName: "Teams Pro",
-			trialDays: 30,
+			trialDays: 14,
 			periodEnd: futureEnd.toISOString(),
 		});
 	});
 
 	test("returns null when org subscription trial expired", async () => {
-		redemptionRows = [{ trialDays: 30 }];
+		redemptionRows = [{ trialDays: 14 }];
 		orgSubRows = [
 			{
 				planId: "teams_pro",

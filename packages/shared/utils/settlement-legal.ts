@@ -13,7 +13,7 @@ export {
 } from "./release-copy";
 
 /** Versioned settlement feature legal copy - counsel must review before production. */
-export const SETTLEMENT_FEATURE_TERMS_VERSION = "2026-06-20" as const;
+export const SETTLEMENT_FEATURE_TERMS_VERSION = "2026-06-23" as const;
 
 /** Checkbox label on sign page when a payout attachment is present. */
 export const SETTLEMENT_RECIPIENT_ACK_LABEL =

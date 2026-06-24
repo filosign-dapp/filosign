@@ -176,7 +176,7 @@ describe("email delivery", () => {
 				to: "partner@acme.com",
 				inviteUrl: "https://app.example.com/?platformInvite=abc",
 				planLabel: "Teams Pro",
-				trialDays: 30,
+				trialDays: 14,
 				recipientName: "Jordan Lee",
 			});
 
@@ -193,7 +193,7 @@ describe("email delivery", () => {
 				to: "partner@acme.com",
 				inviteUrl: "https://app.example.com/?platformInvite=abc",
 				planLabel: "Teams Pro",
-				trialDays: 30,
+				trialDays: 14,
 				recipientName: "Jordan Lee",
 				emailVariant: "warm",
 			});
@@ -217,7 +217,7 @@ describe("email delivery", () => {
 				to: "partner@acme.com",
 				inviteUrl: "https://app.example.com/?platformInvite=abc",
 				planLabel: "Teams Pro",
-				trialDays: 30,
+				trialDays: 14,
 				recipientName: "Jordan Lee",
 				emailVariant: "cold",
 			});
@@ -239,7 +239,7 @@ describe("email delivery", () => {
 				to: "partner@acme.com",
 				inviteUrl: "https://app.example.com/?platformInvite=abc",
 				planLabel: "Teams Pro",
-				trialDays: 30,
+				trialDays: 14,
 				recipientName: "Jordan Lee",
 				emailVariant: "custom",
 				customBody: "Looking forward to mapping your first workflow together.",

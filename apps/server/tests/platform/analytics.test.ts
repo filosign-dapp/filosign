@@ -145,7 +145,7 @@ describe("trackPlatformInviteCreated", () => {
 			inviteId: "invite-1",
 			emailVariant: "warm",
 			planId: "teams_pro",
-			trialDays: 30,
+			trialDays: 14,
 			inviteKind: "partner_trial",
 		});
 		expect(posthogCaptures).toHaveLength(1);
@@ -157,7 +157,7 @@ describe("trackPlatformInviteCreated", () => {
 			email_variant: "warm",
 			invite_id: "invite-1",
 			plan_id: "teams_pro",
-			trial_days: 30,
+			trial_days: 14,
 			invite_kind: "partner_trial",
 		});
 	});
@@ -188,7 +188,7 @@ describe("trackPlatformInviteRedeemed", () => {
 			inviteId: "invite-3",
 			emailVariant: "cold",
 			planId: "teams_pro",
-			trialDays: 30,
+			trialDays: 14,
 			inviteKind: "partner_trial",
 		});
 		expect(posthogCaptures).toHaveLength(1);

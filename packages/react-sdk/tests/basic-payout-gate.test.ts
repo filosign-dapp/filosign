@@ -3,6 +3,7 @@ import type { EntitlementsSnapshot } from "../src/hooks/billing/useEntitlements"
 import type { SettlementFeatureAccessGetOutput } from "../src/hooks/orgs/useSettlementFeatureAccessGet";
 import {
 	canAttachBasicPayout,
+	canUseExternalPayoutRecipients,
 	resolveBasicPayoutGate,
 } from "../src/lib/entitlements";
 
@@ -22,11 +23,13 @@ function entitlements(
 function access(
 	status: SettlementFeatureAccessGetOutput["status"],
 	termsCurrent = true,
+	externalWalletAccessEnabled = false,
 ): SettlementFeatureAccessGetOutput {
 	return {
 		status,
 		termsCurrent,
 		currentTermsVersion: "1",
+		externalWalletAccessEnabled,
 	} as SettlementFeatureAccessGetOutput;
 }
 
@@ -62,5 +65,22 @@ describe("resolveBasicPayoutGate", () => {
 				access("approved", false),
 			),
 		).toEqual({ allowed: false, reason: "terms_outdated" });
+	});
+});
+
+describe("canUseExternalPayoutRecipients", () => {
+	it("requires approved access, current terms, and admin grant", () => {
+		expect(canUseExternalPayoutRecipients(access("approved", true, true))).toBe(
+			true,
+		);
+		expect(
+			canUseExternalPayoutRecipients(access("approved", true, false)),
+		).toBe(false);
+		expect(canUseExternalPayoutRecipients(access("pending", true, true))).toBe(
+			false,
+		);
+		expect(
+			canUseExternalPayoutRecipients(access("approved", false, true)),
+		).toBe(false);
 	});
 });

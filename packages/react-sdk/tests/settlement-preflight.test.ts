@@ -31,4 +31,12 @@ describe("formatSettlementSimError", () => {
 			),
 		).toContain("thirdweb");
 	});
+
+	test("maps gas setup errors before generic insufficient handling", () => {
+		expect(
+			formatSettlementSimError(
+				new Error("insufficient funds for gas * price + value"),
+			),
+		).toContain("Not enough ETH");
+	});
 });

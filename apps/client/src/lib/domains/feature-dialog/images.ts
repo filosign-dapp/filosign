@@ -7,7 +7,7 @@ export const FEATURE_DIALOG_IMAGES = {
 	workspaceCreateInviteTrialDialog: "/images/ww/stock_44.webp",
 	signInOtpAndInviteUnlockDialog: "/images/ww/stock_30.webp",
 	upgradePlanDialog: "/images/ww/stock_18.webp",
-	payoutAccessRequestDialog: "/images/ww/stock_41.webp",
+	payoutAccessRequestDialog: "/images/ww/stock_23.webp",
 	postSendEnvelopeSentDialog: "/images/ww/stock_24.webp",
 	coldShareAccessDialog: "/images/ww/stock_24.webp",
 	feedbackDialog: "/images/stock_10.webp",

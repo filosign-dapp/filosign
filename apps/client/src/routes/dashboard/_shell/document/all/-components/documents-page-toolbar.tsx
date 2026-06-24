@@ -54,7 +54,7 @@ export function DocumentsPageToolbar() {
 							onClick={startNewEnvelope}
 						>
 							<PlusIcon className="size-4" weight="bold" />
-							<span className="hidden sm:inline">New Document</span>
+							<span className="hidden sm:inline">New Envelope</span>
 						</Button>
 					</div>
 				</div>

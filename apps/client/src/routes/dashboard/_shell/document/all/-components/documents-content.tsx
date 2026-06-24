@@ -115,7 +115,7 @@ export function DocumentsContent() {
 					<AppEmptyState
 						preset="page"
 						icon={FileTextIcon}
-						title="No documents yet"
+						title="No envelopes yet"
 						description="Create an envelope, save a draft, or receive a signed document to see items here."
 					>
 						<Button
@@ -125,7 +125,7 @@ export function DocumentsContent() {
 							onClick={startNewEnvelope}
 						>
 							<PlusIcon className="size-4" weight="bold" />
-							Create New Document
+							Create New Envelope
 						</Button>
 					</AppEmptyState>
 				</MotionReveal>

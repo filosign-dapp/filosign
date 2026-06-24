@@ -16,7 +16,7 @@ export const DRAFT_REVIEW_MISSING_CRYPTO_SEED =
 	"DRAFT_REVIEW_MISSING_CRYPTO_SEED" as const;
 
 const DRAFT_REVIEW_DECRYPT_FAILED_MESSAGE =
-	"Could not decrypt this draft. Confirm you're signed in with the invited wallet and complete encryption unlock (wallet sign or recovery phrase).";
+	"Could not decrypt this draft. Confirm you're signed in with the invited account and complete encryption unlock.";
 
 export function normalizeDraftReviewDecryptError(error: unknown): Error {
 	if (
@@ -148,7 +148,7 @@ export function useDecryptDraftReviewWarm() {
 		mutationFn: async (args: { inviteToken: string }) =>
 			withDraftReviewDecryptErrors(async () => {
 				if (!wallet?.account || !isAuthed) {
-					throw new Error("Connect wallet to open this draft");
+					throw new Error("Sign in to open this draft");
 				}
 				const walletAddress = walletAccountAddress(wallet.account);
 				if (!getSessionSeed(walletAddress)) {

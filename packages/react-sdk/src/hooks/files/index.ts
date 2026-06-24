@@ -35,12 +35,25 @@ export {
 export { buildValidatedRegisterRouting } from "../../lib/register-routing";
 export type { PieceFileDekSource } from "../../lib/resolve-piece-file-dek";
 export {
+	filterPostRegisterSatelliteSteps,
+	isPostRegisterSatelliteStep,
+	mergeSendFileIncompleteSteps,
+} from "../../lib/send-file/incomplete-steps";
+export type { PreparedPieceCrypto } from "../../lib/send-file/prepare-piece-crypto";
+export {
 	emitSendFileProgress,
 	type SendFileProgressEvent,
 	type SendFileProgressPhase,
 	type SendFileProgressReporter,
 } from "../../lib/send-file/progress";
-export type { SendFileArgs, SendFileResult } from "../../lib/send-file/types";
+export { retryPostSendSatellites } from "../../lib/send-file/retry-post-send";
+export type {
+	PostSendRetryPayload,
+	SendFileArgs,
+	SendFileIncompleteStep,
+	SendFileResult,
+	SendFileResume,
+} from "../../lib/send-file/types";
 export {
 	formatSettlementSimError,
 	paymentValidatorAt,
@@ -81,6 +94,7 @@ export type {
 } from "../../lib/sign-file/sign-file";
 export { filosignPublicClient, waitForTxReceipt } from "../../lib/tx-receipt";
 export * from "./useAckFile";
+export * from "./useAttachAttachmentPacketForFile";
 export * from "./useAttachSettlementForFile";
 export { useBasicPayoutAttachGate } from "./useBasicPayoutAttachGate";
 export * from "./useCancelAttachmentRule";
@@ -117,6 +131,7 @@ export * from "./useRecordDocumentView";
 export * from "./useRegenerateColdInvite";
 export * from "./useRegistrationStatus";
 export * from "./useRemindSigners";
+export * from "./useRetryPostSendSatellites";
 export * from "./useRevokeSettlementAllowance";
 export * from "./useSendFile";
 export * from "./useSettlementsListByFile";

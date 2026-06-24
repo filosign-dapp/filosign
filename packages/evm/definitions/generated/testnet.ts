@@ -5,20 +5,20 @@ import abi_584ca02aea7f from "../abis/584ca02aea7faacfe17d2edd0078210f747b4f3e85
 import abi_bc37a8c681af from "../abis/bc37a8c681af0849ace7cde4b7005b58679dff2abe8276aaedbdeb31e77ee0e9.json";
 import abi_ff0785f2d6ec from "../abis/ff0785f2d6ec18ac54f04caf8944b32e80931b6e0ba747eea0e46e53494cbb12.json";
 import type { ChainDefinitionsBundle } from "../bundle-types.js";
-import manifest from "../chains/testnet/deployments/20260616T021453Z/manifest.json";
+import manifest from "../chains/testnet/deployments/20260623T205104Z/manifest.json";
 
 export const definitions = {
 	latest: {
 		FSEnvelopeRegistry: {
-			address: "0x4340973aedEBf2688eD2195FA01Aa9b6cf0eB778",
+			address: "0xf44FF1a0e37D10959B96C3929D0F28E9a7f12A9d",
 			abi: abi_ff0785f2d6ec,
 		},
 		FSPaymentValidator: {
-			address: "0x9fce6c3C620A6c9743dc225de510726BABEC5806",
+			address: "0x97Ec503b02Cf85A56B2B77194Fc3C62bC74a95D5",
 			abi: abi_5c06b1840e1e,
 		},
 		FSAttachmentRelease: {
-			address: "0x3BaA142556dE6206dc19D01FaD81971FfB8316e2",
+			address: "0xF11E568198Ce044f417D094730fcE21b418142ED",
 			abi: abi_bc37a8c681af,
 		},
 	},
@@ -32,7 +32,15 @@ export const definitions = {
 			name: "FSEnvelopeRegistry",
 			abi: abi_584ca02aea7f,
 		},
+		"0x3baa142556de6206dc19d01fad81971ffb8316e2": {
+			name: "FSAttachmentRelease",
+			abi: abi_bc37a8c681af,
+		},
 		"0x3e5c6798a4c36d201713a4c525e467265552f87e": {
+			name: "FSEnvelopeRegistry",
+			abi: abi_ff0785f2d6ec,
+		},
+		"0x4340973aedebf2688ed2195fa01aa9b6cf0eb778": {
 			name: "FSEnvelopeRegistry",
 			abi: abi_ff0785f2d6ec,
 		},
@@ -63,6 +71,10 @@ export const definitions = {
 		"0x92f8f4cefb4a390e3c9e6beb9e488b3fae2294c6": {
 			name: "FSEnvelopeRegistry",
 			abi: abi_ff0785f2d6ec,
+		},
+		"0x9fce6c3c620a6c9743dc225de510726babec5806": {
+			name: "FSPaymentValidator",
+			abi: abi_5c06b1840e1e,
 		},
 		"0xac9312374361da2a3eddec8b31f6bbd226b2405c": {
 			name: "FSPaymentValidator",

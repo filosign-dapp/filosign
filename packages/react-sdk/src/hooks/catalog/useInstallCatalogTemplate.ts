@@ -34,7 +34,7 @@ export function useInstallCatalogTemplate() {
 		mutationFn: async (args: InstallCatalogTemplateArgs) => {
 			if (!isAuthed) throw new Error("Not authenticated");
 			if (!deps || !activeOrgId || !activeOrg?.encryptionPublicKey) {
-				throw new Error("Connect your wallet and select a workspace first.");
+				throw new Error("Sign in and select a workspace first.");
 			}
 
 			const pendingKey = args.pendingKey ?? args.systemTemplateId;

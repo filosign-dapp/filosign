@@ -107,13 +107,15 @@ function AddSignDialogs() {
 			<SendProgressDialog
 				open={chrome.sendProgressOpen}
 				state={chrome.sendProgressState}
-				onRetry={chrome.handleSend}
+				envelopeRegisteredInSession={chrome.envelopeRegisteredInSession}
+				onRetry={chrome.handleRetrySend}
 				onDismiss={chrome.dismissSendProgress}
 			/>
 			<ColdShareDialog
 				open={chrome.postSendDialogOpen}
 				share={chrome.postSendShare}
 				warmSummary={chrome.postSendWarmSummary}
+				incompleteSteps={chrome.postSendIncompleteSteps ?? undefined}
 				onDone={chrome.handlePostSendDone}
 			/>
 		</>

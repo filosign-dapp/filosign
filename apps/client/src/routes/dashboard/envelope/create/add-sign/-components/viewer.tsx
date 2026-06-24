@@ -1,7 +1,11 @@
 import { useDroppable } from "@dnd-kit/core";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SkeletonDocumentCanvas } from "@/src/lib/components/app/skeletons";
+import { FileViewerFieldOverlay } from "@/src/lib/domains/files/file-viewer/-components/field-overlay";
+import { PLACEMENT_READONLY_SIGNER_OVERLAY_CLASSNAME } from "@/src/lib/domains/files/placement-overlay";
+import { signatureFieldsToPlacementFields } from "@/src/lib/domains/files/signature-field-to-placement";
 import {
+	useAddSignDnd,
 	useAddSignShell,
 	useAddSignViewer,
 } from "@/src/lib/domains/placement/context";
@@ -50,6 +54,8 @@ function DocumentViewer() {
 		clearFieldFocusRequest,
 		resolvePlacementFieldSize,
 	} = useAddSignViewer();
+	const { interactionMode } = useAddSignDnd();
+	const isViewMode = interactionMode === "view";
 
 	const {
 		panPinchRef,
@@ -171,6 +177,15 @@ function DocumentViewer() {
 		return map;
 	}, [documentFields]);
 
+	const placementPreviewFields = useMemo(() => {
+		if (!isViewMode) return [];
+		return signatureFieldsToPlacementFields(documentFields, (field) => ({
+			docWidth: documentWidth,
+			docHeight: getPageHeight(field.page),
+			margin,
+		}));
+	}, [isViewMode, documentFields, documentWidth, getPageHeight, margin]);
+
 	const overlayProps = useMemo(
 		() => ({
 			selectedFieldIds,
@@ -201,6 +216,19 @@ function DocumentViewer() {
 
 	const renderPageOverlay = useCallback(
 		(pageIndex: number) => {
+			if (isViewMode) {
+				return (
+					<FileViewerFieldOverlay
+						pageIndex={pageIndex}
+						fields={placementPreviewFields}
+						completions={[]}
+						showPlaceholders
+						placeholderPresentation="signer"
+						overlayClassName={PLACEMENT_READONLY_SIGNER_OVERLAY_CLASSNAME}
+					/>
+				);
+			}
+
 			const pageNumber = pageIndex + 1;
 			const pageFields = fieldsByPage.get(pageNumber) ?? [];
 			return (
@@ -217,6 +245,8 @@ function DocumentViewer() {
 			);
 		},
 		[
+			isViewMode,
+			placementPreviewFields,
 			fieldsByPage,
 			overlayProps,
 			getPageHeight,
@@ -321,18 +351,31 @@ function DocumentViewer() {
 							/>
 
 							{!useStripLayout ? (
-								<>
-									{isPlacingField ? (
-										<PlacementPageHighlight
-											pendingFieldType={pendingFieldType}
-										/>
-									) : null}
-									<PlacementPageOverlays
-										pageFields={documentFields}
-										documentHeight={getPageHeight(1)}
-										{...overlayProps}
+								isViewMode ? (
+									<FileViewerFieldOverlay
+										pageIndex={0}
+										fields={placementPreviewFields}
+										completions={[]}
+										showPlaceholders
+										placeholderPresentation="signer"
+										overlayClassName={
+											PLACEMENT_READONLY_SIGNER_OVERLAY_CLASSNAME
+										}
 									/>
-								</>
+								) : (
+									<>
+										{isPlacingField ? (
+											<PlacementPageHighlight
+												pendingFieldType={pendingFieldType}
+											/>
+										) : null}
+										<PlacementPageOverlays
+											pageFields={documentFields}
+											documentHeight={getPageHeight(1)}
+											{...overlayProps}
+										/>
+									</>
+								)
 							) : null}
 						</div>
 					</div>

@@ -3,8 +3,8 @@ import { isAdvancedSettlementReleaseType } from "@filosign/shared";
 import { parseUnits } from "viem";
 import { SUPPORTED_TOKENS } from "@/src/constants";
 import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
-import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements";
-import { buildReleaseParamsFromDraft } from "@/src/lib/domains/settlements";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements/utils/attachment-draft";
+import { buildReleaseParamsFromDraft } from "@/src/lib/domains/settlements/utils/build-release-params";
 import { getRuleGroups } from "@/src/routes/dashboard/envelope/create/-lib/utils/settlement-drafts";
 
 function draftWithRecipientWallet(

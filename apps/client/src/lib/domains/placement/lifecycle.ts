@@ -51,7 +51,7 @@ export function templateEmptyDraftRedirectTarget(): string {
 }
 
 export function systemTemplateEmptyDraftRedirectTarget(): string {
-	return "/dashboard/admin/system-templates";
+	return "/admin/system-templates";
 }
 
 export function envelopeDocumentLoadingMessage(

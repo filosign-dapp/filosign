@@ -163,8 +163,8 @@ export function SettlementRuleRowView({
 								}
 							>
 								{state.isSettling && !state.isTrying
-									? "Sending from wallet…"
-									: "Send from my wallet instead"}
+									? "Sending payout…"
+									: "Send payout from my account instead"}
 							</button>
 						</div>
 					) : null}

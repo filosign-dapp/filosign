@@ -28,7 +28,7 @@ function busyPanelMeta(
 		return {
 			badge: "Sign in",
 			title: "Signing you in…",
-			description: "Continue in the window if prompted.",
+			description: "This usually takes a few seconds.",
 			imageSrc: FEATURE_DIALOG_IMAGES.signInOtpAndInviteUnlockDialog,
 		};
 	}
@@ -44,9 +44,9 @@ function busyPanelMeta(
 	if (panel === "unlocking") {
 		return {
 			badge: "Unlock",
-			title: "Unlocking with your wallet",
+			title: "Unlocking your keys",
 			description:
-				"Confirm in your wallet if prompted. If automatic unlock fails, use your 24-word recovery phrase.",
+				"Filosign is authorizing your keys. If automatic unlock fails, use your 24-word recovery phrase.",
 			imageSrc: FEATURE_DIALOG_IMAGES.recoveryPhraseAndCryptoUnlockDialog,
 		};
 	}
@@ -85,7 +85,7 @@ export function inviteUnlockWizardMeta(
 			badge: "Recovery",
 			title: "Recovery phrase",
 			description:
-				"Your wallet could not unlock this session. Enter your 24-word Filosign recovery phrase (from Profile settings).",
+				"Automatic unlock did not work. Enter your 24-word Filosign recovery phrase (from Profile settings).",
 			imageSrc: FEATURE_DIALOG_IMAGES.recoveryPhraseAndCryptoUnlockDialog,
 		};
 	}
@@ -243,7 +243,7 @@ export function InviteUnlockPassphrasePanel({
 							<InlineLoader size="sm" className="mr-2 text-current" />
 							{unlock.coldDecrypt.isPending
 								? "Unlocking…"
-								: "Securing for your wallet…"}
+								: "Securing your keys…"}
 						</>
 					) : (
 						"Unlock document"

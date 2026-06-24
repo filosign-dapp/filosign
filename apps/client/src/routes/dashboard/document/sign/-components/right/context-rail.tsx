@@ -5,6 +5,7 @@ import { ConditionalAttachmentsPanel } from "@/src/routes/dashboard/document/sig
 import { SettlementStatusPanel } from "@/src/routes/dashboard/document/sign/-components/settlement-status-panel";
 import { SignSidebar } from "@/src/routes/dashboard/document/sign/-components/sidebar";
 import {
+	useSignAttachments,
 	useSignFile,
 	useSignIdentity,
 	useSignMeta,
@@ -18,6 +19,7 @@ export function SignContextRail() {
 	const { signerAddress } = useSignIdentity();
 	const { formatAddress, isSender } = useSignMeta();
 	const settlements = useSignSettlements();
+	const attachments = useSignAttachments();
 	const [executeReplacementOpen, setExecuteReplacementOpen] = useState(false);
 
 	const signers = file?.signers ?? [];
@@ -184,6 +186,15 @@ export function SignContextRail() {
 									onClick={() => settlements.openAttachDialog()}
 								>
 									Add payout
+								</Button>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="h-8 text-xs"
+									onClick={() => attachments.openAttachDialog()}
+								>
+									Add file packet
 								</Button>
 								<Button
 									type="button"

@@ -16,24 +16,7 @@ import {
 	useSignSuccess,
 	useSignViewer,
 } from "@/src/routes/dashboard/document/sign/-lib/context/context";
-
-function signStatusLabel(args: {
-	alreadySigned: boolean;
-	canSign: boolean;
-	hasPlacementFields: boolean;
-	canSubmitPlacementSign: boolean;
-}) {
-	if (args.alreadySigned) {
-		return { label: "Signed", dotClass: "bg-secondary" };
-	}
-	if (!args.canSign) {
-		return null;
-	}
-	if (args.hasPlacementFields && !args.canSubmitPlacementSign) {
-		return { label: "Fields incomplete", dotClass: "bg-amber-500" };
-	}
-	return { label: "Ready to sign", dotClass: "bg-secondary" };
-}
+import { resolveSignHeaderStatus } from "@/src/routes/dashboard/document/sign/-lib/utils/envelope-progress-display";
 
 export function SignHeaderActions() {
 	const { file } = useSignFile();
@@ -44,11 +27,12 @@ export function SignHeaderActions() {
 	const compliance = useSignCompliance();
 	const { setSignSuccessDialogOpen } = useSignSuccess();
 
-	const status = signStatusLabel({
+	const status = resolveSignHeaderStatus({
 		alreadySigned,
 		canSign,
 		hasPlacementFields: myPlacementFields.length > 0,
 		canSubmitPlacementSign,
+		envelopeComplete: Boolean(file?.envelopeProgress?.completedAt),
 	});
 
 	return (

@@ -88,7 +88,7 @@ export function SettlementStatusPanel({
 				)}
 				{isSender ? (
 					<p className="text-xs text-muted-foreground">
-						USDC stays in your wallet until payout. Filosign sends payouts
+						USDC stays in your account until payout. Filosign sends payouts
 						automatically after signing completes. Retry manually if a transfer
 						fails or is still pending after several minutes. Revoke approval to
 						stop unpaid payouts.{" "}

@@ -148,8 +148,8 @@ export function SettlementUpdateDialog({
 						<p>{settlementAllowanceChangeSummary(changeStep)}</p>
 						{treasuryFunded ? (
 							<p>
-								Approval changes are signed from your workspace treasury wallet,
-								not your personal signing wallet.
+								Approval changes authorize from your workspace treasury account,
+								not your personal signing account.
 							</p>
 						) : null}
 						<p>

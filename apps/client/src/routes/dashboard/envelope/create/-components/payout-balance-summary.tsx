@@ -30,7 +30,7 @@ export function PayoutBalanceSummary({
 				{balancePending ? (
 					<span>Loading balance…</span>
 				) : !walletConnected ? (
-					<span>Connect wallet to see balance</span>
+					<span>Sign in to see balance</span>
 				) : balanceError ? (
 					<span>Balance unavailable</span>
 				) : (

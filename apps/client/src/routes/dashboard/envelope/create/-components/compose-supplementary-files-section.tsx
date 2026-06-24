@@ -2,13 +2,13 @@ import { useEntitlements } from "@filosign/react/billing";
 import { canUseSupplementaryAttachments } from "@filosign/react/files";
 import { SUPPLEMENTARY_ATTACHMENT_LIMITS } from "@filosign/shared";
 import { PlusIcon } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import {
-	buildCreateForm,
 	hydrateAttachmentPacketDrafts,
+	mergeEnvelopeFormIntoCreateForm,
 	saveAttachmentPacketDrafts,
 } from "@/src/lib/domains/drafts";
 import {
@@ -17,6 +17,7 @@ import {
 	upsertPacketDraft,
 } from "@/src/lib/domains/files/attachment-packet-compose";
 import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
+import { routingContextFromCompose } from "@/src/lib/domains/satellites";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
 import { AttachmentPacketDialog } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-dialog";
 import {
@@ -46,11 +47,15 @@ export function ComposeSupplementaryFilesContent({
 	>();
 
 	const drafts = createForm?.attachmentPacketDrafts ?? [];
+	const routingContext = useMemo(
+		() => routingContextFromCompose(recipients, createForm?.registerRouting),
+		[recipients, createForm?.registerRouting],
+	);
 
 	const ensureCreateForm = async () => {
 		let draft = createForm ?? useStorePersist.getState().createForm;
 		if (!draft) {
-			draft = await buildCreateForm(formValues, null);
+			draft = await mergeEnvelopeFormIntoCreateForm(formValues, null);
 			setCreateForm(draft);
 		}
 		return draft;
@@ -88,12 +93,16 @@ export function ComposeSupplementaryFilesContent({
 	};
 
 	const persistDrafts = async (next: AttachmentPacketComposeDraft[]) => {
-		const draft = await ensureCreateForm();
-		await saveAttachmentPacketDrafts(draft.draftId, next);
-		setCreateForm({
-			...draft,
-			attachmentPacketDrafts: next,
-		});
+		const prev = await ensureCreateForm();
+		await saveAttachmentPacketDrafts(prev.draftId, next);
+		const merged = await mergeEnvelopeFormIntoCreateForm(
+			form.state.values,
+			prev,
+			{
+				attachmentPacketDrafts: next,
+			},
+		);
+		setCreateForm(merged);
 	};
 
 	const handleSave = async (draft: AttachmentPacketComposeDraft) => {
@@ -143,6 +152,7 @@ export function ComposeSupplementaryFilesContent({
 						<AttachmentPacketSummaryCard
 							key={draft.packetId}
 							draft={draft}
+							routingContext={routingContext}
 							showRecipientCount
 							actions={
 								<AttachmentPacketEditRemoveActions
@@ -172,6 +182,7 @@ export function ComposeSupplementaryFilesContent({
 						}
 					}}
 					recipients={recipients}
+					routingContext={routingContext}
 					existingPacketId={editingPacketId}
 					existingDraft={editingDraft}
 					onSave={(draft) => void handleSave(draft)}

@@ -20,8 +20,11 @@ import {
 	upsertPacketDraft,
 } from "@/src/lib/domains/files/attachment-packet-compose";
 import { validateAttachmentPacketComposeDrafts } from "@/src/lib/domains/files/validate-attachment-packets";
+import {
+	AttachmentPacketDialog,
+	routingContextFromCompose,
+} from "@/src/lib/domains/satellites";
 import { useStorePersist } from "@/src/lib/filosign/use-store";
-import { AttachmentPacketDialog } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-dialog";
 import { AttachmentPacketSummaryBody } from "@/src/routes/dashboard/envelope/create/-components/attachment-packet-summary-card";
 import { rosterEmailsFromRecipients } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/validate";
 
@@ -49,6 +52,14 @@ export function SupplementaryPacketsSidebar() {
 	const rosterEmails = useMemo(
 		() => rosterEmailsFromRecipients(createForm?.recipients ?? []),
 		[createForm?.recipients],
+	);
+	const routingContext = useMemo(
+		() =>
+			routingContextFromCompose(
+				createForm?.recipients ?? [],
+				createForm?.registerRouting,
+			),
+		[createForm?.recipients, createForm?.registerRouting],
 	);
 
 	const validationIssues = useMemo(() => {
@@ -130,6 +141,7 @@ export function SupplementaryPacketsSidebar() {
 								<AttachmentPacketSummaryBody
 									draft={draft}
 									reviewLabel="After send"
+									routingContext={routingContext}
 									compact
 								/>
 							</div>
@@ -168,6 +180,7 @@ export function SupplementaryPacketsSidebar() {
 						}
 					}}
 					recipients={createForm.recipients}
+					routingContext={routingContext}
 					existingPacketId={editingId}
 					existingDraft={editingDraft ?? editingDraftFromStore}
 					onSave={(draft) => void handleSave(draft)}

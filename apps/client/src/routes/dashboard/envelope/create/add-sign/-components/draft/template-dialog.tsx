@@ -97,9 +97,7 @@ export function DraftTemplateDialog({
 								return;
 							}
 							if (!deps) {
-								toastUser.error(
-									"Connect your wallet before saving a template.",
-								);
+								toastUser.error("Sign in before saving a template.");
 								return;
 							}
 

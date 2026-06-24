@@ -18,6 +18,7 @@ import {
 import { signatureFieldTypeLabel } from "@/src/lib/domains/files/placement-field-display";
 import { normalizedRectToCssPercentStyle } from "@/src/lib/domains/files/placement-viewport";
 import { cn } from "@/src/lib/utils";
+import type { PlacementPlaceholderPresentation } from "./constants";
 import type {
 	CompletionSource,
 	OverlayFieldRenderPlan,
@@ -93,6 +94,64 @@ function fieldAccent(field: PlacementField): string {
 	return signerAccentColor(field.assignedRecipientEmail ?? "");
 }
 
+function ReadonlyPlaceholderField({
+	field,
+	typeLabel,
+	accent,
+	overlayClassName,
+	style,
+	placeholderPresentation,
+	fieldHeightPx,
+}: {
+	field: PlacementField;
+	typeLabel: string;
+	accent: string;
+	overlayClassName: string;
+	style: ReturnType<typeof normalizedRectToCssPercentStyle>;
+	placeholderPresentation: PlacementPlaceholderPresentation;
+	fieldHeightPx?: number;
+}) {
+	const signerStyle = placeholderPresentation === "signer";
+
+	if (signerStyle && field.type === "checkbox") {
+		return (
+			<div
+				className={cn(
+					"placement-field-overlay pointer-events-none absolute",
+					overlayClassName,
+				)}
+				style={style}
+			>
+				<PlacementCheckboxField
+					checked={false}
+					accentColor={accent}
+					fieldHeightPx={fieldHeightPx}
+				/>
+			</div>
+		);
+	}
+
+	return (
+		<div
+			className={cn(
+				"placement-field-overlay pointer-events-none absolute",
+				overlayClassName,
+			)}
+			style={style}
+		>
+			<PlacementFieldChrome
+				type={field.type}
+				primaryLabel={typeLabel}
+				assigneeEmail={signerStyle ? undefined : field.assignedRecipientEmail}
+				required={field.required}
+				accentColor={accent}
+				variant={signerStyle ? "pending" : "muted"}
+				fieldHeightPx={fieldHeightPx}
+			/>
+		</div>
+	);
+}
+
 const placementFieldInputClassName =
 	"h-full min-w-0 w-full overflow-x-auto rounded-none border-0 bg-transparent text-left text-placement-fill-interactive-foreground shadow-none placeholder:text-placement-chrome-muted-foreground focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
 
@@ -102,6 +161,7 @@ type PlacementFieldOverlayItemProps = {
 	plan: OverlayFieldRenderPlan;
 	completion: CompletionSource;
 	overlayClassName: string;
+	placeholderPresentation?: PlacementPlaceholderPresentation;
 	alreadySigned: boolean;
 	fieldHeightPx?: number;
 	signatureArtifactsById?: ReadonlyMap<string, UserSignatureArtifact>;
@@ -118,6 +178,7 @@ export function PlacementFieldOverlayItem({
 	plan,
 	completion,
 	overlayClassName,
+	placeholderPresentation = "recipient",
 	alreadySigned,
 	fieldHeightPx,
 	signatureArtifactsById,
@@ -134,23 +195,15 @@ export function PlacementFieldOverlayItem({
 	switch (plan.kind) {
 		case "placeholder":
 			return (
-				<div
-					className={cn(
-						"placement-field-overlay pointer-events-none absolute",
-						overlayClassName,
-					)}
+				<ReadonlyPlaceholderField
+					field={field}
+					typeLabel={typeLabel}
+					accent={accent}
+					overlayClassName={overlayClassName}
 					style={style}
-				>
-					<PlacementFieldChrome
-						type={field.type}
-						primaryLabel={typeLabel}
-						assigneeEmail={field.assignedRecipientEmail}
-						required={field.required}
-						accentColor={accent}
-						variant="muted"
-						fieldHeightPx={fieldHeightPx}
-					/>
-				</div>
+					placeholderPresentation={placeholderPresentation}
+					fieldHeightPx={fieldHeightPx}
+				/>
 			);
 
 		case "readonly-visual":
@@ -206,23 +259,15 @@ export function PlacementFieldOverlayItem({
 		case "readonly-empty-placeholder":
 		case "readonly-missing-placeholder":
 			return (
-				<div
-					className={cn(
-						"placement-field-overlay pointer-events-none absolute",
-						overlayClassName,
-					)}
+				<ReadonlyPlaceholderField
+					field={field}
+					typeLabel={typeLabel}
+					accent={accent}
+					overlayClassName={overlayClassName}
 					style={style}
-				>
-					<PlacementFieldChrome
-						type={field.type}
-						primaryLabel={typeLabel}
-						assigneeEmail={field.assignedRecipientEmail}
-						required={field.required}
-						accentColor={accent}
-						variant="muted"
-						fieldHeightPx={fieldHeightPx}
-					/>
-				</div>
+					placeholderPresentation={placeholderPresentation}
+					fieldHeightPx={fieldHeightPx}
+				/>
 			);
 
 		case "readonly-empty-hidden":

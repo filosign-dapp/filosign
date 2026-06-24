@@ -10,6 +10,7 @@ import { Button } from "@/src/lib/components/ui/button";
 import { InlineLoader } from "@/src/lib/components/ui/loader";
 import { FileViewerFieldOverlay } from "@/src/lib/domains/files/file-viewer/-components/field-overlay";
 import { useFileViewer } from "@/src/lib/domains/files/file-viewer/-lib/context/context";
+import { PLACEMENT_READONLY_SIGNER_OVERLAY_CLASSNAME } from "@/src/lib/domains/files/placement-overlay";
 
 export function FileViewerContent() {
 	const {
@@ -81,6 +82,11 @@ export function FileViewerContent() {
 	}, [fileInfo?.placementManifest, fileData.placementManifest]);
 
 	const fieldCompletions = fileInfo?.fieldCompletions ?? [];
+	const readonlySignerOverlayProps = {
+		showPlaceholders: placementFields.length > 0,
+		placeholderPresentation: "signer" as const,
+		overlayClassName: PLACEMENT_READONLY_SIGNER_OVERLAY_CLASSNAME,
+	};
 
 	const scaledFrameStyle = {
 		width: documentDimensions.width,
@@ -114,6 +120,7 @@ export function FileViewerContent() {
 						pageIndex={0}
 						fields={placementFields}
 						completions={fieldCompletions}
+						{...readonlySignerOverlayProps}
 					/>
 				</div>
 			</div>
@@ -155,6 +162,7 @@ export function FileViewerContent() {
 						pageIndex={0}
 						fields={placementFields}
 						completions={fieldCompletions}
+						{...readonlySignerOverlayProps}
 					/>
 				</div>
 			</div>

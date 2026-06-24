@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { DocCanvasPanel } from "@/src/lib/domains/files/components/doc-canvas-panel";
+import { EnvelopeAckGate } from "@/src/lib/domains/files/components/envelope-ack-gate";
 import { FileViewerContent } from "@/src/lib/domains/files/file-viewer/-components/file-viewer-content";
 import { FileViewerToolbar } from "@/src/lib/domains/files/file-viewer/-components/file-viewer-toolbar";
 import {
@@ -31,6 +32,10 @@ function FileViewerShell({
 		retryWalletUnlock,
 		tryingWalletUnlock,
 		fileData,
+		needsAck,
+		isEnvelopeComplete,
+		handleAcknowledge,
+		acknowledgePending,
 	} = useFileViewer();
 
 	const handleClose = useCallback(() => onOpenChange(false), [onOpenChange]);
@@ -78,6 +83,12 @@ function FileViewerShell({
 				>
 					{fileLoading ? (
 						<DocCanvasPanel busy />
+					) : needsAck ? (
+						<EnvelopeAckGate
+							isComplete={isEnvelopeComplete}
+							onAcknowledge={handleAcknowledge}
+							pending={acknowledgePending}
+						/>
 					) : (
 						<DocCanvasPanel
 							busy={docCanvasBusy}
@@ -103,7 +114,9 @@ function FileViewerShell({
 							}
 						/>
 					)}
-					{!fileLoading && fileInfo && fileData ? <FileViewerContent /> : null}
+					{!fileLoading && fileInfo && fileData && !needsAck ? (
+						<FileViewerContent />
+					) : null}
 				</div>
 			</div>
 		</div>
@@ -122,6 +135,8 @@ export function FileViewer({ file, open, onOpenChange }: FileViewerProps) {
 			controller.recoveryPending,
 			controller.fileLoading,
 			controller.viewFile.isPending,
+			controller.needsAck,
+			controller.acknowledgePending,
 		],
 	);
 

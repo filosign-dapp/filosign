@@ -11,12 +11,21 @@
 import { Route as rootRouteImport } from "./routes/__root"
 import { Route as OnboardingRouteRouteImport } from "./routes/onboarding/route"
 import { Route as DashboardRouteRouteImport } from "./routes/dashboard/route"
+import { Route as AdminRouteRouteImport } from "./routes/admin/route"
 import { Route as IndexRouteImport } from "./routes/index"
 import { Route as OnboardingIndexRouteImport } from "./routes/onboarding/index"
 import { Route as DashboardIndexRouteImport } from "./routes/dashboard/index"
+import { Route as AdminIndexRouteImport } from "./routes/admin/index"
 import { Route as DashboardShellRouteRouteImport } from "./routes/dashboard/_shell/route"
 import { Route as OnboardingCreateSignatureIndexRouteImport } from "./routes/onboarding/create-signature/index"
 import { Route as DraftReviewIndexRouteImport } from "./routes/draft/review/index"
+import { Route as AdminUsersIndexRouteImport } from "./routes/admin/users/index"
+import { Route as AdminSystemTemplatesIndexRouteImport } from "./routes/admin/system-templates/index"
+import { Route as AdminPayoutAccessIndexRouteImport } from "./routes/admin/payout-access/index"
+import { Route as AdminMetricsIndexRouteImport } from "./routes/admin/metrics/index"
+import { Route as AdminInvitesIndexRouteImport } from "./routes/admin/invites/index"
+import { Route as AdminFeedbackIndexRouteImport } from "./routes/admin/feedback/index"
+import { Route as AdminAccessRequestsIndexRouteImport } from "./routes/admin/access-requests/index"
 import { Route as DashboardTemplatesNewIndexRouteImport } from "./routes/dashboard/templates/new/index"
 import { Route as DashboardTemplatesTemplateIdIndexRouteImport } from "./routes/dashboard/templates/$templateId/index"
 import { Route as DashboardSignatureCreateIndexRouteImport } from "./routes/dashboard/signature/create/index"
@@ -25,6 +34,7 @@ import { Route as DashboardDocumentSignIndexRouteImport } from "./routes/dashboa
 import { Route as DashboardShellTemplatesIndexRouteImport } from "./routes/dashboard/_shell/templates/index"
 import { Route as DashboardShellSupportIndexRouteImport } from "./routes/dashboard/_shell/support/index"
 import { Route as DashboardShellAdminIndexRouteImport } from "./routes/dashboard/_shell/admin/index"
+import { Route as AdminSystemTemplatesNewIndexRouteImport } from "./routes/admin/system-templates/new/index"
 import { Route as DashboardTemplatesLibrarySystemTemplateIdIndexRouteImport } from "./routes/dashboard/templates/library/$systemTemplateId/index"
 import { Route as DashboardTemplatesTemplateIdEditIndexRouteImport } from "./routes/dashboard/templates/$templateId/edit/index"
 import { Route as DashboardEnvelopeCreateAddSignIndexRouteImport } from "./routes/dashboard/envelope/create/add-sign/index"
@@ -35,6 +45,7 @@ import { Route as DashboardShellSettingsProfileIndexRouteImport } from "./routes
 import { Route as DashboardShellSettingsBillingIndexRouteImport } from "./routes/dashboard/_shell/settings/billing/index"
 import { Route as DashboardShellDocumentAllIndexRouteImport } from "./routes/dashboard/_shell/document/all/index"
 import { Route as DashboardShellAdminSystemTemplatesIndexRouteImport } from "./routes/dashboard/_shell/admin/system-templates/index"
+import { Route as AdminSystemTemplatesSystemTemplateIdEditIndexRouteImport } from "./routes/admin/system-templates/$systemTemplateId/edit/index"
 import { Route as DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRouteImport } from "./routes/dashboard/admin/system-templates/$systemTemplateId/edit/index"
 
 const OnboardingRouteRoute = OnboardingRouteRouteImport.update({
@@ -45,6 +56,11 @@ const OnboardingRouteRoute = OnboardingRouteRouteImport.update({
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
   id: "/dashboard",
   path: "/dashboard",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: "/admin",
+  path: "/admin",
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -62,6 +78,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   path: "/",
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const DashboardShellRouteRoute = DashboardShellRouteRouteImport.update({
   id: "/_shell",
   getParentRoute: () => DashboardRouteRoute,
@@ -77,6 +98,43 @@ const DraftReviewIndexRoute = DraftReviewIndexRouteImport.update({
   path: "/draft/review/",
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersIndexRoute = AdminUsersIndexRouteImport.update({
+  id: "/users/",
+  path: "/users/",
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminSystemTemplatesIndexRoute =
+  AdminSystemTemplatesIndexRouteImport.update({
+    id: "/system-templates/",
+    path: "/system-templates/",
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
+const AdminPayoutAccessIndexRoute = AdminPayoutAccessIndexRouteImport.update({
+  id: "/payout-access/",
+  path: "/payout-access/",
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminMetricsIndexRoute = AdminMetricsIndexRouteImport.update({
+  id: "/metrics/",
+  path: "/metrics/",
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminInvitesIndexRoute = AdminInvitesIndexRouteImport.update({
+  id: "/invites/",
+  path: "/invites/",
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminFeedbackIndexRoute = AdminFeedbackIndexRouteImport.update({
+  id: "/feedback/",
+  path: "/feedback/",
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAccessRequestsIndexRoute =
+  AdminAccessRequestsIndexRouteImport.update({
+    id: "/access-requests/",
+    path: "/access-requests/",
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
 const DashboardTemplatesNewIndexRoute =
   DashboardTemplatesNewIndexRouteImport.update({
     id: "/templates/new/",
@@ -124,6 +182,12 @@ const DashboardShellAdminIndexRoute =
     id: "/admin/",
     path: "/admin/",
     getParentRoute: () => DashboardShellRouteRoute,
+  } as any)
+const AdminSystemTemplatesNewIndexRoute =
+  AdminSystemTemplatesNewIndexRouteImport.update({
+    id: "/system-templates/new/",
+    path: "/system-templates/new/",
+    getParentRoute: () => AdminRouteRoute,
   } as any)
 const DashboardTemplatesLibrarySystemTemplateIdIndexRoute =
   DashboardTemplatesLibrarySystemTemplateIdIndexRouteImport.update({
@@ -185,6 +249,12 @@ const DashboardShellAdminSystemTemplatesIndexRoute =
     path: "/admin/system-templates/",
     getParentRoute: () => DashboardShellRouteRoute,
   } as any)
+const AdminSystemTemplatesSystemTemplateIdEditIndexRoute =
+  AdminSystemTemplatesSystemTemplateIdEditIndexRouteImport.update({
+    id: "/system-templates/$systemTemplateId/edit/",
+    path: "/system-templates/$systemTemplateId/edit/",
+    getParentRoute: () => AdminRouteRoute,
+  } as any)
 const DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRoute =
   DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRouteImport.update({
     id: "/admin/system-templates/$systemTemplateId/edit/",
@@ -194,12 +264,22 @@ const DashboardAdminSystemTemplatesSystemTemplateIdEditIndexRoute =
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
+  "/admin": typeof AdminRouteRouteWithChildren
   "/dashboard": typeof DashboardShellRouteRouteWithChildren
   "/onboarding": typeof OnboardingRouteRouteWithChildren
+  "/admin/": typeof AdminIndexRoute
   "/dashboard/": typeof DashboardIndexRoute
   "/onboarding/": typeof OnboardingIndexRoute
+  "/admin/access-requests/": typeof AdminAccessRequestsIndexRoute
+  "/admin/feedback/": typeof AdminFeedbackIndexRoute
+  "/admin/invites/": typeof AdminInvitesIndexRoute
+  "/admin/metrics/": typeof AdminMetricsIndexRoute
+  "/admin/payout-access/": typeof AdminPayoutAccessIndexRoute
+  "/admin/system-templates/": typeof AdminSystemTemplatesIndexRoute
+  "/admin/users/": typeof AdminUsersIndexRoute
   "/draft/review/": typeof DraftReviewIndexRoute
   "/onboarding/create-signature/": typeof OnboardingCreateSignatureIndexRoute
+  "/admin/system-templates/new/": typeof AdminSystemTemplatesNewIndexRoute
   "/dashboard/admin/": typeof DashboardShellAdminIndexRoute
   "/dashboard/support/": typeof DashboardShellSupportIndexRoute
   "/dashboard/templates/": typeof DashboardShellTemplatesIndexRoute
@@ -208,6 +288,7 @@ export interface FileRoutesByFullPath {
   "/dashboard/signature/create/": typeof DashboardSignatureCreateIndexRoute
   "/dashboard/templates/$templateId/": typeof DashboardTemplatesTemplateIdIndexRoute
   "/dashboard/templates/new/": typeof DashboardTemplatesNewIndexRoute
+  "/admin/system-templates/$systemTemplateId/edit/": typeof AdminSystemTemplatesSystemTemplateIdEditIndexRoute
   "/dashboard/admin/system-templates/": typeof DashboardShellAdminSystemTemplatesIndexRoute
   "/dashboard/document/all/": typeof DashboardShellDocumentAllIndexRoute
   "/dashboard/settings/billing/": typeof DashboardShellSettingsBillingIndexRoute
@@ -223,9 +304,18 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/dashboard": typeof DashboardIndexRoute
+  "/admin": typeof AdminIndexRoute
   "/onboarding": typeof OnboardingIndexRoute
+  "/admin/access-requests": typeof AdminAccessRequestsIndexRoute
+  "/admin/feedback": typeof AdminFeedbackIndexRoute
+  "/admin/invites": typeof AdminInvitesIndexRoute
+  "/admin/metrics": typeof AdminMetricsIndexRoute
+  "/admin/payout-access": typeof AdminPayoutAccessIndexRoute
+  "/admin/system-templates": typeof AdminSystemTemplatesIndexRoute
+  "/admin/users": typeof AdminUsersIndexRoute
   "/draft/review": typeof DraftReviewIndexRoute
   "/onboarding/create-signature": typeof OnboardingCreateSignatureIndexRoute
+  "/admin/system-templates/new": typeof AdminSystemTemplatesNewIndexRoute
   "/dashboard/admin": typeof DashboardShellAdminIndexRoute
   "/dashboard/support": typeof DashboardShellSupportIndexRoute
   "/dashboard/templates": typeof DashboardShellTemplatesIndexRoute
@@ -234,6 +324,7 @@ export interface FileRoutesByTo {
   "/dashboard/signature/create": typeof DashboardSignatureCreateIndexRoute
   "/dashboard/templates/$templateId": typeof DashboardTemplatesTemplateIdIndexRoute
   "/dashboard/templates/new": typeof DashboardTemplatesNewIndexRoute
+  "/admin/system-templates/$systemTemplateId/edit": typeof AdminSystemTemplatesSystemTemplateIdEditIndexRoute
   "/dashboard/admin/system-templates": typeof DashboardShellAdminSystemTemplatesIndexRoute
   "/dashboard/document/all": typeof DashboardShellDocumentAllIndexRoute
   "/dashboard/settings/billing": typeof DashboardShellSettingsBillingIndexRoute
@@ -249,13 +340,23 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
+  "/admin": typeof AdminRouteRouteWithChildren
   "/dashboard": typeof DashboardRouteRouteWithChildren
   "/onboarding": typeof OnboardingRouteRouteWithChildren
   "/dashboard/_shell": typeof DashboardShellRouteRouteWithChildren
+  "/admin/": typeof AdminIndexRoute
   "/dashboard/": typeof DashboardIndexRoute
   "/onboarding/": typeof OnboardingIndexRoute
+  "/admin/access-requests/": typeof AdminAccessRequestsIndexRoute
+  "/admin/feedback/": typeof AdminFeedbackIndexRoute
+  "/admin/invites/": typeof AdminInvitesIndexRoute
+  "/admin/metrics/": typeof AdminMetricsIndexRoute
+  "/admin/payout-access/": typeof AdminPayoutAccessIndexRoute
+  "/admin/system-templates/": typeof AdminSystemTemplatesIndexRoute
+  "/admin/users/": typeof AdminUsersIndexRoute
   "/draft/review/": typeof DraftReviewIndexRoute
   "/onboarding/create-signature/": typeof OnboardingCreateSignatureIndexRoute
+  "/admin/system-templates/new/": typeof AdminSystemTemplatesNewIndexRoute
   "/dashboard/_shell/admin/": typeof DashboardShellAdminIndexRoute
   "/dashboard/_shell/support/": typeof DashboardShellSupportIndexRoute
   "/dashboard/_shell/templates/": typeof DashboardShellTemplatesIndexRoute
@@ -264,6 +365,7 @@ export interface FileRoutesById {
   "/dashboard/signature/create/": typeof DashboardSignatureCreateIndexRoute
   "/dashboard/templates/$templateId/": typeof DashboardTemplatesTemplateIdIndexRoute
   "/dashboard/templates/new/": typeof DashboardTemplatesNewIndexRoute
+  "/admin/system-templates/$systemTemplateId/edit/": typeof AdminSystemTemplatesSystemTemplateIdEditIndexRoute
   "/dashboard/_shell/admin/system-templates/": typeof DashboardShellAdminSystemTemplatesIndexRoute
   "/dashboard/_shell/document/all/": typeof DashboardShellDocumentAllIndexRoute
   "/dashboard/_shell/settings/billing/": typeof DashboardShellSettingsBillingIndexRoute
@@ -280,12 +382,22 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | "/"
+    | "/admin"
     | "/dashboard"
     | "/onboarding"
+    | "/admin/"
     | "/dashboard/"
     | "/onboarding/"
+    | "/admin/access-requests/"
+    | "/admin/feedback/"
+    | "/admin/invites/"
+    | "/admin/metrics/"
+    | "/admin/payout-access/"
+    | "/admin/system-templates/"
+    | "/admin/users/"
     | "/draft/review/"
     | "/onboarding/create-signature/"
+    | "/admin/system-templates/new/"
     | "/dashboard/admin/"
     | "/dashboard/support/"
     | "/dashboard/templates/"
@@ -294,6 +406,7 @@ export interface FileRouteTypes {
     | "/dashboard/signature/create/"
     | "/dashboard/templates/$templateId/"
     | "/dashboard/templates/new/"
+    | "/admin/system-templates/$systemTemplateId/edit/"
     | "/dashboard/admin/system-templates/"
     | "/dashboard/document/all/"
     | "/dashboard/settings/billing/"
@@ -309,9 +422,18 @@ export interface FileRouteTypes {
   to:
     | "/"
     | "/dashboard"
+    | "/admin"
     | "/onboarding"
+    | "/admin/access-requests"
+    | "/admin/feedback"
+    | "/admin/invites"
+    | "/admin/metrics"
+    | "/admin/payout-access"
+    | "/admin/system-templates"
+    | "/admin/users"
     | "/draft/review"
     | "/onboarding/create-signature"
+    | "/admin/system-templates/new"
     | "/dashboard/admin"
     | "/dashboard/support"
     | "/dashboard/templates"
@@ -320,6 +442,7 @@ export interface FileRouteTypes {
     | "/dashboard/signature/create"
     | "/dashboard/templates/$templateId"
     | "/dashboard/templates/new"
+    | "/admin/system-templates/$systemTemplateId/edit"
     | "/dashboard/admin/system-templates"
     | "/dashboard/document/all"
     | "/dashboard/settings/billing"
@@ -334,13 +457,23 @@ export interface FileRouteTypes {
   id:
     | "__root__"
     | "/"
+    | "/admin"
     | "/dashboard"
     | "/onboarding"
     | "/dashboard/_shell"
+    | "/admin/"
     | "/dashboard/"
     | "/onboarding/"
+    | "/admin/access-requests/"
+    | "/admin/feedback/"
+    | "/admin/invites/"
+    | "/admin/metrics/"
+    | "/admin/payout-access/"
+    | "/admin/system-templates/"
+    | "/admin/users/"
     | "/draft/review/"
     | "/onboarding/create-signature/"
+    | "/admin/system-templates/new/"
     | "/dashboard/_shell/admin/"
     | "/dashboard/_shell/support/"
     | "/dashboard/_shell/templates/"
@@ -349,6 +482,7 @@ export interface FileRouteTypes {
     | "/dashboard/signature/create/"
     | "/dashboard/templates/$templateId/"
     | "/dashboard/templates/new/"
+    | "/admin/system-templates/$systemTemplateId/edit/"
     | "/dashboard/_shell/admin/system-templates/"
     | "/dashboard/_shell/document/all/"
     | "/dashboard/_shell/settings/billing/"
@@ -364,6 +498,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   OnboardingRouteRoute: typeof OnboardingRouteRouteWithChildren
   DraftReviewIndexRoute: typeof DraftReviewIndexRoute
@@ -383,6 +518,13 @@ declare module "@tanstack/react-router" {
       path: "/dashboard"
       fullPath: "/dashboard"
       preLoaderRoute: typeof DashboardRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/admin": {
+      id: "/admin"
+      path: "/admin"
+      fullPath: "/admin"
+      preLoaderRoute: typeof AdminRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/": {
@@ -406,6 +548,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    "/admin/": {
+      id: "/admin/"
+      path: "/"
+      fullPath: "/admin/"
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     "/dashboard/_shell": {
       id: "/dashboard/_shell"
       path: ""
@@ -426,6 +575,55 @@ declare module "@tanstack/react-router" {
       fullPath: "/draft/review/"
       preLoaderRoute: typeof DraftReviewIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    "/admin/users/": {
+      id: "/admin/users/"
+      path: "/users"
+      fullPath: "/admin/users/"
+      preLoaderRoute: typeof AdminUsersIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    "/admin/system-templates/": {
+      id: "/admin/system-templates/"
+      path: "/system-templates"
+      fullPath: "/admin/system-templates/"
+      preLoaderRoute: typeof AdminSystemTemplatesIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    "/admin/payout-access/": {
+      id: "/admin/payout-access/"
+      path: "/payout-access"
+      fullPath: "/admin/payout-access/"
+      preLoaderRoute: typeof AdminPayoutAccessIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    "/admin/metrics/": {
+      id: "/admin/metrics/"
+      path: "/metrics"
+      fullPath: "/admin/metrics/"
+      preLoaderRoute: typeof AdminMetricsIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    "/admin/invites/": {
+      id: "/admin/invites/"
+      path: "/invites"
+      fullPath: "/admin/invites/"
+      preLoaderRoute: typeof AdminInvitesIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    "/admin/feedback/": {
+      id: "/admin/feedback/"
+      path: "/feedback"
+      fullPath: "/admin/feedback/"
+      preLoaderRoute: typeof AdminFeedbackIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    "/admin/access-requests/": {
+      id: "/admin/access-requests/"
+      path: "/access-requests"
+      fullPath: "/admin/access-requests/"
+      preLoaderRoute: typeof AdminAccessRequestsIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     "/dashboard/templates/new/": {
       id: "/dashboard/templates/new/"
@@ -482,6 +680,13 @@ declare module "@tanstack/react-router" {
       fullPath: "/dashboard/admin/"
       preLoaderRoute: typeof DashboardShellAdminIndexRouteImport
       parentRoute: typeof DashboardShellRouteRoute
+    }
+    "/admin/system-templates/new/": {
+      id: "/admin/system-templates/new/"
+      path: "/system-templates/new"
+      fullPath: "/admin/system-templates/new/"
+      preLoaderRoute: typeof AdminSystemTemplatesNewIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
     "/dashboard/templates/library/$systemTemplateId/": {
       id: "/dashboard/templates/library/$systemTemplateId/"
@@ -553,6 +758,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof DashboardShellAdminSystemTemplatesIndexRouteImport
       parentRoute: typeof DashboardShellRouteRoute
     }
+    "/admin/system-templates/$systemTemplateId/edit/": {
+      id: "/admin/system-templates/$systemTemplateId/edit/"
+      path: "/system-templates/$systemTemplateId/edit"
+      fullPath: "/admin/system-templates/$systemTemplateId/edit/"
+      preLoaderRoute: typeof AdminSystemTemplatesSystemTemplateIdEditIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     "/dashboard/admin/system-templates/$systemTemplateId/edit/": {
       id: "/dashboard/admin/system-templates/$systemTemplateId/edit/"
       path: "/admin/system-templates/$systemTemplateId/edit"
@@ -562,6 +774,37 @@ declare module "@tanstack/react-router" {
     }
   }
 }
+
+interface AdminRouteRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminAccessRequestsIndexRoute: typeof AdminAccessRequestsIndexRoute
+  AdminFeedbackIndexRoute: typeof AdminFeedbackIndexRoute
+  AdminInvitesIndexRoute: typeof AdminInvitesIndexRoute
+  AdminMetricsIndexRoute: typeof AdminMetricsIndexRoute
+  AdminPayoutAccessIndexRoute: typeof AdminPayoutAccessIndexRoute
+  AdminSystemTemplatesIndexRoute: typeof AdminSystemTemplatesIndexRoute
+  AdminUsersIndexRoute: typeof AdminUsersIndexRoute
+  AdminSystemTemplatesNewIndexRoute: typeof AdminSystemTemplatesNewIndexRoute
+  AdminSystemTemplatesSystemTemplateIdEditIndexRoute: typeof AdminSystemTemplatesSystemTemplateIdEditIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+  AdminAccessRequestsIndexRoute: AdminAccessRequestsIndexRoute,
+  AdminFeedbackIndexRoute: AdminFeedbackIndexRoute,
+  AdminInvitesIndexRoute: AdminInvitesIndexRoute,
+  AdminMetricsIndexRoute: AdminMetricsIndexRoute,
+  AdminPayoutAccessIndexRoute: AdminPayoutAccessIndexRoute,
+  AdminSystemTemplatesIndexRoute: AdminSystemTemplatesIndexRoute,
+  AdminUsersIndexRoute: AdminUsersIndexRoute,
+  AdminSystemTemplatesNewIndexRoute: AdminSystemTemplatesNewIndexRoute,
+  AdminSystemTemplatesSystemTemplateIdEditIndexRoute:
+    AdminSystemTemplatesSystemTemplateIdEditIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
 
 interface DashboardShellRouteRouteChildren {
   DashboardShellAdminIndexRoute: typeof DashboardShellAdminIndexRoute
@@ -651,6 +894,7 @@ const OnboardingRouteRouteWithChildren = OnboardingRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
   OnboardingRouteRoute: OnboardingRouteRouteWithChildren,
   DraftReviewIndexRoute: DraftReviewIndexRoute,

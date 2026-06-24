@@ -1,5 +1,6 @@
 import { useFilosignContext } from "@filosign/react";
 import { sha256PlaintextHex, zTemplateSnapshot } from "@filosign/shared";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { resolveCreateFormSnapshotDigest } from "@/src/lib/domains/drafts";
 import { hydrateCreateFormFromTemplateEditor } from "@/src/lib/domains/templates/template-composer";
@@ -13,6 +14,7 @@ export function useSystemTemplateEditorHydrate(args: {
 	systemTemplateId: string | undefined;
 }) {
 	const { rpcQuery } = useFilosignContext();
+	const queryClient = useQueryClient();
 	const setCreateForm = useStorePersist((s) => s.setCreateForm);
 	const [loadState, setLoadState] = useState<SystemTemplateEditorLoadState>(
 		() => (args.mode === "system-edit" ? "loading" : "idle"),
@@ -48,33 +50,34 @@ export function useSystemTemplateEditorHydrate(args: {
 
 		void (async () => {
 			try {
-				const templateRow =
-					await rpcQuery.platformAdmin.systemTemplates.get.call({
-						systemTemplateId,
-					});
+				const templateRow = await queryClient.fetchQuery(
+					rpcQuery.platformAdmin.systemTemplates.get.queryOptions({
+						input: { systemTemplateId },
+					}),
+				);
 
 				const resolvedDocuments = await Promise.all(
-					templateRow.documents.flatMap((doc) =>
-						doc.downloadUrl
-							? [
-									(async () => {
-										const res = await fetch(doc.downloadUrl!);
-										if (!res.ok) {
-											throw new Error(`Failed to load ${doc.name}`);
-										}
-										const bytes = new Uint8Array(await res.arrayBuffer());
-										return {
-											id: doc.docId,
-											name: doc.name,
-											size: doc.size,
-											type: doc.mimeType,
-											bytes,
-											plaintextSha256: await sha256PlaintextHex(bytes),
-										};
-									})(),
-								]
-							: [],
-					),
+					templateRow.documents.flatMap((doc) => {
+						const downloadUrl = doc.downloadUrl;
+						if (!downloadUrl) return [];
+						return [
+							(async () => {
+								const res = await fetch(downloadUrl);
+								if (!res.ok) {
+									throw new Error(`Failed to load ${doc.name}`);
+								}
+								const bytes = new Uint8Array(await res.arrayBuffer());
+								return {
+									id: doc.docId,
+									name: doc.name,
+									size: doc.size,
+									type: doc.mimeType,
+									bytes,
+									plaintextSha256: await sha256PlaintextHex(bytes),
+								};
+							})(),
+						];
+					}),
 				);
 
 				const draft = await hydrateCreateFormFromTemplateEditor({
@@ -123,7 +126,7 @@ export function useSystemTemplateEditorHydrate(args: {
 		return () => {
 			cancelled = true;
 		};
-	}, [args.mode, args.systemTemplateId, rpcQuery, setCreateForm]);
+	}, [args.mode, args.systemTemplateId, queryClient, rpcQuery, setCreateForm]);
 
 	return { systemTemplateEditorLoadState: loadState };
 }

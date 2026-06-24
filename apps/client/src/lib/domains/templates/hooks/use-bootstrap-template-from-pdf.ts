@@ -14,7 +14,7 @@ type BootstrapArgs = {
 	files: File[];
 	templateId: string;
 	navigateTo: {
-		to: "/dashboard/templates/new" | "/dashboard/admin/system-templates/new";
+		to: "/dashboard/templates/new" | "/admin/system-templates/new";
 		search?: { templateName: string };
 	};
 	templateContext:

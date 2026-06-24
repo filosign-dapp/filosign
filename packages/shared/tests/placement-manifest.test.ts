@@ -2,6 +2,9 @@ import { describe, expect, it } from "bun:test";
 import {
 	canonicalPlacementManifestJson,
 	computePlacementCommitment,
+	findSignerEmailMissingRequiredSignatureField,
+	recipientHasRequiredSignatureField,
+	validateSignerSignatureFieldsForSend,
 	zPlacementManifest,
 } from "..";
 
@@ -47,5 +50,57 @@ describe("computePlacementCommitment", () => {
 			zPlacementManifest.parse(permuted),
 		);
 		expect(recommit).toBe(commitment);
+	});
+});
+
+describe("signer signature field policy", () => {
+	const fields = minimalManifest.fields;
+
+	it("accepts a required signature field per signer", () => {
+		expect(
+			recipientHasRequiredSignatureField(fields, "signer@example.com"),
+		).toBe(true);
+		expect(
+			findSignerEmailMissingRequiredSignatureField(fields, [
+				"signer@example.com",
+			]),
+		).toBeNull();
+		expect(
+			validateSignerSignatureFieldsForSend(minimalManifest, [
+				"signer@example.com",
+			]),
+		).toBeNull();
+	});
+
+	it("rejects initial-only placement", () => {
+		const manifest = zPlacementManifest.parse({
+			...minimalManifest,
+			fields: [
+				{
+					...minimalManifest.fields[0],
+					type: "initial",
+				},
+			],
+		});
+		expect(
+			findSignerEmailMissingRequiredSignatureField(manifest.fields, [
+				"signer@example.com",
+			]),
+		).toBe("signer@example.com");
+	});
+
+	it("rejects optional signature fields", () => {
+		const manifest = zPlacementManifest.parse({
+			...minimalManifest,
+			fields: [
+				{
+					...minimalManifest.fields[0],
+					required: false,
+				},
+			],
+		});
+		expect(
+			recipientHasRequiredSignatureField(manifest.fields, "signer@example.com"),
+		).toBe(false);
 	});
 });

@@ -135,3 +135,50 @@ export function requiredFieldIdsForRecipientEmail(
 		.filter((f) => f.required)
 		.map((f) => f.id);
 }
+
+type PlacementFieldRecipientRef = {
+	assignedRecipientEmail: string;
+	type: PlacementField["type"];
+	required: boolean;
+};
+
+/** True when the recipient has at least one required signature field (not initial/text/etc.). */
+export function recipientHasRequiredSignatureField(
+	fields: readonly PlacementFieldRecipientRef[],
+	recipientEmail: string,
+): boolean {
+	const key = normalizePlacementRecipientEmail(recipientEmail);
+	return fields.some(
+		(field) =>
+			field.assignedRecipientEmail === key &&
+			field.type === "signature" &&
+			field.required,
+	);
+}
+
+/** First normalized signer email missing a required signature field, or null when valid. */
+export function findSignerEmailMissingRequiredSignatureField(
+	fields: readonly PlacementFieldRecipientRef[],
+	signerEmails: readonly string[],
+): string | null {
+	for (const email of signerEmails) {
+		const normalized = normalizePlacementRecipientEmail(email);
+		if (!recipientHasRequiredSignatureField(fields, normalized)) {
+			return normalized;
+		}
+	}
+	return null;
+}
+
+/** Validate manifest roster emails each have a required signature field. */
+export function validateSignerSignatureFieldsForSend(
+	manifest: PlacementManifest,
+	signerEmails: readonly string[],
+): string | null {
+	const missing = findSignerEmailMissingRequiredSignatureField(
+		manifest.fields,
+		signerEmails,
+	);
+	if (!missing) return null;
+	return `Each signer needs one required signature field (${missing} is missing one).`;
+}

@@ -149,36 +149,34 @@ export async function listPlatformInvites(args?: {
 	const q = args?.q?.trim();
 	if (q) {
 		const pattern = `%${q}%`;
-		filters.push(
-			or(
-				ilike(platformInvites.email, pattern),
-				ilike(platformInvites.note, pattern),
-			)!,
+		const searchFilter = or(
+			ilike(platformInvites.email, pattern),
+			ilike(platformInvites.note, pattern),
 		);
+		if (searchFilter) filters.push(searchFilter);
 	}
 
 	const status = args?.status ?? "all";
 	if (status === "revoked") {
 		filters.push(isNotNull(platformInvites.revokedAt));
 	} else if (status === "expired") {
-		filters.push(
-			and(
-				isNull(platformInvites.revokedAt),
-				isNotNull(platformInvites.expiresAt),
-				lt(platformInvites.expiresAt, now),
-			)!,
+		const expiredFilter = and(
+			isNull(platformInvites.revokedAt),
+			isNotNull(platformInvites.expiresAt),
+			lt(platformInvites.expiresAt, now),
 		);
+		if (expiredFilter) filters.push(expiredFilter);
 	} else if (status === "active") {
-		filters.push(
-			and(
-				isNull(platformInvites.revokedAt),
-				sql`${platformInvites.redemptionCount} < ${platformInvites.maxRedemptions}`,
-				or(
-					isNull(platformInvites.expiresAt),
-					sql`${platformInvites.expiresAt} > ${now}`,
-				)!,
-			)!,
+		const notExpiredFilter = or(
+			isNull(platformInvites.expiresAt),
+			sql`${platformInvites.expiresAt} > ${now}`,
 		);
+		const activeFilter = and(
+			isNull(platformInvites.revokedAt),
+			sql`${platformInvites.redemptionCount} < ${platformInvites.maxRedemptions}`,
+			notExpiredFilter,
+		);
+		if (activeFilter) filters.push(activeFilter);
 	}
 
 	const where = filters.length > 0 ? and(...filters) : undefined;
@@ -262,9 +260,11 @@ export async function listPlatformUsersForAdmin(args?: {
 	const q = args?.q?.trim();
 	if (q) {
 		const pattern = `%${q}%`;
-		filters.push(
-			or(ilike(users.email, pattern), ilike(users.walletAddress, pattern))!,
+		const searchFilter = or(
+			ilike(users.email, pattern),
+			ilike(users.walletAddress, pattern),
 		);
+		if (searchFilter) filters.push(searchFilter);
 	}
 
 	if (args?.planId) {

@@ -11,12 +11,13 @@ export function missingTemplateSignerFieldRoleLabel(
 
 	for (const role of roles) {
 		const assigneeEmail = templateRolePlaceholderEmail(role.roleId);
-		const hasPlacementField = (createForm.signatureFields ?? []).some(
+		const hasRequiredSignatureField = (createForm.signatureFields ?? []).some(
 			(field) =>
 				field.assignedSignerEmail === assigneeEmail &&
-				(field.type === "signature" || field.type === "initial"),
+				field.type === "signature" &&
+				field.required,
 		);
-		if (!hasPlacementField) {
+		if (!hasRequiredSignatureField) {
 			return role.label;
 		}
 	}

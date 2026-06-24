@@ -14,6 +14,10 @@ export const TOASTS = {
 			title: "Add a field for each signer",
 			hint: `Place at least one field for ${email}.`,
 		}),
+		missingRequiredSignatureForSigner: (email: string) => ({
+			title: "Add a required signature for each signer",
+			hint: `Place one required signature field for ${email}.`,
+		}),
 		invalidSupplementaryFiles: "Check attached files and try again.",
 		supplementaryLoadFailed: {
 			title: "Couldn't load attached files",

@@ -5,7 +5,9 @@ import {
 	hashNormalizedSignerEmail,
 	hashOrgIdCommitment,
 	normalizePlacementRecipientEmail,
+	uniqueSignerEmailsFromManifest,
 	usesAdvancedRegisterRouting,
+	validateSignerSignatureFieldsForSend,
 	zPlacementManifest,
 } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
@@ -124,6 +126,21 @@ export async function filesRegister(
 		throwZodBadRequest(parsedManifest.error);
 	}
 	const placementManifest = parsedManifest.data;
+	const signatureFieldError = validateSignerSignatureFieldsForSend(
+		placementManifest,
+		uniqueSignerEmailsFromManifest(placementManifest),
+	);
+	if (signatureFieldError) {
+		throwZodBadRequest(
+			new z.ZodError([
+				{
+					code: "custom",
+					message: signatureFieldError,
+					path: ["placementManifest", "fields"],
+				},
+			]),
+		);
+	}
 	const derivedCommitment = computePlacementCommitment(placementManifest);
 	if (derivedCommitment.toLowerCase() !== placementCommitment.toLowerCase()) {
 		throwZodBadRequest(

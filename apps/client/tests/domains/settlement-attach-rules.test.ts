@@ -232,6 +232,6 @@ describe("payout attach dialog", () => {
 			"utf8",
 		);
 		expect(src).toContain("onAttachLegs");
-		expect(src).not.toContain("leg.recipientWallet as `0x${string}`");
+		expect(src).not.toContain(`leg.recipientWallet as \`0x\${string}\``);
 	});
 });

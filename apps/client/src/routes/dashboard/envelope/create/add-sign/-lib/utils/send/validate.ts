@@ -1,4 +1,7 @@
-import { normalizePlacementRecipientEmail } from "@filosign/shared";
+import {
+	findSignerEmailMissingRequiredSignatureField,
+	normalizePlacementRecipientEmail,
+} from "@filosign/shared";
 import type { Address } from "viem";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
@@ -65,6 +68,17 @@ export function validateSignerPlacementFields(args: {
 		};
 	}
 
+	const placementFields = signatureFields.map((field) => ({
+		assignedRecipientEmail: normalizePlacementRecipientEmail(
+			field.assignedSignerEmail,
+		),
+		type: field.type,
+		required: field.required,
+	}));
+	const signerEmails = signerRecipients.map((signer) =>
+		normalizePlacementRecipientEmail(signer.email?.trim() ?? ""),
+	);
+
 	for (const signer of signerRecipients) {
 		const signerEmail = normalizePlacementRecipientEmail(
 			signer.email?.trim() ?? "",
@@ -79,9 +93,19 @@ export function validateSignerPlacementFields(args: {
 				...TOASTS.send.missingFieldsForSigner(signerEmail),
 			};
 		}
-		if (!signerFields.some((f) => f.required)) {
-			return { kind: "silent" };
-		}
+	}
+
+	const missingRequiredSignature = findSignerEmailMissingRequiredSignatureField(
+		placementFields,
+		signerEmails,
+	);
+	if (missingRequiredSignature) {
+		return {
+			kind: "toast",
+			...TOASTS.send.missingRequiredSignatureForSigner(
+				missingRequiredSignature,
+			),
+		};
 	}
 
 	return null;

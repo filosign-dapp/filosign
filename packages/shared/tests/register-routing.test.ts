@@ -166,9 +166,15 @@ describe("sortedCommitsForEmails (attachment recipients)", () => {
 			"m-mid@example.com",
 		]);
 		expect(commits.length).toBe(3);
-		for (let i = 1; i < commits.length; i++) {
-			expect(commits[i - 1]! < commits[i]!).toBe(true);
+		if (
+			commits[0] === undefined ||
+			commits[1] === undefined ||
+			commits[2] === undefined
+		) {
+			throw new Error("expected three commits");
 		}
+		expect(commits[0] < commits[1]).toBe(true);
+		expect(commits[1] < commits[2]).toBe(true);
 	});
 
 	it("differs from unsorted commitsForEmails when roster order is not sorted", () => {

@@ -182,7 +182,7 @@ describe("finalizeTemplateUseAtComposeContinue", () => {
 });
 
 describe("missingTemplateSignerFieldRoleLabel", () => {
-	test("returns role label when signer has no signature or initial field", () => {
+	test("returns role label when signer has no required signature field", () => {
 		const createForm = {
 			draftId: "draft-1",
 			recipientFingerprint: "fp",

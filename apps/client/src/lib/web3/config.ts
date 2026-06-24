@@ -72,10 +72,7 @@ export const filosignInAppWalletOptions: Record<string, unknown> = {
 			height: 64,
 		},
 	},
-	executionMode:
-		env.VITE_CHAIN === "local"
-			? { mode: "EOA" }
-			: { mode: "EIP7702", sponsorGas: false },
+	executionMode: { mode: "EOA" },
 	hidePrivateKeyExport: false,
 };
 

@@ -4,7 +4,10 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import { isOrgBillingPlanId } from "@/lib/domains/billing/utils/policy";
-import { trackPlatformInviteRedeemed } from "@/lib/platform/analytics";
+import {
+	emitPartnerInviteRedeemedPing,
+	trackPlatformInviteRedeemed,
+} from "@/lib/platform/analytics";
 import {
 	CACHE_TTL,
 	cacheAside,
@@ -134,6 +137,16 @@ export async function redeemPlatformInviteOnRegisterWithTx(
 		planId: invite.planId,
 		trialDays: invite.trialDays,
 		inviteKind: invite.kind,
+	});
+
+	void emitPartnerInviteRedeemedPing({
+		wallet,
+		email: emailNorm,
+		inviteId: invite.id,
+		inviteKind: invite.kind,
+		emailVariant: invite.emailVariant,
+		planId: invite.planId,
+		trialDays: invite.trialDays,
 	});
 }
 

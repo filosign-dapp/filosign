@@ -2,7 +2,8 @@ import type { PlanId } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
 import { isPaidCheckoutPlanId } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
-import { and, eq, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+import { and, count, eq, ilike, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import type { BillingInterval } from "@/lib/domains/billing/billing";
@@ -12,8 +13,10 @@ import {
 	resolveCheckoutSeatCount,
 } from "@/lib/domains/billing/checkout-intents";
 import { assertMarketingCheckoutAllowed } from "@/lib/domains/billing/utils/marketing";
+import { emitPlatformAccessRequestPing } from "@/lib/platform/analytics";
 import db from "@/lib/platform/db";
 import { accessRequests } from "@/lib/platform/db/schema/platform-access";
+import { adminListMeta, adminListOffset } from "./utils/admin-pagination";
 import { normalizeEmail } from "./utils/shared";
 
 function resolvePaidCheckoutPlanId(
@@ -93,10 +96,47 @@ export async function submitAccessRequest(args: {
 		...values,
 	});
 
+	void emitPlatformAccessRequestPing({
+		email,
+		name: values.name,
+		company: values.company,
+		message: values.message,
+		planId: values.planId,
+		billingInterval: values.billingInterval,
+		seatCount: values.seatCount,
+	});
+
 	return { ok: true };
 }
 
-export async function listAccessRequestsForAdmin() {
+export async function listAccessRequestsForAdmin(args?: {
+	page?: number;
+	q?: string;
+	status?: "all" | "pending" | "approved" | "rejected";
+}) {
+	const { safePage, offset, pageSize } = adminListOffset(args?.page);
+	const filters: SQL[] = [];
+
+	const q = args?.q?.trim();
+	if (q) {
+		filters.push(ilike(accessRequests.email, `%${q}%`));
+	}
+
+	const status = args?.status ?? "all";
+	if (status !== "all") {
+		filters.push(eq(accessRequests.status, status));
+	}
+
+	const where = filters.length > 0 ? and(...filters) : undefined;
+
+	const [countRow] = await db
+		.select({ total: count() })
+		.from(accessRequests)
+		.where(where);
+
+	const totalCount = countRow?.total ?? 0;
+	const meta = adminListMeta(totalCount, safePage);
+
 	const rows = await db
 		.select({
 			id: accessRequests.id,
@@ -114,14 +154,18 @@ export async function listAccessRequestsForAdmin() {
 			createdAt: accessRequests.createdAt,
 		})
 		.from(accessRequests)
+		.where(where)
 		.orderBy(sql`${accessRequests.createdAt} desc`)
-		.limit(200);
+		.limit(pageSize)
+		.offset(offset);
 
-	return rows.map((row) => ({
+	const items = rows.map((row) => ({
 		...row,
 		reviewedAt: row.reviewedAt?.toISOString() ?? null,
 		createdAt: row.createdAt.toISOString(),
 	}));
+
+	return { items, ...meta };
 }
 
 export async function approveAccessRequest(args: {

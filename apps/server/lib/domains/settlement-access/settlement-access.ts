@@ -3,7 +3,8 @@ import {
 	SETTLEMENT_FEATURE_TERMS_VERSION,
 	zIsoCountryCode,
 } from "@filosign/shared";
-import { desc, eq } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+import { and, count, desc, eq, ilike } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
@@ -12,7 +13,12 @@ import {
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
 import { assertOrgPermission, resolveActiveOrg } from "@/lib/domains/orgs/orgs";
+import {
+	adminListMeta,
+	adminListOffset,
+} from "@/lib/domains/platform-access/utils/admin-pagination";
 import { isPlatformAdminForWallet } from "@/lib/platform/admin";
+import { emitPayoutAccessRequestPing } from "@/lib/platform/analytics";
 import db from "@/lib/platform/db";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
@@ -263,6 +269,16 @@ export async function submitOrganizationSettlementFeatureRequest(args: {
 			},
 		});
 
+	void emitPayoutAccessRequestPing({
+		wallet: getAddress(args.wallet),
+		organizationId: args.organizationId,
+		organizationLegalName: parsed.data.organizationLegalName,
+		organizationCountry: parsed.data.organizationCountry,
+		useCase: parsed.data.useCase,
+		requesterName: parsed.data.requesterName,
+		requesterRole: parsed.data.requesterRole,
+	});
+
 	return getOrganizationSettlementFeatureAccess(args.organizationId);
 }
 
@@ -306,9 +322,40 @@ export async function assertOrganizationExternalWalletAccessEnabled(
 	}
 }
 
-export async function listSettlementFeatureAccessForAdmin() {
+export async function listSettlementFeatureAccessForAdmin(args?: {
+	page?: number;
+	q?: string;
+	status?: "all" | "pending" | "approved" | "rejected";
+}) {
 	const { organizationSettlementFeatureAccess, organizations } =
 		settlementAccessSchema();
+	const { safePage, offset, pageSize } = adminListOffset(args?.page);
+	const filters: SQL[] = [];
+
+	const q = args?.q?.trim();
+	if (q) {
+		filters.push(ilike(organizations.name, `%${q}%`));
+	}
+
+	const status = args?.status ?? "all";
+	if (status !== "all") {
+		filters.push(eq(organizationSettlementFeatureAccess.status, status));
+	}
+
+	const where = filters.length > 0 ? and(...filters) : undefined;
+
+	const [countRow] = await db
+		.select({ total: count() })
+		.from(organizationSettlementFeatureAccess)
+		.innerJoin(
+			organizations,
+			eq(organizationSettlementFeatureAccess.organizationId, organizations.id),
+		)
+		.where(where);
+
+	const totalCount = countRow?.total ?? 0;
+	const meta = adminListMeta(totalCount, safePage);
+
 	const rows = await db
 		.select({
 			organizationId: organizationSettlementFeatureAccess.organizationId,
@@ -346,9 +393,12 @@ export async function listSettlementFeatureAccessForAdmin() {
 			organizations,
 			eq(organizationSettlementFeatureAccess.organizationId, organizations.id),
 		)
-		.orderBy(desc(organizationSettlementFeatureAccess.updatedAt));
+		.where(where)
+		.orderBy(desc(organizationSettlementFeatureAccess.updatedAt))
+		.limit(pageSize)
+		.offset(offset);
 
-	return rows.map((row) => ({
+	const items = rows.map((row) => ({
 		...row,
 		acceptedAt: row.acceptedAt.toISOString(),
 		reviewedAt: row.reviewedAt?.toISOString() ?? null,
@@ -357,6 +407,8 @@ export async function listSettlementFeatureAccessForAdmin() {
 		externalWalletComplianceCertAt:
 			row.externalWalletComplianceCertAt?.toISOString() ?? null,
 	}));
+
+	return { items, ...meta };
 }
 
 export async function approveOrganizationSettlementFeatureAccess(args: {

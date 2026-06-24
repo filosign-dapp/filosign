@@ -5,7 +5,19 @@ import {
 	type PlatformInviteEmailVariant,
 } from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+import {
+	and,
+	count,
+	eq,
+	ilike,
+	inArray,
+	isNotNull,
+	isNull,
+	lt,
+	or,
+	sql,
+} from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import { getPersonalOrganizationId } from "@/lib/domains/orgs/workspace";
@@ -24,6 +36,7 @@ import {
 import { users } from "@/lib/platform/db/schema/user";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { setOrgPlanManualWithTx } from "./grants";
+import { adminListMeta, adminListOffset } from "./utils/admin-pagination";
 import { generatePlatformInviteToken } from "./utils/shared";
 
 export async function createPlatformInvite(args: {
@@ -124,7 +137,60 @@ export async function rebookPlatformInvite(args: {
 	});
 }
 
-export async function listPlatformInvites() {
+export async function listPlatformInvites(args?: {
+	page?: number;
+	q?: string;
+	status?: "all" | "active" | "revoked" | "expired";
+}) {
+	const { safePage, offset, pageSize } = adminListOffset(args?.page);
+	const now = new Date();
+	const filters: SQL[] = [];
+
+	const q = args?.q?.trim();
+	if (q) {
+		const pattern = `%${q}%`;
+		filters.push(
+			or(
+				ilike(platformInvites.email, pattern),
+				ilike(platformInvites.note, pattern),
+			)!,
+		);
+	}
+
+	const status = args?.status ?? "all";
+	if (status === "revoked") {
+		filters.push(isNotNull(platformInvites.revokedAt));
+	} else if (status === "expired") {
+		filters.push(
+			and(
+				isNull(platformInvites.revokedAt),
+				isNotNull(platformInvites.expiresAt),
+				lt(platformInvites.expiresAt, now),
+			)!,
+		);
+	} else if (status === "active") {
+		filters.push(
+			and(
+				isNull(platformInvites.revokedAt),
+				sql`${platformInvites.redemptionCount} < ${platformInvites.maxRedemptions}`,
+				or(
+					isNull(platformInvites.expiresAt),
+					sql`${platformInvites.expiresAt} > ${now}`,
+				)!,
+			)!,
+		);
+	}
+
+	const where = filters.length > 0 ? and(...filters) : undefined;
+
+	const [countRow] = await db
+		.select({ total: count() })
+		.from(platformInvites)
+		.where(where);
+
+	const totalCount = countRow?.total ?? 0;
+	const meta = adminListMeta(totalCount, safePage);
+
 	const rows = await db
 		.select({
 			id: platformInvites.id,
@@ -144,16 +210,24 @@ export async function listPlatformInvites() {
 			createdAt: platformInvites.createdAt,
 		})
 		.from(platformInvites)
-		.orderBy(sql`${platformInvites.createdAt} desc`);
+		.where(where)
+		.orderBy(sql`${platformInvites.createdAt} desc`)
+		.limit(pageSize)
+		.offset(offset);
 
-	const redemptions = await db
-		.select({
-			inviteId: platformInviteRedemptions.inviteId,
-			walletAddress: platformInviteRedemptions.walletAddress,
-			email: platformInviteRedemptions.email,
-			redeemedAt: platformInviteRedemptions.redeemedAt,
-		})
-		.from(platformInviteRedemptions);
+	const inviteIds = rows.map((row) => row.id);
+	const redemptions =
+		inviteIds.length === 0
+			? []
+			: await db
+					.select({
+						inviteId: platformInviteRedemptions.inviteId,
+						walletAddress: platformInviteRedemptions.walletAddress,
+						email: platformInviteRedemptions.email,
+						redeemedAt: platformInviteRedemptions.redeemedAt,
+					})
+					.from(platformInviteRedemptions)
+					.where(inArray(platformInviteRedemptions.inviteId, inviteIds));
 
 	const byInvite = new Map<string, typeof redemptions>();
 	for (const r of redemptions) {
@@ -162,7 +236,7 @@ export async function listPlatformInvites() {
 		byInvite.set(r.inviteId, list);
 	}
 
-	return rows.map((row) => ({
+	const items = rows.map((row) => ({
 		...row,
 		expiresAt: row.expiresAt?.toISOString() ?? null,
 		revokedAt: row.revokedAt?.toISOString() ?? null,
@@ -173,10 +247,33 @@ export async function listPlatformInvites() {
 			redeemedAt: r.redeemedAt.toISOString(),
 		})),
 	}));
+
+	return { items, ...meta };
 }
 
-export async function listPlatformUsersForAdmin() {
-	const rows = await db
+export async function listPlatformUsersForAdmin(args?: {
+	page?: number;
+	q?: string;
+	planId?: PlanId;
+}) {
+	const { safePage, offset, pageSize } = adminListOffset(args?.page);
+	const filters: SQL[] = [];
+
+	const q = args?.q?.trim();
+	if (q) {
+		const pattern = `%${q}%`;
+		filters.push(
+			or(ilike(users.email, pattern), ilike(users.walletAddress, pattern))!,
+		);
+	}
+
+	if (args?.planId) {
+		filters.push(eq(organizationSubscriptions.planId, args.planId));
+	}
+
+	const where = filters.length > 0 ? and(...filters) : undefined;
+
+	const baseQuery = db
 		.select({
 			walletAddress: users.walletAddress,
 			email: users.email,
@@ -206,11 +303,42 @@ export async function listPlatformUsersForAdmin() {
 		.leftJoin(
 			organizationSubscriptions,
 			eq(organizationSubscriptions.organizationId, organizations.id),
-		)
-		.orderBy(sql`${users.createdAt} desc`)
-		.limit(500);
+		);
 
-	return rows.map((row) => ({
+	const [countRow] = await db
+		.select({ total: count() })
+		.from(users)
+		.leftJoin(
+			organizationMembers,
+			and(
+				eq(organizationMembers.walletAddress, users.walletAddress),
+				eq(organizationMembers.role, "owner"),
+				eq(organizationMembers.status, "active"),
+			),
+		)
+		.leftJoin(
+			organizations,
+			and(
+				eq(organizations.id, organizationMembers.organizationId),
+				eq(organizations.isPersonal, true),
+			),
+		)
+		.leftJoin(
+			organizationSubscriptions,
+			eq(organizationSubscriptions.organizationId, organizations.id),
+		)
+		.where(where);
+
+	const totalCount = countRow?.total ?? 0;
+	const meta = adminListMeta(totalCount, safePage);
+
+	const rows = await baseQuery
+		.where(where)
+		.orderBy(sql`${users.createdAt} desc`)
+		.limit(pageSize)
+		.offset(offset);
+
+	const items = rows.map((row) => ({
 		walletAddress: row.walletAddress,
 		email: row.email,
 		createdAt: row.createdAt.toISOString(),
@@ -222,6 +350,8 @@ export async function listPlatformUsersForAdmin() {
 			number | boolean
 		>,
 	}));
+
+	return { items, ...meta };
 }
 
 async function resolvePersonalOrgId(wallet: Address): Promise<string> {

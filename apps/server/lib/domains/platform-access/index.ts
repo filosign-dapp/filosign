@@ -1,3 +1,4 @@
+export { getPlatformAdminDashboardStats } from "./dashboard-stats";
 export {
 	assertRegistrationAllowed,
 	canStartEmailAuth,

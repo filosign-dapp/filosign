@@ -253,3 +253,139 @@ describe("emitProductFeedbackPing", () => {
 		expect(capturedTelegramEvents).toHaveLength(0);
 	});
 });
+
+describe("emitPlatformAdminRequestPings", () => {
+	beforeEach(async () => {
+		clearCapturedTelegramEvents();
+		const { resetPlatformAlertsRuntimeForTests } = await import(
+			"@/lib/platform/analytics"
+		);
+		resetPlatformAlertsRuntimeForTests();
+	});
+
+	test("emits platform access request ping when TG_ANALYTICS is enabled", async () => {
+		mock.module("@/env", () => ({
+			default: { ...testEnvStub, TG_ANALYTICS: true },
+		}));
+		const { emitPlatformAccessRequestPing } = await import(
+			"@/lib/platform/analytics"
+		);
+		await emitPlatformAccessRequestPing({
+			email: "founder@example.com",
+			name: "Alex",
+			company: "Acme",
+			message: "Need Teams for our legal team",
+			planId: "teams_pro",
+			billingInterval: "yearly",
+			seatCount: 5,
+		});
+		expect(capturedTelegramEvents).toHaveLength(1);
+		expect(capturedTelegramEvents[0]?.name).toBe(
+			PLATFORM_ALERT_EVENTS.platformAccessRequestSubmitted,
+		);
+		expect(capturedTelegramEvents[0]?.message).toBe(
+			"New platform access request",
+		);
+		expect(capturedTelegramEvents[0]?.context).toMatchObject({
+			email: "founder@example.com",
+			company: "Acme",
+			adminPath: "/admin/access-requests",
+		});
+	});
+
+	test("emits payout access request ping when TG_ANALYTICS is enabled", async () => {
+		mock.module("@/env", () => ({
+			default: { ...testEnvStub, TG_ANALYTICS: true },
+		}));
+		const { emitPayoutAccessRequestPing } = await import(
+			"@/lib/platform/analytics"
+		);
+		await emitPayoutAccessRequestPing({
+			wallet: "0x1111111111111111111111111111111111111111",
+			organizationId: "00000000-0000-4000-8000-000000000001",
+			organizationLegalName: "Acme LLC",
+			organizationCountry: "US",
+			useCase: "Pay contractors after signed NDAs",
+			requesterName: "Alex",
+			requesterRole: "Founder",
+		});
+		expect(capturedTelegramEvents).toHaveLength(1);
+		expect(capturedTelegramEvents[0]?.name).toBe(
+			PLATFORM_ALERT_EVENTS.payoutAccessRequestSubmitted,
+		);
+		expect(capturedTelegramEvents[0]?.message).toBe(
+			"New payout access request",
+		);
+		expect(capturedTelegramEvents[0]?.context).toMatchObject({
+			organizationLegalName: "Acme LLC",
+			adminPath: "/admin/payout-access",
+		});
+	});
+
+	test("emits partner invite redeemed ping when TG_ANALYTICS is enabled", async () => {
+		mock.module("@/env", () => ({
+			default: { ...testEnvStub, TG_ANALYTICS: true },
+		}));
+		const { emitPartnerInviteRedeemedPing } = await import(
+			"@/lib/platform/analytics"
+		);
+		await emitPartnerInviteRedeemedPing({
+			wallet: "0x2222222222222222222222222222222222222222",
+			email: "partner@example.com",
+			inviteId: "00000000-0000-4000-8000-000000000002",
+			inviteKind: "partner_trial",
+			emailVariant: "partner_a",
+			planId: "teams_pro",
+			trialDays: 30,
+		});
+		expect(capturedTelegramEvents).toHaveLength(1);
+		expect(capturedTelegramEvents[0]?.name).toBe(
+			PLATFORM_ALERT_EVENTS.partnerInviteRedeemed,
+		);
+		expect(capturedTelegramEvents[0]?.message).toBe("Partner invite redeemed");
+		expect(capturedTelegramEvents[0]?.context).toMatchObject({
+			email: "partner@example.com",
+			planId: "teams_pro",
+			adminPath: "/admin/invites",
+		});
+	});
+
+	test("does not emit admin request pings when TG_ANALYTICS is disabled", async () => {
+		mock.module("@/env", () => ({
+			default: { ...testEnvStub, TG_ANALYTICS: false },
+		}));
+		const {
+			emitPlatformAccessRequestPing,
+			emitPayoutAccessRequestPing,
+			emitPartnerInviteRedeemedPing,
+		} = await import("@/lib/platform/analytics");
+		await emitPlatformAccessRequestPing({
+			email: "founder@example.com",
+			name: null,
+			company: null,
+			message: null,
+			planId: null,
+			billingInterval: null,
+			seatCount: 1,
+		});
+		await emitPayoutAccessRequestPing({
+			wallet: "0x1111111111111111111111111111111111111111",
+			organizationId: "00000000-0000-4000-8000-000000000001",
+			organizationLegalName: "Acme LLC",
+			organizationCountry: "US",
+			useCase: "Contractor payouts",
+			requesterName: "Alex",
+			requesterRole: "Founder",
+		});
+		await emitPartnerInviteRedeemedPing({
+			wallet: "0x2222222222222222222222222222222222222222",
+			email: "partner@example.com",
+			inviteId: "00000000-0000-4000-8000-000000000002",
+			inviteKind: "partner_trial",
+			emailVariant: null,
+			planId: "teams_pro",
+			trialDays: 30,
+		});
+		expect(capturedTelegramEvents).toHaveLength(0);
+	});
+});

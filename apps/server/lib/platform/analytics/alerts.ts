@@ -35,6 +35,9 @@ export const PLATFORM_ALERT_EVENTS = {
 	serverBullmqJobFailed: "server.bullmq_job_failed",
 	serverStarted: "server.started",
 	productFeedbackSubmitted: "product.feedback_submitted",
+	platformAccessRequestSubmitted: "platform.access_request_submitted",
+	payoutAccessRequestSubmitted: "platform.payout_access_request_submitted",
+	partnerInviteRedeemed: "platform.partner_invite_redeemed",
 	serverWorkerStale: "server.worker_stale",
 	billingWebhookStuck: "billing.webhook_stuck",
 	emailOutboxStuck: "email.outbox_stuck",
@@ -252,7 +255,7 @@ export function mirrorPlatformAlertToPostHogFromProcessEnv(
 // ==========================================
 export function createPlatformAlertsRuntime(config: TelegramTransportOptions) {
 	const dedupe = createInMemoryDedupe({
-		windowMs: 5 * 60 * 1000,
+		windowMs: PLATFORM_ALERT_DEDUPE_MS,
 	});
 
 	return createLoggerRuntime({
@@ -307,6 +310,84 @@ export function emitServerStartedPing(): Promise<void> {
 			hostname: os.hostname(),
 		},
 		timestamp: Date.now(),
+	});
+}
+
+/** Telegram ping when a user submits a platform access request (not mirrored to PostHog). */
+export function emitPlatformAccessRequestPing(args: {
+	email: string;
+	name: string | null;
+	company: string | null;
+	message: string | null;
+	planId: string | null;
+	billingInterval: string | null;
+	seatCount: number;
+}): Promise<void> {
+	return emitPlatformInfoEvent({
+		name: PLATFORM_ALERT_EVENTS.platformAccessRequestSubmitted,
+		message: "New platform access request",
+		context: {
+			email: args.email,
+			name: args.name,
+			company: args.company,
+			planId: args.planId,
+			billingInterval: args.billingInterval,
+			seatCount: args.seatCount,
+			message: args.message?.trim().slice(0, 500) ?? null,
+			adminPath: "/admin/access-requests",
+		},
+	});
+}
+
+/** Telegram ping when a workspace requests payout feature access (not mirrored to PostHog). */
+export function emitPayoutAccessRequestPing(args: {
+	wallet: string;
+	organizationId: string;
+	organizationLegalName: string;
+	organizationCountry: string;
+	useCase: string;
+	requesterName: string;
+	requesterRole: string;
+}): Promise<void> {
+	return emitPlatformInfoEvent({
+		name: PLATFORM_ALERT_EVENTS.payoutAccessRequestSubmitted,
+		message: "New payout access request",
+		context: {
+			wallet: args.wallet,
+			organizationId: args.organizationId,
+			organizationLegalName: args.organizationLegalName,
+			organizationCountry: args.organizationCountry,
+			requesterName: args.requesterName,
+			requesterRole: args.requesterRole,
+			useCase: args.useCase.trim().slice(0, 500),
+			adminPath: "/admin/payout-access",
+		},
+	});
+}
+
+/** Telegram ping when a partner invite is redeemed (not mirrored to PostHog). */
+export function emitPartnerInviteRedeemedPing(args: {
+	wallet: string;
+	email: string;
+	inviteId: string;
+	inviteKind: string;
+	emailVariant: string | null;
+	planId: string;
+	trialDays: number;
+}): Promise<void> {
+	return emitPlatformInfoEvent({
+		name: PLATFORM_ALERT_EVENTS.partnerInviteRedeemed,
+		message: "Partner invite redeemed",
+		context: {
+			wallet: args.wallet,
+			email: args.email,
+			inviteId: args.inviteId,
+			inviteKind: args.inviteKind,
+			emailVariant: args.emailVariant,
+			planId: args.planId,
+			trialDays: args.trialDays,
+			adminPath: "/admin/invites",
+		},
 	});
 }
 
@@ -465,7 +546,7 @@ export function emitCriticalPlatformEventFromProcessEnv(
 	event: PlatformAlertEvent,
 ): Promise<void> {
 	const dedupe = createInMemoryDedupe({
-		windowMs: 5 * 60 * 1000,
+		windowMs: PLATFORM_ALERT_DEDUPE_MS,
 	});
 	const runtime = createLoggerRuntime({
 		transports: [createTelegramTransport(readTelegramConfigFromProcessEnv())],

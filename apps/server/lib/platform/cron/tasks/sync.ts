@@ -95,10 +95,10 @@ export function registerSyncSettlementRulesCron(): CronHandle {
 }
 
 // ==========================================
-// 3. Monitor relayer gas + FOC wallet balances
+// 3. Monitor relayer gas + FOC wallet balances (UTC 08:00 and 20:00)
 // ==========================================
 
-export const MONITOR_RELAYER_GAS_CRON = "30 * * * *";
+export const MONITOR_RELAYER_GAS_CRON = "0 8,20 * * *";
 export const RELAYER_GAS_ALERT_THRESHOLD_WEI = parseEther("0.02");
 
 export function relayerGasMonitoringEnabled(): boolean {

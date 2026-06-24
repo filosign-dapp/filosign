@@ -595,49 +595,57 @@ describe("access", () => {
 		const orgId = "00000000-0000-7000-8000-0000000000bb";
 
 		beforeAll(() => {
+			const row = {
+				organizationId: orgId,
+				organizationName: "Acme",
+				status: "approved",
+				termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+				acceptedAt: new Date("2026-05-01T00:00:00Z"),
+				acceptedByWallet: "0xdddddddddddddddddddddddddddddddddddddddd",
+				useCase: "Contractor bonuses",
+				organizationLegalName: "Acme LLC",
+				organizationCountry: "US",
+				requesterName: "Jane",
+				requesterRole: "Admin",
+				requestIp: null,
+				requestUserAgent: null,
+				reviewedAt: new Date("2026-05-02T00:00:00Z"),
+				reviewedByAdminWallet: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+				reviewNote: null,
+				externalWalletAccessEnabled: false,
+				externalWalletAccessEnabledAt: null,
+				externalWalletAccessRequested: true,
+				externalWalletUseCase:
+					"Paying verified contractors who are not envelope signers.",
+				externalWalletComplianceCertAt: new Date("2026-05-01T00:00:00Z"),
+			};
+
+			const listChain = {
+				where: () => listChain,
+				orderBy: () => listChain,
+				limit: () => listChain,
+				offset: () => dbQueryResult([row]),
+			};
+
+			let selectCall = 0;
+
 			mock.module("@/lib/platform/db", () => ({
 				default: {
 					schema: {
 						organizationSettlementFeatureAccess: {},
 						organizations: {},
 					},
-					select: () => ({
-						from: () => ({
-							innerJoin: () => ({
-								orderBy: () =>
-									dbQueryResult([
-										{
-											organizationId: orgId,
-											organizationName: "Acme",
-											status: "approved",
-											termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
-											acceptedAt: new Date("2026-05-01T00:00:00Z"),
-											acceptedByWallet:
-												"0xdddddddddddddddddddddddddddddddddddddddd",
-											useCase: "Contractor bonuses",
-											organizationLegalName: "Acme LLC",
-											organizationCountry: "US",
-											requesterName: "Jane",
-											requesterRole: "Admin",
-											requestIp: null,
-											requestUserAgent: null,
-											reviewedAt: new Date("2026-05-02T00:00:00Z"),
-											reviewedByAdminWallet:
-												"0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-											reviewNote: null,
-											externalWalletAccessEnabled: false,
-											externalWalletAccessEnabledAt: null,
-											externalWalletAccessRequested: true,
-											externalWalletUseCase:
-												"Paying verified contractors who are not envelope signers.",
-											externalWalletComplianceCertAt: new Date(
-												"2026-05-01T00:00:00Z",
-											),
-										},
-									]),
+					select: () => {
+						selectCall += 1;
+						return {
+							from: () => ({
+								innerJoin: () =>
+									selectCall === 1
+										? { where: () => dbQueryResult([{ total: 1 }]) }
+										: listChain,
 							}),
-						}),
-					}),
+						};
+					},
 				},
 			}));
 		});
@@ -651,8 +659,8 @@ describe("access", () => {
 				"@/lib/domains/settlement-access/settlement-access"
 			);
 
-			const rows = await listSettlementFeatureAccessForAdmin();
-			expect(rows[0]).toMatchObject({
+			const result = await listSettlementFeatureAccessForAdmin();
+			expect(result.items[0]).toMatchObject({
 				organizationId: orgId,
 				externalWalletAccessRequested: true,
 				externalWalletUseCase:

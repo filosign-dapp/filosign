@@ -1,14 +1,23 @@
-import type {
-	SettlementReleaseType,
-	SettlementRuleStatus,
-} from "./settlement-rules";
+import type { SettlementRuleStatus } from "./settlement-rules";
+
+export type {
+	ReleaseCopyContext,
+	ReleaseValidationIssue,
+} from "./release-copy";
+export {
+	envelopeMinimumRoutingNote,
+	formatReleaseValidationError,
+	quorumRequiredThresholdLockedHelper,
+	settlementReleaseTypeDescription,
+	settlementReleaseTypeLabel,
+} from "./release-copy";
 
 /** Versioned settlement feature legal copy - counsel must review before production. */
 export const SETTLEMENT_FEATURE_TERMS_VERSION = "2026-06-20" as const;
 
 /** Checkbox label on sign page when a payout attachment is present. */
 export const SETTLEMENT_RECIPIENT_ACK_LABEL =
-	"I understand any USDC payout on this document is between the sender and me. Filosign doesn't guarantee payment, isn't part of that transfer, and won't settle disputes between us.";
+	"I understand any USDC payout on this document is between the sender and recipients. Filosign doesn't guarantee payment, isn't part of that transfer, and won't settle disputes between us.";
 
 export const SETTLEMENT_RECIPIENT_ACK_INTENT_VERSION =
 	`settlement-recipient-ack:${SETTLEMENT_FEATURE_TERMS_VERSION}` as const;
@@ -51,31 +60,6 @@ export function settlementStatusLabelForCompliance(
 		return "Payout processing";
 	}
 	return settlementStatusLabel(status);
-}
-
-export function settlementReleaseTypeLabel(
-	releaseType: SettlementReleaseType | string,
-): string {
-	switch (releaseType) {
-		case "all_signed":
-		case "all_required_signed":
-		case "all_signed_complete":
-			return "Everyone has signed";
-		case "specific_signer":
-			return "When a specific signer signs";
-		case "at_least_n":
-			return "When at least N signers sign";
-		case "quorum_required":
-			return "When envelope quorum is met";
-		case "quorum_set":
-			return "When at least N from a chosen group sign";
-		case "quorum_all":
-			return "When at least N from the roster sign";
-		case "all_of_set":
-			return "When everyone on a chosen list signs";
-		default:
-			return releaseType;
-	}
 }
 
 export function settlementHeaderSummary(

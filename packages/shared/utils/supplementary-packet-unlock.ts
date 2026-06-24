@@ -1,7 +1,11 @@
 import type { AttachmentPacketReleaseMode } from "./attachment";
 import { hashNormalizedSignerEmail } from "./crypto";
 import { normalizePlacementRecipientEmail } from "./placement";
-import { settlementReleaseTypeLabel } from "./settlement-legal";
+import type { ReleaseCopyContext } from "./release-copy";
+import {
+	settlementReleaseTypeDescription,
+	settlementReleaseTypeLabel,
+} from "./release-copy";
 import type {
 	SettlementReleaseParams,
 	SettlementReleaseType,
@@ -13,6 +17,7 @@ export function supplementaryPacketUnlockSummary(args: {
 	releaseParams?: SettlementReleaseParams | null;
 	/** Signer roster emails on the envelope (for specific-signer labels). */
 	signerEmails?: readonly string[];
+	routingContext?: ReleaseCopyContext;
 }): string {
 	if (args.releaseMode === "review") {
 		return "Available after the envelope is sent";
@@ -21,7 +26,8 @@ export function supplementaryPacketUnlockSummary(args: {
 	const releaseType = (args.releaseType ??
 		"all_signed") as SettlementReleaseType;
 	const params = args.releaseParams;
-	const base = settlementReleaseTypeLabel(releaseType);
+	const context = args.routingContext;
+	const base = settlementReleaseTypeLabel(releaseType, context);
 
 	if (
 		releaseType === "specific_signer" &&
@@ -49,14 +55,18 @@ export function supplementaryPacketUnlockSummary(args: {
 		releaseType === "quorum_required" &&
 		params?.releaseType === "quorum_required"
 	) {
-		return `Unlocks when at least ${params.thresholdN} required signature(s) are collected`;
+		if (context && context.quorumN > 0) {
+			return `Unlocks when ${context.quorumN} of ${context.signerCount} signers have signed`;
+		}
+		return `Unlocks when at least ${params.thresholdN} required signer(s) have signed`;
 	}
 	if (releaseType === "quorum_set" && params?.releaseType === "quorum_set") {
 		return `Unlocks when at least ${params.thresholdN} signer(s) from your chosen group sign`;
 	}
 	if (releaseType === "quorum_all" && params?.releaseType === "quorum_all") {
-		return `Unlocks when at least ${params.thresholdN} signer(s) from the roster sign`;
+		return `Unlocks when at least ${params.thresholdN} signer(s) on the document sign`;
 	}
 
-	return `Unlocks when: ${base}`;
+	const description = settlementReleaseTypeDescription(releaseType, context);
+	return `Unlocks when: ${description}`;
 }

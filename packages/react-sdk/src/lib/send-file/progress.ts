@@ -25,6 +25,7 @@ export type SendFileProgressEvent = {
 	phase: SendFileProgressPhase;
 	status: SendFileProgressStatus;
 	detail?: string;
+	pieceCid?: string;
 	ruleIndex?: number;
 	txLabel?: string;
 };

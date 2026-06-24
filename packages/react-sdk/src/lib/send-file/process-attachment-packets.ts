@@ -80,6 +80,26 @@ async function buildRecipientWraps(args: {
 		}
 	}
 
+	const coveredEmails = new Set<string>();
+	for (const wrap of warmWraps) {
+		coveredEmails.add(normalizePlacementRecipientEmail(wrap.email));
+	}
+	for (const wrap of coldWraps) {
+		coveredEmails.add(normalizePlacementRecipientEmail(wrap.email));
+	}
+
+	for (const email of args.draft.recipientEmails) {
+		const normalized = normalizePlacementRecipientEmail(email);
+		if (args.senderEmail && normalized === args.senderEmail) {
+			continue;
+		}
+		if (!coveredEmails.has(normalized)) {
+			throw new Error(
+				`Cannot encrypt file packet for ${email}: recipient needs a Filosign account with encryption keys.`,
+			);
+		}
+	}
+
 	return { warmWraps, coldWraps };
 }
 

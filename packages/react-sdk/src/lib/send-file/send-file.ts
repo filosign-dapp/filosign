@@ -11,7 +11,12 @@ import {
 	registerConditionalAttachments,
 	registerSettlementRulesForFile,
 } from "./register-post-send";
-import type { SendFileArgs, SendFileDeps, SendFileResult } from "./types";
+import type {
+	SendFileArgs,
+	SendFileDeps,
+	SendFileIncompleteStep,
+	SendFileResult,
+} from "./types";
 import {
 	assertSendFileConnected,
 	validateSendFileInput,
@@ -68,6 +73,9 @@ export async function sendFile(
 		routing,
 		isPractice,
 		onProgress,
+		resume,
+		onPreparedPiece,
+		onUploadCompleted,
 	} = args;
 
 	const emit = (event: Parameters<typeof emitSendFileProgress>[1]) =>
@@ -79,30 +87,43 @@ export async function sendFile(
 		placementManifest,
 	});
 
-	const timestamp = await latestChainTimestamp(deps.contracts);
+	let piece: Awaited<ReturnType<typeof preparePieceCrypto>>;
+	let timestamp: number;
+	if (resume?.preparedPiece) {
+		piece = resume.preparedPiece;
+		timestamp = piece.timestamp;
+		emit({ phase: "encrypting", status: "done" });
+	} else {
+		timestamp = await latestChainTimestamp(deps.contracts);
+		emit({ phase: "encrypting", status: "start" });
+		piece = await preparePieceCrypto({
+			deps,
+			timestamp,
+			documents,
+			metadata,
+			placementManifest,
+			signers,
+			viewers,
+			organizationId,
+			orgEncryptionPublicKey,
+		});
+		emit({ phase: "encrypting", status: "done" });
+		onPreparedPiece?.(piece);
+	}
 
-	emit({ phase: "encrypting", status: "start" });
-	const piece = await preparePieceCrypto({
-		deps,
-		timestamp,
-		documents,
-		metadata,
-		placementManifest,
-		signers,
-		viewers,
-		organizationId,
-		orgEncryptionPublicKey,
-	});
-	emit({ phase: "encrypting", status: "done" });
-
-	emit({ phase: "uploading", status: "start" });
-	await uploadEncryptedPiece({
-		rpcQuery: deps.rpcQuery,
-		pieceCid: piece.pieceCid.toString(),
-		encryptedData: piece.encryptedData,
-		isPractice,
-	});
-	emit({ phase: "uploading", status: "done" });
+	if (resume?.uploadCompleted) {
+		emit({ phase: "uploading", status: "done" });
+	} else {
+		emit({ phase: "uploading", status: "start" });
+		await uploadEncryptedPiece({
+			rpcQuery: deps.rpcQuery,
+			pieceCid: piece.pieceCid.toString(),
+			encryptedData: piece.encryptedData,
+			isPractice,
+		});
+		emit({ phase: "uploading", status: "done" });
+		onUploadCompleted?.();
+	}
 
 	emit({ phase: "wallet_sign_register", status: "wallet_prompt" });
 	const { signature, placementCommitment, cidIdentifier } =
@@ -202,27 +223,43 @@ export async function sendFile(
 		}
 	}
 
-	emit({ phase: "registering_envelope", status: "done" });
-
-	await registerConditionalAttachments({
-		deps,
+	emit({
+		phase: "registering_envelope",
+		status: "done",
 		pieceCid: piece.pieceCid.toString(),
-		attachmentPacketDrafts,
-		attachmentPackets,
-		onProgress,
 	});
 
-	await registerSettlementRulesForFile({
-		deps,
-		pieceCid: piece.pieceCid.toString(),
-		cidIdentifier,
-		settlementRules,
-		settlementPayerAddress: args.settlementPayerAddress,
-		payoutPayerSource: args.payoutPayerSource,
-		organizationId,
-		onProgress,
-		registerSettlementRules: args.registerSettlementRules,
-	});
+	const incompleteSteps: SendFileIncompleteStep[] = [];
+
+	try {
+		await registerConditionalAttachments({
+			deps,
+			pieceCid: piece.pieceCid.toString(),
+			attachmentPacketDrafts,
+			attachmentPackets,
+			onProgress,
+		});
+	} catch (error) {
+		incompleteSteps.push("attachment_rule");
+		console.error("Attachment rule registration failed after send:", error);
+	}
+
+	try {
+		await registerSettlementRulesForFile({
+			deps,
+			pieceCid: piece.pieceCid.toString(),
+			cidIdentifier,
+			settlementRules,
+			settlementPayerAddress: args.settlementPayerAddress,
+			payoutPayerSource: args.payoutPayerSource,
+			organizationId,
+			onProgress,
+			registerSettlementRules: args.registerSettlementRules,
+		});
+	} catch (error) {
+		incompleteSteps.push("payout_registration");
+		console.error("Payout registration failed after send:", error);
+	}
 
 	return {
 		success: true as const,
@@ -230,5 +267,16 @@ export async function sendFile(
 		...(coldInvitesPrepared.shareCode
 			? { coldInviteShareCode: coldInvitesPrepared.shareCode }
 			: {}),
+		...(incompleteSteps.length > 0 ? { incompleteSteps } : {}),
+		postSendRetryPayload: {
+			cidIdentifier,
+			attachmentPacketDrafts: attachmentPacketDrafts ?? [],
+			attachmentPackets,
+			settlementRules: settlementRules ?? [],
+			settlementPayerAddress: args.settlementPayerAddress,
+			payoutPayerSource: args.payoutPayerSource,
+			organizationId,
+			registerSettlementRules: args.registerSettlementRules,
+		},
 	};
 }

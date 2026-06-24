@@ -1,4 +1,7 @@
-import type { SendFileProgressEvent } from "@filosign/react/files";
+import type {
+	SendFileIncompleteStep,
+	SendFileProgressEvent,
+} from "@filosign/react/files";
 import type { UserProfile } from "@filosign/react/users";
 import type {
 	CreateForm,
@@ -178,6 +181,90 @@ export function buildSendProgressPlan(args: {
 		})
 	) {
 		steps.push({ id: "self_sign", label: "Signing your fields" });
+	}
+
+	return steps;
+}
+
+export function buildRetrySendProgressPlan(args: {
+	createForm: CreateForm;
+	incompleteSteps: SendFileIncompleteStep[];
+	signatureFields: SignatureField[];
+	selfProfile: UserProfile | undefined;
+}): SendProgressStep[] {
+	const steps: SendProgressStep[] = [];
+
+	if (args.incompleteSteps.includes("attachment_rule")) {
+		steps.push({
+			id: "wallet_attachment_rule",
+			label: "Approving attachments",
+		});
+	}
+
+	if (args.incompleteSteps.includes("payout_registration")) {
+		const settlementCount = args.createForm.settlementDrafts?.length ?? 0;
+		for (let ruleIndex = 0; ruleIndex < settlementCount; ruleIndex++) {
+			const detail = payoutDetail(ruleIndex, settlementCount);
+			if (args.createForm.payoutPayerSource === "org_wallet") {
+				if (ruleIndex === 0) {
+					steps.push(
+						{
+							id: "treasury_safe_propose",
+							label: "Proposing treasury transaction",
+						},
+						{
+							id: "treasury_safe_pending",
+							label: "Waiting for treasury Safe",
+						},
+						{
+							id: "treasury_safe_executed",
+							label: "Treasury transaction executed",
+						},
+					);
+				}
+				break;
+			}
+			steps.push(
+				{
+					id: payoutApproveStepId(ruleIndex),
+					label: "Approving USDC",
+					detail,
+				},
+				{
+					id: payoutConfirmApproveStepId(ruleIndex),
+					label: "Confirming approval",
+					detail,
+				},
+				{
+					id: payoutRegisterStepId(ruleIndex),
+					label: "Registering payout",
+					detail,
+				},
+				{
+					id: payoutConfirmRegisterStepId(ruleIndex),
+					label: "Confirming payout",
+					detail,
+				},
+			);
+		}
+		if (settlementCount > 0) {
+			steps.push({
+				id: "indexing_payout",
+				label: "Saving payout",
+			});
+		}
+	}
+
+	if (args.incompleteSteps.includes("self_sign")) {
+		if (
+			resolveSelfSignAfterSendPlan({
+				createForm: args.createForm,
+				signatureFields: args.signatureFields,
+				selfProfile: args.selfProfile,
+			})
+		) {
+			steps.push({ id: "self_sign", label: "Signing your fields" });
+		}
 	}
 
 	return steps;

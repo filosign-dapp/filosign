@@ -21,7 +21,12 @@ import type { SendProgressEvent } from "@/src/routes/dashboard/envelope/create/a
 import { resolveSelfSignAfterSendPlan } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/self-sign-eligibility";
 import { isColdRecipient } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send-envelope";
 
-export async function selfSignAfterSend(args: {
+export type SelfSignAfterSendResult =
+	| { attempted: false }
+	| { attempted: true; ok: true }
+	| { attempted: true; ok: false };
+
+export type SelfSignAfterSendInput = {
 	createForm: CreateForm;
 	signatureFields: SignatureField[];
 	selfProfile: UserProfile | undefined;
@@ -44,7 +49,12 @@ export async function selfSignAfterSend(args: {
 		status: "idle" | "loading" | "signing" | "success" | "error",
 	) => void;
 	onProgress?: (event: SendProgressEvent) => void;
-}): Promise<void> {
+	suppressFailureToast?: boolean;
+};
+
+export async function selfSignAfterSend(
+	args: SelfSignAfterSendInput,
+): Promise<SelfSignAfterSendResult> {
 	const selfSignPlan =
 		args.result.success && args.result.pieceCid
 			? resolveSelfSignAfterSendPlan({
@@ -54,7 +64,7 @@ export async function selfSignAfterSend(args: {
 				})
 			: null;
 
-	if (!selfSignPlan || !args.result.pieceCid) return;
+	if (!selfSignPlan || !args.result.pieceCid) return { attempted: false };
 
 	const { selfFieldIds } = selfSignPlan;
 
@@ -75,12 +85,22 @@ export async function selfSignAfterSend(args: {
 			suppressGlobalErrorToast(),
 		);
 		args.onProgress?.({ phase: "self_sign", status: "done" });
+		return { attempted: true, ok: true };
 	} catch (signErr) {
 		console.error("Self-sign at send failed:", signErr);
-		showAppErrorToast(signErr);
-		toastUser.message(TOASTS.send.selfSignPartialSuccess.title, {
-			hint: TOASTS.send.selfSignPartialSuccess.hint,
+		if (!args.suppressFailureToast) {
+			showAppErrorToast(signErr);
+			toastUser.message(TOASTS.send.selfSignPartialSuccess.title, {
+				hint: TOASTS.send.selfSignPartialSuccess.hint,
+			});
+		}
+		args.onProgress?.({
+			phase: "self_sign",
+			status: "error",
+			errorMessage:
+				signErr instanceof Error ? signErr.message : "Self-sign failed.",
 		});
+		return { attempted: true, ok: false };
 	}
 }
 

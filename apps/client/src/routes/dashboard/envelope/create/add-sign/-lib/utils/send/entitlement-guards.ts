@@ -7,30 +7,64 @@ import {
 	canUseWorkspaceTreasury,
 	type SendFileArgs,
 } from "@filosign/react/files";
-import { validateAttachmentPacketDraftsForSend } from "@filosign/shared";
+import {
+	type RegisterRoutingInput,
+	validateAttachmentPacketDraftsForSend,
+	validateReleaseParamsForRouting,
+	validateSatelliteRulesForSend,
+} from "@filosign/shared";
 import type { Address } from "viem";
 import { getAddress, isAddress } from "viem";
 import { TOASTS } from "@/src/lib/copy/toasts";
 import { planLimitToastFailure } from "@/src/lib/domains/entitlements/plan-limit-toast";
 import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
 import { validateAttachmentPacketComposeDrafts } from "@/src/lib/domains/files/validate-attachment-packets";
+import { routingContextFromCompose } from "@/src/lib/domains/satellites/routing-context";
 import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements";
+import type { Recipient } from "@/src/routes/dashboard/envelope/create/-lib/types";
 import type { EnvelopeSendValidationFailure } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/utils/send/validation-types";
 
 export function validateSettlementDraftsForSend(args: {
 	entitlements: EntitlementsSnapshot | undefined;
 	settlementDrafts: SettlementAttachmentDraft[] | undefined;
+	recipients?: Recipient[];
+	registerRouting?: RegisterRoutingInput | null;
 }): EnvelopeSendValidationFailure | null {
 	if ((args.settlementDrafts?.length ?? 0) === 0) return null;
-	if (canUseBasicSettlements(args.entitlements)) return null;
+	if (!canUseBasicSettlements(args.entitlements)) {
+		return planLimitToastFailure("features.settlement.basic");
+	}
 
-	return planLimitToastFailure("features.settlement.basic");
+	if (args.recipients?.length) {
+		const routing = routingContextFromCompose(
+			args.recipients,
+			args.registerRouting,
+		);
+		for (const draft of args.settlementDrafts ?? []) {
+			const validation = validateReleaseParamsForRouting({
+				releaseType: draft.releaseType,
+				thresholdN: draft.thresholdN,
+				routing,
+			});
+			if (!validation.ok) {
+				return {
+					kind: "toast",
+					title: "Check payout release conditions",
+					hint: validation.message,
+				};
+			}
+		}
+	}
+
+	return null;
 }
 
 export function validateAttachmentPacketsForSend(args: {
 	entitlements: EntitlementsSnapshot | undefined;
 	attachmentComposeDrafts: AttachmentPacketComposeDraft[];
 	rosterEmails: string[];
+	recipients?: Recipient[];
+	registerRouting?: RegisterRoutingInput | null;
 }): EnvelopeSendValidationFailure | null {
 	if (args.attachmentComposeDrafts.length === 0) return null;
 
@@ -60,7 +94,91 @@ export function validateAttachmentPacketsForSend(args: {
 		};
 	}
 
+	if (args.recipients?.length) {
+		const routing = routingContextFromCompose(
+			args.recipients,
+			args.registerRouting,
+		);
+		for (const draft of args.attachmentComposeDrafts) {
+			if (draft.releaseMode !== "conditional") continue;
+			const validation = validateReleaseParamsForRouting({
+				releaseType: draft.releaseType,
+				thresholdN: draft.thresholdN,
+				routing,
+			});
+			if (!validation.ok) {
+				return {
+					kind: "toast",
+					title: "Check file unlock conditions",
+					hint: validation.message,
+				};
+			}
+		}
+	}
+
 	return null;
+}
+
+function signerEmailsFromRecipients(
+	recipients: Recipient[] | undefined,
+): string[] {
+	if (!recipients?.length) return [];
+	return recipients
+		.filter((r) => r.role === "signer")
+		.map((r) => r.email?.trim() ?? "")
+		.filter((email) => email.length > 0);
+}
+
+export function validateSatelliteContractRulesForSend(args: {
+	settlementDrafts: SettlementAttachmentDraft[] | undefined;
+	attachmentComposeDrafts: AttachmentPacketComposeDraft[];
+	recipients?: Recipient[];
+	registerRouting?: RegisterRoutingInput | null;
+	payoutPayerSource?: "sender" | "org_wallet";
+	connectedWalletAddress?: Address;
+	orgWalletAddress?: string | null;
+}): EnvelopeSendValidationFailure | null {
+	const hasPayouts = (args.settlementDrafts?.length ?? 0) > 0;
+	const hasConditionalAttachments = args.attachmentComposeDrafts.some(
+		(draft) => draft.releaseMode === "conditional",
+	);
+	if (!hasPayouts && !hasConditionalAttachments) {
+		return null;
+	}
+
+	const payerAddress =
+		args.payoutPayerSource === "org_wallet"
+			? args.orgWalletAddress
+			: args.connectedWalletAddress;
+
+	const result = validateSatelliteRulesForSend({
+		routing: routingContextFromCompose(
+			args.recipients ?? [],
+			args.registerRouting,
+		),
+		signerEmails: signerEmailsFromRecipients(args.recipients),
+		payerAddress: hasPayouts ? payerAddress : undefined,
+		settlementDrafts: args.settlementDrafts,
+		attachmentDrafts: args.attachmentComposeDrafts.map((draft) => ({
+			packetId: draft.packetId,
+			releaseMode: draft.releaseMode,
+			releaseType: draft.releaseType,
+			thresholdN: draft.thresholdN,
+			specificSignerEmail: draft.specificSignerEmail,
+			recipientEmails: draft.recipientEmails,
+		})),
+	});
+
+	if (result.ok) return null;
+
+	return {
+		kind: "toast",
+		title:
+			result.failure.scope === "payout"
+				? "Check payout setup"
+				: "Check file unlock conditions",
+		hint: result.failure.message,
+	};
 }
 
 export function validateTreasuryPayerForSend(args: {
@@ -78,7 +196,7 @@ export function validateTreasuryPayerForSend(args: {
 		return {
 			kind: "toast",
 			title: "Workspace treasury needs Teams Pro",
-			hint: "Upgrade to Teams Pro or switch payout payer to your connected wallet.",
+			hint: "Upgrade to Teams Pro or switch payout payer to your account.",
 		};
 	}
 
@@ -86,7 +204,7 @@ export function validateTreasuryPayerForSend(args: {
 		return {
 			kind: "toast",
 			title: "Workspace treasury is not linked",
-			hint: "Link a treasury wallet in workspace settings or switch payout payer to your connected wallet.",
+			hint: "Link a treasury account in workspace settings or switch payout payer to your account.",
 		};
 	}
 
@@ -99,7 +217,7 @@ export function validateTreasuryPayerForSend(args: {
 		return {
 			kind: "toast",
 			title: "Treasury matches your signing wallet",
-			hint: 'Switch payout payer to "My connected wallet" when treasury and signing wallet are the same address.',
+			hint: 'Switch payout payer to "My account" when treasury and signing account use the same address.',
 		};
 	}
 

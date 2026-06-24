@@ -6,8 +6,11 @@ import {
 import type { EntitlementsSnapshot } from "@filosign/react/billing";
 import {
 	formatSettlementSimError,
+	mergeSendFileIncompleteSteps,
 	type SendFileArgs,
+	type SendFileIncompleteStep,
 	type SendFileResult,
+	type SendFileResume,
 	type SignFileArgs,
 } from "@filosign/react/files";
 import type { OrgListItem } from "@filosign/react/orgs";
@@ -22,6 +25,7 @@ import type { Address } from "viem";
 import { BaseError, getAddress, isAddress } from "viem";
 import { toastUser } from "@/src/lib/copy/toast";
 import { hydrateAttachmentPacketDrafts } from "@/src/lib/domains/drafts";
+import type { AttachmentPacketComposeDraft } from "@/src/lib/domains/files/attachment-packet-compose";
 import type {
 	CreateForm,
 	SignatureField,
@@ -31,6 +35,7 @@ import type {
 	ColdSharePackage,
 	WarmShareSummary,
 } from "@/src/lib/domains/invites/types";
+import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements";
 import { suppressGlobalErrorToast } from "@/src/lib/errors";
 import { showAppErrorToast } from "@/src/lib/errors/present-app-error";
 import { readSafePendingQueue, treasuryChainId } from "@/src/lib/web3/treasury";
@@ -50,10 +55,13 @@ import {
 } from "./complete";
 import {
 	validateAttachmentPacketsForSend,
+	validateSatelliteContractRulesForSend,
 	validateSettlementDraftsForSend,
 	validateTreasuryPayerForSend,
 } from "./entitlement-guards";
 import type { SendProgressEvent } from "./progress";
+import type { SendSession } from "./session";
+import { createSendSession, mergeSendSessionIncompleteSteps } from "./session";
 import {
 	reportEnvelopeSendValidationFailure,
 	rosterEmailsFromRecipients,
@@ -103,11 +111,21 @@ export type EnvelopeSendDeps = {
 	) => void;
 	setPostSendShare: (share: ColdSharePackage | null) => void;
 	setPostSendWarmSummary: (summary: WarmShareSummary | null) => void;
+	setPostSendIncompleteSteps: (steps: SendFileIncompleteStep[] | null) => void;
 	setPostSendDialogOpen: (open: boolean) => void;
 	isSendingRef: React.MutableRefObject<boolean>;
 	onProgress?: (event: SendProgressEvent) => void;
 	onSendProgressSuccess?: () => void;
 	closeSendProgress?: () => void;
+	sendSessionRef?: React.MutableRefObject<SendSession | null>;
+	onPartialPostSendUpdate?: (
+		ctx: {
+			pieceCid: string;
+			incompleteSteps?: SendFileIncompleteStep[];
+		} | null,
+	) => void;
+	getPartialPostSendPieceCid?: () => string | undefined;
+	preRegisterCacheRef?: React.MutableRefObject<SendFileResume | null>;
 };
 
 export type RunEnvelopeSendArgs = EnvelopeSendDeps & {
@@ -157,6 +175,331 @@ async function hydrateAttachments(
 	}
 }
 
+function rememberSendSession(args: {
+	result: SendFileResult;
+	sendSessionRef?: React.MutableRefObject<SendSession | null>;
+	onPartialPostSendUpdate?: EnvelopeSendDeps["onPartialPostSendUpdate"];
+}) {
+	if (!args.result.postSendRetryPayload || !args.sendSessionRef) return;
+	args.sendSessionRef.current = createSendSession({
+		pieceCid: args.result.pieceCid,
+		incompleteSteps: args.result.incompleteSteps ?? [],
+		postSendPayload: args.result.postSendRetryPayload,
+	});
+	args.onPartialPostSendUpdate?.({
+		pieceCid: args.result.pieceCid,
+		incompleteSteps: args.result.incompleteSteps,
+	});
+}
+
+function reportPostSendIncomplete(args: {
+	setSendStatus: RunEnvelopeSendArgs["setSendStatus"];
+	emit: (event: SendProgressEvent) => void;
+	errorMessage: string;
+}) {
+	args.setSendStatus("error");
+	args.emit({
+		phase: "send_failed",
+		status: "error",
+		errorMessage: args.errorMessage,
+	});
+	scheduleSendIdle(args.setSendStatus);
+}
+
+async function validateSatellitesBeforeSend(args: {
+	createForm: CreateForm;
+	rpcQuery: FilosignRpcQueryUtils;
+	attachmentComposeDrafts: AttachmentPacketComposeDraft[];
+	connectedWalletAddress?: Address;
+	orgWalletAddress?: string | null;
+}): Promise<
+	| { ok: true; preResolvedSettlementDrafts?: SettlementAttachmentDraft[] }
+	| { ok: false }
+> {
+	const hasSettlementDrafts =
+		(args.createForm.settlementDrafts?.length ?? 0) > 0;
+	const hasConditionalAttachments = args.attachmentComposeDrafts.some(
+		(draft) => draft.releaseMode === "conditional",
+	);
+	if (!hasSettlementDrafts && !hasConditionalAttachments) {
+		return { ok: true };
+	}
+
+	let preResolvedSettlementDrafts: SettlementAttachmentDraft[] | undefined;
+	if (hasSettlementDrafts) {
+		const resolved = await resolveSettlementDrafts({
+			createForm: args.createForm,
+			rpcQuery: args.rpcQuery,
+		});
+		if (!resolved) {
+			reportEnvelopeSendValidationFailure({
+				kind: "toast",
+				title: "Check payout setup",
+				hint: "Could not prepare payout rules. Recipients may need a linked Filosign wallet.",
+			});
+			return { ok: false };
+		}
+		preResolvedSettlementDrafts = resolved;
+	}
+
+	const satelliteContractFailure = validateSatelliteContractRulesForSend({
+		settlementDrafts:
+			preResolvedSettlementDrafts ?? args.createForm.settlementDrafts,
+		attachmentComposeDrafts: args.attachmentComposeDrafts,
+		recipients: args.createForm.recipients,
+		registerRouting: args.createForm.registerRouting,
+		payoutPayerSource: args.createForm.payoutPayerSource,
+		connectedWalletAddress: args.connectedWalletAddress,
+		orgWalletAddress: args.orgWalletAddress,
+	});
+	if (satelliteContractFailure) {
+		reportEnvelopeSendValidationFailure(satelliteContractFailure);
+		return { ok: false };
+	}
+
+	return { ok: true, preResolvedSettlementDrafts };
+}
+
+function finishSuccessfulSend(args: {
+	result: SendFileResult;
+	createForm: CreateForm;
+	sendSessionRef?: React.MutableRefObject<SendSession | null>;
+	onPartialPostSendUpdate?: EnvelopeSendDeps["onPartialPostSendUpdate"];
+	onSendProgressSuccess?: () => void;
+	setSendStatus: RunEnvelopeSendArgs["setSendStatus"];
+	setPostSendShare: EnvelopeSendDeps["setPostSendShare"];
+	setPostSendWarmSummary: EnvelopeSendDeps["setPostSendWarmSummary"];
+	setPostSendIncompleteSteps: EnvelopeSendDeps["setPostSendIncompleteSteps"];
+	closeSendProgress?: () => void;
+	setPostSendDialogOpen: EnvelopeSendDeps["setPostSendDialogOpen"];
+	onClearPreRegisterCache?: () => void;
+}) {
+	if (args.sendSessionRef) {
+		args.sendSessionRef.current = null;
+	}
+	args.onPartialPostSendUpdate?.(null);
+	args.onClearPreRegisterCache?.();
+	args.onSendProgressSuccess?.();
+	args.setSendStatus("success");
+	args.setPostSendShare(buildPostSendShare(args.result));
+	args.setPostSendWarmSummary(
+		buildPostSendWarmSummary(args.result, args.createForm),
+	);
+	args.setPostSendIncompleteSteps(args.result.incompleteSteps ?? null);
+	args.closeSendProgress?.();
+	args.setPostSendDialogOpen(true);
+}
+
+function handleRegisteredEnvelopeFailure(args: {
+	error: unknown;
+	createForm: CreateForm;
+	registeredPieceCid: string;
+	incompleteSteps?: SendFileIncompleteStep[];
+	setSendStatus: RunEnvelopeSendArgs["setSendStatus"];
+	setPostSendShare: EnvelopeSendDeps["setPostSendShare"];
+	setPostSendWarmSummary: EnvelopeSendDeps["setPostSendWarmSummary"];
+	setPostSendIncompleteSteps: EnvelopeSendDeps["setPostSendIncompleteSteps"];
+	emit: (event: SendProgressEvent) => void;
+}): boolean {
+	const partialResult: SendFileResult = {
+		success: true,
+		pieceCid: args.registeredPieceCid,
+		...(args.incompleteSteps?.length
+			? { incompleteSteps: args.incompleteSteps }
+			: {}),
+	};
+	args.setPostSendShare(buildPostSendShare(partialResult));
+	args.setPostSendWarmSummary(
+		buildPostSendWarmSummary(partialResult, args.createForm),
+	);
+	args.setPostSendIncompleteSteps(args.incompleteSteps ?? null);
+	reportPostSendIncomplete({
+		setSendStatus: args.setSendStatus,
+		emit: args.emit,
+		errorMessage:
+			args.error instanceof Error
+				? args.error.message
+				: "Envelope sent, but a follow-up step failed.",
+	});
+	return true;
+}
+
+function abortIfSendPrerequisitesInvalid(args: {
+	createForm: CreateForm;
+	signatureFields: SignatureField[];
+	recipientProfilesLoading: boolean;
+	recipientProfilesMapWithRecipient: RunEnvelopeSendArgs["recipientProfilesMapWithRecipient"];
+	setSendStatus: RunEnvelopeSendArgs["setSendStatus"];
+	closeSendProgress?: () => void;
+}): boolean {
+	if (validateEnvelopeDocuments(args.createForm.documents)) {
+		failSend(args.setSendStatus);
+		args.closeSendProgress?.();
+		return true;
+	}
+	if (validateEnvelopeRecipients(args.createForm.recipients)) {
+		failSend(args.setSendStatus);
+		args.closeSendProgress?.();
+		return true;
+	}
+	if (args.recipientProfilesLoading) {
+		args.closeSendProgress?.();
+		return true;
+	}
+
+	const signerRecipients = args.createForm.recipients.filter(
+		(r) => r.role === "signer",
+	);
+	const fieldFailure = validateSignerPlacementFields({
+		signatureFields: args.signatureFields,
+		signerRecipients,
+	});
+	if (fieldFailure) {
+		reportEnvelopeSendValidationFailure(fieldFailure);
+		failSend(args.setSendStatus);
+		args.closeSendProgress?.();
+		return true;
+	}
+
+	const profileFailure = validateRecipientProfiles({
+		recipients: args.createForm.recipients,
+		recipientProfilesMapWithRecipient: args.recipientProfilesMapWithRecipient,
+		recipientProfilesLoading: args.recipientProfilesLoading,
+	});
+	if (profileFailure) {
+		failSend(args.setSendStatus);
+		args.closeSendProgress?.();
+		return true;
+	}
+
+	return false;
+}
+
+function buildSendFileMutationArgs(args: {
+	builtSendInput: SendFileArgs;
+	createForm: CreateForm;
+	settlementPayerAddress: Address | undefined;
+	registerSettlementRules?: SendFileArgs["registerSettlementRules"];
+	emit: (event: SendProgressEvent) => void;
+	preRegisterCacheRef?: React.MutableRefObject<SendFileResume | null>;
+}): SendFileArgs {
+	return {
+		...args.builtSendInput,
+		settlementPayerAddress: args.settlementPayerAddress,
+		payoutPayerSource: args.createForm.payoutPayerSource ?? "sender",
+		registerSettlementRules: args.registerSettlementRules,
+		onProgress: (event) => args.emit(event),
+		...(args.preRegisterCacheRef?.current
+			? { resume: args.preRegisterCacheRef.current }
+			: {}),
+		onPreparedPiece: (piece) => {
+			if (args.preRegisterCacheRef) {
+				args.preRegisterCacheRef.current = { preparedPiece: piece };
+			}
+		},
+		onUploadCompleted: () => {
+			if (!args.preRegisterCacheRef?.current) return;
+			args.preRegisterCacheRef.current = {
+				...args.preRegisterCacheRef.current,
+				uploadCompleted: true,
+			};
+		},
+	};
+}
+
+async function completeSendAfterRegister(args: {
+	result: SendFileResult;
+	createForm: CreateForm;
+	signatureFields: SignatureField[];
+	selfProfile: UserProfile | undefined;
+	signFile: EnvelopeSendDeps["signFile"];
+	ensureAcknowledged: EnvelopeSendDeps["ensureAcknowledged"];
+	prepareSelfSignCompletions: EnvelopeSendDeps["prepareSelfSignCompletions"];
+	setSendStatus: RunEnvelopeSendArgs["setSendStatus"];
+	emit: (event: SendProgressEvent) => void;
+	sendSessionRef?: React.MutableRefObject<SendSession | null>;
+	onPartialPostSendUpdate?: EnvelopeSendDeps["onPartialPostSendUpdate"];
+	markDraftSent: EnvelopeSendDeps["markDraftSent"];
+	captureAppEvent: EnvelopeSendDeps["captureAppEvent"];
+	coldRecipientCount: number;
+	onSendProgressSuccess?: () => void;
+	setPostSendShare: EnvelopeSendDeps["setPostSendShare"];
+	setPostSendWarmSummary: EnvelopeSendDeps["setPostSendWarmSummary"];
+	setPostSendIncompleteSteps: EnvelopeSendDeps["setPostSendIncompleteSteps"];
+	closeSendProgress?: () => void;
+	setPostSendDialogOpen: EnvelopeSendDeps["setPostSendDialogOpen"];
+	clearPreRegisterCache: () => void;
+}): Promise<void> {
+	if (args.createForm.serverDraftId && args.result.pieceCid) {
+		void args.markDraftSent.mutateAsync({
+			draftId: args.createForm.serverDraftId,
+			pieceCid: args.result.pieceCid,
+		});
+	}
+
+	trackEnvelopeSendSucceeded({
+		captureAppEvent: args.captureAppEvent,
+		coldRecipientCount: args.coldRecipientCount,
+		result: args.result,
+	});
+
+	const selfSignResult = await selfSignAfterSend({
+		createForm: args.createForm,
+		signatureFields: args.signatureFields,
+		selfProfile: args.selfProfile,
+		result: args.result,
+		signFile: args.signFile,
+		ensureAcknowledged: args.ensureAcknowledged,
+		prepareSelfSignCompletions: args.prepareSelfSignCompletions,
+		setSendStatus: args.setSendStatus,
+		onProgress: args.emit,
+	});
+
+	if (
+		selfSignResult.attempted &&
+		!selfSignResult.ok &&
+		args.sendSessionRef?.current
+	) {
+		args.sendSessionRef.current = mergeSendSessionIncompleteSteps(
+			args.sendSessionRef.current,
+			["self_sign"],
+		);
+		args.onPartialPostSendUpdate?.({
+			pieceCid: args.sendSessionRef.current.pieceCid,
+			incompleteSteps: args.sendSessionRef.current.incompleteSteps,
+		});
+	}
+
+	const incompleteSteps = mergeSendFileIncompleteSteps(
+		args.result.incompleteSteps,
+		args.sendSessionRef?.current?.incompleteSteps,
+	);
+
+	if (incompleteSteps.length > 0) {
+		reportPostSendIncomplete({
+			setSendStatus: args.setSendStatus,
+			emit: args.emit,
+			errorMessage: "Envelope sent, but some follow-up steps did not finish.",
+		});
+		return;
+	}
+
+	finishSuccessfulSend({
+		result: args.result,
+		createForm: args.createForm,
+		sendSessionRef: args.sendSessionRef,
+		onPartialPostSendUpdate: args.onPartialPostSendUpdate,
+		onSendProgressSuccess: args.onSendProgressSuccess,
+		setSendStatus: args.setSendStatus,
+		setPostSendShare: args.setPostSendShare,
+		setPostSendWarmSummary: args.setPostSendWarmSummary,
+		setPostSendIncompleteSteps: args.setPostSendIncompleteSteps,
+		closeSendProgress: args.closeSendProgress,
+		setPostSendDialogOpen: args.setPostSendDialogOpen,
+		onClearPreRegisterCache: args.clearPreRegisterCache,
+	});
+}
+
 export async function runEnvelopeSend(
 	args: RunEnvelopeSendArgs,
 ): Promise<void> {
@@ -187,52 +530,47 @@ export async function runEnvelopeSend(
 		setSendStatus,
 		setPostSendShare,
 		setPostSendWarmSummary,
+		setPostSendIncompleteSteps,
 		setPostSendDialogOpen,
 		isSendingRef,
 		onProgress,
 		onSendProgressSuccess,
 		closeSendProgress,
+		sendSessionRef,
+		onPartialPostSendUpdate,
+		getPartialPostSendPieceCid,
+		preRegisterCacheRef,
 	} = args;
 
 	const emit = (event: SendProgressEvent) => onProgress?.(event);
 
-	if (validateEnvelopeDocuments(createForm.documents)) {
+	const clearPreRegisterCache = () => {
+		if (preRegisterCacheRef) {
+			preRegisterCacheRef.current = null;
+		}
+	};
+
+	if (sendSessionRef?.current?.pieceCid) {
+		emit({
+			phase: "send_failed",
+			status: "error",
+			errorMessage:
+				"Envelope already sent. Retry remaining steps instead of sending again.",
+		});
 		failSend(setSendStatus);
-		closeSendProgress?.();
-		return;
-	}
-	if (validateEnvelopeRecipients(createForm.recipients)) {
-		failSend(setSendStatus);
-		closeSendProgress?.();
-		return;
-	}
-	if (recipientProfilesLoading) {
-		closeSendProgress?.();
 		return;
 	}
 
-	const signerRecipients = createForm.recipients.filter(
-		(r) => r.role === "signer",
-	);
-	const fieldFailure = validateSignerPlacementFields({
-		signatureFields,
-		signerRecipients,
-	});
-	if (fieldFailure) {
-		reportEnvelopeSendValidationFailure(fieldFailure);
-		failSend(setSendStatus);
-		closeSendProgress?.();
-		return;
-	}
-
-	const profileFailure = validateRecipientProfiles({
-		recipients: createForm.recipients,
-		recipientProfilesMapWithRecipient,
-		recipientProfilesLoading,
-	});
-	if (profileFailure) {
-		failSend(setSendStatus);
-		closeSendProgress?.();
+	if (
+		abortIfSendPrerequisitesInvalid({
+			createForm,
+			signatureFields,
+			recipientProfilesLoading,
+			recipientProfilesMapWithRecipient,
+			setSendStatus,
+			closeSendProgress,
+		})
+	) {
 		return;
 	}
 
@@ -249,6 +587,8 @@ export async function runEnvelopeSend(
 	const settlementDraftsFailure = validateSettlementDraftsForSend({
 		entitlements,
 		settlementDrafts: createForm.settlementDrafts,
+		recipients: createForm.recipients,
+		registerRouting: createForm.registerRouting,
 	});
 	if (settlementDraftsFailure) {
 		reportEnvelopeSendValidationFailure(settlementDraftsFailure);
@@ -261,6 +601,8 @@ export async function runEnvelopeSend(
 		entitlements,
 		attachmentComposeDrafts,
 		rosterEmails: rosterEmailsFromRecipients(createForm.recipients),
+		recipients: createForm.recipients,
+		registerRouting: createForm.registerRouting,
 	});
 	if (attachmentFailure) {
 		reportEnvelopeSendValidationFailure(attachmentFailure);
@@ -296,6 +638,21 @@ export async function runEnvelopeSend(
 		return;
 	}
 
+	const satellitePreSend = await validateSatellitesBeforeSend({
+		createForm,
+		rpcQuery,
+		attachmentComposeDrafts,
+		connectedWalletAddress,
+		orgWalletAddress,
+	});
+	if (!satellitePreSend.ok) {
+		failSend(setSendStatus);
+		closeSendProgress?.();
+		return;
+	}
+	const preResolvedSettlementDrafts =
+		satellitePreSend.preResolvedSettlementDrafts;
+
 	captureAppEvent(CLIENT_ANALYTICS_EVENTS.envelopeSendClicked, {
 		recipient_count: createForm.recipients?.length ?? 0,
 	});
@@ -311,11 +668,14 @@ export async function runEnvelopeSend(
 		const hasSettlementDrafts = (createForm.settlementDrafts?.length ?? 0) > 0;
 		if (hasSettlementDrafts) {
 			emit({ phase: "resolving_payouts", status: "start" });
+			emit({ phase: "resolving_payouts", status: "done" });
 		}
-		const resolvedSettlementDrafts = await resolveSettlementDrafts({
-			createForm,
-			rpcQuery,
-		});
+		const resolvedSettlementDrafts =
+			preResolvedSettlementDrafts ??
+			(await resolveSettlementDrafts({
+				createForm,
+				rpcQuery,
+			}));
 		if (!resolvedSettlementDrafts) {
 			emit({
 				phase: hasSettlementDrafts ? "resolving_payouts" : "building_payload",
@@ -326,9 +686,6 @@ export async function runEnvelopeSend(
 			isSendingRef.current = false;
 			scheduleSendIdle(setSendStatus);
 			return;
-		}
-		if (hasSettlementDrafts) {
-			emit({ phase: "resolving_payouts", status: "done" });
 		}
 
 		emit({ phase: "building_payload", status: "start" });
@@ -392,49 +749,69 @@ export async function runEnvelopeSend(
 				: walletAddress;
 
 		const result = await sendFile.mutateAsync(
-			{
-				...built.sendInput,
+			buildSendFileMutationArgs({
+				builtSendInput: built.sendInput,
+				createForm,
 				settlementPayerAddress,
-				payoutPayerSource: createForm.payoutPayerSource ?? "sender",
 				registerSettlementRules,
-				onProgress: (event) => emit(event),
-			},
+				emit,
+				preRegisterCacheRef,
+			}),
 			suppressGlobalErrorToast(),
 		);
 
-		await selfSignAfterSend({
+		if (result.postSendRetryPayload && sendSessionRef) {
+			rememberSendSession({
+				result,
+				sendSessionRef,
+				onPartialPostSendUpdate,
+			});
+			clearPreRegisterCache();
+		}
+
+		await completeSendAfterRegister({
+			result,
 			createForm,
 			signatureFields,
 			selfProfile,
-			result,
 			signFile,
 			ensureAcknowledged,
 			prepareSelfSignCompletions,
 			setSendStatus,
-			onProgress: emit,
-		});
-
-		onSendProgressSuccess?.();
-		setSendStatus("success");
-
-		if (createForm.serverDraftId && result.success && result.pieceCid) {
-			void markDraftSent.mutateAsync({
-				draftId: createForm.serverDraftId,
-				pieceCid: result.pieceCid,
-			});
-		}
-
-		trackEnvelopeSendSucceeded({
+			emit,
+			sendSessionRef,
+			onPartialPostSendUpdate,
+			markDraftSent,
 			captureAppEvent,
 			coldRecipientCount: built.coldRecipients.length,
-			result,
+			onSendProgressSuccess,
+			setPostSendShare,
+			setPostSendWarmSummary,
+			setPostSendIncompleteSteps,
+			closeSendProgress,
+			setPostSendDialogOpen,
+			clearPreRegisterCache,
 		});
-
-		setPostSendShare(buildPostSendShare(result));
-		setPostSendWarmSummary(buildPostSendWarmSummary(result, createForm));
-		closeSendProgress?.();
-		setPostSendDialogOpen(true);
 	} catch (error) {
+		const registeredPieceCid =
+			getPartialPostSendPieceCid?.() ?? sendSessionRef?.current?.pieceCid;
+		if (
+			registeredPieceCid &&
+			handleRegisteredEnvelopeFailure({
+				error,
+				createForm,
+				registeredPieceCid,
+				incompleteSteps: sendSessionRef?.current?.incompleteSteps,
+				setSendStatus,
+				setPostSendShare,
+				setPostSendWarmSummary,
+				setPostSendIncompleteSteps,
+				emit,
+			})
+		) {
+			return;
+		}
+
 		setSendStatus("error");
 		emit({
 			phase: "send_failed",

@@ -1,0 +1,1 @@
+ALTER TABLE "platform_invites" ADD COLUMN "preapprove_payout_access" boolean DEFAULT false NOT NULL;

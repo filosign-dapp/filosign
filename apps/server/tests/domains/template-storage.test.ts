@@ -12,7 +12,7 @@ describe("resolveTemplateDocumentNeedsUpload", () => {
 		docId: "doc-1",
 	});
 
-	test("requires upload for new documents", async () => {
+	test("requires upload for new envelopes", async () => {
 		await expect(
 			resolveTemplateDocumentNeedsUpload({
 				existingPlaintextSha256: undefined,

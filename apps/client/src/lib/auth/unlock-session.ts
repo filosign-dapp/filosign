@@ -33,7 +33,7 @@ export function formatWalletUnlockError(err: unknown): string {
 		msg.includes("declined") ||
 		msg.includes("user refused")
 	) {
-		return "Unlock cancelled. Confirm in your wallet to continue.";
+		return "Unlock cancelled. Try again to continue.";
 	}
 	if (msg.includes("network") || msg.includes("fetch")) {
 		return "Network error while unlocking. Try again.";

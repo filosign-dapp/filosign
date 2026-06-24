@@ -46,6 +46,7 @@ Envelope create (`/dashboard/envelope/create`):
 - **`ComposePayoutsSection`** + **`PayoutRuleDialog`** - rule-first attached USDC payouts; one release rule, multiple Filosign recipient legs (**Teams Pro** for advanced release types).
 - **`ComposeSupplementaryFilesSection`** + **`AttachmentPacketDialog`** - rule-first encrypted file packets; any file type within size limits, client filename sanitization, unlock timing, then uploads (**Teams+** / **Teams Pro** for conditional release). Sign page shows a download disclaimer before decrypt.
 - Send step passes routing, settlement drafts, and attachment packets via `useSendFile`.
+- **Send retry idempotency:** envelope registration (encrypt → upload → `files.register`) runs once per send session. `onPreparedPiece` caches the encrypted piece so pre-register retries reuse the same `pieceCid`. If attachment rules, payout registration, or sender self-sign fail after the envelope is on chain, **Try again** retries only those steps (`retryPostSendSatellites` + `selfSignAfterSend`), never a full resend. Dismiss opens the share dialog when `pieceCid` is known. USDC approve failures with `Failed to fetch delegation contract: 401` are thirdweb smart-wallet infrastructure errors, not fixed by redeploying Filosign contracts.
 
 Sign page (`/dashboard/document/sign`):
 

@@ -18,6 +18,7 @@ export {
 	hydrateAttachmentPacketDrafts,
 	loadDocumentBytes,
 	loadDraftDocuments,
+	mergeEnvelopeFormIntoCreateForm,
 	normalizeCreateForm,
 	pruneSignatureFields,
 	recipientFingerprint,

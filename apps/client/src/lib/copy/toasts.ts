@@ -21,7 +21,7 @@ export const TOASTS = {
 		},
 		payoutExceedsBalance: {
 			title: "Not enough USDC",
-			hint: "Lower payout amounts or add funds to your wallet.",
+			hint: "Lower payout amounts or add funds to your account.",
 		},
 		selfSignToggleRequired: {
 			title: "Turn on self-sign first",
@@ -83,11 +83,11 @@ export const TOASTS = {
 		},
 		payoutAttached: {
 			title: "Payout attached",
-			hint: "Approve USDC when prompted so payouts can run later.",
+			hint: "USDC approval completes during attach so payouts can run later.",
 		},
 		payoutApprovalRevoked: {
 			title: "Payout approval revoked",
-			hint: "No USDC can leave your wallet for attached payouts until you approve again.",
+			hint: "No USDC can leave your account for attached payouts until you approve again.",
 		},
 		unlockRuleRemoved: "Unlock rule removed",
 		supplementaryDownloadSignIn: {
@@ -113,7 +113,7 @@ export const TOASTS = {
 		},
 		unlockBeforeSave: {
 			title: "Unlock to save",
-			hint: "Enter your recovery phrase if prompted.",
+			hint: "Enter your recovery phrase if automatic unlock does not work.",
 		},
 		saveFailed: {
 			title: "Couldn't save draft",

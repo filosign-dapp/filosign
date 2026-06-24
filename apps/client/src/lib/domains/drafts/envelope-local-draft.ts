@@ -457,6 +457,16 @@ export async function buildCreateForm(
 	);
 }
 
+/** Merge live compose form values into `createForm` without dropping compose-only fields. */
+export async function mergeEnvelopeFormIntoCreateForm(
+	value: EnvelopeForm,
+	prev: CreateForm | null,
+	patch?: Partial<CreateForm>,
+): Promise<CreateForm> {
+	const next = await buildCreateForm(value, prev);
+	return patch ? { ...next, ...patch } : next;
+}
+
 export async function createFormToEnvelopeForm(
 	draft: CreateForm,
 ): Promise<EnvelopeForm> {
@@ -502,6 +512,7 @@ export function hasDraftContent(draft: CreateForm | null | undefined): boolean {
 		draft.recipients.length > 0 ||
 		(draft.emailMessage?.trim().length ?? 0) > 0 ||
 		(draft.settlementDrafts?.length ?? 0) > 0 ||
+		(draft.attachmentPacketDrafts?.length ?? 0) > 0 ||
 		(draft.payoutPayerSource ?? "sender") !== "sender"
 	);
 }

@@ -3,9 +3,9 @@
     "name": "Base",
     "explorerTxUrl": "https://basescan.org/tx/",
     "defaultRpcUrl": "https://mainnet.base.org",
-    "registryAddress": "0xA10E0cf637433f424bD19650907858a766f3B491",
-    "paymentValidatorAddress": "0x30B7e130812Dc39Ead6A61B8C7f88EFf1693d88D",
-    "attachmentReleaseAddress": "0x1c5e6F95146f4Cc5D9e0c600716F2E69e349b179"
+    "registryAddress": "0xd119ff5bBaF6Aa81531dc1f75a8fA80463ec1478",
+    "paymentValidatorAddress": "0x5eE2733E131D8DF2f0c7e8618A9F7c2E16dba939",
+    "attachmentReleaseAddress": "0x363413aD8528Db9050E042D9B6bF0d75ad05d9d3"
   },
   "31337": {
     "name": "Hardhat",
@@ -14,9 +14,9 @@
   },
   "84532": {
     "name": "Base Sepolia",
-    "registryAddress": "0x4340973aedEBf2688eD2195FA01Aa9b6cf0eB778",
-    "paymentValidatorAddress": "0x9fce6c3C620A6c9743dc225de510726BABEC5806",
-    "attachmentReleaseAddress": "0x3BaA142556dE6206dc19D01FaD81971FfB8316e2",
+    "registryAddress": "0xf44FF1a0e37D10959B96C3929D0F28E9a7f12A9d",
+    "paymentValidatorAddress": "0x97Ec503b02Cf85A56B2B77194Fc3C62bC74a95D5",
+    "attachmentReleaseAddress": "0xF11E568198Ce044f417D094730fcE21b418142ED",
     "explorerTxUrl": "https://sepolia.basescan.org/tx/",
     "defaultRpcUrl": "https://sepolia.base.org"
   }

@@ -56,4 +56,10 @@ export {
 	type PartnerInviteEmailProps,
 	renderPartnerInvite,
 } from "./render-partner-invite";
+export {
+	renderSignerTurn,
+	type SignerTurnEmailProps,
+	signerTurnCopy,
+	signerTurnSubject,
+} from "./render-signer-turn";
 export { filosignEmailColors } from "./tokens";

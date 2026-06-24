@@ -19,6 +19,7 @@ export function filosignMailto(channel: FilosignContactEmail): string {
 export type FilosignTransactionalEmailKind =
 	| "document"
 	| "envelope_completed"
+	| "signer_turn"
 	| "partner_invite"
 	| "access_approved"
 	| "paid_setup"
@@ -28,6 +29,7 @@ export type FilosignTransactionalEmailKind =
 export const FILOSIGN_TRANSACTIONAL_EMAIL_CHANNELS = {
 	document: "contract",
 	envelope_completed: "contract",
+	signer_turn: "contract",
 	partner_invite: "founder",
 	access_approved: "hello",
 	paid_setup: "hello",

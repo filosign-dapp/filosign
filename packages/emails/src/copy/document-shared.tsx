@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 export type DocumentSharedVariant = "warm" | "cold";
-export type DocumentSharedIntent = "initial" | "reminder";
+export type DocumentSharedIntent = "initial" | "reminder" | "rotated";
 export type DocumentSharedContext = "sign" | "draft_review";
 
 export type DocumentSharedCopyInput = {
@@ -98,6 +98,19 @@ function signColdBody(
 	intent: DocumentSharedIntent,
 	documentTitle: string | undefined,
 ): ReactNode {
+	if (intent === "rotated") {
+		return (
+			<>
+				<strong>{senderLabel}</strong> sent you an updated link to access
+				{documentTitleFragment(documentTitle, "a document")} on Filosign. Your
+				previous link is no longer valid.
+				<br />
+				<br />
+				{coldAccessCodeNote}
+			</>
+		);
+	}
+
 	const intro =
 		intent === "reminder" ? (
 			<>
@@ -143,6 +156,10 @@ export function documentSharedSubject(
 			: `Reminder: signature needed from ${senderLabelRaw}`;
 	}
 
+	if (intent === "rotated") {
+		return `Updated access link from ${senderLabelRaw}`;
+	}
+
 	return `${senderLabelRaw} sent you a document`;
 }
 
@@ -170,11 +187,15 @@ export function documentSharedCopy(
 			title:
 				intent === "reminder"
 					? "Signature reminder"
-					: "You have a new document",
+					: intent === "rotated"
+						? "Updated document link"
+						: "You have a new document",
 			preheader:
 				intent === "reminder"
 					? "Your signature is still needed. You will need the access code from the sender."
-					: "Secure access required. Open the link, then enter the code from the sender.",
+					: intent === "rotated"
+						? "Your previous link no longer works. Open the new link, then enter the access code from the sender."
+						: "Secure access required. Open the link, then enter the code from the sender.",
 			body: signColdBody(senderLabel, intent, documentTitle),
 			ctaLabel: "Open document",
 		};

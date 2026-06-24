@@ -271,9 +271,7 @@ export function useSignInviteUnlock(args: {
 				queryKeyHasNonRpcRoot(q.queryKey, filosignNonRpcRoots.authedApi),
 		});
 		if (!session.hasThirdwebSession()) {
-			throw new Error(
-				"Could not authenticate with the server. Sign in with your wallet again.",
-			);
+			throw new Error("Could not authenticate with the server. Sign in again.");
 		}
 		const profile = await fetchUserProfile(rpc);
 		if (!profile.encryptionPublicKey?.trim()) {
@@ -296,12 +294,10 @@ export function useSignInviteUnlock(args: {
 			throw new Error("ACCOUNT_SETUP_IN_PROGRESS");
 		}
 		if (!apiSession.data) {
-			throw new Error("Wait for your wallet session to connect to Filosign.");
+			throw new Error("Wait for your session to finish loading.");
 		}
 		if (!cryptoUnlocked.data) {
-			throw new Error(
-				"Unlock your encryption keys (wallet sign or recovery phrase) to continue.",
-			);
+			throw new Error("Unlock your encryption keys to continue.");
 		}
 	}, [
 		authenticated,

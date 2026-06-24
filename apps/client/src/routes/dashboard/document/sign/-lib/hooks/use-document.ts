@@ -6,6 +6,7 @@ import {
 } from "@/src/lib/domains/files/compliance-pdf";
 import { resolveSatelliteWorkflowSummary } from "@/src/lib/domains/files/compliance-pdf/proof-export-state";
 import { useSignActions } from "./use-actions";
+import { useSignAttachmentActions } from "./use-attachment-actions";
 import { useSignFieldSession } from "./use-field-session";
 import { useSignFileMeta, useSignSigningMeta } from "./use-file-meta";
 import { useSignIdentity } from "./use-identity";
@@ -67,6 +68,7 @@ export function useSignDocumentController() {
 		file,
 		identity.user?.wallet?.address as `0x${string}` | undefined,
 	);
+	const attachments = useSignAttachmentActions(pieceCid, file);
 
 	const satelliteWorkflowSummary = useMemo(
 		() =>
@@ -181,6 +183,7 @@ export function useSignDocumentController() {
 			...settlements,
 			walletAddress: identity.signerAddress,
 		},
+		attachments,
 	};
 }
 

@@ -40,13 +40,13 @@ export function senderToolsClosedCopy(args: {
 	pendingSignerReplacement?: boolean | null;
 }): string | null {
 	if (args.pendingSignerReplacement) {
-		return "Finish or cancel the roster change before adding payouts or changing signers.";
+		return "Finish or cancel the roster change before adding payouts, file packets, or changing signers.";
 	}
 	if (isEnvelopeVoided(args.envelopeProgress)) {
-		return "This envelope was voided. Signer and payout rules can no longer be changed.";
+		return "This envelope was voided. Signer, payout, and file packet rules can no longer be changed.";
 	}
 	if (args.envelopeProgress?.completedAt) {
-		return "This envelope is complete. Signer and payout rules can no longer be changed.";
+		return "This envelope is complete. Signer, payout, and file packet rules can no longer be changed.";
 	}
 	return null;
 }

@@ -1,16 +1,6 @@
-import type { Address } from "viem";
+import type { FileInfo } from "@filosign/react/files";
 
-export type EnvelopeProgressLike = {
-	routingMode: number;
-	requiredSignersCount: number;
-	requiredSignaturesCount: number;
-	quorumN: number;
-	completedAt?: number | null;
-	revokedBeforeCompletedAt?: number | null;
-	revokedBy?: Address | null;
-	nextSignerEmail: string | null;
-	routingOrderEmails?: string[] | null;
-};
+export type EnvelopeProgressLike = NonNullable<FileInfo["envelopeProgress"]>;
 
 export function isEnvelopeVoided(
 	progress: EnvelopeProgressLike | null | undefined,
@@ -22,8 +12,9 @@ export function envelopeProgressTotals(progress: EnvelopeProgressLike): {
 	signedCount: number;
 	totalSigners: number;
 } {
-	const totalSigners = progress.requiredSignersCount;
 	const signedCount = progress.requiredSignaturesCount;
+	const totalSigners =
+		progress.quorumN > 0 ? progress.quorumN : progress.requiredSignersCount;
 	return { signedCount, totalSigners };
 }
 
@@ -43,7 +34,9 @@ export function willSignCompleteEnvelope(
 export function envelopeProgressPercent(
 	signedCount: number,
 	totalSigners: number,
+	isComplete?: boolean,
 ): number {
+	if (isComplete) return 100;
 	if (totalSigners <= 0) return 0;
 	return Math.min(100, Math.round((signedCount / totalSigners) * 100));
 }
@@ -59,6 +52,9 @@ export function buildEnvelopeProgressContextLines(
 	const lines: string[] = [];
 	if (progress.completedAt) {
 		lines.push("This envelope is complete on-chain.");
+		if (quorumN > 0 && requiredSignersCount > quorumN) {
+			lines.push("Quorum met; remaining signers were not required.");
+		}
 		return lines;
 	}
 
@@ -79,4 +75,45 @@ export function buildEnvelopeProgressContextLines(
 	}
 
 	return lines;
+}
+
+export function signerStatusLabel(args: {
+	hasSigned: boolean;
+	isReplacementOld: boolean;
+	isReplacementNew: boolean;
+	invitePending: boolean;
+	isUpNext: boolean;
+	isSequential: boolean;
+	envelopeComplete: boolean;
+}): string {
+	if (args.hasSigned) return "Signed";
+	if (args.envelopeComplete) return "Not required";
+	if (args.isReplacementOld) return "Change pending (current)";
+	if (args.isReplacementNew) return "Change pending (new)";
+	if (args.invitePending) return "Invite pending";
+	if (args.isUpNext) return "Up next";
+	if (args.isSequential) return "Waiting";
+	return "Pending";
+}
+
+export function resolveSignHeaderStatus(args: {
+	alreadySigned: boolean;
+	canSign: boolean;
+	hasPlacementFields: boolean;
+	canSubmitPlacementSign: boolean;
+	envelopeComplete: boolean;
+}): { label: string; dotClass: string } | null {
+	if (args.alreadySigned) {
+		return { label: "Signed", dotClass: "bg-secondary" };
+	}
+	if (args.envelopeComplete) {
+		return { label: "Envelope complete", dotClass: "bg-secondary" };
+	}
+	if (!args.canSign) {
+		return null;
+	}
+	if (args.hasPlacementFields && !args.canSubmitPlacementSign) {
+		return { label: "Fields incomplete", dotClass: "bg-amber-500" };
+	}
+	return { label: "Ready to sign", dotClass: "bg-secondary" };
 }

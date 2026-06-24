@@ -1,3 +1,4 @@
+import { useFilosignContext } from "@filosign/react";
 import { useEntitlements } from "@filosign/react/billing";
 import {
 	buildNewSignerE2eeForAmend,
@@ -20,10 +21,7 @@ import {
 	useUpdateSettlementRule,
 } from "@filosign/react/files";
 import { useActiveOrganization, useActiveOrgId } from "@filosign/react/orgs";
-import type {
-	SettlementRecipientSource,
-	SettlementRuleUpdateInput,
-} from "@filosign/shared";
+import type { SettlementRuleUpdateInput } from "@filosign/shared";
 import {
 	normalizePlacementRecipientEmail,
 	type PlacementManifest,
@@ -35,12 +33,20 @@ import { type Address, getAddress } from "viem";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
 import { useOrgWalletAddress } from "@/src/lib/domains/orgs/use-org-wallet-address";
+import {
+	mapEnvelopeRosterToRecipients,
+	routingContextFromEnvelopeProgress,
+} from "@/src/lib/domains/satellites";
 import type { SettlementAllowanceChangeStep } from "@/src/lib/domains/settlements";
 import {
+	buildSettlementAttachRules,
 	buildSettlementCancelProgressPlan,
 	buildSettlementUpdateProgressPlan,
+	createSettlementProfileLookup,
+	type SettlementAttachmentDraft,
 	useBasicPayoutGateActions,
 	useFirstCanExecuteAtByRuleId,
+	usePayoutPayerBalance,
 } from "@/src/lib/domains/settlements";
 import { showAppErrorToast } from "@/src/lib/errors";
 import {
@@ -65,6 +71,11 @@ type SignFileMeta = {
 	encryptedEncryptionKey?: string | null;
 	placementManifest?: PlacementManifest | unknown | null;
 	signers?: {
+		wallet: string;
+		name?: string | null;
+		email?: string | null;
+	}[];
+	viewers?: {
 		wallet: string;
 		name?: string | null;
 		email?: string | null;
@@ -96,6 +107,7 @@ export function useSignSettlementsActions(
 	const recallEnvelope = useRecallEnvelope(pieceCid);
 	const clearEnvelopeSignatures = useClearEnvelopeSignatures(pieceCid);
 	const attachSettlementRules = useAttachSettlementForFile(pieceCid);
+	const { rpcQuery } = useFilosignContext();
 	const { data: entitlements } = useEntitlements();
 	const activeOrgId = useActiveOrgId();
 	const activeOrg = useActiveOrganization();
@@ -143,6 +155,21 @@ export function useSignSettlementsActions(
 	const [clearSignaturesDialogOpen, setClearSignaturesDialogOpen] =
 		useState(false);
 	const [attachDialogOpen, setAttachDialogOpen] = useState(false);
+	const attachPayoutBalance = usePayoutPayerBalance(attachPayoutPayerSource, {
+		enabled: attachDialogOpen,
+	});
+	const attachRecipients = useMemo(
+		() =>
+			mapEnvelopeRosterToRecipients({
+				signers: file?.signers,
+				viewers: file?.viewers,
+			}),
+		[file?.signers, file?.viewers],
+	);
+	const routingContext = useMemo(
+		() => routingContextFromEnvelopeProgress(file?.envelopeProgress),
+		[file?.envelopeProgress],
+	);
 	const settlementChangeProgress = useSettlementChangeProgress();
 
 	const settlementRules = settlementsQuery.data ?? [];
@@ -397,51 +424,43 @@ export function useSignSettlementsActions(
 	}, [cancelSignerReplacement]);
 
 	const onConfirmAttachSettlement = useCallback(
-		async (
-			rules: Parameters<typeof attachSettlementRules.mutateAsync>[0]["rules"],
-		) => {
-			await attachSettlementRules.mutateAsync({
-				rules,
-				organizationId: activeOrgId ?? undefined,
-				payoutPayerSource: attachPayoutPayerSource,
-				settlementPayerAddress: useOrgWalletForAttach
-					? orgWalletAddress
-					: undefined,
-				registerSettlementRules: treasuryAttachRegistrar,
-			});
-			toastUser.success(TOASTS.sign.payoutAttached.title, {
-				hint: TOASTS.sign.payoutAttached.hint,
-			});
+		async (legs: SettlementAttachmentDraft[]) => {
+			try {
+				const rules = await buildSettlementAttachRules({
+					legs,
+					recipients: attachRecipients,
+					lookupProfile: createSettlementProfileLookup(rpcQuery),
+					canUseAdvancedSettlements: canManageSettlements,
+				});
+				await attachSettlementRules.mutateAsync({
+					rules,
+					organizationId: activeOrgId ?? undefined,
+					payoutPayerSource: attachPayoutPayerSource,
+					settlementPayerAddress: useOrgWalletForAttach
+						? orgWalletAddress
+						: undefined,
+					registerSettlementRules: treasuryAttachRegistrar,
+				});
+				toastUser.success(TOASTS.sign.payoutAttached.title, {
+					hint: TOASTS.sign.payoutAttached.hint,
+				});
+			} catch (error) {
+				showAppErrorToast(error);
+				throw error;
+			}
 		},
 		[
 			activeOrgId,
 			attachPayoutPayerSource,
+			attachRecipients,
 			attachSettlementRules,
+			canManageSettlements,
 			orgWalletAddress,
+			rpcQuery,
 			treasuryAttachRegistrar,
 			useOrgWalletForAttach,
 		],
 	);
-
-	const attachPayeeOptions = useMemo(() => {
-		if (!file) return [];
-		const options: {
-			wallet: `0x${string}`;
-			label: string;
-			email?: string | null;
-			recipientSource: SettlementRecipientSource;
-		}[] = [];
-		for (const signer of file.signers ?? []) {
-			const wallet = signer.wallet as `0x${string}`;
-			options.push({
-				wallet,
-				label: signer.name || signer.email || wallet,
-				email: signer.email,
-				recipientSource: "signer",
-			});
-		}
-		return options;
-	}, [file]);
 
 	const openAttachDialog = useCallback(() => {
 		if (!envelopeOpenForSenderGovernance) return;
@@ -531,6 +550,13 @@ export function useSignSettlementsActions(
 		payoutAccess,
 		onConfirmAttachSettlement,
 		attachPending: attachSettlementRules.isPending,
-		attachPayeeOptions,
+		attachRecipients,
+		routingContext,
+		attachPayerLabel: attachPayoutBalance.payerLabel,
+		attachPayerWalletAddress: attachPayoutBalance.payerAddress,
+		attachWalletBalance: attachPayoutBalance.balance,
+		attachWalletBalanceFormatted: attachPayoutBalance.formatted,
+		attachBalancePending: attachPayoutBalance.isPending,
+		attachBalanceError: attachPayoutBalance.isError,
 	};
 }

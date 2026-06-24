@@ -21,7 +21,7 @@ import {
 	resolvePartnerInviteTrialForWorkspace,
 } from "./registration";
 import {
-	assertNoOwnedActiveDodoSubscriptions,
+	assertWalletEligibleForPartnerTrial,
 	canApplyPartnerTrialToOrgSub,
 } from "./utils/partner-trial-guards";
 import { inviteIsActive, normalizeEmail } from "./utils/shared";
@@ -71,7 +71,7 @@ export async function redeemPartnerInviteForExistingUser(args: {
 		const alreadyRedeemed = Boolean(existingRedemption);
 
 		if (!alreadyRedeemed) {
-			await assertNoOwnedActiveDodoSubscriptions(tx, wallet);
+			await assertWalletEligibleForPartnerTrial(tx, wallet);
 		}
 
 		if (targetOrgId) {

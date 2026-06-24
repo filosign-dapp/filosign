@@ -1,6 +1,9 @@
 import type { PlanId } from "@filosign/entitlements";
 import { throwAppError } from "@filosign/errors/server";
-import type { PlatformInviteEmailVariant } from "@filosign/shared";
+import {
+	DEFAULT_PARTNER_TRIAL_DAYS,
+	type PlatformInviteEmailVariant,
+} from "@filosign/shared";
 import { ORPCError } from "@orpc/server";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Address } from "viem";
@@ -43,7 +46,7 @@ export async function createPlatformInvite(args: {
 			token,
 			kind: args.kind,
 			planId: args.planId,
-			trialDays: args.trialDays ?? 30,
+			trialDays: args.trialDays ?? DEFAULT_PARTNER_TRIAL_DAYS,
 			email: args.email?.trim().toLowerCase() || null,
 			featureOverrides: args.featureOverrides ?? {},
 			maxRedemptions: args.maxRedemptions ?? 1,

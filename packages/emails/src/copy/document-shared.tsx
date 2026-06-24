@@ -188,8 +188,8 @@ export function documentSharedCopy(
 				intent === "reminder"
 					? "Signature reminder"
 					: intent === "rotated"
-						? "Updated document link"
-						: "You have a new document",
+						? "Updated envelope link"
+						: "You have a new envelope",
 			preheader:
 				intent === "reminder"
 					? "Your signature is still needed. You will need the access code from the sender."
@@ -204,7 +204,7 @@ export function documentSharedCopy(
 	return {
 		subject: "",
 		title:
-			intent === "reminder" ? "Signature reminder" : "You have a new document",
+			intent === "reminder" ? "Signature reminder" : "You have a new envelope",
 		preheader:
 			intent === "reminder"
 				? "Your signature is still needed on a Filosign document."

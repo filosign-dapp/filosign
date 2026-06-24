@@ -36,13 +36,19 @@ export function canApplyPartnerTrialToOrgSub(
 	return false;
 }
 
-export async function assertNoOwnedActiveDodoSubscriptions(
+export async function assertWalletEligibleForPartnerTrial(
 	tx: PlatformAccessTx,
 	wallet: Address,
 ): Promise<void> {
 	const walletNorm = getAddress(wallet);
 	const rows = await tx
-		.select({ organizationId: organizationSubscriptions.organizationId })
+		.select({
+			planId: organizationSubscriptions.planId,
+			status: organizationSubscriptions.status,
+			provider: organizationSubscriptions.provider,
+			periodEnd: organizationSubscriptions.periodEnd,
+			dodoSubscriptionId: organizationSubscriptions.dodoSubscriptionId,
+		})
 		.from(organizationMembers)
 		.innerJoin(
 			organizationSubscriptions,
@@ -56,13 +62,11 @@ export async function assertNoOwnedActiveDodoSubscriptions(
 				eq(organizationMembers.walletAddress, walletNorm),
 				eq(organizationMembers.role, "owner"),
 				eq(organizationMembers.status, "active"),
-				eq(organizationSubscriptions.provider, "dodo"),
-				eq(organizationSubscriptions.status, "active"),
 			),
-		)
-		.limit(1);
+		);
 
-	if (rows.length > 0) {
+	const now = new Date();
+	if (rows.some((row) => !canApplyPartnerTrialToOrgSub(row, now))) {
 		throwAppError("WORKSPACE.PLATFORM_INVITE_PAID_PLAN_BLOCKS");
 	}
 }

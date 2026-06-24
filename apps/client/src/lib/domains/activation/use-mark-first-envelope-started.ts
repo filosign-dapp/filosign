@@ -48,7 +48,7 @@ export function useMarkFirstEnvelopeStarted() {
 	]);
 }
 
-/** Covers direct navigation to compose (not only the New Document CTA). */
+/** Covers direct navigation to compose (not only the New Envelope CTA). */
 export function useActivationEnvelopeStartedOnMount() {
 	const markStarted = useMarkFirstEnvelopeStarted();
 	const { activationQuery } = useActivationProgress();

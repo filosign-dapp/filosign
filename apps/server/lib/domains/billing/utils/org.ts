@@ -130,7 +130,6 @@ export async function getOrCreateOrgDodoCustomer(args: {
 		.update(organizationSubscriptions)
 		.set({
 			dodoCustomerId: customerId,
-			provider: "dodo",
 			updatedAt: new Date(),
 		})
 		.where(eq(organizationSubscriptions.organizationId, args.organizationId));

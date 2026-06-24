@@ -27,7 +27,7 @@ export function useProposeSignerReplacement(pieceCid: string | undefined) {
 		mutationFn: async (args: ProposeSignerReplacementArgs) => {
 			if (!pieceCid) throw new Error("pieceCid is required");
 			if (!wallet?.account || !contracts) {
-				throw new Error("Connect your wallet to change a signer.");
+				throw new Error("Sign in to change a signer.");
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 

@@ -19,7 +19,7 @@ export function useRecallEnvelope(pieceCid: string | undefined) {
 		}) => {
 			if (!pieceCid) throw new Error("pieceCid is required");
 			if (!wallet?.account || !contracts) {
-				throw new Error("Connect your wallet to recall this envelope.");
+				throw new Error("Sign in to recall this envelope.");
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 

@@ -16,7 +16,7 @@ export function useManualSettlementPayout(pieceCid: string | undefined) {
 	return useMutation({
 		mutationFn: async (input: ManualSettlementPayoutInput) => {
 			if (!wallet?.account || !contracts) {
-				throw new Error("Connect your wallet to settle from your wallet.");
+				throw new Error("Sign in to send this payout.");
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 

@@ -11,7 +11,7 @@ export function useExecuteSignerReplacement(pieceCid: string | undefined) {
 		mutationFn: async () => {
 			if (!pieceCid) throw new Error("pieceCid is required");
 			if (!wallet?.account) {
-				throw new Error("Connect your wallet to execute the roster change.");
+				throw new Error("Sign in to execute the roster change.");
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 

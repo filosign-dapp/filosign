@@ -56,9 +56,12 @@ export function useDownloadSupplementaryPacket() {
 				);
 			}
 
+			const dekRecipientEmail =
+				access.dekRecipientEmail?.trim() || args.recipientEmail;
+
 			const files = await decryptAttachmentPacketAccess({
 				packetCid: access.packetCid,
-				recipientEmail: args.recipientEmail,
+				recipientEmail: dekRecipientEmail,
 				downloadUrl: access.downloadUrl,
 				kemCiphertext: kemParsed.data,
 				encryptedPacketDek: dekParsed.data,

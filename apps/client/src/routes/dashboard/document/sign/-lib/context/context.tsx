@@ -114,3 +114,8 @@ export function useSignSettlements() {
 	const { sign } = useSignDocumentContext();
 	return sign.settlements;
 }
+
+export function useSignAttachments() {
+	const { sign } = useSignDocumentContext();
+	return sign.attachments;
+}

@@ -1,11 +1,14 @@
 import type { ReactNode } from "react";
 import { ColdShareDialog } from "@/src/lib/domains/invites/-components/cold-share-dialog";
 import {
+	AttachmentPacketDialog,
+	PayoutRuleDialog,
+} from "@/src/lib/domains/satellites";
+import {
 	PayoutAccessRequestDialog,
 	payoutAccessRequestDialogProps,
 } from "@/src/lib/domains/settlements";
 import { AmendSignerDialog } from "@/src/routes/dashboard/document/sign/-components/amend-signer-dialog";
-import { AttachSettlementDialog } from "@/src/routes/dashboard/document/sign/-components/attach-settlement-dialog";
 import { SignShellLayout } from "@/src/routes/dashboard/document/sign/-components/body";
 import { ClearEnvelopeSignaturesDialog } from "@/src/routes/dashboard/document/sign/-components/clear-envelope-signatures-dialog";
 import { RecallEnvelopeDialog } from "@/src/routes/dashboard/document/sign/-components/recall-envelope-dialog";
@@ -16,6 +19,7 @@ import { SignSuccessDialog } from "@/src/routes/dashboard/document/sign/-compone
 import {
 	type SignDocumentContextValue,
 	SignDocumentProvider,
+	useSignAttachments,
 	useSignColdShare,
 	useSignDocumentContext,
 	useSignFile,
@@ -76,6 +80,7 @@ function SignProgressDialogSlot() {
 function SignSettlementDialogs() {
 	const { file } = useSignFile();
 	const settlements = useSignSettlements();
+	const attachments = useSignAttachments();
 	const signingStarted =
 		(file?.envelopeProgress?.requiredSignaturesCount ?? 0) > 0;
 
@@ -125,17 +130,27 @@ function SignSettlementDialogs() {
 				}
 				pending={settlements.clearSignaturesPending}
 			/>
-			<AttachSettlementDialog
+			<PayoutRuleDialog
 				open={settlements.attachDialogOpen}
 				onOpenChange={settlements.setAttachDialogOpen}
-				payees={settlements.attachPayeeOptions}
-				signerEmails={
-					file?.signers
-						?.map((s) => s.email)
-						.filter((e): e is string => Boolean(e)) ?? []
-				}
-				onConfirm={settlements.onConfirmAttachSettlement}
-				pending={settlements.attachPending}
+				recipients={settlements.attachRecipients}
+				routingContext={settlements.routingContext}
+				payerWalletAddress={settlements.attachPayerWalletAddress}
+				payerLabel={settlements.attachPayerLabel}
+				walletBalance={settlements.attachWalletBalance}
+				walletBalanceFormatted={settlements.attachWalletBalanceFormatted}
+				balancePending={settlements.attachBalancePending}
+				balanceError={settlements.attachBalanceError}
+				onAttachLegs={settlements.onConfirmAttachSettlement}
+				attachPending={settlements.attachPending}
+			/>
+			<AttachmentPacketDialog
+				open={attachments.attachDialogOpen}
+				onOpenChange={attachments.setAttachDialogOpen}
+				recipients={attachments.attachRecipients}
+				routingContext={attachments.routingContext}
+				onSave={attachments.onSaveAttachment}
+				savePending={attachments.attachPending}
 			/>
 			<PayoutAccessRequestDialog
 				{...payoutAccessRequestDialogProps(

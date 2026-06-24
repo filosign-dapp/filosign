@@ -53,7 +53,11 @@ export function SignSidebarSignersProgress({
 
 	const lines = buildEnvelopeProgressContextLines(progress, canSignByRouting);
 	const { signedCount, totalSigners } = envelopeProgressTotals(progress);
-	const percent = envelopeProgressPercent(signedCount, totalSigners);
+	const percent = envelopeProgressPercent(
+		signedCount,
+		totalSigners,
+		Boolean(progress.completedAt),
+	);
 
 	if (lines.length === 0 && totalSigners === 0) return null;
 

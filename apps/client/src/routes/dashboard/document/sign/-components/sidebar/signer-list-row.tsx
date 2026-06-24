@@ -10,6 +10,7 @@ import {
 import { defaultChain } from "@/src/constants";
 import { cn } from "@/src/lib/utils";
 import type { EnvelopeProgressLike } from "@/src/routes/dashboard/document/sign/-lib/utils/envelope-progress-display";
+import { signerStatusLabel } from "@/src/routes/dashboard/document/sign/-lib/utils/envelope-progress-display";
 
 type OrderedSigner = {
 	wallet: string;
@@ -45,23 +46,6 @@ function matchesReplacementCommitment(
 		return true;
 	}
 	return signerCommitment != null && signerCommitment === targetCommitment;
-}
-
-function signerStatusLabel(args: {
-	hasSigned: boolean;
-	isReplacementOld: boolean;
-	isReplacementNew: boolean;
-	invitePending: boolean;
-	isUpNext: boolean;
-	isSequential: boolean;
-}): string {
-	if (args.hasSigned) return "Signed";
-	if (args.isReplacementOld) return "Change pending (current)";
-	if (args.isReplacementNew) return "Change pending (new)";
-	if (args.invitePending) return "Invite pending";
-	if (args.isUpNext) return "Up next";
-	if (args.isSequential) return "Waiting";
-	return "Pending";
 }
 
 export function SignerListRow(props: {
@@ -127,6 +111,7 @@ export function SignerListRow(props: {
 		invitePending: signer.invitePending,
 		isUpNext,
 		isSequential,
+		envelopeComplete: Boolean(envelopeProgress?.completedAt),
 	});
 
 	return (

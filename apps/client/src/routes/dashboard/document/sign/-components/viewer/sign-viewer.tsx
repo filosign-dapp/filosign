@@ -1,11 +1,7 @@
-import {
-	FILE_ACK_INTENT_LABELS,
-	FILE_ACK_INTENT_VERSION_V1,
-} from "@filosign/shared";
 import { useCallback, useEffect, useMemo } from "react";
 import { SkeletonDocumentCanvas } from "@/src/lib/components/app/skeletons";
-import { Button } from "@/src/lib/components/ui/button";
 import { DocCanvasPanel } from "@/src/lib/domains/files/components/doc-canvas-panel";
+import { EnvelopeAckGate } from "@/src/lib/domains/files/components/envelope-ack-gate";
 import {
 	DocumentPageContent,
 	DocumentSurface,
@@ -76,6 +72,7 @@ export function SignViewer() {
 	} = useDocumentViewportCanvas();
 
 	const isRevoked = isEnvelopeVoided(file?.envelopeProgress);
+	const isComplete = Boolean(file?.envelopeProgress?.completedAt);
 	const needsAck =
 		file?.participantAccess && !file.participantAccess.canDecrypt;
 
@@ -230,18 +227,11 @@ export function SignViewer() {
 
 	if (needsAck) {
 		return (
-			<div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
-				<p className="max-w-md text-sm text-muted-foreground">
-					{FILE_ACK_INTENT_LABELS[FILE_ACK_INTENT_VERSION_V1]}
-				</p>
-				<Button
-					variant="primary"
-					onClick={() => void handleAcknowledge()}
-					disabled={acknowledgeFile.isPending}
-				>
-					{acknowledgeFile.isPending ? "Accepting…" : "Accept file"}
-				</Button>
-			</div>
+			<EnvelopeAckGate
+				isComplete={isComplete}
+				onAcknowledge={handleAcknowledge}
+				pending={acknowledgeFile.isPending}
+			/>
 		);
 	}
 

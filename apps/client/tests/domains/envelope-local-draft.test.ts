@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+	hasDraftContent,
 	pruneSignatureFields,
 	recipientFingerprint,
 } from "@/src/lib/domains/drafts/envelope-local-draft";
@@ -54,5 +55,30 @@ describe("pruneSignatureFields", () => {
 		];
 
 		expect(pruneSignatureFields([field], recipients)).toHaveLength(1);
+	});
+});
+
+describe("hasDraftContent", () => {
+	test("counts attachment packet drafts", () => {
+		expect(
+			hasDraftContent({
+				draftId: "draft-1",
+				recipientFingerprint: "",
+				recipients: [],
+				emailMessage: "",
+				emailSubject: "",
+				documents: [],
+				settlementDrafts: [],
+				attachmentPacketDrafts: [
+					{
+						packetId: "packet-1",
+						releaseMode: "review",
+						releaseType: "all_signed",
+						recipientEmails: [],
+						files: [],
+					},
+				],
+			}),
+		).toBe(true);
 	});
 });

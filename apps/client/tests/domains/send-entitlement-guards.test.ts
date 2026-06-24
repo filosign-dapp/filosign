@@ -49,6 +49,32 @@ describe("send entitlement guards", () => {
 				hint: copy.description,
 			});
 		});
+
+		test("blocks quorum_required payout when threshold mismatches envelope minimum", () => {
+			const failure = validateSettlementDraftsForSend({
+				entitlements: entitlements({
+					"features.settlement.basic": true,
+				}),
+				settlementDrafts: [
+					{
+						id: "leg-1",
+						releaseType: "quorum_required",
+						thresholdN: 2,
+					} as never,
+				],
+				recipients: [
+					{ email: "a@example.com", role: "signer" },
+					{ email: "b@example.com", role: "signer" },
+					{ email: "c@example.com", role: "signer" },
+					{ email: "d@example.com", role: "signer" },
+				],
+				registerRouting: { quorumN: 3 },
+			});
+			expect(failure?.kind).toBe("toast");
+			expect(failure?.kind === "toast" ? failure.title : "").toBe(
+				"Check payout release conditions",
+			);
+		});
 	});
 
 	describe("validateAttachmentPacketsForSend", () => {
@@ -83,6 +109,45 @@ describe("send entitlement guards", () => {
 				title: copy.title,
 				hint: copy.description,
 			});
+		});
+
+		test("blocks conditional attachment when quorum threshold mismatches routing", () => {
+			const failure = validateAttachmentPacketsForSend({
+				entitlements: entitlements({
+					"features.supplementary_attachments": true,
+					"features.supplementary_attachments.recipient_select": true,
+					"features.supplementary_attachments.conditional_release": true,
+				}),
+				attachmentComposeDrafts: [
+					{
+						packetId: "pkt-1",
+						releaseMode: "conditional",
+						releaseType: "quorum_required",
+						thresholdN: 2,
+						recipientEmails: ["signer@example.com"],
+						files: [
+							{
+								id: "f1",
+								name: "doc.pdf",
+								mimeType: "application/pdf",
+								bytes: new Uint8Array([1]),
+							},
+						],
+					},
+				],
+				rosterEmails: ["signer@example.com"],
+				recipients: [
+					{ email: "a@example.com", role: "signer" },
+					{ email: "b@example.com", role: "signer" },
+					{ email: "c@example.com", role: "signer" },
+					{ email: "d@example.com", role: "signer" },
+				],
+				registerRouting: { quorumN: 3 },
+			});
+			expect(failure?.kind).toBe("toast");
+			expect(failure?.kind === "toast" ? failure.title : "").toBe(
+				"Check file unlock conditions",
+			);
 		});
 	});
 

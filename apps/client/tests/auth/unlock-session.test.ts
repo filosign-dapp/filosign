@@ -49,7 +49,7 @@ describe("attemptWalletLoginUnlock", () => {
 
 		const outcome = await attemptWalletLoginUnlock({ login });
 		expect(outcome).toEqual({
-			failed: "Unlock cancelled. Confirm in your wallet to continue.",
+			failed: "Unlock cancelled. Try again to continue.",
 			isCancelled: true,
 		});
 	});
@@ -59,6 +59,6 @@ describe("formatWalletUnlockError", () => {
 	it("maps user rejection to a friendly message", () => {
 		expect(
 			formatWalletUnlockError(new Error("User rejected the request")),
-		).toBe("Unlock cancelled. Confirm in your wallet to continue.");
+		).toBe("Unlock cancelled. Try again to continue.");
 	});
 });

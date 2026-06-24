@@ -7,6 +7,7 @@ import {
 	useDocumentViewportCanvas,
 } from "@/src/lib/domains/files/document-viewport";
 import { FileViewerFieldOverlay } from "@/src/lib/domains/files/file-viewer/-components/field-overlay";
+import { PLACEMENT_READONLY_SIGNER_OVERLAY_CLASSNAME } from "@/src/lib/domains/files/placement-overlay";
 import { cn } from "@/src/lib/utils";
 import { useDraftReviewViewerSlice } from "@/src/routes/draft/review/-lib/context/context";
 
@@ -52,7 +53,8 @@ export function DraftReviewViewer() {
 				fields={documentFields}
 				completions={[]}
 				showPlaceholders
-				overlayClassName="z-[5]"
+				placeholderPresentation="signer"
+				overlayClassName={PLACEMENT_READONLY_SIGNER_OVERLAY_CLASSNAME}
 			/>
 		),
 		[documentFields],

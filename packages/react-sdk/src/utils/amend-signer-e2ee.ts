@@ -35,7 +35,7 @@ async function decryptSenderDek(args: {
 }): Promise<Uint8Array> {
 	const keySeed = getSessionSeed(args.walletAddress);
 	if (!keySeed) {
-		throw new Error("Please unlock your wallet first");
+		throw new Error("Unlock your encryption keys first");
 	}
 	const { privateKey } = await KEM.keyGen({
 		seed: new Uint8Array(Array.from(keySeed)),

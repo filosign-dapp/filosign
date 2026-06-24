@@ -25,7 +25,8 @@ const SETTLEMENT_REVERT_MESSAGES: Record<string, string> = {
 		"Only the person paying can change this payout.",
 	InvalidPayer: "The payer wallet for this payout isn't valid.",
 	InvalidAmount: "The payout amount isn't valid.",
-	InvalidReleaseConfig: "The pay-out-when settings aren't valid.",
+	InvalidReleaseConfig:
+		"These unlock conditions don't match this envelope's signing rules. Check minimum signatures in Advanced, or simplify the condition.",
 	FileNotRegistered: "This document isn't registered yet.",
 	ExceedsMaxLegs: "Too many recipients on this payout.",
 	ExceedsMaxCommitments: "Too many signers linked to this payout.",
@@ -34,6 +35,10 @@ const SETTLEMENT_REVERT_MESSAGES: Record<string, string> = {
 	PayerCannotBeRecipient:
 		"The payer can't also be a recipient on the same payout.",
 };
+
+export function formatAttachmentSimError(err: unknown): string {
+	return `Couldn't add file packet: ${formatSettlementSimError(err)}`;
+}
 
 export function formatSettlementSimError(err: unknown): string {
 	if (err instanceof BaseError) {
@@ -74,6 +79,12 @@ export function formatSettlementSimError(err: unknown): string {
 	}
 	if (lower.includes("unauthorized")) {
 		return "You're not allowed to do that with this payout.";
+	}
+	if (
+		lower.includes("delegation contract") &&
+		(lower.includes("401") || lower.includes("failed to fetch"))
+	) {
+		return "Wallet provider could not load smart-wallet delegation (HTTP 401). This is a thirdweb/session config issue, not a Filosign contract error. Reconnect your wallet or check thirdweb client credentials, then retry payout setup.";
 	}
 
 	return (

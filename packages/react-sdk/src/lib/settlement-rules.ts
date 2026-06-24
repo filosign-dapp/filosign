@@ -19,6 +19,7 @@ import {
 	getContract,
 	type Hex,
 	http,
+	isAddress,
 } from "viem";
 import type { SendFileProgressReporter } from "./send-file/progress";
 import { emitSendFileProgress } from "./send-file/progress";
@@ -193,6 +194,13 @@ function assertSettlementLegs(legs: SettlementRuleDraftLeg[]) {
 	if (legs.length === 0 || legs.length > 32) {
 		throw new Error("Settlement rule must have 1–32 payout legs");
 	}
+	for (const leg of legs) {
+		if (!leg.recipientWallet || !isAddress(leg.recipientWallet)) {
+			throw new Error(
+				"Payout recipient wallet missing — recipient may not have a linked Filosign account.",
+			);
+		}
+	}
 }
 
 function erc20ApproveAbi(chainKey: ChainKey) {
@@ -253,7 +261,7 @@ async function resolveSettlementApprovalWallet(args: {
 	}
 	if (!args.resolvePayerWallet) {
 		throw new Error(
-			"This payout uses the workspace treasury. Connect your treasury wallet to continue.",
+			"This payout uses the workspace treasury. Authorize from the treasury account to continue.",
 		);
 	}
 	return args.resolvePayerWallet({ payer: args.payer });

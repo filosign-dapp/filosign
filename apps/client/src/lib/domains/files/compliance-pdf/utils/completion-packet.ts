@@ -364,7 +364,7 @@ export async function downloadCompletionPacketZip(args: {
 
 				const decryptedFiles = await decryptAttachmentPacketAccess({
 					packetCid: access.packetCid,
-					recipientEmail: userEmail,
+					recipientEmail: access.dekRecipientEmail?.trim() || userEmail,
 					downloadUrl: access.downloadUrl,
 					kemCiphertext: kemParsed.data,
 					encryptedPacketDek: dekParsed.data,

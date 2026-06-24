@@ -61,7 +61,7 @@ export const PLAN_LIMIT_COPY: Record<
 	"features.treasury.workspace_custom": {
 		title: "Custom workspace treasury needs Teams Pro",
 		description:
-			"Use your workspace treasury as the payout wallet with Teams Pro or Enterprise. Solo and Teams can still send payouts from the connected wallet.",
+			"Use your workspace treasury as the payout wallet with Teams Pro or Enterprise. Solo and Teams can still send payouts from your account.",
 	},
 	"features.signer_replacement": {
 		title: "Change signer needs Teams Pro",

@@ -42,9 +42,9 @@ export function DocCanvasPanel({
 					<div className="space-y-2 text-center">
 						<h2 className="text-base font-semibold">Unlock encryption keys</h2>
 						<p className="text-sm text-muted-foreground">
-							You are still signed in. Confirm in your wallet to decrypt this
-							document. If wallet unlock does not work, enter your 24-word
-							recovery phrase from Profile settings.
+							You are still signed in. Tap Retry to authorize decryption. If
+							that does not work, enter your 24-word recovery phrase from
+							Profile settings.
 						</p>
 					</div>
 					{walletUnlockError ? (

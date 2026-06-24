@@ -1,6 +1,9 @@
 import type { AttachmentPacketDraft } from "@filosign/react/files";
 import type { SettlementReleaseType } from "@filosign/shared";
-import { settlementReleaseTypeLabel } from "@filosign/shared";
+import {
+	type ReleaseCopyContext,
+	settlementReleaseTypeLabel,
+} from "@filosign/shared";
 import type { Recipient } from "@/src/lib/domains/files/envelope-form-types";
 import type { SettlementAttachmentDraft } from "@/src/lib/domains/settlements";
 import { buildReleaseParamsFromDraft } from "@/src/lib/domains/settlements";
@@ -82,11 +85,14 @@ export function toAttachmentPacketDraftsForSend(
 export function attachmentPacketSummaryLabel(
 	draft: AttachmentPacketComposeDraft,
 	reviewLabel = "Available after send",
+	routingContext?: ReleaseCopyContext,
 ): string {
 	if (draft.releaseMode === "review") {
 		return reviewLabel;
 	}
-	return settlementReleaseTypeLabel(draft.releaseType);
+	return settlementReleaseTypeLabel(draft.releaseType, routingContext, {
+		thresholdN: draft.thresholdN,
+	});
 }
 
 export function upsertPacketDraft(

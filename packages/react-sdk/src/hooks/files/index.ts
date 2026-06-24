@@ -23,6 +23,7 @@ export {
 	canUseBasicSettlements,
 	canUseConditionalAttachmentRelease,
 	canUseDraftComments,
+	canUseExternalPayoutRecipients,
 	canUseMetadataTags,
 	canUseSharedTemplates,
 	canUseSignerReplacement,

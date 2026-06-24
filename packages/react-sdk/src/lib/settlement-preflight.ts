@@ -10,6 +10,7 @@ import {
 	getContract,
 	http,
 } from "viem";
+import { formatGasSetupError } from "./gas-setup-errors";
 import type { FilosignWallet } from "./wallet";
 
 const SETTLEMENT_REVERT_MESSAGES: Record<string, string> = {
@@ -52,6 +53,9 @@ export function formatSettlementSimError(err: unknown): string {
 			}
 		}
 	}
+
+	const gasMessage = formatGasSetupError(err);
+	if (gasMessage) return gasMessage;
 
 	const message =
 		err instanceof Error

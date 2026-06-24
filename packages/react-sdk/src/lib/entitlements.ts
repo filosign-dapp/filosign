@@ -81,6 +81,16 @@ export function canAttachBasicPayout(
 	return resolveBasicPayoutGate(entitlements, access).allowed;
 }
 
+export function canUseExternalPayoutRecipients(
+	access?: SettlementFeatureAccessGetOutput | null,
+): boolean {
+	return (
+		access?.status === "approved" &&
+		access.termsCurrent !== false &&
+		access.externalWalletAccessEnabled === true
+	);
+}
+
 export function canUseSupplementaryAttachments(
 	entitlements: EntitlementsSnapshot | undefined,
 ): boolean {

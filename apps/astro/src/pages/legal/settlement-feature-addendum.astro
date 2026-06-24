@@ -14,7 +14,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 		<LegalDocument
 			title="Payout attachment addendum"
 			description="Accept when your workspace requests programmatic payout attachment in the app."
-			lastUpdated="June 20, 2026"
+			lastUpdated="June 23, 2026"
 		>
 			<p class="text-sm text-muted-foreground">
 				Version {ACTIVE_TERMS_VERSION}. Part of the
@@ -65,12 +65,24 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 				On the supported path, payout rules may only be registered from your Filosign-linked sender wallet or your workspace linked treasury address, not arbitrary external payer addresses.
 			</p>
 
-			<h2>7. Indemnity and liability cap</h2>
+			<h2>7. External wallet recipients</h2>
+			<p>
+				An <strong>external wallet recipient</strong> is a blockchain wallet address that is not an envelope signer, viewer, or your workspace linked treasury on that document.
+			</p>
+			<ul>
+				<li>External wallet payouts are a discretionary feature. Requesting them on the payout access form does not guarantee approval.</li>
+				<li>If enabled for your workspace, you are solely responsible for verifying each recipient address, lawful purpose, sanctions and anti–money laundering compliance, and taxes or invoicing for those payouts.</li>
+				<li>Filosign does not screen or vouch for off-envelope wallet addresses unless stated in a separate policy.</li>
+				<li>External recipients do not sign the envelope and do not receive the standard payout disclosure shown to envelope participants on the sign page.</li>
+				<li>Filosign may disable external wallet payouts for your workspace without notice for security, legal, or operational reasons.</li>
+			</ul>
+
+			<h2>8. Indemnity and liability cap</h2>
 			<p>
 				Payout attachment is subject to the indemnity, disclaimer, and liability limits in the <a href="/terms" class="underline">Terms of Service</a>, incorporated by reference.
 			</p>
 
-			<h2>8. Contact</h2>
+			<h2>9. Contact</h2>
 			<p>
 				<a href={`mailto:${LEGAL_OPERATOR.supportEmail}`} class="underline">{LEGAL_OPERATOR.supportEmail}</a>.
 			</p>

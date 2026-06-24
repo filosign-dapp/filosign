@@ -1,5 +1,6 @@
 import {
 	canAttachBasicPayout,
+	canUseExternalPayoutRecipients,
 	resolveBasicPayoutGate,
 } from "../../lib/entitlements";
 import { useEntitlements } from "../billing/useEntitlements";
@@ -18,5 +19,6 @@ export function useBasicPayoutAttachGate() {
 		accessQuery,
 		gate: resolveBasicPayoutGate(entitlements, access),
 		canAttach: canAttachBasicPayout(entitlements, access),
+		canUseExternalRecipients: canUseExternalPayoutRecipients(access),
 	};
 }

@@ -117,7 +117,7 @@ export function OrgWalletSection() {
 					<div className="mt-4 space-y-3">
 						<p className="text-sm text-muted-foreground">
 							Custom workspace treasury is available on Teams Pro or Enterprise.
-							Solo and Teams can attach payouts from the connected wallet.
+							Solo and Teams can attach payouts from your account.
 						</p>
 						<Button
 							type="button"

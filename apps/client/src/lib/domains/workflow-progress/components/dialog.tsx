@@ -17,6 +17,8 @@ export function WorkflowProgressDialog(props: {
 	state: WorkflowProgressState | null;
 	fallbackLabel: string;
 	errorFallbackLabel?: string;
+	retryLabel?: string;
+	dismissLabel?: string;
 	footerText?: string;
 	icon: ReactNode;
 	tips: readonly string[];
@@ -60,7 +62,7 @@ export function WorkflowProgressDialog(props: {
 							className="w-full"
 							onClick={props.onRetry}
 						>
-							Try again
+							{props.retryLabel ?? "Try again"}
 						</Button>
 						<Button
 							type="button"
@@ -69,7 +71,7 @@ export function WorkflowProgressDialog(props: {
 							className="w-full"
 							onClick={props.onDismiss}
 						>
-							Dismiss
+							{props.dismissLabel ?? "Dismiss"}
 						</Button>
 					</WorkflowDialogActions>
 				) : null}

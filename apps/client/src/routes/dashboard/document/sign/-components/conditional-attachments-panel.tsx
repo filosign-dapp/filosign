@@ -36,7 +36,7 @@ export function ConditionalAttachmentsPanel({
 		<div className="space-y-2 rounded-lg border border-border/60 p-3">
 			<div className="space-y-1">
 				<p className="inline-flex items-center gap-2 text-xs font-medium">
-					Extra files with conditions
+					Attached files (conditional)
 					<ProFeatureMark size="xs" />
 				</p>
 				<p className="text-xs text-muted-foreground">

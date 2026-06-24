@@ -29,7 +29,7 @@ export function useTemplateEditorSave() {
 	const saveTemplate = useCallback(
 		async (args: SaveTemplateArgs) => {
 			if (!deps) {
-				throw new Error("Connect your wallet before saving a template.");
+				throw new Error("Sign in before saving a template.");
 			}
 
 			setSaving(true);

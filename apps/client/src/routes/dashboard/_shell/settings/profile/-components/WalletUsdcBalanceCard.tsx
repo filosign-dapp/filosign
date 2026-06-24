@@ -66,7 +66,7 @@ export function WalletUsdcBalanceCard() {
 				>
 					{!address ? (
 						<p className="text-sm text-muted-foreground">
-							Connect a wallet to see your USDC balance.
+							Sign in to see your USDC balance.
 						</p>
 					) : isPending ? (
 						<p className="text-sm text-muted-foreground">Loading…</p>

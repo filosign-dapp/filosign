@@ -13,7 +13,7 @@ export function useCancelAttachmentRule() {
 			releaseContractAddress: `0x${string}`;
 		}) => {
 			if (!wallet?.account || !contracts) {
-				throw new Error("Connect your wallet to cancel an attachment rule.");
+				throw new Error("Sign in to cancel an attachment rule.");
 			}
 			const release = contracts.FSAttachmentRelease;
 			if (!release) {

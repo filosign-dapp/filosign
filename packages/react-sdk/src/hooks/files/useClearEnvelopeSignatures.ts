@@ -16,7 +16,7 @@ export function useClearEnvelopeSignatures(pieceCid: string | undefined) {
 		}) => {
 			if (!pieceCid) throw new Error("pieceCid is required");
 			if (!wallet?.account || !contracts) {
-				throw new Error("Connect your wallet to clear envelope signatures.");
+				throw new Error("Sign in to clear envelope signatures.");
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 

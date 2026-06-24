@@ -23,7 +23,7 @@ export function useCancelSettlementRule(pieceCid: string | undefined) {
 	return useMutation({
 		mutationFn: async (input: CancelSettlementRuleInput) => {
 			if (!wallet?.account || !contracts) {
-				throw new Error("Connect your wallet to cancel a settlement rule.");
+				throw new Error("Sign in to remove this payout.");
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 

@@ -13,7 +13,7 @@ export function useCancelSignerReplacement(pieceCid: string | undefined) {
 		mutationFn: async () => {
 			if (!pieceCid) throw new Error("pieceCid is required");
 			if (!wallet?.account || !contracts) {
-				throw new Error("Connect your wallet to cancel the roster change.");
+				throw new Error("Sign in to cancel the roster change.");
 			}
 			if (!isAuthed) throw new Error("Not authenticated");
 

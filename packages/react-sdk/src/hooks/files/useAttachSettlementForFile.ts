@@ -29,7 +29,7 @@ export function useAttachSettlementForFile(pieceCid: string | undefined) {
 		}) => {
 			if (!pieceCid) throw new Error("pieceCid is required");
 			if (!wallet?.account || !contracts || !session.hasThirdwebSession()) {
-				throw new Error("Connect your wallet to attach a settlement.");
+				throw new Error("Sign in to attach a payout.");
 			}
 
 			const payoutPayerSource = args.payoutPayerSource ?? "sender";

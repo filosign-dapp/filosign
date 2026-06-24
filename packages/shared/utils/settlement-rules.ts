@@ -102,6 +102,7 @@ export const settlementRecipientSources = [
 	"signer",
 	"viewer",
 	"org_wallet",
+	"external",
 ] as const;
 
 export type SettlementRecipientSource =

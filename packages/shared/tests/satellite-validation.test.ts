@@ -154,6 +154,26 @@ describe("validateSatelliteRulesForSend", () => {
 		expect(result.ok).toBe(true);
 	});
 
+	test("accepts external wallet payout leg", () => {
+		const result = validateSatelliteRulesForSend({
+			routing,
+			signerEmails,
+			payerAddress: payer,
+			settlementDrafts: [
+				{
+					id: "leg-1",
+					ruleId: "rule-1",
+					recipientClientRowId:
+						"ext:0x2222222222222222222222222222222222222222",
+					recipientWallet: recipient,
+					amountUsdc: "10",
+					releaseType: "all_signed",
+				},
+			],
+		});
+		expect(result.ok).toBe(true);
+	});
+
 	test("reports wallet missing when leg is configured but wallet unresolved", () => {
 		const result = validateSatelliteRulesForSend({
 			routing,

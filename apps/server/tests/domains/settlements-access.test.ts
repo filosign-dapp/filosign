@@ -115,6 +115,7 @@ describe("access", () => {
 					termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
 					currentTermsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
 					termsCurrent: true,
+					externalWalletAccessEnabled: true,
 				});
 			});
 
@@ -128,6 +129,120 @@ describe("access", () => {
 						callerWallet: adminWallet,
 					}),
 				).resolves.toBeUndefined();
+			});
+		});
+	});
+
+	describe("external-wallet-access-admin", () => {
+		const orgId = "00000000-0000-7000-8000-000000000088";
+		const admin = "0xcccccccccccccccccccccccccccccccccccccccc" as const;
+
+		let selectRow: {
+			status: string;
+			termsVersion: string;
+			externalWalletAccessEnabled: boolean;
+		} | null = null;
+		let updateReturning: Array<{ organizationId: string; status: string }> = [];
+
+		beforeAll(() => {
+			mock.module("@/lib/platform/admin", () => ({
+				isPlatformAdminForWallet: async () => false,
+			}));
+			mock.module("@/lib/platform/db", () => ({
+				default: {
+					schema: {
+						organizationSettlementFeatureAccess: {},
+						organizations: {},
+					},
+					select: () => ({
+						from: () => ({
+							where: () => ({
+								limit: () =>
+									dbQueryResult(
+										selectRow
+											? [
+													{
+														status: selectRow.status,
+														termsVersion: selectRow.termsVersion,
+														acceptedAt: new Date("2026-05-01T00:00:00Z"),
+														acceptedByWallet: admin,
+														useCase: "Test",
+														reviewedAt: new Date("2026-05-02T00:00:00Z"),
+														reviewNote: null,
+														externalWalletAccessEnabled:
+															selectRow.externalWalletAccessEnabled,
+														externalWalletAccessEnabledAt: null,
+														externalWalletAccessRequested: false,
+														externalWalletUseCase: null,
+														externalWalletComplianceCertAt: null,
+													},
+												]
+											: [],
+									),
+							}),
+						}),
+					}),
+					update: () => ({
+						set: () => ({
+							where: () => ({
+								returning: () => Promise.resolve(updateReturning),
+							}),
+						}),
+					}),
+				},
+			}));
+		});
+
+		afterAll(() => {
+			mock.restore();
+		});
+
+		test("assertOrganizationExternalWalletAccessEnabled rejects when grant off", async () => {
+			selectRow = {
+				status: "approved",
+				termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+				externalWalletAccessEnabled: false,
+			};
+			const { assertOrganizationExternalWalletAccessEnabled } = await import(
+				"@/lib/domains/settlement-access/settlement-access"
+			);
+
+			await expect(
+				assertOrganizationExternalWalletAccessEnabled(orgId),
+			).rejects.toMatchObject({
+				code: "FORBIDDEN",
+			});
+		});
+
+		test("assertOrganizationExternalWalletAccessEnabled passes when grant on", async () => {
+			selectRow = {
+				status: "approved",
+				termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+				externalWalletAccessEnabled: true,
+			};
+			const { assertOrganizationExternalWalletAccessEnabled } = await import(
+				"@/lib/domains/settlement-access/settlement-access"
+			);
+
+			await expect(
+				assertOrganizationExternalWalletAccessEnabled(orgId),
+			).resolves.toBeUndefined();
+		});
+
+		test("setOrganizationExternalWalletAccess requires approved payout access", async () => {
+			updateReturning = [{ organizationId: orgId, status: "pending" }];
+			const { setOrganizationExternalWalletAccess } = await import(
+				"@/lib/domains/settlement-access/settlement-access"
+			);
+
+			await expect(
+				setOrganizationExternalWalletAccess({
+					adminWallet: admin,
+					organizationId: orgId,
+					enabled: true,
+				}),
+			).rejects.toMatchObject({
+				code: "FORBIDDEN",
 			});
 		});
 	});
@@ -349,6 +464,200 @@ describe("access", () => {
 				requesterRole: "Founder",
 				requestIp: "203.0.113.42",
 				requestUserAgent: "FilosignTest/1.0",
+				externalWalletAccessRequested: false,
+				externalWalletUseCase: null,
+				externalWalletComplianceCertAt: null,
+			});
+		});
+
+		test("submit persists external wallet intent when requested", async () => {
+			redisStore.clear();
+			inserted = [];
+			selectQueue = [
+				[
+					{
+						planId: "teams_pro",
+						status: "active",
+						seatCount: 3,
+						cancelAtPeriodEnd: false,
+						periodEnd: null,
+						featureOverrides: {},
+					},
+				],
+				[{ count: 0 }],
+				[],
+			];
+			const { submitOrganizationSettlementFeatureRequest } = await import(
+				"@/lib/domains/settlement-access/settlement-access"
+			);
+
+			await submitOrganizationSettlementFeatureRequest({
+				wallet,
+				organizationId: orgId,
+				body: {
+					acceptTerms: true,
+					sanctionsSelfCert: true,
+					useCase: "USDC bonuses for signed contractor SOWs",
+					termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+					organizationLegalName: "Acme Labs LLC",
+					organizationCountry: "US",
+					requesterName: "Jane Doe",
+					requesterRole: "Founder",
+					externalWalletAccessRequested: true,
+					externalWalletUseCase:
+						"We pay contractors who are not signers after legal reviews their wallet.",
+					externalWalletComplianceCert: true,
+				},
+				audit: {
+					requestIp: "203.0.113.42",
+					requestUserAgent: "FilosignTest/1.0",
+				},
+			});
+
+			expect(inserted[0]).toMatchObject({
+				externalWalletAccessRequested: true,
+				externalWalletUseCase:
+					"We pay contractors who are not signers after legal reviews their wallet.",
+			});
+			expect(
+				(inserted[0] as { externalWalletComplianceCertAt: Date })
+					.externalWalletComplianceCertAt,
+			).toBeInstanceOf(Date);
+		});
+
+		test("submit rejects external intent without compliance cert", async () => {
+			const { submitOrganizationSettlementFeatureRequest } = await import(
+				"@/lib/domains/settlement-access/settlement-access"
+			);
+
+			await expect(
+				submitOrganizationSettlementFeatureRequest({
+					wallet,
+					organizationId: orgId,
+					body: {
+						acceptTerms: true,
+						sanctionsSelfCert: true,
+						useCase: "USDC bonuses for signed contractor SOWs",
+						termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+						organizationLegalName: "Acme Labs LLC",
+						organizationCountry: "US",
+						requesterName: "Jane Doe",
+						requesterRole: "Founder",
+						externalWalletAccessRequested: true,
+						externalWalletUseCase:
+							"We pay contractors who are not signers after legal reviews their wallet.",
+						externalWalletComplianceCert: false,
+					},
+					audit: {
+						requestIp: "203.0.113.42",
+						requestUserAgent: "FilosignTest/1.0",
+					},
+				}),
+			).rejects.toMatchObject({
+				code: "BAD_REQUEST",
+			});
+		});
+
+		test("submit rejects vague external use case", async () => {
+			const { submitOrganizationSettlementFeatureRequest } = await import(
+				"@/lib/domains/settlement-access/settlement-access"
+			);
+
+			await expect(
+				submitOrganizationSettlementFeatureRequest({
+					wallet,
+					organizationId: orgId,
+					body: {
+						acceptTerms: true,
+						sanctionsSelfCert: true,
+						useCase: "USDC bonuses for signed contractor SOWs",
+						termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+						organizationLegalName: "Acme Labs LLC",
+						organizationCountry: "US",
+						requesterName: "Jane Doe",
+						requesterRole: "Founder",
+						externalWalletAccessRequested: true,
+						externalWalletUseCase: "contractors",
+						externalWalletComplianceCert: true,
+					},
+					audit: {
+						requestIp: "203.0.113.42",
+						requestUserAgent: "FilosignTest/1.0",
+					},
+				}),
+			).rejects.toMatchObject({
+				code: "BAD_REQUEST",
+			});
+		});
+	});
+
+	describe("settlement-access-admin-list", () => {
+		const orgId = "00000000-0000-7000-8000-0000000000bb";
+
+		beforeAll(() => {
+			mock.module("@/lib/platform/db", () => ({
+				default: {
+					schema: {
+						organizationSettlementFeatureAccess: {},
+						organizations: {},
+					},
+					select: () => ({
+						from: () => ({
+							innerJoin: () => ({
+								orderBy: () =>
+									dbQueryResult([
+										{
+											organizationId: orgId,
+											organizationName: "Acme",
+											status: "approved",
+											termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+											acceptedAt: new Date("2026-05-01T00:00:00Z"),
+											acceptedByWallet:
+												"0xdddddddddddddddddddddddddddddddddddddddd",
+											useCase: "Contractor bonuses",
+											organizationLegalName: "Acme LLC",
+											organizationCountry: "US",
+											requesterName: "Jane",
+											requesterRole: "Admin",
+											requestIp: null,
+											requestUserAgent: null,
+											reviewedAt: new Date("2026-05-02T00:00:00Z"),
+											reviewedByAdminWallet:
+												"0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+											reviewNote: null,
+											externalWalletAccessEnabled: false,
+											externalWalletAccessEnabledAt: null,
+											externalWalletAccessRequested: true,
+											externalWalletUseCase:
+												"Paying verified contractors who are not envelope signers.",
+											externalWalletComplianceCertAt: new Date(
+												"2026-05-01T00:00:00Z",
+											),
+										},
+									]),
+							}),
+						}),
+					}),
+				},
+			}));
+		});
+
+		afterAll(() => {
+			mock.restore();
+		});
+
+		test("list returns external wallet request fields", async () => {
+			const { listSettlementFeatureAccessForAdmin } = await import(
+				"@/lib/domains/settlement-access/settlement-access"
+			);
+
+			const rows = await listSettlementFeatureAccessForAdmin();
+			expect(rows[0]).toMatchObject({
+				organizationId: orgId,
+				externalWalletAccessRequested: true,
+				externalWalletUseCase:
+					"Paying verified contractors who are not envelope signers.",
+				externalWalletComplianceCertAt: "2026-05-01T00:00:00.000Z",
 			});
 		});
 	});

@@ -9,6 +9,7 @@ import { getAddress } from "viem";
 
 mock.module("@/lib/domains/settlement-access/settlement-access", () => ({
 	assertOrganizationSettlementFeatureApproved: async () => {},
+	assertOrganizationExternalWalletAccessEnabled: async () => {},
 }));
 
 import { assertSettlementRulesUsdcToken } from "@/lib/domains/settlements/utils/assert-settlement-token";
@@ -448,6 +449,35 @@ describe("settlements", () => {
 					code: "BAD_REQUEST",
 					message: expect.stringContaining("Payment verification failed"),
 				});
+			});
+
+			test("allows external recipient not on envelope", async () => {
+				const { assertSettlementRecipientsAllowlisted } = await import(
+					"@/lib/domains/settlements/register"
+				);
+				await assertSettlementRecipientsAllowlisted({
+					participantWallets: [getAddress(participant)],
+					rules: [
+						rule({
+							legs: [
+								{
+									recipientWallet: "0x2222222222222222222222222222222222222222",
+									recipientSource: "external",
+									amount: "1",
+								},
+							],
+						}),
+					],
+				});
+			});
+
+			test("register path asserts external wallet org grant", async () => {
+				const src = readFileSync(
+					join(import.meta.dir, "../../lib/domains/settlements/register.ts"),
+					"utf8",
+				);
+				expect(src).toContain("assertOrganizationExternalWalletAccessEnabled");
+				expect(src).toContain('leg.recipientSource === "external"');
 			});
 		});
 	});

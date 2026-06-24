@@ -54,7 +54,7 @@ export function SystemTemplateEditorActions({
 				},
 			});
 			setSaveDialogOpen(false);
-			void navigate({ to: "/dashboard/admin/system-templates" });
+			void navigate({ to: "/admin/system-templates" });
 			clearCreateForm();
 		},
 		[

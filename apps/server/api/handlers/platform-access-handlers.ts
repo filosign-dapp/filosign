@@ -10,6 +10,7 @@ import {
 	canStartEmailAuth,
 	createPlatformInvite,
 	fetchRegisteredUserEmail,
+	getPlatformAdminDashboardStats,
 	getPlatformInviteById,
 	listAccessRequestsForAdmin,
 	listPlatformInvites,
@@ -136,10 +137,21 @@ export async function platformAdminAccess(adminWallet: Address) {
 	return { isAdmin: await isPlatformAdminForWallet(adminWallet) };
 }
 
-export async function platformAdminInvitesList(adminWallet: Address) {
+export async function platformAdminDashboardStats(adminWallet: Address) {
 	await assertPlatformAdmin(adminWallet);
-	const invites = await listPlatformInvites();
-	return { invites };
+	return getPlatformAdminDashboardStats();
+}
+
+export async function platformAdminInvitesList(
+	adminWallet: Address,
+	input: {
+		page?: number;
+		q?: string;
+		status?: "all" | "active" | "revoked" | "expired";
+	},
+) {
+	await assertPlatformAdmin(adminWallet);
+	return listPlatformInvites(input);
 }
 
 export async function platformAdminInvitesCreate(
@@ -288,10 +300,16 @@ export async function platformAdminInvitesSend(
 	};
 }
 
-export async function platformAdminUsersList(adminWallet: Address) {
+export async function platformAdminUsersList(
+	adminWallet: Address,
+	input: {
+		page?: number;
+		q?: string;
+		planId?: PlanId;
+	},
+) {
 	await assertPlatformAdmin(adminWallet);
-	const users = await listPlatformUsersForAdmin();
-	return { users };
+	return listPlatformUsersForAdmin(input);
 }
 
 export async function platformAdminUsersSetFeatureOverrides(
@@ -363,10 +381,16 @@ export async function platformAccessSubmitAccessRequest(body: unknown) {
 	return submitAccessRequest(parsed.data);
 }
 
-export async function platformAdminAccessRequestsList(adminWallet: Address) {
+export async function platformAdminAccessRequestsList(
+	adminWallet: Address,
+	input: {
+		page?: number;
+		q?: string;
+		status?: "all" | "pending" | "approved" | "rejected";
+	},
+) {
 	await assertPlatformAdmin(adminWallet);
-	const requests = await listAccessRequestsForAdmin();
-	return { requests };
+	return listAccessRequestsForAdmin(input);
 }
 
 export async function platformAdminAccessRequestsApprove(

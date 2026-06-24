@@ -17,6 +17,7 @@ import {
 import {
 	attachmentsLinkOnChainRuleHandler,
 	attachmentsPacketAccessHandler,
+	attachmentsRegisterForFileHandler,
 } from "@/api/handlers/attachments";
 import {
 	billingChangeOrgPlan,
@@ -93,7 +94,10 @@ import {
 import { txProcessIndexerHash } from "@/api/handlers/tx";
 import * as userHandlers from "@/api/handlers/users";
 import { filesPieceRouter } from "@/api/orpc/routers/files-piece";
-import { zLinkAttachmentOnChainRuleInput } from "@/lib/domains/attachments";
+import {
+	zAttachmentsRegisterForFileInput,
+	zLinkAttachmentOnChainRuleInput,
+} from "@/lib/domains/attachments";
 import {
 	CHECKOUT_PLAN_IDS,
 	UPGRADE_LIMIT_REASONS,
@@ -702,6 +706,12 @@ export const appRouter = {
 			.output(out.attachments.linkOnChainRule)
 			.handler(({ context, input }) =>
 				attachmentsLinkOnChainRuleHandler(context.userWallet, input),
+			),
+		registerForFile: authenticatedProcedure
+			.input(zAttachmentsRegisterForFileInput)
+			.output(out.attachments.registerForFile)
+			.handler(({ context, input }) =>
+				attachmentsRegisterForFileHandler(context.userWallet, input),
 			),
 	},
 	settlements: {

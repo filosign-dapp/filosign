@@ -2,6 +2,7 @@ import type { Address } from "viem";
 import z from "zod";
 import {
 	attachmentsPacketAccess,
+	attachmentsRegisterForFile,
 	linkAttachmentPacketOnChainRule,
 } from "@/lib/domains/attachments";
 
@@ -15,6 +16,13 @@ export async function attachmentsLinkOnChainRuleHandler(
 	body: unknown,
 ) {
 	return linkAttachmentPacketOnChainRule(userWallet, body);
+}
+
+export async function attachmentsRegisterForFileHandler(
+	userWallet: Address,
+	body: unknown,
+) {
+	return attachmentsRegisterForFile(userWallet, body);
 }
 
 export async function attachmentsPacketAccessHandler(

@@ -23,20 +23,45 @@ function settlementAccessSchema() {
 
 export { SETTLEMENT_FEATURE_TERMS_VERSION };
 
-export const zSettlementFeatureAccessSubmitBody = z.object({
-	acceptTerms: z.literal(true, {
-		error: "You must accept the Settlement Feature Addendum",
-	}),
-	sanctionsSelfCert: z.literal(true, {
-		error: "You must confirm sanctions and export compliance",
-	}),
-	useCase: z.string().min(10).max(2000),
-	termsVersion: z.string().min(1),
-	organizationLegalName: z.string().trim().min(1).max(500),
-	organizationCountry: zIsoCountryCode,
-	requesterName: z.string().trim().min(1).max(200),
-	requesterRole: z.string().trim().min(1).max(200),
-});
+export const zSettlementFeatureAccessSubmitBody = z
+	.object({
+		acceptTerms: z.literal(true, {
+			error: "You must accept the Settlement Feature Addendum",
+		}),
+		sanctionsSelfCert: z.literal(true, {
+			error: "You must confirm sanctions and export compliance",
+		}),
+		useCase: z.string().min(10).max(2000),
+		termsVersion: z.string().min(1),
+		organizationLegalName: z.string().trim().min(1).max(500),
+		organizationCountry: zIsoCountryCode,
+		requesterName: z.string().trim().min(1).max(200),
+		requesterRole: z.string().trim().min(1).max(200),
+		externalWalletAccessRequested: z.boolean().default(false),
+		externalWalletUseCase: z.string().max(2000).optional(),
+		externalWalletComplianceCert: z.boolean().optional(),
+	})
+	.superRefine((data, ctx) => {
+		if (!data.externalWalletAccessRequested) return;
+
+		const externalUseCase = data.externalWalletUseCase?.trim() ?? "";
+		if (externalUseCase.length < 30) {
+			ctx.addIssue({
+				code: "custom",
+				message:
+					"Describe who gets paid, how you verify them, and why they cannot be envelope recipients (at least 30 characters).",
+				path: ["externalWalletUseCase"],
+			});
+		}
+		if (data.externalWalletComplianceCert !== true) {
+			ctx.addIssue({
+				code: "custom",
+				message:
+					"You must confirm sanctions and AML responsibility for external wallet payouts.",
+				path: ["externalWalletComplianceCert"],
+			});
+		}
+	});
 
 export function settlementFeatureAccessApprovedForPlatformAdmin() {
 	return {
@@ -44,6 +69,56 @@ export function settlementFeatureAccessApprovedForPlatformAdmin() {
 		termsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
 		currentTermsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
 		termsCurrent: true,
+		externalWalletAccessEnabled: true,
+	};
+}
+
+function externalWalletIntakeFromSubmit(
+	data: z.infer<typeof zSettlementFeatureAccessSubmitBody>,
+	now: Date,
+) {
+	const requested = data.externalWalletAccessRequested === true;
+	return {
+		externalWalletAccessRequested: requested,
+		externalWalletUseCase: requested
+			? (data.externalWalletUseCase?.trim() ?? null)
+			: null,
+		externalWalletComplianceCertAt:
+			requested && data.externalWalletComplianceCert === true ? now : null,
+	};
+}
+
+function mapSettlementFeatureAccessRow(row: {
+	status: string;
+	termsVersion: string;
+	acceptedAt: Date;
+	acceptedByWallet: string;
+	useCase: string | null;
+	reviewedAt: Date | null;
+	reviewNote: string | null;
+	externalWalletAccessEnabled: boolean;
+	externalWalletAccessEnabledAt: Date | null;
+	externalWalletAccessRequested: boolean;
+	externalWalletUseCase: string | null;
+	externalWalletComplianceCertAt: Date | null;
+}) {
+	return {
+		status: row.status,
+		termsVersion: row.termsVersion,
+		currentTermsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+		acceptedAt: row.acceptedAt.toISOString(),
+		acceptedByWallet: row.acceptedByWallet,
+		useCase: row.useCase,
+		reviewedAt: row.reviewedAt?.toISOString() ?? null,
+		reviewNote: row.reviewNote,
+		termsCurrent: row.termsVersion === SETTLEMENT_FEATURE_TERMS_VERSION,
+		externalWalletAccessEnabled: row.externalWalletAccessEnabled,
+		externalWalletAccessEnabledAt:
+			row.externalWalletAccessEnabledAt?.toISOString() ?? null,
+		externalWalletAccessRequested: row.externalWalletAccessRequested,
+		externalWalletUseCase: row.externalWalletUseCase,
+		externalWalletComplianceCertAt:
+			row.externalWalletComplianceCertAt?.toISOString() ?? null,
 	};
 }
 
@@ -67,6 +142,16 @@ export async function getOrganizationSettlementFeatureAccess(
 			useCase: organizationSettlementFeatureAccess.useCase,
 			reviewedAt: organizationSettlementFeatureAccess.reviewedAt,
 			reviewNote: organizationSettlementFeatureAccess.reviewNote,
+			externalWalletAccessEnabled:
+				organizationSettlementFeatureAccess.externalWalletAccessEnabled,
+			externalWalletAccessEnabledAt:
+				organizationSettlementFeatureAccess.externalWalletAccessEnabledAt,
+			externalWalletAccessRequested:
+				organizationSettlementFeatureAccess.externalWalletAccessRequested,
+			externalWalletUseCase:
+				organizationSettlementFeatureAccess.externalWalletUseCase,
+			externalWalletComplianceCertAt:
+				organizationSettlementFeatureAccess.externalWalletComplianceCertAt,
 		})
 		.from(organizationSettlementFeatureAccess)
 		.where(
@@ -79,20 +164,12 @@ export async function getOrganizationSettlementFeatureAccess(
 			status: "none" as const,
 			termsVersion: null,
 			currentTermsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
+			externalWalletAccessEnabled: false,
+			externalWalletAccessRequested: false,
 		};
 	}
 
-	return {
-		status: row.status,
-		termsVersion: row.termsVersion,
-		currentTermsVersion: SETTLEMENT_FEATURE_TERMS_VERSION,
-		acceptedAt: row.acceptedAt.toISOString(),
-		acceptedByWallet: row.acceptedByWallet,
-		useCase: row.useCase,
-		reviewedAt: row.reviewedAt?.toISOString() ?? null,
-		reviewNote: row.reviewNote,
-		termsCurrent: row.termsVersion === SETTLEMENT_FEATURE_TERMS_VERSION,
-	};
+	return mapSettlementFeatureAccessRow(row);
 }
 
 export async function submitOrganizationSettlementFeatureRequest(args: {
@@ -151,6 +228,7 @@ export async function submitOrganizationSettlementFeatureRequest(args: {
 		requesterRole: parsed.data.requesterRole,
 		requestIp: args.audit.requestIp,
 		requestUserAgent: args.audit.requestUserAgent,
+		...externalWalletIntakeFromSubmit(parsed.data, now),
 	};
 
 	await db
@@ -208,6 +286,26 @@ export async function assertOrganizationSettlementFeatureApproved(
 	}
 }
 
+export async function assertOrganizationExternalWalletAccessEnabled(
+	organizationId: string,
+	options?: { callerWallet?: Address },
+) {
+	if (
+		options?.callerWallet &&
+		(await isPlatformAdminForWallet(options.callerWallet))
+	) {
+		return;
+	}
+
+	const access = await getOrganizationSettlementFeatureAccess(organizationId);
+	if (access.status !== "approved" || !access.termsCurrent) {
+		throw throwAppError("SETTLEMENTS.FEATURE_ACCESS_REQUIRED");
+	}
+	if (!access.externalWalletAccessEnabled) {
+		throw throwAppError("SETTLEMENTS.EXTERNAL_WALLET_ACCESS_REQUIRED");
+	}
+}
+
 export async function listSettlementFeatureAccessForAdmin() {
 	const { organizationSettlementFeatureAccess, organizations } =
 		settlementAccessSchema();
@@ -232,6 +330,16 @@ export async function listSettlementFeatureAccessForAdmin() {
 			reviewedByAdminWallet:
 				organizationSettlementFeatureAccess.reviewedByAdminWallet,
 			reviewNote: organizationSettlementFeatureAccess.reviewNote,
+			externalWalletAccessEnabled:
+				organizationSettlementFeatureAccess.externalWalletAccessEnabled,
+			externalWalletAccessEnabledAt:
+				organizationSettlementFeatureAccess.externalWalletAccessEnabledAt,
+			externalWalletAccessRequested:
+				organizationSettlementFeatureAccess.externalWalletAccessRequested,
+			externalWalletUseCase:
+				organizationSettlementFeatureAccess.externalWalletUseCase,
+			externalWalletComplianceCertAt:
+				organizationSettlementFeatureAccess.externalWalletComplianceCertAt,
 		})
 		.from(organizationSettlementFeatureAccess)
 		.innerJoin(
@@ -244,6 +352,10 @@ export async function listSettlementFeatureAccessForAdmin() {
 		...row,
 		acceptedAt: row.acceptedAt.toISOString(),
 		reviewedAt: row.reviewedAt?.toISOString() ?? null,
+		externalWalletAccessEnabledAt:
+			row.externalWalletAccessEnabledAt?.toISOString() ?? null,
+		externalWalletComplianceCertAt:
+			row.externalWalletComplianceCertAt?.toISOString() ?? null,
 	}));
 }
 
@@ -308,6 +420,45 @@ export async function rejectOrganizationSettlementFeatureAccess(args: {
 
 	if (updated.length === 0) {
 		throw throwAppError("SETTLEMENTS.ACCESS_REQUEST_NOT_FOUND");
+	}
+
+	return getOrganizationSettlementFeatureAccess(args.organizationId);
+}
+
+export async function setOrganizationExternalWalletAccess(args: {
+	adminWallet: Address;
+	organizationId: string;
+	enabled: boolean;
+}) {
+	const { organizationSettlementFeatureAccess } = settlementAccessSchema();
+	const now = new Date();
+	const updated = await db
+		.update(organizationSettlementFeatureAccess)
+		.set({
+			externalWalletAccessEnabled: args.enabled,
+			externalWalletAccessEnabledAt: args.enabled ? now : null,
+			externalWalletAccessEnabledByAdminWallet: args.enabled
+				? getAddress(args.adminWallet)
+				: null,
+			updatedAt: now,
+		})
+		.where(
+			eq(
+				organizationSettlementFeatureAccess.organizationId,
+				args.organizationId,
+			),
+		)
+		.returning({
+			organizationId: organizationSettlementFeatureAccess.organizationId,
+			status: organizationSettlementFeatureAccess.status,
+		});
+
+	const row = updated[0];
+	if (!row) {
+		throw throwAppError("SETTLEMENTS.ACCESS_REQUEST_NOT_FOUND");
+	}
+	if (row.status !== "approved") {
+		throw throwAppError("SETTLEMENTS.FEATURE_ACCESS_REQUIRED");
 	}
 
 	return getOrganizationSettlementFeatureAccess(args.organizationId);

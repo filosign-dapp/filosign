@@ -5,6 +5,7 @@ import {
 	getOrganizationSettlementFeatureAccess,
 	listSettlementFeatureAccessForAdmin,
 	rejectOrganizationSettlementFeatureAccess,
+	setOrganizationExternalWalletAccess,
 	submitOrganizationSettlementFeatureRequest,
 } from "@/lib/domains/settlement-access";
 import { assertPlatformAdmin } from "@/lib/platform/admin";
@@ -81,5 +82,26 @@ export async function settlementAdminRejectAccess(
 		adminWallet,
 		organizationId: parsed.data.organizationId,
 		reviewNote: parsed.data.reviewNote,
+	});
+}
+
+export async function settlementAdminSetExternalWalletAccess(
+	adminWallet: Address,
+	body: unknown,
+) {
+	await assertPlatformAdmin(adminWallet);
+	const parsed = z
+		.object({
+			organizationId: z.uuid(),
+			enabled: z.boolean(),
+		})
+		.safeParse(body);
+	if (!parsed.success) {
+		throw throwZodBadRequest(parsed.error);
+	}
+	return setOrganizationExternalWalletAccess({
+		adminWallet,
+		organizationId: parsed.data.organizationId,
+		enabled: parsed.data.enabled,
 	});
 }

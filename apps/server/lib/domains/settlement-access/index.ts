@@ -1,10 +1,12 @@
 export {
 	approveOrganizationSettlementFeatureAccess,
+	assertOrganizationExternalWalletAccessEnabled,
 	assertOrganizationSettlementFeatureApproved,
 	getOrganizationSettlementFeatureAccess,
 	listSettlementFeatureAccessForAdmin,
 	rejectOrganizationSettlementFeatureAccess,
 	SETTLEMENT_FEATURE_TERMS_VERSION,
+	setOrganizationExternalWalletAccess,
 	submitOrganizationSettlementFeatureRequest,
 	zSettlementFeatureAccessSubmitBody,
 } from "./settlement-access";

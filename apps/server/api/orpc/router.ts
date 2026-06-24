@@ -77,6 +77,7 @@ import {
 	settlementAdminApproveAccess,
 	settlementAdminListAccessRequests,
 	settlementAdminRejectAccess,
+	settlementAdminSetExternalWalletAccess,
 } from "@/api/handlers/settlement-access-handlers";
 import {
 	settlementsCancelRule,
@@ -352,6 +353,17 @@ export const appRouter = {
 				.output(out.platformAdmin.settlementAccessDecision)
 				.handler(({ context, input }) =>
 					settlementAdminRejectAccess(context.userWallet, input),
+				),
+			setExternalWalletAccess: authenticatedProcedure
+				.input(
+					z.object({
+						organizationId: z.uuid(),
+						enabled: z.boolean(),
+					}),
+				)
+				.output(out.platformAdmin.settlementAccessDecision)
+				.handler(({ context, input }) =>
+					settlementAdminSetExternalWalletAccess(context.userWallet, input),
 				),
 		},
 		feedback: {

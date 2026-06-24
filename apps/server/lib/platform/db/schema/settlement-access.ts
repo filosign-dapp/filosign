@@ -42,6 +42,12 @@ export const organizationSettlementFeatureAccess = t.pgTable(
 		reviewedAt: t.timestamp({ withTimezone: true }),
 		reviewedByAdminWallet: tEvmAddress(),
 		reviewNote: t.text(),
+		externalWalletAccessEnabled: t.boolean().notNull().default(false),
+		externalWalletAccessEnabledAt: t.timestamp({ withTimezone: true }),
+		externalWalletAccessEnabledByAdminWallet: tEvmAddress(),
+		externalWalletAccessRequested: t.boolean().notNull().default(false),
+		externalWalletUseCase: t.text(),
+		externalWalletComplianceCertAt: t.timestamp({ withTimezone: true }),
 		...timestamps,
 	},
 	(table) => [

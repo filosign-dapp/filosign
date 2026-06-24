@@ -275,10 +275,9 @@ export function DashboardSidebar() {
 											...group.items,
 											{
 												title: "Admin",
-												url: "/dashboard/admin",
+												url: "/admin/",
 												icon: ShieldCheckIcon,
-												match: (p: string) =>
-													matchPrefix(p, "/dashboard/admin"),
+												match: (p: string) => matchPrefix(p, "/admin"),
 												tooltip: "Platform admin",
 											},
 										]

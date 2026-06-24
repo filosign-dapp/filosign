@@ -111,6 +111,7 @@ import {
 } from "./orgs-output";
 import {
 	rpcPlatformAdminAccessRequestsListOutputSchema,
+	rpcPlatformAdminDashboardStatsOutputSchema,
 	rpcPlatformAdminFeedbackListOutputSchema,
 	rpcPlatformAdminInviteCreateOutputSchema,
 	rpcPlatformAdminInviteRebookOutputSchema,
@@ -260,6 +261,7 @@ export const rpcOut = {
 		settlementAccessDecision:
 			rpcPlatformAdminSettlementAccessDecisionOutputSchema,
 		feedbackList: rpcPlatformAdminFeedbackListOutputSchema,
+		dashboardStats: rpcPlatformAdminDashboardStatsOutputSchema,
 		systemTemplatesList: rpcSystemTemplatesListOutputSchema,
 		systemTemplateGet: rpcSystemTemplateGetOutputSchema,
 		systemTemplate: rpcSystemTemplateOutputSchema,
@@ -333,10 +335,14 @@ export {
 } from "@/lib/domains/drafts";
 export { zFileCommentAppendBody as zFilesCommentAppendInput } from "@/lib/domains/files";
 export {
+	zPlatformAdminAccessRequestsListInput,
 	zPlatformAdminFeedbackListInput,
 	zPlatformAdminInviteCreateInput,
+	zPlatformAdminInvitesListInput,
 	zPlatformAdminSetFeatureOverridesInput,
 	zPlatformAdminSetPlanInput,
+	zPlatformAdminSettlementAccessListInput,
+	zPlatformAdminUsersListInput,
 } from "./platform-admin-output";
 export {
 	zDocumentsListInputSchema,

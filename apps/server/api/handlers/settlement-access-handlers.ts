@@ -37,10 +37,16 @@ export async function settlementAccessSubmitRequest(
 	});
 }
 
-export async function settlementAdminListAccessRequests(adminWallet: Address) {
+export async function settlementAdminListAccessRequests(
+	adminWallet: Address,
+	input: {
+		page?: number;
+		q?: string;
+		status?: "all" | "pending" | "approved" | "rejected";
+	},
+) {
 	await assertPlatformAdmin(adminWallet);
-	const requests = await listSettlementFeatureAccessForAdmin();
-	return { requests };
+	return listSettlementFeatureAccessForAdmin(input);
 }
 
 export async function settlementAdminApproveAccess(

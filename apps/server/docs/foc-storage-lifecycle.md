@@ -99,5 +99,5 @@ When `FOC_BACKUP_ENABLED=false`, `FOC_WALLET_*` may be omitted (local/staging). 
 
 - Routing-complete stub + immediate transition + Synapse upload/extend: **implemented**
 - Parallel backup (R2 retained) + R2-only ciphertext locator: **implemented**
-- FIL/USDFC wallet balance alerts when backup enabled (hourly cron, staging/production): **implemented**
+- FIL/USDFC wallet balance alerts when backup enabled (twice-daily cron UTC 08:00 and 20:00; staging/production): **implemented**
 - Attachment replication: **not yet** (parent FOC plan)

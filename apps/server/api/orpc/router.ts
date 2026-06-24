@@ -60,6 +60,7 @@ import {
 	platformAdminAccessRequestsApprove,
 	platformAdminAccessRequestsList,
 	platformAdminAccessRequestsReject,
+	platformAdminDashboardStats,
 	platformAdminInvitesCreate,
 	platformAdminInvitesList,
 	platformAdminInvitesRebook,
@@ -129,10 +130,14 @@ import {
 	zDocumentsListInputSchema,
 	zNotificationsDismissInputSchema,
 	zNotificationsInboxInputSchema,
+	zPlatformAdminAccessRequestsListInput,
 	zPlatformAdminFeedbackListInput,
 	zPlatformAdminInviteCreateInput,
+	zPlatformAdminInvitesListInput,
 	zPlatformAdminSetFeatureOverridesInput,
 	zPlatformAdminSetPlanInput,
+	zPlatformAdminSettlementAccessListInput,
+	zPlatformAdminUsersListInput,
 } from "./schemas";
 import {
 	zColdInviteClaimBody,
@@ -251,10 +256,18 @@ export const appRouter = {
 		access: authenticatedProcedure
 			.output(z.object({ isAdmin: z.boolean() }))
 			.handler(({ context }) => platformAdminAccess(context.userWallet)),
+		dashboardStats: authenticatedProcedure
+			.output(out.platformAdmin.dashboardStats)
+			.handler(({ context }) =>
+				platformAdminDashboardStats(context.userWallet),
+			),
 		invites: {
 			list: authenticatedProcedure
+				.input(zPlatformAdminInvitesListInput)
 				.output(out.platformAdmin.invitesList)
-				.handler(({ context }) => platformAdminInvitesList(context.userWallet)),
+				.handler(({ context, input }) =>
+					platformAdminInvitesList(context.userWallet, input),
+				),
 			create: authenticatedProcedure
 				.input(zPlatformAdminInviteCreateInput)
 				.output(out.platformAdmin.inviteCreate)
@@ -282,8 +295,11 @@ export const appRouter = {
 		},
 		users: {
 			list: authenticatedProcedure
+				.input(zPlatformAdminUsersListInput)
 				.output(out.platformAdmin.usersList)
-				.handler(({ context }) => platformAdminUsersList(context.userWallet)),
+				.handler(({ context, input }) =>
+					platformAdminUsersList(context.userWallet, input),
+				),
 			setFeatureOverrides: authenticatedProcedure
 				.input(zPlatformAdminSetFeatureOverridesInput)
 				.output(z.object({ ok: z.literal(true) }))
@@ -299,9 +315,10 @@ export const appRouter = {
 		},
 		accessRequests: {
 			list: authenticatedProcedure
+				.input(zPlatformAdminAccessRequestsListInput)
 				.output(out.platformAdmin.accessRequestsList)
-				.handler(({ context }) =>
-					platformAdminAccessRequestsList(context.userWallet),
+				.handler(({ context, input }) =>
+					platformAdminAccessRequestsList(context.userWallet, input),
 				),
 			approve: authenticatedProcedure
 				.input(
@@ -328,9 +345,10 @@ export const appRouter = {
 		},
 		settlementFeatureAccess: {
 			list: authenticatedProcedure
+				.input(zPlatformAdminSettlementAccessListInput)
 				.output(out.platformAdmin.settlementAccessList)
-				.handler(({ context }) =>
-					settlementAdminListAccessRequests(context.userWallet),
+				.handler(({ context, input }) =>
+					settlementAdminListAccessRequests(context.userWallet, input),
 				),
 			approve: authenticatedProcedure
 				.input(

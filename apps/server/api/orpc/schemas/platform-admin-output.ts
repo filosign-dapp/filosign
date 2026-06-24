@@ -61,7 +61,17 @@ export const rpcPlatformAdminInviteRowSchema = z.object({
 });
 
 export const rpcPlatformAdminInvitesListOutputSchema = z.object({
-	invites: z.array(rpcPlatformAdminInviteRowSchema),
+	items: z.array(rpcPlatformAdminInviteRowSchema),
+	page: z.number().int().min(1),
+	pageSize: z.number().int().min(1),
+	totalCount: z.number().int().min(0),
+	totalPages: z.number().int().min(0),
+});
+
+export const zPlatformAdminInvitesListInput = z.object({
+	page: z.number().int().min(1).default(1),
+	q: z.string().max(100).optional(),
+	status: z.enum(["all", "active", "revoked", "expired"]).default("all"),
 });
 
 export const rpcPlatformAdminInviteCreateOutputSchema = z.object({
@@ -101,7 +111,17 @@ export const rpcPlatformAdminUserRowSchema = z.object({
 });
 
 export const rpcPlatformAdminUsersListOutputSchema = z.object({
-	users: z.array(rpcPlatformAdminUserRowSchema),
+	items: z.array(rpcPlatformAdminUserRowSchema),
+	page: z.number().int().min(1),
+	pageSize: z.number().int().min(1),
+	totalCount: z.number().int().min(0),
+	totalPages: z.number().int().min(0),
+});
+
+export const zPlatformAdminUsersListInput = z.object({
+	page: z.number().int().min(1).default(1),
+	q: z.string().max(100).optional(),
+	planId: z.enum(PLAN_IDS).optional(),
 });
 
 export const zPlatformAdminSetFeatureOverridesInput = z.object({
@@ -131,7 +151,17 @@ export const rpcPlatformAdminAccessRequestRowSchema = z.object({
 });
 
 export const rpcPlatformAdminAccessRequestsListOutputSchema = z.object({
-	requests: z.array(rpcPlatformAdminAccessRequestRowSchema),
+	items: z.array(rpcPlatformAdminAccessRequestRowSchema),
+	page: z.number().int().min(1),
+	pageSize: z.number().int().min(1),
+	totalCount: z.number().int().min(0),
+	totalPages: z.number().int().min(0),
+});
+
+export const zPlatformAdminAccessRequestsListInput = z.object({
+	page: z.number().int().min(1).default(1),
+	q: z.string().max(100).optional(),
+	status: z.enum(["all", "pending", "approved", "rejected"]).default("all"),
 });
 
 export const rpcPlatformAdminSettlementAccessRowSchema = z.object({
@@ -159,7 +189,17 @@ export const rpcPlatformAdminSettlementAccessRowSchema = z.object({
 });
 
 export const rpcPlatformAdminSettlementAccessListOutputSchema = z.object({
-	requests: z.array(rpcPlatformAdminSettlementAccessRowSchema),
+	items: z.array(rpcPlatformAdminSettlementAccessRowSchema),
+	page: z.number().int().min(1),
+	pageSize: z.number().int().min(1),
+	totalCount: z.number().int().min(0),
+	totalPages: z.number().int().min(0),
+});
+
+export const zPlatformAdminSettlementAccessListInput = z.object({
+	page: z.number().int().min(1).default(1),
+	q: z.string().max(100).optional(),
+	status: z.enum(["all", "pending", "approved", "rejected"]).default("pending"),
 });
 
 export const rpcPlatformAdminSettlementAccessDecisionOutputSchema = z.object({
@@ -202,4 +242,11 @@ export const rpcPlatformAdminFeedbackListOutputSchema = z.object({
 	pageSize: z.number().int().min(1),
 	totalCount: z.number().int().min(0),
 	totalPages: z.number().int().min(0),
+});
+
+export const rpcPlatformAdminDashboardStatsOutputSchema = z.object({
+	pendingAccessRequests: z.number().int().min(0),
+	pendingPayoutAccess: z.number().int().min(0),
+	activeInvites: z.number().int().min(0),
+	feedbackTotal: z.number().int().min(0),
 });

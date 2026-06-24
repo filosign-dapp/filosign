@@ -17,6 +17,7 @@ import {
 	isEnvelopeRoutingCompleteOnChain,
 	readEnvelopeRegistryProgress,
 } from "../piece-helpers";
+import { buildSignerTurnEmailOutboxRows } from "../signer-turn-email";
 
 const { files } = db.schema;
 
@@ -218,6 +219,28 @@ export async function runPostSignRoutingCompleteJob(args: {
 	}
 
 	if (waitingForMoreSigners(progress)) {
+		if (
+			progress?.nextSignerEmail &&
+			file.registerRoutingJson?.routingMode === 1 &&
+			file.registerRoutingJson.routingOrderEmails?.length
+		) {
+			const { enqueueOutboxByIds, insertJobOutboxRows } = await import(
+				"@/lib/platform/jobs"
+			);
+			const turnRows = await buildSignerTurnEmailOutboxRows({
+				pieceCid: args.pieceCid,
+				sender: getAddress(file.sender) as `0x${string}`,
+				registerRoutingJson: file.registerRoutingJson,
+				nextSignerEmail: progress.nextSignerEmail,
+				turnEpoch: progress.requiredSignaturesCount,
+			});
+			if (turnRows.length > 0) {
+				const inserted = await db.transaction(async (tx) =>
+					insertJobOutboxRows(tx, turnRows),
+				);
+				await enqueueOutboxByIds(inserted.map((row) => row.id));
+			}
+		}
 		return;
 	}
 

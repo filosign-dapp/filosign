@@ -48,6 +48,7 @@ import {
 	updateRegisterStateRelayerAddress,
 } from "./register-state";
 import { compileRegisterRosterEmails } from "./roster-emails";
+import { buildSignerTurnEmailOutboxRows } from "./signer-turn-email";
 
 /** Call-time schema access so Bun `mock.module("@/lib/platform/db")` stays effective across the shared test module cache. */
 function schema() {
@@ -259,7 +260,18 @@ export async function executeRegisterJob(pieceCid: string): Promise<void> {
 					participantWallets,
 					coldInvites,
 				});
-				return insertJobOutboxRows(tx, inserts);
+				const turnInserts =
+					routing?.routingMode === 1 && routing.routingOrderEmails?.length
+						? await buildSignerTurnEmailOutboxRows({
+								pieceCid,
+								sender,
+								registerRoutingJson: routing,
+								nextSignerEmail: routing.routingOrderEmails[0],
+								turnEpoch: 0,
+								tx,
+							})
+						: [];
+				return insertJobOutboxRows(tx, [...inserts, ...turnInserts]);
 			});
 
 			if (!isPractice) {

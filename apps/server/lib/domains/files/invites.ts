@@ -19,6 +19,9 @@ import {
 	trackServerEvent,
 } from "@/lib/platform/analytics";
 import db from "@/lib/platform/db";
+import { buildEmailIdempotencyKey } from "@/lib/platform/email";
+import type { JobOutboxInsert } from "@/lib/platform/jobs";
+import { enqueueOutboxByIds, insertJobOutboxRows } from "@/lib/platform/jobs";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
 
 const {
@@ -407,6 +410,7 @@ export async function filesColdInviteRegenerate(args: {
 	const [file] = await db
 		.select({
 			sender: files.sender,
+			displayName: files.displayName,
 		})
 		.from(files)
 		.where(eq(files.pieceCid, pieceCid))
@@ -433,11 +437,12 @@ export async function filesColdInviteRegenerate(args: {
 		throwAppError("FILES.INVITE_NOT_FOUND");
 	}
 
+	const newInviteToken = parsedBody.data.inviteToken;
 	const expiresAt = inviteExpiresAt();
 	await db
 		.update(fileColdInvites)
 		.set({
-			inviteToken: parsedBody.data.inviteToken,
+			inviteToken: newInviteToken,
 			wrappedEncryptionKey: parsedBody.data.wrappedEncryptionKey,
 			expiresAt,
 			updatedAt: new Date(),
@@ -449,8 +454,59 @@ export async function filesColdInviteRegenerate(args: {
 			),
 		);
 
+	const [senderProfile] = await db
+		.select({
+			email: users.email,
+			firstName: users.firstName,
+			lastName: users.lastName,
+			username: users.username,
+		})
+		.from(users)
+		.where(eq(users.walletAddress, senderWallet))
+		.limit(1);
+
+	const senderName =
+		[senderProfile?.firstName, senderProfile?.lastName]
+			.filter(Boolean)
+			.join(" ") ||
+		senderProfile?.username ||
+		senderProfile?.email ||
+		undefined;
+
+	const documentTitle = file.displayName?.trim() || undefined;
+	const outboxRows: JobOutboxInsert[] = activeInvites.map((invite) => {
+		const to = invite.email.trim().toLowerCase();
+		return {
+			kind: "cold_doc_invite" as const,
+			payload: {
+				to,
+				senderWallet,
+				pieceCid,
+				inviteToken: newInviteToken,
+				senderName,
+				documentTitle,
+				intent: "rotated" as const,
+			},
+			idempotencyKey: buildEmailIdempotencyKey([
+				"cold-invite-rotated",
+				pieceCid,
+				to,
+				newInviteToken,
+			]),
+		};
+	});
+
+	if (outboxRows.length > 0) {
+		const inserted = await db.transaction(async (tx) =>
+			insertJobOutboxRows(tx, outboxRows),
+		);
+		if (inserted.length > 0) {
+			await enqueueOutboxByIds(inserted.map((row) => row.id));
+		}
+	}
+
 	return {
-		inviteToken: parsedBody.data.inviteToken,
+		inviteToken: newInviteToken,
 		recipientEmails: activeInvites.map((row) => row.email),
 		expiresAt: expiresAt.toISOString(),
 	};

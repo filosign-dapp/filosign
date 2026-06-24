@@ -217,14 +217,13 @@ export async function pieceDetail(userWallet: Address, pieceCid: string) {
 		.map((s) => s.email)
 		.filter((email): email is string => Boolean(email));
 
-	const mySupplementaryPackets =
-		participantUser && !isSender
-			? await listSupplementaryPacketsForParticipant({
-					userWallet: userWalletNorm,
-					pieceCid,
-					signerEmails,
-				})
-			: [];
+	const mySupplementaryPackets = participantUser
+		? await listSupplementaryPacketsForParticipant({
+				userWallet: userWalletNorm,
+				pieceCid,
+				signerEmails,
+			})
+		: [];
 
 	const [focRow] = await db
 		.select({

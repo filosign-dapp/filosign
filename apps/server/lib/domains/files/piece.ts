@@ -81,9 +81,6 @@ export async function pieceAck(args: {
 	if (fileRecord.revokedBeforeCompletedAt) {
 		throwAppError("FILES.ENVELOPE_VOIDED");
 	}
-	if (fileRecord.completedAt) {
-		throwAppError("FILES.ENVELOPE_COMPLETE");
-	}
 
 	const [participantRecord] = await db
 		.select({
@@ -144,6 +141,7 @@ export async function pieceAck(args: {
 		ackTimestamp: timestamp,
 		ackSignature: signature,
 		registryAddress: fileRecord.registryAddress as `0x${string}`,
+		envelopeComplete: Boolean(fileRecord.completedAt),
 	});
 
 	const acknowledgedAt = new Date(timestamp * 1000);

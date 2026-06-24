@@ -31,7 +31,13 @@ export async function relayBoundSignerAckIfNeeded(args: {
 	ackTimestamp: number;
 	ackSignature: `0x${string}`;
 	registryAddress: `0x${string}`;
+	/** When true, persist off-chain ack only; on-chain registerEnvelopeAck reverts after completion. */
+	envelopeComplete?: boolean;
 }): Promise<void> {
+	if (args.envelopeComplete) {
+		return;
+	}
+
 	const registry = fsEnvelopeRegistryAt(args.registryAddress);
 	const cidId = computeCidIdentifier(args.pieceCid);
 	const bound = await (

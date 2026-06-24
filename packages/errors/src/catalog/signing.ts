@@ -6,7 +6,7 @@ export const signingErrors = {
 		description: "Wait for the PDF to load, then sign again.",
 		steps: [
 			"Tap Accept file if you have not already.",
-			"Wait until the PDF appears (unlock your wallet if prompted).",
+			"Wait until the PDF appears (unlock your keys if needed).",
 			"Tap Sign again.",
 		],
 		supportSlug: "signing-view-required",
@@ -45,7 +45,7 @@ export const signingErrors = {
 		description: "Wait for the PDF to load, then sign again.",
 		steps: [
 			"Tap Accept file if you have not already.",
-			"Wait until the PDF appears (unlock your wallet if prompted).",
+			"Wait until the PDF appears (unlock your keys if needed).",
 			"Tap Sign again.",
 		],
 		supportSlug: "signing-view-before-sign",

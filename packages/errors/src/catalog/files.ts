@@ -39,8 +39,9 @@ export const filesErrors = {
 	},
 	"FILES.ENVELOPE_COMPLETE": {
 		title: "Document already completed",
-		description: "Everyone has signed. Download a copy from your dashboard.",
-		steps: ["View or download the final signed document from your dashboard."],
+		description:
+			"This envelope is complete on-chain. Signing is closed; you can still view or download the signed document.",
+		steps: ["View or download the final signed document from this page."],
 		audience: "user",
 		severity: "warning",
 		defaultOrpcCode: "FORBIDDEN",

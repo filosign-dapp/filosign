@@ -32,10 +32,7 @@ export const genericErrors = {
 	"AUTH.UNAUTHORIZED": {
 		title: "Sign in required",
 		description: "Your session expired or you are not signed in.",
-		steps: [
-			"Sign out and sign in again.",
-			"Complete wallet unlock if prompted.",
-		],
+		steps: ["Sign out and sign in again.", "Complete key unlock if needed."],
 		supportSlug: "sign-in-required",
 		audience: "user",
 		severity: "warning",

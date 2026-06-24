@@ -51,7 +51,7 @@ export const settlementsErrors = {
 		description: "Wait a moment and try again.",
 		steps: [
 			"Refresh the page.",
-			"Confirm your wallet approved the payment setup.",
+			"Confirm USDC approval completed for this payout.",
 		],
 		audience: "user",
 		severity: "error",

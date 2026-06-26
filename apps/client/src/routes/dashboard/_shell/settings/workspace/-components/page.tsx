@@ -1,5 +1,4 @@
-import { useEntitlements } from "@filosign/react/billing";
-import { canUseTeamCollaboration } from "@filosign/react/files";
+import type { UpgradePlanLimitReason } from "@filosign/react/billing";
 import {
 	BuildingsIcon,
 	GearIcon,
@@ -16,6 +15,7 @@ import { DocsLink } from "@/src/lib/docs/docs-link";
 import { DOCS_LINKS } from "@/src/lib/docs/links";
 import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { UpgradePlanDialog } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
+import { useOpenInviteTeammateDialog } from "@/src/lib/domains/workspace/use-invite-teammate-gate";
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import {
 	CreateWorkspaceFlow,
@@ -109,10 +109,12 @@ function WorkspaceDetailsSection() {
 
 export function WorkspaceSettingsPage() {
 	const { activeOrgId, canInviteMembers } = useWorkspaceSettings();
-	const { data: entitlements } = useEntitlements();
 	const [isInviteOpen, setIsInviteOpen] = useState(false);
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [upgradeOpen, setUpgradeOpen] = useState(false);
+	const [upgradeReason, setUpgradeReason] = useState<UpgradePlanLimitReason>(
+		"features.team_collaboration",
+	);
 	const { pendingBillingId: pendingFromCheckout } =
 		useCreateWorkspacePendingFromUrl();
 
@@ -120,15 +122,13 @@ export function WorkspaceSettingsPage() {
 		if (pendingFromCheckout) setIsCreateOpen(true);
 	}, [pendingFromCheckout]);
 
-	const hasCollaboration = canUseTeamCollaboration(entitlements);
-
-	const handleInviteClick = () => {
-		if (hasCollaboration) {
-			setIsInviteOpen(true);
-		} else {
+	const openInviteDialog = useOpenInviteTeammateDialog({
+		openInvite: () => setIsInviteOpen(true),
+		openUpgrade: (reason) => {
+			setUpgradeReason(reason);
 			setUpgradeOpen(true);
-		}
-	};
+		},
+	});
 
 	return (
 		<div className="mx-auto max-w-3xl space-y-8 px-6 py-8 sm:px-8">
@@ -144,7 +144,7 @@ export function WorkspaceSettingsPage() {
 								variant="outline"
 								size="sm"
 								className="gap-2 touch-manipulation"
-								onClick={handleInviteClick}
+								onClick={openInviteDialog}
 							>
 								<UserPlusIcon className="size-4" aria-hidden="true" />
 								Invite teammate
@@ -176,7 +176,7 @@ export function WorkspaceSettingsPage() {
 				<div className="space-y-6">
 					<WorkspaceDetailsSection />
 					<OrgWalletSection />
-					<MembersSection onInviteClick={handleInviteClick} />
+					<MembersSection onInviteClick={openInviteDialog} />
 					<PayoutFeatureAccessSection />
 				</div>
 			) : (

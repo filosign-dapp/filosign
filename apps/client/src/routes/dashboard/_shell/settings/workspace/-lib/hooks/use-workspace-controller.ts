@@ -6,6 +6,8 @@ import {
 	useOrganizations,
 	usePublishOrgMemberKeyWrap,
 	useRemoveOrgMember,
+	useResendOrgInvite,
+	useRevokeOrgInvite,
 	useSetOrgMemberRole,
 	useUpdateOrganization,
 } from "@filosign/react/orgs";
@@ -27,6 +29,8 @@ export function useWorkspaceSettingsController() {
 	const wrapKey = usePublishOrgMemberKeyWrap();
 	const setRole = useSetOrgMemberRole();
 	const removeMember = useRemoveOrgMember();
+	const revokeInvite = useRevokeOrgInvite();
+	const resendInvite = useResendOrgInvite();
 	const cloneTemplate = useCloneOrgTemplateToEnvelope();
 
 	const orgDetail = useOrganizationGet(activeOrgId ?? undefined);
@@ -42,6 +46,7 @@ export function useWorkspaceSettingsController() {
 		activeMembership?.role === "owner" || activeMembership?.role === "admin";
 
 	const members = orgDetail.data?.members;
+	const pendingInvites = orgDetail.data?.pendingInvites;
 
 	const templates = orgDetail.data?.templates;
 
@@ -55,11 +60,14 @@ export function useWorkspaceSettingsController() {
 		wrapKey,
 		setRole,
 		removeMember,
+		revokeInvite,
+		resendInvite,
 		cloneTemplate,
 		orgDetail,
 		activeMembership,
 		canInviteMembers,
 		members,
+		pendingInvites,
 		templates,
 	};
 }

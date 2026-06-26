@@ -5,14 +5,26 @@ import { BILLING_SETTINGS_PATH } from "@/src/lib/domains/billing/settings-path";
 import { ProFeatureMark } from "@/src/lib/domains/entitlements/pro-feature-mark";
 import { MemberRow } from "@/src/routes/dashboard/_shell/settings/workspace/-components/member-row";
 import { MemberRowCard } from "@/src/routes/dashboard/_shell/settings/workspace/-components/member-row-card";
+import { PendingInviteRow } from "@/src/routes/dashboard/_shell/settings/workspace/-components/pending-invite-row";
+import { PendingInviteRowCard } from "@/src/routes/dashboard/_shell/settings/workspace/-components/pending-invite-row-card";
 import { useWorkspaceSettings } from "@/src/routes/dashboard/_shell/settings/workspace/-lib/context/context";
 import { WorkspaceSection } from "./workspace-section";
 
 export function MembersSection(props: { onInviteClick?: () => void }) {
-	const { activeOrgId, members, myWalletNorm, canInviteMembers } =
-		useWorkspaceSettings();
+	const {
+		activeOrgId,
+		members,
+		pendingInvites,
+		myWalletNorm,
+		canInviteMembers,
+	} = useWorkspaceSettings();
 
-	if (!activeOrgId || !members || members.length === 0) return null;
+	const hasMembers = Boolean(members && members.length > 0);
+	const hasPendingInvites = Boolean(
+		pendingInvites && pendingInvites.length > 0,
+	);
+
+	if (!activeOrgId || (!hasMembers && !hasPendingInvites)) return null;
 
 	return (
 		<WorkspaceSection
@@ -48,7 +60,14 @@ export function MembersSection(props: { onInviteClick?: () => void }) {
 			}
 		>
 			<div className="space-y-3 md:hidden">
-				{members.map((m) => (
+				{pendingInvites?.map((invite) => (
+					<PendingInviteRowCard
+						key={invite.id}
+						invite={invite}
+						canManageInvites={canInviteMembers}
+					/>
+				))}
+				{members?.map((m) => (
 					<MemberRowCard
 						key={m.walletAddress}
 						member={m}
@@ -78,7 +97,14 @@ export function MembersSection(props: { onInviteClick?: () => void }) {
 						</tr>
 					</thead>
 					<tbody className="divide-y divide-border">
-						{members.map((m) => (
+						{pendingInvites?.map((invite) => (
+							<PendingInviteRow
+								key={invite.id}
+								invite={invite}
+								canManageInvites={canInviteMembers}
+							/>
+						))}
+						{members?.map((m) => (
 							<MemberRow
 								key={m.walletAddress}
 								member={m}

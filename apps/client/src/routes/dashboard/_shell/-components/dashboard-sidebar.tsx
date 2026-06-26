@@ -1,6 +1,4 @@
 import { useFilosignContext } from "@filosign/react";
-import { useEntitlements } from "@filosign/react/billing";
-import { canUseTeamCollaboration } from "@filosign/react/files";
 import {
 	useActiveOrganization,
 	useActiveOrgId,
@@ -62,6 +60,7 @@ import {
 	UpgradePlanDialog,
 	type UpgradePlanLimitReason,
 } from "@/src/lib/domains/entitlements/upgrade-plan-dialog";
+import { useOpenInviteTeammateDialog } from "@/src/lib/domains/workspace/use-invite-teammate-gate";
 import { useFeedback } from "@/src/lib/feedback/feedback-provider";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { cn } from "@/src/lib/utils/index";
@@ -209,7 +208,6 @@ export function DashboardSidebar() {
 	const activeOrgId = useActiveOrgId();
 	const activeOrg = useActiveOrganization();
 	const setActiveOrg = useSetPersistedActiveOrganizationId();
-	const { data: entitlements } = useEntitlements();
 
 	const [isCreateOpen, setIsCreateOpen] = useState(false);
 	const [isInviteOpen, setIsInviteOpen] = useState(false);
@@ -224,7 +222,13 @@ export function DashboardSidebar() {
 		if (pendingFromCheckout) setIsCreateOpen(true);
 	}, [pendingFromCheckout]);
 
-	const hasCollaboration = canUseTeamCollaboration(entitlements);
+	const openInviteDialog = useOpenInviteTeammateDialog({
+		openInvite: () => setIsInviteOpen(true),
+		openUpgrade: (reason) => {
+			setUpgradeReason(reason);
+			setUpgradeOpen(true);
+		},
+	});
 
 	const orgs = orgsData?.organizations ?? [];
 
@@ -416,14 +420,7 @@ export function DashboardSidebar() {
 								<DropdownMenuSeparator />
 								<DropdownMenuGroup>
 									<DropdownMenuItem
-										onClick={() => {
-											if (hasCollaboration) {
-												setIsInviteOpen(true);
-											} else {
-												setUpgradeReason("features.team_collaboration");
-												setUpgradeOpen(true);
-											}
-										}}
+										onClick={openInviteDialog}
 										className="gap-2 cursor-pointer"
 									>
 										<UserPlusIcon className="size-4" />

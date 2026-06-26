@@ -5,13 +5,14 @@ import {
 	useNewWorkspacePendingStatus,
 } from "@filosign/react/billing";
 import {
+	useActiveOrgId,
 	useCreateOrganization,
 	useInviteOrgMember,
 	useOrganizations,
 } from "@filosign/react/orgs";
 import { ArrowSquareOutIcon } from "@phosphor-icons/react";
 import type { FormEvent } from "react";
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import env from "@/src/env";
 import { Button } from "@/src/lib/components/ui/button";
 import { Dialog } from "@/src/lib/components/ui/dialog";
@@ -26,6 +27,13 @@ import {
 } from "@/src/lib/components/ui/feature-dialog";
 import { Input } from "@/src/lib/components/ui/input";
 import { Label } from "@/src/lib/components/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/src/lib/components/ui/select";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
 import { clientPublicCheckoutEnabled } from "@/src/lib/deployment";
@@ -41,6 +49,9 @@ import {
 import { showAppErrorToast, suppressGlobalErrorToast } from "@/src/lib/errors";
 import { useSetPersistedActiveOrganizationId } from "@/src/lib/filosign/persisted-active-org";
 import { cn } from "@/src/lib/utils/index";
+
+const INVITE_ROLE_OPTIONS = ["admin", "sender", "viewer", "owner"] as const;
+type InviteRole = (typeof INVITE_ROLE_OPTIONS)[number];
 
 const CHECKOUT_PLANS: OrgCheckoutPlanId[] = ["teams", "teams_pro"];
 
@@ -584,18 +595,51 @@ export function InviteTeammateDialog(props: {
 	onOpenChange: (open: boolean) => void;
 }) {
 	const titleId = useId();
+	const roleId = useId();
 	const inviteMember = useInviteOrgMember();
+	const activeOrgId = useActiveOrgId();
+	const { data: orgsData } = useOrganizations();
 	const [email, setEmail] = useState("");
+	const [role, setRole] = useState<InviteRole>("sender");
+
+	const activeMembership = useMemo(
+		() => orgsData?.organizations.find((org) => org.id === activeOrgId),
+		[activeOrgId, orgsData?.organizations],
+	);
+	const isOwner = activeMembership?.role === "owner";
+	const roleOptions = useMemo(
+		() => INVITE_ROLE_OPTIONS.filter((option) => option !== "owner" || isOwner),
+		[isOwner],
+	);
+
+	useEffect(() => {
+		if (!roleOptions.includes(role)) {
+			setRole("sender");
+		}
+	}, [role, roleOptions]);
 
 	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
 		if (!email.trim()) return;
 		try {
-			await inviteMember.mutateAsync({ email: email.trim() });
-			toastUser.success(TOASTS.workspace.teammateInvited);
+			const result = await inviteMember.mutateAsync(
+				{
+					email: email.trim(),
+					role,
+				},
+				suppressGlobalErrorToast(),
+			);
+			toastUser.success(
+				result.emailSent
+					? TOASTS.workspace.inviteSent
+					: TOASTS.workspace.teammateInvited,
+			);
 			setEmail("");
+			setRole("sender");
 			props.onOpenChange(false);
-		} catch {}
+		} catch (err) {
+			showAppErrorToast(err);
+		}
 	};
 
 	return (
@@ -610,7 +654,7 @@ export function InviteTeammateDialog(props: {
 					<FeatureDialogHeader
 						title="Invite teammate to workspace"
 						titleId={titleId}
-						description="Enter your teammate's email address. Once they register or login, they will be automatically added to this workspace."
+						description="We'll email them a link to join. They must sign in with this email address to accept."
 					/>
 					<FeatureDialogBody>
 						<form onSubmit={handleSubmit} className="space-y-4">
@@ -626,6 +670,33 @@ export function InviteTeammateDialog(props: {
 									disabled={inviteMember.isPending}
 								/>
 							</div>
+							<div className="space-y-2">
+								<Label htmlFor={roleId}>Role</Label>
+								<Select
+									value={role}
+									onValueChange={(value) => setRole(value as InviteRole)}
+									disabled={inviteMember.isPending}
+								>
+									<SelectTrigger id={roleId} className="w-full capitalize">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{roleOptions.map((option) => (
+											<SelectItem
+												key={option}
+												value={option}
+												className="capitalize"
+											>
+												{option}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<p className="text-xs text-muted-foreground">
+								After they join, you may need to grant encryption access before
+								they can open team drafts.
+							</p>
 							<FeatureDialogActions>
 								<Button
 									type="submit"

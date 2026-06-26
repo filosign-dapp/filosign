@@ -169,6 +169,7 @@ export const TOASTS = {
 		checkoutNotCompleted:
 			"Checkout was not completed. Choose a plan to try again.",
 		inviteSent: "Invite sent",
+		joined: "You joined the workspace",
 		nameSaved: "Name saved",
 		teammateInvited: "Teammate invited",
 		treasuryLinked: "Payment wallet linked",

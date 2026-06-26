@@ -67,7 +67,11 @@ export async function executeSwitchAccountLogout(
 
 	const navigateSearch: ColdInviteEntrySearch | undefined = (() => {
 		if (preservedSearch) return preservedSearch;
-		if (!storedGate?.platformInviteToken && !storedGate?.setupToken) {
+		if (
+			!storedGate?.platformInviteToken &&
+			!storedGate?.setupToken &&
+			!storedGate?.orgInviteToken
+		) {
 			return undefined;
 		}
 		return {
@@ -76,6 +80,7 @@ export async function executeSwitchAccountLogout(
 			email: storedGate.coldRecipientEmail ?? "",
 			platformInvite: storedGate.platformInviteToken ?? "",
 			setup: storedGate.setupToken ?? "",
+			orgInvite: storedGate.orgInviteToken ?? "",
 			skipColdSign: "",
 		};
 	})();

@@ -12,6 +12,7 @@ describe("platform-access-session", () => {
 			accessGateFromSearch({
 				platformInvite: "abc12345",
 				setup: "",
+				orgInvite: "",
 				coldInvite: "",
 				coldPieceCid: "",
 				email: "",
@@ -20,11 +21,26 @@ describe("platform-access-session", () => {
 		).toEqual({ platformInviteToken: "abc12345" });
 	});
 
+	test("accessGateFromSearch maps orgInvite param", () => {
+		expect(
+			accessGateFromSearch({
+				platformInvite: "",
+				setup: "",
+				orgInvite: "workspace-token-abc",
+				coldInvite: "",
+				coldPieceCid: "",
+				email: "",
+				skipColdSign: "",
+			}),
+		).toEqual({ orgInviteToken: "workspace-token-abc" });
+	});
+
 	test("storeAccessGateFromSearch persists router search", () => {
 		withSessionStorageStub(() => {
 			storeAccessGateFromSearch({
 				platformInvite: "router-token-abc",
 				setup: "",
+				orgInvite: "",
 				coldInvite: "",
 				coldPieceCid: "",
 				email: "",

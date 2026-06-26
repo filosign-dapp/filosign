@@ -11,6 +11,7 @@ type PreviewGateArgs = {
 	coldInvite?: string;
 	coldPieceCid?: string;
 	email?: string;
+	orgInvite?: string;
 };
 
 function isAwaitingPaidSetupWebhook(preview: {

@@ -7,6 +7,7 @@ export type StoredAccessGate = {
 	setupToken?: string;
 	coldInviteToken?: string;
 	coldRecipientEmail?: string;
+	orgInviteToken?: string;
 };
 
 export function accessGateFromSearch(
@@ -15,10 +16,12 @@ export function accessGateFromSearch(
 	const gate: StoredAccessGate = {};
 	const platformInvite = search.platformInvite?.trim();
 	const setup = search.setup?.trim();
+	const orgInvite = search.orgInvite?.trim();
 	const coldInvite = search.coldInvite?.trim();
 	const email = search.email?.trim().toLowerCase();
 	if (platformInvite) gate.platformInviteToken = platformInvite;
 	if (setup) gate.setupToken = setup;
+	if (orgInvite) gate.orgInviteToken = orgInvite;
 	if (coldInvite) gate.coldInviteToken = coldInvite;
 	if (email) gate.coldRecipientEmail = email;
 	return gate;
@@ -52,4 +55,13 @@ export function readStoredAccessGate(): StoredAccessGate | null {
 export function clearStoredAccessGate(): void {
 	if (typeof sessionStorage === "undefined") return;
 	sessionStorage.removeItem(STORAGE_KEY);
+}
+
+/** Clears register-time gate fields but keeps workspace invite token for post-login accept. */
+export function clearRegisterAccessGatePreservingOrgInvite(): void {
+	const orgInviteToken = readStoredAccessGate()?.orgInviteToken?.trim();
+	clearStoredAccessGate();
+	if (orgInviteToken) {
+		storeAccessGate({ orgInviteToken });
+	}
 }

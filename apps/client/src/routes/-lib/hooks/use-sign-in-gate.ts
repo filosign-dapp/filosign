@@ -57,9 +57,11 @@ export function useSignInGate(search: ColdInviteEntrySearch) {
 	const [dialogPlanLabel, setDialogPlanLabel] = useState<string | null>(null);
 
 	const hasSetupToken = Boolean(search.setup?.trim());
+	const hasOrgInvite = Boolean(search.orgInvite?.trim());
 	const hasDeepLinkGate = Boolean(
 		search.platformInvite?.trim() ||
 			search.setup?.trim() ||
+			search.orgInvite?.trim() ||
 			(search.coldInvite?.trim() && search.coldPieceCid?.trim()) ||
 			search.email?.trim(),
 	);
@@ -70,6 +72,7 @@ export function useSignInGate(search: ColdInviteEntrySearch) {
 			"platform-access-preview",
 			search.platformInvite,
 			search.setup,
+			search.orgInvite,
 			search.coldInvite,
 			search.coldPieceCid,
 			search.email,
@@ -77,8 +80,29 @@ export function useSignInGate(search: ColdInviteEntrySearch) {
 			hasDeepLinkGate,
 		] as const,
 		enabled: gated && hasDeepLinkGate,
-		queryFn: async () =>
-			previewGateWithSetupPolling(
+		queryFn: async () => {
+			if (hasOrgInvite) {
+				const preview = await rpc.orgs.invites.preview({
+					token: search.orgInvite,
+				});
+				if (!preview.valid) {
+					return {
+						valid: false as const,
+						reason: preview.reason ?? "Invite not found or expired",
+					};
+				}
+				return {
+					valid: true as const,
+					gate: "org_invite" as const,
+					lockedEmail: preview.lockedEmail ?? "",
+					planLabel: preview.orgName ?? null,
+					trialDays: null,
+					expiresAt: preview.expiresAt
+						? new Date(preview.expiresAt).toISOString()
+						: null,
+				};
+			}
+			return previewGateWithSetupPolling(
 				(args) => rpc.platformAccess.previewGate(args),
 				{
 					platformInvite: search.platformInvite || undefined,
@@ -86,8 +110,10 @@ export function useSignInGate(search: ColdInviteEntrySearch) {
 					coldInvite: search.coldInvite || undefined,
 					coldPieceCid: search.coldPieceCid || undefined,
 					email: search.email || emailInput || undefined,
+					orgInvite: search.orgInvite || undefined,
 				},
-			),
+			);
+		},
 		staleTime: 30_000,
 	});
 
@@ -202,6 +228,7 @@ export function useSignInGate(search: ColdInviteEntrySearch) {
 				coldInvite: search.coldInvite || undefined,
 				coldPieceCid: search.coldPieceCid || undefined,
 				email,
+				orgInvite: search.orgInvite || undefined,
 			});
 			if (!check.valid) {
 				if (check.reason === NOT_REGISTERED_REASON) {
@@ -238,6 +265,7 @@ export function useSignInGate(search: ColdInviteEntrySearch) {
 				coldInvite: search.coldInvite || undefined,
 				coldPieceCid: search.coldPieceCid || undefined,
 				email,
+				orgInvite: search.orgInvite || undefined,
 			});
 			if (!check.valid) {
 				setAuthError(check.reason ?? "Email not allowed for this link.");

@@ -5,7 +5,11 @@ import {
 } from "@filosign/errors";
 import { useFilosignContext } from "@filosign/react";
 import { useIsRegistered, useLogin } from "@filosign/react/auth";
-import { useActiveOrgId, useOrganizations } from "@filosign/react/orgs";
+import {
+	useAcceptOrgInvite,
+	useActiveOrgId,
+	useOrganizations,
+} from "@filosign/react/orgs";
 import { useRedeemPartnerInvite } from "@filosign/react/platform-access";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -35,18 +39,20 @@ import {
 	shouldPreservePartnerInviteGate,
 } from "@/src/lib/web3/partner-invite-redeem-errors";
 import {
+	clearRegisterAccessGatePreservingOrgInvite,
 	clearStoredAccessGate,
 	readStoredAccessGate,
 } from "@/src/lib/web3/platform-access-session";
 import { useThirdweb } from "@/src/lib/web3/use-thirdweb";
 
-export type AutoRegisterPhase = "register" | "bootstrap" | "redeem";
+export type AutoRegisterPhase = "register" | "bootstrap" | "redeem" | "accept";
 
 export type AutoRegisterStatus =
 	| { status: "idle" }
 	| { status: "registering" }
 	| { status: "bootstrapping" }
 	| { status: "redeeming" }
+	| { status: "accepting" }
 	| { status: "completed" }
 	| {
 			status: "failed";
@@ -93,6 +99,7 @@ export function AutoRegisterProvider({ children }: { children: ReactNode }) {
 	const activeOrgId = useActiveOrgId();
 	const login = useLogin();
 	const redeemPartnerInvite = useRedeemPartnerInvite();
+	const acceptOrgInvite = useAcceptOrgInvite();
 	const queryClient = useQueryClient();
 	const setActiveOrgId = useSetPersistedActiveOrganizationId();
 
@@ -154,8 +161,44 @@ export function AutoRegisterProvider({ children }: { children: ReactNode }) {
 			legalAssent,
 		});
 		clearStoredLegalAssent();
-		clearStoredAccessGate();
+		clearRegisterAccessGatePreservingOrgInvite();
 	}, [login, token]);
+
+	const runOrgInviteAcceptFlow = useCallback(async () => {
+		if (inFlightRef.current) return;
+		inFlightRef.current = true;
+
+		const orgInviteToken = readStoredAccessGate()?.orgInviteToken?.trim();
+		if (!orgInviteToken) {
+			inFlightRef.current = false;
+			setStatus({ status: "completed" });
+			return;
+		}
+
+		setStatus({ status: "accepting" });
+		try {
+			const result = await acceptOrgInvite.mutateAsync({
+				token: orgInviteToken,
+			});
+			if (result.organizationId) {
+				setActiveOrgId(result.organizationId);
+			}
+			clearStoredAccessGate();
+			lastFailedPhaseRef.current = null;
+			toastUser.success(TOASTS.workspace.joined);
+			setStatus({ status: "completed" });
+		} catch (error) {
+			showAppErrorToast(error);
+			const failure = autoRegisterFailureFromError(
+				error,
+				"Workspace invite accept failed",
+			);
+			lastFailedPhaseRef.current = "accept";
+			setStatus({ status: "failed", phase: "accept", ...failure });
+		} finally {
+			inFlightRef.current = false;
+		}
+	}, [acceptOrgInvite, setActiveOrgId]);
 
 	const runRedeemFlow = useCallback(async () => {
 		if (inFlightRef.current) return;
@@ -226,6 +269,12 @@ export function AutoRegisterProvider({ children }: { children: ReactNode }) {
 					phase = "bootstrap";
 				}
 				await runBootstrap();
+				const orgInviteToken = readStoredAccessGate()?.orgInviteToken?.trim();
+				if (orgInviteToken) {
+					inFlightRef.current = false;
+					await runOrgInviteAcceptFlow();
+					return;
+				}
 				lastFailedPhaseRef.current = null;
 				setStatus({ status: "completed" });
 			} catch (error) {
@@ -239,10 +288,14 @@ export function AutoRegisterProvider({ children }: { children: ReactNode }) {
 				inFlightRef.current = false;
 			}
 		},
-		[runBootstrap, runRegister],
+		[runBootstrap, runOrgInviteAcceptFlow, runRegister],
 	);
 
 	const retry = useCallback(() => {
+		if (lastFailedPhaseRef.current === "accept") {
+			void runOrgInviteAcceptFlow();
+			return;
+		}
 		if (lastFailedPhaseRef.current === "redeem") {
 			void runRedeemFlow();
 			return;
@@ -251,7 +304,7 @@ export function AutoRegisterProvider({ children }: { children: ReactNode }) {
 		const skipRegister =
 			isRegistered.data === true || lastFailedPhaseRef.current === "bootstrap";
 		void runFlow(skipRegister);
-	}, [isRegistered.data, runFlow, runRedeemFlow]);
+	}, [isRegistered.data, runFlow, runOrgInviteAcceptFlow, runRedeemFlow]);
 
 	useEffect(() => {
 		if (!ready || !authenticated || !walletAddress || !token) return;
@@ -263,6 +316,10 @@ export function AutoRegisterProvider({ children }: { children: ReactNode }) {
 			if (!orgsReady) return;
 
 			const storedGate = readStoredAccessGate();
+			if (storedGate?.orgInviteToken?.trim()) {
+				void runOrgInviteAcceptFlow();
+				return;
+			}
 			if (storedGate?.platformInviteToken?.trim()) {
 				void runRedeemFlow();
 				return;
@@ -295,6 +352,7 @@ export function AutoRegisterProvider({ children }: { children: ReactNode }) {
 		orgsReady,
 		ready,
 		runFlow,
+		runOrgInviteAcceptFlow,
 		runRedeemFlow,
 		status.status,
 		token,
@@ -306,6 +364,7 @@ export function AutoRegisterProvider({ children }: { children: ReactNode }) {
 			status.status === "registering" ||
 			status.status === "bootstrapping" ||
 			status.status === "redeeming" ||
+			status.status === "accepting" ||
 			(authenticated &&
 				isRegistered.data === false &&
 				status.status !== "failed"),

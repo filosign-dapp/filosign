@@ -17,6 +17,7 @@ const coldSearch = {
 	email: "signer@example.com",
 	platformInvite: "",
 	setup: "",
+	orgInvite: "",
 	skipColdSign: "",
 };
 
@@ -65,6 +66,7 @@ describe("resolvePostAuthDestination", () => {
 			email: "",
 			platformInvite: "",
 			setup: "",
+			orgInvite: "",
 			skipColdSign: "",
 		};
 		expect(
@@ -87,6 +89,7 @@ describe("resolvePostAuthDestination", () => {
 			email: "",
 			platformInvite: "",
 			setup: "",
+			orgInvite: "",
 			skipColdSign: "",
 			upgrade: "teams",
 			interval: "monthly",
@@ -163,6 +166,7 @@ describe("onboardingSearchFromSignDocument", () => {
 			email: "",
 			platformInvite: "",
 			setup: "",
+			orgInvite: "",
 			skipColdSign: "",
 		});
 	});

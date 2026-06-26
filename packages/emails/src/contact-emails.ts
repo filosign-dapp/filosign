@@ -21,6 +21,7 @@ export type FilosignTransactionalEmailKind =
 	| "envelope_completed"
 	| "signer_turn"
 	| "partner_invite"
+	| "workspace_invite"
 	| "access_approved"
 	| "paid_setup"
 	| "checkout_continue";
@@ -31,6 +32,7 @@ export const FILOSIGN_TRANSACTIONAL_EMAIL_CHANNELS = {
 	envelope_completed: "contract",
 	signer_turn: "contract",
 	partner_invite: "founder",
+	workspace_invite: "support",
 	access_approved: "hello",
 	paid_setup: "hello",
 	checkout_continue: "hello",

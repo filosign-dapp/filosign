@@ -22,6 +22,10 @@ export {
 	partnerInviteSubject,
 } from "./copy/partner-invite";
 export {
+	type WorkspaceInviteCopyInput,
+	workspaceInviteCopy,
+} from "./copy/workspace-invite";
+export {
 	emailAssetUrl,
 	filosignEmailAssets,
 	getEmailAssetBaseUrl,
@@ -62,4 +66,9 @@ export {
 	signerTurnCopy,
 	signerTurnSubject,
 } from "./render-signer-turn";
+export {
+	renderWorkspaceInvite,
+	type WorkspaceInviteEmailProps,
+	workspaceInviteSubject,
+} from "./render-workspace-invite";
 export { filosignEmailColors } from "./tokens";

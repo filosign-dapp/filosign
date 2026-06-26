@@ -8,6 +8,7 @@ import {
 	fileRegisterRetryJobId,
 	focTransitionJobId,
 	indexerJobId,
+	orgControllerSyncJobId,
 	payoutJobId,
 	postSignRoutingJobId,
 } from "./utils/idempotency";
@@ -21,6 +22,7 @@ import {
 	FOC_TRANSITION_QUEUE_NAME,
 	getBullmqPrefix,
 	INDEXER_QUEUE_NAME,
+	ORG_CONTROLLER_SYNC_QUEUE_NAME,
 	PAYOUT_QUEUE_NAME,
 	POST_SIGN_CHAIN_DELAY_MS,
 	POST_SIGN_CHAIN_JOB_OPTIONS,
@@ -55,6 +57,8 @@ export type FileRegisterQueueJobData = { pieceCid: string };
 
 export type FileRegisterRetryQueueJobData = { pieceCid: string };
 
+export type OrgControllerSyncQueueJobData = { organizationId: string };
+
 let emailQueue: Queue<EmailQueueJobData> | null = null;
 let payoutQueue: Queue<PayoutQueueJobData> | null = null;
 let postSignRoutingQueue: Queue<PostSignRoutingQueueJobData> | null = null;
@@ -63,6 +67,7 @@ let billingWebhookQueue: Queue<BillingWebhookQueueJobData> | null = null;
 let focTransitionQueue: Queue<FocTransitionQueueJobData> | null = null;
 let fileRegisterQueue: Queue<FileRegisterQueueJobData> | null = null;
 let fileRegisterRetryQueue: Queue<FileRegisterRetryQueueJobData> | null = null;
+let orgControllerSyncQueue: Queue<OrgControllerSyncQueueJobData> | null = null;
 
 function queueOptions() {
 	return {
@@ -149,6 +154,16 @@ export function getFileRegisterRetryQueue(): Queue<FileRegisterRetryQueueJobData
 	return fileRegisterRetryQueue;
 }
 
+export function getOrgControllerSyncQueue(): Queue<OrgControllerSyncQueueJobData> {
+	if (!orgControllerSyncQueue) {
+		orgControllerSyncQueue = new Queue<OrgControllerSyncQueueJobData>(
+			ORG_CONTROLLER_SYNC_QUEUE_NAME,
+			queueOptions(),
+		);
+	}
+	return orgControllerSyncQueue;
+}
+
 export async function enqueueFileRegister(pieceCid: string): Promise<void> {
 	await getFileRegisterQueue().add(
 		"register",
@@ -164,6 +179,16 @@ export async function enqueueFileRegisterRetry(
 		"retry",
 		{ pieceCid },
 		{ jobId: fileRegisterRetryJobId(pieceCid) },
+	);
+}
+
+export async function enqueueOrgControllerSync(
+	organizationId: string,
+): Promise<void> {
+	await getOrgControllerSyncQueue().add(
+		"sync",
+		{ organizationId },
+		{ jobId: orgControllerSyncJobId(organizationId) },
 	);
 }
 
@@ -313,6 +338,10 @@ export async function closeJobsQueues(): Promise<void> {
 	if (fileRegisterRetryQueue) {
 		closes.push(fileRegisterRetryQueue.close());
 		fileRegisterRetryQueue = null;
+	}
+	if (orgControllerSyncQueue) {
+		closes.push(orgControllerSyncQueue.close());
+		orgControllerSyncQueue = null;
 	}
 	await Promise.all(closes);
 }

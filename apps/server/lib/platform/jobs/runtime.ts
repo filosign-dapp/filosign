@@ -7,6 +7,7 @@ import {
 	getFileRegisterQueue,
 	getFocTransitionQueue,
 	getIndexerQueue,
+	getOrgControllerSyncQueue,
 	getPayoutQueue,
 	getPostSignRoutingQueue,
 } from "./queues";
@@ -20,6 +21,7 @@ import {
 	startFileRegisterWorker,
 	startFocTransitionWorker,
 	startIndexerWorker,
+	startOrgControllerSyncWorker,
 	startPayoutWorker,
 	startPostSignRoutingWorker,
 } from "./workers";
@@ -42,6 +44,7 @@ export function startJobsRuntime(options: JobsRuntimeOptions): void {
 			getFocTransitionQueue();
 		}
 		getFileRegisterQueue();
+		getOrgControllerSyncQueue();
 	}
 	if (options.worker) {
 		startEmailWorker();
@@ -54,6 +57,7 @@ export function startJobsRuntime(options: JobsRuntimeOptions): void {
 		}
 		startFileRegisterWorker();
 		startFileRegisterRetryWorker();
+		startOrgControllerSyncWorker();
 		startOutboxDrainer();
 	}
 }

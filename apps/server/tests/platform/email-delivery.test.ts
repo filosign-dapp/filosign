@@ -303,4 +303,54 @@ describe("email delivery", () => {
 			);
 		});
 	});
+
+	describe("sendWorkspaceInviteEmail", () => {
+		test("returns false when outbound email is disabled", async () => {
+			setEmailTestEnv({
+				EMAIL_PROVIDER: "ses",
+				RESEND_ENABLED: false,
+				SES_ENABLED: false,
+			});
+
+			const { sendWorkspaceInviteEmail } = await import(
+				"@/lib/platform/email/invites"
+			);
+
+			const sent = await sendWorkspaceInviteEmail({
+				to: "alex@acme.com",
+				inviteUrl: "https://app.example.com/?orgInvite=abc",
+				orgName: "Acme Legal",
+				inviterName: "Jordan Lee",
+				role: "sender",
+				expiresAt: new Date("2026-07-01T00:00:00.000Z"),
+			});
+
+			expect(sent).toBe(false);
+			expect(resendSend).not.toHaveBeenCalled();
+		});
+
+		test("uses workspace invite subject and from address", async () => {
+			const { sendWorkspaceInviteEmail } = await import(
+				"@/lib/platform/email/invites"
+			);
+
+			await sendWorkspaceInviteEmail({
+				to: "alex@acme.com",
+				inviteUrl: "https://app.example.com/?orgInvite=abc",
+				orgName: "Acme Legal",
+				inviterName: "Jordan Lee",
+				role: "sender",
+				expiresAt: new Date("2026-07-01T00:00:00.000Z"),
+			});
+
+			expect(resendSend).toHaveBeenCalledWith(
+				expect.objectContaining({
+					from: "Filosign <test@example.com>",
+					subject: "You're invited to join Acme Legal on Filosign",
+					to: "alex@acme.com",
+				}),
+				expect.any(Object),
+			);
+		});
+	});
 });

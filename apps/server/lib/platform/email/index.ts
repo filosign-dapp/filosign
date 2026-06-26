@@ -20,6 +20,7 @@ export {
 	sendPaidSetupEmail,
 	sendPartnerInviteEmail,
 	sendSignerTurnEmail,
+	sendWorkspaceInviteEmail,
 } from "./invites";
 export { recipientDisplayNameFromEmail } from "./recipient-name";
 export {

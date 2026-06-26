@@ -38,6 +38,10 @@ export function focTransitionJobId(pieceCid: string): string {
 	return `foc${JOB_ID_SEP}${pieceCid}`;
 }
 
+export function orgControllerSyncJobId(organizationId: string): string {
+	return `org-controllers${JOB_ID_SEP}${organizationId}`;
+}
+
 /** Returns true when the webhook row is already terminal (safe no-op for workers). */
 export async function isBillingWebhookProcessed(
 	providerEventId: string,

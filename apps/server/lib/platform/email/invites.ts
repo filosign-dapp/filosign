@@ -10,8 +10,10 @@ import {
 	renderPaidSetup,
 	renderPartnerInvite,
 	renderSignerTurn,
+	renderWorkspaceInvite,
 	replyToForTransactionalEmail,
 	signerTurnSubject,
+	workspaceInviteSubject,
 } from "@filosign/emails";
 import type { PaidCheckoutPlanId } from "@filosign/shared";
 import type { Address } from "viem";
@@ -379,6 +381,71 @@ export async function sendPartnerInviteEmail(args: {
 			emailVariant,
 			recipientNameRaw.toLowerCase(),
 			customBodyRaw ?? "",
+		],
+	});
+	return true;
+}
+
+function orgRoleLabel(role: string): string {
+	const trimmed = role.trim();
+	if (!trimmed) return "Member";
+	return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+}
+
+function formatInviteExpiresAt(expiresAt: Date): string {
+	return expiresAt.toLocaleDateString("en-US", {
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+		timeZone: "UTC",
+	});
+}
+
+export async function sendWorkspaceInviteEmail(args: {
+	to: string;
+	inviteUrl: string;
+	orgName: string;
+	inviterName: string;
+	role: string;
+	expiresAt: Date;
+}): Promise<boolean> {
+	if (shouldSkipEmail()) return false;
+
+	const email = args.to.trim().toLowerCase();
+	const inviteeName = recipientDisplayNameFromEmail(email);
+	const escapedInviteeName = escapeHtml(inviteeName);
+	const escapedInviterName = escapeHtml(
+		args.inviterName.trim() || "A teammate",
+	);
+	const escapedOrgName = escapeHtml(args.orgName.trim() || "your workspace");
+	const roleLabel = orgRoleLabel(args.role);
+	const escapedRoleLabel = escapeHtml(roleLabel);
+	const expiresAtLabel = formatInviteExpiresAt(args.expiresAt);
+
+	const subject = workspaceInviteSubject(
+		args.orgName.trim() || "your workspace",
+	);
+
+	const { html, text } = await renderWorkspaceInvite({
+		inviteeName: escapedInviteeName,
+		inviterName: escapedInviterName,
+		orgName: escapedOrgName,
+		roleLabel: escapedRoleLabel,
+		expiresAtLabel,
+		ctaHref: args.inviteUrl,
+	});
+
+	await deliverEmail({
+		to: email,
+		subject,
+		text,
+		html,
+		kind: "workspace_invite",
+		idempotencySegments: [
+			"workspace-invite",
+			email,
+			args.inviteUrl,
+			args.orgName.trim().toLowerCase(),
 		],
 	});
 	return true;

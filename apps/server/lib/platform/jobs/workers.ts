@@ -4,6 +4,7 @@ import { runFileRegisterRetryJob } from "@/lib/domains/files/utils/register-retr
 import { executeRegisterJob } from "@/lib/domains/files/utils/register-worker";
 import { runPostSignRoutingCompleteJob } from "@/lib/domains/files/utils/sign/routing-complete";
 import { runFocTransitionForPiece } from "@/lib/domains/foc";
+import { syncOrgControllersOnChain } from "@/lib/domains/orgs/controllers";
 import { tryExecuteSettlementRulesForPiece } from "@/lib/domains/settlements/utils/execute/payout";
 import { SettlementPayoutRetryableError } from "@/lib/domains/settlements/utils/execute/payout-readiness";
 import { evmClient } from "@/lib/platform/evm";
@@ -16,6 +17,7 @@ import type {
 	FileRegisterRetryQueueJobData,
 	FocTransitionQueueJobData,
 	IndexerQueueJobData,
+	OrgControllerSyncQueueJobData,
 	PayoutQueueJobData,
 	PostSignRoutingQueueJobData,
 } from "./queues";
@@ -31,6 +33,7 @@ import {
 	FOC_TRANSITION_QUEUE_NAME,
 	getBullmqPrefix,
 	INDEXER_QUEUE_NAME,
+	ORG_CONTROLLER_SYNC_QUEUE_NAME,
 	PAYOUT_QUEUE_NAME,
 	POST_SIGN_ROUTING_QUEUE_NAME,
 } from "./utils/queue-config";
@@ -55,6 +58,8 @@ let billingWebhookWorker: Worker<BillingWebhookQueueJobData> | null = null;
 let focTransitionWorker: Worker<FocTransitionQueueJobData> | null = null;
 let fileRegisterWorker: Worker<FileRegisterQueueJobData> | null = null;
 let fileRegisterRetryWorker: Worker<FileRegisterRetryQueueJobData> | null =
+	null;
+let orgControllerSyncWorker: Worker<OrgControllerSyncQueueJobData> | null =
 	null;
 
 function commonWorkerOptions() {
@@ -252,6 +257,33 @@ export function startFileRegisterRetryWorker(): Worker<FileRegisterRetryQueueJob
 	return fileRegisterRetryWorker;
 }
 
+export function startOrgControllerSyncWorker(): Worker<OrgControllerSyncQueueJobData> {
+	if (orgControllerSyncWorker) return orgControllerSyncWorker;
+
+	orgControllerSyncWorker = new Worker<OrgControllerSyncQueueJobData>(
+		ORG_CONTROLLER_SYNC_QUEUE_NAME,
+		async (job) => {
+			await syncOrgControllersOnChain(job.data.organizationId);
+		},
+		{
+			...commonWorkerOptions(),
+			concurrency: 1,
+		},
+	);
+
+	attachWorkerFailedHandler(
+		orgControllerSyncWorker,
+		ORG_CONTROLLER_SYNC_QUEUE_NAME,
+		{
+			alertContext: (job) =>
+				job?.data?.organizationId
+					? { organizationId: job.data.organizationId }
+					: {},
+		},
+	);
+	return orgControllerSyncWorker;
+}
+
 export function startAllWorkers(): void {
 	startEmailWorker();
 	startPayoutWorker();
@@ -261,6 +293,7 @@ export function startAllWorkers(): void {
 	startFocTransitionWorker();
 	startFileRegisterWorker();
 	startFileRegisterRetryWorker();
+	startOrgControllerSyncWorker();
 }
 
 export async function closeEmailWorker(): Promise<void> {
@@ -319,6 +352,13 @@ export async function closeFileRegisterRetryWorker(): Promise<void> {
 	}
 }
 
+export async function closeOrgControllerSyncWorker(): Promise<void> {
+	if (orgControllerSyncWorker) {
+		await orgControllerSyncWorker.close();
+		orgControllerSyncWorker = null;
+	}
+}
+
 export async function closeAllWorkers(): Promise<void> {
 	await Promise.all([
 		closeEmailWorker(),
@@ -329,5 +369,6 @@ export async function closeAllWorkers(): Promise<void> {
 		closeFocTransitionWorker(),
 		closeFileRegisterWorker(),
 		closeFileRegisterRetryWorker(),
+		closeOrgControllerSyncWorker(),
 	]);
 }

@@ -9,6 +9,7 @@ export const TIER_LABELS: Record<CheckTier, string> = {
 export const CHECK_LABELS: Record<string, string> = {
 	"local.bundle.schema": "Bundle schema",
 	"local.bundle.sha256.sidecar": "Bundle SHA-256 sidecar",
+	"local.bundle.sha256.canonical": "Bundle canonical hash",
 	"local.manifest.bundleSha256": "Manifest bundle hash",
 	"local.manifest.sidecarMatch": "Manifest vs sidecar hash",
 	"local.placement.commitment": "Placement commitment",

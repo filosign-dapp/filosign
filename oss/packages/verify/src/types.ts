@@ -46,6 +46,8 @@ export type AttachmentManifestPayload = {
 
 export type ParsedProofPacket = {
 	bundle: ComplianceBundle;
+	/** Exact UTF-8 bytes of bundle.json as committed in the proof packet. */
+	bundleJsonBytes: Uint8Array;
 	manifest: VerifyManifestV1;
 	bundleSha256Sidecar: string | null;
 	documentMerkleProofs: {

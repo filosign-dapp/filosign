@@ -55,6 +55,9 @@ describe("parsePacket v1 proof packet", () => {
 		expect(parsed.manifest.format).toBe("filosign-verify-v1");
 		expect(parsed.manifest.packetSchema).toBe("filosign-proof-packet-v1");
 		expect(parsed.bundleSha256Sidecar).toBe(bundleHash);
+		expect(parsed.bundleJsonBytes).toEqual(
+			encode(JSON.stringify(minimalBundle)),
+		);
 		expect(parsed.originalDocuments["a.pdf"]).toEqual(
 			new Uint8Array([7, 8, 9]),
 		);

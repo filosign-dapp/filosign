@@ -47,9 +47,11 @@ export function parsePacket(zipBytes: Uint8Array): ParsedProofPacket {
 	const paths = resolvePathsFromManifest(manifestPath, manifest);
 	validatePacketLayout(entries, paths);
 
-	const bundleRaw = JSON.parse(
-		decodeEntry(entries, paths.bundlePath),
-	) as unknown;
+	const bundleJsonBytes = entries[paths.bundlePath];
+	if (!bundleJsonBytes) {
+		throw new Error(`Missing ${paths.bundlePath} in proof packet`);
+	}
+	const bundleRaw = JSON.parse(new TextDecoder().decode(bundleJsonBytes)) as unknown;
 	const bundle = zComplianceBundle.parse(bundleRaw) satisfies ComplianceBundle;
 
 	const bundleSha256Sidecar = new TextDecoder()
@@ -97,6 +99,7 @@ export function parsePacket(zipBytes: Uint8Array): ParsedProofPacket {
 
 	return {
 		bundle,
+		bundleJsonBytes,
 		manifest,
 		bundleSha256Sidecar,
 		documentMerkleProofs,

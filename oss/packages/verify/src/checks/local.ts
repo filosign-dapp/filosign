@@ -5,6 +5,7 @@ import {
 	computePlacementCommitment,
 	hashNormalizedSignerEmail,
 	merkleRootFromLeafAndSiblings,
+	sha256PlaintextHex,
 } from "@filosign/protocol";
 import type { CheckResult } from "../types";
 import {
@@ -16,6 +17,7 @@ import {
 
 export async function runLocalChecks(args: {
 	bundle: ComplianceBundle;
+	bundleJsonBytes?: Uint8Array | null;
 	bundleSha256Sidecar?: string | null;
 	manifest?: VerifyManifestV1 | null;
 }): Promise<CheckResult[]> {
@@ -29,21 +31,56 @@ export async function runLocalChecks(args: {
 		}),
 	];
 
-	const computedHash = await complianceBundleSha256Hex(bundle);
+	const recomputedCanonicalHash = await complianceBundleSha256Hex(bundle);
+	const committedHash = args.bundleJsonBytes
+		? await sha256PlaintextHex(args.bundleJsonBytes)
+		: recomputedCanonicalHash;
+
 	if (args.bundleSha256Sidecar) {
 		const sidecarMatches =
-			normalizeHex(args.bundleSha256Sidecar) === normalizeHex(computedHash);
+			normalizeHex(args.bundleSha256Sidecar) === normalizeHex(committedHash);
 		results.push(
 			compareCheck({
 				id: "local.bundle.sha256.sidecar",
 				tier: "local",
 				expected: args.bundleSha256Sidecar,
-				actual: computedHash,
+				actual: committedHash,
 				message: sidecarMatches
-					? "bundle.sha256 matches canonical bundle JSON"
-					: "bundle.sha256 does not match canonical bundle JSON",
+					? "bundle.sha256 matches bundle.json bytes in packet"
+					: "bundle.sha256 does not match bundle.json bytes in packet",
 			}),
 		);
+
+		if (args.bundleJsonBytes) {
+			const canonicalMatches =
+				normalizeHex(args.bundleSha256Sidecar) ===
+				normalizeHex(recomputedCanonicalHash);
+			if (sidecarMatches && !canonicalMatches) {
+				results.push(
+					statusCheck({
+						id: "local.bundle.sha256.canonical",
+						tier: "local",
+						status: "warn",
+						message:
+							"bundle.json uses legacy canonicalization (recomputed hash differs from committed bytes)",
+						expected: args.bundleSha256Sidecar,
+						actual: recomputedCanonicalHash,
+					}),
+				);
+			} else {
+				results.push(
+					compareCheck({
+						id: "local.bundle.sha256.canonical",
+						tier: "local",
+						expected: args.bundleSha256Sidecar,
+						actual: recomputedCanonicalHash,
+						message: canonicalMatches
+							? "Recomputed canonical bundle hash matches committed bytes"
+							: "Recomputed canonical bundle hash does not match committed bytes",
+					}),
+				);
+			}
+		}
 	} else {
 		results.push(
 			statusCheck({
@@ -57,16 +94,16 @@ export async function runLocalChecks(args: {
 
 	if (args.manifest) {
 		const manifestMatches =
-			normalizeHex(args.manifest.bundleSha256) === normalizeHex(computedHash);
+			normalizeHex(args.manifest.bundleSha256) === normalizeHex(committedHash);
 		results.push(
 			compareCheck({
 				id: "local.manifest.bundleSha256",
 				tier: "local",
 				expected: args.manifest.bundleSha256,
-				actual: computedHash,
+				actual: committedHash,
 				message: manifestMatches
-					? "verify-manifest.json bundleSha256 matches bundle"
-					: "verify-manifest.json bundleSha256 does not match bundle",
+					? "verify-manifest.json bundleSha256 matches bundle.json bytes"
+					: "verify-manifest.json bundleSha256 does not match bundle.json bytes",
 			}),
 		);
 		if (args.bundleSha256Sidecar) {
@@ -181,6 +218,7 @@ export async function runLocalChecks(args: {
 
 export async function verifyLocal(args: {
 	bundle: ComplianceBundle;
+	bundleJsonBytes?: Uint8Array | null;
 	bundleSha256Sidecar?: string | null;
 	manifest?: VerifyManifestV1 | null;
 }) {

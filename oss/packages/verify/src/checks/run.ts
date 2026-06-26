@@ -26,6 +26,7 @@ export async function verifyPacket(
 		results.push(
 			...(await runLocalChecks({
 				bundle: parsed.bundle,
+				bundleJsonBytes: parsed.bundleJsonBytes,
 				bundleSha256Sidecar: parsed.bundleSha256Sidecar,
 				manifest: parsed.manifest,
 			})),

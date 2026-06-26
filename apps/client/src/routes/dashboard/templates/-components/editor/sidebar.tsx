@@ -1,4 +1,4 @@
-import { CaretDownIcon, PenNibIcon } from "@phosphor-icons/react";
+import { CaretDownIcon, FilePdfIcon, PenNibIcon } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import { Button } from "@/src/lib/components/ui/button";
 import {
@@ -8,6 +8,7 @@ import {
 } from "@/src/lib/components/ui/collapsible";
 import { useAddSignPlacement } from "@/src/lib/domains/placement/context";
 import { PlacementFieldPaletteList } from "@/src/lib/domains/placement/field-palette";
+import { usePdfAcroformImportUi } from "@/src/lib/domains/placement/pdf-acroform-import-context";
 import { resolvePaletteHighlightedFieldType } from "@/src/lib/domains/placement/utils/palette-selection";
 import {
 	isTemplatePreviewMode,
@@ -102,6 +103,41 @@ function TemplateEditorSidebarEdit() {
 	);
 }
 
+function TemplateEditorSidebarFooter() {
+	const mode = useTemplateEditorMode();
+	const isPreview = isTemplatePreviewMode(mode);
+	const { canImportAcroform, detectedCount, detecting, openImportPrompt } =
+		usePdfAcroformImportUi();
+
+	return (
+		<div
+			className={cn(
+				"hidden shrink-0 border-t border-border p-3 lg:block",
+				!isPreview && "space-y-2",
+			)}
+		>
+			<PlacedFieldsSheet variant="sidebar" />
+			{!isPreview && canImportAcroform ? (
+				<Button
+					type="button"
+					variant="ghost"
+					size="sm"
+					className="h-auto w-full justify-start gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+					disabled={detecting}
+					onClick={openImportPrompt}
+				>
+					<FilePdfIcon className="size-3.5 shrink-0" weight="regular" />
+					<span className="text-left">
+						{detecting
+							? "Scanning PDF form fields…"
+							: `Import ${detectedCount} PDF form field${detectedCount === 1 ? "" : "s"}`}
+					</span>
+				</Button>
+			) : null}
+		</div>
+	);
+}
+
 export function TemplateEditorSidebar() {
 	const mode = useTemplateEditorMode();
 
@@ -115,9 +151,7 @@ export function TemplateEditorSidebar() {
 				)}
 			</div>
 
-			<div className="hidden shrink-0 border-t border-border p-3 lg:block">
-				<PlacedFieldsSheet variant="sidebar" />
-			</div>
+			<TemplateEditorSidebarFooter />
 		</div>
 	);
 }

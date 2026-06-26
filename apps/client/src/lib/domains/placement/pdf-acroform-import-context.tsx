@@ -3,8 +3,8 @@ import {
 	useAddSignDnd,
 	useAddSignPlacement,
 } from "@/src/lib/domains/placement/context";
+import { PdfAcroformImportDialog } from "@/src/lib/domains/placement/pdf-acroform-import-dialog";
 import { usePdfAcroformImport } from "@/src/lib/domains/placement/use-pdf-acroform-import";
-import { PdfAcroformImportDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/pdf-acroform-import-dialog";
 
 type PdfAcroformImportContextValue = {
 	canImportAcroform: boolean;

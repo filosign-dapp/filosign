@@ -1,6 +1,10 @@
 export * from "./context";
 export * from "./field-palette";
 export * from "./lifecycle";
+export {
+	PdfAcroformImportProvider,
+	usePdfAcroformImportUi,
+} from "./pdf-acroform-import-context";
 export * from "./types";
 export * from "./use-document-dimensions";
 export * from "./use-placement-controller-core";

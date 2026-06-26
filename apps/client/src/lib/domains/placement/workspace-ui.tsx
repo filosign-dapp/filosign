@@ -6,6 +6,7 @@ import {
 	useAddSignPlacement,
 	useAddSignShell,
 } from "@/src/lib/domains/placement/context";
+import { PdfAcroformImportProvider } from "@/src/lib/domains/placement/pdf-acroform-import-context";
 import type { PlacementController } from "@/src/lib/domains/placement/types";
 import { DocumentThumbnailsSidebar } from "@/src/routes/dashboard/envelope/create/add-sign/-components/thumbnails";
 import DocumentViewer from "@/src/routes/dashboard/envelope/create/add-sign/-components/viewer";
@@ -28,7 +29,9 @@ export function PlacementWorkspaceShell({ children }: { children: ReactNode }) {
 	return (
 		<div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
 			<PlacementCanvasProvider>
-				<PlacementDndProvider>{children}</PlacementDndProvider>
+				<PlacementDndProvider>
+					<PdfAcroformImportProvider>{children}</PdfAcroformImportProvider>
+				</PlacementDndProvider>
 			</PlacementCanvasProvider>
 		</div>
 	);

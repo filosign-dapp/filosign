@@ -8,12 +8,12 @@ import {
 } from "@/src/lib/components/ui/collapsible";
 import { useAddSignPlacement } from "@/src/lib/domains/placement/context";
 import { PlacementFieldPaletteList } from "@/src/lib/domains/placement/field-palette";
+import { usePdfAcroformImportUi } from "@/src/lib/domains/placement/pdf-acroform-import-context";
 import { countFieldsByAssignee } from "@/src/lib/domains/placement/utils/active-assignees";
 import { resolvePaletteHighlightedFieldType } from "@/src/lib/domains/placement/utils/palette-selection";
 import { cn } from "@/src/lib/utils/utils";
 import { ActiveAssigneeStrip } from "@/src/routes/dashboard/envelope/create/add-sign/-components/active-assignee-strip";
 import { PlacedFieldsSheet } from "@/src/routes/dashboard/envelope/create/add-sign/-components/placed-fields-sheet";
-import { usePdfAcroformImportUi } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/pdf-acroform-import-context";
 
 export default function SignatureFieldsSidebar() {
 	const {

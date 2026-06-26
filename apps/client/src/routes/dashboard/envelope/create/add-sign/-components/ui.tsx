@@ -6,10 +6,10 @@ import {
 	useAddSignChrome,
 	useAddSignShell,
 } from "@/src/lib/domains/placement/context";
+import { PdfAcroformImportProvider } from "@/src/lib/domains/placement/pdf-acroform-import-context";
 import type { PlacementController } from "@/src/lib/domains/placement/types";
 import { AddSignHeader } from "@/src/routes/dashboard/envelope/create/add-sign/-components/header";
 import { SendProgressDialog } from "@/src/routes/dashboard/envelope/create/add-sign/-components/send-progress-dialog";
-import { PdfAcroformImportProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/pdf-acroform-import-context";
 import { PlacementCanvasProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-canvas-context";
 import { PlacementDndProvider } from "@/src/routes/dashboard/envelope/create/add-sign/-lib/context/placement-dnd-context";
 import FieldsSidebar from "./fields-sidebar";

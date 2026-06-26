@@ -23,8 +23,8 @@ const parsedEnv = createEnv({
 			.enum(["true", "false", "1", "0"])
 			.optional()
 			.transform((v) => v === "true" || v === "1"),
-		VITE_REOWN_PROJECT_ID: z.string().min(1).optional(),
-		VITE_WALLETCONNECT_PROJECT_ID: z.string().min(1).optional(),
+		VITE_REOWN_PROJECT_ID: z.string().min(1),
+		VITE_WALLETCONNECT_PROJECT_ID: z.string().min(1),
 		/** Unset → disabled on production, enabled on other deployments. */
 		VITE_PUBLIC_CHECKOUT_ENABLED: z
 			.enum(["true", "false", "1", "0"])

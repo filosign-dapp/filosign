@@ -7,6 +7,7 @@ export const coldInviteEntrySearchSchema = z.object({
 	email: z.string().optional().default(""),
 	platformInvite: z.string().optional().default(""),
 	setup: z.string().optional().default(""),
+	orgInvite: z.string().optional().default(""),
 	/** Set to `"1"` when user chose "Continue anyway" after invite mismatch-skip document redirect. */
 	skipColdSign: z.string().optional().default(""),
 	upgrade: z.string().optional(),
@@ -121,6 +122,7 @@ export function hasSignInEntryParams(search: ColdInviteEntrySearch): boolean {
 	return Boolean(
 		search.platformInvite?.trim() ||
 			search.setup?.trim() ||
+			search.orgInvite?.trim() ||
 			(search.coldInvite?.trim() && search.coldPieceCid?.trim()) ||
 			search.email?.trim(),
 	);
@@ -141,6 +143,7 @@ export function extractSignInEntrySearchFromLocation():
 		email: params.get("email") ?? "",
 		platformInvite: params.get("platformInvite") ?? "",
 		setup: params.get("setup") ?? "",
+		orgInvite: params.get("orgInvite") ?? "",
 		skipColdSign: params.get("skipColdSign") ?? "",
 		upgrade: params.get("upgrade") ?? undefined,
 		interval: params.get("interval") ?? undefined,

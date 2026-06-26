@@ -149,8 +149,11 @@ import {
 	zDraftRevokeExternalShareBody,
 	zDraftSaveBody,
 	zDraftShareExternalBody,
+	zOrgInvitePreviewOutput,
 	zOrgsCreateBody,
 	zOrgsInviteCreateBody,
+	zOrgsInviteResendBody,
+	zOrgsInviteRevokeBody,
 	zOrgsKeysPublishWrapBody,
 	zOrgsLinkWalletBody,
 	zOrgsMembersRemoveBody,
@@ -208,6 +211,7 @@ export const appRouter = {
 					coldInvite: z.string().optional(),
 					coldPieceCid: z.string().optional(),
 					email: z.string().optional(),
+					orgInvite: z.string().optional(),
 				}),
 			)
 			.output(zGatePreviewOutput)
@@ -1325,6 +1329,10 @@ export const appRouter = {
 				}),
 		},
 		invites: {
+			preview: publicProcedure
+				.input(z.object({ token: z.string().min(16) }))
+				.output(zOrgInvitePreviewOutput)
+				.handler(({ input }) => orgsHandlers.orgsInvitesPreview(input)),
 			create: authenticatedProcedure
 				.input(zOrgsInviteCreateBody)
 				.output(out.orgs.inviteCreate)
@@ -1346,6 +1354,36 @@ export const appRouter = {
 				.handler(({ context, input }) =>
 					orgsHandlers.orgsInvitesAccept(context.userWallet, input),
 				),
+			revoke: authenticatedProcedure
+				.input(zOrgsInviteRevokeBody)
+				.output(z.object({ ok: z.literal(true) }))
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsInvitesRevoke(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					);
+				}),
+			resend: authenticatedProcedure
+				.input(zOrgsInviteResendBody)
+				.output(out.orgs.inviteResend)
+				.handler(({ context, input }) => {
+					if (!context.activeOrg) {
+						throw new ORPCError("BAD_REQUEST", {
+							message: "X-Org-Id header required",
+						});
+					}
+					return orgsHandlers.orgsInvitesResend(
+						context.userWallet,
+						context.activeOrg,
+						input,
+					);
+				}),
 		},
 		templates: {
 			prepareCreate: authenticatedProcedure

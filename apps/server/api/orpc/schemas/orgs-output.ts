@@ -103,6 +103,14 @@ export const rpcOrgInviteSchema = z.object({
 	role: zOrgMemberRole,
 });
 
+export const rpcOrgPendingInviteSchema = z.object({
+	id: z.uuid(),
+	email: z.string(),
+	role: zOrgMemberRole,
+	expiresAt: zDateWire,
+	createdAt: zDateWire,
+});
+
 export const rpcOrgsCreateOutputSchema = z.object({
 	organization: rpcOrgRowSchema,
 });
@@ -115,6 +123,7 @@ export const rpcOrgsListMineOutputSchema = z.object({
 export const rpcOrgsGetOutputSchema = z.object({
 	organization: rpcOrgRowSchema,
 	members: z.array(rpcOrgMemberSchema),
+	pendingInvites: z.array(rpcOrgPendingInviteSchema),
 	templates: z.array(rpcOrgTemplateSummarySchema),
 });
 
@@ -136,6 +145,12 @@ export const rpcOrgsMemberOutputSchema = z.object({
 
 export const rpcOrgsInviteCreateOutputSchema = z.object({
 	invite: rpcOrgInviteSchema,
+	emailSent: z.boolean(),
+});
+
+export const rpcOrgsInviteResendOutputSchema = z.object({
+	invite: rpcOrgInviteSchema,
+	emailSent: z.boolean(),
 });
 
 export const rpcOrgsTemplatesListOutputSchema = z.object({

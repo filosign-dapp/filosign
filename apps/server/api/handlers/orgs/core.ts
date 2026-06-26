@@ -13,6 +13,7 @@ import {
 	assertEntitlement,
 	resolveEntitlementContext,
 } from "@/lib/domains/entitlements";
+import { pendingOrgInviteFilter } from "@/lib/domains/invites";
 import {
 	type ActiveOrgContext,
 	assertOrgPermission,
@@ -29,6 +30,7 @@ import {
 	validateLinkOrgWalletSignature,
 	validateSafeLinkOrgWalletSignature,
 } from "@/lib/domains/orgs/utils/link-wallet";
+import { syncOrgControllersAfterMembershipChange } from "@/lib/domains/orgs/utils/sync-controllers-after-membership";
 import {
 	attachPartnerTrialOnOrgCreateWithTx,
 	attachPendingOrgBillingOnCreateWithTx,
@@ -49,6 +51,7 @@ const {
 	organizationMembers,
 	organizationMemberKeys,
 	organizationSubscriptions,
+	organizationInvites,
 	users,
 } = db.schema;
 
@@ -268,7 +271,23 @@ export async function orgsGet(
 
 	const templates = await listOrgTemplatesCached(orgId);
 
-	return { organization: org, members, templates };
+	const pendingInvites = await db
+		.select({
+			id: organizationInvites.id,
+			email: organizationInvites.email,
+			role: organizationInvites.role,
+			expiresAt: organizationInvites.expiresAt,
+			createdAt: organizationInvites.createdAt,
+		})
+		.from(organizationInvites)
+		.where(
+			and(
+				eq(organizationInvites.organizationId, orgId),
+				pendingOrgInviteFilter(),
+			),
+		);
+
+	return { organization: org, members, pendingInvites, templates };
 }
 
 export const zOrgsUpdateBody = z
@@ -388,14 +407,7 @@ export async function orgsMembersSetRole(
 		.returning();
 	if (!member) throwAppError("WORKSPACE.MEMBER_NOT_FOUND");
 	await invalidateOnMembershipChange(activeOrg.organizationId, targetWallet);
-	const syncRes = await tryCatch(
-		syncOrgControllersOnChain(activeOrg.organizationId),
-	);
-	if (syncRes.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
-			message: "Failed to sync organization controllers on-chain",
-		});
-	}
+	await syncOrgControllersAfterMembershipChange(activeOrg.organizationId);
 	return { member };
 }
 
@@ -476,14 +488,7 @@ export async function orgsMembersRemove(
 		},
 	});
 	await invalidateOnMembershipChange(activeOrg.organizationId, targetWallet);
-	const syncRes = await tryCatch(
-		syncOrgControllersOnChain(activeOrg.organizationId),
-	);
-	if (syncRes.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
-			message: "Failed to sync organization controllers on-chain",
-		});
-	}
+	await syncOrgControllersAfterMembershipChange(activeOrg.organizationId);
 	return { member };
 }
 

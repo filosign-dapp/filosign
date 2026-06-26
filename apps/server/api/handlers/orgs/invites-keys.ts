@@ -7,27 +7,101 @@ import { and, eq, ne, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
 import z from "zod";
-import { inviteExpiresAt, pendingOrgInviteFilter } from "@/lib/domains/invites";
+import {
+	inviteExpiresAt,
+	pendingOrgInviteFilter,
+	previewOrgInvite,
+} from "@/lib/domains/invites";
 import {
 	type ActiveOrgContext,
 	assertOrgPermission,
 	getOrgMemberWithDocumentRead,
-	syncOrgControllersOnChain,
 } from "@/lib/domains/orgs";
+import { syncOrgControllersAfterMembershipChange } from "@/lib/domains/orgs/utils/sync-controllers-after-membership";
 import { invalidateOnMembershipChange } from "@/lib/platform/cache";
 import db from "@/lib/platform/db";
 import type { OrgMemberRole } from "@/lib/platform/db/schema/organization";
+import { sendWorkspaceInviteEmail } from "@/lib/platform/email";
+import { getClientUrl } from "@/lib/platform/email/utils";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 import { throwZodBadRequest } from "@/lib/platform/utils/zodHttp";
-import { zOrgMemberRole } from "./schemas";
 
 const {
 	organizationMembers,
 	organizationMemberKeys,
 	organizationSubscriptions,
 	organizationInvites,
+	organizations,
 	users,
 } = db.schema;
+
+function displayNameFromProfile(row: {
+	firstName?: string | null;
+	lastName?: string | null;
+	email?: string | null;
+}): string {
+	const full = [row.firstName?.trim(), row.lastName?.trim()]
+		.filter(Boolean)
+		.join(" ");
+	return full || row.email?.trim() || "A teammate";
+}
+
+async function loadWorkspaceInviteEmailContext(args: {
+	organizationId: string;
+	invitedBy: Address;
+}) {
+	const [orgRow] = await db
+		.select({ name: organizations.name })
+		.from(organizations)
+		.where(eq(organizations.id, args.organizationId))
+		.limit(1);
+
+	const [inviter] = await db
+		.select({
+			firstName: users.firstName,
+			lastName: users.lastName,
+			email: users.email,
+		})
+		.from(users)
+		.where(eq(users.walletAddress, getAddress(args.invitedBy)))
+		.limit(1);
+
+	return {
+		orgName: orgRow?.name?.trim() || "your workspace",
+		inviterName: displayNameFromProfile(inviter ?? {}),
+	};
+}
+
+async function deliverWorkspaceInviteEmail(args: {
+	to: string;
+	token: string;
+	organizationId: string;
+	role: OrgMemberRole;
+	expiresAt: Date;
+	invitedBy: Address;
+}): Promise<boolean> {
+	const { orgName, inviterName } = await loadWorkspaceInviteEmailContext({
+		organizationId: args.organizationId,
+		invitedBy: args.invitedBy,
+	});
+	const appUrl = getClientUrl();
+	const inviteUrl = `${appUrl.replace(/\/$/, "")}/?orgInvite=${encodeURIComponent(args.token)}`;
+	const sendRes = await tryCatch(
+		sendWorkspaceInviteEmail({
+			to: args.to,
+			inviteUrl,
+			orgName,
+			inviterName,
+			role: args.role,
+			expiresAt: args.expiresAt,
+		}),
+	);
+	if (sendRes.error) {
+		console.error("[email] workspace invite send failed", sendRes.error);
+		return false;
+	}
+	return sendRes.data;
+}
 
 export const zOrgsKeysPublishWrapBody = z.object({
 	targetWallet: zEvmAddress(),
@@ -260,12 +334,158 @@ export async function orgsInvitesCreate(
 		});
 	}
 
-	return { invite };
+	const emailSent = await deliverWorkspaceInviteEmail({
+		to: invite.email,
+		token: invite.token ?? token,
+		organizationId: activeOrg.organizationId,
+		role: invite.role as OrgMemberRole,
+		expiresAt: invite.expiresAt,
+		invitedBy: getAddress(wallet),
+	});
+
+	return { invite, emailSent };
+}
+
+import { zDateWire } from "@/api/orpc/schemas/rpc-wire";
+import { zOrgMemberRole } from "./schemas";
+
+export const zOrgInvitePreviewOutput = z.object({
+	valid: z.boolean(),
+	lockedEmail: z.string().optional(),
+	orgName: z.string().optional(),
+	role: zOrgMemberRole.optional(),
+	expiresAt: zDateWire.optional(),
+	reason: z.string().optional(),
+});
+
+export async function orgsInvitesPreview(body: unknown) {
+	const parsed = z.object({ token: z.string().min(16) }).safeParse(body);
+	if (!parsed.success) {
+		throwZodBadRequest(parsed.error);
+	}
+
+	return previewOrgInvite({ token: parsed.data.token });
+}
+
+export const zOrgsInviteRevokeBody = z.object({
+	inviteId: z.uuid(),
+});
+
+export async function orgsInvitesRevoke(
+	_wallet: Address,
+	activeOrg: ActiveOrgContext,
+	body: unknown,
+) {
+	assertOrgPermission(activeOrg, "members:invite");
+	const parsed = zOrgsInviteRevokeBody.safeParse(body);
+	if (!parsed.success) {
+		throwZodBadRequest(parsed.error);
+	}
+
+	const [updated] = await db
+		.update(organizationInvites)
+		.set({
+			status: "revoked",
+			token: null,
+			updatedAt: new Date(),
+		})
+		.where(
+			and(
+				eq(organizationInvites.id, parsed.data.inviteId),
+				eq(organizationInvites.organizationId, activeOrg.organizationId),
+				pendingOrgInviteFilter(),
+			),
+		)
+		.returning({ id: organizationInvites.id });
+
+	if (!updated) {
+		throwAppError("WORKSPACE.INVITE_NOT_FOUND");
+	}
+
+	return { ok: true as const };
+}
+
+export const zOrgsInviteResendBody = z.object({
+	inviteId: z.uuid(),
+});
+
+export async function orgsInvitesResend(
+	wallet: Address,
+	activeOrg: ActiveOrgContext,
+	body: unknown,
+) {
+	assertOrgPermission(activeOrg, "members:invite");
+	const parsed = zOrgsInviteResendBody.safeParse(body);
+	if (!parsed.success) {
+		throwZodBadRequest(parsed.error);
+	}
+
+	const [existing] = await db
+		.select()
+		.from(organizationInvites)
+		.where(
+			and(
+				eq(organizationInvites.id, parsed.data.inviteId),
+				eq(organizationInvites.organizationId, activeOrg.organizationId),
+				pendingOrgInviteFilter(),
+			),
+		)
+		.limit(1);
+
+	if (!existing) {
+		throwAppError("WORKSPACE.INVITE_NOT_FOUND");
+	}
+
+	const token = randomBytes(32).toString("hex");
+	const expiresAt = inviteExpiresAt();
+
+	const [invite] = await db
+		.update(organizationInvites)
+		.set({
+			token,
+			expiresAt,
+			invitedBy: getAddress(wallet),
+			updatedAt: new Date(),
+		})
+		.where(eq(organizationInvites.id, existing.id))
+		.returning({
+			id: organizationInvites.id,
+			token: organizationInvites.token,
+			expiresAt: organizationInvites.expiresAt,
+			email: organizationInvites.email,
+			role: organizationInvites.role,
+		});
+
+	if (!invite?.token) {
+		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
+			message: "Failed to resend invite",
+		});
+	}
+
+	const emailSent = await deliverWorkspaceInviteEmail({
+		to: invite.email,
+		token: invite.token,
+		organizationId: activeOrg.organizationId,
+		role: invite.role as OrgMemberRole,
+		expiresAt: invite.expiresAt,
+		invitedBy: getAddress(wallet),
+	});
+
+	return { invite, emailSent };
 }
 
 const zInviteAcceptBody = z.object({
 	token: z.string().min(16),
 });
+
+async function loadInviteRowForAccept(token: string) {
+	const [invite] = await db
+		.select()
+		.from(organizationInvites)
+		.where(eq(organizationInvites.token, token))
+		.limit(1);
+	return invite ?? null;
+}
 
 export async function orgsInvitesAccept(wallet: Address, body: unknown) {
 	const parsed = zInviteAcceptBody.safeParse(body);
@@ -284,18 +504,10 @@ export async function orgsInvitesAccept(wallet: Address, body: unknown) {
 		throwAppError("WORKSPACE.EMAIL_REQUIRED_FOR_ACCEPT");
 	}
 	const emailNorm = normalizePlacementRecipientEmail(rawEmail);
+	const invitee = getAddress(wallet);
+	const token = parsed.data.token.trim();
 
-	const [invite] = await db
-		.select()
-		.from(organizationInvites)
-		.where(
-			and(
-				eq(organizationInvites.token, parsed.data.token),
-				pendingOrgInviteFilter(),
-			),
-		)
-		.limit(1);
-
+	const invite = await loadInviteRowForAccept(token);
 	if (!invite) {
 		throwAppError("WORKSPACE.INVITE_NOT_FOUND");
 	}
@@ -303,7 +515,21 @@ export async function orgsInvitesAccept(wallet: Address, body: unknown) {
 		throwAppError("WORKSPACE.INVITE_EMAIL_MISMATCH");
 	}
 
-	const invitee = getAddress(wallet);
+	if (invite.status === "claimed") {
+		const claimedBy = invite.claimedByWallet
+			? getAddress(invite.claimedByWallet)
+			: null;
+		if (!claimedBy || claimedBy !== invitee) {
+			throwAppError("WORKSPACE.INVITE_NOT_FOUND");
+		}
+		await invalidateOnMembershipChange(invite.organizationId, invitee);
+		await syncOrgControllersAfterMembershipChange(invite.organizationId);
+		return { organizationId: invite.organizationId };
+	}
+
+	if (invite.status !== "pending" || invite.expiresAt.getTime() <= Date.now()) {
+		throwAppError("WORKSPACE.INVITE_NOT_FOUND");
+	}
 
 	await db.transaction(async (tx) => {
 		await assertOrgHasInviteSeat(invite.organizationId, tx, {
@@ -337,20 +563,12 @@ export async function orgsInvitesAccept(wallet: Address, body: unknown) {
 				status: "claimed",
 				claimedAt: new Date(),
 				claimedByWallet: invitee,
-				token: null,
 				updatedAt: new Date(),
 			})
 			.where(eq(organizationInvites.id, invite.id));
 	});
 
 	await invalidateOnMembershipChange(invite.organizationId, invitee);
-	const syncRes = await tryCatch(
-		syncOrgControllersOnChain(invite.organizationId),
-	);
-	if (syncRes.error) {
-		throw new ORPCError("INTERNAL_SERVER_ERROR" /* error-audit-allow */, {
-			message: "Failed to sync organization controllers on-chain",
-		});
-	}
+	await syncOrgControllersAfterMembershipChange(invite.organizationId);
 	return { organizationId: invite.organizationId };
 }

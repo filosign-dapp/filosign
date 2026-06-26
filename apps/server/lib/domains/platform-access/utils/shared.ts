@@ -30,7 +30,8 @@ export type PlatformGatePreview =
 				| "paid_setup"
 				| "cold_recipient"
 				| "returning_user"
-				| "admin_bootstrap";
+				| "admin_bootstrap"
+				| "org_invite";
 			lockedEmail: string;
 			planLabel: string | null;
 			trialDays: number | null;

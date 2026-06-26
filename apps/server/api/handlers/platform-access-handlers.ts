@@ -44,6 +44,7 @@ export const zGatePreviewOutput = z.object({
 			"cold_recipient",
 			"returning_user",
 			"admin_bootstrap",
+			"org_invite",
 		])
 		.optional(),
 	lockedEmail: z.string().optional(),
@@ -62,6 +63,7 @@ export async function platformAccessPreviewGate(body: unknown) {
 			coldInvite: z.string().optional(),
 			coldPieceCid: z.string().optional(),
 			email: z.string().optional(),
+			orgInvite: z.string().optional(),
 		})
 		.safeParse(body);
 

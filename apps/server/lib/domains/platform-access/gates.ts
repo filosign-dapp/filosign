@@ -3,6 +3,7 @@ import { throwAppError } from "@filosign/errors/server";
 import { and, eq, gt, sql } from "drizzle-orm";
 import type { Address } from "viem";
 import { getAddress } from "viem";
+import { previewOrgInvite } from "@/lib/domains/invites";
 import { allowsPlatformAdminAccess } from "@/lib/platform/admin";
 import db from "@/lib/platform/db";
 import {
@@ -185,6 +186,7 @@ export async function canStartEmailAuth(args: {
 	setup?: string;
 	coldInvite?: string;
 	coldPieceCid?: string;
+	orgInvite?: string;
 }): Promise<PlatformGatePreview> {
 	if (!serverSignupPolicyIsGated()) {
 		const email = args.email?.trim();
@@ -200,6 +202,20 @@ export async function canStartEmailAuth(args: {
 
 	if (args.setup?.trim()) {
 		return previewPaidSetup({ setupToken: args.setup });
+	}
+	if (args.orgInvite?.trim()) {
+		const preview = await previewOrgInvite({ token: args.orgInvite });
+		if (!preview.valid) {
+			return { valid: false, reason: preview.reason };
+		}
+		return {
+			valid: true,
+			gate: "org_invite",
+			lockedEmail: preview.lockedEmail,
+			planLabel: preview.orgName,
+			trialDays: null,
+			expiresAt: preview.expiresAt.toISOString(),
+		};
 	}
 	if (args.platformInvite?.trim()) {
 		return previewPlatformInvite({ token: args.platformInvite });
@@ -233,6 +249,7 @@ export type RegistrationAccessGate = {
 	setupToken?: string;
 	coldInviteToken?: string;
 	coldRecipientEmail?: string;
+	orgInviteToken?: string;
 };
 
 export async function assertRegistrationAllowed(args: {
@@ -296,6 +313,21 @@ export async function assertRegistrationAllowed(args: {
 		}
 		if (preview.lockedEmail && preview.lockedEmail !== emailNorm) {
 			throwAppError("WORKSPACE.PLATFORM_EMAIL_MISMATCH");
+		}
+		return;
+	}
+
+	if (args.gate?.orgInviteToken?.trim()) {
+		const preview = await previewOrgInvite({
+			token: args.gate.orgInviteToken,
+		});
+		if (!preview.valid) {
+			throwAppError("WORKSPACE.PLATFORM_INVITE_REQUIRED", {
+				params: { reason: preview.reason },
+			});
+		}
+		if (preview.lockedEmail !== emailNorm) {
+			throwAppError("WORKSPACE.INVITE_EMAIL_MISMATCH");
 		}
 		return;
 	}

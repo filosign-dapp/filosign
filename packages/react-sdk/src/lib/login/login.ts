@@ -24,6 +24,7 @@ export interface RegistrationAccessGate {
 	setupToken?: string;
 	coldInviteToken?: string;
 	coldRecipientEmail?: string;
+	orgInviteToken?: string;
 }
 
 export type { RegistrationLegalAssent };
@@ -153,6 +154,9 @@ async function registerNewUser(
 			: {}),
 		...(params.accessGate?.coldRecipientEmail
 			? { coldRecipientEmail: params.accessGate.coldRecipientEmail }
+			: {}),
+		...(params.accessGate?.orgInviteToken
+			? { orgInviteToken: params.accessGate.orgInviteToken }
 			: {}),
 		...(assent.pilotAddendum
 			? {

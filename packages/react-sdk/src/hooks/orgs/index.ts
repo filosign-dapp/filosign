@@ -14,6 +14,8 @@ export * from "./usePrepareOrgTemplateUpdate";
 export * from "./usePublishOrgMemberKeyWrap";
 export * from "./useRemoveOrgMember";
 export * from "./useRenameOrgTemplate";
+export * from "./useResendOrgInvite";
+export * from "./useRevokeOrgInvite";
 export * from "./useSaveOrgTemplateDeps";
 export * from "./useSetOrgMemberRole";
 export * from "./useSettlementFeatureAccessGet";

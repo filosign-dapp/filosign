@@ -22,7 +22,6 @@ export type ProofDownloadExports = Pick<
 	ReturnType<typeof useCompliancePdfExports>,
 	| "exportsAllowed"
 	| "proofExportPreferred"
-	| "proofExportWarning"
 	| "pdfExportBusy"
 	| "handleDownloadOriginalFiles"
 	| "handleDownloadSignedEnvelope"
@@ -36,7 +35,6 @@ export function pickProofDownloadExports(
 	return {
 		exportsAllowed: exports.exportsAllowed,
 		proofExportPreferred: exports.proofExportPreferred,
-		proofExportWarning: exports.proofExportWarning,
 		pdfExportBusy: exports.pdfExportBusy,
 		handleDownloadOriginalFiles: exports.handleDownloadOriginalFiles,
 		handleDownloadSignedEnvelope: exports.handleDownloadSignedEnvelope,
@@ -57,7 +55,7 @@ export function useCompliancePdfExports(options: {
 	const [pdfExportBusy, setPdfExportBusy] = useState(false);
 
 	const exportsAllowed = Boolean(file?.isFinalized);
-	const { proofExportPreferred, proofExportWarning } = resolveProofExportState(
+	const { proofExportPreferred } = resolveProofExportState(
 		satelliteWorkflowSummary ?? EMPTY_SATELLITE_WORKFLOW_SUMMARY,
 	);
 
@@ -205,7 +203,6 @@ export function useCompliancePdfExports(options: {
 		pdfExportBusy,
 		exportsAllowed,
 		proofExportPreferred,
-		proofExportWarning,
 		handleDownloadOriginalFiles,
 		handleDownloadCompliancePdf,
 		handleDownloadSignedEnvelope,

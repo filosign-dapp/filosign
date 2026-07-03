@@ -9,7 +9,6 @@ import db from "@/lib/platform/db";
 import {
 	dealIdFromUploadResult,
 	getSynapse,
-	retentionEpochsFromUntil,
 	summarizeSynapseUploadResult,
 	uploadFocCiphertext,
 } from "@/lib/platform/foc";
@@ -204,27 +203,6 @@ export async function runFocTransitionForPiece(
 			"foc-transition: resuming verify (upload already committed)",
 		);
 	} else {
-		const prepared = await tryCatch(
-			getSynapse().storage.prepare({
-				dataSize: BigInt(r2Bytes.byteLength),
-				extraRunwayEpochs: retentionEpochsFromUntil(retentionUntil),
-			}),
-		);
-		if (prepared.error) {
-			throw new Error("Synapse prepare failed before FOC transition", {
-				cause: prepared.error,
-			});
-		}
-
-		if (prepared.data.transaction) {
-			const executed = await tryCatch(prepared.data.transaction.execute());
-			if (executed.error) {
-				throw new Error("Synapse funding transaction failed", {
-					cause: executed.error,
-				});
-			}
-		}
-
 		const uploaded = await tryCatch(uploadFocCiphertext(r2Bytes));
 		if (uploaded.error) {
 			throw new Error("Synapse upload to FOC failed", {

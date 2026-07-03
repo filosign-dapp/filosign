@@ -46,8 +46,8 @@ export async function runLocalChecks(args: {
 				expected: args.bundleSha256Sidecar,
 				actual: committedHash,
 				message: sidecarMatches
-					? "bundle.sha256 matches bundle.json bytes in packet"
-					: "bundle.sha256 does not match bundle.json bytes in packet",
+					? "bundle.sha256 matches exact bundle.json bytes in packet"
+					: "bundle.sha256 does not match exact bundle.json bytes in packet",
 			}),
 		);
 
@@ -62,7 +62,7 @@ export async function runLocalChecks(args: {
 						tier: "local",
 						status: "warn",
 						message:
-							"bundle.json uses legacy canonicalization (recomputed hash differs from committed bytes)",
+							"bundle.json bytes match sidecar, but canonical recomputation differs",
 						expected: args.bundleSha256Sidecar,
 						actual: recomputedCanonicalHash,
 					}),
@@ -75,8 +75,8 @@ export async function runLocalChecks(args: {
 						expected: args.bundleSha256Sidecar,
 						actual: recomputedCanonicalHash,
 						message: canonicalMatches
-							? "Recomputed canonical bundle hash matches committed bytes"
-							: "Recomputed canonical bundle hash does not match committed bytes",
+							? "Canonical bundle recomputation matches bundle.sha256"
+							: "Canonical bundle recomputation does not match bundle.sha256",
 					}),
 				);
 			}
@@ -102,8 +102,8 @@ export async function runLocalChecks(args: {
 				expected: args.manifest.bundleSha256,
 				actual: committedHash,
 				message: manifestMatches
-					? "verify-manifest.json bundleSha256 matches bundle.json bytes"
-					: "verify-manifest.json bundleSha256 does not match bundle.json bytes",
+					? "verify-manifest.json bundleSha256 matches exact bundle.json bytes"
+					: "verify-manifest.json bundleSha256 does not match exact bundle.json bytes",
 			}),
 		);
 		if (args.bundleSha256Sidecar) {

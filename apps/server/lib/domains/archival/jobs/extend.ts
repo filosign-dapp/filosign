@@ -2,11 +2,7 @@ import { eq } from "drizzle-orm";
 import { isFocBackupEnabled } from "@/lib/domains/foc/enabled";
 import { resolveFocRetentionUntil } from "@/lib/domains/foc/retention-policy";
 import db from "@/lib/platform/db";
-import {
-	getOrCreatePlatformDataset,
-	getSynapse,
-	retentionEpochsFromUntil,
-} from "@/lib/platform/foc";
+import { getSynapse, retentionEpochsFromUntil } from "@/lib/platform/foc";
 import { logger } from "@/lib/platform/pino";
 import { tryCatch } from "@/lib/platform/utils/tryCatch";
 
@@ -36,10 +32,8 @@ export async function queueFocExtendRetention(organizationId: string) {
 		await resolveFocRetentionUntil(organizationId);
 	const extraRunwayEpochs = retentionEpochsFromUntil(effectiveRetentionUntil);
 	if (extraRunwayEpochs > 0n) {
-		const context = await getOrCreatePlatformDataset();
 		const prepared = await tryCatch(
 			getSynapse().storage.prepare({
-				context,
 				dataSize: 0n,
 				extraRunwayEpochs,
 			}),

@@ -76,7 +76,6 @@ Schema includes `organization_subscriptions` (Dodo IDs, `seatCount`, `billingInt
 | `RELAYER_POOL` / `RELAYER_POOL_PRIVATE_KEYS` | N relayer wallets (production: N=2) |
 | `FOC_BACKUP_ENABLED` | `true` — cold backup to Filecoin on envelope routing complete |
 | `FOC_WALLET_ADDRESS` / `FOC_WALLET_PRIVATE_KEY` | Synapse storage payer (not in pool); required when `FOC_BACKUP_ENABLED=true` |
-| `FC_SYNAPSE_DATASET_ID` | Pin after first mainnet upload logs dataset ID |
 
 Product IDs are hardcoded in [`billing.ts`](../../apps/server/lib/domains/billing/billing.ts) / [`policy.ts`](../../apps/server/lib/domains/billing/policy.ts). Override with `DODO_PRODUCT_ID_*` env vars only if dashboard SKUs change.
 

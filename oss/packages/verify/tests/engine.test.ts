@@ -133,7 +133,7 @@ describe("@filosign/verify local checks", () => {
 			summary.results.find(
 				(result) => result.id === "local.bundle.sha256.sidecar",
 			)?.message,
-		).toBe("bundle.sha256 does not match bundle.json bytes in packet");
+		).toBe("bundle.sha256 does not match exact bundle.json bytes in packet");
 	});
 
 	it("canonical JSON parse round-trip matches sidecar hash", async () => {

@@ -3,9 +3,9 @@ export {
 	archivalCdnUrl,
 	assertCompleteSynapseUpload,
 	dealIdFromUploadResult,
-	getOrCreatePlatformDataset,
 	getSynapse,
 	summarizeSynapseUploadResult,
+	uploadFocCiphertext,
 } from "./synapse";
 export {
 	FOC_FIL_ALERT_THRESHOLD_WEI,

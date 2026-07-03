@@ -37,7 +37,6 @@ const parsedEnv = createEnv({
 			.transform((v) => v === "true"),
 		FOC_WALLET_PRIVATE_KEY: zEvmPrivateKey().optional(),
 		FOC_WALLET_ADDRESS: zEvmAddress().optional(),
-		FC_SYNAPSE_DATASET_ID: z.coerce.number().int().positive().optional(),
 		PG_URI: z.string().min(1),
 		DB_NAME: z.string().min(1),
 		SERVER_URL: z.url(),

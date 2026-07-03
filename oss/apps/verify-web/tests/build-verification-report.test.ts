@@ -73,6 +73,20 @@ const testManifest = {
 	originalDocumentsPrefix: "documents/original/",
 } satisfies ParsedProofPacket["manifest"];
 
+function packet(overrides: Partial<ParsedProofPacket> = {}): ParsedProofPacket {
+	return {
+		bundle,
+		bundleJsonBytes: new TextEncoder().encode(JSON.stringify(bundle)),
+		manifest: testManifest,
+		bundleSha256Sidecar: bundleHash,
+		documentMerkleProofs: null,
+		originalDocuments: {},
+		attachmentManifest: null,
+		originalAttachments: {},
+		...overrides,
+	};
+}
+
 function summaryFromChecks(results: CheckResult[]): VerifySummary {
 	let passed = 0;
 	let failed = 0;
@@ -116,15 +130,7 @@ describe("buildVerificationReport", () => {
 			fileName: "test.zip",
 			chainId: 31337,
 			chainName: "Hardhat",
-			packet: {
-				bundle,
-				manifest: testManifest,
-				bundleSha256Sidecar: bundleHash,
-				documentMerkleProofs: null,
-				originalDocuments: {},
-				attachmentManifest: null,
-				originalAttachments: {},
-			},
+			packet: packet(),
 			summary: summaryFromChecks(results),
 		});
 
@@ -142,15 +148,19 @@ describe("buildVerificationReport", () => {
 	});
 
 	it("lists each party once in Notes for auth subject warnings", () => {
+		const sender = bundle.parties[0];
+		expect(sender).toBeDefined();
+		if (!sender) throw new Error("Missing sender fixture");
+
 		const report = buildVerificationReport({
 			fileName: "test.zip",
 			chainId: 31337,
 			chainName: "Hardhat",
-			packet: {
+			packet: packet({
 				bundle: {
 					...bundle,
 					parties: [
-						bundle.parties[0]!,
+						sender,
 						{
 							role: "signer" as const,
 							wallet:
@@ -162,13 +172,7 @@ describe("buildVerificationReport", () => {
 						},
 					],
 				},
-				manifest: testManifest,
-				bundleSha256Sidecar: bundleHash,
-				documentMerkleProofs: null,
-				originalDocuments: {},
-				attachmentManifest: null,
-				originalAttachments: {},
-			},
+			}),
 			summary: summaryFromChecks([
 				{
 					id: "local.parties[0].authSubjectCommitment",
@@ -194,15 +198,9 @@ describe("buildVerificationReport", () => {
 			fileName: "test.zip",
 			chainId: 31337,
 			chainName: "Hardhat",
-			packet: {
-				bundle,
-				manifest: testManifest,
+			packet: packet({
 				bundleSha256Sidecar: null,
-				documentMerkleProofs: null,
-				originalDocuments: {},
-				attachmentManifest: null,
-				originalAttachments: {},
-			},
+			}),
 			summary: summaryFromChecks([
 				{
 					id: "chain.registration.exists",
@@ -222,15 +220,9 @@ describe("buildVerificationReport", () => {
 			fileName: "proof.zip",
 			chainId: 31337,
 			chainName: "Hardhat",
-			packet: {
-				bundle,
-				manifest: testManifest,
-				bundleSha256Sidecar: bundleHash,
-				documentMerkleProofs: null,
+			packet: packet({
 				originalDocuments: { "contract.pdf": new Uint8Array([1, 2, 3]) },
-				attachmentManifest: null,
-				originalAttachments: {},
-			},
+			}),
 			summary: summaryFromChecks([
 				{
 					id: "documents.merkle.root",
@@ -258,7 +250,7 @@ describe("buildVerificationReport", () => {
 			fileName: "proof.zip",
 			chainId: 31337,
 			chainName: "Hardhat",
-			packet: {
+			packet: packet({
 				bundle: {
 					...bundle,
 					attachments: [
@@ -282,13 +274,7 @@ describe("buildVerificationReport", () => {
 						},
 					],
 				},
-				manifest: testManifest,
-				bundleSha256Sidecar: bundleHash,
-				documentMerkleProofs: null,
-				originalDocuments: {},
-				attachmentManifest: null,
-				originalAttachments: {},
-			},
+			}),
 			summary: summaryFromChecks([
 				{
 					id: "chain.attachment.pkt-1.exists",

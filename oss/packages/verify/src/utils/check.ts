@@ -32,12 +32,16 @@ export function statusCheck(args: {
 	id: string;
 	tier: CheckTier;
 	status: CheckStatus;
+	expected?: string;
+	actual?: string;
 	message?: string;
 }): CheckResult {
 	return {
 		id: args.id,
 		tier: args.tier,
 		status: args.status,
+		expected: args.expected,
+		actual: args.actual,
 		message: args.message,
 	};
 }

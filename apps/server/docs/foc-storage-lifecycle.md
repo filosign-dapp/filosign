@@ -80,11 +80,12 @@ Stub rows are created when any workspace envelope is **routing-complete on-chain
 | `FOC_BACKUP_ENABLED` | `false` | Master switch: stubs, worker, cron, archival Synapse extend |
 | `FOC_RETRIEVAL` | `false` | Download from FilBeam for replicated objects (requires backup) |
 | `FOC_WALLET_*` | optional | Required when `FOC_BACKUP_ENABLED=true`; Synapse payer (USDFC + FIL) |
-| `FC_SYNAPSE_DATASET_ID` | optional | Pin platform dataset; set from first create log or `deal_id` |
 | `WORKSPACE_CHURN_GRACE_DAYS` | `90` | Post-cancel workspace retention |
 | `ARCHIVAL_EXPORT_GRACE_DAYS` | `30` | Post-archival-lapse export window |
 
 When `FOC_BACKUP_ENABLED=false`, `FOC_WALLET_*` may be omitted (local/staging). Bootstrap skips FOC wallet validation; FOC worker and wallet balance cron do not run.
+
+FOC uploads use Synapse-managed datasets/providers and request two copies by default. There is no dataset id bootstrap or pinning step.
 
 ## Mainnet rollout
 

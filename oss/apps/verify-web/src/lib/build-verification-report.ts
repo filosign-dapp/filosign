@@ -131,7 +131,7 @@ function buildAboutSection(args: {
 			rowFromCheck(hashCheck, {
 				claim: "Proof export hash",
 				exportValue: bundleSha256Sidecar ?? " - ",
-				verifiedAgainst: "Bundle hash",
+				verifiedAgainst: "Exact bundle.json bytes",
 			}),
 			{
 				claim: "Document storage ID",
@@ -238,7 +238,8 @@ function buildPublicRegistrationSection(
 
 	const rows = chainFields
 		.filter(
-			(field) => findCheck(results, field.checkId) || field.exportValue !== " - ",
+			(field) =>
+				findCheck(results, field.checkId) || field.exportValue !== " - ",
 		)
 		.map((field) => {
 			const check = findCheck(results, field.checkId);
@@ -401,8 +402,14 @@ function buildSettlementsSection(
 	const rows: VerificationReportRow[] = [];
 
 	for (const pay of bundle.settlements) {
-		const ruleCheck = findCheck(results, `chain.settlement.${pay.onChainRuleId}.exists`);
-		const statusCheck = findCheck(results, `chain.settlement.${pay.onChainRuleId}.status`);
+		const ruleCheck = findCheck(
+			results,
+			`chain.settlement.${pay.onChainRuleId}.exists`,
+		);
+		const statusCheck = findCheck(
+			results,
+			`chain.settlement.${pay.onChainRuleId}.status`,
+		);
 
 		rows.push(
 			rowFromCheck(ruleCheck, {
@@ -412,9 +419,10 @@ function buildSettlementsSection(
 			}),
 			rowFromCheck(statusCheck, {
 				claim: `Rule ${pay.onChainRuleId} payout state`,
-				exportValue: pay.status === "executed" ? "Executed" : "Pending/Cancelled",
+				exportValue:
+					pay.status === "executed" ? "Executed" : "Pending/Cancelled",
 				verifiedAgainst: "On-chain status",
-			})
+			}),
 		);
 
 		if (pay.payoutTxHash) {
@@ -441,13 +449,21 @@ function buildAttachmentsSection(
 	const rows: VerificationReportRow[] = [];
 
 	for (const att of bundle.attachments) {
-		const attCheck = findCheck(results, `chain.attachment.${att.packetId}.exists`);
-		const relCheck = findCheck(results, `chain.attachment.${att.packetId}.released`);
+		const attCheck = findCheck(
+			results,
+			`chain.attachment.${att.packetId}.exists`,
+		);
+		const relCheck = findCheck(
+			results,
+			`chain.attachment.${att.packetId}.released`,
+		);
 
 		rows.push(
 			{
 				claim: "Attachment packet",
-				exportValue: att.label ? `${att.label} (${att.packetId})` : att.packetId,
+				exportValue: att.label
+					? `${att.label} (${att.packetId})`
+					: att.packetId,
 				verifiedAgainst: "Export packet metadata",
 				result: "pass",
 			},
@@ -455,7 +471,7 @@ function buildAttachmentsSection(
 				claim: `Attachment ${att.packetId} rule`,
 				exportValue: `Release mode: ${att.releaseMode}`,
 				verifiedAgainst: "On-chain rules",
-			})
+			}),
 		);
 
 		if (att.packetContentHash) {
@@ -478,7 +494,7 @@ function buildAttachmentsSection(
 					claim: `Attachment ${att.packetId} state`,
 					exportValue: att.unlocked ? "Released" : "Gated",
 					verifiedAgainst: "On-chain release state",
-				})
+				}),
 			);
 		}
 

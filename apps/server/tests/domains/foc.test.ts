@@ -97,6 +97,16 @@ describe("foc", () => {
 				);
 			});
 
+			test("throws when fewer copies are committed than requested", () => {
+				const result = uploadResultStub({
+					requestedCopies: 2,
+					copies: [{ dataSetId: 42n, pieceId: 7n, role: "primary" }],
+				});
+				expect(() => assertCompleteSynapseUpload(result)).toThrow(
+					/fewer copies/,
+				);
+			});
+
 			test("summarizes upload result without bigint JSON issues", () => {
 				const result = uploadResultStub({
 					complete: false,

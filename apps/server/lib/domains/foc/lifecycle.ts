@@ -8,10 +8,10 @@ import {
 import db from "@/lib/platform/db";
 import {
 	dealIdFromUploadResult,
-	getOrCreatePlatformDataset,
 	getSynapse,
 	retentionEpochsFromUntil,
 	summarizeSynapseUploadResult,
+	uploadFocCiphertext,
 } from "@/lib/platform/foc";
 import { logger } from "@/lib/platform/pino";
 import { bucket } from "@/lib/platform/s3/client";
@@ -204,10 +204,8 @@ export async function runFocTransitionForPiece(
 			"foc-transition: resuming verify (upload already committed)",
 		);
 	} else {
-		const context = await getOrCreatePlatformDataset();
 		const prepared = await tryCatch(
 			getSynapse().storage.prepare({
-				context,
 				dataSize: BigInt(r2Bytes.byteLength),
 				extraRunwayEpochs: retentionEpochsFromUntil(retentionUntil),
 			}),
@@ -227,9 +225,7 @@ export async function runFocTransitionForPiece(
 			}
 		}
 
-		const uploaded = await tryCatch(
-			context.upload(r2Bytes, { pieceMetadata: {} }),
-		);
+		const uploaded = await tryCatch(uploadFocCiphertext(r2Bytes));
 		if (uploaded.error) {
 			throw new Error("Synapse upload to FOC failed", {
 				cause: uploaded.error,

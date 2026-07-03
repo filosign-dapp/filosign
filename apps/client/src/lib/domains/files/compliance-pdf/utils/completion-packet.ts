@@ -24,6 +24,7 @@ import { zipSync } from "fflate";
 import { toastUser } from "@/src/lib/copy/toast";
 import { TOASTS } from "@/src/lib/copy/toasts";
 import { downloadBlobBytes } from "./build";
+import { buildProofPacketBundleBytes } from "./bundle-integrity";
 import { sanitizeZipSegment, uniqueZipEntryName } from "./zip-entries";
 
 const paths = PROOF_PACKET_V1_DEFAULT_PATHS;
@@ -225,7 +226,6 @@ export async function warnDocumentMerkleMismatch(args: {
 
 export async function downloadCompletionPacketZip(args: {
 	bundle: ComplianceBundle;
-	bundleCanonicalJson: string;
 	bundleHash: `0x${string}`;
 	exportId: string;
 	fileData: ViewFileResult;
@@ -265,7 +265,10 @@ export async function downloadCompletionPacketZip(args: {
 		registerDocumentMerkleRoot: registerRoot,
 	});
 
-	const bundleJson = args.bundleCanonicalJson;
+	const bundleBytes = await buildProofPacketBundleBytes({
+		bundle: args.bundle,
+		expectedHash: args.bundleHash,
+	});
 	const verifyManifest = buildVerifyManifest({
 		bundle: args.bundle,
 		bundleHash: args.bundleHash,
@@ -289,9 +292,9 @@ export async function downloadCompletionPacketZip(args: {
 		[proofPacketPath(paths.manifest)]: new TextEncoder().encode(
 			JSON.stringify(verifyManifest, null, 2),
 		),
-		[proofPacketPath(paths.bundle)]: new TextEncoder().encode(bundleJson),
+		[proofPacketPath(paths.bundle)]: bundleBytes.bytes,
 		[proofPacketPath(paths.bundleHash)]: new TextEncoder().encode(
-			`${args.bundleHash}\n`,
+			`${bundleBytes.sha256}\n`,
 		),
 		[proofPacketPath(paths.documentMerkle)]: new TextEncoder().encode(
 			merkleProofsJson,

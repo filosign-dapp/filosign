@@ -65,7 +65,7 @@ describe("verifyFocCdnCiphertext", () => {
 				delayMs: 0,
 				fetchCiphertext,
 			}),
-		).rejects.toThrow(/FOC bytes mismatch/);
+		).rejects.toThrow(/FOC CDN bytes mismatch/);
 
 		expect(calls).toBe(1);
 	});

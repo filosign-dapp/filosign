@@ -156,7 +156,7 @@ describe("partner trial guards", () => {
 describe("resolvePartnerInviteTrialForWorkspace", () => {
 	const wallet = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as const;
 	const orgId = "00000000-0000-7000-8000-000000000099";
-	const futureEnd = new Date("2026-07-01T12:00:00.000Z");
+	const futureEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
 	let redemptionRows: unknown[] = [];
 	let orgSubRows: unknown[] = [];

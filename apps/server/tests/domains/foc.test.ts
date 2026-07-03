@@ -14,12 +14,15 @@ import {
 	isFocRetrievalEnabled,
 } from "@/lib/domains/foc/enabled";
 import { isFocTransitionDue } from "@/lib/domains/foc/lifecycle";
+import { assertFocBytesMatch } from "@/lib/domains/foc/utils/cdn-verify";
 import { retentionEpochsFromUntil } from "@/lib/platform/foc/retention";
 import {
 	archivalCdnUrl,
+	assertCompleteSynapseUpload,
 	dataSetIdFromDealId,
 	dealIdFromUploadResult,
 	filbeamRetrievalHost,
+	summarizeSynapseUploadResult,
 } from "@/lib/platform/foc/synapse";
 import { focTransitionJobId } from "@/lib/platform/jobs/utils/idempotency";
 import { testEnvStub } from "../support/env-stub";
@@ -82,6 +85,57 @@ describe("foc", () => {
 				expect(() => dealIdFromUploadResult(result)).toThrow(
 					/no committed copies/,
 				);
+			});
+
+			test("throws when Synapse reports an incomplete upload", () => {
+				const result = uploadResultStub({
+					complete: false,
+					copies: [{ dataSetId: 42n, pieceId: 7n, role: "primary" }],
+				});
+				expect(() => assertCompleteSynapseUpload(result)).toThrow(
+					/did not complete/,
+				);
+			});
+
+			test("summarizes upload result without bigint JSON issues", () => {
+				const result = uploadResultStub({
+					complete: false,
+					requestedCopies: 2,
+					size: 69660n,
+					copies: [
+						{
+							dataSetId: 1319n,
+							pieceId: 15n,
+							role: "primary",
+							providerId: 1n,
+							retrievalUrl: "https://provider.example/piece/bafk",
+							isNewDataSet: false,
+						},
+					],
+					failedAttempts: [{ providerId: 2n, reason: "unreachable" }],
+					pieceCid: { toString: () => "bafkzcibexample" },
+				});
+
+				expect(summarizeSynapseUploadResult(result)).toEqual({
+					pieceCid: "bafkzcibexample",
+					complete: false,
+					requestedCopies: 2,
+					size: "69660",
+					copies: [
+						{
+							dataSetId: "1319",
+							pieceId: "15",
+							role: "primary",
+							providerId: "1",
+							retrievalUrl: "https://provider.example/piece/bafk",
+							isNewDataSet: false,
+						},
+					],
+					failedAttemptsCount: 1,
+					failedAttempts: [
+						{ providerId: "2", error: undefined, reason: "unreachable" },
+					],
+				});
 			});
 		});
 
@@ -167,6 +221,30 @@ describe("foc", () => {
 						r2EvictedAt: new Date(),
 					}),
 				).toBe(false);
+			});
+		});
+
+		describe("assertFocBytesMatch", () => {
+			test("accepts identical bytes", () => {
+				expect(() =>
+					assertFocBytesMatch({
+						pieceCid: "bafkzcibexample",
+						source: "test",
+						actualBytes: new Uint8Array([1, 2, 3]),
+						expectedBytes: new Uint8Array([1, 2, 3]),
+					}),
+				).not.toThrow();
+			});
+
+			test("throws on mismatched bytes", () => {
+				expect(() =>
+					assertFocBytesMatch({
+						pieceCid: "bafkzcibexample",
+						source: "test",
+						actualBytes: new Uint8Array([1, 2, 3]),
+						expectedBytes: new Uint8Array([1, 2, 4]),
+					}),
+				).toThrow(/FOC test bytes mismatch/);
 			});
 		});
 	});

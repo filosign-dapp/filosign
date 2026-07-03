@@ -1,13 +1,17 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { isFocBackupEnabled } from "@/lib/domains/foc/enabled";
 import { resolveFocRetentionUntil } from "@/lib/domains/foc/retention-policy";
-import { verifyFocCdnCiphertext } from "@/lib/domains/foc/utils/cdn-verify";
+import {
+	assertFocBytesMatch,
+	verifyFocCdnCiphertext,
+} from "@/lib/domains/foc/utils/cdn-verify";
 import db from "@/lib/platform/db";
 import {
 	dealIdFromUploadResult,
 	getOrCreatePlatformDataset,
 	getSynapse,
 	retentionEpochsFromUntil,
+	summarizeSynapseUploadResult,
 } from "@/lib/platform/foc";
 import { logger } from "@/lib/platform/pino";
 import { bucket } from "@/lib/platform/s3/client";
@@ -123,11 +127,45 @@ export async function tryFocForRoutingCompletePiece(
 async function verifyFocCiphertext(args: {
 	pieceCid: string;
 	expectedBytes: Uint8Array;
-}): Promise<void> {
-	await verifyFocCdnCiphertext({
+}): Promise<"cdn" | "synapse-provider"> {
+	const cdnVerified = await tryCatch(
+		verifyFocCdnCiphertext({
+			pieceCid: args.pieceCid,
+			expectedBytes: args.expectedBytes,
+		}),
+	);
+	if (!cdnVerified.error) {
+		return "cdn";
+	}
+
+	logger.warn(
+		{ pieceCid: args.pieceCid, err: cdnVerified.error },
+		"foc-transition: CDN verify failed; trying Synapse provider download",
+	);
+
+	const downloaded = await tryCatch(
+		getSynapse().storage.download({
+			pieceCid: args.pieceCid,
+			withCDN: false,
+		}),
+	);
+	if (downloaded.error) {
+		throw new Error(`FOC verify failed for ${args.pieceCid}`, {
+			cause: downloaded.error,
+		});
+	}
+
+	assertFocBytesMatch({
 		pieceCid: args.pieceCid,
+		source: "Synapse provider download",
+		actualBytes: new Uint8Array(downloaded.data),
 		expectedBytes: args.expectedBytes,
 	});
+	logger.info(
+		{ pieceCid: args.pieceCid },
+		"foc-transition: Synapse provider verify succeeded after CDN miss",
+	);
+	return "synapse-provider";
 }
 
 export async function runFocTransitionForPiece(
@@ -202,6 +240,10 @@ export async function runFocTransitionForPiece(
 			throw new Error(`FOC piece CID mismatch for ${pieceCid}`);
 		}
 
+		logger.info(
+			{ pieceCid, upload: summarizeSynapseUploadResult(uploaded.data) },
+			"foc-transition: Synapse upload result",
+		);
 		dealId = dealIdFromUploadResult(uploaded.data);
 		const checkpointAt = new Date();
 		await db
@@ -215,7 +257,10 @@ export async function runFocTransitionForPiece(
 			.where(eq(focObjects.pieceCid, pieceCid));
 	}
 
-	await verifyFocCiphertext({ pieceCid, expectedBytes: r2Bytes });
+	const verifySource = await verifyFocCiphertext({
+		pieceCid,
+		expectedBytes: r2Bytes,
+	});
 
 	const verifiedAt = new Date();
 	await db
@@ -231,7 +276,7 @@ export async function runFocTransitionForPiece(
 		.where(eq(focObjects.pieceCid, pieceCid));
 
 	logger.info(
-		{ pieceCid, organizationId: row.organizationId, dealId },
+		{ pieceCid, organizationId: row.organizationId, dealId, verifySource },
 		"foc-transition: replicated (R2 retained)",
 	);
 }

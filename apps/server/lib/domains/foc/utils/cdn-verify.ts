@@ -9,8 +9,20 @@ function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function bytesMatch(a: Uint8Array, b: Uint8Array): boolean {
+export function bytesMatch(a: Uint8Array, b: Uint8Array): boolean {
 	return a.byteLength === b.byteLength && a.every((byte, i) => byte === b[i]);
+}
+
+export function assertFocBytesMatch(args: {
+	pieceCid: string;
+	source: string;
+	actualBytes: Uint8Array;
+	expectedBytes: Uint8Array;
+}): void {
+	if (bytesMatch(args.actualBytes, args.expectedBytes)) {
+		return;
+	}
+	throw new Error(`FOC ${args.source} bytes mismatch for ${args.pieceCid}`);
 }
 
 export type FocCdnFetch = (url: string) => Promise<Response>;
@@ -60,16 +72,19 @@ export async function verifyFocCdnCiphertext(args: {
 			);
 		} else {
 			const focBytes = new Uint8Array(await focRes.data.arrayBuffer());
-			if (bytesMatch(focBytes, expectedBytes)) {
-				if (i > 0) {
-					logger.info(
-						{ pieceCid, attempt: i + 1, attempts, cdnUrl },
-						"foc-transition: CDN verify succeeded after poll",
-					);
-				}
-				return;
+			assertFocBytesMatch({
+				pieceCid,
+				source: "CDN",
+				actualBytes: focBytes,
+				expectedBytes,
+			});
+			if (i > 0) {
+				logger.info(
+					{ pieceCid, attempt: i + 1, attempts, cdnUrl },
+					"foc-transition: CDN verify succeeded after poll",
+				);
 			}
-			throw new Error(`FOC bytes mismatch for ${pieceCid}`);
+			return;
 		}
 
 		if (i < attempts - 1) await sleep(delayMs);

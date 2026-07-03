@@ -14,6 +14,18 @@ const PLATFORM_DATASET_METADATA = { filosign_platform: "archival" } as const;
 const WITH_CDN = true;
 
 type SynapseClient = ReturnType<typeof Synapse.create>;
+type UploadCopyDiagnostic = UploadResult["copies"][number] & {
+	providerId?: bigint | number | string;
+	retrievalUrl?: string;
+	isNewDataSet?: boolean;
+};
+type UploadResultDiagnostic = UploadResult & {
+	complete?: boolean;
+	requestedCopies?: number;
+	size?: bigint | number;
+	failedAttempts?: readonly unknown[];
+	copies: readonly UploadCopyDiagnostic[];
+};
 
 let synapseClient: SynapseClient | undefined;
 
@@ -145,8 +157,62 @@ export function archivalCdnUrl(pieceCid: string): string {
 	return `https://${getFocWalletAddress()}.${host}/${pieceCid}`;
 }
 
+function stringifyNumberish(value: bigint | number | string | undefined) {
+	return typeof value === "bigint" ? value.toString() : value;
+}
+
+function summarizeFailure(failure: unknown): unknown {
+	if (!failure || typeof failure !== "object") {
+		return failure;
+	}
+	const record = failure as Record<string, unknown>;
+	return {
+		providerId: stringifyNumberish(
+			record.providerId as bigint | number | string | undefined,
+		),
+		error:
+			typeof record.error === "string"
+				? record.error
+				: record.error instanceof Error
+					? record.error.message
+					: undefined,
+		reason: typeof record.reason === "string" ? record.reason : undefined,
+	};
+}
+
+export function summarizeSynapseUploadResult(result: UploadResult) {
+	const inspected = result as UploadResultDiagnostic;
+	return {
+		pieceCid: result.pieceCid.toString(),
+		complete: inspected.complete,
+		requestedCopies: inspected.requestedCopies,
+		size: stringifyNumberish(inspected.size),
+		copies: inspected.copies.map((copy) => ({
+			dataSetId: stringifyNumberish(copy.dataSetId),
+			pieceId: stringifyNumberish(copy.pieceId),
+			role: copy.role,
+			providerId: stringifyNumberish(copy.providerId),
+			retrievalUrl: copy.retrievalUrl,
+			isNewDataSet: copy.isNewDataSet,
+		})),
+		failedAttemptsCount: inspected.failedAttempts?.length ?? 0,
+		failedAttempts: inspected.failedAttempts?.slice(0, 5).map(summarizeFailure),
+	};
+}
+
+export function assertCompleteSynapseUpload(result: UploadResult): void {
+	const inspected = result as UploadResultDiagnostic;
+	if (inspected.copies.length === 0) {
+		throw new Error("Synapse upload returned no committed copies");
+	}
+	if (inspected.complete === false) {
+		throw new Error("Synapse upload did not complete all requested copies");
+	}
+}
+
 /** Stable id stored on `foc_objects.deal_id` from an upload result. */
 export function dealIdFromUploadResult(result: UploadResult): string {
+	assertCompleteSynapseUpload(result);
 	const primary = result.copies[0];
 	if (!primary) {
 		throw new Error("Synapse upload returned no committed copies");

@@ -2,6 +2,7 @@ import { SPRING_TOKENS } from "@filosign/motion";
 import { motion, useReducedMotion } from "motion/react";
 import { landingMedia } from "../../config/landing-media";
 import { cn } from "../../lib/cn";
+import { MARKETING_CTA } from "../../lib/marketing-cta";
 import { marketingHeroSectionClass } from "../../lib/marketing-layout";
 import MarketingCtaButtons from "./MarketingCtaButtons";
 // import MotionAwareVideo from "./MotionAwareVideo";
@@ -68,6 +69,11 @@ export default function MarketingHero() {
 							secondaryLabel="See how it works"
 							secondaryExternal={false}
 						/>
+						{MARKETING_CTA.getStartedNote ? (
+							<p className="mt-3 text-sm text-muted-foreground font-manrope">
+								{MARKETING_CTA.getStartedNote}
+							</p>
+						) : null}
 					</motion.div>
 				</motion.div>
 

@@ -9,6 +9,7 @@ export const env = createEnv({
 		PUBLIC_CLIENT_URL: z.url().default("http://localhost:3001"),
 		PUBLIC_SERVER_URL: z.url().default("http://localhost:3000"),
 		PUBLIC_DEPLOYMENT: z.enum(DEPLOYMENTS).optional(),
+		PUBLIC_BOOK_CALL_URL: z.url().optional(),
 		PUBLIC_CHECKOUT_ENABLED: z
 			.enum(["true", "false"])
 			.optional()
@@ -19,6 +20,7 @@ export const env = createEnv({
 		PUBLIC_CLIENT_URL: import.meta.env.PUBLIC_CLIENT_URL,
 		PUBLIC_SERVER_URL: import.meta.env.PUBLIC_SERVER_URL,
 		PUBLIC_DEPLOYMENT: import.meta.env.PUBLIC_DEPLOYMENT,
+		PUBLIC_BOOK_CALL_URL: import.meta.env.PUBLIC_BOOK_CALL_URL,
 		PUBLIC_CHECKOUT_ENABLED: import.meta.env.PUBLIC_CHECKOUT_ENABLED,
 	},
 });

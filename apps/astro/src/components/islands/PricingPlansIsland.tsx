@@ -279,14 +279,14 @@ function PricingPlanCard({
 				>
 					{isSandbox && publicCheckoutEnabled ? (
 						<a
-							href={MARKETING_CTA.getStartedHref}
+							href={MARKETING_CTA.accessHref}
 							target={
-								MARKETING_CTA.getStartedHref.startsWith("http")
+								MARKETING_CTA.accessHref.startsWith("http")
 									? "_blank"
 									: undefined
 							}
 							rel={
-								MARKETING_CTA.getStartedHref.startsWith("http")
+								MARKETING_CTA.accessHref.startsWith("http")
 									? "noopener noreferrer"
 									: undefined
 							}

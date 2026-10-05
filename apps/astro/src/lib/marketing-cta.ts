@@ -17,7 +17,7 @@ export const MARKETING_CTA = {
 	getStartedHref: bookCallHref ?? accessHref,
 	getStartedLabel: bookCallHref ? "Book a call" : "Request invite",
 	getStartedNote: bookCallHref
-		? "15 minutes with the founder. We'll set up your first workflow with you."
+		? "30 minutes with the founder. We'll set up your first workflow with you."
 		: undefined,
 	exploreHref: "/#how-it-works",
 	exploreLabel: "See how it works",
